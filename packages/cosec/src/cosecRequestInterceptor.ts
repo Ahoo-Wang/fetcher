@@ -34,10 +34,6 @@ export class CoSecRequestInterceptor implements Interceptor {
       },
     };
 
-    // Add CoSec headers
-    if (!newRequest.headers) {
-      newRequest.headers = {};
-    }
     const requestHeaders = newRequest.headers as Record<string, string>;
     requestHeaders[CoSecHeaders.APP_ID] = this.options.appId;
     requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;

@@ -35,6 +35,11 @@ import {
   CompositeToken,
 } from '@ahoo-wang/fetcher-cosec';
 
+// Create a Fetcher instance
+const fetcher = new Fetcher({
+  baseURL: 'https://api.example.com',
+});
+
 // Create storage instances
 const deviceIdStorage = new DeviceIdStorage();
 const tokenStorage = new TokenStorage();
@@ -43,14 +48,12 @@ const tokenStorage = new TokenStorage();
 const tokenRefresher: TokenRefresher = {
   async refresh(token: CompositeToken): Promise<CompositeToken> {
     // Refresh token logic here
-    const response = await fetch('/auth/refresh', {
+    const response = await fetcher.fetch('/auth/refresh', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        refreshToken: token.refreshToken,
-      }),
+      body: token,
     });
 
     const tokens = await response.json();
@@ -60,11 +63,6 @@ const tokenRefresher: TokenRefresher = {
     };
   },
 };
-
-// Create a Fetcher instance
-const fetcher = new Fetcher({
-  baseURL: 'https://api.example.com',
-});
 
 // Add CoSec request interceptor
 fetcher.interceptors.request.use(

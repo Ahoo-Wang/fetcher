@@ -35,6 +35,11 @@ import {
   CompositeToken,
 } from '@ahoo-wang/fetcher-cosec';
 
+// 创建 Fetcher 实例
+const fetcher = new Fetcher({
+  baseURL: 'https://api.example.com',
+});
+
 // 创建存储实例
 const deviceIdStorage = new DeviceIdStorage();
 const tokenStorage = new TokenStorage();
@@ -43,14 +48,12 @@ const tokenStorage = new TokenStorage();
 const tokenRefresher: TokenRefresher = {
   async refresh(token: CompositeToken): Promise<CompositeToken> {
     // 刷新令牌逻辑
-    const response = await fetch('/auth/refresh', {
+    const response = await fetcher.fetch('/auth/refresh', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        refreshToken: token.refreshToken,
-      }),
+      body: token,
     });
 
     const tokens = await response.json();
@@ -60,11 +63,6 @@ const tokenRefresher: TokenRefresher = {
     };
   },
 };
-
-// 创建 Fetcher 实例
-const fetcher = new Fetcher({
-  baseURL: 'https://api.example.com',
-});
 
 // 添加 CoSec 请求拦截器
 fetcher.interceptors.request.use(
