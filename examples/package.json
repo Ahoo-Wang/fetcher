@@ -29,7 +29,8 @@
   },
   "dependencies": {
     "@ahoo-wang/fetcher": "workspace:*",
-    "@ahoo-wang/fetcher-eventstream": "workspace:*"
+    "@ahoo-wang/fetcher-eventstream": "workspace:*",
+    "@ahoo-wang/fetcher-cosec": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.2",
