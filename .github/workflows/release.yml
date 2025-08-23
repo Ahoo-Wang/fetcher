@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  publish-npm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Publish to NPM
+        run: |
+          # Publish each package in the monorepo
+          for package in packages/*/; do
+            if [ -f "$package/package.json" ]; then
+              package_name=$(node -p "require('./$package/package.json').name")
+              if [[ "$package_name" != *"@"* ]]; then
+                echo "Skipping $package_name as it's not a scoped package"
+                continue
+              fi
+              echo "Publishing $package_name"
+              pnpm publish "$package" --access public --no-git-checks
+            fi
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fetcher EventStream Examples</title>
+    <style>
+      :root {
+        --primary-color: #007acc;
+        --primary-hover: #005a9e;
+        --success-color: #388e3c;
+        --error-color: #d32f2f;
+        --warning-color: #f57c00;
+        --background-color: #f5f5f5;
+        --card-background: #ffffff;
+        --text-color: #333333;
+        --border-color: #eeeeee;
+        --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+          Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: var(--background-color);
+        color: var(--text-color);
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .header h1 {
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+      }
+
+      .header p {
+        color: #666;
+        font-size: 1.1rem;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 2rem;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .example-card {
+        background: var(--card-background);
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .example-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .example-card h2 {
+        color: var(--text-color);
+        margin-top: 0;
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 0.5rem;
+      }
+
+      .controls {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+      }
+
+      button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.2s ease;
+      }
+
+      button:hover:not(:disabled) {
+        background-color: var(--primary-hover);
+      }
+
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+
+      button.secondary {
+        background-color: #6c757d;
+      }
+
+      button.secondary:hover:not(:disabled) {
+        background-color: #5a6268;
+      }
+
+      .output {
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        max-height: 300px;
+        overflow-y: auto;
+        font-size: 0.85rem;
+        border: 1px solid var(--border-color);
+      }
+
+      .output.loading {
+        color: var(--primary-color);
+      }
+
+      .output.error {
+        color: var(--error-color);
+        background-color: #ffebee;
+      }
+
+      .output.success {
+        color: var(--success-color);
+        background-color: #e8f5e9;
+      }
+
+      .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+
+      .status-indicator.success {
+        background-color: var(--success-color);
+      }
+
+      .status-indicator.error {
+        background-color: var(--error-color);
+      }
+
+      .status-indicator.loading {
+        background-color: var(--warning-color);
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      .example-description {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+      }
+
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 1rem;
+      }
+
+      .tab {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+      }
+
+      .tab.active {
+        border-bottom: 2px solid var(--primary-color);
+        color: var(--primary-color);
+        font-weight: bold;
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+        text-decoration: none;
+      }
+
+      .back-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Fetcher EventStream Examples</h1>
+      <p>
+        Interactive examples demonstrating Server-Sent Events (SSE) with Fetcher
+      </p>
+      <a href="/" class="back-link">← Back to Main Examples</a>
+    </div>
+
+    <div class="container">
+      <!-- Basic SSE Example -->
+      <div class="example-card">
+        <h2>Basic Server-Sent Events</h2>
+        <div class="example-description">
+          Demonstrates connecting to a Server-Sent Events stream and processing
+          real-time updates.
+        </div>
+        <div class="controls">
+          <button id="basicSseBtn">Connect to SSE Stream</button>
+          <button id="basicSseStopBtn">Disconnect</button>
+          <button id="basicSseClearBtn" class="secondary">Clear Output</button>
+        </div>
+        <div id="basicSseOutput" class="output">
+          Click "Connect to SSE Stream" to start receiving events
+        </div>
+      </div>
+
+      <!-- SSE with Custom Events Example -->
+      <div class="example-card">
+        <h2>SSE with Custom Events</h2>
+        <div class="example-description">
+          Shows how to handle different types of events in an SSE stream.
+        </div>
+        <div class="controls">
+          <button id="customSseBtn">Connect with Custom Events</button>
+          <button id="customSseStopBtn">Disconnect</button>
+          <button id="customSseClearBtn" class="secondary">Clear Output</button>
+        </div>
+        <div id="customSseOutput" class="output">
+          Click "Connect with Custom Events" to start receiving different event
+          types
+        </div>
+      </div>
+
+      <!-- SSE Error Handling Example -->
+      <div class="example-card">
+        <h2>SSE Error Handling</h2>
+        <div class="example-description">
+          Demonstrates how to handle connection errors and reconnections in SSE
+          streams.
+        </div>
+        <div class="controls">
+          <button id="errorSseBtn">Connect with Error Handling</button>
+          <button id="errorSseStopBtn">Disconnect</button>
+          <button id="errorSseClearBtn" class="secondary">Clear Output</button>
+        </div>
+        <div id="errorSseOutput" class="output">
+          Click "Connect with Error Handling" to see error handling in action
+        </div>
+      </div>
+
+      <!-- SSE with Interceptor Example -->
+      <div class="example-card">
+        <h2>SSE with Interceptor</h2>
+        <div class="example-description">
+          Shows how to use the EventStreamInterceptor to automatically add
+          eventStream() method to responses.
+        </div>
+        <div class="controls">
+          <button id="interceptorSseBtn">Connect with Interceptor</button>
+          <button id="interceptorSseStopBtn">Disconnect</button>
+          <button id="interceptorSseClearBtn" class="secondary">
+            Clear Output
+          </button>
+        </div>
+        <div id="interceptorSseOutput" class="output">
+          Click "Connect with Interceptor" to see automatic SSE handling
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      // Note: In a real implementation, we would import from the actual packages
+      // For this example, we'll simulate the behavior
+
+      // Simulate the Fetcher and EventStreamInterceptor classes
+      class Fetcher {
+        constructor(options) {
+          this.options = options;
+          this.interceptors = {
+            response: {
+              use: interceptor => {
+                console.log('Interceptor added:', interceptor);
+              },
+            },
+          };
+        }
+
+        async get(url) {
+          // Simulate a response with eventStream method
+          return {
+            eventStream: () => {
+              return this.createMockEventStream();
+            },
+          };
+        }
+
+        createMockEventStream() {
+          // This is a mock implementation for demonstration purposes
+          const eventStream = {
+            [Symbol.asyncIterator]() {
+              return {
+                async next() {
+                  // Simulate delay
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+
+                  // Randomly decide if we should continue or stop
+                  if (Math.random() > 0.1) {
+                    return {
+                      value: {
+                        event: ['message', 'update', 'notification'][
+                          Math.floor(Math.random() * 3)
+                        ],
+                        data: JSON.stringify({
+                          id: Date.now(),
+                          timestamp: new Date().toISOString(),
+                          message: `Simulated event ${Math.floor(Math.random() * 1000)}`,
+                          type: ['info', 'warning', 'error', 'success'][
+                            Math.floor(Math.random() * 4)
+                          ],
+                        }),
+                        id: Date.now().toString(),
+                        retry: 5000,
+                      },
+                      done: false,
+                    };
+                  } else {
+                    return { done: true };
+                  }
+                },
+              };
+            },
+          };
+
+          return eventStream;
+        }
+      }
+
+      class EventStreamInterceptor {
+        intercept(response) {
+          // Add eventStream method to response
+          response.eventStream = () => {
+            // This would normally convert the response to an event stream
+            return new ReadableStream({
+              start(controller) {
+                let counter = 0;
+                const interval = setInterval(() => {
+                  if (counter < 10) {
+                    controller.enqueue({
+                      event: 'message',
+                      data: `Event ${++counter}: ${new Date().toISOString()}`,
+                      id: counter.toString(),
+                      retry: 5000,
+                    });
+                  } else {
+                    clearInterval(interval);
+                    controller.close();
+                  }
+                }, 1000);
+              },
+            });
+          };
+          return response;
+        }
+      }
+
+      // Helper function to update output
+      function updateOutput(elementId, content, className = '') {
+        const outputElement = document.getElementById(elementId);
+        outputElement.textContent = content;
+        outputElement.className = `output ${className}`;
+      }
+
+      // Helper function to show loading state
+      function showLoading(elementId) {
+        updateOutput(elementId, 'Connecting to SSE stream...', 'loading');
+      }
+
+      // Basic SSE Example
+      let basicSseController = null;
+
+      document
+        .getElementById('basicSseBtn')
+        .addEventListener('click', async () => {
+          const outputId = 'basicSseOutput';
+          showLoading(outputId);
+
+          try {
+            updateOutput(
+              outputId,
+              "Connecting to simulated SSE stream...\n\nThis is a simulation since we don't have a real SSE server running.\nIn a real application, you would connect to an endpoint that sends Server-Sent Events.",
+              'success',
+            );
+
+            // Simulate receiving events
+            let eventCount = 0;
+            const simulateEvents = () => {
+              if (basicSseController) {
+                eventCount++;
+                const eventData = {
+                  id: eventCount,
+                  timestamp: new Date().toISOString(),
+                  message: `Simulated event #${eventCount}`,
+                  data: `This is simulated data for event ${eventCount}`,
+                };
+
+                const currentContent =
+                  document.getElementById(outputId).textContent;
+                const newContent = `${currentContent}\n\n[${eventData.timestamp}] Event #${eventData.id}: ${eventData.message}\nData: ${eventData.data}`;
+                updateOutput(outputId, newContent, 'success');
+
+                // Schedule next event
+                setTimeout(simulateEvents, 2000);
+              }
+            };
+
+            basicSseController = true;
+            simulateEvents();
+          } catch (error) {
+            updateOutput(outputId, `SSE Error: ${error.message}`, 'error');
+          }
+        });
+
+      document
+        .getElementById('basicSseStopBtn')
+        .addEventListener('click', () => {
+          const outputId = 'basicSseOutput';
+          if (basicSseController) {
+            basicSseController = null;
+            const currentContent =
+              document.getElementById(outputId).textContent;
+            updateOutput(
+              outputId,
+              `${currentContent}\n\nSSE stream stopped.`,
+              'success',
+            );
+          } else {
+            updateOutput(outputId, 'No active SSE stream to stop.', 'error');
+          }
+        });
+
+      document
+        .getElementById('basicSseClearBtn')
+        .addEventListener('click', () => {
+          basicSseController = null;
+          updateOutput(
+            'basicSseOutput',
+            'Click "Connect to SSE Stream" to start receiving events',
+          );
+        });
+
+      // Custom Events Example
+      let customSseController = null;
+
+      document
+        .getElementById('customSseBtn')
+        .addEventListener('click', async () => {
+          const outputId = 'customSseOutput';
+          showLoading(outputId);
+
+          try {
+            updateOutput(
+              outputId,
+              'Connecting to SSE stream with custom events...\n\nThis simulates handling different event types like "message", "update", and "notification".',
+              'success',
+            );
+
+            // Simulate receiving different types of events
+            let eventCount = 0;
+            const simulateEvents = () => {
+              if (customSseController) {
+                eventCount++;
+                const eventTypes = ['message', 'update', 'notification'];
+                const eventType =
+                  eventTypes[Math.floor(Math.random() * eventTypes.length)];
+
+                const eventData = {
+                  type: eventType,
+                  id: eventCount,
+                  timestamp: new Date().toISOString(),
+                  message: `Custom ${eventType} event #${eventCount}`,
+                  data: `This is ${eventType} data for event ${eventCount}`,
+                };
+
+                const currentContent =
+                  document.getElementById(outputId).textContent;
+                const newContent = `${currentContent}\n\n[${eventData.timestamp}] ${eventData.type.toUpperCase()} #${eventData.id}: ${eventData.message}\nData: ${eventData.data}`;
+                updateOutput(outputId, newContent, 'success');
+
+                // Schedule next event
+                setTimeout(simulateEvents, 1500);
+              }
+            };
+
+            customSseController = true;
+            simulateEvents();
+          } catch (error) {
+            updateOutput(outputId, `SSE Error: ${error.message}`, 'error');
+          }
+        });
+
+      document
+        .getElementById('customSseStopBtn')
+        .addEventListener('click', () => {
+          const outputId = 'customSseOutput';
+          if (customSseController) {
+            customSseController = null;
+            const currentContent =
+              document.getElementById(outputId).textContent;
+            updateOutput(
+              outputId,
+              `${currentContent}\n\nCustom events stream stopped.`,
+              'success',
+            );
+          } else {
+            updateOutput(
+              outputId,
+              'No active custom events stream to stop.',
+              'error',
+            );
+          }
+        });
+
+      document
+        .getElementById('customSseClearBtn')
+        .addEventListener('click', () => {
+          customSseController = null;
+          updateOutput(
+            'customSseOutput',
+            'Click "Connect with Custom Events" to start receiving different event types',
+          );
+        });
+
+      // Error Handling Example
+      let errorSseController = null;
+
+      document
+        .getElementById('errorSseBtn')
+        .addEventListener('click', async () => {
+          const outputId = 'errorSseOutput';
+          showLoading(outputId);
+
+          try {
+            updateOutput(
+              outputId,
+              'Connecting to SSE stream with error handling...\n\nThis simulates both successful connections and connection errors.',
+              'success',
+            );
+
+            // Simulate connection with occasional errors
+            let eventCount = 0;
+            const simulateEvents = () => {
+              if (errorSseController) {
+                eventCount++;
+
+                // Occasionally simulate an error
+                if (eventCount % 5 === 0 && Math.random() > 0.7) {
+                  const currentContent =
+                    document.getElementById(outputId).textContent;
+                  const newContent = `${currentContent}\n\n[ERROR] Connection lost. Attempting to reconnect in 3 seconds...`;
+                  updateOutput(outputId, newContent, 'error');
+
+                  // Simulate reconnection
+                  setTimeout(() => {
+                    if (errorSseController) {
+                      const currentContent =
+                        document.getElementById(outputId).textContent;
+                      const newContent = `${currentContent}\n\n[INFO] Reconnected successfully.`;
+                      updateOutput(outputId, newContent, 'success');
+                      setTimeout(simulateEvents, 1500);
+                    }
+                  }, 3000);
+                } else {
+                  const eventData = {
+                    id: eventCount,
+                    timestamp: new Date().toISOString(),
+                    message: `Reliable event #${eventCount}`,
+                    data: `This event was received successfully`,
+                  };
+
+                  const currentContent =
+                    document.getElementById(outputId).textContent;
+                  const newContent = `${currentContent}\n\n[${eventData.timestamp}] Event #${eventData.id}: ${eventData.message}\nData: ${eventData.data}`;
+                  updateOutput(outputId, newContent, 'success');
+
+                  // Schedule next event
+                  setTimeout(simulateEvents, 1500);
+                }
+              }
+            };
+
+            errorSseController = true;
+            simulateEvents();
+          } catch (error) {
+            updateOutput(outputId, `SSE Error: ${error.message}`, 'error');
+          }
+        });
+
+      document
+        .getElementById('errorSseStopBtn')
+        .addEventListener('click', () => {
+          const outputId = 'errorSseOutput';
+          if (errorSseController) {
+            errorSseController = null;
+            const currentContent =
+              document.getElementById(outputId).textContent;
+            updateOutput(
+              outputId,
+              `${currentContent}\n\nError handling stream stopped.`,
+              'success',
+            );
+          } else {
+            updateOutput(
+              outputId,
+              'No active error handling stream to stop.',
+              'error',
+            );
+          }
+        });
+
+      document
+        .getElementById('errorSseClearBtn')
+        .addEventListener('click', () => {
+          errorSseController = null;
+          updateOutput(
+            'errorSseOutput',
+            'Click "Connect with Error Handling" to see error handling in action',
+          );
+        });
+
+      // Interceptor Example
+      let interceptorSseController = null;
+
+      document
+        .getElementById('interceptorSseBtn')
+        .addEventListener('click', async () => {
+          const outputId = 'interceptorSseOutput';
+          showLoading(outputId);
+
+          try {
+            updateOutput(
+              outputId,
+              'Connecting to SSE stream with interceptor...\n\nThis demonstrates how the EventStreamInterceptor automatically adds eventStream() method to responses.',
+              'success',
+            );
+
+            // Simulate interceptor behavior
+            const currentContent =
+              document.getElementById(outputId).textContent;
+            const newContent = `${currentContent}\n\n[INFO] EventStreamInterceptor registered successfully.\n[INFO] Response will automatically have eventStream() method.\n[INFO] Starting event stream processing...`;
+            updateOutput(outputId, newContent, 'success');
+
+            // Simulate receiving events with interceptor
+            let eventCount = 0;
+            const simulateEvents = () => {
+              if (interceptorSseController) {
+                eventCount++;
+                const eventData = {
+                  id: eventCount,
+                  timestamp: new Date().toISOString(),
+                  message: `Intercepted event #${eventCount}`,
+                  data: `This event was processed through the interceptor`,
+                };
+
+                const currentContent =
+                  document.getElementById(outputId).textContent;
+                const newContent = `${currentContent}\n\n[${eventData.timestamp}] Event #${eventData.id}: ${eventData.message}\nData: ${eventData.data}`;
+                updateOutput(outputId, newContent, 'success');
+
+                // Schedule next event
+                setTimeout(simulateEvents, 1800);
+              }
+            };
+
+            interceptorSseController = true;
+            simulateEvents();
+          } catch (error) {
+            updateOutput(
+              outputId,
+              `Interceptor Error: ${error.message}`,
+              'error',
+            );
+          }
+        });
+
+      document
+        .getElementById('interceptorSseStopBtn')
+        .addEventListener('click', () => {
+          const outputId = 'interceptorSseOutput';
+          if (interceptorSseController) {
+            interceptorSseController = null;
+            const currentContent =
+              document.getElementById(outputId).textContent;
+            updateOutput(
+              outputId,
+              `${currentContent}\n\nInterceptor stream stopped.`,
+              'success',
+            );
+          } else {
+            updateOutput(
+              outputId,
+              'No active interceptor stream to stop.',
+              'error',
+            );
+          }
+        });
+
+      document
+        .getElementById('interceptorSseClearBtn')
+        .addEventListener('click', () => {
+          interceptorSseController = null;
+          updateOutput(
+            'interceptorSseOutput',
+            'Click "Connect with Interceptor" to see automatic SSE handling',
+          );
+        });
+    </script>
+  </body>
+</html>

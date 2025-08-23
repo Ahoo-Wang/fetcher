@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fetcher Examples</title>
+    <style>
+      :root {
+        --primary-color: #007acc;
+        --primary-hover: #005a9e;
+        --success-color: #388e3c;
+        --error-color: #d32f2f;
+        --warning-color: #f57c00;
+        --background-color: #f5f5f5;
+        --card-background: #ffffff;
+        --text-color: #333333;
+        --border-color: #eeeeee;
+        --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+          Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: var(--background-color);
+        color: var(--text-color);
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .header h1 {
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+      }
+
+      .header p {
+        color: #666;
+        font-size: 1.1rem;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 2rem;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .example-card {
+        background: var(--card-background);
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .example-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .example-card h2 {
+        color: var(--text-color);
+        margin-top: 0;
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 0.5rem;
+      }
+
+      .controls {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+      }
+
+      button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.2s ease;
+      }
+
+      button:hover:not(:disabled) {
+        background-color: var(--primary-hover);
+      }
+
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+
+      button.secondary {
+        background-color: #6c757d;
+      }
+
+      button.secondary:hover:not(:disabled) {
+        background-color: #5a6268;
+      }
+
+      .output {
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        max-height: 300px;
+        overflow-y: auto;
+        font-size: 0.85rem;
+        border: 1px solid var(--border-color);
+      }
+
+      .output.loading {
+        color: var(--primary-color);
+      }
+
+      .output.error {
+        color: var(--error-color);
+        background-color: #ffebee;
+      }
+
+      .output.success {
+        color: var(--success-color);
+        background-color: #e8f5e9;
+      }
+
+      .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+
+      .status-indicator.success {
+        background-color: var(--success-color);
+      }
+
+      .status-indicator.error {
+        background-color: var(--error-color);
+      }
+
+      .status-indicator.loading {
+        background-color: var(--warning-color);
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      .example-description {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+      }
+
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 1rem;
+      }
+
+      .tab {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+      }
+
+      .tab.active {
+        border-bottom: 2px solid var(--primary-color);
+        color: var(--primary-color);
+        font-weight: bold;
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Fetcher Examples</h1>
+      <p>
+        Interactive examples demonstrating the capabilities of the Fetcher HTTP
+        client library
+      </p>
+      <div style="margin-top: 1rem">
+        <a
+          href="/eventstream-examples.html"
+          style="
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+          "
+          >→ EventStream Examples</a
+        >
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Basic GET Request Example -->
+      <div class="example-card">
+        <h2>Basic GET Request</h2>
+        <div class="example-description">
+          Demonstrates a simple GET request to fetch data from a REST API
+          endpoint.
+        </div>
+        <div class="controls">
+          <button id="basicGetBtn">Fetch Post #1</button>
+          <button id="basicGetClearBtn" class="secondary">Clear Output</button>
+        </div>
+        <div id="basicGetOutput" class="output">
+          Click "Fetch Post #1" to run the example
+        </div>
+      </div>
+
+      <!-- Path Parameters Example -->
+      <div class="example-card">
+        <h2>Path Parameters</h2>
+        <div class="example-description">
+          Shows how to use path parameters to dynamically construct URLs.
+        </div>
+        <div class="controls">
+          <button id="pathParamBtn">Fetch User Posts</button>
+          <input
+            type="number"
+            id="userIdInput"
+            placeholder="User ID"
+            value="1"
+            min="1"
+            max="10"
+            style="width: 80px"
+          />
+          <button id="pathParamClearBtn" class="secondary">Clear Output</button>
+        </div>
+        <div id="pathParamOutput" class="output">
+          Click "Fetch User Posts" to run the example
+        </div>
+      </div>
+
+      <!-- Query Parameters Example -->
+      <div class="example-card">
+        <h2>Query Parameters</h2>
+        <div class="example-description">
+          Demonstrates how to add query parameters to filter or paginate
+          results.
+        </div>
+        <div class="controls">
+          <button id="queryParamBtn">Filter Posts</button>
+          <input
+            type="number"
+            id="queryUserIdInput"
+            placeholder="User ID"
+            value="1"
+            min="1"
+            max="10"
+            style="width: 80px"
+          />
+          <button id="queryParamClearBtn" class="secondary">
+            Clear Output
+          </button>
+        </div>
+        <div id="queryParamOutput" class="output">
+          Click "Filter Posts" to run the example
+        </div>
+      </div>
+
+      <!-- POST Request Example -->
+      <div class="example-card">
+        <h2>POST Request</h2>
+        <div class="example-description">
+          Shows how to create new resources using POST requests with JSON
+          payloads.
+        </div>
+        <div class="controls">
+          <button id="postBtn">Create Post</button>
+          <button id="postClearBtn" class="secondary">Clear Output</button>
+        </div>
+        <div id="postOutput" class="output">
+          Click "Create Post" to run the example
+        </div>
+      </div>
+
+      <!-- Interceptor Example -->
+      <div class="example-card">
+        <h2>Request Interceptors</h2>
+        <div class="example-description">
+          Demonstrates how to use interceptors to modify requests before they
+          are sent.
+        </div>
+        <div class="controls">
+          <button id="interceptorBtn">Fetch with Interceptor</button>
+          <button id="interceptorClearBtn" class="secondary">
+            Clear Output
+          </button>
+        </div>
+        <div id="interceptorOutput" class="output">
+          Click "Fetch with Interceptor" to run the example
+        </div>
+      </div>
+
+      <!-- Timeout Example -->
+      <div class="example-card">
+        <h2>Timeout Handling</h2>
+        <div class="example-description">
+          Shows how to configure and handle request timeouts.
+        </div>
+        <div class="controls">
+          <button id="timeoutBtn">Test Timeout</button>
+          <input
+            type="number"
+            id="timeoutInput"
+            placeholder="Timeout (ms)"
+            value="1000"
+            min="100"
+            max="10000"
+            style="width: 100px"
+          />
+          <button id="timeoutClearBtn" class="secondary">Clear Output</button>
+        </div>
+        <div id="timeoutOutput" class="output">
+          Click "Test Timeout" to run the example
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { Fetcher } from '@ahoo-wang/fetcher';
+
+      // Create a Fetcher instance
+      const fetcher = new Fetcher({
+        baseURL: 'https://jsonplaceholder.typicode.com',
+        timeout: 5000,
+      });
+
+      // Helper function to update output
+      function updateOutput(elementId, content, className = '') {
+        const outputElement = document.getElementById(elementId);
+        outputElement.textContent = content;
+        outputElement.className = `output ${className}`;
+      }
+
+      // Helper function to show loading state
+      function showLoading(elementId) {
+        updateOutput(elementId, 'Loading...', 'loading');
+      }
+
+      // Basic GET Request Example
+      document
+        .getElementById('basicGetBtn')
+        .addEventListener('click', async () => {
+          const outputId = 'basicGetOutput';
+          showLoading(outputId);
+
+          try {
+            const response = await fetcher.get('/posts/1');
+            const data = await response.json();
+            updateOutput(outputId, JSON.stringify(data, null, 2), 'success');
+          } catch (error) {
+            updateOutput(outputId, `Error: ${error.message}`, 'error');
+          }
+        });
+
+      document
+        .getElementById('basicGetClearBtn')
+        .addEventListener('click', () => {
+          updateOutput(
+            'basicGetOutput',
+            'Click "Fetch Post #1" to run the example',
+          );
+        });
+
+      // Path Parameters Example
+      document
+        .getElementById('pathParamBtn')
+        .addEventListener('click', async () => {
+          const outputId = 'pathParamOutput';
+          const userId = document.getElementById('userIdInput').value;
+          showLoading(outputId);
+
+          try {
+            const response = await fetcher.get('/users/{id}/posts', {
+              pathParams: { id: userId },
+            });
+            const data = await response.json();
+            updateOutput(
+              outputId,
+              `Found ${data.length} posts for user ${userId}\n\n${JSON.stringify(data.slice(0, 3), null, 2)}${data.length > 3 ? '\n\n...' : ''}`,
+              'success',
+            );
+          } catch (error) {
+            updateOutput(outputId, `Error: ${error.message}`, 'error');
+          }
+        });
+
+      document
+        .getElementById('pathParamClearBtn')
+        .addEventListener('click', () => {
+          updateOutput(
+            'pathParamOutput',
+            'Click "Fetch User Posts" to run the example',
+          );
+        });
+
+      // Query Parameters Example
+      document
+        .getElementById('queryParamBtn')
+        .addEventListener('click', async () => {
+          const outputId = 'queryParamOutput';
+          const userId = document.getElementById('queryUserIdInput').value;
+          showLoading(outputId);
+
+          try {
+            const response = await fetcher.get('/posts', {
+              queryParams: { userId: userId },
+            });
+            const data = await response.json();
+            updateOutput(
+              outputId,
+              `Found ${data.length} posts for user ${userId}\n\n${JSON.stringify(data.slice(0, 3), null, 2)}${data.length > 3 ? '\n\n...' : ''}`,
+              'success',
+            );
+          } catch (error) {
+            updateOutput(outputId, `Error: ${error.message}`, 'error');
+          }
+        });
+
+      document
+        .getElementById('queryParamClearBtn')
+        .addEventListener('click', () => {
+          updateOutput(
+            'queryParamOutput',
+            'Click "Filter Posts" to run the example',
+          );
+        });
+
+      // POST Request Example
+      document.getElementById('postBtn').addEventListener('click', async () => {
+        const outputId = 'postOutput';
+        showLoading(outputId);
+
+        try {
+          const response = await fetcher.post('/posts', {
+            body: JSON.stringify({
+              title: 'Test Post',
+              body: 'This is a test post created with Fetcher',
+              userId: 1,
+            }),
+            headers: { 'Content-Type': 'application/json' },
+          });
+          const data = await response.json();
+          updateOutput(
+            outputId,
+            `Successfully created post #${data.id}\n\n${JSON.stringify(data, null, 2)}`,
+            'success',
+          );
+        } catch (error) {
+          updateOutput(outputId, `Error: ${error.message}`, 'error');
+        }
+      });
+
+      document.getElementById('postClearBtn').addEventListener('click', () => {
+        updateOutput('postOutput', 'Click "Create Post" to run the example');
+      });
+
+      // Interceptor Example
+      document
+        .getElementById('interceptorBtn')
+        .addEventListener('click', async () => {
+          const outputId = 'interceptorOutput';
+          showLoading(outputId);
+
+          // Add request interceptor
+          const requestInterceptorId = fetcher.interceptors.request.use({
+            intercept(request) {
+              return {
+                ...request,
+                headers: {
+                  ...request.headers,
+                  'X-Custom-Header': 'Added by interceptor',
+                },
+              };
+            },
+          });
+
+          try {
+            const response = await fetcher.get('/posts/1');
+            const data = await response.json();
+            updateOutput(
+              outputId,
+              `Request completed with custom header\n\n${JSON.stringify(data, null, 2)}`,
+              'success',
+            );
+          } catch (error) {
+            updateOutput(outputId, `Error: ${error.message}`, 'error');
+          } finally {
+            // Remove interceptor
+            fetcher.interceptors.request.eject(requestInterceptorId);
+          }
+        });
+
+      document
+        .getElementById('interceptorClearBtn')
+        .addEventListener('click', () => {
+          updateOutput(
+            'interceptorOutput',
+            'Click "Fetch with Interceptor" to run the example',
+          );
+        });
+
+      // Timeout Example
+      document
+        .getElementById('timeoutBtn')
+        .addEventListener('click', async () => {
+          const outputId = 'timeoutOutput';
+          const timeout = parseInt(
+            document.getElementById('timeoutInput').value,
+          );
+          showLoading(outputId);
+
+          try {
+            // Create a new fetcher with custom timeout
+            const timeoutFetcher = new Fetcher({
+              baseURL: 'https://jsonplaceholder.typicode.com',
+              timeout: timeout,
+            });
+
+            const startTime = Date.now();
+            const response = await timeoutFetcher.get('/posts/1');
+            const endTime = Date.now();
+
+            const data = await response.json();
+            updateOutput(
+              outputId,
+              `Request completed in ${endTime - startTime}ms\n\n${JSON.stringify(data, null, 2)}`,
+              'success',
+            );
+          } catch (error) {
+            updateOutput(outputId, `Timeout Error: ${error.message}`, 'error');
+          }
+        });
+
+      document
+        .getElementById('timeoutClearBtn')
+        .addEventListener('click', () => {
+          updateOutput(
+            'timeoutOutput',
+            'Click "Test Timeout" to run the example',
+          );
+        });
+
+      // Server-Sent Events Example
+      let sseController = null;
+
+      document
+        .getElementById('sseStartBtn')
+        .addEventListener('click', async () => {
+          const outputId = 'sseOutput';
+          showLoading(outputId);
+
+          try {
+            // Note: For a real SSE example, we would need a server that supports SSE
+            // Since we don't have one running, we'll simulate the behavior
+            updateOutput(
+              outputId,
+              "Starting simulated SSE stream...\n\nThis is a simulation since we don't have an actual SSE server running.\nIn a real application, you would connect to an endpoint that sends Server-Sent Events.",
+              'success',
+            );
+
+            // Simulate receiving events
+            let eventCount = 0;
+            const simulateEvents = () => {
+              if (sseController) {
+                eventCount++;
+                const eventData = {
+                  id: eventCount,
+                  timestamp: new Date().toISOString(),
+                  message: `Simulated event #${eventCount}`,
+                  data: `This is simulated data for event ${eventCount}`,
+                };
+
+                const currentContent =
+                  document.getElementById(outputId).textContent;
+                const newContent = `${currentContent}\n\n[${eventData.timestamp}] Event #${eventData.id}: ${eventData.message}\nData: ${eventData.data}`;
+                updateOutput(outputId, newContent, 'success');
+
+                // Schedule next event
+                setTimeout(simulateEvents, 2000);
+              }
+            };
+
+            sseController = true;
+            simulateEvents();
+          } catch (error) {
+            updateOutput(outputId, `SSE Error: ${error.message}`, 'error');
+          }
+        });
+
+      document.getElementById('sseStopBtn').addEventListener('click', () => {
+        const outputId = 'sseOutput';
+        if (sseController) {
+          sseController = null;
+          const currentContent = document.getElementById(outputId).textContent;
+          updateOutput(
+            outputId,
+            `${currentContent}\n\nSSE stream stopped.`,
+            'success',
+          );
+        } else {
+          updateOutput(outputId, 'No active SSE stream to stop.', 'error');
+        }
+      });
+
+      document.getElementById('sseClearBtn').addEventListener('click', () => {
+        sseController = null;
+        updateOutput(
+          'sseOutput',
+          'Click "Start Streaming" to begin receiving real-time events',
+        );
+      });
+    </script>
+  </body>
+</html>

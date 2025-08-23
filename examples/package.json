@@ -1,0 +1,39 @@
+{
+  "name": "@fetcher/examples",
+  "private": true,
+  "description": "Examples for Fetcher HTTP client library",
+  "keywords": [
+    "fetcher",
+    "http",
+    "client",
+    "examples",
+    "sse",
+    "server-sent-events"
+  ],
+  "author": "Ahoo-Wang",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/master/examples",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ahoo-Wang/fetcher.git",
+    "directory": "examples"
+  },
+  "bugs": {
+    "url": "https://github.com/Ahoo-Wang/fetcher/issues"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@ahoo-wang/fetcher": "workspace:*",
+    "@ahoo-wang/fetcher-eventstream": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3",
+    "unplugin-dts": "1.0.0-beta.6"
+  }
+}
