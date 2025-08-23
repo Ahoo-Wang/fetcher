@@ -136,17 +136,17 @@ Converts a Response object with a `text/event-stream` body to a readable stream 
 
 A response interceptor that automatically adds an `eventStream()` method to responses with `text/event-stream` content type.
 
-#### `intercept(response: Response): Response`
+#### `intercept(exchange: FetchExchange): FetchExchange`
 
 Intercepts a response and adds the `eventStream()` method if the content type is `text/event-stream`.
 
 **Parameters:**
 
-- `response`: The HTTP response to intercept
+- `exchange`: The fetch exchange containing the response to intercept
 
 **Returns:**
 
-- `Response`: The intercepted response with added `eventStream()` method
+- `FetchExchange`: The intercepted exchange with response potentially modified to include `eventStream()` method
 
 ### ServerSentEvent
 

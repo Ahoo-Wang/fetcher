@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { EventStreamInterceptor, toServerSentEventStream } from '../src';
+import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
 
 // Mock the EventStreamConverter
 vi.mock('../src/eventStreamConverter', async () => {
@@ -11,16 +12,26 @@ vi.mock('../src/eventStreamConverter', async () => {
 });
 
 describe('EventStreamInterceptor', () => {
+  const mockFetcher = new Fetcher();
+
   it('should add eventStream method to response when content-type is text/event-stream', () => {
     const interceptor = new EventStreamInterceptor();
     const response = new Response('data: hello\n\n', {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const interceptedResponse = interceptor.intercept(response);
+    const exchange: FetchExchange = {
+      fetcher: mockFetcher,
+      url: 'http://example.com',
+      request: {},
+      response: response,
+      error: undefined,
+    };
 
-    expect(interceptedResponse.eventStream).toBeDefined();
-    expect(typeof interceptedResponse.eventStream).toBe('function');
+    const interceptedExchange = interceptor.intercept(exchange);
+
+    expect(interceptedExchange.response?.eventStream).toBeDefined();
+    expect(typeof interceptedExchange.response?.eventStream).toBe('function');
   });
 
   it('should not add eventStream method to response when content-type is not text/event-stream', () => {
@@ -29,29 +40,53 @@ describe('EventStreamInterceptor', () => {
       headers: { 'content-type': 'text/plain' },
     });
 
-    const interceptedResponse = interceptor.intercept(response);
+    const exchange: FetchExchange = {
+      fetcher: mockFetcher,
+      url: 'http://example.com',
+      request: {},
+      response: response,
+      error: undefined,
+    };
 
-    expect(interceptedResponse.eventStream).toBeUndefined();
+    const interceptedExchange = interceptor.intercept(exchange);
+
+    expect(interceptedExchange.response?.eventStream).toBeUndefined();
   });
 
   it('should not add eventStream method to response when content-type is null', () => {
     const interceptor = new EventStreamInterceptor();
     const response = new Response('hello world');
 
-    const interceptedResponse = interceptor.intercept(response);
+    const exchange: FetchExchange = {
+      fetcher: mockFetcher,
+      url: 'http://example.com',
+      request: {},
+      response: response,
+      error: undefined,
+    };
 
-    expect(interceptedResponse.eventStream).toBeUndefined();
+    const interceptedExchange = interceptor.intercept(exchange);
+
+    expect(interceptedExchange.response?.eventStream).toBeUndefined();
   });
 
-  it('should return the same response object', () => {
+  it('should return the same exchange object', () => {
     const interceptor = new EventStreamInterceptor();
     const response = new Response('data: hello\n\n', {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const interceptedResponse = interceptor.intercept(response);
+    const exchange: FetchExchange = {
+      fetcher: mockFetcher,
+      url: 'http://example.com',
+      request: {},
+      response: response,
+      error: undefined,
+    };
 
-    expect(interceptedResponse).toBe(response);
+    const interceptedExchange = interceptor.intercept(exchange);
+
+    expect(interceptedExchange).toBe(exchange);
   });
 
   it('should call EventStreamConverter when eventStream method is called', async () => {
@@ -60,10 +95,18 @@ describe('EventStreamInterceptor', () => {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const interceptedResponse = interceptor.intercept(response);
+    const exchange: FetchExchange = {
+      fetcher: mockFetcher,
+      url: 'http://example.com',
+      request: {},
+      response: response,
+      error: undefined,
+    };
 
-    if (interceptedResponse.eventStream) {
-      const stream = interceptedResponse.eventStream();
+    const interceptedExchange = interceptor.intercept(exchange);
+
+    if (interceptedExchange.response?.eventStream) {
+      interceptedExchange.response.eventStream();
 
       // Verify that EventStreamConverter.toEventStream was called with the response
       expect(toServerSentEventStream).toHaveBeenCalledWith(response);

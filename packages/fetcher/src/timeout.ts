@@ -1,4 +1,5 @@
 import { FetcherRequest } from './fetcher';
+import { FetchExchange } from './interceptor';
 
 /**
  * 定义具有超时能力的接口
@@ -33,15 +34,14 @@ export function resolveTimeout(
  * 当HTTP请求超时时抛出此异常
  */
 export class FetchTimeoutError extends Error {
-  url: string;
-  request: FetcherRequest;
+  exchange: FetchExchange;
 
-  constructor(url: string, request: FetcherRequest, timeout: number) {
-    const message = `Request timeout of ${timeout}ms exceeded for ${request?.method || 'GET'} ${url}`;
+  constructor(exchange: FetchExchange, timeout: number) {
+    const method = exchange.request?.method || 'GET';
+    const message = `Request timeout of ${timeout}ms exceeded for ${method} ${exchange.url}`;
     super(message);
     this.name = 'FetchTimeoutError';
-    this.url = url;
-    this.request = request;
+    this.exchange = exchange;
 
     // 修复原型链
     Object.setPrototypeOf(this, FetchTimeoutError.prototype);

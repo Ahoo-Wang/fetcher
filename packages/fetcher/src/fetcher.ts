@@ -8,16 +8,17 @@ import {
   HttpMethod,
   RequestField,
 } from './types';
-import { FetcherInterceptors } from './interceptor';
+import { FetcherInterceptors, FetchExchange } from './interceptor';
 import { RequestBodyInterceptor } from './requestBodyInterceptor';
 
 /**
- * Fetcher配置选项接口
+ * Fetcher configuration options interface
  */
 export interface FetcherOptions
   extends BaseURLCapable,
     HeadersCapable,
-    TimeoutCapable {}
+    TimeoutCapable {
+}
 
 const defaultHeaders: Record<string, string> = {
   [ContentTypeHeader]: ContentTypeValues.APPLICATION_JSON,
@@ -29,7 +30,7 @@ const defaultOptions: FetcherOptions = {
 };
 
 /**
- * Fetcher请求选项接口
+ * Fetcher request options interface
  */
 export interface FetcherRequest
   extends TimeoutCapable,
@@ -40,7 +41,7 @@ export interface FetcherRequest
 }
 
 /**
- * HTTP请求客户端类，支持URL构建、超时控制等功能
+ * HTTP client class that supports URL building, timeout control, and more
  *
  * @example
  * const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
@@ -57,9 +58,9 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
   interceptors: FetcherInterceptors = new FetcherInterceptors();
 
   /**
-   * 创建Fetcher实例
+   * Create a Fetcher instance
    *
-   * @param options - Fetcher配置选项
+   * @param options - Fetcher configuration options
    */
   constructor(options: FetcherOptions = defaultOptions) {
     this.urlBuilder = new UrlBuilder(options.baseURL);
@@ -71,75 +72,97 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
   }
 
   /**
-   * 发起HTTP请求
+   * Make an HTTP request
    *
-   * @param url - 请求URL路径
-   * @param request - 请求选项，包括路径参数、查询参数等
-   * @returns Promise<Response> HTTP响应
+   * @param url - Request URL path
+   * @param request - Request options, including path parameters, query parameters, etc.
+   * @returns Promise<Response> HTTP response
    */
   async fetch(url: string, request: FetcherRequest = {}): Promise<Response> {
-    // 合并默认请求头和请求级请求头
+    const exchange = await this.request(url, request);
+    if (!exchange.response) {
+      throw new Error(`Request to ${exchange.url} failed with no response`);
+    }
+    return exchange.response;
+  }
+
+  /**
+   * Send an HTTP request
+   *
+   * @param url - Request URL address, supports path parameter placeholders
+   * @param request - Request configuration object, including method, headers, body, etc.
+   * @returns Promise that resolves to a FetchExchange object containing request and response information
+   *
+   * @throws Throws an exception when an error occurs during the request and is not handled by error interceptors
+   */
+  async request(
+    url: string,
+    request: FetcherRequest = {},
+  ): Promise<FetchExchange> {
+    // Merge default headers and request-level headers
     const mergedHeaders = {
       ...(this.headers || {}),
       ...(request.headers || {}),
     };
-    // 合并请求选项
-    let fetchRequest: FetcherRequest = {
+    // Merge request options
+    const fetchRequest: FetcherRequest = {
       ...request,
       headers:
         Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
     };
-
+    const finalUrl = this.urlBuilder.build(
+      url,
+      request.pathParams,
+      request.queryParams,
+    );
+    let exchange: FetchExchange = {
+      fetcher: this,
+      url: finalUrl,
+      request: fetchRequest,
+      response: undefined,
+      error: undefined,
+    };
     try {
       // Apply request interceptors
-      fetchRequest = await this.interceptors.request.intercept(fetchRequest);
-
-      const finalUrl = this.urlBuilder.build(
-        url,
-        request.pathParams,
-        request.queryParams,
-      );
-
-      const init: FetcherRequest = {
-        ...fetchRequest,
-        body: fetchRequest.body as BodyInit | null,
-      };
-
-      let response = await this.timeoutFetch(finalUrl, init);
-
+      exchange = await this.interceptors.request.intercept(exchange);
+      exchange.response = await this.timeoutFetch(exchange);
       // Apply response interceptors
-      response = await this.interceptors.response.intercept(response);
-
-      return response;
+      exchange = await this.interceptors.response.intercept(exchange);
+      return exchange;
     } catch (error) {
       // Apply error interceptors
-      const processedError = await this.interceptors.error.intercept(error);
-      throw processedError;
+      exchange.error = error;
+      exchange = await this.interceptors.error.intercept(exchange);
+      if (exchange.response) {
+        return exchange;
+      }
+      throw exchange.error;
     }
   }
 
   /**
-   * 带超时控制的HTTP请求方法
+   * HTTP request method with timeout control
    *
-   * 该方法使用Promise.race来实现超时控制，同时发起fetch请求和超时Promise，
-   * 当任一Promise完成时，会返回其结果或抛出异常。
+   * This method uses Promise.race to implement timeout control, initiating both
+   * fetch request and timeout Promise simultaneously. When either Promise completes,
+   * it returns the result or throws an exception.
    *
-   * @param url - 请求的URL地址
-   * @param request - 请求选项，包括method、headers、body等fetch API支持的选项
-   * @returns Promise<Response> HTTP响应Promise
-   * @throws FetchTimeoutError 当请求超时时抛出
+   * @param exchange - The exchange containing request information
+   * @returns Promise<Response> HTTP response Promise
+   * @throws FetchTimeoutError Thrown when the request times out
    */
-  private async timeoutFetch(url: string, request: FetcherRequest) {
+  private async timeoutFetch(exchange: FetchExchange) {
     // Extract timeout from request
+    const url = exchange.url;
+    const request = exchange.request;
     const requestTimeout = request.timeout;
     const timeout = resolveTimeout(requestTimeout, this.timeout);
     if (!timeout) {
-      // @ts-ignore
-      return fetch(url, request);
+      return fetch(url, request as RequestInit);
     }
 
     const controller = new AbortController();
-    // 创建新的请求对象，避免修改原始请求对象
+    // Create a new request object to avoid modifying the original request object
     const fetchRequest = {
       ...request,
       signal: controller.signal,
@@ -148,25 +171,23 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
     let timerId: ReturnType<typeof setTimeout> | null = null;
     const timeoutPromise = new Promise<Response>((_, reject) => {
       timerId = setTimeout(() => {
-        // 清理定时器资源并处理超时错误
+        // Clean up timer resources and handle timeout error
         if (timerId) {
           clearTimeout(timerId);
         }
-        const error = new FetchTimeoutError(
-          url,
-          request as FetcherRequest,
-          timeout,
-        );
+        const error = new FetchTimeoutError(exchange, timeout);
         controller.abort(error);
         reject(error);
       }, timeout);
     });
 
     try {
-      // @ts-ignore
-      return await Promise.race([fetch(url, fetchRequest), timeoutPromise]);
+      return await Promise.race([
+        fetch(url, fetchRequest as RequestInit),
+        timeoutPromise,
+      ]);
     } finally {
-      // 清理定时器资源
+      // Clean up timer resources
       if (timerId) {
         clearTimeout(timerId);
       }
@@ -174,121 +195,119 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
   }
 
   /**
-   * 发起GET请求
+   * Make an HTTP request with the specified method
    *
-   * @param url - 请求URL路径
-   * @param request - 请求选项，包括路径参数、查询参数等
-   * @returns Promise<Response> HTTP响应
+   * @param method - HTTP method to use
+   * @param url - Request URL path
+   * @param request - Request options
+   * @returns Promise<Response> HTTP response
+   */
+  private async methodFetch(
+    method: HttpMethod,
+    url: string,
+    request: FetcherRequest = {},
+  ): Promise<Response> {
+    return this.fetch(url, {
+      ...request,
+      method,
+    });
+  }
+
+  /**
+   * Make a GET request
+   *
+   * @param url - Request URL path
+   * @param request - Request options, including path parameters, query parameters, etc.
+   * @returns Promise<Response> HTTP response
    */
   async get(
     url: string,
     request: Omit<FetcherRequest, RequestField.METHOD | RequestField.BODY> = {},
   ): Promise<Response> {
-    return this.fetch(url, {
-      ...request,
-      method: HttpMethod.GET,
-    });
+    return this.methodFetch(HttpMethod.GET, url, request);
   }
 
   /**
-   * 发起POST请求
+   * Make a POST request
    *
-   * @param url - 请求URL路径
-   * @param request - 请求选项，包括路径参数、查询参数、请求体等
-   * @returns Promise<Response> HTTP响应
+   * @param url - Request URL path
+   * @param request - Request options, including path parameters, query parameters, request body, etc.
+   * @returns Promise<Response> HTTP response
    */
   async post(
     url: string,
     request: Omit<FetcherRequest, RequestField.METHOD> = {},
   ): Promise<Response> {
-    return this.fetch(url, {
-      ...request,
-      method: HttpMethod.POST,
-    });
+    return this.methodFetch(HttpMethod.POST, url, request);
   }
 
   /**
-   * 发起PUT请求
+   * Make a PUT request
    *
-   * @param url - 请求URL路径
-   * @param request - 请求选项，包括路径参数、查询参数、请求体等
-   * @returns Promise<Response> HTTP响应
+   * @param url - Request URL path
+   * @param request - Request options, including path parameters, query parameters, request body, etc.
+   * @returns Promise<Response> HTTP response
    */
   async put(
     url: string,
     request: Omit<FetcherRequest, RequestField.METHOD> = {},
   ): Promise<Response> {
-    return this.fetch(url, {
-      ...request,
-      method: HttpMethod.PUT,
-    });
+    return this.methodFetch(HttpMethod.PUT, url, request);
   }
 
   /**
-   * 发起DELETE请求
+   * Make a DELETE request
    *
-   * @param url - 请求URL路径
-   * @param request - 请求选项，包括路径参数、查询参数等
-   * @returns Promise<Response> HTTP响应
+   * @param url - Request URL path
+   * @param request - Request options, including path parameters, query parameters, etc.
+   * @returns Promise<Response> HTTP response
    */
   async delete(
     url: string,
     request: Omit<FetcherRequest, RequestField.METHOD> = {},
   ): Promise<Response> {
-    return this.fetch(url, {
-      ...request,
-      method: HttpMethod.DELETE,
-    });
+    return this.methodFetch(HttpMethod.DELETE, url, request);
   }
 
   /**
-   * 发起PATCH请求
+   * Make a PATCH request
    *
-   * @param url - 请求URL路径
-   * @param request - 请求选项，包括路径参数、查询参数、请求体等
-   * @returns Promise<Response> HTTP响应
+   * @param url - Request URL path
+   * @param request - Request options, including path parameters, query parameters, request body, etc.
+   * @returns Promise<Response> HTTP response
    */
   async patch(
     url: string,
     request: Omit<FetcherRequest, RequestField.METHOD> = {},
   ): Promise<Response> {
-    return this.fetch(url, {
-      ...request,
-      method: HttpMethod.PATCH,
-    });
+    return this.methodFetch(HttpMethod.PATCH, url, request);
   }
 
   /**
-   * 发起HEAD请求
+   * Make a HEAD request
    *
-   * @param url - 请求URL路径
-   * @param request - 请求选项，包括路径参数、查询参数等
-   * @returns Promise<Response> HTTP响应
+   * @param url - Request URL path
+   * @param request - Request options, including path parameters, query parameters, etc.
+   * @returns Promise<Response> HTTP response
    */
   async head(
     url: string,
     request: Omit<FetcherRequest, RequestField.METHOD | RequestField.BODY> = {},
   ): Promise<Response> {
-    return this.fetch(url, {
-      ...request,
-      method: HttpMethod.HEAD,
-    });
+    return this.methodFetch(HttpMethod.HEAD, url, request);
   }
 
   /**
-   * 发起OPTIONS请求
+   * Make an OPTIONS request
    *
-   * @param url - 请求URL路径
-   * @param request - 请求选项，包括路径参数、查询参数等
-   * @returns Promise<Response> HTTP响应
+   * @param url - Request URL path
+   * @param request - Request options, including path parameters, query parameters, etc.
+   * @returns Promise<Response> HTTP response
    */
   async options(
     url: string,
     request: Omit<FetcherRequest, RequestField.METHOD | RequestField.BODY> = {},
   ): Promise<Response> {
-    return this.fetch(url, {
-      ...request,
-      method: HttpMethod.OPTIONS,
-    });
+    return this.methodFetch(HttpMethod.OPTIONS, url, request);
   }
 }

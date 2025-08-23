@@ -1,10 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Fetcher } from '../src';
-import {
-  RequestInterceptor,
-  ResponseInterceptor,
-  ErrorInterceptor,
-} from '../src';
+import { Interceptor } from '../src';
+import { FetchExchange } from '../src/interceptor';
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -24,13 +21,16 @@ describe('Fetcher Interceptors', () => {
     const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
     // Add a request interceptor that modifies the request
-    const requestInterceptor: RequestInterceptor = {
-      intercept: vi.fn(request => {
+    const requestInterceptor: Interceptor = {
+      intercept: vi.fn((exchange: FetchExchange) => {
         return {
-          ...request,
-          headers: {
-            ...request.headers,
-            'X-Test-Header': 'test-value',
+          ...exchange,
+          request: {
+            ...exchange.request,
+            headers: {
+              ...exchange.request.headers,
+              'X-Test-Header': 'test-value',
+            },
           },
         };
       }),
@@ -54,14 +54,16 @@ describe('Fetcher Interceptors', () => {
     const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
     // Add a response interceptor that modifies the response
-    const responseInterceptor: ResponseInterceptor = {
-      intercept: vi.fn(async response => {
+    const responseInterceptor: Interceptor = {
+      intercept: vi.fn(async (exchange: FetchExchange) => {
         // Add a custom property to the response
-        Object.defineProperty(response, 'customProperty', {
-          value: 'intercepted',
-          writable: false,
-        });
-        return response;
+        if (exchange.response) {
+          Object.defineProperty(exchange.response, 'customProperty', {
+            value: 'intercepted',
+            writable: false,
+          });
+        }
+        return exchange;
       }),
     };
 
@@ -81,9 +83,10 @@ describe('Fetcher Interceptors', () => {
     const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
     // Add an error interceptor that modifies the error
-    const errorInterceptor: ErrorInterceptor = {
-      intercept: vi.fn(async error => {
-        return new Error(`Intercepted: ${error.message}`);
+    const errorInterceptor: Interceptor = {
+      intercept: vi.fn(async (exchange: FetchExchange) => {
+        exchange.error = new Error(`Intercepted: ${exchange.error?.message}`);
+        return exchange;
       }),
     };
 
@@ -100,25 +103,31 @@ describe('Fetcher Interceptors', () => {
     const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
     // Add multiple request interceptors
-    const interceptor1: RequestInterceptor = {
-      intercept: vi.fn(request => {
+    const interceptor1: Interceptor = {
+      intercept: vi.fn((exchange: FetchExchange) => {
         return {
-          ...request,
-          headers: {
-            ...request.headers,
-            'X-Interceptor-1': 'value-1',
+          ...exchange,
+          request: {
+            ...exchange.request,
+            headers: {
+              ...exchange.request.headers,
+              'X-Interceptor-1': 'value-1',
+            },
           },
         };
       }),
     };
 
-    const interceptor2: RequestInterceptor = {
-      intercept: vi.fn(request => {
+    const interceptor2: Interceptor = {
+      intercept: vi.fn((exchange: FetchExchange) => {
         return {
-          ...request,
-          headers: {
-            ...request.headers,
-            'X-Interceptor-2': 'value-2',
+          ...exchange,
+          request: {
+            ...exchange.request,
+            headers: {
+              ...exchange.request.headers,
+              'X-Interceptor-2': 'value-2',
+            },
           },
         };
       }),
@@ -145,13 +154,16 @@ describe('Fetcher Interceptors', () => {
     const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
     // Add an async request interceptor
-    const asyncInterceptor: RequestInterceptor = {
-      intercept: vi.fn(request => {
+    const asyncInterceptor: Interceptor = {
+      intercept: vi.fn((exchange: FetchExchange) => {
         return Promise.resolve({
-          ...request,
-          headers: {
-            ...request.headers,
-            'X-Async-Header': 'async-value',
+          ...exchange,
+          request: {
+            ...exchange.request,
+            headers: {
+              ...exchange.request.headers,
+              'X-Async-Header': 'async-value',
+            },
           },
         });
       }),
@@ -175,13 +187,16 @@ describe('Fetcher Interceptors', () => {
     const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
     // Add an interceptor and then eject it
-    const interceptor: RequestInterceptor = {
-      intercept: vi.fn(request => {
+    const interceptor: Interceptor = {
+      intercept: vi.fn((exchange: FetchExchange) => {
         return {
-          ...request,
-          headers: {
-            ...request.headers,
-            'X-Ejected-Header': 'ejected-value',
+          ...exchange,
+          request: {
+            ...exchange.request,
+            headers: {
+              ...exchange.request.headers,
+              'X-Ejected-Header': 'ejected-value',
+            },
           },
         };
       }),
@@ -202,5 +217,59 @@ describe('Fetcher Interceptors', () => {
     if (fetchInit.headers) {
       expect(fetchInit.headers).not.toHaveProperty('X-Ejected-Header');
     }
+  });
+
+  it('should handle interceptor that transforms error to response', async () => {
+    const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
+
+    // Add an error interceptor that transforms error to response
+    const errorInterceptor: Interceptor = {
+      intercept: vi.fn(async (exchange: FetchExchange) => {
+        // Transform the error to a response
+        exchange.response = new Response('Error handled by interceptor', {
+          status: 200,
+        });
+        return exchange;
+      }),
+    };
+
+    fetcher.interceptors.error.use(errorInterceptor);
+    mockFetch.mockRejectedValue(new Error('Network error'));
+
+    const response = await fetcher.get('/users');
+
+    // Verify the interceptor was called
+    expect(errorInterceptor.intercept).toHaveBeenCalled();
+
+    // Verify we got a response instead of an error
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('Error handled by interceptor');
+  });
+
+  it('should apply interceptors in the correct order', async () => {
+    const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
+
+    // Add multiple request interceptors to test order
+    const calls: string[] = [];
+
+    fetcher.interceptors.request.use({
+      intercept: vi.fn((exchange: FetchExchange) => {
+        calls.push('interceptor1');
+        return exchange;
+      }),
+    });
+
+    fetcher.interceptors.request.use({
+      intercept: vi.fn((exchange: FetchExchange) => {
+        calls.push('interceptor2');
+        return exchange;
+      }),
+    });
+
+    mockFetch.mockResolvedValue(new Response('OK'));
+    await fetcher.get('/users');
+
+    // Verify the order of interceptor execution
+    expect(calls).toEqual(['interceptor1', 'interceptor2']);
   });
 });
