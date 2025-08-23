@@ -1,7 +1,7 @@
-import {nanoid} from 'nanoid';
+import { nanoid } from 'nanoid';
 
 export interface IdGenerator {
-    generateId(): string;
+  generateId(): string;
 }
 
 /**
@@ -9,12 +9,12 @@ export interface IdGenerator {
  * Generates unique request IDs using Nano ID
  */
 export class NanoIdGenerator implements IdGenerator {
-    /**
-     * Generate a unique request ID
-     */
-    generateId(): string {
-        return nanoid();
-    }
+  /**
+   * Generate a unique request ID
+   */
+  generateId(): string {
+    return nanoid();
+  }
 }
 
 export const idGenerator = new NanoIdGenerator();

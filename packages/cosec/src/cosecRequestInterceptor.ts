@@ -43,7 +43,8 @@ export class CoSecRequestInterceptor implements Interceptor {
     requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;
     requestHeaders[CoSecHeaders.REQUEST_ID] = requestId;
     if (token) {
-      requestHeaders[CoSecHeaders.AUTHORIZATION] = `Bearer ${token.accessToken}`;
+      requestHeaders[CoSecHeaders.AUTHORIZATION] =
+        `Bearer ${token.accessToken}`;
     }
     return { ...exchange, request: newRequest };
   }

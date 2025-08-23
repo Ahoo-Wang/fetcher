@@ -1,0 +1,175 @@
+import { describe, it, expect, vi } from 'vitest';
+import { CoSecRequestInterceptor } from '../src';
+import { DeviceIdStorage } from '../src';
+import { TokenStorage } from '../src';
+import { InMemoryStorage } from '../src';
+import { CoSecHeaders } from '../src';
+import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
+
+describe('CoSecRequestInterceptor', () => {
+  it('should add CoSec headers to request', () => {
+    const storage = new InMemoryStorage();
+    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
+    const tokenStorage = new TokenStorage('test-token', storage);
+
+    // Set up test data
+    deviceIdStorage.set('test-device-id-123');
+    tokenStorage.set({
+      accessToken: 'test-access-token',
+      refreshToken: 'test-refresh-token',
+    });
+
+    const interceptor = new CoSecRequestInterceptor({
+      appId: 'test-app-id',
+      deviceIdStorage,
+      tokenStorage,
+      tokenRefresher: {
+        refresh: vi.fn(),
+      },
+    });
+
+    const fetcher = new Fetcher();
+    const exchange: FetchExchange = {
+      fetcher,
+      url: 'https://api.example.com/test',
+      request: {
+        method: 'GET',
+      },
+      response: undefined,
+      error: undefined,
+    };
+
+    const result = interceptor.intercept(exchange);
+
+    expect(result.request.headers).toBeDefined();
+    const headers = result.request.headers as Record<string, string>;
+    expect(headers[CoSecHeaders.APP_ID]).toBe('test-app-id');
+    expect(headers[CoSecHeaders.DEVICE_ID]).toBe('test-device-id-123');
+    expect(headers[CoSecHeaders.AUTHORIZATION]).toBe(
+      'Bearer test-access-token',
+    );
+    expect(headers[CoSecHeaders.REQUEST_ID]).toBeDefined();
+  });
+
+  it('should generate new device ID if none exists', () => {
+    const storage = new InMemoryStorage();
+    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
+    const tokenStorage = new TokenStorage('test-token', storage);
+
+    const interceptor = new CoSecRequestInterceptor({
+      appId: 'test-app-id',
+      deviceIdStorage,
+      tokenStorage,
+      tokenRefresher: {
+        refresh: vi.fn(),
+      },
+    });
+
+    const fetcher = new Fetcher();
+    const exchange: FetchExchange = {
+      fetcher,
+      url: 'https://api.example.com/test',
+      request: {
+        method: 'GET',
+      },
+      response: undefined,
+      error: undefined,
+    };
+
+    const result = interceptor.intercept(exchange);
+
+    expect(result.request.headers).toBeDefined();
+    const headers = result.request.headers as Record<string, string>;
+    expect(headers[CoSecHeaders.APP_ID]).toBe('test-app-id');
+    expect(headers[CoSecHeaders.DEVICE_ID]).toBeDefined();
+    expect(headers[CoSecHeaders.DEVICE_ID]).toBeTruthy();
+    expect(headers[CoSecHeaders.REQUEST_ID]).toBeDefined();
+  });
+
+  it('should not add authorization header if no token exists', () => {
+    const storage = new InMemoryStorage();
+    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
+    const tokenStorage = new TokenStorage('test-token', storage);
+
+    deviceIdStorage.set('test-device-id-123');
+    // Don't set any token
+
+    const interceptor = new CoSecRequestInterceptor({
+      appId: 'test-app-id',
+      deviceIdStorage,
+      tokenStorage,
+      tokenRefresher: {
+        refresh: vi.fn(),
+      },
+    });
+
+    const fetcher = new Fetcher();
+    const exchange: FetchExchange = {
+      fetcher,
+      url: 'https://api.example.com/test',
+      request: {
+        method: 'GET',
+      },
+      response: undefined,
+      error: undefined,
+    };
+
+    const result = interceptor.intercept(exchange);
+
+    expect(result.request.headers).toBeDefined();
+    const headers = result.request.headers as Record<string, string>;
+    expect(headers[CoSecHeaders.APP_ID]).toBe('test-app-id');
+    expect(headers[CoSecHeaders.DEVICE_ID]).toBe('test-device-id-123');
+    expect(headers[CoSecHeaders.AUTHORIZATION]).toBeUndefined();
+    expect(headers[CoSecHeaders.REQUEST_ID]).toBeDefined();
+  });
+
+  it('should preserve existing headers', () => {
+    const storage = new InMemoryStorage();
+    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
+    const tokenStorage = new TokenStorage('test-token', storage);
+
+    deviceIdStorage.set('test-device-id-123');
+    tokenStorage.set({
+      accessToken: 'test-access-token',
+      refreshToken: 'test-refresh-token',
+    });
+
+    const interceptor = new CoSecRequestInterceptor({
+      appId: 'test-app-id',
+      deviceIdStorage,
+      tokenStorage,
+      tokenRefresher: {
+        refresh: vi.fn(),
+      },
+    });
+
+    const fetcher = new Fetcher();
+    const exchange: FetchExchange = {
+      fetcher,
+      url: 'https://api.example.com/test',
+      request: {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Custom-Header': 'custom-value',
+        },
+      },
+      response: undefined,
+      error: undefined,
+    };
+
+    const result = interceptor.intercept(exchange);
+
+    expect(result.request.headers).toBeDefined();
+    const headers = result.request.headers as Record<string, string>;
+    expect(headers['Content-Type']).toBe('application/json');
+    expect(headers['X-Custom-Header']).toBe('custom-value');
+    expect(headers[CoSecHeaders.APP_ID]).toBe('test-app-id');
+    expect(headers[CoSecHeaders.DEVICE_ID]).toBe('test-device-id-123');
+    expect(headers[CoSecHeaders.AUTHORIZATION]).toBe(
+      'Bearer test-access-token',
+    );
+    expect(headers[CoSecHeaders.REQUEST_ID]).toBeDefined();
+  });
+});
