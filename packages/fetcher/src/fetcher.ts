@@ -81,7 +81,7 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
   async fetch(url: string, request: FetcherRequest = {}): Promise<Response> {
     const exchange = await this.request(url, request);
     if (!exchange.response) {
-      throw new Error('Request failed with no response');
+      throw new Error(`Request to ${exchange.url} failed with no response`);
     }
     return exchange.response;
   }

@@ -24,8 +24,7 @@ export interface Interceptor {
 /**
  * 拦截器管理器类，用于管理同一类型的多个拦截器
  */
-export class InterceptorManager
-  implements Interceptor {
+export class InterceptorManager implements Interceptor {
   private interceptors: Array<Interceptor | null> = [];
 
   /**
