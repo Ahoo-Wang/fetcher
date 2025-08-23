@@ -12,6 +12,7 @@
  */
 
 export * from './fetcher';
+export * from './fetcherRegistrar';
 export * from './interceptor';
 export * from './timeout';
 export * from './types';
