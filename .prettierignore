@@ -1,0 +1,22 @@
+# Build directories
+dist/
+build/
+.out/
+
+# Node modules
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
+
+# Coverage reports
+coverage/
+*.coverage
+
+# Log files
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
