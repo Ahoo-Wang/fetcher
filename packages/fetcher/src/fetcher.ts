@@ -8,7 +8,7 @@ import {
   HttpMethod,
   RequestField,
 } from './types';
-import { FetcherInterceptors } from './interceptor';
+import { FetcherInterceptors, FetchExchange } from './interceptor';
 import { RequestBodyInterceptor } from './requestBodyInterceptor';
 
 /**
@@ -17,7 +17,8 @@ import { RequestBodyInterceptor } from './requestBodyInterceptor';
 export interface FetcherOptions
   extends BaseURLCapable,
     HeadersCapable,
-    TimeoutCapable {}
+    TimeoutCapable {
+}
 
 const defaultHeaders: Record<string, string> = {
   [ContentTypeHeader]: ContentTypeValues.APPLICATION_JSON,
@@ -84,37 +85,38 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
       ...(request.headers || {}),
     };
     // 合并请求选项
-    let fetchRequest: FetcherRequest = {
+    const fetchRequest: FetcherRequest = {
       ...request,
       headers:
         Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
     };
-
+    const finalUrl = this.urlBuilder.build(
+      url,
+      request.pathParams,
+      request.queryParams,
+    );
+    let exchange: FetchExchange = {
+      fetcher: this,
+      url: finalUrl,
+      request: fetchRequest,
+      response: undefined,
+      error: undefined,
+    };
     try {
       // Apply request interceptors
-      fetchRequest = await this.interceptors.request.intercept(fetchRequest);
-
-      const finalUrl = this.urlBuilder.build(
-        url,
-        request.pathParams,
-        request.queryParams,
-      );
-
-      const init: FetcherRequest = {
-        ...fetchRequest,
-        body: fetchRequest.body as BodyInit | null,
-      };
-
-      let response = await this.timeoutFetch(finalUrl, init);
-
+      exchange = await this.interceptors.request.intercept(exchange);
+      exchange.response = await this.timeoutFetch(exchange.url, exchange.request);
       // Apply response interceptors
-      response = await this.interceptors.response.intercept(response);
-
-      return response;
+      exchange = await this.interceptors.response.intercept(exchange);
+      return exchange.response!!;
     } catch (error) {
       // Apply error interceptors
-      const processedError = await this.interceptors.error.intercept(error);
-      throw processedError;
+      exchange.error = error;
+      exchange = await this.interceptors.error.intercept(exchange);
+      if (exchange.response) {
+        return exchange.response;
+      }
+      throw exchange.error;
     }
   }
 

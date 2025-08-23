@@ -87,13 +87,16 @@ const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
 // Add request interceptor
 const requestInterceptorId = fetcher.interceptors.request.use({
-  intercept(request) {
+  intercept(exchange) {
     // Modify request configuration, e.g., add auth header
     return {
-      ...request,
-      headers: {
-        ...request.headers,
-        Authorization: 'Bearer token',
+      ...exchange,
+      request: {
+        ...exchange.request,
+        headers: {
+          ...exchange.request.headers,
+          Authorization: 'Bearer token',
+        },
       },
     };
   },
@@ -101,18 +104,18 @@ const requestInterceptorId = fetcher.interceptors.request.use({
 
 // Add response interceptor
 const responseInterceptorId = fetcher.interceptors.response.use({
-  intercept(response) {
+  intercept(exchange) {
     // Process response data, e.g., parse JSON
-    return response;
+    return exchange;
   },
 });
 
 // Add error interceptor
 const errorInterceptorId = fetcher.interceptors.error.use({
-  intercept(error) {
+  intercept(exchange) {
     // Handle errors, e.g., log them
-    console.error('Request failed:', error);
-    return error;
+    console.error('Request failed:', exchange.error);
+    return exchange;
   },
 });
 ```
@@ -160,10 +163,10 @@ Interceptor manager for managing multiple interceptors of the same type.
 
 #### Methods
 
-- `use(interceptor: T): number` - Add interceptor, returns interceptor ID
+- `use(interceptor: Interceptor): number` - Add interceptor, returns interceptor ID
 - `eject(index: number): void` - Remove interceptor by ID
 - `clear(): void` - Clear all interceptors
-- `intercept(data: R): Promise<R>` - Execute all interceptors sequentially
+- `intercept(exchange: FetchExchange): Promise<FetchExchange>` - Execute all interceptors sequentially
 
 ### FetcherInterceptors Class
 
@@ -171,9 +174,9 @@ Fetcher interceptor collection, including request, response, and error intercept
 
 #### Properties
 
-- `request: RequestInterceptorManager` - Request interceptor manager
-- `response: ResponseInterceptorManager` - Response interceptor manager
-- `error: ErrorInterceptorManager` - Error interceptor manager
+- `request: InterceptorManager` - Request interceptor manager
+- `response: InterceptorManager` - Response interceptor manager
+- `error: InterceptorManager` - Error interceptor manager
 
 ## Complete Example
 
@@ -191,38 +194,37 @@ const fetcher = new Fetcher({
 
 // Add request interceptor - Add auth header
 fetcher.interceptors.request.use({
-  intercept(request) {
+  intercept(exchange) {
     return {
-      ...request,
-      headers: {
-        ...request.headers,
-        Authorization: 'Bearer ' + getAuthToken(),
+      ...exchange,
+      request: {
+        ...exchange.request,
+        headers: {
+          ...exchange.request.headers,
+          Authorization: 'Bearer ' + getAuthToken(),
+        },
       },
     };
   },
 });
 
-// Add response interceptor - Auto-parse JSON
+// Add response interceptor - Process response
 fetcher.interceptors.response.use({
-  intercept(response) {
-    if (response.headers.get('content-type')?.includes('application/json')) {
-      return response.json().then(data => {
-        return new Response(JSON.stringify(data), response);
-      });
-    }
-    return response;
+  intercept(exchange) {
+    // Note: Response processing would typically happen after the response is received
+    return exchange;
   },
 });
 
 // Add error interceptor - Unified error handling
 fetcher.interceptors.error.use({
-  intercept(error) {
-    if (error.name === 'FetchTimeoutError') {
-      console.error('Request timeout:', error.message);
+  intercept(exchange) {
+    if (exchange.error?.name === 'FetchTimeoutError') {
+      console.error('Request timeout:', exchange.error.message);
     } else {
-      console.error('Network error:', error.message);
+      console.error('Network error:', exchange.error?.message);
     }
-    return error;
+    return exchange;
   },
 });
 

@@ -1,11 +1,10 @@
-import { RequestInterceptor } from './interceptor';
-import { FetcherRequest } from './fetcher';
+import { FetchExchange, Interceptor } from './interceptor';
 import { ContentTypeHeader, ContentTypeValues } from './types';
 
 /**
  * 请求体拦截器，负责将普通对象转换为JSON字符串
  */
-export class RequestBodyInterceptor implements RequestInterceptor {
+export class RequestBodyInterceptor implements Interceptor {
   /**
    * 尝试转换请求体为合法的 fetch API body 类型
    *
@@ -25,18 +24,19 @@ export class RequestBodyInterceptor implements RequestInterceptor {
    *
    * 对于不支持的 object 类型（如普通对象），将自动转换为 JSON 字符串
    *
-   * @param request 请求参数
+   * @param exchange
    * @returns 转换后的请求
    */
-  intercept(request: FetcherRequest): FetcherRequest {
+  intercept(exchange: FetchExchange): FetchExchange {
+    const request = exchange.request;
     // 如果没有请求体，直接返回
     if (request.body === undefined || request.body === null) {
-      return request;
+      return exchange;
     }
 
     // 如果请求体不是对象，直接返回
     if (typeof request.body !== 'object') {
-      return request;
+      return exchange;
     }
 
     // 检查是否为支持的类型
@@ -49,7 +49,7 @@ export class RequestBodyInterceptor implements RequestInterceptor {
       request.body instanceof FormData ||
       request.body instanceof ReadableStream
     ) {
-      return request;
+      return exchange;
     }
 
     // 对于普通对象，转换为 JSON 字符串
@@ -68,6 +68,6 @@ export class RequestBodyInterceptor implements RequestInterceptor {
       headers[ContentTypeHeader] = ContentTypeValues.APPLICATION_JSON;
     }
 
-    return modifiedRequest;
+    return { ...exchange, request: modifiedRequest };
   }
 }
