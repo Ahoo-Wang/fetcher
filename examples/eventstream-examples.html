@@ -299,98 +299,25 @@
     </div>
 
     <script type="module">
-      // Note: In a real implementation, we would import from the actual packages
-      // For this example, we'll simulate the behavior
+      // Import the actual Fetcher and EventStreamInterceptor
+      import { Fetcher } from '../packages/fetcher/dist/index.es.js';
+      import { EventStreamInterceptor } from '../packages/eventstream/dist/index.es.js';
 
-      // Simulate the Fetcher and EventStreamInterceptor classes
-      class Fetcher {
-        constructor(options) {
-          this.options = options;
-          this.interceptors = {
-            response: {
-              use: interceptor => {
-                console.log('Interceptor added:', interceptor);
-              },
-            },
-          };
-        }
+      // Create a real Fetcher instance
+      const fetcher = new Fetcher({
+        baseURL: 'http://localhost:3001',
+      });
 
-        async get(url) {
-          // Simulate a response with eventStream method
-          return {
-            eventStream: () => {
-              return this.createMockEventStream();
-            },
-          };
-        }
+      // Add the event stream interceptor
+      fetcher.interceptors.response.use(new EventStreamInterceptor());
 
-        createMockEventStream() {
-          // This is a mock implementation for demonstration purposes
-          const eventStream = {
-            [Symbol.asyncIterator]() {
-              return {
-                async next() {
-                  // Simulate delay
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-
-                  // Randomly decide if we should continue or stop
-                  if (Math.random() > 0.1) {
-                    return {
-                      value: {
-                        event: ['message', 'update', 'notification'][
-                          Math.floor(Math.random() * 3)
-                        ],
-                        data: JSON.stringify({
-                          id: Date.now(),
-                          timestamp: new Date().toISOString(),
-                          message: `Simulated event ${Math.floor(Math.random() * 1000)}`,
-                          type: ['info', 'warning', 'error', 'success'][
-                            Math.floor(Math.random() * 4)
-                          ],
-                        }),
-                        id: Date.now().toString(),
-                        retry: 5000,
-                      },
-                      done: false,
-                    };
-                  } else {
-                    return { done: true };
-                  }
-                },
-              };
-            },
-          };
-
-          return eventStream;
-        }
-      }
-
-      class EventStreamInterceptor {
-        intercept(response) {
-          // Add eventStream method to response
-          response.eventStream = () => {
-            // This would normally convert the response to an event stream
-            return new ReadableStream({
-              start(controller) {
-                let counter = 0;
-                const interval = setInterval(() => {
-                  if (counter < 10) {
-                    controller.enqueue({
-                      event: 'message',
-                      data: `Event ${++counter}: ${new Date().toISOString()}`,
-                      id: counter.toString(),
-                      retry: 5000,
-                    });
-                  } else {
-                    clearInterval(interval);
-                    controller.close();
-                  }
-                }, 1000);
-              },
-            });
-          };
-          return response;
-        }
+      // Helper function to append to output
+      function appendOutput(elementId, content, className = '') {
+        const outputElement = document.getElementById(elementId);
+        outputElement.textContent += content + '\n';
+        outputElement.className = `output ${className}`;
+        // Scroll to bottom
+        outputElement.scrollTop = outputElement.scrollHeight;
       }
 
       // Helper function to update output
@@ -415,38 +342,57 @@
           showLoading(outputId);
 
           try {
+            // Connect to the real SSE endpoint
+            const response = await fetcher.get('/events');
+
+            if (response.eventStream) {
+              appendOutput(outputId, 'Connected to SSE stream', 'success');
+
+              // Create an async iterator for the event stream
+              basicSseController = true;
+
+              // Process events asynchronously
+              (async () => {
+                try {
+                  for await (const event of response.eventStream()) {
+                    if (!basicSseController) break;
+
+                    const eventData = {
+                      type: event.event || 'message',
+                      id: event.id || 'unknown',
+                      data: event.data,
+                      timestamp: new Date().toISOString(),
+                    };
+
+                    appendOutput(
+                      outputId,
+                      `[${eventData.timestamp}] ${eventData.type}: ${eventData.data}`,
+                      'success',
+                    );
+                  }
+                } catch (error) {
+                  if (basicSseController) {
+                    appendOutput(
+                      outputId,
+                      `SSE Error: ${error.message}`,
+                      'error',
+                    );
+                  }
+                }
+              })();
+            } else {
+              updateOutput(
+                outputId,
+                'Response is not an event stream',
+                'error',
+              );
+            }
+          } catch (error) {
             updateOutput(
               outputId,
-              "Connecting to simulated SSE stream...\n\nThis is a simulation since we don't have a real SSE server running.\nIn a real application, you would connect to an endpoint that sends Server-Sent Events.",
-              'success',
+              `Connection Error: ${error.message}`,
+              'error',
             );
-
-            // Simulate receiving events
-            let eventCount = 0;
-            const simulateEvents = () => {
-              if (basicSseController) {
-                eventCount++;
-                const eventData = {
-                  id: eventCount,
-                  timestamp: new Date().toISOString(),
-                  message: `Simulated event #${eventCount}`,
-                  data: `This is simulated data for event ${eventCount}`,
-                };
-
-                const currentContent =
-                  document.getElementById(outputId).textContent;
-                const newContent = `${currentContent}\n\n[${eventData.timestamp}] Event #${eventData.id}: ${eventData.message}\nData: ${eventData.data}`;
-                updateOutput(outputId, newContent, 'success');
-
-                // Schedule next event
-                setTimeout(simulateEvents, 2000);
-              }
-            };
-
-            basicSseController = true;
-            simulateEvents();
-          } catch (error) {
-            updateOutput(outputId, `SSE Error: ${error.message}`, 'error');
           }
         });
 
@@ -456,13 +402,7 @@
           const outputId = 'basicSseOutput';
           if (basicSseController) {
             basicSseController = null;
-            const currentContent =
-              document.getElementById(outputId).textContent;
-            updateOutput(
-              outputId,
-              `${currentContent}\n\nSSE stream stopped.`,
-              'success',
-            );
+            appendOutput(outputId, '\nSSE stream stopped.', 'success');
           } else {
             updateOutput(outputId, 'No active SSE stream to stop.', 'error');
           }
@@ -488,43 +428,86 @@
           showLoading(outputId);
 
           try {
+            // Connect to the real SSE endpoint
+            const response = await fetcher.get('/events');
+
+            if (response.eventStream) {
+              appendOutput(
+                outputId,
+                'Connected to SSE stream with custom events',
+                'success',
+              );
+
+              // Create an async iterator for the event stream
+              customSseController = true;
+
+              // Process events asynchronously
+              (async () => {
+                try {
+                  for await (const event of response.eventStream()) {
+                    if (!customSseController) break;
+
+                    const eventData = {
+                      type: event.event || 'message',
+                      id: event.id || 'unknown',
+                      data: event.data,
+                      timestamp: new Date().toISOString(),
+                    };
+
+                    // Handle different event types
+                    switch (eventData.type) {
+                      case 'update':
+                        appendOutput(
+                          outputId,
+                          `[${eventData.timestamp}] UPDATE #${eventData.id}: ${eventData.data}`,
+                          'success',
+                        );
+                        break;
+                      case 'message':
+                        appendOutput(
+                          outputId,
+                          `[${eventData.timestamp}] MESSAGE #${eventData.id}: ${eventData.data}`,
+                          'success',
+                        );
+                        break;
+                      case 'notification':
+                        appendOutput(
+                          outputId,
+                          `[${eventData.timestamp}] NOTIFICATION #${eventData.id}: ${eventData.data}`,
+                          'success',
+                        );
+                        break;
+                      default:
+                        appendOutput(
+                          outputId,
+                          `[${eventData.timestamp}] EVENT #${eventData.id}: ${eventData.data}`,
+                          'success',
+                        );
+                    }
+                  }
+                } catch (error) {
+                  if (customSseController) {
+                    appendOutput(
+                      outputId,
+                      `SSE Error: ${error.message}`,
+                      'error',
+                    );
+                  }
+                }
+              })();
+            } else {
+              updateOutput(
+                outputId,
+                'Response is not an event stream',
+                'error',
+              );
+            }
+          } catch (error) {
             updateOutput(
               outputId,
-              'Connecting to SSE stream with custom events...\n\nThis simulates handling different event types like "message", "update", and "notification".',
-              'success',
+              `Connection Error: ${error.message}`,
+              'error',
             );
-
-            // Simulate receiving different types of events
-            let eventCount = 0;
-            const simulateEvents = () => {
-              if (customSseController) {
-                eventCount++;
-                const eventTypes = ['message', 'update', 'notification'];
-                const eventType =
-                  eventTypes[Math.floor(Math.random() * eventTypes.length)];
-
-                const eventData = {
-                  type: eventType,
-                  id: eventCount,
-                  timestamp: new Date().toISOString(),
-                  message: `Custom ${eventType} event #${eventCount}`,
-                  data: `This is ${eventType} data for event ${eventCount}`,
-                };
-
-                const currentContent =
-                  document.getElementById(outputId).textContent;
-                const newContent = `${currentContent}\n\n[${eventData.timestamp}] ${eventData.type.toUpperCase()} #${eventData.id}: ${eventData.message}\nData: ${eventData.data}`;
-                updateOutput(outputId, newContent, 'success');
-
-                // Schedule next event
-                setTimeout(simulateEvents, 1500);
-              }
-            };
-
-            customSseController = true;
-            simulateEvents();
-          } catch (error) {
-            updateOutput(outputId, `SSE Error: ${error.message}`, 'error');
           }
         });
 
@@ -534,11 +517,9 @@
           const outputId = 'customSseOutput';
           if (customSseController) {
             customSseController = null;
-            const currentContent =
-              document.getElementById(outputId).textContent;
-            updateOutput(
+            appendOutput(
               outputId,
-              `${currentContent}\n\nCustom events stream stopped.`,
+              '\nCustom events stream stopped.',
               'success',
             );
           } else {
@@ -570,58 +551,73 @@
           showLoading(outputId);
 
           try {
+            // Connect to the real SSE endpoint
+            const response = await fetcher.get('/events');
+
+            if (response.eventStream) {
+              appendOutput(
+                outputId,
+                'Connected to SSE stream with error handling',
+                'success',
+              );
+
+              // Create an async iterator for the event stream
+              errorSseController = true;
+
+              // Process events asynchronously with error handling
+              (async () => {
+                try {
+                  for await (const event of response.eventStream()) {
+                    if (!errorSseController) break;
+
+                    const eventData = {
+                      type: event.event || 'message',
+                      id: event.id || 'unknown',
+                      data: event.data,
+                      timestamp: new Date().toISOString(),
+                    };
+
+                    appendOutput(
+                      outputId,
+                      `[${eventData.timestamp}] ${eventData.type}: ${eventData.data}`,
+                      'success',
+                    );
+                  }
+                } catch (error) {
+                  if (errorSseController) {
+                    appendOutput(
+                      outputId,
+                      `[ERROR] Connection error: ${error.message}`,
+                      'error',
+                    );
+
+                    // Simulate reconnection attempt
+                    setTimeout(() => {
+                      if (errorSseController) {
+                        appendOutput(
+                          outputId,
+                          '[INFO] Attempting to reconnect...',
+                          'loading',
+                        );
+                        // In a real implementation, you would try to reconnect here
+                      }
+                    }, 3000);
+                  }
+                }
+              })();
+            } else {
+              updateOutput(
+                outputId,
+                'Response is not an event stream',
+                'error',
+              );
+            }
+          } catch (error) {
             updateOutput(
               outputId,
-              'Connecting to SSE stream with error handling...\n\nThis simulates both successful connections and connection errors.',
-              'success',
+              `Connection Error: ${error.message}`,
+              'error',
             );
-
-            // Simulate connection with occasional errors
-            let eventCount = 0;
-            const simulateEvents = () => {
-              if (errorSseController) {
-                eventCount++;
-
-                // Occasionally simulate an error
-                if (eventCount % 5 === 0 && Math.random() > 0.7) {
-                  const currentContent =
-                    document.getElementById(outputId).textContent;
-                  const newContent = `${currentContent}\n\n[ERROR] Connection lost. Attempting to reconnect in 3 seconds...`;
-                  updateOutput(outputId, newContent, 'error');
-
-                  // Simulate reconnection
-                  setTimeout(() => {
-                    if (errorSseController) {
-                      const currentContent =
-                        document.getElementById(outputId).textContent;
-                      const newContent = `${currentContent}\n\n[INFO] Reconnected successfully.`;
-                      updateOutput(outputId, newContent, 'success');
-                      setTimeout(simulateEvents, 1500);
-                    }
-                  }, 3000);
-                } else {
-                  const eventData = {
-                    id: eventCount,
-                    timestamp: new Date().toISOString(),
-                    message: `Reliable event #${eventCount}`,
-                    data: `This event was received successfully`,
-                  };
-
-                  const currentContent =
-                    document.getElementById(outputId).textContent;
-                  const newContent = `${currentContent}\n\n[${eventData.timestamp}] Event #${eventData.id}: ${eventData.message}\nData: ${eventData.data}`;
-                  updateOutput(outputId, newContent, 'success');
-
-                  // Schedule next event
-                  setTimeout(simulateEvents, 1500);
-                }
-              }
-            };
-
-            errorSseController = true;
-            simulateEvents();
-          } catch (error) {
-            updateOutput(outputId, `SSE Error: ${error.message}`, 'error');
           }
         });
 
@@ -631,11 +627,9 @@
           const outputId = 'errorSseOutput';
           if (errorSseController) {
             errorSseController = null;
-            const currentContent =
-              document.getElementById(outputId).textContent;
-            updateOutput(
+            appendOutput(
               outputId,
-              `${currentContent}\n\nError handling stream stopped.`,
+              '\nError handling stream stopped.',
               'success',
             );
           } else {
@@ -667,46 +661,65 @@
           showLoading(outputId);
 
           try {
-            updateOutput(
-              outputId,
-              'Connecting to SSE stream with interceptor...\n\nThis demonstrates how the EventStreamInterceptor automatically adds eventStream() method to responses.',
-              'success',
-            );
+            // Connect to the real SSE endpoint
+            // The EventStreamInterceptor is already registered
+            const response = await fetcher.get('/events');
 
-            // Simulate interceptor behavior
-            const currentContent =
-              document.getElementById(outputId).textContent;
-            const newContent = `${currentContent}\n\n[INFO] EventStreamInterceptor registered successfully.\n[INFO] Response will automatically have eventStream() method.\n[INFO] Starting event stream processing...`;
-            updateOutput(outputId, newContent, 'success');
+            if (response.eventStream) {
+              appendOutput(
+                outputId,
+                '[INFO] EventStreamInterceptor automatically added eventStream() method to response',
+                'success',
+              );
+              appendOutput(
+                outputId,
+                'Connected to SSE stream through interceptor',
+                'success',
+              );
 
-            // Simulate receiving events with interceptor
-            let eventCount = 0;
-            const simulateEvents = () => {
-              if (interceptorSseController) {
-                eventCount++;
-                const eventData = {
-                  id: eventCount,
-                  timestamp: new Date().toISOString(),
-                  message: `Intercepted event #${eventCount}`,
-                  data: `This event was processed through the interceptor`,
-                };
+              // Create an async iterator for the event stream
+              interceptorSseController = true;
 
-                const currentContent =
-                  document.getElementById(outputId).textContent;
-                const newContent = `${currentContent}\n\n[${eventData.timestamp}] Event #${eventData.id}: ${eventData.message}\nData: ${eventData.data}`;
-                updateOutput(outputId, newContent, 'success');
+              // Process events asynchronously
+              (async () => {
+                try {
+                  for await (const event of response.eventStream()) {
+                    if (!interceptorSseController) break;
 
-                // Schedule next event
-                setTimeout(simulateEvents, 1800);
-              }
-            };
+                    const eventData = {
+                      type: event.event || 'message',
+                      id: event.id || 'unknown',
+                      data: event.data,
+                      timestamp: new Date().toISOString(),
+                    };
 
-            interceptorSseController = true;
-            simulateEvents();
+                    appendOutput(
+                      outputId,
+                      `[${eventData.timestamp}] [INTERCEPTED] ${eventData.type}: ${eventData.data}`,
+                      'success',
+                    );
+                  }
+                } catch (error) {
+                  if (interceptorSseController) {
+                    appendOutput(
+                      outputId,
+                      `[ERROR] Interceptor processing error: ${error.message}`,
+                      'error',
+                    );
+                  }
+                }
+              })();
+            } else {
+              updateOutput(
+                outputId,
+                'Response is not an event stream (Interceptor may not have been applied)',
+                'error',
+              );
+            }
           } catch (error) {
             updateOutput(
               outputId,
-              `Interceptor Error: ${error.message}`,
+              `Connection Error: ${error.message}`,
               'error',
             );
           }
@@ -718,13 +731,7 @@
           const outputId = 'interceptorSseOutput';
           if (interceptorSseController) {
             interceptorSseController = null;
-            const currentContent =
-              document.getElementById(outputId).textContent;
-            updateOutput(
-              outputId,
-              `${currentContent}\n\nInterceptor stream stopped.`,
-              'success',
-            );
+            appendOutput(outputId, '\nInterceptor stream stopped.', 'success');
           } else {
             updateOutput(
               outputId,
