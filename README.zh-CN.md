@@ -25,6 +25,7 @@
 
 - [`@ahoo-wang/fetcher`](packages/fetcher)：核心 HTTP 客户端库。
 - [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream)：服务器发送事件（SSE）的事件流支持。
+- [`@ahoo-wang/fetcher-cosec`](./packages/cosec)：Fetcher HTTP 客户端的 CoSec 认证支持。
 
 ## 示例
 
