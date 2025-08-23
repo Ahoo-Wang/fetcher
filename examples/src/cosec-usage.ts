@@ -35,6 +35,11 @@ fetcher.interceptors.request.use(
     appId: 'your-app-id',
     deviceIdStorage: deviceIdStorage,
     tokenStorage: tokenStorage,
+    tokenRefresher: {
+      refresh(token: CompositeToken): Promise<CompositeToken> {
+        return Promise.reject('Token refresh failed');
+      },
+    },
   }),
 );
 
@@ -52,7 +57,10 @@ fetcher.interceptors.response.use(
 async function makeAuthenticatedRequest() {
   try {
     // Store some initial tokens for testing
-    tokenStorage.storeTokens('initial-access-token', 'initial-refresh-token');
+    tokenStorage.set({
+      accessToken: 'initial-access-token',
+      refreshToken: 'initial-refresh-token',
+    });
 
     const response = await fetcher.get('/protected-resource');
     const data = await response.json();
