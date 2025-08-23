@@ -136,17 +136,17 @@ if (response.eventStream) {
 
 响应拦截器，自动为 `text/event-stream` 内容类型的响应添加 `eventStream()` 方法。
 
-#### `intercept(response: Response): Response`
+#### `intercept(exchange: FetchExchange): FetchExchange`
 
 拦截响应，如果内容类型是 `text/event-stream` 则添加 `eventStream()` 方法。
 
 **参数：**
 
-- `response`：要拦截的 HTTP 响应
+- `exchange`：包含要拦截响应的 fetch exchange
 
 **返回：**
 
-- `Response`：添加了 `eventStream()` 方法的拦截响应
+- `FetchExchange`：可能修改了响应以包含 `eventStream()` 方法的拦截 exchange
 
 ### ServerSentEvent
 

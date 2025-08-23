@@ -19,7 +19,7 @@
 - **模块化设计**：代码结构清晰，易于维护和扩展。
 - **事件流支持**：通过 `@ahoo-wang/fetcher-eventstream` 包内置支持服务器发送事件（SSE）。
 - **自动请求体转换**：自动将普通对象转换为 JSON 并设置适当的 Content-Type 头部。
-- **TypeScript 支持**：完整的 TypeScript 类型定义。
+- **TypeScript 支持**：完整的 TypeScript 类型定义，提升开发体验。
 
 ## 包
 
