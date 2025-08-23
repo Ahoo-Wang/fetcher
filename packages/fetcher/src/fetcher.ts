@@ -124,10 +124,16 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
     };
     try {
       // Apply request interceptors
-      exchange = await this.interceptors.request.intercept(exchange);
+      const requestExchange = {
+        ...exchange,
+      };
+      exchange = await this.interceptors.request.intercept(requestExchange);
       exchange.response = await this.timeoutFetch(exchange);
       // Apply response interceptors
-      exchange = await this.interceptors.response.intercept(exchange);
+      const responseExchange = {
+        ...exchange,
+      };
+      exchange = await this.interceptors.response.intercept(responseExchange);
       return exchange;
     } catch (error) {
       // Apply error interceptors
