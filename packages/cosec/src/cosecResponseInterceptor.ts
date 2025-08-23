@@ -25,8 +25,14 @@ export class CoSecResponseInterceptor implements Interceptor {
     if (!currentToken) {
       return exchange;
     }
-    const newToken = await this.options.tokenRefresher.refresh(currentToken);
-    this.options.tokenStorage.set(newToken);
-    return exchange.fetcher.request(exchange.url, exchange.request);
+    try {
+      const newToken = await this.options.tokenRefresher.refresh(currentToken);
+      this.options.tokenStorage.set(newToken);
+      return exchange.fetcher.request(exchange.url, exchange.request);
+    } catch (error) {
+      // If token refresh fails, clear stored tokens and re-throw the error
+      this.options.tokenStorage.clear();
+      throw error;
+    }
   }
 }
