@@ -1,7 +1,9 @@
 import { toServerSentEventStream } from './eventStreamConverter';
 import {
   ContentTypeHeader,
-  ContentTypeValues, FetchExchange, Interceptor,
+  ContentTypeValues,
+  FetchExchange,
+  Interceptor,
 } from '@ahoo-wang/fetcher';
 
 export class EventStreamInterceptor implements Interceptor {
