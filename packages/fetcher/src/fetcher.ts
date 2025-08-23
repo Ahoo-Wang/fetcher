@@ -105,7 +105,7 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
     try {
       // Apply request interceptors
       exchange = await this.interceptors.request.intercept(exchange);
-      exchange.response = await this.timeoutFetch(exchange.url, exchange.request);
+      exchange.response = await this.timeoutFetch(exchange);
       // Apply response interceptors
       exchange = await this.interceptors.response.intercept(exchange);
       return exchange.response!!;
@@ -126,13 +126,14 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
    * 该方法使用Promise.race来实现超时控制，同时发起fetch请求和超时Promise，
    * 当任一Promise完成时，会返回其结果或抛出异常。
    *
-   * @param url - 请求的URL地址
-   * @param request - 请求选项，包括method、headers、body等fetch API支持的选项
+   * @param exchange
    * @returns Promise<Response> HTTP响应Promise
    * @throws FetchTimeoutError 当请求超时时抛出
    */
-  private async timeoutFetch(url: string, request: FetcherRequest) {
+  private async timeoutFetch(exchange: FetchExchange) {
     // Extract timeout from request
+    const url = exchange.url;
+    const request = exchange.request;
     const requestTimeout = request.timeout;
     const timeout = resolveTimeout(requestTimeout, this.timeout);
     if (!timeout) {
@@ -155,8 +156,7 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
           clearTimeout(timerId);
         }
         const error = new FetchTimeoutError(
-          url,
-          request as FetcherRequest,
+          exchange,
           timeout,
         );
         controller.abort(error);

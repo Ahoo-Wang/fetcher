@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { Fetcher } from '../src/fetcher';
 import { HttpMethod } from '../src/types';
 import { FetchTimeoutError } from '../src/timeout';
+import { FetchExchange } from '../src/interceptor';
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -121,7 +122,14 @@ describe('Fetcher', () => {
         // Simulate abort event when signal is aborted
         if (options?.signal) {
           options.signal.addEventListener('abort', () => {
-            reject(new FetchTimeoutError(url, { method: HttpMethod.GET }, 100));
+            const exchange: FetchExchange = {
+              fetcher,
+              url,
+              request: { method: HttpMethod.GET },
+              response: undefined,
+              error: undefined,
+            };
+            reject(new FetchTimeoutError(exchange, 100));
           });
         }
       });
@@ -148,7 +156,14 @@ describe('Fetcher', () => {
         // Simulate abort event when signal is aborted
         if (options?.signal) {
           options.signal.addEventListener('abort', () => {
-            reject(new FetchTimeoutError(url, { method: HttpMethod.GET }, 100));
+            const exchange: FetchExchange = {
+              fetcher,
+              url,
+              request: { method: HttpMethod.GET },
+              response: undefined,
+              error: undefined,
+            };
+            reject(new FetchTimeoutError(exchange, 100));
           });
         }
       });
@@ -175,16 +190,17 @@ describe('Fetcher', () => {
         // Simulate abort event when signal is aborted
         if (options?.signal) {
           options.signal.addEventListener('abort', () => {
-            reject(
-              new FetchTimeoutError(
-                url,
-                {
-                  method: HttpMethod.POST,
-                  body: JSON.stringify({ name: 'John' }),
-                },
-                100,
-              ),
-            );
+            const exchange: FetchExchange = {
+              fetcher,
+              url,
+              request: {
+                method: HttpMethod.POST,
+                body: JSON.stringify({ name: 'John' }),
+              },
+              response: undefined,
+              error: undefined,
+            };
+            reject(new FetchTimeoutError(exchange, 100));
           });
         }
       });
@@ -196,11 +212,6 @@ describe('Fetcher', () => {
 
     await expect(promise).rejects.toThrow(FetchTimeoutError);
     await expect(promise).rejects.toHaveProperty('name', 'FetchTimeoutError');
-    await expect(promise).rejects.toHaveProperty(
-      'url',
-      'https://api.example.com/users/123',
-    );
-    await expect(promise).rejects.toHaveProperty('request');
     await expect(promise).rejects.toHaveProperty(
       'message',
       'Request timeout of 100ms exceeded for POST https://api.example.com/users/123',

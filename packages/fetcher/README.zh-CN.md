@@ -87,13 +87,16 @@ const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
 // 添加请求拦截器
 const requestInterceptorId = fetcher.interceptors.request.use({
-  intercept(request) {
+  intercept(exchange) {
     // 修改请求配置，例如添加认证头部
     return {
-      ...request,
-      headers: {
-        ...request.headers,
-        Authorization: 'Bearer token',
+      ...exchange,
+      request: {
+        ...exchange.request,
+        headers: {
+          ...exchange.request.headers,
+          Authorization: 'Bearer token',
+        },
       },
     };
   },
@@ -101,18 +104,18 @@ const requestInterceptorId = fetcher.interceptors.request.use({
 
 // 添加响应拦截器
 const responseInterceptorId = fetcher.interceptors.response.use({
-  intercept(response) {
+  intercept(exchange) {
     // 处理响应数据，例如解析 JSON
-    return response;
+    return exchange;
   },
 });
 
 // 添加错误拦截器
 const errorInterceptorId = fetcher.interceptors.error.use({
-  intercept(error) {
+  intercept(exchange) {
     // 处理错误，例如记录日志
-    console.error('请求失败:', error);
-    return error;
+    console.error('请求失败:', exchange.error);
+    return exchange;
   },
 });
 ```
@@ -160,10 +163,10 @@ new Fetcher(options?: FetcherOptions)
 
 #### 方法
 
-- `use(interceptor: T): number` - 添加拦截器，返回拦截器 ID
+- `use(interceptor: Interceptor): number` - 添加拦截器，返回拦截器 ID
 - `eject(index: number): void` - 按 ID 移除拦截器
 - `clear(): void` - 清除所有拦截器
-- `intercept(data: R): Promise<R>` - 顺序执行所有拦截器
+- `intercept(exchange: FetchExchange): Promise<FetchExchange>` - 顺序执行所有拦截器
 
 ### FetcherInterceptors 类
 
@@ -171,9 +174,9 @@ Fetcher 拦截器集合，包括请求、响应和错误拦截器管理器。
 
 #### 属性
 
-- `request: RequestInterceptorManager` - 请求拦截器管理器
-- `response: ResponseInterceptorManager` - 响应拦截器管理器
-- `error: ErrorInterceptorManager` - 错误拦截器管理器
+- `request: InterceptorManager` - 请求拦截器管理器
+- `response: InterceptorManager` - 响应拦截器管理器
+- `error: InterceptorManager` - 错误拦截器管理器
 
 ## 完整示例
 
@@ -191,38 +194,37 @@ const fetcher = new Fetcher({
 
 // 添加请求拦截器 - 添加认证头部
 fetcher.interceptors.request.use({
-  intercept(request) {
+  intercept(exchange) {
     return {
-      ...request,
-      headers: {
-        ...request.headers,
-        Authorization: 'Bearer ' + getAuthToken(),
+      ...exchange,
+      request: {
+        ...exchange.request,
+        headers: {
+          ...exchange.request.headers,
+          Authorization: 'Bearer ' + getAuthToken(),
+        },
       },
     };
   },
 });
 
-// 添加响应拦截器 - 自动解析 JSON
+// 添加响应拦截器 - 处理响应
 fetcher.interceptors.response.use({
-  intercept(response) {
-    if (response.headers.get('content-type')?.includes('application/json')) {
-      return response.json().then(data => {
-        return new Response(JSON.stringify(data), response);
-      });
-    }
-    return response;
+  intercept(exchange) {
+    // 注意：响应处理通常在收到响应后进行
+    return exchange;
   },
 });
 
 // 添加错误拦截器 - 统一错误处理
 fetcher.interceptors.error.use({
-  intercept(error) {
-    if (error.name === 'FetchTimeoutError') {
-      console.error('请求超时:', error.message);
+  intercept(exchange) {
+    if (exchange.error?.name === 'FetchTimeoutError') {
+      console.error('请求超时:', exchange.error.message);
     } else {
-      console.error('网络错误:', error.message);
+      console.error('网络错误:', exchange.error?.message);
     }
-    return error;
+    return exchange;
   },
 });
 
