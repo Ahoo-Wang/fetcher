@@ -1,5 +1,5 @@
-import { Fetcher, RequestInterceptor } from '@ahoo-wang/fetcher';
-import { updateOutput, showLoading } from './basicGetExample';
+import { Fetcher, FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
+import { showLoading, updateOutput } from './basicGetExample';
 
 // Create a Fetcher instance
 const fetcher = new Fetcher({
@@ -19,16 +19,17 @@ export function initInterceptorExample(): void {
 
       // Add request interceptor
       const requestInterceptorId = fetcher.interceptors.request.use({
-        intercept(request: Request) {
-          return {
-            ...request,
+        intercept(exchange: FetchExchange) {
+          exchange.request = {
+            ...exchange.request,
             headers: {
-              ...request.headers,
+              ...exchange.request.headers,
               'X-Custom-Header': 'Added by interceptor',
             },
           };
+          return exchange;
         },
-      } as RequestInterceptor);
+      } as Interceptor);
 
       try {
         const response: Response = await fetcher.get('/posts/1');

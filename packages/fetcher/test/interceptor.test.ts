@@ -1,20 +1,18 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   Interceptor,
-  RequestInterceptor,
-  ResponseInterceptor,
-  ErrorInterceptor,
   InterceptorManager,
   FetcherInterceptors,
+  FetchExchange,
 } from '../src';
-import { FetcherRequest } from '../src';
 import { HttpMethod } from '../src';
+import { Fetcher } from '../src';
 
 describe('interceptor.ts', () => {
   describe('InterceptorManager', () => {
     it('should add interceptor with use method', () => {
-      const manager = new InterceptorManager<any, Interceptor<any>>();
-      const interceptor: Interceptor<any> = {
+      const manager = new InterceptorManager();
+      const interceptor: Interceptor = {
         intercept: vi.fn(data => data),
       };
 
@@ -23,8 +21,8 @@ describe('interceptor.ts', () => {
     });
 
     it('should eject interceptor by index', () => {
-      const manager = new InterceptorManager<any, Interceptor<any>>();
-      const interceptor: Interceptor<any> = {
+      const manager = new InterceptorManager();
+      const interceptor: Interceptor = {
         intercept: vi.fn(data => data),
       };
 
@@ -36,11 +34,11 @@ describe('interceptor.ts', () => {
     });
 
     it('should clear all interceptors', () => {
-      const manager = new InterceptorManager<any, Interceptor<any>>();
-      const interceptor1: Interceptor<any> = {
+      const manager = new InterceptorManager();
+      const interceptor1: Interceptor = {
         intercept: vi.fn(data => data),
       };
-      const interceptor2: Interceptor<any> = {
+      const interceptor2: Interceptor = {
         intercept: vi.fn(data => data),
       };
 
@@ -53,55 +51,104 @@ describe('interceptor.ts', () => {
     });
 
     it('should process data through interceptors', async () => {
-      const manager = new InterceptorManager<number, Interceptor<number>>();
-      const interceptor1: Interceptor<number> = {
-        intercept: vi.fn(data => data + 1),
+      const manager = new InterceptorManager();
+      const mockExchange: FetchExchange = {
+        fetcher: new Fetcher(),
+        url: 'http://example.com',
+        request: {},
+        response: undefined,
+        error: undefined,
       };
-      const interceptor2: Interceptor<number> = {
-        intercept: vi.fn(data => data * 2),
+
+      const interceptor1: Interceptor = {
+        intercept: vi.fn(exchange => {
+          return {
+            ...exchange,
+            url: exchange.url + '/modified1',
+          };
+        }),
+      };
+
+      const interceptor2: Interceptor = {
+        intercept: vi.fn(exchange => {
+          return {
+            ...exchange,
+            url: exchange.url + '/modified2',
+          };
+        }),
       };
 
       manager.use(interceptor1);
       manager.use(interceptor2);
 
-      const result = await manager.intercept(5);
-      expect(result).toBe(12); // (5 + 1) * 2 = 12
-      expect(interceptor1.intercept).toHaveBeenCalledWith(5);
-      expect(interceptor2.intercept).toHaveBeenCalledWith(6);
+      const result = await manager.intercept(mockExchange);
+      expect(result.url).toBe('http://example.com/modified1/modified2');
+      expect(interceptor1.intercept).toHaveBeenCalledWith(mockExchange);
+      expect(interceptor2.intercept).toHaveBeenCalled();
     });
 
     it('should skip ejected interceptors', async () => {
-      const manager = new InterceptorManager<number, Interceptor<number>>();
-      const interceptor1: Interceptor<number> = {
-        intercept: vi.fn(data => data + 1),
+      const manager = new InterceptorManager();
+      const mockExchange: FetchExchange = {
+        fetcher: new Fetcher(),
+        url: 'http://example.com',
+        request: {},
+        response: undefined,
+        error: undefined,
       };
-      const interceptor2: Interceptor<number> = {
-        intercept: vi.fn(data => data * 2),
+
+      const interceptor1: Interceptor = {
+        intercept: vi.fn(exchange => {
+          return {
+            ...exchange,
+            url: exchange.url + '/modified1',
+          };
+        }),
+      };
+
+      const interceptor2: Interceptor = {
+        intercept: vi.fn(exchange => {
+          return {
+            ...exchange,
+            url: exchange.url + '/modified2',
+          };
+        }),
       };
 
       const index = manager.use(interceptor1);
       manager.use(interceptor2);
       manager.eject(index);
 
-      const result = await manager.intercept(5);
-      expect(result).toBe(10); // 5 * 2 = 10 (first interceptor was ejected)
+      const result = await manager.intercept(mockExchange);
+      expect(result.url).toBe('http://example.com/modified2'); // first interceptor was ejected
       expect(interceptor1.intercept).not.toHaveBeenCalled();
-      expect(interceptor2.intercept).toHaveBeenCalledWith(5);
+      expect(interceptor2.intercept).toHaveBeenCalledWith(mockExchange);
     });
 
     it('should handle async interceptors', async () => {
-      const manager = new InterceptorManager<string, Interceptor<string>>();
-      const interceptor: Interceptor<string> = {
-        intercept: vi.fn((data: string) => {
-          return Promise.resolve(data + ' processed');
+      const manager = new InterceptorManager();
+      const mockExchange: FetchExchange = {
+        fetcher: new Fetcher(),
+        url: 'http://example.com',
+        request: {},
+        response: undefined,
+        error: undefined,
+      };
+
+      const interceptor: Interceptor = {
+        intercept: vi.fn((exchange: FetchExchange) => {
+          return Promise.resolve({
+            ...exchange,
+            url: exchange.url + '/processed',
+          });
         }),
       };
 
       manager.use(interceptor);
 
-      const result = await manager.intercept('test');
-      expect(result).toBe('test processed');
-      expect(interceptor.intercept).toHaveBeenCalledWith('test');
+      const result = await manager.intercept(mockExchange);
+      expect(result.url).toBe('http://example.com/processed');
+      expect(interceptor.intercept).toHaveBeenCalledWith(mockExchange);
     });
   });
 
@@ -120,8 +167,8 @@ describe('interceptor.ts', () => {
 
     it('should allow adding request interceptors', () => {
       const interceptors = new FetcherInterceptors();
-      const requestInterceptor: RequestInterceptor = {
-        intercept: vi.fn(request => request),
+      const requestInterceptor: Interceptor = {
+        intercept: vi.fn(exchange => exchange),
       };
 
       const index = interceptors.request.use(requestInterceptor);
@@ -130,8 +177,8 @@ describe('interceptor.ts', () => {
 
     it('should allow adding response interceptors', () => {
       const interceptors = new FetcherInterceptors();
-      const responseInterceptor: ResponseInterceptor = {
-        intercept: vi.fn(response => response),
+      const responseInterceptor: Interceptor = {
+        intercept: vi.fn(exchange => exchange),
       };
 
       const index = interceptors.response.use(responseInterceptor);
@@ -140,8 +187,8 @@ describe('interceptor.ts', () => {
 
     it('should allow adding error interceptors', () => {
       const interceptors = new FetcherInterceptors();
-      const errorInterceptor: ErrorInterceptor = {
-        intercept: vi.fn(error => error),
+      const errorInterceptor: Interceptor = {
+        intercept: vi.fn(exchange => exchange),
       };
 
       const index = interceptors.error.use(errorInterceptor);
@@ -152,29 +199,39 @@ describe('interceptor.ts', () => {
   describe('Interceptor Types', () => {
     it('should process request interceptors correctly', async () => {
       const interceptors = new FetcherInterceptors();
-      const request: FetcherRequest = {
-        method: HttpMethod.GET,
-        headers: { 'Content-Type': 'application/json' },
+      const mockExchange: FetchExchange = {
+        fetcher: new Fetcher(),
+        url: 'http://example.com',
+        request: {
+          method: HttpMethod.GET,
+          headers: { 'Content-Type': 'application/json' },
+        },
+        response: undefined,
+        error: undefined,
       };
 
-      const requestInterceptor: RequestInterceptor = {
-        intercept: vi.fn(req => ({
-          ...req,
-          headers: {
-            ...req.headers,
-            Authorization: 'Bearer token',
+      const requestInterceptor: Interceptor = {
+        intercept: vi.fn(exchange => ({
+          ...exchange,
+          request: {
+            ...exchange.request,
+            headers: {
+              ...exchange.request.headers,
+              Authorization: 'Bearer token',
+            },
           },
         })),
       };
 
       interceptors.request.use(requestInterceptor);
-      const processedRequest = await interceptors.request.intercept(request);
+      const processedExchange =
+        await interceptors.request.intercept(mockExchange);
 
-      expect(processedRequest.headers).toHaveProperty(
+      expect(processedExchange.request.headers).toHaveProperty(
         'Authorization',
         'Bearer token',
       );
-      expect(requestInterceptor.intercept).toHaveBeenCalledWith(request);
+      expect(requestInterceptor.intercept).toHaveBeenCalledWith(mockExchange);
     });
 
     it('should process response interceptors correctly', async () => {
@@ -184,40 +241,65 @@ describe('interceptor.ts', () => {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      const responseInterceptor: ResponseInterceptor = {
-        intercept: vi.fn(async res => {
+      const mockExchange: FetchExchange = {
+        fetcher: new Fetcher(),
+        url: 'http://example.com',
+        request: {},
+        response: response,
+        error: undefined,
+      };
+
+      const responseInterceptor: Interceptor = {
+        intercept: vi.fn(async exchange => {
           // Add a custom header to the response
-          Object.defineProperty(res, 'customHeader', {
-            value: 'intercepted',
-            writable: false,
-          });
-          return res;
+          if (exchange.response) {
+            Object.defineProperty(exchange.response, 'customHeader', {
+              value: 'intercepted',
+              writable: false,
+            });
+          }
+          return exchange;
         }),
       };
 
       interceptors.response.use(responseInterceptor);
-      const processedResponse = await interceptors.response.intercept(response);
+      const processedExchange =
+        await interceptors.response.intercept(mockExchange);
 
-      expect(processedResponse).toBe(response);
-      expect((processedResponse as any).customHeader).toBe('intercepted');
-      expect(responseInterceptor.intercept).toHaveBeenCalledWith(response);
+      expect(processedExchange.response).toBe(response);
+      expect((processedExchange.response as any).customHeader).toBe(
+        'intercepted',
+      );
+      expect(responseInterceptor.intercept).toHaveBeenCalledWith(mockExchange);
     });
 
     it('should process error interceptors correctly', async () => {
       const interceptors = new FetcherInterceptors();
       const error = new Error('Network error');
 
-      const errorInterceptor: ErrorInterceptor = {
-        intercept: vi.fn(err => {
-          return new Error(`Intercepted: ${err.message}`);
+      const mockExchange: FetchExchange = {
+        fetcher: new Fetcher(),
+        url: 'http://example.com',
+        request: {},
+        response: undefined,
+        error: error,
+      };
+
+      const errorInterceptor: Interceptor = {
+        intercept: vi.fn(exchange => {
+          exchange.error = new Error(`Intercepted: ${exchange.error?.message}`);
+          return exchange;
         }),
       };
 
       interceptors.error.use(errorInterceptor);
-      const processedError = await interceptors.error.intercept(error);
+      const processedExchange =
+        await interceptors.error.intercept(mockExchange);
 
-      expect(processedError.message).toBe('Intercepted: Network error');
-      expect(errorInterceptor.intercept).toHaveBeenCalledWith(error);
+      expect(processedExchange.error?.message).toBe(
+        'Intercepted: Network error',
+      );
+      expect(errorInterceptor.intercept).toHaveBeenCalledWith(mockExchange);
     });
   });
 });

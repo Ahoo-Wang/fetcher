@@ -1,49 +1,39 @@
-import { FetcherRequest } from './fetcher';
+import { Fetcher, FetcherRequest } from './fetcher';
+
+export interface FetchExchange {
+  fetcher: Fetcher;
+  url: string;
+  request: FetcherRequest;
+  response: Response | undefined;
+  error: Error | any | undefined;
+}
 
 /**
  * 拦截器接口，定义了拦截器的基本结构
  * @template T - 拦截器处理的数据类型
  */
-export interface Interceptor<T> {
+export interface Interceptor {
   /**
    * 拦截并处理数据
-   * @param data - 需要处理的数据
+   * @param exchange - 需要处理的数据
    * @returns 处理后的数据，可以是同步或异步返回
    */
-  intercept(data: T): T | Promise<T>;
+  intercept(exchange: FetchExchange): FetchExchange | Promise<FetchExchange>;
 }
 
 /**
- * 请求拦截器接口，专门用于处理请求数据
- */
-export interface RequestInterceptor extends Interceptor<FetcherRequest> {}
-
-/**
- * 响应拦截器接口，专门用于处理响应数据
- */
-export interface ResponseInterceptor extends Interceptor<Response> {}
-
-/**
- * 错误拦截器接口，专门用于处理错误数据
- */
-export interface ErrorInterceptor extends Interceptor<any> {}
-
-/**
  * 拦截器管理器类，用于管理同一类型的多个拦截器
- * @template R - 拦截器处理的数据类型
- * @template T - 拦截器类型
  */
-export class InterceptorManager<R, T extends Interceptor<R>>
-  implements Interceptor<R>
-{
-  private interceptors: Array<T | null> = [];
+export class InterceptorManager
+  implements Interceptor {
+  private interceptors: Array<Interceptor | null> = [];
 
   /**
    * 添加拦截器到管理器中
    * @param interceptor - 要添加的拦截器
    * @returns 拦截器在管理器中的索引位置
    */
-  use(interceptor: T): number {
+  use(interceptor: Interceptor): number {
     const index = this.interceptors.length;
     this.interceptors.push(interceptor);
     return index;
@@ -68,41 +58,20 @@ export class InterceptorManager<R, T extends Interceptor<R>>
 
   /**
    * 依次执行所有拦截器对数据的处理
-   * @param data - 需要处理的数据
+   * @param exchange - 需要处理的数据
    * @returns 经过所有拦截器处理后的数据
    */
-  async intercept(data: R): Promise<R> {
-    let processedData = data;
+  async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+    let processedExchange = exchange;
     for (let interceptor of this.interceptors) {
       if (interceptor) {
         // 每个拦截器处理前一个拦截器的输出结果
-        processedData = await interceptor.intercept(processedData);
+        processedExchange = await interceptor.intercept(processedExchange);
       }
     }
-    return processedData;
+    return processedExchange;
   }
 }
-
-/**
- * 请求拦截器管理器类型定义
- */
-export type RequestInterceptorManager = InterceptorManager<
-  FetcherRequest,
-  RequestInterceptor
->;
-
-/**
- * 响应拦截器管理器类型定义
- */
-export type ResponseInterceptorManager = InterceptorManager<
-  Response,
-  ResponseInterceptor
->;
-
-/**
- * 错误拦截器管理器类型定义
- */
-export type ErrorInterceptorManager = InterceptorManager<any, ErrorInterceptor>;
 
 /**
  * Fetcher拦截器集合类，包含请求、响应和错误拦截器管理器
@@ -111,24 +80,15 @@ export class FetcherInterceptors {
   /**
    * 请求拦截器管理器
    */
-  request: RequestInterceptorManager = new InterceptorManager<
-    FetcherRequest,
-    RequestInterceptor
-  >();
+  request: InterceptorManager = new InterceptorManager();
 
   /**
    * 响应拦截器管理器
    */
-  response: ResponseInterceptorManager = new InterceptorManager<
-    Response,
-    ResponseInterceptor
-  >();
+  response: InterceptorManager = new InterceptorManager();
 
   /**
    * 错误拦截器管理器
    */
-  error: ErrorInterceptorManager = new InterceptorManager<
-    any,
-    ErrorInterceptor
-  >();
+  error: InterceptorManager = new InterceptorManager();
 }
