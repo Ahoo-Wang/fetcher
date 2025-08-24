@@ -1,7 +1,7 @@
 {
   "name": "@ahoo-wang/fetcher-decorator",
   "version": "0.5.3",
-  "description": "Decorator support for Fetcher HTTP client",
+  "description": "TypeScript decorators for clean API service definitions with the ultra-lightweight Fetcher HTTP client",
   "keywords": [
     "fetch",
     "http",

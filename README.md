@@ -7,12 +7,12 @@
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 
-A modern, lightweight HTTP client library based on the Fetch API, designed to simplify and optimize interactions with
-backend RESTful APIs. It provides an Axios-like API with support for path parameters, query parameters, timeout
-settings, and request/response interceptors.
+An ultra-lightweight HTTP client library (1.9kB min+gzip) - 86% smaller than Axios (14kB). Provides an Axios-like API
+with full Fetch API compatibility, designed for performance-critical applications.
 
 ## 🌟 Features
 
+- **⚡ Ultra-Lightweight**: Only 1.9kB min+gzip - 86% smaller than Axios (14kB)
 - **🔄 Fetch API Compatible**: Fully compatible with the native Fetch API for easy adoption
 - **🧭 Path & Query Parameters**: Native support for path parameters (`{id}`) and query parameters
 - **⏱️ Timeout Control**: Configurable request timeouts with proper error handling
@@ -26,12 +26,12 @@ settings, and request/response interceptors.
 
 ## 📦 Packages
 
-| Package                                                    | Description                      | Version                                                                                                                                 | Npm Bundle Size                                                                                                                                                   |
-|------------------------------------------------------------|----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`@ahoo-wang/fetcher`](./packages/fetcher)                 | Core HTTP client library         | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
-| [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | Server-Sent Events (SSE) support | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
-| [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | CoSec authentication integration | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
-| [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | TypeScript decorator support     | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
+| Package                                                    | Description                                                                            | Version                                                                                                                                 | Npm Bundle Size                                                                                                                                                   |
+|------------------------------------------------------------|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`@ahoo-wang/fetcher`](./packages/fetcher)                 | Ultra-lightweight HTTP client library (1.9kB min+gzip) - 86% smaller than Axios (14kB) | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
+| [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | Server-Sent Events (SSE) support for the ultra-lightweight Fetcher                     | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
+| [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | CoSec authentication integration for the ultra-lightweight Fetcher                     | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
+| [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | TypeScript decorators for clean API service definitions with Fetcher                   | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
 
 ## 🚀 Quick Start
 

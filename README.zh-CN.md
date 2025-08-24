@@ -12,6 +12,7 @@ API，支持路径参数、查询参数、超时设置和请求/响应拦截器�
 
 ## 🌟 特性
 
+- **⚡ Ultra-Lightweight**: Only 1.9kB min+gzip - 86% smaller than Axios (14kB)
 - **🔄 Fetch API 兼容**：与原生 Fetch API 完全兼容，易于上手
 - **🧭 路径和查询参数**：原生支持路径参数（`{id}`）和查询参数
 - **⏱️ 超时控制**：可配置的请求超时和适当的错误处理

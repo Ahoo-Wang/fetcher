@@ -13,6 +13,7 @@ settings, and request/response interceptors.
 
 ## 🌟 Features
 
+- **⚡ Ultra-Lightweight**: Only 1.9kB min+gzip - 86% smaller than Axios (14kB)
 - **🔄 Fetch API Compatible**: Fully compatible with the native Fetch API for easy adoption
 - **🧭 Path & Query Parameters**: Native support for path parameters (`{id}`) and query parameters
 - **⏱️ Timeout Control**: Configurable request timeouts with proper error handling

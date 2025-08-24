@@ -1,7 +1,7 @@
 {
   "name": "@ahoo-wang/fetcher",
   "version": "0.5.3",
-  "description": "Core library providing basic HTTP client functionality for Fetcher",
+  "description": "Ultra-lightweight HTTP client library (1.9kB min+gzip) - 86% smaller than Axios. Axios-like API with full Fetch API compatibility",
   "keywords": [
     "fetch",
     "http",
