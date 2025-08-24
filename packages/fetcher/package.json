@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Core library providing basic HTTP client functionality for Fetcher",
   "keywords": [
     "fetch",
