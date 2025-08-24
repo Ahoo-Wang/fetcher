@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-cosec",
-  "version": "0.3.3",
+  "version": "0.3.5",
   "description": "Support for CoSec authentication in Fetcher",
   "keywords": [
     "fetch",
