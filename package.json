@@ -1,6 +1,6 @@
 {
   "name": "fetcher",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "A modern HTTP client library based on fetch API",
   "private": true,
   "type": "module",
@@ -14,7 +14,8 @@
     "lint": "pnpm -r lint",
     "format": "prettier --write .",
     "clean": "pnpm -r clean",
-    "init": "sh ./scripts/init.sh"
+    "init": "sh ./scripts/init.sh",
+    "update-version": "sh ./scripts/update-all-versions.sh"
   },
   "keywords": [
     "fetcher",

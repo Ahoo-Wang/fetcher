@@ -201,6 +201,17 @@ pnpm format
 pnpm clean
 ```
 
+### Version Management
+
+To update the version of all packages in the workspace at once, use the following command:
+
+```bash
+pnpm update-version <new-version>
+```
+
+This will update the version field in all `package.json` files across the monorepo, including the root package and all
+workspace packages.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please see the [contributing guide](./CONTRIBUTING.md) for details.
