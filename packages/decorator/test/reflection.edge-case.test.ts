@@ -60,7 +60,7 @@ describe('reflection - edge cases', () => {
       _param2: { a: string; b: number } = { a: 'default', b: 0 },
       ...rest: any[]
     ) => {
-      return { param1, param2, rest };
+      return { param1, param2: _param2, rest };
     };
 
     // Should extract parameter names correctly
@@ -80,13 +80,13 @@ describe('reflection - edge cases', () => {
       ...rest: any[]
     ): Promise<any> {
       const result = await param1;
-      return { result, param2, rest };
+      return { result, param2: _param2, rest };
     }
 
     // Should extract parameter names correctly
     expect(getParameterNames(asyncComplex)).toEqual([
       'param1',
-      'param2',
+      '_param2',
       '...rest',
     ]);
   });
@@ -106,7 +106,7 @@ describe('reflection - edge cases', () => {
     // Should extract parameter names correctly
     expect(getParameterNames(TestClass.prototype.complexMethod)).toEqual([
       'param1',
-      'param2',
+      '_param2',
       '...rest',
     ]);
   });
@@ -184,14 +184,14 @@ describe('reflection - edge cases', () => {
       _param2: Map<string, Set<number>>,
       _param3: Promise<Array<{ a: string; b: number }>>,
     ) {
-      return { param1, param2, param3 };
+      return { param1, param2: _param2, param3: _param3 };
     }
 
     // Should extract parameter names correctly
     expect(getParameterNames(withNestedGenerics)).toEqual([
       'param1',
-      'param2',
-      'param3',
+      '_param2',
+      '_param3',
     ]);
   });
 
@@ -202,14 +202,18 @@ describe('reflection - edge cases', () => {
       _param2: string | number,
       _param3: { a: string } & { b: number },
     ) {
-      return { param1: param1 as any, param2, _param3: param3 as any };
+      return {
+        param1: param1 as any,
+        param2: _param2,
+        _param3: _param3 as any,
+      };
     }
 
     // Should extract parameter names correctly
     expect(getParameterNames(withUnionIntersection)).toEqual([
       'param1',
-      'param2',
-      'param3',
+      '_param2',
+      '_param3',
     ]);
   });
 });

@@ -3,6 +3,7 @@
   "version": "0.5.2",
   "description": "A modern HTTP client library based on fetch API",
   "private": true,
+  "type": "module",
   "workspaces": [
     "packages/*",
     "examples"

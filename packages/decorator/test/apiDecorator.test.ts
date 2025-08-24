@@ -124,7 +124,7 @@ describe('apiDecorator', () => {
       @api('/api')
       class TestService {
         @get('/users/{id}')
-        getUser(@path('id') _id: number) {
+        getUser(@path('id') id: number) {
           // Implementation will be generated automatically
         }
       }
@@ -171,7 +171,7 @@ describe('apiDecorator', () => {
       @api('/test')
       class TestService {
         @get('/users/{id}')
-        getUser(_id: number) {
+        getUser(id: number) {
           return Promise.resolve(new Response('{"user": {"id": 1}}'));
         }
       }
@@ -190,7 +190,7 @@ describe('apiDecorator', () => {
       @api('/api')
       class TestService {
         @get('/users/{id}')
-        getUser(@path('id') _id: number) {
+        getUser(@path('id') id: number) {
           // Implementation will be generated automatically
         }
       }
@@ -210,7 +210,7 @@ describe('apiDecorator', () => {
       @api('/api')
       class TestService {
         @get('/users/{id}')
-        getUser(@path('id') _id: number) {
+        getUser(@path('id') id: number) {
           // Implementation will be generated automatically
         }
       }
@@ -319,7 +319,7 @@ describe('apiDecorator', () => {
       @api('/test')
       class TestService {
         @get('/users/{id}')
-        getUser(@path('id') _id: number) {
+        getUser(@path('id') id: number) {
           return Promise.resolve(new Response('{"user": {"id": 1}}'));
         }
       }

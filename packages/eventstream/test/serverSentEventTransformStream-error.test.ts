@@ -12,7 +12,6 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { ServerSentEventTransformer } from '../src/serverSentEventTransformStream';
 
 describe('ServerSentEventTransformStream Error Handling', () => {
   it('should handle non-Error objects in error handling', () => {

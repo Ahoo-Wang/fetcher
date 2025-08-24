@@ -138,7 +138,7 @@ describe('apiDecorator - edge cases', () => {
     @api('/test')
     class TestService {
       @get('/users/{id}')
-      getUser(_id: number) {
+      getUser(id: number) {
         return Promise.resolve(new Response('{"user": {"id": 1}}'));
       }
     }
@@ -178,7 +178,7 @@ describe('apiDecorator - edge cases', () => {
     @api('/test')
     class TestService {
       @get('/users/{id}')
-      getUser(@path('id') _id: number) {
+      getUser(@path('id') id: number) {
         return Promise.resolve(new Response('{"user": {"id": 1}}'));
       }
     }

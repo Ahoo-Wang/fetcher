@@ -60,7 +60,7 @@ export function getParameterNames(func: (...args: any[]) => any): string[] {
 
     // Parse and clean parameter names
     return parseParameterNames(paramsStr);
-  } catch (_error: unknown) {
+  } catch {
     // Return empty array on any parsing errors to avoid breaking the application
     return [];
   }
@@ -95,7 +95,7 @@ export function getParameterName(
         return paramNames[parameterIndex];
       }
     }
-  } catch (_error: unknown) {
+  } catch {
     // If we can't get the parameter name, return undefined
     // This will use default naming in the execution logic
   }

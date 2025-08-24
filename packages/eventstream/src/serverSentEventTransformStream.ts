@@ -54,12 +54,13 @@ function processFieldInternal(
     case ServerSentEventField.ID:
       currentEvent.id = value;
       break;
-    case ServerSentEventField.RETRY:
+    case ServerSentEventField.RETRY: {
       const retryValue = parseInt(value, 10);
       if (!isNaN(retryValue)) {
         currentEvent.retry = retryValue;
       }
       break;
+    }
     default:
       // Ignore unknown fields
       break;
@@ -97,7 +98,7 @@ export class ServerSentEventTransformer
     chunk: string,
     controller: TransformStreamDefaultController<ServerSentEvent>,
   ) {
-    let currentEvent = this.currentEvent;
+    const currentEvent = this.currentEvent;
     try {
       // Skip empty lines (event separator)
       if (chunk.trim() === '') {
@@ -112,8 +113,7 @@ export class ServerSentEventTransformer
 
           // Reset current event (preserve id and retry for subsequent events)
           currentEvent.event = 'message';
-          currentEvent.id = currentEvent.id;
-          currentEvent.retry = currentEvent.retry;
+          // Preserve id and retry for subsequent events (no need to reassign to themselves)
           currentEvent.data = [];
         }
         return;
@@ -166,7 +166,7 @@ export class ServerSentEventTransformer
    * @param controller Controller for controlling the transform stream
    */
   flush(controller: TransformStreamDefaultController<ServerSentEvent>) {
-    let currentEvent = this.currentEvent;
+    const currentEvent = this.currentEvent;
     try {
       // Send the last event (if any)
       if (currentEvent.data.length > 0) {

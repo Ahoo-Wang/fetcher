@@ -48,7 +48,7 @@ export class UrlBuilder implements BaseURLCapable {
     path?: Record<string, any>,
     query?: Record<string, any>,
   ): string {
-    let combinedURL = combineURLs(this.baseURL, url);
+    const combinedURL = combineURLs(this.baseURL, url);
     let finalUrl = this.interpolateUrl(combinedURL, path);
     if (query) {
       const queryString = new URLSearchParams(query).toString();
