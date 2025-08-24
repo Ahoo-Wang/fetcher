@@ -228,7 +228,6 @@ describe('FunctionMetadata - branch coverage', () => {
     // Since the instanceof check won't pass in test environment, signal will remain null
     const request = metadata.resolveRequest([123, signal]);
     expect(request.path).toEqual({ id: 123 });
-    // The signal check won't pass in test environment, so signal remains null
-    expect(request.signal).toBeNull();
+    expect(request.signal).toBe(signal);
   });
 });
