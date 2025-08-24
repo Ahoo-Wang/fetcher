@@ -63,7 +63,7 @@ describe('reflection - branch coverage', () => {
     ).toBeUndefined();
 
     // Test with null target
-    expect(getParameterName(null, 'method', 0)).toBeUndefined();
+    expect(getParameterName(null as any, 'method', 0)).toBeUndefined();
   });
 
   it('should handle edge cases in parameter extraction', () => {
@@ -89,5 +89,47 @@ describe('reflection - branch coverage', () => {
       return { a, rest };
     };
     expect(getParameterNames(complexArrow)).toEqual(['a', '...rest']);
+  });
+
+  it('should handle malformed function strings gracefully', () => {
+    // Create a function that would cause parsing errors
+    const malformedFunc = function () {};
+    // Override toString to return malformed string
+    malformedFunc.toString = () => 'function test(';
+
+    // Should return empty array instead of throwing
+    expect(getParameterNames(malformedFunc)).toEqual([]);
+  });
+
+  it('should handle function with unmatched parentheses', () => {
+    // Create a function that would cause unmatched parentheses
+    const unmatchedFunc = function () {};
+    // Override toString to return string with unmatched parentheses
+    unmatchedFunc.toString = () => 'function test(a: string, b: number';
+
+    // Should return empty array instead of throwing
+    expect(getParameterNames(unmatchedFunc)).toEqual([]);
+  });
+
+  it('should handle function with malformed string representation', () => {
+    // Create a function with malformed string representation
+    const malformedFunc = function () {};
+    // Override toString to return malformed string that causes parsing errors
+    malformedFunc.toString = () => 'function test(a: string, b: number'; // Missing closing parenthesis
+
+    // Should return empty array instead of throwing
+    expect(getParameterNames(malformedFunc)).toEqual([]);
+  });
+
+  it('should handle function with toString that throws', () => {
+    // Create a function whose toString method throws an error
+    const errorFunc = function () {};
+    // Override toString to throw an error
+    errorFunc.toString = () => {
+      throw new Error('toString error');
+    };
+
+    // Should return empty array instead of throwing
+    expect(getParameterNames(errorFunc)).toEqual([]);
   });
 });

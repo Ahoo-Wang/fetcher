@@ -84,4 +84,23 @@ describe('apiDecorator - branch coverage', () => {
     // Method should still be replaced with executor
     expect(typeof instance.getUsers).toBe('function');
   });
+
+  it('should handle non-function properties on prototype', () => {
+    @api('/test')
+    class TestService {
+      @get('/users')
+      getUsers() {
+        return Promise.resolve(new Response('{"users": []}'));
+      }
+    }
+
+    // Add a non-function property to the prototype
+    (TestService.prototype as any)['nonFunctionProperty'] = 'not a function';
+
+    const instance = new TestService();
+    // Non-function property should remain unchanged
+    expect((instance as any)['nonFunctionProperty']).toBe('not a function');
+    // Method should still be replaced with executor
+    expect(typeof instance.getUsers).toBe('function');
+  });
 });
