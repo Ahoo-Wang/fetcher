@@ -15,10 +15,12 @@
 
 # Install dependencies
 pnpm install
-
+# Format all packages
+pnpm format
+# Lint all packages
+pnpm lint
 # Build all packages
 pnpm run build
-
 # Run tests
 pnpm run test
 
