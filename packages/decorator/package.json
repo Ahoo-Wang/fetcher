@@ -36,7 +36,7 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest run --coverage",
-    "lint": "tsc --noEmit",
+    "lint": "eslint . --fix",
     "clean": "rm -rf dist"
   },
   "dependencies": {

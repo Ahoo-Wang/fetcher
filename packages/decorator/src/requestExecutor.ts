@@ -94,14 +94,14 @@ export class FunctionMetadata implements NamedCapable {
    * @param args - The runtime arguments passed to the method
    * @returns A FetcherRequest object with all request configuration
    */
-  resolveRequest(args: any[]): FetcherRequest {
-    const pathParams: Record<string, any> = {};
-    const queryParams: Record<string, any> = {};
+  resolveRequest(args: unknown[]): FetcherRequest {
+    const pathParams: Record<string, unknown> = {};
+    const queryParams: Record<string, unknown> = {};
     const headers: Record<string, string> = {
       ...this.api.headers,
       ...this.endpoint.headers,
     };
-    let body: any = null;
+    let body: BodyInit | Record<string, unknown> | null = null;
     // Process parameters based on their decorators
     this.parameters.forEach(param => {
       const value = args[param.index];
@@ -127,7 +127,7 @@ export class FunctionMetadata implements NamedCapable {
           }
           break;
         case ParameterType.BODY:
-          body = value;
+          body = value as BodyInit | Record<string, unknown> | null;
           break;
       }
     });
@@ -195,7 +195,7 @@ export class RequestExecutor {
    * @param args - The runtime arguments passed to the method
    * @returns A Promise that resolves to the Response
    */
-  async execute(args: any[]): Promise<Response> {
+  async execute(args: unknown[]): Promise<Response> {
     const path = this.metadata.resolvePath();
     const request = this.metadata.resolveRequest(args);
     return await this.metadata.fetcher.fetch(path, request);

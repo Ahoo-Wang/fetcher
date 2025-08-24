@@ -64,8 +64,8 @@ export const API_METADATA_KEY = Symbol('api:metadata');
  * @param functionName - The name of the method to bind
  * @param apiMetadata - The API metadata for the class
  */
-function bindExecutor(
-  constructor: Function,
+function bindExecutor<T extends new (...args: any[]) => any>(
+  constructor: T,
   functionName: string,
   apiMetadata: ApiMetadata,
 ) {
@@ -105,7 +105,7 @@ function bindExecutor(
   const requestExecutor = new RequestExecutor(functionMetadata);
 
   // Replace method with actual implementation
-  constructor.prototype[functionName] = function(...args: any[]) {
+  constructor.prototype[functionName] = function(...args: unknown[]) {
     return requestExecutor.execute(args);
   };
 }
@@ -114,7 +114,7 @@ export function api(
   basePath: string = '',
   metadata: Omit<ApiMetadata, 'basePath'> = {},
 ) {
-  return function(constructor: Function) {
+  return function <T extends new (...args: any[]) => any>(constructor: T): T {
     const apiMetadata: ApiMetadata = {
       basePath,
       ...metadata,
@@ -127,5 +127,7 @@ export function api(
     Object.getOwnPropertyNames(constructor.prototype).forEach(functionName => {
       bindExecutor(constructor, functionName, apiMetadata);
     });
+
+    return constructor;
   };
 }

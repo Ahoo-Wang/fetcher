@@ -58,7 +58,7 @@ export function endpoint(
   path: string = '',
   metadata: MethodEndpointMetadata = {},
 ) {
-  return function(target: any, propertyKey: string): void {
+  return function(target: object, propertyKey: string | symbol): void {
     // Store metadata directly on the method
     const endpointMetadata = {
       method: method,

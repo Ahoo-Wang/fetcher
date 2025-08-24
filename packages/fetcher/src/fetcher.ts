@@ -48,9 +48,9 @@ export const defaultOptions: FetcherOptions = {
 export interface FetcherRequest
   extends TimeoutCapable,
     Omit<RequestInit, 'body'> {
-  pathParams?: Record<string, any>;
-  queryParams?: Record<string, any>;
-  body?: BodyInit | Record<string, any> | null;
+  pathParams?: Record<string, unknown>;
+  queryParams?: Record<string, unknown>;
+  body?: BodyInit | Record<string, unknown> | null;
 }
 
 /**

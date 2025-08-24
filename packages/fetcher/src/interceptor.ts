@@ -75,7 +75,7 @@ export class InterceptorManager implements Interceptor {
    */
   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
     let processedExchange = exchange;
-    for (let interceptor of this.interceptors) {
+    for (const interceptor of this.interceptors) {
       if (interceptor) {
         // 每个拦截器处理前一个拦截器的输出结果
         processedExchange = await interceptor.intercept(processedExchange);
