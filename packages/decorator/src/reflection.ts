@@ -66,11 +66,40 @@ export function getParameterNames(func: Function): string[] {
   }
 }
 
-export function getParameterName(func: Function, index: number): string | undefined {
-  const parameterNames = getParameterNames(func);
-  if (index < parameterNames.length) {
-    return parameterNames[index];
+/**
+ * Helper function to automatically extract parameter name when not provided
+ *
+ * @param target - The target object (class prototype)
+ * @param propertyKey - The method name
+ * @param parameterIndex - The index of the parameter
+ * @param providedName - The name explicitly provided by the user (if any)
+ * @returns The parameter name, either provided or automatically extracted
+ */
+export function getParameterName(
+  target: any,
+  propertyKey: string,
+  parameterIndex: number,
+  providedName?: string,
+): string | undefined {
+  // If a name was explicitly provided, use it
+  if (providedName) {
+    return providedName;
   }
+
+  // Try to automatically extract the parameter name
+  try {
+    const method = target[propertyKey];
+    if (method) {
+      const paramNames = getParameterNames(method);
+      if (parameterIndex < paramNames.length) {
+        return paramNames[parameterIndex];
+      }
+    }
+  } catch (error) {
+    // If we can't get the parameter name, return undefined
+    // This will use default naming in the execution logic
+  }
+
   return undefined;
 }
 

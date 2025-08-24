@@ -9,7 +9,7 @@ import {
 } from './metadata';
 import { HttpMethod } from '@ahoo-wang/fetcher';
 import { fetcherRegistrar } from '@ahoo-wang/fetcher';
-import { getParameterNames } from './reflection';
+import { getParameterName, getParameterNames } from './reflection';
 import 'reflect-metadata';
 
 /**
@@ -223,44 +223,6 @@ export function options(
     return descriptor;
   };
 }
-
-/**
- * Helper function to automatically extract parameter name when not provided
- *
- * @param target - The target object (class prototype)
- * @param propertyKey - The method name
- * @param parameterIndex - The index of the parameter
- * @param providedName - The name explicitly provided by the user (if any)
- * @returns The parameter name, either provided or automatically extracted
- */
-function getParameterName(
-  target: any,
-  propertyKey: string,
-  parameterIndex: number,
-  providedName?: string,
-): string | undefined {
-  // If a name was explicitly provided, use it
-  if (providedName) {
-    return providedName;
-  }
-
-  // Try to automatically extract the parameter name
-  try {
-    const method = target[propertyKey];
-    if (method) {
-      const paramNames = getParameterNames(method);
-      if (parameterIndex < paramNames.length) {
-        return paramNames[parameterIndex];
-      }
-    }
-  } catch (error) {
-    // If we can't get the parameter name, return undefined
-    // This will use default naming in the execution logic
-  }
-
-  return undefined;
-}
-
 /**
  * Parameter decorators
  */
