@@ -36,8 +36,7 @@ describe('apiDecorator', () => {
   describe('metadata definition', () => {
     it('should define API metadata on class', () => {
       @api('/api', { headers: { 'X-Test': 'test' }, timeout: 5000 })
-      class TestService {
-      }
+      class TestService {}
 
       const metadata = Reflect.getMetadata(API_METADATA_KEY, TestService);
       expect(metadata).toEqual({
@@ -49,8 +48,7 @@ describe('apiDecorator', () => {
 
     it('should handle empty basePath', () => {
       @api()
-      class TestService {
-      }
+      class TestService {}
 
       const metadata = Reflect.getMetadata(API_METADATA_KEY, TestService);
       expect(metadata).toEqual({
@@ -64,8 +62,7 @@ describe('apiDecorator', () => {
         timeout: 5000,
         fetcher: 'custom',
       })
-      class TestService {
-      }
+      class TestService {}
 
       const metadata = Reflect.getMetadata(API_METADATA_KEY, TestService);
       expect(metadata).toEqual({
@@ -222,8 +219,9 @@ describe('apiDecorator', () => {
       const response = await instance.getUser(1);
 
       expect(mockFetch).toHaveBeenCalledWith('/api/users/{id}', {
-        pathParams: { id: 1 },
-        queryParams: {},
+        method: 'GET',
+        path: { id: 1 },
+        query: {},
         headers: {},
         body: null,
         timeout: undefined,
@@ -235,8 +233,7 @@ describe('apiDecorator', () => {
   describe('class structure handling', () => {
     it('should handle class with no methods', () => {
       @api('/test')
-      class TestService {
-      }
+      class TestService {}
 
       const metadata = Reflect.getMetadata(API_METADATA_KEY, TestService);
       expect(metadata).toBeDefined();

@@ -94,31 +94,31 @@ export class FunctionMetadata implements NamedCapable {
    * @param args - The runtime arguments passed to the method
    * @returns A FetcherRequest object with all request configuration
    */
-  resolveRequest(args: unknown[]): FetcherRequest {
-    const pathParams: Record<string, unknown> = {};
-    const queryParams: Record<string, unknown> = {};
+  resolveRequest(args: any[]): FetcherRequest {
+    const path: Record<string, any> = {};
+    const query: Record<string, any> = {};
     const headers: Record<string, string> = {
       ...this.api.headers,
       ...this.endpoint.headers,
     };
-    let body: BodyInit | Record<string, unknown> | null = null;
+    let body: any = null;
     // Process parameters based on their decorators
     this.parameters.forEach(param => {
       const value = args[param.index];
       switch (param.type) {
         case ParameterType.PATH:
           if (param.name) {
-            pathParams[param.name] = value;
+            path[param.name] = value;
           } else {
             // If no name specified, use as default path param
-            pathParams['param' + param.index] = value;
+            path['param' + param.index] = value;
           }
           break;
         case ParameterType.QUERY:
           if (param.name) {
-            queryParams[param.name] = value;
+            query[param.name] = value;
           } else {
-            queryParams['param' + param.index] = value;
+            query['param' + param.index] = value;
           }
           break;
         case ParameterType.HEADER:
@@ -127,13 +127,14 @@ export class FunctionMetadata implements NamedCapable {
           }
           break;
         case ParameterType.BODY:
-          body = value as BodyInit | Record<string, unknown> | null;
+          body = value;
           break;
       }
     });
     return {
-      pathParams,
-      queryParams,
+      method: this.endpoint.method,
+      path,
+      query,
       headers,
       body,
       timeout: this.resolveTimeout(),
@@ -195,7 +196,7 @@ export class RequestExecutor {
    * @param args - The runtime arguments passed to the method
    * @returns A Promise that resolves to the Response
    */
-  async execute(args: unknown[]): Promise<Response> {
+  async execute(args: any[]): Promise<Response> {
     const path = this.metadata.resolvePath();
     const request = this.metadata.resolveRequest(args);
     return await this.metadata.fetcher.fetch(path, request);

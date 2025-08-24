@@ -29,8 +29,8 @@ describe('FunctionMetadata - branch coverage', () => {
 
     const request = metadata.resolveRequest(['pathValue', 'queryValue']);
 
-    expect(request.pathParams).toEqual({ param0: 'pathValue' });
-    expect(request.queryParams).toEqual({ param1: 'queryValue' });
+    expect(request.path).toEqual({ param0: 'pathValue' });
+    expect(request.query).toEqual({ param1: 'queryValue' });
   });
 
   it('should handle header parameter with undefined value', () => {

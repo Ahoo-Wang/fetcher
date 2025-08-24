@@ -38,20 +38,20 @@ export class UrlBuilder implements BaseURLCapable {
    * 构建完整的URL，包括路径参数替换和查询参数添加
    *
    * @param url - 需要构建的URL路径
-   * @param pathParams - 路径参数对象，用于替换URL中的占位符（如{id}）
-   * @param queryParams - 查询参数对象，将被添加到URL查询字符串中
+   * @param path - 路径参数对象，用于替换URL中的占位符（如{id}）
+   * @param query - 查询参数对象，将被添加到URL查询字符串中
    * @returns 完整的URL字符串
    * @throws 当路径参数中缺少必需的占位符时抛出错误
    */
   build(
     url: string,
-    pathParams?: Record<string, any>,
-    queryParams?: Record<string, any>,
+    path?: Record<string, any>,
+    query?: Record<string, any>,
   ): string {
-    const combinedURL = combineURLs(this.baseURL, url);
-    let finalUrl = this.interpolateUrl(combinedURL, pathParams);
-    if (queryParams) {
-      const queryString = new URLSearchParams(queryParams).toString();
+    let combinedURL = combineURLs(this.baseURL, url);
+    let finalUrl = this.interpolateUrl(combinedURL, path);
+    if (query) {
+      const queryString = new URLSearchParams(query).toString();
       if (queryString) {
         finalUrl += '?' + queryString;
       }
@@ -63,14 +63,14 @@ export class UrlBuilder implements BaseURLCapable {
    * 替换url中的占位符参数
    *
    * @param url - 包含占位符的路径字符串，如 "http://localhost/users/{id}/posts/{postId}"
-   * @param pathParams - 路径参数对象，用于替换路径中的占位符
+   * @param path - 路径参数对象，用于替换路径中的占位符
    * @returns 替换占位符后的路径字符串
    * @throws 当路径参数中缺少必需的占位符时抛出错误
    */
-  interpolateUrl(url: string, pathParams?: Record<string, any>): string {
-    if (!pathParams) return url;
+  interpolateUrl(url: string, path?: Record<string, any>): string {
+    if (!path) return url;
     return url.replace(/{([^}]+)}/g, (_, key) => {
-      const value = pathParams[key];
+      const value = path[key];
       // 如果路径参数未定义，抛出错误而不是保留原占位符
       if (value === undefined) {
         throw new Error(`Missing required path parameter: ${key}`);
