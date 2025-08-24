@@ -22,8 +22,7 @@ import {
 } from '@ahoo-wang/fetcher-decorator';
 
 // Create and register a fetcher
-const userFetcher = new Fetcher({ baseURL: 'https://api.user-service.com' });
-fetcherRegistrar.register('user', userFetcher);
+const userFetcher = new NamedFetcher('user', { baseURL: 'https://api.user-service.com' });
 
 // Define your service class with decorators
 @api('/users', { headers: {}, fetcher: 'user', timeout: 10000 })
