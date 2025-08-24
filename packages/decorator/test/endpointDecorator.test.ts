@@ -15,7 +15,7 @@ import { HttpMethod } from '@ahoo-wang/fetcher';
 describe('endpointDecorator', () => {
   it('should define endpoint metadata', () => {
     class TestService {
-      // eslint-disable-next-line no-empty-function
+
       getUsers() {
         // Implementation will be generated automatically
       }
@@ -39,7 +39,7 @@ describe('endpointDecorator', () => {
 
   it('should define GET endpoint', () => {
     class TestService {
-      // eslint-disable-next-line no-empty-function
+
       getUsers() {
         // Implementation will be generated automatically
       }
@@ -63,7 +63,7 @@ describe('endpointDecorator', () => {
 
   it('should define POST endpoint', () => {
     class TestService {
-      // eslint-disable-next-line no-empty-function
+
       createUsers() {
         // Implementation will be generated automatically
       }
@@ -87,7 +87,7 @@ describe('endpointDecorator', () => {
 
   it('should define PUT endpoint', () => {
     class TestService {
-      // eslint-disable-next-line no-empty-function
+
       updateUsers() {
         // Implementation will be generated automatically
       }
@@ -111,7 +111,7 @@ describe('endpointDecorator', () => {
 
   it('should define DELETE endpoint', () => {
     class TestService {
-      // eslint-disable-next-line no-empty-function
+
       deleteUsers() {
         // Implementation will be generated automatically
       }
@@ -135,7 +135,7 @@ describe('endpointDecorator', () => {
 
   it('should define PATCH endpoint', () => {
     class TestService {
-      // eslint-disable-next-line no-empty-function
+
       patchUsers() {
         // Implementation will be generated automatically
       }
@@ -159,7 +159,7 @@ describe('endpointDecorator', () => {
 
   it('should define HEAD endpoint', () => {
     class TestService {
-      // eslint-disable-next-line no-empty-function
+
       headUsers() {
         // Implementation will be generated automatically
       }
@@ -183,7 +183,7 @@ describe('endpointDecorator', () => {
 
   it('should define OPTIONS endpoint', () => {
     class TestService {
-      // eslint-disable-next-line no-empty-function
+
       optionsUsers() {
         // Implementation will be generated automatically
       }

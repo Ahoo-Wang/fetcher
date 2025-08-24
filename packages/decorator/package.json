@@ -11,6 +11,7 @@
   ],
   "author": "Ahoo-Wang",
   "license": "Apache-2.0",
+  "type": "module",
   "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/master/packages/fetcher-decorator",
   "repository": {
     "type": "git",
@@ -36,7 +37,7 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest run --coverage",
-    "lint": "tsc --noEmit",
+    "lint": "eslint . --fix",
     "clean": "rm -rf dist"
   },
   "dependencies": {

@@ -40,7 +40,7 @@
  * // Returns: ['param1', 'param2', '...rest']
  * ```
  */
-export function getParameterNames(func: Function): string[] {
+export function getParameterNames(func: (...args: any[]) => any): string[] {
   // Validate that the input is a function
   if (typeof func !== 'function') {
     throw new TypeError('Expected a function');
@@ -60,7 +60,7 @@ export function getParameterNames(func: Function): string[] {
 
     // Parse and clean parameter names
     return parseParameterNames(paramsStr);
-  } catch (error) {
+  } catch {
     // Return empty array on any parsing errors to avoid breaking the application
     return [];
   }
@@ -76,8 +76,8 @@ export function getParameterNames(func: Function): string[] {
  * @returns The parameter name, either provided or automatically extracted
  */
 export function getParameterName(
-  target: any,
-  propertyKey: string,
+  target: object,
+  propertyKey: string | symbol,
   parameterIndex: number,
   providedName?: string,
 ): string | undefined {
@@ -88,14 +88,14 @@ export function getParameterName(
 
   // Try to automatically extract the parameter name
   try {
-    const method = target[propertyKey];
-    if (method) {
+    const method = target[propertyKey as keyof typeof target];
+    if (method && typeof method === 'function') {
       const paramNames = getParameterNames(method);
       if (parameterIndex < paramNames.length) {
         return paramNames[parameterIndex];
       }
     }
-  } catch (error) {
+  } catch {
     // If we can't get the parameter name, return undefined
     // This will use default naming in the execution logic
   }

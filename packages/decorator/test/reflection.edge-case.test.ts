@@ -57,16 +57,16 @@ describe('reflection - edge cases', () => {
     // Arrow function with complex parameters
     const complexArrow = (
       param1: string | number,
-      param2: { a: string; b: number } = { a: 'default', b: 0 },
+      _param2: { a: string; b: number } = { a: 'default', b: 0 },
       ...rest: any[]
     ) => {
-      return { param1, param2, rest };
+      return { param1, param2: _param2, rest };
     };
 
     // Should extract parameter names correctly
     expect(getParameterNames(complexArrow)).toEqual([
       'param1',
-      'param2',
+      '_param2',
       'b',
       '...rest',
     ]);
@@ -76,17 +76,17 @@ describe('reflection - edge cases', () => {
     // Async function with complex parameters
     async function asyncComplex(
       param1: Promise<string>,
-      param2: string = 'default',
+      _param2: string = 'default',
       ...rest: any[]
     ): Promise<any> {
       const result = await param1;
-      return { result, param2, rest };
+      return { result, param2: _param2, rest };
     }
 
     // Should extract parameter names correctly
     expect(getParameterNames(asyncComplex)).toEqual([
       'param1',
-      'param2',
+      '_param2',
       '...rest',
     ]);
   });
@@ -96,17 +96,17 @@ describe('reflection - edge cases', () => {
       // Method with complex parameters
       complexMethod(
         param1: string | undefined,
-        param2: number | null = null,
+        _param2: number | null = null,
         ...rest: Array<string | number>
       ) {
-        return { param1, param2, rest };
+        return { param1, param2: _param2, rest };
       }
     }
 
     // Should extract parameter names correctly
     expect(getParameterNames(TestClass.prototype.complexMethod)).toEqual([
       'param1',
-      'param2',
+      '_param2',
       '...rest',
     ]);
   });
@@ -114,13 +114,22 @@ describe('reflection - edge cases', () => {
   it('should handle getParameterName with edge cases', () => {
     class TestClass {
       // Method with parameters
-      testMethod(a: string, b: number) {
-        return { a, b };
+      complexMethod(
+        param1: string | undefined,
+        _param2: number | null = null,
+        ...rest: Array<string | number>
+      ) {
+        return { param1, _param2: _param2, rest };
       }
 
       // Method without parameters
       noParamMethod() {
         return 'no params';
+      }
+
+      // Method for testing parameter extraction
+      testMethod(a: string, b: number) {
+        return { a, b };
       }
 
       // Non-existent method
@@ -147,7 +156,7 @@ describe('reflection - edge cases', () => {
     ).toBeUndefined();
 
     // Should handle null target
-    expect(getParameterName(null, 'testMethod', 0)).toBeUndefined();
+    expect(getParameterName({} as object, 'testMethod', 0)).toBeUndefined();
 
     // Should handle provided name
     expect(
@@ -172,17 +181,17 @@ describe('reflection - edge cases', () => {
     // Function with nested generic types
     function withNestedGenerics(
       param1: Record<string, Array<number>>,
-      param2: Map<string, Set<number>>,
-      param3: Promise<Array<{ a: string; b: number }>>,
+      _param2: Map<string, Set<number>>,
+      _param3: Promise<Array<{ a: string; b: number }>>,
     ) {
-      return { param1, param2, param3 };
+      return { param1, param2: _param2, param3: _param3 };
     }
 
     // Should extract parameter names correctly
     expect(getParameterNames(withNestedGenerics)).toEqual([
       'param1',
-      'param2',
-      'param3',
+      '_param2',
+      '_param3',
     ]);
   });
 
@@ -190,17 +199,21 @@ describe('reflection - edge cases', () => {
     // Function with union and intersection types
     function withUnionIntersection(
       param1: string & { length: number },
-      param2: string | number,
-      param3: { a: string } & { b: number },
+      _param2: string | number,
+      _param3: { a: string } & { b: number },
     ) {
-      return { param1: param1 as any, param2, param3: param3 as any };
+      return {
+        param1: param1 as any,
+        param2: _param2,
+        _param3: _param3 as any,
+      };
     }
 
     // Should extract parameter names correctly
     expect(getParameterNames(withUnionIntersection)).toEqual([
       'param1',
-      'param2',
-      'param3',
+      '_param2',
+      '_param3',
     ]);
   });
 });

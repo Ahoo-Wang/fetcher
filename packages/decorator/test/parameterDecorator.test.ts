@@ -12,7 +12,7 @@ import {
 describe('parameterDecorator', () => {
   it('should define parameter metadata', () => {
     class TestService {
-      getUsers(_id: number) {
+      getUsers(id: number) {
         // Implementation will be generated automatically
       }
     }
@@ -38,7 +38,7 @@ describe('parameterDecorator', () => {
 
   it('should define path parameter', () => {
     class TestService {
-      getUsers(_id: number) {
+      getUsers(id: number) {
         // Implementation will be generated automatically
       }
     }
@@ -64,7 +64,7 @@ describe('parameterDecorator', () => {
 
   it('should define query parameter', () => {
     class TestService {
-      getUsers(_limit: number) {
+      getUsers(limit: number) {
         // Implementation will be generated automatically
       }
     }
@@ -90,7 +90,7 @@ describe('parameterDecorator', () => {
 
   it('should define header parameter', () => {
     class TestService {
-      getUsers(_auth: string) {
+      getUsers(auth: string) {
         // Implementation will be generated automatically
       }
     }
@@ -116,7 +116,7 @@ describe('parameterDecorator', () => {
 
   it('should define body parameter', () => {
     class TestService {
-      createUsers(_user: any) {
+      createUsers(user: any) {
         // Implementation will be generated automatically
       }
     }
@@ -134,7 +134,7 @@ describe('parameterDecorator', () => {
     expect(metadata).toEqual([
       {
         type: ParameterType.BODY,
-        name: '_user',
+        name: 'user',
         index: 0,
       },
     ]);
@@ -142,7 +142,7 @@ describe('parameterDecorator', () => {
 
   it('should handle multiple parameters', () => {
     class TestService {
-      updateUsers(_id: number, _force: boolean, _user: any) {
+      updateUsers(id: number, force: boolean, user: any) {
         // Implementation will be generated automatically
       }
     }
@@ -172,7 +172,7 @@ describe('parameterDecorator', () => {
       },
       {
         type: ParameterType.BODY,
-        name: '_user',
+        name: 'user',
         index: 2,
       },
     ]);

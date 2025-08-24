@@ -117,10 +117,14 @@ export const PARAMETER_METADATA_KEY = Symbol('parameter:metadata');
  * ```
  */
 export function parameter(type: ParameterType, name: string = '') {
-  return function(target: any, propertyKey: string, parameterIndex: number) {
+  return function(
+    target: object,
+    propertyKey: string | symbol,
+    parameterIndex: number,
+  ) {
     const paramName = getParameterName(
       target,
-      propertyKey,
+      propertyKey as string,
       parameterIndex,
       name,
     );
