@@ -12,7 +12,7 @@
  */
 
 import { NamedCapable } from './types';
-import { defaultOptions, Fetcher, FetcherOptions } from './fetcher';
+import { DEFAULT_OPTIONS, Fetcher, FetcherOptions } from './fetcher';
 import { DEFAULT_FETCHER_NAME, fetcherRegistrar } from './fetcherRegistrar';
 
 /**
@@ -58,7 +58,7 @@ export class NamedFetcher extends Fetcher implements NamedCapable {
    *   headers: { 'Authorization': 'Bearer token' }
    * });
    */
-  constructor(name: string, options: FetcherOptions = defaultOptions) {
+  constructor(name: string, options: FetcherOptions = DEFAULT_OPTIONS) {
     super(options);
     this.name = name;
     fetcherRegistrar.register(name, this);

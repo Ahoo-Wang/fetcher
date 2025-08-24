@@ -33,13 +33,13 @@ export interface FetcherOptions
     TimeoutCapable {
 }
 
-const defaultHeaders: Record<string, string> = {
+const DEFAULT_HEADERS: Record<string, string> = {
   [ContentTypeHeader]: ContentTypeValues.APPLICATION_JSON,
 };
 
-export const defaultOptions: FetcherOptions = {
+export const DEFAULT_OPTIONS: FetcherOptions = {
   baseURL: '',
-  headers: defaultHeaders,
+  headers: DEFAULT_HEADERS,
 };
 
 /**
@@ -142,7 +142,7 @@ export interface FetcherRequest
  * });
  */
 export class Fetcher implements HeadersCapable, TimeoutCapable {
-  headers?: Record<string, string> = defaultHeaders;
+  headers?: Record<string, string> = DEFAULT_HEADERS;
   timeout?: number;
   private urlBuilder: UrlBuilder;
   interceptors: FetcherInterceptors = new FetcherInterceptors();
@@ -152,7 +152,7 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
    *
    * @param options - Fetcher configuration options
    */
-  constructor(options: FetcherOptions = defaultOptions) {
+  constructor(options: FetcherOptions = DEFAULT_OPTIONS) {
     this.urlBuilder = new UrlBuilder(options.baseURL);
     if (options.headers !== undefined) {
       this.headers = options.headers;
