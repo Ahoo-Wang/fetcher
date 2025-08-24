@@ -16,10 +16,12 @@
     "composite": true,
     "incremental": true
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*",
+    "test/**/*"
+  ],
   "exclude": [
     "node_modules",
-    "dist",
-    "test"
+    "dist"
   ]
 }

@@ -21,11 +21,11 @@
     "incremental": true
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*",
+    "test/**/*"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "test"
+    "dist"
   ]
 }
