@@ -13,7 +13,7 @@
 
 import { NamedCapable } from './types';
 import { defaultOptions, Fetcher, FetcherOptions } from './fetcher';
-import { defaultFetcherName, fetcherRegistrar } from './fetcherRegistrar';
+import { DEFAULT_FETCHER_NAME, fetcherRegistrar } from './fetcherRegistrar';
 
 /**
  * NamedFetcher is an extension of the Fetcher class that automatically registers
@@ -86,4 +86,4 @@ export class NamedFetcher extends Fetcher implements NamedCapable {
  *   .then(response => response.json())
  *   .then(data => console.log(data));
  */
-export const fetcher = new NamedFetcher(defaultFetcherName);
+export const fetcher = new NamedFetcher(DEFAULT_FETCHER_NAME);

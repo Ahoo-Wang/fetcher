@@ -14,7 +14,7 @@
 import { getStorage } from './inMemoryStorage';
 import { idGenerator } from './idGenerator';
 
-const defaultCoSecDeviceIdKey = 'cosec-device-id';
+export const DEFAULT_COSEC_DEVICE_ID_KEY = 'cosec-device-id';
 
 /**
  * Device ID storage class for managing device identifiers
@@ -24,7 +24,7 @@ export class DeviceIdStorage {
   private storage: Storage;
 
   constructor(
-    deviceIdKey: string = defaultCoSecDeviceIdKey,
+    deviceIdKey: string = DEFAULT_COSEC_DEVICE_ID_KEY,
     storage: Storage = getStorage(),
   ) {
     this.deviceIdKey = deviceIdKey;

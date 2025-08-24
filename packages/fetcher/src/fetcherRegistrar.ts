@@ -16,7 +16,7 @@ import { Fetcher } from './fetcher';
 /**
  * Default fetcher name used when no name is specified
  */
-export const defaultFetcherName = 'default';
+export const DEFAULT_FETCHER_NAME = 'default';
 
 /**
  * FetcherRegistrar is a registry for managing multiple Fetcher instances.
@@ -119,7 +119,7 @@ export class FetcherRegistrar {
    * const defaultFetcher = fetcherRegistrar.default;
    */
   get default(): Fetcher {
-    return this.requiredGet(defaultFetcherName);
+    return this.requiredGet(DEFAULT_FETCHER_NAME);
   }
 
   /**
@@ -131,7 +131,7 @@ export class FetcherRegistrar {
    * fetcherRegistrar.default = fetcher;
    */
   set default(fetcher: Fetcher) {
-    this.register(defaultFetcherName, fetcher);
+    this.register(DEFAULT_FETCHER_NAME, fetcher);
   }
 
   /**

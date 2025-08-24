@@ -12,7 +12,7 @@
  */
 import {
   combineURLs,
-  defaultFetcherName,
+  DEFAULT_FETCHER_NAME,
   Fetcher,
   fetcherRegistrar,
   FetcherRequest,
@@ -80,7 +80,7 @@ export class FunctionMetadata implements NamedCapable {
    */
   get fetcher(): Fetcher {
     const fetcherName =
-      this.endpoint.fetcher || this.api.fetcher || defaultFetcherName;
+      this.endpoint.fetcher || this.api.fetcher || DEFAULT_FETCHER_NAME;
     return fetcherRegistrar.requiredGet(fetcherName);
   }
 

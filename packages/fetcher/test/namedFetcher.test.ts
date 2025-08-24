@@ -13,7 +13,7 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { NamedFetcher, fetcher } from '../src';
-import { fetcherRegistrar, defaultFetcherName } from '../src';
+import { fetcherRegistrar, DEFAULT_FETCHER_NAME } from '../src';
 import { Fetcher } from '../src';
 
 // Mock fetch
@@ -135,7 +135,7 @@ describe('NamedFetcher', () => {
     // Check that the default fetcher is properly created
     expect(fetcher).toBeInstanceOf(NamedFetcher);
     expect(fetcher).toBeInstanceOf(Fetcher);
-    expect(fetcher.name).toBe(defaultFetcherName);
+    expect(fetcher.name).toBe(DEFAULT_FETCHER_NAME);
 
     // Note: The default fetcher should be registered automatically when the module is imported
     // We don't need to manually check registration as it happens during module initialization
