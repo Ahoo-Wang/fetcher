@@ -11,7 +11,6 @@
  * limitations under the License.
  */
 
-import { FetcherRequest } from './fetcher';
 import { FetchExchange } from './interceptor';
 
 /**

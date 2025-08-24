@@ -78,6 +78,55 @@ fetcher
   });
 ```
 
+### 命名 Fetcher 用法
+
+NamedFetcher 是 Fetcher 类的扩展，它会自动使用提供的名称在全局注册器中注册自己。当您需要在应用程序中管理多个 fetcher
+实例时，这很有用。
+
+```typescript
+import { NamedFetcher, fetcherRegistrar } from '@ahoo-wang/fetcher';
+
+// 创建一个自动注册自己的命名 fetcher
+const apiFetcher = new NamedFetcher('api', {
+  baseURL: 'https://api.example.com',
+  timeout: 5000,
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: 'Bearer token',
+  },
+});
+
+// 为不同的服务创建另一个命名 fetcher
+const authFetcher = new NamedFetcher('auth', {
+  baseURL: 'https://auth.example.com',
+  timeout: 3000,
+});
+
+// 正常使用 fetcher
+apiFetcher
+  .get('/users/123')
+  .then(response => response.json())
+  .then(data => console.log(data));
+
+// 从注册器中检索命名 fetcher
+const retrievedFetcher = fetcherRegistrar.get('api');
+if (retrievedFetcher) {
+  retrievedFetcher.post('/users', {
+    body: { name: 'Jane Doe' },
+  });
+}
+
+// 使用 requiredGet 检索 fetcher（如果未找到则抛出错误）
+try {
+  const authFetcher = fetcherRegistrar.requiredGet('auth');
+  authFetcher.post('/login', {
+    body: { username: 'user', password: 'pass' },
+  });
+} catch (error) {
+  console.error('未找到 Fetcher:', error.message);
+}
+```
+
 ### 拦截器用法
 
 ```typescript
@@ -148,6 +197,40 @@ new Fetcher(options?: FetcherOptions)
 - `patch(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PATCH 请求
 - `head(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - HEAD 请求
 - `options(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - OPTIONS 请求
+
+### NamedFetcher 类
+
+Fetcher 类的扩展，它会自动使用提供的名称在全局 fetcherRegistrar 中注册自己。
+
+#### 构造函数
+
+```typescript
+new NamedFetcher(name
+:
+string, options ? : FetcherOptions
+)
+```
+
+**参数：**
+
+- `name`：注册此 fetcher 的名称
+- `options`：与 Fetcher 构造函数相同的选项
+
+### FetcherRegistrar
+
+用于按名称管理多个 Fetcher 实例的全局实例。
+
+#### 属性
+
+- `default`：获取或设置默认 fetcher 实例
+
+#### 方法
+
+- `register(name: string, fetcher: Fetcher): void` - 使用名称注册 fetcher
+- `unregister(name: string): boolean` - 按名称注销 fetcher
+- `get(name: string): Fetcher | undefined` - 按名称获取 fetcher
+- `requiredGet(name: string): Fetcher` - 按名称获取 fetcher，如果未找到则抛出错误
+- `fetchers: Map<string, Fetcher>` - 获取所有已注册的 fetcher
 
 ### UrlBuilder 类
 

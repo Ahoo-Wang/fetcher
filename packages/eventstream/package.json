@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-eventstream",
-  "version": "0.3.3",
+  "version": "0.3.5",
   "description": "Support for text/event-stream in Fetcher",
   "keywords": [
     "fetch",
