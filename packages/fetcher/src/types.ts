@@ -50,3 +50,7 @@ export enum ContentTypeValues {
   APPLICATION_JSON = 'application/json',
   TEXT_EVENT_STREAM = 'text/event-stream',
 }
+
+export interface NamedCapable {
+  name: string;
+}

@@ -1,5 +1,6 @@
 {
   "name": "@fetcher/examples",
+  "version": "0.5.5",
   "private": true,
   "description": "Examples for Fetcher HTTP client library",
   "keywords": [
@@ -30,7 +31,8 @@
   "dependencies": {
     "@ahoo-wang/fetcher": "workspace:*",
     "@ahoo-wang/fetcher-eventstream": "workspace:*",
-    "@ahoo-wang/fetcher-cosec": "workspace:*"
+    "@ahoo-wang/fetcher-cosec": "workspace:*",
+    "@ahoo-wang/fetcher-decorator": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.2",

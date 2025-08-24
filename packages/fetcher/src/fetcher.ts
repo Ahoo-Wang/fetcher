@@ -33,23 +33,100 @@ export interface FetcherOptions
     TimeoutCapable {
 }
 
-const defaultHeaders: Record<string, string> = {
+const DEFAULT_HEADERS: Record<string, string> = {
   [ContentTypeHeader]: ContentTypeValues.APPLICATION_JSON,
 };
 
-const defaultOptions: FetcherOptions = {
+export const DEFAULT_OPTIONS: FetcherOptions = {
   baseURL: '',
-  headers: defaultHeaders,
+  headers: DEFAULT_HEADERS,
 };
 
 /**
- * Fetcher request options interface
+ * Fetcher request configuration interface
+ *
+ * This interface defines all the configuration options available for making HTTP requests
+ * with the Fetcher client. It extends the standard RequestInit interface while adding
+ * Fetcher-specific features like path parameters, query parameters, and timeout control.
+ *
+ * @example
+ * ```typescript
+ * const request: FetcherRequest = {
+ *   method: 'GET',
+ *   path: { id: 123 },
+ *   query: { include: 'profile' },
+ *   headers: { 'Authorization': 'Bearer token' },
+ *   timeout: 5000
+ * };
+ *
+ * const response = await fetcher.fetch('/users/{id}', request);
+ * ```
  */
 export interface FetcherRequest
   extends TimeoutCapable,
     Omit<RequestInit, 'body'> {
-  pathParams?: Record<string, any>;
-  queryParams?: Record<string, any>;
+  /**
+   * Path parameters for URL templating
+   *
+   * An object containing key-value pairs that will be used to replace placeholders
+   * in the URL path. Placeholders are specified using curly braces, e.g., '/users/{id}'.
+   *
+   * @example
+   * ```typescript
+   * // With URL '/users/{id}/posts/{postId}'
+   * const request = {
+   *   path: { id: 123, postId: 456 }
+   * };
+   * // Results in URL: '/users/123/posts/456'
+   * ```
+   */
+  path?: Record<string, any>;
+
+  /**
+   * Query parameters for URL query string
+   *
+   * An object containing key-value pairs that will be serialized and appended
+   * to the URL as query parameters. Arrays are serialized as multiple parameters
+   * with the same name, and objects are JSON-stringified.
+   *
+   * @example
+   * ```typescript
+   * const request = {
+   *   query: {
+   *     limit: 10,
+   *     filter: 'active',
+   *     tags: ['important', 'urgent']
+   *   }
+   * };
+   * // Results in query string: '?limit=10&filter=active&tags=important&tags=urgent'
+   * ```
+   */
+  query?: Record<string, any>;
+
+  /**
+   * Request body
+   *
+   * The body of the request. Can be a string, Blob, ArrayBuffer, FormData,
+   * URLSearchParams, or a plain object. Plain objects are automatically
+   * converted to JSON and the appropriate Content-Type header is set.
+   *
+   * @example
+   * ```typescript
+   * // Plain object (automatically converted to JSON)
+   * const request = {
+   *   method: 'POST',
+   *   body: { name: 'John', email: 'john@example.com' }
+   * };
+   *
+   * // FormData
+   * const formData = new FormData();
+   * formData.append('name', 'John');
+   * const request = {
+   *   method: 'POST',
+   *   body: formData
+   * };
+   * ```
+   */
   body?: BodyInit | Record<string, any> | null;
 }
 
@@ -65,7 +142,7 @@ export interface FetcherRequest
  * });
  */
 export class Fetcher implements HeadersCapable, TimeoutCapable {
-  headers?: Record<string, string> = defaultHeaders;
+  headers?: Record<string, string> = DEFAULT_HEADERS;
   timeout?: number;
   private urlBuilder: UrlBuilder;
   interceptors: FetcherInterceptors = new FetcherInterceptors();
@@ -75,7 +152,7 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
    *
    * @param options - Fetcher configuration options
    */
-  constructor(options: FetcherOptions = defaultOptions) {
+  constructor(options: FetcherOptions = DEFAULT_OPTIONS) {
     this.urlBuilder = new UrlBuilder(options.baseURL);
     if (options.headers !== undefined) {
       this.headers = options.headers;
@@ -123,11 +200,7 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
       headers:
         Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
     };
-    const finalUrl = this.urlBuilder.build(
-      url,
-      request.pathParams,
-      request.queryParams,
-    );
+    const finalUrl = this.urlBuilder.build(url, request.path, request.query);
     let exchange: FetchExchange = {
       fetcher: this,
       url: finalUrl,

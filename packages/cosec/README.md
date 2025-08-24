@@ -1,26 +1,41 @@
 # @ahoo-wang/fetcher-cosec
 
+[![npm version](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)
+[![Build Status](https://github.com/Ahoo-Wang/fetcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Ahoo-Wang/fetcher/actions)
+[![codecov](https://codecov.io/gh/Ahoo-Wang/fetcher/graph/badge.svg?token=JGiWZ52CvJ)](https://codecov.io/gh/Ahoo-Wang/fetcher)
+[![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher-cosec.svg)](https://github.com/Ahoo-Wang/fetcher/blob/main/LICENSE)
+[![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)
+[![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)
+
 Support for CoSec authentication in Fetcher HTTP client.
 
 [CoSec](https://github.com/Ahoo-Wang/CoSec) is a comprehensive authentication and authorization framework.
 
 This package provides integration between the Fetcher HTTP client and the CoSec authentication framework.
 
-## Features
+## 🌟 Features
 
-- Automatic CoSec authentication headers
-- Device ID management with localStorage persistence
-- Automatic token refresh based on response codes (401)
-- Request ID generation for tracking
-- Token storage management
+- **🔐 Automatic Authentication**: Automatic CoSec authentication headers
+- **📱 Device Management**: Device ID management with localStorage persistence
+- **🔄 Token Refresh**: Automatic token refresh based on response codes (401)
+- **追踪 Request Tracking**: Unique request ID generation for tracking
+- **💾 Token Storage**: Secure token storage management
+- **🛡️ TypeScript Support**: Complete TypeScript type definitions
 
-## Installation
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
+# Using npm
 npm install @ahoo-wang/fetcher-cosec
-```
 
-## Usage
+# Using pnpm
+pnpm add @ahoo-wang/fetcher-cosec
+
+# Using yarn
+yarn add @ahoo-wang/fetcher-cosec
+```
 
 ### Basic Setup
 
@@ -85,7 +100,9 @@ fetcher.interceptors.response.use(
 );
 ```
 
-### Configuration Options
+## 🔧 Configuration
+
+### CoSecOptions Interface
 
 ```typescript
 interface CoSecOptions {
@@ -120,18 +137,37 @@ The interceptor automatically adds the following headers to requests:
 3. `Authorization`: Bearer token
 4. `CoSec-Request-Id`: Unique request identifier for each request
 
-### Token Refresh
+## 📚 API Reference
 
-The response interceptor automatically handles token refresh when the server returns status code 401. When this happens,
-the `tokenRefresher.refresh` function is called to obtain new access and refresh tokens.
+### Core Classes
 
-### Token Storage
+#### CoSecRequestInterceptor
 
-The package includes a `TokenStorage` class for managing tokens in localStorage:
+Adds CoSec authentication headers to outgoing requests.
 
 ```typescript
-import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
+new CoSecRequestInterceptor(options
+:
+CoSecOptions
+)
+```
 
+#### CoSecResponseInterceptor
+
+Handles token refresh when the server returns status code 401.
+
+```typescript
+new CoSecResponseInterceptor(options
+:
+CoSecOptions
+)
+```
+
+#### TokenStorage
+
+Manages token storage in localStorage.
+
+```typescript
 const tokenStorage = new TokenStorage();
 
 // Store tokens
@@ -142,22 +178,16 @@ tokenStorage.set({
 
 // Get tokens
 const token = tokenStorage.get();
-if (token) {
-  console.log('Access token:', token.accessToken);
-  console.log('Refresh token:', token.refreshToken);
-}
 
 // Clear tokens
 tokenStorage.clear();
 ```
 
-### Device ID Storage
+#### DeviceIdStorage
 
-The package includes a `DeviceIdStorage` class for managing device identifiers in localStorage:
+Manages device ID storage in localStorage.
 
 ```typescript
-import { DeviceIdStorage } from '@ahoo-wang/fetcher-cosec';
-
 const deviceIdStorage = new DeviceIdStorage();
 
 // Get or create a device ID
@@ -176,7 +206,13 @@ deviceIdStorage.clear();
 const newDeviceId = deviceIdStorage.generateDeviceId();
 ```
 
-## API
+#### InMemoryStorage
+
+In-memory storage fallback for environments without localStorage.
+
+```typescript
+const inMemoryStorage = new InMemoryStorage();
+```
 
 ### Interfaces
 
@@ -185,20 +221,102 @@ const newDeviceId = deviceIdStorage.generateDeviceId();
 - `CompositeToken`: Contains both access and refresh tokens
 - `TokenRefresher`: Provides a method to refresh tokens
 
-### Classes
+## 🛠️ Examples
 
-- `TokenStorage`: Manages token storage in localStorage
-- `DeviceIdStorage`: Manages device ID storage in localStorage
-- `CoSecRequestInterceptor`: Adds CoSec headers to requests
-- `CoSecResponseInterceptor`: Handles token refresh on 401 responses
-- `InMemoryStorage`: In-memory storage fallback for environments without localStorage
+### Complete Authentication Setup
 
-## CoSec Framework
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+import {
+  CoSecRequestInterceptor,
+  CoSecResponseInterceptor,
+  DeviceIdStorage,
+  TokenStorage,
+} from '@ahoo-wang/fetcher-cosec';
+
+// Create storage instances
+const deviceIdStorage = new DeviceIdStorage();
+const tokenStorage = new TokenStorage();
+
+// Create token refresher
+const tokenRefresher = {
+  async refresh(token) {
+    const response = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        refreshToken: token.refreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Token refresh failed');
+    }
+
+    const tokens = await response.json();
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    };
+  },
+};
+
+// Create fetcher with CoSec interceptors
+const secureFetcher = new Fetcher({
+  baseURL: 'https://api.example.com',
+});
+
+secureFetcher.interceptors.request.use(
+  new CoSecRequestInterceptor({
+    appId: 'my-app-id',
+    deviceIdStorage,
+    tokenStorage,
+    tokenRefresher,
+  }),
+);
+
+secureFetcher.interceptors.response.use(
+  new CoSecResponseInterceptor({
+    appId: 'my-app-id',
+    deviceIdStorage,
+    tokenStorage,
+    tokenRefresher,
+  }),
+);
+
+// Use the fetcher
+const response = await secureFetcher.get('/api/user/profile');
+```
+
+## 🧪 Testing
+
+```bash
+# Run tests
+pnpm test
+
+# Run tests with coverage
+pnpm test --coverage
+```
+
+## 🌐 CoSec Framework
 
 This package is designed to work with the [CoSec authentication framework](https://github.com/Ahoo-Wang/CoSec). For more
 information about CoSec features and capabilities, please visit
 the [CoSec GitHub repository](https://github.com/Ahoo-Wang/CoSec).
 
-## License
+## 🤝 Contributing
+
+Contributions are welcome! Please see
+the [contributing guide](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) for more details.
+
+## 📄 License
 
 Apache-2.0
+
+---
+
+<p align="center">
+  Part of the <a href="https://github.com/Ahoo-Wang/fetcher">Fetcher</a> ecosystem
+</p>

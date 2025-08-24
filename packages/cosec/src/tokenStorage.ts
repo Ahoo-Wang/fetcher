@@ -14,7 +14,7 @@
 import { getStorage } from './inMemoryStorage';
 import { CompositeToken } from './tokenRefresher';
 
-const defaultCoSecTokenKey = 'cosec-token';
+export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 
 /**
  * Token storage class for managing access and refresh tokens
@@ -24,7 +24,7 @@ export class TokenStorage {
   private storage: Storage;
 
   constructor(
-    tokenKey: string = defaultCoSecTokenKey,
+    tokenKey: string = DEFAULT_COSEC_TOKEN_KEY,
     storage: Storage = getStorage(),
   ) {
     this.tokenKey = tokenKey;

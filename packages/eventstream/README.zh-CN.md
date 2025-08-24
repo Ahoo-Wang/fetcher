@@ -5,39 +5,34 @@
 [![codecov](https://codecov.io/gh/Ahoo-Wang/fetcher/graph/badge.svg?token=JGiWZ52CvJ)](https://codecov.io/gh/Ahoo-Wang/fetcher)
 [![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher-eventstream.svg)](https://github.com/Ahoo-Wang/fetcher/blob/main/LICENSE)
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream)
+[![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream)
 
-为 Fetcher 提供 text/event-stream 支持，实现服务器发送事件（SSE）功能。
+为 Fetcher 提供 text/event-stream 支持，实现服务器发送事件（SSE）功能，用于实时数据流。
 
-## 特性
+## 🌟 特性
 
-- **事件流转换**：将 `text/event-stream` 响应转换为 `ServerSentEvent` 对象的异步生成器
-- **拦截器集成**：自动为 `text/event-stream` 内容类型的响应添加 `eventStream()` 方法
-- **SSE 解析**：根据规范解析服务器发送事件，包括数据、事件、ID 和重试字段
-- **流支持**：正确处理分块数据和多行事件
-- **注释处理**：正确忽略注释行（以 `:` 开头的行）
-- **TypeScript 支持**：完整的 TypeScript 类型定义
+- **📡 事件流转换**：将 `text/event-stream` 响应转换为 `ServerSentEvent` 对象的异步生成器
+- **🔌 拦截器集成**：自动为 `text/event-stream` 内容类型的响应添加 `eventStream()` 方法
+- **📋 SSE 解析**：根据规范解析服务器发送事件，包括数据、事件、ID 和重试字段
+- **🔄 流支持**：正确处理分块数据和多行事件
+- **💬 注释处理**：正确忽略注释行（以 `:` 开头的行）
+- **🛡️ TypeScript 支持**：完整的 TypeScript 类型定义
+- **⚡ 性能优化**：高效的解析和流处理，适用于高性能应用
 
-## 安装
+## 🚀 快速开始
 
-使用 pnpm：
-
-```bash
-pnpm add @ahoo-wang/fetcher-eventstream
-```
-
-使用 npm：
+### 安装
 
 ```bash
+# 使用 npm
 npm install @ahoo-wang/fetcher-eventstream
-```
 
-使用 yarn：
+# 使用 pnpm
+pnpm add @ahoo-wang/fetcher-eventstream
 
-```bash
+# 使用 yarn
 yarn add @ahoo-wang/fetcher-eventstream
 ```
-
-## 使用
 
 ### 带拦截器的基本用法
 
@@ -83,70 +78,35 @@ try {
 }
 ```
 
-### 异步迭代器用法
-
-```typescript
-import { Fetcher } from '@ahoo-wang/fetcher';
-import { EventStreamInterceptor } from '@ahoo-wang/fetcher-eventstream';
-
-const fetcher = new Fetcher({
-  baseURL: 'https://api.example.com',
-  interceptors: {
-    response: [new EventStreamInterceptor()],
-  },
-});
-
-// 使用异步迭代
-const response = await fetcher.get('/events');
-if (response.eventStream) {
-  for await (const event of response.eventStream()) {
-    switch (event.event) {
-      case 'message':
-        console.log('消息:', event.data);
-        break;
-      case 'notification':
-        console.log('通知:', event.data);
-        break;
-      default:
-        console.log('未知事件:', event);
-    }
-  }
-}
-```
-
-## API 参考
-
-### EventStreamConverter
-
-用于将 `text/event-stream` 响应转换为可读流的工具类。
-
-#### `toServerSentEventStream(response: Response): ServerEventStream`
-
-将带有 `text/event-stream` 主体的 Response 对象转换为 ServerSentEvent 对象的可读流。
-
-**参数：**
-
-- `response`：带有 `text/event-stream` 内容类型的 HTTP 响应
-
-**返回：**
-
-- `ServerEventStream`：ServerSentEvent 对象的可读流
+## 📚 API 参考
 
 ### EventStreamInterceptor
 
 响应拦截器，自动为 `text/event-stream` 内容类型的响应添加 `eventStream()` 方法。
 
-#### `intercept(exchange: FetchExchange): FetchExchange`
+#### 用法
 
-拦截响应，如果内容类型是 `text/event-stream` 则添加 `eventStream()` 方法。
+```typescript
+fetcher.interceptors.response.use(new EventStreamInterceptor());
+```
 
-**参数：**
+### toServerSentEventStream
 
-- `exchange`：包含要拦截响应的 fetch exchange
+将带有 `text/event-stream` 主体的 Response 对象转换为 ServerSentEvent 对象的可读流。
 
-**返回：**
+#### 签名
 
-- `FetchExchange`：可能修改了响应以包含 `eventStream()` 方法的拦截 exchange
+```typescript
+function toServerSentEventStream(response: Response): ServerSentEventStream;
+```
+
+#### 参数
+
+- `response`：带有 `text/event-stream` 内容类型的 HTTP 响应
+
+#### 返回
+
+- `ServerSentEventStream`：ServerSentEvent 对象的可读流
 
 ### ServerSentEvent
 
@@ -169,18 +129,7 @@ ServerSentEvent 对象的可读流的类型别名。
 type ServerSentEventStream = ReadableStream<ServerSentEvent>;
 ```
 
-## 服务器发送事件规范合规性
-
-此包完全实现了 [服务器发送事件规范](https://html.spec.whatwg.org/multipage/server-sent-events.html)：
-
-- **数据字段**：支持多行数据字段
-- **事件字段**：自定义事件类型
-- **ID 字段**：最后事件 ID 跟踪
-- **重试字段**：自动重连超时
-- **注释行**：忽略以 `:` 开头的行
-- **事件分发**：正确的事件分发，默认事件类型为 'message'
-
-## 示例
+## 🛠️ 示例
 
 ### 实时通知
 
@@ -207,6 +156,8 @@ if (response.eventStream) {
       case 'update':
         handleUpdate(JSON.parse(event.data));
         break;
+      default:
+        console.log('未知事件:', event);
     }
   }
 }
@@ -238,12 +189,41 @@ if (response.eventStream) {
 }
 ```
 
-## 测试
+### 聊天应用
 
-运行此包的测试：
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+import { EventStreamInterceptor } from '@ahoo-wang/fetcher-eventstream';
+
+const fetcher = new Fetcher({
+  baseURL: 'https://chat-api.example.com',
+});
+fetcher.interceptors.response.use(new EventStreamInterceptor());
+
+// 实时聊天消息
+const response = await fetcher.get('/rooms/123/messages');
+if (response.eventStream) {
+  for await (const event of response.eventStream()) {
+    if (event.event === 'message') {
+      const message = JSON.parse(event.data);
+      displayMessage(message);
+    } else if (event.event === 'user-joined') {
+      showUserJoined(event.data);
+    } else if (event.event === 'user-left') {
+      showUserLeft(event.data);
+    }
+  }
+}
+```
+
+## 🧪 测试
 
 ```bash
+# 运行测试
 pnpm test
+
+# 运行带覆盖率的测试
+pnpm test --coverage
 ```
 
 测试套件包括：
@@ -253,6 +233,27 @@ pnpm test
 - 边界情况处理（畸形事件、分块数据等）
 - 大事件流的性能测试
 
-## 许可证
+## 📋 服务器发送事件规范合规性
+
+此包完全实现了 [服务器发送事件规范](https://html.spec.whatwg.org/multipage/server-sent-events.html)：
+
+- **数据字段**：支持多行数据字段
+- **事件字段**：自定义事件类型
+- **ID 字段**：最后事件 ID 跟踪
+- **重试字段**：自动重连超时
+- **注释行**：忽略以 `:` 开头的行
+- **事件分发**：正确的事件分发，默认事件类型为 'message'
+
+## 🤝 贡献
+
+欢迎贡献！请查看 [贡献指南](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) 了解更多详情。
+
+## 📄 许可证
 
 本项目采用 [Apache-2.0 许可证](../../LICENSE)。
+
+---
+
+<p align="center">
+  Fetcher 生态系统的一部分
+</p>

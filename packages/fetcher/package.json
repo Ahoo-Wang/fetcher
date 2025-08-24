@@ -1,7 +1,7 @@
 {
   "name": "@ahoo-wang/fetcher",
-  "version": "0.3.2",
-  "description": "Core library providing basic HTTP client functionality for Fetcher",
+  "version": "0.5.5",
+  "description": "Ultra-lightweight (1.9kB) HTTP client with built-in path parameters and Axios-like API",
   "keywords": [
     "fetch",
     "http",
@@ -35,7 +35,7 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest run --coverage",
-    "lint": "tsc --noEmit",
+    "lint": "eslint . --fix",
     "clean": "rm -rf dist"
   },
   "devDependencies": {

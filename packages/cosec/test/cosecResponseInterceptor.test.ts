@@ -170,7 +170,7 @@ describe('CoSecResponseInterceptor', () => {
     });
     fetcher.request = requestMock;
 
-    const result = await interceptor.intercept(exchange);
+    await interceptor.intercept(exchange);
 
     expect(tokenRefresher.refresh).toHaveBeenCalledWith({
       accessToken: 'old-access-token',

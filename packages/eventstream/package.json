@@ -1,7 +1,7 @@
 {
   "name": "@ahoo-wang/fetcher-eventstream",
-  "version": "0.3.2",
-  "description": "Support for text/event-stream in Fetcher",
+  "version": "0.5.5",
+  "description": "Server-Sent Events (SSE) support for Fetcher HTTP client",
   "keywords": [
     "fetch",
     "event-stream",
@@ -35,7 +35,7 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest run --coverage",
-    "lint": "tsc --noEmit",
+    "lint": "eslint . --fix",
     "clean": "rm -rf dist"
   },
   "dependencies": {

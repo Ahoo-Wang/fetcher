@@ -1,26 +1,41 @@
 # @ahoo-wang/fetcher-cosec
 
+[![npm version](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)
+[![Build Status](https://github.com/Ahoo-Wang/fetcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Ahoo-Wang/fetcher/actions)
+[![codecov](https://codecov.io/gh/Ahoo-Wang/fetcher/graph/badge.svg?token=JGiWZ52CvJ)](https://codecov.io/gh/Ahoo-Wang/fetcher)
+[![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher-cosec.svg)](https://github.com/Ahoo-Wang/fetcher/blob/main/LICENSE)
+[![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)
+[![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)
+
 Fetcher HTTP 客户端的 CoSec 认证支持。
 
 [CoSec](https://github.com/Ahoo-Wang/CoSec) 是一个全面的身份认证和授权框架。
 
 此包提供了 Fetcher HTTP 客户端与 CoSec 认证框架之间的集成。
 
-## 功能特性
+## 🌟 功能特性
 
-- 自动添加 CoSec 认证头
-- 设备 ID 管理与 localStorage 持久化
-- 基于响应码（401）的自动令牌刷新
-- 请求 ID 生成用于跟踪
-- 令牌存储管理
+- **🔐 自动认证**：自动添加 CoSec 认证头
+- **📱 设备管理**：设备 ID 管理与 localStorage 持久化
+- **🔄 令牌刷新**：基于响应码（401）的自动令牌刷新
+- **追踪 请求跟踪**：请求 ID 生成用于跟踪
+- **💾 令牌存储**：安全的令牌存储管理
+- **🛡️ TypeScript 支持**：完整的 TypeScript 类型定义
 
-## 安装
+## 🚀 快速开始
+
+### 安装
 
 ```bash
+# 使用 npm
 npm install @ahoo-wang/fetcher-cosec
-```
 
-## 使用方法
+# 使用 pnpm
+pnpm add @ahoo-wang/fetcher-cosec
+
+# 使用 yarn
+yarn add @ahoo-wang/fetcher-cosec
+```
 
 ### 基本设置
 
@@ -85,7 +100,9 @@ fetcher.interceptors.response.use(
 );
 ```
 
-### 配置选项
+## 🔧 配置
+
+### CoSecOptions 接口
 
 ```typescript
 interface CoSecOptions {
@@ -120,17 +137,37 @@ interface CoSecOptions {
 3. `Authorization`: Bearer 令牌
 4. `CoSec-Request-Id`: 每个请求的唯一请求标识符
 
-### 令牌刷新
+## 📚 API 参考
 
-响应拦截器会在服务器返回状态码 401 时自动处理令牌刷新。此时会调用 `tokenRefresher.refresh` 函数来获取新的访问和刷新令牌。
+### 核心类
 
-### 令牌存储
+#### CoSecRequestInterceptor
 
-包中包含一个 `TokenStorage` 类，用于管理 localStorage 中的令牌：
+向传出请求添加 CoSec 认证头部。
 
 ```typescript
-import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
+new CoSecRequestInterceptor(options
+:
+CoSecOptions
+)
+```
 
+#### CoSecResponseInterceptor
+
+在服务器返回状态码 401 时处理令牌刷新。
+
+```typescript
+new CoSecResponseInterceptor(options
+:
+CoSecOptions
+)
+```
+
+#### TokenStorage
+
+管理 localStorage 中的令牌存储。
+
+```typescript
 const tokenStorage = new TokenStorage();
 
 // 存储令牌
@@ -141,22 +178,16 @@ tokenStorage.set({
 
 // 获取令牌
 const token = tokenStorage.get();
-if (token) {
-  console.log('访问令牌:', token.accessToken);
-  console.log('刷新令牌:', token.refreshToken);
-}
 
 // 清除令牌
 tokenStorage.clear();
 ```
 
-### 设备 ID 存储
+#### DeviceIdStorage
 
-包中包含一个 `DeviceIdStorage` 类，用于管理 localStorage 中的设备标识符：
+管理 localStorage 中的设备 ID 存储。
 
 ```typescript
-import { DeviceIdStorage } from '@ahoo-wang/fetcher-cosec';
-
 const deviceIdStorage = new DeviceIdStorage();
 
 // 获取或创建设备 ID
@@ -175,7 +206,13 @@ deviceIdStorage.clear();
 const newDeviceId = deviceIdStorage.generateDeviceId();
 ```
 
-## API
+#### InMemoryStorage
+
+无 localStorage 环境的内存存储后备。
+
+```typescript
+const inMemoryStorage = new InMemoryStorage();
+```
 
 ### 接口
 
@@ -184,19 +221,100 @@ const newDeviceId = deviceIdStorage.generateDeviceId();
 - `CompositeToken`: 包含访问和刷新令牌
 - `TokenRefresher`: 提供刷新令牌的方法
 
-### 类
+## 🛠️ 示例
 
-- `TokenStorage`: 管理 localStorage 中的令牌存储
-- `DeviceIdStorage`: 管理 localStorage 中的设备 ID 存储
-- `CoSecRequestInterceptor`: 向请求添加 CoSec 头部
-- `CoSecResponseInterceptor`: 处理 401 响应的令牌刷新
-- `InMemoryStorage`: 无 localStorage 环境的内存存储后备
+### 完整认证设置
 
-## CoSec 框架
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+import {
+  CoSecRequestInterceptor,
+  CoSecResponseInterceptor,
+  DeviceIdStorage,
+  TokenStorage,
+} from '@ahoo-wang/fetcher-cosec';
+
+// 创建存储实例
+const deviceIdStorage = new DeviceIdStorage();
+const tokenStorage = new TokenStorage();
+
+// 创建令牌刷新器
+const tokenRefresher = {
+  async refresh(token) {
+    const response = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        refreshToken: token.refreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('令牌刷新失败');
+    }
+
+    const tokens = await response.json();
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    };
+  },
+};
+
+// 创建带 CoSec 拦截器的 fetcher
+const secureFetcher = new Fetcher({
+  baseURL: 'https://api.example.com',
+});
+
+secureFetcher.interceptors.request.use(
+  new CoSecRequestInterceptor({
+    appId: 'my-app-id',
+    deviceIdStorage,
+    tokenStorage,
+    tokenRefresher,
+  }),
+);
+
+secureFetcher.interceptors.response.use(
+  new CoSecResponseInterceptor({
+    appId: 'my-app-id',
+    deviceIdStorage,
+    tokenStorage,
+    tokenRefresher,
+  }),
+);
+
+// 使用 fetcher
+const response = await secureFetcher.get('/api/user/profile');
+```
+
+## 🧪 测试
+
+```bash
+# 运行测试
+pnpm test
+
+# 运行带覆盖率的测试
+pnpm test --coverage
+```
+
+## 🌐 CoSec 框架
 
 此包设计用于与 [CoSec 认证框架](https://github.com/Ahoo-Wang/CoSec) 配合使用。有关 CoSec
 功能和特性的更多信息，请访问 [CoSec GitHub 仓库](https://github.com/Ahoo-Wang/CoSec)。
 
-## 许可证
+## 🤝 贡献
+
+欢迎贡献！请查看 [贡献指南](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) 了解更多详情。
+
+## 📄 许可证
 
 Apache-2.0
+
+---
+
+<p align="center">
+  Fetcher 生态系统的一部分
+</p>

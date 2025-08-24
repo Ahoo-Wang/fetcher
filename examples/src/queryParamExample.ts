@@ -36,7 +36,7 @@ export function initQueryParamExample(): void {
 
       try {
         const response: Response = await fetcher.get('/posts', {
-          queryParams: { userId: userId },
+          query: { userId: userId },
         });
         const data = await response.json();
         updateOutput(
