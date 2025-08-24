@@ -14,7 +14,7 @@ export interface EndpointMetadata extends ApiMetadata {
   /**
    * Path for the endpoint (relative to class base path)
    */
-  path: string;
+  path?: string;
 }
 
 export const ENDPOINT_METADATA_KEY = Symbol('endpoint:metadata');
