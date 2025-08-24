@@ -7,33 +7,68 @@ import 'reflect-metadata';
 /**
  * Metadata for class-level API configuration
  *
+ * This interface defines the configuration options that can be applied to an entire API class.
+ * These settings will be used as defaults for all endpoints within the class unless overridden
+ * at the method level.
  */
 export interface ApiMetadata extends TimeoutCapable, HeadersCapable {
   /**
    * Base path for all endpoints in the class
+   *
+   * This path will be prepended to all endpoint paths defined in the class.
+   * For example, if basePath is '/api/v1' and an endpoint has path '/users',
+   * the full path will be '/api/v1/users'.
    */
   basePath?: string;
 
   /**
    * Default headers for all requests in the class
+   *
+   * These headers will be included in every request made by methods in this class.
+   * They can be overridden or extended at the method level.
    */
   headers?: Record<string, string>;
 
   /**
-   * Default timeout for all requests in the class
+   * Default timeout for all requests in the class (in milliseconds)
+   *
+   * This timeout value will be applied to all requests made by methods in this class.
+   * Individual methods can specify their own timeout values to override this default.
    */
   timeout?: number;
 
   /**
-   * Name of the fetcher instance to use,default: default .
-   * FetcherRegistrar
+   * Name of the fetcher instance to use, default: 'default'
+   *
+   * This allows you to specify which fetcher instance should be used for requests
+   * from this API class. The fetcher must be registered with the FetcherRegistrar.
    */
   fetcher?: string;
 }
 
 export const API_METADATA_KEY = Symbol('api:metadata');
 
-function bindExecutor(constructor: Function, functionName: string, apiMetadata: ApiMetadata) {
+/**
+ * Binds a request executor to a method, replacing the original method with
+ * an implementation that makes HTTP requests based on the decorator metadata.
+ *
+ * @param constructor - The class constructor
+ * @param functionName - The name of the method to bind
+ * @param apiMetadata - The API metadata for the class
+ */
+/**
+ * Binds a request executor to a method, replacing the original method with
+ * an implementation that makes HTTP requests based on the decorator metadata.
+ *
+ * @param constructor - The class constructor
+ * @param functionName - The name of the method to bind
+ * @param apiMetadata - The API metadata for the class
+ */
+function bindExecutor(
+  constructor: Function,
+  functionName: string,
+  apiMetadata: ApiMetadata,
+) {
   const endpointFunction = constructor.prototype[functionName];
   if (functionName === 'constructor') {
     return;
