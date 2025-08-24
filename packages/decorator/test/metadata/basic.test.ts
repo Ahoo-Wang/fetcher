@@ -4,7 +4,7 @@ import {
   ENDPOINT_METADATA_KEY,
   PARAMETER_METADATA_KEY,
   ParameterType,
-} from '../src/metadata';
+} from '../../src';
 import { fetcherRegistrar } from '@ahoo-wang/fetcher';
 import { Fetcher } from '@ahoo-wang/fetcher';
 import 'reflect-metadata';
