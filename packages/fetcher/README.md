@@ -199,7 +199,7 @@ Core HTTP client class that provides various HTTP methods.
 #### Constructor
 
 ```typescript
-new Fetcher(options: FetcherOptions = defaultOptions)
+new Fetcher(defaultOptions)
 ```
 
 **Parameters:**
@@ -227,12 +227,7 @@ name.
 #### Constructor
 
 ```typescript
-new NamedFetcher(name
-:
-string, options
-:
-FetcherOptions = defaultOptions
-)
+new NamedFetcher(name, defaultOptions)
 ```
 
 **Parameters:**
