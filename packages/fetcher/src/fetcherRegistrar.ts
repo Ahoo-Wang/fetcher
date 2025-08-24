@@ -16,7 +16,7 @@ import { Fetcher } from './fetcher';
 /**
  * Default fetcher name used when no name is specified
  */
-const defaultFetcherName = 'default';
+export const defaultFetcherName = 'default';
 
 /**
  * FetcherRegistrar is a registry for managing multiple Fetcher instances.
