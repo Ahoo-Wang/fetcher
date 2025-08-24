@@ -127,6 +127,27 @@ try {
 }
 ```
 
+### Default Fetcher Usage
+
+The library also exports a pre-configured default fetcher instance that can be used directly:
+
+```typescript
+import { fetcher } from '@ahoo-wang/fetcher';
+
+// Use the default fetcher directly
+fetcher
+  .get('/users')
+  .then(response => response.json())
+  .then(data => console.log(data));
+
+// The default fetcher is also available through the registrar
+import { fetcherRegistrar } from '@ahoo-wang/fetcher';
+
+const defaultFetcher = fetcherRegistrar.default;
+// defaultFetcher is the same instance as fetcher
+console.log(defaultFetcher === fetcher); // true
+```
+
 ### Interceptor Usage
 
 ```typescript
