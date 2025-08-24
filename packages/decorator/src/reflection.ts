@@ -79,8 +79,8 @@ export function getParameterName(
   target: any,
   propertyKey: string,
   parameterIndex: number,
-  providedName?: string,
-): string | undefined {
+  providedName: string = '',
+): string {
   // If a name was explicitly provided, use it
   if (providedName) {
     return providedName;
@@ -100,7 +100,7 @@ export function getParameterName(
     // This will use default naming in the execution logic
   }
 
-  return undefined;
+  return '';
 }
 
 /**

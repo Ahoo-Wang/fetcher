@@ -14,14 +14,14 @@ export interface EndpointMetadata extends ApiMetadata {
   /**
    * Path for the endpoint (relative to class base path)
    */
-  path?: string;
+  path: string;
 }
 
 export const ENDPOINT_METADATA_KEY = Symbol('endpoint:metadata');
 
 export type MethodEndpointMetadata = Omit<EndpointMetadata, 'method' | 'path'>;
 
-export function endpoint(method: HttpMethod, path?: string, metadata: MethodEndpointMetadata = {}) {
+export function endpoint(method: HttpMethod, path: string = '', metadata: MethodEndpointMetadata = {}) {
   return function(target: any, propertyKey: string): void {
     // Store metadata directly on the method
     const endpointMetadata = {
@@ -39,30 +39,30 @@ export function endpoint(method: HttpMethod, path?: string, metadata: MethodEndp
 }
 
 
-export function get(path?: string, metadata: MethodEndpointMetadata = {}) {
+export function get(path: string = '', metadata: MethodEndpointMetadata = {}) {
   return endpoint(HttpMethod.GET, path, metadata);
 }
 
-export function post(path?: string, metadata: MethodEndpointMetadata = {}) {
+export function post(path: string = '', metadata: MethodEndpointMetadata = {}) {
   return endpoint(HttpMethod.POST, path, metadata);
 }
 
-export function put(path?: string, metadata: MethodEndpointMetadata = {}) {
+export function put(path: string = '', metadata: MethodEndpointMetadata = {}) {
   return endpoint(HttpMethod.PUT, path, metadata);
 }
 
-export function del(path?: string, metadata: MethodEndpointMetadata = {}) {
+export function del(path: string = '', metadata: MethodEndpointMetadata = {}) {
   return endpoint(HttpMethod.DELETE, path, metadata);
 }
 
-export function patch(path?: string, metadata: MethodEndpointMetadata = {}) {
+export function patch(path: string = '', metadata: MethodEndpointMetadata = {}) {
   return endpoint(HttpMethod.PATCH, path, metadata);
 }
 
-export function head(path?: string, metadata: MethodEndpointMetadata = {}) {
+export function head(path: string = '', metadata: MethodEndpointMetadata = {}) {
   return endpoint(HttpMethod.HEAD, path, metadata);
 }
 
-export function options(path?: string, metadata: MethodEndpointMetadata = {}) {
+export function options(path: string = '', metadata: MethodEndpointMetadata = {}) {
   return endpoint(HttpMethod.OPTIONS, path, metadata);
 }

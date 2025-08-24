@@ -33,7 +33,7 @@ export interface ParameterMetadata {
 
 export const PARAMETER_METADATA_KEY = Symbol('parameter:metadata');
 
-export function parameter(type: ParameterType, name: string | undefined = undefined) {
+export function parameter(type: ParameterType, name: string = '') {
   return function(target: any, propertyKey: string, parameterIndex: number) {
     const paramName = getParameterName(
       target,
@@ -60,15 +60,15 @@ export function parameter(type: ParameterType, name: string | undefined = undefi
   };
 }
 
-export function path(name: string | undefined = undefined) {
+export function path(name: string = '') {
   return parameter(ParameterType.PATH, name);
 }
 
-export function query(name: string | undefined = undefined) {
+export function query(name: string = '') {
   return parameter(ParameterType.QUERY, name);
 }
 
-export function header(name: string | undefined = undefined) {
+export function header(name: string = '') {
   return parameter(ParameterType.HEADER, name);
 }
 

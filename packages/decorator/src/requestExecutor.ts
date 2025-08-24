@@ -113,9 +113,9 @@ export class RequestExecutor {
     this.metadata = metadata;
   }
 
-  execute(args: any[]): Promise<Response> {
+  async execute(args: any[]): Promise<Response> {
     const path = this.metadata.resolvePath();
     const request = this.metadata.resolveRequest(args);
-    return this.metadata.fetcher.fetch(path, request);
+    return await this.metadata.fetcher.fetch(path, request);
   }
 }
