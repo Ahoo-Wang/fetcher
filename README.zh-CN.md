@@ -23,6 +23,16 @@
 - **📦 命名 Fetcher 支持**：自动注册和检索 fetcher 实例
 - **⚙️ 默认 Fetcher**：预配置的默认 fetcher 实例，快速开始
 
+#### [`@ahoo-wang/fetcher-decorator`](./packages/decorator)
+
+- **🎨 清晰的 API 定义**：使用直观的装饰器定义 HTTP 服务
+- **🧭 自动参数绑定**：路径、查询、头部和请求体参数自动绑定
+- **⏱️ 可配置超时**：支持方法级和类级超时设置
+- **🔗 Fetcher 集成**：与 Fetcher 的命名 fetcher 系统无缝集成
+- **⚡ 自动实现**：方法自动实现为 HTTP 调用
+- **📦 元数据系统**：丰富的元数据支持，用于高级自定义
+-
+
 #### [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream)
 
 - **📡 事件流转换**：将 `text/event-stream` 响应转换为 `ServerSentEvent` 对象的异步生成器
@@ -39,15 +49,6 @@
 - **🔄 令牌刷新**：基于响应代码（401）自动刷新令牌
 - **追踪 请求跟踪**：生成唯一请求 ID 用于跟踪
 - **💾 令牌存储**：安全的令牌存储管理
-
-#### [`@ahoo-wang/fetcher-decorator`](./packages/decorator)
-
-- **🎨 清晰的 API 定义**：使用直观的装饰器定义 HTTP 服务
-- **🧭 自动参数绑定**：路径、查询、头部和请求体参数自动绑定
-- **⏱️ 可配置超时**：支持方法级和类级超时设置
-- **🔗 Fetcher 集成**：与 Fetcher 的命名 fetcher 系统无缝集成
-- **⚡ 自动实现**：方法自动实现为 HTTP 调用
-- **📦 元数据系统**：丰富的元数据支持，用于高级自定义
 
 ## 📦 包
 

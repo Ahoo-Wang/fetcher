@@ -24,6 +24,15 @@ smaller than Axios while providing the same powerful features.
 - **📦 Named Fetcher Support**: Automatic registration and retrieval of fetcher instances
 - **⚙️ Default Fetcher**: Pre-configured default fetcher instance for quick start
 
+#### [`@ahoo-wang/fetcher-decorator`](./packages/decorator)
+
+- **🎨 Clean API Definitions**: Define HTTP services using intuitive decorators
+- **🧭 Automatic Parameter Binding**: Path, query, header, and body parameters automatically bound
+- **⏱️ Configurable Timeouts**: Per-method and per-class timeout settings
+- **🔗 Fetcher Integration**: Seamless integration with Fetcher's named fetcher system
+- **⚡ Automatic Implementation**: Methods automatically implemented with HTTP calls
+- **📦 Metadata System**: Rich metadata support for advanced customization
+
 #### [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream)
 
 - **📡 Event Stream Conversion**: Converts `text/event-stream` responses to async generators of `ServerSentEvent` objects
@@ -42,15 +51,6 @@ smaller than Axios while providing the same powerful features.
 - **🔄 Token Refresh**: Automatic token refresh based on response codes (401)
 - **追踪 Request Tracking**: Unique request ID generation for tracking
 - **💾 Token Storage**: Secure token storage management
-
-#### [`@ahoo-wang/fetcher-decorator`](./packages/decorator)
-
-- **🎨 Clean API Definitions**: Define HTTP services using intuitive decorators
-- **🧭 Automatic Parameter Binding**: Path, query, header, and body parameters automatically bound
-- **⏱️ Configurable Timeouts**: Per-method and per-class timeout settings
-- **🔗 Fetcher Integration**: Seamless integration with Fetcher's named fetcher system
-- **⚡ Automatic Implementation**: Methods automatically implemented with HTTP calls
-- **📦 Metadata System**: Rich metadata support for advanced customization
 
 ## 📦 Packages
 
