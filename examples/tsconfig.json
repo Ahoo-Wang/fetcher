@@ -13,7 +13,9 @@
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

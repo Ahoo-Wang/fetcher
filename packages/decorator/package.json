@@ -40,7 +40,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@ahoo-wang/fetcher": "workspace:*"
+    "@ahoo-wang/fetcher": "workspace:*",
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^3.2.4",
