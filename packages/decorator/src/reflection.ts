@@ -66,6 +66,14 @@ export function getParameterNames(func: Function): string[] {
   }
 }
 
+export function getParameterName(func: Function, index: number): string | undefined {
+  const parameterNames = getParameterNames(func);
+  if (index < parameterNames.length) {
+    return parameterNames[index];
+  }
+  return undefined;
+}
+
 /**
  * Checks if a parameter string contains actual parameters
  *
