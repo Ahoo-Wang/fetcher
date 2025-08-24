@@ -15,7 +15,6 @@ import { HttpMethod } from '@ahoo-wang/fetcher';
 describe('endpointDecorator', () => {
   it('should define endpoint metadata', () => {
     class TestService {
-
       getUsers() {
         // Implementation will be generated automatically
       }
@@ -39,7 +38,6 @@ describe('endpointDecorator', () => {
 
   it('should define GET endpoint', () => {
     class TestService {
-
       getUsers() {
         // Implementation will be generated automatically
       }
@@ -63,7 +61,6 @@ describe('endpointDecorator', () => {
 
   it('should define POST endpoint', () => {
     class TestService {
-
       createUsers() {
         // Implementation will be generated automatically
       }
@@ -87,7 +84,6 @@ describe('endpointDecorator', () => {
 
   it('should define PUT endpoint', () => {
     class TestService {
-
       updateUsers() {
         // Implementation will be generated automatically
       }
@@ -111,7 +107,6 @@ describe('endpointDecorator', () => {
 
   it('should define DELETE endpoint', () => {
     class TestService {
-
       deleteUsers() {
         // Implementation will be generated automatically
       }
@@ -135,7 +130,6 @@ describe('endpointDecorator', () => {
 
   it('should define PATCH endpoint', () => {
     class TestService {
-
       patchUsers() {
         // Implementation will be generated automatically
       }
@@ -159,7 +153,6 @@ describe('endpointDecorator', () => {
 
   it('should define HEAD endpoint', () => {
     class TestService {
-
       headUsers() {
         // Implementation will be generated automatically
       }
@@ -183,7 +176,6 @@ describe('endpointDecorator', () => {
 
   it('should define OPTIONS endpoint', () => {
     class TestService {
-
       optionsUsers() {
         // Implementation will be generated automatically
       }
