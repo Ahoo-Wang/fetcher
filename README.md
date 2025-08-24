@@ -26,6 +26,7 @@ A modern HTTP client library based on the Fetch API, designed to simplify and op
 - [`@ahoo-wang/fetcher`](packages/fetcher): The core HTTP client library.
 - [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream): Event stream support for real-time data with Server-Sent Events (SSE).
 - [`@ahoo-wang/fetcher-cosec`](./packages/cosec): CoSec authentication support for Fetcher HTTP client.
+- [`@ahoo-wang/fetcher-decorator`](./packages/decorator): Decorator support for Fetcher HTTP client.
 
 ## Examples
 
