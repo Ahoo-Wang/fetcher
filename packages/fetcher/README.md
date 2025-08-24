@@ -78,6 +78,55 @@ fetcher
   });
 ```
 
+### Named Fetcher Usage
+
+NamedFetcher is an extension of the Fetcher class that automatically registers itself with a global registrar. This is
+useful when you need to manage multiple fetcher instances throughout your application.
+
+```typescript
+import { NamedFetcher, fetcherRegistrar } from '@ahoo-wang/fetcher';
+
+// Create a named fetcher that automatically registers itself
+const apiFetcher = new NamedFetcher('api', {
+  baseURL: 'https://api.example.com',
+  timeout: 5000,
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: 'Bearer token',
+  },
+});
+
+// Create another named fetcher for a different service
+const authFetcher = new NamedFetcher('auth', {
+  baseURL: 'https://auth.example.com',
+  timeout: 3000,
+});
+
+// Use the fetcher normally
+apiFetcher
+  .get('/users/123')
+  .then(response => response.json())
+  .then(data => console.log(data));
+
+// Retrieve a named fetcher from the registrar
+const retrievedFetcher = fetcherRegistrar.get('api');
+if (retrievedFetcher) {
+  retrievedFetcher.post('/users', {
+    body: { name: 'Jane Doe' },
+  });
+}
+
+// Use requiredGet to retrieve a fetcher (throws error if not found)
+try {
+  const authFetcher = fetcherRegistrar.requiredGet('auth');
+  authFetcher.post('/login', {
+    body: { username: 'user', password: 'pass' },
+  });
+} catch (error) {
+  console.error('Fetcher not found:', error.message);
+}
+```
+
 ### Interceptor Usage
 
 ```typescript
@@ -148,6 +197,43 @@ new Fetcher(options: FetcherOptions = defaultOptions)
 - `patch(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PATCH request
 - `head(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - HEAD request
 - `options(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - OPTIONS request
+
+### NamedFetcher Class
+
+An extension of the Fetcher class that automatically registers itself with the global fetcherRegistrar using a provided
+name.
+
+#### Constructor
+
+```typescript
+new NamedFetcher(name
+:
+string, options
+:
+FetcherOptions = defaultOptions
+)
+```
+
+**Parameters:**
+
+- `name`: The name to register this fetcher under
+- `options`: Same as Fetcher constructor options
+
+### FetcherRegistrar
+
+Global instance for managing multiple Fetcher instances by name.
+
+#### Properties
+
+- `default`: Get or set the default fetcher instance
+
+#### Methods
+
+- `register(name: string, fetcher: Fetcher): void` - Register a fetcher with a name
+- `unregister(name: string): boolean` - Unregister a fetcher by name
+- `get(name: string): Fetcher | undefined` - Get a fetcher by name
+- `requiredGet(name: string): Fetcher` - Get a fetcher by name, throws if not found
+- `fetchers: Map<string, Fetcher>` - Get all registered fetchers
 
 ### UrlBuilder Class
 

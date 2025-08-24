@@ -37,7 +37,7 @@ const defaultHeaders: Record<string, string> = {
   [ContentTypeHeader]: ContentTypeValues.APPLICATION_JSON,
 };
 
-const defaultOptions: FetcherOptions = {
+export const defaultOptions: FetcherOptions = {
   baseURL: '',
   headers: defaultHeaders,
 };
