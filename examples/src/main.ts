@@ -17,7 +17,6 @@ import { initQueryParamExample } from './queryParamExample';
 import { initPostExample } from './postExample';
 import { initInterceptorExample } from './interceptorExample';
 import { initTimeoutExample } from './timeoutExample';
-import { initDecoratorExample } from './decoratorExample';
 
 // Initialize all examples when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,5 +26,4 @@ document.addEventListener('DOMContentLoaded', () => {
   initPostExample();
   initInterceptorExample();
   initTimeoutExample();
-  initDecoratorExample();
 });

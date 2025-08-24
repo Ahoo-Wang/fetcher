@@ -62,9 +62,9 @@ userService.createUser({ name: 'John' }).then(response => {
 
 - `basePath`: 类中所有端点的基础路径
 - `metadata`: API 的额外元数据
-    - `headers`: 类中所有请求的默认头部
-    - `timeout`: 类中所有请求的默认超时时间
-    - `fetcher`: 要使用的 fetcher 实例名称（默认：'default'）
+  - `headers`: 类中所有请求的默认头部
+  - `timeout`: 类中所有请求的默认超时时间
+  - `fetcher`: 要使用的 fetcher 实例名称（默认：'default'）
 
 ### 方法装饰器
 
@@ -100,9 +100,9 @@ userService.createUser({ name: 'John' }).then(response => {
 
 - `path`: 端点路径（相对于类基础路径）
 - `metadata`: 端点的额外元数据
-    - `headers`: 请求的头部
-    - `timeout`: 请求的超时时间
-    - `fetcher`: 要使用的 fetcher 实例名称
+  - `headers`: 请求的头部
+  - `timeout`: 请求的超时时间
+  - `fetcher`: 要使用的 fetcher 实例名称
 
 ### 参数装饰器
 
