@@ -63,8 +63,8 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  * ```
  */
 export interface FetcherRequest
-  extends TimeoutCapable,
-    Omit<RequestInit, 'body'> {
+  extends TimeoutCapable, HeadersCapable,
+    Omit<RequestInit, 'body' | 'headers'> {
   /**
    * Path parameters for URL templating
    *
