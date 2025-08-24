@@ -225,6 +225,7 @@ describe('apiDecorator', () => {
         headers: {},
         body: null,
         timeout: undefined,
+        signal: null,
       });
       expect(response).toBe(mockResponse);
     });

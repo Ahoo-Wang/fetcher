@@ -102,29 +102,23 @@ export class FunctionMetadata implements NamedCapable {
       ...this.endpoint.headers,
     };
     let body: any = null;
+    let signal: AbortSignal | null = null;
     // Process parameters based on their decorators
     this.parameters.forEach(param => {
       const value = args[param.index];
+      if (value instanceof AbortSignal) {
+        signal = value;
+        return;
+      }
       switch (param.type) {
         case ParameterType.PATH:
-          if (param.name) {
-            path[param.name] = value;
-          } else {
-            // If no name specified, use as default path param
-            path['param' + param.index] = value;
-          }
+          this.processPathParam(param, value, path);
           break;
         case ParameterType.QUERY:
-          if (param.name) {
-            query[param.name] = value;
-          } else {
-            query['param' + param.index] = value;
-          }
+          this.processQueryParam(param, value, query);
           break;
         case ParameterType.HEADER:
-          if (param.name && value !== undefined) {
-            headers[param.name] = String(value);
-          }
+          this.processHeaderParam(param, value, headers);
           break;
         case ParameterType.BODY:
           body = value;
@@ -138,7 +132,24 @@ export class FunctionMetadata implements NamedCapable {
       headers,
       body,
       timeout: this.resolveTimeout(),
+      signal,
     };
+  }
+
+  private processPathParam(param: ParameterMetadata, value: any, path: Record<string, any>) {
+    const paramName = param.name || `param${param.index}`;
+    path[paramName] = value;
+  }
+
+  private processQueryParam(param: ParameterMetadata, value: any, query: Record<string, any>) {
+    const paramName = param.name || `param${param.index}`;
+    query[paramName] = value;
+  }
+
+  private processHeaderParam(param: ParameterMetadata, value: any, headers: Record<string, string>) {
+    if (param.name && value !== undefined) {
+      headers[param.name] = String(value);
+    }
   }
 
   /**
