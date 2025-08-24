@@ -132,6 +132,7 @@ export class FunctionMetadata implements NamedCapable {
       }
     });
     return {
+      method: this.endpoint.method,
       pathParams,
       queryParams,
       headers,

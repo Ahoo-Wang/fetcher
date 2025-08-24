@@ -92,7 +92,6 @@ const response = await userService.createUser({ name: 'John' });
 **示例：**
 
 ```typescript
-
 @api('/api/v1', {
   headers: { 'X-API-Version': '1.0' },
   timeout: 5000,
@@ -212,7 +211,6 @@ class UserService {
 ### 继承支持
 
 ```typescript
-
 @api('/base')
 class BaseService {
   @get('/status')
@@ -233,7 +231,6 @@ class UserService extends BaseService {
 ### 复杂参数处理
 
 ```typescript
-
 @api('/api')
 class ComplexService {
   @post('/batch')

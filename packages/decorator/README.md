@@ -93,7 +93,6 @@ Defines API metadata for a class.
 **Example:**
 
 ```typescript
-
 @api('/api/v1', {
   headers: { 'X-API-Version': '1.0' },
   timeout: 5000,
@@ -213,7 +212,6 @@ class UserService {
 ### Inheritance Support
 
 ```typescript
-
 @api('/base')
 class BaseService {
   @get('/status')
@@ -234,7 +232,6 @@ class UserService extends BaseService {
 ### Complex Parameter Handling
 
 ```typescript
-
 @api('/api')
 class ComplexService {
   @post('/batch')
