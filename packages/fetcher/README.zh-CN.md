@@ -199,9 +199,8 @@ const errorInterceptorId = fetcher.interceptors.error.use({
 #### 构造函数
 
 ```typescript
-new Fetcher(defaultOptions)
+new Fetcher(defaultOptions);
 ```
-
 
 **参数：**
 
@@ -227,7 +226,7 @@ Fetcher 类的扩展，它会自动使用提供的名称在全局 fetcherRegistr
 #### 构造函数
 
 ```typescript
-new NamedFetcher(name, defaultOptions)
+new NamedFetcher(name, defaultOptions);
 ```
 
 **参数：**
