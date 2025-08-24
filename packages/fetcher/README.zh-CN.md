@@ -6,82 +6,61 @@
 [![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher.svg)](https://github.com/Ahoo-Wang/fetcher/blob/main/LICENSE)
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 
-一个基于 Fetch API 的现代 HTTP 客户端库，旨在简化和优化与后端 RESTful API 的交互。它提供了类似 Axios 的 API，支持路径参数、查询参数、超时设置和请求/响应拦截器。
+一个基于 Fetch API 的现代、轻量级 HTTP 客户端库，旨在简化和优化与后端 RESTful API 的交互。它提供了类似 Axios 的
+API，支持路径参数、查询参数、超时设置和请求/响应拦截器。
 
-## 特性
+## 🌟 特性
 
-- **Fetch API 兼容**：Fetcher 的 API 与原生 Fetch API 完全兼容，易于上手。
-- **路径和查询参数**：支持请求中的路径参数和查询参数，路径参数用 `{}` 包装。
-- **超时设置**：可以配置请求超时。
-- **请求拦截器**：支持在发送请求前修改请求。
-- **响应拦截器**：支持在返回响应后处理响应。
-- **错误拦截器**：支持在请求生命周期中处理错误。
-- **模块化设计**：代码结构清晰，易于维护和扩展。
-- **自动请求体转换**：自动将普通对象转换为 JSON 并设置适当的 Content-Type 头部。
-- **TypeScript 支持**：完整的 TypeScript 类型定义。
+- **🔄 Fetch API 兼容**：与原生 Fetch API 完全兼容，易于上手
+- **🧭 路径和查询参数**：原生支持路径参数（`{id}`）和查询参数
+- **⏱️ 超时控制**：可配置的请求超时和适当的错误处理
+- **🔗 拦截器系统**：请求、响应和错误拦截器的中间件模式
+- **🎯 自动请求体转换**：自动将 JavaScript 对象转换为 JSON 并设置适当头部
+- **🛡️ TypeScript 支持**：完整的 TypeScript 类型定义，提升开发体验
+- **🧩 模块化架构**：轻量级核心和可选的扩展包
+- **📦 命名 Fetcher 支持**：自动注册和检索 fetcher 实例
+- **⚙️ 默认 Fetcher**：预配置的默认 fetcher 实例，快速开始
 
-## 安装
+## 🚀 快速开始
 
-使用 pnpm：
-
-```bash
-pnpm add @ahoo-wang/fetcher
-```
-
-使用 npm：
+### 安装
 
 ```bash
+# 使用 npm
 npm install @ahoo-wang/fetcher
-```
 
-使用 yarn：
+# 使用 pnpm
+pnpm add @ahoo-wang/fetcher
 
-```bash
+# 使用 yarn
 yarn add @ahoo-wang/fetcher
 ```
-
-## 使用
 
 ### 基本用法
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
 
+// 创建 fetcher 实例
 const fetcher = new Fetcher({
   baseURL: 'https://api.example.com',
   timeout: 5000,
 });
 
-// 带路径参数和查询参数的 GET 请求
-fetcher
-  .get('/users/{id}', {
-    pathParams: { id: 123 },
-    queryParams: { include: 'profile' },
-  })
-  .then(response => {
-    console.log(response.data);
-  })
-  .catch(error => {
-    console.error(error);
-  });
+// 带路径和查询参数的 GET 请求
+const response = await fetcher.get('/users/{id}', {
+  pathParams: { id: 123 },
+  queryParams: { include: 'profile' },
+});
+const userData = await response.json();
 
-// 带 JSON 体的 POST 请求（自动转换为 JSON 字符串）
-fetcher
-  .post('/users', {
-    body: { name: 'John Doe', email: 'john@example.com' },
-  })
-  .then(response => {
-    console.log(response.data);
-  })
-  .catch(error => {
-    console.error(error);
-  });
+// 带自动 JSON 转换的 POST 请求
+const createUserResponse = await fetcher.post('/users', {
+  body: { name: 'John Doe', email: 'john@example.com' },
+});
 ```
 
 ### 命名 Fetcher 用法
-
-NamedFetcher 是 Fetcher 类的扩展，它会自动使用提供的名称在全局注册器中注册自己。当您需要在应用程序中管理多个 fetcher
-实例时，这很有用。
 
 ```typescript
 import { NamedFetcher, fetcherRegistrar } from '@ahoo-wang/fetcher';
@@ -96,30 +75,16 @@ const apiFetcher = new NamedFetcher('api', {
   },
 });
 
-// 为不同的服务创建另一个命名 fetcher
-const authFetcher = new NamedFetcher('auth', {
-  baseURL: 'https://auth.example.com',
-  timeout: 3000,
-});
-
-// 正常使用 fetcher
-apiFetcher
-  .get('/users/123')
-  .then(response => response.json())
-  .then(data => console.log(data));
-
 // 从注册器中检索命名 fetcher
 const retrievedFetcher = fetcherRegistrar.get('api');
 if (retrievedFetcher) {
-  retrievedFetcher.post('/users', {
-    body: { name: 'Jane Doe' },
-  });
+  const response = await retrievedFetcher.get('/users/123');
 }
 
 // 使用 requiredGet 检索 fetcher（如果未找到则抛出错误）
 try {
   const authFetcher = fetcherRegistrar.requiredGet('auth');
-  authFetcher.post('/login', {
+  await authFetcher.post('/login', {
     body: { username: 'user', password: 'pass' },
   });
 } catch (error) {
@@ -129,68 +94,72 @@ try {
 
 ### 默认 Fetcher 用法
 
-该库还导出了一个预配置的默认 fetcher 实例，可以直接使用：
-
 ```typescript
 import { fetcher } from '@ahoo-wang/fetcher';
 
 // 直接使用默认 fetcher
-fetcher
-  .get('/users')
-  .then(response => response.json())
-  .then(data => console.log(data));
-
-// 默认 fetcher 也可以通过注册器获取
-import { fetcherRegistrar } from '@ahoo-wang/fetcher';
-
-const defaultFetcher = fetcherRegistrar.default;
-// defaultFetcher 与 fetcher 是同一个实例
-console.log(defaultFetcher === fetcher); // true
+const response = await fetcher.get('/users');
+const data = await response.json();
 ```
 
-### 拦截器用法
+## 🔗 拦截器系统
+
+### 请求拦截器
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
-// 添加请求拦截器
-const requestInterceptorId = fetcher.interceptors.request.use({
+// 添加请求拦截器（例如用于认证）
+const interceptorId = fetcher.interceptors.request.use({
   intercept(exchange) {
-    // 修改请求配置，例如添加认证头部
     return {
       ...exchange,
       request: {
         ...exchange.request,
         headers: {
           ...exchange.request.headers,
-          Authorization: 'Bearer token',
+          Authorization: 'Bearer ' + getAuthToken(),
         },
       },
     };
   },
 });
 
-// 添加响应拦截器
-const responseInterceptorId = fetcher.interceptors.response.use({
-  intercept(exchange) {
-    // 处理响应数据，例如解析 JSON
-    return exchange;
-  },
-});
+// 移除拦截器
+fetcher.interceptors.request.eject(interceptorId);
+```
 
-// 添加错误拦截器
-const errorInterceptorId = fetcher.interceptors.error.use({
+### 响应拦截器
+
+```typescript
+// 添加响应拦截器（例如用于日志记录）
+fetcher.interceptors.response.use({
   intercept(exchange) {
-    // 处理错误，例如记录日志
-    console.error('请求失败:', exchange.error);
+    console.log('收到响应:', exchange.response.status);
     return exchange;
   },
 });
 ```
 
-## API 参考
+### 错误拦截器
+
+```typescript
+// 添加错误拦截器（例如用于统一错误处理）
+fetcher.interceptors.error.use({
+  intercept(exchange) {
+    if (exchange.error?.name === 'FetchTimeoutError') {
+      console.error('请求超时:', exchange.error.message);
+    } else {
+      console.error('网络错误:', exchange.error?.message);
+    }
+    return exchange;
+  },
+});
+```
+
+## 📚 API 参考
 
 ### Fetcher 类
 
@@ -199,14 +168,14 @@ const errorInterceptorId = fetcher.interceptors.error.use({
 #### 构造函数
 
 ```typescript
-new Fetcher(defaultOptions);
+new Fetcher(options ? : FetcherOptions);
 ```
 
-**参数：**
+**选项：**
 
-- `options.baseURL`：基础 URL
-- `options.timeout`：以毫秒为单位的请求超时
-- `options.headers`：默认请求头部
+- `baseURL`：基础 URL
+- `timeout`：以毫秒为单位的请求超时
+- `headers`：默认请求头部
 
 #### 方法
 
@@ -226,13 +195,12 @@ Fetcher 类的扩展，它会自动使用提供的名称在全局 fetcherRegistr
 #### 构造函数
 
 ```typescript
-new NamedFetcher(name, defaultOptions);
+new NamedFetcher(name
+:
+string, options ? : FetcherOptions
+)
+;
 ```
-
-**参数：**
-
-- `name`：注册此 fetcher 的名称
-- `options`：与 Fetcher 构造函数相同的选项
 
 ### FetcherRegistrar
 
@@ -250,112 +218,51 @@ new NamedFetcher(name, defaultOptions);
 - `requiredGet(name: string): Fetcher` - 按名称获取 fetcher，如果未找到则抛出错误
 - `fetchers: Map<string, Fetcher>` - 获取所有已注册的 fetcher
 
-### UrlBuilder 类
+### 拦截器系统
 
-用于构建带参数的完整 URL 的 URL 构建器。
-
-#### 方法
-
-- `build(path: string, pathParams?: Record<string, any>, queryParams?: Record<string, any>): string` - 构建完整 URL
-
-### InterceptorManager 类
+#### InterceptorManager
 
 用于管理同一类型多个拦截器的拦截器管理器。
 
-#### 方法
+**方法：**
 
 - `use(interceptor: Interceptor): number` - 添加拦截器，返回拦截器 ID
 - `eject(index: number): void` - 按 ID 移除拦截器
 - `clear(): void` - 清除所有拦截器
 - `intercept(exchange: FetchExchange): Promise<FetchExchange>` - 顺序执行所有拦截器
 
-### FetcherInterceptors 类
+#### FetcherInterceptors
 
 Fetcher 拦截器集合，包括请求、响应和错误拦截器管理器。
 
-#### 属性
+**属性：**
 
 - `request: InterceptorManager` - 请求拦截器管理器
 - `response: InterceptorManager` - 响应拦截器管理器
 - `error: InterceptorManager` - 错误拦截器管理器
 
-## 完整示例
+## 🛠️ 开发
 
-```typescript
-import { Fetcher } from '@ahoo-wang/fetcher';
-
-// 创建 fetcher 实例
-const fetcher = new Fetcher({
-  baseURL: 'https://api.example.com',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// 添加请求拦截器 - 添加认证头部
-fetcher.interceptors.request.use({
-  intercept(exchange) {
-    return {
-      ...exchange,
-      request: {
-        ...exchange.request,
-        headers: {
-          ...exchange.request.headers,
-          Authorization: 'Bearer ' + getAuthToken(),
-        },
-      },
-    };
-  },
-});
-
-// 添加响应拦截器 - 处理响应
-fetcher.interceptors.response.use({
-  intercept(exchange) {
-    // 注意：响应处理通常在收到响应后进行
-    return exchange;
-  },
-});
-
-// 添加错误拦截器 - 统一错误处理
-fetcher.interceptors.error.use({
-  intercept(exchange) {
-    if (exchange.error?.name === 'FetchTimeoutError') {
-      console.error('请求超时:', exchange.error.message);
-    } else {
-      console.error('网络错误:', exchange.error?.message);
-    }
-    return exchange;
-  },
-});
-
-// 使用 fetcher 发起请求
-fetcher
-  .get('/users/{id}', {
-    pathParams: { id: 123 },
-    queryParams: { include: 'profile,posts' },
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log('用户数据:', data);
-  })
-  .catch(error => {
-    console.error('获取用户失败:', error);
-  });
-```
-
-## 测试
-
-运行测试：
+### 测试
 
 ```bash
+# 运行测试
 pnpm test
+
+# 运行带覆盖率的测试
+pnpm test --coverage
 ```
 
-## 贡献
+## 🤝 贡献
 
-欢迎任何形式的贡献！请查看 [贡献指南](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) 了解更多详情。
+欢迎贡献！请查看 [贡献指南](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) 了解更多详情。
 
-## 许可证
+## 📄 许可证
 
 本项目采用 [Apache-2.0 许可证](https://opensource.org/licenses/Apache-2.0)。
+
+---
+
+<p align="center">
+  Fetcher 生态系统的一部分
+</p>

@@ -6,82 +6,62 @@
 [![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher.svg)](https://github.com/Ahoo-Wang/fetcher/blob/main/LICENSE)
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 
-A modern HTTP client library based on the Fetch API, designed to simplify and optimize interactions with backend RESTful APIs. It provides an Axios-like API with support for path parameters, query parameters, timeout settings, and request/response interceptors.
+A modern, lightweight HTTP client library based on the Fetch API, designed to simplify and optimize interactions with
+backend RESTful APIs. It provides an Axios-like API with support for path parameters, query parameters, timeout
+settings, and request/response interceptors.
 
-## Features
+## 🌟 Features
 
-- **Fetch API Compatible**: Fetcher's API is fully compatible with the native Fetch API, making it easy to get started.
-- **Path and Query Parameters**: Supports path parameters and query parameters in requests, with path parameters wrapped in `{}`.
-- **Timeout Settings**: Request timeout can be configured.
-- **Request Interceptors**: Supports modifying requests before they are sent.
-- **Response Interceptors**: Supports processing responses after they are returned.
-- **Error Interceptors**: Supports handling errors during the request lifecycle.
-- **Modular Design**: Clear code structure for easy maintenance and extension.
-- **Automatic Request Body Conversion**: Automatically converts plain objects to JSON and sets appropriate Content-Type headers.
-- **TypeScript Support**: Complete TypeScript type definitions.
+- **🔄 Fetch API Compatible**: Fully compatible with the native Fetch API for easy adoption
+- **🧭 Path & Query Parameters**: Native support for path parameters (`{id}`) and query parameters
+- **⏱️ Timeout Control**: Configurable request timeouts with proper error handling
+- **🔗 Interceptor System**: Request, response, and error interceptors for middleware patterns
+- **🎯 Automatic Body Conversion**: Converts JavaScript objects to JSON with proper headers
+- **🛡️ TypeScript Support**: Complete TypeScript definitions for type-safe development
+- **🧩 Modular Architecture**: Lightweight core with optional extension packages
+- **📦 Named Fetcher Support**: Automatic registration and retrieval of fetcher instances
+- **⚙️ Default Fetcher**: Pre-configured default fetcher instance for quick start
 
-## Installation
+## 🚀 Quick Start
 
-Using pnpm:
-
-```bash
-pnpm add @ahoo-wang/fetcher
-```
-
-Using npm:
+### Installation
 
 ```bash
+# Using npm
 npm install @ahoo-wang/fetcher
-```
 
-Using yarn:
+# Using pnpm
+pnpm add @ahoo-wang/fetcher
 
-```bash
+# Using yarn
 yarn add @ahoo-wang/fetcher
 ```
-
-## Usage
 
 ### Basic Usage
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
 
+// Create a fetcher instance
 const fetcher = new Fetcher({
   baseURL: 'https://api.example.com',
   timeout: 5000,
 });
 
-// GET request with path parameters and query parameters
-fetcher
-  .get('/users/{id}', {
-    pathParams: { id: 123 },
-    queryParams: { include: 'profile' },
-  })
-  .then(response => {
-    console.log(response.data);
-  })
-  .catch(error => {
-    console.error(error);
-  });
+// GET request with path and query parameters
+const response = await fetcher.get('/users/{id}', {
+  pathParams: { id: 123 },
+  queryParams: { include: 'profile' },
+});
+const userData = await response.json();
 
-// POST request with JSON body (automatically converted to JSON string)
-fetcher
-  .post('/users', {
-    body: { name: 'John Doe', email: 'john@example.com' },
-  })
-  .then(response => {
-    console.log(response.data);
-  })
-  .catch(error => {
-    console.error(error);
-  });
+// POST request with automatic JSON conversion
+const createUserResponse = await fetcher.post('/users', {
+  body: { name: 'John Doe', email: 'john@example.com' },
+});
 ```
 
 ### Named Fetcher Usage
-
-NamedFetcher is an extension of the Fetcher class that automatically registers itself with a global registrar. This is
-useful when you need to manage multiple fetcher instances throughout your application.
 
 ```typescript
 import { NamedFetcher, fetcherRegistrar } from '@ahoo-wang/fetcher';
@@ -96,30 +76,16 @@ const apiFetcher = new NamedFetcher('api', {
   },
 });
 
-// Create another named fetcher for a different service
-const authFetcher = new NamedFetcher('auth', {
-  baseURL: 'https://auth.example.com',
-  timeout: 3000,
-});
-
-// Use the fetcher normally
-apiFetcher
-  .get('/users/123')
-  .then(response => response.json())
-  .then(data => console.log(data));
-
 // Retrieve a named fetcher from the registrar
 const retrievedFetcher = fetcherRegistrar.get('api');
 if (retrievedFetcher) {
-  retrievedFetcher.post('/users', {
-    body: { name: 'Jane Doe' },
-  });
+  const response = await retrievedFetcher.get('/users/123');
 }
 
 // Use requiredGet to retrieve a fetcher (throws error if not found)
 try {
   const authFetcher = fetcherRegistrar.requiredGet('auth');
-  authFetcher.post('/login', {
+  await authFetcher.post('/login', {
     body: { username: 'user', password: 'pass' },
   });
 } catch (error) {
@@ -129,68 +95,72 @@ try {
 
 ### Default Fetcher Usage
 
-The library also exports a pre-configured default fetcher instance that can be used directly:
-
 ```typescript
 import { fetcher } from '@ahoo-wang/fetcher';
 
 // Use the default fetcher directly
-fetcher
-  .get('/users')
-  .then(response => response.json())
-  .then(data => console.log(data));
-
-// The default fetcher is also available through the registrar
-import { fetcherRegistrar } from '@ahoo-wang/fetcher';
-
-const defaultFetcher = fetcherRegistrar.default;
-// defaultFetcher is the same instance as fetcher
-console.log(defaultFetcher === fetcher); // true
+const response = await fetcher.get('/users');
+const data = await response.json();
 ```
 
-### Interceptor Usage
+## 🔗 Interceptor System
+
+### Request Interceptors
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
-// Add request interceptor
-const requestInterceptorId = fetcher.interceptors.request.use({
+// Add request interceptor (e.g., for authentication)
+const interceptorId = fetcher.interceptors.request.use({
   intercept(exchange) {
-    // Modify request configuration, e.g., add auth header
     return {
       ...exchange,
       request: {
         ...exchange.request,
         headers: {
           ...exchange.request.headers,
-          Authorization: 'Bearer token',
+          Authorization: 'Bearer ' + getAuthToken(),
         },
       },
     };
   },
 });
 
-// Add response interceptor
-const responseInterceptorId = fetcher.interceptors.response.use({
-  intercept(exchange) {
-    // Process response data, e.g., parse JSON
-    return exchange;
-  },
-});
+// Remove interceptor
+fetcher.interceptors.request.eject(interceptorId);
+```
 
-// Add error interceptor
-const errorInterceptorId = fetcher.interceptors.error.use({
+### Response Interceptors
+
+```typescript
+// Add response interceptor (e.g., for logging)
+fetcher.interceptors.response.use({
   intercept(exchange) {
-    // Handle errors, e.g., log them
-    console.error('Request failed:', exchange.error);
+    console.log('Response received:', exchange.response.status);
     return exchange;
   },
 });
 ```
 
-## API Reference
+### Error Interceptors
+
+```typescript
+// Add error interceptor (e.g., for unified error handling)
+fetcher.interceptors.error.use({
+  intercept(exchange) {
+    if (exchange.error?.name === 'FetchTimeoutError') {
+      console.error('Request timeout:', exchange.error.message);
+    } else {
+      console.error('Network error:', exchange.error?.message);
+    }
+    return exchange;
+  },
+});
+```
+
+## 📚 API Reference
 
 ### Fetcher Class
 
@@ -199,14 +169,14 @@ Core HTTP client class that provides various HTTP methods.
 #### Constructor
 
 ```typescript
-new Fetcher(defaultOptions);
+new Fetcher(options ? : FetcherOptions);
 ```
 
-**Parameters:**
+**Options:**
 
-- `options.baseURL`: Base URL
-- `options.timeout`: Request timeout in milliseconds
-- `options.headers`: Default request headers
+- `baseURL`: Base URL for all requests
+- `timeout`: Request timeout in milliseconds
+- `headers`: Default request headers
 
 #### Methods
 
@@ -221,19 +191,17 @@ new Fetcher(defaultOptions);
 
 ### NamedFetcher Class
 
-An extension of the Fetcher class that automatically registers itself with the global fetcherRegistrar using a provided
-name.
+An extension of the Fetcher class that automatically registers itself with the global fetcherRegistrar.
 
 #### Constructor
 
 ```typescript
-new NamedFetcher(name, defaultOptions);
+new NamedFetcher(name
+:
+string, options ? : FetcherOptions
+)
+;
 ```
-
-**Parameters:**
-
-- `name`: The name to register this fetcher under
-- `options`: Same as Fetcher constructor options
 
 ### FetcherRegistrar
 
@@ -251,112 +219,52 @@ Global instance for managing multiple Fetcher instances by name.
 - `requiredGet(name: string): Fetcher` - Get a fetcher by name, throws if not found
 - `fetchers: Map<string, Fetcher>` - Get all registered fetchers
 
-### UrlBuilder Class
+### Interceptor System
 
-URL builder for constructing complete URLs with parameters.
-
-#### Methods
-
-- `build(path: string, pathParams?: Record<string, any>, queryParams?: Record<string, any>): string` - Build complete URL
-
-### InterceptorManager Class
+#### InterceptorManager
 
 Interceptor manager for managing multiple interceptors of the same type.
 
-#### Methods
+**Methods:**
 
 - `use(interceptor: Interceptor): number` - Add interceptor, returns interceptor ID
 - `eject(index: number): void` - Remove interceptor by ID
 - `clear(): void` - Clear all interceptors
 - `intercept(exchange: FetchExchange): Promise<FetchExchange>` - Execute all interceptors sequentially
 
-### FetcherInterceptors Class
+#### FetcherInterceptors
 
 Fetcher interceptor collection, including request, response, and error interceptor managers.
 
-#### Properties
+**Properties:**
 
 - `request: InterceptorManager` - Request interceptor manager
 - `response: InterceptorManager` - Response interceptor manager
 - `error: InterceptorManager` - Error interceptor manager
 
-## Complete Example
+## 🛠️ Development
 
-```typescript
-import { Fetcher } from '@ahoo-wang/fetcher';
-
-// Create fetcher instance
-const fetcher = new Fetcher({
-  baseURL: 'https://api.example.com',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add request interceptor - Add auth header
-fetcher.interceptors.request.use({
-  intercept(exchange) {
-    return {
-      ...exchange,
-      request: {
-        ...exchange.request,
-        headers: {
-          ...exchange.request.headers,
-          Authorization: 'Bearer ' + getAuthToken(),
-        },
-      },
-    };
-  },
-});
-
-// Add response interceptor - Process response
-fetcher.interceptors.response.use({
-  intercept(exchange) {
-    // Note: Response processing would typically happen after the response is received
-    return exchange;
-  },
-});
-
-// Add error interceptor - Unified error handling
-fetcher.interceptors.error.use({
-  intercept(exchange) {
-    if (exchange.error?.name === 'FetchTimeoutError') {
-      console.error('Request timeout:', exchange.error.message);
-    } else {
-      console.error('Network error:', exchange.error?.message);
-    }
-    return exchange;
-  },
-});
-
-// Use fetcher to make requests
-fetcher
-  .get('/users/{id}', {
-    pathParams: { id: 123 },
-    queryParams: { include: 'profile,posts' },
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log('User data:', data);
-  })
-  .catch(error => {
-    console.error('Failed to fetch user:', error);
-  });
-```
-
-## Testing
-
-Run tests:
+### Testing
 
 ```bash
+# Run tests
 pnpm test
+
+# Run tests with coverage
+pnpm test --coverage
 ```
 
-## Contributing
+## 🤝 Contributing
 
-Contributions of any kind are welcome! Please see the [contributing guide](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) for more details.
+Contributions are welcome! Please see
+the [contributing guide](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) for more details.
 
-## License
+## 📄 License
 
 This project is licensed under the [Apache-2.0 License](https://opensource.org/licenses/Apache-2.0).
+
+---
+
+<p align="center">
+  Part of the <a href="https://github.com/Ahoo-Wang/fetcher">Fetcher</a> ecosystem
+</p>
