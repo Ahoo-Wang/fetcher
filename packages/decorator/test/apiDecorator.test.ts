@@ -220,8 +220,8 @@ describe('apiDecorator', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/users/{id}', {
         method: 'GET',
-        pathParams: { id: 1 },
-        queryParams: {},
+        path: { id: 1 },
+        query: {},
         headers: {},
         body: null,
         timeout: undefined,

@@ -36,7 +36,7 @@ export function initPathParamExample(): void {
 
       try {
         const response: Response = await fetcher.get('/users/{id}/posts', {
-          pathParams: { id: userId },
+          path: { id: userId },
         });
         const data = await response.json();
         updateOutput(

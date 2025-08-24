@@ -59,8 +59,8 @@ const fetcher = new Fetcher({
 
 // 带路径和查询参数的 GET 请求
 const response = await fetcher.get('/users/{id}', {
-  pathParams: { id: 123 },
-  queryParams: { include: 'profile' },
+  path: { id: 123 },
+  query: { include: 'profile' },
 });
 const userData = await response.json();
 

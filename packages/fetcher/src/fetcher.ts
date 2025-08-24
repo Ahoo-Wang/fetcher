@@ -48,8 +48,8 @@ export const defaultOptions: FetcherOptions = {
 export interface FetcherRequest
   extends TimeoutCapable,
     Omit<RequestInit, 'body'> {
-  pathParams?: Record<string, any>;
-  queryParams?: Record<string, any>;
+  path?: Record<string, any>;
+  query?: Record<string, any>;
   body?: BodyInit | Record<string, any> | null;
 }
 
@@ -123,11 +123,7 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
       headers:
         Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
     };
-    const finalUrl = this.urlBuilder.build(
-      url,
-      request.pathParams,
-      request.queryParams,
-    );
+    const finalUrl = this.urlBuilder.build(url, request.path, request.query);
     let exchange: FetchExchange = {
       fetcher: this,
       url: finalUrl,

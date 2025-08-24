@@ -95,8 +95,8 @@ export class FunctionMetadata implements NamedCapable {
    * @returns A FetcherRequest object with all request configuration
    */
   resolveRequest(args: any[]): FetcherRequest {
-    const pathParams: Record<string, any> = {};
-    const queryParams: Record<string, any> = {};
+    const path: Record<string, any> = {};
+    const query: Record<string, any> = {};
     const headers: Record<string, string> = {
       ...this.api.headers,
       ...this.endpoint.headers,
@@ -108,17 +108,17 @@ export class FunctionMetadata implements NamedCapable {
       switch (param.type) {
         case ParameterType.PATH:
           if (param.name) {
-            pathParams[param.name] = value;
+            path[param.name] = value;
           } else {
             // If no name specified, use as default path param
-            pathParams['param' + param.index] = value;
+            path['param' + param.index] = value;
           }
           break;
         case ParameterType.QUERY:
           if (param.name) {
-            queryParams[param.name] = value;
+            query[param.name] = value;
           } else {
-            queryParams['param' + param.index] = value;
+            query['param' + param.index] = value;
           }
           break;
         case ParameterType.HEADER:
@@ -133,8 +133,8 @@ export class FunctionMetadata implements NamedCapable {
     });
     return {
       method: this.endpoint.method,
-      pathParams,
-      queryParams,
+      path,
+      query,
       headers,
       body,
       timeout: this.resolveTimeout(),

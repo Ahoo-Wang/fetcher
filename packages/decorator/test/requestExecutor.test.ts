@@ -49,7 +49,7 @@ describe('FunctionMetadata', () => {
     );
 
     const request = metadata.resolveRequest([123]);
-    expect(request.pathParams).toEqual({ id: 123 });
+    expect(request.path).toEqual({ id: 123 });
   });
 
   it('should resolve request with query parameters', () => {
@@ -67,7 +67,7 @@ describe('FunctionMetadata', () => {
     );
 
     const request = metadata.resolveRequest([10]);
-    expect(request.queryParams).toEqual({ limit: 10 });
+    expect(request.query).toEqual({ limit: 10 });
   });
 
   it('should resolve request with header parameters', () => {
