@@ -127,6 +127,27 @@ try {
 }
 ```
 
+### 默认 Fetcher 用法
+
+该库还导出了一个预配置的默认 fetcher 实例，可以直接使用：
+
+```typescript
+import { fetcher } from '@ahoo-wang/fetcher';
+
+// 直接使用默认 fetcher
+fetcher
+  .get('/users')
+  .then(response => response.json())
+  .then(data => console.log(data));
+
+// 默认 fetcher 也可以通过注册器获取
+import { fetcherRegistrar } from '@ahoo-wang/fetcher';
+
+const defaultFetcher = fetcherRegistrar.default;
+// defaultFetcher 与 fetcher 是同一个实例
+console.log(defaultFetcher === fetcher); // true
+```
+
 ### 拦截器用法
 
 ```typescript

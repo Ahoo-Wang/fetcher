@@ -13,7 +13,7 @@
 
 import { NamedCapable } from './types';
 import { defaultOptions, Fetcher, FetcherOptions } from './fetcher';
-import { fetcherRegistrar } from './fetcherRegistrar';
+import { defaultFetcherName, fetcherRegistrar } from './fetcherRegistrar';
 
 /**
  * NamedFetcher is an extension of the Fetcher class that automatically registers
@@ -64,3 +64,26 @@ export class NamedFetcher extends Fetcher implements NamedCapable {
     fetcherRegistrar.register(name, this);
   }
 }
+
+/**
+ * Default named fetcher instance registered with the name 'default'.
+ * This provides a convenient way to use a pre-configured fetcher instance
+ * without having to create and register one manually.
+ *
+ * @example
+ * // Use the default fetcher directly
+ * import { fetcher } from '@ahoo-wang/fetcher';
+ *
+ * fetcher.get('/users')
+ *   .then(response => response.json())
+ *   .then(data => console.log(data));
+ *
+ * // Or retrieve it from the registrar
+ * import { fetcherRegistrar } from '@ahoo-wang/fetcher';
+ *
+ * const defaultFetcher = fetcherRegistrar.default;
+ * defaultFetcher.get('/users')
+ *   .then(response => response.json())
+ *   .then(data => console.log(data));
+ */
+export const fetcher = new NamedFetcher(defaultFetcherName);

@@ -51,7 +51,6 @@ export enum ContentTypeValues {
   TEXT_EVENT_STREAM = 'text/event-stream',
 }
 
-
 export interface NamedCapable {
   name: string;
 }
