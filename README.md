@@ -49,7 +49,7 @@ smaller than Axios while providing the same powerful features.
 - **🔐 Automatic Authentication**: Automatic CoSec authentication headers
 - **📱 Device Management**: Device ID management with localStorage persistence
 - **🔄 Token Refresh**: Automatic token refresh based on response codes (401)
-- **追踪 Request Tracking**: Unique request ID generation for tracking
+- **🌈 Request Tracking**: Unique request ID generation for tracking
 - **💾 Token Storage**: Secure token storage management
 
 ## 📦 Packages

@@ -18,7 +18,7 @@ This package provides integration between the Fetcher HTTP client and the CoSec 
 - **🔐 Automatic Authentication**: Automatic CoSec authentication headers
 - **📱 Device Management**: Device ID management with localStorage persistence
 - **🔄 Token Refresh**: Automatic token refresh based on response codes (401)
-- **追踪 Request Tracking**: Unique request ID generation for tracking
+- **🌈 Request Tracking**: Unique request ID generation for tracking
 - **💾 Token Storage**: Secure token storage management
 - **🛡️ TypeScript Support**: Complete TypeScript type definitions
 
