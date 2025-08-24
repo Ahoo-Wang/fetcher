@@ -132,4 +132,26 @@ describe('reflection - branch coverage', () => {
     // Should return empty array instead of throwing
     expect(getParameterNames(errorFunc)).toEqual([]);
   });
+
+  it('should handle arrow function with unmatched parentheses', () => {
+    // Create an arrow function with unmatched parentheses
+    const unmatchedArrowFunc = function() {
+    };
+    // Override toString to return arrow function with unmatched parentheses
+    unmatchedArrowFunc.toString = () => '(a: string, b: number'; // Arrow function starting with ( but no closing )
+
+    // Should return empty array instead of throwing
+    expect(getParameterNames(unmatchedArrowFunc)).toEqual([]);
+  });
+
+  it('should handle function with no opening parenthesis', () => {
+    // Create a function with no opening parenthesis
+    const noParenFunc = function() {
+    };
+    // Override toString to return function with no opening parenthesis
+    noParenFunc.toString = () => 'function test'; // No parentheses
+
+    // Should return empty array instead of throwing
+    expect(getParameterNames(noParenFunc)).toEqual([]);
+  });
 });
