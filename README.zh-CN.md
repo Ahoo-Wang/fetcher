@@ -7,31 +7,56 @@
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 
-一个基于 Fetch API 的现代、轻量级 HTTP 客户端库，旨在简化和优化与后端 RESTful API 的交互。它提供了类似 Axios 的
-API，支持路径参数、查询参数、超时设置和请求/响应拦截器。
+一个现代、超轻量级（1.9kB）的 HTTP 客户端，内置路径参数、查询参数和类似 Axios 的 API。比 Axios 小 86%，同时提供相同的强大功能。
 
 ## 🌟 特性
 
-- **⚡ Ultra-Lightweight**: Only 1.9kB min+gzip - 86% smaller than Axios (14kB)
-- **🔄 Fetch API 兼容**：与原生 Fetch API 完全兼容，易于上手
-- **🧭 路径和查询参数**：原生支持路径参数（`{id}`）和查询参数
-- **⏱️ 超时控制**：可配置的请求超时和适当的错误处理
+#### [`@ahoo-wang/fetcher`](./packages/fetcher)
+
+- **⚡ 超轻量级**：仅 1.9kB min+gzip - 比 Axios 小 86%
+- **🧭 路径和查询参数**：内置支持路径（`{id}`）和查询参数
 - **🔗 拦截器系统**：请求、响应和错误拦截器的中间件模式
-- **📡 事件流支持**：通过 `@ahoo-wang/fetcher-eventstream` 内置支持服务器发送事件（SSE）
-- **🎯 自动请求体转换**：自动将 JavaScript 对象转换为 JSON 并设置适当头部
+- **⏱️ 超时控制**：可配置的请求超时和适当的错误处理
+- **🔄 Fetch API 兼容**：与原生 Fetch API 完全兼容
 - **🛡️ TypeScript 支持**：完整的 TypeScript 类型定义，提升开发体验
 - **🧩 模块化架构**：轻量级核心和可选的扩展包
-- **📱 认证支持**：通过 `@ahoo-wang/fetcher-cosec` 支持 CoSec 认证
-- **🎨 装饰器支持**：通过 `@ahoo-wang/fetcher-decorator` 支持 TypeScript 装饰器
+- **📦 命名 Fetcher 支持**：自动注册和检索 fetcher 实例
+- **⚙️ 默认 Fetcher**：预配置的默认 fetcher 实例，快速开始
+
+#### [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream)
+
+- **📡 事件流转换**：将 `text/event-stream` 响应转换为 `ServerSentEvent` 对象的异步生成器
+- **🔌 拦截器集成**：自动为具有 `text/event-stream` 内容类型的响应添加 `eventStream()` 方法
+- **📋 SSE 解析**：根据规范解析服务器发送事件，包括数据、事件、ID 和重试字段
+- **🔄 流式支持**：正确处理分块数据和多行事件
+- **💬 注释处理**：根据 SSE 规范正确忽略注释行（以 `:` 开头的行）
+- **⚡ 性能优化**：高效的解析和流式处理，适用于高性能应用
+
+#### [`@ahoo-wang/fetcher-cosec`](./packages/cosec)
+
+- **🔐 自动认证**：自动生成 CoSec 认证头部
+- **📱 设备管理**：使用 localStorage 持久化的设备 ID 管理
+- **🔄 令牌刷新**：基于响应代码（401）自动刷新令牌
+- **追踪 请求跟踪**：生成唯一请求 ID 用于跟踪
+- **💾 令牌存储**：安全的令牌存储管理
+
+#### [`@ahoo-wang/fetcher-decorator`](./packages/decorator)
+
+- **🎨 清晰的 API 定义**：使用直观的装饰器定义 HTTP 服务
+- **🧭 自动参数绑定**：路径、查询、头部和请求体参数自动绑定
+- **⏱️ 可配置超时**：支持方法级和类级超时设置
+- **🔗 Fetcher 集成**：与 Fetcher 的命名 fetcher 系统无缝集成
+- **⚡ 自动实现**：方法自动实现为 HTTP 调用
+- **📦 元数据系统**：丰富的元数据支持，用于高级自定义
 
 ## 📦 包
 
-| 包                                                          | 描述               | 版本                                                                                                                                      | 包大小                                                                                                                                                               |
-|------------------------------------------------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`@ahoo-wang/fetcher`](./packages/fetcher)                 | 核心 HTTP 客户端库     | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
-| [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | 服务器发送事件（SSE）支持   | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
-| [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | CoSec 认证集成       | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
-| [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | TypeScript 装饰器支持 | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
+| 包                                                          | 描述                                 | 版本                                                                                                                                      | 包大小                                                                                                                                                               |
+|------------------------------------------------------------|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`@ahoo-wang/fetcher`](./packages/fetcher)                 | 超轻量级（1.9kB）HTTP 客户端，类似 Axios 的 API | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
+| [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | Fetcher HTTP 客户端的服务器发送事件（SSE）支持    | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
+| [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | Fetcher HTTP 客户端的 CoSec 认证集成       | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
+| [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | Fetcher HTTP 客户端的 TypeScript 装饰器   | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
 
 ## 🚀 快速开始
 

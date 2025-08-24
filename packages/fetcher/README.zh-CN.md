@@ -7,16 +7,15 @@
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 
-一个基于 Fetch API 的现代、轻量级 HTTP 客户端库，旨在简化和优化与后端 RESTful API 的交互。它提供了类似 Axios 的
-API，支持路径参数、查询参数、超时设置和请求/响应拦截器。
+一个现代、超轻量级（1.9kB）的 HTTP 客户端，内置路径参数、查询参数和类似 Axios 的 API。比 Axios 小 86%，同时提供相同的强大功能。
 
 ## 🌟 特性
 
-- **🔄 Fetch API 兼容**：与原生 Fetch API 完全兼容，易于上手
-- **🧭 路径和查询参数**：原生支持路径参数（`{id}`）和查询参数
-- **⏱️ 超时控制**：可配置的请求超时和适当的错误处理
+- **⚡ 超轻量级**：仅 1.9kB min+gzip - 比 Axios 小 86%
+- **🧭 路径和查询参数**：内置支持路径（`{id}`）和查询参数
 - **🔗 拦截器系统**：请求、响应和错误拦截器的中间件模式
-- **🎯 自动请求体转换**：自动将 JavaScript 对象转换为 JSON 并设置适当头部
+- **⏱️ 超时控制**：可配置的请求超时和适当的错误处理
+- **🔄 Fetch API 兼容**：与原生 Fetch API 完全兼容
 - **🛡️ TypeScript 支持**：完整的 TypeScript 类型定义，提升开发体验
 - **🧩 模块化架构**：轻量级核心和可选的扩展包
 - **📦 命名 Fetcher 支持**：自动注册和检索 fetcher 实例

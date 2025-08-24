@@ -7,18 +7,16 @@
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 
-A modern, lightweight HTTP client library based on the Fetch API, designed to simplify and optimize interactions with
-backend RESTful APIs. It provides an Axios-like API with support for path parameters, query parameters, timeout
-settings, and request/response interceptors.
+A modern, ultra-lightweight (1.9kB) HTTP client with built-in path parameters, query parameters, and Axios-like API. 86%
+smaller than Axios while providing the same powerful features.
 
 ## 🌟 Features
 
-- **⚡ Ultra-Lightweight**: Only 1.9kB min+gzip - 86% smaller than Axios (14kB)
-- **🔄 Fetch API Compatible**: Fully compatible with the native Fetch API for easy adoption
-- **🧭 Path & Query Parameters**: Native support for path parameters (`{id}`) and query parameters
-- **⏱️ Timeout Control**: Configurable request timeouts with proper error handling
+- **⚡ Ultra-Lightweight**: Only 1.9kB min+gzip - 86% smaller than Axios
+- **🧭 Path & Query Parameters**: Built-in support for path (`{id}`) and query parameters
 - **🔗 Interceptor System**: Request, response, and error interceptors for middleware patterns
-- **🎯 Automatic Body Conversion**: Converts JavaScript objects to JSON with proper headers
+- **⏱️ Timeout Control**: Configurable request timeouts with proper error handling
+- **🔄 Fetch API Compatible**: Fully compatible with the native Fetch API
 - **🛡️ TypeScript Support**: Complete TypeScript definitions for type-safe development
 - **🧩 Modular Architecture**: Lightweight core with optional extension packages
 - **📦 Named Fetcher Support**: Automatic registration and retrieval of fetcher instances
