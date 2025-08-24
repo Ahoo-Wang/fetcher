@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import * as index from '../src/index';
 import { API_METADATA_KEY } from '../src';
-import {
-  PARAMETER_METADATA_KEY,
-  ParameterType,
-} from '../src';
+import { PARAMETER_METADATA_KEY, ParameterType } from '../src';
 
 describe('index', () => {
   it('should export all decorators and utilities', () => {
