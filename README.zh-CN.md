@@ -108,6 +108,20 @@ fetcher
   });
 ```
 
+### 使用默认 Fetcher
+
+Fetcher 库还提供了一个预配置的默认 fetcher 实例，可以直接使用：
+
+```typescript
+import { fetcher } from '@ahoo-wang/fetcher';
+
+// 直接使用默认 fetcher
+fetcher
+  .get('/users')
+  .then(response => response.json())
+  .then(data => console.log(data));
+```
+
 ### 服务器发送事件
 
 ```typescript

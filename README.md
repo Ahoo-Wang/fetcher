@@ -108,6 +108,20 @@ fetcher
   });
 ```
 
+### Using the Default Fetcher
+
+The Fetcher library also provides a pre-configured default fetcher instance that can be used directly:
+
+```typescript
+import { fetcher } from '@ahoo-wang/fetcher';
+
+// Use the default fetcher directly
+fetcher
+  .get('/users')
+  .then(response => response.json())
+  .then(data => console.log(data));
+```
+
 ### Server-Sent Events
 
 ```typescript
