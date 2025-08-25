@@ -104,3 +104,7 @@ export class UrlBuilder implements BaseURLCapable {
     });
   }
 }
+
+export interface UrlBuilderCapable {
+  urlBuilder: UrlBuilder;
+}

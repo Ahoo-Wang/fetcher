@@ -23,4 +23,5 @@ export * from './requestBodyInterceptor';
 export * from './timeout';
 export * from './types';
 export * from './urlBuilder';
+export * from './urlResolveInterceptor';
 export * from './urls';

@@ -19,6 +19,11 @@ describe('RequestBodyInterceptor', () => {
   const interceptor = new RequestBodyInterceptor();
   const mockFetcher = new Fetcher();
 
+  it('should have correct name and order', () => {
+    expect(interceptor.name).toBe('RequestBodyInterceptor');
+    expect(interceptor.order).toBe(Number.MIN_SAFE_INTEGER + 100);
+  });
+
   it('should not modify request without body', () => {
     const exchange: FetchExchange = {
       fetcher: mockFetcher,

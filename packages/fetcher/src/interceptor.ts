@@ -16,6 +16,7 @@ import { OrderedCapable, toSorted } from './orderedCapable';
 import { RequestBodyInterceptor } from './requestBodyInterceptor';
 import { FetchInterceptor } from './fetchInterceptor';
 import { FetchExchange } from './fetchExchange';
+import { UrlResolveInterceptor } from './urlResolveInterceptor';
 
 /**
  * Interceptor Interface
@@ -238,13 +239,17 @@ export class FetcherInterceptors {
    * Request Interceptor Manager
    *
    * Responsible for managing all request-phase interceptors, executed before HTTP requests are sent.
-   * Contains two built-in interceptors by default: RequestBodyInterceptor and FetchInterceptor.
+   * Contains three built-in interceptors by default: UrlResolveInterceptor, RequestBodyInterceptor, and FetchInterceptor.
    *
    * @remarks
    * Request interceptors are executed in ascending order of their order values, with smaller values having higher priority.
-   * FetchInterceptor's order is set to Number.MAX_SAFE_INTEGER to ensure it executes last.
+   * The default interceptors are:
+   * 1. UrlResolveInterceptor (order: Number.MIN_SAFE_INTEGER) - Resolves the final URL
+   * 2. RequestBodyInterceptor (order: 0) - Converts object bodies to JSON
+   * 3. FetchInterceptor (order: Number.MAX_SAFE_INTEGER) - Executes the actual HTTP request
    */
   request: InterceptorManager = new InterceptorManager([
+    new UrlResolveInterceptor(),
     new RequestBodyInterceptor(),
     new FetchInterceptor(),
   ]);
