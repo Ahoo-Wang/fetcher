@@ -21,7 +21,8 @@ import {
   HttpMethod,
   RequestField,
 } from './types';
-import { FetcherInterceptors, FetchExchange } from './interceptor';
+import { FetcherInterceptors } from './interceptor';
+import { FetchExchange } from './fetchExchange';
 
 /**
  * Fetcher configuration options interface

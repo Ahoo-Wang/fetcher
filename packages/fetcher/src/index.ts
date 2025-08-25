@@ -13,6 +13,7 @@
 
 export * from './fetcher';
 export * from './fetcherRegistrar';
+export * from './fetchExchange';
 export * from './fetchInterceptor';
 export * from './interceptor';
 export * from './mergeRequest';

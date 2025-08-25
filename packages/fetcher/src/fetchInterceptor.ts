@@ -11,8 +11,9 @@
  * limitations under the License.
  */
 
-import { FetchExchange, Interceptor } from './interceptor';
+import { Interceptor } from './interceptor';
 import { timeoutFetch } from './timeout';
+import { FetchExchange } from './fetchExchange';
 
 /**
  * FetchInterceptor Class
