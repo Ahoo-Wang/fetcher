@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Interceptor, FetcherRequest, FetchExchange } from '@ahoo-wang/fetcher';
+import { FetcherRequest, FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
 import { CoSecHeaders, CoSecOptions } from './types';
 import { idGenerator } from './idGenerator';
 
@@ -57,6 +57,7 @@ export class CoSecRequestInterceptor implements Interceptor {
       requestHeaders[CoSecHeaders.AUTHORIZATION] =
         `Bearer ${token.accessToken}`;
     }
-    return { ...exchange, request: newRequest };
+    exchange.request = newRequest;
+    return exchange;
   }
 }

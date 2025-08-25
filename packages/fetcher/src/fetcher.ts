@@ -206,6 +206,7 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
       request: fetchRequest,
       response: undefined,
       error: undefined,
+      attributes: {},
     };
     try {
       // Apply request interceptors

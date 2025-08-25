@@ -17,12 +17,86 @@ import { OrderedCapable, toSorted } from './orderedCapable';
 import { RequestBodyInterceptor } from './requestBodyInterceptor';
 import { FetchInterceptor } from './fetchInterceptor';
 
+/**
+ * FetchExchange Interface
+ *
+ * Represents the complete exchange object that flows through the interceptor chain.
+ * This object contains all the information about a request, response, and any errors
+ * that occur during the HTTP request lifecycle. It also provides a mechanism for
+ * sharing data between interceptors through the attributes property.
+ *
+ * @example
+ * ```typescript
+ * // In a request interceptor
+ * const requestInterceptor: Interceptor = {
+ *   name: 'RequestInterceptor',
+ *   order: 0,
+ *   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+ *     // Add custom data to share with other interceptors
+ *     exchange.attributes = exchange.attributes || {};
+ *     exchange.attributes.startTime = Date.now();
+ *     exchange.attributes.customHeader = 'my-value';
+ *     return exchange;
+ *   }
+ * };
+ *
+ * // In a response interceptor
+ * const responseInterceptor: Interceptor = {
+ *   name: 'ResponseInterceptor',
+ *   order: 0,
+ *   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+ *     // Access data shared by previous interceptors
+ *     if (exchange.attributes && exchange.attributes.startTime) {
+ *       const startTime = exchange.attributes.startTime;
+ *       const duration = Date.now() - startTime;
+ *       console.log(`Request took ${duration}ms`);
+ *     }
+ *     return exchange;
+ *   }
+ * };
+ * ```
+ */
 export interface FetchExchange {
+  /**
+   * The Fetcher instance that initiated this exchange
+   */
   fetcher: Fetcher;
+
+  /**
+   * The URL for this request
+   */
   url: string;
+
+  /**
+   * The request configuration including method, headers, body, etc.
+   */
   request: FetcherRequest;
+
+  /**
+   * The response object, undefined until the request completes successfully
+   */
   response: Response | undefined;
+
+  /**
+   * Any error that occurred during the request processing, undefined if no error occurred
+   */
   error: Error | any | undefined;
+
+  /**
+   * Shared attributes for passing data between interceptors
+   *
+   * This property allows interceptors to share arbitrary data with each other.
+   * Interceptors can read from and write to this object to pass information
+   * along the interceptor chain.
+   *
+   * @remarks
+   * - This property is optional and may be undefined initially
+   * - Interceptors should initialize this property if they need to use it
+   * - Use string keys to avoid conflicts between different interceptors
+   * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
+   * - Be mindful of memory usage when storing large objects
+   */
+  attributes?: Record<string, any>;
 }
 
 /**
