@@ -105,39 +105,23 @@ const data = await response.json<User>();
 
 ## 🔗 拦截器系统
 
-### Interceptor
+### 核心概念
 
-拦截器接口，定义了拦截器的基本结构。
+Fetcher 中的拦截器系统遵循中间件模式，允许您在 HTTP 请求生命周期的不同阶段拦截和修改请求、响应和错误。
 
-**属性：**
+#### 拦截器类型
 
-- `name: string` - 拦截器的名称，用于标识拦截器，不可重复
-- `order: number` - 拦截器的执行顺序，数值越小优先级越高
+1. **请求拦截器**：在发送请求之前处理请求
+2. **响应拦截器**：在收到响应之后处理响应
+3. **错误拦截器**：处理请求过程中发生的错误
 
-**方法：**
+#### 内置拦截器
 
-- `intercept(exchange: FetchExchange): FetchExchange | Promise<FetchExchange>` - 拦截并处理数据
+Fetcher 自带几个内置拦截器，它们会自动注册：
 
-### InterceptorManager
-
-用于管理同一类型多个拦截器的拦截器管理器。
-
-**方法：**
-
-- `use(interceptor: Interceptor): boolean` - 添加拦截器，返回是否添加成功
-- `eject(name: string): boolean` - 按名称移除拦截器，返回是否移除成功
-- `clear(): void` - 清除所有拦截器
-- `intercept(exchange: FetchExchange): Promise<FetchExchange>` - 顺序执行所有拦截器
-
-### FetcherInterceptors
-
-Fetcher 拦截器集合，包括请求、响应和错误拦截器管理器。
-
-**属性：**
-
-- `request: InterceptorManager` - 请求拦截器管理器
-- `response: InterceptorManager` - 响应拦截器管理器
-- `error: InterceptorManager` - 错误拦截器管理器
+1. **UrlResolveInterceptor**：解析带路径和查询参数的 URL（顺序：Number.MIN_SAFE_INTEGER）
+2. **RequestBodyInterceptor**：将对象体转换为 JSON 字符串（顺序：Number.MIN_SAFE_INTEGER + 100）
+3. **FetchInterceptor**：执行实际的 HTTP 请求（顺序：Number.MAX_SAFE_INTEGER）
 
 ### 使用拦截器
 
@@ -244,17 +228,131 @@ fetcher.interceptors.request.use({
 // 3. auth-interceptor (order: 50)
 ```
 
-## 🛠️ 开发
+## 📚 API 参考
 
-### 测试
+### Fetcher 类
 
-```bash
-# 运行测试
-pnpm test
+核心 HTTP 客户端类，提供各种 HTTP 方法。
 
-# 运行带覆盖率的测试
-pnpm test --coverage
+#### 构造函数
+
+```typescript
+new Fetcher(options ? : FetcherOptions);
 ```
+
+**选项：**
+
+- `baseURL`：所有请求的基础 URL
+- `timeout`：请求超时时间（毫秒）
+- `headers`：默认请求头部
+- `interceptors`：用于请求、响应和错误处理的拦截器集合
+
+#### 方法
+
+- `fetch(url: string, request?: FetcherRequest): Promise<Response>` - 通用 HTTP 请求方法
+- `get(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - GET 请求
+- `post(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - POST 请求
+- `put(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PUT 请求
+- `delete(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - DELETE 请求
+- `patch(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PATCH 请求
+- `head(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - HEAD 请求
+- `options(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - OPTIONS 请求
+
+#### 属性
+
+- `urlBuilder`：用于构建 URL 的 URL 构建器实例
+- `headers`：默认请求头部
+- `timeout`：默认请求超时时间
+- `interceptors`：用于请求、响应和错误处理的拦截器集合
+
+### FetcherRequest 接口
+
+HTTP 请求的配置选项。
+
+**属性：**
+
+- `method`：HTTP 方法（GET、POST、PUT、DELETE 等）
+- `headers`：请求头部
+- `body`：请求体（可以是对象、字符串、Blob 等）
+- `path`：用于 URL 模板的路径参数
+- `query`：用于 URL 查询字符串的查询参数
+- `timeout`：请求超时时间（毫秒）
+
+### 响应扩展
+
+为了提供更好的 TypeScript 支持，我们扩展了原生 Response 接口，添加了类型安全的 json() 方法：
+
+```typescript
+// 现在您可以安全地使用它
+const response = await fetcher.get('/users/123');
+const userData = await response.json<User>(); // 类型是 Promise<User>
+```
+
+### NamedFetcher 类
+
+Fetcher 类的扩展，会自动将自己注册到全局 fetcherRegistrar。
+
+#### 构造函数
+
+```typescript
+new NamedFetcher(name
+:
+string, options ? : FetcherOptions
+)
+;
+```
+
+### FetcherRegistrar
+
+用于按名称管理多个 Fetcher 实例的全局实例。
+
+#### 属性
+
+- `default`：获取或设置默认 fetcher 实例
+
+#### 方法
+
+- `register(name: string, fetcher: Fetcher): void` - 按名称注册 fetcher
+- `unregister(name: string): boolean` - 按名称注销 fetcher
+- `get(name: string): Fetcher | undefined` - 按名称获取 fetcher
+- `requiredGet(name: string): Fetcher` - 按名称获取 fetcher，如果未找到则抛出错误
+- `fetchers: Map<string, Fetcher>` - 获取所有已注册的 fetcher
+
+### 拦截器系统
+
+#### Interceptor 接口
+
+拦截器接口，定义了拦截器的基本结构。
+
+**属性：**
+
+- `name: string` - 拦截器的名称，用于标识拦截器，不可重复
+- `order: number` - 拦截器的执行顺序，数值越小优先级越高
+
+**方法：**
+
+- `intercept(exchange: FetchExchange): FetchExchange | Promise<FetchExchange>` - 拦截并处理数据
+
+#### InterceptorManager 类
+
+用于管理同一类型多个拦截器的拦截器管理器。
+
+**方法：**
+
+- `use(interceptor: Interceptor): boolean` - 添加拦截器，返回是否添加成功
+- `eject(name: string): boolean` - 按名称移除拦截器，返回是否移除成功
+- `clear(): void` - 清除所有拦截器
+- `intercept(exchange: FetchExchange): Promise<FetchExchange>` - 顺序执行所有拦截器
+
+#### FetcherInterceptors 类
+
+Fetcher 拦截器集合，包括请求、响应和错误拦截器管理器。
+
+**属性：**
+
+- `request: InterceptorManager` - 请求拦截器管理器
+- `response: InterceptorManager` - 响应拦截器管理器
+- `error: InterceptorManager` - 错误拦截器管理器
 
 ## 🤝 贡献
 
