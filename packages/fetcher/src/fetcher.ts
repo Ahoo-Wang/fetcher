@@ -196,7 +196,8 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
     // Merge request options
     const fetchRequest: FetcherRequest = {
       ...request,
-      headers: Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
+      headers:
+        Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
     const finalUrl = this.urlBuilder.build(url, request.path, request.query);
@@ -208,20 +209,40 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
       error: undefined,
       attributes: {},
     };
+    return this.exchange(exchange);
+  }
+
+  /**
+   * Process a fetch exchange through the interceptor chain
+   *
+   * This method orchestrates the complete request lifecycle by applying interceptors
+   * in the following order:
+   * 1. Request interceptors - to modify the outgoing request
+   * 2. Response interceptors - to process the incoming response
+   *
+   * If any error occurs during the process, error interceptors are applied to handle it.
+   * If an error interceptor produces a response, that response is returned. Otherwise,
+   * the original error is re-thrown.
+   *
+   * @param fetchExchange - The exchange object containing request, response, and metadata
+   * @returns Promise<FetchExchange> The processed exchange with final response or error
+   * @throws Error if an error occurs and is not handled by error interceptors
+   */
+  async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
     try {
       // Apply request interceptors
-      exchange = await this.interceptors.request.intercept(exchange);
+      fetchExchange = await this.interceptors.request.intercept(fetchExchange);
       // Apply response interceptors
-      exchange = await this.interceptors.response.intercept(exchange);
-      return exchange;
+      fetchExchange = await this.interceptors.response.intercept(fetchExchange);
+      return fetchExchange;
     } catch (error) {
       // Apply error interceptors
-      exchange.error = error;
-      exchange = await this.interceptors.error.intercept(exchange);
-      if (exchange.response) {
-        return exchange;
+      fetchExchange.error = error;
+      fetchExchange = await this.interceptors.error.intercept(fetchExchange);
+      if (fetchExchange.response) {
+        return fetchExchange;
       }
-      throw exchange.error;
+      throw fetchExchange.error;
     }
   }
 
