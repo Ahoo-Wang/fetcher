@@ -20,12 +20,28 @@ import { ContentTypeHeader, ContentTypeValues, FetchExchange, Interceptor } from
  * Interceptor responsible for enhancing Response objects with event stream capabilities
  * when the response content type indicates a server-sent event stream.
  *
+ * This interceptor detects responses with `text/event-stream` content type and adds
+ * an `eventStream()` method to the Response object, which returns a readable stream
+ * of Server-Sent Events that can be consumed using `for await` syntax.
+ *
  * @remarks
  * This interceptor runs after the HTTP response is received but before the response
  * is returned to the caller. The order is set to Number.MAX_SAFE_INTEGER - 100 to
  * ensure it runs after all standard response processing is complete, as it adds
  * specialized functionality to the response object. This order allows other
  * response interceptors to run after it if needed.
+ *
+ * @example
+ * ```typescript
+ * // Using the eventStream method
+ * const response = await fetcher.get('/events');
+ * if (response.headers.get('content-type')?.includes('text/event-stream')) {
+ *   const eventStream = response.eventStream();
+ *   for await (const event of eventStream) {
+ *     console.log('Received event:', event);
+ *   }
+ * }
+ * ```
  */
 export class EventStreamInterceptor implements Interceptor {
   name = 'EventStreamInterceptor';

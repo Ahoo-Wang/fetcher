@@ -23,15 +23,6 @@ import { idGenerator } from './idGenerator';
  * - CoSec-App-Id: Application identifier
  * - Authorization: Bearer token
  * - CoSec-Request-Id: Unique request identifier for each request
- */
-/**
- * CoSec Request Interceptor
- *
- * Automatically adds CoSec authentication headers to requests:
- * - CoSec-Device-Id: Device identifier (stored in localStorage or generated)
- * - CoSec-App-Id: Application identifier
- * - Authorization: Bearer token
- * - CoSec-Request-Id: Unique request identifier for each request
  *
  * @remarks
  * This interceptor runs after the basic request processing interceptors but before
@@ -50,6 +41,15 @@ export class CoSecRequestInterceptor implements Interceptor {
 
   /**
    * Intercept requests to add CoSec authentication headers
+   *
+   * This method adds the following headers to each request:
+   * - CoSec-App-Id: The application identifier from the CoSec options
+   * - CoSec-Device-Id: A unique device identifier, either retrieved from storage or generated
+   * - CoSec-Request-Id: A unique identifier for this specific request
+   * - Authorization: Bearer token if available in token storage
+   *
+   * @param exchange - The fetch exchange containing the request to be processed
+   * @returns The modified exchange with CoSec authentication headers added
    */
   intercept(exchange: FetchExchange): FetchExchange {
     const requestId = idGenerator.generateId();
