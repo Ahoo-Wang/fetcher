@@ -62,10 +62,7 @@ class UserService {
   }
 
   @get('/{id}')
-  getUser(
-    @path() id: number,
-    @query() include: string,
-  ): Promise<Response> {
+  getUser(@path() id: number, @query() include: string): Promise<Response> {
     throw new Error('实现将自动生成');
   }
 }
@@ -188,6 +185,10 @@ class UserService {
 
 - `name`: 头部名称（可选 - 如果未提供则自动提取）
 
+#### `@request()`
+
+定义请求参数，将用作基础请求对象。这允许您传递一个完整的 FetcherRequest 对象来自定义请求配置。
+
 **示例：**
 
 ```typescript
@@ -198,6 +199,11 @@ class UserService {
     @query() limit: number,
     @header('Authorization') auth: string,
   ): Promise<Response> {
+    throw new Error('实现将自动生成');
+  }
+
+  @post('/users')
+  createUsers(@request() request: FetcherRequest): Promise<Response> {
     throw new Error('实现将自动生成');
   }
 
@@ -241,6 +247,32 @@ class ComplexService {
     @header('X-Request-ID') requestId: string,
     @query() dryRun: boolean = false,
   ): Promise<Response> {
+    throw new Error('实现将自动生成');
+  }
+}
+```
+
+### 请求合并
+
+当使用 `@request()` 装饰器时，提供的 `FetcherRequest` 对象会使用复杂的合并策略与端点特定配置进行合并：
+
+- **嵌套对象**（路径、查询、头部）会被递归合并，参数值优先
+- **基本值**（方法、请求体、超时、信号）来自参数请求的值会覆盖端点值
+- **空对象**会被优雅地处理，回退到端点配置
+
+```typescript
+
+@api('/users')
+class UserService {
+  @post('/')
+  createUsers(
+    @body() user: User,
+    @request() request: FetcherRequest,
+  ): Promise<Response> {
+    // 最终请求将合并：
+    // - 端点方法（POST）
+    // - 请求体参数（user 对象）
+    // - 来自 request 参数的任何配置
     throw new Error('实现将自动生成');
   }
 }

@@ -64,6 +64,11 @@ export enum ParameterType {
    * ```
    */
   BODY = 'body',
+
+  /**
+   * Request parameter that will be used as the request object.
+   */
+  REQUEST = 'request',
 }
 
 /**
@@ -245,4 +250,23 @@ export function header(name: string = '') {
  */
 export function body() {
   return parameter(ParameterType.BODY);
+}
+
+/**
+ * Request parameter decorator
+ *
+ * Defines a request parameter that will be used as the base request object.
+ * This allows you to pass a complete FetcherRequest object to customize
+ * the request configuration.
+ *
+ * @returns A parameter decorator function
+ *
+ * @example
+ * ```typescript
+ * @post('/users')
+ * createUsers(@request() request: FetcherRequest): Promise<Response>
+ * ```
+ */
+export function request() {
+  return parameter(ParameterType.REQUEST);
 }

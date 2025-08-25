@@ -223,9 +223,9 @@ describe('apiDecorator', () => {
         path: { id: 1 },
         query: {},
         headers: {},
-        body: null,
+        body: undefined,
         timeout: undefined,
-        signal: null,
+        signal: undefined,
       });
       expect(response).toBe(mockResponse);
     });
