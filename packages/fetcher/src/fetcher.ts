@@ -22,7 +22,6 @@ import {
   RequestField,
 } from './types';
 import { FetcherInterceptors, FetchExchange } from './interceptor';
-import { RequestBodyInterceptor } from './requestBodyInterceptor';
 
 /**
  * Fetcher configuration options interface
@@ -31,6 +30,7 @@ export interface FetcherOptions
   extends BaseURLCapable,
     HeadersCapable,
     TimeoutCapable {
+  interceptors?: FetcherInterceptors;
 }
 
 const DEFAULT_HEADERS: Record<string, string> = {
@@ -146,7 +146,7 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
   headers?: Record<string, string> = DEFAULT_HEADERS;
   timeout?: number;
   private urlBuilder: UrlBuilder;
-  interceptors: FetcherInterceptors = new FetcherInterceptors();
+  interceptors: FetcherInterceptors;
 
   /**
    * Create a Fetcher instance
@@ -155,11 +155,9 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
    */
   constructor(options: FetcherOptions = DEFAULT_OPTIONS) {
     this.urlBuilder = new UrlBuilder(options.baseURL);
-    if (options.headers !== undefined) {
-      this.headers = options.headers;
-    }
+    this.headers = options.headers ?? DEFAULT_HEADERS;
     this.timeout = options.timeout;
-    this.interceptors.request.use(new RequestBodyInterceptor());
+    this.interceptors = options.interceptors ?? new FetcherInterceptors();
   }
 
   /**
