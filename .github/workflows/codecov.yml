@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20, 22]
+        node-version: 22
 
     steps:
       - name: Checkout code
@@ -39,5 +39,8 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Lint
-        run: pnpm lint
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: packages/*/coverage/coverage-final.json
