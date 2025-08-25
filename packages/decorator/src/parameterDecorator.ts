@@ -105,15 +105,22 @@ export const PARAMETER_METADATA_KEY = Symbol('parameter:metadata');
  * This function creates a decorator that can be used to specify how a method parameter
  * should be handled in the HTTP request. It stores metadata about the parameter
  * that will be used during request execution.
+ * The name is optional - if not provided, it will be automatically extracted
+ * from the method parameter name using reflection.
  *
  * @param type - The type of parameter (PATH, QUERY, HEADER, or BODY)
- * @param name - The name of the parameter (used for path, query, and header parameters)
+ * @param name - The name of the parameter (used for path, query, and header parameters, optional - auto-extracted if not provided)
  * @returns A parameter decorator function
  *
  * @example
  * ```typescript
+ * // With explicit name
  * @get('/users/{id}')
  * getUser(@parameter(ParameterType.PATH, 'id') userId: string): Promise<Response>
+ *
+ * // With auto-extracted name
+ * @get('/users/{userId}')
+ * getUser(@parameter(ParameterType.PATH) userId: string): Promise<Response>
  * ```
  */
 export function parameter(type: ParameterType, name: string = '') {
@@ -147,18 +154,95 @@ export function parameter(type: ParameterType, name: string = '') {
   };
 }
 
+/**
+ * Path parameter decorator
+ *
+ * Defines a path parameter that will be inserted into the URL path.
+ * The name is optional - if not provided, it will be automatically extracted
+ * from the method parameter name using reflection.
+ *
+ * @param name - The name of the path parameter (optional, auto-extracted if not provided)
+ * @returns A parameter decorator function
+ *
+ * @example
+ * ```typescript
+ * // With explicit name
+ * @get('/users/{id}')
+ * getUser(@path('id') userId: string): Promise<Response>
+ *
+ * // With auto-extracted name
+ * @get('/users/{userId}')
+ * getUser(@path() userId: string): Promise<Response>
+ * ```
+ */
 export function path(name: string = '') {
   return parameter(ParameterType.PATH, name);
 }
 
+/**
+ * Query parameter decorator
+ *
+ * Defines a query parameter that will be appended to the URL query string.
+ * The name is optional - if not provided, it will be automatically extracted
+ * from the method parameter name using reflection.
+ *
+ * @param name - The name of the query parameter (optional, auto-extracted if not provided)
+ * @returns A parameter decorator function
+ *
+ * @example
+ * ```typescript
+ * // With explicit name
+ * @get('/users')
+ * getUsers(@query('limit') limit: number): Promise<Response>
+ *
+ * // With auto-extracted name
+ * @get('/users')
+ * getUsers(@query() limit: number): Promise<Response>
+ * ```
+ */
 export function query(name: string = '') {
   return parameter(ParameterType.QUERY, name);
 }
 
+/**
+ * Header parameter decorator
+ *
+ * Defines a header parameter that will be added to the request headers.
+ * The name is optional - if not provided, it will be automatically extracted
+ * from the method parameter name using reflection.
+ *
+ * @param name - The name of the header parameter (optional, auto-extracted if not provided)
+ * @returns A parameter decorator function
+ *
+ * @example
+ * ```typescript
+ * // With explicit name
+ * @get('/users')
+ * getUsers(@header('Authorization') token: string): Promise<Response>
+ *
+ * // With auto-extracted name
+ * @get('/users')
+ * getUsers(@header() authorization: string): Promise<Response>
+ * ```
+ */
 export function header(name: string = '') {
   return parameter(ParameterType.HEADER, name);
 }
 
+/**
+ * Body parameter decorator
+ *
+ * Defines a body parameter that will be sent as the request body.
+ * Note that body parameters don't have names since there's only one body per request.
+ *
+ * @returns A parameter decorator function
+ *
+ * @example
+ * ```typescript
+ * @post('/users')
+ * createUser(@body() user: User): Promise<Response>
+ * ```
+ */
 export function body() {
   return parameter(ParameterType.BODY);
 }

@@ -63,8 +63,8 @@ class UserService {
 
   @get('/{id}')
   getUser(
-    @path('id') id: number,
-    @query('include') include: string,
+    @path() id: number,
+    @query() include: string,
   ): Promise<Response> {
     throw new Error('实现将自动生成');
   }
@@ -147,7 +147,7 @@ class ApiService {
 ```typescript
 class UserService {
   @get('/{id}', { timeout: 3000 })
-  getUser(@path('id') id: number): Promise<Response> {
+  getUser(@path() id: number): Promise<Response> {
     throw new Error('实现将自动生成');
   }
 
@@ -162,31 +162,31 @@ class UserService {
 
 #### `@path(name)`
 
-定义路径参数。
+定义路径参数。名称是可选的 - 如果未提供，将使用反射从方法参数名自动提取。
 
 **参数：**
 
-- `name`: 参数名称（在路径模板中使用）
+- `name`: 参数名称（在路径模板中使用，可选 - 如果未提供则自动提取）
 
 #### `@query(name)`
 
-定义查询参数。
+定义查询参数。名称是可选的 - 如果未提供，将使用反射从方法参数名自动提取。
 
 **参数：**
 
-- `name`: 参数名称（在查询字符串中使用）
+- `name`: 参数名称（在查询字符串中使用，可选 - 如果未提供则自动提取）
 
 #### `@body()`
 
-定义请求体。
+定义请求体。请求体参数没有名称，因为每个请求只有一个请求体。
 
 #### `@header(name)`
 
-定义头部参数。
+定义头部参数。名称是可选的 - 如果未提供，将使用反射从方法参数名自动提取。
 
 **参数：**
 
-- `name`: 头部名称
+- `name`: 头部名称（可选 - 如果未提供则自动提取）
 
 **示例：**
 
@@ -195,7 +195,7 @@ class UserService {
   @get('/search')
   searchUsers(
     @query('q') query: string,
-    @query('limit') limit: number,
+    @query() limit: number,
     @header('Authorization') auth: string,
   ): Promise<Response> {
     throw new Error('实现将自动生成');
@@ -224,7 +224,7 @@ class BaseService {
 @api('/users')
 class UserService extends BaseService {
   @get('/{id}')
-  getUser(@path('id') id: number): Promise<Response> {
+  getUser(@path() id: number): Promise<Response> {
     throw new Error('实现将自动生成');
   }
 }
@@ -239,7 +239,7 @@ class ComplexService {
   batchOperation(
     @body() items: Item[],
     @header('X-Request-ID') requestId: string,
-    @query('dryRun') dryRun: boolean = false,
+    @query() dryRun: boolean = false,
   ): Promise<Response> {
     throw new Error('实现将自动生成');
   }
