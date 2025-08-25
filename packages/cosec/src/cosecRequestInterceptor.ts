@@ -25,6 +25,8 @@ import { idGenerator } from './idGenerator';
  * - CoSec-Request-Id: Unique request identifier for each request
  */
 export class CoSecRequestInterceptor implements Interceptor {
+  name = 'CoSecRequestInterceptor';
+  order = Number.MIN_SAFE_INTEGER;
   private options: CoSecOptions;
 
   constructor(options: CoSecOptions) {

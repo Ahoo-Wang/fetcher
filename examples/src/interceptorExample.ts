@@ -31,7 +31,9 @@ export function initInterceptorExample(): void {
       showLoading(outputId);
 
       // Add request interceptor
-      const requestInterceptorId = fetcher.interceptors.request.use({
+      const requestInterceptor: Interceptor = {
+        name: 'RequestInterceptor',
+        order: Number.MIN_SAFE_INTEGER,
         intercept(exchange: FetchExchange) {
           exchange.request = {
             ...exchange.request,
@@ -42,7 +44,8 @@ export function initInterceptorExample(): void {
           };
           return exchange;
         },
-      } as Interceptor);
+      };
+      const requestInterceptorId = fetcher.interceptors.request.use(requestInterceptor);
 
       try {
         const response: Response = await fetcher.get('/posts/1');
@@ -56,7 +59,7 @@ export function initInterceptorExample(): void {
         updateOutput(outputId, `Error: ${error.message}`, 'error');
       } finally {
         // Remove interceptor
-        fetcher.interceptors.request.eject(requestInterceptorId);
+        fetcher.interceptors.request.eject(requestInterceptor.name);
       }
     });
   }

@@ -5,6 +5,7 @@ import {
   query,
   header,
   body,
+  request,
   ParameterType,
   PARAMETER_METADATA_KEY,
 } from '../src';
@@ -142,7 +143,7 @@ describe('parameterDecorator', () => {
 
   it('should handle multiple parameters', () => {
     class TestService {
-      updateUsers(id: number, force: boolean, user: any) {
+      updateUsers(_id: number, _force: boolean, _user: any) {
         // Implementation will be generated automatically
       }
     }
@@ -172,8 +173,34 @@ describe('parameterDecorator', () => {
       },
       {
         type: ParameterType.BODY,
-        name: 'user',
+        name: '_user',
         index: 2,
+      },
+    ]);
+  });
+
+  it('should define request parameter', () => {
+    class TestService {
+      createUsers(_request: any) {
+        // Implementation will be generated automatically
+      }
+    }
+
+    // Apply decorator manually for testing
+    request()(TestService.prototype, 'createUsers', 0);
+
+    const instance = new TestService();
+    const metadata = Reflect.getMetadata(
+      PARAMETER_METADATA_KEY,
+      Object.getPrototypeOf(instance),
+      'createUsers',
+    );
+
+    expect(metadata).toEqual([
+      {
+        type: ParameterType.REQUEST,
+        name: '_request',
+        index: 0,
       },
     ]);
   });

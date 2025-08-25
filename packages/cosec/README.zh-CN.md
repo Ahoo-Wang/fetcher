@@ -6,6 +6,7 @@
 [![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher-cosec.svg)](https://github.com/Ahoo-Wang/fetcher/blob/main/LICENSE)
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
 Fetcher HTTP 客户端的 CoSec 认证支持。
 
@@ -18,7 +19,7 @@ Fetcher HTTP 客户端的 CoSec 认证支持。
 - **🔐 自动认证**：自动添加 CoSec 认证头
 - **📱 设备管理**：设备 ID 管理与 localStorage 持久化
 - **🔄 令牌刷新**：基于响应码（401）的自动令牌刷新
-- **追踪 请求跟踪**：请求 ID 生成用于跟踪
+- **🌈 请求跟踪**：请求 ID 生成用于跟踪
 - **💾 令牌存储**：安全的令牌存储管理
 - **🛡️ TypeScript 支持**：完整的 TypeScript 类型定义
 

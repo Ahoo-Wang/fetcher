@@ -6,6 +6,7 @@
 [![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher-decorator.svg)](https://github.com/Ahoo-Wang/fetcher/blob/main/LICENSE)
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
 Decorator support for Fetcher HTTP client. Enables clean, declarative API service definitions using TypeScript
 decorators.
@@ -62,10 +63,7 @@ class UserService {
   }
 
   @get('/{id}')
-  getUser(
-    @path('id') id: number,
-    @query('include') include: string,
-  ): Promise<Response> {
+  getUser(@path() id: number, @query() include: string): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
 }
@@ -147,7 +145,7 @@ Defines an OPTIONS endpoint.
 ```typescript
 class UserService {
   @get('/{id}', { timeout: 3000 })
-  getUser(@path('id') id: number): Promise<Response> {
+  getUser(@path() id: number): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
 
@@ -162,31 +160,40 @@ class UserService {
 
 #### `@path(name)`
 
-Defines a path parameter.
+Defines a path parameter. The name is optional - if not provided, it will be automatically extracted from the method
+parameter name.
 
 **Parameters:**
 
-- `name`: Name of the parameter (used in the path template)
+- `name`: Name of the parameter (used in the path template, optional - auto-extracted if not provided)
 
 #### `@query(name)`
 
-Defines a query parameter.
+Defines a query parameter. The name is optional - if not provided, it will be automatically extracted from the method
+parameter name.
 
 **Parameters:**
 
-- `name`: Name of the parameter (used in the query string)
+- `name`: Name of the parameter (used in the query string, optional - auto-extracted if not provided)
 
 #### `@body()`
 
-Defines a request body.
+Defines a request body. Body parameters don't have names since there's only one body per request.
 
 #### `@header(name)`
 
-Defines a header parameter.
+Defines a header parameter. The name is optional - if not provided, it will be automatically extracted from the method
+parameter name.
 
 **Parameters:**
 
-- `name`: Name of the header
+- `name`: Name of the header (optional - auto-extracted if not provided)
+
+#### `@request()`
+
+Defines a request parameter that will be used as the base request object. This allows you to pass a complete
+FetcherRequest
+object to customize the request configuration.
 
 **Example:**
 
@@ -195,14 +202,19 @@ class UserService {
   @get('/search')
   searchUsers(
     @query('q') query: string,
-    @query('limit') limit: number,
+    @query() limit: number,
     @header('Authorization') auth: string,
   ): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
 
+  @post('/users')
+  createUsers(@request() request: FetcherRequest): Promise<Response> {
+    throw new Error('Implementation will be generated automatically.');
+  }
+
   @put('/{id}')
-  updateUser(@path('id') id: number, @body() user: User): Promise<Response> {
+  updateUser(@path() id: number, @body() user: User): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
 }
@@ -224,7 +236,7 @@ class BaseService {
 @api('/users')
 class UserService extends BaseService {
   @get('/{id}')
-  getUser(@path('id') id: number): Promise<Response> {
+  getUser(@path() id: number): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
 }
@@ -239,8 +251,35 @@ class ComplexService {
   batchOperation(
     @body() items: Item[],
     @header('X-Request-ID') requestId: string,
-    @query('dryRun') dryRun: boolean = false,
+    @query() dryRun: boolean = false,
   ): Promise<Response> {
+    throw new Error('Implementation will be generated automatically.');
+  }
+}
+```
+
+### Request Merging
+
+When using the `@request()` decorator, the provided `FetcherRequest` object is merged with endpoint-specific
+configuration using a sophisticated merging strategy:
+
+- **Nested objects** (path, query, headers) are recursively merged, with parameter values taking precedence
+- **Primitive values** (method, body, timeout, signal) from the parameter request override endpoint values
+- **Empty objects** are handled gracefully, falling back to endpoint configuration
+
+```typescript
+
+@api('/users')
+class UserService {
+  @post('/')
+  createUsers(
+    @body() user: User,
+    @request() request: FetcherRequest,
+  ): Promise<Response> {
+    // The final request will merge:
+    // - Endpoint method (POST)
+    // - Body parameter (user object)
+    // - Any configuration from the request parameter
     throw new Error('Implementation will be generated automatically.');
   }
 }

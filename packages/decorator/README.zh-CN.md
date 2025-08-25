@@ -6,6 +6,7 @@
 [![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher-decorator.svg)](https://github.com/Ahoo-Wang/fetcher/blob/main/LICENSE)
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
 Fetcher HTTP 客户端的装饰器支持。使用 TypeScript 装饰器实现简洁、声明式的 API 服务定义。
 
@@ -61,10 +62,7 @@ class UserService {
   }
 
   @get('/{id}')
-  getUser(
-    @path('id') id: number,
-    @query('include') include: string,
-  ): Promise<Response> {
+  getUser(@path() id: number, @query() include: string): Promise<Response> {
     throw new Error('实现将自动生成');
   }
 }
@@ -146,7 +144,7 @@ class ApiService {
 ```typescript
 class UserService {
   @get('/{id}', { timeout: 3000 })
-  getUser(@path('id') id: number): Promise<Response> {
+  getUser(@path() id: number): Promise<Response> {
     throw new Error('实现将自动生成');
   }
 
@@ -161,31 +159,35 @@ class UserService {
 
 #### `@path(name)`
 
-定义路径参数。
+定义路径参数。名称是可选的 - 如果未提供，将使用反射从方法参数名自动提取。
 
 **参数：**
 
-- `name`: 参数名称（在路径模板中使用）
+- `name`: 参数名称（在路径模板中使用，可选 - 如果未提供则自动提取）
 
 #### `@query(name)`
 
-定义查询参数。
+定义查询参数。名称是可选的 - 如果未提供，将使用反射从方法参数名自动提取。
 
 **参数：**
 
-- `name`: 参数名称（在查询字符串中使用）
+- `name`: 参数名称（在查询字符串中使用，可选 - 如果未提供则自动提取）
 
 #### `@body()`
 
-定义请求体。
+定义请求体。请求体参数没有名称，因为每个请求只有一个请求体。
 
 #### `@header(name)`
 
-定义头部参数。
+定义头部参数。名称是可选的 - 如果未提供，将使用反射从方法参数名自动提取。
 
 **参数：**
 
-- `name`: 头部名称
+- `name`: 头部名称（可选 - 如果未提供则自动提取）
+
+#### `@request()`
+
+定义请求参数，将用作基础请求对象。这允许您传递一个完整的 FetcherRequest 对象来自定义请求配置。
 
 **示例：**
 
@@ -194,9 +196,14 @@ class UserService {
   @get('/search')
   searchUsers(
     @query('q') query: string,
-    @query('limit') limit: number,
+    @query() limit: number,
     @header('Authorization') auth: string,
   ): Promise<Response> {
+    throw new Error('实现将自动生成');
+  }
+
+  @post('/users')
+  createUsers(@request() request: FetcherRequest): Promise<Response> {
     throw new Error('实现将自动生成');
   }
 
@@ -223,7 +230,7 @@ class BaseService {
 @api('/users')
 class UserService extends BaseService {
   @get('/{id}')
-  getUser(@path('id') id: number): Promise<Response> {
+  getUser(@path() id: number): Promise<Response> {
     throw new Error('实现将自动生成');
   }
 }
@@ -238,8 +245,34 @@ class ComplexService {
   batchOperation(
     @body() items: Item[],
     @header('X-Request-ID') requestId: string,
-    @query('dryRun') dryRun: boolean = false,
+    @query() dryRun: boolean = false,
   ): Promise<Response> {
+    throw new Error('实现将自动生成');
+  }
+}
+```
+
+### 请求合并
+
+当使用 `@request()` 装饰器时，提供的 `FetcherRequest` 对象会使用复杂的合并策略与端点特定配置进行合并：
+
+- **嵌套对象**（路径、查询、头部）会被递归合并，参数值优先
+- **基本值**（方法、请求体、超时、信号）来自参数请求的值会覆盖端点值
+- **空对象**会被优雅地处理，回退到端点配置
+
+```typescript
+
+@api('/users')
+class UserService {
+  @post('/')
+  createUsers(
+    @body() user: User,
+    @request() request: FetcherRequest,
+  ): Promise<Response> {
+    // 最终请求将合并：
+    // - 端点方法（POST）
+    // - 请求体参数（user 对象）
+    // - 来自 request 参数的任何配置
     throw new Error('实现将自动生成');
   }
 }

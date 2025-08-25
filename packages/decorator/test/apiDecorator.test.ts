@@ -223,8 +223,9 @@ describe('apiDecorator', () => {
         path: { id: 1 },
         query: {},
         headers: {},
-        body: null,
+        body: undefined,
         timeout: undefined,
+        signal: undefined,
       });
       expect(response).toBe(mockResponse);
     });
@@ -238,6 +239,49 @@ describe('apiDecorator', () => {
       const metadata = Reflect.getMetadata(API_METADATA_KEY, TestService);
       expect(metadata).toBeDefined();
       expect(metadata.basePath).toBe('/test');
+    });
+
+    it('should handle non-function properties gracefully', () => {
+      @api('/test')
+      class TestService {
+        @get('/users')
+        getUsers() {
+          return Promise.resolve(new Response('{"users": []}'));
+        }
+      }
+
+      // Add a non-function property to the prototype
+      (TestService.prototype as any)['nonFunctionProperty'] = 'not a function';
+
+      const instance = new TestService();
+      // Non-function property should remain unchanged
+      expect((instance as any)['nonFunctionProperty']).toBe('not a function');
+      // Method should still be replaced with executor
+      expect(typeof instance.getUsers).toBe('function');
+    });
+
+    it('should handle case where prototype property is not a function', () => {
+      @api('/test')
+      class TestService {
+        @get('/users')
+        getUsers() {
+          return Promise.resolve(new Response('{"users": []}'));
+        }
+      }
+
+      // Manually set a prototype property to a non-function value
+      Object.defineProperty(TestService.prototype, 'nonFunctionMethod', {
+        value: 'not a function',
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+
+      const instance = new TestService();
+      // Non-function property should remain unchanged
+      expect((instance as any).nonFunctionMethod).toBe('not a function');
+      // Decorated method should still work
+      expect(typeof instance.getUsers).toBe('function');
     });
 
     it('should handle class with only constructor', () => {

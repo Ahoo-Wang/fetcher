@@ -61,6 +61,23 @@ describe('reflection', () => {
     expect(paramNames).toEqual(['a', 'b']);
   });
 
+  it('should cache results for performance', () => {
+    function testFunc(a: string, b: number, c: boolean) {
+      return a + b + (c ? 1 : 0);
+    }
+
+    // Call getParameterNames twice on the same function
+    const firstCall = getParameterNames(testFunc);
+    const secondCall = getParameterNames(testFunc);
+
+    // Both calls should return the same result
+    expect(firstCall).toEqual(['a', 'b', 'c']);
+    expect(secondCall).toEqual(['a', 'b', 'c']);
+
+    // Verify that the results are strictly equal (cached)
+    expect(firstCall).toBe(secondCall);
+  });
+
   it('should handle class method', () => {
     class TestClass {
       method(a: string, b: number) {

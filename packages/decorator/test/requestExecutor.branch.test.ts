@@ -33,33 +33,6 @@ describe('FunctionMetadata - branch coverage', () => {
     expect(request.query).toEqual({ param1: 'queryValue' });
   });
 
-  it('should handle header parameter with undefined value', () => {
-    const metadata = new FunctionMetadata(
-      'testFunc',
-      {},
-      { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.HEADER,
-          name: 'Authorization',
-          index: 0,
-        },
-      ],
-    );
-
-    // Test with undefined value
-    const request1 = metadata.resolveRequest([undefined]);
-    expect(request1.headers).toEqual({});
-
-    // Test with null value
-    const request2 = metadata.resolveRequest([null]);
-    expect(request2.headers).toEqual({ Authorization: 'null' });
-
-    // Test with actual value
-    const request3 = metadata.resolveRequest(['Bearer token']);
-    expect(request3.headers).toEqual({ Authorization: 'Bearer token' });
-  });
-
   it('should handle fetcher resolution with different priorities', () => {
     // Mock fetcher registrar
     vi.spyOn(fetcherRegistrar, 'requiredGet').mockImplementation(
@@ -173,5 +146,88 @@ describe('FunctionMetadata - branch coverage', () => {
     );
 
     expect(metadata3.resolveTimeout()).toBeUndefined();
+  });
+
+  it('should handle path parameter without name', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      [
+        {
+          type: ParameterType.PATH,
+          index: 0,
+        },
+      ],
+    );
+
+    const request = metadata.resolveRequest(['pathValue']);
+    expect(request.path).toEqual({ param0: 'pathValue' });
+  });
+
+  it('should handle query parameter without name', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      [
+        {
+          type: ParameterType.QUERY,
+          index: 0,
+        },
+      ],
+    );
+
+    const request = metadata.resolveRequest(['queryValue']);
+    expect(request.query).toEqual({ param0: 'queryValue' });
+  });
+
+  it('should handle header parameter with undefined value', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      [
+        {
+          type: ParameterType.HEADER,
+          name: 'Authorization',
+          index: 0,
+        },
+      ],
+    );
+
+    // Test with undefined value
+    const request1 = metadata.resolveRequest([undefined]);
+    expect(request1.headers).toEqual({});
+
+    // Test with null value
+    const request2 = metadata.resolveRequest([null]);
+    expect(request2.headers).toEqual({ Authorization: 'null' });
+
+    // Test with actual value
+    const request3 = metadata.resolveRequest(['Bearer token']);
+    expect(request3.headers).toEqual({ Authorization: 'Bearer token' });
+  });
+
+  it('should handle AbortSignal parameter', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      [
+        {
+          type: ParameterType.PATH,
+          name: 'id',
+          index: 0,
+        },
+      ],
+    );
+    const abortController = new AbortController();
+    // Create a simple object with AbortSignal in prototype chain
+    const signal = abortController.signal;
+    // Since the instanceof check won't pass in test environment, signal will remain null
+    const request = metadata.resolveRequest([123, signal]);
+    expect(request.path).toEqual({ id: 123 });
+    expect(request.signal).toBe(signal);
   });
 });

@@ -16,6 +16,7 @@ import {
   Fetcher,
   fetcherRegistrar,
   FetcherRequest,
+  mergeRequest,
   NamedCapable,
 } from '@ahoo-wang/fetcher';
 import { ApiMetadata } from './apiDecorator';
@@ -89,10 +90,44 @@ export class FunctionMetadata implements NamedCapable {
    *
    * This method processes the runtime arguments according to the parameter metadata
    * and constructs a FetcherRequest object with path parameters, query parameters,
-   * headers, body, and timeout.
+   * headers, body, and timeout. It handles various parameter types including:
+   * - Path parameters (@path decorator)
+   * - Query parameters (@query decorator)
+   * - Header parameters (@header decorator)
+   * - Body parameter (@body decorator)
+   * - Complete request object (@request decorator)
+   * - AbortSignal for request cancellation
+   *
+   * The method uses mergeRequest to combine the endpoint-specific configuration
+   * with the parameter-provided request object, where the parameter request
+   * takes precedence over endpoint configuration.
    *
    * @param args - The runtime arguments passed to the method
    * @returns A FetcherRequest object with all request configuration
+   *
+   * @example
+   * ```typescript
+   * // For a method decorated like:
+   * @get('/users/{id}')
+   * getUser(
+   *   @path('id') id: number,
+   *   @query('include') include: string,
+   *   @header('Authorization') auth: string
+   * ): Promise<Response>
+   *
+   * // Calling with: getUser(123, 'profile', 'Bearer token')
+   * // Would produce a request with:
+   * // {
+   * //   method: 'GET',
+   * //   path: { id: 123 },
+   * //   query: { include: 'profile' },
+   * //   headers: {
+   * //     'Authorization': 'Bearer token',
+   * //     ...apiHeaders,
+   * //     ...endpointHeaders
+   * //   }
+   * // }
+   * ```
    */
   resolveRequest(args: any[]): FetcherRequest {
     const path: Record<string, any> = {};
@@ -101,44 +136,102 @@ export class FunctionMetadata implements NamedCapable {
       ...this.api.headers,
       ...this.endpoint.headers,
     };
-    let body: any = null;
+    let body: any = undefined;
+    let signal: AbortSignal | null | undefined = undefined;
+    let parameterRequest: FetcherRequest = {};
     // Process parameters based on their decorators
-    this.parameters.forEach(param => {
-      const value = args[param.index];
-      switch (param.type) {
-        case ParameterType.PATH:
-          if (param.name) {
-            path[param.name] = value;
-          } else {
-            // If no name specified, use as default path param
-            path['param' + param.index] = value;
-          }
-          break;
-        case ParameterType.QUERY:
-          if (param.name) {
-            query[param.name] = value;
-          } else {
-            query['param' + param.index] = value;
-          }
-          break;
-        case ParameterType.HEADER:
-          if (param.name && value !== undefined) {
-            headers[param.name] = String(value);
-          }
-          break;
-        case ParameterType.BODY:
-          body = value;
-          break;
+    args.forEach((value, index) => {
+      if (value instanceof AbortSignal) {
+        signal = value;
+        return;
+      }
+      if (index < this.parameters.length) {
+        const param = this.parameters[index];
+        switch (param.type) {
+          case ParameterType.PATH:
+            this.processPathParam(param, value, path);
+            break;
+          case ParameterType.QUERY:
+            this.processQueryParam(param, value, query);
+            break;
+          case ParameterType.HEADER:
+            this.processHeaderParam(param, value, headers);
+            break;
+          case ParameterType.BODY:
+            body = value;
+            break;
+          case ParameterType.REQUEST:
+            parameterRequest = this.processRequestParam(value);
+            break;
+        }
       }
     });
-    return {
+    const endpointRequest: FetcherRequest = {
       method: this.endpoint.method,
       path,
       query,
       headers,
       body,
       timeout: this.resolveTimeout(),
+      signal,
     };
+    return mergeRequest(endpointRequest, parameterRequest);
+  }
+
+  private processPathParam(
+    param: ParameterMetadata,
+    value: any,
+    path: Record<string, any>,
+  ) {
+    const paramName = param.name || `param${param.index}`;
+    path[paramName] = value;
+  }
+
+  private processQueryParam(
+    param: ParameterMetadata,
+    value: any,
+    query: Record<string, any>,
+  ) {
+    const paramName = param.name || `param${param.index}`;
+    query[paramName] = value;
+  }
+
+  private processHeaderParam(
+    param: ParameterMetadata,
+    value: any,
+    headers: Record<string, string>,
+  ) {
+    if (param.name && value !== undefined) {
+      headers[param.name] = String(value);
+    }
+  }
+
+  /**
+   * Processes a request parameter value
+   *
+   * This method handles the @request() decorator parameter by casting
+   * the provided value to a FetcherRequest. The @request() decorator
+   * allows users to pass a complete FetcherRequest object to customize
+   * the request configuration.
+   *
+   * @param value - The value provided for the @request() parameter
+   * @returns The value cast to FetcherRequest type
+   *
+   * @example
+   * ```typescript
+   * @post('/users')
+   * createUsers(@request() request: FetcherRequest): Promise<Response>
+   *
+   * // Usage:
+   * const customRequest: FetcherRequest = {
+   *   headers: { 'X-Custom': 'value' },
+   *   timeout: 5000
+   * };
+   * await service.createUsers(customRequest);
+   * ```
+   */
+  private processRequestParam(value: any): FetcherRequest {
+    return value as FetcherRequest;
   }
 
   /**

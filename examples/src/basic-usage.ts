@@ -18,12 +18,14 @@ const fetcher = new Fetcher({
   baseURL: 'https://jsonplaceholder.typicode.com',
   timeout: 5000,
 });
-
+type Post = {
+  id: string;
+};
 // Basic GET request
 fetcher
   .get('/posts/1')
-  .then((response: Response) => response.json())
-  .then((data: unknown) => {
+  .then((response: Response) => response.json<Post>())
+  .then((data: Post) => {
     console.log('Basic GET request:', data);
   })
   .catch((error: unknown) => {

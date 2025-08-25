@@ -106,6 +106,25 @@ describe('FunctionMetadata', () => {
     expect(request.body).toEqual(requestBody);
   });
 
+  it('should resolve request with null signal when no signal provided', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      [
+        {
+          type: ParameterType.PATH,
+          name: 'id',
+          index: 0,
+        },
+      ],
+    );
+
+    const request = metadata.resolveRequest([123]);
+    expect(request.path).toEqual({ id: 123 });
+    expect(request.signal).toBeUndefined();
+  });
+
   it('should get fetcher correctly', () => {
     // Mock fetcher registrar
     vi.spyOn(fetcherRegistrar, 'requiredGet').mockReturnValue(

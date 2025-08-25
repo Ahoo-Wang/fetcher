@@ -51,6 +51,28 @@ export enum ContentTypeValues {
   TEXT_EVENT_STREAM = 'text/event-stream',
 }
 
+/**
+ * 具备名称能力的接口
+ * 实现该接口的类型需要提供一个名称属性
+ */
 export interface NamedCapable {
+  /**
+   * 名称
+   */
   name: string;
+}
+
+/**
+ * Global extension of Response interface
+ * Adds type-safe json() method support to Response objects
+ */
+declare global {
+  interface Response {
+    /**
+     * Parse response body as JSON in a type-safe manner
+     * @template T The type of returned data, defaults to any
+     * @returns Promise<T> The parsed JSON data
+     */
+    json<T = any>(): Promise<T>;
+  }
 }
