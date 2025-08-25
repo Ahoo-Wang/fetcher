@@ -64,8 +64,8 @@ class UserService {
 
   @get('/{id}')
   getUser(
-    @path('id') id: number,
-    @query('include') include: string,
+    @path() id: number,
+    @query() include: string,
   ): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
@@ -148,7 +148,7 @@ Defines an OPTIONS endpoint.
 ```typescript
 class UserService {
   @get('/{id}', { timeout: 3000 })
-  getUser(@path('id') id: number): Promise<Response> {
+  getUser(@path() id: number): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
 
@@ -163,31 +163,34 @@ class UserService {
 
 #### `@path(name)`
 
-Defines a path parameter.
+Defines a path parameter. The name is optional - if not provided, it will be automatically extracted from the method
+parameter name.
 
 **Parameters:**
 
-- `name`: Name of the parameter (used in the path template)
+- `name`: Name of the parameter (used in the path template, optional - auto-extracted if not provided)
 
 #### `@query(name)`
 
-Defines a query parameter.
+Defines a query parameter. The name is optional - if not provided, it will be automatically extracted from the method
+parameter name.
 
 **Parameters:**
 
-- `name`: Name of the parameter (used in the query string)
+- `name`: Name of the parameter (used in the query string, optional - auto-extracted if not provided)
 
 #### `@body()`
 
-Defines a request body.
+Defines a request body. Body parameters don't have names since there's only one body per request.
 
 #### `@header(name)`
 
-Defines a header parameter.
+Defines a header parameter. The name is optional - if not provided, it will be automatically extracted from the method
+parameter name.
 
 **Parameters:**
 
-- `name`: Name of the header
+- `name`: Name of the header (optional - auto-extracted if not provided)
 
 **Example:**
 
@@ -196,14 +199,14 @@ class UserService {
   @get('/search')
   searchUsers(
     @query('q') query: string,
-    @query('limit') limit: number,
+    @query() limit: number,
     @header('Authorization') auth: string,
   ): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
 
   @put('/{id}')
-  updateUser(@path('id') id: number, @body() user: User): Promise<Response> {
+  updateUser(@path() id: number, @body() user: User): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
 }
@@ -225,7 +228,7 @@ class BaseService {
 @api('/users')
 class UserService extends BaseService {
   @get('/{id}')
-  getUser(@path('id') id: number): Promise<Response> {
+  getUser(@path() id: number): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
 }
@@ -240,7 +243,7 @@ class ComplexService {
   batchOperation(
     @body() items: Item[],
     @header('X-Request-ID') requestId: string,
-    @query('dryRun') dryRun: boolean = false,
+    @query() dryRun: boolean = false,
   ): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
