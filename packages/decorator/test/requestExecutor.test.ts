@@ -122,7 +122,7 @@ describe('FunctionMetadata', () => {
 
     const request = metadata.resolveRequest([123]);
     expect(request.path).toEqual({ id: 123 });
-    expect(request.signal).toBeNull();
+    expect(request.signal).toBeUndefined();
   });
 
   it('should get fetcher correctly', () => {

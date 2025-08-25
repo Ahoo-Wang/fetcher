@@ -63,10 +63,7 @@ class UserService {
   }
 
   @get('/{id}')
-  getUser(
-    @path() id: number,
-    @query() include: string,
-  ): Promise<Response> {
+  getUser(@path() id: number, @query() include: string): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
 }
@@ -192,6 +189,12 @@ parameter name.
 
 - `name`: Name of the header (optional - auto-extracted if not provided)
 
+#### `@request()`
+
+Defines a request parameter that will be used as the base request object. This allows you to pass a complete
+FetcherRequest
+object to customize the request configuration.
+
 **Example:**
 
 ```typescript
@@ -202,6 +205,11 @@ class UserService {
     @query() limit: number,
     @header('Authorization') auth: string,
   ): Promise<Response> {
+    throw new Error('Implementation will be generated automatically.');
+  }
+
+  @post('/users')
+  createUsers(@request() request: FetcherRequest): Promise<Response> {
     throw new Error('Implementation will be generated automatically.');
   }
 
@@ -245,6 +253,33 @@ class ComplexService {
     @header('X-Request-ID') requestId: string,
     @query() dryRun: boolean = false,
   ): Promise<Response> {
+    throw new Error('Implementation will be generated automatically.');
+  }
+}
+```
+
+### Request Merging
+
+When using the `@request()` decorator, the provided `FetcherRequest` object is merged with endpoint-specific
+configuration using a sophisticated merging strategy:
+
+- **Nested objects** (path, query, headers) are recursively merged, with parameter values taking precedence
+- **Primitive values** (method, body, timeout, signal) from the parameter request override endpoint values
+- **Empty objects** are handled gracefully, falling back to endpoint configuration
+
+```typescript
+
+@api('/users')
+class UserService {
+  @post('/')
+  createUsers(
+    @body() user: User,
+    @request() request: FetcherRequest,
+  ): Promise<Response> {
+    // The final request will merge:
+    // - Endpoint method (POST)
+    // - Body parameter (user object)
+    // - Any configuration from the request parameter
     throw new Error('Implementation will be generated automatically.');
   }
 }
