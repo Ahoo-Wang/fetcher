@@ -102,7 +102,7 @@ export interface FetcherRequest
    * };
    * ```
    */
-  body?: BodyInit | Record<string, any> | null;
+  body?: BodyInit | Record<string, any> | string | null;
 }
 
 /**
