@@ -39,10 +39,6 @@ export enum HttpMethod {
   OPTIONS = 'OPTIONS',
 }
 
-export enum RequestField {
-  METHOD = 'method',
-  BODY = 'body',
-}
 
 export const ContentTypeHeader = 'Content-Type';
 

@@ -13,16 +13,9 @@
 
 import { UrlBuilder, UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, TimeoutCapable } from './timeout';
-import {
-  BaseURLCapable,
-  ContentTypeHeader,
-  ContentTypeValues,
-  HeadersCapable,
-  HttpMethod,
-  RequestField,
-} from './types';
+import { BaseURLCapable, ContentTypeHeader, ContentTypeValues, HeadersCapable, HttpMethod } from './types';
 import { FetcherInterceptors } from './interceptor';
-import { FetcherRequest, FetchExchange } from './fetchExchange';
+import { FetcherRequest, FetchExchange, RequestField } from './fetchExchange';
 
 /**
  * Fetcher configuration options interface
