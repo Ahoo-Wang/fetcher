@@ -341,4 +341,37 @@ describe('Fetcher', () => {
       }),
     );
   });
+
+  it('should support generic response json type', async () => {
+    interface User {
+      id: number;
+      name: string;
+      email: string;
+    }
+
+    const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
+    const mockData: User = {
+      id: 1,
+      name: 'John Doe',
+      email: 'john@example.com',
+    };
+    mockFetch.mockResolvedValue(new Response(JSON.stringify(mockData)));
+
+    const response = await fetcher.get('/users/1');
+    const userData = await response.json<User>();
+
+    // Type assertion to verify generic type support
+    const typedUser: User = userData;
+    expect(typedUser.id).toBe(1);
+    expect(typedUser.name).toBe('John Doe');
+    expect(typedUser.email).toBe('john@example.com');
+
+    expect(userData).toEqual(mockData);
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.example.com/users/1',
+      expect.objectContaining({
+        method: 'GET',
+      }),
+    );
+  });
 });
