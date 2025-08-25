@@ -15,33 +15,51 @@ import { combineURLs } from './urls';
 import { BaseURLCapable } from './types';
 
 /**
- * URL构建器类，用于构建带有路径参数和查询参数的完整URL
+ * UrlBuilder Class
+ *
+ * URL builder class for constructing complete URLs with path parameters and query parameters.
+ * This class handles URL composition, path parameter interpolation, and query string generation.
  *
  * @example
+ * ```typescript
  * const urlBuilder = new UrlBuilder('https://api.example.com');
  * const url = urlBuilder.build('/users/{id}', { id: 123 }, { filter: 'active' });
- * // 结果: https://api.example.com/users/123?filter=active
+ * // Result: https://api.example.com/users/123?filter=active
+ * ```
  */
 export class UrlBuilder implements BaseURLCapable {
+  /**
+   * Base URL that all constructed URLs will be based on
+   */
   baseURL: string;
 
   /**
-   * 创建UrlBuilder实例
+   * Creates a UrlBuilder instance
    *
-   * @param baseURL - 基础URL，所有构建的URL都将基于此URL
+   * @param baseURL - Base URL that all constructed URLs will be based on
    */
   constructor(baseURL: string) {
     this.baseURL = baseURL;
   }
 
   /**
-   * 构建完整的URL，包括路径参数替换和查询参数添加
+   * Builds a complete URL, including path parameter replacement and query parameter addition
    *
-   * @param url - 需要构建的URL路径
-   * @param path - 路径参数对象，用于替换URL中的占位符（如{id}）
-   * @param query - 查询参数对象，将被添加到URL查询字符串中
-   * @returns 完整的URL字符串
-   * @throws 当路径参数中缺少必需的占位符时抛出错误
+   * @param url - URL path to build
+   * @param path - Path parameter object used to replace placeholders in the URL (e.g., {id})
+   * @param query - Query parameter object to be added to the URL query string
+   * @returns Complete URL string
+   * @throws Error when required path parameters are missing
+   *
+   * @example
+   * ```typescript
+   * const urlBuilder = new UrlBuilder('https://api.example.com');
+   * const url = urlBuilder.build('/users/{id}/posts/{postId}',
+   *   { id: 123, postId: 456 },
+   *   { filter: 'active', limit: 10 }
+   * );
+   * // Result: https://api.example.com/users/123/posts/456?filter=active&limit=10
+   * ```
    */
   build(
     url: string,
@@ -60,18 +78,25 @@ export class UrlBuilder implements BaseURLCapable {
   }
 
   /**
-   * 替换url中的占位符参数
+   * Replaces placeholders in the URL with path parameters
    *
-   * @param url - 包含占位符的路径字符串，如 "http://localhost/users/{id}/posts/{postId}"
-   * @param path - 路径参数对象，用于替换路径中的占位符
-   * @returns 替换占位符后的路径字符串
-   * @throws 当路径参数中缺少必需的占位符时抛出错误
+   * @param url - Path string containing placeholders, e.g., "http://localhost/users/{id}/posts/{postId}"
+   * @param path - Path parameter object used to replace placeholders in the URL
+   * @returns Path string with placeholders replaced
+   * @throws Error when required path parameters are missing
+   *
+   * @example
+   * ```typescript
+   * const urlBuilder = new UrlBuilder('https://api.example.com');
+   * const result = urlBuilder.interpolateUrl('/users/{id}/posts/{postId}', { id: 123, postId: 456 });
+   * // Result: /users/123/posts/456
+   * ```
    */
   interpolateUrl(url: string, path?: Record<string, any>): string {
     if (!path) return url;
     return url.replace(/{([^}]+)}/g, (_, key) => {
       const value = path[key];
-      // 如果路径参数未定义，抛出错误而不是保留原占位符
+      // If path parameter is undefined, throw an error instead of preserving the placeholder
       if (value === undefined) {
         throw new Error(`Missing required path parameter: ${key}`);
       }

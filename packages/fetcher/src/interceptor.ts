@@ -15,6 +15,7 @@ import { Fetcher, FetcherRequest } from './fetcher';
 import { NamedCapable } from './types';
 import { OrderedCapable, toSorted } from './orderedCapable';
 import { RequestBodyInterceptor } from './requestBodyInterceptor';
+import { FetchInterceptor } from './fetchInterceptor';
 
 export interface FetchExchange {
   fetcher: Fetcher;
@@ -25,80 +26,181 @@ export interface FetchExchange {
 }
 
 /**
- * 拦截器接口，定义了拦截器的基本结构
- * @template T - 拦截器处理的数据类型
+ * Interceptor Interface
+ *
+ * Defines the basic structure of an interceptor. Interceptors are used to process
+ * requests, responses, or errors at different stages of the HTTP request lifecycle.
+ *
+ * @remarks
+ * Interceptors follow the Chain of Responsibility pattern, where each interceptor
+ * can modify the exchange object and pass it to the next interceptor in the chain.
+ *
+ * @example
+ * // Example of a custom request interceptor
+ * const loggingInterceptor: Interceptor = {
+ *   name: 'LoggingInterceptor',
+ *   order: 0,
+ *   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+ *     console.log(`Making request to ${exchange.url}`);
+ *     const result = await next.intercept(exchange);
+ *     console.log(`Received response with status ${result.response?.status}`);
+ *     return result;
+ *   }
+ * };
  */
 export interface Interceptor extends NamedCapable, OrderedCapable {
   /**
-   * 拦截器的名称,用于标识拦截器，不可重复
+   * Interceptor name, used to identify the interceptor and must be unique
+   *
+   * @remarks
+   * The name is used by the InterceptorManager to manage interceptors,
+   * including adding, removing, and preventing duplicates.
    */
   name: string;
 
   /**
-   * 拦截并处理数据
-   * @param exchange - 需要处理的数据
-   * @returns 处理后的数据，可以是同步或异步返回
+   * Intercept and process data
+   *
+   * This method is called by the InterceptorManager to process the exchange object.
+   * The interceptor can modify the request, response, or error properties of the
+   * exchange object and then pass it to the next interceptor in the chain.
+   *
+   * @param exchange - The data to be processed, containing request, response, and error information
+   * @returns The processed data, which can be returned synchronously or asynchronously
+   *
+   * @remarks
+   * Interceptors should either return the exchange object (possibly modified) or
+   * a new exchange object. They can also throw errors or transform errors into responses.
    */
   intercept(exchange: FetchExchange): FetchExchange | Promise<FetchExchange>;
 }
 
 /**
- * 拦截器管理器类，用于管理同一类型的多个拦截器
+ * InterceptorManager Class
+ *
+ * Manages multiple interceptors of the same type. Responsible for adding, removing,
+ * and executing interceptors in the correct order. Each InterceptorManager instance
+ * handles one type of interceptor (request, response, or error).
+ *
+ * @remarks
+ * Interceptors are executed in ascending order of their `order` property.
+ * Interceptors with the same order value are executed in the order they were added.
+ *
+ * @example
+ * // Create an interceptor manager with initial interceptors
+ * const requestManager = new InterceptorManager([interceptor1, interceptor2]);
+ *
+ * // Add a new interceptor
+ * requestManager.use(newInterceptor);
+ *
+ * // Remove an interceptor by name
+ * requestManager.eject('InterceptorName');
+ *
+ * // Process an exchange through all interceptors
+ * const result = await requestManager.intercept(exchange);
  */
 export class InterceptorManager implements Interceptor {
+  /**
+   * Gets the name of this interceptor manager
+   *
+   * @returns The constructor name of this class
+   */
   get name(): string {
     return this.constructor.name;
   }
 
+  /**
+   * Gets the order of this interceptor manager
+   *
+   * @returns Number.MIN_SAFE_INTEGER, indicating this manager should execute early
+   */
   get order(): number {
     return Number.MIN_SAFE_INTEGER;
   }
 
+  /**
+   * Array of interceptors managed by this manager, sorted by their order property
+   */
   private sortedInterceptors: Interceptor[] = [];
 
+  /**
+   * Creates a new InterceptorManager instance
+   *
+   * @param interceptors - Initial array of interceptors to manage
+   *
+   * @remarks
+   * The provided interceptors will be sorted by their order property immediately
+   * upon construction.
+   */
   constructor(interceptors: Interceptor[] = []) {
     this.sortedInterceptors = toSorted(interceptors);
   }
 
   /**
-   * 添加拦截器到管理器中
-   * @param interceptor - 要添加的拦截器
-   * @returns 拦截器在管理器中的索引位置
+   * Adds an interceptor to this manager
+   *
+   * @param interceptor - The interceptor to add
+   * @returns True if the interceptor was added, false if an interceptor with the
+   *          same name already exists
+   *
+   * @remarks
+   * Interceptors are uniquely identified by their name property. Attempting to add
+   * an interceptor with a name that already exists in the manager will fail.
+   *
+   * After adding, interceptors are automatically sorted by their order property.
    */
   use(interceptor: Interceptor): boolean {
     if (this.sortedInterceptors.some(item => item.name === interceptor.name)) {
       return false;
     }
-    this.sortedInterceptors = toSorted([...this.sortedInterceptors, interceptor]);
+    this.sortedInterceptors = toSorted([
+      ...this.sortedInterceptors,
+      interceptor,
+    ]);
     return true;
   }
 
   /**
-   * 根据名称移除拦截器
-   * @param name 要移除的拦截器名称
+   * Removes an interceptor by name
+   *
+   * @param name - The name of the interceptor to remove
+   * @returns True if an interceptor was removed, false if no interceptor with the
+   *          given name was found
    */
   eject(name: string): boolean {
     const original = this.sortedInterceptors;
-    this.sortedInterceptors = toSorted(original, interceptor => interceptor.name !== name);
+    this.sortedInterceptors = toSorted(
+      original,
+      interceptor => interceptor.name !== name,
+    );
     return original.length !== this.sortedInterceptors.length;
   }
 
   /**
-   * 清空所有拦截器
+   * Removes all interceptors from this manager
    */
   clear(): void {
     this.sortedInterceptors = [];
   }
 
   /**
-   * 依次执行所有拦截器对数据的处理
-   * @param exchange - 需要处理的数据
-   * @returns 经过所有拦截器处理后的数据
+   * Executes all managed interceptors on the given exchange object
+   *
+   * @param exchange - The exchange object to process
+   * @returns A promise that resolves to the processed exchange object
+   *
+   * @remarks
+   * Interceptors are executed in order, with each interceptor receiving the result
+   * of the previous interceptor. The first interceptor receives the original
+   * exchange object.
+   *
+   * If any interceptor throws an error, the execution chain is broken and the error
+   * is propagated to the caller.
    */
   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
     let processedExchange = exchange;
     for (const interceptor of this.sortedInterceptors) {
-      // 每个拦截器处理前一个拦截器的输出结果
+      // Each interceptor processes the output of the previous interceptor
       processedExchange = await interceptor.intercept(processedExchange);
     }
     return processedExchange;
@@ -106,21 +208,75 @@ export class InterceptorManager implements Interceptor {
 }
 
 /**
- * Fetcher拦截器集合类，包含请求、响应和错误拦截器管理器
+ * FetcherInterceptors Class
+ *
+ * The interceptor collection management class for Fetcher, responsible for managing three types of interceptors:
+ * 1. Request interceptors - Process requests before sending HTTP requests
+ * 2. Response interceptors - Process responses after receiving HTTP responses
+ * 3. Error interceptors - Handle errors when they occur during the request process
+ *
+ * Each type of interceptor is managed by an InterceptorManager instance, supporting adding, removing, and executing interceptors.
+ *
+ * @example
+ * // Create a custom interceptor
+ * const customRequestInterceptor: Interceptor = {
+ *   name: 'CustomRequestInterceptor',
+ *   order: 100,
+ *   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+ *     // Modify request headers
+ *     exchange.request.headers = {
+ *       ...exchange.request.headers,
+ *       'X-Custom-Header': 'custom-value'
+ *     };
+ *     return exchange;
+ *   }
+ * };
+ *
+ * // Add interceptor to Fetcher
+ * const fetcher = new Fetcher();
+ * fetcher.interceptors.request.use(customRequestInterceptor);
+ *
+ * @remarks
+ * By default, the request interceptor manager has two built-in interceptors registered:
+ * 1. RequestBodyInterceptor - Automatically converts object-type request bodies to JSON strings
+ * 2. FetchInterceptor - Executes actual HTTP requests and handles timeouts
  */
 export class FetcherInterceptors {
   /**
-   * 请求拦截器管理器
+   * Request Interceptor Manager
+   *
+   * Responsible for managing all request-phase interceptors, executed before HTTP requests are sent.
+   * Contains two built-in interceptors by default: RequestBodyInterceptor and FetchInterceptor.
+   *
+   * @remarks
+   * Request interceptors are executed in ascending order of their order values, with smaller values having higher priority.
+   * FetchInterceptor's order is set to Number.MAX_SAFE_INTEGER to ensure it executes last.
    */
-  request: InterceptorManager = new InterceptorManager([new RequestBodyInterceptor()]);
+  request: InterceptorManager = new InterceptorManager([
+    new RequestBodyInterceptor(),
+    new FetchInterceptor(),
+  ]);
 
   /**
-   * 响应拦截器管理器
+   * Response Interceptor Manager
+   *
+   * Responsible for managing all response-phase interceptors, executed after HTTP responses are received.
+   * Empty by default, custom response processing logic can be added as needed.
+   *
+   * @remarks
+   * Response interceptors are executed in ascending order of their order values, with smaller values having higher priority.
    */
   response: InterceptorManager = new InterceptorManager();
 
   /**
-   * 错误拦截器管理器
+   * Error Interceptor Manager
+   *
+   * Responsible for managing all error-handling phase interceptors, executed when errors occur during HTTP requests.
+   * Empty by default, custom error handling logic can be added as needed.
+   *
+   * @remarks
+   * Error interceptors are executed in ascending order of their order values, with smaller values having higher priority.
+   * Error interceptors can transform errors into normal responses, avoiding thrown exceptions.
    */
   error: InterceptorManager = new InterceptorManager();
 }

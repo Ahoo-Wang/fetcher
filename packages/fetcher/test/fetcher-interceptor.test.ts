@@ -11,10 +11,8 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Fetcher } from '../src';
-import { Interceptor } from '../src';
-import { FetchExchange } from '../src/interceptor';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Fetcher, FetchExchange, Interceptor } from '../src';
 
 // Mock fetch
 const mockFetch = vi.fn();
