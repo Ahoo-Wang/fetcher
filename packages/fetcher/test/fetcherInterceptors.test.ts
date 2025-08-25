@@ -77,13 +77,13 @@ describe('FetcherInterceptors', () => {
 
     // Check the order of interceptors
     expect(requestInterceptors[0].name).toBe('UrlResolveInterceptor');
-    expect(requestInterceptors[0].order).toBe(Number.MIN_SAFE_INTEGER);
+    expect(requestInterceptors[0].order).toBe(Number.MIN_SAFE_INTEGER + 100);
 
     expect(requestInterceptors[1].name).toBe('RequestBodyInterceptor');
-    expect(requestInterceptors[1].order).toBe(Number.MIN_SAFE_INTEGER + 100);
+    expect(requestInterceptors[1].order).toBe(Number.MIN_SAFE_INTEGER + 200);
 
     expect(requestInterceptors[2].name).toBe('FetchInterceptor');
-    expect(requestInterceptors[2].order).toBe(Number.MAX_SAFE_INTEGER);
+    expect(requestInterceptors[2].order).toBe(Number.MAX_SAFE_INTEGER - 100);
   });
 
   it('should start with empty response and error interceptors', () => {

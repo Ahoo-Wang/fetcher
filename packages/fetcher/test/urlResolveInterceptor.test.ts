@@ -18,7 +18,7 @@ describe('UrlResolveInterceptor', () => {
   it('should have correct name and order', () => {
     const interceptor = new UrlResolveInterceptor();
     expect(interceptor.name).toBe('UrlResolveInterceptor');
-    expect(interceptor.order).toBe(Number.MIN_SAFE_INTEGER);
+    expect(interceptor.order).toBe(Number.MIN_SAFE_INTEGER + 100);
   });
 
   it('should resolve URL with path and query parameters', () => {

@@ -119,9 +119,9 @@ Fetcher 中的拦截器系统遵循中间件模式，允许您在 HTTP 请求生
 
 Fetcher 自带几个内置拦截器，它们会自动注册：
 
-1. **UrlResolveInterceptor**：解析带路径和查询参数的 URL（顺序：Number.MIN_SAFE_INTEGER）
-2. **RequestBodyInterceptor**：将对象体转换为 JSON 字符串（顺序：Number.MIN_SAFE_INTEGER + 100）
-3. **FetchInterceptor**：执行实际的 HTTP 请求（顺序：Number.MAX_SAFE_INTEGER）
+1. **UrlResolveInterceptor**：解析带路径和查询参数的 URL（顺序：Number.MIN_SAFE_INTEGER + 100）
+2. **RequestBodyInterceptor**：将对象体转换为 JSON 字符串（顺序：Number.MIN_SAFE_INTEGER + 200）
+3. **FetchInterceptor**：执行实际的 HTTP 请求（顺序：Number.MAX_SAFE_INTEGER - 100）
 
 ### 使用拦截器
 
