@@ -1,6 +1,6 @@
 {
   "name": "@fetcher/examples",
-  "version": "0.6.1",
+  "version": "0.6.5",
   "private": true,
   "description": "Examples for Fetcher HTTP client library",
   "keywords": [
