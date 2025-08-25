@@ -104,7 +104,41 @@ const data = await response.json<User>();
 
 ## 🔗 拦截器系统
 
-### 请求拦截器
+### Interceptor
+
+拦截器接口，定义了拦截器的基本结构。
+
+**属性：**
+
+- `name: string` - 拦截器的名称，用于标识拦截器，不可重复
+- `order: number` - 拦截器的执行顺序，数值越小优先级越高
+
+**方法：**
+
+- `intercept(exchange: FetchExchange): FetchExchange | Promise<FetchExchange>` - 拦截并处理数据
+
+### InterceptorManager
+
+用于管理同一类型多个拦截器的拦截器管理器。
+
+**方法：**
+
+- `use(interceptor: Interceptor): boolean` - 添加拦截器，返回是否添加成功
+- `eject(name: string): boolean` - 按名称移除拦截器，返回是否移除成功
+- `clear(): void` - 清除所有拦截器
+- `intercept(exchange: FetchExchange): Promise<FetchExchange>` - 顺序执行所有拦截器
+
+### FetcherInterceptors
+
+Fetcher 拦截器集合，包括请求、响应和错误拦截器管理器。
+
+**属性：**
+
+- `request: InterceptorManager` - 请求拦截器管理器
+- `response: InterceptorManager` - 响应拦截器管理器
+- `error: InterceptorManager` - 错误拦截器管理器
+
+### 使用拦截器
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
@@ -112,7 +146,9 @@ import { Fetcher } from '@ahoo-wang/fetcher';
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
 // 添加请求拦截器（例如用于认证）
-const interceptorId = fetcher.interceptors.request.use({
+const success = fetcher.interceptors.request.use({
+  name: 'auth-interceptor',
+  order: 100,
   intercept(exchange) {
     return {
       ...exchange,
@@ -127,27 +163,20 @@ const interceptorId = fetcher.interceptors.request.use({
   },
 });
 
-// 移除拦截器
-fetcher.interceptors.request.eject(interceptorId);
-```
-
-### 响应拦截器
-
-```typescript
 // 添加响应拦截器（例如用于日志记录）
 fetcher.interceptors.response.use({
+  name: 'logging-interceptor',
+  order: 10,
   intercept(exchange) {
-    console.log('收到响应:', exchange.response.status);
+    console.log('收到响应:', exchange.response?.status);
     return exchange;
   },
 });
-```
 
-### 错误拦截器
-
-```typescript
 // 添加错误拦截器（例如用于统一错误处理）
 fetcher.interceptors.error.use({
+  name: 'error-interceptor',
+  order: 50,
   intercept(exchange) {
     if (exchange.error?.name === 'FetchTimeoutError') {
       console.error('请求超时:', exchange.error.message);
@@ -157,89 +186,62 @@ fetcher.interceptors.error.use({
     return exchange;
   },
 });
+
+// 按名称移除拦截器
+fetcher.interceptors.request.eject('auth-interceptor');
 ```
 
-## 📚 API 参考
+### 有序执行
 
-### Fetcher 类
+`OrderedCapable` 系统允许您控制拦截器和其他组件的执行顺序。
 
-提供各种 HTTP 方法的核心 HTTP 客户端类。
-
-#### 构造函数
+#### 排序概念
 
 ```typescript
-new Fetcher(options ? : FetcherOptions);
+import { OrderedCapable } from '@ahoo-wang/fetcher';
+
+// 数值越小优先级越高
+const highPriority: OrderedCapable = { order: 1 }; // 首先执行
+const mediumPriority: OrderedCapable = { order: 10 }; // 其次执行
+const lowPriority: OrderedCapable = { order: 100 }; // 最后执行
 ```
 
-**选项：**
-
-- `baseURL`：基础 URL
-- `timeout`：以毫秒为单位的请求超时
-- `headers`：默认请求头部
-
-#### 方法
-
-- `fetch(url: string, request?: FetcherRequest): Promise<Response>` - 通用 HTTP 请求方法
-- `get(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - GET 请求
-- `post(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - POST 请求
-- `put(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PUT 请求
-- `delete(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - DELETE 请求
-- `patch(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PATCH 请求
-- `head(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - HEAD 请求
-- `options(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - OPTIONS 请求
-
-### NamedFetcher 类
-
-Fetcher 类的扩展，它会自动使用提供的名称在全局 fetcherRegistrar 中注册自己。
-
-#### 构造函数
+#### 拦截器排序
 
 ```typescript
-new NamedFetcher(name
-:
-string, options ? : FetcherOptions
-)
-;
+// 添加具有不同顺序的拦截器
+fetcher.interceptors.request.use({
+  name: 'timing-interceptor',
+  order: 5, // 很早执行
+  intercept(exchange) {
+    console.log('很早的计时');
+    return exchange;
+  },
+});
+
+fetcher.interceptors.request.use({
+  name: 'logging-interceptor',
+  order: 10, // 较早执行
+  intercept(exchange) {
+    console.log('较早的日志');
+    return exchange;
+  },
+});
+
+fetcher.interceptors.request.use({
+  name: 'auth-interceptor',
+  order: 50, // 较晚执行
+  intercept(exchange) {
+    // 添加认证头部
+    return exchange;
+  },
+});
+
+// 执行顺序将是：
+// 1. timing-interceptor (order: 5)
+// 2. logging-interceptor (order: 10)
+// 3. auth-interceptor (order: 50)
 ```
-
-### FetcherRegistrar
-
-用于按名称管理多个 Fetcher 实例的全局实例。
-
-#### 属性
-
-- `default`：获取或设置默认 fetcher 实例
-
-#### 方法
-
-- `register(name: string, fetcher: Fetcher): void` - 使用名称注册 fetcher
-- `unregister(name: string): boolean` - 按名称注销 fetcher
-- `get(name: string): Fetcher | undefined` - 按名称获取 fetcher
-- `requiredGet(name: string): Fetcher` - 按名称获取 fetcher，如果未找到则抛出错误
-- `fetchers: Map<string, Fetcher>` - 获取所有已注册的 fetcher
-
-### 拦截器系统
-
-#### InterceptorManager
-
-用于管理同一类型多个拦截器的拦截器管理器。
-
-**方法：**
-
-- `use(interceptor: Interceptor): number` - 添加拦截器，返回拦截器 ID
-- `eject(index: number): void` - 按 ID 移除拦截器
-- `clear(): void` - 清除所有拦截器
-- `intercept(exchange: FetchExchange): Promise<FetchExchange>` - 顺序执行所有拦截器
-
-#### FetcherInterceptors
-
-Fetcher 拦截器集合，包括请求、响应和错误拦截器管理器。
-
-**属性：**
-
-- `request: InterceptorManager` - 请求拦截器管理器
-- `response: InterceptorManager` - 响应拦截器管理器
-- `error: InterceptorManager` - 错误拦截器管理器
 
 ## 🛠️ 开发
 

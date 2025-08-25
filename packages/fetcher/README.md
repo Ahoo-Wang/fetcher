@@ -105,7 +105,41 @@ const data = await response.json<User>();
 
 ## 🔗 Interceptor System
 
-### Request Interceptors
+### Interceptor
+
+Interceptor interface that defines the basic structure of interceptors.
+
+**Properties:**
+
+- `name: string` - The name of the interceptor, used to identify it, must be unique
+- `order: number` - The execution order of the interceptor, smaller values have higher priority
+
+**Methods:**
+
+- `intercept(exchange: FetchExchange): FetchExchange | Promise<FetchExchange>` - Intercept and process data
+
+### InterceptorManager
+
+Interceptor manager for managing multiple interceptors of the same type.
+
+**Methods:**
+
+- `use(interceptor: Interceptor): boolean` - Add interceptor, returns whether the addition was successful
+- `eject(name: string): boolean` - Remove interceptor by name, returns whether the removal was successful
+- `clear(): void` - Clear all interceptors
+- `intercept(exchange: FetchExchange): Promise<FetchExchange>` - Execute all interceptors in sequence
+
+### FetcherInterceptors
+
+Fetcher interceptor collection, including request, response, and error interceptor managers.
+
+**Properties:**
+
+- `request: InterceptorManager` - Request interceptor manager
+- `response: InterceptorManager` - Response interceptor manager
+- `error: InterceptorManager` - Error interceptor manager
+
+### Using Interceptors
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
@@ -113,7 +147,9 @@ import { Fetcher } from '@ahoo-wang/fetcher';
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
 // Add request interceptor (e.g., for authentication)
-const interceptorId = fetcher.interceptors.request.use({
+const success = fetcher.interceptors.request.use({
+  name: 'auth-interceptor',
+  order: 100,
   intercept(exchange) {
     return {
       ...exchange,
@@ -128,8 +164,84 @@ const interceptorId = fetcher.interceptors.request.use({
   },
 });
 
-// Remove interceptor
-fetcher.interceptors.request.eject(interceptorId);
+// Add response interceptor (e.g., for logging)
+fetcher.interceptors.response.use({
+  name: 'logging-interceptor',
+  order: 10,
+  intercept(exchange) {
+    console.log('Response received:', exchange.response?.status);
+    return exchange;
+  },
+});
+
+// Add error interceptor (e.g., for unified error handling)
+fetcher.interceptors.error.use({
+  name: 'error-interceptor',
+  order: 50,
+  intercept(exchange) {
+    if (exchange.error?.name === 'FetchTimeoutError') {
+      console.error('Request timeout:', exchange.error.message);
+    } else {
+      console.error('Network error:', exchange.error?.message);
+    }
+    return exchange;
+  },
+});
+
+// Remove interceptor by name
+fetcher.interceptors.request.eject('auth-interceptor');
+```
+
+### Ordered Execution
+
+The `OrderedCapable` system allows you to control the execution order of interceptors and other components.
+
+#### Ordering Concept
+
+```typescript
+import { OrderedCapable } from '@ahoo-wang/fetcher';
+
+// Lower order values have higher priority
+const highPriority: OrderedCapable = { order: 1 }; // Executes first
+const mediumPriority: OrderedCapable = { order: 10 }; // Executes second
+const lowPriority: OrderedCapable = { order: 100 }; // Executes last
+```
+
+#### Interceptor Ordering
+
+```typescript
+// Add interceptors with different orders
+fetcher.interceptors.request.use({
+  name: 'timing-interceptor',
+  order: 5, // Executes very early
+  intercept(exchange) {
+    console.log('Very early timing');
+    return exchange;
+  },
+});
+
+fetcher.interceptors.request.use({
+  name: 'logging-interceptor',
+  order: 10, // Executes early
+  intercept(exchange) {
+    console.log('Early logging');
+    return exchange;
+  },
+});
+
+fetcher.interceptors.request.use({
+  name: 'auth-interceptor',
+  order: 50, // Executes later
+  intercept(exchange) {
+    // Add auth headers
+    return exchange;
+  },
+});
+
+// Execution order will be:
+// 1. timing-interceptor (order: 5)
+// 2. logging-interceptor (order: 10)
+// 3. auth-interceptor (order: 50)
 ```
 
 ### Response Interceptors
@@ -171,6 +283,99 @@ Core HTTP client class that provides various HTTP methods.
 ```typescript
 new Fetcher(options ? : FetcherOptions);
 ```
+
+**Options:**
+
+- `baseURL`: Base URL for all requests
+- `timeout`: Request timeout in milliseconds
+- `headers`: Default request headers
+
+#### Methods
+
+- `fetch(url: string, request?: FetcherRequest): Promise<Response>` - Generic HTTP request method
+- `get(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - GET request
+- `post(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - POST request
+- `put(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PUT request
+- `delete(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - DELETE request
+- `patch(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PATCH request
+- `head(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - HEAD request
+- `options(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - OPTIONS request
+
+### Response Extension
+
+To provide better TypeScript support, we extend the native Response interface with a type-safe json() method:
+
+```typescript
+// Now you can use it with type safety
+const response = await fetcher.get('/users/123');
+const userData = await response.json<User>(); // Type is Promise<User>
+```
+
+### NamedFetcher Class
+
+An extension of the Fetcher class that automatically registers itself with the global fetcherRegistrar.
+
+#### Constructor
+
+```typescript
+new NamedFetcher(name
+:
+string, options ? : FetcherOptions
+)
+;
+```
+
+### FetcherRegistrar
+
+Global instance for managing multiple Fetcher instances by name.
+
+#### Properties
+
+- `default`: Get or set the default fetcher instance
+
+#### Methods
+
+- `register(name: string, fetcher: Fetcher): void` - Register a fetcher with a name
+- `unregister(name: string): boolean` - Unregister a fetcher by name
+- `get(name: string): Fetcher | undefined` - Get a fetcher by name
+- `requiredGet(name: string): Fetcher` - Get a fetcher by name, throws if not found
+- `fetchers: Map<string, Fetcher>` - Get all registered fetchers
+
+### Interceptor System
+
+#### Interceptor
+
+Interceptor interface that defines the basic structure of interceptors.
+
+**Properties:**
+
+- `name: string` - The name of the interceptor, used to identify it, must be unique
+- `order: number` - The execution order of the interceptor, smaller values have higher priority
+
+**Methods:**
+
+- `intercept(exchange: FetchExchange): FetchExchange | Promise<FetchExchange>` - Intercept and process data
+
+#### InterceptorManager
+
+Interceptor manager for managing multiple interceptors of the same type.
+
+**Methods:**
+
+- `use(interceptor: Interceptor): boolean` - Add interceptor, returns whether the addition was successful
+- `eject(name: string): boolean` - Remove interceptor by name, returns whether the removal was successful
+- `clear(): void` - Clear all interceptors
+- `intercept(exchange: FetchExchange): Promise<FetchExchange>` - Execute all interceptors in sequence
+
+#### FetcherInterceptors
+
+Fetcher interceptor collection, including request, response, and error interceptor managers.
+
+**Properties:**
+
+- `request: InterceptorManager` - Request interceptor manager
+- `response: InterceptorManager` - Response interceptor manager
+- `error: InterceptorManager` - Error interceptor manager
 
 **Options:**
 
