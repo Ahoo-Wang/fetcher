@@ -14,6 +14,7 @@
 export * from './fetcher';
 export * from './fetcherRegistrar';
 export * from './interceptor';
+export * from './mergeRequest';
 export * from './namedFetcher';
 export * from './orderedCapable';
 export * from './requestBodyInterceptor';
