@@ -145,6 +145,7 @@ describe('Fetcher - exchange', () => {
     const requestInterceptor: Interceptor = {
       name: 'RequestInterceptor',
       order: 0,
+      //@typescript-eslint/no-unused-vars
       async intercept(_exchange: FetchExchange): Promise<FetchExchange> {
         // Throw an error to trigger error interceptor
         throw new Error('Request failed');
