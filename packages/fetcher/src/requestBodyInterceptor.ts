@@ -11,8 +11,9 @@
  * limitations under the License.
  */
 
-import { FetchExchange, Interceptor } from './interceptor';
+import { Interceptor } from './interceptor';
 import { ContentTypeHeader, ContentTypeValues } from './types';
+import { FetchExchange } from './fetchExchange';
 
 /**
  * RequestBodyInterceptor Class
