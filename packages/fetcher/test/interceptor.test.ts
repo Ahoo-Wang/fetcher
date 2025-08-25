@@ -37,6 +37,7 @@ describe('interceptor.ts', () => {
       };
 
       const manager = new InterceptorManager([interceptor1, interceptor2]);
+      expect(manager.order).toEqual(Number.MIN_SAFE_INTEGER);
       expect(manager['sortedInterceptors']).toHaveLength(2);
       expect(manager['sortedInterceptors'][0]).toBe(interceptor2); // order 5
       expect(manager['sortedInterceptors'][1]).toBe(interceptor1); // order 10
