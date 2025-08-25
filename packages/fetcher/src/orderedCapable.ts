@@ -12,31 +12,36 @@
  */
 
 /**
- * 具备排序能力的接口
+ * OrderedCapable Interface
  *
- * 实现该接口的类型需要提供一个排序属性，用于确定执行顺序。
- * 数值越小优先级越高，相同数值的元素保持原有相对顺序。
+ * Interface that provides ordering capability for types that implement it.
+ * Implementing types must provide an order property to determine execution order.
+ * Lower numerical values have higher priority, and elements with the same value
+ * maintain their relative order.
  */
 export interface OrderedCapable {
   /**
-   * 排序值
+   * Order value
    *
-   * 数值越小优先级越高。负数、零和正数都支持。
-   * 当多个元素具有相同的order值时，它们的相对顺序将保持不变（稳定排序）。
+   * Lower numerical values have higher priority. Negative numbers, zero, and
+   * positive numbers are all supported.
+   * When multiple elements have the same order value, their relative order
+   * will remain unchanged (stable sort).
    */
   order: number;
 }
 
 /**
- * 对实现了OrderedCapable接口的数组进行排序
+ * Sorts an array of elements that implement the OrderedCapable interface
  *
- * 该函数创建并返回一个新的排序数组，不会修改原始数组。
- * 支持可选的过滤函数来筛选需要排序的元素。
+ * This function creates and returns a new sorted array without modifying the
+ * original array. It supports an optional filter function to select elements
+ * that should participate in sorting.
  *
- * @template T - 数组元素类型，必须实现OrderedCapable接口
- * @param array - 需要排序的数组
- * @param filter - 可选的过滤函数，用于筛选需要参与排序的元素
- * @returns 排序后的新数组，按照order值升序排列
+ * @template T - Array element type that must implement the OrderedCapable interface
+ * @param array - The array to be sorted
+ * @param filter - Optional filter function to select elements that should be sorted
+ * @returns A new array sorted in ascending order by the order property
  *
  * @example
  * ```typescript
@@ -47,11 +52,11 @@ export interface OrderedCapable {
  * ];
  *
  * const sortedItems = toSorted(items);
- * // 结果: [{ order: 1 }, { order: 5 }, { order: 10 }]
+ * // Result: [{ order: 1 }, { order: 5 }, { order: 10 }]
  *
- * // 使用过滤函数
+ * // Using filter function
  * const filteredAndSorted = toSorted(items, item => item.order > 3);
- * // 结果: [{ order: 5 }, { order: 10 }]
+ * // Result: [{ order: 5 }, { order: 10 }]
  * ```
  */
 export function toSorted<T extends OrderedCapable>(

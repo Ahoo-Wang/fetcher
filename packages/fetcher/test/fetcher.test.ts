@@ -11,11 +11,8 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { Fetcher } from '../src/fetcher';
-import { HttpMethod } from '../src/types';
-import { FetchTimeoutError } from '../src/timeout';
-import { FetchExchange } from '../src/interceptor';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Fetcher, HttpMethod } from '../src';
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -41,6 +38,9 @@ describe('Fetcher', () => {
     const fetcher = new Fetcher(options);
 
     expect(fetcher).toBeDefined();
+    // Verify options are properly set
+    expect(fetcher.headers).toHaveProperty('Content-Type', 'application/json');
+    expect(fetcher.timeout).toBe(5000);
   });
 
   it('should make a GET request', async () => {
@@ -120,114 +120,6 @@ describe('Fetcher', () => {
     expect(fetchInit.headers).toHaveProperty(
       'Content-Type',
       'application/json',
-    );
-  });
-
-  it('should handle timeout', async () => {
-    const fetcher = new Fetcher({
-      baseURL: 'https://api.example.com',
-      timeout: 100,
-    });
-
-    // Mock fetch to simulate a timeout scenario
-    mockFetch.mockImplementation((url, options) => {
-      return new Promise((_, reject) => {
-        // Simulate abort event when signal is aborted
-        if (options?.signal) {
-          options.signal.addEventListener('abort', () => {
-            const exchange: FetchExchange = {
-              fetcher,
-              url,
-              request: { method: HttpMethod.GET },
-              response: undefined,
-              error: undefined,
-            };
-            reject(new FetchTimeoutError(exchange, 100));
-          });
-        }
-      });
-    });
-
-    const promise = fetcher.get('/users');
-    await expect(promise).rejects.toThrow(FetchTimeoutError);
-    await expect(promise).rejects.toHaveProperty('name', 'FetchTimeoutError');
-    await expect(promise).rejects.toHaveProperty(
-      'message',
-      'Request timeout of 100ms exceeded for GET https://api.example.com/users',
-    );
-  });
-
-  it('should use request-level timeout over config-level timeout', async () => {
-    const fetcher = new Fetcher({
-      baseURL: 'https://api.example.com',
-      timeout: 5000,
-    });
-
-    // Mock fetch to simulate a timeout scenario
-    mockFetch.mockImplementation((url, options) => {
-      return new Promise((_, reject) => {
-        // Simulate abort event when signal is aborted
-        if (options?.signal) {
-          options.signal.addEventListener('abort', () => {
-            const exchange: FetchExchange = {
-              fetcher,
-              url,
-              request: { method: HttpMethod.GET },
-              response: undefined,
-              error: undefined,
-            };
-            reject(new FetchTimeoutError(exchange, 100));
-          });
-        }
-      });
-    });
-
-    const promise = fetcher.get('/users', { timeout: 100 });
-    await expect(promise).rejects.toThrow(FetchTimeoutError);
-    await expect(promise).rejects.toHaveProperty('name', 'FetchTimeoutError');
-    await expect(promise).rejects.toHaveProperty(
-      'message',
-      'Request timeout of 100ms exceeded for GET https://api.example.com/users',
-    );
-  });
-
-  it('should throw FetchTimeoutError with correct properties', async () => {
-    const fetcher = new Fetcher({
-      baseURL: 'https://api.example.com',
-      timeout: 100,
-    });
-
-    // Mock fetch to simulate a timeout scenario
-    mockFetch.mockImplementation((url, options) => {
-      return new Promise((_, reject) => {
-        // Simulate abort event when signal is aborted
-        if (options?.signal) {
-          options.signal.addEventListener('abort', () => {
-            const exchange: FetchExchange = {
-              fetcher,
-              url,
-              request: {
-                method: HttpMethod.POST,
-                body: JSON.stringify({ name: 'John' }),
-              },
-              response: undefined,
-              error: undefined,
-            };
-            reject(new FetchTimeoutError(exchange, 100));
-          });
-        }
-      });
-    });
-
-    const promise = fetcher.post('/users/123', {
-      body: JSON.stringify({ name: 'John' }),
-    });
-
-    await expect(promise).rejects.toThrow(FetchTimeoutError);
-    await expect(promise).rejects.toHaveProperty('name', 'FetchTimeoutError');
-    await expect(promise).rejects.toHaveProperty(
-      'message',
-      'Request timeout of 100ms exceeded for POST https://api.example.com/users/123',
     );
   });
 

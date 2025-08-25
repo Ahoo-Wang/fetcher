@@ -12,7 +12,7 @@
  */
 
 import { UrlBuilder } from './urlBuilder';
-import { FetchTimeoutError, resolveTimeout, TimeoutCapable } from './timeout';
+import { resolveTimeout, TimeoutCapable } from './timeout';
 import {
   BaseURLCapable,
   ContentTypeHeader,
@@ -196,8 +196,8 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
     // Merge request options
     const fetchRequest: FetcherRequest = {
       ...request,
-      headers:
-        Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
+      headers: Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
+      timeout: resolveTimeout(request.timeout, this.timeout),
     };
     const finalUrl = this.urlBuilder.build(url, request.path, request.query);
     let exchange: FetchExchange = {
@@ -206,19 +206,13 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
       request: fetchRequest,
       response: undefined,
       error: undefined,
+      attributes: {},
     };
     try {
       // Apply request interceptors
-      const requestExchange = {
-        ...exchange,
-      };
-      exchange = await this.interceptors.request.intercept(requestExchange);
-      exchange.response = await this.timeoutFetch(exchange);
+      exchange = await this.interceptors.request.intercept(exchange);
       // Apply response interceptors
-      const responseExchange = {
-        ...exchange,
-      };
-      exchange = await this.interceptors.response.intercept(responseExchange);
+      exchange = await this.interceptors.response.intercept(exchange);
       return exchange;
     } catch (error) {
       // Apply error interceptors
@@ -228,60 +222,6 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
         return exchange;
       }
       throw exchange.error;
-    }
-  }
-
-  /**
-   * HTTP request method with timeout control
-   *
-   * This method uses Promise.race to implement timeout control, initiating both
-   * fetch request and timeout Promise simultaneously. When either Promise completes,
-   * it returns the result or throws an exception.
-   *
-   * @param exchange - The exchange containing request information
-   * @returns Promise<Response> HTTP response Promise
-   * @throws FetchTimeoutError Thrown when the request times out
-   */
-  private async timeoutFetch(exchange: FetchExchange) {
-    // Extract timeout from request
-    const url = exchange.url;
-    const request = exchange.request;
-    const requestTimeout = request.timeout;
-    const timeout = resolveTimeout(requestTimeout, this.timeout);
-    if (!timeout) {
-      return fetch(url, request as RequestInit);
-    }
-
-    const controller = new AbortController();
-    // Create a new request object to avoid modifying the original request object
-    const fetchRequest = {
-      ...request,
-      signal: controller.signal,
-    };
-
-    let timerId: ReturnType<typeof setTimeout> | null = null;
-    const timeoutPromise = new Promise<Response>((_, reject) => {
-      timerId = setTimeout(() => {
-        // Clean up timer resources and handle timeout error
-        if (timerId) {
-          clearTimeout(timerId);
-        }
-        const error = new FetchTimeoutError(exchange, timeout);
-        controller.abort(error);
-        reject(error);
-      }, timeout);
-    });
-
-    try {
-      return await Promise.race([
-        fetch(url, fetchRequest as RequestInit),
-        timeoutPromise,
-      ]);
-    } finally {
-      // Clean up timer resources
-      if (timerId) {
-        clearTimeout(timerId);
-      }
     }
   }
 

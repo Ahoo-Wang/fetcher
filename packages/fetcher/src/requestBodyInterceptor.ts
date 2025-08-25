@@ -15,19 +15,41 @@ import { FetchExchange, Interceptor } from './interceptor';
 import { ContentTypeHeader, ContentTypeValues } from './types';
 
 /**
- * 请求体拦截器，负责将普通对象转换为JSON字符串
+ * RequestBodyInterceptor Class
+ *
+ * Interceptor responsible for converting plain objects to JSON strings for HTTP request bodies.
+ * This interceptor ensures that object request bodies are properly serialized and that
+ * the appropriate Content-Type header is set.
+ *
+ * @remarks
+ * This interceptor runs early in the request processing chain with the lowest possible
+ * order value (Number.MIN_SAFE_INTEGER) to ensure request bodies are properly formatted
+ * before other interceptors process them.
  */
 export class RequestBodyInterceptor implements Interceptor {
+  /**
+   * Interceptor name, used for identification and management
+   */
   name = 'RequestBodyInterceptor';
+
+  /**
+   * Interceptor execution order, set to minimum safe integer to ensure early execution
+   *
+   * @remarks
+   * This interceptor should run before other request interceptors to ensure
+   * request bodies are properly formatted early in the processing chain.
+   */
   order = Number.MIN_SAFE_INTEGER;
 
   /**
-   * 尝试转换请求体为合法的 fetch API body 类型
+   * Attempts to convert request body to a valid fetch API body type
    *
-   * 根据 Fetch API 规范，body 可以是多种类型，但对于普通对象，需要转换为 JSON 字符串
-   * https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#setting_a_body
+   * According to the Fetch API specification, body can be multiple types, but for
+   * plain objects, they need to be converted to JSON strings.
    *
-   * 支持的类型:
+   * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#setting_a_body}
+   *
+   * Supported types:
    *   - a string
    *   - ArrayBuffer
    *   - TypedArray
@@ -38,27 +60,39 @@ export class RequestBodyInterceptor implements Interceptor {
    *   - FormData
    *   - ReadableStream
    *
-   * 对于不支持的 object 类型（如普通对象），将自动转换为 JSON 字符串
+   * For unsupported object types (like plain objects), they will be automatically
+   * converted to JSON strings.
    *
-   * @param exchange
-   * @returns 转换后的请求
+   * @param exchange - The exchange object containing the request to process
+   * @returns The processed exchange object with potentially modified request body
+   *
+   * @example
+   * // Plain object body will be converted to JSON
+   * const exchange = {
+   *   request: {
+   *     body: { name: 'John', age: 30 }
+   *   }
+   * };
+   * const result = interceptor.intercept(exchange);
+   * // result.request.body will be '{"name":"John","age":30}'
+   * // result.request.headers will include 'Content-Type: application/json'
    */
   intercept(exchange: FetchExchange): FetchExchange {
     const request = exchange.request;
-    // 如果没有请求体，直接返回
+    // If there's no request body, return unchanged
     if (request.body === undefined || request.body === null) {
       return exchange;
     }
 
-    // 如果请求体不是对象，直接返回
+    // If request body is not an object, return unchanged
     if (typeof request.body !== 'object') {
       return exchange;
     }
 
-    // 检查是否为支持的类型
+    // Check if it's a supported type
     if (
       request.body instanceof ArrayBuffer ||
-      ArrayBuffer.isView(request.body) || // 包括 TypedArray 和 DataView
+      ArrayBuffer.isView(request.body) || // Includes TypedArray and DataView
       request.body instanceof Blob ||
       request.body instanceof File ||
       request.body instanceof URLSearchParams ||
@@ -68,22 +102,22 @@ export class RequestBodyInterceptor implements Interceptor {
       return exchange;
     }
 
-    // 对于普通对象，转换为 JSON 字符串
-    // 同时确保 Content-Type 头部设置为 application/json
+    // For plain objects, convert to JSON string
+    // Also ensure Content-Type header is set to application/json
     const modifiedRequest = { ...request };
     modifiedRequest.body = JSON.stringify(request.body);
 
-    // 设置 Content-Type 头部
+    // Set Content-Type header
     if (!modifiedRequest.headers) {
       modifiedRequest.headers = {};
     }
 
-    // 只有在没有显式设置 Content-Type 时才设置默认值
+    // Only set default Content-Type if not explicitly set
     const headers = modifiedRequest.headers as Record<string, string>;
     if (!headers[ContentTypeHeader]) {
       headers[ContentTypeHeader] = ContentTypeValues.APPLICATION_JSON;
     }
-
-    return { ...exchange, request: modifiedRequest };
+    exchange.request = modifiedRequest;
+    return exchange;
   }
 }
