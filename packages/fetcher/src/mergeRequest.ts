@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { FetcherRequest } from './fetcher';
+import { FetcherRequest } from './fetchExchange';
 
 /**
  * Merges two FetcherRequest objects into one.
