@@ -15,6 +15,10 @@ import { Fetcher } from './fetcher';
 import { HeadersCapable } from './types';
 import { TimeoutCapable } from './timeout';
 
+export enum RequestField {
+  METHOD = 'method',
+  BODY = 'body',
+}
 
 /**
  * Fetcher request configuration interface
@@ -104,6 +108,7 @@ export interface FetcherRequest
    */
   body?: BodyInit | Record<string, any> | string | null;
 }
+
 
 /**
  * FetchExchange Interface
