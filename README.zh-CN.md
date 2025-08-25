@@ -15,7 +15,7 @@
 
 - **⚡ 超轻量级**：仅 1.9kB min+gzip - 比 Axios 小 86%
 - **🧭 路径和查询参数**：内置支持路径（`{id}`）和查询参数
-- **🔗 拦截器系统**：请求、响应和错误拦截器的中间件模式
+- **🔗 拦截器系统**：带有序执行的请求、响应和错误拦截器，支持灵活的中间件模式
 - **⏱️ 超时控制**：可配置的请求超时和适当的错误处理
 - **🔄 Fetch API 兼容**：与原生 Fetch API 完全兼容
 - **🛡️ TypeScript 支持**：完整的 TypeScript 类型定义，提升开发体验
@@ -146,8 +146,10 @@ import { Fetcher } from '@ahoo-wang/fetcher';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
-// 添加请求拦截器（例如用于认证）
+// 添加带排序的请求拦截器（例如用于认证）
 fetcher.interceptors.request.use({
+  name: 'auth-interceptor',
+  order: 100, // 数值越小优先级越高
   intercept(exchange) {
     return {
       ...exchange,
@@ -162,13 +164,28 @@ fetcher.interceptors.request.use({
   },
 });
 
+// 添加在认证之前执行的日志拦截器
+fetcher.interceptors.request.use({
+  name: 'logging-interceptor',
+  order: 50, // 在 auth-interceptor 之前执行
+  intercept(exchange) {
+    console.log('发送请求:', exchange.request.method, exchange.url);
+    return exchange;
+  },
+});
+
 // 添加响应拦截器（例如用于日志记录）
 fetcher.interceptors.response.use({
+  name: 'response-logging-interceptor',
+  order: 10,
   intercept(exchange) {
     console.log('收到响应:', exchange.response.status);
     return exchange;
   },
 });
+
+// 通过名称移除拦截器
+fetcher.interceptors.request.eject('auth-interceptor');
 ```
 
 ### 服务器发送事件

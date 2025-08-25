@@ -16,7 +16,8 @@ smaller than Axios while providing the same powerful features.
 
 - **⚡ Ultra-Lightweight**: Only 1.9kB min+gzip - 86% smaller than Axios
 - **🧭 Path & Query Parameters**: Built-in support for path (`{id}`) and query parameters
-- **🔗 Interceptor System**: Request, response, and error interceptors for middleware patterns
+- **🔗 Interceptor System**: Request, response, and error interceptors with ordered execution for flexible middleware
+  patterns
 - **⏱️ Timeout Control**: Configurable request timeouts with proper error handling
 - **🔄 Fetch API Compatible**: Fully compatible with the native Fetch API
 - **🛡️ TypeScript Support**: Complete TypeScript definitions for type-safe development
@@ -149,8 +150,10 @@ import { Fetcher } from '@ahoo-wang/fetcher';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
-// Add request interceptor (e.g., for authentication)
+// Add request interceptor with ordering (e.g., for authentication)
 fetcher.interceptors.request.use({
+  name: 'auth-interceptor',
+  order: 100, // Lower values execute first
   intercept(exchange) {
     return {
       ...exchange,
@@ -165,13 +168,28 @@ fetcher.interceptors.request.use({
   },
 });
 
+// Add logging interceptor that executes before authentication
+fetcher.interceptors.request.use({
+  name: 'logging-interceptor',
+  order: 50, // Executes before auth-interceptor
+  intercept(exchange) {
+    console.log('Request sending:', exchange.request.method, exchange.url);
+    return exchange;
+  },
+});
+
 // Add response interceptor (e.g., for logging)
 fetcher.interceptors.response.use({
+  name: 'response-logging-interceptor',
+  order: 10,
   intercept(exchange) {
     console.log('Response received:', exchange.response.status);
     return exchange;
   },
 });
+
+// Remove interceptor by name
+fetcher.interceptors.request.eject('auth-interceptor');
 ```
 
 ### Server-Sent Events
