@@ -68,7 +68,10 @@ export class InterceptorManager implements Interceptor {
     if (this.sortedInterceptors.some(item => item.name === interceptor.name)) {
       return false;
     }
-    this.sortedInterceptors = toSorted([...this.sortedInterceptors, interceptor]);
+    this.sortedInterceptors = toSorted([
+      ...this.sortedInterceptors,
+      interceptor,
+    ]);
     return true;
   }
 
@@ -78,7 +81,10 @@ export class InterceptorManager implements Interceptor {
    */
   eject(name: string): boolean {
     const original = this.sortedInterceptors;
-    this.sortedInterceptors = toSorted(original, interceptor => interceptor.name !== name);
+    this.sortedInterceptors = toSorted(
+      original,
+      interceptor => interceptor.name !== name,
+    );
     return original.length !== this.sortedInterceptors.length;
   }
 

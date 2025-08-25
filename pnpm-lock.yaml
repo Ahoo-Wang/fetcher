@@ -177,6 +177,40 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4
 
+  packages/wow:
+    dependencies:
+      '@ahoo-wang/fetcher':
+        specifier: workspace:*
+        version: link:../fetcher
+      '@ahoo-wang/fetcher-decorator':
+        specifier: workspace:*
+        version: link:../decorator
+      '@ahoo-wang/fetcher-eventstream':
+        specifier: workspace:*
+        version: link:../eventstream
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: ^3.2.4
+        version: 3.2.4(vitest@3.2.4)
+      eslint:
+        specifier: ^9.33.0
+        version: 9.34.0
+      prettier:
+        specifier: ^3.6.2
+        version: 3.6.2
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      unplugin-dts:
+        specifier: 1.0.0-beta.6
+        version: 1.0.0-beta.6(esbuild@0.25.9)(rollup@4.47.1)(typescript@5.9.2)(vite@7.1.3)
+      vite:
+        specifier: ^7.1.3
+        version: 7.1.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4
+
 packages:
   '@ampproject/remapping@2.3.0':
     resolution:
