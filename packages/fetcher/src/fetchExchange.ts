@@ -15,7 +15,6 @@ import { Fetcher } from './fetcher';
 import { HeadersCapable } from './types';
 import { TimeoutCapable } from './timeout';
 
-
 /**
  * Fetcher request configuration interface
  *
@@ -144,7 +143,7 @@ export interface FetcherRequest
  * };
  * ```
  */
-export interface FetchExchange {
+export class FetchExchange {
   /**
    * The Fetcher instance that initiated this exchange
    */
@@ -163,12 +162,12 @@ export interface FetchExchange {
   /**
    * The response object, undefined until the request completes successfully
    */
-  response: Response | undefined;
+  response?: Response;
 
   /**
    * Any error that occurred during the request processing, undefined if no error occurred
    */
-  error: Error | any | undefined;
+  error?: Error | any;
 
   /**
    * Shared attributes for passing data between interceptors
@@ -184,5 +183,39 @@ export interface FetchExchange {
    * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
    * - Be mindful of memory usage when storing large objects
    */
-  attributes?: Record<string, any>;
+  attributes: Record<string, any>;
+
+  constructor(
+    fetcher: Fetcher,
+    url: string,
+    request: FetcherRequest = {},
+    response?: Response,
+    error?: Error | any,
+    attributes: Record<string, any> = {},
+  ) {
+    this.fetcher = fetcher;
+    this.url = url;
+    this.request = request;
+    this.response = response;
+    this.error = error;
+    this.attributes = attributes;
+  }
+
+  /**
+   * Checks if this exchange has an error
+   *
+   * @returns true if an error is present, false otherwise
+   */
+  hasError(): boolean {
+    return this.error !== undefined && this.error !== null;
+  }
+
+  /**
+   * Checks if this exchange has a response
+   *
+   * @returns true if a response is present, false otherwise
+   */
+  hasResponse(): boolean {
+    return this.response !== undefined && this.response !== null;
+  }
 }

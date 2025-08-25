@@ -112,14 +112,10 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
         Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
-    const exchange: FetchExchange = {
-      fetcher: this,
-      url: url,
-      request: fetchRequest,
-      response: undefined,
-      error: undefined,
-      attributes: {},
-    };
+
+    const exchange = new FetchExchange(
+      this, url, fetchRequest,
+    );
     return this.exchange(exchange);
   }
 
