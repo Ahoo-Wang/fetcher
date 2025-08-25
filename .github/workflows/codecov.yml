@@ -1,19 +1,15 @@
-name: CI
+name: Codecov
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  build-and-test:
+  build-test-upload-coverage:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [20, 22]
 
     steps:
       - name: Checkout code
@@ -27,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 22
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -39,5 +35,8 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Lint
-        run: pnpm lint
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: packages/*/coverage/coverage-final.json
