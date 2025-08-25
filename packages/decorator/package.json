@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-decorator",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "description": "TypeScript decorators for clean API service definitions with Fetcher HTTP client",
   "keywords": [
     "fetch",
