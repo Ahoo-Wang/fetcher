@@ -11,10 +11,9 @@
  * limitations under the License.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { RequestBodyInterceptor } from '../src/requestBodyInterceptor';
-import { ContentTypeHeader, ContentTypeValues } from '../src';
-import { Fetcher, FetchExchange } from '../src';
+import { ContentTypeHeader, ContentTypeValues, Fetcher, FetchExchange } from '../src';
 
 describe('RequestBodyInterceptor', () => {
   const interceptor = new RequestBodyInterceptor();
@@ -29,6 +28,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -45,6 +45,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -61,6 +62,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -77,6 +79,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -93,6 +96,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -110,6 +114,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -127,6 +132,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -145,6 +151,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -162,6 +169,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -179,6 +187,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -196,6 +205,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -214,6 +224,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -231,6 +242,7 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
@@ -248,10 +260,11 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
-    expect(result).not.toBe(exchange); // Should return a new object
+    expect(result).toBe(exchange); // Should return the same object (modified in place)
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
@@ -273,10 +286,11 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
-    expect(result).not.toBe(exchange); // Should return a new object
+    expect(result).toBe(exchange); // Should return the same object (modified in place)
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that existing Content-Type header is preserved
@@ -295,10 +309,11 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
-    expect(result).not.toBe(exchange); // Should return a new object
+    expect(result).toBe(exchange); // Should return the same object (modified in place)
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
@@ -325,10 +340,11 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
-    expect(result).not.toBe(exchange); // Should return a new object
+    expect(result).toBe(exchange); // Should return the same object (modified in place)
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
@@ -347,10 +363,11 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
-    expect(result).not.toBe(exchange); // Should return a new object
+    expect(result).toBe(exchange); // Should return the same object (modified in place)
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
@@ -370,10 +387,11 @@ describe('RequestBodyInterceptor', () => {
       },
       response: undefined,
       error: undefined,
+      attributes: {},
     };
 
     const result = interceptor.intercept(exchange);
-    expect(result).not.toBe(exchange); // Should return a new object
+    expect(result).toBe(exchange); // Should return the same object (modified in place)
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set

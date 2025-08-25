@@ -117,7 +117,7 @@ export class RequestBodyInterceptor implements Interceptor {
     if (!headers[ContentTypeHeader]) {
       headers[ContentTypeHeader] = ContentTypeValues.APPLICATION_JSON;
     }
-
-    return { ...exchange, request: modifiedRequest };
+    exchange.request = modifiedRequest;
+    return exchange;
   }
 }

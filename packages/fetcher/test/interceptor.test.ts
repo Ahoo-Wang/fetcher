@@ -11,15 +11,8 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi } from 'vitest';
-import {
-  Interceptor,
-  InterceptorManager,
-  FetcherInterceptors,
-  FetchExchange,
-} from '../src';
-import { HttpMethod } from '../src';
-import { Fetcher } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import { Fetcher, FetcherInterceptors, FetchExchange, HttpMethod, Interceptor, InterceptorManager } from '../src';
 
 describe('interceptor.ts', () => {
   describe('InterceptorManager', () => {
@@ -125,6 +118,7 @@ describe('interceptor.ts', () => {
         request: {},
         response: undefined,
         error: undefined,
+        attributes: {},
       };
 
       const interceptor1: Interceptor = {
@@ -166,6 +160,7 @@ describe('interceptor.ts', () => {
         request: {},
         response: undefined,
         error: undefined,
+        attributes: {},
       };
 
       const interceptor1: Interceptor = {
@@ -208,6 +203,7 @@ describe('interceptor.ts', () => {
         request: {},
         response: undefined,
         error: undefined,
+        attributes: {},
       };
 
       const interceptor1: Interceptor = {
@@ -263,6 +259,7 @@ describe('interceptor.ts', () => {
         request: {},
         response: undefined,
         error: undefined,
+        attributes: {},
       };
 
       const interceptor: Interceptor = {
@@ -291,6 +288,7 @@ describe('interceptor.ts', () => {
         request: {},
         response: undefined,
         error: undefined,
+        attributes: {},
       };
 
       const interceptor1: Interceptor = {
@@ -346,6 +344,7 @@ describe('interceptor.ts', () => {
         request: {},
         response: undefined,
         error: undefined,
+        attributes: {},
       };
 
       const calls: string[] = [];
@@ -450,6 +449,7 @@ describe('interceptor.ts', () => {
         },
         response: undefined,
         error: undefined,
+        attributes: {},
       };
 
       const requestInterceptor: Interceptor = {
@@ -491,6 +491,7 @@ describe('interceptor.ts', () => {
         request: {},
         response: response,
         error: undefined,
+        attributes: {},
       };
 
       const responseInterceptor: Interceptor = {
@@ -529,6 +530,7 @@ describe('interceptor.ts', () => {
         request: {},
         response: undefined,
         error: error,
+        attributes: {},
       };
 
       const errorInterceptor: Interceptor = {
