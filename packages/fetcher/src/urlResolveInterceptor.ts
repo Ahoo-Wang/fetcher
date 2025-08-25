@@ -42,7 +42,7 @@ export class UrlResolveInterceptor implements Interceptor {
   /**
    * The order of this interceptor (executed first)
    */
-  order = Number.MIN_SAFE_INTEGER;
+  order = Number.MIN_SAFE_INTEGER + 100;
 
   /**
    * Resolves the final URL by combining the base URL, path parameters, and query parameters
