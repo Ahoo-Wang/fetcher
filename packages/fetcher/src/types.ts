@@ -62,4 +62,17 @@ export interface NamedCapable {
   name: string;
 }
 
-
+/**
+ * Global extension of Response interface
+ * Adds type-safe json() method support to Response objects
+ */
+declare global {
+  interface Response {
+    /**
+     * Parse response body as JSON in a type-safe manner
+     * @template T The type of returned data, defaults to any
+     * @returns Promise<T> The parsed JSON data
+     */
+    json<T = any>(): Promise<T>;
+  }
+}
