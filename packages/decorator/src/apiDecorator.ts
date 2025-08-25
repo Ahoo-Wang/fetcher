@@ -1,6 +1,6 @@
 import { HeadersCapable, TimeoutCapable } from '@ahoo-wang/fetcher';
 import { ENDPOINT_METADATA_KEY } from './endpointDecorator';
-import { RequestExecutor, FunctionMetadata } from './requestExecutor';
+import { FunctionMetadata, RequestExecutor } from './requestExecutor';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator';
 import 'reflect-metadata';
 

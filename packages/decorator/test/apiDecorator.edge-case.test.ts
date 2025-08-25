@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   api,
-  get,
-  path,
-  PARAMETER_METADATA_KEY,
   API_METADATA_KEY,
   ENDPOINT_METADATA_KEY,
+  get,
+  PARAMETER_METADATA_KEY,
   ParameterType,
+  path,
 } from '../src';
 import { fetcherRegistrar } from '@ahoo-wang/fetcher';
 import 'reflect-metadata';

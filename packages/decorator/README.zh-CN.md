@@ -261,7 +261,6 @@ class ComplexService {
 - **空对象**会被优雅地处理，回退到端点配置
 
 ```typescript
-
 @api('/users')
 class UserService {
   @post('/')

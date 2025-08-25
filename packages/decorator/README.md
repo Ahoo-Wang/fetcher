@@ -268,7 +268,6 @@ configuration using a sophisticated merging strategy:
 - **Empty objects** are handled gracefully, falling back to endpoint configuration
 
 ```typescript
-
 @api('/users')
 class UserService {
   @post('/')

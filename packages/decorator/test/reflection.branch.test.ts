@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { getParameterNames, getParameterName } from '../src/reflection';
+import { describe, expect, it } from 'vitest';
+import { getParameterName, getParameterNames } from '../src/reflection';
 
 describe('reflection - branch coverage', () => {
   it('should handle non-function input to getParameterNames', () => {

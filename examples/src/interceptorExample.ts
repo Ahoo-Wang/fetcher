@@ -45,7 +45,8 @@ export function initInterceptorExample(): void {
           return exchange;
         },
       };
-      const requestInterceptorId = fetcher.interceptors.request.use(requestInterceptor);
+      const requestInterceptorId =
+        fetcher.interceptors.request.use(requestInterceptor);
 
       try {
         const response: Response = await fetcher.get('/posts/1');
