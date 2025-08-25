@@ -14,6 +14,7 @@
 import { Fetcher, FetcherRequest } from './fetcher';
 import { NamedCapable } from './types';
 import { OrderedCapable, toSorted } from './orderedCapable';
+import { RequestBodyInterceptor } from './requestBodyInterceptor';
 
 export interface FetchExchange {
   fetcher: Fetcher;
@@ -111,7 +112,7 @@ export class FetcherInterceptors {
   /**
    * 请求拦截器管理器
    */
-  request: InterceptorManager = new InterceptorManager();
+  request: InterceptorManager = new InterceptorManager([new RequestBodyInterceptor()]);
 
   /**
    * 响应拦截器管理器
