@@ -12,6 +12,8 @@
  */
 
 import { Fetcher, FetcherRequest } from './fetcher';
+import { NamedCapable } from './types';
+import { OrderedCapable, toSorted } from './orderedCapable';
 
 export interface FetchExchange {
   fetcher: Fetcher;
@@ -25,7 +27,12 @@ export interface FetchExchange {
  * 拦截器接口，定义了拦截器的基本结构
  * @template T - 拦截器处理的数据类型
  */
-export interface Interceptor {
+export interface Interceptor extends NamedCapable, OrderedCapable {
+  /**
+   * 拦截器的名称,用于标识拦截器，不可重复
+   */
+  name: string;
+
   /**
    * 拦截并处理数据
    * @param exchange - 需要处理的数据
@@ -38,34 +45,48 @@ export interface Interceptor {
  * 拦截器管理器类，用于管理同一类型的多个拦截器
  */
 export class InterceptorManager implements Interceptor {
-  private interceptors: Array<Interceptor | null> = [];
+  get name(): string {
+    return this.constructor.name;
+  }
+
+  get order(): number {
+    return Number.MIN_SAFE_INTEGER;
+  }
+
+  private sortedInterceptors: Interceptor[] = [];
+
+  constructor(interceptors: Interceptor[] = []) {
+    this.sortedInterceptors = toSorted(interceptors);
+  }
 
   /**
    * 添加拦截器到管理器中
    * @param interceptor - 要添加的拦截器
    * @returns 拦截器在管理器中的索引位置
    */
-  use(interceptor: Interceptor): number {
-    const index = this.interceptors.length;
-    this.interceptors.push(interceptor);
-    return index;
+  use(interceptor: Interceptor): boolean {
+    if (this.sortedInterceptors.some(item => item.name === interceptor.name)) {
+      return false;
+    }
+    this.sortedInterceptors = toSorted([...this.sortedInterceptors, interceptor]);
+    return true;
   }
 
   /**
-   * 根据索引移除拦截器
-   * @param index - 要移除的拦截器索引
+   * 根据名称移除拦截器
+   * @param name 要移除的拦截器名称
    */
-  eject(index: number): void {
-    if (this.interceptors[index]) {
-      this.interceptors[index] = null;
-    }
+  eject(name: string): boolean {
+    const original = this.sortedInterceptors;
+    this.sortedInterceptors = toSorted(original, interceptor => interceptor.name !== name);
+    return original.length !== this.sortedInterceptors.length;
   }
 
   /**
    * 清空所有拦截器
    */
   clear(): void {
-    this.interceptors = [];
+    this.sortedInterceptors = [];
   }
 
   /**
@@ -75,11 +96,9 @@ export class InterceptorManager implements Interceptor {
    */
   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
     let processedExchange = exchange;
-    for (const interceptor of this.interceptors) {
-      if (interceptor) {
-        // 每个拦截器处理前一个拦截器的输出结果
-        processedExchange = await interceptor.intercept(processedExchange);
-      }
+    for (const interceptor of this.sortedInterceptors) {
+      // 每个拦截器处理前一个拦截器的输出结果
+      processedExchange = await interceptor.intercept(processedExchange);
     }
     return processedExchange;
   }

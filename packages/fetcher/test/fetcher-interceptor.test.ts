@@ -35,6 +35,8 @@ describe('Fetcher Interceptors', () => {
 
     // Add a request interceptor that modifies the request
     const requestInterceptor: Interceptor = {
+      name: 'request-interceptor-1',
+      order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
         return {
           ...exchange,
@@ -68,6 +70,8 @@ describe('Fetcher Interceptors', () => {
 
     // Add a response interceptor that modifies the response
     const responseInterceptor: Interceptor = {
+      name: 'response-interceptor-1',
+      order: 0,
       intercept: vi.fn(async (exchange: FetchExchange) => {
         // Add a custom property to the response
         if (exchange.response) {
@@ -97,6 +101,8 @@ describe('Fetcher Interceptors', () => {
 
     // Add an error interceptor that modifies the error
     const errorInterceptor: Interceptor = {
+      name: 'error-interceptor-1',
+      order: 0,
       intercept: vi.fn(async (exchange: FetchExchange) => {
         exchange.error = new Error(`Intercepted: ${exchange.error?.message}`);
         return exchange;
@@ -117,6 +123,8 @@ describe('Fetcher Interceptors', () => {
 
     // Add multiple request interceptors
     const interceptor1: Interceptor = {
+      name: 'multi-request-interceptor-1',
+      order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
         return {
           ...exchange,
@@ -132,6 +140,8 @@ describe('Fetcher Interceptors', () => {
     };
 
     const interceptor2: Interceptor = {
+      name: 'multi-request-interceptor-2',
+      order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
         return {
           ...exchange,
@@ -168,6 +178,8 @@ describe('Fetcher Interceptors', () => {
 
     // Add an async request interceptor
     const asyncInterceptor: Interceptor = {
+      name: 'async-interceptor-1',
+      order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
         return Promise.resolve({
           ...exchange,
@@ -201,6 +213,8 @@ describe('Fetcher Interceptors', () => {
 
     // Add an interceptor and then eject it
     const interceptor: Interceptor = {
+      name: 'ejected-interceptor-1',
+      order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
         return {
           ...exchange,
@@ -215,8 +229,8 @@ describe('Fetcher Interceptors', () => {
       }),
     };
 
-    const index = fetcher.interceptors.request.use(interceptor);
-    fetcher.interceptors.request.eject(index);
+    fetcher.interceptors.request.use(interceptor);
+    fetcher.interceptors.request.eject('ejected-interceptor-1');
     mockFetch.mockResolvedValue(new Response('OK'));
 
     await fetcher.get('/users');
@@ -237,6 +251,8 @@ describe('Fetcher Interceptors', () => {
 
     // Add an error interceptor that transforms error to response
     const errorInterceptor: Interceptor = {
+      name: 'error-to-response-interceptor-1',
+      order: 0,
       intercept: vi.fn(async (exchange: FetchExchange) => {
         // Transform the error to a response
         exchange.response = new Response('Error handled by interceptor', {
@@ -266,6 +282,8 @@ describe('Fetcher Interceptors', () => {
     const calls: string[] = [];
 
     fetcher.interceptors.request.use({
+      name: 'order-test-interceptor-1',
+      order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
         calls.push('interceptor1');
         return exchange;
@@ -273,6 +291,8 @@ describe('Fetcher Interceptors', () => {
     });
 
     fetcher.interceptors.request.use({
+      name: 'order-test-interceptor-2',
+      order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
         calls.push('interceptor2');
         return exchange;

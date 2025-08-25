@@ -20,6 +20,9 @@ import {
 } from '@ahoo-wang/fetcher';
 
 export class EventStreamInterceptor implements Interceptor {
+  name = 'EventStreamInterceptor';
+  order = Number.MAX_SAFE_INTEGER;
+
   intercept(exchange: FetchExchange): FetchExchange {
     // Check if the response is an event stream
     const response = exchange.response;

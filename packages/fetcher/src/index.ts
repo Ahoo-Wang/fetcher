@@ -15,6 +15,8 @@ export * from './fetcher';
 export * from './fetcherRegistrar';
 export * from './interceptor';
 export * from './namedFetcher';
+export * from './orderedCapable';
+export * from './requestBodyInterceptor';
 export * from './timeout';
 export * from './types';
 export * from './urlBuilder';

@@ -221,37 +221,85 @@ Global instance for managing multiple Fetcher instances by name.
 
 ### Interceptor System
 
-#### InterceptorManager
+#### Request Interceptors
 
-Interceptor manager for managing multiple interceptors of the same type.
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
 
-**Methods:**
+const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
-- `use(interceptor: Interceptor): number` - Add interceptor, returns interceptor ID
-- `eject(index: number): void` - Remove interceptor by ID
-- `clear(): void` - Clear all interceptors
-- `intercept(exchange: FetchExchange): Promise<FetchExchange>` - Execute all interceptors sequentially
+// Add request interceptor (e.g., for authentication)
+const interceptorId = fetcher.interceptors.request.use({
+  name: 'auth-interceptor',
+  order: 100,
+  intercept(exchange) {
+    return {
+      ...exchange,
+      request: {
+        ...exchange.request,
+        headers: {
+          ...exchange.request.headers,
+          Authorization: 'Bearer ' + getAuthToken(),
+        },
+      },
+    };
+  },
+});
 
-#### FetcherInterceptors
+// Remove interceptor
+fetcher.interceptors.request.eject('auth-interceptor');
+```
 
-Fetcher interceptor collection, including request, response, and error interceptor managers.
+### OrderedCapable System
 
-**Properties:**
+The `OrderedCapable` system allows you to control the execution order of interceptors and other components.
 
-- `request: InterceptorManager` - Request interceptor manager
-- `response: InterceptorManager` - Response interceptor manager
-- `error: InterceptorManager` - Error interceptor manager
+#### Ordering Concept
 
-## 🛠️ Development
+```typescript
+import { OrderedCapable } from '@ahoo-wang/fetcher';
 
-### Testing
+// Lower order values have higher priority
+const highPriority: OrderedCapable = { order: 1 }; // Executes first
+const mediumPriority: OrderedCapable = { order: 10 }; // Executes second
+const lowPriority: OrderedCapable = { order: 100 }; // Executes last
+```
 
-```bash
-# Run tests
-pnpm test
+#### Interceptor Ordering
 
-# Run tests with coverage
-pnpm test --coverage
+```typescript
+// Add interceptors with different orders
+fetcher.interceptors.request.use({
+  name: 'logging-interceptor',
+  order: 10, // Executes early
+  intercept(exchange) {
+    console.log('Early logging');
+    return exchange;
+  },
+});
+
+fetcher.interceptors.request.use({
+  name: 'auth-interceptor',
+  order: 50, // Executes later
+  intercept(exchange) {
+    // Add auth headers
+    return exchange;
+  },
+});
+
+fetcher.interceptors.request.use({
+  name: 'timing-interceptor',
+  order: 5, // Executes very early
+  intercept(exchange) {
+    console.log('Very early timing');
+    return exchange;
+  },
+});
+
+// Execution order will be:
+// 1. timing-interceptor (order: 5)
+// 2. logging-interceptor (order: 10)
+// 3. auth-interceptor (order: 50)
 ```
 
 ## 🤝 Contributing

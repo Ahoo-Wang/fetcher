@@ -20,6 +20,8 @@ import { FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
  * Handles automatic token refresh based on response codes
  */
 export class CoSecResponseInterceptor implements Interceptor {
+  name = 'CoSecResponseInterceptor';
+  order = Number.MAX_SAFE_INTEGER;
   private options: CoSecOptions;
 
   constructor(options: CoSecOptions) {
