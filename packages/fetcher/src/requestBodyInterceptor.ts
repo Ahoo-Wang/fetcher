@@ -18,6 +18,9 @@ import { ContentTypeHeader, ContentTypeValues } from './types';
  * 请求体拦截器，负责将普通对象转换为JSON字符串
  */
 export class RequestBodyInterceptor implements Interceptor {
+  name = 'RequestBodyInterceptor';
+  order = Number.MIN_SAFE_INTEGER;
+
   /**
    * 尝试转换请求体为合法的 fetch API body 类型
    *

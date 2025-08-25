@@ -51,6 +51,15 @@ export enum ContentTypeValues {
   TEXT_EVENT_STREAM = 'text/event-stream',
 }
 
+/**
+ * 具备名称能力的接口
+ * 实现该接口的类型需要提供一个名称属性
+ */
 export interface NamedCapable {
+  /**
+   * 名称
+   */
   name: string;
 }
+
+

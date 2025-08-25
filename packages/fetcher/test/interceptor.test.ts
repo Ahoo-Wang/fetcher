@@ -23,44 +23,97 @@ import { Fetcher } from '../src';
 
 describe('interceptor.ts', () => {
   describe('InterceptorManager', () => {
+    it('should initialize with provided interceptors', () => {
+      const interceptor1: Interceptor = {
+        name: 'init-interceptor-1',
+        order: 10,
+        intercept: vi.fn(data => data),
+      };
+
+      const interceptor2: Interceptor = {
+        name: 'init-interceptor-2',
+        order: 5,
+        intercept: vi.fn(data => data),
+      };
+
+      const manager = new InterceptorManager([interceptor1, interceptor2]);
+      expect(manager['sortedInterceptors']).toHaveLength(2);
+      expect(manager['sortedInterceptors'][0]).toBe(interceptor2); // order 5
+      expect(manager['sortedInterceptors'][1]).toBe(interceptor1); // order 10
+    });
+
     it('should add interceptor with use method', () => {
       const manager = new InterceptorManager();
       const interceptor: Interceptor = {
+        name: 'test-interceptor-1',
+        order: 0,
         intercept: vi.fn(data => data),
       };
 
-      const index = manager.use(interceptor);
-      expect(index).toBe(0);
+      const result = manager.use(interceptor);
+      expect(result).toBe(true);
     });
 
-    it('should eject interceptor by index', () => {
+    it('should reject interceptor with duplicate name', () => {
       const manager = new InterceptorManager();
-      const interceptor: Interceptor = {
+      const interceptor1: Interceptor = {
+        name: 'duplicate-name-interceptor',
+        order: 0,
         intercept: vi.fn(data => data),
       };
 
-      const index = manager.use(interceptor);
-      expect(manager['interceptors'][index]).toBe(interceptor);
+      const interceptor2: Interceptor = {
+        name: 'duplicate-name-interceptor',
+        order: 10,
+        intercept: vi.fn(data => data),
+      };
 
-      manager.eject(index);
-      expect(manager['interceptors'][index]).toBeNull();
+      // Add first interceptor
+      const result1 = manager.use(interceptor1);
+      expect(result1).toBe(true);
+
+      // Try to add interceptor with same name - should be rejected
+      const result2 = manager.use(interceptor2);
+      expect(result2).toBe(false);
+
+      // Should still have only one interceptor
+      expect(manager['sortedInterceptors']).toHaveLength(1);
+      expect(manager['sortedInterceptors'][0]).toBe(interceptor1);
+    });
+
+    it('should eject interceptor by name', () => {
+      const manager = new InterceptorManager();
+      const interceptor: Interceptor = {
+        name: 'test-interceptor-2',
+        order: 0,
+        intercept: vi.fn(data => data),
+      };
+
+      manager.use(interceptor);
+
+      manager.eject('test-interceptor-2');
+      expect(manager['sortedInterceptors'].length).toBe(0);
     });
 
     it('should clear all interceptors', () => {
       const manager = new InterceptorManager();
       const interceptor1: Interceptor = {
+        name: 'test-interceptor-3',
+        order: 0,
         intercept: vi.fn(data => data),
       };
       const interceptor2: Interceptor = {
+        name: 'test-interceptor-4',
+        order: 0,
         intercept: vi.fn(data => data),
       };
 
       manager.use(interceptor1);
       manager.use(interceptor2);
-      expect(manager['interceptors']).toHaveLength(2);
+      expect(manager['sortedInterceptors']).toHaveLength(2);
 
       manager.clear();
-      expect(manager['interceptors']).toHaveLength(0);
+      expect(manager['sortedInterceptors']).toHaveLength(0);
     });
 
     it('should process data through interceptors', async () => {
@@ -74,6 +127,8 @@ describe('interceptor.ts', () => {
       };
 
       const interceptor1: Interceptor = {
+        name: 'test-interceptor-5',
+        order: 0,
         intercept: vi.fn(exchange => {
           return {
             ...exchange,
@@ -83,6 +138,8 @@ describe('interceptor.ts', () => {
       };
 
       const interceptor2: Interceptor = {
+        name: 'test-interceptor-6',
+        order: 0,
         intercept: vi.fn(exchange => {
           return {
             ...exchange,
@@ -111,6 +168,8 @@ describe('interceptor.ts', () => {
       };
 
       const interceptor1: Interceptor = {
+        name: 'test-interceptor-7',
+        order: 0,
         intercept: vi.fn(exchange => {
           return {
             ...exchange,
@@ -120,6 +179,8 @@ describe('interceptor.ts', () => {
       };
 
       const interceptor2: Interceptor = {
+        name: 'test-interceptor-8',
+        order: 0,
         intercept: vi.fn(exchange => {
           return {
             ...exchange,
@@ -128,14 +189,69 @@ describe('interceptor.ts', () => {
         }),
       };
 
-      const index = manager.use(interceptor1);
+      manager.use(interceptor1);
       manager.use(interceptor2);
-      manager.eject(index);
+      manager.eject('test-interceptor-8');
 
       const result = await manager.intercept(mockExchange);
-      expect(result.url).toBe('http://example.com/modified2'); // first interceptor was ejected
-      expect(interceptor1.intercept).not.toHaveBeenCalled();
-      expect(interceptor2.intercept).toHaveBeenCalledWith(mockExchange);
+      expect(result.url).toBe('http://example.com/modified1'); // second interceptor was ejected
+      expect(interceptor1.intercept).toHaveBeenCalledWith(mockExchange);
+      expect(interceptor2.intercept).not.toHaveBeenCalled();
+    });
+
+    it('should handle ejecting interceptor by name when multiple interceptors exist', async () => {
+      const manager = new InterceptorManager();
+      const mockExchange: FetchExchange = {
+        fetcher: new Fetcher(),
+        url: 'http://example.com',
+        request: {},
+        response: undefined,
+        error: undefined,
+      };
+
+      const interceptor1: Interceptor = {
+        name: 'test-interceptor-9',
+        order: 0,
+        intercept: vi.fn(exchange => {
+          return {
+            ...exchange,
+            url: exchange.url + '/first',
+          };
+        }),
+      };
+
+      const interceptor2: Interceptor = {
+        name: 'test-interceptor-10',
+        order: 0,
+        intercept: vi.fn(exchange => {
+          return {
+            ...exchange,
+            url: exchange.url + '/second',
+          };
+        }),
+      };
+
+      const interceptor3: Interceptor = {
+        name: 'test-interceptor-11',
+        order: 0,
+        intercept: vi.fn(exchange => {
+          return {
+            ...exchange,
+            url: exchange.url + '/third',
+          };
+        }),
+      };
+
+      manager.use(interceptor1);
+      manager.use(interceptor2);
+      manager.use(interceptor3);
+      manager.eject('test-interceptor-10');
+
+      const result = await manager.intercept(mockExchange);
+      expect(result.url).toBe('http://example.com/first/third'); // second interceptor was ejected
+      expect(interceptor1.intercept).toHaveBeenCalledWith(mockExchange);
+      expect(interceptor2.intercept).not.toHaveBeenCalled();
+      expect(interceptor3.intercept).toHaveBeenCalled();
     });
 
     it('should handle async interceptors', async () => {
@@ -149,6 +265,8 @@ describe('interceptor.ts', () => {
       };
 
       const interceptor: Interceptor = {
+        name: 'test-interceptor-9',
+        order: 0,
         intercept: vi.fn((exchange: FetchExchange) => {
           return Promise.resolve({
             ...exchange,
@@ -162,6 +280,110 @@ describe('interceptor.ts', () => {
       const result = await manager.intercept(mockExchange);
       expect(result.url).toBe('http://example.com/processed');
       expect(interceptor.intercept).toHaveBeenCalledWith(mockExchange);
+    });
+
+    it('should execute interceptors in order', async () => {
+      const manager = new InterceptorManager();
+      const mockExchange: FetchExchange = {
+        fetcher: new Fetcher(),
+        url: 'http://example.com',
+        request: {},
+        response: undefined,
+        error: undefined,
+      };
+
+      const interceptor1: Interceptor = {
+        name: 'test-interceptor-10',
+        order: 10,
+        intercept: vi.fn(exchange => {
+          return {
+            ...exchange,
+            url: exchange.url + '/second',
+          };
+        }),
+      };
+
+      const interceptor2: Interceptor = {
+        name: 'test-interceptor-11',
+        order: 5,
+        intercept: vi.fn(exchange => {
+          return {
+            ...exchange,
+            url: exchange.url + '/first',
+          };
+        }),
+      };
+
+      manager.use(interceptor1);
+      manager.use(interceptor2);
+
+      const result = await manager.intercept(mockExchange);
+      expect(result.url).toBe('http://example.com/first/second');
+      expect(interceptor2.intercept).toHaveBeenCalledWith(mockExchange);
+      expect(interceptor1.intercept).toHaveBeenCalled();
+    });
+
+    it('should eject interceptor by name', () => {
+      const manager = new InterceptorManager();
+      const interceptor: Interceptor = {
+        name: 'test-interceptor-to-eject',
+        order: 0,
+        intercept: vi.fn(data => data),
+      };
+
+      manager.use(interceptor);
+
+      manager.eject('test-interceptor-to-eject');
+      expect(manager['sortedInterceptors'].length).toBe(0);
+    });
+
+    it('should execute interceptors in order', async () => {
+      const manager = new InterceptorManager();
+      const mockExchange: FetchExchange = {
+        fetcher: new Fetcher(),
+        url: 'http://example.com',
+        request: {},
+        response: undefined,
+        error: undefined,
+      };
+
+      const calls: string[] = [];
+
+      const interceptor1: Interceptor = {
+        name: 'ordered-interceptor-1',
+        order: 10,
+        intercept: vi.fn(exchange => {
+          calls.push('interceptor1');
+          return exchange;
+        }),
+      };
+
+      const interceptor2: Interceptor = {
+        name: 'ordered-interceptor-2',
+        order: 5,
+        intercept: vi.fn(exchange => {
+          calls.push('interceptor2');
+          return exchange;
+        }),
+      };
+
+      const interceptor3: Interceptor = {
+        name: 'ordered-interceptor-3',
+        order: 15,
+        intercept: vi.fn(exchange => {
+          calls.push('interceptor3');
+          return exchange;
+        }),
+      };
+
+      manager.use(interceptor1);
+      manager.use(interceptor2);
+      manager.use(interceptor3);
+
+      await manager.intercept(mockExchange);
+
+      // Should execute in order: interceptor2 (order 5), interceptor1 (order 10), interceptor3 (order 15)
+      expect(calls).toEqual(['interceptor2', 'interceptor1', 'interceptor3']);
     });
   });
 
@@ -181,31 +403,37 @@ describe('interceptor.ts', () => {
     it('should allow adding request interceptors', () => {
       const interceptors = new FetcherInterceptors();
       const requestInterceptor: Interceptor = {
+        name: 'request-interceptor',
+        order: 0,
         intercept: vi.fn(exchange => exchange),
       };
 
-      const index = interceptors.request.use(requestInterceptor);
-      expect(index).toBe(0);
+      const result = interceptors.request.use(requestInterceptor);
+      expect(result).toBe(true);
     });
 
     it('should allow adding response interceptors', () => {
       const interceptors = new FetcherInterceptors();
       const responseInterceptor: Interceptor = {
+        name: 'response-interceptor',
+        order: 0,
         intercept: vi.fn(exchange => exchange),
       };
 
-      const index = interceptors.response.use(responseInterceptor);
-      expect(index).toBe(0);
+      const result = interceptors.response.use(responseInterceptor);
+      expect(result).toBe(true);
     });
 
     it('should allow adding error interceptors', () => {
       const interceptors = new FetcherInterceptors();
       const errorInterceptor: Interceptor = {
+        name: 'error-interceptor',
+        order: 0,
         intercept: vi.fn(exchange => exchange),
       };
 
-      const index = interceptors.error.use(errorInterceptor);
-      expect(index).toBe(0);
+      const result = interceptors.error.use(errorInterceptor);
+      expect(result).toBe(true);
     });
   });
 
@@ -224,6 +452,8 @@ describe('interceptor.ts', () => {
       };
 
       const requestInterceptor: Interceptor = {
+        name: 'request-interceptor-1',
+        order: 0,
         intercept: vi.fn(exchange => ({
           ...exchange,
           request: {
@@ -263,6 +493,8 @@ describe('interceptor.ts', () => {
       };
 
       const responseInterceptor: Interceptor = {
+        name: 'response-interceptor-1',
+        order: 0,
         intercept: vi.fn(async exchange => {
           // Add a custom header to the response
           if (exchange.response) {
@@ -299,6 +531,8 @@ describe('interceptor.ts', () => {
       };
 
       const errorInterceptor: Interceptor = {
+        name: 'error-interceptor-1',
+        order: 0,
         intercept: vi.fn(exchange => {
           exchange.error = new Error(`Intercepted: ${exchange.error?.message}`);
           return exchange;
