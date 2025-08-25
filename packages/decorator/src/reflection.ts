@@ -11,6 +11,9 @@
  * limitations under the License.
  */
 
+// Cache for storing previously extracted parameter names to improve performance
+const parameterNameCache = new WeakMap<Function, string[]>();
+
 /**
  * Extracts parameter names from a function
  *
@@ -46,6 +49,11 @@ export function getParameterNames(func: (...args: any[]) => any): string[] {
     throw new TypeError('Expected a function');
   }
 
+  // Check cache first to improve performance
+  if (parameterNameCache.has(func)) {
+    return parameterNameCache.get(func)!;
+  }
+
   try {
     // Convert function to string and trim whitespace
     const fnStr = func.toString().trim();
@@ -55,14 +63,20 @@ export function getParameterNames(func: (...args: any[]) => any): string[] {
 
     // Handle empty parameters
     if (!hasParameters(paramsStr)) {
-      return [];
+      const emptyResult: string[] = [];
+      parameterNameCache.set(func, emptyResult);
+      return emptyResult;
     }
 
     // Parse and clean parameter names
-    return parseParameterNames(paramsStr);
+    const result = parseParameterNames(paramsStr);
+    parameterNameCache.set(func, result);
+    return result;
   } catch {
     // Return empty array on any parsing errors to avoid breaking the application
-    return [];
+    const errorResult: string[] = [];
+    parameterNameCache.set(func, errorResult);
+    return errorResult;
   }
 }
 
