@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Fetcher Documentation
+    url: https://github.com/Ahoo-Wang/fetcher
+    about: Check the documentation for usage questions
+  - name: Fetcher Community Support
+    url: https://github.com/Ahoo-Wang/fetcher/discussions
+    about: Ask questions and discuss with other community members
