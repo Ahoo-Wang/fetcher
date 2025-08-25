@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { UrlBuilder } from './urlBuilder';
+import { UrlBuilder, UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, TimeoutCapable } from './timeout';
 import {
   BaseURLCapable,
@@ -54,10 +54,10 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  *   timeout: 5000
  * });
  */
-export class Fetcher implements HeadersCapable, TimeoutCapable {
+export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapable {
+  urlBuilder: UrlBuilder;
   headers?: Record<string, string> = DEFAULT_HEADERS;
   timeout?: number;
-  private urlBuilder: UrlBuilder;
   interceptors: FetcherInterceptors;
 
   /**
@@ -112,10 +112,9 @@ export class Fetcher implements HeadersCapable, TimeoutCapable {
         Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
-    const finalUrl = this.urlBuilder.build(url, request.path, request.query);
     const exchange: FetchExchange = {
       fetcher: this,
-      url: finalUrl,
+      url: url,
       request: fetchRequest,
       response: undefined,
       error: undefined,

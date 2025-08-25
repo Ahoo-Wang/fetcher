@@ -34,13 +34,15 @@ export class RequestBodyInterceptor implements Interceptor {
   name = 'RequestBodyInterceptor';
 
   /**
-   * Interceptor execution order, set to minimum safe integer to ensure early execution
+   * Interceptor execution order, set to run after UrlResolveInterceptor but before FetchInterceptor
    *
    * @remarks
-   * This interceptor should run before other request interceptors to ensure
-   * request bodies are properly formatted early in the processing chain.
+   * This interceptor should run after URL resolution (UrlResolveInterceptor) but before
+   * the actual HTTP request is made (FetchInterceptor). The order is set to
+   * Number.MIN_SAFE_INTEGER + 100 to ensure it executes in the correct position
+   * in the interceptor chain.
    */
-  order = Number.MIN_SAFE_INTEGER;
+  order = Number.MIN_SAFE_INTEGER + 100;
 
   /**
    * Attempts to convert request body to a valid fetch API body type
