@@ -93,7 +93,7 @@ const response = await fetcher.get('/users/{id}', {
   path: { id: 123 },
   query: { include: 'profile' },
 });
-const userData = await response.json();
+const userData = await response.json<User>();
 
 // POST request with automatic JSON conversion
 const createUserResponse = await fetcher.post('/users', {

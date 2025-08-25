@@ -89,7 +89,7 @@ const response = await fetcher.get('/users/{id}', {
   path: { id: 123 },
   query: { include: 'profile' },
 });
-const userData = await response.json();
+const userData = await response.json<User>();
 
 // 带自动 JSON 转换的 POST 请求
 const createUserResponse = await fetcher.post('/users', {

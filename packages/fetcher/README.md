@@ -53,7 +53,7 @@ const response = await fetcher.get('/users/{id}', {
   path: { id: 123 },
   query: { include: 'profile' },
 });
-const userData = await response.json();
+const userData = await response.json<User>();
 
 // POST request with automatic JSON conversion
 const createUserResponse = await fetcher.post('/users', {
@@ -100,7 +100,7 @@ import { fetcher } from '@ahoo-wang/fetcher';
 
 // Use the default fetcher directly
 const response = await fetcher.get('/users');
-const data = await response.json();
+const data = await response.json<User>();
 ```
 
 ## 🔗 Interceptor System
