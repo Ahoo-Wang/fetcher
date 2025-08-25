@@ -39,14 +39,16 @@ export class FetchInterceptor implements Interceptor {
   name = 'FetchInterceptor';
 
   /**
-   * Interceptor execution order, set to maximum safe integer to ensure last execution
+   * Interceptor execution order, set to near maximum safe integer to ensure last execution
    *
    * @remarks
    * Since this is the interceptor that actually executes HTTP requests, it should
    * execute after all other request interceptors, so its order is set to
-   * Number.MAX_SAFE_INTEGER
+   * Number.MAX_SAFE_INTEGER - 100. This ensures that all request preprocessing is
+   * completed before the actual network request is made, while still allowing
+   * other interceptors to run after it if needed.
    */
-  order = Number.MAX_SAFE_INTEGER;
+  order = Number.MAX_SAFE_INTEGER - 100;
 
   /**
    * Intercept and process HTTP requests

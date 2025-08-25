@@ -19,9 +19,21 @@ import { FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
  *
  * Handles automatic token refresh based on response codes
  */
+/**
+ * CoSec Response Interceptor
+ *
+ * Handles automatic token refresh based on response codes
+ *
+ * @remarks
+ * This interceptor runs near the end of the response processing chain, just before
+ * the final response is returned. The order is set to Number.MAX_SAFE_INTEGER - 100
+ * to ensure it runs after most other response interceptors but still allows for
+ * final processing interceptors to run afterward. This order aligns with other
+ * response enhancement interceptors like EventStreamInterceptor.
+ */
 export class CoSecResponseInterceptor implements Interceptor {
   name = 'CoSecResponseInterceptor';
-  order = Number.MAX_SAFE_INTEGER;
+  order = Number.MAX_SAFE_INTEGER - 100;
   private options: CoSecOptions;
 
   constructor(options: CoSecOptions) {

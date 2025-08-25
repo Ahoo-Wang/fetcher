@@ -41,6 +41,12 @@ export class UrlResolveInterceptor implements Interceptor {
 
   /**
    * The order of this interceptor (executed first)
+   *
+   * @remarks
+   * This interceptor should run first in the request interceptor chain to ensure
+   * URL resolution happens before any other request processing. The order is set to
+   * Number.MIN_SAFE_INTEGER + 100 to allow for other interceptors that need to run
+   * even earlier while still maintaining a high priority.
    */
   order = Number.MIN_SAFE_INTEGER + 100;
 

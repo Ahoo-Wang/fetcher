@@ -39,10 +39,11 @@ export class RequestBodyInterceptor implements Interceptor {
    * @remarks
    * This interceptor should run after URL resolution (UrlResolveInterceptor) but before
    * the actual HTTP request is made (FetchInterceptor). The order is set to
-   * Number.MIN_SAFE_INTEGER + 100 to ensure it executes in the correct position
-   * in the interceptor chain.
+   * Number.MIN_SAFE_INTEGER + 200 to ensure it executes in the correct position
+   * in the interceptor chain, allowing for other interceptors to run between URL resolution
+   * and request body processing.
    */
-  order = Number.MIN_SAFE_INTEGER + 100;
+  order = Number.MIN_SAFE_INTEGER + 200;
 
   /**
    * Attempts to convert request body to a valid fetch API body type

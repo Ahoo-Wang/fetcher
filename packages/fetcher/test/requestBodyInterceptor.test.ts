@@ -21,7 +21,7 @@ describe('RequestBodyInterceptor', () => {
 
   it('should have correct name and order', () => {
     expect(interceptor.name).toBe('RequestBodyInterceptor');
-    expect(interceptor.order).toBe(Number.MIN_SAFE_INTEGER + 100);
+    expect(interceptor.order).toBe(Number.MIN_SAFE_INTEGER + 200);
   });
 
   it('should not modify request without body', () => {

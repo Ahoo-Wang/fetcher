@@ -121,9 +121,9 @@ responses, and errors at different stages of the HTTP request lifecycle.
 
 Fetcher comes with several built-in interceptors that are automatically registered:
 
-1. **UrlResolveInterceptor**: Resolves URLs with path and query parameters (order: Number.MIN_SAFE_INTEGER)
-2. **RequestBodyInterceptor**: Converts object bodies to JSON strings (order: Number.MIN_SAFE_INTEGER + 100)
-3. **FetchInterceptor**: Executes the actual HTTP request (order: Number.MAX_SAFE_INTEGER)
+1. **UrlResolveInterceptor**: Resolves URLs with path and query parameters (order: Number.MIN_SAFE_INTEGER + 100)
+2. **RequestBodyInterceptor**: Converts object bodies to JSON strings (order: Number.MIN_SAFE_INTEGER + 200)
+3. **FetchInterceptor**: Executes the actual HTTP request (order: Number.MAX_SAFE_INTEGER - 100)
 
 ### Using Interceptors
 

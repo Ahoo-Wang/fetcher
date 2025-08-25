@@ -24,9 +24,24 @@ import { idGenerator } from './idGenerator';
  * - Authorization: Bearer token
  * - CoSec-Request-Id: Unique request identifier for each request
  */
+/**
+ * CoSec Request Interceptor
+ *
+ * Automatically adds CoSec authentication headers to requests:
+ * - CoSec-Device-Id: Device identifier (stored in localStorage or generated)
+ * - CoSec-App-Id: Application identifier
+ * - Authorization: Bearer token
+ * - CoSec-Request-Id: Unique request identifier for each request
+ *
+ * @remarks
+ * This interceptor runs after the basic request processing interceptors but before
+ * the actual HTTP request is made. The order is set to Number.MIN_SAFE_INTEGER + 1000
+ * to allow for other authentication or preprocessing interceptors to run earlier
+ * while ensuring it runs before FetchInterceptor.
+ */
 export class CoSecRequestInterceptor implements Interceptor {
   name = 'CoSecRequestInterceptor';
-  order = Number.MIN_SAFE_INTEGER;
+  order = Number.MIN_SAFE_INTEGER + 1000;
   private options: CoSecOptions;
 
   constructor(options: CoSecOptions) {
