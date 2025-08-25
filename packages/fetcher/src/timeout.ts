@@ -11,25 +11,31 @@
  * limitations under the License.
  */
 
-import { FetchExchange } from './interceptor';
-
 /**
- * 定义具有超时能力的接口
+ * TimeoutCapable Interface
+ *
+ * Interface that defines timeout capability for HTTP requests.
  */
 export interface TimeoutCapable {
   /**
-   * 请求超时
-   * 当值为0时，表示不设置超时，默认值为 undefined
+   * Request timeout in milliseconds
+   *
+   * When the value is 0, it indicates no timeout should be set.
+   * The default value is undefined.
    */
   timeout?: number;
 }
 
 /**
- * 解析请求超时设置，优先使用请求级别的超时设置
+ * Resolves request timeout settings, prioritizing request-level timeout settings
  *
- * @param requestTimeout - 请求级别的超时设置
- * @param optionsTimeout - 配置级别的超时设置
- * @returns 解析后的超时设置
+ * @param requestTimeout - Request-level timeout setting
+ * @param optionsTimeout - Configuration-level timeout setting
+ * @returns Resolved timeout setting
+ *
+ * @remarks
+ * If requestTimeout is defined, it takes precedence over optionsTimeout.
+ * Otherwise, optionsTimeout is returned. If both are undefined, undefined is returned.
  */
 export function resolveTimeout(
   requestTimeout?: number,
@@ -42,20 +48,130 @@ export function resolveTimeout(
 }
 
 /**
- * FetchTimeoutError 异常类
- * 当HTTP请求超时时抛出此异常
+ * FetchTimeoutError Class
+ *
+ * Exception class thrown when an HTTP request times out.
+ * This error is thrown by the timeoutFetch function when a request exceeds its timeout limit.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   const response = await timeoutFetch('https://api.example.com/users', {}, 1000);
+ * } catch (error) {
+ *   if (error instanceof FetchTimeoutError) {
+ *     console.log(`Request timed out after ${error.timeout}ms`);
+ *   }
+ * }
+ * ```
  */
 export class FetchTimeoutError extends Error {
-  exchange: FetchExchange;
+  /**
+   * The URL that timed out
+   */
+  url: string;
 
-  constructor(exchange: FetchExchange, timeout: number) {
-    const method = exchange.request?.method || 'GET';
-    const message = `Request timeout of ${timeout}ms exceeded for ${method} ${exchange.url}`;
+  /**
+   * The request options that timed out
+   */
+  request: RequestInit;
+
+  /**
+   * The timeout value in milliseconds
+   */
+  timeout: number;
+
+  /**
+   * Creates a new FetchTimeoutError instance
+   *
+   * @param url - The URL that timed out
+   * @param request - The request options that timed out
+   * @param timeout - The timeout value in milliseconds
+   */
+  constructor(url: string, request: RequestInit, timeout: number) {
+    const method = request.method || 'GET';
+    const message = `Request timeout of ${timeout}ms exceeded for ${method} ${url}`;
     super(message);
     this.name = 'FetchTimeoutError';
-    this.exchange = exchange;
-
-    // 修复原型链
+    this.url = url;
+    this.request = request;
+    this.timeout = timeout;
+    // Fix prototype chain
     Object.setPrototypeOf(this, FetchTimeoutError.prototype);
+  }
+}
+
+/**
+ * HTTP request method with timeout control
+ *
+ * This method uses Promise.race to implement timeout control, initiating both
+ * fetch request and timeout Promise simultaneously. When either Promise completes,
+ * it returns the result or throws an exception.
+ *
+ * @param url - The URL to fetch
+ * @param request - The request initialization options
+ * @param timeout - Optional timeout in milliseconds
+ * @returns Promise<Response> HTTP response Promise
+ * @throws FetchTimeoutError Thrown when the request times out
+ *
+ * @example
+ * ```typescript
+ * // With timeout
+ * try {
+ *   const response = await timeoutFetch('https://api.example.com/users', { method: 'GET' }, 5000);
+ *   console.log('Request completed successfully');
+ * } catch (error) {
+ *   if (error instanceof FetchTimeoutError) {
+ *     console.log(`Request timed out after ${error.timeout}ms`);
+ *   }
+ * }
+ *
+ * // Without timeout (delegates to regular fetch)
+ * const response = await timeoutFetch('https://api.example.com/users', { method: 'GET' });
+ * ```
+ */
+export async function timeoutFetch(
+  url: string,
+  request: RequestInit,
+  timeout?: number,
+): Promise<Response> {
+  // Extract timeout from request
+  if (!timeout) {
+    return fetch(url, request as RequestInit);
+  }
+
+  // Create AbortController for fetch request cancellation
+  const controller = new AbortController();
+  // Create a new request object to avoid modifying the original request object
+  const fetchRequest = {
+    ...request,
+    signal: controller.signal,
+  };
+
+  // Timer resource management
+  let timerId: ReturnType<typeof setTimeout> | null = null;
+  // Create timeout Promise that rejects after specified time
+  const timeoutPromise = new Promise<Response>((_, reject) => {
+    timerId = setTimeout(() => {
+      // Clean up timer resources and handle timeout error
+      if (timerId) {
+        clearTimeout(timerId);
+      }
+      const error = new FetchTimeoutError(url, request, timeout);
+      controller.abort(error);
+      reject(error);
+    }, timeout);
+  });
+
+  try {
+    // Race between fetch request and timeout Promise
+    return await Promise.race([
+      fetch(url, fetchRequest as RequestInit),
+      timeoutPromise,
+    ]);
+  } finally {
+    // Clean up timer resources
+    if (timerId) {
+      clearTimeout(timerId);
+    }
   }
 }

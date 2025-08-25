@@ -12,27 +12,45 @@
  */
 
 /**
- * 检查给定的 URL 是否为绝对 URL
+ * Checks if the given URL is an absolute URL
  *
- * @param url - 需要检查的 URL 字符串
- * @returns boolean - 如果是绝对 URL 返回 true，否则返回 false
+ * @param url - URL string to check
+ * @returns boolean - Returns true if it's an absolute URL, false otherwise
+ *
+ * @example
+ * ```typescript
+ * isAbsoluteURL('https://api.example.com/users'); // true
+ * isAbsoluteURL('/users'); // false
+ * isAbsoluteURL('users'); // false
+ * ```
  */
 export function isAbsoluteURL(url: string) {
   return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
 }
 
 /**
- * 将基础 URL 和相对 URL 组合成完整的 URL
+ * Combines a base URL and a relative URL into a complete URL
  *
- * @param baseURL - 基础 URL
- * @param relativeURL - 相对 URL
- * @returns string - 组合后的完整 URL
+ * @param baseURL - Base URL
+ * @param relativeURL - Relative URL
+ * @returns string - Combined complete URL
+ *
+ * @remarks
+ * If the relative URL is already an absolute URL, it will be returned as-is.
+ * Otherwise, the base URL and relative URL will be combined with proper path separator handling.
+ *
+ * @example
+ * ```typescript
+ * combineURLs('https://api.example.com', '/users'); // https://api.example.com/users
+ * combineURLs('https://api.example.com/', 'users'); // https://api.example.com/users
+ * combineURLs('https://api.example.com', 'https://other.com/users'); // https://other.com/users
+ * ```
  */
 export function combineURLs(baseURL: string, relativeURL: string) {
   if (isAbsoluteURL(relativeURL)) {
     return relativeURL;
   }
-  // 如果相对 URL 存在，则组合基础 URL 和相对 URL，否则返回基础 URL
+  // If relative URL exists, combine base URL and relative URL, otherwise return base URL
   return relativeURL
     ? baseURL.replace(/\/?\/$/, '') + '/' + relativeURL.replace(/^\/+/, '')
     : baseURL;
