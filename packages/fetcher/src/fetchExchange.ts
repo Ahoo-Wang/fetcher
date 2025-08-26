@@ -15,12 +15,16 @@ import { Fetcher } from './fetcher';
 import { FetchRequest } from './fetchRequest';
 
 /**
- * FetchExchange Interface
+ * FetchExchange
  *
  * Represents the complete exchange object that flows through the interceptor chain.
  * This object contains all the information about a request, response, and any errors
  * that occur during the HTTP request lifecycle. It also provides a mechanism for
  * sharing data between interceptors through the attributes property.
+ *
+ * FetchExchange instances are unique within a single request scope, meaning each HTTP
+ * request creates its own FetchExchange instance that is passed through the interceptor
+ * chain for that specific request.
  *
  * @example
  * ```typescript
@@ -28,12 +32,11 @@ import { FetchRequest } from './fetchRequest';
  * const requestInterceptor: Interceptor = {
  *   name: 'RequestInterceptor',
  *   order: 0,
- *   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+ *   intercept(exchange: FetchExchange) {
  *     // Add custom data to share with other interceptors
  *     exchange.attributes = exchange.attributes || {};
  *     exchange.attributes.startTime = Date.now();
  *     exchange.attributes.customHeader = 'my-value';
- *     return exchange;
  *   }
  * };
  *
@@ -41,19 +44,18 @@ import { FetchRequest } from './fetchRequest';
  * const responseInterceptor: Interceptor = {
  *   name: 'ResponseInterceptor',
  *   order: 0,
- *   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+ *   intercept(exchange: FetchExchange) {
  *     // Access data shared by previous interceptors
  *     if (exchange.attributes && exchange.attributes.startTime) {
  *       const startTime = exchange.attributes.startTime;
  *       const duration = Date.now() - startTime;
  *       console.log(`Request took ${duration}ms`);
  *     }
- *     return exchange;
  *   }
  * };
  * ```
  */
-export interface FetchExchange {
+export class FetchExchange {
   /**
    * The Fetcher instance that initiated this exchange
    */
@@ -88,5 +90,35 @@ export interface FetchExchange {
    * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
    * - Be mindful of memory usage when storing large objects
    */
-  attributes?: Record<string, any>;
+  attributes: Record<string, any> = {};
+
+  constructor(
+    fetcher: Fetcher,
+    request: FetchRequest,
+    response?: Response,
+    error?: Error | any,
+  ) {
+    this.fetcher = fetcher;
+    this.request = request;
+    this.response = response;
+    this.error = error;
+  }
+
+  /**
+   * Checks if the exchange has an error
+   *
+   * @returns true if an error is present, false otherwise
+   */
+  hasError(): boolean {
+    return !!this.error;
+  }
+
+  /**
+   * Checks if the exchange has a response
+   *
+   * @returns true if a response is present, false otherwise
+   */
+  hasResponse(): boolean {
+    return !!this.response;
+  }
 }

@@ -137,14 +137,11 @@ const success = fetcher.interceptors.request.use({
   name: 'auth-interceptor',
   order: 100,
   intercept(exchange) {
-    return {
-      ...exchange,
-      request: {
-        ...exchange.request,
-        headers: {
-          ...exchange.request.headers,
-          Authorization: 'Bearer ' + getAuthToken(),
-        },
+    exchange.request = {
+      ...exchange.request,
+      headers: {
+        ...exchange.request.headers,
+        Authorization: 'Bearer ' + getAuthToken(),
       },
     };
   },
@@ -156,7 +153,6 @@ fetcher.interceptors.response.use({
   order: 10,
   intercept(exchange) {
     console.log('收到响应:', exchange.response?.status);
-    return exchange;
   },
 });
 
@@ -170,7 +166,6 @@ fetcher.interceptors.error.use({
     } else {
       console.error('网络错误:', exchange.error?.message);
     }
-    return exchange;
   },
 });
 
@@ -333,7 +328,7 @@ string, options ? : FetcherOptions
 
 **方法：**
 
-- `intercept(exchange: FetchExchange): FetchExchange | Promise<FetchExchange>` - 拦截并处理数据
+- `intercept(exchange: FetchExchange): void | Promise<void>` - 拦截并处理数据
 
 #### InterceptorManager 类
 
@@ -344,7 +339,7 @@ string, options ? : FetcherOptions
 - `use(interceptor: Interceptor): boolean` - 添加拦截器，返回是否添加成功
 - `eject(name: string): boolean` - 按名称移除拦截器，返回是否移除成功
 - `clear(): void` - 清除所有拦截器
-- `intercept(exchange: FetchExchange): Promise<FetchExchange>` - 顺序执行所有拦截器
+- `intercept(exchange: FetchExchange): Promise<void>` - 顺序执行所有拦截器
 
 #### FetcherInterceptors 类
 

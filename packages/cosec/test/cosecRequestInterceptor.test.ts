@@ -13,7 +13,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { CoSecHeaders, CoSecRequestInterceptor, DeviceIdStorage, InMemoryStorage, TokenStorage } from '../src';
-import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
+import { Fetcher, FetchExchange, RequestHeaders } from '@ahoo-wang/fetcher';
 
 describe('CoSecRequestInterceptor', () => {
   it('should add CoSec headers to request', () => {
@@ -38,20 +38,15 @@ describe('CoSecRequestInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: undefined,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    });
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
-    expect(result.request.headers).toBeDefined();
-    const headers = result.request.headers as Record<string, string>;
+    expect(exchange.request.headers).toBeDefined();
+    const headers = exchange.request.headers as Record<string, string>;
     expect(headers[CoSecHeaders.APP_ID]).toBe('test-app-id');
     expect(headers[CoSecHeaders.DEVICE_ID]).toBe('test-device-id-123');
     expect(headers[CoSecHeaders.AUTHORIZATION]).toBe(
@@ -75,20 +70,15 @@ describe('CoSecRequestInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: undefined,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    });
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
-    expect(result.request.headers).toBeDefined();
-    const headers = result.request.headers as Record<string, string>;
+    expect(exchange.request.headers).toBeDefined();
+    const headers = exchange.request.headers as RequestHeaders;
     expect(headers[CoSecHeaders.APP_ID]).toBe('test-app-id');
     expect(headers[CoSecHeaders.DEVICE_ID]).toBeDefined();
     expect(headers[CoSecHeaders.DEVICE_ID]).toBeTruthy();
@@ -113,20 +103,15 @@ describe('CoSecRequestInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: undefined,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    });
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
-    expect(result.request.headers).toBeDefined();
-    const headers = result.request.headers as Record<string, string>;
+    expect(exchange.request.headers).toBeDefined();
+    const headers = exchange.request.headers as RequestHeaders;
     expect(headers[CoSecHeaders.APP_ID]).toBe('test-app-id');
     expect(headers[CoSecHeaders.DEVICE_ID]).toBe('test-device-id-123');
     expect(headers[CoSecHeaders.AUTHORIZATION]).toBeUndefined();
@@ -154,24 +139,19 @@ describe('CoSecRequestInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Custom-Header': 'custom-value',
-        },
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Custom-Header': 'custom-value',
       },
-      response: undefined,
-      error: undefined,
-    };
+    });
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
-    expect(result.request.headers).toBeDefined();
-    const headers = result.request.headers as Record<string, string>;
+    expect(exchange.request.headers).toBeDefined();
+    const headers = exchange.request.headers as RequestHeaders;
     expect(headers['Content-Type']).toBe('application/json');
     expect(headers['X-Custom-Header']).toBe('custom-value');
     expect(headers[CoSecHeaders.APP_ID]).toBe('test-app-id');

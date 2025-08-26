@@ -35,23 +35,21 @@ describe('Fetcher - exchange', () => {
     const requestInterceptor: Interceptor = {
       name: 'RequestInterceptor',
       order: 0,
-      async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+      async intercept(exchange: FetchExchange): Promise<void> {
         // Modify the exchange in the request interceptor
         exchange.attributes = exchange.attributes || {};
         exchange.attributes.requestModified = true;
-        return exchange;
       },
     };
 
     const responseInterceptor: Interceptor = {
       name: 'ResponseInterceptor',
       order: 0,
-      async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+      async intercept(exchange: FetchExchange): Promise<void> {
         // Create a mock response
         exchange.response = new Response('OK');
         exchange.attributes = exchange.attributes || {};
         exchange.attributes.responseModified = true;
-        return exchange;
       },
     };
 
@@ -63,13 +61,10 @@ describe('Fetcher - exchange', () => {
     fetcher.interceptors.request = requestManager;
     fetcher.interceptors.response = responseManager;
 
-    const exchange: FetchExchange = {
+    const exchange = new FetchExchange(
       fetcher,
-      request: { url: '/test', method: 'GET' },
-      response: undefined,
-      error: undefined,
-      attributes: {},
-    };
+      { url: '/test', method: 'GET' },
+    );
 
     const result = await fetcher.exchange(exchange);
 
@@ -92,7 +87,7 @@ describe('Fetcher - exchange', () => {
     const requestInterceptor: Interceptor = {
       name: 'RequestInterceptor',
       order: 0,
-      async intercept(_exchange: FetchExchange): Promise<FetchExchange> {
+      async intercept(_exchange: FetchExchange): Promise<void> {
         // Throw an error to trigger error interceptor
         throw new Error('Request failed');
       },
@@ -101,10 +96,9 @@ describe('Fetcher - exchange', () => {
     const errorInterceptor: Interceptor = {
       name: 'ErrorInterceptor',
       order: 0,
-      async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+      async intercept(exchange: FetchExchange): Promise<void> {
         // Handle the error and create a response
         exchange.response = new Response('Error handled', { status: 500 });
-        return exchange;
       },
     };
 
@@ -116,13 +110,10 @@ describe('Fetcher - exchange', () => {
     fetcher.interceptors.request = requestManager;
     fetcher.interceptors.error = errorManager;
 
-    const exchange: FetchExchange = {
+    const exchange = new FetchExchange(
       fetcher,
-      request: { url: '/test', method: 'GET' },
-      response: undefined,
-      error: undefined,
-      attributes: {},
-    };
+      { url: '/test', method: 'GET' },
+    );
 
     const result = await fetcher.exchange(exchange);
 
@@ -144,7 +135,7 @@ describe('Fetcher - exchange', () => {
       name: 'RequestInterceptor',
       order: 0,
       //@typescript-eslint/no-unused-vars
-      async intercept(_exchange: FetchExchange): Promise<FetchExchange> {
+      async intercept(_exchange: FetchExchange): Promise<void> {
         // Throw an error to trigger error interceptor
         throw new Error('Request failed');
       },
@@ -153,7 +144,7 @@ describe('Fetcher - exchange', () => {
     const errorInterceptor: Interceptor = {
       name: 'ErrorInterceptor',
       order: 0,
-      async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+      async intercept(exchange: FetchExchange): Promise<void> {
         // Just rethrow the error without creating a response
         throw exchange.error;
       },
@@ -167,13 +158,10 @@ describe('Fetcher - exchange', () => {
     fetcher.interceptors.request = requestManager;
     fetcher.interceptors.error = errorManager;
 
-    const exchange: FetchExchange = {
+    const exchange = new FetchExchange(
       fetcher,
-      request: { url: '/test', method: 'GET' },
-      response: undefined,
-      error: undefined,
-      attributes: {},
-    };
+      { url: '/test', method: 'GET' },
+    );
 
     // Verify the error is rethrown
     await expect(fetcher.exchange(exchange)).rejects.toThrow('Request failed');

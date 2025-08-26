@@ -33,19 +33,13 @@ describe('CoSecResponseInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: undefined,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    });
 
-    const result = await interceptor.intercept(exchange);
+    await interceptor.intercept(exchange);
 
-    expect(result).toBe(exchange);
     expect(tokenRefresher.refresh).not.toHaveBeenCalled();
   });
 
@@ -66,19 +60,12 @@ describe('CoSecResponseInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: new Response('Forbidden', { status: 403 }),
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    }, new Response('Forbidden', { status: 403 }));
+    await interceptor.intercept(exchange);
 
-    const result = await interceptor.intercept(exchange);
-
-    expect(result).toBe(exchange);
     expect(tokenRefresher.refresh).not.toHaveBeenCalled();
   });
 
@@ -101,19 +88,13 @@ describe('CoSecResponseInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: new Response('Unauthorized', { status: 401 }),
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    }, new Response('Forbidden', { status: 401 }));
 
-    const result = await interceptor.intercept(exchange);
+    await interceptor.intercept(exchange);
 
-    expect(result).toBe(exchange);
     expect(tokenRefresher.refresh).not.toHaveBeenCalled();
   });
 
@@ -145,15 +126,10 @@ describe('CoSecResponseInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: new Response('Unauthorized', { status: 401 }),
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    }, new Response('Forbidden', { status: 401 }));
 
     // Mock the fetcher's request method to avoid actual network calls
     const requestMock = vi.fn().mockResolvedValue({
@@ -203,15 +179,10 @@ describe('CoSecResponseInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: new Response('Unauthorized', { status: 401 }),
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    }, new Response('Forbidden', { status: 401 }));
 
     await expect(interceptor.intercept(exchange)).rejects.toThrow(
       'Token refresh failed',

@@ -158,14 +158,11 @@ fetcher.interceptors.request.use({
   name: 'auth-interceptor',
   order: 100, // Lower values execute first
   intercept(exchange) {
-    return {
-      ...exchange,
-      request: {
-        ...exchange.request,
-        headers: {
-          ...exchange.request.headers,
-          Authorization: 'Bearer ' + getAuthToken(),
-        },
+    exchange.request = {
+      ...exchange.request,
+      headers: {
+        ...exchange.request.headers,
+        Authorization: 'Bearer ' + getAuthToken(),
       },
     };
   },
@@ -176,8 +173,11 @@ fetcher.interceptors.request.use({
   name: 'logging-interceptor',
   order: 50, // Executes before auth-interceptor
   intercept(exchange) {
-    console.log('Request sending:', exchange.request.method, exchange.url);
-    return exchange;
+    console.log(
+      'Request sending:',
+      exchange.request.method,
+      exchange.request.url,
+    );
   },
 });
 
@@ -187,7 +187,6 @@ fetcher.interceptors.response.use({
   order: 10,
   intercept(exchange) {
     console.log('Response received:', exchange.response.status);
-    return exchange;
   },
 });
 

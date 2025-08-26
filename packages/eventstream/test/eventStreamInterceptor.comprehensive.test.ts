@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { EventStreamInterceptor } from '../src';
 import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
 
@@ -36,18 +36,12 @@ describe('EventStreamInterceptor Comprehensive', () => {
         headers: { 'content-type': contentType },
       });
 
-      const exchange: FetchExchange = {
-        fetcher: mockFetcher,
-        url: 'http://example.com/events',
-        request: {},
-        response: response,
-        error: undefined,
-      };
+      const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
-      const result = interceptor.intercept(exchange);
+      interceptor.intercept(exchange);
 
-      expect(result.response?.eventStream).toBeDefined();
-      expect(typeof result.response?.eventStream).toBe('function');
+      expect(exchange.response?.eventStream).toBeDefined();
+      expect(typeof exchange.response?.eventStream).toBe('function');
     }
   });
 
@@ -71,17 +65,11 @@ describe('EventStreamInterceptor Comprehensive', () => {
         headers: contentType ? headers : undefined,
       });
 
-      const exchange: FetchExchange = {
-        fetcher: mockFetcher,
-        url: 'http://example.com/api',
-        request: {},
-        response: response,
-        error: undefined,
-      };
+      const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
-      const result = interceptor.intercept(exchange);
+      interceptor.intercept(exchange);
 
-      expect(result.response?.eventStream).toBeUndefined();
+      expect(exchange.response?.eventStream).toBeUndefined();
     }
   });
 
@@ -91,18 +79,12 @@ describe('EventStreamInterceptor Comprehensive', () => {
     response.headers.append('content-type', 'text/event-stream');
     response.headers.append('content-type', 'application/json');
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      url: 'http://example.com/events',
-      request: {},
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
     // Should still add eventStream method if any header matches
-    expect(result.response?.eventStream).toBeDefined();
+    expect(exchange.response?.eventStream).toBeDefined();
   });
 
   it('should preserve existing response properties', () => {
@@ -115,42 +97,29 @@ describe('EventStreamInterceptor Comprehensive', () => {
       },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      url: 'http://example.com/events',
-      request: {},
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
     // Should preserve all original response properties
-    expect(result.response?.status).toBe(201);
-    expect(result.response?.statusText).toBe('Created');
-    expect(result.response?.headers.get('custom-header')).toBe('custom-value');
+    expect(exchange.response?.status).toBe(201);
+    expect(exchange.response?.statusText).toBe('Created');
+    expect(exchange.response?.headers.get('custom-header')).toBe('custom-value');
 
     // Should add eventStream method
-    expect(result.response?.eventStream).toBeDefined();
+    expect(exchange.response?.eventStream).toBeDefined();
   });
 
   it('should handle response with no body', () => {
     const response = new Response(null, {
       headers: { 'content-type': 'text/event-stream' },
     });
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      url: 'http://example.com/events',
-      request: {},
-      response: response,
-      error: undefined,
-    };
-
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
     // Should still add eventStream method even with null body
-    expect(result.response?.eventStream).toBeDefined();
+    expect(exchange.response?.eventStream).toBeDefined();
   });
 
   it('should handle response with empty body', () => {
@@ -158,50 +127,35 @@ describe('EventStreamInterceptor Comprehensive', () => {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      url: 'http://example.com/events',
-      request: {},
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
     // Should still add eventStream method even with empty body
-    expect(result.response?.eventStream).toBeDefined();
+    expect(exchange.response?.eventStream).toBeDefined();
   });
 
   it('should not modify exchange when response is undefined', () => {
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      url: 'http://example.com/events',
-      request: {},
-      response: undefined,
-      error: new Error('Test error'),
-    };
 
-    const result = interceptor.intercept(exchange);
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, undefined, new Error('Test error'));
+    interceptor.intercept(exchange);
 
     // Should return the same exchange object
-    expect(result).toBe(exchange);
-    expect(result.response).toBeUndefined();
+    expect(exchange.response).toBeUndefined();
   });
 
   it('should not modify exchange when response is null', () => {
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com/events',
-      request: {},
+      request: { url: 'http://example.com/events' },
       response: null,
       error: undefined,
     } as unknown as FetchExchange;
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
     // Should return the same exchange object
-    expect(result).toBe(exchange);
-    expect(result.response).toBeNull();
+    expect(exchange.response).toBeNull();
   });
 
   it('should be idempotent when called multiple times', () => {
@@ -209,27 +163,18 @@ describe('EventStreamInterceptor Comprehensive', () => {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      url: 'http://example.com/events',
-      request: {},
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
     // Call interceptor multiple times
-    const result1 = interceptor.intercept(exchange);
-    const result2 = interceptor.intercept(result1);
-    const result3 = interceptor.intercept(result2);
+    interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
     // All results should be the same object
-    expect(result1).toBe(exchange);
-    expect(result2).toBe(exchange);
-    expect(result3).toBe(exchange);
 
     // Response should have eventStream method
-    expect(result1.response?.eventStream).toBeDefined();
-    expect(result2.response?.eventStream).toBeDefined();
-    expect(result3.response?.eventStream).toBeDefined();
+    expect(exchange.response?.eventStream).toBeDefined();
+    expect(exchange.response?.eventStream).toBeDefined();
+    expect(exchange.response?.eventStream).toBeDefined();
   });
 });
