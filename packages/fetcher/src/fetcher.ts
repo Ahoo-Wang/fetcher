@@ -14,7 +14,7 @@
 import { UrlBuilder, UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, TimeoutCapable } from './timeout';
 import { FetcherInterceptors } from './interceptor';
-import { ExchangeError, FetchExchange } from './fetchExchange';
+import { FetchExchange } from './fetchExchange';
 import {
   BaseURLCapable,
   ContentTypeValues,
@@ -25,6 +25,7 @@ import {
   RequestHeadersCapable,
 } from './fetchRequest';
 import { mergeRecords } from './utils';
+import { ExchangeError, FetchError } from './fetcherError';
 
 /**
  * Configuration options for the Fetcher client.
@@ -78,8 +79,7 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  * ```
  */
 export class Fetcher
-  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable
-{
+  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable {
   urlBuilder: UrlBuilder;
   headers?: RequestHeaders = DEFAULT_HEADERS;
   timeout?: number;
@@ -109,14 +109,14 @@ export class Fetcher
    * @param url - The URL path for the request (relative to baseURL if set)
    * @param request - Request configuration including headers, body, parameters, etc.
    * @returns Promise that resolves to the HTTP response
-   * @throws Error if the request fails and no response is generated
+   * @throws FetchError if the request fails and no response is generated
    */
   async fetch(url: string, request: FetchRequestInit = {}): Promise<Response> {
     const fetchRequest = request as FetchRequest;
     fetchRequest.url = url;
     const exchange = await this.request(fetchRequest);
     if (!exchange.response) {
-      throw new Error(`Request to ${fetchRequest.url} failed with no response`);
+      throw new FetchError(exchange, `Request to ${fetchRequest.url} failed with no response`);
     }
     return exchange.response;
   }

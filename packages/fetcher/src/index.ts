@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+export * from './fetcherError';
 export * from './fetcher';
 export * from './fetcherRegistrar';
 export * from './fetchExchange';
