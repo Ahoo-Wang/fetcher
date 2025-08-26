@@ -13,7 +13,13 @@
 
 import { UrlBuilder, UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, TimeoutCapable } from './timeout';
-import { BaseURLCapable, ContentTypeHeader, ContentTypeValues, HeadersCapable, HttpMethod } from './types';
+import {
+  BaseURLCapable,
+  ContentTypeHeader,
+  ContentTypeValues,
+  HeadersCapable,
+  HttpMethod,
+} from './types';
 import { FetcherInterceptors } from './interceptor';
 import { FetchExchange } from './fetchExchange';
 import { FetchRequest, FetchRequestInit } from './fetchRequest';
@@ -21,6 +27,16 @@ import { mergeRecords } from './utils';
 
 /**
  * Fetcher configuration options interface
+ *
+ * @example
+ * ```typescript
+ * const options: FetcherOptions = {
+ *   baseURL: 'https://api.example.com',
+ *   headers: { 'Content-Type': 'application/json' },
+ *   timeout: 5000,
+ *   interceptors: new FetcherInterceptors()
+ * };
+ * ```
  */
 export interface FetcherOptions
   extends BaseURLCapable,
@@ -42,14 +58,20 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  * HTTP client class that supports URL building, timeout control, and more
  *
  * @example
+ * ```typescript
  * const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
  * const response = await fetcher.fetch('/users/{id}', {
- *   pathParams: { id: 123 },
- *   queryParams: { filter: 'active' },
+ *   urlParams: {
+ *     path: { id: 123 },
+ *     query: { filter: 'active' }
+ *   },
  *   timeout: 5000
  * });
+ * ```
  */
-export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapable {
+export class Fetcher
+  implements UrlBuilderCapable, HeadersCapable, TimeoutCapable
+{
   urlBuilder: UrlBuilder;
   headers?: Record<string, string> = DEFAULT_HEADERS;
   timeout?: number;
@@ -92,9 +114,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
    *
    * @throws Throws an exception when an error occurs during the request and is not handled by error interceptors
    */
-  async request(
-    request: FetchRequest,
-  ): Promise<FetchExchange> {
+  async request(request: FetchRequest): Promise<FetchExchange> {
     // Merge default headers and request-level headers
     const mergedHeaders = mergeRecords(request.headers, this.headers);
     // Merge request options

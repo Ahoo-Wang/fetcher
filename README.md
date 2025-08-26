@@ -57,7 +57,7 @@ smaller than Axios while providing the same powerful features.
 ## 📦 Packages
 
 | Package                                                    | Description                                               | Version                                                                                                                                 | Npm Bundle Size                                                                                                                                                   |
-|------------------------------------------------------------|-----------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`@ahoo-wang/fetcher`](./packages/fetcher)                 | Ultra-lightweight (1.9kB) HTTP client with Axios-like API | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
 | [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | Server-Sent Events (SSE) support for Fetcher HTTP client  | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
 | [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | CoSec authentication integration for Fetcher HTTP client  | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
@@ -91,8 +91,10 @@ const fetcher = new Fetcher({
 
 // GET request with path and query parameters
 const response = await fetcher.get('/users/{id}', {
-  path: { id: 123 },
-  query: { include: 'profile' },
+  urlParams: {
+    path: { id: 123 },
+    query: { include: 'profile' },
+  },
 });
 const userData = await response.json<User>();
 
