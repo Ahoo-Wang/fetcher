@@ -26,8 +26,10 @@ import { UrlParams } from './urlBuilder';
  * ```typescript
  * const request: FetchRequestInit = {
  *   method: 'GET',
- *   path: { id: 123 },
- *   query: { include: 'profile' },
+ *   urlParams: {
+ *     path: { id: 123 },
+ *     query: { include: 'profile' }
+ *   },
  *   headers: { 'Authorization': 'Bearer token' },
  *   timeout: 5000
  * };
