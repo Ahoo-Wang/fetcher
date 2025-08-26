@@ -23,7 +23,7 @@ import { HeadersCapable } from './types';
  *
  * @example
  * ```typescript
- * const request: FetchRequest = {
+ * const request: FetchRequestInit = {
  *   method: 'GET',
  *   path: { id: 123 },
  *   query: { include: 'profile' },
