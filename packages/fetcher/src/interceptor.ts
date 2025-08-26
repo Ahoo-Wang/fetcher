@@ -19,14 +19,11 @@ import { FetchExchange } from './fetchExchange';
 import { UrlResolveInterceptor } from './urlResolveInterceptor';
 
 /**
- * Interceptor Interface
+ * Interface for HTTP interceptors in the fetcher pipeline.
  *
- * Defines the basic structure of an interceptor. Interceptors are used to process
- * requests, responses, or errors at different stages of the HTTP request lifecycle.
- *
- * @remarks
- * Interceptors follow the Chain of Responsibility pattern, where each interceptor
- * can modify the exchange object and pass it to the next interceptor in the chain.
+ * Interceptors are middleware components that can modify requests, responses, or handle errors
+ * at different stages of the HTTP request lifecycle. They follow the Chain of Responsibility
+ * pattern, where each interceptor can process the exchange object and pass it to the next.
  *
  * @example
  * // Example of a custom request interceptor
@@ -44,22 +41,20 @@ import { UrlResolveInterceptor } from './urlResolveInterceptor';
  */
 export interface Interceptor extends NamedCapable, OrderedCapable {
   /**
-   * Interceptor name, used to identify the interceptor and must be unique
+   * Unique identifier for the interceptor.
    *
-   * @remarks
-   * The name is used by the InterceptorManager to manage interceptors,
-   * including adding, removing, and preventing duplicates.
+   * Used by InterceptorManager to manage interceptors, including adding, removing,
+   * and preventing duplicates. Each interceptor must have a unique name.
    */
   name: string;
 
   /**
-   * Intercept and process data
+   * Process the exchange object in the interceptor pipeline.
    *
-   * This method is called by the InterceptorManager to process the exchange object.
-   * The interceptor can modify the request, response, or error properties of the
-   * exchange object directly.
+   * This method is called by InterceptorManager to process the exchange object.
+   * Interceptors can modify request, response, or error properties directly.
    *
-   * @param exchange - The data to be processed, containing request, response, and error information
+   * @param exchange - The exchange object containing request, response, and error information
    *
    * @remarks
    * Interceptors should modify the exchange object directly rather than returning it.
@@ -69,11 +64,10 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
 }
 
 /**
- * InterceptorManager Class
+ * Manager for a collection of interceptors of the same type.
  *
- * Manages multiple interceptors of the same type. Responsible for adding, removing,
- * and executing interceptors in the correct order. Each InterceptorManager instance
- * handles one type of interceptor (request, response, or error).
+ * Handles adding, removing, and executing interceptors in the correct order.
+ * Each InterceptorManager instance manages one type of interceptor (request, response, or error).
  *
  * @remarks
  * Interceptors are executed in ascending order of their `order` property.
@@ -94,7 +88,7 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
  */
 export class InterceptorManager implements Interceptor {
   /**
-   * Gets the name of this interceptor manager
+   * Gets the name of this interceptor manager.
    *
    * @returns The constructor name of this class
    */
@@ -103,7 +97,7 @@ export class InterceptorManager implements Interceptor {
   }
 
   /**
-   * Gets the order of this interceptor manager
+   * Gets the order of this interceptor manager.
    *
    * @returns Number.MIN_SAFE_INTEGER, indicating this manager should execute early
    */
@@ -112,12 +106,12 @@ export class InterceptorManager implements Interceptor {
   }
 
   /**
-   * Array of interceptors managed by this manager, sorted by their order property
+   * Array of interceptors managed by this manager, sorted by their order property.
    */
   private sortedInterceptors: Interceptor[] = [];
 
   /**
-   * Creates a new InterceptorManager instance
+   * Initializes a new InterceptorManager instance.
    *
    * @param interceptors - Initial array of interceptors to manage
    *
@@ -130,7 +124,7 @@ export class InterceptorManager implements Interceptor {
   }
 
   /**
-   * Adds an interceptor to this manager
+   * Adds an interceptor to this manager.
    *
    * @param interceptor - The interceptor to add
    * @returns True if the interceptor was added, false if an interceptor with the
@@ -154,7 +148,7 @@ export class InterceptorManager implements Interceptor {
   }
 
   /**
-   * Removes an interceptor by name
+   * Removes an interceptor by name.
    *
    * @param name - The name of the interceptor to remove
    * @returns True if an interceptor was removed, false if no interceptor with the
@@ -170,17 +164,17 @@ export class InterceptorManager implements Interceptor {
   }
 
   /**
-   * Removes all interceptors from this manager
+   * Removes all interceptors from this manager.
    */
   clear(): void {
     this.sortedInterceptors = [];
   }
 
   /**
-   * Executes all managed interceptors on the given exchange object
+   * Executes all managed interceptors on the given exchange object.
    *
    * @param exchange - The exchange object to process
-   * @returns A promise that resolves to the processed exchange object
+   * @returns A promise that resolves when all interceptors have been executed
    *
    * @remarks
    * Interceptors are executed in order, with each interceptor receiving the result
@@ -199,14 +193,15 @@ export class InterceptorManager implements Interceptor {
 }
 
 /**
- * FetcherInterceptors Class
+ * Collection of interceptor managers for the Fetcher client.
  *
- * The interceptor collection management class for Fetcher, responsible for managing three types of interceptors:
+ * Manages three types of interceptors:
  * 1. Request interceptors - Process requests before sending HTTP requests
  * 2. Response interceptors - Process responses after receiving HTTP responses
  * 3. Error interceptors - Handle errors when they occur during the request process
  *
- * Each type of interceptor is managed by an InterceptorManager instance, supporting adding, removing, and executing interceptors.
+ * Each type of interceptor is managed by an InterceptorManager instance, supporting
+ * adding, removing, and executing interceptors.
  *
  * @example
  * // Create a custom interceptor
@@ -228,20 +223,21 @@ export class InterceptorManager implements Interceptor {
  * fetcher.interceptors.request.use(customRequestInterceptor);
  *
  * @remarks
- * By default, the request interceptor manager has two built-in interceptors registered:
- * 1. RequestBodyInterceptor - Automatically converts object-type request bodies to JSON strings
- * 2. FetchInterceptor - Executes actual HTTP requests and handles timeouts
+ * By default, the request interceptor manager has three built-in interceptors registered:
+ * 1. UrlResolveInterceptor - Resolves the final URL with parameters
+ * 2. RequestBodyInterceptor - Automatically converts object-type request bodies to JSON strings
+ * 3. FetchInterceptor - Executes actual HTTP requests and handles timeouts
  */
 export class FetcherInterceptors {
   /**
-   * Request Interceptor Manager
+   * Manager for request-phase interceptors.
    *
-   * Responsible for managing all request-phase interceptors, executed before HTTP requests are sent.
-   * Contains three built-in interceptors by default: UrlResolveInterceptor, RequestBodyInterceptor, and FetchInterceptor.
+   * Executed before HTTP requests are sent. Contains three built-in interceptors by default:
+   * UrlResolveInterceptor, RequestBodyInterceptor, and FetchInterceptor.
    *
    * @remarks
-   * Request interceptors are executed in ascending order of their order values, with smaller values having higher priority.
-   * The default interceptors are:
+   * Request interceptors are executed in ascending order of their order values, with smaller
+   * values having higher priority. The default interceptors are:
    * 1. UrlResolveInterceptor (order: Number.MIN_SAFE_INTEGER) - Resolves the final URL
    * 2. RequestBodyInterceptor (order: 0) - Converts object bodies to JSON
    * 3. FetchInterceptor (order: Number.MAX_SAFE_INTEGER) - Executes the actual HTTP request
@@ -253,25 +249,27 @@ export class FetcherInterceptors {
   ]);
 
   /**
-   * Response Interceptor Manager
+   * Manager for response-phase interceptors.
    *
-   * Responsible for managing all response-phase interceptors, executed after HTTP responses are received.
-   * Empty by default, custom response processing logic can be added as needed.
+   * Executed after HTTP responses are received. Empty by default, custom response processing
+   * logic can be added as needed.
    *
    * @remarks
-   * Response interceptors are executed in ascending order of their order values, with smaller values having higher priority.
+   * Response interceptors are executed in ascending order of their order values, with smaller
+   * values having higher priority.
    */
   response: InterceptorManager = new InterceptorManager();
 
   /**
-   * Error Interceptor Manager
+   * Manager for error-handling phase interceptors.
    *
-   * Responsible for managing all error-handling phase interceptors, executed when errors occur during HTTP requests.
-   * Empty by default, custom error handling logic can be added as needed.
+   * Executed when errors occur during HTTP requests. Empty by default, custom error handling
+   * logic can be added as needed.
    *
    * @remarks
-   * Error interceptors are executed in ascending order of their order values, with smaller values having higher priority.
-   * Error interceptors can transform errors into normal responses, avoiding thrown exceptions.
+   * Error interceptors are executed in ascending order of their order values, with smaller
+   * values having higher priority. Error interceptors can transform errors into normal responses,
+   * avoiding thrown exceptions.
    */
   error: InterceptorManager = new InterceptorManager();
 }

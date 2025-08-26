@@ -16,27 +16,21 @@ import { FetchExchange } from './fetchExchange';
 import { ContentTypeValues } from './fetchRequest';
 
 /**
- * RequestBodyInterceptor Class
- *
  * Interceptor responsible for converting plain objects to JSON strings for HTTP request bodies.
- * This interceptor ensures that object request bodies are properly serialized and that
- * the appropriate Content-Type header is set.
  *
- * @remarks
- * This interceptor runs early in the request processing chain with the lowest possible
- * order value (Number.MIN_SAFE_INTEGER) to ensure request bodies are properly formatted
- * before other interceptors process them.
+ * This interceptor ensures that object request bodies are properly serialized and that
+ * the appropriate Content-Type header is set. It runs early in the request processing chain
+ * to ensure request bodies are properly formatted before other interceptors process them.
  */
 export class RequestBodyInterceptor implements Interceptor {
   /**
-   * Interceptor name, used for identification and management
+   * Interceptor name, used for identification and management.
    */
   name = 'RequestBodyInterceptor';
 
   /**
-   * Interceptor execution order, set to run after UrlResolveInterceptor but before FetchInterceptor
+   * Interceptor execution order, set to run after UrlResolveInterceptor but before FetchInterceptor.
    *
-   * @remarks
    * This interceptor should run after URL resolution (UrlResolveInterceptor) but before
    * the actual HTTP request is made (FetchInterceptor). The order is set to
    * Number.MIN_SAFE_INTEGER + 200 to ensure it executes in the correct position
@@ -46,7 +40,7 @@ export class RequestBodyInterceptor implements Interceptor {
   order = Number.MIN_SAFE_INTEGER + 200;
 
   /**
-   * Attempts to convert request body to a valid fetch API body type
+   * Attempts to convert request body to a valid fetch API body type.
    *
    * According to the Fetch API specification, body can be multiple types, but for
    * plain objects, they need to be converted to JSON strings.
@@ -68,7 +62,6 @@ export class RequestBodyInterceptor implements Interceptor {
    * converted to JSON strings.
    *
    * @param exchange - The exchange object containing the request to process
-   * @returns The processed exchange object with potentially modified request body
    *
    * @example
    * // Plain object body will be converted to JSON

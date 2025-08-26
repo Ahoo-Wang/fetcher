@@ -2,15 +2,15 @@ import { getParameterName } from './reflection';
 import 'reflect-metadata';
 
 /**
- * Parameter types for decorator parameters
+ * Parameter types for decorator parameters.
  *
- * This enum defines the different types of parameters that can be used
+ * Defines the different types of parameters that can be used
  * in API method decorators to specify how arguments should be handled
  * in the HTTP request.
  */
 export enum ParameterType {
   /**
-   * Path parameter that will be inserted into the URL path
+   * Path parameter that will be inserted into the URL path.
    *
    * Path parameters are used to specify dynamic parts of the URL path.
    * They are defined using curly braces in the endpoint path.
@@ -24,7 +24,7 @@ export enum ParameterType {
   PATH = 'path',
 
   /**
-   * Query parameter that will be appended to the URL query string
+   * Query parameter that will be appended to the URL query string.
    *
    * Query parameters are used to pass non-hierarchical data to the server.
    * They appear after the '?' in the URL.
@@ -38,7 +38,7 @@ export enum ParameterType {
   QUERY = 'query',
 
   /**
-   * Header parameter that will be added to the request headers
+   * Header parameter that will be added to the request headers.
    *
    * Header parameters are used to pass metadata about the request,
    * such as authentication tokens or content type information.
@@ -52,7 +52,7 @@ export enum ParameterType {
   HEADER = 'header',
 
   /**
-   * Body parameter that will be sent as the request body
+   * Body parameter that will be sent as the request body.
    *
    * The body parameter represents the main data payload of the request.
    * It is typically used with POST, PUT, and PATCH requests.
@@ -72,21 +72,21 @@ export enum ParameterType {
 }
 
 /**
- * Metadata for method parameters
+ * Metadata for method parameters.
  *
- * This interface defines the metadata stored for each parameter
+ * Defines the metadata stored for each parameter
  * decorated with @path, @query, @header, or @body decorators.
  */
 export interface ParameterMetadata {
   /**
-   * Type of parameter (path, query, header, body)
+   * Type of parameter (path, query, header, body).
    *
    * Specifies how this parameter should be handled in the HTTP request.
    */
   type: ParameterType;
 
   /**
-   * Name of the parameter (used for path, query, and header parameters)
+   * Name of the parameter (used for path, query, and header parameters).
    *
    * For path and query parameters, this corresponds to the key in the URL.
    * For header parameters, this corresponds to the header name.
@@ -95,7 +95,7 @@ export interface ParameterMetadata {
   name?: string;
 
   /**
-   * Index of the parameter in the method signature
+   * Index of the parameter in the method signature.
    *
    * This is used to map the runtime argument values to the correct parameter metadata.
    */
@@ -105,9 +105,9 @@ export interface ParameterMetadata {
 export const PARAMETER_METADATA_KEY = Symbol('parameter:metadata');
 
 /**
- * Decorator factory for method parameters
+ * Decorator factory for method parameters.
  *
- * This function creates a decorator that can be used to specify how a method parameter
+ * Creates a decorator that can be used to specify how a method parameter
  * should be handled in the HTTP request. It stores metadata about the parameter
  * that will be used during request execution.
  * The name is optional - if not provided, it will be automatically extracted
@@ -129,7 +129,7 @@ export const PARAMETER_METADATA_KEY = Symbol('parameter:metadata');
  * ```
  */
 export function parameter(type: ParameterType, name: string = '') {
-  return function(
+  return function (
     target: object,
     propertyKey: string | symbol,
     parameterIndex: number,
@@ -160,7 +160,7 @@ export function parameter(type: ParameterType, name: string = '') {
 }
 
 /**
- * Path parameter decorator
+ * Path parameter decorator.
  *
  * Defines a path parameter that will be inserted into the URL path.
  * The name is optional - if not provided, it will be automatically extracted
@@ -185,7 +185,7 @@ export function path(name: string = '') {
 }
 
 /**
- * Query parameter decorator
+ * Query parameter decorator.
  *
  * Defines a query parameter that will be appended to the URL query string.
  * The name is optional - if not provided, it will be automatically extracted
@@ -210,7 +210,7 @@ export function query(name: string = '') {
 }
 
 /**
- * Header parameter decorator
+ * Header parameter decorator.
  *
  * Defines a header parameter that will be added to the request headers.
  * The name is optional - if not provided, it will be automatically extracted
@@ -235,7 +235,7 @@ export function header(name: string = '') {
 }
 
 /**
- * Body parameter decorator
+ * Body parameter decorator.
  *
  * Defines a body parameter that will be sent as the request body.
  * Note that body parameters don't have names since there's only one body per request.
@@ -253,7 +253,7 @@ export function body() {
 }
 
 /**
- * Request parameter decorator
+ * Request parameter decorator.
  *
  * Defines a request parameter that will be used as the base request object.
  * This allows you to pass a complete FetcherRequest object to customize

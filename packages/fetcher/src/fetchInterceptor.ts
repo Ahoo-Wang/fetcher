@@ -16,7 +16,7 @@ import { timeoutFetch } from './timeout';
 import { FetchExchange } from './fetchExchange';
 
 /**
- * FetchInterceptor Class
+ * Interceptor implementation responsible for executing actual HTTP requests.
  *
  * This is an interceptor implementation responsible for executing actual HTTP requests
  * and handling timeout control. It is the last interceptor in the Fetcher request
@@ -30,18 +30,16 @@ import { FetchExchange } from './fetchExchange';
  */
 export class FetchInterceptor implements Interceptor {
   /**
-   * Interceptor name, used to identify and manage interceptor instances
+   * Interceptor name, used to identify and manage interceptor instances.
    *
-   * @remarks
    * Each interceptor must have a unique name for identification and manipulation
-   * within the interceptor manager
+   * within the interceptor manager.
    */
   name = 'FetchInterceptor';
 
   /**
-   * Interceptor execution order, set to near maximum safe integer to ensure last execution
+   * Interceptor execution order, set to near maximum safe integer to ensure last execution.
    *
-   * @remarks
    * Since this is the interceptor that actually executes HTTP requests, it should
    * execute after all other request interceptors, so its order is set to
    * Number.MAX_SAFE_INTEGER - 100. This ensures that all request preprocessing is
@@ -51,7 +49,7 @@ export class FetchInterceptor implements Interceptor {
   order = Number.MAX_SAFE_INTEGER - 100;
 
   /**
-   * Intercept and process HTTP requests
+   * Intercept and process HTTP requests.
    *
    * Executes the actual HTTP request and applies timeout control. This is the final
    * step in the request processing chain, responsible for calling the timeoutFetch
@@ -63,15 +61,17 @@ export class FetchInterceptor implements Interceptor {
    *
    * @example
    * // Usually called internally by Fetcher
-   * const exchange = {
-   *   url: 'https://api.example.com/users',
-   *   request: {
+   * const fetcher = new Fetcher();
+   * const exchange = new FetchExchange(
+   *   fetcher,
+   *   {
+   *     url: 'https://api.example.com/users',
    *     method: 'GET',
    *     timeout: 5000
    *   }
-   * };
-   * const result = await fetchInterceptor.intercept(exchange);
-   * console.log(result.response); // HTTP response object
+   * );
+   * await fetchInterceptor.intercept(exchange);
+   * console.log(exchange.response); // HTTP response object
    */
   async intercept(exchange: FetchExchange) {
     exchange.response = await timeoutFetch(exchange.request);

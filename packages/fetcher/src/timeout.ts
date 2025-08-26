@@ -14,13 +14,13 @@
 import { FetchRequest } from './fetchRequest';
 
 /**
- * TimeoutCapable Interface
- *
  * Interface that defines timeout capability for HTTP requests.
+ *
+ * Objects implementing this interface can specify timeout values for HTTP requests.
  */
 export interface TimeoutCapable {
   /**
-   * Request timeout in milliseconds
+   * Request timeout in milliseconds.
    *
    * When the value is 0, it indicates no timeout should be set.
    * The default value is undefined.
@@ -29,7 +29,7 @@ export interface TimeoutCapable {
 }
 
 /**
- * Resolves request timeout settings, prioritizing request-level timeout settings
+ * Resolves request timeout settings, prioritizing request-level timeout settings.
  *
  * @param requestTimeout - Request-level timeout setting
  * @param optionsTimeout - Configuration-level timeout setting
@@ -50,9 +50,8 @@ export function resolveTimeout(
 }
 
 /**
- * FetchTimeoutError Class
- *
  * Exception class thrown when an HTTP request times out.
+ *
  * This error is thrown by the timeoutFetch function when a request exceeds its timeout limit.
  *
  * @example
@@ -68,12 +67,12 @@ export function resolveTimeout(
  */
 export class FetchTimeoutError extends Error {
   /**
-   * The request options that timed out
+   * The request options that timed out.
    */
   request: FetchRequest;
 
   /**
-   * Creates a new FetchTimeoutError instance
+   * Creates a new FetchTimeoutError instance.
    *
    * @param request - The request options that timed out
    */
@@ -89,9 +88,9 @@ export class FetchTimeoutError extends Error {
 }
 
 /**
- * HTTP request method with timeout control
+ * HTTP request method with timeout control.
  *
- * This method uses Promise.race to implement timeout control, initiating both
+ * Uses Promise.race to implement timeout control, initiating both
  * fetch request and timeout Promise simultaneously. When either Promise completes,
  * it returns the result or throws an exception.
  *
