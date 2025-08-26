@@ -15,7 +15,7 @@ import { Fetcher } from './fetcher';
 import { FetchRequest } from './fetchRequest';
 
 /**
- * FetchExchange Interface
+ * FetchExchange
  *
  * Represents the complete exchange object that flows through the interceptor chain.
  * This object contains all the information about a request, response, and any errors
@@ -55,7 +55,7 @@ import { FetchRequest } from './fetchRequest';
  * };
  * ```
  */
-export interface FetchExchange {
+export class FetchExchange {
   /**
    * The Fetcher instance that initiated this exchange
    */
@@ -90,5 +90,12 @@ export interface FetchExchange {
    * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
    * - Be mindful of memory usage when storing large objects
    */
-  attributes?: Record<string, any>;
+  attributes: Record<string, any> = {};
+
+  constructor(fetcher: Fetcher, request: FetchRequest, response?: Response, error?: Error | any) {
+    this.fetcher = fetcher;
+    this.request = request;
+    this.response = response;
+    this.error = error;
+  }
 }
