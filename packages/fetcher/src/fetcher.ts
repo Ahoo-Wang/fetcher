@@ -123,13 +123,7 @@ export class Fetcher
       headers: mergedHeaders,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
-    const exchange: FetchExchange = {
-      fetcher: this,
-      request: fetchRequest,
-      response: undefined,
-      error: undefined,
-      attributes: {},
-    };
+    const exchange: FetchExchange = new FetchExchange(this, fetchRequest);
     return this.exchange(exchange);
   }
 
