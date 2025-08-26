@@ -120,8 +120,10 @@ export class FunctionMetadata implements NamedCapable {
    * // Would produce a request with:
    * // {
    * //   method: 'GET',
-   * //   path: { id: 123 },
-   * //   query: { include: 'profile' },
+   * //   urlParams: {
+   * //     path: { id: 123 },
+   * //     query: { include: 'profile' }
+   * //   },
    * //   headers: {
    * //     'Authorization': 'Bearer token',
    * //     ...apiHeaders,

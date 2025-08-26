@@ -53,8 +53,10 @@ export interface UrlParams {
  * ```typescript
  * const urlBuilder = new UrlBuilder('https://api.example.com');
  * const url = urlBuilder.build('/users/{id}', {
- *   path: { id: 123 },
- *   query: { filter: 'active' }
+ *   urlParams: {
+ *     path: { id: 123 },
+ *     query: { filter: 'active' }
+ *   }
  * });
  * // Result: https://api.example.com/users/123?filter=active
  * ```
