@@ -139,14 +139,11 @@ const success = fetcher.interceptors.request.use({
   name: 'auth-interceptor',
   order: 100,
   intercept(exchange) {
-    return {
-      ...exchange,
-      request: {
-        ...exchange.request,
-        headers: {
-          ...exchange.request.headers,
-          Authorization: 'Bearer ' + getAuthToken(),
-        },
+    exchange.request = {
+      ...exchange.request,
+      headers: {
+        ...exchange.request.headers,
+        Authorization: 'Bearer ' + getAuthToken(),
       },
     };
   },
@@ -158,7 +155,6 @@ fetcher.interceptors.response.use({
   order: 10,
   intercept(exchange) {
     console.log('Response received:', exchange.response?.status);
-    return exchange;
   },
 });
 
@@ -172,7 +168,6 @@ fetcher.interceptors.error.use({
     } else {
       console.error('Network error:', exchange.error?.message);
     }
-    return exchange;
   },
 });
 
@@ -335,7 +330,7 @@ Interceptor interface that defines the basic structure of interceptors.
 
 **Methods:**
 
-- `intercept(exchange: FetchExchange): FetchExchange | Promise<FetchExchange>` - Intercept and process data
+- `intercept(exchange: FetchExchange): void | Promise<void>` - Intercept and process data
 
 #### InterceptorManager Class
 
@@ -346,7 +341,7 @@ Interceptor manager for managing multiple interceptors of the same type.
 - `use(interceptor: Interceptor): boolean` - Add interceptor, returns whether the addition was successful
 - `eject(name: string): boolean` - Remove interceptor by name, returns whether the removal was successful
 - `clear(): void` - Clear all interceptors
-- `intercept(exchange: FetchExchange): Promise<FetchExchange>` - Execute all interceptors in sequence
+- `intercept(exchange: FetchExchange): Promise<void>` - Execute all interceptors in sequence
 
 #### FetcherInterceptors Class
 
