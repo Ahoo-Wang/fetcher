@@ -15,7 +15,8 @@ import { UrlBuilder, UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, TimeoutCapable } from './timeout';
 import { BaseURLCapable, ContentTypeHeader, ContentTypeValues, HeadersCapable, HttpMethod } from './types';
 import { FetcherInterceptors } from './interceptor';
-import { FetcherRequest, FetchExchange, RequestField } from './fetchExchange';
+import { FetchExchange } from './fetchExchange';
+import { FetchRequestInit } from './fetchRequest';
 
 /**
  * Fetcher configuration options interface
@@ -72,7 +73,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
    * @param request - Request options, including path parameters, query parameters, etc.
    * @returns Promise<Response> HTTP response
    */
-  async fetch(url: string, request: FetcherRequest = {}): Promise<Response> {
+  async fetch(url: string, request: FetchRequestInit = {}): Promise<Response> {
     const exchange = await this.request(url, request);
     if (!exchange.response) {
       throw new Error(`Request to ${exchange.url} failed with no response`);
@@ -91,7 +92,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
    */
   async request(
     url: string,
-    request: FetcherRequest = {},
+    request: FetchRequestInit = {},
   ): Promise<FetchExchange> {
     // Merge default headers and request-level headers
     const mergedHeaders = {
@@ -99,7 +100,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
       ...(request.headers || {}),
     };
     // Merge request options
-    const fetchRequest: FetcherRequest = {
+    const fetchRequest: FetchRequestInit = {
       ...request,
       headers:
         Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
@@ -161,7 +162,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
   private async methodFetch(
     method: HttpMethod,
     url: string,
-    request: FetcherRequest = {},
+    request: FetchRequestInit = {},
   ): Promise<Response> {
     return this.fetch(url, {
       ...request,
@@ -178,7 +179,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
    */
   async get(
     url: string,
-    request: Omit<FetcherRequest, RequestField.METHOD | RequestField.BODY> = {},
+    request: Omit<FetchRequestInit, 'method' | 'body'> = {},
   ): Promise<Response> {
     return this.methodFetch(HttpMethod.GET, url, request);
   }
@@ -192,7 +193,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
    */
   async post(
     url: string,
-    request: Omit<FetcherRequest, RequestField.METHOD> = {},
+    request: Omit<FetchRequestInit, 'method'> = {},
   ): Promise<Response> {
     return this.methodFetch(HttpMethod.POST, url, request);
   }
@@ -206,7 +207,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
    */
   async put(
     url: string,
-    request: Omit<FetcherRequest, RequestField.METHOD> = {},
+    request: Omit<FetchRequestInit, 'method'> = {},
   ): Promise<Response> {
     return this.methodFetch(HttpMethod.PUT, url, request);
   }
@@ -220,7 +221,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
    */
   async delete(
     url: string,
-    request: Omit<FetcherRequest, RequestField.METHOD> = {},
+    request: Omit<FetchRequestInit, 'method'> = {},
   ): Promise<Response> {
     return this.methodFetch(HttpMethod.DELETE, url, request);
   }
@@ -234,7 +235,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
    */
   async patch(
     url: string,
-    request: Omit<FetcherRequest, RequestField.METHOD> = {},
+    request: Omit<FetchRequestInit, 'method'> = {},
   ): Promise<Response> {
     return this.methodFetch(HttpMethod.PATCH, url, request);
   }
@@ -248,7 +249,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
    */
   async head(
     url: string,
-    request: Omit<FetcherRequest, RequestField.METHOD | RequestField.BODY> = {},
+    request: Omit<FetchRequestInit, 'method' | 'body'> = {},
   ): Promise<Response> {
     return this.methodFetch(HttpMethod.HEAD, url, request);
   }
@@ -262,7 +263,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
    */
   async options(
     url: string,
-    request: Omit<FetcherRequest, RequestField.METHOD | RequestField.BODY> = {},
+    request: Omit<FetchRequestInit, 'method' | 'body'> = {},
   ): Promise<Response> {
     return this.methodFetch(HttpMethod.OPTIONS, url, request);
   }

@@ -15,7 +15,7 @@ import {
   DEFAULT_FETCHER_NAME,
   Fetcher,
   fetcherRegistrar,
-  FetcherRequest,
+  FetchRequestInit,
   mergeRequest,
   NamedCapable,
 } from '@ahoo-wang/fetcher';
@@ -129,7 +129,7 @@ export class FunctionMetadata implements NamedCapable {
    * // }
    * ```
    */
-  resolveRequest(args: any[]): FetcherRequest {
+  resolveRequest(args: any[]): FetchRequestInit {
     const path: Record<string, any> = {};
     const query: Record<string, any> = {};
     const headers: Record<string, string> = {
@@ -138,7 +138,7 @@ export class FunctionMetadata implements NamedCapable {
     };
     let body: any = undefined;
     let signal: AbortSignal | null | undefined = undefined;
-    let parameterRequest: FetcherRequest = {};
+    let parameterRequest: FetchRequestInit = {};
     // Process parameters based on their decorators
     args.forEach((value, index) => {
       if (value instanceof AbortSignal) {
@@ -166,7 +166,7 @@ export class FunctionMetadata implements NamedCapable {
         }
       }
     });
-    const endpointRequest: FetcherRequest = {
+    const endpointRequest: FetchRequestInit = {
       method: this.endpoint.method,
       path,
       query,
@@ -230,8 +230,8 @@ export class FunctionMetadata implements NamedCapable {
    * await service.createUsers(customRequest);
    * ```
    */
-  private processRequestParam(value: any): FetcherRequest {
-    return value as FetcherRequest;
+  private processRequestParam(value: any): FetchRequestInit {
+    return value as FetchRequestInit;
   }
 
   /**
