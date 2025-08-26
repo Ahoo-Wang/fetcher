@@ -54,11 +54,7 @@ export class EventStreamInterceptor implements Interceptor {
       return;
     }
     const contentType = response.headers.get(ContentTypeHeader);
-    if (
-      contentType &&
-      contentType.includes(ContentTypeValues.TEXT_EVENT_STREAM)
-    ) {
-      // Add eventStream method to response
+    if (contentType?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
       response.eventStream = () => toServerSentEventStream(response);
     }
   }
