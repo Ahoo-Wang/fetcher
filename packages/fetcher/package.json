@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher",
-  "version": "0.8.6",
+  "version": "0.8.8",
   "description": "Ultra-lightweight (1.9kB) HTTP client with built-in path parameters and Axios-like API",
   "keywords": [
     "fetch",
