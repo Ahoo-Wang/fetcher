@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { FetcherRequest } from './fetchExchange';
+import { FetchRequestInit } from './fetchRequest';
 
 /**
  * Merges two FetcherRequest objects into one.
@@ -52,9 +52,9 @@ import { FetcherRequest } from './fetchExchange';
  * ```
  */
 export function mergeRequest(
-  first: FetcherRequest,
-  second: FetcherRequest,
-): FetcherRequest {
+  first: FetchRequestInit,
+  second: FetchRequestInit,
+): FetchRequestInit {
   // If first request is empty, return second request
   if (Object.keys(first).length === 0) {
     return second;

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { FetcherRequest, FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
+import { FetchExchange, FetchRequestInit, Interceptor } from '@ahoo-wang/fetcher';
 import { CoSecHeaders, CoSecOptions } from './types';
 import { idGenerator } from './idGenerator';
 
@@ -57,7 +57,7 @@ export class CoSecRequestInterceptor implements Interceptor {
     const token = this.options.tokenStorage.get();
 
     // Clone the request to avoid modifying the original
-    const newRequest: FetcherRequest = {
+    const newRequest: FetchRequestInit = {
       ...exchange.request,
       headers: {
         ...exchange.request.headers,
