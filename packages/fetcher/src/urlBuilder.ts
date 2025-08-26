@@ -15,33 +15,55 @@ import { combineURLs } from './urls';
 import { BaseURLCapable } from './types';
 import { FetchRequest } from './fetchRequest';
 
+/**
+ * Interface for URL parameters including path and query parameters
+ */
 export interface UrlParams {
   /**
    * Path parameter object used to replace placeholders in the URL (e.g., {id})
+   *
+   * @example
+   * ```typescript
+   * // For URL template '/users/{id}/posts/{postId}'
+   * const path = { id: 123, postId: 456 };
+   * ```
    */
   path?: Record<string, any>;
+
   /**
-   *  Query/Search parameter object to be added to the URL query string
+   * Query parameter object to be added to the URL query string
+   *
+   * @example
+   * ```typescript
+   * const query = { filter: 'active', page: 1, limit: 10 };
+   * // Results in query string: ?filter=active&page=1&limit=10
+   * ```
    */
   query?: Record<string, any>;
 }
 
 /**
- * UrlBuilder Class
+ * URL Builder class for constructing complete URLs with path parameters and query parameters
  *
- * URL builder class for constructing complete URLs with path parameters and query parameters.
  * This class handles URL composition, path parameter interpolation, and query string generation.
+ * It combines a base URL with a path, replaces path placeholders with actual values, and appends
+ * query parameters to create a complete URL.
  *
  * @example
  * ```typescript
  * const urlBuilder = new UrlBuilder('https://api.example.com');
- * const url = urlBuilder.build('/users/{id}', { id: 123 }, { filter: 'active' });
+ * const url = urlBuilder.build('/users/{id}', {
+ *   path: { id: 123 },
+ *   query: { filter: 'active' }
+ * });
  * // Result: https://api.example.com/users/123?filter=active
  * ```
  */
 export class UrlBuilder implements BaseURLCapable {
   /**
    * Base URL that all constructed URLs will be based on
+   *
+   * This is typically the root of your API endpoint (e.g., 'https://api.example.com')
    */
   baseURL: string;
 
@@ -49,6 +71,11 @@ export class UrlBuilder implements BaseURLCapable {
    * Creates a UrlBuilder instance
    *
    * @param baseURL - Base URL that all constructed URLs will be based on
+   *
+   * @example
+   * ```typescript
+   * const urlBuilder = new UrlBuilder('https://api.example.com');
+   * ```
    */
   constructor(baseURL: string) {
     this.baseURL = baseURL;
@@ -57,25 +84,22 @@ export class UrlBuilder implements BaseURLCapable {
   /**
    * Builds a complete URL, including path parameter replacement and query parameter addition
    *
-   * @param url - URL path to build
-   * @param params -
-   * @returns Complete URL string
+   * @param url - URL path to build (e.g., '/users/{id}/posts')
+   * @param params - URL parameters including path and query parameters
+   * @returns Complete URL string with base URL, path parameters interpolated, and query string appended
    * @throws Error when required path parameters are missing
    *
    * @example
    * ```typescript
    * const urlBuilder = new UrlBuilder('https://api.example.com');
-   * const url = urlBuilder.build('/users/{id}/posts/{postId}',
-   *   { id: 123, postId: 456 },
-   *   { filter: 'active', limit: 10 }
-   * );
+   * const url = urlBuilder.build('/users/{id}/posts/{postId}', {
+   *   path: { id: 123, postId: 456 },
+   *   query: { filter: 'active', limit: 10 }
+   * });
    * // Result: https://api.example.com/users/123/posts/456?filter=active&limit=10
    * ```
    */
-  build(
-    url: string,
-    params?: UrlParams,
-  ): string {
+  build(url: string, params?: UrlParams): string {
     const path = params?.path;
     const query = params?.query;
     const combinedURL = combineURLs(this.baseURL, url);
@@ -89,7 +113,16 @@ export class UrlBuilder implements BaseURLCapable {
     return finalUrl;
   }
 
-  resolveRequestUrl(request: FetchRequest) {
+  /**
+   * Resolves a complete URL from a FetchRequest
+   *
+   * This method is used internally by the Fetcher to build the final URL for a request
+   * by combining the request URL with its URL parameters using this UrlBuilder.
+   *
+   * @param request - The FetchRequest containing URL and URL parameters
+   * @returns Complete resolved URL string
+   */
+  resolveRequestUrl(request: FetchRequest): string {
     return this.build(request.url, request.urlParams);
   }
 
@@ -104,11 +137,23 @@ export class UrlBuilder implements BaseURLCapable {
    * @example
    * ```typescript
    * const urlBuilder = new UrlBuilder('https://api.example.com');
-   * const result = urlBuilder.interpolateUrl('/users/{id}/posts/{postId}', { id: 123, postId: 456 });
-   * // Result: /users/123/posts/456
+   * const result = urlBuilder.interpolateUrl('/users/{id}/posts/{postId}', {
+   *   path: { id: 123, postId: 456 }
+   * });
+   * // Result: https://api.example.com/users/123/posts/456
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Missing required parameter throws an error
+   * try {
+   *   urlBuilder.interpolateUrl('/users/{id}', { name: 'John' });
+   * } catch (error) {
+   *   console.error(error.message); // "Missing required path parameter: id"
+   * }
    * ```
    */
-  interpolateUrl(url: string, path?: Record<string, any>): string {
+  interpolateUrl(url: string, path?: Record<string, any> | null): string {
     if (!path) return url;
     return url.replace(/{([^}]+)}/g, (_, key) => {
       const value = path[key];
@@ -121,6 +166,12 @@ export class UrlBuilder implements BaseURLCapable {
   }
 }
 
+/**
+ * Interface for objects that have a UrlBuilder capability
+ */
 export interface UrlBuilderCapable {
+  /**
+   * The UrlBuilder instance
+   */
   urlBuilder: UrlBuilder;
 }
