@@ -17,7 +17,7 @@ import { idGenerator } from './idGenerator';
 export const DEFAULT_COSEC_DEVICE_ID_KEY = 'cosec-device-id';
 
 /**
- * Device ID storage class for managing device identifiers
+ * Storage class for managing device identifiers.
  */
 export class DeviceIdStorage {
   private readonly deviceIdKey: string;
@@ -32,28 +32,36 @@ export class DeviceIdStorage {
   }
 
   /**
-   * Get the current device ID
+   * Get the current device ID.
+   *
+   * @returns The current device ID or null if not set
    */
   get(): string | null {
     return this.storage.getItem(this.deviceIdKey);
   }
 
   /**
-   * Set a device ID
+   * Set a device ID.
+   *
+   * @param deviceId - The device ID to set
    */
   set(deviceId: string): void {
     this.storage.setItem(this.deviceIdKey, deviceId);
   }
 
   /**
-   * Generate a new device ID
+   * Generate a new device ID.
+   *
+   * @returns A newly generated device ID
    */
   generateDeviceId(): string {
     return idGenerator.generateId();
   }
 
   /**
-   * Get or create a device ID
+   * Get or create a device ID.
+   *
+   * @returns The existing device ID if available, otherwise a newly generated one
    */
   getOrCreate(): string {
     // Try to get existing device ID from storage
@@ -68,7 +76,7 @@ export class DeviceIdStorage {
   }
 
   /**
-   * Clear the stored device ID
+   * Clear the stored device ID.
    */
   clear(): void {
     this.storage.removeItem(this.deviceIdKey);
