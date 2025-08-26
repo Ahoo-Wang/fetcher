@@ -18,6 +18,7 @@ import {
   FetchRequestInit,
   mergeRequest,
   NamedCapable,
+  UrlParams,
 } from '@ahoo-wang/fetcher';
 import { ApiMetadata } from './apiDecorator';
 import { EndpointMetadata } from './endpointDecorator';
@@ -166,10 +167,13 @@ export class FunctionMetadata implements NamedCapable {
         }
       }
     });
-    const endpointRequest: FetchRequestInit = {
-      method: this.endpoint.method,
+    const urlParams: UrlParams = {
       path,
       query,
+    };
+    const endpointRequest: FetchRequestInit = {
+      method: this.endpoint.method,
+      urlParams,
       headers,
       body,
       timeout: this.resolveTimeout(),

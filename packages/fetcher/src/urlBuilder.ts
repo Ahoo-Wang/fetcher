@@ -15,6 +15,17 @@ import { combineURLs } from './urls';
 import { BaseURLCapable } from './types';
 import { FetchRequest } from './fetchRequest';
 
+export interface UrlParams {
+  /**
+   * Path parameter object used to replace placeholders in the URL (e.g., {id})
+   */
+  path?: Record<string, any>;
+  /**
+   *  Query parameter object to be added to the URL query string
+   */
+  query?: Record<string, any>;
+}
+
 /**
  * UrlBuilder Class
  *
@@ -47,8 +58,7 @@ export class UrlBuilder implements BaseURLCapable {
    * Builds a complete URL, including path parameter replacement and query parameter addition
    *
    * @param url - URL path to build
-   * @param path - Path parameter object used to replace placeholders in the URL (e.g., {id})
-   * @param query - Query parameter object to be added to the URL query string
+   * @param params -
    * @returns Complete URL string
    * @throws Error when required path parameters are missing
    *
@@ -64,9 +74,10 @@ export class UrlBuilder implements BaseURLCapable {
    */
   build(
     url: string,
-    path?: Record<string, any>,
-    query?: Record<string, any>,
+    params?: UrlParams,
   ): string {
+    const path = params?.path;
+    const query = params?.query;
     const combinedURL = combineURLs(this.baseURL, url);
     let finalUrl = this.interpolateUrl(combinedURL, path);
     if (query) {
@@ -79,7 +90,7 @@ export class UrlBuilder implements BaseURLCapable {
   }
 
   resolveRequestUrl(request: FetchRequest) {
-    return this.build(request.url, request.path, request.query);
+    return this.build(request.url, request.urlParams);
   }
 
   /**

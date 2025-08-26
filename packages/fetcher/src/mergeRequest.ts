@@ -12,6 +12,7 @@
  */
 
 import { FetchRequestInit } from './fetchRequest';
+import { UrlParams } from './urlBuilder';
 
 /**
  * Merges two FetcherRequest objects into one.
@@ -66,14 +67,9 @@ export function mergeRequest(
   }
 
   // Merge nested objects
-  const path = {
-    ...first.path,
-    ...second.path,
-  };
-
-  const query = {
-    ...first.query,
-    ...second.query,
+  const urlParams: UrlParams = {
+    path: mergeRecords(first.urlParams?.path, second.urlParams?.path),
+    query: mergeRecords(first.urlParams?.query, second.urlParams?.query),
   };
 
   const headers = {
@@ -92,11 +88,26 @@ export function mergeRequest(
     ...first,
     ...second,
     method,
-    path,
-    query,
+    urlParams,
     headers,
     body,
     timeout,
     signal,
   };
+}
+
+export function mergeRecords(
+  first?: Record<string, any>,
+  second?: Record<string, any>,
+): Record<string, any> | undefined {
+  if (typeof first === 'undefined' && typeof second === 'undefined') {
+    return undefined;
+  }
+  if (typeof second === 'undefined') {
+    return first;
+  }
+  if (typeof first === 'undefined') {
+    return second;
+  }
+  return { ...first, ...second };
 }

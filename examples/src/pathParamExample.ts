@@ -12,7 +12,7 @@
  */
 
 import { Fetcher } from '@ahoo-wang/fetcher';
-import { updateOutput, showLoading } from './basicGetExample';
+import { showLoading, updateOutput } from './basicGetExample';
 
 // Create a Fetcher instance
 const fetcher = new Fetcher({
@@ -36,7 +36,7 @@ export function initPathParamExample(): void {
 
       try {
         const response: Response = await fetcher.get('/users/{id}/posts', {
-          path: { id: userId },
+          urlParams: { path: { id: userId } },
         });
         const data = await response.json();
         updateOutput(

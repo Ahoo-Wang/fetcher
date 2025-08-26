@@ -35,7 +35,7 @@ fetcher
 // GET request with path parameters
 fetcher
   .get('/posts/{id}', {
-    path: { id: 1 },
+    urlParams: { path: { id: 1 } },
   })
   .then((response: Response) => response.json())
   .then((data: unknown) => {
@@ -48,7 +48,7 @@ fetcher
 // GET request with query parameters
 fetcher
   .get('/posts', {
-    query: { userId: 1 },
+    urlParams: { query: { userId: 1 } },
   })
   .then((response: Response) => response.json())
   .then((data: unknown) => {
