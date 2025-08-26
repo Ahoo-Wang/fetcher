@@ -16,7 +16,7 @@ import { TokenStorage } from './tokenStorage';
 import { TokenRefresher } from './tokenRefresher';
 
 /**
- * CoSec HTTP headers enumeration
+ * CoSec HTTP headers enumeration.
  */
 export enum CoSecHeaders {
   DEVICE_ID = 'CoSec-Device-Id',
@@ -30,33 +30,34 @@ export enum ResponseCodes {
 }
 
 /**
- * CoSec options interface
+ * CoSec options interface.
  */
 export interface CoSecOptions {
   /**
-   * Application ID to be sent in the CoSec-App-Id header
+   * Application ID to be sent in the CoSec-App-Id header.
    */
   appId: string;
 
   /**
-   * Device ID storage instance
+   * Device ID storage instance.
    */
   deviceIdStorage: DeviceIdStorage;
 
   /**
-   * Token storage instance
+   * Token storage instance.
    */
   tokenStorage: TokenStorage;
 
   /**
-   * Token refresher function
-   * Takes a CompositeToken and returns a Promise that resolves to a new CompositeToken
+   * Token refresher function.
+   *
+   * Takes a CompositeToken and returns a Promise that resolves to a new CompositeToken.
    */
   tokenRefresher: TokenRefresher;
 }
 
 /**
- * Authorization result interface
+ * Authorization result interface.
  */
 export interface AuthorizeResult {
   authorized: boolean;
@@ -64,7 +65,7 @@ export interface AuthorizeResult {
 }
 
 /**
- * Authorization result constants
+ * Authorization result constants.
  */
 export const AuthorizeResults = {
   ALLOW: { authorized: true, reason: 'Allow' },

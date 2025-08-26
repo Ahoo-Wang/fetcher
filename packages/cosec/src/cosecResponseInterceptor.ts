@@ -15,9 +15,7 @@ import { CoSecOptions, ResponseCodes } from './types';
 import { FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
 
 /**
- * CoSec Response Interceptor
- *
- * Handles automatic token refresh based on response codes
+ * Interceptor that handles automatic token refresh based on response codes.
  *
  * @remarks
  * This interceptor runs near the end of the response processing chain, just before
@@ -36,7 +34,7 @@ export class CoSecResponseInterceptor implements Interceptor {
   }
 
   /**
-   * Intercept responses to handle token refresh for unauthorized responses
+   * Intercept responses to handle token refresh for unauthorized responses.
    *
    * This method checks if a response has a 401 (UNAUTHORIZED) status code and attempts
    * to refresh the authentication token if one is available. If token refresh is successful,
@@ -44,7 +42,6 @@ export class CoSecResponseInterceptor implements Interceptor {
    * tokens are cleared and the original error is re-thrown.
    *
    * @param exchange - The fetch exchange containing the response to be processed
-   * @returns Promise<FetchExchange> The processed exchange, either with a refreshed token or original error
    * @throws Error if token refresh fails or other errors occur during processing
    */
   async intercept(exchange: FetchExchange): Promise<void> {

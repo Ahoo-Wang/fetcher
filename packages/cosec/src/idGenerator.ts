@@ -18,12 +18,14 @@ export interface IdGenerator {
 }
 
 /**
- * Nano ID implementation of IdGenerator
- * Generates unique request IDs using Nano ID
+ * Nano ID implementation of IdGenerator.
+ * Generates unique request IDs using Nano ID.
  */
 export class NanoIdGenerator implements IdGenerator {
   /**
-   * Generate a unique request ID
+   * Generate a unique request ID.
+   *
+   * @returns A unique request ID
    */
   generateId(): string {
     return nanoid();

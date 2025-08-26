@@ -12,33 +12,35 @@
  */
 
 /**
- * Access token interface
+ * Interface for access tokens.
  */
 export interface AccessToken {
   accessToken: string;
 }
 
 /**
- * Refresh token interface
+ * Interface for refresh tokens.
  */
 export interface RefreshToken {
   refreshToken: string;
 }
 
 /**
- * Composite token interface that contains both access and refresh tokens
- * accessToken and refreshToken always appear in pairs, no need to split them
+ * Composite token interface that contains both access and refresh tokens.
+ *
+ * accessToken and refreshToken always appear in pairs, no need to split them.
  */
-export interface CompositeToken extends AccessToken, RefreshToken {
-}
+export interface CompositeToken extends AccessToken, RefreshToken {}
 
 /**
- * Token refresher interface
- * Provides a method to refresh tokens
+ * Interface for token refreshers.
+ *
+ * Provides a method to refresh tokens.
  */
 export interface TokenRefresher {
   /**
-   * Refresh the given token and return a new CompositeToken
+   * Refresh the given token and return a new CompositeToken.
+   *
    * @param token The token to refresh
    * @returns A Promise that resolves to a new CompositeToken
    */
