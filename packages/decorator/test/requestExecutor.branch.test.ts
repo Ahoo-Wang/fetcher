@@ -1,6 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
-import { FunctionMetadata } from '../src';
-import { ParameterType } from '../src';
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { describe, expect, it, vi } from 'vitest';
+import { FunctionMetadata, ParameterType } from '../src';
 import { fetcherRegistrar, HttpMethod } from '@ahoo-wang/fetcher';
 
 // Mock fetcher
@@ -29,8 +41,8 @@ describe('FunctionMetadata - branch coverage', () => {
 
     const request = metadata.resolveRequest(['pathValue', 'queryValue']);
 
-    expect(request.path).toEqual({ param0: 'pathValue' });
-    expect(request.query).toEqual({ param1: 'queryValue' });
+    expect(request.urlParams?.path).toEqual({ param0: 'pathValue' });
+    expect(request.urlParams?.query).toEqual({ param1: 'queryValue' });
   });
 
   it('should handle fetcher resolution with different priorities', () => {
@@ -162,7 +174,7 @@ describe('FunctionMetadata - branch coverage', () => {
     );
 
     const request = metadata.resolveRequest(['pathValue']);
-    expect(request.path).toEqual({ param0: 'pathValue' });
+    expect(request.urlParams?.path).toEqual({ param0: 'pathValue' });
   });
 
   it('should handle query parameter without name', () => {
@@ -179,7 +191,7 @@ describe('FunctionMetadata - branch coverage', () => {
     );
 
     const request = metadata.resolveRequest(['queryValue']);
-    expect(request.query).toEqual({ param0: 'queryValue' });
+    expect(request.urlParams?.query).toEqual({ param0: 'queryValue' });
   });
 
   it('should handle header parameter with undefined value', () => {
@@ -227,7 +239,7 @@ describe('FunctionMetadata - branch coverage', () => {
     const signal = abortController.signal;
     // Since the instanceof check won't pass in test environment, signal will remain null
     const request = metadata.resolveRequest([123, signal]);
-    expect(request.path).toEqual({ id: 123 });
+    expect(request.urlParams?.path).toEqual({ id: 123 });
     expect(request.signal).toBe(signal);
   });
 });
