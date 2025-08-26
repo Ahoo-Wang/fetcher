@@ -11,12 +11,8 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi } from 'vitest';
-import { CoSecRequestInterceptor } from '../src';
-import { DeviceIdStorage } from '../src';
-import { TokenStorage } from '../src';
-import { InMemoryStorage } from '../src';
-import { CoSecHeaders } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import { CoSecHeaders, CoSecRequestInterceptor, DeviceIdStorage, InMemoryStorage, TokenStorage } from '../src';
 import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
 
 describe('CoSecRequestInterceptor', () => {
@@ -44,8 +40,8 @@ describe('CoSecRequestInterceptor', () => {
     const fetcher = new Fetcher();
     const exchange: FetchExchange = {
       fetcher,
-      url: 'https://api.example.com/test',
       request: {
+        url: 'https://api.example.com/test',
         method: 'GET',
       },
       response: undefined,
@@ -81,8 +77,8 @@ describe('CoSecRequestInterceptor', () => {
     const fetcher = new Fetcher();
     const exchange: FetchExchange = {
       fetcher,
-      url: 'https://api.example.com/test',
       request: {
+        url: 'https://api.example.com/test',
         method: 'GET',
       },
       response: undefined,
@@ -119,8 +115,8 @@ describe('CoSecRequestInterceptor', () => {
     const fetcher = new Fetcher();
     const exchange: FetchExchange = {
       fetcher,
-      url: 'https://api.example.com/test',
       request: {
+        url: 'https://api.example.com/test',
         method: 'GET',
       },
       response: undefined,
@@ -160,8 +156,8 @@ describe('CoSecRequestInterceptor', () => {
     const fetcher = new Fetcher();
     const exchange: FetchExchange = {
       fetcher,
-      url: 'https://api.example.com/test',
       request: {
+        url: 'https://api.example.com/test',
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

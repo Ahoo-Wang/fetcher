@@ -11,9 +11,8 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi } from 'vitest';
-import { Fetcher } from '../src';
-import { FetchExchange } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import { Fetcher, FetchExchange } from '../src';
 
 describe('Fetcher Edge Cases', () => {
   it('should handle case where exchange has no response (covers lines 84-85)', async () => {
@@ -22,14 +21,16 @@ describe('Fetcher Edge Cases', () => {
     // Mock the request method to return an exchange without response
     const mockRequest = vi.spyOn(fetcher as any, 'request').mockResolvedValue({
       fetcher,
-      url: 'https://api.example.com/test',
-      request: {},
+      request: {
+        url: '/test',
+      },
       response: undefined, // No response
       error: undefined,
+      attributes: {},
     } as FetchExchange);
 
     await expect(fetcher.fetch('/test')).rejects.toThrow(
-      'Request to https://api.example.com/test failed with no response',
+      'Request to /test failed with no response',
     );
 
     mockRequest.mockRestore();
