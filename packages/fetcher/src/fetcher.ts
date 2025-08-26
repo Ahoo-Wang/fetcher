@@ -13,16 +13,17 @@
 
 import { UrlBuilder, UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, TimeoutCapable } from './timeout';
-import {
-  BaseURLCapable,
-  ContentTypeHeader,
-  ContentTypeValues,
-  HeadersCapable,
-  HttpMethod,
-} from './types';
 import { FetcherInterceptors } from './interceptor';
 import { FetchExchange } from './fetchExchange';
-import { FetchRequest, FetchRequestInit } from './fetchRequest';
+import {
+  BaseURLCapable,
+  ContentTypeValues,
+  FetchRequest,
+  FetchRequestInit,
+  HttpMethod,
+  RequestHeaders,
+  RequestHeadersCapable,
+} from './fetchRequest';
 import { mergeRecords } from './utils';
 
 /**
@@ -40,13 +41,13 @@ import { mergeRecords } from './utils';
  */
 export interface FetcherOptions
   extends BaseURLCapable,
-    HeadersCapable,
+    RequestHeadersCapable,
     TimeoutCapable {
   interceptors?: FetcherInterceptors;
 }
 
-const DEFAULT_HEADERS: Record<string, string> = {
-  [ContentTypeHeader]: ContentTypeValues.APPLICATION_JSON,
+const DEFAULT_HEADERS: RequestHeaders = {
+  'Content-Type': ContentTypeValues.APPLICATION_JSON,
 };
 
 export const DEFAULT_OPTIONS: FetcherOptions = {
@@ -70,10 +71,10 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  * ```
  */
 export class Fetcher
-  implements UrlBuilderCapable, HeadersCapable, TimeoutCapable
+  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable
 {
   urlBuilder: UrlBuilder;
-  headers?: Record<string, string> = DEFAULT_HEADERS;
+  headers?: RequestHeaders = DEFAULT_HEADERS;
   timeout?: number;
   interceptors: FetcherInterceptors;
 

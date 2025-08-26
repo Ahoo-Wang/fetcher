@@ -12,10 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { FetcherInterceptors } from '../src/interceptor';
-import { UrlResolveInterceptor } from '../src/urlResolveInterceptor';
-import { RequestBodyInterceptor } from '../src/requestBodyInterceptor';
-import { FetchInterceptor } from '../src/fetchInterceptor';
+import { FetcherInterceptors, FetchInterceptor, RequestBodyInterceptor, UrlResolveInterceptor } from '../src';
 
 describe('FetcherInterceptors', () => {
   it('should create FetcherInterceptors with default interceptors', () => {
