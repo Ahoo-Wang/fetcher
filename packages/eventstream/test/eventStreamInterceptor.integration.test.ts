@@ -11,9 +11,8 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi } from 'vitest';
-import { EventStreamInterceptor } from '../src';
-import { toServerSentEventStream } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import { EventStreamInterceptor, toServerSentEventStream } from '../src';
 import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
 
 // Mock the EventStreamConverter
@@ -36,42 +35,37 @@ describe('EventStreamInterceptor Integration', () => {
 
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com/events',
       request: {
+        url: 'http://example.com/events',
         method: 'GET',
       },
       response: response,
       error: undefined,
     };
 
-    const result = interceptor.intercept(exchange);
-
-    // Should return the same exchange object
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
 
     // Response should have eventStream method
-    expect(result.response?.eventStream).toBeDefined();
-    expect(typeof result.response?.eventStream).toBe('function');
+    expect(exchange.response?.eventStream).toBeDefined();
+    expect(typeof exchange.response?.eventStream).toBe('function');
   });
 
   it('should not modify exchange when response is undefined', () => {
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com/events',
       request: {
+        url: 'http://example.com/events',
         method: 'GET',
       },
       response: undefined,
       error: undefined,
     };
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
-    // Should return the same exchange object
-    expect(result).toBe(exchange);
 
     // Response should remain undefined
-    expect(result.response).toBeUndefined();
+    expect(exchange.response).toBeUndefined();
   });
 
   it('should not modify exchange when content-type is not event-stream', () => {
@@ -81,21 +75,18 @@ describe('EventStreamInterceptor Integration', () => {
 
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com/api',
       request: {
+        url: 'http://example.com/api',
         method: 'GET',
       },
       response: response,
       error: undefined,
     };
 
-    const result = interceptor.intercept(exchange);
-
-    // Should return the same exchange object
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
 
     // Response should not have eventStream method
-    expect(result.response?.eventStream).toBeUndefined();
+    expect(exchange.response?.eventStream).toBeUndefined();
   });
 
   it('should work with actual event stream conversion', () => {
@@ -105,19 +96,19 @@ describe('EventStreamInterceptor Integration', () => {
 
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com/events',
       request: {
+        url: 'http://example.com/events',
         method: 'GET',
       },
       response: response,
       error: undefined,
     };
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
     // Call the eventStream method
-    if (result.response?.eventStream) {
-      const stream = result.response.eventStream();
+    if (exchange.response?.eventStream) {
+      const stream = exchange.response.eventStream();
 
       // Verify it returns a ReadableStream
       expect(stream).toBeInstanceOf(ReadableStream);

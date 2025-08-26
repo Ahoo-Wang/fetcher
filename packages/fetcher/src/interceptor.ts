@@ -30,14 +30,15 @@ import { UrlResolveInterceptor } from './urlResolveInterceptor';
  *
  * @example
  * // Example of a custom request interceptor
- * const loggingInterceptor: Interceptor = {
- *   name: 'LoggingInterceptor',
- *   order: 0,
- *   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
- *     console.log(`Making request to ${exchange.url}`);
- *     const result = await next.intercept(exchange);
- *     console.log(`Received response with status ${result.response?.status}`);
- *     return result;
+ * const customRequestInterceptor: Interceptor = {
+ *   name: 'CustomRequestInterceptor',
+ *   order: 100,
+ *   async intercept(exchange: FetchExchange): Promise<void> {
+ *     // Modify request headers
+ *     exchange.request.headers = {
+ *       ...exchange.request.headers,
+ *       'X-Custom-Header': 'custom-value'
+ *     };
  *   }
  * };
  */
@@ -56,13 +57,13 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
    *
    * This method is called by the InterceptorManager to process the exchange object.
    * The interceptor can modify the request, response, or error properties of the
-   * exchange object and then pass it to the next interceptor in the chain.
+   * exchange object directly.
    *
    * @param exchange - The data to be processed, containing request, response, and error information
    *
    * @remarks
-   * Interceptors should either return the exchange object (possibly modified) or
-   * a new exchange object. They can also throw errors or transform errors into responses.
+   * Interceptors should modify the exchange object directly rather than returning it.
+   * They can also throw errors or transform errors into responses.
    */
   intercept(exchange: FetchExchange): void | Promise<void>;
 }

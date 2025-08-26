@@ -35,8 +35,8 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBeUndefined();
   });
 
   it('should not modify request with null body', () => {
@@ -52,8 +52,8 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBeNull();
   });
 
   it('should not modify request with string body', () => {
@@ -69,8 +69,8 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe('plain text');
   });
 
   it('should not modify request with number body', () => {
@@ -86,8 +86,8 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(42);
   });
 
   it('should not modify request with boolean body', () => {
@@ -103,8 +103,8 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(true);
   });
 
   it('should not modify request with ArrayBuffer body', () => {
@@ -121,8 +121,8 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(arrayBuffer);
   });
 
   it('should not modify request with Blob body', () => {
@@ -139,8 +139,8 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(blob);
   });
 
   it('should not modify request with FormData body', () => {
@@ -151,33 +151,34 @@ describe('RequestBodyInterceptor', () => {
       request: {
         url: 'http://example.com',
         method: 'POST',
-        body: formData,
+        body: formData as any,
       },
       response: undefined,
       error: undefined,
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(formData);
   });
 
   it('should not modify request with URLSearchParams body', () => {
-    const params = new URLSearchParams({ key: 'value' });
+    const urlSearchParams = new URLSearchParams();
+    urlSearchParams.append('key', 'value');
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
       request: {
         url: 'http://example.com',
         method: 'POST',
-        body: params,
+        body: urlSearchParams as any,
       },
       response: undefined,
       error: undefined,
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(urlSearchParams);
   });
 
   it('should not modify request with ReadableStream body', () => {
@@ -194,12 +195,12 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(stream);
   });
 
   it('should not modify request with File body', () => {
-    const file = new File(['content'], 'test.txt', { type: 'text/plain' });
+    const file = new File(['hello'], 'test.txt', { type: 'text/plain' });
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
       request: {
@@ -212,13 +213,13 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(file);
   });
 
   it('should not modify request with DataView body', () => {
-    const buffer = new ArrayBuffer(16);
-    const dataView = new DataView(buffer);
+    const arrayBuffer = new ArrayBuffer(16);
+    const dataView = new DataView(arrayBuffer);
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
       request: {
@@ -231,26 +232,26 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(dataView);
   });
 
   it('should not modify request with TypedArray body', () => {
-    const uint8Array = new Uint8Array([1, 2, 3]);
+    const typedArray = new Uint8Array([1, 2, 3]);
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
       request: {
         url: 'http://example.com',
         method: 'POST',
-        body: uint8Array as any,
+        body: typedArray as any,
       },
       response: undefined,
       error: undefined,
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange);
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(typedArray);
   });
 
   it('should convert plain object to JSON string and set Content-Type header', () => {
@@ -267,12 +268,12 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange); // Should return the same object (modified in place)
-    expect(result.request.body).toBe(JSON.stringify(requestBody));
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
-    const headers = result.request.headers!;
+    const headers = exchange.request.headers!;
     expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
   });
 
@@ -293,12 +294,12 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange); // Should return the same object (modified in place)
-    expect(result.request.body).toBe(JSON.stringify(requestBody));
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that existing Content-Type header is preserved
-    const headers = result.request.headers!;
+    const headers = exchange.request.headers!;
     expect(headers['Content-Type']).toBe('text/plain');
   });
 
@@ -316,12 +317,12 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange); // Should return the same object (modified in place)
-    expect(result.request.body).toBe(JSON.stringify(requestBody));
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
-    const headers = result.request.headers!;
+    const headers = exchange.request.headers!;
     expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
   });
 
@@ -347,12 +348,12 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange); // Should return the same object (modified in place)
-    expect(result.request.body).toBe(JSON.stringify(requestBody));
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
-    const headers = result.request.headers!;
+    const headers = exchange.request.headers!;
     expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
   });
 
@@ -370,12 +371,12 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange); // Should return the same object (modified in place)
-    expect(result.request.body).toBe(JSON.stringify(requestBody));
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
-    const headers = result.request.headers!;
+    const headers = exchange.request.headers!;
     expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
   });
 
@@ -394,12 +395,12 @@ describe('RequestBodyInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
-    expect(result).toBe(exchange); // Should return the same object (modified in place)
-    expect(result.request.body).toBe(JSON.stringify(requestBody));
+    interceptor.intercept(exchange);
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
+    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
-    const headers = result.request.headers!;
+    const headers = exchange.request.headers!;
     expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
   });
 });

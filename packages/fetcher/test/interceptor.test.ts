@@ -13,14 +13,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  Fetcher,
-  FetcherInterceptors,
-  FetchExchange,
-  HttpMethod,
-  Interceptor,
-  InterceptorManager,
-} from '../src';
+import { Fetcher, FetcherInterceptors, FetchExchange, HttpMethod, Interceptor, InterceptorManager } from '../src';
 
 describe('interceptor.ts', () => {
   describe('InterceptorManager', () => {
@@ -124,9 +117,9 @@ describe('interceptor.ts', () => {
         attributes: {},
       };
 
-      const result = await manager.intercept(mockExchange);
+      await manager.intercept(mockExchange);
 
-      expect(result).toBe(mockExchange);
+      expect(mockExchange).toBe(mockExchange);
       expect(interceptor1.intercept).toHaveBeenCalledWith(mockExchange);
       expect(interceptor2.intercept).toHaveBeenCalledWith(mockExchange);
     });
@@ -158,9 +151,9 @@ describe('interceptor.ts', () => {
         attributes: {},
       };
 
-      const result = await manager.intercept(mockExchange);
+      await manager.intercept(mockExchange);
 
-      expect(result).toBe(mockExchange);
+      expect(mockExchange).toBe(mockExchange);
       expect(interceptor1.intercept).not.toHaveBeenCalled();
       expect(interceptor2.intercept).toHaveBeenCalledWith(mockExchange);
     });
@@ -192,9 +185,9 @@ describe('interceptor.ts', () => {
         attributes: {},
       };
 
-      const result = await manager.intercept(mockExchange);
+      await manager.intercept(mockExchange);
 
-      expect(result).toBe(mockExchange);
+      expect(mockExchange).toBe(mockExchange);
       expect(interceptor1.intercept).not.toHaveBeenCalled();
       expect(interceptor2.intercept).not.toHaveBeenCalled();
     });
@@ -206,12 +199,9 @@ describe('interceptor.ts', () => {
         intercept: vi.fn(async exchange => {
           // Simulate async operation
           await new Promise(resolve => setTimeout(resolve, 10));
-          return {
-            ...exchange,
-            attributes: {
-              ...exchange.attributes,
-              processed: true,
-            },
+          exchange.attributes = {
+            ...exchange.attributes,
+            processed: true,
           };
         }),
       };
@@ -229,9 +219,9 @@ describe('interceptor.ts', () => {
         attributes: {},
       };
 
-      const result = await manager.intercept(mockExchange);
+      await manager.intercept(mockExchange);
 
-      expect(result.attributes?.processed).toBe(true);
+      expect(mockExchange.attributes?.processed).toBe(true);
       expect(asyncInterceptor.intercept).toHaveBeenCalledWith(mockExchange);
     });
 
@@ -354,23 +344,21 @@ describe('interceptor.ts', () => {
       const requestInterceptor: Interceptor = {
         name: 'request-interceptor-1',
         order: 0,
-        intercept: vi.fn(exchange => ({
-          ...exchange,
-          request: {
+        intercept: vi.fn(exchange => {
+          exchange.request = {
             ...exchange.request,
             headers: {
               ...exchange.request.headers,
               Authorization: 'Bearer token',
             },
-          },
-        })),
+          };
+        }),
       };
 
       interceptors.request.use(requestInterceptor);
-      const processedExchange =
-        await interceptors.request.intercept(mockExchange);
+      await interceptors.request.intercept(mockExchange);
 
-      expect(processedExchange.request.headers).toHaveProperty(
+      expect(mockExchange.request.headers).toHaveProperty(
         'Authorization',
         'Bearer token',
       );
@@ -410,13 +398,10 @@ describe('interceptor.ts', () => {
       };
 
       interceptors.response.use(responseInterceptor);
-      const processedExchange =
-        await interceptors.response.intercept(mockExchange);
+      await interceptors.response.intercept(mockExchange);
 
-      expect(processedExchange.response).toBe(response);
-      expect((processedExchange.response as any).customHeader).toBe(
-        'intercepted',
-      );
+      expect(mockExchange.response).toBe(response);
+      expect((mockExchange.response as any).customHeader).toBe('intercepted');
       expect(responseInterceptor.intercept).toHaveBeenCalledWith(mockExchange);
     });
 
@@ -444,12 +429,9 @@ describe('interceptor.ts', () => {
       };
 
       interceptors.error.use(errorInterceptor);
-      const processedExchange =
-        await interceptors.error.intercept(mockExchange);
+      await interceptors.error.intercept(mockExchange);
 
-      expect(processedExchange.error?.message).toBe(
-        'Intercepted: Network error',
-      );
+      expect(mockExchange.error?.message).toBe('Intercepted: Network error');
       expect(errorInterceptor.intercept).toHaveBeenCalledWith(mockExchange);
     });
   });

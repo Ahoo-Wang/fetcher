@@ -96,7 +96,6 @@ export class FetchTimeoutError extends Error {
  * it returns the result or throws an exception.
  *
  * @param request - The request initialization options
- * @param timeout - Optional timeout in milliseconds
  * @returns Promise<Response> HTTP response Promise
  * @throws FetchTimeoutError Thrown when the request times out
  *
