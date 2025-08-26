@@ -43,7 +43,7 @@ export enum ContentTypeValues {
 }
 
 export interface RequestHeaders {
-  ContentTypeHeader?: string;
+  'Content-Type'?: string;
   'Accept'?: string;
   'Authorization'?: string;
 
