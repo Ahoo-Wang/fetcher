@@ -52,17 +52,17 @@ describe('timeout.ts', () => {
   describe('FetchTimeoutError', () => {
     it('should create FetchTimeoutError with correct properties', () => {
       const url = 'https://api.example.com/users';
-      const request = { method: HttpMethod.GET };
       const timeout = 1000;
+      const request = { url: url, method: HttpMethod.GET, timeout };
 
-      const error = new FetchTimeoutError(url, request, timeout);
+      const error = new FetchTimeoutError(request);
 
       expect(error).toBeInstanceOf(FetchTimeoutError);
       expect(error).toBeInstanceOf(Error);
       expect(error.name).toBe('FetchTimeoutError');
-      expect(error.url).toBe(url);
+      expect(error.request.url).toBe(url);
       expect(error.request).toBe(request);
-      expect(error.timeout).toBe(timeout);
+      expect(error.request.timeout).toBe(timeout);
       expect(error.message).toBe(
         'Request timeout of 1000ms exceeded for GET https://api.example.com/users',
       );
@@ -70,10 +70,10 @@ describe('timeout.ts', () => {
 
     it('should use default method GET when request method is not provided', () => {
       const url = 'https://api.example.com/users';
-      const request = {};
       const timeout = 5000;
+      const request = { url: url, timeout: timeout };
 
-      const error = new FetchTimeoutError(url, request, timeout);
+      const error = new FetchTimeoutError(request);
 
       expect(error.message).toBe(
         'Request timeout of 5000ms exceeded for GET https://api.example.com/users',
@@ -84,14 +84,14 @@ describe('timeout.ts', () => {
       const url = 'https://api.example.com/users';
       const timeout = 1000;
 
-      const postRequest = { method: HttpMethod.POST };
-      const postError = new FetchTimeoutError(url, postRequest, timeout);
+      const postRequest = { url, method: HttpMethod.POST, timeout };
+      const postError = new FetchTimeoutError(postRequest);
       expect(postError.message).toBe(
         'Request timeout of 1000ms exceeded for POST https://api.example.com/users',
       );
 
-      const putRequest = { method: HttpMethod.PUT };
-      const putError = new FetchTimeoutError(url, putRequest, timeout);
+      const putRequest = { url, method: HttpMethod.PUT, timeout };
+      const putError = new FetchTimeoutError(putRequest);
       expect(putError.message).toBe(
         'Request timeout of 1000ms exceeded for PUT https://api.example.com/users',
       );
@@ -99,10 +99,10 @@ describe('timeout.ts', () => {
 
     it('should maintain proper prototype chain', () => {
       const url = 'https://api.example.com/users';
-      const request = { method: HttpMethod.GET };
       const timeout = 1000;
+      const request = { url, method: HttpMethod.GET, timeout };
 
-      const error = new FetchTimeoutError(url, request, timeout);
+      const error = new FetchTimeoutError(request);
 
       expect(error.constructor).toBe(FetchTimeoutError);
       expect(error instanceof FetchTimeoutError).toBe(true);
@@ -126,9 +126,9 @@ describe('timeout.ts', () => {
       const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse);
 
       const url = 'https://api.example.com/users';
-      const request = { method: HttpMethod.GET };
+      const request = { url, method: HttpMethod.GET };
 
-      const response = await timeoutFetch(url, request);
+      const response = await timeoutFetch(request);
 
       expect(mockFetch).toHaveBeenCalledWith(url, request);
       expect(response).toBe(mockResponse);
@@ -147,10 +147,10 @@ describe('timeout.ts', () => {
       const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse);
 
       const url = 'https://api.example.com/users';
-      const request = { method: HttpMethod.GET };
       const timeout = 1000;
+      const request = { url, method: HttpMethod.GET, timeout };
 
-      const response = await timeoutFetch(url, request, timeout);
+      const response = await timeoutFetch(request);
 
       expect(mockFetch).toHaveBeenCalledWith(url, expect.objectContaining({
         signal: expect.any(AbortSignal),
@@ -169,12 +169,12 @@ describe('timeout.ts', () => {
       });
 
       const url = 'https://api.example.com/users';
-      const request = { method: HttpMethod.GET };
       const timeout = 10; // Short timeout for testing
+      const request = { url, method: HttpMethod.GET, timeout };
 
-      await expect(timeoutFetch(url, request, timeout)).rejects.toThrow(FetchTimeoutError);
-      await expect(timeoutFetch(url, request, timeout)).rejects.toHaveProperty('url', url);
-      await expect(timeoutFetch(url, request, timeout)).rejects.toHaveProperty('timeout', timeout);
+      await expect(timeoutFetch(request)).rejects.toThrow(FetchTimeoutError);
+      await expect(timeoutFetch(request)).rejects.toHaveProperty('url', url);
+      await expect(timeoutFetch(request)).rejects.toHaveProperty('timeout', timeout);
 
       // Clean up
       mockFetch.mockRestore();
@@ -193,10 +193,10 @@ describe('timeout.ts', () => {
       const mockClearTimeout = vi.spyOn(globalThis, 'clearTimeout');
 
       const url = 'https://api.example.com/users';
-      const request = { method: HttpMethod.GET };
       const timeout = 1000;
+      const request = { url, method: HttpMethod.GET, timeout };
 
-      const response = await timeoutFetch(url, request, timeout);
+      const response = await timeoutFetch(request);
 
       expect(response).toBe(mockResponse);
       // Verify that clearTimeout was called (timer was cleared)
@@ -215,22 +215,22 @@ describe('timeout.ts', () => {
       });
 
       const url = 'https://api.example.com/users';
-      const request = { method: HttpMethod.GET };
       const timeout = 10; // Short timeout for testing
+      const request = { url, method: HttpMethod.GET, timeout };
 
-      await expect(timeoutFetch(url, request, timeout)).rejects.toThrow(FetchTimeoutError);
+      await expect(timeoutFetch(request)).rejects.toThrow(FetchTimeoutError);
 
       // Verify that the AbortController's abort method would be called
       // We can't directly test this without more complex mocking, but we can
       // verify that the signal would be aborted by checking the error
       try {
-        await timeoutFetch(url, request, timeout);
+        await timeoutFetch(request);
       } catch (error) {
         expect(error).toBeInstanceOf(FetchTimeoutError);
         const timeoutError = error as FetchTimeoutError;
         // The error should have the correct properties
-        expect(timeoutError.url).toBe(url);
-        expect(timeoutError.timeout).toBe(timeout);
+        expect(timeoutError.request.url).toBe(url);
+        expect(timeoutError.request.timeout).toBe(timeout);
       }
 
       // Clean up

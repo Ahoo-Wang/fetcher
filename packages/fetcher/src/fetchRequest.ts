@@ -102,3 +102,10 @@ export interface FetchRequestInit
    */
   body?: BodyInit | Record<string, any> | string | null;
 }
+
+export interface FetchRequest extends FetchRequestInit {
+  /**
+   * The URL for this request
+   */
+  url: string;
+}

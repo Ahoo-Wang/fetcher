@@ -57,11 +57,8 @@ export class UrlResolveInterceptor implements Interceptor {
    * @returns The modified exchange with the resolved URL
    */
   intercept(exchange: FetchExchange): FetchExchange {
-    exchange.url = exchange.fetcher.urlBuilder.build(
-      exchange.url,
-      exchange.request.path,
-      exchange.request.query,
-    );
+    const request = exchange.request;
+    request.url = exchange.fetcher.urlBuilder.resolveRequestUrl(request);
     return exchange;
   }
 }

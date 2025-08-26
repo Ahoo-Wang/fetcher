@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { FetchRequest } from './fetchRequest';
+
 /**
  * TimeoutCapable Interface
  *
@@ -66,35 +68,21 @@ export function resolveTimeout(
  */
 export class FetchTimeoutError extends Error {
   /**
-   * The URL that timed out
-   */
-  url: string;
-
-  /**
    * The request options that timed out
    */
-  request: RequestInit;
-
-  /**
-   * The timeout value in milliseconds
-   */
-  timeout: number;
+  request: FetchRequest;
 
   /**
    * Creates a new FetchTimeoutError instance
    *
-   * @param url - The URL that timed out
    * @param request - The request options that timed out
-   * @param timeout - The timeout value in milliseconds
    */
-  constructor(url: string, request: RequestInit, timeout: number) {
+  constructor(request: FetchRequest) {
     const method = request.method || 'GET';
-    const message = `Request timeout of ${timeout}ms exceeded for ${method} ${url}`;
+    const message = `Request timeout of ${request.timeout}ms exceeded for ${method} ${request.url}`;
     super(message);
     this.name = 'FetchTimeoutError';
-    this.url = url;
     this.request = request;
-    this.timeout = timeout;
     // Fix prototype chain
     Object.setPrototypeOf(this, FetchTimeoutError.prototype);
   }
@@ -107,7 +95,6 @@ export class FetchTimeoutError extends Error {
  * fetch request and timeout Promise simultaneously. When either Promise completes,
  * it returns the result or throws an exception.
  *
- * @param url - The URL to fetch
  * @param request - The request initialization options
  * @param timeout - Optional timeout in milliseconds
  * @returns Promise<Response> HTTP response Promise
@@ -130,13 +117,14 @@ export class FetchTimeoutError extends Error {
  * ```
  */
 export async function timeoutFetch(
-  url: string,
-  request: RequestInit,
-  timeout?: number,
+  request: FetchRequest,
 ): Promise<Response> {
+  const url = request.url;
+  const timeout = request.timeout;
+  const requestInit = request as RequestInit;
   // Extract timeout from request
   if (!timeout) {
-    return fetch(url, request as RequestInit);
+    return fetch(url, requestInit);
   }
 
   // Create AbortController for fetch request cancellation
@@ -156,7 +144,7 @@ export async function timeoutFetch(
       if (timerId) {
         clearTimeout(timerId);
       }
-      const error = new FetchTimeoutError(url, request, timeout);
+      const error = new FetchTimeoutError(request);
       controller.abort(error);
       reject(error);
     }, timeout);
@@ -165,7 +153,7 @@ export async function timeoutFetch(
   try {
     // Race between fetch request and timeout Promise
     return await Promise.race([
-      fetch(url, fetchRequest as RequestInit),
+      fetch(url, requestInit),
       timeoutPromise,
     ]);
   } finally {
