@@ -12,8 +12,8 @@
  */
 
 import { Interceptor } from './interceptor';
-import { ContentTypeHeader, ContentTypeValues } from './types';
 import { FetchExchange } from './fetchExchange';
+import { ContentTypeValues } from './fetchRequest';
 
 /**
  * RequestBodyInterceptor Class
@@ -117,9 +117,9 @@ export class RequestBodyInterceptor implements Interceptor {
     }
 
     // Only set default Content-Type if not explicitly set
-    const headers = modifiedRequest.headers as Record<string, string>;
-    if (!headers[ContentTypeHeader]) {
-      headers[ContentTypeHeader] = ContentTypeValues.APPLICATION_JSON;
+    const headers = modifiedRequest.headers;
+    if (!headers['Content-Type']) {
+      headers['Content-Type'] = ContentTypeValues.APPLICATION_JSON;
     }
     exchange.request = modifiedRequest;
     return exchange;

@@ -65,8 +65,7 @@ describe('Fetcher - exchange', () => {
 
     const exchange: FetchExchange = {
       fetcher,
-      url: '/test',
-      request: { method: 'GET' },
+      request: { url: '/test', method: 'GET' },
       response: undefined,
       error: undefined,
       attributes: {},
@@ -119,8 +118,7 @@ describe('Fetcher - exchange', () => {
 
     const exchange: FetchExchange = {
       fetcher,
-      url: '/test',
-      request: { method: 'GET' },
+      request: { url: '/test', method: 'GET' },
       response: undefined,
       error: undefined,
       attributes: {},
@@ -171,8 +169,7 @@ describe('Fetcher - exchange', () => {
 
     const exchange: FetchExchange = {
       fetcher,
-      url: '/test',
-      request: { method: 'GET' },
+      request: { url: '/test', method: 'GET' },
       response: undefined,
       error: undefined,
       attributes: {},

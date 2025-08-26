@@ -10,43 +10,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-export interface BaseURLCapable {
-  /**
-   * 请求的 baseURL
-   * 当值为空时，表示不设置 baseURL，默认值为 undefined
-   */
-  baseURL: string;
-}
-
-export interface HeadersCapable {
-  /**
-   * 请求头
-   */
-  headers?: Record<string, string>;
-}
-
-/**
- * HTTP方法枚举常量
- */
-export enum HttpMethod {
-  GET = 'GET',
-  POST = 'POST',
-  PUT = 'PUT',
-  DELETE = 'DELETE',
-  PATCH = 'PATCH',
-  HEAD = 'HEAD',
-  OPTIONS = 'OPTIONS',
-}
-
-
-export const ContentTypeHeader = 'Content-Type';
-
-export enum ContentTypeValues {
-  APPLICATION_JSON = 'application/json',
-  TEXT_EVENT_STREAM = 'text/event-stream',
-}
-
 /**
  * 具备名称能力的接口
  * 实现该接口的类型需要提供一个名称属性

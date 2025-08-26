@@ -12,8 +12,7 @@
  */
 
 import { combineURLs } from './urls';
-import { BaseURLCapable } from './types';
-import { FetchRequest } from './fetchRequest';
+import { BaseURLCapable, FetchRequest } from './fetchRequest';
 
 /**
  * Interface for URL parameters including path and query parameters

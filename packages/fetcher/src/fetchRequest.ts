@@ -12,8 +12,50 @@
  */
 
 import { TimeoutCapable } from './timeout';
-import { HeadersCapable } from './types';
 import { UrlParams } from './urlBuilder';
+
+export interface BaseURLCapable {
+  /**
+   * 请求的 baseURL
+   * 当值为空时，表示不设置 baseURL，默认值为 undefined
+   */
+  baseURL: string;
+}
+
+/**
+ * HTTP方法枚举常量
+ */
+export enum HttpMethod {
+  GET = 'GET',
+  POST = 'POST',
+  PUT = 'PUT',
+  DELETE = 'DELETE',
+  PATCH = 'PATCH',
+  HEAD = 'HEAD',
+  OPTIONS = 'OPTIONS',
+}
+
+export const ContentTypeHeader = 'Content-Type';
+
+export enum ContentTypeValues {
+  APPLICATION_JSON = 'application/json',
+  TEXT_EVENT_STREAM = 'text/event-stream',
+}
+
+export interface RequestHeaders {
+  ContentTypeHeader?: string;
+  'Accept'?: string;
+  'Authorization'?: string;
+
+  [key: string]: string | undefined;
+}
+
+export interface RequestHeadersCapable {
+  /**
+   * Request headers
+   */
+  headers?: RequestHeaders;
+}
 
 /**
  * Fetcher request configuration interface
@@ -39,7 +81,7 @@ import { UrlParams } from './urlBuilder';
  */
 export interface FetchRequestInit
   extends TimeoutCapable,
-    HeadersCapable,
+    RequestHeadersCapable,
     Omit<RequestInit, 'body' | 'headers'> {
   urlParams?: UrlParams;
 

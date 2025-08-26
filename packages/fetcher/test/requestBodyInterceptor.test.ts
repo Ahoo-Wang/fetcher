@@ -12,8 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { RequestBodyInterceptor } from '../src/requestBodyInterceptor';
-import { ContentTypeHeader, ContentTypeValues, Fetcher, FetchExchange } from '../src';
+import { ContentTypeValues, Fetcher, FetchExchange, RequestBodyInterceptor } from '../src';
 
 describe('RequestBodyInterceptor', () => {
   const interceptor = new RequestBodyInterceptor();
@@ -273,8 +272,8 @@ describe('RequestBodyInterceptor', () => {
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
-    const headers = result.request.headers as Record<string, string>;
-    expect(headers[ContentTypeHeader]).toBe(ContentTypeValues.APPLICATION_JSON);
+    const headers = result.request.headers!;
+    expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
   });
 
   it('should not override existing Content-Type header', () => {
@@ -286,7 +285,7 @@ describe('RequestBodyInterceptor', () => {
         method: 'POST',
         body: requestBody as any,
         headers: {
-          [ContentTypeHeader]: 'text/plain',
+          ['Content-Type']: 'text/plain',
         },
       },
       response: undefined,
@@ -299,8 +298,8 @@ describe('RequestBodyInterceptor', () => {
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that existing Content-Type header is preserved
-    const headers = result.request.headers as Record<string, string>;
-    expect(headers[ContentTypeHeader]).toBe('text/plain');
+    const headers = result.request.headers!;
+    expect(headers['Content-Type']).toBe('text/plain');
   });
 
   it('should handle array body by converting to JSON', () => {
@@ -322,8 +321,8 @@ describe('RequestBodyInterceptor', () => {
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
-    const headers = result.request.headers as Record<string, string>;
-    expect(headers[ContentTypeHeader]).toBe(ContentTypeValues.APPLICATION_JSON);
+    const headers = result.request.headers!;
+    expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
   });
 
   it('should handle nested object body by converting to JSON', () => {
@@ -353,8 +352,8 @@ describe('RequestBodyInterceptor', () => {
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
-    const headers = result.request.headers as Record<string, string>;
-    expect(headers[ContentTypeHeader]).toBe(ContentTypeValues.APPLICATION_JSON);
+    const headers = result.request.headers!;
+    expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
   });
 
   it('should handle empty object body', () => {
@@ -376,8 +375,8 @@ describe('RequestBodyInterceptor', () => {
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
-    const headers = result.request.headers as Record<string, string>;
-    expect(headers[ContentTypeHeader]).toBe(ContentTypeValues.APPLICATION_JSON);
+    const headers = result.request.headers!;
+    expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
   });
 
   it('should handle null prototype object body', () => {
@@ -400,7 +399,7 @@ describe('RequestBodyInterceptor', () => {
     expect(result.request.body).toBe(JSON.stringify(requestBody));
 
     // Check that Content-Type header is set
-    const headers = result.request.headers as Record<string, string>;
-    expect(headers[ContentTypeHeader]).toBe(ContentTypeValues.APPLICATION_JSON);
+    const headers = result.request.headers!;
+    expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
   });
 });
