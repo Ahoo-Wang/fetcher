@@ -13,6 +13,7 @@
 
 import { combineURLs } from './urls';
 import { BaseURLCapable } from './types';
+import { FetchRequest } from './fetchRequest';
 
 /**
  * UrlBuilder Class
@@ -75,6 +76,10 @@ export class UrlBuilder implements BaseURLCapable {
       }
     }
     return finalUrl;
+  }
+
+  resolveRequestUrl(request: FetchRequest) {
+    return this.build(request.url, request.path, request.query);
   }
 
   /**

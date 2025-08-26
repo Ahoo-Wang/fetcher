@@ -75,11 +75,7 @@ export class FetchInterceptor implements Interceptor {
    * console.log(result.response); // HTTP response object
    */
   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
-    exchange.response = await timeoutFetch(
-      exchange.url,
-      exchange.request as RequestInit,
-      exchange.request.timeout,
-    );
+    exchange.response = await timeoutFetch(exchange.request);
     return exchange;
   }
 }

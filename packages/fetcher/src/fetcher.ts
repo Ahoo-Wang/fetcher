@@ -16,7 +16,7 @@ import { resolveTimeout, TimeoutCapable } from './timeout';
 import { BaseURLCapable, ContentTypeHeader, ContentTypeValues, HeadersCapable, HttpMethod } from './types';
 import { FetcherInterceptors } from './interceptor';
 import { FetchExchange } from './fetchExchange';
-import { FetchRequestInit } from './fetchRequest';
+import { FetchRequest, FetchRequestInit } from './fetchRequest';
 
 /**
  * Fetcher configuration options interface
@@ -74,9 +74,11 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
    * @returns Promise<Response> HTTP response
    */
   async fetch(url: string, request: FetchRequestInit = {}): Promise<Response> {
-    const exchange = await this.request(url, request);
+    const fetchRequest = request as FetchRequest;
+    fetchRequest.url = url;
+    const exchange = await this.request(fetchRequest);
     if (!exchange.response) {
-      throw new Error(`Request to ${exchange.url} failed with no response`);
+      throw new Error(`Request to ${fetchRequest.url} failed with no response`);
     }
     return exchange.response;
   }
@@ -84,15 +86,13 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
   /**
    * Send an HTTP request
    *
-   * @param url - Request URL address, supports path parameter placeholders
-   * @param request - Request configuration object, including method, headers, body, etc.
+   * @param request - Request configuration object, including url, method, headers, body, etc.
    * @returns Promise that resolves to a FetchExchange object containing request and response information
    *
    * @throws Throws an exception when an error occurs during the request and is not handled by error interceptors
    */
   async request(
-    url: string,
-    request: FetchRequestInit = {},
+    request: FetchRequest,
   ): Promise<FetchExchange> {
     // Merge default headers and request-level headers
     const mergedHeaders = {
@@ -100,7 +100,7 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
       ...(request.headers || {}),
     };
     // Merge request options
-    const fetchRequest: FetchRequestInit = {
+    const fetchRequest: FetchRequest = {
       ...request,
       headers:
         Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
@@ -108,7 +108,6 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
     };
     const exchange: FetchExchange = {
       fetcher: this,
-      url: url,
       request: fetchRequest,
       response: undefined,
       error: undefined,

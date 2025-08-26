@@ -12,7 +12,7 @@
  */
 
 import { Fetcher } from './fetcher';
-import { FetchRequestInit } from './fetchRequest';
+import { FetchRequest } from './fetchRequest';
 
 /**
  * FetchExchange Interface
@@ -60,14 +60,9 @@ export interface FetchExchange {
   fetcher: Fetcher;
 
   /**
-   * The URL for this request
+   * The request configuration including url, method, headers, body, etc.
    */
-  url: string;
-
-  /**
-   * The request configuration including method, headers, body, etc.
-   */
-  request: FetchRequestInit;
+  request: FetchRequest;
 
   /**
    * The response object, undefined until the request completes successfully
