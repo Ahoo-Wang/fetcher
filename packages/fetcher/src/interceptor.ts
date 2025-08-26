@@ -59,13 +59,12 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
    * exchange object and then pass it to the next interceptor in the chain.
    *
    * @param exchange - The data to be processed, containing request, response, and error information
-   * @returns The processed data, which can be returned synchronously or asynchronously
    *
    * @remarks
    * Interceptors should either return the exchange object (possibly modified) or
    * a new exchange object. They can also throw errors or transform errors into responses.
    */
-  intercept(exchange: FetchExchange): FetchExchange | Promise<FetchExchange>;
+  intercept(exchange: FetchExchange): void | Promise<void>;
 }
 
 /**
@@ -190,13 +189,11 @@ export class InterceptorManager implements Interceptor {
    * If any interceptor throws an error, the execution chain is broken and the error
    * is propagated to the caller.
    */
-  async intercept(exchange: FetchExchange): Promise<FetchExchange> {
-    let processedExchange = exchange;
+  async intercept(exchange: FetchExchange): Promise<void> {
     for (const interceptor of this.sortedInterceptors) {
       // Each interceptor processes the output of the previous interceptor
-      processedExchange = await interceptor.intercept(processedExchange);
+      await interceptor.intercept(exchange);
     }
-    return processedExchange;
   }
 }
 

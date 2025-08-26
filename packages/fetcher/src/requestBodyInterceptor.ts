@@ -81,16 +81,16 @@ export class RequestBodyInterceptor implements Interceptor {
    * // result.request.body will be '{"name":"John","age":30}'
    * // result.request.headers will include 'Content-Type: application/json'
    */
-  intercept(exchange: FetchExchange): FetchExchange {
+  intercept(exchange: FetchExchange) {
     const request = exchange.request;
     // If there's no request body, return unchanged
     if (request.body === undefined || request.body === null) {
-      return exchange;
+      return;
     }
 
     // If request body is not an object, return unchanged
     if (typeof request.body !== 'object') {
-      return exchange;
+      return;
     }
 
     // Check if it's a supported type
@@ -103,7 +103,7 @@ export class RequestBodyInterceptor implements Interceptor {
       request.body instanceof FormData ||
       request.body instanceof ReadableStream
     ) {
-      return exchange;
+      return;
     }
 
     // For plain objects, convert to JSON string
@@ -122,6 +122,5 @@ export class RequestBodyInterceptor implements Interceptor {
       headers['Content-Type'] = ContentTypeValues.APPLICATION_JSON;
     }
     exchange.request = modifiedRequest;
-    return exchange;
   }
 }

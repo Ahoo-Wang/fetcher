@@ -58,7 +58,6 @@ export class FetchInterceptor implements Interceptor {
    * function to send the network request.
    *
    * @param exchange - Exchange object containing request information
-   * @returns Promise<FetchExchange> Processed exchange object containing response information
    *
    * @throws {FetchTimeoutError} Throws timeout exception when request times out
    *
@@ -74,8 +73,7 @@ export class FetchInterceptor implements Interceptor {
    * const result = await fetchInterceptor.intercept(exchange);
    * console.log(result.response); // HTTP response object
    */
-  async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+  async intercept(exchange: FetchExchange) {
     exchange.response = await timeoutFetch(exchange.request);
-    return exchange;
   }
 }

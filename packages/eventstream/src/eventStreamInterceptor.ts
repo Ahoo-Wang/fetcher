@@ -47,11 +47,11 @@ export class EventStreamInterceptor implements Interceptor {
   name = 'EventStreamInterceptor';
   order = Number.MAX_SAFE_INTEGER - 100;
 
-  intercept(exchange: FetchExchange): FetchExchange {
+  intercept(exchange: FetchExchange) {
     // Check if the response is an event stream
     const response = exchange.response;
     if (!response) {
-      return exchange;
+      return;
     }
     const contentType = response.headers.get(ContentTypeHeader);
     if (
@@ -61,6 +61,5 @@ export class EventStreamInterceptor implements Interceptor {
       // Add eventStream method to response
       response.eventStream = () => toServerSentEventStream(response);
     }
-    return exchange;
   }
 }
