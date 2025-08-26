@@ -12,7 +12,7 @@
  */
 
 import { Fetcher } from '@ahoo-wang/fetcher';
-import { updateOutput, showLoading } from './basicGetExample';
+import { showLoading, updateOutput } from './basicGetExample';
 
 // Create a Fetcher instance
 const fetcher = new Fetcher({
@@ -36,7 +36,7 @@ export function initQueryParamExample(): void {
 
       try {
         const response: Response = await fetcher.get('/posts', {
-          query: { userId: userId },
+          urlParams: { query: { userId: userId } },
         });
         const data = await response.json();
         updateOutput(

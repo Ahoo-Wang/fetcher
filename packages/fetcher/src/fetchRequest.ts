@@ -13,6 +13,7 @@
 
 import { TimeoutCapable } from './timeout';
 import { HeadersCapable } from './types';
+import { UrlParams } from './urlBuilder';
 
 /**
  * Fetcher request configuration interface
@@ -38,43 +39,7 @@ export interface FetchRequestInit
   extends TimeoutCapable,
     HeadersCapable,
     Omit<RequestInit, 'body' | 'headers'> {
-  /**
-   * Path parameters for URL templating
-   *
-   * An object containing key-value pairs that will be used to replace placeholders
-   * in the URL path. Placeholders are specified using curly braces, e.g., '/users/{id}'.
-   *
-   * @example
-   * ```typescript
-   * // With URL '/users/{id}/posts/{postId}'
-   * const request = {
-   *   path: { id: 123, postId: 456 }
-   * };
-   * // Results in URL: '/users/123/posts/456'
-   * ```
-   */
-  path?: Record<string, any>;
-
-  /**
-   * Query parameters for URL query string
-   *
-   * An object containing key-value pairs that will be serialized and appended
-   * to the URL as query parameters. Arrays are serialized as multiple parameters
-   * with the same name, and objects are JSON-stringified.
-   *
-   * @example
-   * ```typescript
-   * const request = {
-   *   query: {
-   *     limit: 10,
-   *     filter: 'active',
-   *     tags: ['important', 'urgent']
-   *   }
-   * };
-   * // Results in query string: '?limit=10&filter=active&tags=important&tags=urgent'
-   * ```
-   */
-  query?: Record<string, any>;
+  urlParams?: UrlParams;
 
   /**
    * Request body
