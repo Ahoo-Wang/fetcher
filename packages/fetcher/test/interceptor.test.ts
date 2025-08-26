@@ -13,7 +13,14 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Fetcher, FetcherInterceptors, FetchExchange, HttpMethod, Interceptor, InterceptorManager } from '../src';
+import {
+  Fetcher,
+  FetcherInterceptors,
+  FetchExchange,
+  HttpMethod,
+  Interceptor,
+  InterceptorManager,
+} from '../src';
 
 describe('interceptor.ts', () => {
   describe('InterceptorManager', () => {
@@ -21,6 +28,10 @@ describe('interceptor.ts', () => {
 
     beforeEach(() => {
       manager = new InterceptorManager();
+    });
+
+    it('should have correct order value', () => {
+      expect(manager.order).toBe(Number.MIN_SAFE_INTEGER);
     });
 
     it('should add interceptor with use method', () => {
@@ -152,6 +163,40 @@ describe('interceptor.ts', () => {
       expect(result).toBe(mockExchange);
       expect(interceptor1.intercept).not.toHaveBeenCalled();
       expect(interceptor2.intercept).toHaveBeenCalledWith(mockExchange);
+    });
+
+    it('should clear all interceptors', async () => {
+      const interceptor1: Interceptor = {
+        name: 'interceptor-1',
+        order: 0,
+        intercept: vi.fn(exchange => exchange),
+      };
+      const interceptor2: Interceptor = {
+        name: 'interceptor-2',
+        order: 1,
+        intercept: vi.fn(exchange => exchange),
+      };
+
+      manager.use(interceptor1);
+      manager.use(interceptor2);
+      manager.clear();
+
+      const mockExchange: FetchExchange = {
+        fetcher: new Fetcher(),
+        request: {
+          url: 'http://example.com',
+          method: HttpMethod.GET,
+        },
+        response: undefined,
+        error: undefined,
+        attributes: {},
+      };
+
+      const result = await manager.intercept(mockExchange);
+
+      expect(result).toBe(mockExchange);
+      expect(interceptor1.intercept).not.toHaveBeenCalled();
+      expect(interceptor2.intercept).not.toHaveBeenCalled();
     });
 
     it('should handle async interceptors', async () => {
