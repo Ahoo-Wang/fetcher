@@ -51,8 +51,10 @@ const fetcher = new Fetcher({
 
 // GET request with path and query parameters
 const response = await fetcher.get('/users/{id}', {
-  path: { id: 123 },
-  query: { include: 'profile' },
+  urlParams: {
+    path: { id: 123 },
+    query: { include: 'profile' },
+  },
 });
 const userData = await response.json<User>();
 
