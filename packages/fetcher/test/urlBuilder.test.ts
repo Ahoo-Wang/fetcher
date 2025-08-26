@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { UrlBuilder } from '../src';
 
 describe('UrlBuilder', () => {
@@ -29,32 +29,30 @@ describe('UrlBuilder', () => {
 
   it('should build URL with path parameters', () => {
     const urlBuilder = new UrlBuilder('https://api.example.com');
-    const url = urlBuilder.build('/users/{id}', { id: 123 });
+    const url = urlBuilder.build('/users/{id}', { path: { id: 123 } });
     expect(url).toBe('https://api.example.com/users/123');
   });
 
   it('should build URL with query parameters', () => {
     const urlBuilder = new UrlBuilder('https://api.example.com');
-    const url = urlBuilder.build('/users', undefined, {
-      filter: 'active',
-      page: '1',
+    const url = urlBuilder.build('/users', {
+      query: { filter: 'active', page: '1' },
     });
     expect(url).toBe('https://api.example.com/users?filter=active&page=1');
   });
 
   it('should build URL with path parameters and query parameters', () => {
     const urlBuilder = new UrlBuilder('https://api.example.com');
-    const url = urlBuilder.build(
-      '/users/{id}',
-      { id: 123 },
-      { filter: 'active' },
-    );
+    const url = urlBuilder.build('/users/{id}', {
+      path: { id: 123 },
+      query: { filter: 'active' },
+    });
     expect(url).toBe('https://api.example.com/users/123?filter=active');
   });
 
   it('should throw error when missing required path parameter', () => {
     const urlBuilder = new UrlBuilder('https://api.example.com');
-    expect(() => urlBuilder.build('/users/{id}', {})).toThrow(
+    expect(() => urlBuilder.build('/users/{id}', { path: {} })).toThrow(
       'Missing required path parameter: id',
     );
   });

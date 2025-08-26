@@ -81,8 +81,10 @@ describe('Fetcher', () => {
     mockFetch.mockResolvedValue(new Response('OK'));
 
     await fetcher.get('/users/{id}', {
-      path: { id: 123 },
-      query: { filter: 'active' },
+      urlParams: {
+        path: { id: 123 },
+        query: { filter: 'active' },
+      },
     });
 
     expect(mockFetch).toHaveBeenCalledWith(

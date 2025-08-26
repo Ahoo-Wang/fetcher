@@ -21,7 +21,7 @@ export interface UrlParams {
    */
   path?: Record<string, any>;
   /**
-   *  Query parameter object to be added to the URL query string
+   *  Query/Search parameter object to be added to the URL query string
    */
   query?: Record<string, any>;
 }

@@ -27,8 +27,8 @@ describe('RequestBodyInterceptor', () => {
   it('should not modify request without body', () => {
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
       },
       response: undefined,
@@ -43,8 +43,8 @@ describe('RequestBodyInterceptor', () => {
   it('should not modify request with null body', () => {
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: null,
       },
@@ -60,8 +60,8 @@ describe('RequestBodyInterceptor', () => {
   it('should not modify request with string body', () => {
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: 'plain text' as any,
       },
@@ -77,8 +77,8 @@ describe('RequestBodyInterceptor', () => {
   it('should not modify request with number body', () => {
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: 42 as any,
       },
@@ -94,8 +94,8 @@ describe('RequestBodyInterceptor', () => {
   it('should not modify request with boolean body', () => {
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: true as any,
       },
@@ -112,8 +112,8 @@ describe('RequestBodyInterceptor', () => {
     const arrayBuffer = new ArrayBuffer(8);
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: arrayBuffer as any,
       },
@@ -130,8 +130,8 @@ describe('RequestBodyInterceptor', () => {
     const blob = new Blob(['hello'], { type: 'text/plain' });
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: blob as any,
       },
@@ -149,10 +149,10 @@ describe('RequestBodyInterceptor', () => {
     formData.append('key', 'value');
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
-        body: formData as any,
+        body: formData,
       },
       response: undefined,
       error: undefined,
@@ -167,10 +167,10 @@ describe('RequestBodyInterceptor', () => {
     const params = new URLSearchParams({ key: 'value' });
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
-        body: params as any,
+        body: params,
       },
       response: undefined,
       error: undefined,
@@ -185,8 +185,8 @@ describe('RequestBodyInterceptor', () => {
     const stream = new ReadableStream();
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: stream as any,
       },
@@ -203,8 +203,8 @@ describe('RequestBodyInterceptor', () => {
     const file = new File(['content'], 'test.txt', { type: 'text/plain' });
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: file as any,
       },
@@ -222,8 +222,8 @@ describe('RequestBodyInterceptor', () => {
     const dataView = new DataView(buffer);
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: dataView as any,
       },
@@ -240,8 +240,8 @@ describe('RequestBodyInterceptor', () => {
     const uint8Array = new Uint8Array([1, 2, 3]);
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: uint8Array as any,
       },
@@ -258,8 +258,8 @@ describe('RequestBodyInterceptor', () => {
     const requestBody = { name: 'John', age: 30 };
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: requestBody as any,
       },
@@ -281,8 +281,8 @@ describe('RequestBodyInterceptor', () => {
     const requestBody = { name: 'John', age: 30 };
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: requestBody as any,
         headers: {
@@ -307,8 +307,8 @@ describe('RequestBodyInterceptor', () => {
     const requestBody = [1, 2, 3];
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: requestBody as any,
       },
@@ -338,8 +338,8 @@ describe('RequestBodyInterceptor', () => {
     };
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: requestBody as any,
       },
@@ -361,8 +361,8 @@ describe('RequestBodyInterceptor', () => {
     const requestBody = {};
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: requestBody as any,
       },
@@ -385,8 +385,8 @@ describe('RequestBodyInterceptor', () => {
     requestBody.name = 'John';
     const exchange: FetchExchange = {
       fetcher: mockFetcher,
-      url: 'http://example.com',
       request: {
+        url: 'http://example.com',
         method: 'POST',
         body: requestBody as any,
       },

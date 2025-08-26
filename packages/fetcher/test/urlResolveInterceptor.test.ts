@@ -30,8 +30,7 @@ describe('UrlResolveInterceptor', () => {
       request: {
         url: '/users/{id}',
         method: 'GET',
-        path: { id: 123 },
-        query: { filter: 'active' },
+        urlParams: { path: { id: 123 }, query: { filter: 'active' } },
       },
       response: undefined,
       error: undefined,
@@ -74,7 +73,7 @@ describe('UrlResolveInterceptor', () => {
       request: {
         url: '/users/{id}/posts/{postId}',
         method: 'GET',
-        path: { id: 123, postId: 456 },
+        urlParams: { path: { id: 123, postId: 456 } },
       },
       response: undefined,
       error: undefined,
@@ -97,9 +96,11 @@ describe('UrlResolveInterceptor', () => {
       request: {
         url: '/users',
         method: 'GET',
-        query: {
-          filter: 'active',
-          limit: 10,
+        urlParams: {
+          query: {
+            filter: 'active',
+            limit: 10,
+          },
         },
       },
       response: undefined,
@@ -123,9 +124,11 @@ describe('UrlResolveInterceptor', () => {
       request: {
         url: '/users',
         method: 'GET',
-        query: {
-          tags: ['important', 'urgent'],
-          status: 'active',
+        urlParams: {
+          query: {
+            tags: ['important', 'urgent'],
+            status: 'active',
+          },
         },
       },
       response: undefined,

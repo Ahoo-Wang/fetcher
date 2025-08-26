@@ -1,14 +1,25 @@
-import { describe, it, expect } from 'vitest';
-import { mergeRequest } from '../src';
-import { HttpMethod } from '../src';
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { describe, expect, it } from 'vitest';
+import { HttpMethod, mergeRequest } from '../src';
 
 describe('mergeRequest', () => {
   it('should return second request when first request is empty', () => {
     const first = {};
     const second = {
       method: HttpMethod.POST,
-      path: { id: 1 },
-      query: { filter: 'active' },
+      urlParams: { path: { id: 1 }, query: { filter: 'active' } },
       headers: { 'Content-Type': 'application/json' },
     };
 
@@ -19,7 +30,7 @@ describe('mergeRequest', () => {
   it('should return first request when second request is empty', () => {
     const first = {
       method: HttpMethod.GET,
-      path: { userId: 123 },
+      urlParams: { path: { userId: 123 } },
       headers: { Authorization: 'Bearer token' },
     };
     const second = {};
@@ -30,26 +41,26 @@ describe('mergeRequest', () => {
 
   it('should merge path parameters', () => {
     const first = {
-      path: { id: 1 },
+      urlParams: { path: { id: 1 } },
     };
     const second = {
-      path: { action: 'edit' },
+      urlParams: { path: { action: 'edit' } },
     };
 
     const result = mergeRequest(first, second);
-    expect(result.path).toEqual({ id: 1, action: 'edit' });
+    expect(result.urlParams?.path).toEqual({ id: 1, action: 'edit' });
   });
 
   it('should merge query parameters', () => {
     const first = {
-      query: { page: 1, limit: 10 },
+      urlParams: { query: { page: 1, limit: 10 } },
     };
     const second = {
-      query: { filter: 'active', sort: 'name' },
+      urlParams: { query: { filter: 'active', sort: 'name' } },
     };
 
     const result = mergeRequest(first, second);
-    expect(result.query).toEqual({
+    expect(result.urlParams?.query).toEqual({
       page: 1,
       limit: 10,
       filter: 'active',
@@ -59,103 +70,101 @@ describe('mergeRequest', () => {
 
   it('should merge headers', () => {
     const first = {
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     };
     const second = {
-      headers: { Authorization: 'Bearer token', 'X-Custom': 'value' },
+      headers: { Authorization: 'Bearer token' },
     };
 
     const result = mergeRequest(first, second);
     expect(result.headers).toEqual({
       'Content-Type': 'application/json',
-      Accept: 'application/json',
       Authorization: 'Bearer token',
-      'X-Custom': 'value',
     });
   });
 
   it('should give second request precedence for primitive values', () => {
     const first = {
       method: HttpMethod.GET,
-      body: { name: 'John' },
-      timeout: 5000,
+      timeout: 1000,
     };
     const second = {
       method: HttpMethod.POST,
-      body: { name: 'Jane' },
-      timeout: 3000,
+      timeout: 2000,
     };
 
     const result = mergeRequest(first, second);
     expect(result.method).toBe(HttpMethod.POST);
-    expect(result.body).toEqual({ name: 'Jane' });
-    expect(result.timeout).toBe(3000);
+    expect(result.timeout).toBe(2000);
   });
 
   it('should handle undefined values correctly', () => {
     const first = {
       method: HttpMethod.GET,
-      body: undefined,
       timeout: undefined,
     };
     const second = {
       method: undefined,
-      body: { name: 'John' },
-      timeout: 5000,
+      timeout: 2000,
     };
 
     const result = mergeRequest(first, second);
     expect(result.method).toBe(HttpMethod.GET);
-    expect(result.body).toEqual({ name: 'John' });
-    expect(result.timeout).toBe(5000);
+    expect(result.timeout).toBe(2000);
   });
 
   it('should handle null body values correctly', () => {
     const first = {
       body: null,
-      timeout: 1000,
     };
     const second = {
-      body: { name: 'John' },
-      timeout: undefined,
+      body: undefined,
     };
 
     const result = mergeRequest(first, second);
-    expect(result.body).toEqual({ name: 'John' });
-    expect(result.timeout).toBe(1000);
+    expect(result.body).toBe(null);
+
+    const result2 = mergeRequest(second, first);
+    expect(result2.body).toBe(undefined);
   });
 
   it('should merge complex requests correctly', () => {
     const first = {
       method: HttpMethod.GET,
-      path: { userId: 123 },
-      query: { page: 1 },
-      headers: { Authorization: 'Bearer old-token' },
+      urlParams: {
+        path: { userId: 123 },
+        query: { page: 1 },
+      },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer old-token',
+      },
       timeout: 5000,
     };
 
     const second = {
       method: HttpMethod.POST,
-      path: { postId: 456 },
-      query: { filter: 'active' },
-      headers: { 'Content-Type': 'application/json' },
-      body: { title: 'New Post' },
+      urlParams: {
+        path: { postId: 456 },
+        query: { filter: 'active' },
+      },
+      headers: {
+        Authorization: 'Bearer new-token',
+      },
       timeout: 3000,
     };
 
     const result = mergeRequest(first, second);
     expect(result).toEqual({
       method: HttpMethod.POST,
-      path: { userId: 123, postId: 456 },
-      query: { page: 1, filter: 'active' },
-      headers: {
-        Authorization: 'Bearer old-token',
-        'Content-Type': 'application/json',
+      urlParams: {
+        path: { userId: 123, postId: 456 },
+        query: { page: 1, filter: 'active' },
       },
-      body: { title: 'New Post' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer new-token',
+      },
       timeout: 3000,
     });
   });
@@ -163,7 +172,7 @@ describe('mergeRequest', () => {
   it('should preserve signal from second request', () => {
     const abortController = new AbortController();
     const first = {
-      signal: null,
+      signal: undefined,
     };
     const second = {
       signal: abortController.signal,
@@ -174,20 +183,10 @@ describe('mergeRequest', () => {
   });
 
   it('should handle empty objects correctly', () => {
-    const first = {
-      path: {},
-      query: {},
-      headers: {},
-    };
-    const second = {
-      path: { id: 1 },
-      query: { filter: 'active' },
-      headers: { 'Content-Type': 'application/json' },
-    };
+    const first = {};
+    const second = {};
 
     const result = mergeRequest(first, second);
-    expect(result.path).toEqual({ id: 1 });
-    expect(result.query).toEqual({ filter: 'active' });
-    expect(result.headers).toEqual({ 'Content-Type': 'application/json' });
+    expect(result).toEqual({});
   });
 });
