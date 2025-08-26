@@ -42,7 +42,6 @@ export function initInterceptorExample(): void {
               'X-Custom-Header': 'Added by interceptor',
             },
           };
-          return exchange;
         },
       };
       const requestInterceptorId =

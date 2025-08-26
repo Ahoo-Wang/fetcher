@@ -43,9 +43,8 @@ describe('CoSecResponseInterceptor', () => {
       error: undefined,
     };
 
-    const result = await interceptor.intercept(exchange);
+    await interceptor.intercept(exchange);
 
-    expect(result).toBe(exchange);
     expect(tokenRefresher.refresh).not.toHaveBeenCalled();
   });
 
@@ -76,9 +75,8 @@ describe('CoSecResponseInterceptor', () => {
       error: undefined,
     };
 
-    const result = await interceptor.intercept(exchange);
+    await interceptor.intercept(exchange);
 
-    expect(result).toBe(exchange);
     expect(tokenRefresher.refresh).not.toHaveBeenCalled();
   });
 
@@ -111,9 +109,8 @@ describe('CoSecResponseInterceptor', () => {
       error: undefined,
     };
 
-    const result = await interceptor.intercept(exchange);
+    await interceptor.intercept(exchange);
 
-    expect(result).toBe(exchange);
     expect(tokenRefresher.refresh).not.toHaveBeenCalled();
   });
 

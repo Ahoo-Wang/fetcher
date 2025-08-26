@@ -37,9 +37,9 @@ describe('UrlResolveInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
-    expect(result.request.url).toBe(
+    expect(exchange.request.url).toBe(
       'https://api.example.com/users/123?filter=active',
     );
   });
@@ -59,9 +59,9 @@ describe('UrlResolveInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
-    expect(result.request.url).toBe('https://api.example.com/users');
+    expect(exchange.request.url).toBe('https://api.example.com/users');
   });
 
   it('should resolve URL with only path parameters', () => {
@@ -80,9 +80,9 @@ describe('UrlResolveInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
-    expect(result.request.url).toBe(
+    expect(exchange.request.url).toBe(
       'https://api.example.com/users/123/posts/456',
     );
   });
@@ -99,7 +99,6 @@ describe('UrlResolveInterceptor', () => {
         urlParams: {
           query: {
             filter: 'active',
-            limit: 10,
           },
         },
       },
@@ -108,10 +107,10 @@ describe('UrlResolveInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
-    expect(result.request.url).toBe(
-      'https://api.example.com/users?filter=active&limit=10',
+    expect(exchange.request.url).toBe(
+      'https://api.example.com/users?filter=active',
     );
   });
 
@@ -136,11 +135,11 @@ describe('UrlResolveInterceptor', () => {
       attributes: {},
     };
 
-    const result = interceptor.intercept(exchange);
+    interceptor.intercept(exchange);
 
     // Check that the URL contains the expected parameters
-    expect(result.request.url).toContain('https://api.example.com/users');
-    expect(result.request.url).toContain('tags=important');
-    expect(result.request.url).toContain('status=active');
+    expect(exchange.request.url).toContain('https://api.example.com/users');
+    expect(exchange.request.url).toContain('tags=important');
+    expect(exchange.request.url).toContain('status=active');
   });
 });

@@ -36,14 +36,11 @@ describe('Fetcher Interceptors', () => {
       name: 'request-interceptor-1',
       order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
-        return {
-          ...exchange,
-          request: {
-            ...exchange.request,
-            headers: {
-              ...exchange.request.headers,
-              'X-Test-Header': 'test-value',
-            },
+        exchange.request = {
+          ...exchange.request,
+          headers: {
+            ...exchange.request.headers,
+            'X-Test-Header': 'test-value',
           },
         };
       }),
@@ -78,7 +75,6 @@ describe('Fetcher Interceptors', () => {
             writable: false,
           });
         }
-        return exchange;
       }),
     };
 
@@ -103,7 +99,6 @@ describe('Fetcher Interceptors', () => {
       order: 0,
       intercept: vi.fn(async (exchange: FetchExchange) => {
         exchange.error = new Error(`Intercepted: ${exchange.error?.message}`);
-        return exchange;
       }),
     };
 
@@ -124,14 +119,11 @@ describe('Fetcher Interceptors', () => {
       name: 'multi-request-interceptor-1',
       order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
-        return {
-          ...exchange,
-          request: {
-            ...exchange.request,
-            headers: {
-              ...exchange.request.headers,
-              'X-Interceptor-1': 'value-1',
-            },
+        exchange.request = {
+          ...exchange.request,
+          headers: {
+            ...exchange.request.headers,
+            'X-Interceptor-1': 'value-1',
           },
         };
       }),
@@ -141,14 +133,11 @@ describe('Fetcher Interceptors', () => {
       name: 'multi-request-interceptor-2',
       order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
-        return {
-          ...exchange,
-          request: {
-            ...exchange.request,
-            headers: {
-              ...exchange.request.headers,
-              'X-Interceptor-2': 'value-2',
-            },
+        exchange.request = {
+          ...exchange.request,
+          headers: {
+            ...exchange.request.headers,
+            'X-Interceptor-2': 'value-2',
           },
         };
       }),
@@ -178,17 +167,14 @@ describe('Fetcher Interceptors', () => {
     const asyncInterceptor: Interceptor = {
       name: 'async-interceptor-1',
       order: 0,
-      intercept: vi.fn((exchange: FetchExchange) => {
-        return Promise.resolve({
-          ...exchange,
-          request: {
-            ...exchange.request,
-            headers: {
-              ...exchange.request.headers,
-              'X-Async-Header': 'async-value',
-            },
+      intercept: vi.fn(async (exchange: FetchExchange) => {
+        exchange.request = {
+          ...exchange.request,
+          headers: {
+            ...exchange.request.headers,
+            'X-Async-Header': 'async-value',
           },
-        });
+        };
       }),
     };
 
@@ -214,14 +200,11 @@ describe('Fetcher Interceptors', () => {
       name: 'ejected-interceptor-1',
       order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
-        return {
-          ...exchange,
-          request: {
-            ...exchange.request,
-            headers: {
-              ...exchange.request.headers,
-              'X-Ejected-Header': 'ejected-value',
-            },
+        exchange.request = {
+          ...exchange.request,
+          headers: {
+            ...exchange.request.headers,
+            'X-Ejected-Header': 'ejected-value',
           },
         };
       }),
@@ -256,7 +239,6 @@ describe('Fetcher Interceptors', () => {
         exchange.response = new Response('Error handled by interceptor', {
           status: 200,
         });
-        return exchange;
       }),
     };
 
@@ -284,16 +266,14 @@ describe('Fetcher Interceptors', () => {
       order: 0,
       intercept: vi.fn((exchange: FetchExchange) => {
         calls.push('interceptor1');
-        return exchange;
       }),
     });
 
     fetcher.interceptors.request.use({
       name: 'order-test-interceptor-2',
       order: 0,
-      intercept: vi.fn((exchange: FetchExchange) => {
+      intercept: vi.fn((_exchange: FetchExchange) => {
         calls.push('interceptor2');
-        return exchange;
       }),
     });
 

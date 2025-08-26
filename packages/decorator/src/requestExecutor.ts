@@ -18,6 +18,7 @@ import {
   FetchRequestInit,
   mergeRequest,
   NamedCapable,
+  RequestHeaders,
   UrlParams,
 } from '@ahoo-wang/fetcher';
 import { ApiMetadata } from './apiDecorator';
@@ -135,7 +136,7 @@ export class FunctionMetadata implements NamedCapable {
   resolveRequest(args: any[]): FetchRequestInit {
     const path: Record<string, any> = {};
     const query: Record<string, any> = {};
-    const headers: Record<string, string> = {
+    const headers: RequestHeaders = {
       ...this.api.headers,
       ...this.endpoint.headers,
     };
@@ -205,7 +206,7 @@ export class FunctionMetadata implements NamedCapable {
   private processHeaderParam(
     param: ParameterMetadata,
     value: any,
-    headers: Record<string, string>,
+    headers: RequestHeaders,
   ) {
     if (param.name && value !== undefined) {
       headers[param.name] = String(value);

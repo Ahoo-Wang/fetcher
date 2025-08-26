@@ -22,18 +22,21 @@ import { FetchRequest } from './fetchRequest';
  * that occur during the HTTP request lifecycle. It also provides a mechanism for
  * sharing data between interceptors through the attributes property.
  *
+ * FetchExchange instances are unique within a single request scope, meaning each HTTP
+ * request creates its own FetchExchange instance that is passed through the interceptor
+ * chain for that specific request.
+ *
  * @example
  * ```typescript
  * // In a request interceptor
  * const requestInterceptor: Interceptor = {
  *   name: 'RequestInterceptor',
  *   order: 0,
- *   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+ *   intercept(exchange: FetchExchange) {
  *     // Add custom data to share with other interceptors
  *     exchange.attributes = exchange.attributes || {};
  *     exchange.attributes.startTime = Date.now();
  *     exchange.attributes.customHeader = 'my-value';
- *     return exchange;
  *   }
  * };
  *
@@ -41,14 +44,13 @@ import { FetchRequest } from './fetchRequest';
  * const responseInterceptor: Interceptor = {
  *   name: 'ResponseInterceptor',
  *   order: 0,
- *   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+ *   intercept(exchange: FetchExchange) {
  *     // Access data shared by previous interceptors
  *     if (exchange.attributes && exchange.attributes.startTime) {
  *       const startTime = exchange.attributes.startTime;
  *       const duration = Date.now() - startTime;
  *       console.log(`Request took ${duration}ms`);
  *     }
- *     return exchange;
  *   }
  * };
  * ```
