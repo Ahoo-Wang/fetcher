@@ -14,16 +14,25 @@
 import { TimeoutCapable } from './timeout';
 import { UrlParams } from './urlBuilder';
 
+/**
+ * Interface for objects that can have a base URL
+ *
+ * This interface defines a baseURL property that can be used to set a base URL
+ * for HTTP requests. When the baseURL is empty, it means no base URL is set.
+ */
 export interface BaseURLCapable {
   /**
-   * 请求的 baseURL
-   * 当值为空时，表示不设置 baseURL，默认值为 undefined
+   * The base URL for requests
+   * When empty, indicates no base URL is set. Default is undefined.
    */
   baseURL: string;
 }
 
 /**
- * HTTP方法枚举常量
+ * HTTP method enumeration constants
+ *
+ * Defines the standard HTTP methods that can be used for requests.
+ * Each method is represented as a string literal type.
  */
 export enum HttpMethod {
   GET = 'GET',
@@ -42,14 +51,25 @@ export enum ContentTypeValues {
   TEXT_EVENT_STREAM = 'text/event-stream',
 }
 
+/**
+ * Request headers interface
+ *
+ * Defines common HTTP headers that can be sent with requests.
+ * Allows for additional custom headers through index signature.
+ */
 export interface RequestHeaders {
   'Content-Type'?: string;
-  'Accept'?: string;
-  'Authorization'?: string;
+  Accept?: string;
+  Authorization?: string;
 
   [key: string]: string | undefined;
 }
 
+/**
+ * Interface for objects that can have request headers
+ *
+ * This interface defines an optional headers property for HTTP requests.
+ */
 export interface RequestHeadersCapable {
   /**
    * Request headers
@@ -112,6 +132,12 @@ export interface FetchRequestInit
   body?: BodyInit | Record<string, any> | string | null;
 }
 
+/**
+ * Fetcher request interface
+ *
+ * Extends FetchRequestInit with a required URL property.
+ * Represents a complete request configuration ready to be executed.
+ */
 export interface FetchRequest extends FetchRequestInit {
   /**
    * The URL for this request
