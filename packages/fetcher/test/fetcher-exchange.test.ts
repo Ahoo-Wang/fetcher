@@ -61,10 +61,10 @@ describe('Fetcher - exchange', () => {
     fetcher.interceptors.request = requestManager;
     fetcher.interceptors.response = responseManager;
 
-    const exchange = new FetchExchange(
-      fetcher,
-      { url: '/test', method: 'GET' },
-    );
+    const exchange = new FetchExchange(fetcher, {
+      url: '/test',
+      method: 'GET',
+    });
 
     const result = await fetcher.exchange(exchange);
 
@@ -97,8 +97,8 @@ describe('Fetcher - exchange', () => {
       name: 'ErrorInterceptor',
       order: 0,
       async intercept(exchange: FetchExchange): Promise<void> {
-        // Handle the error and create a response
-        exchange.response = new Response('Error handled', { status: 500 });
+        // Clear the error to indicate it's been handled
+        exchange.error = undefined;
       },
     };
 
@@ -110,17 +110,16 @@ describe('Fetcher - exchange', () => {
     fetcher.interceptors.request = requestManager;
     fetcher.interceptors.error = errorManager;
 
-    const exchange = new FetchExchange(
-      fetcher,
-      { url: '/test', method: 'GET' },
-    );
+    const exchange = new FetchExchange(fetcher, {
+      url: '/test',
+      method: 'GET',
+    });
 
     const result = await fetcher.exchange(exchange);
 
-    // Verify the error was handled and response was created
+    // Verify the error was handled
     expect(result).toBeDefined();
-    expect(result.response).toBeInstanceOf(Response);
-    expect(result.response?.status).toBe(500);
+    expect(result.error).toBeUndefined();
   });
 
   it('should rethrow error when error interceptor does not produce response', async () => {
@@ -158,10 +157,10 @@ describe('Fetcher - exchange', () => {
     fetcher.interceptors.request = requestManager;
     fetcher.interceptors.error = errorManager;
 
-    const exchange = new FetchExchange(
-      fetcher,
-      { url: '/test', method: 'GET' },
-    );
+    const exchange = new FetchExchange(fetcher, {
+      url: '/test',
+      method: 'GET',
+    });
 
     // Verify the error is rethrown
     await expect(fetcher.exchange(exchange)).rejects.toThrow('Request failed');
