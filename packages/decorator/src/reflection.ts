@@ -15,7 +15,7 @@
 const parameterNameCache = new WeakMap<Function, string[]>();
 
 /**
- * Extracts parameter names from a function
+ * Extracts parameter names from a function.
  *
  * This function parses the string representation of a function to extract
  * the names of its parameters. It handles various function formats including
@@ -81,7 +81,7 @@ export function getParameterNames(func: (...args: any[]) => any): string[] {
 }
 
 /**
- * Helper function to automatically extract parameter name when not provided
+ * Helper function to automatically extract parameter name when not provided.
  *
  * @param target - The target object (class prototype)
  * @param propertyKey - The method name
@@ -118,7 +118,7 @@ export function getParameterName(
 }
 
 /**
- * Checks if a parameter string contains actual parameters
+ * Checks if a parameter string contains actual parameters.
  *
  * @param paramsStr - The parameter string to check
  * @returns True if the string contains parameters, false otherwise
@@ -130,7 +130,7 @@ function hasParameters(paramsStr: string): boolean {
 }
 
 /**
- * Extracts the parameter string from a function string representation
+ * Extracts the parameter string from a function string representation.
  *
  * @param fnStr - The string representation of the function
  * @returns The parameter string, or empty string if not found
@@ -154,7 +154,7 @@ function extractParameterString(fnStr: string): string {
 }
 
 /**
- * Finds the matching closing parenthesis for an opening parenthesis
+ * Finds the matching closing parenthesis for an opening parenthesis.
  *
  * @param str - The string to search in
  * @param openingParenIndex - The index of the opening parenthesis
@@ -183,7 +183,7 @@ function findClosingParenthesis(
 }
 
 /**
- * Parses and cleans parameter names from a parameter string
+ * Parses and cleans parameter names from a parameter string.
  *
  * @param paramsStr - The parameter string to parse
  * @returns An array of cleaned parameter names
@@ -197,7 +197,7 @@ function parseParameterNames(paramsStr: string): string[] {
 }
 
 /**
- * Trims whitespace from a string
+ * Trims whitespace from a string.
  *
  * @param str - The string to trim
  * @returns The trimmed string
@@ -207,7 +207,7 @@ function trimWhitespace(str: string): string {
 }
 
 /**
- * Checks if a string is not empty
+ * Checks if a string is not empty.
  *
  * @param str - The string to check
  * @returns True if the string is not empty, false otherwise
@@ -217,7 +217,7 @@ function isNotEmpty(str: string): boolean {
 }
 
 /**
- * Extracts a clean parameter name by removing type annotations and default values
+ * Extracts a clean parameter name by removing type annotations and default values.
  *
  * @param param - The raw parameter string
  * @returns The cleaned parameter name
@@ -233,7 +233,7 @@ function extractParameterName(param: string): string {
 }
 
 /**
- * Removes default value from a parameter string
+ * Removes default value from a parameter string.
  *
  * @param param - The parameter string
  * @returns The parameter string without default value
@@ -247,7 +247,7 @@ function removeDefaultValue(param: string): string {
 }
 
 /**
- * Removes type annotation from a parameter string
+ * Removes type annotation from a parameter string.
  *
  * @param param - The parameter string
  * @returns The parameter string without type annotation

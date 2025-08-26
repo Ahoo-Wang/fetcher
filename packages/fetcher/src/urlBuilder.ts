@@ -15,11 +15,15 @@ import { combineURLs } from './urls';
 import { BaseURLCapable, FetchRequest } from './fetchRequest';
 
 /**
- * Interface for URL parameters including path and query parameters
+ * Container for URL parameters including path and query parameters.
+ *
+ * Used to define dynamic parts of a URL including path placeholders and query string parameters.
  */
 export interface UrlParams {
   /**
-   * Path parameter object used to replace placeholders in the URL (e.g., {id})
+   * Path parameter object used to replace placeholders in the URL (e.g., {id}).
+   *
+   * These parameters are used to substitute named placeholders in the URL path.
    *
    * @example
    * ```typescript
@@ -30,7 +34,9 @@ export interface UrlParams {
   path?: Record<string, any>;
 
   /**
-   * Query parameter object to be added to the URL query string
+   * Query parameter object to be added to the URL query string.
+   *
+   * These parameters are appended to the URL as a query string.
    *
    * @example
    * ```typescript
@@ -42,34 +48,32 @@ export interface UrlParams {
 }
 
 /**
- * URL Builder class for constructing complete URLs with path parameters and query parameters
+ * Utility class for constructing complete URLs with path parameters and query parameters.
  *
- * This class handles URL composition, path parameter interpolation, and query string generation.
- * It combines a base URL with a path, replaces path placeholders with actual values, and appends
+ * Handles URL composition, path parameter interpolation, and query string generation.
+ * Combines a base URL with a path, replaces path placeholders with actual values, and appends
  * query parameters to create a complete URL.
  *
  * @example
  * ```typescript
  * const urlBuilder = new UrlBuilder('https://api.example.com');
  * const url = urlBuilder.build('/users/{id}', {
- *   urlParams: {
- *     path: { id: 123 },
- *     query: { filter: 'active' }
- *   }
+ *   path: { id: 123 },
+ *   query: { filter: 'active' }
  * });
  * // Result: https://api.example.com/users/123?filter=active
  * ```
  */
 export class UrlBuilder implements BaseURLCapable {
   /**
-   * Base URL that all constructed URLs will be based on
+   * Base URL that all constructed URLs will be based on.
    *
-   * This is typically the root of your API endpoint (e.g., 'https://api.example.com')
+   * This is typically the root of your API endpoint (e.g., 'https://api.example.com').
    */
   baseURL: string;
 
   /**
-   * Creates a UrlBuilder instance
+   * Initializes a new UrlBuilder instance.
    *
    * @param baseURL - Base URL that all constructed URLs will be based on
    *
@@ -83,7 +87,7 @@ export class UrlBuilder implements BaseURLCapable {
   }
 
   /**
-   * Builds a complete URL, including path parameter replacement and query parameter addition
+   * Builds a complete URL, including path parameter replacement and query parameter addition.
    *
    * @param url - URL path to build (e.g., '/users/{id}/posts')
    * @param params - URL parameters including path and query parameters
@@ -115,9 +119,9 @@ export class UrlBuilder implements BaseURLCapable {
   }
 
   /**
-   * Resolves a complete URL from a FetchRequest
+   * Resolves a complete URL from a FetchRequest.
    *
-   * This method is used internally by the Fetcher to build the final URL for a request
+   * Used internally by the Fetcher to build the final URL for a request
    * by combining the request URL with its URL parameters using this UrlBuilder.
    *
    * @param request - The FetchRequest containing URL and URL parameters
@@ -128,7 +132,7 @@ export class UrlBuilder implements BaseURLCapable {
   }
 
   /**
-   * Replaces placeholders in the URL with path parameters
+   * Replaces placeholders in the URL with path parameters.
    *
    * @param url - Path string containing placeholders, e.g., "http://localhost/users/{id}/posts/{postId}"
    * @param path - Path parameter object used to replace placeholders in the URL
@@ -168,11 +172,13 @@ export class UrlBuilder implements BaseURLCapable {
 }
 
 /**
- * Interface for objects that have a UrlBuilder capability
+ * Interface for objects that have a UrlBuilder capability.
+ *
+ * Indicates that an object has a UrlBuilder instance for URL construction.
  */
 export interface UrlBuilderCapable {
   /**
-   * The UrlBuilder instance
+   * The UrlBuilder instance.
    */
   urlBuilder: UrlBuilder;
 }

@@ -17,7 +17,7 @@ import { CompositeToken } from './tokenRefresher';
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 
 /**
- * Token storage class for managing access and refresh tokens
+ * Storage class for managing access and refresh tokens.
  */
 export class TokenStorage {
   private readonly tokenKey: string;
@@ -32,7 +32,9 @@ export class TokenStorage {
   }
 
   /**
-   * Get the current access token
+   * Get the current access token.
+   *
+   * @returns The current composite token or null if not set
    */
   get(): CompositeToken | null {
     const tokenStr = this.storage.getItem(this.tokenKey);
@@ -40,7 +42,9 @@ export class TokenStorage {
   }
 
   /**
-   * Store a composite token
+   * Store a composite token.
+   *
+   * @param token - The composite token to store
    */
   set(token: CompositeToken): void {
     const tokenStr = JSON.stringify(token);
@@ -48,7 +52,7 @@ export class TokenStorage {
   }
 
   /**
-   * Clear all tokens
+   * Clear all tokens.
    */
   clear(): void {
     this.storage.removeItem(this.tokenKey);

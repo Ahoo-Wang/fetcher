@@ -1,6 +1,6 @@
 {
   "name": "fetcher",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "A modern HTTP client library based on fetch API",
   "private": true,
   "type": "module",

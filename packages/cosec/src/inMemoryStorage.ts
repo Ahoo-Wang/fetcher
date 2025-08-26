@@ -12,7 +12,7 @@
  */
 
 /**
- * In-memory storage fallback for environments without localStorage
+ * In-memory storage fallback for environments without localStorage.
  */
 export class InMemoryStorage implements Storage {
   private store: Map<string, string> = new Map();
