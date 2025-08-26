@@ -92,10 +92,33 @@ export class FetchExchange {
    */
   attributes: Record<string, any> = {};
 
-  constructor(fetcher: Fetcher, request: FetchRequest, response?: Response, error?: Error | any) {
+  constructor(
+    fetcher: Fetcher,
+    request: FetchRequest,
+    response?: Response,
+    error?: Error | any,
+  ) {
     this.fetcher = fetcher;
     this.request = request;
     this.response = response;
     this.error = error;
+  }
+
+  /**
+   * Checks if the exchange has an error
+   *
+   * @returns true if an error is present, false otherwise
+   */
+  hasError(): boolean {
+    return !!this.error;
+  }
+
+  /**
+   * Checks if the exchange has a response
+   *
+   * @returns true if a response is present, false otherwise
+   */
+  hasResponse(): boolean {
+    return !!this.response;
   }
 }
