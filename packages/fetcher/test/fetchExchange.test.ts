@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { Fetcher, FetchExchange, FetchRequest } from '../src';
+import { ExchangeError, Fetcher, FetchExchange, FetchRequest } from '../src';
 
 describe('FetchExchange', () => {
   const mockFetcher = {} as Fetcher;
@@ -77,5 +77,81 @@ describe('FetchExchange', () => {
     const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
 
     expect(exchange.hasResponse()).toBe(true);
+  });
+});
+
+describe('ExchangeError', () => {
+  const mockFetcher = {} as Fetcher;
+  const mockRequest = { url: '/test' } as FetchRequest;
+
+  it('should create ExchangeError with error message from exchange error', () => {
+    const mockError = new Error('test error');
+    const exchange = new FetchExchange(
+      mockFetcher,
+      mockRequest,
+      undefined,
+      mockError,
+    );
+    const exchangeError = new ExchangeError(exchange);
+
+    expect(exchangeError).toBeInstanceOf(ExchangeError);
+    expect(exchangeError).toBeInstanceOf(Error);
+    expect(exchangeError.name).toBe('ExchangeError');
+    expect(exchangeError.message).toBe('test error');
+    expect(exchangeError.exchange).toBe(exchange);
+  });
+
+  it('should create ExchangeError with message from response statusText when no error', () => {
+    const mockResponse = new Response('test', {
+      status: 404,
+      statusText: 'Not Found',
+    });
+    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
+    const exchangeError = new ExchangeError(exchange);
+
+    expect(exchangeError).toBeInstanceOf(ExchangeError);
+    expect(exchangeError.message).toBe('Not Found');
+    expect(exchangeError.exchange).toBe(exchange);
+  });
+
+  it('should create ExchangeError with default message when no error or response statusText', () => {
+    const mockResponse = new Response('test'); // No statusText
+    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
+    const exchangeError = new ExchangeError(exchange);
+
+    expect(exchangeError).toBeInstanceOf(ExchangeError);
+    expect(exchangeError.message).toBe(
+      'Unknown error occurred during exchange',
+    );
+    expect(exchangeError.exchange).toBe(exchange);
+  });
+
+  it('should copy stack trace from original error', () => {
+    const mockError = new Error('test error');
+    mockError.stack = 'test stack trace';
+    const exchange = new FetchExchange(
+      mockFetcher,
+      mockRequest,
+      undefined,
+      mockError,
+    );
+    const exchangeError = new ExchangeError(exchange);
+
+    expect(exchangeError.stack).toBe('test stack trace');
+  });
+
+  it('should handle undefined stack trace gracefully', () => {
+    const mockError = new Error('test error');
+    mockError.stack = undefined;
+    const exchange = new FetchExchange(
+      mockFetcher,
+      mockRequest,
+      undefined,
+      mockError,
+    );
+    const exchangeError = new ExchangeError(exchange);
+
+    expect(exchangeError).toBeInstanceOf(ExchangeError);
+    expect(exchangeError.message).toBe('test error');
   });
 });
