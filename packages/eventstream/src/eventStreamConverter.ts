@@ -18,10 +18,22 @@ import {
 } from './serverSentEventTransformStream';
 
 /**
- * ServerSentEventStream is a ReadableStream of ServerSentEvent objects
+ * A ReadableStream of ServerSentEvent objects.
  */
 export type ServerSentEventStream = ReadableStream<ServerSentEvent>;
 
+/**
+ * Converts a Response object to a ServerSentEventStream.
+ *
+ * Processes the response body through a series of transform streams:
+ * 1. TextDecoderStream: Decode Uint8Array data to UTF-8 strings
+ * 2. TextLineStream: Split text by lines
+ * 3. ServerSentEventStream: Parse line data into server-sent events
+ *
+ * @param response - The Response object to convert
+ * @returns A ReadableStream of ServerSentEvent objects
+ * @throws Error if the response body is null
+ */
 export function toServerSentEventStream(
   response: Response,
 ): ServerSentEventStream {
@@ -29,10 +41,6 @@ export function toServerSentEventStream(
     throw new Error('Response body is null');
   }
 
-  // Process the response body through a series of transform streams:
-  // 1. TextDecoderStream: Decode Uint8Array data to UTF-8 strings
-  // 2. TextLineStream: Split text by lines
-  // 3. ServerSentEventStream: Parse line data into server-sent events
   return response.body
     .pipeThrough(new TextDecoderStream('utf-8'))
     .pipeThrough(new TextLineTransformStream())

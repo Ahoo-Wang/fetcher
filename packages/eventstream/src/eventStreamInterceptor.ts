@@ -12,13 +12,15 @@
  */
 
 import { toServerSentEventStream } from './eventStreamConverter';
-import { ContentTypeHeader, ContentTypeValues, FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
+import {
+  ContentTypeHeader,
+  ContentTypeValues,
+  FetchExchange,
+  Interceptor,
+} from '@ahoo-wang/fetcher';
 
 /**
- * EventStreamInterceptor Class
- *
- * Interceptor responsible for enhancing Response objects with event stream capabilities
- * when the response content type indicates a server-sent event stream.
+ * Interceptor that enhances Response objects with event stream capabilities.
  *
  * This interceptor detects responses with `text/event-stream` content type and adds
  * an `eventStream()` method to the Response object, which returns a readable stream
