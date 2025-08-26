@@ -54,7 +54,7 @@ describe('ExchangeError', () => {
 
     expect(exchangeError).toBeInstanceOf(ExchangeError);
     expect(exchangeError.message).toBe(
-      'Unknown error occurred during exchange',
+      `Request to ${mockRequest.url} failed during exchange`,
     );
     expect(exchangeError.exchange).toBe(exchange);
   });
