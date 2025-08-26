@@ -31,21 +31,27 @@ import { mergeRecords } from './utils';
  * ```typescript
  * const request1 = {
  *   method: 'GET',
- *   path: { id: 1 },
+ *   urlParams: {
+ *     path: { id: 1 }
+ *   },
  *   headers: { 'Content-Type': 'application/json' }
  * };
  *
  * const request2 = {
  *   method: 'POST',
- *   query: { filter: 'active' },
+ *   urlParams: {
+ *     query: { filter: 'active' }
+ *   },
  *   headers: { 'Authorization': 'Bearer token' }
  * };
  *
  * const merged = mergeRequest(request1, request2);
  * // Result: {
  * //   method: 'POST',
- * //   path: { id: 1 },
- * //   query: { filter: 'active' },
+ * //   urlParams: {
+ * //     path: { id: 1 },
+ * //     query: { filter: 'active' }
+ * //   },
  * //   headers: {
  * //     'Content-Type': 'application/json',
  * //     'Authorization': 'Bearer token'
