@@ -3,21 +3,21 @@ import { ApiMetadata } from './apiDecorator';
 import 'reflect-metadata';
 
 /**
- * Metadata for HTTP endpoints
+ * Metadata for HTTP endpoints.
  *
- * This interface defines the configuration options for individual HTTP endpoints (methods).
+ * Defines the configuration options for individual HTTP endpoints (methods).
  * These settings will override any corresponding class-level settings from ApiMetadata.
  */
 export interface EndpointMetadata extends ApiMetadata {
   /**
-   * HTTP method for the endpoint
+   * HTTP method for the endpoint.
    *
    * Specifies the HTTP verb to be used for this endpoint (GET, POST, PUT, DELETE, etc.)
    */
   method: HttpMethod;
 
   /**
-   * Path for the endpoint (relative to class base path)
+   * Path for the endpoint (relative to class base path).
    *
    * This path will be appended to the class's base path to form the complete URL.
    * Path parameters can be specified using curly braces, e.g., '/users/{id}'
@@ -30,9 +30,9 @@ export const ENDPOINT_METADATA_KEY = Symbol('endpoint:metadata');
 export type MethodEndpointMetadata = Omit<EndpointMetadata, 'method' | 'path'>;
 
 /**
- * Decorator factory for defining HTTP endpoints
+ * Decorator factory for defining HTTP endpoints.
  *
- * This function creates a decorator that can be used to define HTTP endpoints
+ * Creates a decorator that can be used to define HTTP endpoints
  * on class methods. It stores metadata about the endpoint that will be used
  * to generate the actual HTTP request.
  *
@@ -58,7 +58,7 @@ export function endpoint(
   path: string = '',
   metadata: MethodEndpointMetadata = {},
 ) {
-  return function(target: object, propertyKey: string | symbol): void {
+  return function (target: object, propertyKey: string | symbol): void {
     // Store metadata directly on the method
     const endpointMetadata = {
       method: method,

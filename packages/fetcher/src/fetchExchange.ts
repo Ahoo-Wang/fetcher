@@ -15,7 +15,7 @@ import { Fetcher } from './fetcher';
 import { FetchRequest } from './fetchRequest';
 
 /**
- * FetchExchange
+ * Container for HTTP request/response data that flows through the interceptor chain.
  *
  * Represents the complete exchange object that flows through the interceptor chain.
  * This object contains all the information about a request, response, and any errors
@@ -57,7 +57,7 @@ import { FetchRequest } from './fetchRequest';
  */
 export class FetchExchange {
   /**
-   * The Fetcher instance that initiated this exchange
+   * The Fetcher instance that initiated this exchange.
    */
   fetcher: Fetcher;
 
@@ -67,17 +67,17 @@ export class FetchExchange {
   request: FetchRequest;
 
   /**
-   * The response object, undefined until the request completes successfully
+   * The response object, undefined until the request completes successfully.
    */
   response: Response | undefined;
 
   /**
-   * Any error that occurred during the request processing, undefined if no error occurred
+   * Any error that occurred during the request processing, undefined if no error occurred.
    */
   error: Error | any | undefined;
 
   /**
-   * Shared attributes for passing data between interceptors
+   * Shared attributes for passing data between interceptors.
    *
    * This property allows interceptors to share arbitrary data with each other.
    * Interceptors can read from and write to this object to pass information
@@ -105,7 +105,7 @@ export class FetchExchange {
   }
 
   /**
-   * Checks if the exchange has an error
+   * Checks if the exchange has an error.
    *
    * @returns true if an error is present, false otherwise
    */
@@ -114,7 +114,7 @@ export class FetchExchange {
   }
 
   /**
-   * Checks if the exchange has a response
+   * Checks if the exchange has a response.
    *
    * @returns true if a response is present, false otherwise
    */

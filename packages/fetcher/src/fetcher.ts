@@ -27,7 +27,10 @@ import {
 import { mergeRecords } from './utils';
 
 /**
- * Fetcher configuration options interface
+ * Configuration options for the Fetcher client.
+ *
+ * Defines the customizable aspects of a Fetcher instance including base URL,
+ * default headers, timeout settings, and interceptors.
  *
  * @example
  * ```typescript
@@ -56,7 +59,11 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
 };
 
 /**
- * HTTP client class that supports URL building, timeout control, and more
+ * HTTP client with support for interceptors, URL building, and timeout control.
+ *
+ * The Fetcher class provides a flexible and extensible HTTP client implementation
+ * that follows the interceptor pattern. It supports URL parameter interpolation,
+ * request/response transformation, and timeout handling.
  *
  * @example
  * ```typescript
@@ -71,16 +78,20 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  * ```
  */
 export class Fetcher
-  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable {
+  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable
+{
   urlBuilder: UrlBuilder;
   headers?: RequestHeaders = DEFAULT_HEADERS;
   timeout?: number;
   interceptors: FetcherInterceptors;
 
   /**
-   * Create a Fetcher instance
+   * Initializes a new Fetcher instance with optional configuration.
    *
-   * @param options - Fetcher configuration options
+   * Creates a Fetcher with default settings that can be overridden through the options parameter.
+   * If no interceptors are provided, a default set of interceptors will be used.
+   *
+   * @param options - Configuration options for the Fetcher instance
    */
   constructor(options: FetcherOptions = DEFAULT_OPTIONS) {
     this.urlBuilder = new UrlBuilder(options.baseURL);
@@ -90,11 +101,15 @@ export class Fetcher
   }
 
   /**
-   * Make an HTTP request
+   * Executes an HTTP request with the specified URL and options.
    *
-   * @param url - Request URL path
-   * @param request - Request options, including path parameters, query parameters, etc.
-   * @returns Promise<Response> HTTP response
+   * This is the primary method for making HTTP requests. It processes the request
+   * through the interceptor chain and returns the resulting Response.
+   *
+   * @param url - The URL path for the request (relative to baseURL if set)
+   * @param request - Request configuration including headers, body, parameters, etc.
+   * @returns Promise that resolves to the HTTP response
+   * @throws Error if the request fails and no response is generated
    */
   async fetch(url: string, request: FetchRequestInit = {}): Promise<Response> {
     const fetchRequest = request as FetchRequest;
@@ -107,12 +122,15 @@ export class Fetcher
   }
 
   /**
-   * Send an HTTP request
+   * Processes an HTTP request through the Fetcher's internal workflow.
    *
-   * @param request - Request configuration object, including url, method, headers, body, etc.
-   * @returns Promise that resolves to a FetchExchange object containing request and response information
+   * This method prepares the request by merging headers and timeout settings,
+   * creates a FetchExchange object, and passes it through the exchange method
+   * for interceptor processing.
    *
-   * @throws Throws an exception when an error occurs during the request and is not handled by error interceptors
+   * @param request - Complete request configuration object
+   * @returns Promise that resolves to a FetchExchange containing request/response data
+   * @throws Error if an unhandled error occurs during request processing
    */
   async request(request: FetchRequest): Promise<FetchExchange> {
     // Merge default headers and request-level headers
@@ -128,20 +146,20 @@ export class Fetcher
   }
 
   /**
-   * Process a fetch exchange through the interceptor chain
+   * Processes a FetchExchange through the interceptor chain.
    *
-   * This method orchestrates the complete request lifecycle by applying interceptors
-   * in the following order:
-   * 1. Request interceptors - to modify the outgoing request
-   * 2. Response interceptors - to process the incoming response
+   * Orchestrates the complete request lifecycle by applying interceptors in sequence:
+   * 1. Request interceptors - Modify the outgoing request
+   * 2. Response interceptors - Process the incoming response
    *
-   * If any error occurs during the process, error interceptors are applied to handle it.
-   * If an error interceptor produces a response, that response is returned. Otherwise,
-   * the original error is re-thrown.
+   * Error handling follows this flow:
+   * - If an error occurs, error interceptors are invoked
+   * - If an error interceptor produces a response, it's returned
+   * - Otherwise, the original error is re-thrown
    *
-   * @param fetchExchange - The exchange object containing request, response, and metadata
-   * @returns Promise<FetchExchange> The processed exchange with final response or error
-   * @throws Error if an error occurs and is not handled by error interceptors
+   * @param fetchExchange - The exchange object containing request and response data
+   * @returns Promise resolving to the processed exchange
+   * @throws Error if an unhandled error occurs during processing
    */
   async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
     try {
@@ -162,12 +180,15 @@ export class Fetcher
   }
 
   /**
-   * Make an HTTP request with the specified method
+   * Internal helper method for making HTTP requests with a specific method.
    *
-   * @param method - HTTP method to use
-   * @param url - Request URL path
-   * @param request - Request options
-   * @returns Promise<Response> HTTP response
+   * This private method is used by the public HTTP method methods (get, post, etc.)
+   * to execute requests with the appropriate HTTP verb.
+   *
+   * @param method - The HTTP method to use for the request
+   * @param url - The URL path for the request
+   * @param request - Additional request options
+   * @returns Promise that resolves to the HTTP response
    */
   private async methodFetch(
     method: HttpMethod,
@@ -181,11 +202,14 @@ export class Fetcher
   }
 
   /**
-   * Make a GET request
+   * Makes a GET HTTP request.
    *
-   * @param url - Request URL path
-   * @param request - Request options, including path parameters, query parameters, etc.
-   * @returns Promise<Response> HTTP response
+   * Convenience method for making GET requests. The request body is omitted
+   * as GET requests should not contain a body according to HTTP specification.
+   *
+   * @param url - The URL path for the request
+   * @param request - Request options excluding method and body
+   * @returns Promise that resolves to the HTTP response
    */
   async get(
     url: string,
@@ -195,11 +219,13 @@ export class Fetcher
   }
 
   /**
-   * Make a POST request
+   * Makes a POST HTTP request.
    *
-   * @param url - Request URL path
-   * @param request - Request options, including path parameters, query parameters, request body, etc.
-   * @returns Promise<Response> HTTP response
+   * Convenience method for making POST requests, commonly used for creating resources.
+   *
+   * @param url - The URL path for the request
+   * @param request - Request options including body and other parameters
+   * @returns Promise that resolves to the HTTP response
    */
   async post(
     url: string,
@@ -209,11 +235,13 @@ export class Fetcher
   }
 
   /**
-   * Make a PUT request
+   * Makes a PUT HTTP request.
    *
-   * @param url - Request URL path
-   * @param request - Request options, including path parameters, query parameters, request body, etc.
-   * @returns Promise<Response> HTTP response
+   * Convenience method for making PUT requests, commonly used for updating resources.
+   *
+   * @param url - The URL path for the request
+   * @param request - Request options including body and other parameters
+   * @returns Promise that resolves to the HTTP response
    */
   async put(
     url: string,
@@ -223,11 +251,13 @@ export class Fetcher
   }
 
   /**
-   * Make a DELETE request
+   * Makes a DELETE HTTP request.
    *
-   * @param url - Request URL path
-   * @param request - Request options, including path parameters, query parameters, etc.
-   * @returns Promise<Response> HTTP response
+   * Convenience method for making DELETE requests, commonly used for deleting resources.
+   *
+   * @param url - The URL path for the request
+   * @param request - Request options excluding method and body
+   * @returns Promise that resolves to the HTTP response
    */
   async delete(
     url: string,
@@ -237,11 +267,13 @@ export class Fetcher
   }
 
   /**
-   * Make a PATCH request
+   * Makes a PATCH HTTP request.
    *
-   * @param url - Request URL path
-   * @param request - Request options, including path parameters, query parameters, request body, etc.
-   * @returns Promise<Response> HTTP response
+   * Convenience method for making PATCH requests, commonly used for partial updates.
+   *
+   * @param url - The URL path for the request
+   * @param request - Request options including body and other parameters
+   * @returns Promise that resolves to the HTTP response
    */
   async patch(
     url: string,
@@ -251,11 +283,14 @@ export class Fetcher
   }
 
   /**
-   * Make a HEAD request
+   * Makes a HEAD HTTP request.
    *
-   * @param url - Request URL path
-   * @param request - Request options, including path parameters, query parameters, etc.
-   * @returns Promise<Response> HTTP response
+   * Convenience method for making HEAD requests, which retrieve headers only.
+   * The request body is omitted as HEAD requests should not contain a body.
+   *
+   * @param url - The URL path for the request
+   * @param request - Request options excluding method and body
+   * @returns Promise that resolves to the HTTP response
    */
   async head(
     url: string,
@@ -265,11 +300,14 @@ export class Fetcher
   }
 
   /**
-   * Make an OPTIONS request
+   * Makes an OPTIONS HTTP request.
    *
-   * @param url - Request URL path
-   * @param request - Request options, including path parameters, query parameters, etc.
-   * @returns Promise<Response> HTTP response
+   * Convenience method for making OPTIONS requests, commonly used for CORS preflight.
+   * The request body is omitted as OPTIONS requests typically don't contain a body.
+   *
+   * @param url - The URL path for the request
+   * @param request - Request options excluding method and body
+   * @returns Promise that resolves to the HTTP response
    */
   async options(
     url: string,

@@ -26,35 +26,35 @@ import { EndpointMetadata } from './endpointDecorator';
 import { ParameterMetadata, ParameterType } from './parameterDecorator';
 
 /**
- * Metadata container for a function with HTTP endpoint decorators
+ * Metadata container for a function with HTTP endpoint decorators.
  *
- * This class encapsulates all the metadata needed to execute an HTTP request
+ * Encapsulates all the metadata needed to execute an HTTP request
  * for a decorated method, including API-level defaults, endpoint-specific
  * configuration, and parameter metadata.
  */
 export class FunctionMetadata implements NamedCapable {
   /**
-   * Name of the function
+   * Name of the function.
    */
   name: string;
 
   /**
-   * API-level metadata (class-level configuration)
+   * API-level metadata (class-level configuration).
    */
   api: ApiMetadata;
 
   /**
-   * Endpoint-level metadata (method-level configuration)
+   * Endpoint-level metadata (method-level configuration).
    */
   endpoint: EndpointMetadata;
 
   /**
-   * Parameter metadata for all decorated parameters
+   * Parameter metadata for all decorated parameters.
    */
   parameters: ParameterMetadata[];
 
   /**
-   * Creates a new FunctionMetadata instance
+   * Creates a new FunctionMetadata instance.
    *
    * @param name - The name of the function
    * @param api - API-level metadata
@@ -74,7 +74,7 @@ export class FunctionMetadata implements NamedCapable {
   }
 
   /**
-   * Gets the fetcher instance to use for this function
+   * Gets the fetcher instance to use for this function.
    *
    * Returns the fetcher specified in the endpoint metadata, or the API metadata,
    * or falls back to the default fetcher if none is specified.
@@ -88,7 +88,7 @@ export class FunctionMetadata implements NamedCapable {
   }
 
   /**
-   * Resolves the request configuration from the method arguments
+   * Resolves the request configuration from the method arguments.
    *
    * This method processes the runtime arguments according to the parameter metadata
    * and constructs a FetcherRequest object with path parameters, query parameters,
@@ -214,7 +214,7 @@ export class FunctionMetadata implements NamedCapable {
   }
 
   /**
-   * Processes a request parameter value
+   * Processes a request parameter value.
    *
    * This method handles the @request() decorator parameter by casting
    * the provided value to a FetcherRequest. The @request() decorator
@@ -242,7 +242,7 @@ export class FunctionMetadata implements NamedCapable {
   }
 
   /**
-   * Resolves the full path for the request
+   * Resolves the full path for the request.
    *
    * Combines the base path from API metadata with the endpoint path
    * from endpoint metadata to create the complete path.
@@ -256,7 +256,7 @@ export class FunctionMetadata implements NamedCapable {
   }
 
   /**
-   * Resolves the timeout for the request
+   * Resolves the timeout for the request.
    *
    * Returns the timeout specified in the endpoint metadata, or the API metadata,
    * or undefined if no timeout is specified.
@@ -269,7 +269,7 @@ export class FunctionMetadata implements NamedCapable {
 }
 
 /**
- * Executor for HTTP requests based on decorated method metadata
+ * Executor for HTTP requests based on decorated method metadata.
  *
  * This class is responsible for executing HTTP requests based on the metadata
  * collected from decorators. It resolves the path, constructs the request,
@@ -279,7 +279,7 @@ export class RequestExecutor {
   private readonly metadata: FunctionMetadata;
 
   /**
-   * Creates a new RequestExecutor instance
+   * Creates a new RequestExecutor instance.
    *
    * @param metadata - The function metadata containing all request information
    */
@@ -288,7 +288,7 @@ export class RequestExecutor {
   }
 
   /**
-   * Executes the HTTP request
+   * Executes the HTTP request.
    *
    * This method resolves the path and request configuration from the metadata
    * and arguments, then executes the request using the configured fetcher.
