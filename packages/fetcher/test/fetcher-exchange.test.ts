@@ -61,13 +61,10 @@ describe('Fetcher - exchange', () => {
     fetcher.interceptors.request = requestManager;
     fetcher.interceptors.response = responseManager;
 
-    const exchange: FetchExchange = {
+    const exchange = new FetchExchange(
       fetcher,
-      request: { url: '/test', method: 'GET' },
-      response: undefined,
-      error: undefined,
-      attributes: {},
-    };
+      { url: '/test', method: 'GET' },
+    );
 
     const result = await fetcher.exchange(exchange);
 
@@ -113,13 +110,10 @@ describe('Fetcher - exchange', () => {
     fetcher.interceptors.request = requestManager;
     fetcher.interceptors.error = errorManager;
 
-    const exchange: FetchExchange = {
+    const exchange = new FetchExchange(
       fetcher,
-      request: { url: '/test', method: 'GET' },
-      response: undefined,
-      error: undefined,
-      attributes: {},
-    };
+      { url: '/test', method: 'GET' },
+    );
 
     const result = await fetcher.exchange(exchange);
 
@@ -164,13 +158,10 @@ describe('Fetcher - exchange', () => {
     fetcher.interceptors.request = requestManager;
     fetcher.interceptors.error = errorManager;
 
-    const exchange: FetchExchange = {
+    const exchange = new FetchExchange(
       fetcher,
-      request: { url: '/test', method: 'GET' },
-      response: undefined,
-      error: undefined,
-      attributes: {},
-    };
+      { url: '/test', method: 'GET' },
+    );
 
     // Verify the error is rethrown
     await expect(fetcher.exchange(exchange)).rejects.toThrow('Request failed');

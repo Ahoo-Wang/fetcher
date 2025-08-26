@@ -38,15 +38,10 @@ describe('CoSecRequestInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: undefined,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    });
 
     interceptor.intercept(exchange);
 
@@ -75,15 +70,10 @@ describe('CoSecRequestInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: undefined,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    });
 
     interceptor.intercept(exchange);
 
@@ -113,15 +103,10 @@ describe('CoSecRequestInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: undefined,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    });
 
     interceptor.intercept(exchange);
 
@@ -154,19 +139,14 @@ describe('CoSecRequestInterceptor', () => {
     });
 
     const fetcher = new Fetcher();
-    const exchange: FetchExchange = {
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Custom-Header': 'custom-value',
-        },
+    const exchange: FetchExchange = new FetchExchange(fetcher, {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Custom-Header': 'custom-value',
       },
-      response: undefined,
-      error: undefined,
-    };
+    });
 
     interceptor.intercept(exchange);
 

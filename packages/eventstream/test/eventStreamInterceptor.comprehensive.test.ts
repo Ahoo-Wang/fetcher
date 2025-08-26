@@ -36,12 +36,7 @@ describe('EventStreamInterceptor Comprehensive', () => {
         headers: { 'content-type': contentType },
       });
 
-      const exchange: FetchExchange = {
-        fetcher: mockFetcher,
-        request: { url: 'http://example.com/events' },
-        response: response,
-        error: undefined,
-      };
+      const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
       interceptor.intercept(exchange);
 
@@ -70,12 +65,7 @@ describe('EventStreamInterceptor Comprehensive', () => {
         headers: contentType ? headers : undefined,
       });
 
-      const exchange: FetchExchange = {
-        fetcher: mockFetcher,
-        request: { url: 'http://example.com/events' },
-        response: response,
-        error: undefined,
-      };
+      const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
       interceptor.intercept(exchange);
 
@@ -89,12 +79,7 @@ describe('EventStreamInterceptor Comprehensive', () => {
     response.headers.append('content-type', 'text/event-stream');
     response.headers.append('content-type', 'application/json');
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: { url: 'http://example.com/events' },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
     interceptor.intercept(exchange);
 
@@ -112,12 +97,7 @@ describe('EventStreamInterceptor Comprehensive', () => {
       },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: { url: 'http://example.com/events' },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
     interceptor.intercept(exchange);
 
@@ -134,13 +114,7 @@ describe('EventStreamInterceptor Comprehensive', () => {
     const response = new Response(null, {
       headers: { 'content-type': 'text/event-stream' },
     });
-
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: { url: 'http://example.com/events' },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
     interceptor.intercept(exchange);
 
@@ -153,12 +127,7 @@ describe('EventStreamInterceptor Comprehensive', () => {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: { url: 'http://example.com/events' },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
     interceptor.intercept(exchange);
 
@@ -167,13 +136,8 @@ describe('EventStreamInterceptor Comprehensive', () => {
   });
 
   it('should not modify exchange when response is undefined', () => {
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: { url: 'http://example.com/events' },
-      response: undefined,
-      error: new Error('Test error'),
-    };
 
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, undefined, new Error('Test error'));
     interceptor.intercept(exchange);
 
     // Should return the same exchange object
@@ -199,12 +163,7 @@ describe('EventStreamInterceptor Comprehensive', () => {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: { url: 'http://example.com/events' },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
     // Call interceptor multiple times
     interceptor.intercept(exchange);

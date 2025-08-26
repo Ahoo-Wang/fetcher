@@ -33,12 +33,7 @@ describe('EventStreamInterceptor', () => {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: { url: 'http://example.com' },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
     interceptor.intercept(exchange);
 
@@ -52,12 +47,7 @@ describe('EventStreamInterceptor', () => {
       headers: { 'content-type': 'text/plain' },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: { url: 'http://example.com' },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
     interceptor.intercept(exchange);
     expect(exchange.response?.eventStream).toBeUndefined();
   });
@@ -66,12 +56,7 @@ describe('EventStreamInterceptor', () => {
     const interceptor = new EventStreamInterceptor();
     const response = new Response('hello world');
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: { url: 'http://example.com' },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
     interceptor.intercept(exchange);
     expect(exchange.response?.eventStream).toBeUndefined();
   });
@@ -82,12 +67,7 @@ describe('EventStreamInterceptor', () => {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: { url: 'http://example.com' },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
     interceptor.intercept(exchange);
     expect(exchange).toBe(exchange);
   });
@@ -98,12 +78,7 @@ describe('EventStreamInterceptor', () => {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: { url: 'http://example.com' },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
     interceptor.intercept(exchange);
 
