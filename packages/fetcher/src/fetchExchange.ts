@@ -24,9 +24,14 @@ export class ExchangeError extends Error {
   constructor(
     public readonly exchange: FetchExchange,
   ) {
-    super(exchange.error.message);
+    const errorMessage = exchange.error?.message ||
+      exchange.response?.statusText ||
+      'Unknown error occurred during exchange';
+    super(errorMessage);
     this.name = 'ExchangeError';
-    this.stack = exchange.error.stack;
+    if (exchange.error?.stack) {
+      this.stack = exchange.error.stack;
+    }
     Object.setPrototypeOf(this, ExchangeError.prototype);
   }
 }
