@@ -27,8 +27,8 @@ describe('UrlResolveInterceptor', () => {
 
     const exchange: FetchExchange = {
       fetcher,
-      url: '/users/{id}',
       request: {
+        url: '/users/{id}',
         method: 'GET',
         path: { id: 123 },
         query: { filter: 'active' },
@@ -40,7 +40,9 @@ describe('UrlResolveInterceptor', () => {
 
     const result = interceptor.intercept(exchange);
 
-    expect(result.url).toBe('https://api.example.com/users/123?filter=active');
+    expect(result.request.url).toBe(
+      'https://api.example.com/users/123?filter=active',
+    );
   });
 
   it('should resolve URL without path and query parameters', () => {
@@ -49,8 +51,8 @@ describe('UrlResolveInterceptor', () => {
 
     const exchange: FetchExchange = {
       fetcher,
-      url: '/users',
       request: {
+        url: '/users',
         method: 'GET',
       },
       response: undefined,
@@ -60,7 +62,7 @@ describe('UrlResolveInterceptor', () => {
 
     const result = interceptor.intercept(exchange);
 
-    expect(result.url).toBe('https://api.example.com/users');
+    expect(result.request.url).toBe('https://api.example.com/users');
   });
 
   it('should resolve URL with only path parameters', () => {
@@ -69,8 +71,8 @@ describe('UrlResolveInterceptor', () => {
 
     const exchange: FetchExchange = {
       fetcher,
-      url: '/users/{id}/posts/{postId}',
       request: {
+        url: '/users/{id}/posts/{postId}',
         method: 'GET',
         path: { id: 123, postId: 456 },
       },
@@ -81,7 +83,9 @@ describe('UrlResolveInterceptor', () => {
 
     const result = interceptor.intercept(exchange);
 
-    expect(result.url).toBe('https://api.example.com/users/123/posts/456');
+    expect(result.request.url).toBe(
+      'https://api.example.com/users/123/posts/456',
+    );
   });
 
   it('should resolve URL with only query parameters', () => {
@@ -90,8 +94,8 @@ describe('UrlResolveInterceptor', () => {
 
     const exchange: FetchExchange = {
       fetcher,
-      url: '/users',
       request: {
+        url: '/users',
         method: 'GET',
         query: {
           filter: 'active',
@@ -105,7 +109,7 @@ describe('UrlResolveInterceptor', () => {
 
     const result = interceptor.intercept(exchange);
 
-    expect(result.url).toBe(
+    expect(result.request.url).toBe(
       'https://api.example.com/users?filter=active&limit=10',
     );
   });
@@ -116,8 +120,8 @@ describe('UrlResolveInterceptor', () => {
 
     const exchange: FetchExchange = {
       fetcher,
-      url: '/users',
       request: {
+        url: '/users',
         method: 'GET',
         query: {
           tags: ['important', 'urgent'],
@@ -132,8 +136,8 @@ describe('UrlResolveInterceptor', () => {
     const result = interceptor.intercept(exchange);
 
     // Check that the URL contains the expected parameters
-    expect(result.url).toContain('https://api.example.com/users');
-    expect(result.url).toContain('tags=important');
-    expect(result.url).toContain('status=active');
+    expect(result.request.url).toContain('https://api.example.com/users');
+    expect(result.request.url).toContain('tags=important');
+    expect(result.request.url).toContain('status=active');
   });
 });

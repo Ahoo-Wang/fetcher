@@ -11,11 +11,8 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi } from 'vitest';
-import { CoSecResponseInterceptor } from '../src';
-import { DeviceIdStorage } from '../src';
-import { TokenStorage } from '../src';
-import { InMemoryStorage } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import { CoSecResponseInterceptor, DeviceIdStorage, InMemoryStorage, TokenStorage } from '../src';
 import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
 
 describe('CoSecResponseInterceptor', () => {
@@ -38,8 +35,8 @@ describe('CoSecResponseInterceptor', () => {
     const fetcher = new Fetcher();
     const exchange: FetchExchange = {
       fetcher,
-      url: 'https://api.example.com/test',
       request: {
+        url: 'https://api.example.com/test',
         method: 'GET',
       },
       response: undefined,
@@ -71,8 +68,8 @@ describe('CoSecResponseInterceptor', () => {
     const fetcher = new Fetcher();
     const exchange: FetchExchange = {
       fetcher,
-      url: 'https://api.example.com/test',
       request: {
+        url: 'https://api.example.com/test',
         method: 'GET',
       },
       response: new Response('Forbidden', { status: 403 }),
@@ -106,8 +103,8 @@ describe('CoSecResponseInterceptor', () => {
     const fetcher = new Fetcher();
     const exchange: FetchExchange = {
       fetcher,
-      url: 'https://api.example.com/test',
       request: {
+        url: 'https://api.example.com/test',
         method: 'GET',
       },
       response: new Response('Unauthorized', { status: 401 }),
@@ -150,8 +147,8 @@ describe('CoSecResponseInterceptor', () => {
     const fetcher = new Fetcher();
     const exchange: FetchExchange = {
       fetcher,
-      url: 'https://api.example.com/test',
       request: {
+        url: 'https://api.example.com/test',
         method: 'GET',
       },
       response: new Response('Unauthorized', { status: 401 }),
@@ -161,8 +158,8 @@ describe('CoSecResponseInterceptor', () => {
     // Mock the fetcher's request method to avoid actual network calls
     const requestMock = vi.fn().mockResolvedValue({
       fetcher,
-      url: 'https://api.example.com/test',
       request: {
+        url: 'https://api.example.com/test',
         method: 'GET',
       },
       response: new Response('OK', { status: 200 }),
@@ -177,7 +174,8 @@ describe('CoSecResponseInterceptor', () => {
       refreshToken: 'old-refresh-token',
     });
     expect(tokenStorage.get()).toEqual(newToken);
-    expect(requestMock).toHaveBeenCalledWith('https://api.example.com/test', {
+    expect(requestMock).toHaveBeenCalledWith({
+      url: 'https://api.example.com/test',
       method: 'GET',
     });
   });
@@ -207,8 +205,8 @@ describe('CoSecResponseInterceptor', () => {
     const fetcher = new Fetcher();
     const exchange: FetchExchange = {
       fetcher,
-      url: 'https://api.example.com/test',
       request: {
+        url: 'https://api.example.com/test',
         method: 'GET',
       },
       response: new Response('Unauthorized', { status: 401 }),

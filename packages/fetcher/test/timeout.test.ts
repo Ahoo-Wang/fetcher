@@ -123,7 +123,9 @@ describe('timeout.ts', () => {
       });
 
       // Mock global fetch
-      const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse);
+      const mockFetch = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(mockResponse);
 
       const url = 'https://api.example.com/users';
       const request = { url, method: HttpMethod.GET };
@@ -144,7 +146,9 @@ describe('timeout.ts', () => {
       });
 
       // Mock global fetch
-      const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse);
+      const mockFetch = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(mockResponse);
 
       const url = 'https://api.example.com/users';
       const timeout = 1000;
@@ -152,9 +156,12 @@ describe('timeout.ts', () => {
 
       const response = await timeoutFetch(request);
 
-      expect(mockFetch).toHaveBeenCalledWith(url, expect.objectContaining({
-        signal: expect.any(AbortSignal),
-      }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          signal: expect.any(AbortSignal),
+        }),
+      );
       expect(response).toBe(mockResponse);
 
       // Clean up
@@ -173,8 +180,14 @@ describe('timeout.ts', () => {
       const request = { url, method: HttpMethod.GET, timeout };
 
       await expect(timeoutFetch(request)).rejects.toThrow(FetchTimeoutError);
-      await expect(timeoutFetch(request)).rejects.toHaveProperty('url', url);
-      await expect(timeoutFetch(request)).rejects.toHaveProperty('timeout', timeout);
+      await expect(timeoutFetch(request)).rejects.toHaveProperty(
+        'request.url',
+        url,
+      );
+      await expect(timeoutFetch(request)).rejects.toHaveProperty(
+        'request.timeout',
+        timeout,
+      );
 
       // Clean up
       mockFetch.mockRestore();
@@ -187,7 +200,9 @@ describe('timeout.ts', () => {
       });
 
       // Mock global fetch
-      const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse);
+      const mockFetch = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(mockResponse);
 
       // Mock clearTimeout to verify it's called
       const mockClearTimeout = vi.spyOn(globalThis, 'clearTimeout');

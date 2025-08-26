@@ -116,9 +116,7 @@ export class FetchTimeoutError extends Error {
  * const response = await timeoutFetch('https://api.example.com/users', { method: 'GET' });
  * ```
  */
-export async function timeoutFetch(
-  request: FetchRequest,
-): Promise<Response> {
+export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   const url = request.url;
   const timeout = request.timeout;
   const requestInit = request as RequestInit;
@@ -130,8 +128,8 @@ export async function timeoutFetch(
   // Create AbortController for fetch request cancellation
   const controller = new AbortController();
   // Create a new request object to avoid modifying the original request object
-  const fetchRequest = {
-    ...request,
+  const fetchRequest: RequestInit = {
+    ...requestInit,
     signal: controller.signal,
   };
 
@@ -152,10 +150,7 @@ export async function timeoutFetch(
 
   try {
     // Race between fetch request and timeout Promise
-    return await Promise.race([
-      fetch(url, requestInit),
-      timeoutPromise,
-    ]);
+    return await Promise.race([fetch(url, fetchRequest), timeoutPromise]);
   } finally {
     // Clean up timer resources
     if (timerId) {
