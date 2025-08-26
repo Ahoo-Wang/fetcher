@@ -154,7 +154,7 @@ export class Fetcher
       // Apply error interceptors
       fetchExchange.error = error;
       await this.interceptors.error.intercept(fetchExchange);
-      if (fetchExchange.response) {
+      if (fetchExchange.hasResponse()) {
         return fetchExchange;
       }
       throw fetchExchange.error;
