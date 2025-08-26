@@ -33,15 +33,7 @@ describe('EventStreamInterceptor Integration', () => {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: {
-        url: 'http://example.com/events',
-        method: 'GET',
-      },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
     interceptor.intercept(exchange);
 
@@ -51,15 +43,7 @@ describe('EventStreamInterceptor Integration', () => {
   });
 
   it('should not modify exchange when response is undefined', () => {
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: {
-        url: 'http://example.com/events',
-        method: 'GET',
-      },
-      response: undefined,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' });
 
     interceptor.intercept(exchange);
 
@@ -73,15 +57,7 @@ describe('EventStreamInterceptor Integration', () => {
       headers: { 'content-type': 'application/json' },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: {
-        url: 'http://example.com/api',
-        method: 'GET',
-      },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
     interceptor.intercept(exchange);
 
@@ -94,15 +70,7 @@ describe('EventStreamInterceptor Integration', () => {
       headers: { 'content-type': 'text/event-stream' },
     });
 
-    const exchange: FetchExchange = {
-      fetcher: mockFetcher,
-      request: {
-        url: 'http://example.com/events',
-        method: 'GET',
-      },
-      response: response,
-      error: undefined,
-    };
+    const exchange: FetchExchange = new FetchExchange(mockFetcher, { url: 'http://example.com' }, response);
 
     interceptor.intercept(exchange);
 
