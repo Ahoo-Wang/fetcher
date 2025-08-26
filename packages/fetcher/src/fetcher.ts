@@ -14,7 +14,7 @@
 import { UrlBuilder, UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, TimeoutCapable } from './timeout';
 import { FetcherInterceptors } from './interceptor';
-import { FetchExchange } from './fetchExchange';
+import { ExchangeError, FetchExchange } from './fetchExchange';
 import {
   BaseURLCapable,
   ContentTypeValues,
@@ -145,22 +145,6 @@ export class Fetcher
     return this.exchange(exchange);
   }
 
-  /**
-   * Processes a FetchExchange through the interceptor chain.
-   *
-   * Orchestrates the complete request lifecycle by applying interceptors in sequence:
-   * 1. Request interceptors - Modify the outgoing request
-   * 2. Response interceptors - Process the incoming response
-   *
-   * Error handling follows this flow:
-   * - If an error occurs, error interceptors are invoked
-   * - If an error interceptor produces a response, it's returned
-   * - Otherwise, the original error is re-thrown
-   *
-   * @param fetchExchange - The exchange object containing request and response data
-   * @returns Promise resolving to the processed exchange
-   * @throws Error if an unhandled error occurs during processing
-   */
   async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
     try {
       // Apply request interceptors
@@ -168,14 +152,19 @@ export class Fetcher
       // Apply response interceptors
       await this.interceptors.response.intercept(fetchExchange);
       return fetchExchange;
-    } catch (error) {
+    } catch (error: any) {
       // Apply error interceptors
       fetchExchange.error = error;
       await this.interceptors.error.intercept(fetchExchange);
-      if (fetchExchange.hasResponse()) {
+
+      // If error interceptors cleared the error (indicating it's been handled/fixed), return the exchange
+      if (!fetchExchange.hasError()) {
         return fetchExchange;
       }
-      throw fetchExchange.error;
+
+      // Otherwise, wrap the error in ExchangeError
+      // Use fetchExchange.error.message to respect modifications made by error interceptors
+      throw new ExchangeError(fetchExchange);
     }
   }
 
