@@ -11,9 +11,22 @@
  * limitations under the License.
  */
 
+/**
+ * Transformer that splits text into lines.
+ *
+ * This transformer accumulates chunks of text and splits them by newline characters,
+ * emitting each line as a separate chunk while preserving the remaining buffer
+ * for the next chunk.
+ */
 export class TextLineTransformer implements Transformer<string, string> {
   private buffer = '';
 
+  /**
+   * Transform input string chunk by splitting it into lines.
+   *
+   * @param chunk Input string chunk
+   * @param controller Controller for controlling the transform stream
+   */
   transform(
     chunk: string,
     controller: TransformStreamDefaultController<string>,
@@ -31,6 +44,11 @@ export class TextLineTransformer implements Transformer<string, string> {
     }
   }
 
+  /**
+   * Flush remaining buffer when the stream ends.
+   *
+   * @param controller Controller for controlling the transform stream
+   */
   flush(controller: TransformStreamDefaultController<string>) {
     try {
       // Only send when buffer is not empty, avoid sending meaningless empty lines
@@ -43,6 +61,9 @@ export class TextLineTransformer implements Transformer<string, string> {
   }
 }
 
+/**
+ * A TransformStream that splits text into lines.
+ */
 export class TextLineTransformStream extends TransformStream<string, string> {
   constructor() {
     super(new TextLineTransformer());

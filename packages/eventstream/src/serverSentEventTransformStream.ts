@@ -12,8 +12,9 @@
  */
 
 /**
- * Represents a message sent in an event stream
- * https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format
+ * Represents a message sent in an event stream.
+ *
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format}
  */
 export interface ServerSentEvent {
   /** The event ID to set the EventSource object's last event ID value. */
@@ -75,8 +76,9 @@ interface EventState {
 }
 
 /**
- * ServerSentEventTransformer is responsible for converting a string stream into a ServerSentEvent object stream
- * Implements the Transformer interface for processing data transformation in TransformStream
+ * Transformer responsible for converting a string stream into a ServerSentEvent object stream.
+ *
+ * Implements the Transformer interface for processing data transformation in TransformStream.
  */
 export class ServerSentEventTransformer
   implements Transformer<string, ServerSentEvent>
@@ -90,7 +92,8 @@ export class ServerSentEventTransformer
   };
 
   /**
-   * Transform input string chunk into ServerSentEvent object
+   * Transform input string chunk into ServerSentEvent object.
+   *
    * @param chunk Input string chunk
    * @param controller Controller for controlling the transform stream
    */
@@ -162,7 +165,8 @@ export class ServerSentEventTransformer
   }
 
   /**
-   * Called when the stream ends, used to process remaining data
+   * Called when the stream ends, used to process remaining data.
+   *
    * @param controller Controller for controlling the transform stream
    */
   flush(controller: TransformStreamDefaultController<ServerSentEvent>) {
@@ -192,8 +196,7 @@ export class ServerSentEventTransformer
 }
 
 /**
- * ServerSentEventTransformStream is a TransformStream that converts a stream of strings
- * into a stream of ServerSentEvent objects.
+ * A TransformStream that converts a stream of strings into a stream of ServerSentEvent objects.
  */
 export class ServerSentEventTransformStream extends TransformStream<
   string,

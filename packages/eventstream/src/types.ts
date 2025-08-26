@@ -15,10 +15,21 @@ import { ServerSentEventStream } from './eventStreamConverter';
 
 declare global {
   interface Response {
+    /**
+     * Returns a ServerSentEventStream for consuming server-sent events.
+     *
+     * This method is added to Response objects by the EventStreamInterceptor
+     * when the response content type indicates a server-sent event stream.
+     *
+     * @returns A ReadableStream of ServerSentEvent objects
+     */
     eventStream?(): ServerSentEventStream;
   }
 
   interface ReadableStream<R = any> {
+    /**
+     * Makes ReadableStream async iterable for use with for-await loops.
+     */
     [Symbol.asyncIterator](): AsyncIterator<R>;
   }
 }
