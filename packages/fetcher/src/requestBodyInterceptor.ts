@@ -65,14 +65,16 @@ export class RequestBodyInterceptor implements Interceptor {
    *
    * @example
    * // Plain object body will be converted to JSON
-   * const exchange = {
-   *   request: {
+   * const fetcher = new Fetcher();
+   * const exchange = new FetchExchange(
+   *   fetcher,
+   *   {
    *     body: { name: 'John', age: 30 }
    *   }
-   * };
-   * const result = interceptor.intercept(exchange);
-   * // result.request.body will be '{"name":"John","age":30}'
-   * // result.request.headers will include 'Content-Type: application/json'
+   * );
+   * interceptor.intercept(exchange);
+   * // exchange.request.body will be '{"name":"John","age":30}'
+   * // exchange.request.headers will include 'Content-Type: application/json'
    */
   intercept(exchange: FetchExchange) {
     const request = exchange.request;
