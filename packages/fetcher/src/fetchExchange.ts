@@ -15,6 +15,23 @@ import { Fetcher } from './fetcher';
 import { FetchRequest } from './fetchRequest';
 
 /**
+ * Custom error class for FetchExchange related errors.
+ *
+ * This error is thrown when there are issues with the HTTP exchange process,
+ * such as when a request fails and no response is generated.
+ */
+export class ExchangeError extends Error {
+  constructor(
+    public readonly exchange: FetchExchange,
+  ) {
+    super(exchange.error.message);
+    this.name = 'ExchangeError';
+    this.stack = exchange.error.stack;
+    Object.setPrototypeOf(this, ExchangeError.prototype);
+  }
+}
+
+/**
  * Container for HTTP request/response data that flows through the interceptor chain.
  *
  * Represents the complete exchange object that flows through the interceptor chain.
