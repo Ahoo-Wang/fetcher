@@ -54,6 +54,12 @@ typings/
 # TypeScript cache
 *.tsbuildinfo
 
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
 # Optional npm cache directory
 .npm
 
