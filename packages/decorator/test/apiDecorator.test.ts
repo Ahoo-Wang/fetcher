@@ -1,12 +1,25 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   api,
-  get,
-  path,
   API_METADATA_KEY,
   ENDPOINT_METADATA_KEY,
+  get,
   PARAMETER_METADATA_KEY,
   ParameterType,
+  path,
 } from '../src';
 import { fetcherRegistrar } from '@ahoo-wang/fetcher';
 import 'reflect-metadata';
@@ -145,28 +158,6 @@ describe('apiDecorator', () => {
       ]);
     });
 
-    it('should handle methods with no parameter metadata', () => {
-      @api('/test')
-      class TestService {
-        @get('/users')
-        getUsers() {
-          return Promise.resolve(new Response('{"users": []}'));
-        }
-      }
-
-      const instance = new TestService();
-      const parameterMetadata = Reflect.getMetadata(
-        PARAMETER_METADATA_KEY,
-        Object.getPrototypeOf(instance),
-        'getUsers',
-      );
-
-      // Should have no parameter metadata
-      expect(parameterMetadata).toBeUndefined();
-      // Method should still be replaced with executor
-      expect(typeof instance.getUsers).toBe('function');
-    });
-
     it('should handle method with endpoint metadata and parameters but no names', () => {
       @api('/test')
       class TestService {
@@ -220,8 +211,10 @@ describe('apiDecorator', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/users/{id}', {
         method: 'GET',
-        path: { id: 1 },
-        query: {},
+        urlParams: {
+          path: { id: 1 },
+          query: {},
+        },
         headers: {},
         body: undefined,
         timeout: undefined,

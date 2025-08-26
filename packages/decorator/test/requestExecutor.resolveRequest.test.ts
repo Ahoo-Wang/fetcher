@@ -1,6 +1,18 @@
-import { describe, it, expect } from 'vitest';
-import { FunctionMetadata } from '../src';
-import { ParameterType } from '../src';
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { describe, expect, it } from 'vitest';
+import { FunctionMetadata, ParameterType } from '../src';
 import { HttpMethod } from '@ahoo-wang/fetcher';
 
 describe('FunctionMetadata.resolveRequest', () => {
@@ -19,14 +31,14 @@ describe('FunctionMetadata.resolveRequest', () => {
 
     const requestObject = {
       headers: { 'X-Custom': 'value' },
-      query: { filter: 'active' },
+      urlParams: { query: { filter: 'active' } },
       timeout: 5000,
     };
     const request = metadata.resolveRequest([requestObject]);
     expect(request.headers).toEqual({
       'X-Custom': 'value',
     });
-    expect(request.query).toEqual({ filter: 'active' });
+    expect(request.urlParams?.query).toEqual({ filter: 'active' });
     expect(request.timeout).toBe(5000);
   });
 
@@ -50,19 +62,19 @@ describe('FunctionMetadata.resolveRequest', () => {
 
     const requestObject = {
       headers: { 'X-Custom': 'value' },
-      query: { filter: 'active' },
+      urlParams: { query: { filter: 'active' } },
       timeout: 5000,
     };
     const request = metadata.resolveRequest([123, requestObject]);
 
     // Path parameter should be merged
-    expect(request.path).toEqual({ id: 123 });
+    expect(request.urlParams?.path).toEqual({ id: 123 });
 
     // Parameter request should take precedence
     expect(request.headers).toEqual({
       'X-Custom': 'value',
     });
-    expect(request.query).toEqual({ filter: 'active' });
+    expect(request.urlParams?.query).toEqual({ filter: 'active' });
     expect(request.timeout).toBe(5000);
   });
 
@@ -118,7 +130,7 @@ describe('FunctionMetadata.resolveRequest', () => {
     // Should fall back to endpoint configuration
     expect(request.method).toBe(HttpMethod.GET);
     // Path parameter should still be processed
-    expect(request.path).toEqual({ id: 456 });
+    expect(request.urlParams?.path).toEqual({ id: 456 });
   });
 
   it('should merge nested objects correctly', () => {
@@ -145,18 +157,20 @@ describe('FunctionMetadata.resolveRequest', () => {
     );
 
     const requestObject = {
-      path: { postId: 123 },
-      query: { filter: 'active' },
+      urlParams: {
+        path: { postId: 123 },
+        query: { filter: 'active' },
+      },
       headers: { Authorization: 'Bearer token' },
     };
     const request = metadata.resolveRequest([requestObject, 789, 2]);
 
     // Should merge nested objects
-    expect(request.path).toEqual({
+    expect(request.urlParams?.path).toEqual({
       postId: 123,
       userId: 789,
     });
-    expect(request.query).toEqual({
+    expect(request.urlParams?.query).toEqual({
       filter: 'active',
       page: 2,
     });
