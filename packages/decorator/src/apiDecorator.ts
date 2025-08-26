@@ -1,4 +1,17 @@
-import { HeadersCapable, TimeoutCapable } from '@ahoo-wang/fetcher';
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { RequestHeaders, RequestHeadersCapable, TimeoutCapable } from '@ahoo-wang/fetcher';
 import { ENDPOINT_METADATA_KEY } from './endpointDecorator';
 import { FunctionMetadata, RequestExecutor } from './requestExecutor';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator';
@@ -11,7 +24,7 @@ import 'reflect-metadata';
  * These settings will be used as defaults for all endpoints within the class unless overridden
  * at the method level.
  */
-export interface ApiMetadata extends TimeoutCapable, HeadersCapable {
+export interface ApiMetadata extends TimeoutCapable, RequestHeadersCapable {
   /**
    * Base path for all endpoints in the class
    *
@@ -27,7 +40,7 @@ export interface ApiMetadata extends TimeoutCapable, HeadersCapable {
    * These headers will be included in every request made by methods in this class.
    * They can be overridden or extended at the method level.
    */
-  headers?: Record<string, string>;
+  headers?: RequestHeaders;
 
   /**
    * Default timeout for all requests in the class (in milliseconds)
