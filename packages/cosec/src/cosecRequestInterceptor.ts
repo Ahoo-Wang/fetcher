@@ -48,10 +48,9 @@ export class CoSecRequestInterceptor implements Interceptor {
    * - CoSec-Request-Id: A unique identifier for this specific request
    * - Authorization: Bearer token if available in token storage
    *
-   * @param exchange - The fetch exchange containing the request to be processed
    * @returns The modified exchange with CoSec authentication headers added
    */
-  intercept(exchange: FetchExchange): FetchExchange {
+  intercept(exchange: FetchExchange) {
     const requestId = idGenerator.generateId();
     const deviceId = this.options.deviceIdStorage.getOrCreate();
     const token = this.options.tokenStorage.get();
@@ -73,6 +72,5 @@ export class CoSecRequestInterceptor implements Interceptor {
         `Bearer ${token.accessToken}`;
     }
     exchange.request = newRequest;
-    return exchange;
   }
 }

@@ -71,8 +71,7 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  * ```
  */
 export class Fetcher
-  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable
-{
+  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable {
   urlBuilder: UrlBuilder;
   headers?: RequestHeaders = DEFAULT_HEADERS;
   timeout?: number;
@@ -153,14 +152,14 @@ export class Fetcher
   async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
     try {
       // Apply request interceptors
-      fetchExchange = await this.interceptors.request.intercept(fetchExchange);
+      await this.interceptors.request.intercept(fetchExchange);
       // Apply response interceptors
-      fetchExchange = await this.interceptors.response.intercept(fetchExchange);
+      await this.interceptors.response.intercept(fetchExchange);
       return fetchExchange;
     } catch (error) {
       // Apply error interceptors
       fetchExchange.error = error;
-      fetchExchange = await this.interceptors.error.intercept(fetchExchange);
+      await this.interceptors.error.intercept(fetchExchange);
       if (fetchExchange.response) {
         return fetchExchange;
       }

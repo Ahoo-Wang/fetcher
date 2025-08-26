@@ -47,22 +47,22 @@ export class CoSecResponseInterceptor implements Interceptor {
    * @returns Promise<FetchExchange> The processed exchange, either with a refreshed token or original error
    * @throws Error if token refresh fails or other errors occur during processing
    */
-  async intercept(exchange: FetchExchange): Promise<FetchExchange> {
+  async intercept(exchange: FetchExchange): Promise<void> {
     const response = exchange.response;
     if (!response) {
-      return exchange;
+      return;
     }
     if (response.status !== ResponseCodes.UNAUTHORIZED) {
-      return exchange;
+      return;
     }
     const currentToken = this.options.tokenStorage.get();
     if (!currentToken) {
-      return exchange;
+      return;
     }
     try {
       const newToken = await this.options.tokenRefresher.refresh(currentToken);
       this.options.tokenStorage.set(newToken);
-      return exchange.fetcher.request(exchange.request);
+      await exchange.fetcher.request(exchange.request);
     } catch (error) {
       // If token refresh fails, clear stored tokens and re-throw the error
       this.options.tokenStorage.clear();
