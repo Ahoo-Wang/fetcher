@@ -11,18 +11,53 @@
  * limitations under the License.
  */
 
+/**
+ * Merges two record objects, giving precedence to the second record for overlapping keys.
+ *
+ * This utility function is used to merge configuration objects where the second object
+ * takes precedence over the first when there are conflicting keys.
+ *
+ * @template V - The type of values in the records
+ * @param first - The first record to merge (lower precedence)
+ * @param second - The second record to merge (higher precedence)
+ * @returns A new merged record, or undefined if both inputs are undefined
+ *
+ * @example
+ * ```typescript
+ * // Merge two objects
+ * const defaults = { timeout: 5000, retries: 3 };
+ * const overrides = { timeout: 10000 };
+ * const result = mergeRecords(defaults, overrides);
+ * // Result: { timeout: 10000, retries: 3 }
+ *
+ * // Handle undefined values
+ * const result2 = mergeRecords(undefined, { timeout: 5000 });
+ * // Result: { timeout: 5000 }
+ *
+ * // Return undefined when both are undefined
+ * const result3 = mergeRecords(undefined, undefined);
+ * // Result: undefined
+ * ```
+ */
 export function mergeRecords<V>(
   first?: Record<string, V>,
   second?: Record<string, V>,
 ): Record<string, V> | undefined {
+  // If both records are undefined, return undefined
   if (first === undefined && second === undefined) {
     return undefined;
   }
+
+  // If second record is undefined, return first record
   if (second === undefined) {
     return first;
   }
+
+  // If first record is undefined, return second record
   if (first === undefined) {
     return second;
   }
+
+  // Merge both records, with second taking precedence
   return { ...first, ...second };
 }
