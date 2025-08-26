@@ -17,6 +17,7 @@ import { BaseURLCapable, ContentTypeHeader, ContentTypeValues, HeadersCapable, H
 import { FetcherInterceptors } from './interceptor';
 import { FetchExchange } from './fetchExchange';
 import { FetchRequest, FetchRequestInit } from './fetchRequest';
+import { mergeRecords } from './utils';
 
 /**
  * Fetcher configuration options interface
@@ -95,15 +96,11 @@ export class Fetcher implements UrlBuilderCapable, HeadersCapable, TimeoutCapabl
     request: FetchRequest,
   ): Promise<FetchExchange> {
     // Merge default headers and request-level headers
-    const mergedHeaders = {
-      ...(this.headers || {}),
-      ...(request.headers || {}),
-    };
+    const mergedHeaders = mergeRecords(request.headers, this.headers);
     // Merge request options
     const fetchRequest: FetchRequest = {
       ...request,
-      headers:
-        Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined,
+      headers: mergedHeaders,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
     const exchange: FetchExchange = {

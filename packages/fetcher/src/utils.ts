@@ -11,19 +11,18 @@
  * limitations under the License.
  */
 
-export * from './fetcher';
-export * from './fetcherRegistrar';
-export * from './fetchExchange';
-export * from './fetchInterceptor';
-export * from './fetchRequest';
-export * from './interceptor';
-export * from './mergeRequest';
-export * from './namedFetcher';
-export * from './orderedCapable';
-export * from './requestBodyInterceptor';
-export * from './timeout';
-export * from './types';
-export * from './urlBuilder';
-export * from './urlResolveInterceptor';
-export * from './urls';
-export * from './utils';
+export function mergeRecords<V>(
+  first?: Record<string, V>,
+  second?: Record<string, V>,
+): Record<string, V> | undefined {
+  if (first === undefined && second === undefined) {
+    return undefined;
+  }
+  if (second === undefined) {
+    return first;
+  }
+  if (first === undefined) {
+    return second;
+  }
+  return { ...first, ...second };
+}
