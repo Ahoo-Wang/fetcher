@@ -154,14 +154,11 @@ fetcher.interceptors.request.use({
   name: 'auth-interceptor',
   order: 100, // 数值越小优先级越高
   intercept(exchange) {
-    return {
-      ...exchange,
-      request: {
-        ...exchange.request,
-        headers: {
-          ...exchange.request.headers,
-          Authorization: 'Bearer ' + getAuthToken(),
-        },
+    exchange.request = {
+      ...exchange.request,
+      headers: {
+        ...exchange.request.headers,
+        Authorization: 'Bearer ' + getAuthToken(),
       },
     };
   },
@@ -172,8 +169,7 @@ fetcher.interceptors.request.use({
   name: 'logging-interceptor',
   order: 50, // 在 auth-interceptor 之前执行
   intercept(exchange) {
-    console.log('发送请求:', exchange.request.method, exchange.url);
-    return exchange;
+    console.log('发送请求:', exchange.request.method, exchange.request.url);
   },
 });
 
@@ -183,7 +179,6 @@ fetcher.interceptors.response.use({
   order: 10,
   intercept(exchange) {
     console.log('收到响应:', exchange.response.status);
-    return exchange;
   },
 });
 
