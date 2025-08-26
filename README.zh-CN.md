@@ -8,13 +8,13 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-一个现代、超轻量级（1.9kB）的 HTTP 客户端，内置路径参数、查询参数和类似 Axios 的 API。比 Axios 小 86%，同时提供相同的强大功能。
+一个现代、超轻量级的 HTTP 客户端，内置路径参数、查询参数和类似 Axios 的 API。比 Axios 小 83%，同时提供相同的强大功能。
 
 ## 🌟 特性
 
 #### [`@ahoo-wang/fetcher`](./packages/fetcher)
 
-- **⚡ 超轻量级**：仅 1.9kB min+gzip - 比 Axios 小 86%
+- **⚡ 超轻量级**：仅 2.3KiB min+gzip - 比 Axios 小 83%
 - **🧭 路径和查询参数**：内置支持路径（`{id}`）和查询参数
 - **🔗 拦截器系统**：带有序执行的请求、响应和错误拦截器，支持灵活的中间件模式
 - **⏱️ 超时控制**：可配置的请求超时和适当的错误处理
