@@ -26,7 +26,7 @@ export class RequestBodyInterceptor implements Interceptor {
   /**
    * Interceptor name, used for identification and management.
    */
-  name = 'RequestBodyInterceptor';
+  readonly name = 'RequestBodyInterceptor';
 
   /**
    * Interceptor execution order, set to run after UrlResolveInterceptor but before FetchInterceptor.
@@ -37,7 +37,7 @@ export class RequestBodyInterceptor implements Interceptor {
    * in the interceptor chain, allowing for other interceptors to run between URL resolution
    * and request body processing.
    */
-  order = Number.MIN_SAFE_INTEGER + 200;
+  readonly order = Number.MIN_SAFE_INTEGER + 200;
 
   /**
    * Attempts to convert request body to a valid fetch API body type.

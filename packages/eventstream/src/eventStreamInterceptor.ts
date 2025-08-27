@@ -12,12 +12,7 @@
  */
 
 import { toServerSentEventStream } from './eventStreamConverter';
-import {
-  ContentTypeHeader,
-  ContentTypeValues,
-  FetchExchange,
-  Interceptor,
-} from '@ahoo-wang/fetcher';
+import { ContentTypeHeader, ContentTypeValues, FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
 
 /**
  * Interceptor that enhances Response objects with event stream capabilities.
@@ -46,8 +41,8 @@ import {
  * ```
  */
 export class EventStreamInterceptor implements Interceptor {
-  name = 'EventStreamInterceptor';
-  order = Number.MAX_SAFE_INTEGER - 100;
+  readonly name = 'EventStreamInterceptor';
+  readonly order = Number.MAX_SAFE_INTEGER - 100;
 
   intercept(exchange: FetchExchange) {
     // Check if the response is an event stream

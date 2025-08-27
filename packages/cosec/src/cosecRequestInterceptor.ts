@@ -31,8 +31,8 @@ import { idGenerator } from './idGenerator';
  * while ensuring it runs before FetchInterceptor.
  */
 export class CoSecRequestInterceptor implements Interceptor {
-  name = 'CoSecRequestInterceptor';
-  order = Number.MIN_SAFE_INTEGER + 1000;
+  readonly name = 'CoSecRequestInterceptor';
+  readonly order = Number.MIN_SAFE_INTEGER + 1000;
   private options: CoSecOptions;
 
   constructor(options: CoSecOptions) {

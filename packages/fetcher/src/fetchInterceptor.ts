@@ -35,7 +35,7 @@ export class FetchInterceptor implements Interceptor {
    * Each interceptor must have a unique name for identification and manipulation
    * within the interceptor manager.
    */
-  name = 'FetchInterceptor';
+  readonly name = 'FetchInterceptor';
 
   /**
    * Interceptor execution order, set to near maximum safe integer to ensure last execution.
@@ -46,7 +46,7 @@ export class FetchInterceptor implements Interceptor {
    * completed before the actual network request is made, while still allowing
    * other interceptors to run after it if needed.
    */
-  order = Number.MAX_SAFE_INTEGER - 100;
+  readonly order = Number.MAX_SAFE_INTEGER - 100;
 
   /**
    * Intercept and process HTTP requests.

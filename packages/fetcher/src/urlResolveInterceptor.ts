@@ -33,7 +33,7 @@ export class UrlResolveInterceptor implements Interceptor {
   /**
    * The name of this interceptor.
    */
-  name = 'UrlResolveInterceptor';
+  readonly name = 'UrlResolveInterceptor';
 
   /**
    * The order of this interceptor (executed first).
@@ -43,7 +43,7 @@ export class UrlResolveInterceptor implements Interceptor {
    * Number.MIN_SAFE_INTEGER + 100 to allow for other interceptors that need to run
    * even earlier while still maintaining a high priority.
    */
-  order = Number.MIN_SAFE_INTEGER + 100;
+  readonly order = Number.MIN_SAFE_INTEGER + 100;
 
   /**
    * Resolves the final URL by combining the base URL, path parameters, and query parameters.
