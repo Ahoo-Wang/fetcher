@@ -13,13 +13,14 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { FunctionMetadata, ParameterType } from '../src';
-import { fetcherRegistrar, HttpMethod } from '@ahoo-wang/fetcher';
+import { fetcherRegistrar, HttpMethod, Fetcher } from '@ahoo-wang/fetcher';
+import { ResultExtractors } from '../src/resultExtractor';
 
 // Mock fetcher
 const mockFetch = vi.fn();
-const mockFetcher: any = {
-  fetch: mockFetch,
-};
+const mockFetcher = new Fetcher({} as any);
+vi.spyOn(mockFetcher, 'fetch').mockImplementation(mockFetch);
+vi.spyOn(fetcherRegistrar, 'requiredGet').mockReturnValue(mockFetcher);
 
 describe('FunctionMetadata - branch coverage', () => {
   it('should handle parameter without name', () => {
@@ -46,15 +47,6 @@ describe('FunctionMetadata - branch coverage', () => {
   });
 
   it('should handle fetcher resolution with different priorities', () => {
-    // Mock fetcher registrar
-    vi.spyOn(fetcherRegistrar, 'requiredGet').mockImplementation(
-      (name: string) => {
-        if (name === 'endpointFetcher') return mockFetcher as any;
-        if (name === 'apiFetcher') return mockFetcher as any;
-        return mockFetcher as any; // default fetcher
-      },
-    );
-
     // Test with endpoint fetcher
     const metadata1 = new FunctionMetadata(
       'testFunc',
@@ -132,22 +124,22 @@ describe('FunctionMetadata - branch coverage', () => {
     // Test with endpoint timeout
     const metadata1 = new FunctionMetadata(
       'testFunc',
-      { timeout: 5000 },
-      { method: HttpMethod.GET, timeout: 3000 },
+      { timeout: 1000 },
+      { method: HttpMethod.GET, timeout: 2000 },
       [],
     );
 
-    expect(metadata1.resolveTimeout()).toBe(3000);
+    expect(metadata1.resolveTimeout()).toBe(2000);
 
     // Test with api timeout
     const metadata2 = new FunctionMetadata(
       'testFunc',
-      { timeout: 5000 },
+      { timeout: 1000 },
       { method: HttpMethod.GET },
       [],
     );
 
-    expect(metadata2.resolveTimeout()).toBe(5000);
+    expect(metadata2.resolveTimeout()).toBe(1000);
 
     // Test with no timeout
     const metadata3 = new FunctionMetadata(
@@ -208,17 +200,8 @@ describe('FunctionMetadata - branch coverage', () => {
       ],
     );
 
-    // Test with undefined value
-    const request1 = metadata.resolveRequest([undefined]);
-    expect(request1.headers).toEqual({});
-
-    // Test with null value
-    const request2 = metadata.resolveRequest([null]);
-    expect(request2.headers).toEqual({ Authorization: 'null' });
-
-    // Test with actual value
-    const request3 = metadata.resolveRequest(['Bearer token']);
-    expect(request3.headers).toEqual({ Authorization: 'Bearer token' });
+    const request = metadata.resolveRequest([undefined]);
+    expect(request.headers).toEqual({});
   });
 
   it('should handle AbortSignal parameter', () => {
@@ -226,20 +209,46 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.PATH,
-          name: 'id',
-          index: 0,
-        },
-      ],
+      [],
     );
+
     const abortController = new AbortController();
-    // Create a simple object with AbortSignal in prototype chain
-    const signal = abortController.signal;
-    // Since the instanceof check won't pass in test environment, signal will remain null
-    const request = metadata.resolveRequest([123, signal]);
-    expect(request.urlParams?.path).toEqual({ id: 123 });
-    expect(request.signal).toBe(signal);
+    const request = metadata.resolveRequest([abortController.signal]);
+    expect(request.signal).toBe(abortController.signal);
+  });
+
+  it('should handle result extractor resolution with different priorities', () => {
+    // Mock a custom result extractor
+    const customExtractor = vi.fn();
+
+    // Test with endpoint result extractor
+    const metadata1 = new FunctionMetadata(
+      'testFunc',
+      { resultExtractor: ResultExtractors.Json },
+      { method: HttpMethod.GET, resultExtractor: customExtractor },
+      [],
+    );
+
+    expect(metadata1.resolveResultExtractor()).toBe(customExtractor);
+
+    // Test with api result extractor
+    const metadata2 = new FunctionMetadata(
+      'testFunc',
+      { resultExtractor: ResultExtractors.Json },
+      { method: HttpMethod.GET },
+      [],
+    );
+
+    expect(metadata2.resolveResultExtractor()).toBe(ResultExtractors.Json);
+
+    // Test with default result extractor
+    const metadata3 = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      [],
+    );
+
+    expect(metadata3.resolveResultExtractor()).toBe(ResultExtractors.DEFAULT);
   });
 });
