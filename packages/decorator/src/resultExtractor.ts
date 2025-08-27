@@ -93,7 +93,7 @@ export const ServerSentEventStreamResultExtractor: ResultExtractor = (
     throw new ExchangeError(exchange, 'ServerSentEventStream is not supported');
   }
   // Return the event stream
-  return exchange.requiredResponse.eventStream();
+  return exchange.requiredResponse.eventStream()!;
 };
 
 /**
