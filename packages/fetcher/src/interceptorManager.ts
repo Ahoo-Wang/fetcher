@@ -4,6 +4,7 @@ import { FetchInterceptor } from './fetchInterceptor';
 import { FetchExchange } from './fetchExchange';
 import { FetcherError } from './fetcherError';
 import { InterceptorRegistry } from './interceptor';
+import { ValidateStatusInterceptor } from './validateStatusInterceptor';
 
 /**
  * Custom error class for FetchExchange related errors.
@@ -103,14 +104,19 @@ export class InterceptorManager {
   /**
    * Manager for response-phase interceptors.
    *
-   * Executed after HTTP responses are received. Empty by default, custom response processing
-   * logic can be added as needed.
+   * Executed after HTTP responses are received. Contains ValidateStatusInterceptor by default
+   * which validates HTTP status codes and throws errors for invalid statuses.
    *
    * @remarks
    * Response interceptors are executed in ascending order of their order values, with smaller
    * values having higher priority.
+   *
+   * By default, the response interceptor registry has one built-in interceptor registered:
+   * 1. ValidateStatusInterceptor - Validates HTTP status codes and throws HttpStatusValidationError for invalid statuses
    */
-  response: InterceptorRegistry = new InterceptorRegistry();
+  response: InterceptorRegistry = new InterceptorRegistry([
+    new ValidateStatusInterceptor(),
+  ]);
 
   /**
    * Manager for error-handling phase interceptors.
