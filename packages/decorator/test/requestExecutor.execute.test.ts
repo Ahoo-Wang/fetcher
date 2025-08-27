@@ -74,7 +74,7 @@ describe('RequestExecutor - execute method', () => {
       signal: undefined,
     });
 
-    expect(result).toBe(mockResponse);
+    expect(result).toEqual({ id: 1, name: 'John' });
   });
 
   it('should execute HTTP request with query parameters', async () => {
@@ -121,7 +121,7 @@ describe('RequestExecutor - execute method', () => {
       signal: undefined,
     });
 
-    expect(result).toBe(mockResponse);
+    expect(result).toEqual({ users: [{ id: 1, name: 'John' }] });
   });
 
   it('should execute HTTP request with headers', async () => {
@@ -167,7 +167,7 @@ describe('RequestExecutor - execute method', () => {
       signal: undefined,
     });
 
-    expect(result).toBe(mockResponse);
+    expect(result).toEqual({ id: 1, name: 'John' });
   });
 
   it('should execute HTTP request with timeout', async () => {
@@ -209,7 +209,7 @@ describe('RequestExecutor - execute method', () => {
       signal: undefined,
     });
 
-    expect(result).toBe(mockResponse);
+    expect(result).toEqual({ id: 1, name: 'John' });
   });
 
   it('should execute HTTP request with AbortSignal', async () => {
@@ -252,6 +252,6 @@ describe('RequestExecutor - execute method', () => {
       signal: abortController.signal,
     });
 
-    expect(result).toBe(mockResponse);
+    expect(result).toEqual({ id: 1, name: 'John' });
   });
 });
