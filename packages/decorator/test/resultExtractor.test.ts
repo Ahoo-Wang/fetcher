@@ -12,7 +12,14 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { ResultExtractors } from '../src/resultExtractor';
+import {
+  ResultExtractors,
+  ExchangeResultExtractor,
+  ResponseResultExtractor,
+  JsonResultExtractor,
+  TextResultExtractor,
+  ServerSentEventStreamResultExtractor,
+} from '../src/resultExtractor';
 import { ExchangeError, FetchExchange, FetchRequest } from '@ahoo-wang/fetcher';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 
@@ -21,21 +28,21 @@ describe('ResultExtractor', () => {
   const mockRequest = { url: '/test' } as FetchRequest;
   const mockExchange = new FetchExchange({} as any, mockRequest, mockResponse);
 
-  describe('Exchange', () => {
+  describe('ExchangeResultExtractor', () => {
     it('should return the original FetchExchange object', () => {
-      const result = ResultExtractors.Exchange(mockExchange);
+      const result = ExchangeResultExtractor(mockExchange);
       expect(result).toBe(mockExchange);
     });
   });
 
-  describe('Response', () => {
+  describe('ResponseResultExtractor', () => {
     it('should return the response object from FetchExchange', () => {
-      const result = ResultExtractors.Response(mockExchange);
+      const result = ResponseResultExtractor(mockExchange);
       expect(result).toBe(mockResponse);
     });
   });
 
-  describe('Json', () => {
+  describe('JsonResultExtractor', () => {
     it('should parse the response content as JSON format', async () => {
       const jsonResponse = new Response(
         JSON.stringify({ id: 1, name: 'John' }),
@@ -46,7 +53,7 @@ describe('ResultExtractor', () => {
         jsonResponse,
       );
 
-      const result = ResultExtractors.Json(jsonExchange);
+      const result = JsonResultExtractor(jsonExchange);
       expect(result).toBeInstanceOf(Promise);
 
       const data = await result;
@@ -54,7 +61,7 @@ describe('ResultExtractor', () => {
     });
   });
 
-  describe('Text', () => {
+  describe('TextResultExtractor', () => {
     it('should parse the response content as text format', async () => {
       const textResponse = new Response('Hello World');
       const textExchange = new FetchExchange(
@@ -63,7 +70,7 @@ describe('ResultExtractor', () => {
         textResponse,
       );
 
-      const result = ResultExtractors.Text(textExchange);
+      const result = TextResultExtractor(textExchange);
       expect(result).toBeInstanceOf(Promise);
 
       const data = await result;
@@ -71,7 +78,7 @@ describe('ResultExtractor', () => {
     });
   });
 
-  describe('ServerSentEventStream', () => {
+  describe('ServerSentEventStreamResultExtractor', () => {
     it('should return ServerSentEventStream when response supports event stream', () => {
       const eventStreamResponse = new Response('');
 
@@ -89,8 +96,7 @@ describe('ResultExtractor', () => {
         eventStreamResponse,
       );
 
-      const result =
-        ResultExtractors.ServerSentEventStream(eventStreamExchange);
+      const result = ServerSentEventStreamResultExtractor(eventStreamExchange);
       expect(result).toBe(mockEventStream);
     });
 
@@ -110,14 +116,20 @@ describe('ResultExtractor', () => {
       );
 
       expect(() =>
-        ResultExtractors.ServerSentEventStream(noEventStreamExchange),
+        ServerSentEventStreamResultExtractor(noEventStreamExchange),
       ).toThrow(ExchangeError);
     });
   });
 
-  describe('DEFAULT', () => {
-    it('should be the Response extractor by default', () => {
-      expect(ResultExtractors.DEFAULT).toBe(ResultExtractors.Response);
+  describe('ResultExtractors object', () => {
+    it('should contain all result extractors', () => {
+      expect(ResultExtractors.Exchange).toBe(ExchangeResultExtractor);
+      expect(ResultExtractors.Response).toBe(ResponseResultExtractor);
+      expect(ResultExtractors.Json).toBe(JsonResultExtractor);
+      expect(ResultExtractors.Text).toBe(TextResultExtractor);
+      expect(ResultExtractors.ServerSentEventStream).toBe(
+        ServerSentEventStreamResultExtractor,
+      );
     });
   });
 });

@@ -21,7 +21,9 @@ import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
  * @returns Returns a value of type FetchExchange, Response, or Promise<any>
  */
 export interface ResultExtractor {
-  (exchange: FetchExchange): FetchExchange | Response | Promise<any> | ServerSentEventStream;
+  (
+    exchange: FetchExchange,
+  ): FetchExchange | Response | Promise<any> | ServerSentEventStream;
 }
 
 /**
@@ -37,7 +39,9 @@ export interface ResultExtractorCapable {
  * @param exchange - FetchExchange object
  * @returns The original FetchExchange object
  */
-export const ExchangeResultExtractor: ResultExtractor = (exchange: FetchExchange) => {
+export const ExchangeResultExtractor: ResultExtractor = (
+  exchange: FetchExchange,
+) => {
   return exchange;
 };
 
@@ -46,7 +50,9 @@ export const ExchangeResultExtractor: ResultExtractor = (exchange: FetchExchange
  * @param exchange - FetchExchange object
  * @returns The response object from FetchExchange
  */
-export const ResponseResultExtractor: ResultExtractor = (exchange: FetchExchange) => {
+export const ResponseResultExtractor: ResultExtractor = (
+  exchange: FetchExchange,
+) => {
   return exchange.requiredResponse;
 };
 
@@ -55,7 +61,9 @@ export const ResponseResultExtractor: ResultExtractor = (exchange: FetchExchange
  * @param exchange - FetchExchange object
  * @returns Promise of parsed JSON data
  */
-export const JsonResultExtractor: ResultExtractor = (exchange: FetchExchange) => {
+export const JsonResultExtractor: ResultExtractor = (
+  exchange: FetchExchange,
+) => {
   return exchange.requiredResponse.json();
 };
 
@@ -64,7 +72,9 @@ export const JsonResultExtractor: ResultExtractor = (exchange: FetchExchange) =>
  * @param exchange - FetchExchange object
  * @returns Promise of parsed text data
  */
-export const TextResultExtractor: ResultExtractor = (exchange: FetchExchange) => {
+export const TextResultExtractor: ResultExtractor = (
+  exchange: FetchExchange,
+) => {
   return exchange.requiredResponse.text();
 };
 
@@ -75,7 +85,9 @@ export const TextResultExtractor: ResultExtractor = (exchange: FetchExchange) =>
  * @returns Readable stream object of server-sent event stream
  * @throws ExchangeError exception when server does not support ServerSentEventStream
  */
-export const ServerSentEventStreamResultExtractor: ResultExtractor = (exchange: FetchExchange) => {
+export const ServerSentEventStreamResultExtractor: ResultExtractor = (
+  exchange: FetchExchange,
+) => {
   // Check if response supports event stream, throw exception if not supported
   if (!exchange.requiredResponse.eventStream) {
     throw new ExchangeError(exchange, 'ServerSentEventStream is not supported');
@@ -102,4 +114,5 @@ export const ResultExtractors = {
   Json: JsonResultExtractor,
   Text: TextResultExtractor,
   ServerSentEventStream: ServerSentEventStreamResultExtractor,
+  DEFAULT: ResponseResultExtractor,
 };
