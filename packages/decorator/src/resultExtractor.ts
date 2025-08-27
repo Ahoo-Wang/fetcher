@@ -13,6 +13,7 @@
 
 import { ExchangeError, FetchExchange } from '@ahoo-wang/fetcher';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
+import { CommandResultEventStream, toCommandResultEventStream } from '@ahoo-wang/fetcher-wow';
 
 /**
  * Result extractor interface
@@ -23,7 +24,7 @@ import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 export interface ResultExtractor {
   (
     exchange: FetchExchange,
-  ): FetchExchange | Response | Promise<any> | ServerSentEventStream;
+  ): FetchExchange | Response | Promise<any> | ServerSentEventStream | CommandResultEventStream;
 }
 
 /**
@@ -97,6 +98,22 @@ export const ServerSentEventStreamResultExtractor: ResultExtractor = (
 };
 
 /**
+ * Extracts command result event stream from the given exchange.
+ * This function transforms a server-sent event stream into a command result event stream.
+ *
+ * @param exchange - The exchange object containing the server-sent event stream data
+ * @returns A command result event stream derived from the server-sent event stream
+ */
+export const CommandResultEventStreamResultExtractor: ResultExtractor = (exchange) => {
+  // Extract the server-sent event stream from the exchange
+  const serverSentEventStream = ServerSentEventStreamResultExtractor(exchange) as ServerSentEventStream;
+
+  // Transform the server-sent event stream into a command result event stream
+  return toCommandResultEventStream(serverSentEventStream);
+};
+
+
+/**
  * ResultExtractors is an object that maps result extractor names to their corresponding
  * extractor functions. These extractors are used to process and extract data from different
  * types of responses or results in the application.
@@ -107,6 +124,7 @@ export const ServerSentEventStreamResultExtractor: ResultExtractor = (
  * - Json: Handles JSON format result extraction
  * - Text: Handles plain text result extraction
  * - ServerSentEventStream: Handles server-sent event stream result extraction
+ * - CommandResultEventStream: Handles command result event stream result extraction
  */
 export const ResultExtractors = {
   Exchange: ExchangeResultExtractor,
@@ -114,5 +132,6 @@ export const ResultExtractors = {
   Json: JsonResultExtractor,
   Text: TextResultExtractor,
   ServerSentEventStream: ServerSentEventStreamResultExtractor,
+  CommandResultEventStream: CommandResultEventStreamResultExtractor,
   DEFAULT: ResponseResultExtractor,
 };
