@@ -284,6 +284,51 @@ class UserService {
 }
 ```
 
+### Result Extractors
+
+Result extractors are used to process and extract data from different types of responses or results in the application.
+They allow you to customize how the response from an HTTP request is processed and returned.
+
+#### Available Result Extractors
+
+- **ExchangeResultExtractor**: Returns the original FetchExchange object
+- **ResponseResultExtractor**: Returns the response object from FetchExchange (default)
+- **JsonResultExtractor**: Parses the response content as JSON format
+- **TextResultExtractor**: Parses the response content as text format
+- **ServerSentEventStreamResultExtractor**: Extracts server-sent event stream from FetchExchange
+- **CommandResultEventStreamResultExtractor**: Extracts command result event stream from FetchExchange
+
+#### Using Result Extractors
+
+You can specify a result extractor at the class level or method level:
+
+```typescript
+import { ResultExtractors } from '@ahoo-wang/fetcher-decorator';
+
+@api('/users', { resultExtractor: ResultExtractors.Json })
+class UserService {
+  // Uses class-level JSON result extractor
+  @get('/{id}')
+  getUser(@path() id: number): Promise<User> {
+    throw new Error('Implementation will be generated automatically.');
+  }
+
+  // Overrides with ServerSentEventStream result extractor
+  @get('/events', { resultExtractor: ResultExtractors.ServerSentEventStream })
+  getUserEvents(): Promise<ServerSentEventStream> {
+    throw new Error('Implementation will be generated automatically.');
+  }
+
+  // Uses CommandResultEventStream result extractor for command handling
+  @post('/commands', {
+    resultExtractor: ResultExtractors.CommandResultEventStream,
+  })
+  executeCommand(@body() command: Command): Promise<CommandResultEventStream> {
+    throw new Error('Implementation will be generated automatically.');
+  }
+}
+```
+
 ## 🧪 Testing
 
 ```bash
