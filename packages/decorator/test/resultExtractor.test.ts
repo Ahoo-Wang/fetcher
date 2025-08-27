@@ -20,7 +20,7 @@ import {
   TextResultExtractor,
   ServerSentEventStreamResultExtractor,
   CommandResultEventStreamResultExtractor,
-} from '../src/resultExtractor';
+} from '../src';
 import { ExchangeError, FetchExchange, FetchRequest } from '@ahoo-wang/fetcher';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 import { CommandResultEventStream } from '@ahoo-wang/fetcher-wow';
