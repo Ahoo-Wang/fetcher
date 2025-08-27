@@ -45,7 +45,7 @@ export class TokenStorage {
     try {
       return JSON.parse(tokenStr);
     } catch (error) {
-      // If parsing fails, clear the invalid token and return null
+      console.warn('Failed to get token from storage:', error);
       this.clear();
       return null;
     }
