@@ -11,64 +11,97 @@
  * limitations under the License.
  */
 
-import { describe, it, expect } from 'vitest';
-import { DeviceIdStorage } from '../src';
-import { InMemoryStorage } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import { DEFAULT_COSEC_DEVICE_ID_KEY, DeviceIdStorage, InMemoryStorage, } from '../src';
 
-describe('DeviceIdStorage', () => {
-  it('should get existing device ID', () => {
-    const storage = new InMemoryStorage();
-    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
+describe('deviceIdStorage.ts', () => {
+  describe('DeviceIdStorage', () => {
+    it('should create DeviceIdStorage with default parameters', () => {
+      const storage = new DeviceIdStorage();
+      expect(storage).toBeInstanceOf(DeviceIdStorage);
+    });
 
-    storage.setItem('test-device-id', 'existing-device-id');
+    it('should create DeviceIdStorage with custom parameters', () => {
+      const customKey = 'custom-device-id-key';
+      const customStorage = new InMemoryStorage();
+      const storage = new DeviceIdStorage(customKey, customStorage);
 
-    const deviceId = deviceIdStorage.get();
-    expect(deviceId).toBe('existing-device-id');
-  });
+      expect(storage).toBeInstanceOf(DeviceIdStorage);
+    });
 
-  it('should set device ID', () => {
-    const storage = new InMemoryStorage();
-    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
+    it('should get null when no device ID is set', () => {
+      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+      const result = storage.get();
 
-    deviceIdStorage.set('new-device-id');
+      expect(result).toBeNull();
+    });
 
-    const deviceId = storage.getItem('test-device-id');
-    expect(deviceId).toBe('new-device-id');
-  });
+    it('should set and get device ID', () => {
+      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+      const deviceId = 'test-device-id';
 
-  it('should generate new device ID', () => {
-    const storage = new InMemoryStorage();
-    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
+      storage.set(deviceId);
+      const result = storage.get();
 
-    const deviceId1 = deviceIdStorage.generateDeviceId();
-    const deviceId2 = deviceIdStorage.generateDeviceId();
+      expect(result).toBe(deviceId);
+    });
 
-    expect(deviceId1).toBeDefined();
-    expect(deviceId2).toBeDefined();
-    expect(deviceId1).not.toBe(deviceId2);
-  });
+    it('should generate device ID', () => {
+      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+      const deviceId = storage.generateDeviceId();
 
-  it('should get or create device ID', () => {
-    const storage = new InMemoryStorage();
-    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
+      expect(deviceId).toBeDefined();
+      expect(typeof deviceId).toBe('string');
+      expect(deviceId.length).toBeGreaterThan(0);
+    });
 
-    // First call should generate and store a new device ID
-    const deviceId1 = deviceIdStorage.getOrCreate();
-    expect(deviceId1).toBeDefined();
+    it('should get existing device ID when available', () => {
+      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+      const deviceId = 'existing-device-id';
 
-    // Second call should return the same device ID
-    const deviceId2 = deviceIdStorage.getOrCreate();
-    expect(deviceId2).toBe(deviceId1);
-  });
+      storage.set(deviceId);
+      const result = storage.getOrCreate();
 
-  it('should clear stored device ID', () => {
-    const storage = new InMemoryStorage();
-    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
+      expect(result).toBe(deviceId);
+    });
 
-    deviceIdStorage.set('test-device-id');
-    expect(deviceIdStorage.get()).toBe('test-device-id');
+    it('should generate and store new device ID when none exists', () => {
+      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+      const result = storage.getOrCreate();
 
-    deviceIdStorage.clear();
-    expect(deviceIdStorage.get()).toBeNull();
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
+
+      // Verify it's stored
+      const stored = storage.get();
+      expect(stored).toBe(result);
+    });
+
+    it('should clear stored device ID', () => {
+      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+      const deviceId = 'test-device-id';
+
+      storage.set(deviceId);
+      storage.clear();
+      const result = storage.get();
+
+      expect(result).toBeNull();
+    });
+
+    it('should use default key when none provided', () => {
+      const mockStorage = {
+        getItem: vi.fn().mockReturnValue(null),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      } as unknown as Storage;
+
+      const storage = new DeviceIdStorage(undefined, mockStorage);
+      storage.get();
+
+      expect(mockStorage.getItem).toHaveBeenCalledWith(
+        DEFAULT_COSEC_DEVICE_ID_KEY,
+      );
+    });
   });
 });

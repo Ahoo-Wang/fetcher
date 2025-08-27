@@ -11,62 +11,82 @@
  * limitations under the License.
  */
 
-import { describe, it, expect } from 'vitest';
-import { TokenStorage } from '../src';
-import { InMemoryStorage } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import { CompositeToken, DEFAULT_COSEC_TOKEN_KEY, InMemoryStorage, TokenStorage, } from '../src';
 
-describe('TokenStorage', () => {
-  it('should get existing token', () => {
-    const storage = new InMemoryStorage();
-    const tokenStorage = new TokenStorage('test-token', storage);
+describe('tokenStorage.ts', () => {
+  describe('TokenStorage', () => {
+    it('should create TokenStorage with default parameters', () => {
+      const storage = new TokenStorage();
+      expect(storage).toBeInstanceOf(TokenStorage);
+    });
 
-    const token = {
-      accessToken: 'test-access-token',
-      refreshToken: 'test-refresh-token',
-    };
+    it('should create TokenStorage with custom parameters', () => {
+      const customKey = 'custom-token-key';
+      const customStorage = new InMemoryStorage();
+      const storage = new TokenStorage(customKey, customStorage);
 
-    storage.setItem('test-token', JSON.stringify(token));
+      expect(storage).toBeInstanceOf(TokenStorage);
+    });
 
-    const retrievedToken = tokenStorage.get();
-    expect(retrievedToken).toEqual(token);
-  });
+    it('should get null when no token is set', () => {
+      const storage = new TokenStorage('test-key', new InMemoryStorage());
+      const result = storage.get();
 
-  it('should return null when no token exists', () => {
-    const storage = new InMemoryStorage();
-    const tokenStorage = new TokenStorage('test-token', storage);
+      expect(result).toBeNull();
+    });
 
-    const token = tokenStorage.get();
-    expect(token).toBeNull();
-  });
+    it('should set and get token', () => {
+      const storage = new TokenStorage('test-key', new InMemoryStorage());
+      const token: CompositeToken = {
+        accessToken: 'test-access-token',
+        refreshToken: 'test-refresh-token',
+      };
 
-  it('should set token', () => {
-    const storage = new InMemoryStorage();
-    const tokenStorage = new TokenStorage('test-token', storage);
+      storage.set(token);
+      const result = storage.get();
 
-    const token = {
-      accessToken: 'test-access-token',
-      refreshToken: 'test-refresh-token',
-    };
+      expect(result).toEqual(token);
+    });
 
-    tokenStorage.set(token);
+    it('should clear stored token', () => {
+      const storage = new TokenStorage('test-key', new InMemoryStorage());
+      const token: CompositeToken = {
+        accessToken: 'test-access-token',
+        refreshToken: 'test-refresh-token',
+      };
 
-    const storedToken = storage.getItem('test-token');
-    expect(storedToken).toBe(JSON.stringify(token));
-  });
+      storage.set(token);
+      storage.clear();
+      const result = storage.get();
 
-  it('should clear stored token', () => {
-    const storage = new InMemoryStorage();
-    const tokenStorage = new TokenStorage('test-token', storage);
+      expect(result).toBeNull();
+    });
 
-    const token = {
-      accessToken: 'test-access-token',
-      refreshToken: 'test-refresh-token',
-    };
+    it('should handle invalid JSON in storage', () => {
+      const mockStorage = {
+        getItem: vi.fn().mockReturnValue('invalid-json'),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      } as unknown as Storage;
 
-    tokenStorage.set(token);
-    expect(tokenStorage.get()).toEqual(token);
+      const storage = new TokenStorage('test-key', mockStorage);
+      const result = storage.get();
 
-    tokenStorage.clear();
-    expect(tokenStorage.get()).toBeNull();
+      expect(result).toBeNull();
+    });
+
+    it('should use default key when none provided', () => {
+      const mockStorage = {
+        getItem: vi.fn().mockReturnValue(null),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      } as unknown as Storage;
+
+      const storage = new TokenStorage(undefined, mockStorage);
+      storage.get();
+
+      expect(mockStorage.getItem).toHaveBeenCalledWith(DEFAULT_COSEC_TOKEN_KEY);
+    });
   });
 });
