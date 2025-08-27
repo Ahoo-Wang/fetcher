@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Interceptor } from './interceptor';
+import { RequestInterceptor } from './interceptor';
 import { FetchExchange } from './fetchExchange';
 
 /**
@@ -46,7 +46,7 @@ export const URL_RESOLVE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
  * // Query params: { filter: 'active' }
  * // Final URL: 'https://api.example.com/users/123?filter=active'
  */
-export class UrlResolveInterceptor implements Interceptor {
+export class UrlResolveInterceptor implements RequestInterceptor {
   /**
    * The name of this interceptor.
    */

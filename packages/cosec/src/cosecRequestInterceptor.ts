@@ -11,7 +11,13 @@
  * limitations under the License.
  */
 
-import { FetchExchange, FetchRequest, Interceptor, REQUEST_BODY_INTERCEPTOR_ORDER } from '@ahoo-wang/fetcher';
+import {
+  FetchExchange,
+  FetchRequest,
+  Interceptor,
+  REQUEST_BODY_INTERCEPTOR_ORDER,
+  RequestInterceptor,
+} from '@ahoo-wang/fetcher';
 import { CoSecHeaders, CoSecOptions } from './types';
 import { idGenerator } from './idGenerator';
 
@@ -44,7 +50,7 @@ export const COSEC_REQUEST_INTERCEPTOR_ORDER =
  * are complete, ensuring that the final request is properly authenticated before
  * being sent over the network.
  */
-export class CoSecRequestInterceptor implements Interceptor {
+export class CoSecRequestInterceptor implements RequestInterceptor {
   readonly name = COSEC_REQUEST_INTERCEPTOR_NAME;
   readonly order = COSEC_REQUEST_INTERCEPTOR_ORDER;
   private options: CoSecOptions;

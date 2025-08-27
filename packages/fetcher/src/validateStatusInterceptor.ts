@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Interceptor } from './interceptor';
+import { ResponseInterceptor } from './interceptor';
 import { FetchExchange } from './fetchExchange';
 import { FetcherError } from './fetcherError';
 
@@ -99,7 +99,7 @@ export const VALIDATE_STATUS_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
  * const interceptor = new ValidateStatusInterceptor((status) => true);
  * ```
  */
-export class ValidateStatusInterceptor implements Interceptor {
+export class ValidateStatusInterceptor implements ResponseInterceptor {
   /**
    * Gets the name of this interceptor.
    *
