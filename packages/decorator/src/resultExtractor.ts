@@ -150,5 +150,5 @@ export const ResultExtractors = {
   Text: TextResultExtractor,
   ServerSentEventStream: ServerSentEventStreamResultExtractor,
   CommandResultEventStream: CommandResultEventStreamResultExtractor,
-  DEFAULT: ResponseResultExtractor,
+  DEFAULT: JsonResultExtractor,
 };

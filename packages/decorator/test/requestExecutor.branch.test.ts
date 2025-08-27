@@ -249,6 +249,6 @@ describe('FunctionMetadata - branch coverage', () => {
       [],
     );
 
-    expect(metadata3.resolveResultExtractor()).toBe(ResultExtractors.DEFAULT);
+    expect(metadata3.resolveResultExtractor()).toBe(ResultExtractors.Json);
   });
 });
