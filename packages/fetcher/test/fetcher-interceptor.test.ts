@@ -260,7 +260,7 @@ describe('Fetcher Interceptors', () => {
     fetcher.interceptors.request.use({
       name: 'order-test-interceptor-1',
       order: 0,
-      intercept: vi.fn((exchange: FetchExchange) => {
+      intercept: vi.fn(() => {
         calls.push('interceptor1');
       }),
     });
@@ -268,7 +268,7 @@ describe('Fetcher Interceptors', () => {
     fetcher.interceptors.request.use({
       name: 'order-test-interceptor-2',
       order: 0,
-      intercept: vi.fn((_exchange: FetchExchange) => {
+      intercept: vi.fn(() => {
         calls.push('interceptor2');
       }),
     });
