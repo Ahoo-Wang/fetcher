@@ -77,6 +77,30 @@ describe('apiDecorator - branch coverage', () => {
     expect(typeof instance.getUsers).toBe('function');
   });
 
+  it('should handle non-function prototype properties', () => {
+    @api('/test')
+    class TestService {
+      @get('/users')
+      getUsers() {
+        return Promise.resolve(new Response('{"users": []}'));
+      }
+    }
+
+    // Manually set a prototype property to a non-function value
+    Object.defineProperty(TestService.prototype, 'nonFunctionMethod', {
+      value: 'not a function',
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
+
+    const instance = new TestService();
+    // Non-function property should remain unchanged
+    expect((instance as any).nonFunctionMethod).toBe('not a function');
+    // Decorated method should still work
+    expect(typeof instance.getUsers).toBe('function');
+  });
+
   it('should handle non-function properties on prototype', () => {
     @api('/test')
     class TestService {
