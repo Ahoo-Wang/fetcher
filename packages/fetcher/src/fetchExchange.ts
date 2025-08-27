@@ -13,6 +13,7 @@
 
 import { Fetcher } from './fetcher';
 import { FetchRequest } from './fetchRequest';
+import { ExchangeError } from './interceptorManager';
 
 /**
  * Container for HTTP request/response data that flows through the interceptor chain.
@@ -120,5 +121,25 @@ export class FetchExchange {
    */
   hasResponse(): boolean {
     return !!this.response;
+  }
+
+  /**
+   * Gets the required response object, throwing an error if no response is available.
+   *
+   * This getter ensures that a response object is available, and throws an ExchangeError
+   * with details about the request if no response was received. This is useful for
+   * guaranteeing that downstream code always has a valid Response object to work with.
+   *
+   * @throws {ExchangeError} If no response is available for the current exchange
+   * @returns The Response object for this exchange
+   */
+  get requiredResponse(): Response {
+    if (!this.response) {
+      throw new ExchangeError(
+        this,
+        `Request to ${this.request.url} failed with no response`,
+      );
+    }
+    return this.response;
   }
 }
