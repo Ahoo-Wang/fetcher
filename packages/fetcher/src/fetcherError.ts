@@ -12,7 +12,6 @@
  */
 
 import { FetchExchange } from './fetchExchange';
-import { FetchRequest } from './fetchRequest';
 
 /**
  * Base error class for all Fetcher-related errors.
@@ -140,40 +139,3 @@ export class FetchError extends FetcherError {
   }
 }
 
-/**
- * Exception class thrown when an HTTP request times out.
- *
- * This error is thrown by the timeoutFetch function when a request exceeds its timeout limit.
- *
- * @example
- * ```typescript
- * try {
- *   const response = await timeoutFetch('https://api.example.com/users', {}, 1000);
- * } catch (error) {
- *   if (error instanceof FetchTimeoutError) {
- *     console.log(`Request timed out after ${error.timeout}ms`);
- *   }
- * }
- * ```
- */
-export class FetchTimeoutError extends FetcherError {
-  /**
-   * The request options that timed out.
-   */
-  request: FetchRequest;
-
-  /**
-   * Creates a new FetchTimeoutError instance.
-   *
-   * @param request - The request options that timed out
-   */
-  constructor(request: FetchRequest) {
-    const method = request.method || 'GET';
-    const message = `Request timeout of ${request.timeout}ms exceeded for ${method} ${request.url}`;
-    super(message);
-    this.name = 'FetchTimeoutError';
-    this.request = request;
-    // Fix prototype chain
-    Object.setPrototypeOf(this, FetchTimeoutError.prototype);
-  }
-}
