@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-decorator",
-  "version": "0.9.1",
+  "version": "0.9.8",
   "description": "TypeScript decorators for clean API service definitions with Fetcher HTTP client",
   "keywords": [
     "fetch",
@@ -11,7 +11,6 @@
   ],
   "author": "Ahoo-Wang",
   "license": "Apache-2.0",
-  "type": "module",
   "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/master/packages/fetcher-decorator",
   "repository": {
     "type": "git",
@@ -21,6 +20,7 @@
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
   },
+  "type": "module",
   "main": "./dist/index.umd.js",
   "module": "./dist/index.es.js",
   "types": "./dist/index.d.ts",
@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@ahoo-wang/fetcher": "workspace:*",
+    "@ahoo-wang/fetcher-eventstream": "workspace:*",
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {

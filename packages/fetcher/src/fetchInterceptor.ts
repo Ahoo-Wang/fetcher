@@ -11,42 +11,63 @@
  * limitations under the License.
  */
 
-import { Interceptor } from './interceptor';
+import { RequestInterceptor } from './interceptor';
 import { timeoutFetch } from './timeout';
 import { FetchExchange } from './fetchExchange';
+
+/**
+ * The name of the FetchInterceptor.
+ */
+export const FETCH_INTERCEPTOR_NAME = 'FetchInterceptor';
+
+/**
+ * The order of the FetchInterceptor.
+ * Set to Number.MAX_SAFE_INTEGER - 1000 to ensure it runs latest among request interceptors.
+ */
+export const FETCH_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
 
 /**
  * Interceptor implementation responsible for executing actual HTTP requests.
  *
  * This is an interceptor implementation responsible for executing actual HTTP requests
- * and handling timeout control. It is the last interceptor in the Fetcher request
+ * and handling timeout control. It is the latest interceptor in the Fetcher request
  * processing chain, ensuring that the actual network request is executed after all
  * previous interceptors have completed processing.
+ *
+ * @remarks
+ * This interceptor runs at the very end of the request interceptor chain to ensure
+ * that the actual HTTP request is executed after all other request processing is complete.
+ * The order is set to FETCH_INTERCEPTOR_ORDER to ensure it executes after all other
+ * request interceptors, completing the request processing pipeline before the network
+ * request is made. This positioning ensures that all request preprocessing is
+ * completed before the actual network request is made.
  *
  * @example
  * // Usually not created manually as Fetcher uses it automatically
  * const fetcher = new Fetcher();
  * // FetchInterceptor is automatically registered in fetcher.interceptors.request
  */
-export class FetchInterceptor implements Interceptor {
+export class FetchInterceptor implements RequestInterceptor {
   /**
    * Interceptor name, used to identify and manage interceptor instances.
    *
    * Each interceptor must have a unique name for identification and manipulation
    * within the interceptor manager.
    */
-  name = 'FetchInterceptor';
+  readonly name = FETCH_INTERCEPTOR_NAME;
 
   /**
-   * Interceptor execution order, set to near maximum safe integer to ensure last execution.
+   * Interceptor execution order, set to near maximum safe integer to ensure latest execution.
    *
    * Since this is the interceptor that actually executes HTTP requests, it should
    * execute after all other request interceptors, so its order is set to
-   * Number.MAX_SAFE_INTEGER - 100. This ensures that all request preprocessing is
+   * FETCH_INTERCEPTOR_ORDER. This ensures that all request preprocessing is
    * completed before the actual network request is made, while still allowing
-   * other interceptors to run after it if needed.
+   * other interceptors to run after it if needed. The positioning at the end
+   * of the request chain ensures that all transformations and validations are
+   * completed before the network request is executed.
    */
-  order = Number.MAX_SAFE_INTEGER - 100;
+  readonly order = FETCH_INTERCEPTOR_ORDER;
 
   /**
    * Intercept and process HTTP requests.

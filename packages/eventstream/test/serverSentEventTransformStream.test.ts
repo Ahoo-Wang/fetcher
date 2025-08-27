@@ -11,402 +11,602 @@
  * limitations under the License.
  */
 
-import { describe, it, expect } from 'vitest';
-import { ServerSentEventTransformStream } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  ServerSentEventField,
+  ServerSentEventTransformer,
+  ServerSentEventTransformStream,
+} from '../src/serverSentEventTransformStream';
 
-describe('ServerSentEventTransformStream', () => {
-  it('should parse simple event', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+describe('serverSentEventTransformStream.ts', () => {
+  describe('ServerSentEventTransformStream', () => {
+    it('should create ServerSentEventTransformStream instance', () => {
+      const stream = new ServerSentEventTransformStream();
 
-    // Write a simple event
-    writer.write('data: hello\n');
-    writer.write('\n');
-    writer.close();
-
-    const { value, done } = await reader.read();
-    expect(done).toBe(false);
-    expect(value).toEqual({
-      event: 'message',
-      data: 'hello',
-      id: '',
-      retry: undefined,
+      expect(stream).toBeInstanceOf(ServerSentEventTransformStream);
+      expect(stream).toBeInstanceOf(TransformStream);
     });
-
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
   });
 
-  it('should parse event with custom event type', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
-
-    // Write an event with custom event type
-    writer.write('event: custom\n');
-    writer.write('data: hello\n');
-    writer.write('\n');
-    writer.close();
-
-    const { value, done } = await reader.read();
-    expect(done).toBe(false);
-    expect(value).toEqual({
-      event: 'custom',
-      data: 'hello',
-      id: '',
-      retry: undefined,
+  describe('ServerSentEventField', () => {
+    it('should define ServerSentEventField enum values', () => {
+      expect(ServerSentEventField.ID).toBe('id');
+      expect(ServerSentEventField.RETRY).toBe('retry');
+      expect(ServerSentEventField.EVENT).toBe('event');
+      expect(ServerSentEventField.DATA).toBe('data');
     });
-
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
   });
 
-  it('should parse event with id', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+  describe('ServerSentEventTransformer', () => {
+    it('should initialize with default event state', () => {
+      const transformer = new ServerSentEventTransformer();
 
-    // Write an event with id
-    writer.write('id: 123\n');
-    writer.write('data: hello\n');
-    writer.write('\n');
-    writer.close();
-
-    const { value, done } = await reader.read();
-    expect(done).toBe(false);
-    expect(value).toEqual({
-      event: 'message',
-      data: 'hello',
-      id: '123',
-      retry: undefined,
+      // We can't directly access private properties, but we can test behavior
+      expect(transformer).toBeInstanceOf(ServerSentEventTransformer);
     });
 
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
-  });
+    it('should skip empty lines', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should parse event with retry', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      transformer.transform('', controller);
 
-    // Write an event with retry
-    writer.write('retry: 5000\n');
-    writer.write('data: hello\n');
-    writer.write('\n');
-    writer.close();
-
-    const { value, done } = await reader.read();
-    expect(done).toBe(false);
-    expect(value).toEqual({
-      event: 'message',
-      data: 'hello',
-      id: '',
-      retry: 5000,
+      expect(controller.enqueue).not.toHaveBeenCalled();
     });
 
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
-  });
+    it('should ignore comment lines', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should parse multi-line data', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      transformer.transform(':comment line', controller);
 
-    // Write an event with multi-line data
-    writer.write('data: hello\n');
-    writer.write('data: world\n');
-    writer.write('\n');
-    writer.close();
-
-    const { value, done } = await reader.read();
-    expect(done).toBe(false);
-    expect(value).toEqual({
-      event: 'message',
-      data: 'hello\nworld',
-      id: '',
-      retry: undefined,
+      expect(controller.enqueue).not.toHaveBeenCalled();
     });
 
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
-  });
+    it('should parse event field correctly', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should ignore comment lines', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      // First send data
+      transformer.transform('data:test data', controller);
 
-    // Write an event with comment lines
-    writer.write(': this is a comment\n');
-    writer.write('data: hello\n');
-    writer.write('\n');
-    writer.close();
+      // Then send empty line to trigger event
+      transformer.transform('', controller);
 
-    const { value, done } = await reader.read();
-    expect(done).toBe(false);
-    expect(value).toEqual({
-      event: 'message',
-      data: 'hello',
-      id: '',
-      retry: undefined,
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'message',
+          data: 'test data',
+        }),
+      );
     });
 
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
-  });
+    it('should parse id field correctly', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should handle empty data field', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      // Send id
+      transformer.transform('id:123', controller);
 
-    // Write an event with empty data field
-    writer.write('data:\n');
-    writer.write('\n');
-    writer.close();
+      // Send data
+      transformer.transform('data:test data', controller);
 
-    const { value, done } = await reader.read();
-    expect(done).toBe(false);
-    expect(value).toEqual({
-      event: 'message',
-      data: '',
-      id: '',
-      retry: undefined,
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: '123',
+          data: 'test data',
+        }),
+      );
     });
 
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
-  });
+    it('should parse retry field correctly', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should handle multiple events', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      // Send retry
+      transformer.transform('retry:5000', controller);
 
-    // Write multiple events
-    writer.write('data: first\n');
-    writer.write('\n');
-    writer.write('data: second\n');
-    writer.write('\n');
-    writer.close();
+      // Send data
+      transformer.transform('data:test data', controller);
 
-    // Read first event
-    const firstResult = await reader.read();
-    expect(firstResult.done).toBe(false);
-    expect(firstResult.value).toEqual({
-      event: 'message',
-      data: 'first',
-      id: '',
-      retry: undefined,
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          retry: 5000,
+          data: 'test data',
+        }),
+      );
     });
 
-    // Read second event
-    const secondResult = await reader.read();
-    expect(secondResult.done).toBe(false);
-    expect(secondResult.value).toEqual({
-      event: 'message',
-      data: 'second',
-      id: '',
-      retry: undefined,
+    it('should handle invalid retry value', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send invalid retry
+      transformer.transform('retry:invalid', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
+      // retry should not be set
+      const event = (controller.enqueue as any).mock.calls[0][0];
+      expect(event.retry).toBeUndefined();
     });
 
-    // Check that stream is done
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
-  });
+    it('should handle field without colon', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should handle event with colon in data', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      // Send field without colon
+      transformer.transform('event', controller);
 
-    // Write an event with colon in data
-    writer.write('data: hello: world\n');
-    writer.write('\n');
-    writer.close();
+      // Send data
+      transformer.transform('data:test data', controller);
 
-    const { value, done } = await reader.read();
-    expect(done).toBe(false);
-    expect(value).toEqual({
-      event: 'message',
-      data: 'hello: world',
-      id: '',
-      retry: undefined,
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'message', // event field is case-insensitive and converted to lowercase
+          data: 'test data',
+        }),
+      );
     });
 
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
-  });
+    it('should handle field with leading space in value', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should handle event with space after colon', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      // Send field with leading space
+      transformer.transform('data: test data', controller);
 
-    // Write an event with space after colon
-    writer.write('data: hello world\n');
-    writer.write('\n');
-    writer.close();
+      // Send empty line to trigger event
+      transformer.transform('', controller);
 
-    const { value, done } = await reader.read();
-    expect(done).toBe(false);
-    expect(value).toEqual({
-      event: 'message',
-      data: 'hello world',
-      id: '',
-      retry: undefined,
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
     });
 
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
-  });
+    it('should handle multiple data lines', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should preserve last event ID for subsequent events', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      // Send multiple data lines
+      transformer.transform('data:first line', controller);
+      transformer.transform('data:second line', controller);
 
-    // Write first event with ID
-    writer.write('id: 123\n');
-    writer.write('data: first\n');
-    writer.write('\n');
+      // Send empty line to trigger event
+      transformer.transform('', controller);
 
-    // Write second event without ID
-    writer.write('data: second\n');
-    writer.write('\n');
-    writer.close();
-
-    // Read first event
-    const firstResult = await reader.read();
-    expect(firstResult.done).toBe(false);
-    expect(firstResult.value).toEqual({
-      event: 'message',
-      data: 'first',
-      id: '123',
-      retry: undefined,
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'first line\nsecond line',
+        }),
+      );
     });
 
-    // Read second event
-    const secondResult = await reader.read();
-    expect(secondResult.done).toBe(false);
-    expect(secondResult.value).toEqual({
-      event: 'message',
-      data: 'second',
-      id: '123', // Should preserve the last event ID
-      retry: undefined,
+    it('should flush remaining data', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send data without empty line
+      transformer.transform('data:test data', controller);
+
+      // Flush should send the event
+      transformer.flush(controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
     });
 
-    // Check that stream is done
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
-  });
+    it('should handle errors in transform', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should preserve retry value for subsequent events', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      // Mock chunk to throw an error
+      const chunk = {
+        trim: () => {
+          throw new Error('Test error');
+        },
+      } as any;
 
-    // Write first event with retry
-    writer.write('retry: 5000\n');
-    writer.write('data: first\n');
-    writer.write('\n');
+      transformer.transform(chunk, controller);
 
-    // Write second event without retry
-    writer.write('data: second\n');
-    writer.write('\n');
-    writer.close();
-
-    // Read first event
-    const firstResult = await reader.read();
-    expect(firstResult.done).toBe(false);
-    expect(firstResult.value).toEqual({
-      event: 'message',
-      data: 'first',
-      id: '',
-      retry: 5000,
+      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
     });
 
-    // Read second event
-    const secondResult = await reader.read();
-    expect(secondResult.done).toBe(false);
-    expect(secondResult.value).toEqual({
-      event: 'message',
-      data: 'second',
-      id: '',
-      retry: 5000, // Should preserve the last retry value
+    it('should handle errors in flush', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Mock controller.enqueue to throw an error
+      controller.enqueue.mockImplementationOnce(() => {
+        throw new Error('Test error');
+      });
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Flush should handle the error
+      transformer.flush(controller);
+
+      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
     });
 
-    // Check that stream is done
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
-  });
+    it('should reset state after sending event', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should reset data and event fields but preserve id and retry', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      // Send first event
+      transformer.transform('id:123', controller);
+      transformer.transform('data:first event', controller);
+      transformer.transform('', controller);
 
-    // Write first event with all fields
-    writer.write('id: 123\n');
-    writer.write('retry: 5000\n');
-    writer.write('event: custom\n');
-    writer.write('data: first\n');
-    writer.write('\n');
+      // Send second event (without id)
+      transformer.transform('data:second event', controller);
+      transformer.transform('', controller);
 
-    // Write second event with only data
-    writer.write('data: second\n');
-    writer.write('\n');
-    writer.close();
+      expect(controller.enqueue).toHaveBeenCalledTimes(2);
 
-    // Read first event
-    const firstResult = await reader.read();
-    expect(firstResult.done).toBe(false);
-    expect(firstResult.value).toEqual({
-      event: 'custom',
-      data: 'first',
-      id: '123',
-      retry: 5000,
+      // First event should have id
+      expect(controller.enqueue).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          id: '123',
+          data: 'first event',
+        }),
+      );
+
+      // Second event should also have id (preserved from first event)
+      expect(controller.enqueue).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          id: '123',
+          data: 'second event',
+        }),
+      );
     });
 
-    // Read second event
-    const secondResult = await reader.read();
-    expect(secondResult.done).toBe(false);
-    expect(secondResult.value).toEqual({
-      event: 'message', // Should reset to default
-      data: 'second',
-      id: '123', // Should preserve
-      retry: 5000, // Should preserve
+    it('should handle unknown field', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send unknown field
+      transformer.transform('unknown:test', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
     });
 
-    // Check that stream is done
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
-  });
+    it('should handle colon at the beginning of line', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should handle malformed retry value gracefully', async () => {
-    const stream = new ServerSentEventTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      // Send line starting with colon (comment)
+      transformer.transform(':comment', controller);
 
-    // Write an event with invalid retry value
-    writer.write('retry: invalid\n');
-    writer.write('data: hello\n');
-    writer.write('\n');
-    writer.close();
+      // Send data
+      transformer.transform('data:test data', controller);
 
-    const { value, done } = await reader.read();
-    expect(done).toBe(false);
-    expect(value).toEqual({
-      event: 'message',
-      data: 'hello',
-      id: '',
-      retry: undefined, // Should not set retry for invalid value
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
     });
 
-    const finalResult = await reader.read();
-    expect(finalResult.done).toBe(true);
+    it('should handle colon at the end of line', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send line ending with colon
+      transformer.transform('field:', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle multiple colons in line', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send line with multiple colons
+      transformer.transform('event:test:event', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'test:event',
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle empty field name', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send line with empty field name
+      transformer.transform(':test', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle empty data', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send empty data
+      transformer.transform('data:', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: '',
+        }),
+      );
+    });
+
+    it('should handle whitespace in field name', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send field with whitespace
+      transformer.transform('  event  :test', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'test',
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle whitespace in field value', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send field with whitespace in value
+      transformer.transform('data:  test data  ', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle empty data array in flush', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Don't send any data, just flush
+      transformer.flush(controller);
+
+      expect(controller.enqueue).not.toHaveBeenCalled();
+    });
+
+    it('should handle data with newlines', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send data with newlines
+      transformer.transform('data:line1\nline2', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'line1\nline2',
+        }),
+      );
+    });
+
+    it('should handle non-Error object in transform error', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Mock chunk to throw a non-Error object
+      const chunk = {
+        trim: () => {
+          throw 'Test error string';
+        },
+      } as any;
+
+      transformer.transform(chunk, controller);
+
+      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
+      // The error should be converted to an Error object
+      const errorCall = (controller.error as any).mock.calls[0][0];
+      expect(errorCall).toBeInstanceOf(Error);
+      expect(errorCall.message).toBe('Test error string');
+    });
+
+    it('should handle undefined event in flush', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Set event to undefined
+      (transformer as any).currentEvent.event = undefined;
+      (transformer as any).currentEvent.data = ['test data'];
+
+      // Flush should use 'message' as default event
+      transformer.flush(controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'message',
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle non-Error object in flush error', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Mock controller.enqueue to throw a non-Error object
+      controller.enqueue.mockImplementationOnce(() => {
+        throw 'Test error string';
+      });
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Flush should handle the error
+      transformer.flush(controller);
+
+      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
+      // The error should be converted to an Error object
+      const errorCall = (controller.error as any).mock.calls[0][0];
+      expect(errorCall).toBeInstanceOf(Error);
+      expect(errorCall.message).toBe('Test error string');
+    });
   });
 });

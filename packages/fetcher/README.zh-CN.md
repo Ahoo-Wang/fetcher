@@ -8,11 +8,11 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-一个现代、超轻量级（1.9kB）的 HTTP 客户端，内置路径参数、查询参数和类似 Axios 的 API。比 Axios 小 86%，同时提供相同的强大功能。
+一个现代、超轻量级（2.3kB）的 HTTP 客户端，内置路径参数、查询参数和类似 Axios 的 API。比 Axios 小 83%，同时提供相同的强大功能。
 
 ## 🌟 特性
 
-- **⚡ 超轻量级**：仅 1.9kB min+gzip - 比 Axios 小 86%
+- **⚡ 超轻量级**：仅 2.3KiB min+gzip - 比 Axios 小 83%
 - **🧭 路径和查询参数**：内置支持路径（`{id}`）和查询参数
 - **🔗 拦截器系统**：请求、响应和错误拦截器的中间件模式
 - **⏱️ 超时控制**：可配置的请求超时和适当的错误处理
@@ -121,9 +121,11 @@ Fetcher 中的拦截器系统遵循中间件模式，允许您在 HTTP 请求生
 
 Fetcher 自带几个内置拦截器，它们会自动注册：
 
-1. **UrlResolveInterceptor**：解析带路径和查询参数的 URL（顺序：Number.MIN_SAFE_INTEGER + 100）
-2. **RequestBodyInterceptor**：将对象体转换为 JSON 字符串（顺序：Number.MIN_SAFE_INTEGER + 200）
-3. **FetchInterceptor**：执行实际的 HTTP 请求（顺序：Number.MAX_SAFE_INTEGER - 100）
+1. **UrlResolveInterceptor**：解析带路径和查询参数的 URL（顺序：Number.MIN_SAFE_INTEGER + 1000）
+2. **RequestBodyInterceptor**：将对象体转换为 JSON 字符串（顺序：Number.MIN_SAFE_INTEGER + 2000）
+3. **FetchInterceptor**：执行实际的 HTTP 请求（顺序：Number.MAX_SAFE_INTEGER - 1000）
+4. **ValidateStatusInterceptor**：验证 HTTP 状态码并在状态码无效时抛出错误（响应拦截器，顺序：Number.MAX_SAFE_INTEGER -
+   1000）
 
 ### 使用拦截器
 
@@ -244,6 +246,13 @@ new Fetcher(options ? : FetcherOptions);
 - `headers`：默认请求头部
 - `interceptors`：用于请求、响应和错误处理的拦截器集合
 
+#### 属性
+
+- `urlBuilder`：用于构建 URL 的 URL 构建器实例
+- `headers`：默认请求头部
+- `timeout`：默认请求超时时间
+- `interceptors`：用于请求、响应和错误处理的拦截器集合
+
 #### 方法
 
 - `fetch(url: string, request?: FetcherRequest): Promise<Response>` - 通用 HTTP 请求方法
@@ -254,13 +263,7 @@ new Fetcher(options ? : FetcherOptions);
 - `patch(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PATCH 请求
 - `head(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - HEAD 请求
 - `options(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - OPTIONS 请求
-
-#### 属性
-
-- `urlBuilder`：用于构建 URL 的 URL 构建器实例
-- `headers`：默认请求头部
-- `timeout`：默认请求超时时间
-- `interceptors`：用于请求、响应和错误处理的拦截器集合
+- `request(request: FetchRequest): Promise<FetchExchange>` - 通过 Fetcher 的内部工作流处理 HTTP 请求
 
 ### FetcherRequest 接口
 
@@ -271,8 +274,7 @@ HTTP 请求的配置选项。
 - `method`：HTTP 方法（GET、POST、PUT、DELETE 等）
 - `headers`：请求头部
 - `body`：请求体（可以是对象、字符串、Blob 等）
-- `path`：用于 URL 模板的路径参数
-- `query`：用于 URL 查询字符串的查询参数
+- `urlParams`：URL 参数，包括用于 URL 模板的路径参数和用于 URL 查询字符串的查询参数
 - `timeout`：请求超时时间（毫秒）
 
 ### 响应扩展
@@ -330,9 +332,13 @@ string, options ? : FetcherOptions
 
 - `intercept(exchange: FetchExchange): void | Promise<void>` - 拦截并处理数据
 
-#### InterceptorManager 类
+#### InterceptorRegistry 类
 
-用于管理同一类型多个拦截器的拦截器管理器。
+用于管理同一类型多个拦截器的拦截器注册表。
+
+**属性：**
+
+- `interceptors: Interceptor[]` - 获取注册表中的所有拦截器
 
 **方法：**
 
@@ -341,15 +347,19 @@ string, options ? : FetcherOptions
 - `clear(): void` - 清除所有拦截器
 - `intercept(exchange: FetchExchange): Promise<void>` - 顺序执行所有拦截器
 
-#### FetcherInterceptors 类
+#### InterceptorManager 类
 
 Fetcher 拦截器集合，包括请求、响应和错误拦截器管理器。
 
 **属性：**
 
-- `request: InterceptorManager` - 请求拦截器管理器
-- `response: InterceptorManager` - 响应拦截器管理器
-- `error: InterceptorManager` - 错误拦截器管理器
+- `request: InterceptorRegistry` - 请求拦截器管理器
+- `response: InterceptorRegistry` - 响应拦截器管理器
+- `error: InterceptorRegistry` - 错误拦截器管理器
+
+**方法：**
+
+- `exchange(fetchExchange: FetchExchange): Promise<FetchExchange>` - 通过拦截器管道处理 FetchExchange
 
 ## 🤝 贡献
 

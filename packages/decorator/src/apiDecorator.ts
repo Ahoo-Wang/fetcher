@@ -20,6 +20,7 @@ import { ENDPOINT_METADATA_KEY } from './endpointDecorator';
 import { FunctionMetadata, RequestExecutor } from './requestExecutor';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator';
 import 'reflect-metadata';
+import { ResultExtractorCapable } from './resultExtractor';
 
 /**
  * Metadata for class-level API configuration.
@@ -28,7 +29,7 @@ import 'reflect-metadata';
  * These settings will be used as defaults for all endpoints within the class unless overridden
  * at the method level.
  */
-export interface ApiMetadata extends TimeoutCapable, RequestHeadersCapable {
+export interface ApiMetadata extends TimeoutCapable, RequestHeadersCapable, ResultExtractorCapable {
   /**
    * Base path for all endpoints in the class.
    *
@@ -114,7 +115,7 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   const requestExecutor = new RequestExecutor(functionMetadata);
 
   // Replace method with actual implementation
-  constructor.prototype[functionName] = function (...args: unknown[]) {
+  constructor.prototype[functionName] = function(...args: unknown[]) {
     return requestExecutor.execute(args);
   };
 }

@@ -38,7 +38,17 @@ export class TokenStorage {
    */
   get(): CompositeToken | null {
     const tokenStr = this.storage.getItem(this.tokenKey);
-    return tokenStr ? JSON.parse(tokenStr) : null;
+    if (!tokenStr) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(tokenStr);
+    } catch (error) {
+      console.warn('Failed to get token from storage:', error);
+      this.clear();
+      return null;
+    }
   }
 
   /**

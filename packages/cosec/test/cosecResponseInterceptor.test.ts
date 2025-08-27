@@ -12,183 +12,232 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { CoSecResponseInterceptor, DeviceIdStorage, InMemoryStorage, TokenStorage } from '../src';
+import {
+  CompositeToken,
+  COSEC_RESPONSE_INTERCEPTOR_NAME,
+  COSEC_RESPONSE_INTERCEPTOR_ORDER,
+  CoSecOptions,
+  CoSecResponseInterceptor,
+  DeviceIdStorage,
+  InMemoryStorage,
+  ResponseCodes,
+  TokenRefresher,
+  TokenStorage,
+} from '../src';
 import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
 
-describe('CoSecResponseInterceptor', () => {
-  it('should return exchange if no response exists', async () => {
-    const storage = new InMemoryStorage();
-    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
-    const tokenStorage = new TokenStorage('test-token', storage);
+describe('cosecResponseInterceptor.ts', () => {
+  describe('CoSecResponseInterceptor', () => {
+    it('should have correct name and order', () => {
+      const options: CoSecOptions = {
+        appId: 'test-app-id',
+        deviceIdStorage: new DeviceIdStorage(
+          'test-device-key',
+          new InMemoryStorage(),
+        ),
+        tokenStorage: new TokenStorage('test-token-key', new InMemoryStorage()),
+        tokenRefresher: {
+          refresh: async (_token: CompositeToken) => ({
+            accessToken: 'test-access-token',
+            refreshToken: 'test-refresh-token',
+          }),
+        },
+      };
 
-    const tokenRefresher = {
-      refresh: vi.fn(),
-    };
+      const interceptor = new CoSecResponseInterceptor(options);
 
-    const interceptor = new CoSecResponseInterceptor({
-      appId: 'test-app-id',
-      deviceIdStorage,
-      tokenStorage,
-      tokenRefresher,
+      expect(interceptor.name).toBe(COSEC_RESPONSE_INTERCEPTOR_NAME);
+      expect(interceptor.order).toBe(COSEC_RESPONSE_INTERCEPTOR_ORDER);
     });
 
-    const fetcher = new Fetcher();
-    const exchange: FetchExchange = new FetchExchange(fetcher, {
-      url: 'https://api.example.com/test',
-      method: 'GET',
+    it('should not intercept when there is no response', async () => {
+      const options: CoSecOptions = {
+        appId: 'test-app-id',
+        deviceIdStorage: new DeviceIdStorage(
+          'test-device-key',
+          new InMemoryStorage(),
+        ),
+        tokenStorage: new TokenStorage('test-token-key', new InMemoryStorage()),
+        tokenRefresher: {
+          refresh: async (_token: CompositeToken) => ({
+            accessToken: 'test-access-token',
+            refreshToken: 'test-refresh-token',
+          }),
+        },
+      };
+
+      const interceptor = new CoSecResponseInterceptor(options);
+
+      const mockFetcher = {} as Fetcher;
+      const request = { url: '/test' };
+      const exchange = new FetchExchange(mockFetcher, request);
+
+      // No response in exchange
+      await interceptor.intercept(exchange);
+
+      // Should not throw and should not modify exchange
+      expect(exchange.response).toBeUndefined();
     });
 
-    await interceptor.intercept(exchange);
+    it('should not intercept when response status is not 401', async () => {
+      const options: CoSecOptions = {
+        appId: 'test-app-id',
+        deviceIdStorage: new DeviceIdStorage(
+          'test-device-key',
+          new InMemoryStorage(),
+        ),
+        tokenStorage: new TokenStorage('test-token-key', new InMemoryStorage()),
+        tokenRefresher: {
+          refresh: async (_token: CompositeToken) => ({
+            accessToken: 'test-access-token',
+            refreshToken: 'test-refresh-token',
+          }),
+        },
+      };
 
-    expect(tokenRefresher.refresh).not.toHaveBeenCalled();
-  });
+      const interceptor = new CoSecResponseInterceptor(options);
 
-  it('should return exchange for non-401 responses', async () => {
-    const storage = new InMemoryStorage();
-    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
-    const tokenStorage = new TokenStorage('test-token', storage);
+      const mockFetcher = {} as Fetcher;
+      const request = { url: '/test' };
+      const response = new Response('test', { status: 200 });
+      const exchange = new FetchExchange(mockFetcher, request, response);
 
-    const tokenRefresher = {
-      refresh: vi.fn(),
-    };
+      await interceptor.intercept(exchange);
 
-    const interceptor = new CoSecResponseInterceptor({
-      appId: 'test-app-id',
-      deviceIdStorage,
-      tokenStorage,
-      tokenRefresher,
+      // Should not modify exchange
+      expect(exchange.response).toBe(response);
     });
 
-    const fetcher = new Fetcher();
-    const exchange: FetchExchange = new FetchExchange(fetcher, {
-      url: 'https://api.example.com/test',
-      method: 'GET',
-    }, new Response('Forbidden', { status: 403 }));
-    await interceptor.intercept(exchange);
+    it('should not intercept when there is no current token', async () => {
+      const options: CoSecOptions = {
+        appId: 'test-app-id',
+        deviceIdStorage: new DeviceIdStorage(
+          'test-device-key',
+          new InMemoryStorage(),
+        ),
+        tokenStorage: new TokenStorage('test-token-key', new InMemoryStorage()),
+        tokenRefresher: {
+          refresh: async (_token: CompositeToken) => ({
+            accessToken: 'test-access-token',
+            refreshToken: 'test-refresh-token',
+          }),
+        },
+      };
 
-    expect(tokenRefresher.refresh).not.toHaveBeenCalled();
-  });
+      const interceptor = new CoSecResponseInterceptor(options);
 
-  it('should return exchange if no current token exists', async () => {
-    const storage = new InMemoryStorage();
-    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
-    const tokenStorage = new TokenStorage('test-token', storage);
+      const mockFetcher = {} as Fetcher;
+      const request = { url: '/test' };
+      const response = new Response('test', {
+        status: ResponseCodes.UNAUTHORIZED,
+      });
+      const exchange = new FetchExchange(mockFetcher, request, response);
 
-    // Don't set any token
+      await interceptor.intercept(exchange);
 
-    const tokenRefresher = {
-      refresh: vi.fn(),
-    };
-
-    const interceptor = new CoSecResponseInterceptor({
-      appId: 'test-app-id',
-      deviceIdStorage,
-      tokenStorage,
-      tokenRefresher,
+      // Should not modify exchange
+      expect(exchange.response).toBe(response);
     });
 
-    const fetcher = new Fetcher();
-    const exchange: FetchExchange = new FetchExchange(fetcher, {
-      url: 'https://api.example.com/test',
-      method: 'GET',
-    }, new Response('Forbidden', { status: 401 }));
+    it('should refresh token and retry request on 401 response', async () => {
+      const tokenStorage = new TokenStorage(
+        'test-token-key',
+        new InMemoryStorage(),
+      );
+      const tokenRefresher: TokenRefresher = {
+        refresh: vi.fn().mockImplementation(async (_token: CompositeToken) => ({
+          accessToken: 'new-access-token',
+          refreshToken: 'new-refresh-token',
+        })),
+      };
 
-    await interceptor.intercept(exchange);
+      const options: CoSecOptions = {
+        appId: 'test-app-id',
+        deviceIdStorage: new DeviceIdStorage(
+          'test-device-key',
+          new InMemoryStorage(),
+        ),
+        tokenStorage,
+        tokenRefresher,
+      };
 
-    expect(tokenRefresher.refresh).not.toHaveBeenCalled();
-  });
+      const interceptor = new CoSecResponseInterceptor(options);
 
-  it('should refresh token for 401 responses', async () => {
-    const storage = new InMemoryStorage();
-    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
-    const tokenStorage = new TokenStorage('test-token', storage);
+      const mockFetcher = {
+        request: vi.fn().mockResolvedValue({}),
+      } as unknown as Fetcher;
 
-    // Set up initial token
-    tokenStorage.set({
-      accessToken: 'old-access-token',
-      refreshToken: 'old-refresh-token',
+      const request = { url: '/test' };
+      const response = new Response('test', {
+        status: ResponseCodes.UNAUTHORIZED,
+      });
+      const exchange = new FetchExchange(mockFetcher, request, response);
+
+      // Set a current token
+      const currentToken: CompositeToken = {
+        accessToken: 'old-access-token',
+        refreshToken: 'old-refresh-token',
+      };
+      tokenStorage.set(currentToken);
+
+      await interceptor.intercept(exchange);
+
+      // Verify token was refreshed
+      expect(tokenRefresher.refresh).toHaveBeenCalledWith(currentToken);
+
+      // Verify new token was stored
+      const newToken = tokenStorage.get();
+      expect(newToken).toEqual({
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+      });
+
+      // Verify request was retried
+      expect(mockFetcher.request).toHaveBeenCalledWith(request);
     });
 
-    const newToken = {
-      accessToken: 'new-access-token',
-      refreshToken: 'new-refresh-token',
-    };
+    it('should clear token storage and re-throw error when token refresh fails', async () => {
+      const tokenStorage = new TokenStorage(
+        'test-token-key',
+        new InMemoryStorage(),
+      );
+      const tokenRefresher: TokenRefresher = {
+        refresh: vi.fn().mockRejectedValue(new Error('Refresh failed')),
+      };
 
-    const tokenRefresher = {
-      refresh: vi.fn().mockResolvedValue(newToken),
-    };
+      const options: CoSecOptions = {
+        appId: 'test-app-id',
+        deviceIdStorage: new DeviceIdStorage(
+          'test-device-key',
+          new InMemoryStorage(),
+        ),
+        tokenStorage,
+        tokenRefresher,
+      };
 
-    const interceptor = new CoSecResponseInterceptor({
-      appId: 'test-app-id',
-      deviceIdStorage,
-      tokenStorage,
-      tokenRefresher,
+      const interceptor = new CoSecResponseInterceptor(options);
+
+      const mockFetcher = {} as Fetcher;
+      const request = { url: '/test' };
+      const response = new Response('test', {
+        status: ResponseCodes.UNAUTHORIZED,
+      });
+      const exchange = new FetchExchange(mockFetcher, request, response);
+
+      // Set a current token
+      const currentToken: CompositeToken = {
+        accessToken: 'old-access-token',
+        refreshToken: 'old-refresh-token',
+      };
+      tokenStorage.set(currentToken);
+
+      await expect(interceptor.intercept(exchange)).rejects.toThrow(
+        'Refresh failed',
+      );
+
+      // Verify token was cleared
+      const storedToken = tokenStorage.get();
+      expect(storedToken).toBeNull();
     });
-
-    const fetcher = new Fetcher();
-    const exchange: FetchExchange = new FetchExchange(fetcher, {
-      url: 'https://api.example.com/test',
-      method: 'GET',
-    }, new Response('Forbidden', { status: 401 }));
-
-    // Mock the fetcher's request method to avoid actual network calls
-    const requestMock = vi.fn().mockResolvedValue({
-      fetcher,
-      request: {
-        url: 'https://api.example.com/test',
-        method: 'GET',
-      },
-      response: new Response('OK', { status: 200 }),
-      error: undefined,
-    });
-    fetcher.request = requestMock;
-
-    await interceptor.intercept(exchange);
-
-    expect(tokenRefresher.refresh).toHaveBeenCalledWith({
-      accessToken: 'old-access-token',
-      refreshToken: 'old-refresh-token',
-    });
-    expect(tokenStorage.get()).toEqual(newToken);
-    expect(requestMock).toHaveBeenCalledWith({
-      url: 'https://api.example.com/test',
-      method: 'GET',
-    });
-  });
-
-  it('should clear tokens and re-throw error if token refresh fails', async () => {
-    const storage = new InMemoryStorage();
-    const deviceIdStorage = new DeviceIdStorage('test-device-id', storage);
-    const tokenStorage = new TokenStorage('test-token', storage);
-
-    // Set up initial token
-    tokenStorage.set({
-      accessToken: 'old-access-token',
-      refreshToken: 'old-refresh-token',
-    });
-
-    const tokenRefresher = {
-      refresh: vi.fn().mockRejectedValue(new Error('Token refresh failed')),
-    };
-
-    const interceptor = new CoSecResponseInterceptor({
-      appId: 'test-app-id',
-      deviceIdStorage,
-      tokenStorage,
-      tokenRefresher,
-    });
-
-    const fetcher = new Fetcher();
-    const exchange: FetchExchange = new FetchExchange(fetcher, {
-      url: 'https://api.example.com/test',
-      method: 'GET',
-    }, new Response('Forbidden', { status: 401 }));
-
-    await expect(interceptor.intercept(exchange)).rejects.toThrow(
-      'Token refresh failed',
-    );
-
-    expect(tokenRefresher.refresh).toHaveBeenCalled();
-    expect(tokenStorage.get()).toBeNull();
   });
 });

@@ -12,53 +12,71 @@
  */
 
 import { CoSecOptions, ResponseCodes } from './types';
-import { FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
+import { FetchExchange, ResponseInterceptor } from '@ahoo-wang/fetcher';
 
 /**
- * Interceptor that handles automatic token refresh based on response codes.
- *
- * @remarks
- * This interceptor runs near the end of the response processing chain, just before
- * the final response is returned. The order is set to Number.MAX_SAFE_INTEGER - 100
- * to ensure it runs after most other response interceptors but still allows for
- * final processing interceptors to run afterward. This order aligns with other
- * response enhancement interceptors like EventStreamInterceptor.
+ * The name of the CoSecResponseInterceptor.
  */
-export class CoSecResponseInterceptor implements Interceptor {
-  name = 'CoSecResponseInterceptor';
-  order = Number.MAX_SAFE_INTEGER - 100;
+export const COSEC_RESPONSE_INTERCEPTOR_NAME = 'CoSecResponseInterceptor';
+
+/**
+ * The order of the CoSecResponseInterceptor.
+ * Set to a high negative value to ensure it runs early in the interceptor chain.
+ */
+export const COSEC_RESPONSE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
+
+/**
+ * CoSecResponseInterceptor is responsible for handling unauthorized responses (401)
+ * by attempting to refresh the authentication token and retrying the original request.
+ *
+ * This interceptor:
+ * 1. Checks if the response status is 401 (UNAUTHORIZED)
+ * 2. If so, and if there's a current token, attempts to refresh it
+ * 3. On successful refresh, stores the new token and retries the original request
+ * 4. On refresh failure, clears stored tokens and propagates the error
+ */
+export class CoSecResponseInterceptor implements ResponseInterceptor {
+  readonly name = COSEC_RESPONSE_INTERCEPTOR_NAME;
+  readonly order = COSEC_RESPONSE_INTERCEPTOR_ORDER;
   private options: CoSecOptions;
 
+  /**
+   * Creates a new CoSecResponseInterceptor instance.
+   * @param options - The CoSec configuration options including token storage and refresher
+   */
   constructor(options: CoSecOptions) {
     this.options = options;
   }
 
   /**
-   * Intercept responses to handle token refresh for unauthorized responses.
-   *
-   * This method checks if a response has a 401 (UNAUTHORIZED) status code and attempts
-   * to refresh the authentication token if one is available. If token refresh is successful,
-   * the original request is retried with the new token. If token refresh fails, stored
-   * tokens are cleared and the original error is re-thrown.
-   *
-   * @param exchange - The fetch exchange containing the response to be processed
-   * @throws Error if token refresh fails or other errors occur during processing
+   * Intercepts the response and handles unauthorized responses by refreshing tokens.
+   * @param exchange - The fetch exchange containing request and response information
    */
   async intercept(exchange: FetchExchange): Promise<void> {
     const response = exchange.response;
+    // If there's no response, nothing to intercept
     if (!response) {
       return;
     }
+
+    // Only handle unauthorized responses (401)
     if (response.status !== ResponseCodes.UNAUTHORIZED) {
       return;
     }
+
+    // Get the current token from storage
     const currentToken = this.options.tokenStorage.get();
+    // If there's no current token, we can't refresh it
     if (!currentToken) {
       return;
     }
+
     try {
+      // Attempt to refresh the token
       const newToken = await this.options.tokenRefresher.refresh(currentToken);
+      // Store the refreshed token
       this.options.tokenStorage.set(newToken);
+      // Retry the original request with the new token
       await exchange.fetcher.request(exchange.request);
     } catch (error) {
       // If token refresh fails, clear stored tokens and re-throw the error

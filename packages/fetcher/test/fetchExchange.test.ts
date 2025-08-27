@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { Fetcher, FetchExchange, FetchRequest } from '../src';
+import { ExchangeError, Fetcher, FetchExchange, FetchRequest } from '../src';
 
 describe('FetchExchange', () => {
   const mockFetcher = {} as Fetcher;
@@ -77,5 +77,14 @@ describe('FetchExchange', () => {
     const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
 
     expect(exchange.hasResponse()).toBe(true);
+    expect(exchange.requiredResponse).toBe(mockResponse);
   });
+  it('should throw an error when trying to access requiredResponse without a response', () => {
+    expect(() => {
+      const exchange = new FetchExchange(mockFetcher, mockRequest);
+      exchange.requiredResponse;
+    }).toThrowError(ExchangeError);
+  });
+
 });
+

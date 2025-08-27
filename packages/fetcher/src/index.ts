@@ -12,11 +12,13 @@
  */
 
 export * from './fetcher';
+export * from './fetcherError';
 export * from './fetcherRegistrar';
 export * from './fetchExchange';
 export * from './fetchInterceptor';
 export * from './fetchRequest';
 export * from './interceptor';
+export * from './interceptorManager';
 export * from './mergeRequest';
 export * from './namedFetcher';
 export * from './orderedCapable';
@@ -27,3 +29,5 @@ export * from './urlBuilder';
 export * from './urlResolveInterceptor';
 export * from './urls';
 export * from './utils';
+export * from './validateStatusInterceptor';
+

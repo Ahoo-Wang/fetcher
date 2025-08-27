@@ -75,6 +75,8 @@ interface EventState {
   data: string[];
 }
 
+const DEFAULT_EVENT_TYPE = 'message';
+
 /**
  * Transformer responsible for converting a string stream into a ServerSentEvent object stream.
  *
@@ -85,7 +87,7 @@ export class ServerSentEventTransformer
 {
   // Initialize currentEvent with default values in a closure
   private currentEvent: EventState = {
-    event: 'message',
+    event: DEFAULT_EVENT_TYPE,
     id: undefined,
     retry: undefined,
     data: [],
@@ -108,14 +110,14 @@ export class ServerSentEventTransformer
         // If there is accumulated event data, send event
         if (currentEvent.data.length > 0) {
           controller.enqueue({
-            event: currentEvent.event || 'message',
+            event: currentEvent.event || DEFAULT_EVENT_TYPE,
             data: currentEvent.data.join('\n'),
             id: currentEvent.id || '',
             retry: currentEvent.retry,
           } as ServerSentEvent);
 
           // Reset current event (preserve id and retry for subsequent events)
-          currentEvent.event = 'message';
+          currentEvent.event = DEFAULT_EVENT_TYPE;
           // Preserve id and retry for subsequent events (no need to reassign to themselves)
           currentEvent.data = [];
         }
@@ -157,7 +159,7 @@ export class ServerSentEventTransformer
         error instanceof Error ? error : new Error(String(error)),
       );
       // Reset state
-      currentEvent.event = 'message';
+      currentEvent.event = DEFAULT_EVENT_TYPE;
       currentEvent.id = undefined;
       currentEvent.retry = undefined;
       currentEvent.data = [];
@@ -175,7 +177,7 @@ export class ServerSentEventTransformer
       // Send the last event (if any)
       if (currentEvent.data.length > 0) {
         controller.enqueue({
-          event: currentEvent.event || 'message',
+          event: currentEvent.event || DEFAULT_EVENT_TYPE,
           data: currentEvent.data.join('\n'),
           id: currentEvent.id || '',
           retry: currentEvent.retry,
@@ -187,7 +189,7 @@ export class ServerSentEventTransformer
       );
     } finally {
       // Reset state
-      currentEvent.event = 'message';
+      currentEvent.event = DEFAULT_EVENT_TYPE;
       currentEvent.id = undefined;
       currentEvent.retry = undefined;
       currentEvent.data = [];

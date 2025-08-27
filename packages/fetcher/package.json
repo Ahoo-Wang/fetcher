@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher",
-  "version": "0.9.1",
+  "version": "0.9.8",
   "description": "Ultra-lightweight (1.9kB) HTTP client with built-in path parameters and Axios-like API",
   "keywords": [
     "fetch",
@@ -14,11 +14,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Ahoo-Wang/fetcher.git",
-    "directory": "packages/core"
+    "directory": "packages/fetcher"
   },
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
   },
+  "type": "module",
   "main": "./dist/index.umd.js",
   "module": "./dist/index.es.js",
   "types": "./dist/index.d.ts",

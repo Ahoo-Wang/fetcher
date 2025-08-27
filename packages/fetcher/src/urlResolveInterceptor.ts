@@ -11,16 +11,33 @@
  * limitations under the License.
  */
 
-import { Interceptor } from './interceptor';
+import { RequestInterceptor } from './interceptor';
 import { FetchExchange } from './fetchExchange';
+
+/**
+ * The name of the UrlResolveInterceptor.
+ */
+export const URL_RESOLVE_INTERCEPTOR_NAME = 'UrlResolveInterceptor';
+
+/**
+ * The order of the UrlResolveInterceptor.
+ * Set to Number.MIN_SAFE_INTEGER + 1000 to ensure it runs earliest among request interceptors.
+ */
+export const URL_RESOLVE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
 
 /**
  * Interceptor responsible for resolving the final URL for a request.
  *
  * This interceptor combines the base URL, path parameters, and query parameters
- * to create the final URL for a request. It should be executed early in
+ * to create the final URL for a request. It should be executed earliest in
  * the interceptor chain to ensure the URL is properly resolved before other interceptors
  * process the request.
+ *
+ * @remarks
+ * This interceptor runs at the very beginning of the request interceptor chain to ensure
+ * URL resolution happens before any other request processing. The order is set to
+ * URL_RESOLVE_INTERCEPTOR_ORDER to ensure it executes before all other request interceptors,
+ * establishing the foundation for subsequent processing.
  *
  * @example
  * // With baseURL: 'https://api.example.com'
@@ -29,21 +46,21 @@ import { FetchExchange } from './fetchExchange';
  * // Query params: { filter: 'active' }
  * // Final URL: 'https://api.example.com/users/123?filter=active'
  */
-export class UrlResolveInterceptor implements Interceptor {
+export class UrlResolveInterceptor implements RequestInterceptor {
   /**
    * The name of this interceptor.
    */
-  name = 'UrlResolveInterceptor';
+  readonly name = URL_RESOLVE_INTERCEPTOR_NAME;
 
   /**
-   * The order of this interceptor (executed first).
+   * The order of this interceptor (executed earliest).
    *
-   * This interceptor should run first in the request interceptor chain to ensure
+   * This interceptor should run at the very beginning of the request interceptor chain to ensure
    * URL resolution happens before any other request processing. The order is set to
-   * Number.MIN_SAFE_INTEGER + 100 to allow for other interceptors that need to run
-   * even earlier while still maintaining a high priority.
+   * URL_RESOLVE_INTERCEPTOR_ORDER to ensure it executes before all other request interceptors,
+   * establishing the foundation for subsequent processing.
    */
-  order = Number.MIN_SAFE_INTEGER + 100;
+  readonly order = URL_RESOLVE_INTERCEPTOR_ORDER;
 
   /**
    * Resolves the final URL by combining the base URL, path parameters, and query parameters.

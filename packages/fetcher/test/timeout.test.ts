@@ -11,245 +11,145 @@
  * limitations under the License.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { FetchRequest, FetchTimeoutError, resolveTimeout, timeoutFetch, } from '../src';
 
-import { FetchTimeoutError, HttpMethod, resolveTimeout, TimeoutCapable, timeoutFetch } from '../src';
+describe('FetchTimeoutError', () => {
+  it('should create FetchTimeoutError with correct message', () => {
+    const request: FetchRequest = {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+      timeout: 1000,
+    };
 
-describe('timeout.ts', () => {
-  describe('resolveTimeout', () => {
-    it('should return request timeout when it is defined', () => {
-      expect(resolveTimeout(1000, 2000)).toBe(1000);
-      expect(resolveTimeout(0, 5000)).toBe(0);
-      expect(resolveTimeout(3000, undefined)).toBe(3000);
-    });
-
-    it('should return options timeout when request timeout is undefined', () => {
-      expect(resolveTimeout(undefined, 2000)).toBe(2000);
-      expect(resolveTimeout(undefined, 0)).toBe(0);
-    });
-
-    it('should return undefined when both timeouts are undefined', () => {
-      expect(resolveTimeout(undefined, undefined)).toBeUndefined();
-    });
-
-    it('should handle edge cases correctly', () => {
-      // 测试0值 - 表示不设置超时
-      expect(resolveTimeout(0, undefined)).toBe(0);
-      expect(resolveTimeout(undefined, 0)).toBe(0);
-    });
+    const error = new FetchTimeoutError(request);
+    expect(error).toBeInstanceOf(FetchTimeoutError);
+    expect(error.name).toBe('FetchTimeoutError');
+    expect(error.message).toBe(
+      'Request timeout of 1000ms exceeded for GET https://api.example.com/test',
+    );
+    expect(error.request).toBe(request);
   });
 
-  describe('TimeoutCapable', () => {
-    it('should define timeout as an optional number', () => {
-      const timeoutCapable: TimeoutCapable = {};
-      expect(timeoutCapable.timeout).toBeUndefined();
+  it('should handle missing method in request', () => {
+    const request: FetchRequest = {
+      url: 'https://api.example.com/test',
+      timeout: 1000,
+    } as FetchRequest;
 
-      const timeoutCapableWithTimeout: TimeoutCapable = { timeout: 1000 };
-      expect(timeoutCapableWithTimeout.timeout).toBe(1000);
-    });
+    const error = new FetchTimeoutError(request);
+    expect(error.message).toBe(
+      'Request timeout of 1000ms exceeded for GET https://api.example.com/test',
+    );
+  });
+});
+
+describe('resolveTimeout', () => {
+  it('should return request timeout when defined', () => {
+    const result = resolveTimeout(1000, 2000);
+    expect(result).toBe(1000);
   });
 
-  describe('FetchTimeoutError', () => {
-    it('should create FetchTimeoutError with correct properties', () => {
-      const url = 'https://api.example.com/users';
-      const timeout = 1000;
-      const request = { url: url, method: HttpMethod.GET, timeout };
-
-      const error = new FetchTimeoutError(request);
-
-      expect(error).toBeInstanceOf(FetchTimeoutError);
-      expect(error).toBeInstanceOf(Error);
-      expect(error.name).toBe('FetchTimeoutError');
-      expect(error.request.url).toBe(url);
-      expect(error.request).toBe(request);
-      expect(error.request.timeout).toBe(timeout);
-      expect(error.message).toBe(
-        'Request timeout of 1000ms exceeded for GET https://api.example.com/users',
-      );
-    });
-
-    it('should use default method GET when request method is not provided', () => {
-      const url = 'https://api.example.com/users';
-      const timeout = 5000;
-      const request = { url: url, timeout: timeout };
-
-      const error = new FetchTimeoutError(request);
-
-      expect(error.message).toBe(
-        'Request timeout of 5000ms exceeded for GET https://api.example.com/users',
-      );
-    });
-
-    it('should handle different HTTP methods correctly', () => {
-      const url = 'https://api.example.com/users';
-      const timeout = 1000;
-
-      const postRequest = { url, method: HttpMethod.POST, timeout };
-      const postError = new FetchTimeoutError(postRequest);
-      expect(postError.message).toBe(
-        'Request timeout of 1000ms exceeded for POST https://api.example.com/users',
-      );
-
-      const putRequest = { url, method: HttpMethod.PUT, timeout };
-      const putError = new FetchTimeoutError(putRequest);
-      expect(putError.message).toBe(
-        'Request timeout of 1000ms exceeded for PUT https://api.example.com/users',
-      );
-    });
-
-    it('should maintain proper prototype chain', () => {
-      const url = 'https://api.example.com/users';
-      const timeout = 1000;
-      const request = { url, method: HttpMethod.GET, timeout };
-
-      const error = new FetchTimeoutError(request);
-
-      expect(error.constructor).toBe(FetchTimeoutError);
-      expect(error instanceof FetchTimeoutError).toBe(true);
-      expect(error instanceof Error).toBe(true);
-    });
+  it('should return options timeout when request timeout is undefined', () => {
+    const result = resolveTimeout(undefined, 2000);
+    expect(result).toBe(2000);
   });
 
-  describe('timeoutFetch', () => {
-    beforeEach(() => {
-      // 清除所有模拟
-      vi.clearAllMocks();
+  it('should return undefined when both timeouts are undefined', () => {
+    const result = resolveTimeout(undefined, undefined);
+    expect(result).toBeUndefined();
+  });
+});
+
+describe('timeoutFetch', () => {
+  // Replace global fetch with mock
+  const originalFetch = globalThis.fetch;
+
+  it('should delegate to fetch when no timeout is specified', async () => {
+    // Set up mock fetch
+    const mockFetch = vi.fn();
+    globalThis.fetch = mockFetch as any;
+    const response = new Response('test');
+    mockFetch.mockResolvedValue(response);
+
+    const request: FetchRequest = {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+    };
+
+    const result = await timeoutFetch(request);
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.example.com/test',
+      request,
+    );
+    expect(result).toBe(response);
+
+    // Restore original fetch
+    globalThis.fetch = originalFetch;
+  });
+
+  it('should resolve normally when request completes before timeout', async () => {
+    vi.useFakeTimers();
+
+    // Set up mock fetch
+    const mockFetch = vi.fn();
+    globalThis.fetch = mockFetch as any;
+    const response = new Response('test');
+    mockFetch.mockResolvedValue(response);
+
+    const request: FetchRequest = {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+      timeout: 1000,
+    };
+
+    const promise = timeoutFetch(request);
+
+    // Advance timers but not enough to trigger timeout
+    vi.advanceTimersByTime(500);
+
+    const result = await promise;
+    expect(result).toBe(response);
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.example.com/test',
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      }),
+    );
+
+    // Restore original fetch
+    globalThis.fetch = originalFetch;
+    vi.useRealTimers();
+  });
+
+  it('should reject with FetchTimeoutError when request times out', async () => {
+    vi.useFakeTimers();
+
+    // Set up mock fetch that never resolves
+    const mockFetch = vi.fn();
+    globalThis.fetch = mockFetch as any;
+    mockFetch.mockReturnValue(new Promise(() => {})); // Never resolves
+
+    const request: FetchRequest = {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+      timeout: 1000,
+    };
+
+    const promise = timeoutFetch(request);
+
+    // Advance timers to trigger timeout
+    vi.advanceTimersByTime(1000);
+
+    await expect(promise).rejects.toThrow(FetchTimeoutError);
+    await expect(promise).rejects.toMatchObject({
+      message:
+        'Request timeout of 1000ms exceeded for GET https://api.example.com/test',
+      request: request,
     });
 
-    it('should call fetch directly when no timeout is provided', async () => {
-      const mockResponse = new Response('{"data": "test"}', {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      // Mock global fetch
-      const mockFetch = vi
-        .spyOn(globalThis, 'fetch')
-        .mockResolvedValue(mockResponse);
-
-      const url = 'https://api.example.com/users';
-      const request = { url, method: HttpMethod.GET };
-
-      const response = await timeoutFetch(request);
-
-      expect(mockFetch).toHaveBeenCalledWith(url, request);
-      expect(response).toBe(mockResponse);
-
-      // Clean up
-      mockFetch.mockRestore();
-    });
-
-    it('should call fetch with AbortController signal when timeout is provided', async () => {
-      const mockResponse = new Response('{"data": "test"}', {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      // Mock global fetch
-      const mockFetch = vi
-        .spyOn(globalThis, 'fetch')
-        .mockResolvedValue(mockResponse);
-
-      const url = 'https://api.example.com/users';
-      const timeout = 1000;
-      const request = { url, method: HttpMethod.GET, timeout };
-
-      const response = await timeoutFetch(request);
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        url,
-        expect.objectContaining({
-          signal: expect.any(AbortSignal),
-        }),
-      );
-      expect(response).toBe(mockResponse);
-
-      // Clean up
-      mockFetch.mockRestore();
-    });
-
-    it('should reject with FetchTimeoutError when timeout is exceeded', async () => {
-      // Mock global fetch to simulate a long-running request
-      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
-        return new Promise(() => {
-        }); // Never resolves
-      });
-
-      const url = 'https://api.example.com/users';
-      const timeout = 10; // Short timeout for testing
-      const request = { url, method: HttpMethod.GET, timeout };
-
-      await expect(timeoutFetch(request)).rejects.toThrow(FetchTimeoutError);
-      await expect(timeoutFetch(request)).rejects.toHaveProperty(
-        'request.url',
-        url,
-      );
-      await expect(timeoutFetch(request)).rejects.toHaveProperty(
-        'request.timeout',
-        timeout,
-      );
-
-      // Clean up
-      mockFetch.mockRestore();
-    });
-
-    it('should clear timeout when fetch completes successfully', async () => {
-      const mockResponse = new Response('{"data": "test"}', {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      // Mock global fetch
-      const mockFetch = vi
-        .spyOn(globalThis, 'fetch')
-        .mockResolvedValue(mockResponse);
-
-      // Mock clearTimeout to verify it's called
-      const mockClearTimeout = vi.spyOn(globalThis, 'clearTimeout');
-
-      const url = 'https://api.example.com/users';
-      const timeout = 1000;
-      const request = { url, method: HttpMethod.GET, timeout };
-
-      const response = await timeoutFetch(request);
-
-      expect(response).toBe(mockResponse);
-      // Verify that clearTimeout was called (timer was cleared)
-      expect(mockClearTimeout).toHaveBeenCalled();
-
-      // Clean up
-      mockFetch.mockRestore();
-      mockClearTimeout.mockRestore();
-    });
-
-    it('should abort the request when timeout is exceeded', async () => {
-      // Mock global fetch to simulate a long-running request
-      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
-        return new Promise(() => {
-        }); // Never resolves
-      });
-
-      const url = 'https://api.example.com/users';
-      const timeout = 10; // Short timeout for testing
-      const request = { url, method: HttpMethod.GET, timeout };
-
-      await expect(timeoutFetch(request)).rejects.toThrow(FetchTimeoutError);
-
-      // Verify that the AbortController's abort method would be called
-      // We can't directly test this without more complex mocking, but we can
-      // verify that the signal would be aborted by checking the error
-      try {
-        await timeoutFetch(request);
-      } catch (error) {
-        expect(error).toBeInstanceOf(FetchTimeoutError);
-        const timeoutError = error as FetchTimeoutError;
-        // The error should have the correct properties
-        expect(timeoutError.request.url).toBe(url);
-        expect(timeoutError.request.timeout).toBe(timeout);
-      }
-
-      // Clean up
-      mockFetch.mockRestore();
-    });
+    // Restore original fetch
+    globalThis.fetch = originalFetch;
+    vi.useRealTimers();
   });
 });

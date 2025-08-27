@@ -14,7 +14,7 @@ import {
   combineURLs,
   DEFAULT_FETCHER_NAME,
   Fetcher,
-  fetcherRegistrar,
+  fetcherRegistrar, FetchExchange, FetchRequest,
   FetchRequestInit,
   mergeRequest,
   NamedCapable,
@@ -24,6 +24,8 @@ import {
 import { ApiMetadata } from './apiDecorator';
 import { EndpointMetadata } from './endpointDecorator';
 import { ParameterMetadata, ParameterType } from './parameterDecorator';
+import { ResultExtractor, ResultExtractors } from './resultExtractor';
+import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 
 /**
  * Metadata container for a function with HTTP endpoint decorators.
@@ -266,6 +268,10 @@ export class FunctionMetadata implements NamedCapable {
   resolveTimeout(): number | undefined {
     return this.endpoint.timeout || this.api.timeout;
   }
+
+  resolveResultExtractor(): ResultExtractor {
+    return this.endpoint.resultExtractor || this.api.resultExtractor || ResultExtractors.DEFAULT;
+  }
 }
 
 /**
@@ -296,9 +302,16 @@ export class RequestExecutor {
    * @param args - The runtime arguments passed to the method
    * @returns A Promise that resolves to the Response
    */
-  async execute(args: any[]): Promise<Response> {
+  async execute(args: any[]): Promise<FetchExchange | Response | any | ServerSentEventStream> {
     const path = this.metadata.resolvePath();
-    const request = this.metadata.resolveRequest(args);
-    return await this.metadata.fetcher.fetch(path, request);
+    const requestInit = this.metadata.resolveRequest(args);
+    const request: FetchRequest = {
+      url: path,
+      ...requestInit,
+    };
+    const exchange = await this.metadata.fetcher.request(request);
+    const extractor = this.metadata.resolveResultExtractor();
+    const result = await extractor(exchange);
+    return result;
   }
 }

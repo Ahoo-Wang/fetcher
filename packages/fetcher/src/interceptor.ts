@@ -13,10 +13,7 @@
 
 import { NamedCapable } from './types';
 import { OrderedCapable, toSorted } from './orderedCapable';
-import { RequestBodyInterceptor } from './requestBodyInterceptor';
-import { FetchInterceptor } from './fetchInterceptor';
 import { FetchExchange } from './fetchExchange';
-import { UrlResolveInterceptor } from './urlResolveInterceptor';
 
 /**
  * Interface for HTTP interceptors in the fetcher pipeline.
@@ -43,15 +40,23 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
   /**
    * Unique identifier for the interceptor.
    *
-   * Used by InterceptorManager to manage interceptors, including adding, removing,
+   * Used by InterceptorRegistry to manage interceptors, including adding, removing,
    * and preventing duplicates. Each interceptor must have a unique name.
    */
-  name: string;
+  readonly name: string;
+
+  /**
+   * Interceptor method that modifies the request or response.
+   *
+   * @param exchange - The current exchange object, which contains the request and response.
+   * @returns A promise that resolves to the modified exchange object.
+   */
+  readonly order: number;
 
   /**
    * Process the exchange object in the interceptor pipeline.
    *
-   * This method is called by InterceptorManager to process the exchange object.
+   * This method is called by InterceptorRegistry to process the exchange object.
    * Interceptors can modify request, response, or error properties directly.
    *
    * @param exchange - The exchange object containing request, response, and error information
@@ -64,31 +69,113 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
 }
 
 /**
- * Manager for a collection of interceptors of the same type.
+ * Interface for request interceptors.
+ *
+ * Request interceptors are executed before the HTTP request is sent.
+ * They can modify the request configuration, add headers, or perform
+ * other preprocessing tasks.
+ *
+ * @example
+ * // Example of a request interceptor that adds an authorization header
+ * const authInterceptor: RequestInterceptor = {
+ *   name: 'AuthorizationInterceptor',
+ *   order: 100,
+ *   async intercept(exchange: FetchExchange): Promise<void> {
+ *     const token = getAuthToken();
+ *     if (token) {
+ *       exchange.request.headers = {
+ *         ...exchange.request.headers,
+ *         'Authorization': `Bearer ${token}`
+ *       };
+ *     }
+ *   }
+ * };
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface RequestInterceptor extends Interceptor {
+}
+
+/**
+ * Interface for response interceptors.
+ *
+ * Response interceptors are executed after the HTTP response is received
+ * but before it's processed by the application. They can modify the response,
+ * transform data, or handle response-specific logic.
+ *
+ * @example
+ * // Example of a response interceptor that parses JSON data
+ * const jsonInterceptor: ResponseInterceptor = {
+ *   name: 'JsonResponseInterceptor',
+ *   order: 100,
+ *   async intercept(exchange: FetchExchange): Promise<void> {
+ *     if (exchange.response && exchange.response.headers.get('content-type')?.includes('application/json')) {
+ *       const data = await exchange.response.json();
+ *       // Attach parsed data to a custom property
+ *       (exchange.response as any).jsonData = data;
+ *     }
+ *   }
+ * };
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ResponseInterceptor extends Interceptor {
+}
+
+/**
+ * Interface for error interceptors.
+ *
+ * Error interceptors are executed when an HTTP request fails.
+ * They can handle errors, transform them, or implement retry logic.
+ *
+ * @example
+ * // Example of an error interceptor that retries failed requests
+ * const retryInterceptor: ErrorInterceptor = {
+ *   name: 'RetryInterceptor',
+ *   order: 100,
+ *   async intercept(exchange: FetchExchange): Promise<void> {
+ *     if (exchange.error && isRetryableError(exchange.error)) {
+ *       // Implement retry logic
+ *       const retryCount = (exchange.request as any).retryCount || 0;
+ *       if (retryCount < 3) {
+ *         (exchange.request as any).retryCount = retryCount + 1;
+ *         // Retry the request
+ *         exchange.response = await fetch(exchange.request);
+ *         // Clear the error since we've recovered
+ *         exchange.error = undefined;
+ *       }
+ *     }
+ *   }
+ * };
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ErrorInterceptor extends Interceptor {
+}
+
+/**
+ * Registry for a collection of interceptors of the same type.
  *
  * Handles adding, removing, and executing interceptors in the correct order.
- * Each InterceptorManager instance manages one type of interceptor (request, response, or error).
+ * Each InterceptorRegistry instance manages one type of interceptor (request, response, or error).
  *
  * @remarks
  * Interceptors are executed in ascending order of their `order` property.
  * Interceptors with the same order value are executed in the order they were added.
  *
  * @example
- * // Create an interceptor manager with initial interceptors
- * const requestManager = new InterceptorManager([interceptor1, interceptor2]);
+ * // Create an interceptor registry with initial interceptors
+ * const requestRegistry = new InterceptorRegistry([interceptor1, interceptor2]);
  *
  * // Add a new interceptor
- * requestManager.use(newInterceptor);
+ * requestRegistry.use(newInterceptor);
  *
  * // Remove an interceptor by name
- * requestManager.eject('InterceptorName');
+ * requestRegistry.eject('InterceptorName');
  *
  * // Process an exchange through all interceptors
- * const result = await requestManager.intercept(exchange);
+ * const result = await requestRegistry.intercept(exchange);
  */
-export class InterceptorManager implements Interceptor {
+export class InterceptorRegistry implements Interceptor {
   /**
-   * Gets the name of this interceptor manager.
+   * Gets the name of this interceptor registry.
    *
    * @returns The constructor name of this class
    */
@@ -97,21 +184,21 @@ export class InterceptorManager implements Interceptor {
   }
 
   /**
-   * Gets the order of this interceptor manager.
+   * Gets the order of this interceptor registry.
    *
-   * @returns Number.MIN_SAFE_INTEGER, indicating this manager should execute early
+   * @returns Number.MIN_SAFE_INTEGER, indicating this registry should execute early
    */
   get order(): number {
     return Number.MIN_SAFE_INTEGER;
   }
 
   /**
-   * Array of interceptors managed by this manager, sorted by their order property.
+   * Array of interceptors managed by this registry, sorted by their order property.
    */
   private sortedInterceptors: Interceptor[] = [];
 
   /**
-   * Initializes a new InterceptorManager instance.
+   * Initializes a new InterceptorRegistry instance.
    *
    * @param interceptors - Initial array of interceptors to manage
    *
@@ -124,7 +211,14 @@ export class InterceptorManager implements Interceptor {
   }
 
   /**
-   * Adds an interceptor to this manager.
+   * Returns an array of all interceptors in the registry.
+   */
+  get interceptors(): Interceptor[] {
+    return [...this.sortedInterceptors];
+  }
+
+  /**
+   * Adds an interceptor to this registry.
    *
    * @param interceptor - The interceptor to add
    * @returns True if the interceptor was added, false if an interceptor with the
@@ -132,7 +226,7 @@ export class InterceptorManager implements Interceptor {
    *
    * @remarks
    * Interceptors are uniquely identified by their name property. Attempting to add
-   * an interceptor with a name that already exists in the manager will fail.
+   * an interceptor with a name that already exists in the registry will fail.
    *
    * After adding, interceptors are automatically sorted by their order property.
    */
@@ -164,11 +258,12 @@ export class InterceptorManager implements Interceptor {
   }
 
   /**
-   * Removes all interceptors from this manager.
+   * Removes all interceptors from this registry.
    */
   clear(): void {
     this.sortedInterceptors = [];
   }
+
 
   /**
    * Executes all managed interceptors on the given exchange object.
@@ -190,86 +285,4 @@ export class InterceptorManager implements Interceptor {
       await interceptor.intercept(exchange);
     }
   }
-}
-
-/**
- * Collection of interceptor managers for the Fetcher client.
- *
- * Manages three types of interceptors:
- * 1. Request interceptors - Process requests before sending HTTP requests
- * 2. Response interceptors - Process responses after receiving HTTP responses
- * 3. Error interceptors - Handle errors when they occur during the request process
- *
- * Each type of interceptor is managed by an InterceptorManager instance, supporting
- * adding, removing, and executing interceptors.
- *
- * @example
- * // Create a custom interceptor
- * const customRequestInterceptor: Interceptor = {
- *   name: 'CustomRequestInterceptor',
- *   order: 100,
- *   async intercept(exchange: FetchExchange): Promise<FetchExchange> {
- *     // Modify request headers
- *     exchange.request.headers = {
- *       ...exchange.request.headers,
- *       'X-Custom-Header': 'custom-value'
- *     };
- *     return exchange;
- *   }
- * };
- *
- * // Add interceptor to Fetcher
- * const fetcher = new Fetcher();
- * fetcher.interceptors.request.use(customRequestInterceptor);
- *
- * @remarks
- * By default, the request interceptor manager has three built-in interceptors registered:
- * 1. UrlResolveInterceptor - Resolves the final URL with parameters
- * 2. RequestBodyInterceptor - Automatically converts object-type request bodies to JSON strings
- * 3. FetchInterceptor - Executes actual HTTP requests and handles timeouts
- */
-export class FetcherInterceptors {
-  /**
-   * Manager for request-phase interceptors.
-   *
-   * Executed before HTTP requests are sent. Contains three built-in interceptors by default:
-   * UrlResolveInterceptor, RequestBodyInterceptor, and FetchInterceptor.
-   *
-   * @remarks
-   * Request interceptors are executed in ascending order of their order values, with smaller
-   * values having higher priority. The default interceptors are:
-   * 1. UrlResolveInterceptor (order: Number.MIN_SAFE_INTEGER) - Resolves the final URL
-   * 2. RequestBodyInterceptor (order: 0) - Converts object bodies to JSON
-   * 3. FetchInterceptor (order: Number.MAX_SAFE_INTEGER) - Executes the actual HTTP request
-   */
-  request: InterceptorManager = new InterceptorManager([
-    new UrlResolveInterceptor(),
-    new RequestBodyInterceptor(),
-    new FetchInterceptor(),
-  ]);
-
-  /**
-   * Manager for response-phase interceptors.
-   *
-   * Executed after HTTP responses are received. Empty by default, custom response processing
-   * logic can be added as needed.
-   *
-   * @remarks
-   * Response interceptors are executed in ascending order of their order values, with smaller
-   * values having higher priority.
-   */
-  response: InterceptorManager = new InterceptorManager();
-
-  /**
-   * Manager for error-handling phase interceptors.
-   *
-   * Executed when errors occur during HTTP requests. Empty by default, custom error handling
-   * logic can be added as needed.
-   *
-   * @remarks
-   * Error interceptors are executed in ascending order of their order values, with smaller
-   * values having higher priority. Error interceptors can transform errors into normal responses,
-   * avoiding thrown exceptions.
-   */
-  error: InterceptorManager = new InterceptorManager();
 }

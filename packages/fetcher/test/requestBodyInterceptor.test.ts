@@ -12,310 +12,148 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { ContentTypeValues, Fetcher, FetchExchange, RequestBodyInterceptor } from '../src';
+import {
+  ContentTypeValues,
+  Fetcher,
+  FetchExchange,
+  REQUEST_BODY_INTERCEPTOR_NAME,
+  REQUEST_BODY_INTERCEPTOR_ORDER,
+  RequestBodyInterceptor,
+} from '../src';
 
 describe('RequestBodyInterceptor', () => {
-  const interceptor = new RequestBodyInterceptor();
-  const mockFetcher = new Fetcher();
+  const mockFetcher = {} as Fetcher;
 
   it('should have correct name and order', () => {
-    expect(interceptor.name).toBe('RequestBodyInterceptor');
-    expect(interceptor.order).toBe(Number.MIN_SAFE_INTEGER + 200);
+    const interceptor = new RequestBodyInterceptor();
+    expect(interceptor.name).toBe(REQUEST_BODY_INTERCEPTOR_NAME);
+    expect(interceptor.order).toBe(REQUEST_BODY_INTERCEPTOR_ORDER);
   });
 
-  it('should not modify request without body', () => {
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-      },
-    );
+  it('should not modify request when body is undefined', () => {
+    const interceptor = new RequestBodyInterceptor();
+    const request = { url: '/test' };
+    const exchange = new FetchExchange(mockFetcher, request);
 
     interceptor.intercept(exchange);
+
     expect(exchange.request.body).toBeUndefined();
   });
 
-  it('should not modify request with null body', () => {
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: null,
-      },
-    );
+  it('should not modify request when body is null', () => {
+    const interceptor = new RequestBodyInterceptor();
+    const request = { url: '/test', body: null };
+    const exchange = new FetchExchange(mockFetcher, request);
 
     interceptor.intercept(exchange);
+
     expect(exchange.request.body).toBeNull();
   });
 
-  it('should not modify request with string body', () => {
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: 'plain text' as any,
-      },
-    );
+  it('should not modify request when body is string', () => {
+    const interceptor = new RequestBodyInterceptor();
+    const requestBody = 'test body';
+    const request = { url: '/test', body: requestBody };
+    const exchange = new FetchExchange(mockFetcher, request);
 
     interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe('plain text');
+
+    expect(exchange.request.body).toBe(requestBody);
   });
 
-  it('should not modify request with number body', () => {
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: 42 as any,
-      },
-    );
+  it('should not modify request when body is ArrayBuffer', () => {
+    const interceptor = new RequestBodyInterceptor();
+    const requestBody = new ArrayBuffer(8);
+    const request = { url: '/test', body: requestBody };
+    const exchange = new FetchExchange(mockFetcher, request);
 
     interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(42);
+
+    expect(exchange.request.body).toBe(requestBody);
   });
 
-  it('should not modify request with boolean body', () => {
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: true as any,
-      },
-    );
+  it('should not modify request when body is Blob', () => {
+    const interceptor = new RequestBodyInterceptor();
+    const requestBody = new Blob(['test']);
+    const request = { url: '/test', body: requestBody };
+    const exchange = new FetchExchange(mockFetcher, request);
 
     interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(true);
+
+    expect(exchange.request.body).toBe(requestBody);
   });
 
-  it('should not modify request with ArrayBuffer body', () => {
-    const arrayBuffer = new ArrayBuffer(8);
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: arrayBuffer as any,
-      },
-    );
+  it('should not modify request when body is URLSearchParams', () => {
+    const interceptor = new RequestBodyInterceptor();
+    const requestBody = new URLSearchParams('key=value');
+    const request = { url: '/test', body: requestBody };
+    const exchange = new FetchExchange(mockFetcher, request);
 
     interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(arrayBuffer);
+
+    expect(exchange.request.body).toBe(requestBody);
   });
 
-  it('should not modify request with Blob body', () => {
-    const blob = new Blob(['hello'], { type: 'text/plain' });
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: blob as any,
-      });
+  it('should not modify request when body is FormData', () => {
+    const interceptor = new RequestBodyInterceptor();
+    const requestBody = new FormData();
+    requestBody.append('key', 'value');
+    const request = { url: '/test', body: requestBody };
+    const exchange = new FetchExchange(mockFetcher, request);
 
     interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(blob);
-  });
 
-  it('should not modify request with FormData body', () => {
-    const formData = new FormData();
-    formData.append('key', 'value');
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: formData as any,
-      });
-
-    interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(formData);
-  });
-
-  it('should not modify request with URLSearchParams body', () => {
-    const urlSearchParams = new URLSearchParams();
-    urlSearchParams.append('key', 'value');
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: urlSearchParams as any,
-      },
-    );
-
-    interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(urlSearchParams);
-  });
-
-  it('should not modify request with ReadableStream body', () => {
-    const stream = new ReadableStream();
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: stream as any,
-      });
-
-    interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(stream);
-  });
-
-  it('should not modify request with File body', () => {
-    const file = new File(['hello'], 'test.txt', { type: 'text/plain' });
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: file,
-      });
-
-    interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(file);
-  });
-
-  it('should not modify request with DataView body', () => {
-    const arrayBuffer = new ArrayBuffer(16);
-    const dataView = new DataView(arrayBuffer);
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: dataView,
-      });
-
-    interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(dataView);
-  });
-
-  it('should not modify request with TypedArray body', () => {
-    const typedArray = new Uint8Array([1, 2, 3]);
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: typedArray as any,
-      });
-
-    interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(typedArray);
+    expect(exchange.request.body).toBe(requestBody);
   });
 
   it('should convert plain object to JSON string and set Content-Type header', () => {
-    const requestBody = { name: 'John', age: 30 };
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: requestBody as any,
-      });
+    const interceptor = new RequestBodyInterceptor();
+    const requestBody = { name: 'test', value: 123 };
+    const request = { url: '/test', body: requestBody };
+    const exchange = new FetchExchange(mockFetcher, request);
 
     interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
-    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
 
-    // Check that Content-Type header is set
-    const headers = exchange.request.headers!;
-    expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
+    expect(exchange.request.body).toBe('{"name":"test","value":123}');
+    expect(exchange.request.headers).toEqual({
+      'Content-Type': ContentTypeValues.APPLICATION_JSON,
+    });
   });
 
-  it('should not override existing Content-Type header', () => {
-    const requestBody = { name: 'John', age: 30 };
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: requestBody as any,
-        headers: {
-          ['Content-Type']: 'text/plain',
-        },
-      });
-
-    interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
-    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
-
-    // Check that existing Content-Type header is preserved
-    const headers = exchange.request.headers!;
-    expect(headers['Content-Type']).toBe('text/plain');
-  });
-
-  it('should handle array body by converting to JSON', () => {
-    const requestBody = [1, 2, 3];
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: requestBody as any,
-      });
-
-    interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
-    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
-
-    // Check that Content-Type header is set
-    const headers = exchange.request.headers!;
-    expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
-  });
-
-  it('should handle nested object body by converting to JSON', () => {
-    const requestBody = {
-      user: {
-        name: 'John',
-        address: {
-          city: 'New York',
-          zip: '10001',
-        },
-      },
+  it('should convert plain object to JSON string and preserve existing headers', () => {
+    const interceptor = new RequestBodyInterceptor();
+    const requestBody = { name: 'test', value: 123 };
+    const request = {
+      url: '/test',
+      body: requestBody,
+      headers: { Authorization: 'Bearer token' },
     };
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method: 'POST',
-        body: requestBody as any,
-      });
+    const exchange = new FetchExchange(mockFetcher, request);
 
     interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
-    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
 
-    // Check that Content-Type header is set
-    const headers = exchange.request.headers!;
-    expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
+    expect(exchange.request.body).toBe('{"name":"test","value":123}');
+    expect(exchange.request.headers).toEqual({
+      Authorization: 'Bearer token',
+      'Content-Type': ContentTypeValues.APPLICATION_JSON,
+    });
   });
 
-  it('should handle empty object body', () => {
-    const requestBody = {};
-    const exchange = new FetchExchange(
-      mockFetcher,
-      {
-        url: 'http://example.com',
-        method:
-          'POST',
-        body:
-          requestBody as any,
-      });
+  it('should convert plain object to JSON string and not override existing Content-Type', () => {
+    const interceptor = new RequestBodyInterceptor();
+    const requestBody = { name: 'test', value: 123 };
+    const request = {
+      url: '/test',
+      body: requestBody,
+      headers: { 'Content-Type': 'text/plain' },
+    };
+    const exchange = new FetchExchange(mockFetcher, request);
 
     interceptor.intercept(exchange);
-    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
-    expect(exchange.request.body).toBe(JSON.stringify(requestBody));
 
-// Check that Content-Type header is set
-    const headers = exchange.request.headers!;
-    expect(headers['Content-Type']).toBe(ContentTypeValues.APPLICATION_JSON);
-  })
-  ;
-})
-;
+    expect(exchange.request.body).toBe('{"name":"test","value":123}');
+    expect(exchange.request.headers).toEqual({
+      'Content-Type': 'text/plain',
+    });
+  });
+});

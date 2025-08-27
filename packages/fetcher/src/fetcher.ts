@@ -13,7 +13,6 @@
 
 import { UrlBuilder, UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, TimeoutCapable } from './timeout';
-import { FetcherInterceptors } from './interceptor';
 import { FetchExchange } from './fetchExchange';
 import {
   BaseURLCapable,
@@ -25,6 +24,7 @@ import {
   RequestHeadersCapable,
 } from './fetchRequest';
 import { mergeRecords } from './utils';
+import { InterceptorManager } from './interceptorManager';
 
 /**
  * Configuration options for the Fetcher client.
@@ -38,7 +38,7 @@ import { mergeRecords } from './utils';
  *   baseURL: 'https://api.example.com',
  *   headers: { 'Content-Type': 'application/json' },
  *   timeout: 5000,
- *   interceptors: new FetcherInterceptors()
+ *   interceptors: new InterceptorManager()
  * };
  * ```
  */
@@ -46,7 +46,7 @@ export interface FetcherOptions
   extends BaseURLCapable,
     RequestHeadersCapable,
     TimeoutCapable {
-  interceptors?: FetcherInterceptors;
+  interceptors?: InterceptorManager;
 }
 
 const DEFAULT_HEADERS: RequestHeaders = {
@@ -78,12 +78,11 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  * ```
  */
 export class Fetcher
-  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable
-{
-  urlBuilder: UrlBuilder;
-  headers?: RequestHeaders = DEFAULT_HEADERS;
-  timeout?: number;
-  interceptors: FetcherInterceptors;
+  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable {
+  readonly urlBuilder: UrlBuilder;
+  readonly headers?: RequestHeaders = DEFAULT_HEADERS;
+  readonly timeout?: number;
+  readonly interceptors: InterceptorManager;
 
   /**
    * Initializes a new Fetcher instance with optional configuration.
@@ -97,7 +96,7 @@ export class Fetcher
     this.urlBuilder = new UrlBuilder(options.baseURL);
     this.headers = options.headers ?? DEFAULT_HEADERS;
     this.timeout = options.timeout;
-    this.interceptors = options.interceptors ?? new FetcherInterceptors();
+    this.interceptors = options.interceptors ?? new InterceptorManager();
   }
 
   /**
@@ -109,16 +108,13 @@ export class Fetcher
    * @param url - The URL path for the request (relative to baseURL if set)
    * @param request - Request configuration including headers, body, parameters, etc.
    * @returns Promise that resolves to the HTTP response
-   * @throws Error if the request fails and no response is generated
+   * @throws FetchError if the request fails and no response is generated
    */
   async fetch(url: string, request: FetchRequestInit = {}): Promise<Response> {
     const fetchRequest = request as FetchRequest;
     fetchRequest.url = url;
     const exchange = await this.request(fetchRequest);
-    if (!exchange.response) {
-      throw new Error(`Request to ${fetchRequest.url} failed with no response`);
-    }
-    return exchange.response;
+    return exchange.requiredResponse;
   }
 
   /**
@@ -142,41 +138,7 @@ export class Fetcher
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
     const exchange: FetchExchange = new FetchExchange(this, fetchRequest);
-    return this.exchange(exchange);
-  }
-
-  /**
-   * Processes a FetchExchange through the interceptor chain.
-   *
-   * Orchestrates the complete request lifecycle by applying interceptors in sequence:
-   * 1. Request interceptors - Modify the outgoing request
-   * 2. Response interceptors - Process the incoming response
-   *
-   * Error handling follows this flow:
-   * - If an error occurs, error interceptors are invoked
-   * - If an error interceptor produces a response, it's returned
-   * - Otherwise, the original error is re-thrown
-   *
-   * @param fetchExchange - The exchange object containing request and response data
-   * @returns Promise resolving to the processed exchange
-   * @throws Error if an unhandled error occurs during processing
-   */
-  async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
-    try {
-      // Apply request interceptors
-      await this.interceptors.request.intercept(fetchExchange);
-      // Apply response interceptors
-      await this.interceptors.response.intercept(fetchExchange);
-      return fetchExchange;
-    } catch (error) {
-      // Apply error interceptors
-      fetchExchange.error = error;
-      await this.interceptors.error.intercept(fetchExchange);
-      if (fetchExchange.hasResponse()) {
-        return fetchExchange;
-      }
-      throw fetchExchange.error;
-    }
+    return this.interceptors.exchange(exchange);
   }
 
   /**
