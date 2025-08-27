@@ -333,7 +333,7 @@ Interceptor interface that defines the basic structure of interceptors.
 
 - `intercept(exchange: FetchExchange): void | Promise<void>` - Intercept and process data
 
-#### InterceptorManager Class
+#### InterceptorRegistry Class
 
 Interceptor manager for managing multiple interceptors of the same type.
 
@@ -344,7 +344,7 @@ Interceptor manager for managing multiple interceptors of the same type.
 - `clear(): void` - Clear all interceptors
 - `intercept(exchange: FetchExchange): Promise<void>` - Execute all interceptors in sequence
 
-#### FetcherInterceptors Class
+#### InterceptorManager Class
 
 Fetcher interceptor collection, including request, response, and error interceptor managers.
 

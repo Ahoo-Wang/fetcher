@@ -41,7 +41,7 @@ import { InterceptorRegistry } from './interceptor';
  * 2. RequestBodyInterceptor - Automatically converts object-type request bodies to JSON strings
  * 3. FetchInterceptor - Executes actual HTTP requests and handles timeouts
  */
-export class FetcherInterceptors {
+export class InterceptorManager {
   /**
    * Manager for request-phase interceptors.
    *

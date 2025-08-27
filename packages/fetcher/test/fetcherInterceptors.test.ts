@@ -12,11 +12,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { FetcherInterceptors, FetchInterceptor, RequestBodyInterceptor, UrlResolveInterceptor } from '../src';
+import { FetchInterceptor, InterceptorManager, RequestBodyInterceptor, UrlResolveInterceptor, } from '../src';
 
-describe('FetcherInterceptors', () => {
-  it('should create FetcherInterceptors with default interceptors', () => {
-    const interceptors = new FetcherInterceptors();
+describe('InterceptorManager', () => {
+  it('should create InterceptorManager with default interceptors', () => {
+    const interceptors = new InterceptorManager();
 
     expect(interceptors).toBeDefined();
     expect(interceptors.request).toBeDefined();
@@ -25,7 +25,7 @@ describe('FetcherInterceptors', () => {
   });
 
   it('should have UrlResolveInterceptor in request interceptors', () => {
-    const interceptors = new FetcherInterceptors();
+    const interceptors = new InterceptorManager();
 
     // Check that UrlResolveInterceptor is in the request interceptors
     const requestInterceptors = (interceptors.request as any)
@@ -39,7 +39,7 @@ describe('FetcherInterceptors', () => {
   });
 
   it('should have RequestBodyInterceptor in request interceptors', () => {
-    const interceptors = new FetcherInterceptors();
+    const interceptors = new InterceptorManager();
 
     // Check that RequestBodyInterceptor is in the request interceptors
     const requestInterceptors = (interceptors.request as any)
@@ -53,7 +53,7 @@ describe('FetcherInterceptors', () => {
   });
 
   it('should have FetchInterceptor in request interceptors', () => {
-    const interceptors = new FetcherInterceptors();
+    const interceptors = new InterceptorManager();
 
     // Check that FetchInterceptor is in the request interceptors
     const requestInterceptors = (interceptors.request as any)
@@ -67,7 +67,7 @@ describe('FetcherInterceptors', () => {
   });
 
   it('should have correct order of default request interceptors', () => {
-    const interceptors = new FetcherInterceptors();
+    const interceptors = new InterceptorManager();
 
     const requestInterceptors = (interceptors.request as any)
       .sortedInterceptors;
@@ -84,7 +84,7 @@ describe('FetcherInterceptors', () => {
   });
 
   it('should start with empty response and error interceptors', () => {
-    const interceptors = new FetcherInterceptors();
+    const interceptors = new InterceptorManager();
 
     const responseInterceptors = (interceptors.response as any)
       .sortedInterceptors;

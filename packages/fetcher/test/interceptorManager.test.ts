@@ -12,7 +12,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Fetcher, FetcherInterceptors, FetchExchange, HttpMethod, Interceptor, InterceptorRegistry, } from '../src';
+import { Fetcher, FetchExchange, HttpMethod, Interceptor, InterceptorManager, InterceptorRegistry, } from '../src';
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -251,9 +251,9 @@ describe('InterceptorRegistry', () => {
     });
   });
 
-  describe('FetcherInterceptors', () => {
+  describe('InterceptorManager', () => {
     it('should create interceptor managers for request, response and error', () => {
-      const interceptors = new FetcherInterceptors();
+      const interceptors = new InterceptorManager();
 
       expect(interceptors.request).toBeInstanceOf(InterceptorRegistry);
       expect(interceptors.response).toBeInstanceOf(InterceptorRegistry);
@@ -261,7 +261,7 @@ describe('InterceptorRegistry', () => {
     });
 
     it('should allow adding request interceptors', () => {
-      const interceptors = new FetcherInterceptors();
+      const interceptors = new InterceptorManager();
       const requestInterceptor: Interceptor = {
         name: 'request-interceptor',
         order: 0,
@@ -273,7 +273,7 @@ describe('InterceptorRegistry', () => {
     });
 
     it('should allow adding response interceptors', () => {
-      const interceptors = new FetcherInterceptors();
+      const interceptors = new InterceptorManager();
       const responseInterceptor: Interceptor = {
         name: 'response-interceptor',
         order: 0,
@@ -285,7 +285,7 @@ describe('InterceptorRegistry', () => {
     });
 
     it('should allow adding error interceptors', () => {
-      const interceptors = new FetcherInterceptors();
+      const interceptors = new InterceptorManager();
       const errorInterceptor: Interceptor = {
         name: 'error-interceptor',
         order: 0,
