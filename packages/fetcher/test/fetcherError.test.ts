@@ -10,81 +10,78 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import { describe, expect, it } from 'vitest';
-import { ExchangeError, Fetcher, FetchExchange, FetchRequest } from '../src';
+import { Fetcher, FetcherError, FetchError, FetchExchange } from '../src';
 
-describe('ExchangeError', () => {
+describe('FetcherError', () => {
+  it('should create FetcherError with default message', () => {
+    const error = new FetcherError();
+    expect(error).toBeInstanceOf(FetcherError);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.name).toBe('FetcherError');
+    expect(error.message).toBe('An error occurred in the fetcher');
+  });
+
+  it('should create FetcherError with custom message', () => {
+    const errorMessage = 'Custom error message';
+    const error = new FetcherError(errorMessage);
+    expect(error.message).toBe(errorMessage);
+  });
+
+  it('should create FetcherError with cause', () => {
+    const cause = new Error('Cause error');
+    const error = new FetcherError(undefined, cause);
+    expect(error.cause).toBe(cause);
+    expect(error.message).toBe(cause.message);
+  });
+
+  it('should create FetcherError with custom message and cause', () => {
+    const errorMessage = 'Custom error message';
+    const cause = new Error('Cause error');
+    const error = new FetcherError(errorMessage, cause);
+    expect(error.message).toBe(errorMessage);
+    expect(error.cause).toBe(cause);
+  });
+
+  it('should copy stack trace from cause', () => {
+    const cause = new Error('Cause error');
+    const error = new FetcherError(undefined, cause);
+    expect(error.stack).toBe(cause.stack);
+  });
+});
+
+describe('FetchError', () => {
   const mockFetcher = {} as Fetcher;
-  const mockRequest = { url: '/test' } as FetchRequest;
+  const mockRequest = { url: '/test' };
 
-  it('should create ExchangeError with error message from exchange error', () => {
-    const mockError = new Error('test error');
+  it('should create FetchError with default message', () => {
+    const exchange = new FetchExchange(mockFetcher, mockRequest);
+    const error = new FetchError(exchange);
+    expect(error).toBeInstanceOf(FetchError);
+    expect(error).toBeInstanceOf(FetcherError);
+    expect(error.name).toBe('FetchError');
+    expect(error.exchange).toBe(exchange);
+    expect(error.message).toBe('Request to /test failed with no response');
+  });
+
+  it('should create FetchError with custom message', () => {
+    const exchange = new FetchExchange(mockFetcher, mockRequest);
+    const errorMessage = 'Custom error message';
+    const error = new FetchError(exchange, errorMessage);
+    expect(error.message).toBe(errorMessage);
+  });
+
+  it('should create FetchError with error in exchange', () => {
+    const cause = new Error('Cause error');
     const exchange = new FetchExchange(
       mockFetcher,
       mockRequest,
       undefined,
-      mockError,
+      cause,
     );
-    const exchangeError = new ExchangeError(exchange);
-
-    expect(exchangeError).toBeInstanceOf(ExchangeError);
-    expect(exchangeError).toBeInstanceOf(Error);
-    expect(exchangeError.name).toBe('ExchangeError');
-    expect(exchangeError.message).toBe('test error');
-    expect(exchangeError.exchange).toBe(exchange);
-  });
-
-  it('should create ExchangeError with message from response statusText when no error', () => {
-    const mockResponse = new Response('test', {
-      status: 404,
-      statusText: 'Not Found',
-    });
-    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
-    const exchangeError = new ExchangeError(exchange);
-
-    expect(exchangeError).toBeInstanceOf(ExchangeError);
-    expect(exchangeError.message).toBe('Not Found');
-    expect(exchangeError.exchange).toBe(exchange);
-  });
-
-  it('should create ExchangeError with default message when no error or response statusText', () => {
-    const mockResponse = new Response('test'); // No statusText
-    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
-    const exchangeError = new ExchangeError(exchange);
-
-    expect(exchangeError).toBeInstanceOf(ExchangeError);
-    expect(exchangeError.message).toBe(
-      `Request to ${mockRequest.url} failed during exchange`,
-    );
-    expect(exchangeError.exchange).toBe(exchange);
-  });
-
-  it('should copy stack trace from original error', () => {
-    const mockError = new Error('test error');
-    mockError.stack = 'test stack trace';
-    const exchange = new FetchExchange(
-      mockFetcher,
-      mockRequest,
-      undefined,
-      mockError,
-    );
-    const exchangeError = new ExchangeError(exchange);
-
-    expect(exchangeError.stack).toBe('test stack trace');
-  });
-
-  it('should handle undefined stack trace gracefully', () => {
-    const mockError = new Error('test error');
-    mockError.stack = undefined;
-    const exchange = new FetchExchange(
-      mockFetcher,
-      mockRequest,
-      undefined,
-      mockError,
-    );
-    const exchangeError = new ExchangeError(exchange);
-
-    expect(exchangeError).toBeInstanceOf(ExchangeError);
-    expect(exchangeError.message).toBe('test error');
+    const error = new FetchError(exchange);
+    expect(error.message).toBe(cause.message);
+    expect(error.cause).toBe(cause);
   });
 });

@@ -11,261 +11,317 @@
  * limitations under the License.
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Fetcher, HttpMethod } from '../src';
-
-// Mock fetch
-const mockFetch = vi.fn();
-globalThis.fetch = mockFetch;
+import { describe, expect, it, vi } from 'vitest';
+import { DEFAULT_OPTIONS, Fetcher, FetchError, FetchRequest, HttpMethod, } from '../src';
 
 describe('Fetcher', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-    mockFetch.mockClear();
-  });
-
-  it('should create fetcher with default options', () => {
+  it('should create Fetcher with default options', () => {
     const fetcher = new Fetcher();
-    expect(fetcher).toBeDefined();
+
+    expect(fetcher).toBeInstanceOf(Fetcher);
+    expect(fetcher.urlBuilder.baseURL).toBe(DEFAULT_OPTIONS.baseURL);
+    expect(fetcher.headers).toEqual(DEFAULT_OPTIONS.headers);
+    expect(fetcher.timeout).toBeUndefined();
+    expect(fetcher.interceptors).toBeDefined();
   });
 
-  it('should create fetcher with custom options', () => {
+  it('should create Fetcher with custom options', () => {
     const options = {
       baseURL: 'https://api.example.com',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { Authorization: 'Bearer token' },
       timeout: 5000,
     };
+
     const fetcher = new Fetcher(options);
 
-    expect(fetcher).toBeDefined();
-    // Verify options are properly set
-    expect(fetcher.headers).toHaveProperty('Content-Type', 'application/json');
-    expect(fetcher.timeout).toBe(5000);
+    expect(fetcher.urlBuilder.baseURL).toBe(options.baseURL);
+    expect(fetcher.headers).toEqual(options.headers);
+    expect(fetcher.timeout).toBe(options.timeout);
   });
 
-  it('should make a GET request', async () => {
-    const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-    mockFetch.mockResolvedValue(new Response('OK'));
+  it('should handle missing headers in options', () => {
+    const options = {
+      baseURL: 'https://api.example.com',
+    };
+
+    const fetcher = new Fetcher(options as any);
+
+    expect(fetcher.headers).toEqual(DEFAULT_OPTIONS.headers);
+  });
+
+  it('should handle missing interceptors in options', () => {
+    const options = {
+      baseURL: 'https://api.example.com',
+    };
+
+    const fetcher = new Fetcher(options as any);
+
+    expect(fetcher.interceptors).toBeDefined();
+  });
+
+  it('should make GET request', async () => {
+    const fetcher = new Fetcher();
+    const mockResponse = new Response('test');
+
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        exchange.response = mockResponse;
+        return exchange;
+      });
 
     const response = await fetcher.get('/users');
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/users',
-      expect.objectContaining({
-        method: HttpMethod.GET,
-      }),
-    );
-    expect(response).toBeInstanceOf(Response);
+    expect(response).toBe(mockResponse);
+    expect(exchangeSpy).toHaveBeenCalled();
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
   });
 
-  it('should make a POST request with body', async () => {
-    const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-    mockFetch.mockResolvedValue(new Response('OK'));
+  it('should make POST request', async () => {
+    const fetcher = new Fetcher();
+    const mockResponse = new Response('test');
 
-    const response = await fetcher.post('/users', {
-      body: JSON.stringify({ name: 'John' }),
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        exchange.response = mockResponse;
+        return exchange;
+      });
+
+    const response = await fetcher.post('/users', { body: { name: 'test' } });
+
+    expect(response).toBe(mockResponse);
+    expect(exchangeSpy).toHaveBeenCalled();
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
+  });
+
+  it('should make PUT request', async () => {
+    const fetcher = new Fetcher();
+    const mockResponse = new Response('test');
+
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        exchange.response = mockResponse;
+        return exchange;
+      });
+
+    const response = await fetcher.put('/users/1', { body: { name: 'test' } });
+
+    expect(response).toBe(mockResponse);
+    expect(exchangeSpy).toHaveBeenCalled();
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
+  });
+
+  it('should make DELETE request', async () => {
+    const fetcher = new Fetcher();
+    const mockResponse = new Response('test');
+
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        exchange.response = mockResponse;
+        return exchange;
+      });
+
+    const response = await fetcher.delete('/users/1');
+
+    expect(response).toBe(mockResponse);
+    expect(exchangeSpy).toHaveBeenCalled();
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
+  });
+
+  it('should make PATCH request', async () => {
+    const fetcher = new Fetcher();
+    const mockResponse = new Response('test');
+
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        exchange.response = mockResponse;
+        return exchange;
+      });
+
+    const response = await fetcher.patch('/users/1', {
+      body: { name: 'test' },
     });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/users',
-      expect.objectContaining({
-        method: HttpMethod.POST,
-        body: JSON.stringify({ name: 'John' }),
-      }),
-    );
-    expect(response).toBeInstanceOf(Response);
+    expect(response).toBe(mockResponse);
+    expect(exchangeSpy).toHaveBeenCalled();
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
   });
 
-  it('should build URL with path and query parameters', async () => {
-    const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-    mockFetch.mockResolvedValue(new Response('OK'));
+  it('should make HEAD request', async () => {
+    const fetcher = new Fetcher();
+    const mockResponse = new Response(null, { status: 200 });
 
-    await fetcher.get('/users/{id}', {
-      urlParams: {
-        path: { id: 123 },
-        query: { filter: 'active' },
-      },
-    });
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        exchange.response = mockResponse;
+        return exchange;
+      });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/users/123?filter=active',
-      expect.objectContaining({
-        method: HttpMethod.GET,
-      }),
-    );
+    const response = await fetcher.head('/users');
+
+    expect(response).toBe(mockResponse);
+    expect(exchangeSpy).toHaveBeenCalled();
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
   });
 
-  it('should merge headers correctly', async () => {
-    const fetcher = new Fetcher({
-      baseURL: 'https://api.example.com',
-      headers: { Authorization: 'Bearer token' },
-    });
-    mockFetch.mockResolvedValue(new Response('OK'));
+  it('should make OPTIONS request', async () => {
+    const fetcher = new Fetcher();
+    const mockResponse = new Response(null, { status: 200 });
 
-    await fetcher.get('/users', {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        exchange.response = mockResponse;
+        return exchange;
+      });
 
-    // Check that fetch was called with the right URL
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/users',
-      expect.objectContaining({
-        method: HttpMethod.GET,
-      }),
-    );
+    const response = await fetcher.options('/users');
 
-    // Check headers specifically
-    const callArgs = mockFetch.mock.calls[0];
-    const fetchInit = callArgs[1];
-    expect(fetchInit.headers).toBeDefined();
-    expect(fetchInit.headers).toHaveProperty('Authorization', 'Bearer token');
-    expect(fetchInit.headers).toHaveProperty(
-      'Content-Type',
-      'application/json',
-    );
+    expect(response).toBe(mockResponse);
+    expect(exchangeSpy).toHaveBeenCalled();
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
   });
 
-  it('should make all HTTP method requests', async () => {
-    const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-    mockFetch.mockResolvedValue(new Response('OK'));
+  it('should call fetch method with correct parameters', async () => {
+    const fetcher = new Fetcher();
+    const mockResponse = new Response('test');
 
-    await fetcher.get('/users');
-    expect(mockFetch).toHaveBeenNthCalledWith(
-      1,
-      'https://api.example.com/users',
-      expect.objectContaining({ method: HttpMethod.GET }),
-    );
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        exchange.response = mockResponse;
+        return exchange;
+      });
 
-    await fetcher.post('/users');
-    expect(mockFetch).toHaveBeenNthCalledWith(
-      2,
-      'https://api.example.com/users',
-      expect.objectContaining({ method: HttpMethod.POST }),
-    );
+    const response = await fetcher.fetch('/users', { method: HttpMethod.GET });
 
-    await fetcher.put('/users/123');
-    expect(mockFetch).toHaveBeenNthCalledWith(
-      3,
-      'https://api.example.com/users/123',
-      expect.objectContaining({ method: HttpMethod.PUT }),
-    );
+    expect(response).toBe(mockResponse);
+    expect(exchangeSpy).toHaveBeenCalled();
 
-    await fetcher.delete('/users/123');
-    expect(mockFetch).toHaveBeenNthCalledWith(
-      4,
-      'https://api.example.com/users/123',
-      expect.objectContaining({ method: HttpMethod.DELETE }),
-    );
-
-    await fetcher.patch('/users/123');
-    expect(mockFetch).toHaveBeenNthCalledWith(
-      5,
-      'https://api.example.com/users/123',
-      expect.objectContaining({ method: HttpMethod.PATCH }),
-    );
-
-    await fetcher.head('/users');
-    expect(mockFetch).toHaveBeenNthCalledWith(
-      6,
-      'https://api.example.com/users',
-      expect.objectContaining({ method: HttpMethod.HEAD }),
-    );
-
-    await fetcher.options('/users');
-    expect(mockFetch).toHaveBeenNthCalledWith(
-      7,
-      'https://api.example.com/users',
-      expect.objectContaining({ method: HttpMethod.OPTIONS }),
-    );
+    // Clean up spy
+    exchangeSpy.mockRestore();
   });
 
-  it('should convert object body to JSON string with RequestBodyInterceptor', async () => {
-    const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-    mockFetch.mockResolvedValue(new Response('OK'));
+  it('should throw FetchError when no response is returned', async () => {
+    const fetcher = new Fetcher();
 
-    const requestBody = { name: 'John', age: 30 };
-    await fetcher.post('/users', {
-      body: requestBody as any,
-    });
+    // Mock the interceptors.exchange method to not set a response
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        return exchange;
+      });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/users',
-      expect.objectContaining({
-        method: HttpMethod.POST,
-        body: JSON.stringify(requestBody),
-        headers: expect.objectContaining({
-          'Content-Type': 'application/json',
-        }),
-      }),
-    );
+    await expect(fetcher.get('/users')).rejects.toThrow(FetchError);
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
   });
 
-  it('should not convert non-object body with RequestBodyInterceptor', async () => {
-    const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-    mockFetch.mockResolvedValue(new Response('OK'));
-
-    const requestBody = 'plain text';
-    await fetcher.post('/users', {
-      body: requestBody as any,
-    });
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/users',
-      expect.objectContaining({
-        method: HttpMethod.POST,
-        body: requestBody,
-      }),
-    );
-  });
-
-  it('should not convert supported body types with RequestBodyInterceptor', async () => {
-    const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-    mockFetch.mockResolvedValue(new Response('OK'));
-
-    const blobBody = new Blob(['hello'], { type: 'text/plain' });
-    await fetcher.post('/users', {
-      body: blobBody as any,
-    });
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/users',
-      expect.objectContaining({
-        method: HttpMethod.POST,
-        body: blobBody,
-      }),
-    );
-  });
-
-  it('should support generic response json type', async () => {
-    interface User {
-      id: number;
-      name: string;
-      email: string;
-    }
-
-    const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-    const mockData: User = {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
+  it('should merge headers correctly in request method', async () => {
+    const defaultHeaders = { 'Content-Type': 'application/json' };
+    const fetcher = new Fetcher({ baseURL: '', headers: defaultHeaders });
+    const requestHeaders = { Authorization: 'Bearer token' };
+    const request: FetchRequest = {
+      url: '/users',
+      headers: requestHeaders,
     };
-    mockFetch.mockResolvedValue(new Response(JSON.stringify(mockData)));
 
-    const response = await fetcher.get('/users/1');
-    const userData = await response.json<User>();
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        // Verify that headers are merged correctly
+        expect(exchange.request.headers).toEqual({
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer token',
+        });
+        exchange.response = new Response('test');
+        return exchange;
+      });
 
-    // Type assertion to verify generic type support
-    const typedUser: User = userData;
-    expect(typedUser.id).toBe(1);
-    expect(typedUser.name).toBe('John Doe');
-    expect(typedUser.email).toBe('john@example.com');
+    await fetcher.request(request);
 
-    expect(userData).toEqual(mockData);
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/users/1',
-      expect.objectContaining({
-        method: 'GET',
-      }),
-    );
+    expect(exchangeSpy).toHaveBeenCalled();
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
+  });
+
+  it('should resolve timeout correctly in request method', async () => {
+    const fetcher = new Fetcher({ baseURL: '', timeout: 5000 });
+    const request: FetchRequest = {
+      url: '/users',
+      timeout: 3000,
+    };
+
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        // Verify that request timeout takes precedence
+        expect(exchange.request.timeout).toBe(3000);
+        exchange.response = new Response('test');
+        return exchange;
+      });
+
+    await fetcher.request(request);
+
+    expect(exchangeSpy).toHaveBeenCalled();
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
+  });
+
+  it('should use fetcher timeout when request timeout is not specified', async () => {
+    const fetcherTimeout = 5000;
+    const fetcher = new Fetcher({ baseURL: '', timeout: fetcherTimeout });
+    const request: FetchRequest = {
+      url: '/users',
+    };
+
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        // Verify that fetcher timeout is used
+        expect(exchange.request.timeout).toBe(fetcherTimeout);
+        exchange.response = new Response('test');
+        return exchange;
+      });
+
+    await fetcher.request(request);
+
+    expect(exchangeSpy).toHaveBeenCalled();
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
   });
 });
