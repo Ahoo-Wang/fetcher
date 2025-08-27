@@ -12,7 +12,7 @@
  */
 
 import { CoSecOptions, ResponseCodes } from './types';
-import { FetchExchange, Interceptor, ResponseInterceptor } from '@ahoo-wang/fetcher';
+import { FetchExchange, ResponseInterceptor } from '@ahoo-wang/fetcher';
 
 /**
  * The name of the CoSecResponseInterceptor.
