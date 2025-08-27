@@ -69,7 +69,7 @@ export const VALIDATE_STATUS_INTERCEPTOR_NAME = 'ValidateStatusInterceptor';
  * The order of the ValidateStatusInterceptor.
  * Set to Number.MAX_SAFE_INTEGER to ensure it runs last among response interceptors.
  */
-export const VALIDATE_STATUS_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER;
+export const VALIDATE_STATUS_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
 
 /**
  * Response interceptor that validates HTTP status codes.
