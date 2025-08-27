@@ -52,6 +52,7 @@ describe('InterceptorRegistry', () => {
 
     const registry = new InterceptorRegistry([interceptor1, interceptor2]);
     expect(registry).toBeInstanceOf(InterceptorRegistry);
+    expect(registry.interceptors).toEqual([interceptor1, interceptor2]);
   });
 
   it('should add interceptor to registry', () => {

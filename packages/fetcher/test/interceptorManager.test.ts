@@ -24,7 +24,9 @@ describe('InterceptorManager', () => {
     expect(manager.request).toBeDefined();
     expect(manager.response).toBeDefined();
     expect(manager.error).toBeDefined();
-
+    expect(manager.request.interceptors).toHaveLength(3);
+    expect(manager.response.interceptors).toHaveLength(1);
+    expect(manager.error.interceptors).toHaveLength(0);
     // Check that request registry has default interceptors
     expect(manager.request).toBeDefined();
   });
@@ -178,4 +180,5 @@ describe('ExchangeError', () => {
       'Request to https://api.example.com/test failed during exchange',
     );
   });
+
 });

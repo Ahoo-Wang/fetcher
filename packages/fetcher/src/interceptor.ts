@@ -211,6 +211,13 @@ export class InterceptorRegistry implements Interceptor {
   }
 
   /**
+   * Returns an array of all interceptors in the registry.
+   */
+  get interceptors(): Interceptor[] {
+    return [...this.sortedInterceptors];
+  }
+
+  /**
    * Adds an interceptor to this registry.
    *
    * @param interceptor - The interceptor to add
@@ -256,6 +263,7 @@ export class InterceptorRegistry implements Interceptor {
   clear(): void {
     this.sortedInterceptors = [];
   }
+
 
   /**
    * Executes all managed interceptors on the given exchange object.
