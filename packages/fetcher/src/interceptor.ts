@@ -68,19 +68,86 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
   intercept(exchange: FetchExchange): void | Promise<void>;
 }
 
+/**
+ * Interface for request interceptors.
+ *
+ * Request interceptors are executed before the HTTP request is sent.
+ * They can modify the request configuration, add headers, or perform
+ * other preprocessing tasks.
+ *
+ * @example
+ * // Example of a request interceptor that adds an authorization header
+ * const authInterceptor: RequestInterceptor = {
+ *   name: 'AuthorizationInterceptor',
+ *   order: 100,
+ *   async intercept(exchange: FetchExchange): Promise<void> {
+ *     const token = getAuthToken();
+ *     if (token) {
+ *       exchange.request.headers = {
+ *         ...exchange.request.headers,
+ *         'Authorization': `Bearer ${token}`
+ *       };
+ *     }
+ *   }
+ * };
+ */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface RequestInterceptor extends Interceptor {
-
 }
 
+/**
+ * Interface for response interceptors.
+ *
+ * Response interceptors are executed after the HTTP response is received
+ * but before it's processed by the application. They can modify the response,
+ * transform data, or handle response-specific logic.
+ *
+ * @example
+ * // Example of a response interceptor that parses JSON data
+ * const jsonInterceptor: ResponseInterceptor = {
+ *   name: 'JsonResponseInterceptor',
+ *   order: 100,
+ *   async intercept(exchange: FetchExchange): Promise<void> {
+ *     if (exchange.response && exchange.response.headers.get('content-type')?.includes('application/json')) {
+ *       const data = await exchange.response.json();
+ *       // Attach parsed data to a custom property
+ *       (exchange.response as any).jsonData = data;
+ *     }
+ *   }
+ * };
+ */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ResponseInterceptor extends Interceptor {
-
 }
 
+/**
+ * Interface for error interceptors.
+ *
+ * Error interceptors are executed when an HTTP request fails.
+ * They can handle errors, transform them, or implement retry logic.
+ *
+ * @example
+ * // Example of an error interceptor that retries failed requests
+ * const retryInterceptor: ErrorInterceptor = {
+ *   name: 'RetryInterceptor',
+ *   order: 100,
+ *   async intercept(exchange: FetchExchange): Promise<void> {
+ *     if (exchange.error && isRetryableError(exchange.error)) {
+ *       // Implement retry logic
+ *       const retryCount = (exchange.request as any).retryCount || 0;
+ *       if (retryCount < 3) {
+ *         (exchange.request as any).retryCount = retryCount + 1;
+ *         // Retry the request
+ *         exchange.response = await fetch(exchange.request);
+ *         // Clear the error since we've recovered
+ *         exchange.error = undefined;
+ *       }
+ *     }
+ *   }
+ * };
+ */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ErrorInterceptor extends Interceptor {
-
 }
 
 /**
