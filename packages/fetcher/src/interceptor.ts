@@ -17,6 +17,7 @@ import { RequestBodyInterceptor } from './requestBodyInterceptor';
 import { FetchInterceptor } from './fetchInterceptor';
 import { FetchExchange } from './fetchExchange';
 import { UrlResolveInterceptor } from './urlResolveInterceptor';
+import { ExchangeError } from './fetcherError';
 
 /**
  * Interface for HTTP interceptors in the fetcher pipeline.
@@ -280,4 +281,112 @@ export class FetcherInterceptors {
    * avoiding thrown exceptions.
    */
   error: InterceptorManager = new InterceptorManager();
+
+  /**
+   * Processes a FetchExchange through the interceptor pipeline.
+   *
+   * This method is the core of the Fetcher's interceptor system. It executes the three
+   * phases of interceptors in sequence:
+   * 1. Request interceptors - Process the request before sending
+   * 2. Response interceptors - Process the response after receiving
+   * 3. Error interceptors - Handle any errors that occurred during the process
+   *
+   * The interceptor pipeline follows the Chain of Responsibility pattern, where each
+   * interceptor can modify the exchange object and decide whether to continue or
+   * terminate the chain.
+   *
+   * @param fetchExchange - The exchange object containing request, response, and error information
+   * @returns Promise that resolves to the processed FetchExchange
+   * @throws ExchangeError if an unhandled error occurs during processing
+   *
+   * @remarks
+   * The method handles three distinct phases:
+   *
+   * 1. Request Phase: Executes request interceptors which can modify headers, URL, body, etc.
+   *    Built-in interceptors handle URL resolution, body serialization, and actual HTTP execution.
+   *
+   * 2. Response Phase: Executes response interceptors which can transform or validate responses.
+   *    These interceptors only run if the request phase completed without throwing.
+   *
+   * 3. Error Phase: Executes error interceptors when any phase throws an error. Error interceptors
+   *    can handle errors by clearing the error property. If error interceptors clear the error,
+   *    the exchange is returned successfully.
+   *
+   * Error Handling:
+   * - If any interceptor throws an error, the error phase is triggered
+   * - Error interceptors can "fix" errors by clearing the error property on the exchange
+   * - If errors remain after error interceptors run, they are wrapped in ExchangeError
+   *
+   * Order of Execution:
+   * 1. Request interceptors (sorted by order property, ascending)
+   * 2. Response interceptors (sorted by order property, ascending) - only if no error in request phase
+   * 3. Error interceptors (sorted by order property, ascending) - only if an error occurred
+   *
+   * @example
+   * ```typescript
+   * // Create a fetcher with custom interceptors
+   * const fetcher = new Fetcher();
+   *
+   * // Add a request interceptor
+   * fetcher.interceptors.request.use({
+   *   name: 'AuthInterceptor',
+   *   order: 100,
+   *   async intercept(exchange: FetchExchange) {
+   *     exchange.request.headers = {
+   *       ...exchange.request.headers,
+   *       'Authorization': 'Bearer ' + getToken()
+   *     };
+   *   }
+   * });
+   *
+   * // Add a response interceptor
+   * fetcher.interceptors.response.use({
+   *   name: 'ResponseLogger',
+   *   order: 100,
+   *   async intercept(exchange: FetchExchange) {
+   *     console.log(`Response status: ${exchange.response?.status}`);
+   *   }
+   * });
+   *
+   * // Add an error interceptor
+   * fetcher.interceptors.error.use({
+   *   name: 'ErrorLogger',
+   *   order: 100,
+   *   async intercept(exchange: FetchExchange) {
+   *     console.error(`Request to ${exchange.request.url} failed:`, exchange.error);
+   *     // Clear the error to indicate it's been handled
+   *     exchange.error = undefined;
+   *   }
+   * });
+   *
+   * // Create and process an exchange
+   * const request: FetchRequest = {
+   *   url: '/api/users',
+   *   method: HttpMethod.GET
+   * };
+   * const exchange = new FetchExchange(fetcher, request);
+   * const result = await fetcher.exchange(exchange);
+   * ```
+   */
+  async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
+    try {
+      // Apply request interceptors
+      await this.request.intercept(fetchExchange);
+      // Apply response interceptors
+      await this.response.intercept(fetchExchange);
+      return fetchExchange;
+    } catch (error: any) {
+      // Apply error interceptors
+      fetchExchange.error = error;
+      await this.error.intercept(fetchExchange);
+
+      // If error interceptors cleared the error (indicating it's been handled/fixed), return the exchange
+      if (!fetchExchange.hasError()) {
+        return fetchExchange;
+      }
+
+      // Otherwise, wrap the error in ExchangeError
+      throw new ExchangeError(fetchExchange);
+    }
+  }
 }
