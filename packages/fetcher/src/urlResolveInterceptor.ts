@@ -15,6 +15,17 @@ import { Interceptor } from './interceptor';
 import { FetchExchange } from './fetchExchange';
 
 /**
+ * The name of the UrlResolveInterceptor.
+ */
+export const URL_RESOLVE_INTERCEPTOR_NAME = 'UrlResolveInterceptor';
+
+/**
+ * The order of the UrlResolveInterceptor.
+ * Set to Number.MIN_SAFE_INTEGER + 100 to ensure it runs first among request interceptors.
+ */
+export const URL_RESOLVE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 100;
+
+/**
  * Interceptor responsible for resolving the final URL for a request.
  *
  * This interceptor combines the base URL, path parameters, and query parameters
@@ -33,17 +44,17 @@ export class UrlResolveInterceptor implements Interceptor {
   /**
    * The name of this interceptor.
    */
-  readonly name = 'UrlResolveInterceptor';
+  readonly name = URL_RESOLVE_INTERCEPTOR_NAME;
 
   /**
    * The order of this interceptor (executed first).
    *
    * This interceptor should run first in the request interceptor chain to ensure
    * URL resolution happens before any other request processing. The order is set to
-   * Number.MIN_SAFE_INTEGER + 100 to allow for other interceptors that need to run
+   * URL_RESOLVE_INTERCEPTOR_ORDER to allow for other interceptors that need to run
    * even earlier while still maintaining a high priority.
    */
-  readonly order = Number.MIN_SAFE_INTEGER + 100;
+  readonly order = URL_RESOLVE_INTERCEPTOR_ORDER;
 
   /**
    * Resolves the final URL by combining the base URL, path parameters, and query parameters.

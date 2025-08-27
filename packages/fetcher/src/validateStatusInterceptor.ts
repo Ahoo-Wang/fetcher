@@ -22,10 +22,10 @@ import { FetcherError } from './fetcherError';
  * does not pass the validation defined by the validateStatus function.
  */
 export class HttpStatusValidationError extends FetcherError {
-  constructor(
-    public readonly exchange: FetchExchange,
-  ) {
-    super(`Request failed with status code ${exchange.response?.status} for ${exchange.request.url}`);
+  constructor(public readonly exchange: FetchExchange) {
+    super(
+      `Request failed with status code ${exchange.response?.status} for ${exchange.request.url}`,
+    );
     this.name = 'HttpStatusValidationError';
     Object.setPrototypeOf(this, HttpStatusValidationError.prototype);
   }
@@ -55,10 +55,21 @@ export class HttpStatusValidationError extends FetcherError {
  * });
  * ```
  */
-type ValidateStatus = (status: number) => boolean
+type ValidateStatus = (status: number) => boolean;
 
 const DEFAULT_VALIDATE_STATUS: ValidateStatus = (status: number) =>
   status >= 200 && status < 300;
+
+/**
+ * The name of the ValidateStatusInterceptor.
+ */
+export const VALIDATE_STATUS_INTERCEPTOR_NAME = 'ValidateStatusInterceptor';
+
+/**
+ * The order of the ValidateStatusInterceptor.
+ * Set to Number.MAX_SAFE_INTEGER to ensure it runs last among response interceptors.
+ */
+export const VALIDATE_STATUS_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER;
 
 /**
  * Response interceptor that validates HTTP status codes.
@@ -86,16 +97,16 @@ export class ValidateStatusInterceptor implements Interceptor {
    * @returns The name of this interceptor
    */
   get name(): string {
-    return 'ValidateStatusInterceptor';
+    return VALIDATE_STATUS_INTERCEPTOR_NAME;
   }
 
   /**
    * Gets the order of this interceptor.
    *
-   * @returns Number.MAX_SAFE_INTEGER, indicating this interceptor should execute late
+   * @returns VALIDATE_STATUS_INTERCEPTOR_ORDER, indicating this interceptor should execute late
    */
   get order(): number {
-    return Number.MAX_SAFE_INTEGER;
+    return VALIDATE_STATUS_INTERCEPTOR_ORDER;
   }
 
   /**

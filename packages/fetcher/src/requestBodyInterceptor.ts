@@ -16,6 +16,17 @@ import { FetchExchange } from './fetchExchange';
 import { ContentTypeValues } from './fetchRequest';
 
 /**
+ * The name of the RequestBodyInterceptor.
+ */
+export const REQUEST_BODY_INTERCEPTOR_NAME = 'RequestBodyInterceptor';
+
+/**
+ * The order of the RequestBodyInterceptor.
+ * Set to Number.MIN_SAFE_INTEGER + 200 to ensure it runs early among request interceptors.
+ */
+export const REQUEST_BODY_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 200;
+
+/**
  * Interceptor responsible for converting plain objects to JSON strings for HTTP request bodies.
  *
  * This interceptor ensures that object request bodies are properly serialized and that
@@ -26,18 +37,18 @@ export class RequestBodyInterceptor implements Interceptor {
   /**
    * Interceptor name, used for identification and management.
    */
-  readonly name = 'RequestBodyInterceptor';
+  readonly name = REQUEST_BODY_INTERCEPTOR_NAME;
 
   /**
    * Interceptor execution order, set to run after UrlResolveInterceptor but before FetchInterceptor.
    *
    * This interceptor should run after URL resolution (UrlResolveInterceptor) but before
    * the actual HTTP request is made (FetchInterceptor). The order is set to
-   * Number.MIN_SAFE_INTEGER + 200 to ensure it executes in the correct position
+   * REQUEST_BODY_INTERCEPTOR_ORDER to ensure it executes in the correct position
    * in the interceptor chain, allowing for other interceptors to run between URL resolution
    * and request body processing.
    */
-  readonly order = Number.MIN_SAFE_INTEGER + 200;
+  readonly order = REQUEST_BODY_INTERCEPTOR_ORDER;
 
   /**
    * Attempts to convert request body to a valid fetch API body type.

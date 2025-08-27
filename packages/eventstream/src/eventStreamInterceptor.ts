@@ -15,6 +15,17 @@ import { toServerSentEventStream } from './eventStreamConverter';
 import { ContentTypeHeader, ContentTypeValues, FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
 
 /**
+ * The name of the EventStreamInterceptor.
+ */
+export const EVENT_STREAM_INTERCEPTOR_NAME = 'EventStreamInterceptor';
+
+/**
+ * The order of the EventStreamInterceptor.
+ * Set to Number.MAX_SAFE_INTEGER - 100 to ensure it runs late among response interceptors.
+ */
+export const EVENT_STREAM_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 100;
+
+/**
  * Interceptor that enhances Response objects with event stream capabilities.
  *
  * This interceptor detects responses with `text/event-stream` content type and adds
@@ -23,7 +34,7 @@ import { ContentTypeHeader, ContentTypeValues, FetchExchange, Interceptor } from
  *
  * @remarks
  * This interceptor runs after the HTTP response is received but before the response
- * is returned to the caller. The order is set to Number.MAX_SAFE_INTEGER - 100 to
+ * is returned to the caller. The order is set to EVENT_STREAM_INTERCEPTOR_ORDER to
  * ensure it runs after all standard response processing is complete, as it adds
  * specialized functionality to the response object. This order allows other
  * response interceptors to run after it if needed.
@@ -41,8 +52,8 @@ import { ContentTypeHeader, ContentTypeValues, FetchExchange, Interceptor } from
  * ```
  */
 export class EventStreamInterceptor implements Interceptor {
-  readonly name = 'EventStreamInterceptor';
-  readonly order = Number.MAX_SAFE_INTEGER - 100;
+  readonly name = EVENT_STREAM_INTERCEPTOR_NAME;
+  readonly order = EVENT_STREAM_INTERCEPTOR_ORDER;
 
   intercept(exchange: FetchExchange) {
     // Check if the response is an event stream
