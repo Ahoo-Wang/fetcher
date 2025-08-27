@@ -46,7 +46,15 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
    * Used by InterceptorManager to manage interceptors, including adding, removing,
    * and preventing duplicates. Each interceptor must have a unique name.
    */
-  name: string;
+  readonly name: string;
+
+  /**
+   * Interceptor method that modifies the request or response.
+   *
+   * @param exchange - The current exchange object, which contains the request and response.
+   * @returns A promise that resolves to the modified exchange object.
+   */
+  readonly order: number;
 
   /**
    * Process the exchange object in the interceptor pipeline.

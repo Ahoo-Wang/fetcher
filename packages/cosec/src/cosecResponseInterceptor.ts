@@ -25,8 +25,8 @@ import { FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
  * response enhancement interceptors like EventStreamInterceptor.
  */
 export class CoSecResponseInterceptor implements Interceptor {
-  name = 'CoSecResponseInterceptor';
-  order = Number.MAX_SAFE_INTEGER - 100;
+  readonly name = 'CoSecResponseInterceptor';
+  readonly order = Number.MAX_SAFE_INTEGER - 100;
   private options: CoSecOptions;
 
   constructor(options: CoSecOptions) {
