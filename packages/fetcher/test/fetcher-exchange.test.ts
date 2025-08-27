@@ -12,7 +12,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Fetcher, FetchExchange, Interceptor, InterceptorManager, } from '../src';
+import { Fetcher, FetchExchange, Interceptor, InterceptorRegistry, } from '../src';
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -28,8 +28,8 @@ describe('FetcherInterceptors - exchange', () => {
     const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
     // Create custom interceptor managers
-    const requestManager = new InterceptorManager();
-    const responseManager = new InterceptorManager();
+    const requestManager = new InterceptorRegistry();
+    const responseManager = new InterceptorRegistry();
 
     // Mock interceptors
     const requestInterceptor: Interceptor = {
@@ -80,8 +80,8 @@ describe('FetcherInterceptors - exchange', () => {
     const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
     // Create custom interceptor managers
-    const requestManager = new InterceptorManager();
-    const errorManager = new InterceptorManager();
+    const requestManager = new InterceptorRegistry();
+    const errorManager = new InterceptorRegistry();
 
     // Mock interceptors
     const requestInterceptor: Interceptor = {
@@ -126,8 +126,8 @@ describe('FetcherInterceptors - exchange', () => {
     const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
     // Create custom interceptor managers
-    const requestManager = new InterceptorManager();
-    const errorManager = new InterceptorManager();
+    const requestManager = new InterceptorRegistry();
+    const errorManager = new InterceptorRegistry();
 
     // Mock interceptors
     const requestInterceptor: Interceptor = {

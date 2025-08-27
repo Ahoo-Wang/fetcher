@@ -13,7 +13,6 @@
 
 import { UrlBuilder, UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, TimeoutCapable } from './timeout';
-import { FetcherInterceptors } from './interceptor';
 import { FetchExchange } from './fetchExchange';
 import {
   BaseURLCapable,
@@ -26,6 +25,7 @@ import {
 } from './fetchRequest';
 import { mergeRecords } from './utils';
 import { FetchError } from './fetcherError';
+import { FetcherInterceptors } from './fetcherInterceptors';
 
 /**
  * Configuration options for the Fetcher client.
