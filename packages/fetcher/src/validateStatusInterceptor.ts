@@ -67,7 +67,7 @@ export const VALIDATE_STATUS_INTERCEPTOR_NAME = 'ValidateStatusInterceptor';
 
 /**
  * The order of the ValidateStatusInterceptor.
- * Set to Number.MAX_SAFE_INTEGER - 1000 to ensure it runs late among response interceptors,
+ * Set to Number.MAX_SAFE_INTEGER - 1000 to ensure it runs latest among response interceptors,
  * but still allows other interceptors to run after it if needed.
  */
 export const VALIDATE_STATUS_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
@@ -78,6 +78,14 @@ export const VALIDATE_STATUS_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
  * This interceptor implements behavior similar to axios's validateStatus option.
  * It checks the response status code against a validation function and throws
  * an error if the status is not valid.
+ *
+ * @remarks
+ * This interceptor runs at the very beginning of the response interceptor chain to ensure
+ * status validation happens before any other response processing. The order is set to
+ * VALIDATE_STATUS_INTERCEPTOR_ORDER to ensure it executes early in the response chain,
+ * allowing for other response interceptors to run after it if needed. This positioning
+ * ensures that invalid responses are caught and handled early in the response processing
+ * pipeline, before other response handlers attempt to process them.
  *
  * @example
  * ```typescript
@@ -104,7 +112,7 @@ export class ValidateStatusInterceptor implements Interceptor {
   /**
    * Gets the order of this interceptor.
    *
-   * @returns VALIDATE_STATUS_INTERCEPTOR_ORDER, indicating this interceptor should execute late
+   * @returns VALIDATE_STATUS_INTERCEPTOR_ORDER, indicating this interceptor should execute early
    */
   get order(): number {
     return VALIDATE_STATUS_INTERCEPTOR_ORDER;
@@ -125,6 +133,13 @@ export class ValidateStatusInterceptor implements Interceptor {
    *
    * @param exchange - The exchange containing the response to validate
    * @throws HttpStatusValidationError if the status code is not valid
+   *
+   * @remarks
+   * This method runs at the beginning of the response interceptor chain to ensure
+   * status validation happens before any other response processing. Invalid responses
+   * are caught and converted to HttpStatusValidationError early in the pipeline,
+   * preventing other response handlers from attempting to process them. Valid responses
+   * proceed through the rest of the response interceptor chain normally.
    */
   intercept(exchange: FetchExchange) {
     // Only validate if there's a response

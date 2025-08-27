@@ -25,7 +25,8 @@ export const REQUEST_BODY_INTERCEPTOR_NAME = 'RequestBodyInterceptor';
  * The order of the RequestBodyInterceptor.
  * Set to URL_RESOLVE_INTERCEPTOR_ORDER + 1000 to ensure it runs early among request interceptors.
  */
-export const REQUEST_BODY_INTERCEPTOR_ORDER = URL_RESOLVE_INTERCEPTOR_ORDER + 1000;
+export const REQUEST_BODY_INTERCEPTOR_ORDER =
+  URL_RESOLVE_INTERCEPTOR_ORDER + 1000;
 
 /**
  * Interceptor responsible for converting plain objects to JSON strings for HTTP request bodies.
@@ -33,6 +34,14 @@ export const REQUEST_BODY_INTERCEPTOR_ORDER = URL_RESOLVE_INTERCEPTOR_ORDER + 10
  * This interceptor ensures that object request bodies are properly serialized and that
  * the appropriate Content-Type header is set. It runs early in the request processing chain
  * to ensure request bodies are properly formatted before other interceptors process them.
+ *
+ * @remarks
+ * This interceptor runs after URL resolution (UrlResolveInterceptor) but before
+ * the actual HTTP request is made (FetchInterceptor). The order is set to
+ * REQUEST_BODY_INTERCEPTOR_ORDER to ensure it executes in the correct position
+ * in the interceptor chain, allowing for other interceptors to run between URL resolution
+ * and request body processing. This positioning ensures that URL parameters are resolved
+ * first, then request bodies are properly formatted, and finally the HTTP request is executed.
  */
 export class RequestBodyInterceptor implements Interceptor {
   /**
@@ -47,7 +56,8 @@ export class RequestBodyInterceptor implements Interceptor {
    * the actual HTTP request is made (FetchInterceptor). The order is set to
    * REQUEST_BODY_INTERCEPTOR_ORDER to ensure it executes in the correct position
    * in the interceptor chain, allowing for other interceptors to run between URL resolution
-   * and request body processing.
+   * and request body processing. This positioning ensures that URL parameters are resolved
+   * first, then request bodies are properly formatted, and finally the HTTP request is executed.
    */
   readonly order = REQUEST_BODY_INTERCEPTOR_ORDER;
 

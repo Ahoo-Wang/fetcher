@@ -22,9 +22,10 @@ export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
 
 /**
  * The order of the CoSecRequestInterceptor.
- * Set to REQUEST_BODY_INTERCEPTOR_ORDER + 1000 to ensure it runs early among request interceptors.
+ * Set to REQUEST_BODY_INTERCEPTOR_ORDER + 1000 to ensure it runs after RequestBodyInterceptor.
  */
-export const COSEC_REQUEST_INTERCEPTOR_ORDER = REQUEST_BODY_INTERCEPTOR_ORDER + 1000;
+export const COSEC_REQUEST_INTERCEPTOR_ORDER =
+  REQUEST_BODY_INTERCEPTOR_ORDER + 1000;
 
 /**
  * Interceptor that automatically adds CoSec authentication headers to requests.
@@ -36,10 +37,12 @@ export const COSEC_REQUEST_INTERCEPTOR_ORDER = REQUEST_BODY_INTERCEPTOR_ORDER + 
  * - CoSec-Request-Id: Unique request identifier for each request
  *
  * @remarks
- * This interceptor runs after the basic request processing interceptors but before
- * the actual HTTP request is made. The order is set to COSEC_REQUEST_INTERCEPTOR_ORDER
- * to allow for other authentication or preprocessing interceptors to run earlier
- * while ensuring it runs before FetchInterceptor.
+ * This interceptor runs after RequestBodyInterceptor but before FetchInterceptor.
+ * The order is set to COSEC_REQUEST_INTERCEPTOR_ORDER to ensure it runs after
+ * request body processing but before the actual HTTP request is made. This positioning
+ * allows for proper authentication header addition after all request body transformations
+ * are complete, ensuring that the final request is properly authenticated before
+ * being sent over the network.
  */
 export class CoSecRequestInterceptor implements Interceptor {
   readonly name = COSEC_REQUEST_INTERCEPTOR_NAME;
@@ -60,6 +63,15 @@ export class CoSecRequestInterceptor implements Interceptor {
    * - Authorization: Bearer token if available in token storage
    *
    * @param exchange - The fetch exchange containing the request to process
+   *
+   * @remarks
+   * This method runs after RequestBodyInterceptor but before FetchInterceptor.
+   * It ensures that authentication headers are added to the request after all
+   * body processing is complete. The positioning allows for proper authentication
+   * header addition after all request body transformations are finished, ensuring
+   * that the final request is properly authenticated before being sent over the network.
+   * This execution order prevents authentication headers from being overwritten by
+   * subsequent request processing interceptors.
    */
   intercept(exchange: FetchExchange) {
     const requestId = idGenerator.generateId();
