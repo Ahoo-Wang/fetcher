@@ -23,7 +23,7 @@ export const URL_RESOLVE_INTERCEPTOR_NAME = 'UrlResolveInterceptor';
  * The order of the UrlResolveInterceptor.
  * Set to Number.MIN_SAFE_INTEGER + 100 to ensure it runs first among request interceptors.
  */
-export const URL_RESOLVE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 100;
+export const URL_RESOLVE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
 
 /**
  * Interceptor responsible for resolving the final URL for a request.

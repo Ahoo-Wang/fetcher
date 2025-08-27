@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { FetchExchange, FetchRequest, Interceptor } from '@ahoo-wang/fetcher';
+import { FetchExchange, FetchRequest, Interceptor, REQUEST_BODY_INTERCEPTOR_ORDER } from '@ahoo-wang/fetcher';
 import { CoSecHeaders, CoSecOptions } from './types';
 import { idGenerator } from './idGenerator';
 
@@ -24,7 +24,7 @@ export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
  * The order of the CoSecRequestInterceptor.
  * Set to Number.MIN_SAFE_INTEGER + 1000 to ensure it runs early among request interceptors.
  */
-export const COSEC_REQUEST_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
+export const COSEC_REQUEST_INTERCEPTOR_ORDER = REQUEST_BODY_INTERCEPTOR_ORDER + 1000;
 
 /**
  * Interceptor that automatically adds CoSec authentication headers to requests.

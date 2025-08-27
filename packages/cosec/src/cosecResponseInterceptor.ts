@@ -23,7 +23,7 @@ export const COSEC_RESPONSE_INTERCEPTOR_NAME = 'CoSecResponseInterceptor';
  * The order of the CoSecResponseInterceptor.
  * Set to Number.MAX_SAFE_INTEGER - 100 to ensure it runs late among response interceptors.
  */
-export const COSEC_RESPONSE_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 100;
+export const COSEC_RESPONSE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
 
 /**
  * Interceptor that handles automatic token refresh based on response codes.

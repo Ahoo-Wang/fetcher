@@ -14,6 +14,7 @@
 import { Interceptor } from './interceptor';
 import { FetchExchange } from './fetchExchange';
 import { ContentTypeValues } from './fetchRequest';
+import { URL_RESOLVE_INTERCEPTOR_ORDER } from './urlResolveInterceptor';
 
 /**
  * The name of the RequestBodyInterceptor.
@@ -24,7 +25,7 @@ export const REQUEST_BODY_INTERCEPTOR_NAME = 'RequestBodyInterceptor';
  * The order of the RequestBodyInterceptor.
  * Set to Number.MIN_SAFE_INTEGER + 200 to ensure it runs early among request interceptors.
  */
-export const REQUEST_BODY_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 200;
+export const REQUEST_BODY_INTERCEPTOR_ORDER = URL_RESOLVE_INTERCEPTOR_ORDER + 1000;
 
 /**
  * Interceptor responsible for converting plain objects to JSON strings for HTTP request bodies.
