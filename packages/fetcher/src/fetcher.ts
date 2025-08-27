@@ -24,7 +24,6 @@ import {
   RequestHeadersCapable,
 } from './fetchRequest';
 import { mergeRecords } from './utils';
-import { FetchError } from './fetcherError';
 import { InterceptorManager } from './interceptorManager';
 
 /**
@@ -79,8 +78,7 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  * ```
  */
 export class Fetcher
-  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable
-{
+  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable {
   readonly urlBuilder: UrlBuilder;
   readonly headers?: RequestHeaders = DEFAULT_HEADERS;
   readonly timeout?: number;
@@ -116,13 +114,7 @@ export class Fetcher
     const fetchRequest = request as FetchRequest;
     fetchRequest.url = url;
     const exchange = await this.request(fetchRequest);
-    if (!exchange.response) {
-      throw new FetchError(
-        exchange,
-        `Request to ${fetchRequest.url} failed with no response`,
-      );
-    }
-    return exchange.response;
+    return exchange.requiredResponse;
   }
 
   /**
