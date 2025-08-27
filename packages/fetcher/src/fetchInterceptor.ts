@@ -16,6 +16,17 @@ import { timeoutFetch } from './timeout';
 import { FetchExchange } from './fetchExchange';
 
 /**
+ * The name of the FetchInterceptor.
+ */
+export const FETCH_INTERCEPTOR_NAME = 'FetchInterceptor';
+
+/**
+ * The order of the FetchInterceptor.
+ * Set to Number.MAX_SAFE_INTEGER - 100 to ensure it runs last among request interceptors.
+ */
+export const FETCH_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 100;
+
+/**
  * Interceptor implementation responsible for executing actual HTTP requests.
  *
  * This is an interceptor implementation responsible for executing actual HTTP requests
@@ -35,18 +46,18 @@ export class FetchInterceptor implements Interceptor {
    * Each interceptor must have a unique name for identification and manipulation
    * within the interceptor manager.
    */
-  readonly name = 'FetchInterceptor';
+  readonly name = FETCH_INTERCEPTOR_NAME;
 
   /**
    * Interceptor execution order, set to near maximum safe integer to ensure last execution.
    *
    * Since this is the interceptor that actually executes HTTP requests, it should
    * execute after all other request interceptors, so its order is set to
-   * Number.MAX_SAFE_INTEGER - 100. This ensures that all request preprocessing is
+   * FETCH_INTERCEPTOR_ORDER. This ensures that all request preprocessing is
    * completed before the actual network request is made, while still allowing
    * other interceptors to run after it if needed.
    */
-  readonly order = Number.MAX_SAFE_INTEGER - 100;
+  readonly order = FETCH_INTERCEPTOR_ORDER;
 
   /**
    * Intercept and process HTTP requests.
