@@ -9,8 +9,7 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
 A modern, ultra-lightweight (2.3KiB) HTTP client with built-in path parameters, query parameters, and Axios-like API.
-83%
-smaller than Axios while providing the same powerful features.
+83% smaller than Axios while providing the same powerful features.
 
 ## 🌟 Features
 
@@ -124,9 +123,11 @@ responses, and errors at different stages of the HTTP request lifecycle.
 
 Fetcher comes with several built-in interceptors that are automatically registered:
 
-1. **UrlResolveInterceptor**: Resolves URLs with path and query parameters (order: Number.MIN_SAFE_INTEGER + 100)
-2. **RequestBodyInterceptor**: Converts object bodies to JSON strings (order: Number.MIN_SAFE_INTEGER + 200)
-3. **FetchInterceptor**: Executes the actual HTTP request (order: Number.MAX_SAFE_INTEGER - 100)
+1. **UrlResolveInterceptor**: Resolves URLs with path and query parameters (order: Number.MIN_SAFE_INTEGER + 1000)
+2. **RequestBodyInterceptor**: Converts object bodies to JSON strings (order: Number.MIN_SAFE_INTEGER + 2000)
+3. **FetchInterceptor**: Executes the actual HTTP request (order: Number.MAX_SAFE_INTEGER - 1000)
+4. **ValidateStatusInterceptor**: Validates HTTP status codes and throws errors for invalid statuses (response
+   interceptor, order: Number.MAX_SAFE_INTEGER - 1000)
 
 ### Using Interceptors
 
@@ -247,6 +248,13 @@ new Fetcher(options ? : FetcherOptions);
 - `headers`: Default request headers
 - `interceptors`: Interceptor collection for request, response, and error handling
 
+#### Properties
+
+- `urlBuilder`: URL builder instance for constructing URLs
+- `headers`: Default request headers
+- `timeout`: Default request timeout
+- `interceptors`: Interceptor collection for request, response, and error handling
+
 #### Methods
 
 - `fetch(url: string, request?: FetcherRequest): Promise<Response>` - Generic HTTP request method
@@ -257,13 +265,8 @@ new Fetcher(options ? : FetcherOptions);
 - `patch(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PATCH request
 - `head(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - HEAD request
 - `options(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - OPTIONS request
-
-#### Properties
-
-- `urlBuilder`: URL builder instance for constructing URLs
-- `headers`: Default request headers
-- `timeout`: Default request timeout
-- `interceptors`: Interceptor collection for request, response, and error handling
+- `request(request: FetchRequest): Promise<FetchExchange>` - Process an HTTP request through the Fetcher's internal
+  workflow
 
 ### FetcherRequest Interface
 
@@ -274,8 +277,7 @@ Configuration options for HTTP requests.
 - `method`: HTTP method (GET, POST, PUT, DELETE, etc.)
 - `headers`: Request headers
 - `body`: Request body (can be object, string, Blob, etc.)
-- `path`: Path parameters for URL templating
-- `query`: Query parameters for URL query string
+- `urlParams`: URL parameters including path parameters for URL templating and query parameters for URL query string
 - `timeout`: Request timeout in milliseconds
 
 ### Response Extension
@@ -335,7 +337,11 @@ Interceptor interface that defines the basic structure of interceptors.
 
 #### InterceptorRegistry Class
 
-Interceptor manager for managing multiple interceptors of the same type.
+Registry for managing multiple interceptors of the same type.
+
+**Properties:**
+
+- `interceptors: Interceptor[]` - Get all interceptors in the registry
 
 **Methods:**
 
@@ -350,9 +356,14 @@ Fetcher interceptor collection, including request, response, and error intercept
 
 **Properties:**
 
-- `request: InterceptorManager` - Request interceptor manager
-- `response: InterceptorManager` - Response interceptor manager
-- `error: InterceptorManager` - Error interceptor manager
+- `request: InterceptorRegistry` - Request interceptor manager
+- `response: InterceptorRegistry` - Response interceptor manager
+- `error: InterceptorRegistry` - Error interceptor manager
+
+**Methods:**
+
+- `exchange(fetchExchange: FetchExchange): Promise<FetchExchange>` - Process a FetchExchange through the interceptor
+  pipeline, executing request, response, and error interceptors in sequence
 
 ## 🤝 Contributing
 
