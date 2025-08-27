@@ -12,9 +12,9 @@
  */
 import {
   combineURLs,
-  DEFAULT_FETCHER_NAME,
+  fetcher,
   Fetcher,
-  fetcherRegistrar, FetchExchange, FetchRequest,
+  FetchExchange, FetchRequest,
   FetchRequestInit,
   mergeRequest,
   NamedCapable,
@@ -26,6 +26,7 @@ import { EndpointMetadata } from './endpointDecorator';
 import { ParameterMetadata, ParameterType } from './parameterDecorator';
 import { ResultExtractor, ResultExtractors } from './resultExtractor';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
+import { getFetcher } from './fetcherCapable';
 
 /**
  * Metadata container for a function with HTTP endpoint decorators.
@@ -75,6 +76,7 @@ export class FunctionMetadata implements NamedCapable {
     this.parameters = parameters;
   }
 
+
   /**
    * Gets the fetcher instance to use for this function.
    *
@@ -84,9 +86,7 @@ export class FunctionMetadata implements NamedCapable {
    * @returns The fetcher instance
    */
   get fetcher(): Fetcher {
-    const fetcherName =
-      this.endpoint.fetcher || this.api.fetcher || DEFAULT_FETCHER_NAME;
-    return fetcherRegistrar.requiredGet(fetcherName);
+    return getFetcher(this.endpoint.fetcher ?? this.api.fetcher) ?? fetcher;
   }
 
   /**

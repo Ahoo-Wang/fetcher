@@ -12,6 +12,7 @@
  */
 
 import {
+  Fetcher,
   RequestHeaders,
   RequestHeadersCapable,
   TimeoutCapable,
@@ -21,6 +22,7 @@ import { FunctionMetadata, RequestExecutor } from './requestExecutor';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator';
 import 'reflect-metadata';
 import { ResultExtractorCapable } from './resultExtractor';
+import { FetcherCapable } from './fetcherCapable';
 
 /**
  * Metadata for class-level API configuration.
@@ -29,7 +31,7 @@ import { ResultExtractorCapable } from './resultExtractor';
  * These settings will be used as defaults for all endpoints within the class unless overridden
  * at the method level.
  */
-export interface ApiMetadata extends TimeoutCapable, RequestHeadersCapable, ResultExtractorCapable {
+export interface ApiMetadata extends TimeoutCapable, RequestHeadersCapable, ResultExtractorCapable, FetcherCapable {
   /**
    * Base path for all endpoints in the class.
    *
@@ -61,7 +63,7 @@ export interface ApiMetadata extends TimeoutCapable, RequestHeadersCapable, Resu
    * This allows you to specify which fetcher instance should be used for requests
    * from this API class. The fetcher must be registered with the FetcherRegistrar.
    */
-  fetcher?: string;
+  fetcher?: string | Fetcher;
 }
 
 export const API_METADATA_KEY = Symbol('api:metadata');
