@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-eventstream",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "Server-Sent Events (SSE) support for Fetcher HTTP client",
   "keywords": [
     "fetch",
