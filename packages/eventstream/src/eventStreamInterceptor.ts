@@ -21,7 +21,7 @@ export const EVENT_STREAM_INTERCEPTOR_NAME = 'EventStreamInterceptor';
 
 /**
  * The order of the EventStreamInterceptor.
- * Set to Number.MAX_SAFE_INTEGER - 1000 to ensure it runs late among response interceptors.
+ * Set to Number.MAX_SAFE_INTEGER - 1000 to ensure it runs latest among response interceptors.
  */
 export const EVENT_STREAM_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
 
@@ -33,11 +33,13 @@ export const EVENT_STREAM_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
  * of Server-Sent Events that can be consumed using `for await` syntax.
  *
  * @remarks
- * This interceptor runs after the HTTP response is received but before the response
- * is returned to the caller. The order is set to EVENT_STREAM_INTERCEPTOR_ORDER to
- * ensure it runs after all standard response processing is complete, as it adds
- * specialized functionality to the response object. This order allows other
- * response interceptors to run after it if needed.
+ * This interceptor runs at the very end of the response interceptor chain to ensure
+ * it runs after all standard response processing is complete, as it adds
+ * specialized functionality to the response object. The order is set to
+ * EVENT_STREAM_INTERCEPTOR_ORDER to ensure it executes latest among response interceptors,
+ * allowing for other response interceptors to run before it if needed. This positioning
+ * ensures that all response processing is completed before specialized event stream
+ * functionality is added to the response object.
  *
  * @example
  * ```typescript
@@ -55,6 +57,24 @@ export class EventStreamInterceptor implements Interceptor {
   readonly name = EVENT_STREAM_INTERCEPTOR_NAME;
   readonly order = EVENT_STREAM_INTERCEPTOR_ORDER;
 
+  /**
+   * Intercepts responses to add event stream capabilities.
+   *
+   * This method runs at the very end of the response interceptor chain to ensure
+   * it runs after all standard response processing is complete. It detects responses
+   * with `text/event-stream` content type and adds an `eventStream()` method to
+   * the Response object, which returns a readable stream of Server-Sent Events.
+   *
+   * @param exchange - The exchange containing the response to enhance
+   *
+   * @remarks
+   * This method executes latest among response interceptors to ensure all response
+   * processing is completed before specialized event stream functionality is added.
+   * It only enhances responses with `text/event-stream` content type, leaving other
+   * responses unchanged. The positioning at the end of the response chain ensures
+   * that all response transformations and validations are completed before event
+   * stream capabilities are added to the response object.
+   */
   intercept(exchange: FetchExchange) {
     // Check if the response is an event stream
     const response = exchange.response;
