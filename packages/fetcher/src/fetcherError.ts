@@ -11,8 +11,6 @@
  * limitations under the License.
  */
 
-import { FetchExchange } from './fetchExchange';
-
 /**
  * Base error class for all Fetcher-related errors.
  *
@@ -57,47 +55,6 @@ export class FetcherError extends Error {
 
     // Set prototype for instanceof checks to work correctly
     Object.setPrototypeOf(this, FetcherError.prototype);
-  }
-}
-
-
-/**
- * Custom error class for Fetcher request failures.
- *
- * This error is thrown when a fetch request fails and no response is generated.
- * It wraps the FetchExchange object to provide comprehensive information about the failed request.
- *
- * @example
- * ```typescript
- * try {
- *   await fetcher.get('/api/users');
- * } catch (error) {
- *   if (error instanceof FetchError) {
- *     console.log('Failed URL:', error.exchange.request.url);
- *     console.log('Request headers:', error.exchange.request.headers);
- *     console.log('Interceptor attributes:', error.exchange.attributes);
- *   }
- * }
- * ```
- */
-export class FetchError extends FetcherError {
-  /**
-   * Creates a new FetchError instance.
-   *
-   * @param exchange - The FetchExchange object containing request/response/error information.
-   * @param errorMsg - Optional custom error message. If not provided, will use the exchange's error message.
-   */
-  constructor(
-    public readonly exchange: FetchExchange,
-    errorMsg?: string,
-  ) {
-    const errorMessage =
-      errorMsg ||
-      exchange.error?.message ||
-      `Request to ${exchange.request.url} failed with no response`;
-    super(errorMessage, exchange.error);
-    this.name = 'FetchError';
-    Object.setPrototypeOf(this, FetchError.prototype);
   }
 }
 
