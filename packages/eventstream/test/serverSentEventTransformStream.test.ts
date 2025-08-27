@@ -325,5 +325,288 @@ describe('serverSentEventTransformStream.ts', () => {
         }),
       );
     });
+
+    it('should handle unknown field', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send unknown field
+      transformer.transform('unknown:test', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle colon at the beginning of line', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send line starting with colon (comment)
+      transformer.transform(':comment', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle colon at the end of line', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send line ending with colon
+      transformer.transform('field:', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle multiple colons in line', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send line with multiple colons
+      transformer.transform('event:test:event', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'test:event',
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle empty field name', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send line with empty field name
+      transformer.transform(':test', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle empty data', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send empty data
+      transformer.transform('data:', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: '',
+        }),
+      );
+    });
+
+    it('should handle whitespace in field name', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send field with whitespace
+      transformer.transform('  event  :test', controller);
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'test',
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle whitespace in field value', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send field with whitespace in value
+      transformer.transform('data:  test data  ', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle empty data array in flush', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Don't send any data, just flush
+      transformer.flush(controller);
+
+      expect(controller.enqueue).not.toHaveBeenCalled();
+    });
+
+    it('should handle data with newlines', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send data with newlines
+      transformer.transform('data:line1\nline2', controller);
+
+      // Send empty line to trigger event
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: 'line1\nline2',
+        }),
+      );
+    });
+
+    it('should handle non-Error object in transform error', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Mock chunk to throw a non-Error object
+      const chunk = {
+        trim: () => {
+          throw 'Test error string';
+        },
+      } as any;
+
+      transformer.transform(chunk, controller);
+
+      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
+      // The error should be converted to an Error object
+      const errorCall = (controller.error as any).mock.calls[0][0];
+      expect(errorCall).toBeInstanceOf(Error);
+      expect(errorCall.message).toBe('Test error string');
+    });
+
+    it('should handle undefined event in flush', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Set event to undefined
+      (transformer as any).currentEvent.event = undefined;
+      (transformer as any).currentEvent.data = ['test data'];
+
+      // Flush should use 'message' as default event
+      transformer.flush(controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'message',
+          data: 'test data',
+        }),
+      );
+    });
+
+    it('should handle non-Error object in flush error', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Mock controller.enqueue to throw a non-Error object
+      controller.enqueue.mockImplementationOnce(() => {
+        throw 'Test error string';
+      });
+
+      // Send data
+      transformer.transform('data:test data', controller);
+
+      // Flush should handle the error
+      transformer.flush(controller);
+
+      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
+      // The error should be converted to an Error object
+      const errorCall = (controller.error as any).mock.calls[0][0];
+      expect(errorCall).toBeInstanceOf(Error);
+      expect(errorCall.message).toBe('Test error string');
+    });
   });
 });
