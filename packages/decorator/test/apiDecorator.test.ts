@@ -25,9 +25,9 @@ import { fetcherRegistrar } from '@ahoo-wang/fetcher';
 import 'reflect-metadata';
 
 // Mock fetcher
-const mockFetch = vi.fn();
+const mockRequest = vi.fn();
 const mockFetcher = {
-  fetch: mockFetch,
+  request: mockRequest,
 };
 
 describe('apiDecorator', () => {
@@ -174,9 +174,13 @@ describe('apiDecorator', () => {
   });
 
   describe('method execution', () => {
-    it('should replace method with request executor', () => {
+    it('should replace method with request executor', async () => {
       const mockResponse = new Response('{"id": 1, "name": "John"}');
-      mockFetch.mockResolvedValue(Promise.resolve(mockResponse));
+      mockRequest.mockResolvedValue({
+        request: {} as any,
+        response: Promise.resolve(mockResponse),
+        requiredResponse: Promise.resolve(mockResponse),
+      });
 
       @api('/api')
       class TestService {
@@ -196,7 +200,12 @@ describe('apiDecorator', () => {
 
     it('should execute HTTP request when calling decorated method', async () => {
       const mockResponse = new Response('{"id": 1, "name": "John"}');
-      mockFetch.mockResolvedValue(mockResponse);
+      const mockExchange = {
+        request: {} as any,
+        response: Promise.resolve(mockResponse),
+        requiredResponse: mockResponse,
+      };
+      mockRequest.mockResolvedValue(mockExchange);
 
       @api('/api')
       class TestService {
@@ -209,7 +218,8 @@ describe('apiDecorator', () => {
       const instance = new TestService();
       const response = await instance.getUser(1);
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/users/{id}', {
+      expect(mockRequest).toHaveBeenCalledWith({
+        url: '/api/users/{id}',
         method: 'GET',
         urlParams: {
           path: { id: 1 },
@@ -220,6 +230,9 @@ describe('apiDecorator', () => {
         timeout: undefined,
         signal: undefined,
       });
+
+      // The response should be the result of the default result extractor (Response extractor)
+      // which returns exchange.requiredResponse
       expect(response).toBe(mockResponse);
     });
   });
