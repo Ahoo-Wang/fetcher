@@ -13,12 +13,12 @@
 
 export * from './fetcher';
 export * from './fetcherError';
-export * from './interceptorManager';
 export * from './fetcherRegistrar';
 export * from './fetchExchange';
 export * from './fetchInterceptor';
 export * from './fetchRequest';
 export * from './interceptor';
+export * from './interceptorManager';
 export * from './mergeRequest';
 export * from './namedFetcher';
 export * from './orderedCapable';
