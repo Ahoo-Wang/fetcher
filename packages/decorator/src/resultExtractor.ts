@@ -13,7 +13,10 @@
 
 import { ExchangeError, FetchExchange } from '@ahoo-wang/fetcher';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
-import { CommandResultEventStream, toCommandResultEventStream } from '@ahoo-wang/fetcher-wow';
+import {
+  CommandResultEventStream,
+  toCommandResultEventStream,
+} from '@ahoo-wang/fetcher-wow';
 
 /**
  * Result extractor interface
@@ -24,7 +27,12 @@ import { CommandResultEventStream, toCommandResultEventStream } from '@ahoo-wang
 export interface ResultExtractor {
   (
     exchange: FetchExchange,
-  ): FetchExchange | Response | Promise<any> | ServerSentEventStream | CommandResultEventStream;
+  ):
+    | FetchExchange
+    | Response
+    | Promise<any>
+    | ServerSentEventStream
+    | CommandResultEventStream;
 }
 
 /**
@@ -98,20 +106,29 @@ export const ServerSentEventStreamResultExtractor: ResultExtractor = (
 };
 
 /**
- * Extracts command result event stream from the given exchange.
+ * CommandResultEventStream result extractor, used to extract command result event stream from FetchExchange.
  * This function transforms a server-sent event stream into a command result event stream.
  *
+ * 提取命令结果事件流，用于从FetchExchange中提取命令结果事件流。
+ * 该函数将服务器发送事件流转换为命令结果事件流。
+ *
  * @param exchange - The exchange object containing the server-sent event stream data
+ *                  包含服务器发送事件流数据的交换对象
  * @returns A command result event stream derived from the server-sent event stream
+ *          从服务器发送事件流派生的命令结果事件流
+ * @throws ExchangeError exception when server does not support ServerSentEventStream
+ *                       当服务器不支持ServerSentEventStream时抛出ExchangeError异常
  */
-export const CommandResultEventStreamResultExtractor: ResultExtractor = (exchange) => {
-  // Extract the server-sent event stream from the exchange
-  const serverSentEventStream = ServerSentEventStreamResultExtractor(exchange) as ServerSentEventStream;
+export const CommandResultEventStreamResultExtractor: ResultExtractor =
+  exchange => {
+    // Extract the server-sent event stream from the exchange
+    const serverSentEventStream = ServerSentEventStreamResultExtractor(
+      exchange,
+    ) as ServerSentEventStream;
 
-  // Transform the server-sent event stream into a command result event stream
-  return toCommandResultEventStream(serverSentEventStream);
-};
-
+    // Transform the server-sent event stream into a command result event stream
+    return toCommandResultEventStream(serverSentEventStream);
+  };
 
 /**
  * ResultExtractors is an object that maps result extractor names to their corresponding
