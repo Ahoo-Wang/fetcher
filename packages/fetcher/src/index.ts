@@ -28,3 +28,4 @@ export * from './urlBuilder';
 export * from './urlResolveInterceptor';
 export * from './urls';
 export * from './utils';
+export * from './validateStatusInterceptor';
