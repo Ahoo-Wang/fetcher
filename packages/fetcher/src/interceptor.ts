@@ -40,7 +40,7 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
   /**
    * Unique identifier for the interceptor.
    *
-   * Used by InterceptorManager to manage interceptors, including adding, removing,
+   * Used by InterceptorRegistry to manage interceptors, including adding, removing,
    * and preventing duplicates. Each interceptor must have a unique name.
    */
   readonly name: string;
@@ -56,7 +56,7 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
   /**
    * Process the exchange object in the interceptor pipeline.
    *
-   * This method is called by InterceptorManager to process the exchange object.
+   * This method is called by InterceptorRegistry to process the exchange object.
    * Interceptors can modify request, response, or error properties directly.
    *
    * @param exchange - The exchange object containing request, response, and error information
@@ -69,31 +69,31 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
 }
 
 /**
- * Manager for a collection of interceptors of the same type.
+ * Registry for a collection of interceptors of the same type.
  *
  * Handles adding, removing, and executing interceptors in the correct order.
- * Each InterceptorManager instance manages one type of interceptor (request, response, or error).
+ * Each InterceptorRegistry instance manages one type of interceptor (request, response, or error).
  *
  * @remarks
  * Interceptors are executed in ascending order of their `order` property.
  * Interceptors with the same order value are executed in the order they were added.
  *
  * @example
- * // Create an interceptor manager with initial interceptors
- * const requestManager = new InterceptorManager([interceptor1, interceptor2]);
+ * // Create an interceptor registry with initial interceptors
+ * const requestRegistry = new InterceptorRegistry([interceptor1, interceptor2]);
  *
  * // Add a new interceptor
- * requestManager.use(newInterceptor);
+ * requestRegistry.use(newInterceptor);
  *
  * // Remove an interceptor by name
- * requestManager.eject('InterceptorName');
+ * requestRegistry.eject('InterceptorName');
  *
  * // Process an exchange through all interceptors
- * const result = await requestManager.intercept(exchange);
+ * const result = await requestRegistry.intercept(exchange);
  */
 export class InterceptorRegistry implements Interceptor {
   /**
-   * Gets the name of this interceptor manager.
+   * Gets the name of this interceptor registry.
    *
    * @returns The constructor name of this class
    */
@@ -102,21 +102,21 @@ export class InterceptorRegistry implements Interceptor {
   }
 
   /**
-   * Gets the order of this interceptor manager.
+   * Gets the order of this interceptor registry.
    *
-   * @returns Number.MIN_SAFE_INTEGER, indicating this manager should execute early
+   * @returns Number.MIN_SAFE_INTEGER, indicating this registry should execute early
    */
   get order(): number {
     return Number.MIN_SAFE_INTEGER;
   }
 
   /**
-   * Array of interceptors managed by this manager, sorted by their order property.
+   * Array of interceptors managed by this registry, sorted by their order property.
    */
   private sortedInterceptors: Interceptor[] = [];
 
   /**
-   * Initializes a new InterceptorManager instance.
+   * Initializes a new InterceptorRegistry instance.
    *
    * @param interceptors - Initial array of interceptors to manage
    *
@@ -129,7 +129,7 @@ export class InterceptorRegistry implements Interceptor {
   }
 
   /**
-   * Adds an interceptor to this manager.
+   * Adds an interceptor to this registry.
    *
    * @param interceptor - The interceptor to add
    * @returns True if the interceptor was added, false if an interceptor with the
@@ -137,7 +137,7 @@ export class InterceptorRegistry implements Interceptor {
    *
    * @remarks
    * Interceptors are uniquely identified by their name property. Attempting to add
-   * an interceptor with a name that already exists in the manager will fail.
+   * an interceptor with a name that already exists in the registry will fail.
    *
    * After adding, interceptors are automatically sorted by their order property.
    */
@@ -169,7 +169,7 @@ export class InterceptorRegistry implements Interceptor {
   }
 
   /**
-   * Removes all interceptors from this manager.
+   * Removes all interceptors from this registry.
    */
   clear(): void {
     this.sortedInterceptors = [];
@@ -196,4 +196,3 @@ export class InterceptorRegistry implements Interceptor {
     }
   }
 }
-

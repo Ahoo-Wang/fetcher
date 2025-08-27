@@ -18,7 +18,7 @@ import { Fetcher, FetcherInterceptors, FetchExchange, HttpMethod, Interceptor, I
 const mockFetch = vi.fn();
 globalThis.fetch = mockFetch;
 
-describe('InterceptorManager', () => {
+describe('InterceptorRegistry', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -28,7 +28,7 @@ describe('InterceptorManager', () => {
     mockFetch.mockClear();
   });
 
-  describe('InterceptorManager', () => {
+  describe('InterceptorRegistry', () => {
     let manager: InterceptorRegistry;
 
     beforeEach(() => {
