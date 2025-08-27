@@ -33,63 +33,73 @@ export interface ResultExtractorCapable {
 }
 
 /**
- * Result extractors namespace
- * Contains commonly used predefined result extractor implementations
+ * Returns the original FetchExchange object
+ * @param exchange - FetchExchange object
+ * @returns The original FetchExchange object
  */
-export namespace ResultExtractors {
-  /**
-   * Returns the original FetchExchange object
-   * @param exchange - FetchExchange object
-   * @returns The original FetchExchange object
-   */
-  export const Exchange: ResultExtractor = (exchange: FetchExchange) => {
-    return exchange;
-  };
+export const ExchangeResultExtractor: ResultExtractor = (exchange: FetchExchange) => {
+  return exchange;
+};
 
-  /**
-   * Returns the response object from FetchExchange
-   * @param exchange - FetchExchange object
-   * @returns The response object from FetchExchange
-   */
-  export const Response: ResultExtractor = (exchange: FetchExchange) => {
-    return exchange.requiredResponse;
-  };
+/**
+ * Returns the response object from FetchExchange
+ * @param exchange - FetchExchange object
+ * @returns The response object from FetchExchange
+ */
+export const ResponseResultExtractor: ResultExtractor = (exchange: FetchExchange) => {
+  return exchange.requiredResponse;
+};
 
-  /**
-   * Parses the response content as JSON format
-   * @param exchange - FetchExchange object
-   * @returns Promise of parsed JSON data
-   */
-  export const Json: ResultExtractor = (exchange: FetchExchange) => {
-    return exchange.requiredResponse.json();
-  };
+/**
+ * Parses the response content as JSON format
+ * @param exchange - FetchExchange object
+ * @returns Promise of parsed JSON data
+ */
+export const JsonResultExtractor: ResultExtractor = (exchange: FetchExchange) => {
+  return exchange.requiredResponse.json();
+};
 
-  /**
-   * Parses the response content as text format
-   * @param exchange - FetchExchange object
-   * @returns Promise of parsed text data
-   */
-  export const Text: ResultExtractor = (exchange: FetchExchange) => {
-    return exchange.requiredResponse.text();
-  };
+/**
+ * Parses the response content as text format
+ * @param exchange - FetchExchange object
+ * @returns Promise of parsed text data
+ */
+export const TextResultExtractor: ResultExtractor = (exchange: FetchExchange) => {
+  return exchange.requiredResponse.text();
+};
 
-  /**
-   * ServerSentEventStream result extractor, used to extract server-sent event stream from FetchExchange
-   *
-   * @param exchange - FetchExchange object containing request and response information
-   * @returns Readable stream object of server-sent event stream
-   * @throws ExchangeError exception when server does not support ServerSentEventStream
-   */
-  export const ServerSentEventStream: ResultExtractor = (exchange: FetchExchange) => {
-    // Check if response supports event stream, throw exception if not supported
-    if (!exchange.requiredResponse.eventStream) {
-      throw new ExchangeError(exchange, 'ServerSentEventStream is not supported');
-    }
-    // Return the event stream
-    return exchange.requiredResponse.eventStream();
-  };
+/**
+ * ServerSentEventStream result extractor, used to extract server-sent event stream from FetchExchange
+ *
+ * @param exchange - FetchExchange object containing request and response information
+ * @returns Readable stream object of server-sent event stream
+ * @throws ExchangeError exception when server does not support ServerSentEventStream
+ */
+export const ServerSentEventStreamResultExtractor: ResultExtractor = (exchange: FetchExchange) => {
+  // Check if response supports event stream, throw exception if not supported
+  if (!exchange.requiredResponse.eventStream) {
+    throw new ExchangeError(exchange, 'ServerSentEventStream is not supported');
+  }
+  // Return the event stream
+  return exchange.requiredResponse.eventStream();
+};
 
-
-  // Default result extractor is Response type
-  export const DEFAULT = Response;
-}
+/**
+ * ResultExtractors is an object that maps result extractor names to their corresponding
+ * extractor functions. These extractors are used to process and extract data from different
+ * types of responses or results in the application.
+ *
+ * Each property represents a specific type of result extractor:
+ * - Exchange: Handles exchange-related result extraction
+ * - Response: Handles general response result extraction
+ * - Json: Handles JSON format result extraction
+ * - Text: Handles plain text result extraction
+ * - ServerSentEventStream: Handles server-sent event stream result extraction
+ */
+export const ResultExtractors = {
+  Exchange: ExchangeResultExtractor,
+  Response: ResponseResultExtractor,
+  Json: JsonResultExtractor,
+  Text: TextResultExtractor,
+  ServerSentEventStream: ServerSentEventStreamResultExtractor,
+};
