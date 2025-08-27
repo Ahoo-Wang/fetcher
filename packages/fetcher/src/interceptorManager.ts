@@ -95,7 +95,7 @@ export class InterceptorManager {
    * 2. RequestBodyInterceptor (order: 0) - Converts object bodies to JSON
    * 3. FetchInterceptor (order: Number.MAX_SAFE_INTEGER) - Executes the actual HTTP request
    */
-  request: InterceptorRegistry = new InterceptorRegistry([
+  readonly request: InterceptorRegistry = new InterceptorRegistry([
     new UrlResolveInterceptor(),
     new RequestBodyInterceptor(),
     new FetchInterceptor(),
@@ -114,7 +114,7 @@ export class InterceptorManager {
    * By default, the response interceptor registry has one built-in interceptor registered:
    * 1. ValidateStatusInterceptor - Validates HTTP status codes and throws HttpStatusValidationError for invalid statuses
    */
-  response: InterceptorRegistry = new InterceptorRegistry([
+  readonly response: InterceptorRegistry = new InterceptorRegistry([
     new ValidateStatusInterceptor(),
   ]);
 
@@ -129,7 +129,7 @@ export class InterceptorManager {
    * values having higher priority. Error interceptors can transform errors into normal responses,
    * avoiding thrown exceptions.
    */
-  error: InterceptorRegistry = new InterceptorRegistry();
+  readonly error: InterceptorRegistry = new InterceptorRegistry();
 
   /**
    * Processes a FetchExchange through the interceptor pipeline.
