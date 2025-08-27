@@ -22,7 +22,7 @@ export const FETCH_INTERCEPTOR_NAME = 'FetchInterceptor';
 
 /**
  * The order of the FetchInterceptor.
- * Set to Number.MAX_SAFE_INTEGER - 100 to ensure it runs last among request interceptors.
+ * Set to Number.MAX_SAFE_INTEGER - 1000 to ensure it runs last among request interceptors.
  */
 export const FETCH_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
 
