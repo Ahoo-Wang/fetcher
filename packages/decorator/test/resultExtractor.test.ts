@@ -23,10 +23,7 @@ import {
 } from '../src/resultExtractor';
 import { ExchangeError, FetchExchange, FetchRequest } from '@ahoo-wang/fetcher';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
-import {
-  CommandResultEventStream,
-  toCommandResultEventStream,
-} from '@ahoo-wang/fetcher-wow';
+import { CommandResultEventStream } from '@ahoo-wang/fetcher-wow';
 
 describe('ResultExtractor', () => {
   const mockResponse = new Response('{"id": 1, "name": "John"}');
