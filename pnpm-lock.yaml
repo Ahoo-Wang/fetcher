@@ -103,6 +103,9 @@ importers:
       '@ahoo-wang/fetcher-eventstream':
         specifier: workspace:*
         version: link:../eventstream
+      '@ahoo-wang/fetcher-wow':
+        specifier: workspace:*
+        version: link:../wow
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
