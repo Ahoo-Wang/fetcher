@@ -57,12 +57,12 @@ const userFetcher = new NamedFetcher('user', {
 @api('/users', { fetcher: 'user', timeout: 10000 })
 class UserService {
   @post('/', { timeout: 5000 })
-  createUser(@body() user: User): Promise<Response> {
+  createUser(@body() user: User): Promise<User> {
     throw new Error('实现将自动生成');
   }
 
   @get('/{id}')
-  getUser(@path() id: number, @query() include: string): Promise<Response> {
+  getUser(@path() id: number, @query() include: string): Promise<User> {
     throw new Error('实现将自动生成');
   }
 }
@@ -285,8 +285,8 @@ class UserService {
 #### 可用的结果提取器
 
 - **ExchangeResultExtractor**: 返回原始的 FetchExchange 对象
-- **ResponseResultExtractor**: 返回 FetchExchange 中的响应对象（默认）
-- **JsonResultExtractor**: 将响应内容解析为 JSON 格式
+- **ResponseResultExtractor**: 返回 FetchExchange 中的响应对象
+- **JsonResultExtractor**: 将响应内容解析为 JSON 格式（默认）
 - **TextResultExtractor**: 将响应内容解析为文本格式
 - **ServerSentEventStreamResultExtractor**: 从 FetchExchange 中提取服务器发送事件流
 - **CommandResultEventStreamResultExtractor**: 从 FetchExchange 中提取命令结果事件流

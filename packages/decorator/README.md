@@ -58,12 +58,12 @@ const userFetcher = new NamedFetcher('user', {
 @api('/users', { fetcher: 'user', timeout: 10000 })
 class UserService {
   @post('/', { timeout: 5000 })
-  createUser(@body() user: User): Promise<Response> {
+  createUser(@body() user: User): Promise<User> {
     throw new Error('Implementation will be generated automatically.');
   }
 
   @get('/{id}')
-  getUser(@path() id: number, @query() include: string): Promise<Response> {
+  getUser(@path() id: number, @query() include: string): Promise<User> {
     throw new Error('Implementation will be generated automatically.');
   }
 }
@@ -145,7 +145,7 @@ Defines an OPTIONS endpoint.
 ```typescript
 class UserService {
   @get('/{id}', { timeout: 3000 })
-  getUser(@path() id: number): Promise<Response> {
+  getUser(@path() id: number): Promise<User> {
     throw new Error('Implementation will be generated automatically.');
   }
 
@@ -292,8 +292,8 @@ They allow you to customize how the response from an HTTP request is processed a
 #### Available Result Extractors
 
 - **ExchangeResultExtractor**: Returns the original FetchExchange object
-- **ResponseResultExtractor**: Returns the response object from FetchExchange (default)
-- **JsonResultExtractor**: Parses the response content as JSON format
+- **ResponseResultExtractor**: Returns the response object from FetchExchange
+- **JsonResultExtractor**: Parses the response content as JSON format (default)
 - **TextResultExtractor**: Parses the response content as text format
 - **ServerSentEventStreamResultExtractor**: Extracts server-sent event stream from FetchExchange
 - **CommandResultEventStreamResultExtractor**: Extracts command result event stream from FetchExchange
