@@ -9,8 +9,7 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
 A modern, ultra-lightweight (2.3KiB) HTTP client with built-in path parameters, query parameters, and Axios-like API.
-83%
-smaller than Axios while providing the same powerful features.
+83% smaller than Axios while providing the same powerful features.
 
 ## 🌟 Features
 
