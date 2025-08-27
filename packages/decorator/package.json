@@ -11,7 +11,6 @@
   ],
   "author": "Ahoo-Wang",
   "license": "Apache-2.0",
-  "type": "module",
   "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/master/packages/fetcher-decorator",
   "repository": {
     "type": "git",
@@ -21,6 +20,7 @@
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
   },
+  "type": "module",
   "main": "./dist/index.umd.js",
   "module": "./dist/index.es.js",
   "types": "./dist/index.d.ts",
