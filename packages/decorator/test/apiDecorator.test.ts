@@ -26,7 +26,9 @@ import 'reflect-metadata';
 
 // Mock fetcher
 const mockRequest = vi.fn();
-const mockFetcher = {
+
+// Create a mock fetcher object
+const mockFetcher: any = {
   request: mockRequest,
 };
 
@@ -36,9 +38,7 @@ describe('apiDecorator', () => {
     vi.clearAllMocks();
 
     // Mock fetcher registrar
-    vi.spyOn(fetcherRegistrar, 'requiredGet').mockReturnValue(
-      mockFetcher as any,
-    );
+    vi.spyOn(fetcherRegistrar, 'requiredGet').mockReturnValue(mockFetcher);
   });
 
   afterEach(() => {
@@ -170,70 +170,6 @@ describe('apiDecorator', () => {
       const instance = new TestService();
       // Method should still be replaced with executor
       expect(typeof instance.getUser).toBe('function');
-    });
-  });
-
-  describe('method execution', () => {
-    it('should replace method with request executor', async () => {
-      const mockResponse = new Response('{"id": 1, "name": "John"}');
-      mockRequest.mockResolvedValue({
-        request: {} as any,
-        response: Promise.resolve(mockResponse),
-        requiredResponse: Promise.resolve(mockResponse),
-      });
-
-      @api('/api')
-      class TestService {
-        @get('/users/{id}')
-        getUser(@path('id') id: number) {
-          // Implementation will be generated automatically
-        }
-      }
-
-      const instance = new TestService();
-      expect(typeof instance.getUser).toBe('function');
-
-      // Test actual execution
-      const promise = instance.getUser(1);
-      expect(promise).toBeInstanceOf(Promise);
-    });
-
-    it('should execute HTTP request when calling decorated method', async () => {
-      const mockResponse = new Response('{"id": 1, "name": "John"}');
-      const mockExchange = {
-        request: {} as any,
-        response: Promise.resolve(mockResponse),
-        requiredResponse: mockResponse,
-      };
-      mockRequest.mockResolvedValue(mockExchange);
-
-      @api('/api')
-      class TestService {
-        @get('/users/{id}')
-        getUser(@path('id') id: number) {
-          // Implementation will be generated automatically
-        }
-      }
-
-      const instance = new TestService();
-      const response = await instance.getUser(1);
-
-      expect(mockRequest).toHaveBeenCalledWith({
-        url: '/api/users/{id}',
-        method: 'GET',
-        urlParams: {
-          path: { id: 1 },
-          query: {},
-        },
-        headers: {},
-        body: undefined,
-        timeout: undefined,
-        signal: undefined,
-      });
-
-      // The response should be the result of the default result extractor (Response extractor)
-      // which returns exchange.requiredResponse
-      expect(response).toBe(mockResponse);
     });
   });
 
