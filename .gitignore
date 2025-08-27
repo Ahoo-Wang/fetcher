@@ -56,6 +56,7 @@ typings/
 
 # IDE specific files
 .idea/
+!.idea/copyright/
 .vscode/
 *.swp
 *.swo
@@ -93,7 +94,6 @@ typings/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
