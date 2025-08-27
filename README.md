@@ -8,14 +8,13 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-A modern, ultra-lightweight (2.3KiB) HTTP client with built-in path parameters, query parameters, and Axios-like API.
-83% smaller than Axios while providing the same powerful features.
+A modern, ultra-lightweight HTTP client with built-in path parameters, query parameters, and Axios-like API.
 
 ## 🌟 Features
 
 #### [`@ahoo-wang/fetcher`](./packages/fetcher)
 
-- **⚡ Ultra-Lightweight**: Only 2.3KiB min+gzip - 83% smaller than Axios
+- **⚡ Ultra-Lightweight**: Only 2.7KiB min+gzip
 - **🧭 Path & Query Parameters**: Built-in support for path (`{id}`) and query parameters
 - **🔗 Interceptor System**: Request, response, and error interceptors with ordered execution for flexible middleware
   patterns
