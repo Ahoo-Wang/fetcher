@@ -81,10 +81,10 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
 export class Fetcher
   implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable
 {
-  urlBuilder: UrlBuilder;
-  headers?: RequestHeaders = DEFAULT_HEADERS;
-  timeout?: number;
-  interceptors: InterceptorManager;
+  readonly urlBuilder: UrlBuilder;
+  readonly headers?: RequestHeaders = DEFAULT_HEADERS;
+  readonly timeout?: number;
+  readonly interceptors: InterceptorManager;
 
   /**
    * Initializes a new Fetcher instance with optional configuration.
