@@ -11,17 +11,13 @@
  * limitations under the License.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-describe('ServerSentEventTransformStream Error Handling', () => {
-  it('should handle non-Error objects in error handling', () => {
-    // This is a more advanced test that would require mocking
-    // For now, let's focus on ensuring the existing tests cover the main paths
-
-    // The lines 141 and 169 are for handling cases where the caught error
-    // is not an instance of Error. This is defensive programming.
-    // In normal operation, this code should work correctly.
-
-    expect(true).toBe(true); // Placeholder test
+describe('types.ts', () => {
+  it('should extend ReadableStream with async iterator', () => {
+    // This test verifies that the global declaration is properly recognized
+    const stream = new ReadableStream();
+    // The Symbol.asyncIterator should be available on ReadableStream
+    expect(stream[Symbol.asyncIterator]).toBeDefined();
   });
 });

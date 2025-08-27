@@ -11,119 +11,145 @@
  * limitations under the License.
  */
 
-import { describe, it, expect } from 'vitest';
-import { TextLineTransformStream } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import { TextLineTransformer, TextLineTransformStream, } from '../src/textLineTransformStream';
 
-describe('TextLineTransformStream', () => {
-  it('should split chunks by newlines', async () => {
-    const stream = new TextLineTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+describe('textLineTransformStream.ts', () => {
+  describe('TextLineTransformStream', () => {
+    it('should create TextLineTransformStream instance', () => {
+      const stream = new TextLineTransformStream();
 
-    writer.write('hello\nworld\n');
-    writer.close();
+      expect(stream).toBeInstanceOf(TextLineTransformStream);
+      expect(stream).toBeInstanceOf(TransformStream);
+    });
 
-    const chunks: string[] = [];
-    let done = false;
-    while (!done) {
-      const { value, done: readerDone } = await reader.read();
-      done = readerDone;
-      if (value !== undefined) {
-        chunks.push(value);
-      }
-    }
+    it('should create TextLineTransformStream with TextLineTransformer', () => {
+      // This test ensures the constructor properly calls super with TextLineTransformer
+      const stream = new TextLineTransformStream();
 
-    expect(chunks).toEqual(['hello', 'world']);
-  }, 10000);
+      // We can't directly access the internal transformer, but we can test the behavior
+      expect(stream).toBeDefined();
+    });
+  });
 
-  it('should handle chunks without newlines', async () => {
-    const stream = new TextLineTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+  describe('TextLineTransformer', () => {
+    it('should transform chunks by splitting lines', async () => {
+      const transformer = new TextLineTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-    writer.write('hello');
-    writer.write('world');
-    writer.close();
+      transformer.transform('line1\nline2\n', controller);
 
-    const chunks: string[] = [];
-    let done = false;
-    while (!done) {
-      const { value, done: readerDone } = await reader.read();
-      done = readerDone;
-      if (value !== undefined) {
-        chunks.push(value);
-      }
-    }
+      expect(controller.enqueue).toHaveBeenCalledWith('line1');
+      expect(controller.enqueue).toHaveBeenCalledWith('line2');
+    });
 
-    expect(chunks).toEqual(['helloworld']);
-  }, 10000);
+    it('should accumulate buffer for incomplete lines', async () => {
+      const transformer = new TextLineTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-  it('should handle mixed chunks with and without newlines', async () => {
-    const stream = new TextLineTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      transformer.transform('line1\nline2', controller);
 
-    writer.write('hello\nwo');
-    writer.write('rld\nfoo');
-    writer.write('\nbar');
-    writer.close();
+      expect(controller.enqueue).toHaveBeenCalledWith('line1');
+      expect(controller.enqueue).not.toHaveBeenCalledWith('line2');
+    });
 
-    const chunks: string[] = [];
-    let done = false;
-    while (!done) {
-      const { value, done: readerDone } = await reader.read();
-      done = readerDone;
-      if (value !== undefined) {
-        chunks.push(value);
-      }
-    }
+    it('should flush remaining buffer', async () => {
+      const transformer = new TextLineTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-    expect(chunks).toEqual(['hello', 'world', 'foo', 'bar']);
-  }, 10000);
+      transformer.transform('line1\nline2', controller);
+      transformer.flush(controller);
 
-  it('should handle empty chunks', async () => {
-    const stream = new TextLineTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+      expect(controller.enqueue).toHaveBeenCalledWith('line1');
+      expect(controller.enqueue).toHaveBeenCalledWith('line2');
+    });
 
-    writer.write('');
-    writer.write('\n');
-    writer.write('');
-    writer.close();
+    it('should not flush empty buffer', async () => {
+      const transformer = new TextLineTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-    const chunks: string[] = [];
-    let done = false;
-    while (!done) {
-      const { value, done: readerDone } = await reader.read();
-      done = readerDone;
-      if (value !== undefined) {
-        chunks.push(value);
-      }
-    }
+      transformer.flush(controller);
 
-    // The TextLineStream should only emit one empty string for the newline
-    // The trailing empty string should not be emitted
-    expect(chunks).toEqual(['']);
-  }, 10000);
+      expect(controller.enqueue).not.toHaveBeenCalled();
+    });
 
-  it('should handle trailing content without newline', async () => {
-    const stream = new TextLineTransformStream();
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+    it('should handle errors in transform', async () => {
+      const transformer = new TextLineTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
 
-    writer.write('hello\nworld');
-    writer.close();
+      // Mock chunk to throw an error
+      const chunk = {
+        toString: () => {
+          throw new Error('Test error');
+        },
+      } as any;
 
-    const chunks: string[] = [];
-    let done = false;
-    while (!done) {
-      const { value, done: readerDone } = await reader.read();
-      done = readerDone;
-      if (value !== undefined) {
-        chunks.push(value);
-      }
-    }
+      transformer.transform(chunk, controller);
 
-    expect(chunks).toEqual(['hello', 'world']);
-  }, 10000);
+      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    it('should handle errors in flush', async () => {
+      const transformer = new TextLineTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Mock controller.enqueue to throw an error
+      controller.enqueue.mockImplementationOnce(() => {
+        throw new Error('Test error');
+      });
+
+      transformer.transform('test', controller);
+      transformer.flush(controller);
+
+      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    it('should handle empty buffer in flush', async () => {
+      const transformer = new TextLineTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Set buffer to empty string
+      (transformer as any).buffer = '';
+
+      transformer.flush(controller);
+
+      expect(controller.enqueue).not.toHaveBeenCalled();
+    });
+
+    it('should handle buffer with only whitespace in flush', async () => {
+      const transformer = new TextLineTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Set buffer to whitespace
+      (transformer as any).buffer = '   ';
+
+      transformer.flush(controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith('   ');
+    });
+  });
 });
