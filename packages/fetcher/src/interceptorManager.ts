@@ -52,7 +52,7 @@ export class ExchangeError extends FetcherError {
  * 2. Response interceptors - Process responses after receiving HTTP responses
  * 3. Error interceptors - Handle errors when they occur during the request process
  *
- * Each type of interceptor is managed by an InterceptorManager instance, supporting
+ * Each type of interceptor is managed by an InterceptorRegistry instance, supporting
  * adding, removing, and executing interceptors.
  *
  * @example
@@ -75,14 +75,14 @@ export class ExchangeError extends FetcherError {
  * fetcher.interceptors.request.use(customRequestInterceptor);
  *
  * @remarks
- * By default, the request interceptor manager has three built-in interceptors registered:
+ * By default, the request interceptor registry has three built-in interceptors registered:
  * 1. UrlResolveInterceptor - Resolves the final URL with parameters
  * 2. RequestBodyInterceptor - Automatically converts object-type request bodies to JSON strings
  * 3. FetchInterceptor - Executes actual HTTP requests and handles timeouts
  */
 export class InterceptorManager {
   /**
-   * Manager for request-phase interceptors.
+   * Registry for request-phase interceptors.
    *
    * Executed before HTTP requests are sent. Contains three built-in interceptors by default:
    * UrlResolveInterceptor, RequestBodyInterceptor, and FetchInterceptor.
