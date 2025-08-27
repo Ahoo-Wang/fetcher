@@ -12,7 +12,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Fetcher, FetcherInterceptors, FetchExchange, HttpMethod, Interceptor, InterceptorManager, } from '../src';
+import { Fetcher, FetcherInterceptors, FetchExchange, HttpMethod, Interceptor, InterceptorRegistry, } from '../src';
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -29,10 +29,10 @@ describe('InterceptorManager', () => {
   });
 
   describe('InterceptorManager', () => {
-    let manager: InterceptorManager;
+    let manager: InterceptorRegistry;
 
     beforeEach(() => {
-      manager = new InterceptorManager();
+      manager = new InterceptorRegistry();
     });
 
     it('should have correct order value', () => {
@@ -255,9 +255,9 @@ describe('InterceptorManager', () => {
     it('should create interceptor managers for request, response and error', () => {
       const interceptors = new FetcherInterceptors();
 
-      expect(interceptors.request).toBeInstanceOf(InterceptorManager);
-      expect(interceptors.response).toBeInstanceOf(InterceptorManager);
-      expect(interceptors.error).toBeInstanceOf(InterceptorManager);
+      expect(interceptors.request).toBeInstanceOf(InterceptorRegistry);
+      expect(interceptors.response).toBeInstanceOf(InterceptorRegistry);
+      expect(interceptors.error).toBeInstanceOf(InterceptorRegistry);
     });
 
     it('should allow adding request interceptors', () => {
@@ -407,7 +407,7 @@ describe('InterceptorManager', () => {
 
   describe('Interceptor Types', () => {
     it('should process request interceptors correctly', async () => {
-      const manager = new InterceptorManager();
+      const manager = new InterceptorRegistry();
       const mockExchange = new FetchExchange(new Fetcher(), {
         url: 'http://example.com',
         method: HttpMethod.GET,
@@ -439,7 +439,7 @@ describe('InterceptorManager', () => {
     });
 
     it('should process response interceptors correctly', async () => {
-      const manager = new InterceptorManager();
+      const manager = new InterceptorRegistry();
       const response = new Response('{"data": "test"}', {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -477,7 +477,7 @@ describe('InterceptorManager', () => {
     });
 
     it('should process error interceptors correctly', async () => {
-      const manager = new InterceptorManager();
+      const manager = new InterceptorRegistry();
       const error = new Error('Network error');
 
       const mockExchange = new FetchExchange(

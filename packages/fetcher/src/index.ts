@@ -11,8 +11,9 @@
  * limitations under the License.
  */
 
-export * from './fetcherError';
 export * from './fetcher';
+export * from './fetcherError';
+export * from './fetcherInterceptors';
 export * from './fetcherRegistrar';
 export * from './fetchExchange';
 export * from './fetchInterceptor';
@@ -29,3 +30,4 @@ export * from './urlResolveInterceptor';
 export * from './urls';
 export * from './utils';
 export * from './validateStatusInterceptor';
+
