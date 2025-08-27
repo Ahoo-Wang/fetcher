@@ -23,7 +23,10 @@ import {
 } from '../src/resultExtractor';
 import { ExchangeError, FetchExchange, FetchRequest } from '@ahoo-wang/fetcher';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
-import { CommandResultEventStream } from '@ahoo-wang/fetcher-wow';
+import {
+  CommandResultEventStream,
+  toCommandResultEventStream,
+} from '@ahoo-wang/fetcher-wow';
 
 describe('ResultExtractor', () => {
   const mockResponse = new Response('{"id": 1, "name": "John"}');
@@ -123,6 +126,28 @@ describe('ResultExtractor', () => {
     });
   });
 
+  describe('CommandResultEventStreamResultExtractor', () => {
+    it('should throw ExchangeError when server does not support ServerSentEventStream', () => {
+      const noEventStreamResponse = new Response('');
+      // Ensure there's no eventStream function
+      Object.defineProperty(noEventStreamResponse, 'eventStream', {
+        configurable: true,
+        enumerable: true,
+        get: () => undefined,
+      });
+
+      const noEventStreamExchange = new FetchExchange(
+        {} as any,
+        mockRequest,
+        noEventStreamResponse,
+      );
+
+      expect(() =>
+        CommandResultEventStreamResultExtractor(noEventStreamExchange),
+      ).toThrow(ExchangeError);
+    });
+  });
+
   describe('ResultExtractors object', () => {
     it('should contain all result extractors', () => {
       expect(ResultExtractors.Exchange).toBe(ExchangeResultExtractor);
@@ -131,6 +156,9 @@ describe('ResultExtractor', () => {
       expect(ResultExtractors.Text).toBe(TextResultExtractor);
       expect(ResultExtractors.ServerSentEventStream).toBe(
         ServerSentEventStreamResultExtractor,
+      );
+      expect(ResultExtractors.CommandResultEventStream).toBe(
+        CommandResultEventStreamResultExtractor,
       );
     });
   });
