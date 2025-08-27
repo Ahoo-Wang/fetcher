@@ -330,7 +330,7 @@ string, options ? : FetcherOptions
 
 - `intercept(exchange: FetchExchange): void | Promise<void>` - 拦截并处理数据
 
-#### InterceptorManager 类
+#### InterceptorRegistry 类
 
 用于管理同一类型多个拦截器的拦截器管理器。
 
@@ -341,7 +341,7 @@ string, options ? : FetcherOptions
 - `clear(): void` - 清除所有拦截器
 - `intercept(exchange: FetchExchange): Promise<void>` - 顺序执行所有拦截器
 
-#### FetcherInterceptors 类
+#### InterceptorManager 类
 
 Fetcher 拦截器集合，包括请求、响应和错误拦截器管理器。
 

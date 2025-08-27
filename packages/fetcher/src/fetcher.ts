@@ -25,7 +25,7 @@ import {
 } from './fetchRequest';
 import { mergeRecords } from './utils';
 import { FetchError } from './fetcherError';
-import { FetcherInterceptors } from './fetcherInterceptors';
+import { InterceptorManager } from './interceptorManager';
 
 /**
  * Configuration options for the Fetcher client.
@@ -39,7 +39,7 @@ import { FetcherInterceptors } from './fetcherInterceptors';
  *   baseURL: 'https://api.example.com',
  *   headers: { 'Content-Type': 'application/json' },
  *   timeout: 5000,
- *   interceptors: new FetcherInterceptors()
+ *   interceptors: new InterceptorManager()
  * };
  * ```
  */
@@ -47,7 +47,7 @@ export interface FetcherOptions
   extends BaseURLCapable,
     RequestHeadersCapable,
     TimeoutCapable {
-  interceptors?: FetcherInterceptors;
+  interceptors?: InterceptorManager;
 }
 
 const DEFAULT_HEADERS: RequestHeaders = {
@@ -84,7 +84,7 @@ export class Fetcher
   urlBuilder: UrlBuilder;
   headers?: RequestHeaders = DEFAULT_HEADERS;
   timeout?: number;
-  interceptors: FetcherInterceptors;
+  interceptors: InterceptorManager;
 
   /**
    * Initializes a new Fetcher instance with optional configuration.
@@ -98,7 +98,7 @@ export class Fetcher
     this.urlBuilder = new UrlBuilder(options.baseURL);
     this.headers = options.headers ?? DEFAULT_HEADERS;
     this.timeout = options.timeout;
-    this.interceptors = options.interceptors ?? new FetcherInterceptors();
+    this.interceptors = options.interceptors ?? new InterceptorManager();
   }
 
   /**

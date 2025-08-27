@@ -13,7 +13,7 @@
 
 export * from './fetcher';
 export * from './fetcherError';
-export * from './fetcherInterceptors';
+export * from './interceptorManager';
 export * from './fetcherRegistrar';
 export * from './fetchExchange';
 export * from './fetchInterceptor';

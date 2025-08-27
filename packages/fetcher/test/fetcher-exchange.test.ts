@@ -18,7 +18,7 @@ import { Fetcher, FetchExchange, Interceptor, InterceptorRegistry, } from '../sr
 const mockFetch = vi.fn();
 globalThis.fetch = mockFetch;
 
-describe('FetcherInterceptors - exchange', () => {
+describe('InterceptorManager - exchange', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     mockFetch.mockClear();
