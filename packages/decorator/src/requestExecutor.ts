@@ -145,10 +145,13 @@ export class FunctionMetadata implements NamedCapable {
     let parameterRequest: FetchRequestInit = {};
     // Process parameters based on their decorators
     args.forEach((value, index) => {
+      // Handle AbortSignal parameters
       if (value instanceof AbortSignal) {
         signal = value;
         return;
       }
+
+      // Process parameters based on their decorators
       if (index < this.parameters.length) {
         const param = this.parameters[index];
         switch (param.type) {

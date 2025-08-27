@@ -11,11 +11,7 @@
  * limitations under the License.
  */
 
-import {
-  RequestHeaders,
-  RequestHeadersCapable,
-  TimeoutCapable,
-} from '@ahoo-wang/fetcher';
+import { RequestHeaders, RequestHeadersCapable, TimeoutCapable, } from '@ahoo-wang/fetcher';
 import { ENDPOINT_METADATA_KEY } from './endpointDecorator';
 import { FunctionMetadata, RequestExecutor } from './requestExecutor';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator';
@@ -78,22 +74,30 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   functionName: string,
   apiMetadata: ApiMetadata,
 ) {
-  const endpointFunction = constructor.prototype[functionName];
+  // Skip constructor
   if (functionName === 'constructor') {
     return;
   }
+
+  const endpointFunction = constructor.prototype[functionName];
+
+  // Skip non-function properties
   if (typeof endpointFunction !== 'function') {
     return;
   }
 
+  // Check if method has endpoint metadata
   const endpointMetadata = Reflect.getMetadata(
     ENDPOINT_METADATA_KEY,
     constructor.prototype,
     functionName,
   );
+
+  // Skip methods without endpoint metadata
   if (!endpointMetadata) {
     return;
   }
+
   // Get parameter metadata for this method
   const parameterMetadata =
     Reflect.getMetadata(

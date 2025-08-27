@@ -253,6 +253,29 @@ describe('apiDecorator', () => {
       expect(typeof instance.getUsers).toBe('function');
     });
 
+    it('should not modify methods without endpoint metadata', () => {
+      @api('/test')
+      class TestService {
+        // Regular method without any decorators
+        regularMethod() {
+          return 'regular';
+        }
+
+        // Method with endpoint decorator
+        @get('/users')
+        getUsers() {
+          return Promise.resolve(new Response('{"users": []}'));
+        }
+      }
+
+      const instance = new TestService();
+      // Regular method should remain unchanged
+      expect(instance.regularMethod()).toBe('regular');
+      expect(typeof instance.regularMethod).toBe('function');
+      // Decorated method should be replaced with executor
+      expect(typeof instance.getUsers).toBe('function');
+    });
+
     it('should handle case where prototype property is not a function', () => {
       @api('/test')
       class TestService {
@@ -274,6 +297,27 @@ describe('apiDecorator', () => {
       // Non-function property should remain unchanged
       expect((instance as any).nonFunctionMethod).toBe('not a function');
       // Decorated method should still work
+      expect(typeof instance.getUsers).toBe('function');
+    });
+
+    it('should not modify the constructor function', () => {
+      @api('/test')
+      class TestService {
+        constructor() {
+          // Empty constructor
+        }
+
+        @get('/users')
+        getUsers() {
+          return Promise.resolve(new Response('{"users": []}'));
+        }
+      }
+
+      const instance = new TestService();
+      // Constructor should not be modified
+      expect(typeof instance.constructor).toBe('function');
+      expect(instance.constructor.name).toBe('TestService');
+      // Method should still be replaced with executor
       expect(typeof instance.getUsers).toBe('function');
     });
 

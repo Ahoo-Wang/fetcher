@@ -137,6 +137,28 @@ describe('FunctionMetadata', () => {
     expect(request.signal).toBeUndefined();
   });
 
+  it('should resolve request with AbortSignal', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      [
+        {
+          type: ParameterType.PATH,
+          name: 'id',
+          index: 0,
+        },
+      ],
+    );
+
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+
+    const request = metadata.resolveRequest([123, signal]);
+    expect(request.urlParams?.path).toEqual({ id: 123 });
+    expect(request.signal).toBe(signal);
+  });
+
   it('should get fetcher correctly', () => {
     // Mock fetcher registrar
     vi.spyOn(fetcherRegistrar, 'requiredGet').mockReturnValue(
