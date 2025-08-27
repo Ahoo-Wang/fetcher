@@ -15,18 +15,29 @@ import { CoSecOptions, ResponseCodes } from './types';
 import { FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
 
 /**
+ * The name of the CoSecResponseInterceptor.
+ */
+export const COSEC_RESPONSE_INTERCEPTOR_NAME = 'CoSecResponseInterceptor';
+
+/**
+ * The order of the CoSecResponseInterceptor.
+ * Set to Number.MAX_SAFE_INTEGER - 100 to ensure it runs late among response interceptors.
+ */
+export const COSEC_RESPONSE_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 100;
+
+/**
  * Interceptor that handles automatic token refresh based on response codes.
  *
  * @remarks
  * This interceptor runs near the end of the response processing chain, just before
- * the final response is returned. The order is set to Number.MAX_SAFE_INTEGER - 100
+ * the final response is returned. The order is set to COSEC_RESPONSE_INTERCEPTOR_ORDER
  * to ensure it runs after most other response interceptors but still allows for
  * final processing interceptors to run afterward. This order aligns with other
  * response enhancement interceptors like EventStreamInterceptor.
  */
 export class CoSecResponseInterceptor implements Interceptor {
-  readonly name = 'CoSecResponseInterceptor';
-  readonly order = Number.MAX_SAFE_INTEGER - 100;
+  readonly name = COSEC_RESPONSE_INTERCEPTOR_NAME;
+  readonly order = COSEC_RESPONSE_INTERCEPTOR_ORDER;
   private options: CoSecOptions;
 
   constructor(options: CoSecOptions) {

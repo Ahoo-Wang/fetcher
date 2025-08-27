@@ -16,6 +16,17 @@ import { CoSecHeaders, CoSecOptions } from './types';
 import { idGenerator } from './idGenerator';
 
 /**
+ * The name of the CoSecRequestInterceptor.
+ */
+export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
+
+/**
+ * The order of the CoSecRequestInterceptor.
+ * Set to Number.MIN_SAFE_INTEGER + 1000 to ensure it runs early among request interceptors.
+ */
+export const COSEC_REQUEST_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
+
+/**
  * Interceptor that automatically adds CoSec authentication headers to requests.
  *
  * This interceptor adds the following headers to each request:
@@ -26,13 +37,13 @@ import { idGenerator } from './idGenerator';
  *
  * @remarks
  * This interceptor runs after the basic request processing interceptors but before
- * the actual HTTP request is made. The order is set to Number.MIN_SAFE_INTEGER + 1000
+ * the actual HTTP request is made. The order is set to COSEC_REQUEST_INTERCEPTOR_ORDER
  * to allow for other authentication or preprocessing interceptors to run earlier
  * while ensuring it runs before FetchInterceptor.
  */
 export class CoSecRequestInterceptor implements Interceptor {
-  readonly name = 'CoSecRequestInterceptor';
-  readonly order = Number.MIN_SAFE_INTEGER + 1000;
+  readonly name = COSEC_REQUEST_INTERCEPTOR_NAME;
+  readonly order = COSEC_REQUEST_INTERCEPTOR_ORDER;
   private options: CoSecOptions;
 
   constructor(options: CoSecOptions) {
