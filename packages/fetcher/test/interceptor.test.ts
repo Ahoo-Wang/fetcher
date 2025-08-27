@@ -39,16 +39,10 @@ describe('interceptor.ts', () => {
       expect(result).toBe(true);
 
       // Test indirectly by checking if the interceptor is called
-      const mockExchange: FetchExchange = {
-        fetcher: new Fetcher(),
-        request: {
-          url: 'http://example.com',
-          method: HttpMethod.GET,
-        },
-        response: undefined,
-        error: undefined,
-        attributes: {},
-      };
+      const mockExchange = new FetchExchange(new Fetcher(), {
+        url: 'http://example.com',
+        method: HttpMethod.GET,
+      });
 
       manager.intercept(mockExchange);
       expect(interceptor.intercept).toHaveBeenCalled();
@@ -73,16 +67,10 @@ describe('interceptor.ts', () => {
       expect(result2).toBe(false);
 
       // Test that only the first interceptor is called
-      const mockExchange: FetchExchange = {
-        fetcher: new Fetcher(),
-        request: {
-          url: 'http://example.com',
-          method: HttpMethod.GET,
-        },
-        response: undefined,
-        error: undefined,
-        attributes: {},
-      };
+      const mockExchange = new FetchExchange(new Fetcher(), {
+        url: 'http://example.com',
+        method: HttpMethod.GET,
+      });
 
       manager.intercept(mockExchange);
       expect(interceptor1.intercept).toHaveBeenCalled();
@@ -106,16 +94,10 @@ describe('interceptor.ts', () => {
       manager.use(interceptor1);
       manager.use(interceptor2);
 
-      const mockExchange: FetchExchange = {
-        fetcher: new Fetcher(),
-        request: {
-          url: 'http://example.com',
-          method: HttpMethod.GET,
-        },
-        response: undefined,
-        error: undefined,
-        attributes: {},
-      };
+      const mockExchange = new FetchExchange(new Fetcher(), {
+        url: 'http://example.com',
+        method: HttpMethod.GET,
+      });
 
       await manager.intercept(mockExchange);
 
@@ -140,16 +122,10 @@ describe('interceptor.ts', () => {
       manager.use(interceptor2);
       manager.eject('interceptor-1');
 
-      const mockExchange: FetchExchange = {
-        fetcher: new Fetcher(),
-        request: {
-          url: 'http://example.com',
-          method: HttpMethod.GET,
-        },
-        response: undefined,
-        error: undefined,
-        attributes: {},
-      };
+      const mockExchange = new FetchExchange(new Fetcher(), {
+        url: 'http://example.com',
+        method: HttpMethod.GET,
+      });
 
       await manager.intercept(mockExchange);
 
@@ -174,16 +150,10 @@ describe('interceptor.ts', () => {
       manager.use(interceptor2);
       manager.clear();
 
-      const mockExchange: FetchExchange = {
-        fetcher: new Fetcher(),
-        request: {
-          url: 'http://example.com',
-          method: HttpMethod.GET,
-        },
-        response: undefined,
-        error: undefined,
-        attributes: {},
-      };
+      const mockExchange = new FetchExchange(new Fetcher(), {
+        url: 'http://example.com',
+        method: HttpMethod.GET,
+      });
 
       await manager.intercept(mockExchange);
 
@@ -208,16 +178,10 @@ describe('interceptor.ts', () => {
 
       manager.use(asyncInterceptor);
 
-      const mockExchange: FetchExchange = {
-        fetcher: new Fetcher(),
-        request: {
-          url: 'http://example.com',
-          method: HttpMethod.GET,
-        },
-        response: undefined,
-        error: undefined,
-        attributes: {},
-      };
+      const mockExchange = new FetchExchange(new Fetcher(), {
+        url: 'http://example.com',
+        method: HttpMethod.GET,
+      });
 
       await manager.intercept(mockExchange);
 
@@ -259,16 +223,10 @@ describe('interceptor.ts', () => {
       manager.use(interceptor2);
       manager.use(interceptor3);
 
-      const mockExchange: FetchExchange = {
-        fetcher: new Fetcher(),
-        request: {
-          url: 'http://example.com',
-          method: HttpMethod.GET,
-        },
-        response: undefined,
-        error: undefined,
-        attributes: {},
-      };
+      const mockExchange = new FetchExchange(new Fetcher(), {
+        url: 'http://example.com',
+        method: HttpMethod.GET,
+      });
 
       await manager.intercept(mockExchange);
 
@@ -328,18 +286,12 @@ describe('interceptor.ts', () => {
 
   describe('Interceptor Types', () => {
     it('should process request interceptors correctly', async () => {
-      const interceptors = new FetcherInterceptors();
-      const mockExchange: FetchExchange = {
-        fetcher: new Fetcher(),
-        request: {
-          url: 'http://example.com',
-          method: HttpMethod.GET,
-          headers: { 'Content-Type': 'application/json' },
-        },
-        response: undefined,
-        error: undefined,
-        attributes: {},
-      };
+      const manager = new InterceptorManager();
+      const mockExchange = new FetchExchange(new Fetcher(), {
+        url: 'http://example.com',
+        method: HttpMethod.GET,
+        headers: { 'Content-Type': 'application/json' },
+      });
 
       const requestInterceptor: Interceptor = {
         name: 'request-interceptor-1',
@@ -355,8 +307,8 @@ describe('interceptor.ts', () => {
         }),
       };
 
-      interceptors.request.use(requestInterceptor);
-      await interceptors.request.intercept(mockExchange);
+      manager.use(requestInterceptor);
+      await manager.intercept(mockExchange);
 
       expect(mockExchange.request.headers).toHaveProperty(
         'Authorization',
@@ -366,21 +318,19 @@ describe('interceptor.ts', () => {
     });
 
     it('should process response interceptors correctly', async () => {
-      const interceptors = new FetcherInterceptors();
+      const manager = new InterceptorManager();
       const response = new Response('{"data": "test"}', {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
 
-      const mockExchange: FetchExchange = {
-        fetcher: new Fetcher(),
-        request: {
+      const mockExchange = new FetchExchange(
+        new Fetcher(),
+        {
           url: 'http://example.com',
         },
-        response: response,
-        error: undefined,
-        attributes: {},
-      };
+        response,
+      );
 
       const responseInterceptor: Interceptor = {
         name: 'response-interceptor-1',
@@ -397,8 +347,8 @@ describe('interceptor.ts', () => {
         }),
       };
 
-      interceptors.response.use(responseInterceptor);
-      await interceptors.response.intercept(mockExchange);
+      manager.use(responseInterceptor);
+      await manager.intercept(mockExchange);
 
       expect(mockExchange.response).toBe(response);
       expect((mockExchange.response as any).customHeader).toBe('intercepted');
@@ -406,18 +356,17 @@ describe('interceptor.ts', () => {
     });
 
     it('should process error interceptors correctly', async () => {
-      const interceptors = new FetcherInterceptors();
+      const manager = new InterceptorManager();
       const error = new Error('Network error');
 
-      const mockExchange: FetchExchange = {
-        fetcher: new Fetcher(),
-        request: {
+      const mockExchange = new FetchExchange(
+        new Fetcher(),
+        {
           url: 'http://example.com',
         },
-        response: undefined,
-        error: error,
-        attributes: {},
-      };
+        undefined,
+        error,
+      );
 
       const errorInterceptor: Interceptor = {
         name: 'error-interceptor-1',
@@ -428,8 +377,8 @@ describe('interceptor.ts', () => {
         }),
       };
 
-      interceptors.error.use(errorInterceptor);
-      await interceptors.error.intercept(mockExchange);
+      manager.use(errorInterceptor);
+      await manager.intercept(mockExchange);
 
       expect(mockExchange.error?.message).toBe('Intercepted: Network error');
       expect(errorInterceptor.intercept).toHaveBeenCalledWith(mockExchange);

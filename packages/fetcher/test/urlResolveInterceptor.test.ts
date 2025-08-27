@@ -19,7 +19,7 @@ describe('UrlResolveInterceptor', () => {
     const interceptor = new UrlResolveInterceptor();
 
     expect(interceptor.name).toBe('UrlResolveInterceptor');
-    expect(interceptor.order).toBe(Number.MIN_SAFE_INTEGER + 100);
+    expect(interceptor.order).toBe(Number.MIN_SAFE_INTEGER + 1000);
   });
 
   it('should resolve URL using urlBuilder', () => {

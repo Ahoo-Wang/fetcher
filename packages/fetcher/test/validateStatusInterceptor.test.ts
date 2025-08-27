@@ -22,7 +22,7 @@ describe('ValidateStatusInterceptor', () => {
     const interceptor = new ValidateStatusInterceptor();
 
     expect(interceptor.name).toBe('ValidateStatusInterceptor');
-    expect(interceptor.order).toBe(Number.MAX_SAFE_INTEGER);
+    expect(interceptor.order).toBe(Number.MAX_SAFE_INTEGER - 1000);
   });
 
   it('should create interceptor with custom validateStatus function', () => {
@@ -30,7 +30,15 @@ describe('ValidateStatusInterceptor', () => {
     const interceptor = new ValidateStatusInterceptor(customValidate);
 
     expect(interceptor.name).toBe('ValidateStatusInterceptor');
-    expect(interceptor.order).toBe(Number.MAX_SAFE_INTEGER);
+    expect(interceptor.order).toBe(Number.MAX_SAFE_INTEGER - 1000);
+  });
+
+  it('should create interceptor with custom validateStatus function', () => {
+    const customValidate = (status: number) => status === 200;
+    const interceptor = new ValidateStatusInterceptor(customValidate);
+
+    expect(interceptor.name).toBe('ValidateStatusInterceptor');
+    expect(interceptor.order).toBe(Number.MAX_SAFE_INTEGER - 1000);
   });
 
   it('should not throw error for valid status codes (default validation)', () => {

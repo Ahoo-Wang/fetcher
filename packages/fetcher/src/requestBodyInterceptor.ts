@@ -23,7 +23,7 @@ export const REQUEST_BODY_INTERCEPTOR_NAME = 'RequestBodyInterceptor';
 
 /**
  * The order of the RequestBodyInterceptor.
- * Set to Number.MIN_SAFE_INTEGER + 200 to ensure it runs early among request interceptors.
+ * Set to URL_RESOLVE_INTERCEPTOR_ORDER + 1000 to ensure it runs early among request interceptors.
  */
 export const REQUEST_BODY_INTERCEPTOR_ORDER = URL_RESOLVE_INTERCEPTOR_ORDER + 1000;
 

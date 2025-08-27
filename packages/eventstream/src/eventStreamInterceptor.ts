@@ -21,7 +21,7 @@ export const EVENT_STREAM_INTERCEPTOR_NAME = 'EventStreamInterceptor';
 
 /**
  * The order of the EventStreamInterceptor.
- * Set to Number.MAX_SAFE_INTEGER - 100 to ensure it runs late among response interceptors.
+ * Set to Number.MAX_SAFE_INTEGER - 1000 to ensure it runs late among response interceptors.
  */
 export const EVENT_STREAM_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
 

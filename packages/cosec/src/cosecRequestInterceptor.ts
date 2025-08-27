@@ -22,7 +22,7 @@ export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
 
 /**
  * The order of the CoSecRequestInterceptor.
- * Set to Number.MIN_SAFE_INTEGER + 1000 to ensure it runs early among request interceptors.
+ * Set to REQUEST_BODY_INTERCEPTOR_ORDER + 1000 to ensure it runs early among request interceptors.
  */
 export const COSEC_REQUEST_INTERCEPTOR_ORDER = REQUEST_BODY_INTERCEPTOR_ORDER + 1000;
 
