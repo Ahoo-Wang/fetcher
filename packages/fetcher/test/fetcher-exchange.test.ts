@@ -12,13 +12,13 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Fetcher, FetchExchange, Interceptor, InterceptorManager } from '../src';
+import { Fetcher, FetchExchange, Interceptor, InterceptorManager, } from '../src';
 
 // Mock fetch
 const mockFetch = vi.fn();
 globalThis.fetch = mockFetch;
 
-describe('Fetcher - exchange', () => {
+describe('FetcherInterceptors - exchange', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     mockFetch.mockClear();
@@ -66,7 +66,7 @@ describe('Fetcher - exchange', () => {
       method: 'GET',
     });
 
-    const result = await fetcher.exchange(exchange);
+    const result = await fetcher.interceptors.exchange(exchange);
 
     // Verify the exchange was processed through interceptors
     expect(result).toBeDefined();
@@ -115,7 +115,7 @@ describe('Fetcher - exchange', () => {
       method: 'GET',
     });
 
-    const result = await fetcher.exchange(exchange);
+    const result = await fetcher.interceptors.exchange(exchange);
 
     // Verify the error was handled
     expect(result).toBeDefined();
@@ -163,6 +163,8 @@ describe('Fetcher - exchange', () => {
     });
 
     // Verify the error is rethrown
-    await expect(fetcher.exchange(exchange)).rejects.toThrow('Request failed');
+    await expect(fetcher.interceptors.exchange(exchange)).rejects.toThrow(
+      'Request failed',
+    );
   });
 });
