@@ -277,6 +277,51 @@ class UserService {
 }
 ```
 
+### 结果提取器
+
+结果提取器用于处理和提取应用程序中不同类型响应或结果的数据。
+它们允许您自定义如何处理和返回 HTTP 请求的响应。
+
+#### 可用的结果提取器
+
+- **ExchangeResultExtractor**: 返回原始的 FetchExchange 对象
+- **ResponseResultExtractor**: 返回 FetchExchange 中的响应对象（默认）
+- **JsonResultExtractor**: 将响应内容解析为 JSON 格式
+- **TextResultExtractor**: 将响应内容解析为文本格式
+- **ServerSentEventStreamResultExtractor**: 从 FetchExchange 中提取服务器发送事件流
+- **CommandResultEventStreamResultExtractor**: 从 FetchExchange 中提取命令结果事件流
+
+#### 使用结果提取器
+
+您可以在类级别或方法级别指定结果提取器：
+
+```typescript
+import { ResultExtractors } from '@ahoo-wang/fetcher-decorator';
+
+@api('/users', { resultExtractor: ResultExtractors.Json })
+class UserService {
+  // 使用类级别的 JSON 结果提取器
+  @get('/{id}')
+  getUser(@path() id: number): Promise<User> {
+    throw new Error('实现将自动生成');
+  }
+
+  // 使用 ServerSentEventStream 结果提取器覆盖
+  @get('/events', { resultExtractor: ResultExtractors.ServerSentEventStream })
+  getUserEvents(): Promise<ServerSentEventStream> {
+    throw new Error('实现将自动生成');
+  }
+
+  // 使用 CommandResultEventStream 结果提取器处理命令
+  @post('/commands', {
+    resultExtractor: ResultExtractors.CommandResultEventStream,
+  })
+  executeCommand(@body() command: Command): Promise<CommandResultEventStream> {
+    throw new Error('实现将自动生成');
+  }
+}
+```
+
 ## 🧪 测试
 
 ```bash
