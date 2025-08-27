@@ -16,7 +16,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Fetcher, FetcherInterceptors, FetchExchange, HttpMethod, Interceptor, InterceptorRegistry, } from '../src';
 
 describe('interceptor.ts', () => {
-  describe('InterceptorManager', () => {
+  describe('InterceptorRegistry', () => {
     let manager: InterceptorRegistry;
 
     beforeEach(() => {
