@@ -1,6 +1,7 @@
 import { HttpMethod } from '@ahoo-wang/fetcher';
 import { ApiMetadata } from './apiDecorator';
 import 'reflect-metadata';
+import { ResultExtractor, ResultExtractorCapable } from './resultExtractor';
 
 /**
  * Metadata for HTTP endpoints.
@@ -8,7 +9,7 @@ import 'reflect-metadata';
  * Defines the configuration options for individual HTTP endpoints (methods).
  * These settings will override any corresponding class-level settings from ApiMetadata.
  */
-export interface EndpointMetadata extends ApiMetadata {
+export interface EndpointMetadata extends ApiMetadata, ResultExtractorCapable {
   /**
    * HTTP method for the endpoint.
    *
@@ -58,7 +59,7 @@ export function endpoint(
   path: string = '',
   metadata: MethodEndpointMetadata = {},
 ) {
-  return function (target: object, propertyKey: string | symbol): void {
+  return function(target: object, propertyKey: string | symbol): void {
     // Store metadata directly on the method
     const endpointMetadata = {
       method: method,
