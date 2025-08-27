@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Interceptor } from './interceptor';
+import { RequestInterceptor } from './interceptor';
 import { FetchExchange } from './fetchExchange';
 import { ContentTypeValues } from './fetchRequest';
 import { URL_RESOLVE_INTERCEPTOR_ORDER } from './urlResolveInterceptor';
@@ -43,7 +43,7 @@ export const REQUEST_BODY_INTERCEPTOR_ORDER =
  * and request body processing. This positioning ensures that URL parameters are resolved
  * first, then request bodies are properly formatted, and finally the HTTP request is executed.
  */
-export class RequestBodyInterceptor implements Interceptor {
+export class RequestBodyInterceptor implements RequestInterceptor {
   /**
    * Interceptor name, used for identification and management.
    */

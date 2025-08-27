@@ -12,7 +12,12 @@
  */
 
 import { toServerSentEventStream } from './eventStreamConverter';
-import { ContentTypeHeader, ContentTypeValues, FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
+import {
+  ContentTypeHeader,
+  ContentTypeValues,
+  FetchExchange,
+  ResponseInterceptor,
+} from '@ahoo-wang/fetcher';
 
 /**
  * The name of the EventStreamInterceptor.
@@ -53,7 +58,7 @@ export const EVENT_STREAM_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
  * }
  * ```
  */
-export class EventStreamInterceptor implements Interceptor {
+export class EventStreamInterceptor implements ResponseInterceptor {
   readonly name = EVENT_STREAM_INTERCEPTOR_NAME;
   readonly order = EVENT_STREAM_INTERCEPTOR_ORDER;
 

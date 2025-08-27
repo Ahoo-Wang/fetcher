@@ -68,6 +68,21 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
   intercept(exchange: FetchExchange): void | Promise<void>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface RequestInterceptor extends Interceptor {
+
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ResponseInterceptor extends Interceptor {
+
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ErrorInterceptor extends Interceptor {
+
+}
+
 /**
  * Registry for a collection of interceptors of the same type.
  *

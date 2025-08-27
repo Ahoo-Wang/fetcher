@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Interceptor } from './interceptor';
+import { RequestInterceptor } from './interceptor';
 import { timeoutFetch } from './timeout';
 import { FetchExchange } from './fetchExchange';
 
@@ -47,7 +47,7 @@ export const FETCH_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
  * const fetcher = new Fetcher();
  * // FetchInterceptor is automatically registered in fetcher.interceptors.request
  */
-export class FetchInterceptor implements Interceptor {
+export class FetchInterceptor implements RequestInterceptor {
   /**
    * Interceptor name, used to identify and manage interceptor instances.
    *

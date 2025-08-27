@@ -12,7 +12,7 @@
  */
 
 import { CoSecOptions, ResponseCodes } from './types';
-import { FetchExchange, Interceptor } from '@ahoo-wang/fetcher';
+import { FetchExchange, Interceptor, ResponseInterceptor } from '@ahoo-wang/fetcher';
 
 /**
  * The name of the CoSecResponseInterceptor.
@@ -35,7 +35,7 @@ export const COSEC_RESPONSE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
  * 3. On successful refresh, stores the new token and retries the original request
  * 4. On refresh failure, clears stored tokens and propagates the error
  */
-export class CoSecResponseInterceptor implements Interceptor {
+export class CoSecResponseInterceptor implements ResponseInterceptor {
   readonly name = COSEC_RESPONSE_INTERCEPTOR_NAME;
   readonly order = COSEC_RESPONSE_INTERCEPTOR_ORDER;
   private options: CoSecOptions;
