@@ -11,12 +11,85 @@
  * limitations under the License.
  */
 
-import { FetchExchange } from '@ahoo-wang/fetcher';
+import { ExchangeError, FetchExchange } from '@ahoo-wang/fetcher';
+import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 
+/**
+ * Result extractor interface
+ * Defines a function type for extracting results from a FetchExchange
+ * @param exchange - FetchExchange object containing request and response information
+ * @returns Returns a value of type FetchExchange, Response, or Promise<any>
+ */
 export interface ResultExtractor {
-  (exchange: FetchExchange): Promise<any>;
+  (exchange: FetchExchange): FetchExchange | Response | Promise<any> | ServerSentEventStream;
 }
 
-export const JsonResultResultExtractor: ResultExtractor = (exchange: FetchExchange) => {
-  return exchange.response?.json();
-};
+/**
+ * Interface with result extractor capability
+ * Defines an optional resultExtractor property
+ */
+export interface ResultExtractorCapable {
+  resultExtractor?: ResultExtractor;
+}
+
+/**
+ * Result extractors namespace
+ * Contains commonly used predefined result extractor implementations
+ */
+export namespace ResultExtractors {
+  /**
+   * Returns the original FetchExchange object
+   * @param exchange - FetchExchange object
+   * @returns The original FetchExchange object
+   */
+  export const Exchange: ResultExtractor = (exchange: FetchExchange) => {
+    return exchange;
+  };
+
+  /**
+   * Returns the response object from FetchExchange
+   * @param exchange - FetchExchange object
+   * @returns The response object from FetchExchange
+   */
+  export const Response: ResultExtractor = (exchange: FetchExchange) => {
+    return exchange.requiredResponse;
+  };
+
+  /**
+   * Parses the response content as JSON format
+   * @param exchange - FetchExchange object
+   * @returns Promise of parsed JSON data
+   */
+  export const Json: ResultExtractor = (exchange: FetchExchange) => {
+    return exchange.requiredResponse.json();
+  };
+
+  /**
+   * Parses the response content as text format
+   * @param exchange - FetchExchange object
+   * @returns Promise of parsed text data
+   */
+  export const Text: ResultExtractor = (exchange: FetchExchange) => {
+    return exchange.requiredResponse.text();
+  };
+
+  /**
+   * ServerSentEventStream result extractor, used to extract server-sent event stream from FetchExchange
+   *
+   * @param exchange - FetchExchange object containing request and response information
+   * @returns Readable stream object of server-sent event stream
+   * @throws ExchangeError exception when server does not support ServerSentEventStream
+   */
+  export const ServerSentEventStream: ResultExtractor = (exchange: FetchExchange) => {
+    // Check if response supports event stream, throw exception if not supported
+    if (!exchange.requiredResponse.eventStream) {
+      throw new ExchangeError(exchange, 'ServerSentEventStream is not supported');
+    }
+    // Return the event stream
+    return exchange.requiredResponse.eventStream();
+  };
+
+
+  // Default result extractor is Response type
+  export const DEFAULT = Response;
+}
