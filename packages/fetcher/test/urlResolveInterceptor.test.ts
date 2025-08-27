@@ -12,37 +12,61 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { Fetcher, FetchExchange, FetchRequest, UrlBuilder, UrlResolveInterceptor } from '../src';
+import {
+  Fetcher,
+  FetchExchange,
+  URL_RESOLVE_INTERCEPTOR_NAME,
+  URL_RESOLVE_INTERCEPTOR_ORDER,
+  UrlBuilder,
+  UrlResolveInterceptor,
+} from '../src';
 
 describe('UrlResolveInterceptor', () => {
   it('should have correct name and order', () => {
     const interceptor = new UrlResolveInterceptor();
-
-    expect(interceptor.name).toBe('UrlResolveInterceptor');
-    expect(interceptor.order).toBe(Number.MIN_SAFE_INTEGER + 1000);
+    expect(interceptor.name).toBe(URL_RESOLVE_INTERCEPTOR_NAME);
+    expect(interceptor.order).toBe(URL_RESOLVE_INTERCEPTOR_ORDER);
   });
 
-  it('should resolve URL using urlBuilder', () => {
+  it('should resolve URL using fetcher urlBuilder', () => {
+    const urlBuilder = new UrlBuilder('https://api.example.com');
+    const fetcher = { urlBuilder } as Fetcher;
     const interceptor = new UrlResolveInterceptor();
-    const mockResolvedUrl = 'https://api.example.com/users/123?filter=active';
-
-    const mockUrlBuilder = {
-      resolveRequestUrl: vi.fn().mockReturnValue(mockResolvedUrl),
-    } as unknown as UrlBuilder;
 
     const request = {
       url: '/users/{id}',
-    } as FetchRequest;
-
-    const fetcher = {
-      urlBuilder: mockUrlBuilder,
-    } as Fetcher;
+      urlParams: {
+        path: { id: 123 },
+        query: { filter: 'active' },
+      },
+    };
 
     const exchange = new FetchExchange(fetcher, request);
 
+    // Mock the urlBuilder.resolveRequestUrl method
+    const resolvedUrl = 'https://api.example.com/users/123?filter=active';
+    urlBuilder.resolveRequestUrl = vi.fn().mockReturnValue(resolvedUrl);
+
     interceptor.intercept(exchange);
 
-    expect(mockUrlBuilder.resolveRequestUrl).toHaveBeenCalledWith(request);
-    expect(request.url).toBe(mockResolvedUrl);
+    expect(urlBuilder.resolveRequestUrl).toHaveBeenCalledWith(request);
+    expect(exchange.request.url).toBe(resolvedUrl);
+  });
+
+  it('should update request URL with resolved URL', () => {
+    const urlBuilder = new UrlBuilder('https://api.example.com');
+    const fetcher = { urlBuilder } as Fetcher;
+    const interceptor = new UrlResolveInterceptor();
+
+    const request = { url: '/users' };
+    const exchange = new FetchExchange(fetcher, request);
+
+    // Mock the urlBuilder.resolveRequestUrl method
+    const resolvedUrl = 'https://api.example.com/users';
+    urlBuilder.resolveRequestUrl = vi.fn().mockReturnValue(resolvedUrl);
+
+    interceptor.intercept(exchange);
+
+    expect(exchange.request.url).toBe(resolvedUrl);
   });
 });

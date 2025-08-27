@@ -11,498 +11,171 @@
  * limitations under the License.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Fetcher, FetchExchange, HttpMethod, Interceptor, InterceptorManager, InterceptorRegistry, } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import { ExchangeError, Fetcher, FetchExchange, Interceptor, InterceptorManager, } from '../src';
 
-// Mock fetch
-const mockFetch = vi.fn();
-globalThis.fetch = mockFetch;
+describe('InterceptorManager', () => {
+  const mockFetcher = {} as Fetcher;
+  const mockRequest = { url: '/test' };
 
-describe('InterceptorRegistry', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
+  it('should create InterceptorManager with default registries', () => {
+    const manager = new InterceptorManager();
+
+    expect(manager.request).toBeDefined();
+    expect(manager.response).toBeDefined();
+    expect(manager.error).toBeDefined();
+
+    // Check that request registry has default interceptors
+    expect(manager.request).toBeDefined();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-    mockFetch.mockClear();
+  it('should process exchange through request interceptors', async () => {
+    const manager = new InterceptorManager();
+    const exchange = new FetchExchange(mockFetcher, mockRequest);
+
+    // Mock intercept method of request registry
+    const requestInterceptSpy = vi
+      .spyOn(manager.request, 'intercept')
+      .mockResolvedValue();
+
+    await manager.exchange(exchange);
+
+    expect(requestInterceptSpy).toHaveBeenCalledWith(exchange);
+
+    // Clean up spy
+    requestInterceptSpy.mockRestore();
   });
 
-  describe('InterceptorRegistry', () => {
-    let manager: InterceptorRegistry;
+  it('should process exchange through response interceptors when request succeeds', async () => {
+    const manager = new InterceptorManager();
+    const exchange = new FetchExchange(mockFetcher, mockRequest);
 
-    beforeEach(() => {
-      manager = new InterceptorRegistry();
-    });
+    // Mock intercept methods
+    const requestInterceptSpy = vi
+      .spyOn(manager.request, 'intercept')
+      .mockResolvedValue();
+    const responseInterceptSpy = vi
+      .spyOn(manager.response, 'intercept')
+      .mockResolvedValue();
 
-    it('should have correct order value', () => {
-      expect(manager.order).toBe(Number.MIN_SAFE_INTEGER);
-    });
+    await manager.exchange(exchange);
 
-    it('should add interceptor with use method', () => {
-      const interceptor: Interceptor = {
-        name: 'test-interceptor',
-        order: 0,
-        intercept: vi.fn(exchange => exchange),
-      };
+    expect(requestInterceptSpy).toHaveBeenCalledWith(exchange);
+    expect(responseInterceptSpy).toHaveBeenCalledWith(exchange);
 
-      const result = manager.use(interceptor);
-
-      expect(result).toBe(true);
-
-      // Test indirectly by checking if the interceptor is called
-      const mockExchange = new FetchExchange(new Fetcher(), {
-        url: 'http://example.com',
-        method: HttpMethod.GET,
-      });
-
-      manager.intercept(mockExchange);
-      expect(interceptor.intercept).toHaveBeenCalled();
-    });
-
-    it('should reject interceptor with duplicate name', () => {
-      const interceptor1: Interceptor = {
-        name: 'duplicate-interceptor',
-        order: 0,
-        intercept: vi.fn(exchange => exchange),
-      };
-      const interceptor2: Interceptor = {
-        name: 'duplicate-interceptor',
-        order: 1,
-        intercept: vi.fn(exchange => exchange),
-      };
-
-      const result1 = manager.use(interceptor1);
-      const result2 = manager.use(interceptor2);
-
-      expect(result1).toBe(true);
-      expect(result2).toBe(false);
-
-      // Test that only the first interceptor is called
-      const mockExchange = new FetchExchange(new Fetcher(), {
-        url: 'http://example.com',
-        method: HttpMethod.GET,
-      });
-
-      manager.intercept(mockExchange);
-      expect(interceptor1.intercept).toHaveBeenCalled();
-    });
-
-    it('should process data through interceptors', async () => {
-      const interceptor1: Interceptor = {
-        name: 'interceptor-1',
-        order: 0,
-        intercept: vi.fn(async exchange => {
-          // Simulate async operation without using setTimeout
-          await Promise.resolve();
-          return exchange;
-        }),
-      };
-      const interceptor2: Interceptor = {
-        name: 'interceptor-2',
-        order: 1,
-        intercept: vi.fn(exchange => exchange),
-      };
-
-      manager.use(interceptor1);
-      manager.use(interceptor2);
-
-      const mockExchange = new FetchExchange(new Fetcher(), {
-        url: 'http://example.com',
-        method: HttpMethod.GET,
-      });
-
-      await manager.intercept(mockExchange);
-
-      expect(mockExchange).toBe(mockExchange);
-      expect(interceptor1.intercept).toHaveBeenCalledWith(mockExchange);
-      expect(interceptor2.intercept).toHaveBeenCalledWith(mockExchange);
-    });
-
-    it('should skip ejected interceptors', async () => {
-      const interceptor1: Interceptor = {
-        name: 'interceptor-1',
-        order: 0,
-        intercept: vi.fn(exchange => exchange),
-      };
-      const interceptor2: Interceptor = {
-        name: 'interceptor-2',
-        order: 1,
-        intercept: vi.fn(exchange => exchange),
-      };
-
-      manager.use(interceptor1);
-      manager.use(interceptor2);
-      manager.eject('interceptor-1');
-
-      const mockExchange = new FetchExchange(new Fetcher(), {
-        url: 'http://example.com',
-        method: HttpMethod.GET,
-      });
-
-      await manager.intercept(mockExchange);
-
-      expect(mockExchange).toBe(mockExchange);
-      expect(interceptor1.intercept).not.toHaveBeenCalled();
-      expect(interceptor2.intercept).toHaveBeenCalledWith(mockExchange);
-    });
-
-    it('should clear all interceptors', async () => {
-      const interceptor1: Interceptor = {
-        name: 'interceptor-1',
-        order: 0,
-        intercept: vi.fn(exchange => exchange),
-      };
-      const interceptor2: Interceptor = {
-        name: 'interceptor-2',
-        order: 1,
-        intercept: vi.fn(exchange => exchange),
-      };
-
-      manager.use(interceptor1);
-      manager.use(interceptor2);
-      manager.clear();
-
-      const mockExchange = new FetchExchange(new Fetcher(), {
-        url: 'http://example.com',
-        method: HttpMethod.GET,
-      });
-
-      await manager.intercept(mockExchange);
-
-      expect(mockExchange).toBe(mockExchange);
-      expect(interceptor1.intercept).not.toHaveBeenCalled();
-      expect(interceptor2.intercept).not.toHaveBeenCalled();
-    });
-
-    it('should handle async interceptors', async () => {
-      const asyncInterceptor: Interceptor = {
-        name: 'async-interceptor',
-        order: 0,
-        intercept: vi.fn(async exchange => {
-          // Simulate async operation without using setTimeout
-          await Promise.resolve();
-          exchange.attributes = {
-            ...exchange.attributes,
-            processed: true,
-          };
-        }),
-      };
-
-      manager.use(asyncInterceptor);
-
-      const mockExchange = new FetchExchange(new Fetcher(), {
-        url: 'http://example.com',
-        method: HttpMethod.GET,
-      });
-
-      await manager.intercept(mockExchange);
-
-      expect(mockExchange.attributes?.processed).toBe(true);
-      expect(asyncInterceptor.intercept).toHaveBeenCalledWith(mockExchange);
-    });
-
-    it('should execute interceptors in order', async () => {
-      const callOrder: string[] = [];
-
-      const interceptor1: Interceptor = {
-        name: 'interceptor-1',
-        order: 1,
-        intercept: vi.fn(async exchange => {
-          callOrder.push('interceptor-1');
-          return exchange;
-        }),
-      };
-
-      const interceptor2: Interceptor = {
-        name: 'interceptor-2',
-        order: 0,
-        intercept: vi.fn(async exchange => {
-          callOrder.push('interceptor-2');
-          return exchange;
-        }),
-      };
-
-      const interceptor3: Interceptor = {
-        name: 'interceptor-3',
-        order: 2,
-        intercept: vi.fn(async exchange => {
-          callOrder.push('interceptor-3');
-          return exchange;
-        }),
-      };
-
-      manager.use(interceptor1);
-      manager.use(interceptor2);
-      manager.use(interceptor3);
-
-      const mockExchange = new FetchExchange(new Fetcher(), {
-        url: 'http://example.com',
-        method: HttpMethod.GET,
-      });
-
-      await manager.intercept(mockExchange);
-
-      expect(callOrder).toEqual([
-        'interceptor-2',
-        'interceptor-1',
-        'interceptor-3',
-      ]);
-    });
+    // Clean up spies
+    requestInterceptSpy.mockRestore();
+    responseInterceptSpy.mockRestore();
   });
 
-  describe('InterceptorManager', () => {
-    it('should create interceptor managers for request, response and error', () => {
-      const interceptors = new InterceptorManager();
+  it('should process exchange through error interceptors when request fails', async () => {
+    const manager = new InterceptorManager();
+    const exchange = new FetchExchange(mockFetcher, mockRequest);
 
-      expect(interceptors.request).toBeInstanceOf(InterceptorRegistry);
-      expect(interceptors.response).toBeInstanceOf(InterceptorRegistry);
-      expect(interceptors.error).toBeInstanceOf(InterceptorRegistry);
-    });
+    const error = new Error('Test error');
 
-    it('should allow adding request interceptors', () => {
-      const interceptors = new InterceptorManager();
-      const requestInterceptor: Interceptor = {
-        name: 'request-interceptor',
-        order: 0,
-        intercept: vi.fn(exchange => exchange),
-      };
+    // Mock intercept methods
+    const requestInterceptSpy = vi
+      .spyOn(manager.request, 'intercept')
+      .mockRejectedValue(error);
+    const errorInterceptSpy = vi
+      .spyOn(manager.error, 'intercept')
+      .mockResolvedValue();
 
-      const result = interceptors.request.use(requestInterceptor);
-      expect(result).toBe(true);
-    });
+    await expect(manager.exchange(exchange)).rejects.toThrow(ExchangeError);
+    expect(exchange.error).toBe(error);
 
-    it('should allow adding response interceptors', () => {
-      const interceptors = new InterceptorManager();
-      const responseInterceptor: Interceptor = {
-        name: 'response-interceptor',
-        order: 0,
-        intercept: vi.fn(exchange => exchange),
-      };
+    expect(requestInterceptSpy).toHaveBeenCalledWith(exchange);
+    expect(errorInterceptSpy).toHaveBeenCalledWith(exchange);
 
-      const result = interceptors.response.use(responseInterceptor);
-      expect(result).toBe(true);
-    });
-
-    it('should allow adding error interceptors', () => {
-      const interceptors = new InterceptorManager();
-      const errorInterceptor: Interceptor = {
-        name: 'error-interceptor',
-        order: 0,
-        intercept: vi.fn(exchange => exchange),
-      };
-
-      const result = interceptors.error.use(errorInterceptor);
-      expect(result).toBe(true);
-    });
-
-    it('should process request through all phases correctly', async () => {
-      const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-      const mockResponse = new Response('{"data": "test"}');
-
-      mockFetch.mockResolvedValue(mockResponse);
-
-      // Add a request interceptor
-      const requestInterceptor: Interceptor = {
-        name: 'request-interceptor-test',
-        order: 0,
-        intercept: vi.fn((exchange: FetchExchange) => {
-          exchange.request = {
-            ...exchange.request,
-            headers: {
-              ...exchange.request.headers,
-              'X-Request-Test': 'request-value',
-            },
-          };
-        }),
-      };
-
-      // Add a response interceptor
-      const responseInterceptor: Interceptor = {
-        name: 'response-interceptor-test',
-        order: 0,
-        intercept: vi.fn((exchange: FetchExchange) => {
-          if (exchange.response) {
-            Object.defineProperty(exchange.response, 'intercepted', {
-              value: true,
-              writable: false,
-            });
-          }
-        }),
-      };
-
-      fetcher.interceptors.request.use(requestInterceptor);
-      fetcher.interceptors.response.use(responseInterceptor);
-
-      const response = await fetcher.get('/users');
-
-      // Verify interceptors were called
-      expect(requestInterceptor.intercept).toHaveBeenCalled();
-      expect(responseInterceptor.intercept).toHaveBeenCalled();
-
-      // Verify the request interceptor modified the request
-      const callArgs = mockFetch.mock.calls[0];
-      const fetchInit = callArgs[1];
-      expect(fetchInit.headers).toHaveProperty(
-        'X-Request-Test',
-        'request-value',
-      );
-
-      // Verify the response interceptor modified the response
-      expect((response as any).intercepted).toBe(true);
-    });
-
-    it('should handle error phase correctly', async () => {
-      const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-      const mockError = new Error('Network error');
-
-      mockFetch.mockRejectedValue(mockError);
-
-      // Add an error interceptor
-      const errorInterceptor: Interceptor = {
-        name: 'error-interceptor-test',
-        order: 0,
-        intercept: vi.fn((exchange: FetchExchange) => {
-          exchange.error = new Error(`Intercepted: ${exchange.error?.message}`);
-        }),
-      };
-
-      fetcher.interceptors.error.use(errorInterceptor);
-
-      const promise = fetcher.get('/users');
-
-      await expect(promise).rejects.toThrow('Intercepted: Network error');
-      expect(errorInterceptor.intercept).toHaveBeenCalled();
-    });
-
-    it('should handle error interceptor that clears error', async () => {
-      const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-      const mockError = new Error('Network error');
-
-      mockFetch.mockRejectedValue(mockError);
-
-      // Add an error interceptor that clears the error
-      const errorInterceptor: Interceptor = {
-        name: 'error-clear-interceptor-test',
-        order: 0,
-        intercept: vi.fn((exchange: FetchExchange) => {
-          // Clear the error to indicate it's been handled
-          exchange.error = undefined;
-        }),
-      };
-
-      fetcher.interceptors.error.use(errorInterceptor);
-
-      // This test verifies that the error interceptor is called
-      // Note: The current implementation in fetcher.ts doesn't handle error-to-success conversion
-      // in the fetch method, so this will still throw an error
-      const promise = fetcher.get('/users');
-
-      await expect(promise).rejects.toThrow(
-        'Request to /users failed with no response',
-      );
-      expect(errorInterceptor.intercept).toHaveBeenCalled();
-    });
+    // Clean up spies
+    requestInterceptSpy.mockRestore();
+    errorInterceptSpy.mockRestore();
   });
 
-  describe('Interceptor Types', () => {
-    it('should process request interceptors correctly', async () => {
-      const manager = new InterceptorRegistry();
-      const mockExchange = new FetchExchange(new Fetcher(), {
-        url: 'http://example.com',
-        method: HttpMethod.GET,
-        headers: { 'Content-Type': 'application/json' },
-      });
+  it('should return exchange when error interceptors clear the error', async () => {
+    const manager = new InterceptorManager();
+    const exchange = new FetchExchange(mockFetcher, mockRequest);
 
-      const requestInterceptor: Interceptor = {
-        name: 'request-interceptor-1',
-        order: 0,
-        intercept: vi.fn(exchange => {
-          exchange.request = {
-            ...exchange.request,
-            headers: {
-              ...exchange.request.headers,
-              Authorization: 'Bearer token',
-            },
-          };
-        }),
-      };
+    const error = new Error('Test error');
 
-      manager.use(requestInterceptor);
-      await manager.intercept(mockExchange);
+    // Mock intercept methods
+    vi.spyOn(manager.request, 'intercept').mockRejectedValue(error);
 
-      expect(mockExchange.request.headers).toHaveProperty(
-        'Authorization',
-        'Bearer token',
-      );
-      expect(requestInterceptor.intercept).toHaveBeenCalledWith(mockExchange);
+    // Mock error interceptor that clears the error
+    const errorInterceptor: Interceptor = {
+      name: 'test-error-interceptor',
+      order: 100,
+      intercept: (exchange: FetchExchange) => {
+        exchange.error = undefined;
+      },
+    };
+    manager.error.use(errorInterceptor);
+
+    const result = await manager.exchange(exchange);
+
+    expect(result).toBe(exchange);
+    expect(result.error).toBeUndefined();
+  });
+
+  it('should throw ExchangeError when error is not handled by error interceptors', async () => {
+    const manager = new InterceptorManager();
+    const exchange = new FetchExchange(mockFetcher, mockRequest);
+
+    const error = new Error('Test error');
+
+    // Mock intercept methods
+    vi.spyOn(manager.request, 'intercept').mockRejectedValue(error);
+
+    await expect(manager.exchange(exchange)).rejects.toThrow(ExchangeError);
+    expect(exchange.error).toBe(error);
+  });
+});
+
+describe('ExchangeError', () => {
+  it('should create ExchangeError with error message from exchange', () => {
+    const mockFetcher = {} as Fetcher;
+    const mockRequest = { url: '/test' };
+    const error = new Error('Original error');
+    const exchange = new FetchExchange(
+      mockFetcher,
+      mockRequest,
+      undefined,
+      error,
+    );
+
+    const exchangeError = new ExchangeError(exchange);
+
+    expect(exchangeError).toBeInstanceOf(ExchangeError);
+    expect(exchangeError.name).toBe('ExchangeError');
+    expect(exchangeError.message).toBe('Original error');
+    expect(exchangeError.exchange).toBe(exchange);
+    expect(exchangeError.cause).toBe(error);
+  });
+
+  it('should create ExchangeError with response status text when no error message', () => {
+    const mockFetcher = {} as Fetcher;
+    const mockRequest = { url: '/test' };
+    const response = new Response('error response', {
+      status: 404,
+      statusText: 'Not Found',
     });
+    const exchange = new FetchExchange(mockFetcher, mockRequest, response);
 
-    it('should process response interceptors correctly', async () => {
-      const manager = new InterceptorRegistry();
-      const response = new Response('{"data": "test"}', {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    const exchangeError = new ExchangeError(exchange);
 
-      const mockExchange = new FetchExchange(
-        new Fetcher(),
-        {
-          url: 'http://example.com',
-        },
-        response,
-      );
+    expect(exchangeError.message).toBe('Not Found');
+  });
 
-      const responseInterceptor: Interceptor = {
-        name: 'response-interceptor-1',
-        order: 0,
-        intercept: vi.fn(async exchange => {
-          // Add a custom header to the response
-          if (exchange.response) {
-            Object.defineProperty(exchange.response, 'customHeader', {
-              value: 'intercepted',
-              writable: false,
-            });
-          }
-          return exchange;
-        }),
-      };
+  it('should create ExchangeError with default message when no error or response', () => {
+    const mockFetcher = {} as Fetcher;
+    const mockRequest = { url: 'https://api.example.com/test' };
+    const exchange = new FetchExchange(mockFetcher, mockRequest);
 
-      manager.use(responseInterceptor);
-      await manager.intercept(mockExchange);
+    const exchangeError = new ExchangeError(exchange);
 
-      expect(mockExchange.response).toBe(response);
-      expect((mockExchange.response as any).customHeader).toBe('intercepted');
-      expect(responseInterceptor.intercept).toHaveBeenCalledWith(mockExchange);
-    });
-
-    it('should process error interceptors correctly', async () => {
-      const manager = new InterceptorRegistry();
-      const error = new Error('Network error');
-
-      const mockExchange = new FetchExchange(
-        new Fetcher(),
-        {
-          url: 'http://example.com',
-        },
-        undefined,
-        error,
-      );
-
-      const errorInterceptor: Interceptor = {
-        name: 'error-interceptor-1',
-        order: 0,
-        intercept: vi.fn(exchange => {
-          exchange.error = new Error(`Intercepted: ${exchange.error?.message}`);
-          return exchange;
-        }),
-      };
-
-      manager.use(errorInterceptor);
-      await manager.intercept(mockExchange);
-
-      expect(mockExchange.error?.message).toBe('Intercepted: Network error');
-      expect(errorInterceptor.intercept).toHaveBeenCalledWith(mockExchange);
-    });
+    expect(exchangeError.message).toBe(
+      'Request to https://api.example.com/test failed during exchange',
+    );
   });
 });

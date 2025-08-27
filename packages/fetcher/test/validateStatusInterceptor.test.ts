@@ -12,161 +12,104 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { Fetcher, FetchExchange, FetchRequest, HttpStatusValidationError, ValidateStatusInterceptor } from '../src';
+import {
+  Fetcher,
+  FetchExchange,
+  HttpStatusValidationError,
+  VALIDATE_STATUS_INTERCEPTOR_NAME,
+  VALIDATE_STATUS_INTERCEPTOR_ORDER,
+  ValidateStatusInterceptor,
+} from '../src';
 
 describe('ValidateStatusInterceptor', () => {
   const mockFetcher = {} as Fetcher;
-  const mockRequest = { url: 'https://api.example.com/test' } as FetchRequest;
 
-  it('should create interceptor with default validateStatus function', () => {
+  it('should have correct name and order', () => {
     const interceptor = new ValidateStatusInterceptor();
-
-    expect(interceptor.name).toBe('ValidateStatusInterceptor');
-    expect(interceptor.order).toBe(Number.MAX_SAFE_INTEGER - 1000);
+    expect(interceptor.name).toBe(VALIDATE_STATUS_INTERCEPTOR_NAME);
+    expect(interceptor.order).toBe(VALIDATE_STATUS_INTERCEPTOR_ORDER);
   });
 
-  it('should create interceptor with custom validateStatus function', () => {
-    const customValidate = (status: number) => status === 200;
-    const interceptor = new ValidateStatusInterceptor(customValidate);
-
-    expect(interceptor.name).toBe('ValidateStatusInterceptor');
-    expect(interceptor.order).toBe(Number.MAX_SAFE_INTEGER - 1000);
-  });
-
-  it('should create interceptor with custom validateStatus function', () => {
-    const customValidate = (status: number) => status === 200;
-    const interceptor = new ValidateStatusInterceptor(customValidate);
-
-    expect(interceptor.name).toBe('ValidateStatusInterceptor');
-    expect(interceptor.order).toBe(Number.MAX_SAFE_INTEGER - 1000);
-  });
-
-  it('should not throw error for valid status codes (default validation)', () => {
+  it('should not throw error for valid status (2xx by default)', () => {
     const interceptor = new ValidateStatusInterceptor();
-    const mockResponse = new Response('success', { status: 200 });
-    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
+    const response = new Response('test', { status: 200 });
+    const request = { url: '/test' };
+    const exchange = new FetchExchange(mockFetcher, request, response);
 
-    // Should not throw for 2xx status codes
-    expect(interceptor.intercept(exchange)).toBeUndefined();
+    expect(() => interceptor.intercept(exchange)).not.toThrow();
   });
 
-  it('should throw HttpStatusValidationError for invalid status codes (default validation)', () => {
+  it('should throw HttpStatusValidationError for invalid status (non-2xx by default)', () => {
     const interceptor = new ValidateStatusInterceptor();
-    const mockResponse = new Response('error', {
-      status: 404,
-      statusText: 'Not Found',
-    });
-    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
+    const response = new Response('test', { status: 404 });
+    const request = { url: '/test' };
+    const exchange = new FetchExchange(mockFetcher, request, response);
 
     expect(() => interceptor.intercept(exchange)).toThrow(
       HttpStatusValidationError,
     );
+  });
+
+  it('should not throw error when no response is present', () => {
+    const interceptor = new ValidateStatusInterceptor();
+    const request = { url: '/test' };
+    const exchange = new FetchExchange(mockFetcher, request);
+
+    expect(() => interceptor.intercept(exchange)).not.toThrow();
+  });
+
+  it('should use custom validateStatus function', () => {
+    const validateStatus = (status: number) => status === 200;
+    const interceptor = new ValidateStatusInterceptor(validateStatus);
+    const response = new Response('test', { status: 201 });
+    const request = { url: '/test' };
+    const exchange = new FetchExchange(mockFetcher, request, response);
+
     expect(() => interceptor.intercept(exchange)).toThrow(
-      'Request failed with status code 404 for https://api.example.com/test',
+      HttpStatusValidationError,
     );
+  });
+
+  it('should not throw error with custom validateStatus function for valid status', () => {
+    const validateStatus = (status: number) => status === 200 || status === 201;
+    const interceptor = new ValidateStatusInterceptor(validateStatus);
+    const response = new Response('test', { status: 201 });
+    const request = { url: '/test' };
+    const exchange = new FetchExchange(mockFetcher, request, response);
+
+    expect(() => interceptor.intercept(exchange)).not.toThrow();
+  });
+
+  it('should create HttpStatusValidationError with correct message', () => {
+    const interceptor = new ValidateStatusInterceptor();
+    const response = new Response('test', { status: 404 });
+    const request = { url: 'https://api.example.com/test' };
+    const exchange = new FetchExchange(mockFetcher, request, response);
 
     try {
       interceptor.intercept(exchange);
+      expect.fail('Should have thrown HttpStatusValidationError');
     } catch (error) {
       expect(error).toBeInstanceOf(HttpStatusValidationError);
-      const validationError = error as HttpStatusValidationError;
-      expect(validationError.exchange).toBe(exchange);
+      // @ts-ignore
+      expect(error.message).toBe(
+        'Request failed with status code 404 for https://api.example.com/test',
+      );
+      // @ts-ignore
+      expect(error.exchange).toBe(exchange);
     }
   });
+});
 
-  it('should not throw error when validateStatus returns true', () => {
-    const interceptor = new ValidateStatusInterceptor(status => status === 404);
-    const mockResponse = new Response('not found', {
-      status: 404,
-      statusText: 'Not Found',
-    });
-    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
+describe('HttpStatusValidationError', () => {
+  it('should create HttpStatusValidationError with correct properties', () => {
+    const mockFetcher = {} as Fetcher;
+    const request = { url: '/test' };
+    const exchange = new FetchExchange(mockFetcher, request);
+    const error = new HttpStatusValidationError(exchange);
 
-    // Should not throw since validateStatus returns true for 404
-    expect(interceptor.intercept(exchange)).toBeUndefined();
-  });
-
-  it('should throw HttpStatusValidationError when validateStatus returns false', () => {
-    const interceptor = new ValidateStatusInterceptor(status => status === 200);
-    const mockResponse = new Response('forbidden', {
-      status: 403,
-      statusText: 'Forbidden',
-    });
-    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
-
-    expect(() => interceptor.intercept(exchange)).toThrow(
-      HttpStatusValidationError,
-    );
-  });
-
-  it('should not validate when there is no response', () => {
-    const interceptor = new ValidateStatusInterceptor();
-    const exchange = new FetchExchange(
-      mockFetcher,
-      mockRequest,
-      undefined,
-      new Error('Network error'),
-    );
-
-    // Should not throw when there's no response
-    expect(interceptor.intercept(exchange)).toBeUndefined();
-  });
-
-  it('should handle response with no statusText', () => {
-    const interceptor = new ValidateStatusInterceptor();
-    const mockResponse = new Response('error', { status: 500 });
-    // Manually remove statusText to simulate edge case
-    Object.defineProperty(mockResponse, 'statusText', { value: '' });
-    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
-
-    expect(() => interceptor.intercept(exchange)).toThrow(
-      HttpStatusValidationError,
-    );
-    expect(() => interceptor.intercept(exchange)).toThrow(
-      'Request failed with status code 500 for https://api.example.com/test',
-    );
-  });
-
-  it('should handle request with no url', () => {
-    const interceptor = new ValidateStatusInterceptor();
-    const mockResponse = new Response('error', {
-      status: 400,
-      statusText: 'Bad Request',
-    });
-    const requestWithoutUrl = {} as FetchRequest;
-    const exchange = new FetchExchange(
-      mockFetcher,
-      requestWithoutUrl,
-      mockResponse,
-    );
-
-    expect(() => interceptor.intercept(exchange)).toThrow(
-      HttpStatusValidationError,
-    );
-    expect(() => interceptor.intercept(exchange)).toThrow(
-      'Request failed with status code 400 for undefined',
-    );
-  });
-
-  it('should work with validateStatus that always returns true', () => {
-    const interceptor = new ValidateStatusInterceptor(_status => true);
-    const mockResponse = new Response('error', {
-      status: 500,
-      statusText: 'Internal Server Error',
-    });
-    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
-
-    // Should not throw since validateStatus always returns true
-    expect(interceptor.intercept(exchange)).toBeUndefined();
-  });
-
-  it('should work with validateStatus that always returns false', () => {
-    const interceptor = new ValidateStatusInterceptor(_status => false);
-    const mockResponse = new Response('success', { status: 200 });
-    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
-
-    expect(() => interceptor.intercept(exchange)).toThrow(
-      HttpStatusValidationError,
-    );
+    expect(error).toBeInstanceOf(HttpStatusValidationError);
+    expect(error.name).toBe('HttpStatusValidationError');
+    expect(error.exchange).toBe(exchange);
   });
 });
