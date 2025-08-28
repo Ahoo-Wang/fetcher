@@ -22,7 +22,10 @@ import {
   JsonEventStreamResultExtractor,
 } from '../src';
 import { ExchangeError, FetchExchange, FetchRequest } from '@ahoo-wang/fetcher';
-import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
+import {
+  ServerSentEventStream,
+  JsonServerSentEventStream,
+} from '@ahoo-wang/fetcher-eventstream';
 
 describe('ResultExtractor', () => {
   const mockResponse = new Response('{"id": 1, "name": "John"}');
@@ -79,7 +82,7 @@ describe('ResultExtractor', () => {
     });
   });
 
-  describe('ServerSentEventStreamResultExtractor', () => {
+  describe('EventStreamResultExtractor', () => {
     it('should return ServerSentEventStream when response supports event stream', () => {
       const eventStreamResponse = new Response('');
 
@@ -116,8 +119,51 @@ describe('ResultExtractor', () => {
         noEventStreamResponse,
       );
 
+      expect(() => EventStreamResultExtractor(noEventStreamExchange)).toThrow(
+        ExchangeError,
+      );
+    });
+  });
+
+  describe('JsonEventStreamResultExtractor', () => {
+    it('should return JsonServerSentEventStream when response supports json event stream', () => {
+      const jsonEventStreamResponse = new Response('');
+
+      // Mock the jsonEventStream function on the response
+      const mockJsonEventStream = {} as JsonServerSentEventStream<any>;
+      Object.defineProperty(jsonEventStreamResponse, 'jsonEventStream', {
+        configurable: true,
+        enumerable: true,
+        get: () => () => mockJsonEventStream,
+      });
+
+      const jsonEventStreamExchange = new FetchExchange(
+        {} as any,
+        mockRequest,
+        jsonEventStreamResponse,
+      );
+
+      const result = JsonEventStreamResultExtractor(jsonEventStreamExchange);
+      expect(result).toBe(mockJsonEventStream);
+    });
+
+    it('should throw ExchangeError when server does not support JsonServerSentEventStream', () => {
+      const noJsonEventStreamResponse = new Response('');
+      // Ensure there's no jsonEventStream function
+      Object.defineProperty(noJsonEventStreamResponse, 'jsonEventStream', {
+        configurable: true,
+        enumerable: true,
+        get: () => undefined,
+      });
+
+      const noJsonEventStreamExchange = new FetchExchange(
+        {} as any,
+        mockRequest,
+        noJsonEventStreamResponse,
+      );
+
       expect(() =>
-        EventStreamResultExtractor(noEventStreamExchange),
+        JsonEventStreamResultExtractor(noJsonEventStreamExchange),
       ).toThrow(ExchangeError);
     });
   });
@@ -128,12 +174,14 @@ describe('ResultExtractor', () => {
       expect(ResultExtractors.Response).toBe(ResponseResultExtractor);
       expect(ResultExtractors.Json).toBe(JsonResultExtractor);
       expect(ResultExtractors.Text).toBe(TextResultExtractor);
-      expect(ResultExtractors.EventStream).toBe(
-        EventStreamResultExtractor,
-      );
+      expect(ResultExtractors.EventStream).toBe(EventStreamResultExtractor);
       expect(ResultExtractors.JsonEventStream).toBe(
         JsonEventStreamResultExtractor,
       );
+    });
+
+    it('should have correct DEFAULT extractor', () => {
+      expect(ResultExtractors.DEFAULT).toBe(JsonResultExtractor);
     });
   });
 });
