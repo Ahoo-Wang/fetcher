@@ -360,25 +360,6 @@ describe('apiDecorator', () => {
       expect(typeof TestService.prototype.constructor).toBe('function');
     });
 
-    it('should handle non-function prototype properties', () => {
-      @api('/test')
-      class TestService {
-        @get('/users')
-        getUsers() {
-          return Promise.resolve(new Response('{"users": []}'));
-        }
-      }
-
-      // Add a non-function property to the prototype
-      (TestService.prototype as any).nonFunctionProp = 'not a function';
-
-      const instance = new TestService();
-      // Non-function property should remain
-      expect((instance as any).nonFunctionProp).toBe('not a function');
-      // Method should still be replaced with executor
-      expect(typeof instance.getUsers).toBe('function');
-    });
-
     it('should handle methods without endpoint metadata', () => {
       @api('/test')
       class TestService {
@@ -399,7 +380,8 @@ describe('apiDecorator', () => {
       // Decorated method should be replaced with executor
       expect(typeof instance.getUsers).toBe('function');
     });
-    it('should handle constructor function name', () => {
+
+    it('should handle various non-function prototype properties', () => {
       @api('/test')
       class TestService {
         @get('/users')
@@ -408,9 +390,37 @@ describe('apiDecorator', () => {
         }
       }
 
-      // Constructor should not be processed
-      expect(typeof TestService.prototype.constructor).toBe('function');
+      // Add various types of non-function properties
+      (TestService.prototype as any).nonFunctionProp = 'not a function';
+      (TestService.prototype as any).stringValue = 'string';
+      (TestService.prototype as any).numberValue = 42;
+      (TestService.prototype as any).objectValue = { key: 'value' };
+      (TestService.prototype as any).nullValue = null;
+      (TestService.prototype as any).undefinedValue = undefined;
+
+      // Directly set a non-function property on the prototype
+      Object.defineProperty(TestService.prototype, 'definedNonFunctionProp', {
+        value: 'not-a-function',
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+
+      const instance = new TestService();
+
+      // All non-function properties should remain
+      expect((instance as any).nonFunctionProp).toBe('not a function');
+      expect((instance as any).stringValue).toBe('string');
+      expect((instance as any).numberValue).toBe(42);
+      expect((instance as any).objectValue).toEqual({ key: 'value' });
+      expect((instance as any).nullValue).toBeNull();
+      expect((instance as any).undefinedValue).toBeUndefined();
+      expect((instance as any).definedNonFunctionProp).toBe('not-a-function');
+
+      // Method should still be replaced with executor
+      expect(typeof instance.getUsers).toBe('function');
     });
+    // Removed duplicate test cases - functionality covered by the comprehensive test above
 
     it('should handle non-function prototype properties', () => {
       @api('/test')
