@@ -28,6 +28,7 @@ import { ParameterMetadata, ParameterType } from './parameterDecorator';
 import { ResultExtractor, ResultExtractors } from './resultExtractor';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 import { getFetcher } from './fetcherCapable';
+import { an } from 'vitest/dist/chunks/reporters.d.BFLkQcL6';
 
 /**
  * Metadata container for a function with HTTP endpoint decorators.
@@ -307,24 +308,51 @@ export class RequestExecutor {
   }
 
   /**
+   * Retrieves the fetcher instance from the target object.
+   *
+   * @param target - The target object that may contain a fetcher property
+   * @returns The fetcher instance if exists, otherwise undefined
+   */
+  private getTargetFetcher(target: any): Fetcher | undefined {
+    if (!target || typeof target !== 'object') {
+      return undefined;
+    }
+    // Extract the fetcher property from the target object
+    const fetcher = target['fetcher'];
+
+    // Validate that the fetcher is an instance of the Fetcher class
+    if (fetcher instanceof Fetcher) {
+      return fetcher;
+    }
+
+    // Return undefined if no valid fetcher instance is found
+    return undefined;
+  }
+
+
+  /**
    * Executes the HTTP request.
    *
    * This method resolves the path and request configuration from the metadata
    * and arguments, then executes the request using the configured fetcher.
    *
+   * @param target - The target object that the method is called on
    * @param args - The runtime arguments passed to the method
    * @returns A Promise that resolves to the Response
    */
   async execute(
+    target: any,
     args: any[],
   ): Promise<FetchExchange | Response | any | ServerSentEventStream> {
+    console.log(target);
     const path = this.metadata.resolvePath();
     const requestInit = this.metadata.resolveRequest(args);
     const request: FetchRequest = {
       url: path,
       ...requestInit,
     };
-    const exchange = await this.metadata.fetcher.request(request);
+    const fetcher = this.getTargetFetcher(target) || this.metadata.fetcher;
+    const exchange = await fetcher.request(request);
     const extractor = this.metadata.resolveResultExtractor();
     return extractor(exchange);
   }
