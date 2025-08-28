@@ -6,11 +6,14 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "examples"
+    "examples",
+    "integration-test"
   ],
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
+    "test:unit": "pnpm -r --filter=./packages/* test",
+    "test:it": "pnpm -r --filter=./integration-test test",
     "lint": "pnpm -r lint",
     "format": "prettier --write .",
     "clean": "pnpm -r clean",

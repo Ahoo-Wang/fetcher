@@ -14,7 +14,8 @@ import {
   combineURLs,
   fetcher,
   Fetcher,
-  FetchExchange, FetchRequest,
+  FetchExchange,
+  FetchRequest,
   FetchRequestInit,
   mergeRequest,
   NamedCapable,
@@ -320,7 +321,6 @@ export class RequestExecutor {
     };
     const exchange = await this.metadata.fetcher.request(request);
     const extractor = this.metadata.resolveResultExtractor();
-    const result = await extractor(exchange);
-    return result;
+    return extractor(exchange);
   }
 }
