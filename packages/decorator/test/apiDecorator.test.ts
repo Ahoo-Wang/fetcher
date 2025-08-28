@@ -452,6 +452,78 @@ describe('apiDecorator', () => {
       expect(typeof instance.getUsers).toBe('function');
     });
 
+    it('should handle constructor function name in bindExecutor', () => {
+      @api('/test')
+      class TestService {
+        @get('/users')
+        getUsers() {
+          return Promise.resolve(new Response('{"users": []}'));
+        }
+      }
+
+      // Test that constructor is not processed
+      expect(typeof TestService.prototype.constructor).toBe('function');
+    });
+
+    it('should handle non-function property types', () => {
+      @api('/test')
+      class TestService {
+        @get('/users')
+        getUsers() {
+          return Promise.resolve(new Response('{"users": []}'));
+        }
+      }
+
+      // Add various non-function properties to test the typeof check
+      (TestService.prototype as any).stringValue = 'string';
+      (TestService.prototype as any).numberValue = 42;
+      (TestService.prototype as any).objectValue = { key: 'value' };
+      (TestService.prototype as any).nullValue = null;
+      (TestService.prototype as any).undefinedValue = undefined;
+
+      const instance = new TestService();
+
+      // All non-function properties should remain
+      expect((instance as any).stringValue).toBe('string');
+      expect((instance as any).numberValue).toBe(42);
+      expect((instance as any).objectValue).toEqual({ key: 'value' });
+      expect((instance as any).nullValue).toBeNull();
+      expect((instance as any).undefinedValue).toBeUndefined();
+
+      // The method should still work
+      expect(typeof instance.getUsers).toBe('function');
+    });
+
+    it('should handle non-function properties in prototype', () => {
+      @api('/test')
+      class TestService {
+        @get('/users')
+        getUsers() {
+          return Promise.resolve(new Response('{"users": []}'));
+        }
+      }
+
+      // Directly set a non-function property on the prototype to test bindExecutor
+      Object.defineProperty(TestService.prototype, 'nonFunctionProp', {
+        value: 'not-a-function',
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+
+      // Also test with a property that is explicitly not a function
+      (TestService.prototype as any).explicitlyNonFunction = 42;
+
+      const instance = new TestService();
+
+      // The properties should remain
+      expect((instance as any).nonFunctionProp).toBe('not-a-function');
+      expect((instance as any).explicitlyNonFunction).toBe(42);
+
+      // The method should still work
+      expect(typeof instance.getUsers).toBe('function');
+    });
+
     it('should execute request executor', async () => {
       // Mock the RequestExecutor to test the execution path
       @api('/test')

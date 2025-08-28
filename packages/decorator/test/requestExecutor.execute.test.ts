@@ -12,7 +12,13 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FunctionMetadata, ParameterType, RequestExecutor } from '../src';
+import {
+  FunctionMetadata,
+  ParameterType,
+  RequestExecutor,
+  api,
+  get,
+} from '../src';
 import { fetcherRegistrar, HttpMethod } from '@ahoo-wang/fetcher';
 import * as fetcherCapableModule from '../src/fetcherCapable';
 import 'reflect-metadata';
@@ -78,6 +84,39 @@ describe('RequestExecutor - execute method', () => {
     });
 
     expect(result).toEqual({ id: 1, name: 'John' });
+  });
+
+  it('should execute request through decorator binding', async () => {
+    // This test ensures the actual executor execution path is covered
+    const mockResponse = new Response('{"users": [{"id": 1, "name": "John"}]}');
+    const mockExchange = {
+      request: {} as any,
+      response: Promise.resolve(mockResponse),
+      requiredResponse: mockResponse,
+    };
+
+    mockRequest.mockResolvedValue(mockExchange);
+
+    // Create a service class that will go through the full decorator binding process
+    @api('/api')
+    class TestService {
+      @get('/users')
+      getUsers() {
+        // This will be replaced by the executor
+        throw new Error('Should not be called');
+      }
+    }
+
+    const instance = new TestService();
+    // The getUsers method should now be the executor function
+    expect(typeof instance.getUsers).toBe('function');
+
+    // Call the method - this should trigger the execution path
+    const result = await instance.getUsers();
+    expect(result).toEqual({ users: [{ id: 1, name: 'John' }] });
+
+    // Verify the request was made
+    expect(mockRequest).toHaveBeenCalled();
   });
 
   it('should execute HTTP request with query parameters', async () => {
