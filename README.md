@@ -405,31 +405,31 @@ if (llmResponse.jsonEventStream) {
 }
 ```
 
-## 🎯 Real-World Examples
+## 🎯 Integration Test Examples
 
-Dive into practical implementations in our [examples](./examples) directory:
+Explore comprehensive, production-ready implementations in our [integration-test](./integration-test) directory:
 
 ### 🌐 HTTP Operations
 
-- **CRUD Operations** - Complete GET, POST, PUT, PATCH, DELETE implementations
+- **Typicode API Integration** - Complete integration with JSONPlaceholder API demonstrating real-world usage
 - **Parameter Handling** - Advanced path, query, and body parameter management
 - **Error Handling** - Comprehensive error handling patterns
 
 ### 🔧 Advanced Patterns
 
-- **Authentication Flows** - Token-based auth, refresh tokens, session management
+- **COSEC Authentication** - Enterprise-grade security integration with token management
 - **Interceptor Chains** - Complex middleware patterns with ordered execution
 - **Timeout Strategies** - Adaptive timeout configurations
 
 ### 📡 Real-Time Features
 
+- **LLM Streaming API** - Native support for streaming responses from Large Language Models
 - **Server-Sent Events** - Real-time notifications and updates
 - **Streaming Data** - Continuous data streams with automatic reconnection
-- **Event Filtering** - Selective event processing
 
 ### 🎨 Decorator Patterns
 
-- **Service Abstractions** - Clean, maintainable API service layers
+- **Declarative Services** - Clean, maintainable API service layers using TypeScript decorators
 - **Metadata Extensions** - Custom metadata for advanced use cases
 - **Type-Safe APIs** - Full TypeScript integration with automatic type inference
 
