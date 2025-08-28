@@ -95,6 +95,24 @@ try {
 }
 ```
 
+### Real-world Example: Typicode API Integration
+
+The following example shows how to integrate with the JSONPlaceholder API, similar to the integration test in the
+Fetcher project. You can find the complete implementation
+in [integration-test/src/fetcher/typicodeFetcher.ts](../../integration-test/src/fetcher/typicodeFetcher.ts).
+
+```typescript
+import { NamedFetcher } from '@ahoo-wang/fetcher';
+import { cosecRequestInterceptor, cosecResponseInterceptor } from '../cosec';
+
+export const typicodeFetcher = new NamedFetcher('typicode', {
+  baseURL: 'https://jsonplaceholder.typicode.com',
+});
+
+typicodeFetcher.interceptors.request.use(cosecRequestInterceptor);
+typicodeFetcher.interceptors.response.use(cosecResponseInterceptor);
+```
+
 ### Default Fetcher Usage
 
 ```typescript
