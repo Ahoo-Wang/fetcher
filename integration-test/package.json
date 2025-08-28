@@ -25,9 +25,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test": "vitest run --coverage",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {

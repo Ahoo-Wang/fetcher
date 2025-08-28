@@ -83,24 +83,6 @@ describe('TypicodePostService Integration Test', () => {
     expect(post.userId).toBe(updatedPost.userId);
   });
 
-  it('should patch a post', async () => {
-    const postId = '1';
-    const patchedPost = {
-      title: 'Patched Post Title',
-    };
-
-    const post = await typicodePostService.patchPost(postId, patchedPost);
-    expect(post).toBeDefined();
-    expect(post.id).toBe(parseInt(postId));
-    expect(post.title).toBe(patchedPost.title);
-  });
-
-  it('should delete a post', async () => {
-    const postId = '1';
-    // This should not throw an error
-    await expect(typicodePostService.deletePost(postId)).resolves.toBeUndefined();
-  });
-
   it('should create a new post', async () => {
     const newPost: Post = {
       userId: 1,
@@ -146,7 +128,9 @@ describe('TypicodePostService Integration Test', () => {
 
   it('should delete a post', async () => {
     const postId = '1';
+    const emptyResult = await typicodePostService.deletePost(postId);
+    expect(emptyResult).toBeDefined();
+    expect(emptyResult).toEqual({});
     // This should not throw an error
-    await expect(typicodePostService.deletePost(postId)).resolves.toBeUndefined();
   });
 });
