@@ -129,6 +129,43 @@ interface CoSecOptions {
 }
 ```
 
+### 真实世界示例：CoSec 集成
+
+以下示例展示了如何设置 CoSec 认证，类似于 Fetcher
+项目中的集成测试。您可以在 [integration-test/src/cosec/cosec.ts](../../integration-test/src/cosec/cosec.ts) 中找到完整实现。
+
+```typescript
+import {
+  CompositeToken,
+  CoSecOptions,
+  CoSecRequestInterceptor,
+  CoSecResponseInterceptor,
+  DeviceIdStorage,
+  TokenRefresher,
+  TokenStorage,
+} from '@ahoo-wang/fetcher-cosec';
+
+export class MockTokenRefresher implements TokenRefresher {
+  refresh(_token: CompositeToken): Promise<CompositeToken> {
+    return Promise.reject('令牌刷新失败');
+  }
+}
+
+const cosecOptions: CoSecOptions = {
+  appId: 'appId',
+  deviceIdStorage: new DeviceIdStorage(),
+  tokenStorage: new TokenStorage(),
+  tokenRefresher: new MockTokenRefresher(),
+};
+
+export const cosecRequestInterceptor = new CoSecRequestInterceptor(
+  cosecOptions,
+);
+export const cosecResponseInterceptor = new CoSecResponseInterceptor(
+  cosecOptions,
+);
+```
+
 ### 添加的头部
 
 拦截器会自动向请求添加以下头部：
