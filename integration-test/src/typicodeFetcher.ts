@@ -13,43 +13,11 @@
 
 
 import { NamedFetcher } from '@ahoo-wang/fetcher';
-
-export interface Comment {
-  postId: number;
-  id: number;
-  name: string;
-  email: string;
-  body: string;
-}
-
-export interface Photo {
-  albumId: number;
-  id: number;
-  title: string;
-  url: string;
-  thumbnailUrl: string;
-}
-
-export interface Album {
-  userId: number;
-  id: number;
-  title: string;
-}
-
-export interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-export interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+import { cosecRequestInterceptor, cosecResponseInterceptor } from './cosec';
 
 export const typicodeFetcher = new NamedFetcher('typicode', {
   baseURL: 'https://jsonplaceholder.typicode.com',
 });
+
+typicodeFetcher.interceptors.request.use(cosecRequestInterceptor);
+typicodeFetcher.interceptors.response.use(cosecResponseInterceptor);

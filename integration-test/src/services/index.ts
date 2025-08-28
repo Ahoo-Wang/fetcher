@@ -11,14 +11,5 @@
  * limitations under the License.
  */
 
-import { defineConfig } from 'vite';
-
-export default defineConfig({
-  server: {
-    port: 3000,
-  },
-  build: {
-    sourcemap: true,
-    outDir: 'dist',
-  },
-});
+export * from './typicodePostService';
+export * from './typicodeUserService';
