@@ -288,8 +288,8 @@ class UserService {
 - **ResponseResultExtractor**: 返回 FetchExchange 中的响应对象
 - **JsonResultExtractor**: 将响应内容解析为 JSON 格式（默认）
 - **TextResultExtractor**: 将响应内容解析为文本格式
-- **ServerSentEventStreamResultExtractor**: 从 FetchExchange 中提取服务器发送事件流
-- **CommandResultEventStreamResultExtractor**: 从 FetchExchange 中提取命令结果事件流
+- **EventStreamResultExtractor**: 从 FetchExchange 中提取服务器发送事件流
+- **JsonEventStreamResultExtractor**: 从 FetchExchange 中提取 JSON 服务器发送事件流
 
 #### 使用结果提取器
 
@@ -306,17 +306,17 @@ class UserService {
     throw new Error('实现将自动生成');
   }
 
-  // 使用 ServerSentEventStream 结果提取器覆盖
-  @get('/events', { resultExtractor: ResultExtractors.ServerSentEventStream })
+  // 使用 EventStream 结果提取器覆盖
+  @get('/events', { resultExtractor: ResultExtractors.EventStream })
   getUserEvents(): Promise<ServerSentEventStream> {
     throw new Error('实现将自动生成');
   }
 
-  // 使用 CommandResultEventStream 结果提取器处理命令
-  @post('/commands', {
-    resultExtractor: ResultExtractors.CommandResultEventStream,
+  // 使用 JsonEventStream 结果提取器处理 JSON 事件
+  @get('/json-events', {
+    resultExtractor: ResultExtractors.JsonEventStream,
   })
-  executeCommand(@body() command: Command): Promise<CommandResultEventStream> {
+  getJsonEvents(): Promise<JsonServerSentEventStream<MyDataType>> {
     throw new Error('实现将自动生成');
   }
 }

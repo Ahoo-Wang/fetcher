@@ -295,8 +295,8 @@ They allow you to customize how the response from an HTTP request is processed a
 - **ResponseResultExtractor**: Returns the response object from FetchExchange
 - **JsonResultExtractor**: Parses the response content as JSON format (default)
 - **TextResultExtractor**: Parses the response content as text format
-- **ServerSentEventStreamResultExtractor**: Extracts server-sent event stream from FetchExchange
-- **CommandResultEventStreamResultExtractor**: Extracts command result event stream from FetchExchange
+- **EventStreamResultExtractor**: Extracts server-sent event stream from FetchExchange
+- **JsonEventStreamResultExtractor**: Extracts JSON server-sent event stream from FetchExchange
 
 #### Using Result Extractors
 
@@ -313,17 +313,17 @@ class UserService {
     throw new Error('Implementation will be generated automatically.');
   }
 
-  // Overrides with ServerSentEventStream result extractor
-  @get('/events', { resultExtractor: ResultExtractors.ServerSentEventStream })
+  // Overrides with EventStream result extractor
+  @get('/events', { resultExtractor: ResultExtractors.EventStream })
   getUserEvents(): Promise<ServerSentEventStream> {
     throw new Error('Implementation will be generated automatically.');
   }
 
-  // Uses CommandResultEventStream result extractor for command handling
-  @post('/commands', {
-    resultExtractor: ResultExtractors.CommandResultEventStream,
+  // Uses JsonEventStream result extractor for JSON event handling
+  @get('/json-events', {
+    resultExtractor: ResultExtractors.JsonEventStream,
   })
-  executeCommand(@body() command: Command): Promise<CommandResultEventStream> {
+  getJsonEvents(): Promise<JsonServerSentEventStream<MyDataType>> {
     throw new Error('Implementation will be generated automatically.');
   }
 }
