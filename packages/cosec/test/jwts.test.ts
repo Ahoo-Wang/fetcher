@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { parseJwtPayload } from '../src';
+import { parseJwtPayload, JwtPayload, isTokenExpired } from '../src';
 
 describe('jwts', () => {
   describe('parseJwtPayload', () => {
@@ -66,7 +66,7 @@ describe('jwts', () => {
     });
 
     it('should handle JWT with Base64URL encoding correctly', () => {
-      // A JWT token with payload: {"iss": "test_issuer", "exp": 1609459200}
+      // A JWT token with payload: {"iss": "test_issuer", "exp": 16094592}
       // Contains Base64URL encoded characters (- and _)
       const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0ZXN0X2lzc3VlciIsImV4cCI6MTYwOTQ1OTJ9.fZl8SkVX449q5Zjpe7R0QDI6H5nCJQY4V5bE95iY44A';
       const payload = parseJwtPayload(token);
@@ -84,6 +84,83 @@ describe('jwts', () => {
       expect(payload).toBeDefined();
       expect(payload?.aud).toEqual(['service1', 'service2']);
       expect(payload?.roles).toEqual(['admin', 'user']);
+    });
+  });
+
+  describe('isTokenExpired', () => {
+    it('should return true for an expired token (string)', () => {
+      // A real JWT token with payload: {"exp": 1609459200} (2021-01-01 00:00:00 UTC)
+      const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MDk0NTkyMDB9.np4JH87ovwVKG1k4cV2bHx88a1q7Bzwr9sX4Y6x5P5Q';
+      const isExpired = isTokenExpired(expiredToken);
+
+      expect(isExpired).toBe(true);
+    });
+
+    it('should return false for a non-expired token (string)', () => {
+      // Create a token that expires in the future (1 hour from now)
+      const futureExp = Math.floor(Date.now() / 1000) + 3600;
+      const payload = { exp: futureExp };
+      let base64Payload = btoa(JSON.stringify(payload));
+      // Handle Base64URL encoding
+      base64Payload = base64Payload.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      const nonExpiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${base64Payload}.XYS34_symbols_for_padding`;
+      const isExpired = isTokenExpired(nonExpiredToken);
+
+      expect(isExpired).toBe(false);
+    });
+
+    it('should return true for a token that cannot be parsed', () => {
+      const invalidToken = 'invalid.token';
+      const isExpired = isTokenExpired(invalidToken);
+
+      expect(isExpired).toBe(true);
+    });
+
+    it('should return false for a token without exp claim (string)', () => {
+      // A token without exp claim
+      const tokenWithoutExp = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+      const isExpired = isTokenExpired(tokenWithoutExp);
+
+      expect(isExpired).toBe(false);
+    });
+
+    it('should return true for an expired token (JwtPayload)', () => {
+      // Payload with past expiration time
+      const expiredPayload: JwtPayload = {
+        exp: 1609459200, // 2021-01-01 00:00:00 UTC
+      };
+      const isExpired = isTokenExpired(expiredPayload);
+
+      expect(isExpired).toBe(true);
+    });
+
+    it('should return false for a non-expired token (JwtPayload)', () => {
+      // Payload with future expiration time
+      const futureExp = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+      const nonExpiredPayload: JwtPayload = {
+        exp: futureExp,
+      };
+      const isExpired = isTokenExpired(nonExpiredPayload);
+
+      expect(isExpired).toBe(false);
+    });
+
+    it('should return false for a payload without exp claim', () => {
+      // Payload without exp claim
+      const payloadWithoutExp: JwtPayload = {
+        sub: '1234567890',
+        name: 'John Doe',
+      };
+      const isExpired = isTokenExpired(payloadWithoutExp);
+
+      expect(isExpired).toBe(false);
+    });
+
+    it('should return true for a null payload', () => {
+      // @ts-expect-error Testing invalid input
+      const isExpired = isTokenExpired(null);
+
+      expect(isExpired).toBe(true);
     });
   });
 });

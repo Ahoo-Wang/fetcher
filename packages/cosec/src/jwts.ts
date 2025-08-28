@@ -92,3 +92,28 @@ export function parseJwtPayload(token: string): JwtPayload | null {
     return null;
   }
 }
+
+/**
+ * Checks if a JWT token is expired based on its expiration time (exp claim).
+ *
+ * This function determines if a JWT token has expired by comparing its exp claim
+ * with the current time. If the token is a string, it will be parsed first.
+ * Tokens without an exp claim are considered not expired.
+ *
+ * @param token - The JWT token to check, either as a string or as a JwtPayload object
+ * @returns true if the token is expired or cannot be parsed, false otherwise
+ */
+export function isTokenExpired(token: string | JwtPayload): boolean {
+  const payload = typeof token === 'string' ? parseJwtPayload(token) : token;
+  if (!payload) {
+    return true;
+  }
+
+  const exp = payload.exp;
+  if (!exp) {
+    return false;
+  }
+
+  const now = Date.now() / 1000;
+  return now > exp;
+}
