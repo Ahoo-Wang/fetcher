@@ -11,15 +11,310 @@
  * limitations under the License.
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FunctionMetadata, ParameterType } from '../src';
-import { fetcherRegistrar, HttpMethod } from '@ahoo-wang/fetcher';
+import { fetcherRegistrar, HttpMethod, Fetcher } from '@ahoo-wang/fetcher';
+import { RequestExecutor } from '../src/requestExecutor';
+import * as fetcherCapableModule from '../src/fetcherCapable';
 
 // Mock fetcher
-const mockFetch = vi.fn();
-const mockFetcher = {
-  fetch: mockFetch,
+const mockRequest = vi.fn();
+const mockFetcher: any = {
+  request: mockRequest,
 };
+
+describe('RequestExecutor', () => {
+  beforeEach(() => {
+    // Clear all mocks before each test
+    vi.clearAllMocks();
+
+    // Mock fetcher registrar
+    vi.spyOn(fetcherRegistrar, 'requiredGet').mockReturnValue(mockFetcher);
+
+    // Mock getFetcher function to return our mock fetcher
+    vi.spyOn(fetcherCapableModule, 'getFetcher').mockReturnValue(mockFetcher);
+  });
+
+  it('should execute request with target fetcher', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue({}),
+      text: vi.fn().mockResolvedValue(''),
+    } as any;
+
+    const mockExchange = {
+      request: {},
+      response: Promise.resolve(mockResponse),
+      requiredResponse: mockResponse,
+    };
+
+    mockRequest.mockResolvedValue(mockExchange);
+
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      { basePath: '' },
+      { method: HttpMethod.GET, path: '/api/users' },
+      new Map(),
+    );
+
+    const executor = new RequestExecutor(metadata);
+    const target = { fetcher: mockFetcher };
+    await executor.execute(target, []);
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/users',
+        method: 'GET',
+      }),
+    );
+  });
+
+  it('should fallback to metadata fetcher when target fetcher is not a Fetcher instance', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue({}),
+      text: vi.fn().mockResolvedValue(''),
+    } as any;
+
+    const mockExchange = {
+      request: {},
+      response: Promise.resolve(mockResponse),
+      requiredResponse: mockResponse,
+    };
+
+    mockRequest.mockResolvedValue(mockExchange);
+
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      { basePath: '' },
+      { method: HttpMethod.GET, path: '/api/users' },
+      new Map(),
+    );
+
+    const executor = new RequestExecutor(metadata);
+
+    // Test with a non-Fetcher instance
+    const target = { fetcher: {} }; // Not a Fetcher instance
+    await executor.execute(target, []);
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/users',
+        method: 'GET',
+      }),
+    );
+  });
+
+  it('should fallback to metadata fetcher when target has no fetcher property', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue({}),
+      text: vi.fn().mockResolvedValue(''),
+    } as any;
+
+    const mockExchange = {
+      request: {},
+      response: Promise.resolve(mockResponse),
+      requiredResponse: mockResponse,
+    };
+
+    mockRequest.mockResolvedValue(mockExchange);
+
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      { basePath: '' },
+      { method: HttpMethod.GET, path: '/api/users' },
+      new Map(),
+    );
+
+    const executor = new RequestExecutor(metadata);
+
+    // Test with an object that has no fetcher property
+    const target = { otherProperty: 'value' };
+    await executor.execute(target, []);
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/users',
+        method: 'GET',
+      }),
+    );
+  });
+
+  it('should return fetcher when target has valid fetcher instance', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      { basePath: '' },
+      { method: HttpMethod.GET, path: '/api/users' },
+      new Map(),
+    );
+
+    const executor = new RequestExecutor(metadata);
+
+    // Create a real Fetcher instance
+    const realFetcher = new Fetcher();
+
+    // Test with a valid Fetcher instance
+    const target = { fetcher: realFetcher };
+    const result = (executor as any).getTargetFetcher(target);
+
+    expect(result).toBe(realFetcher);
+  });
+
+  it('should return undefined when target has non-Fetcher fetcher property', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      { basePath: '' },
+      { method: HttpMethod.GET, path: '/api/users' },
+      new Map(),
+    );
+
+    const executor = new RequestExecutor(metadata);
+
+    // Test with a non-Fetcher instance
+    const target = { fetcher: {} };
+    const result = (executor as any).getTargetFetcher(target);
+
+    expect(result).toBeUndefined();
+  });
+
+  it('should return undefined when target has no fetcher property', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      { basePath: '' },
+      { method: HttpMethod.GET, path: '/api/users' },
+      new Map(),
+    );
+
+    const executor = new RequestExecutor(metadata);
+
+    // Test with an object that has no fetcher property
+    const target = { otherProperty: 'value' };
+    const result = (executor as any).getTargetFetcher(target);
+
+    expect(result).toBeUndefined();
+  });
+
+  it('should return undefined when target is not an object', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      { basePath: '' },
+      { method: HttpMethod.GET, path: '/api/users' },
+      new Map(),
+    );
+
+    const executor = new RequestExecutor(metadata);
+
+    // Test with null target
+    let result = (executor as any).getTargetFetcher(null);
+    expect(result).toBeUndefined();
+
+    // Test with undefined target
+    result = (executor as any).getTargetFetcher(undefined);
+    expect(result).toBeUndefined();
+
+    // Test with string target
+    result = (executor as any).getTargetFetcher('not-an-object');
+    expect(result).toBeUndefined();
+
+    // Test with number target
+    result = (executor as any).getTargetFetcher(123);
+    expect(result).toBeUndefined();
+  });
+
+  it('should fallback to metadata fetcher when target is null or undefined', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue({}),
+      text: vi.fn().mockResolvedValue(''),
+    } as any;
+
+    const mockExchange = {
+      request: {},
+      response: Promise.resolve(mockResponse),
+      requiredResponse: mockResponse,
+    };
+
+    mockRequest.mockResolvedValue(mockExchange);
+
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      { basePath: '' },
+      { method: HttpMethod.GET, path: '/api/users' },
+      new Map(),
+    );
+
+    const executor = new RequestExecutor(metadata);
+
+    // Test with null target
+    await executor.execute(null, []);
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/users',
+        method: 'GET',
+      }),
+    );
+
+    // Clear mock to test with undefined target
+    vi.clearAllMocks();
+    mockRequest.mockResolvedValue(mockExchange);
+
+    // Test with undefined target
+    await executor.execute(undefined, []);
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/users',
+        method: 'GET',
+      }),
+    );
+  });
+
+  it('should fallback to metadata fetcher when target is not an object', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue({}),
+      text: vi.fn().mockResolvedValue(''),
+    } as any;
+
+    const mockExchange = {
+      request: {},
+      response: Promise.resolve(mockResponse),
+      requiredResponse: mockResponse,
+    };
+
+    mockRequest.mockResolvedValue(mockExchange);
+
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      { basePath: '' },
+      { method: HttpMethod.GET, path: '/api/users' },
+      new Map(),
+    );
+
+    const executor = new RequestExecutor(metadata);
+
+    // Test with non-object target (string)
+    await executor.execute('not-an-object', []);
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/users',
+        method: 'GET',
+      }),
+    );
+
+    // Clear mock to test with number
+    vi.clearAllMocks();
+    mockRequest.mockResolvedValue(mockExchange);
+
+    // Test with number target
+    await executor.execute(123, []);
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/users',
+        method: 'GET',
+      }),
+    );
+  });
+});
 
 describe('FunctionMetadata', () => {
   it('should resolve path correctly', () => {
