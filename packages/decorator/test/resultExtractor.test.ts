@@ -18,12 +18,11 @@ import {
   ResponseResultExtractor,
   JsonResultExtractor,
   TextResultExtractor,
-  ServerSentEventStreamResultExtractor,
-  CommandResultEventStreamResultExtractor,
+  EventStreamResultExtractor,
+  JsonEventStreamResultExtractor,
 } from '../src';
 import { ExchangeError, FetchExchange, FetchRequest } from '@ahoo-wang/fetcher';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
-import { CommandResultEventStream } from '@ahoo-wang/fetcher-wow';
 
 describe('ResultExtractor', () => {
   const mockResponse = new Response('{"id": 1, "name": "John"}');
@@ -98,7 +97,7 @@ describe('ResultExtractor', () => {
         eventStreamResponse,
       );
 
-      const result = ServerSentEventStreamResultExtractor(eventStreamExchange);
+      const result = EventStreamResultExtractor(eventStreamExchange);
       expect(result).toBe(mockEventStream);
     });
 
@@ -118,29 +117,7 @@ describe('ResultExtractor', () => {
       );
 
       expect(() =>
-        ServerSentEventStreamResultExtractor(noEventStreamExchange),
-      ).toThrow(ExchangeError);
-    });
-  });
-
-  describe('CommandResultEventStreamResultExtractor', () => {
-    it('should throw ExchangeError when server does not support ServerSentEventStream', () => {
-      const noEventStreamResponse = new Response('');
-      // Ensure there's no eventStream function
-      Object.defineProperty(noEventStreamResponse, 'eventStream', {
-        configurable: true,
-        enumerable: true,
-        get: () => undefined,
-      });
-
-      const noEventStreamExchange = new FetchExchange(
-        {} as any,
-        mockRequest,
-        noEventStreamResponse,
-      );
-
-      expect(() =>
-        CommandResultEventStreamResultExtractor(noEventStreamExchange),
+        EventStreamResultExtractor(noEventStreamExchange),
       ).toThrow(ExchangeError);
     });
   });
@@ -151,11 +128,11 @@ describe('ResultExtractor', () => {
       expect(ResultExtractors.Response).toBe(ResponseResultExtractor);
       expect(ResultExtractors.Json).toBe(JsonResultExtractor);
       expect(ResultExtractors.Text).toBe(TextResultExtractor);
-      expect(ResultExtractors.ServerSentEventStream).toBe(
-        ServerSentEventStreamResultExtractor,
+      expect(ResultExtractors.EventStream).toBe(
+        EventStreamResultExtractor,
       );
-      expect(ResultExtractors.CommandResultEventStream).toBe(
-        CommandResultEventStreamResultExtractor,
+      expect(ResultExtractors.JsonEventStream).toBe(
+        JsonEventStreamResultExtractor,
       );
     });
   });
