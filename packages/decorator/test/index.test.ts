@@ -46,13 +46,18 @@ describe('index', () => {
       'getUser',
     );
 
-    expect(parameterMetadata).toEqual([
-      {
-        type: ParameterType.PATH,
-        name: 'id',
-        index: 0,
-      },
-    ]);
+    expect(parameterMetadata).toEqual(
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+      ]),
+    );
   });
 
   it('should have reflection utilities available', () => {

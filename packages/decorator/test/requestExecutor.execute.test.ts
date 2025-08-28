@@ -49,13 +49,16 @@ describe('RequestExecutor - execute method', () => {
       'testFunc',
       { basePath: 'http://localhost/api' },
       { method: HttpMethod.GET, path: '/users/{id}' },
-      [
-        {
-          type: ParameterType.PATH,
-          name: 'id',
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const executor = new RequestExecutor(metadata);
@@ -91,18 +94,24 @@ describe('RequestExecutor - execute method', () => {
       'testFunc',
       { basePath: 'http://localhost/api' },
       { method: HttpMethod.GET, path: '/users' },
-      [
-        {
-          type: ParameterType.QUERY,
-          name: 'limit',
-          index: 0,
-        },
-        {
-          type: ParameterType.QUERY,
-          name: 'offset',
-          index: 1,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.QUERY,
+            name: 'limit',
+            index: 0,
+          },
+        ],
+        [
+          1,
+          {
+            type: ParameterType.QUERY,
+            name: 'offset',
+            index: 1,
+          },
+        ],
+      ]),
     );
 
     const executor = new RequestExecutor(metadata);
@@ -138,17 +147,23 @@ describe('RequestExecutor - execute method', () => {
       'testFunc',
       { basePath: 'http://localhost/api' },
       { method: HttpMethod.POST, path: '/users' },
-      [
-        {
-          type: ParameterType.HEADER,
-          name: 'Authorization',
-          index: 0,
-        },
-        {
-          type: ParameterType.BODY,
-          index: 1,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.HEADER,
+            name: 'Authorization',
+            index: 0,
+          },
+        ],
+        [
+          1,
+          {
+            type: ParameterType.BODY,
+            index: 1,
+          },
+        ],
+      ]),
     );
 
     const executor = new RequestExecutor(metadata);
@@ -184,13 +199,16 @@ describe('RequestExecutor - execute method', () => {
       'testFunc',
       { basePath: 'http://localhost/api', timeout: 5000 },
       { method: HttpMethod.GET, path: '/users/{id}' },
-      [
-        {
-          type: ParameterType.PATH,
-          name: 'id',
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const executor = new RequestExecutor(metadata);
@@ -226,13 +244,16 @@ describe('RequestExecutor - execute method', () => {
       'testFunc',
       { basePath: 'http://localhost/api' },
       { method: HttpMethod.GET, path: '/users/{id}' },
-      [
-        {
-          type: ParameterType.PATH,
-          name: 'id',
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const executor = new RequestExecutor(metadata);

@@ -149,13 +149,18 @@ describe('apiDecorator', () => {
         'getUser',
       );
 
-      expect(parameterMetadata).toEqual([
-        {
-          type: ParameterType.PATH,
-          name: 'id',
-          index: 0,
-        },
-      ]);
+      expect(parameterMetadata).toEqual(
+        new Map([
+          [
+            0,
+            {
+              type: ParameterType.PATH,
+              name: 'id',
+              index: 0,
+            },
+          ],
+        ]),
+      );
     });
 
     it('should handle method with endpoint metadata and parameters but no names', () => {
@@ -326,13 +331,18 @@ describe('apiDecorator', () => {
       // Should have both endpoint and parameter metadata
       expect(endpointMetadata).toBeDefined();
       expect(parameterMetadata).toBeDefined();
-      expect(parameterMetadata).toEqual([
-        {
-          type: ParameterType.PATH,
-          name: 'id',
-          index: 0,
-        },
-      ]);
+      expect(parameterMetadata).toEqual(
+        new Map([
+          [
+            0,
+            {
+              type: ParameterType.PATH,
+              name: 'id',
+              index: 0,
+            },
+          ],
+        ]),
+      );
 
       // Method should be replaced with executor
       expect(typeof instance.getUser).toBe('function');

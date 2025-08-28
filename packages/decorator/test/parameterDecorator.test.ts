@@ -28,13 +28,18 @@ describe('parameterDecorator', () => {
       'getUsers',
     );
 
-    expect(metadata).toEqual([
-      {
-        type: ParameterType.PATH,
-        name: 'id',
-        index: 0,
-      },
-    ]);
+    expect(metadata).toEqual(
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+      ]),
+    );
   });
 
   it('should define path parameter', () => {
@@ -54,13 +59,18 @@ describe('parameterDecorator', () => {
       'getUsers',
     );
 
-    expect(metadata).toEqual([
-      {
-        type: ParameterType.PATH,
-        name: 'id',
-        index: 0,
-      },
-    ]);
+    expect(metadata).toEqual(
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+      ]),
+    );
   });
 
   it('should define query parameter', () => {
@@ -80,13 +90,18 @@ describe('parameterDecorator', () => {
       'getUsers',
     );
 
-    expect(metadata).toEqual([
-      {
-        type: ParameterType.QUERY,
-        name: 'limit',
-        index: 0,
-      },
-    ]);
+    expect(metadata).toEqual(
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.QUERY,
+            name: 'limit',
+            index: 0,
+          },
+        ],
+      ]),
+    );
   });
 
   it('should define header parameter', () => {
@@ -106,13 +121,18 @@ describe('parameterDecorator', () => {
       'getUsers',
     );
 
-    expect(metadata).toEqual([
-      {
-        type: ParameterType.HEADER,
-        name: 'Authorization',
-        index: 0,
-      },
-    ]);
+    expect(metadata).toEqual(
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.HEADER,
+            name: 'Authorization',
+            index: 0,
+          },
+        ],
+      ]),
+    );
   });
 
   it('should define body parameter', () => {
@@ -132,13 +152,18 @@ describe('parameterDecorator', () => {
       'createUsers',
     );
 
-    expect(metadata).toEqual([
-      {
-        type: ParameterType.BODY,
-        name: 'user',
-        index: 0,
-      },
-    ]);
+    expect(metadata).toEqual(
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.BODY,
+            name: 'user',
+            index: 0,
+          },
+        ],
+      ]),
+    );
   });
 
   it('should handle multiple parameters', () => {
@@ -160,23 +185,34 @@ describe('parameterDecorator', () => {
       'updateUsers',
     );
 
-    expect(metadata).toEqual([
-      {
-        type: ParameterType.PATH,
-        name: 'id',
-        index: 0,
-      },
-      {
-        type: ParameterType.QUERY,
-        name: 'force',
-        index: 1,
-      },
-      {
-        type: ParameterType.BODY,
-        name: '_user',
-        index: 2,
-      },
-    ]);
+    expect(metadata).toEqual(
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+        [
+          1,
+          {
+            type: ParameterType.QUERY,
+            name: 'force',
+            index: 1,
+          },
+        ],
+        [
+          2,
+          {
+            type: ParameterType.BODY,
+            name: '_user',
+            index: 2,
+          },
+        ],
+      ]),
+    );
   });
 
   it('should define request parameter', () => {
@@ -196,12 +232,17 @@ describe('parameterDecorator', () => {
       'createUsers',
     );
 
-    expect(metadata).toEqual([
-      {
-        type: ParameterType.REQUEST,
-        name: '_request',
-        index: 0,
-      },
-    ]);
+    expect(metadata).toEqual(
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.REQUEST,
+            name: '_request',
+            index: 0,
+          },
+        ],
+      ]),
+    );
   });
 });

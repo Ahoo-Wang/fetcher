@@ -21,12 +21,15 @@ describe('FunctionMetadata.resolveRequest', () => {
       'testFunc',
       {},
       { method: HttpMethod.POST },
-      [
-        {
-          type: ParameterType.REQUEST,
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.REQUEST,
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const requestObject = {
@@ -47,17 +50,23 @@ describe('FunctionMetadata.resolveRequest', () => {
       'testFunc',
       {},
       { method: HttpMethod.POST },
-      [
-        {
-          type: ParameterType.PATH,
-          name: 'id',
-          index: 0,
-        },
-        {
-          type: ParameterType.REQUEST,
-          index: 1,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+        [
+          1,
+          {
+            type: ParameterType.REQUEST,
+            index: 1,
+          },
+        ],
+      ]),
     );
 
     const requestObject = {
@@ -83,12 +92,15 @@ describe('FunctionMetadata.resolveRequest', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.REQUEST,
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.REQUEST,
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const requestObject = {
@@ -111,17 +123,23 @@ describe('FunctionMetadata.resolveRequest', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.REQUEST,
-          index: 0,
-        },
-        {
-          type: ParameterType.PATH,
-          name: 'id',
-          index: 1,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.REQUEST,
+            index: 0,
+          },
+        ],
+        [
+          1,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 1,
+          },
+        ],
+      ]),
     );
 
     const requestObject = {};
@@ -138,22 +156,31 @@ describe('FunctionMetadata.resolveRequest', () => {
       'testFunc',
       {},
       { method: HttpMethod.POST },
-      [
-        {
-          type: ParameterType.REQUEST,
-          index: 0,
-        },
-        {
-          type: ParameterType.PATH,
-          name: 'userId',
-          index: 1,
-        },
-        {
-          type: ParameterType.QUERY,
-          name: 'page',
-          index: 2,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.REQUEST,
+            index: 0,
+          },
+        ],
+        [
+          1,
+          {
+            type: ParameterType.PATH,
+            name: 'userId',
+            index: 1,
+          },
+        ],
+        [
+          2,
+          {
+            type: ParameterType.QUERY,
+            name: 'page',
+            index: 2,
+          },
+        ],
+      ]),
     );
 
     const requestObject = {
