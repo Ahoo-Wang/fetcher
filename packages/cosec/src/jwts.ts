@@ -88,7 +88,7 @@ export function parseJwtPayload(token: string): JwtPayload | null {
     return JSON.parse(jsonPayload) as JwtPayload;
   } catch (error) {
     // Avoid exposing sensitive information in error logs
-    console.error('Failed to parse JWT token');
+    console.error('Failed to parse JWT token', error);
     return null;
   }
 }
