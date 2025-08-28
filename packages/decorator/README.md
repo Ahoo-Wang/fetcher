@@ -355,6 +355,37 @@ class UserService {
 }
 ```
 
+### Fetcher Resolution Priority
+
+The fetcher used for making HTTP requests is determined by the following priority order:
+
+1. **Service Instance Fetcher Property**: The `fetcher` property on the service instance has the highest priority
+2. **Endpoint-Level Fetcher**: The fetcher specified in the endpoint metadata (`@get('/path', { fetcher: 'name' })`)
+3. **Class-Level Fetcher**: The fetcher specified in the class metadata (`@api('/base', { fetcher: 'name' })`)
+4. **Default Fetcher**: Falls back to the default fetcher if none of the above are specified
+
+```typescript
+// Example showing fetcher resolution priority
+const customFetcher = new Fetcher({ baseURL: 'https://custom-api.com' });
+
+@api('/users', { fetcher: 'class-level-fetcher' })
+class UserService {
+  @get('/{id}', { fetcher: 'endpoint-level-fetcher' })
+  getUser(@path() id: number): Promise<User> {
+    throw new Error('Implementation will be generated automatically.');
+  }
+}
+
+// Service instance with fetcher property (highest priority)
+const userService = new UserService();
+userService.fetcher = customFetcher; // This fetcher will be used
+
+// If no fetcher property is set on the instance, it would use:
+// 1. 'endpoint-level-fetcher' (from @get decorator)
+// 2. 'class-level-fetcher' (from @api decorator)
+// 3. Default fetcher (if neither of the above are specified)
+```
+
 ### Result Extractors
 
 Result extractors are used to process and extract data from different types of responses or results in the application.
