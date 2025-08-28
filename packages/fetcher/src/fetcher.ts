@@ -129,7 +129,7 @@ export class Fetcher
    * @throws Error if an unhandled error occurs during request processing
    */
   async request(request: FetchRequest): Promise<FetchExchange> {
-    // Merge default headers and request-level headers
+    // Merge default headers and request-level headers. defensive copy
     const mergedHeaders = {
       ...this.headers,
       ...request.headers,
