@@ -130,7 +130,10 @@ export class Fetcher
    */
   async request(request: FetchRequest): Promise<FetchExchange> {
     // Merge default headers and request-level headers
-    const mergedHeaders = mergeRecords(request.headers, this.headers);
+    const mergedHeaders = {
+      ...this.headers,
+      ...request.headers,
+    };
     // Merge request options
     const fetchRequest: FetchRequest = {
       ...request,
