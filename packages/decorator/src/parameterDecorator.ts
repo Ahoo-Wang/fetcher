@@ -129,7 +129,7 @@ export const PARAMETER_METADATA_KEY = Symbol('parameter:metadata');
  * ```
  */
 export function parameter(type: ParameterType, name: string = '') {
-  return function (
+  return function(
     target: object,
     propertyKey: string | symbol,
     parameterIndex: number,
@@ -141,15 +141,14 @@ export function parameter(type: ParameterType, name: string = '') {
       name,
     );
 
-    const existingParameters: ParameterMetadata[] =
-      Reflect.getMetadata(PARAMETER_METADATA_KEY, target, propertyKey) || [];
-
-    existingParameters.push({
+    const existingParameters: Map<number, ParameterMetadata> =
+      Reflect.getMetadata(PARAMETER_METADATA_KEY, target, propertyKey) || new Map();
+    const parameterMetadata: ParameterMetadata = {
       type: type,
       name: paramName,
       index: parameterIndex,
-    });
-
+    };
+    existingParameters.set(parameterIndex, parameterMetadata);
     Reflect.defineMetadata(
       PARAMETER_METADATA_KEY,
       existingParameters,

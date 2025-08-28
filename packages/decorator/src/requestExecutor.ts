@@ -54,7 +54,7 @@ export class FunctionMetadata implements NamedCapable {
   /**
    * Parameter metadata for all decorated parameters.
    */
-  parameters: ParameterMetadata[];
+  parameters: Map<number, ParameterMetadata>;
 
   /**
    * Creates a new FunctionMetadata instance.
@@ -68,7 +68,7 @@ export class FunctionMetadata implements NamedCapable {
     name: string,
     api: ApiMetadata,
     endpoint: EndpointMetadata,
-    parameters: ParameterMetadata[],
+    parameters: Map<number, ParameterMetadata>,
   ) {
     this.name = name;
     this.api = api;
@@ -151,25 +151,26 @@ export class FunctionMetadata implements NamedCapable {
         signal = value;
         return;
       }
-      if (index < this.parameters.length) {
-        const param = this.parameters[index];
-        switch (param.type) {
-          case ParameterType.PATH:
-            this.processPathParam(param, value, path);
-            break;
-          case ParameterType.QUERY:
-            this.processQueryParam(param, value, query);
-            break;
-          case ParameterType.HEADER:
-            this.processHeaderParam(param, value, headers);
-            break;
-          case ParameterType.BODY:
-            body = value;
-            break;
-          case ParameterType.REQUEST:
-            parameterRequest = this.processRequestParam(value);
-            break;
-        }
+      const funParameter = this.parameters.get(index);
+      if (!funParameter) {
+        return;
+      }
+      switch (funParameter.type) {
+        case ParameterType.PATH:
+          this.processPathParam(funParameter, value, path);
+          break;
+        case ParameterType.QUERY:
+          this.processQueryParam(funParameter, value, query);
+          break;
+        case ParameterType.HEADER:
+          this.processHeaderParam(funParameter, value, headers);
+          break;
+        case ParameterType.BODY:
+          body = value;
+          break;
+        case ParameterType.REQUEST:
+          parameterRequest = this.processRequestParam(value);
+          break;
       }
     });
     const urlParams: UrlParams = {
