@@ -8,7 +8,8 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-Support for text/event-stream in Fetcher, enabling Server-Sent Events (SSE) functionality for real-time data streaming.
+Power your real-time applications with Server-Sent Events support, specially designed for Large Language Model streaming
+APIs.
 
 ## 🌟 Features
 

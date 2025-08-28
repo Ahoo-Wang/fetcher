@@ -8,8 +8,7 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-Decorator support for Fetcher HTTP client. Enables clean, declarative API service definitions using TypeScript
-decorators.
+Transform your API interactions with clean, declarative service definitions using TypeScript decorators.
 
 ## 🌟 Features
 
