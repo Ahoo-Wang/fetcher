@@ -1,4 +1,8 @@
-# Fetcher
+<div align="center">
+
+# 🚀 Fetcher
+
+**The Ultimate HTTP Client Ecosystem for Modern JavaScript Applications**
 
 [![npm version](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![Build Status](https://github.com/Ahoo-Wang/fetcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Ahoo-Wang/fetcher/actions)
@@ -8,13 +12,23 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-A modern, ultra-lightweight HTTP client with built-in path parameters, query parameters, and Axios-like API.
+**Ultra-lightweight • Modular • TypeScript-First • Interceptor-Powered • LLM Streaming API Support**
 
-## 🌟 Features
+</div>
 
-#### [`@ahoo-wang/fetcher`](./packages/fetcher)
+## 🌟 Why Fetcher?
 
-- **⚡ Ultra-Lightweight**: Only 2.7KiB min+gzip
+Fetcher is not just another HTTP client—it's a complete ecosystem designed for modern web development with native LLM
+streaming API support. Built on the native Fetch API, Fetcher provides an Axios-like experience with powerful features
+while maintaining an incredibly small footprint.
+
+## 🚀 Core Features
+
+### 🎯 [`@ahoo-wang/fetcher`](./packages/fetcher) - The Foundation
+
+The lightweight core that powers the entire ecosystem:
+
+- **⚡ Ultra-Lightweight**: Only 2.7KiB min+gzip - smaller than most alternatives
 - **🧭 Path & Query Parameters**: Built-in support for path (`{id}`) and query parameters
 - **🔗 Interceptor System**: Request, response, and error interceptors with ordered execution for flexible middleware
   patterns
@@ -25,7 +39,9 @@ A modern, ultra-lightweight HTTP client with built-in path parameters, query par
 - **📦 Named Fetcher Support**: Automatic registration and retrieval of fetcher instances
 - **⚙️ Default Fetcher**: Pre-configured default fetcher instance for quick start
 
-#### [`@ahoo-wang/fetcher-decorator`](./packages/decorator)
+### 🎨 [`@ahoo-wang/fetcher-decorator`](./packages/decorator) - Declarative APIs
+
+Transform your API interactions with clean, declarative service definitions:
 
 - **🎨 Clean API Definitions**: Define HTTP services using intuitive decorators
 - **🧭 Automatic Parameter Binding**: Path, query, header, and body parameters automatically bound
@@ -34,7 +50,10 @@ A modern, ultra-lightweight HTTP client with built-in path parameters, query par
 - **⚡ Automatic Implementation**: Methods automatically implemented with HTTP calls
 - **📦 Metadata System**: Rich metadata support for advanced customization
 
-#### [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream)
+### 📡 [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) - Real-Time Streaming & LLM Support
+
+Power your real-time applications with Server-Sent Events support, specially designed for Large Language Model streaming
+APIs:
 
 - **📡 Event Stream Conversion**: Converts `text/event-stream` responses to async generators of `ServerSentEvent` objects
 - **🔌 Interceptor Integration**: Automatically adds `eventStream()` method to responses with `text/event-stream` content
@@ -44,8 +63,48 @@ A modern, ultra-lightweight HTTP client with built-in path parameters, query par
 - **🔄 Streaming Support**: Handles chunked data and multi-line events correctly
 - **💬 Comment Handling**: Properly ignores comment lines (lines starting with `:`) as per SSE specification
 - **⚡ Performance Optimized**: Efficient parsing and streaming for high-performance applications
+- **🤖 LLM Streaming Ready**: Native support for streaming responses from popular LLM APIs like OpenAI GPT, Claude, etc.
 
-#### [`@ahoo-wang/fetcher-cosec`](./packages/cosec)
+#### LLM Integration Example
+
+The [LlmClient](./integration-test/src/eventstream/llmClient.ts) demonstrates how to create a specialized client for LLM
+APIs with streaming support:
+
+```typescript
+import { createLlmFetcher, LlmClient } from './llmClient';
+
+// Initialize the LLM client with your API configuration
+const llmFetcher = createLlmFetcher({
+  baseURL: 'https://api.openai.com/v1',
+  apiKey: process.env.OPENAI_API_KEY || 'your-api-key',
+  model: 'gpt-3.5-turbo',
+});
+
+const llmClient = new LlmClient();
+
+// Stream chat completions token by token
+async function streamChatExample() {
+  const stream = await llmClient.streamChat({
+    messages: [
+      { role: 'system', content: 'You are a helpful assistant.' },
+      { role: 'user', content: 'Explain quantum computing in simple terms.' },
+    ],
+    stream: true,
+  });
+
+  for await (const event of stream) {
+    if (event.data) {
+      const chunk = event.data;
+      const content = chunk.choices[0]?.delta?.content || '';
+      process.stdout.write(content); // Real-time output
+    }
+  }
+}
+```
+
+### 🔐 [`@ahoo-wang/fetcher-cosec`](./packages/cosec) - Enterprise Security
+
+Secure your applications with integrated authentication:
 
 - **🔐 Automatic Authentication**: Automatic CoSec authentication headers
 - **📱 Device Management**: Device ID management with localStorage persistence
@@ -53,31 +112,40 @@ A modern, ultra-lightweight HTTP client with built-in path parameters, query par
 - **🌈 Request Tracking**: Unique request ID generation for tracking
 - **💾 Token Storage**: Secure token storage management
 
-## 📦 Packages
+## 📦 Package Ecosystem
 
-| Package                                                    | Description                                               | Version                                                                                                                                 | Npm Bundle Size                                                                                                                                                   |
-| ---------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`@ahoo-wang/fetcher`](./packages/fetcher)                 | Ultra-lightweight (1.9kB) HTTP client with Axios-like API | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
-| [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | Server-Sent Events (SSE) support for Fetcher HTTP client  | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
-| [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | CoSec authentication integration for Fetcher HTTP client  | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
-| [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | TypeScript decorators for Fetcher HTTP client             | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
+<div align="center">
 
-## 🚀 Quick Start
+| Package                                                    | Description                                                                                                          | Version                                                                                                                                 | Size                                                                                                                                                   |
+|------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`@ahoo-wang/fetcher`](./packages/fetcher)                 | **Core HTTP Client**<br/>Ultra-lightweight foundation with Axios-like API                                            | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
+| [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **Decorator Support**<br/>Declarative API service definitions                                                        | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
+| [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **Real-Time Streaming & LLM Support**<br/>Server-Sent Events (SSE) support with native LLM streaming API integration | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
+| [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | **Enterprise Security**<br/>CoSec authentication integration                                                         | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
 
-### Installation
+</div>
+
+## 🚀 Getting Started
+
+### 📦 Installation
 
 ```bash
-# Core package
+# Install the core package
 npm install @ahoo-wang/fetcher
 
-# Or with pnpm
+# Or install with all extensions including LLM streaming support
+npm install @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-cosec
+
+# Using pnpm (recommended)
 pnpm add @ahoo-wang/fetcher
 
-# Or with yarn
+# Using yarn
 yarn add @ahoo-wang/fetcher
 ```
 
-### Basic Usage
+### ⚡ Quick Examples
+
+#### Basic HTTP Client
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
@@ -103,7 +171,7 @@ const createUserResponse = await fetcher.post('/users', {
 });
 ```
 
-### Decorator-Based Services
+#### Declarative API Services
 
 ```typescript
 import { NamedFetcher } from '@ahoo-wang/fetcher';
@@ -125,75 +193,53 @@ const apiFetcher = new NamedFetcher('api', {
 @api('/users', { fetcher: 'api' })
 class UserService {
   @get('/')
-  getUsers(@query('limit') limit?: number): Promise<Response> {
-    throw new Error('Implementation will be generated automatically.');
+  getUsers(@query('limit') limit?: number): Promise<User[]> {
+    throw new Error('Auto-generated');
   }
 
   @post('/')
-  createUser(@body() user: User): Promise<Response> {
-    throw new Error('Implementation will be generated automatically.');
+  createUser(@body() user: User): Promise<User> {
+    throw new Error('Auto-generated');
   }
 
   @get('/{id}')
-  getUser(@path('id') id: number): Promise<Response> {
-    throw new Error('Implementation will be generated automatically.');
+  getUser(@path('id') id: number): Promise<User> {
+    throw new Error('Auto-generated');
   }
 }
 
 // Use the service
 const userService = new UserService();
-const response = await userService.getUsers(10);
+const users = await userService.getUsers(10);
 ```
 
-### Using Interceptors
+#### Powerful Interceptors
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
-// Add request interceptor with ordering (e.g., for authentication)
+// Add request interceptor with ordering
 fetcher.interceptors.request.use({
   name: 'auth-interceptor',
-  order: 100, // Lower values execute first
+  order: 100,
   intercept(exchange) {
-    exchange.request = {
-      ...exchange.request,
-      headers: {
-        ...exchange.request.headers,
-        Authorization: 'Bearer ' + getAuthToken(),
-      },
-    };
+    exchange.request.headers.Authorization = 'Bearer ' + getAuthToken();
   },
 });
 
-// Add logging interceptor that executes before authentication
-fetcher.interceptors.request.use({
-  name: 'logging-interceptor',
-  order: 50, // Executes before auth-interceptor
-  intercept(exchange) {
-    console.log(
-      'Request sending:',
-      exchange.request.method,
-      exchange.request.url,
-    );
-  },
-});
-
-// Add response interceptor (e.g., for logging)
+// Add response interceptor for logging
 fetcher.interceptors.response.use({
-  name: 'response-logging-interceptor',
+  name: 'logging-interceptor',
   order: 10,
   intercept(exchange) {
-    console.log('Response received:', exchange.response.status);
+    console.log('Response:', exchange.response.status);
   },
 });
-
-// Remove interceptor by name
-fetcher.interceptors.request.eject('auth-interceptor');
 ```
 
-### Server-Sent Events
+#### Real-Time Streaming & LLM Support
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
@@ -202,34 +248,199 @@ import { EventStreamInterceptor } from '@ahoo-wang/fetcher-eventstream';
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 fetcher.interceptors.response.use(new EventStreamInterceptor());
 
-// Stream real-time events
+// Stream real-time events (generic SSE)
 const response = await fetcher.get('/events');
 if (response.eventStream) {
   for await (const event of response.eventStream()) {
-    console.log('Event received:', event);
+    console.log('Real-time event:', event);
+  }
+}
+
+// Stream LLM responses token by token
+const llmResponse = await fetcher.post('/chat/completions', {
+  body: {
+    model: 'gpt-3.5-turbo',
+    messages: [{ role: 'user', content: 'Hello!' }],
+    stream: true,
+  },
+});
+
+if (llmResponse.jsonEventStream) {
+  // Specialized for JSON SSE events from LLM APIs
+  for await (const event of llmResponse.jsonEventStream<ChatCompletionChunk>()) {
+    const content = event.data.choices[0]?.delta?.content || '';
+    process.stdout.write(content); // Real-time token output
   }
 }
 ```
 
-## 📚 Examples
+### ⚡ Quick Examples
 
-Explore comprehensive examples in the [examples](./examples) directory:
+#### Basic HTTP Client
 
-1. **Basic HTTP Operations** - GET, POST, PUT, DELETE requests
-2. **Parameter Handling** - Path parameters, query parameters, request bodies
-3. **Interceptor Patterns** - Authentication, logging, error handling
-4. **Timeout Management** - Request timeout configuration and handling
-5. **Event Streaming** - Real-time Server-Sent Events
-6. **Decorator Usage** - Clean API service definitions with TypeScript decorators
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
 
-## 🛠️ Development
+// Create a fetcher instance
+const fetcher = new Fetcher({
+  baseURL: 'https://api.example.com',
+  timeout: 5000,
+});
 
-### Prerequisites
+// GET request with path and query parameters
+const response = await fetcher.get('/users/{id}', {
+  urlParams: {
+    path: { id: 123 },
+    query: { include: 'profile' },
+  },
+});
+const userData = await response.json<User>();
+
+// POST request with automatic JSON conversion
+const createUserResponse = await fetcher.post('/users', {
+  body: { name: 'John Doe', email: 'john@example.com' },
+});
+```
+
+#### Declarative API Services
+
+```typescript
+import { NamedFetcher } from '@ahoo-wang/fetcher';
+import {
+  api,
+  get,
+  post,
+  path,
+  query,
+  body,
+} from '@ahoo-wang/fetcher-decorator';
+
+// Register a named fetcher
+const apiFetcher = new NamedFetcher('api', {
+  baseURL: 'https://api.example.com',
+});
+
+// Define service with decorators
+@api('/users', { fetcher: 'api' })
+class UserService {
+  @get('/')
+  getUsers(@query('limit') limit?: number): Promise<User[]> {
+    throw new Error('Auto-generated');
+  }
+
+  @post('/')
+  createUser(@body() user: User): Promise<User> {
+    throw new Error('Auto-generated');
+  }
+
+  @get('/{id}')
+  getUser(@path('id') id: number): Promise<User> {
+    throw new Error('Auto-generated');
+  }
+}
+
+// Use the service
+const userService = new UserService();
+const users = await userService.getUsers(10);
+```
+
+#### Powerful Interceptors
+
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+
+const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
+
+// Add request interceptor with ordering
+fetcher.interceptors.request.use({
+  name: 'auth-interceptor',
+  order: 100,
+  intercept(exchange) {
+    exchange.request.headers.Authorization = 'Bearer ' + getAuthToken();
+  },
+});
+
+// Add response interceptor for logging
+fetcher.interceptors.response.use({
+  name: 'logging-interceptor',
+  order: 10,
+  intercept(exchange) {
+    console.log('Response:', exchange.response.status);
+  },
+});
+```
+
+#### Real-Time Streaming & LLM Support
+
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+import { EventStreamInterceptor } from '@ahoo-wang/fetcher-eventstream';
+
+const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
+fetcher.interceptors.response.use(new EventStreamInterceptor());
+
+// Stream real-time events (generic SSE)
+const response = await fetcher.get('/events');
+if (response.eventStream) {
+  for await (const event of response.eventStream()) {
+    console.log('Real-time event:', event);
+  }
+}
+
+// Stream LLM responses token by token
+const llmResponse = await fetcher.post('/chat/completions', {
+  body: {
+    model: 'gpt-3.5-turbo',
+    messages: [{ role: 'user', content: 'Hello!' }],
+    stream: true,
+  },
+});
+
+if (llmResponse.jsonEventStream) {
+  // Specialized for JSON SSE events from LLM APIs
+  for await (const event of llmResponse.jsonEventStream<ChatCompletionChunk>()) {
+    const content = event.data.choices[0]?.delta?.content || '';
+    process.stdout.write(content); // Real-time token output
+  }
+}
+```
+
+## 🎯 Real-World Examples
+
+Dive into practical implementations in our [examples](./examples) directory:
+
+### 🌐 HTTP Operations
+
+- **CRUD Operations** - Complete GET, POST, PUT, PATCH, DELETE implementations
+- **Parameter Handling** - Advanced path, query, and body parameter management
+- **Error Handling** - Comprehensive error handling patterns
+
+### 🔧 Advanced Patterns
+
+- **Authentication Flows** - Token-based auth, refresh tokens, session management
+- **Interceptor Chains** - Complex middleware patterns with ordered execution
+- **Timeout Strategies** - Adaptive timeout configurations
+
+### 📡 Real-Time Features
+
+- **Server-Sent Events** - Real-time notifications and updates
+- **Streaming Data** - Continuous data streams with automatic reconnection
+- **Event Filtering** - Selective event processing
+
+### 🎨 Decorator Patterns
+
+- **Service Abstractions** - Clean, maintainable API service layers
+- **Metadata Extensions** - Custom metadata for advanced use cases
+- **Type-Safe APIs** - Full TypeScript integration with automatic type inference
+
+## 🏗️ Development & Contributing
+
+### 🛠️ Prerequisites
 
 - Node.js >= 16
 - pnpm >= 8
 
-### Commands
+### 🚀 Development Commands
 
 ```bash
 # Install dependencies
@@ -238,7 +449,7 @@ pnpm install
 # Build all packages
 pnpm build
 
-# Run tests
+# Run tests with coverage
 pnpm test
 
 # Format code
@@ -246,22 +457,24 @@ pnpm format
 
 # Clean build artifacts
 pnpm clean
+
+# Run integration tests
+cd integration-test && pnpm test
 ```
 
-### Version Management
+### 📦 Version Management
 
-To update the version of all packages in the workspace at once, use the following command:
+Update all packages simultaneously:
 
 ```bash
 pnpm update-version <new-version>
 ```
 
-This will update the version field in all `package.json` files across the monorepo, including the root package and all
-workspace packages.
+This updates the version field in all `package.json` files across the monorepo.
 
-## 🤝 Contributing
+### 🤝 Contributing
 
-Contributions are welcome! Please see the [contributing guide](./CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [contributing guide](./CONTRIBUTING.md) for details:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
@@ -269,12 +482,23 @@ Contributions are welcome! Please see the [contributing guide](./CONTRIBUTING.md
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a pull request
 
+### 🧪 Quality Assurance
+
+- **Code Coverage**: Maintained above 95% across all packages
+- **TypeScript**: Strict type checking enabled
+- **Linting**: ESLint with Prettier for consistent code style
+- **Testing**: Comprehensive unit and integration tests
+
 ## 📄 License
 
 This project is licensed under the [Apache-2.0 License](./LICENSE).
 
 ---
 
-<p align="center">
-  Built with ❤️ by <a href="https://github.com/Ahoo-Wang">Ahoo-Wang</a>
-</p>
+<div align="center">
+
+**Built with ❤️ by [Ahoo-Wang](https://github.com/Ahoo-Wang)**
+
+[![GitHub](https://img.shields.io/github/stars/Ahoo-Wang/fetcher?style=social)](https://github.com/Ahoo-Wang/fetcher)
+
+</div>
