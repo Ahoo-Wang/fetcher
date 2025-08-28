@@ -1,8 +1,8 @@
 {
-  "name": "@ahoo-wang/fetcher-examples",
+  "name": "@ahoo-wang/fetcher-integration-test",
   "version": "0.11.1",
   "private": true,
-  "description": "Examples for Fetcher HTTP client library",
+  "description": "Integration Test Fetcher",
   "keywords": [
     "fetcher",
     "http",
