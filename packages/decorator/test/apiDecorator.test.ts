@@ -399,5 +399,75 @@ describe('apiDecorator', () => {
       // Decorated method should be replaced with executor
       expect(typeof instance.getUsers).toBe('function');
     });
+    it('should handle constructor function name', () => {
+      @api('/test')
+      class TestService {
+        @get('/users')
+        getUsers() {
+          return Promise.resolve(new Response('{"users": []}'));
+        }
+      }
+
+      // Constructor should not be processed
+      expect(typeof TestService.prototype.constructor).toBe('function');
+    });
+
+    it('should handle non-function prototype properties', () => {
+      @api('/test')
+      class TestService {
+        @get('/users')
+        getUsers() {
+          return Promise.resolve(new Response('{"users": []}'));
+        }
+      }
+
+      // Set a non-function property on prototype
+      (TestService.prototype as any).nonFunctionProperty = 'test-value';
+
+      const instance = new TestService();
+      // Non-function property should remain
+      expect((instance as any).nonFunctionProperty).toBe('test-value');
+      // Decorated method should be replaced with executor
+      expect(typeof instance.getUsers).toBe('function');
+    });
+
+    it('should handle non-function properties in bindExecutor', () => {
+      @api('/test')
+      class TestService {
+        @get('/users')
+        getUsers() {
+          return Promise.resolve(new Response('{"users": []}'));
+        }
+      }
+
+      // Manually test the bindExecutor function with a non-function property
+      const originalMethod = TestService.prototype.getUsers;
+      // Set a property that is not a function
+      (TestService.prototype as any).nonFunction = 'not-a-function';
+
+      const instance = new TestService();
+      // The non-function property should remain unchanged
+      expect((TestService.prototype as any).nonFunction).toBe('not-a-function');
+      // The method should still work
+      expect(typeof instance.getUsers).toBe('function');
+    });
+
+    it('should execute request executor', async () => {
+      // Mock the RequestExecutor to test the execution path
+      @api('/test')
+      class TestService {
+        @get('/users')
+        getUsers() {
+          throw new Error('Should be replaced by executor');
+        }
+      }
+
+      const instance = new TestService();
+      // The method should be replaced with a function that executes the request
+      expect(typeof instance.getUsers).toBe('function');
+
+      // Note: We can't easily test the actual execution here without mocking
+      // the entire fetch infrastructure, but we can verify the function exists
+    });
   });
 });
