@@ -23,7 +23,6 @@ import {
   RequestHeaders,
   RequestHeadersCapable,
 } from './fetchRequest';
-import { mergeRecords } from './utils';
 import { InterceptorManager } from './interceptorManager';
 
 /**
