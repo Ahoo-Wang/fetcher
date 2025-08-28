@@ -13,7 +13,7 @@
 ## 🌟 特性
 
 - **📡 事件流转换**：将 `text/event-stream` 响应转换为 `ServerSentEvent` 对象的异步生成器
-- **🔌 拦截器集成**：自动为 `text/event-stream` 内容类型的响应添加 `eventStream()` 方法
+- **🔌 拦截器集成**：自动为 `text/event-stream` 内容类型的响应添加 `eventStream()` 和 `jsonEventStream()` 方法
 - **📋 SSE 解析**：根据规范解析服务器发送事件，包括数据、事件、ID 和重试字段
 - **🔄 流支持**：正确处理分块数据和多行事件
 - **💬 注释处理**：正确忽略注释行（以 `:` 开头的行）
@@ -55,6 +55,14 @@ if (response.eventStream) {
     console.log('收到事件:', event);
   }
 }
+
+// 使用 jsonEventStream 方法处理 JSON 数据
+const jsonResponse = await fetcher.get('/json-events');
+if (response.jsonEventStream) {
+  for await (const event of response.jsonEventStream<MyDataType>()) {
+    console.log('收到 JSON 事件:', event.data);
+  }
+}
 ```
 
 ### 手动转换
@@ -89,6 +97,46 @@ try {
 
 ```typescript
 fetcher.interceptors.response.use(new EventStreamInterceptor());
+```
+
+### toJsonServerSentEventStream
+
+将 ServerSentEventStream 转换为 JsonServerSentEventStream，用于处理带有 JSON 数据的服务器发送事件。
+
+#### 签名
+
+```typescript
+function toJsonServerSentEventStream<DATA>(
+  serverSentEventStream: ServerSentEventStream,
+): JsonServerSentEventStream<DATA>;
+```
+
+#### 参数
+
+- `serverSentEventStream`：要转换的 ServerSentEventStream
+
+#### 返回
+
+- `JsonServerSentEventStream<DATA>`：带有 JSON 数据的 ServerSentEvent 对象的可读流
+
+### JsonServerSentEvent
+
+定义带有 JSON 数据的服务器发送事件结构的接口。
+
+```typescript
+interface JsonServerSentEvent<DATA> extends Omit<ServerSentEvent, 'data'> {
+  data: DATA; // 作为解析 JSON 的事件数据
+}
+```
+
+### JsonServerSentEventStream
+
+带有 JSON 数据的 ServerSentEvent 对象的可读流的类型别名。
+
+```typescript
+type JsonServerSentEventStream<DATA> = ReadableStream<
+  JsonServerSentEvent<DATA>
+>;
 ```
 
 ### toServerSentEventStream
