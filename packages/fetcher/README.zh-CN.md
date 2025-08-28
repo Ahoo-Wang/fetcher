@@ -95,14 +95,22 @@ try {
 }
 ```
 
-### 默认 Fetcher 用法
+### 真实世界示例：Typicode API 集成
+
+以下示例展示了如何与 JSONPlaceholder API 集成，类似于 Fetcher
+项目中的集成测试。您可以在 [integration-test/src/fetcher/typicodeFetcher.ts](../../integration-test/src/fetcher/typicodeFetcher.ts)
+中找到完整实现。
 
 ```typescript
-import { fetcher } from '@ahoo-wang/fetcher';
+import { NamedFetcher } from '@ahoo-wang/fetcher';
+import { cosecRequestInterceptor, cosecResponseInterceptor } from '../cosec';
 
-// 直接使用默认 fetcher
-const response = await fetcher.get('/users');
-const data = await response.json<User>();
+export const typicodeFetcher = new NamedFetcher('typicode', {
+  baseURL: 'https://jsonplaceholder.typicode.com',
+});
+
+typicodeFetcher.interceptors.request.use(cosecRequestInterceptor);
+typicodeFetcher.interceptors.response.use(cosecResponseInterceptor);
 ```
 
 ## 🔗 拦截器系统
