@@ -13,3 +13,4 @@
 
 export * from './typicodePostService';
 export * from './typicodeUserService';
+export * from './resultExtractorService';
