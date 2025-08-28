@@ -27,7 +27,7 @@ describe('FunctionMetadata', () => {
       'testFunc',
       { basePath: '/api' },
       { method: HttpMethod.GET, path: '/users' },
-      [],
+      new Map(),
     );
 
     const path = metadata.resolvePath();
@@ -39,7 +39,7 @@ describe('FunctionMetadata', () => {
       'testFunc',
       { timeout: 5000 },
       { method: HttpMethod.GET },
-      [],
+      new Map(),
     );
 
     const timeout = metadata.resolveTimeout();
@@ -51,13 +51,16 @@ describe('FunctionMetadata', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.PATH,
-          name: 'id',
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const request = metadata.resolveRequest([123]);
@@ -69,13 +72,16 @@ describe('FunctionMetadata', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.QUERY,
-          name: 'limit',
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.QUERY,
+            name: 'limit',
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const request = metadata.resolveRequest([10]);
@@ -87,13 +93,16 @@ describe('FunctionMetadata', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.HEADER,
-          name: 'Authorization',
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.HEADER,
+            name: 'Authorization',
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const request = metadata.resolveRequest(['Bearer token']);
@@ -105,12 +114,15 @@ describe('FunctionMetadata', () => {
       'testFunc',
       {},
       { method: HttpMethod.POST },
-      [
-        {
-          type: ParameterType.BODY,
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.BODY,
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const requestBody = { name: 'John', age: 30 };
@@ -123,13 +135,16 @@ describe('FunctionMetadata', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.PATH,
-          name: 'id',
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const request = metadata.resolveRequest([123]);
@@ -147,7 +162,7 @@ describe('FunctionMetadata', () => {
       'testFunc',
       { fetcher: 'test' },
       { method: HttpMethod.GET },
-      [],
+      new Map(),
     );
 
     const fetcher = metadata.fetcher;

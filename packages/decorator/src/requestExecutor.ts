@@ -52,7 +52,15 @@ export class FunctionMetadata implements NamedCapable {
   endpoint: EndpointMetadata;
 
   /**
-   * Parameter metadata for all decorated parameters.
+   * Metadata for method parameters.
+   *
+   * Defines the metadata stored for each parameter decorated with @path, @query,
+   * @header, or @body decorators. Stored as a Map keyed by parameter index.
+   *
+   * @remarks
+   * The metadata is stored as a Map<number, ParameterMetadata> where the key is
+   * the parameter index and the value is the parameter metadata. This ensures
+   * correct parameter ordering regardless of decorator application order.
    */
   parameters: Map<number, ParameterMetadata>;
 
