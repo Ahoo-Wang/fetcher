@@ -1,13 +1,17 @@
 {
   "name": "@ahoo-wang/fetcher-cosec",
   "version": "1.0.0",
-  "description": "CoSec authentication integration for Fetcher HTTP client",
+  "description": "CoSec authentication integration for Fetcher HTTP client with enterprise-grade security features. Provides automatic token management, device ID persistence, and request tracking.",
   "keywords": [
     "fetch",
     "http",
     "client",
     "cosec",
-    "authentication"
+    "authentication",
+    "security",
+    "enterprise",
+    "token-management",
+    "device-id"
   ],
   "author": "Ahoo-Wang",
   "license": "Apache-2.0",

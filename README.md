@@ -449,8 +449,8 @@ pnpm install
 # Build all packages
 pnpm build
 
-# Run tests with coverage
-pnpm test
+# Run unit tests with coverage
+pnpm test:unit
 
 # Format code
 pnpm format
@@ -459,7 +459,7 @@ pnpm format
 pnpm clean
 
 # Run integration tests
-cd integration-test && pnpm test
+#pnpm test:it
 ```
 
 ### 📦 Version Management
