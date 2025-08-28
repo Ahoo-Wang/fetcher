@@ -51,4 +51,9 @@ if [ -f "examples/package.json" ]; then
   node -e "$UPDATE_SCRIPT" examples/package.json "$VERSION"
 fi
 
+if [ -f "integration-test/package.json" ]; then
+  echo "Updating integration-test/package.json..."
+  node -e "$UPDATE_SCRIPT" integration-test/package.json "$VERSION"
+fi
+
 echo "All packages updated to version $VERSION"
