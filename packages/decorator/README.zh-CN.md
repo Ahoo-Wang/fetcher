@@ -349,6 +349,37 @@ class UserService {
 }
 ```
 
+### Fetcher 解析优先级
+
+用于发起 HTTP 请求的 fetcher 通过以下优先级顺序确定：
+
+1. **服务实例 Fetcher 属性**：服务实例上的 `fetcher` 属性具有最高优先级
+2. **端点级别 Fetcher**：在端点元数据中指定的 fetcher（`@get('/path', { fetcher: 'name' })`）
+3. **类级别 Fetcher**：在类元数据中指定的 fetcher（`@api('/base', { fetcher: 'name' })`）
+4. **默认 Fetcher**：如果以上都没有指定，则回退到默认 fetcher
+
+```typescript
+// 展示 fetcher 解析优先级的示例
+const customFetcher = new Fetcher({ baseURL: 'https://custom-api.com' });
+
+@api('/users', { fetcher: 'class-level-fetcher' })
+class UserService {
+  @get('/{id}', { fetcher: 'endpoint-level-fetcher' })
+  getUser(@path() id: number): Promise<User> {
+    throw new Error('实现将自动生成');
+  }
+}
+
+// 带有 fetcher 属性的服务实例（最高优先级）
+const userService = new UserService();
+userService.fetcher = customFetcher; // 将使用此 fetcher
+
+// 如果实例上没有设置 fetcher 属性，则会使用：
+// 1. 'endpoint-level-fetcher'（来自 @get 装饰器）
+// 2. 'class-level-fetcher'（来自 @api 装饰器）
+// 3. 默认 fetcher（如果以上都没有指定）
+```
+
 ### 结果提取器
 
 结果提取器用于处理和提取应用程序中不同类型响应或结果的数据。
