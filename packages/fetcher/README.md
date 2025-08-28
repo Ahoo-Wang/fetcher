@@ -8,7 +8,7 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-A modern, ultra-lightweight HTTP client with built-in path parameters, query parameters, and Axios-like API.
+The lightweight core that powers the entire Fetcher ecosystem. Ultra-lightweight foundation with Axios-like API.
 
 ## 🌟 Features
 

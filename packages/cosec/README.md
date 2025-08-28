@@ -8,11 +8,7 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-Support for CoSec authentication in Fetcher HTTP client.
-
-[CoSec](https://github.com/Ahoo-Wang/CoSec) is a comprehensive authentication and authorization framework.
-
-This package provides integration between the Fetcher HTTP client and the CoSec authentication framework.
+Secure your applications with integrated authentication using the [CoSec](https://github.com/Ahoo-Wang/CoSec) framework.
 
 ## 🌟 Features
 
