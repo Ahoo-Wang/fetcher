@@ -12,7 +12,11 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { DEFAULT_COSEC_DEVICE_ID_KEY, DeviceIdStorage, InMemoryStorage, } from '../src';
+import {
+  DEFAULT_COSEC_DEVICE_ID_KEY,
+  DeviceIdStorage,
+  InMemoryStorage,
+} from '../src';
 
 describe('deviceIdStorage.ts', () => {
   describe('DeviceIdStorage', () => {

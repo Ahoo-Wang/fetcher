@@ -12,7 +12,13 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { ExchangeError, Fetcher, FetchExchange, Interceptor, InterceptorManager, } from '../src';
+import {
+  ExchangeError,
+  Fetcher,
+  FetchExchange,
+  Interceptor,
+  InterceptorManager,
+} from '../src';
 
 describe('InterceptorManager', () => {
   const mockFetcher = {} as Fetcher;
@@ -180,5 +186,4 @@ describe('ExchangeError', () => {
       'Request to https://api.example.com/test failed during exchange',
     );
   });
-
 });

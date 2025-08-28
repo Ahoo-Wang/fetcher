@@ -12,7 +12,13 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { DEFAULT_OPTIONS, Fetcher, FetchError, FetchRequest, HttpMethod, } from '../src';
+import {
+  DEFAULT_OPTIONS,
+  Fetcher,
+  FetchError,
+  FetchRequest,
+  HttpMethod,
+} from '../src';
 
 describe('Fetcher', () => {
   it('should create Fetcher with default options', () => {

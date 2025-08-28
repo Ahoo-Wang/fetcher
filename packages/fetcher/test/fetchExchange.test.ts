@@ -85,6 +85,4 @@ describe('FetchExchange', () => {
       exchange.requiredResponse;
     }).toThrowError(ExchangeError);
   });
-
 });
-

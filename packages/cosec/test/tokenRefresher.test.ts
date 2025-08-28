@@ -12,7 +12,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { AccessToken, CompositeToken, RefreshToken, TokenRefresher, } from '../src';
+import {
+  AccessToken,
+  CompositeToken,
+  RefreshToken,
+  TokenRefresher,
+} from '../src';
 
 describe('tokenRefresher.ts', () => {
   describe('AccessToken', () => {
