@@ -14,11 +14,13 @@
 import { ServerSentEvent } from './serverSentEventTransformStream';
 import { ServerSentEventStream } from './eventStreamConverter';
 
-export interface JsonServerSentEvent<DATA> extends Omit<ServerSentEvent, 'data'> {
+export interface JsonServerSentEvent<DATA>
+  extends Omit<ServerSentEvent, 'data'> {
   data: DATA;
 }
 
-export class JsonServerSentEventTransform<DATA> implements Transformer<ServerSentEvent, JsonServerSentEvent<DATA>> {
+export class JsonServerSentEventTransform<DATA>
+  implements Transformer<ServerSentEvent, JsonServerSentEvent<DATA>> {
   transform(
     chunk: ServerSentEvent,
     controller: TransformStreamDefaultController<JsonServerSentEvent<DATA>>,
@@ -33,16 +35,23 @@ export class JsonServerSentEventTransform<DATA> implements Transformer<ServerSen
   }
 }
 
-export class JsonServerSentEventTransformStream<DATA> extends TransformStream<ServerSentEvent, JsonServerSentEvent<DATA>> {
+export class JsonServerSentEventTransformStream<DATA> extends TransformStream<
+  ServerSentEvent,
+  JsonServerSentEvent<DATA>
+> {
   constructor() {
     super(new JsonServerSentEventTransform());
   }
 }
 
-export type JsonServerSentEventStream<DATA> = ReadableStream<JsonServerSentEvent<DATA>>;
+export type JsonServerSentEventStream<DATA> = ReadableStream<
+  JsonServerSentEvent<DATA>
+>;
 
 export function toJsonServerSentEventStream<DATA>(
   serverSentEventStream: ServerSentEventStream,
 ): JsonServerSentEventStream<DATA> {
-  return serverSentEventStream.pipeThrough(new JsonServerSentEventTransformStream<DATA>());
+  return serverSentEventStream.pipeThrough(
+    new JsonServerSentEventTransformStream<DATA>(),
+  );
 }

@@ -12,7 +12,12 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { CompositeToken, DEFAULT_COSEC_TOKEN_KEY, InMemoryStorage, TokenStorage, } from '../src';
+import {
+  CompositeToken,
+  DEFAULT_COSEC_TOKEN_KEY,
+  InMemoryStorage,
+  TokenStorage,
+} from '../src';
 
 describe('tokenStorage.ts', () => {
   describe('TokenStorage', () => {

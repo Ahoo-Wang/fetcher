@@ -12,7 +12,13 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FETCH_INTERCEPTOR_NAME, FETCH_INTERCEPTOR_ORDER, Fetcher, FetchExchange, FetchInterceptor, } from '../src';
+import {
+  FETCH_INTERCEPTOR_NAME,
+  FETCH_INTERCEPTOR_ORDER,
+  Fetcher,
+  FetchExchange,
+  FetchInterceptor,
+} from '../src';
 
 describe('FetchInterceptor', () => {
   it('should have correct name and order', () => {

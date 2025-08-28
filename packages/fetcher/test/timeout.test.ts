@@ -12,7 +12,12 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FetchRequest, FetchTimeoutError, resolveTimeout, timeoutFetch, } from '../src';
+import {
+  FetchRequest,
+  FetchTimeoutError,
+  resolveTimeout,
+  timeoutFetch,
+} from '../src';
 
 describe('FetchTimeoutError', () => {
   it('should create FetchTimeoutError with correct message', () => {

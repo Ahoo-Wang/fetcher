@@ -14,7 +14,6 @@
 import { FetchRequest } from './fetchRequest';
 import { FetcherError } from './fetcherError';
 
-
 /**
  * Exception class thrown when an HTTP request times out.
  *

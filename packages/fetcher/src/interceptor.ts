@@ -264,7 +264,6 @@ export class InterceptorRegistry implements Interceptor {
     this.sortedInterceptors = [];
   }
 
-
   /**
    * Executes all managed interceptors on the given exchange object.
    *

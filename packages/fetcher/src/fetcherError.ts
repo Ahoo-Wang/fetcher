@@ -57,4 +57,3 @@ export class FetcherError extends Error {
     Object.setPrototypeOf(this, FetcherError.prototype);
   }
 }
-

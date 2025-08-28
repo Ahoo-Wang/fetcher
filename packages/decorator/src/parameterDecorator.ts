@@ -142,7 +142,8 @@ export function parameter(type: ParameterType, name: string = '') {
     );
 
     const existingParameters: Map<number, ParameterMetadata> =
-      Reflect.getMetadata(PARAMETER_METADATA_KEY, target, propertyKey) || new Map();
+      Reflect.getMetadata(PARAMETER_METADATA_KEY, target, propertyKey) ||
+      new Map();
     const parameterMetadata: ParameterMetadata = {
       type: type,
       name: paramName,

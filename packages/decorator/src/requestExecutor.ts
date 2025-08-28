@@ -85,7 +85,6 @@ export class FunctionMetadata implements NamedCapable {
     this.parameters = parameters;
   }
 
-
   /**
    * Gets the fetcher instance to use for this function.
    *
@@ -280,7 +279,11 @@ export class FunctionMetadata implements NamedCapable {
   }
 
   resolveResultExtractor(): ResultExtractor {
-    return this.endpoint.resultExtractor || this.api.resultExtractor || ResultExtractors.DEFAULT;
+    return (
+      this.endpoint.resultExtractor ||
+      this.api.resultExtractor ||
+      ResultExtractors.DEFAULT
+    );
   }
 }
 
@@ -312,7 +315,9 @@ export class RequestExecutor {
    * @param args - The runtime arguments passed to the method
    * @returns A Promise that resolves to the Response
    */
-  async execute(args: any[]): Promise<FetchExchange | Response | any | ServerSentEventStream> {
+  async execute(
+    args: any[],
+  ): Promise<FetchExchange | Response | any | ServerSentEventStream> {
     const path = this.metadata.resolvePath();
     const requestInit = this.metadata.resolveRequest(args);
     const request: FetchRequest = {

@@ -12,7 +12,12 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { Fetcher, FetchExchange, Interceptor, InterceptorRegistry, } from '../src';
+import {
+  Fetcher,
+  FetchExchange,
+  Interceptor,
+  InterceptorRegistry,
+} from '../src';
 
 describe('Interceptor', () => {
   it('should define Interceptor interface', () => {

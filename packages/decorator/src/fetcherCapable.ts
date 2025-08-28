@@ -40,5 +40,7 @@ export function getFetcher(fetcher?: string | Fetcher): Fetcher | undefined {
 
   // Return the fetcher directly if it's already a Fetcher instance,
   // otherwise resolve it through the fetcher registrar
-  return fetcher instanceof Fetcher ? fetcher : fetcherRegistrar.requiredGet(fetcher);
+  return fetcher instanceof Fetcher
+    ? fetcher
+    : fetcherRegistrar.requiredGet(fetcher);
 }

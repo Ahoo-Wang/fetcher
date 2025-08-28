@@ -35,8 +35,12 @@ export class ExchangeError extends FetcherError {
    * @param exchange - The FetchExchange object containing request/response/error information.
    * @param errorMsg - An optional error message.
    */
-  constructor(public readonly exchange: FetchExchange, errorMsg?: string) {
-    const errorMessage = errorMsg ||
+  constructor(
+    public readonly exchange: FetchExchange,
+    errorMsg?: string,
+  ) {
+    const errorMessage =
+      errorMsg ||
       exchange.error?.message ||
       exchange.response?.statusText ||
       `Request to ${exchange.request.url} failed during exchange`;
