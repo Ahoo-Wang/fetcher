@@ -88,6 +88,9 @@ importers:
       vite:
         specifier: ^7.1.3
         version: 7.1.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.4
 
   packages/cosec:
     dependencies:
