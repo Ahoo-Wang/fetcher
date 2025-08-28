@@ -63,6 +63,24 @@ const createUserResponse = await fetcher.post('/users', {
 });
 ```
 
+### 集成测试示例：Typicode API 集成
+
+以下示例展示了如何与 JSONPlaceholder API 集成，类似于 Fetcher
+项目中的集成测试。您可以在 [integration-test/src/fetcher/typicodeFetcher.ts](../../integration-test/src/fetcher/typicodeFetcher.ts)
+中找到完整实现。
+
+```typescript
+import { NamedFetcher } from '@ahoo-wang/fetcher';
+import { cosecRequestInterceptor, cosecResponseInterceptor } from '../cosec';
+
+export const typicodeFetcher = new NamedFetcher('typicode', {
+  baseURL: 'https://jsonplaceholder.typicode.com',
+});
+
+typicodeFetcher.interceptors.request.use(cosecRequestInterceptor);
+typicodeFetcher.interceptors.response.use(cosecResponseInterceptor);
+```
+
 ### 命名 Fetcher 用法
 
 ```typescript
@@ -93,24 +111,6 @@ try {
 } catch (error) {
   console.error('未找到 Fetcher:', error.message);
 }
-```
-
-### 真实世界示例：Typicode API 集成
-
-以下示例展示了如何与 JSONPlaceholder API 集成，类似于 Fetcher
-项目中的集成测试。您可以在 [integration-test/src/fetcher/typicodeFetcher.ts](../../integration-test/src/fetcher/typicodeFetcher.ts)
-中找到完整实现。
-
-```typescript
-import { NamedFetcher } from '@ahoo-wang/fetcher';
-import { cosecRequestInterceptor, cosecResponseInterceptor } from '../cosec';
-
-export const typicodeFetcher = new NamedFetcher('typicode', {
-  baseURL: 'https://jsonplaceholder.typicode.com',
-});
-
-typicodeFetcher.interceptors.request.use(cosecRequestInterceptor);
-typicodeFetcher.interceptors.response.use(cosecResponseInterceptor);
 ```
 
 ## 🔗 拦截器系统

@@ -36,44 +36,7 @@ pnpm add @ahoo-wang/fetcher-decorator
 yarn add @ahoo-wang/fetcher-decorator
 ```
 
-### Basic Usage
-
-```typescript
-import { NamedFetcher, fetcherRegistrar } from '@ahoo-wang/fetcher';
-import {
-  api,
-  get,
-  post,
-  path,
-  query,
-  body,
-} from '@ahoo-wang/fetcher-decorator';
-
-// Create and register a fetcher
-const userFetcher = new NamedFetcher('user', {
-  baseURL: 'https://api.user-service.com',
-});
-
-// Define your service class with decorators
-@api('/users', { fetcher: 'user', timeout: 10000 })
-class UserService {
-  @post('/', { timeout: 5000 })
-  createUser(@body() user: User): Promise<User> {
-    throw new Error('Implementation will be generated automatically.');
-  }
-
-  @get('/{id}')
-  getUser(@path() id: number, @query() include: string): Promise<User> {
-    throw new Error('Implementation will be generated automatically.');
-  }
-}
-
-// Use the service
-const userService = new UserService();
-const response = await userService.createUser({ name: 'John' });
-```
-
-### Real-world Example: Typicode Post Service
+### Integration Test Example: Typicode Post Service
 
 The following example shows how to define a service for the JSONPlaceholder API, similar to the integration test in the
 Fetcher project. You can find the complete implementation
@@ -143,6 +106,43 @@ export class TypicodePostService {
 }
 
 export const typicodePostService = new TypicodePostService();
+```
+
+### Basic Usage
+
+```typescript
+import { NamedFetcher, fetcherRegistrar } from '@ahoo-wang/fetcher';
+import {
+  api,
+  get,
+  post,
+  path,
+  query,
+  body,
+} from '@ahoo-wang/fetcher-decorator';
+
+// Create and register a fetcher
+const userFetcher = new NamedFetcher('user', {
+  baseURL: 'https://api.user-service.com',
+});
+
+// Define your service class with decorators
+@api('/users', { fetcher: 'user', timeout: 10000 })
+class UserService {
+  @post('/', { timeout: 5000 })
+  createUser(@body() user: User): Promise<User> {
+    throw new Error('Implementation will be generated automatically.');
+  }
+
+  @get('/{id}')
+  getUser(@path() id: number, @query() include: string): Promise<User> {
+    throw new Error('Implementation will be generated automatically.');
+  }
+}
+
+// Use the service
+const userService = new UserService();
+const response = await userService.createUser({ name: 'John' });
 ```
 
 ## 📚 API Reference
