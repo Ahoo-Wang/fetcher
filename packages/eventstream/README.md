@@ -13,7 +13,8 @@ Support for text/event-stream in Fetcher, enabling Server-Sent Events (SSE) func
 ## 🌟 Features
 
 - **📡 Event Stream Conversion**: Converts `text/event-stream` responses to async generators of `ServerSentEvent` objects
-- **🔌 Interceptor Integration**: Automatically adds `eventStream()` method to responses with `text/event-stream` content
+- **🔌 Interceptor Integration**: Automatically adds `eventStream()` and `jsonEventStream()` methods to responses with
+  `text/event-stream` content
   type
 - **📋 SSE Parsing**: Parses Server-Sent Events according to the specification, including data, event, id, and retry
   fields
@@ -57,6 +58,14 @@ if (response.eventStream) {
     console.log('Received event:', event);
   }
 }
+
+// Using the jsonEventStream method for JSON data
+const jsonResponse = await fetcher.get('/json-events');
+if (response.jsonEventStream) {
+  for await (const event of response.jsonEventStream<MyDataType>()) {
+    console.log('Received JSON event:', event.data);
+  }
+}
 ```
 
 ### Manual Conversion
@@ -92,6 +101,46 @@ type.
 
 ```typescript
 fetcher.interceptors.response.use(new EventStreamInterceptor());
+```
+
+### toJsonServerSentEventStream
+
+Converts a ServerSentEventStream to a JsonServerSentEventStream for consuming server-sent events with JSON data.
+
+#### Signature
+
+```typescript
+function toJsonServerSentEventStream<DATA>(
+  serverSentEventStream: ServerSentEventStream,
+): JsonServerSentEventStream<DATA>;
+```
+
+#### Parameters
+
+- `serverSentEventStream`: The ServerSentEventStream to convert
+
+#### Returns
+
+- `JsonServerSentEventStream<DATA>`: A readable stream of ServerSentEvent objects with JSON data
+
+### JsonServerSentEvent
+
+Interface defining the structure of a Server-Sent Event with JSON data.
+
+```typescript
+interface JsonServerSentEvent<DATA> extends Omit<ServerSentEvent, 'data'> {
+  data: DATA; // Event data as parsed JSON
+}
+```
+
+### JsonServerSentEventStream
+
+Type alias for a readable stream of ServerSentEvent objects with JSON data.
+
+```typescript
+type JsonServerSentEventStream<DATA> = ReadableStream<
+  JsonServerSentEvent<DATA>
+>;
 ```
 
 ### toServerSentEventStream
