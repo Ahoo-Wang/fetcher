@@ -101,6 +101,44 @@ fetcher.interceptors.response.use(
 );
 ```
 
+### Real-world Example: CoSec Integration
+
+The following example shows how to set up CoSec authentication, similar to the integration test in the Fetcher project.
+You can find the complete implementation
+in [integration-test/src/cosec/cosec.ts](../../integration-test/src/cosec/cosec.ts).
+
+```typescript
+import {
+  CompositeToken,
+  CoSecOptions,
+  CoSecRequestInterceptor,
+  CoSecResponseInterceptor,
+  DeviceIdStorage,
+  TokenRefresher,
+  TokenStorage,
+} from '@ahoo-wang/fetcher-cosec';
+
+export class MockTokenRefresher implements TokenRefresher {
+  refresh(_token: CompositeToken): Promise<CompositeToken> {
+    return Promise.reject('Token refresh failed');
+  }
+}
+
+const cosecOptions: CoSecOptions = {
+  appId: 'appId',
+  deviceIdStorage: new DeviceIdStorage(),
+  tokenStorage: new TokenStorage(),
+  tokenRefresher: new MockTokenRefresher(),
+};
+
+export const cosecRequestInterceptor = new CoSecRequestInterceptor(
+  cosecOptions,
+);
+export const cosecResponseInterceptor = new CoSecResponseInterceptor(
+  cosecOptions,
+);
+```
+
 ## 🔧 Configuration
 
 ### CoSecOptions Interface
