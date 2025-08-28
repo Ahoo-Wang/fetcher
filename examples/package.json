@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-examples",
-  "version": "0.11.2",
+  "version": "0.11.3",
   "private": true,
   "description": "Examples for Fetcher HTTP client library",
   "keywords": [
