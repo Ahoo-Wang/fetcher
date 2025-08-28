@@ -266,4 +266,32 @@ describe('FunctionMetadata - branch coverage', () => {
 
     expect(metadata3.resolveResultExtractor()).toBe(ResultExtractors.Json);
   });
+
+  it('should handle case when parameter metadata does not exist', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      new Map(), // Empty parameters map
+    );
+
+    // Should handle empty parameters without errors
+    const request = metadata.resolveRequest(['someValue']);
+    expect(request).toBeDefined();
+    expect(request.method).toBe(HttpMethod.GET);
+  });
+
+  it('should handle case when funParameter does not exist', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      new Map(), // Empty parameters map
+    );
+
+    // Should handle case where parameters.get returns undefined
+    const request = metadata.resolveRequest(['value1', 'value2']);
+    expect(request).toBeDefined();
+    expect(request.method).toBe(HttpMethod.GET);
+  });
 });
