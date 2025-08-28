@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { typicodeFetcher } from '../../src/fetcher/typicodeFetcher';
+import { typicodeFetcher } from '../../src';
 
 describe('typicodeFetcher Integration Test', () => {
   it('should fetch posts from typicode API', async () => {
@@ -81,7 +81,7 @@ describe('typicodeFetcher Integration Test', () => {
     };
 
     const response = await typicodeFetcher.put(`/posts/${postId}`, {
-      body: JSON.stringify(updatedPost),
+      body: updatedPost,
     });
     expect(response).toBeDefined();
     const post = await response.json();
@@ -98,7 +98,7 @@ describe('typicodeFetcher Integration Test', () => {
     };
 
     const response = await typicodeFetcher.patch(`/posts/${postId}`, {
-      body: JSON.stringify(patchedPost),
+      body: patchedPost,
     });
     expect(response).toBeDefined();
     const post = await response.json();
