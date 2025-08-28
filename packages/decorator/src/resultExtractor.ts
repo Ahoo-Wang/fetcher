@@ -12,11 +12,7 @@
  */
 
 import { ExchangeError, FetchExchange } from '@ahoo-wang/fetcher';
-import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
-import {
-  CommandResultEventStream,
-  toCommandResultEventStream,
-} from '@ahoo-wang/fetcher-wow';
+import { JsonServerSentEventStream, ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 
 /**
  * Result extractor interface
@@ -32,7 +28,7 @@ export interface ResultExtractor {
     | Response
     | Promise<any>
     | ServerSentEventStream
-    | CommandResultEventStream;
+    | JsonServerSentEventStream<any>;
 }
 
 /**
@@ -94,7 +90,7 @@ export const TextResultExtractor: ResultExtractor = (
  * @returns Readable stream object of server-sent event stream
  * @throws ExchangeError exception when server does not support ServerSentEventStream
  */
-export const ServerSentEventStreamResultExtractor: ResultExtractor = (
+export const EventStreamResultExtractor: ResultExtractor = (
   exchange: FetchExchange,
 ) => {
   // Check if response supports event stream, throw exception if not supported
@@ -105,30 +101,17 @@ export const ServerSentEventStreamResultExtractor: ResultExtractor = (
   return exchange.requiredResponse.eventStream()!;
 };
 
-/**
- * CommandResultEventStream result extractor, used to extract command result event stream from FetchExchange.
- * This function transforms a server-sent event stream into a command result event stream.
- *
- * 提取命令结果事件流，用于从FetchExchange中提取命令结果事件流。
- * 该函数将服务器发送事件流转换为命令结果事件流。
- *
- * @param exchange - The exchange object containing the server-sent event stream data
- *                  包含服务器发送事件流数据的交换对象
- * @returns A command result event stream derived from the server-sent event stream
- *          从服务器发送事件流派生的命令结果事件流
- * @throws ExchangeError exception when server does not support ServerSentEventStream
- *                       当服务器不支持ServerSentEventStream时抛出ExchangeError异常
- */
-export const CommandResultEventStreamResultExtractor: ResultExtractor =
-  exchange => {
-    // Extract the server-sent event stream from the exchange
-    const serverSentEventStream = ServerSentEventStreamResultExtractor(
-      exchange,
-    ) as ServerSentEventStream;
+export const JsonEventStreamResultExtractor: ResultExtractor = (
+  exchange: FetchExchange,
+) => {
+  // Check if response supports event stream, throw exception if not supported
+  if (!exchange.requiredResponse.jsonEventStream) {
+    throw new ExchangeError(exchange, 'JsonServerSentEventStream is not supported');
+  }
+  // Return the event stream
+  return exchange.requiredResponse.jsonEventStream()!;
+};
 
-    // Transform the server-sent event stream into a command result event stream
-    return toCommandResultEventStream(serverSentEventStream);
-  };
 
 /**
  * ResultExtractors is an object that maps result extractor names to their corresponding
@@ -140,15 +123,15 @@ export const CommandResultEventStreamResultExtractor: ResultExtractor =
  * - Response: Handles general response result extraction
  * - Json: Handles JSON format result extraction
  * - Text: Handles plain text result extraction
- * - ServerSentEventStream: Handles server-sent event stream result extraction
- * - CommandResultEventStream: Handles command result event stream result extraction
+ * - EventStream: Handles server-sent event stream result extraction
+ * - JsonEventStream:
  */
 export const ResultExtractors = {
   Exchange: ExchangeResultExtractor,
   Response: ResponseResultExtractor,
   Json: JsonResultExtractor,
   Text: TextResultExtractor,
-  ServerSentEventStream: ServerSentEventStreamResultExtractor,
-  CommandResultEventStream: CommandResultEventStreamResultExtractor,
+  EventStream: EventStreamResultExtractor,
+  JsonEventStream: JsonEventStreamResultExtractor,
   DEFAULT: JsonResultExtractor,
 };
