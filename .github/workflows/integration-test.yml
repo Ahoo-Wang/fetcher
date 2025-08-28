@@ -34,3 +34,7 @@ jobs:
 
       - name: Test
         run: pnpm test:it
+        env:
+          FETCHER_LLM_BASE_URL: ${{ secrets.FETCHER_LLM_BASE_URL }}
+          FETCHER_LLM_API_KEY: ${{ secrets.FETCHER_LLM_API_KEY }}
+          FETCHER_LLM_MODEL: ${{ secrets.FETCHER_LLM_MODEL }}
