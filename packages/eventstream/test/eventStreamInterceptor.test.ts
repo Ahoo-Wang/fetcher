@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   EVENT_STREAM_INTERCEPTOR_NAME,
   EVENT_STREAM_INTERCEPTOR_ORDER,
@@ -60,15 +60,18 @@ describe('eventStreamInterceptor.ts', () => {
       expect(true).toBe(true);
     });
 
-    it('should add eventStream method when content type is event stream', () => {
+    it('should add eventStream and jsonEventStream methods when content type is event stream', () => {
       const interceptor = new EventStreamInterceptor();
       const headers = new Headers();
       headers.set('content-type', 'text/event-stream');
 
+      // Create a mock response body that won't cause locking issues
       const response = {
         headers,
-        body: new ReadableStream(),
-      } as Response;
+        body: {
+          pipeThrough: vi.fn().mockReturnThis(),
+        },
+      } as unknown as Response;
 
       const exchange = {
         response,
@@ -79,9 +82,8 @@ describe('eventStreamInterceptor.ts', () => {
       // Verify that the eventStream method was added
       expect(typeof (response as any).eventStream).toBe('function');
 
-      // Verify that the eventStream method returns a ServerSentEventStream
-      const eventStream = (response as any).eventStream();
-      expect(eventStream).toBeInstanceOf(ReadableStream);
+      // Verify that the jsonEventStream method was added
+      expect(typeof (response as any).jsonEventStream).toBe('function');
     });
 
     it('should handle content type with charset', () => {
@@ -102,6 +104,9 @@ describe('eventStreamInterceptor.ts', () => {
 
       // Verify that the eventStream method was added
       expect(typeof (response as any).eventStream).toBe('function');
+
+      // Verify that the jsonEventStream method was added
+      expect(typeof (response as any).jsonEventStream).toBe('function');
     });
 
     it('should call toServerSentEventStream when eventStream method is invoked', () => {
@@ -126,6 +131,30 @@ describe('eventStreamInterceptor.ts', () => {
       // Call the eventStream method and verify it returns a ServerSentEventStream
       const eventStream = (response as any).eventStream();
       expect(eventStream).toBeInstanceOf(ReadableStream);
+    });
+
+    it('should call toJsonServerSentEventStream when jsonEventStream method is invoked', () => {
+      const interceptor = new EventStreamInterceptor();
+      const headers = new Headers();
+      headers.set('content-type', 'text/event-stream');
+
+      const response = {
+        headers,
+        body: new ReadableStream(),
+      } as Response;
+
+      const exchange = {
+        response,
+      } as FetchExchange;
+
+      interceptor.intercept(exchange);
+
+      // Verify that the jsonEventStream method was added
+      expect(typeof (response as any).jsonEventStream).toBe('function');
+
+      // Call the jsonEventStream method and verify it returns a JsonServerSentEventStream
+      const jsonEventStream = (response as any).jsonEventStream();
+      expect(jsonEventStream).toBeInstanceOf(ReadableStream);
     });
   });
 });
