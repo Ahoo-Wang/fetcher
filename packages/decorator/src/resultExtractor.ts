@@ -12,7 +12,10 @@
  */
 
 import { ExchangeError, FetchExchange } from '@ahoo-wang/fetcher';
-import { JsonServerSentEventStream, ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
+import {
+  JsonServerSentEventStream,
+  ServerSentEventStream,
+} from '@ahoo-wang/fetcher-eventstream';
 
 /**
  * Result extractor interface
@@ -101,17 +104,26 @@ export const EventStreamResultExtractor: ResultExtractor = (
   return exchange.requiredResponse.eventStream()!;
 };
 
+/**
+ * JsonServerSentEventStream result extractor, used to extract JSON server-sent event stream from FetchExchange
+ *
+ * @param exchange - FetchExchange object containing request and response information
+ * @returns Readable stream object of JSON server-sent event stream
+ * @throws ExchangeError exception when server does not support JsonServerSentEventStream
+ */
 export const JsonEventStreamResultExtractor: ResultExtractor = (
   exchange: FetchExchange,
 ) => {
   // Check if response supports event stream, throw exception if not supported
   if (!exchange.requiredResponse.jsonEventStream) {
-    throw new ExchangeError(exchange, 'JsonServerSentEventStream is not supported');
+    throw new ExchangeError(
+      exchange,
+      'JsonServerSentEventStream is not supported',
+    );
   }
   // Return the event stream
   return exchange.requiredResponse.jsonEventStream()!;
 };
-
 
 /**
  * ResultExtractors is an object that maps result extractor names to their corresponding
@@ -124,7 +136,7 @@ export const JsonEventStreamResultExtractor: ResultExtractor = (
  * - Json: Handles JSON format result extraction
  * - Text: Handles plain text result extraction
  * - EventStream: Handles server-sent event stream result extraction
- * - JsonEventStream:
+ * - JsonEventStream: Handles JSON server-sent event stream result extraction
  */
 export const ResultExtractors = {
   Exchange: ExchangeResultExtractor,
