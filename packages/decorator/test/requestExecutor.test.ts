@@ -11,15 +11,63 @@
  * limitations under the License.
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FunctionMetadata, ParameterType } from '../src';
 import { fetcherRegistrar, HttpMethod } from '@ahoo-wang/fetcher';
+import { RequestExecutor } from '../src/requestExecutor';
+import * as fetcherCapableModule from '../src/fetcherCapable';
 
 // Mock fetcher
-const mockFetch = vi.fn();
-const mockFetcher = {
-  fetch: mockFetch,
+const mockRequest = vi.fn();
+const mockFetcher: any = {
+  request: mockRequest,
 };
+
+describe('RequestExecutor', () => {
+  beforeEach(() => {
+    // Clear all mocks before each test
+    vi.clearAllMocks();
+
+    // Mock fetcher registrar
+    vi.spyOn(fetcherRegistrar, 'requiredGet').mockReturnValue(mockFetcher);
+
+    // Mock getFetcher function to return our mock fetcher
+    vi.spyOn(fetcherCapableModule, 'getFetcher').mockReturnValue(mockFetcher);
+  });
+
+  it('should execute request with target fetcher', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue({}),
+      text: vi.fn().mockResolvedValue(''),
+    } as any;
+
+    const mockExchange = {
+      request: {},
+      response: Promise.resolve(mockResponse),
+      requiredResponse: mockResponse,
+    };
+
+    mockRequest.mockResolvedValue(mockExchange);
+
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      { basePath: '' },
+      { method: HttpMethod.GET, path: '/api/users' },
+      new Map(),
+    );
+
+    const executor = new RequestExecutor(metadata);
+    const target = { fetcher: mockFetcher };
+    await executor.execute(target, []);
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/users',
+        method: 'GET',
+      }),
+    );
+  });
+});
 
 describe('FunctionMetadata', () => {
   it('should resolve path correctly', () => {

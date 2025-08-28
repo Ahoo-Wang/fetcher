@@ -28,7 +28,6 @@ import { ParameterMetadata, ParameterType } from './parameterDecorator';
 import { ResultExtractor, ResultExtractors } from './resultExtractor';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 import { getFetcher } from './fetcherCapable';
-import { an } from 'vitest/dist/chunks/reporters.d.BFLkQcL6';
 
 /**
  * Metadata container for a function with HTTP endpoint decorators.
@@ -288,6 +287,9 @@ export class FunctionMetadata implements NamedCapable {
   }
 }
 
+
+const TARGET_FETCHER_PROPERTY = 'fetcher';
+
 /**
  * Executor for HTTP requests based on decorated method metadata.
  *
@@ -318,7 +320,7 @@ export class RequestExecutor {
       return undefined;
     }
     // Extract the fetcher property from the target object
-    const fetcher = target['fetcher'];
+    const fetcher = target[TARGET_FETCHER_PROPERTY];
 
     // Validate that the fetcher is an instance of the Fetcher class
     if (fetcher instanceof Fetcher) {
@@ -328,7 +330,6 @@ export class RequestExecutor {
     // Return undefined if no valid fetcher instance is found
     return undefined;
   }
-
 
   /**
    * Executes the HTTP request.
@@ -344,7 +345,6 @@ export class RequestExecutor {
     target: any,
     args: any[],
   ): Promise<FetchExchange | Response | any | ServerSentEventStream> {
-    console.log(target);
     const path = this.metadata.resolvePath();
     const requestInit = this.metadata.resolveRequest(args);
     const request: FetchRequest = {
