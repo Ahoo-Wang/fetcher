@@ -12,6 +12,7 @@
  */
 
 import { ServerSentEventStream } from './eventStreamConverter';
+import { JsonServerSentEventStream } from './jsonServerSentEventTransformStream';
 
 declare global {
   interface Response {
@@ -24,6 +25,17 @@ declare global {
      * @returns A ReadableStream of ServerSentEvent objects
      */
     eventStream?(): ServerSentEventStream;
+
+    /**
+     * Returns a JsonServerSentEventStream for consuming server-sent events with JSON data.
+     *
+     * This method is added to Response objects by the EventStreamInterceptor
+     * when the response content type indicates a server-sent event stream.
+     *
+     * @template DATA - The type of the JSON data in the server-sent events
+     * @returns A ReadableStream of ServerSentEvent objects with JSON data
+     */
+    jsonEventStream?<DATA>(): JsonServerSentEventStream<DATA>;
   }
 
   interface ReadableStream<R = any> {

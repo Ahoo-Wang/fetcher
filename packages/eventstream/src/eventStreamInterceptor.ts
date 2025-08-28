@@ -18,6 +18,7 @@ import {
   FetchExchange,
   ResponseInterceptor,
 } from '@ahoo-wang/fetcher';
+import { toJsonServerSentEventStream } from './jsonServerSentEventTransformStream';
 
 /**
  * The name of the EventStreamInterceptor.
@@ -89,6 +90,7 @@ export class EventStreamInterceptor implements ResponseInterceptor {
     const contentType = response.headers.get(ContentTypeHeader);
     if (contentType?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
       response.eventStream = () => toServerSentEventStream(response);
+      response.jsonEventStream = () => toJsonServerSentEventStream(toServerSentEventStream(response));
     }
   }
 }
