@@ -16,7 +16,7 @@ import { api, get, PARAMETER_METADATA_KEY } from '../src';
 import 'reflect-metadata';
 
 describe('apiDecorator - branch coverage', () => {
-  it('should handle non-function properties', () => {
+  it('should handle various non-function properties and edge cases', () => {
     @api('/test')
     class TestService {
       static staticProperty = 'static';
@@ -28,13 +28,43 @@ describe('apiDecorator - branch coverage', () => {
       }
     }
 
+    // Add various non-function properties to test edge cases
+    (TestService.prototype as any).nonFunctionProp = 'not-a-function';
+    (TestService.prototype as any).numberValue = 42;
+    (TestService.prototype as any).nullValue = null;
+    (TestService.prototype as any).undefinedValue = undefined;
+
+    // Directly define non-function properties
+    Object.defineProperty(TestService.prototype, 'definedProp', {
+      value: 'defined-value',
+      writable: true,
+    });
+
     // Verify that static and instance properties are not affected
     expect(TestService.staticProperty).toBe('static');
     const instance = new TestService();
     expect(instance.instanceProperty).toBe('instance');
 
+    // Verify that all non-function properties remain
+    expect((instance as any).nonFunctionProp).toBe('not-a-function');
+    expect((instance as any).numberValue).toBe(42);
+    expect((instance as any).nullValue).toBeNull();
+    expect((instance as any).undefinedValue).toBeUndefined();
+    expect((instance as any).definedProp).toBe('defined-value');
+
     // Verify that the decorated method still works
     expect(typeof instance.getUsers).toBe('function');
+
+    // Test parameter metadata (should be undefined for this method since no parameters)
+    const parameterMetadata = Reflect.getMetadata(
+      PARAMETER_METADATA_KEY,
+      Object.getPrototypeOf(instance),
+      'getUsers',
+    );
+    expect(parameterMetadata).toBeUndefined();
+
+    // Constructor should not be processed
+    expect(typeof TestService.prototype.constructor).toBe('function');
   });
 
   it('should handle methods with no parameter metadata', () => {
