@@ -28,16 +28,22 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.PATH,
-          index: 0,
-        },
-        {
-          type: ParameterType.QUERY,
-          index: 1,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            index: 0,
+          },
+        ],
+        [
+          1,
+          {
+            type: ParameterType.QUERY,
+            index: 1,
+          },
+        ],
+      ]),
     );
 
     const request = metadata.resolveRequest(['pathValue', 'queryValue']);
@@ -52,7 +58,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       { fetcher: 'apiFetcher' },
       { method: HttpMethod.GET, fetcher: 'endpointFetcher' },
-      [],
+      new Map(),
     );
 
     expect(metadata1.fetcher).toBe(mockFetcher);
@@ -62,7 +68,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       { fetcher: 'apiFetcher' },
       { method: HttpMethod.GET },
-      [],
+      new Map(),
     );
 
     expect(metadata2.fetcher).toBe(mockFetcher);
@@ -72,7 +78,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [],
+      new Map(),
     );
 
     expect(metadata3.fetcher).toBeDefined();
@@ -84,7 +90,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       { basePath: '/api' },
       { method: HttpMethod.GET, path: '/users' },
-      [],
+      new Map(),
     );
 
     expect(metadata1.resolvePath()).toBe('/api/users');
@@ -94,7 +100,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       { basePath: '/api' },
       { method: HttpMethod.GET },
-      [],
+      new Map(),
     );
 
     expect(metadata2.resolvePath()).toBe('/api');
@@ -104,7 +110,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET, path: '/users' },
-      [],
+      new Map(),
     );
 
     expect(metadata3.resolvePath()).toBe('/users');
@@ -114,7 +120,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [],
+      new Map(),
     );
 
     expect(metadata4.resolvePath()).toBe('');
@@ -126,7 +132,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       { timeout: 1000 },
       { method: HttpMethod.GET, timeout: 2000 },
-      [],
+      new Map(),
     );
 
     expect(metadata1.resolveTimeout()).toBe(2000);
@@ -136,7 +142,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       { timeout: 1000 },
       { method: HttpMethod.GET },
-      [],
+      new Map(),
     );
 
     expect(metadata2.resolveTimeout()).toBe(1000);
@@ -146,7 +152,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [],
+      new Map(),
     );
 
     expect(metadata3.resolveTimeout()).toBeUndefined();
@@ -157,12 +163,15 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.PATH,
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const request = metadata.resolveRequest(['pathValue']);
@@ -174,12 +183,15 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.QUERY,
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.QUERY,
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const request = metadata.resolveRequest(['queryValue']);
@@ -191,13 +203,16 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [
-        {
-          type: ParameterType.HEADER,
-          name: 'Authorization',
-          index: 0,
-        },
-      ],
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.HEADER,
+            name: 'Authorization',
+            index: 0,
+          },
+        ],
+      ]),
     );
 
     const request = metadata.resolveRequest([undefined]);
@@ -209,7 +224,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [],
+      new Map(),
     );
 
     const abortController = new AbortController();
@@ -226,7 +241,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       { resultExtractor: ResultExtractors.Json },
       { method: HttpMethod.GET, resultExtractor: customExtractor },
-      [],
+      new Map(),
     );
 
     expect(metadata1.resolveResultExtractor()).toBe(customExtractor);
@@ -236,7 +251,7 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       { resultExtractor: ResultExtractors.Json },
       { method: HttpMethod.GET },
-      [],
+      new Map(),
     );
 
     expect(metadata2.resolveResultExtractor()).toBe(ResultExtractors.Json);
@@ -246,9 +261,37 @@ describe('FunctionMetadata - branch coverage', () => {
       'testFunc',
       {},
       { method: HttpMethod.GET },
-      [],
+      new Map(),
     );
 
     expect(metadata3.resolveResultExtractor()).toBe(ResultExtractors.Json);
+  });
+
+  it('should handle case when parameter metadata does not exist', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      new Map(), // Empty parameters map
+    );
+
+    // Should handle empty parameters without errors
+    const request = metadata.resolveRequest(['someValue']);
+    expect(request).toBeDefined();
+    expect(request.method).toBe(HttpMethod.GET);
+  });
+
+  it('should handle case when funParameter does not exist', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      new Map(), // Empty parameters map
+    );
+
+    // Should handle case where parameters.get returns undefined
+    const request = metadata.resolveRequest(['value1', 'value2']);
+    expect(request).toBeDefined();
+    expect(request.method).toBe(HttpMethod.GET);
   });
 });

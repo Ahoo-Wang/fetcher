@@ -31,7 +31,11 @@ import { FetcherCapable } from './fetcherCapable';
  * These settings will be used as defaults for all endpoints within the class unless overridden
  * at the method level.
  */
-export interface ApiMetadata extends TimeoutCapable, RequestHeadersCapable, ResultExtractorCapable, FetcherCapable {
+export interface ApiMetadata
+  extends TimeoutCapable,
+    RequestHeadersCapable,
+    ResultExtractorCapable,
+    FetcherCapable {
   /**
    * Base path for all endpoints in the class.
    *
@@ -103,7 +107,7 @@ function bindExecutor<T extends new (...args: any[]) => any>(
       PARAMETER_METADATA_KEY,
       constructor.prototype,
       functionName,
-    ) || [];
+    ) || new Map();
 
   // Create function metadata
   const functionMetadata = new FunctionMetadata(
