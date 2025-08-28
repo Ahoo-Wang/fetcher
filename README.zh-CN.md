@@ -401,8 +401,8 @@ pnpm install
 # 构建所有包
 pnpm build
 
-# 运行测试与覆盖率
-pnpm test
+# 运行单元测试与覆盖率
+pnpm test:unit
 
 # 格式化代码
 pnpm format
@@ -411,7 +411,7 @@ pnpm format
 pnpm clean
 
 # 运行集成测试
-cd integration-test && pnpm test
+#pnpm test:it
 ```
 
 ### 📦 版本管理
