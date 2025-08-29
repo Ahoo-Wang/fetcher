@@ -12,7 +12,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { parseJwtPayload, JwtPayload, isTokenExpired } from '../src';
+import { parseJwtPayload, JwtPayload } from '../src';
+import { isTokenExpired } from '../src/jwts';
 
 describe('jwts', () => {
   describe('parseJwtPayload', () => {
@@ -89,21 +90,17 @@ describe('jwts', () => {
 
   describe('isTokenExpired', () => {
     it('should return true for an expired token (string)', () => {
-      // A real JWT token with payload: {"exp": 1609459200} (2021-01-01 00:00:00 UTC)
-      const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MDk0NTkyMDB9.np4JH87ovwVKG1k4cV2bHx88a1q7Bzwr9sX4Y6x5P5Q';
+      // A token with exp: 1609459200 (2021-01-01 00:00:00 UTC)
+      const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MDk0NTkyMDB9.XYS34_symbols_for_padding';
       const isExpired = isTokenExpired(expiredToken);
 
       expect(isExpired).toBe(true);
     });
 
     it('should return false for a non-expired token (string)', () => {
-      // Create a token that expires in the future (1 hour from now)
-      const futureExp = Math.floor(Date.now() / 1000) + 3600;
-      const payload = { exp: futureExp };
-      let base64Payload = btoa(JSON.stringify(payload));
-      // Handle Base64URL encoding
-      base64Payload = base64Payload.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-      const nonExpiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${base64Payload}.XYS34_symbols_for_padding`;
+      // Create a token that expires in the future
+      const futureExp = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+      const nonExpiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiO${futureExp}fQ.XYS34_symbols_for_padding`;
       const isExpired = isTokenExpired(nonExpiredToken);
 
       expect(isExpired).toBe(false);
