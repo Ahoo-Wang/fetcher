@@ -105,11 +105,6 @@ import { CommandResult, CommandStage } from '@ahoo-wang/fetcher-wow';
 HTTP client for sending commands to the Wow framework. This client provides methods to send commands and receive results
 either synchronously or as a stream of events.
 
-##### Installation
-
-The CommandHttpClient is part of the `@ahoo-wang/fetcher-wow` package, which is already installed as part of the main
-package.
-
 ##### Usage
 
 First, create a fetcher instance with base configuration and add the EventStreamInterceptor:
