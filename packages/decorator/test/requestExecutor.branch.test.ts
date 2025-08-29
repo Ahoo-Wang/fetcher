@@ -14,7 +14,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FunctionMetadata, ParameterType } from '../src';
 import { fetcherRegistrar, HttpMethod, Fetcher } from '@ahoo-wang/fetcher';
-import { ResultExtractors } from '../src/resultExtractor';
+import { ResultExtractors } from '../src';
 
 // Mock fetcher
 const mockFetch = vi.fn();
@@ -92,7 +92,7 @@ describe('FunctionMetadata - branch coverage', () => {
       { method: HttpMethod.GET, path: '/users' },
       new Map(),
     );
-
+    expect(metadata1.resolvePath('orders')).toBe('/api/orders');
     expect(metadata1.resolvePath()).toBe('/api/users');
 
     // Test with only basePath
@@ -124,6 +124,7 @@ describe('FunctionMetadata - branch coverage', () => {
     );
 
     expect(metadata4.resolvePath()).toBe('');
+
   });
 
   it('should handle timeout resolution with different priorities', () => {
