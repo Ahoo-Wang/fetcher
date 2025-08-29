@@ -41,7 +41,6 @@ export interface NamedCapable {
   name: string;
 }
 
-
 /**
  * Global extension of Response interface
  * Adds type-safe json() method support to Response objects

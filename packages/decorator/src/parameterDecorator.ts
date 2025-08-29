@@ -263,9 +263,7 @@ export function body() {
  * the HTTP request including method, headers, body, and URL parameters.
  */
 export interface ParameterRequest extends FetchRequestInit, PathCapable {
-
 }
-
 
 /**
  * Request parameter decorator.

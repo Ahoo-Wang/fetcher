@@ -18,12 +18,17 @@ import {
   FetchRequest,
   FetchRequestInit,
   mergeRequest,
-  NamedCapable, RequestHeaders,
+  NamedCapable,
+  RequestHeaders,
   UrlParams,
 } from '@ahoo-wang/fetcher';
 import { ApiMetadata } from './apiDecorator';
 import { EndpointMetadata, PathCapable } from './endpointDecorator';
-import { ParameterMetadata, ParameterRequest, ParameterType } from './parameterDecorator';
+import {
+  ParameterMetadata,
+  ParameterRequest,
+  ParameterType,
+} from './parameterDecorator';
 import { ResultExtractor, ResultExtractors } from './resultExtractor';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 import { getFetcher } from './fetcherCapable';
@@ -192,7 +197,10 @@ export class FunctionMetadata implements NamedCapable {
       timeout: this.resolveTimeout(),
       signal,
     };
-    const mergedRequest = mergeRequest(endpointRequest, parameterRequest) as any;
+    const mergedRequest = mergeRequest(
+      endpointRequest,
+      parameterRequest,
+    ) as any;
     const parameterPath = parameterRequest.path;
     mergedRequest.url = this.resolvePath(parameterPath);
     return mergedRequest;
@@ -271,7 +279,6 @@ export class FunctionMetadata implements NamedCapable {
     return combineURLs(basePath, endpointPath);
   }
 
-
   /**
    * Resolves the timeout for the request.
    *
@@ -292,7 +299,6 @@ export class FunctionMetadata implements NamedCapable {
     );
   }
 }
-
 
 const TARGET_FETCHER_PROPERTY = 'fetcher';
 

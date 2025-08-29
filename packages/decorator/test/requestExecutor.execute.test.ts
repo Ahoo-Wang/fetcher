@@ -206,7 +206,10 @@ describe('RequestExecutor - execute method', () => {
     );
 
     const executor = new RequestExecutor(metadata);
-    const result = await executor.execute(null, ['Bearer token', { name: 'John' }]);
+    const result = await executor.execute(null, [
+      'Bearer token',
+      { name: 'John' },
+    ]);
 
     expect(mockRequest).toHaveBeenCalledWith({
       url: 'http://localhost/api/users',
@@ -297,7 +300,10 @@ describe('RequestExecutor - execute method', () => {
 
     const executor = new RequestExecutor(metadata);
     const abortController = new AbortController();
-    const result = await executor.execute(null, ['123', abortController.signal]);
+    const result = await executor.execute(null, [
+      '123',
+      abortController.signal,
+    ]);
 
     expect(mockRequest).toHaveBeenCalledWith({
       url: 'http://localhost/api/users/{id}',

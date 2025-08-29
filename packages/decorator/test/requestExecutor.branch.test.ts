@@ -124,7 +124,6 @@ describe('FunctionMetadata - branch coverage', () => {
     );
 
     expect(metadata4.resolvePath()).toBe('');
-
   });
 
   it('should handle timeout resolution with different priorities', () => {
