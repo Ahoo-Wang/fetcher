@@ -90,7 +90,7 @@ export interface CoSecJwtPayload extends JwtPayload {
  * @param token - The JWT token string to parse
  * @returns The parsed JWT payload or null if parsing fails
  */
-export function parseJwtPayload(token: string): CoSecJwtPayload | null {
+export function parseJwtPayload<T extends JwtPayload>(token: string): T | null {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) {
@@ -111,7 +111,7 @@ export function parseJwtPayload(token: string): CoSecJwtPayload | null {
         })
         .join(''),
     );
-    return JSON.parse(jsonPayload) as CoSecJwtPayload;
+    return JSON.parse(jsonPayload) as T;
   } catch (error) {
     // Avoid exposing sensitive information in error logs
     console.error('Failed to parse JWT token', error);
