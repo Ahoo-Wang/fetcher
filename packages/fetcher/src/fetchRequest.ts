@@ -58,7 +58,7 @@ export enum ContentTypeValues {
  * Allows for additional custom headers through index signature.
  */
 export interface RequestHeaders {
-  'Content-Type'?: string;
+  [ContentTypeHeader]?: string;
   Accept?: string;
   Authorization?: string;
 

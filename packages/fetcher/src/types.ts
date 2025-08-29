@@ -10,16 +10,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
- * 具备名称能力的接口
- * 实现该接口的类型需要提供一个名称属性
+ * Creates a new type by making specified properties of an existing type optional.
+ *
+ * This utility type takes a type T and a set of keys K (which must be keys of T),
+ * and produces a new type where:
+ * - Properties not in K remain required and unchanged
+ * - Properties in K become optional (partial)
+ *
+ * @template T - The original type to modify
+ * @template K - The keys of T that should become optional
+ * @returns A new type with specified properties made optional
+ *
+ * @example
+ * type User = { id: number; name: string; email: string; };
+ * type UserWithOptionalEmail = PartialBy<User, 'email'>;
+ * // Result: { id: number; name: string; email?: string; }
+ */
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+/**
+ * Interface representing a named capable entity
+ * Types implementing this interface must provide a name property
  */
 export interface NamedCapable {
   /**
-   * 名称
+   * The name of the entity
    */
   name: string;
 }
+
 
 /**
  * Global extension of Response interface
