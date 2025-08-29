@@ -17,7 +17,7 @@ import { EventStreamInterceptor } from '@ahoo-wang/fetcher-eventstream';
 import {
   CommandHeaders,
   CommandHttpClient,
-  CommandHttpRequest,
+  CommandHttpRequest, CommandResult,
   CommandStage,
   ErrorCodes,
 } from '@ahoo-wang/fetcher-wow';
@@ -27,33 +27,58 @@ const wowFetcher = new Fetcher({
 });
 
 wowFetcher.interceptors.response.use(new EventStreamInterceptor());
-const comamndHttpClient = new CommandHttpClient(wowFetcher);
-describe('CommandHttpClient Integration Test', () => {
-  it('should send command', async () => {
-    const command: CommandHttpRequest = {
-      path: 'owner/{ownerId}/cart/add_cart_item',
-      method: HttpMethod.POST,
-      headers: {
-        [CommandHeaders.WAIT_STAGE]: CommandStage.SNAPSHOT,
-      },
-      urlParams: {
-        path: {
-          ownerId: '1',
-        },
-      },
-      body: {
-        productId: 'productId',
-        quantity: 1,
-      },
-    };
-    const commandResult = await comamndHttpClient.send(command);
-    expect(commandResult.contextName).toBeDefined();
-    expect(commandResult.aggregateName).toBeDefined();
-    expect(commandResult.aggregateId).toBeDefined();
-    expect(commandResult.aggregateVersion).toBeDefined();
+const commandHttpClient = new CommandHttpClient(wowFetcher);
 
+function expectCommandResultToBeDefined(commandResult: CommandResult) {
+  expect(commandResult.id).toBeDefined();
+  expect(commandResult.waitCommandId).toBeDefined();
+  expect(commandResult.stage).toBeDefined();
+  expect(commandResult.contextName).toBeDefined();
+  expect(commandResult.aggregateName).toBeDefined();
+  expect(commandResult.tenantId).toBeDefined();
+  expect(commandResult.aggregateId).toBeDefined();
+  expect(commandResult.aggregateVersion).toBeDefined();
+  expect(commandResult.requestId).toBeDefined();
+  expect(commandResult.commandId).toBeDefined();
+  expect(commandResult.function).toBeDefined();
+  expect(commandResult.errorCode).toBeDefined();
+  expect(commandResult.errorMsg).toBeDefined();
+  expect(commandResult.result).toBeDefined();
+  expect(commandResult.signalTime).toBeDefined();
+}
+
+describe('CommandHttpClient Integration Test', () => {
+  const command: CommandHttpRequest = {
+    path: 'owner/{ownerId}/cart/add_cart_item',
+    method: HttpMethod.POST,
+    headers: {
+      [CommandHeaders.WAIT_STAGE]: CommandStage.SNAPSHOT,
+    },
+    urlParams: {
+      path: {
+        ownerId: 'ownerId',
+      },
+    },
+    body: {
+      productId: 'productId',
+      quantity: 1,
+    },
+  };
+
+  it('should send command', async () => {
+    const commandResult = await commandHttpClient.send(command);
+    expectCommandResultToBeDefined(commandResult);
     expect(commandResult.aggregateId).toBe(command.urlParams?.path?.ownerId);
     expect(commandResult.errorCode).toBe(ErrorCodes.SUCCEEDED);
     expect(commandResult.stage).toBe(CommandStage.SNAPSHOT);
+  });
+
+  it('should send command and wait stream', async () => {
+    const commandResultStream = await commandHttpClient.sendAndWaitStream(command);
+    expect(commandResultStream).toBeDefined();
+    for await (const commandResultEvent of commandResultStream) {
+      console.info(`Received : ${JSON.stringify(commandResultEvent)}`);
+      expectCommandResultToBeDefined(commandResultEvent.data);
+    }
   });
 });

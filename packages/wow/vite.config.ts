@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import dts from 'unplugin-dts/vite';
 
 export default defineConfig({
@@ -41,4 +41,9 @@ export default defineConfig({
       tsconfigPath: './tsconfig.json',
     }),
   ],
+  test: {
+    coverage: {
+      exclude: ['src/command/commandHttpClient.ts'],
+    },
+  },
 });
