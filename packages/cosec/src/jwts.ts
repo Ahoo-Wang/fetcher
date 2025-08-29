@@ -121,25 +121,31 @@ export function parseJwtPayload<T extends JwtPayload>(token: string): T | null {
 
 /**
  * Checks if a JWT token is expired based on its expiration time (exp claim).
- *
+ * 
  * This function determines if a JWT token has expired by comparing its exp claim
  * with the current time. If the token is a string, it will be parsed first.
  * Tokens without an exp claim are considered not expired.
  *
+ * The early period parameter allows for early token expiration, which is useful
+ * for triggering token refresh before the token actually expires. This helps
+ * avoid race conditions where a token expires between the time it is checked and
+ * the time it is used.
+ *
  * @param token - The JWT token to check, either as a string or as a JwtPayload object
- * @returns true if the token is expired or cannot be parsed, false otherwise
+ * @param earlyPeriod - The time in seconds before actual expiration when the token should be considered expired (default: 0)
+ * @returns true if the token is expired (or will expire within the early period) or cannot be parsed, false otherwise
  */
-export function isTokenExpired(token: string | CoSecJwtPayload): boolean {
+export function isTokenExpired(token: string | CoSecJwtPayload, earlyPeriod: number = 0): boolean {
   const payload = typeof token === 'string' ? parseJwtPayload(token) : token;
   if (!payload) {
     return true;
   }
 
-  const exp = payload.exp;
-  if (!exp) {
+  const expAt = payload.exp;
+  if (!expAt) {
     return false;
   }
 
   const now = Date.now() / 1000;
-  return now > exp;
+  return now > expAt - earlyPeriod;
 }
