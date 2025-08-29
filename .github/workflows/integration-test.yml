@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       wow:
-        image: ahoowang/wow-example-server:main
+        image: ahoowang/wow-example-server:pr-1877
         ports:
           - 8080:8080
         options:
