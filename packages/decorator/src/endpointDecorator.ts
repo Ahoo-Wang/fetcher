@@ -19,7 +19,10 @@ export interface PathCapable {
  * Defines the configuration options for individual HTTP endpoints (methods).
  * These settings will override any corresponding class-level settings from ApiMetadata.
  */
-export interface EndpointMetadata extends ApiMetadata, ResultExtractorCapable, PathCapable {
+export interface EndpointMetadata
+  extends ApiMetadata,
+    ResultExtractorCapable,
+    PathCapable {
   /**
    * HTTP method for the endpoint.
    *

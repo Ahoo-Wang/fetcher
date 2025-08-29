@@ -27,7 +27,7 @@ export default defineConfig({
       output: {
         globals: {
           '@ahoo-wang/fetcher': 'Fetcher',
-          'nanoid': 'nanoid',
+          nanoid: 'nanoid',
         },
       },
     },

@@ -19,7 +19,8 @@ describe('jwts', () => {
   describe('parseJwtPayload', () => {
     it('should parse a valid JWT token and return its payload', () => {
       // A JWT token with payload: {"sub": "1234567890", "name": "John Doe", "iat": 1516239022}
-      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+      const token =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
       const payload = parseJwtPayload(token);
 
       expect(payload).toBeDefined();
@@ -51,7 +52,8 @@ describe('jwts', () => {
     it('should return null for a token with invalid Base64 payload', () => {
       // Header: {"alg": "HS256", "typ": "JWT"}
       // Payload: Invalid Base64 string
-      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid_payload.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+      const token =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid_payload.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
       const payload = parseJwtPayload(token);
 
       expect(payload).toBeNull();
@@ -60,7 +62,8 @@ describe('jwts', () => {
     it('should return null for a token with non-JSON payload', () => {
       // Header: {"alg": "HS256", "typ": "JWT"}
       // Payload: "invalid" (not JSON)
-      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.aW52YWxpZA==.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+      const token =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.aW52YWxpZA==.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
       const payload = parseJwtPayload(token);
 
       expect(payload).toBeNull();
@@ -69,7 +72,8 @@ describe('jwts', () => {
     it('should handle JWT with Base64URL encoding correctly', () => {
       // A JWT token with payload: {"iss": "test_issuer", "exp": 16094592}
       // Contains Base64URL encoded characters (- and _)
-      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0ZXN0X2lzc3VlciIsImV4cCI6MTYwOTQ1OTJ9.fZl8SkVX449q5Zjpe7R0QDI6H5nCJQY4V5bE95iY44A';
+      const token =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0ZXN0X2lzc3VlciIsImV4cCI6MTYwOTQ1OTJ9.fZl8SkVX449q5Zjpe7R0QDI6H5nCJQY4V5bE95iY44A';
       const payload = parseJwtPayload(token);
 
       expect(payload).toBeDefined();
@@ -79,7 +83,8 @@ describe('jwts', () => {
 
     it('should handle JWT with complex payload including arrays', () => {
       // A JWT token with payload: {"aud": ["service1", "service2"], "roles": ["admin", "user"]}
-      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsic2VydmljZTEiLCJzZXJ2aWNlMiJdLCJyb2xlcyI6WyJhZG1pbiIsInVzZXIiXX0.5F4CQnY6h8QkjcOqZ39D3MqG_u9hXvUPso74KZy5rZc';
+      const token =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsic2VydmljZTEiLCJzZXJ2aWNlMiJdLCJyb2xlcyI6WyJhZG1pbiIsInVzZXIiXX0.5F4CQnY6h8QkjcOqZ39D3MqG_u9hXvUPso74KZy5rZc';
       const payload = parseJwtPayload(token);
 
       expect(payload).toBeDefined();
@@ -91,7 +96,8 @@ describe('jwts', () => {
   describe('isTokenExpired', () => {
     it('should return true for an expired token (string)', () => {
       // A token with exp: 1609459200 (2021-01-01 00:00:00 UTC)
-      const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MDk0NTkyMDB9.XYS34_symbols_for_padding';
+      const expiredToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MDk0NTkyMDB9.XYS34_symbols_for_padding';
       const isExpired = isTokenExpired(expiredToken);
 
       expect(isExpired).toBe(true);
@@ -106,7 +112,8 @@ describe('jwts', () => {
 
     it('should return false for a token without exp claim (string)', () => {
       // A token without exp claim
-      const tokenWithoutExp = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+      const tokenWithoutExp =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
       const isExpired = isTokenExpired(tokenWithoutExp);
 
       expect(isExpired).toBe(false);

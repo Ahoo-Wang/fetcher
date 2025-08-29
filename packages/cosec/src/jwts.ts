@@ -59,7 +59,6 @@ export interface JwtPayload {
  * Extends the standard JwtPayload interface with additional CoSec-specific properties.
  */
 export interface CoSecJwtPayload extends JwtPayload {
-
   /**
    * Tenant identifier - identifies the tenant scope for the JWT.
    */
@@ -78,7 +77,6 @@ export interface CoSecJwtPayload extends JwtPayload {
    * Attributes - custom key-value pairs providing additional information about the JWT.
    */
   attributes?: Record<string, any>;
-
 }
 
 /**
@@ -101,7 +99,10 @@ export function parseJwtPayload<T extends JwtPayload>(token: string): T | null {
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
 
     // Add padding if needed
-    const paddedBase64 = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+    const paddedBase64 = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      '=',
+    );
 
     const jsonPayload = decodeURIComponent(
       atob(paddedBase64)
@@ -121,7 +122,7 @@ export function parseJwtPayload<T extends JwtPayload>(token: string): T | null {
 
 /**
  * Checks if a JWT token is expired based on its expiration time (exp claim).
- * 
+ *
  * This function determines if a JWT token has expired by comparing its exp claim
  * with the current time. If the token is a string, it will be parsed first.
  * Tokens without an exp claim are considered not expired.
@@ -135,7 +136,10 @@ export function parseJwtPayload<T extends JwtPayload>(token: string): T | null {
  * @param earlyPeriod - The time in seconds before actual expiration when the token should be considered expired (default: 0)
  * @returns true if the token is expired (or will expire within the early period) or cannot be parsed, false otherwise
  */
-export function isTokenExpired(token: string | CoSecJwtPayload, earlyPeriod: number = 0): boolean {
+export function isTokenExpired(
+  token: string | CoSecJwtPayload,
+  earlyPeriod: number = 0,
+): boolean {
   const payload = typeof token === 'string' ? parseJwtPayload(token) : token;
   if (!payload) {
     return true;
