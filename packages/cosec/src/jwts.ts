@@ -10,20 +10,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /**
  * Interface representing a JWT payload as defined in RFC 7519.
  * Contains standard JWT claims as well as custom properties.
  */
 export interface JwtPayload {
   /**
-   * Issuer - identifies the principal that issued the JWT.
+   * JWT ID - provides a unique identifier for the JWT.
    */
-  iss?: string;
+  jti?: string;
   /**
    * Subject - identifies the principal that is the subject of the JWT.
    */
   sub?: string;
+  /**
+   * Issuer - identifies the principal that issued the JWT.
+   */
+  iss?: string;
   /**
    * Audience - identifies the recipients that the JWT is intended for.
    * Can be a single string or an array of strings.
@@ -44,15 +47,38 @@ export interface JwtPayload {
    * Represented as NumericDate (seconds since Unix epoch).
    */
   iat?: number;
-  /**
-   * JWT ID - provides a unique identifier for the JWT.
-   */
-  jti?: string;
 
   /**
    * Allows additional custom properties to be included in the payload.
    */
   [key: string]: any;
+}
+
+/**
+ * Interface representing a JWT payload with CoSec-specific extensions.
+ * Extends the standard JwtPayload interface with additional CoSec-specific properties.
+ */
+export interface CoSecJwtPayload extends JwtPayload {
+
+  /**
+   * Tenant identifier - identifies the tenant scope for the JWT.
+   */
+  tenantId?: string;
+  /**
+   * Policies - array of policy identifiers associated with the JWT.
+   * These are security policies defined internally by Cosec.
+   */
+  policies?: string[];
+  /**
+   * Roles - array of role identifiers associated with the JWT.
+   * Role IDs indicate what roles the token belongs to.
+   */
+  roles?: string[];
+  /**
+   * Attributes - custom key-value pairs providing additional information about the JWT.
+   */
+  attributes?: Record<string, any>;
+
 }
 
 /**
@@ -64,7 +90,7 @@ export interface JwtPayload {
  * @param token - The JWT token string to parse
  * @returns The parsed JWT payload or null if parsing fails
  */
-export function parseJwtPayload(token: string): JwtPayload | null {
+export function parseJwtPayload(token: string): CoSecJwtPayload | null {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) {
@@ -85,7 +111,7 @@ export function parseJwtPayload(token: string): JwtPayload | null {
         })
         .join(''),
     );
-    return JSON.parse(jsonPayload) as JwtPayload;
+    return JSON.parse(jsonPayload) as CoSecJwtPayload;
   } catch (error) {
     // Avoid exposing sensitive information in error logs
     console.error('Failed to parse JWT token', error);
@@ -103,7 +129,7 @@ export function parseJwtPayload(token: string): JwtPayload | null {
  * @param token - The JWT token to check, either as a string or as a JwtPayload object
  * @returns true if the token is expired or cannot be parsed, false otherwise
  */
-export function isTokenExpired(token: string | JwtPayload): boolean {
+export function isTokenExpired(token: string | CoSecJwtPayload): boolean {
   const payload = typeof token === 'string' ? parseJwtPayload(token) : token;
   if (!payload) {
     return true;

@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { parseJwtPayload, JwtPayload } from '../src';
+import { parseJwtPayload, CoSecJwtPayload } from '../src';
 import { isTokenExpired } from '../src';
 
 describe('jwts', () => {
@@ -114,7 +114,7 @@ describe('jwts', () => {
 
     it('should return true for an expired token (JwtPayload)', () => {
       // Payload with past expiration time
-      const expiredPayload: JwtPayload = {
+      const expiredPayload: CoSecJwtPayload = {
         exp: 1609459200, // 2021-01-01 00:00:00 UTC
       };
       const isExpired = isTokenExpired(expiredPayload);
@@ -125,7 +125,7 @@ describe('jwts', () => {
     it('should return false for a non-expired token (JwtPayload)', () => {
       // Payload with future expiration time
       const futureExp = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
-      const nonExpiredPayload: JwtPayload = {
+      const nonExpiredPayload: CoSecJwtPayload = {
         exp: futureExp,
       };
       const isExpired = isTokenExpired(nonExpiredPayload);
@@ -135,7 +135,7 @@ describe('jwts', () => {
 
     it('should return false for a payload without exp claim', () => {
       // Payload without exp claim
-      const payloadWithoutExp: JwtPayload = {
+      const payloadWithoutExp: CoSecJwtPayload = {
         sub: '1234567890',
         name: 'John Doe',
       };
