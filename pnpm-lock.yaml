@@ -78,6 +78,9 @@ importers:
       '@ahoo-wang/fetcher-eventstream':
         specifier: workspace:*
         version: link:../packages/eventstream
+      '@ahoo-wang/fetcher-wow':
+        specifier: workspace:*
+        version: link:../packages/wow
     devDependencies:
       '@types/node':
         specifier: ^24.3.0
@@ -217,6 +220,9 @@ importers:
       '@ahoo-wang/fetcher':
         specifier: workspace:*
         version: link:../fetcher
+      '@ahoo-wang/fetcher-decorator':
+        specifier: workspace:*
+        version: link:../decorator
       '@ahoo-wang/fetcher-eventstream':
         specifier: workspace:*
         version: link:../eventstream
