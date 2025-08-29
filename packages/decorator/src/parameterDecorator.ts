@@ -1,5 +1,7 @@
 import { getParameterName } from './reflection';
 import 'reflect-metadata';
+import { PathCapable } from './endpointDecorator';
+import { FetchRequestInit } from '@ahoo-wang/fetcher';
 
 /**
  * Parameter types for decorator parameters.
@@ -253,10 +255,23 @@ export function body() {
 }
 
 /**
+ * Interface for request parameter objects.
+ *
+ * Combines FetchRequestInit and PathCapable interfaces to provide
+ * a complete request configuration object that can be used with
+ * the @request() decorator. This allows full customization of
+ * the HTTP request including method, headers, body, and URL parameters.
+ */
+export interface ParameterRequest extends FetchRequestInit, PathCapable {
+
+}
+
+
+/**
  * Request parameter decorator.
  *
  * Defines a request parameter that will be used as the base request object.
- * This allows you to pass a complete FetcherRequest object to customize
+ * This allows you to pass a complete ParameterRequest object to customize
  * the request configuration.
  *
  * @returns A parameter decorator function
@@ -264,7 +279,7 @@ export function body() {
  * @example
  * ```typescript
  * @post('/users')
- * createUsers(@request() request: FetcherRequest): Promise<Response>
+ * createUsers(@request() request: ParameterRequest): Promise<Response>
  * ```
  */
 export function request() {

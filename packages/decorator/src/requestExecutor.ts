@@ -18,13 +18,12 @@ import {
   FetchRequest,
   FetchRequestInit,
   mergeRequest,
-  NamedCapable,
-  RequestHeaders,
+  NamedCapable, RequestHeaders,
   UrlParams,
 } from '@ahoo-wang/fetcher';
 import { ApiMetadata } from './apiDecorator';
-import { EndpointMetadata } from './endpointDecorator';
-import { ParameterMetadata, ParameterType } from './parameterDecorator';
+import { EndpointMetadata, PathCapable } from './endpointDecorator';
+import { ParameterMetadata, ParameterRequest, ParameterType } from './parameterDecorator';
 import { ResultExtractor, ResultExtractors } from './resultExtractor';
 import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 import { getFetcher } from './fetcherCapable';
@@ -143,16 +142,16 @@ export class FunctionMetadata implements NamedCapable {
    * // }
    * ```
    */
-  resolveRequest(args: any[]): FetchRequestInit {
-    const path: Record<string, any> = {};
-    const query: Record<string, any> = {};
+  resolveRequest(args: any[]): FetchRequest {
+    const pathParams: Record<string, any> = {};
+    const queryParams: Record<string, any> = {};
     const headers: RequestHeaders = {
       ...this.api.headers,
       ...this.endpoint.headers,
     };
     let body: any = undefined;
     let signal: AbortSignal | null | undefined = undefined;
-    let parameterRequest: FetchRequestInit = {};
+    let parameterRequest: ParameterRequest = {};
     // Process parameters based on their decorators
     args.forEach((value, index) => {
       if (value instanceof AbortSignal) {
@@ -165,10 +164,10 @@ export class FunctionMetadata implements NamedCapable {
       }
       switch (funParameter.type) {
         case ParameterType.PATH:
-          this.processPathParam(funParameter, value, path);
+          this.processPathParam(funParameter, value, pathParams);
           break;
         case ParameterType.QUERY:
-          this.processQueryParam(funParameter, value, query);
+          this.processQueryParam(funParameter, value, queryParams);
           break;
         case ParameterType.HEADER:
           this.processHeaderParam(funParameter, value, headers);
@@ -182,8 +181,8 @@ export class FunctionMetadata implements NamedCapable {
       }
     });
     const urlParams: UrlParams = {
-      path,
-      query,
+      path: pathParams,
+      query: queryParams,
     };
     const endpointRequest: FetchRequestInit = {
       method: this.endpoint.method,
@@ -193,7 +192,10 @@ export class FunctionMetadata implements NamedCapable {
       timeout: this.resolveTimeout(),
       signal,
     };
-    return mergeRequest(endpointRequest, parameterRequest);
+    const mergedRequest = mergeRequest(endpointRequest, parameterRequest) as any;
+    const parameterPath = parameterRequest.path;
+    mergedRequest.url = this.resolvePath(parameterPath);
+    return mergedRequest;
   }
 
   private processPathParam(
@@ -248,23 +250,27 @@ export class FunctionMetadata implements NamedCapable {
    * await service.createUsers(customRequest);
    * ```
    */
-  private processRequestParam(value: any): FetchRequestInit {
-    return value as FetchRequestInit;
+  private processRequestParam(value: any): ParameterRequest {
+    return value as ParameterRequest;
   }
 
   /**
-   * Resolves the full path for the request.
+   * Resolves the complete path by combining base path and endpoint path
    *
-   * Combines the base path from API metadata with the endpoint path
-   * from endpoint metadata to create the complete path.
-   *
-   * @returns The full path for the request
+   * @param parameterPath - Optional path parameter to use instead of endpoint path
+   * @returns The combined URL path
    */
-  resolvePath(): string {
+  resolvePath(parameterPath?: string): string {
+    // Get the base path from endpoint, API, or default to empty string
     const basePath = this.endpoint.basePath || this.api.basePath || '';
-    const endpointPath = this.endpoint.path || '';
+
+    // Use provided parameter path or fallback to endpoint path
+    const endpointPath = parameterPath || this.endpoint.path || '';
+
+    // Combine the base path and endpoint path into a complete URL
     return combineURLs(basePath, endpointPath);
   }
+
 
   /**
    * Resolves the timeout for the request.
@@ -345,13 +351,8 @@ export class RequestExecutor {
     target: any,
     args: any[],
   ): Promise<FetchExchange | Response | any | ServerSentEventStream> {
-    const path = this.metadata.resolvePath();
-    const requestInit = this.metadata.resolveRequest(args);
-    const request: FetchRequest = {
-      url: path,
-      ...requestInit,
-    };
     const fetcher = this.getTargetFetcher(target) || this.metadata.fetcher;
+    const request = this.metadata.resolveRequest(args);
     const exchange = await fetcher.request(request);
     const extractor = this.metadata.resolveResultExtractor();
     return extractor(exchange);

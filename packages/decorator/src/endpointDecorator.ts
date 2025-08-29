@@ -3,20 +3,7 @@ import { ApiMetadata } from './apiDecorator';
 import 'reflect-metadata';
 import { ResultExtractor, ResultExtractorCapable } from './resultExtractor';
 
-/**
- * Metadata for HTTP endpoints.
- *
- * Defines the configuration options for individual HTTP endpoints (methods).
- * These settings will override any corresponding class-level settings from ApiMetadata.
- */
-export interface EndpointMetadata extends ApiMetadata, ResultExtractorCapable {
-  /**
-   * HTTP method for the endpoint.
-   *
-   * Specifies the HTTP verb to be used for this endpoint (GET, POST, PUT, DELETE, etc.)
-   */
-  method: HttpMethod;
-
+export interface PathCapable {
   /**
    * Path for the endpoint (relative to class base path).
    *
@@ -24,6 +11,21 @@ export interface EndpointMetadata extends ApiMetadata, ResultExtractorCapable {
    * Path parameters can be specified using curly braces, e.g., '/users/{id}'
    */
   path?: string;
+}
+
+/**
+ * Metadata for HTTP endpoints.
+ *
+ * Defines the configuration options for individual HTTP endpoints (methods).
+ * These settings will override any corresponding class-level settings from ApiMetadata.
+ */
+export interface EndpointMetadata extends ApiMetadata, ResultExtractorCapable, PathCapable {
+  /**
+   * HTTP method for the endpoint.
+   *
+   * Specifies the HTTP verb to be used for this endpoint (GET, POST, PUT, DELETE, etc.)
+   */
+  method?: HttpMethod;
 }
 
 export const ENDPOINT_METADATA_KEY = Symbol('endpoint:metadata');
@@ -55,8 +57,8 @@ export type MethodEndpointMetadata = Omit<EndpointMetadata, 'method' | 'path'>;
  * ```
  */
 export function endpoint(
-  method: HttpMethod,
-  path: string = '',
+  method?: HttpMethod,
+  path?: string,
   metadata: MethodEndpointMetadata = {},
 ) {
   return function(target: object, propertyKey: string | symbol): void {
