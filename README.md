@@ -359,13 +359,3 @@ We welcome contributions! Please see our [contributing guide](./CONTRIBUTING.md)
 ## 📄 License
 
 This project is licensed under the [Apache-2.0 License](./LICENSE).
-
----
-
-<div align="center">
-
-**Built with ❤️ by [Ahoo-Wang](https://github.com/Ahoo-Wang)**
-
-[![GitHub](https://img.shields.io/github/stars/Ahoo-Wang/fetcher?style=social)](https://github.com/Ahoo-Wang/fetcher)
-
-</div>

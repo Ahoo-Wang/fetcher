@@ -353,13 +353,3 @@ pnpm update-version <new-version>
 ## 📄 许可证
 
 本项目采用 [Apache-2.0 许可证](./LICENSE)。
-
----
-
-<div align="center">
-
-**由 [Ahoo-Wang](https://github.com/Ahoo-Wang) 用 ❤️ 构建**
-
-[![GitHub](https://img.shields.io/github/stars/Ahoo-Wang/fetcher?style=social)](https://github.com/Ahoo-Wang/fetcher)
-
-</div>
