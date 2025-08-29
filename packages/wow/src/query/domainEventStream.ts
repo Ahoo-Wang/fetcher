@@ -24,13 +24,13 @@ export interface DomainEvent<BODY> extends Identifier, Named, BodyCapable<BODY> 
 }
 
 export interface DomainEventStreamHeaders {
-  'command_operator'?: string;
-  'command_wait_endpoint'?: string;
-  'command_wait_stage'?: CommandStage;
-  'local_first'?: string;
-  'remote_ip': string;
-  'user_agent'?: string;
-  'trace_id'?: string;
+  command_operator?: string;
+  command_wait_endpoint?: string;
+  command_wait_stage?: CommandStage;
+  local_first?: string;
+  remote_ip: string;
+  user_agent?: string;
+  trace_id?: string;
 
   [key: string]: string | undefined;
 }
