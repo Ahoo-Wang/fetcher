@@ -6,11 +6,21 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   integration-test:
     runs-on: ubuntu-latest
-
+    services:
+      wow:
+        image: ahoowang/wow-example-server:main
+        ports:
+          - 8080:8080
+        options:
+          --health-cmd "curl -f http://localhost:8080/actuator/health"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
