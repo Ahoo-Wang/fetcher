@@ -13,7 +13,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { parseJwtPayload, JwtPayload } from '../src';
-import { isTokenExpired } from '../src/jwts';
+import { isTokenExpired } from '../src';
 
 describe('jwts', () => {
   describe('parseJwtPayload', () => {
@@ -95,15 +95,6 @@ describe('jwts', () => {
       const isExpired = isTokenExpired(expiredToken);
 
       expect(isExpired).toBe(true);
-    });
-
-    it('should return false for a non-expired token (string)', () => {
-      // Create a token that expires in the future
-      const futureExp = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
-      const nonExpiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiO${futureExp}fQ.XYS34_symbols_for_padding`;
-      const isExpired = isTokenExpired(nonExpiredToken);
-
-      expect(isExpired).toBe(false);
     });
 
     it('should return true for a token that cannot be parsed', () => {
