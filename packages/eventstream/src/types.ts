@@ -27,6 +27,18 @@ declare global {
     eventStream?(): ServerSentEventStream;
 
     /**
+     * Returns a ServerSentEventStream for consuming server-sent events.
+     *
+     * This method is similar to eventStream() but throws an error if the event stream is not available.
+     * It is added to Response objects by the EventStreamInterceptor when the response content type
+     * indicates a server-sent event stream.
+     *
+     * @returns A ReadableStream of ServerSentEvent objects
+     * @throws ExchangeError if the event stream is not available
+     */
+    requiredEventStream(): ServerSentEventStream;
+
+    /**
      * Returns a JsonServerSentEventStream for consuming server-sent events with JSON data.
      *
      * This method is added to Response objects by the EventStreamInterceptor
@@ -36,6 +48,19 @@ declare global {
      * @returns A ReadableStream of ServerSentEvent objects with JSON data
      */
     jsonEventStream?<DATA>(): JsonServerSentEventStream<DATA>;
+
+    /**
+     * Returns a JsonServerSentEventStream for consuming server-sent events with JSON data.
+     *
+     * This method is similar to jsonEventStream() but throws an error if the event stream is not available.
+     * It is added to Response objects by the EventStreamInterceptor when the response content type
+     * indicates a server-sent event stream with JSON data.
+     *
+     * @template DATA - The type of the JSON data in the server-sent events
+     * @returns A ReadableStream of ServerSentEvent objects with JSON data
+     * @throws ExchangeError if the event stream is not available
+     */
+    requiredJsonEventStream<DATA>(): JsonServerSentEventStream<DATA>;
   }
 
   interface ReadableStream<R = any> {
