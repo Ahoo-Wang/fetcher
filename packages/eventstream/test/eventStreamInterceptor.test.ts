@@ -16,8 +16,8 @@ import {
   EVENT_STREAM_INTERCEPTOR_NAME,
   EVENT_STREAM_INTERCEPTOR_ORDER,
   EventStreamInterceptor,
-} from '../src/eventStreamInterceptor';
-import { FetchExchange } from '@ahoo-wang/fetcher';
+} from '../src';
+import { FetchExchange, ExchangeError } from '@ahoo-wang/fetcher';
 
 describe('eventStreamInterceptor.ts', () => {
   describe('EventStreamInterceptor', () => {
@@ -154,6 +154,90 @@ describe('eventStreamInterceptor.ts', () => {
 
       // Call the jsonEventStream method and verify it returns a JsonServerSentEventStream
       const jsonEventStream = (response as any).jsonEventStream();
+      expect(jsonEventStream).toBeInstanceOf(ReadableStream);
+    });
+
+    it('should throw error when requiredEventStream is called on non-event-stream response', () => {
+      const interceptor = new EventStreamInterceptor();
+      const headers = new Headers();
+      headers.set('content-type', 'application/json');
+
+      const response = {
+        headers,
+      } as Response;
+
+      const exchange = {
+        response,
+      } as FetchExchange;
+
+      interceptor.intercept(exchange);
+
+      // Verify that calling requiredEventStream throws an error
+      expect(() => {
+        (response as any).requiredEventStream();
+      }).toThrow(ExchangeError);
+    });
+
+    it('should return event stream when requiredEventStream is called on event-stream response', () => {
+      const interceptor = new EventStreamInterceptor();
+      const headers = new Headers();
+      headers.set('content-type', 'text/event-stream');
+
+      const response = {
+        headers,
+        body: new ReadableStream(),
+      } as Response;
+
+      const exchange = {
+        response,
+      } as FetchExchange;
+
+      interceptor.intercept(exchange);
+
+      // Verify that requiredEventStream returns a ServerSentEventStream
+      const eventStream = (response as any).requiredEventStream();
+      expect(eventStream).toBeInstanceOf(ReadableStream);
+    });
+
+    it('should throw error when requiredJsonEventStream is called on non-event-stream response', () => {
+      const interceptor = new EventStreamInterceptor();
+      const headers = new Headers();
+      headers.set('content-type', 'application/json');
+
+      const response = {
+        headers,
+      } as Response;
+
+      const exchange = {
+        response,
+      } as FetchExchange;
+
+      interceptor.intercept(exchange);
+
+      // Verify that calling requiredJsonEventStream throws an error
+      expect(() => {
+        (response as any).requiredJsonEventStream();
+      }).toThrow(ExchangeError);
+    });
+
+    it('should return json event stream when requiredJsonEventStream is called on event-stream response', () => {
+      const interceptor = new EventStreamInterceptor();
+      const headers = new Headers();
+      headers.set('content-type', 'text/event-stream');
+
+      const response = {
+        headers,
+        body: new ReadableStream(),
+      } as Response;
+
+      const exchange = {
+        response,
+      } as FetchExchange;
+
+      interceptor.intercept(exchange);
+
+      // Verify that requiredJsonEventStream returns a JsonServerSentEventStream
+      const jsonEventStream = (response as any).requiredJsonEventStream();
       expect(jsonEventStream).toBeInstanceOf(ReadableStream);
     });
   });
