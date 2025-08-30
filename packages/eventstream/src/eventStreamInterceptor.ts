@@ -14,7 +14,7 @@
 import { toServerSentEventStream } from './eventStreamConverter';
 import {
   CONTENT_TYPE_HEADER,
-  ContentTypeValues,
+  ContentTypeValues, ExchangeError,
   FetchExchange,
   ResponseInterceptor,
 } from '@ahoo-wang/fetcher';
@@ -88,10 +88,19 @@ export class EventStreamInterceptor implements ResponseInterceptor {
       return;
     }
     const contentType = response.headers.get(CONTENT_TYPE_HEADER);
-    if (contentType?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
-      response.eventStream = () => toServerSentEventStream(response);
-      response.jsonEventStream = () =>
-        toJsonServerSentEventStream(toServerSentEventStream(response));
+    if (!contentType?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
+      response.requiredEventStream = () => {
+        throw new ExchangeError(exchange, `ServerSentEventStream is not supported. Response content-type: ${contentType}`);
+      };
+      response.requiredJsonEventStream = () => {
+        throw new ExchangeError(exchange, `JsonServerSentEventStream is not supported. Response content-type: ${contentType}`);
+      };
+      return;
     }
+    response.eventStream = () => toServerSentEventStream(response);
+    response.requiredEventStream = response.eventStream;
+    response.jsonEventStream = () =>
+      toJsonServerSentEventStream(toServerSentEventStream(response));
+    response.requiredJsonEventStream = response.jsonEventStream;
   }
 }
