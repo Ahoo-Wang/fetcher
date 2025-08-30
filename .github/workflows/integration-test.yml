@@ -19,18 +19,19 @@ jobs:
         env:
           MONGO_INITDB_ROOT_USERNAME: root
           MONGO_INITDB_ROOT_PASSWORD: root
-        options:
-          --health-cmd mongo
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          MONGO_INITDB_DATABASE: wow_example_db
+        options: >-
+          --health-cmd="mongo --eval 'db.adminCommand(\"ping\")'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
       wow:
         image: ahoowang/wow-example-server:main
         ports:
           - 8080:8080
         env:
           SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration,org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration,org.springframework.boot.autoconfigure.elasticsearch.ReactiveElasticsearchClientAutoConfiguration
-          SPRING_DATA_MONGODB_URI: mongodb://root:root@localhost:27017/wow_example_db?authSource=admin&maxIdleTimeMS=60000
+          SPRING_DATA_MONGODB_URI: mongodb://root:root@mongo:27017/wow_example_db?authSource=admin&maxIdleTimeMS=60000
           WOW_EVENTSOURCING_STORE_STORAGE: mongo
           WOW_EVENTSOURCING_SNAPSHOT_STORAGE: mongo
         options:
