@@ -90,10 +90,10 @@ export class EventStreamInterceptor implements ResponseInterceptor {
     const contentType = response.headers.get(CONTENT_TYPE_HEADER);
     if (!contentType?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
       response.requiredEventStream = () => {
-        throw new ExchangeError(exchange, 'ServerSentEventStream is not supported');
+        throw new ExchangeError(exchange, `ServerSentEventStream is not supported. Response content-type: ${contentType}`);
       };
       response.requiredJsonEventStream = () => {
-        throw new ExchangeError(exchange, 'JsonServerSentEventStream is not supported');
+        throw new ExchangeError(exchange, `JsonServerSentEventStream is not supported. Response content-type: ${contentType}`);
       };
       return;
     }
