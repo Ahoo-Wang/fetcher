@@ -28,7 +28,6 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-expressions': 'off',
     },
   },
   // 为 integration-test 添加特定配置
@@ -36,7 +35,6 @@ export default tseslint.config(
     files: ['integration-test/**/*.{ts,tsx}'],
     rules: {
       // 可以为集成测试设置特定规则
-      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
     },
   },
