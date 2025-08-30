@@ -18,15 +18,15 @@ import { TokenRefresher } from './tokenRefresher';
 /**
  * CoSec HTTP headers enumeration.
  */
-export enum CoSecHeaders {
-  DEVICE_ID = 'CoSec-Device-Id',
-  APP_ID = 'CoSec-App-Id',
-  AUTHORIZATION = 'Authorization',
-  REQUEST_ID = 'CoSec-Request-Id',
+export class CoSecHeaders {
+  static readonly DEVICE_ID = 'CoSec-Device-Id';
+  static readonly APP_ID = 'CoSec-App-Id';
+  static readonly AUTHORIZATION = 'Authorization';
+  static readonly REQUEST_ID = 'CoSec-Request-Id';
 }
 
-export enum ResponseCodes {
-  UNAUTHORIZED = 401,
+export class ResponseCodes {
+  static readonly UNAUTHORIZED = 401;
 }
 
 /**

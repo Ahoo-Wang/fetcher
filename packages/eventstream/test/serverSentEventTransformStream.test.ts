@@ -13,10 +13,10 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import {
-  ServerSentEventField,
+  ServerSentEventFields,
   ServerSentEventTransformer,
   ServerSentEventTransformStream,
-} from '../src/serverSentEventTransformStream';
+} from '../src';
 
 describe('serverSentEventTransformStream.ts', () => {
   describe('ServerSentEventTransformStream', () => {
@@ -30,10 +30,10 @@ describe('serverSentEventTransformStream.ts', () => {
 
   describe('ServerSentEventField', () => {
     it('should define ServerSentEventField enum values', () => {
-      expect(ServerSentEventField.ID).toBe('id');
-      expect(ServerSentEventField.RETRY).toBe('retry');
-      expect(ServerSentEventField.EVENT).toBe('event');
-      expect(ServerSentEventField.DATA).toBe('data');
+      expect(ServerSentEventFields.ID).toBe('id');
+      expect(ServerSentEventFields.RETRY).toBe('retry');
+      expect(ServerSentEventFields.EVENT).toBe('event');
+      expect(ServerSentEventFields.DATA).toBe('data');
     });
   });
 

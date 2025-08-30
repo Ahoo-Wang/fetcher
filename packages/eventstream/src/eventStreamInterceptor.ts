@@ -13,7 +13,7 @@
 
 import { toServerSentEventStream } from './eventStreamConverter';
 import {
-  ContentTypeHeader,
+  CONTENT_TYPE_HEADER,
   ContentTypeValues,
   FetchExchange,
   ResponseInterceptor,
@@ -87,7 +87,7 @@ export class EventStreamInterceptor implements ResponseInterceptor {
     if (!response) {
       return;
     }
-    const contentType = response.headers.get(ContentTypeHeader);
+    const contentType = response.headers.get(CONTENT_TYPE_HEADER);
     if (contentType?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
       response.eventStream = () => toServerSentEventStream(response);
       response.jsonEventStream = () =>

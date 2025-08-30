@@ -44,11 +44,11 @@ export enum HttpMethod {
   OPTIONS = 'OPTIONS',
 }
 
-export const ContentTypeHeader = 'Content-Type';
+export const CONTENT_TYPE_HEADER = 'Content-Type';
 
-export enum ContentTypeValues {
-  APPLICATION_JSON = 'application/json',
-  TEXT_EVENT_STREAM = 'text/event-stream',
+export class ContentTypeValues {
+  static readonly APPLICATION_JSON = 'application/json';
+  static readonly TEXT_EVENT_STREAM = 'text/event-stream';
 }
 
 /**
@@ -58,7 +58,7 @@ export enum ContentTypeValues {
  * Allows for additional custom headers through index signature.
  */
 export interface RequestHeaders {
-  [ContentTypeHeader]?: string;
+  [CONTENT_TYPE_HEADER]?: string;
   Accept?: string;
   Authorization?: string;
 
