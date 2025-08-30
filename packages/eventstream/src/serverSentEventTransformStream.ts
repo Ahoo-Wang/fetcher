@@ -27,11 +27,11 @@ export interface ServerSentEvent {
   retry?: number;
 }
 
-export enum ServerSentEventField {
-  ID = 'id',
-  RETRY = 'retry',
-  EVENT = 'event',
-  DATA = 'data',
+export class ServerSentEventFields {
+  static readonly ID = 'id';
+  static readonly RETRY = 'retry';
+  static readonly EVENT = 'event';
+  static readonly DATA = 'data';
 }
 
 /**
@@ -46,16 +46,16 @@ function processFieldInternal(
   currentEvent: EventState,
 ) {
   switch (field) {
-    case ServerSentEventField.EVENT:
+    case ServerSentEventFields.EVENT:
       currentEvent.event = value;
       break;
-    case ServerSentEventField.DATA:
+    case ServerSentEventFields.DATA:
       currentEvent.data.push(value);
       break;
-    case ServerSentEventField.ID:
+    case ServerSentEventFields.ID:
       currentEvent.id = value;
       break;
-    case ServerSentEventField.RETRY: {
+    case ServerSentEventFields.RETRY: {
       const retryValue = parseInt(value, 10);
       if (!isNaN(retryValue)) {
         currentEvent.retry = retryValue;
@@ -83,8 +83,7 @@ const DEFAULT_EVENT_TYPE = 'message';
  * Implements the Transformer interface for processing data transformation in TransformStream.
  */
 export class ServerSentEventTransformer
-  implements Transformer<string, ServerSentEvent>
-{
+  implements Transformer<string, ServerSentEvent> {
   // Initialize currentEvent with default values in a closure
   private currentEvent: EventState = {
     event: DEFAULT_EVENT_TYPE,
