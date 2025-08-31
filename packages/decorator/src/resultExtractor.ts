@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { ExchangeError, FetchExchange } from '@ahoo-wang/fetcher';
+import { FetchExchange } from '@ahoo-wang/fetcher';
 import {
   JsonServerSentEventStream,
   ServerSentEventStream,
@@ -96,12 +96,7 @@ export const TextResultExtractor: ResultExtractor = (
 export const EventStreamResultExtractor: ResultExtractor = (
   exchange: FetchExchange,
 ) => {
-  // Check if response supports event stream, throw exception if not supported
-  if (!exchange.requiredResponse.eventStream) {
-    throw new ExchangeError(exchange, 'ServerSentEventStream is not supported');
-  }
-  // Return the event stream
-  return exchange.requiredResponse.eventStream()!;
+  return exchange.requiredResponse.requiredEventStream();
 };
 
 /**
@@ -114,15 +109,7 @@ export const EventStreamResultExtractor: ResultExtractor = (
 export const JsonEventStreamResultExtractor: ResultExtractor = (
   exchange: FetchExchange,
 ) => {
-  // Check if response supports event stream, throw exception if not supported
-  if (!exchange.requiredResponse.jsonEventStream) {
-    throw new ExchangeError(
-      exchange,
-      'JsonServerSentEventStream is not supported',
-    );
-  }
-  // Return the event stream
-  return exchange.requiredResponse.jsonEventStream()!;
+  return exchange.requiredResponse.requiredJsonEventStream();
 };
 
 /**
