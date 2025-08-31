@@ -102,6 +102,22 @@ async function streamChatExample() {
 }
 ```
 
+### 🧩 [`@ahoo-wang/fetcher-wow`](./packages/wow) - CQRS/DDD Framework Support
+
+First-class integration with the [Wow](https://github.com/Ahoo-Wang/Wow) CQRS/DDD framework:
+
+- **🚀 Command Client**: High-level client for sending commands to Wow services with both synchronous and streaming
+  responses
+- **🔍 Query Clients**: Specialized clients for querying snapshot and event stream data with comprehensive query
+  operations
+- **📡 Real-time Event Streaming**: Built-in support for Server-Sent Events to receive real-time command results and data
+  updates
+- **📦 Complete TypeScript Support**: Full type definitions for all Wow framework entities including commands, events,
+  and queries
+- **🧱 DDD Primitives**: Essential Domain-Driven Design building blocks including aggregates, events, and value objects
+- **🔄 CQRS Pattern Implementation**: First-class support for Command Query Responsibility Segregation architectural
+  pattern
+
 ### 🔐 [`@ahoo-wang/fetcher-cosec`](./packages/cosec) - Enterprise Security
 
 Secure your applications with integrated authentication:
@@ -121,6 +137,7 @@ Secure your applications with integrated authentication:
 | [`@ahoo-wang/fetcher`](./packages/fetcher)                 | **Core HTTP Client**<br/>Ultra-lightweight foundation with Axios-like API                                            | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
 | [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **Decorator Support**<br/>Declarative API service definitions                                                        | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
 | [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **Real-Time Streaming & LLM Support**<br/>Server-Sent Events (SSE) support with native LLM streaming API integration | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
+| [`@ahoo-wang/fetcher-wow`](./packages/wow)                 | **CQRS/DDD Framework Support**<br/>First-class integration with the Wow CQRS/DDD framework                           | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-wow.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-wow)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 |
 | [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | **Enterprise Security**<br/>CoSec authentication integration                                                         | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
 
 </div>
@@ -129,7 +146,7 @@ Secure your applications with integrated authentication:
 
 ### 📦 Installation
 
-```bash
+```shell
 # Install the core package
 npm install @ahoo-wang/fetcher
 
@@ -311,7 +328,7 @@ Explore comprehensive, production-ready implementations in our [integration-test
 
 ### 🚀 Development Commands
 
-```bash
+```shell
 # Install dependencies
 pnpm install
 
@@ -335,7 +352,7 @@ pnpm clean
 
 Update all packages simultaneously:
 
-```bash
+```shell
 pnpm update-version <new-version>
 ```
 

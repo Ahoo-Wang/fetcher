@@ -95,6 +95,17 @@ async function streamChatExample() {
 }
 ```
 
+### 🧩 [`@ahoo-wang/fetcher-wow`](./packages/wow) - CQRS/DDD 框架支持
+
+与 [Wow](https://github.com/Ahoo-Wang/Wow) CQRS/DDD 框架的一流集成：
+
+- **🚀 命令客户端**: 用于向 Wow 服务发送命令的高级客户端，支持同步和流式响应
+- **🔍 查询客户端**: 专门用于查询快照和事件流数据的客户端，支持全面的查询操作
+- **📡 实时事件流**: 内置对服务器发送事件的支持，用于接收实时命令结果和数据更新
+- **📦 完整的 TypeScript 支持**: 为所有 Wow 框架实体提供完整的类型定义，包括命令、事件和查询
+- **🧱 DDD 基础构件**: 基本的领域驱动设计构建块，包括聚合、事件和值对象
+- **🔄 CQRS 模式实现**: 对命令查询责任分离架构模式的一流支持
+
 ### 🔐 [`@ahoo-wang/fetcher-cosec`](./packages/cosec) - 企业安全
 
 使用集成认证保护您的应用：
@@ -114,6 +125,7 @@ async function streamChatExample() {
 | [`@ahoo-wang/fetcher`](./packages/fetcher)                 | **核心 HTTP 客户端**<br/>具有 Axios 类似 API 的超轻量级基础                      | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
 | [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **装饰器支持**<br/>声明式 API 服务定义                                       | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
 | [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **实时流和 LLM 支持**<br/>Server-Sent Events (SSE) 支持，原生 LLM 流式 API 集成 | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
+| [`@ahoo-wang/fetcher-wow`](./packages/wow)                 | **CQRS/DDD 框架支持**<br/>与 Wow CQRS/DDD 框架的一流集成                     | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-wow.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-wow)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 |
 | [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | **企业安全**<br/>CoSec 认证集成                                          | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
 
 </div>
@@ -122,7 +134,7 @@ async function streamChatExample() {
 
 ### 📦 安装
 
-```bash
+``` shell
 # 安装核心包
 npm install @ahoo-wang/fetcher
 
@@ -304,7 +316,7 @@ if (llmResponse.jsonEventStream) {
 
 ### 🚀 开发命令
 
-```bash
+```shell
 # 安装依赖
 pnpm install
 
@@ -328,7 +340,7 @@ pnpm clean
 
 同时更新所有包：
 
-```bash
+```shell
 pnpm update-version <new-version>
 ```
 
