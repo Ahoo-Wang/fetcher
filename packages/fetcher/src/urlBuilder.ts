@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { combineURLs } from './urls';
+import { combineURLs, interpolateUrl } from './urls';
 import { BaseURLCapable, FetchRequest } from './fetchRequest';
 
 /**
@@ -108,7 +108,7 @@ export class UrlBuilder implements BaseURLCapable {
     const path = params?.path;
     const query = params?.query;
     const combinedURL = combineURLs(this.baseURL, url);
-    let finalUrl = this.interpolateUrl(combinedURL, path);
+    let finalUrl = interpolateUrl(combinedURL, path);
     if (query) {
       const queryString = new URLSearchParams(query).toString();
       if (queryString) {
@@ -129,45 +129,6 @@ export class UrlBuilder implements BaseURLCapable {
    */
   resolveRequestUrl(request: FetchRequest): string {
     return this.build(request.url, request.urlParams);
-  }
-
-  /**
-   * Replaces placeholders in the URL with path parameters.
-   *
-   * @param url - Path string containing placeholders, e.g., "http://localhost/users/{id}/posts/{postId}"
-   * @param path - Path parameter object used to replace placeholders in the URL
-   * @returns Path string with placeholders replaced
-   * @throws Error when required path parameters are missing
-   *
-   * @example
-   * ```typescript
-   * const urlBuilder = new UrlBuilder('https://api.example.com');
-   * const result = urlBuilder.interpolateUrl('/users/{id}/posts/{postId}', {
-   *   path: { id: 123, postId: 456 }
-   * });
-   * // Result: https://api.example.com/users/123/posts/456
-   * ```
-   *
-   * @example
-   * ```typescript
-   * // Missing required parameter throws an error
-   * try {
-   *   urlBuilder.interpolateUrl('/users/{id}', { name: 'John' });
-   * } catch (error) {
-   *   console.error(error.message); // "Missing required path parameter: id"
-   * }
-   * ```
-   */
-  interpolateUrl(url: string, path?: Record<string, any> | null): string {
-    if (!path) return url;
-    return url.replace(/{([^}]+)}/g, (_, key) => {
-      const value = path[key];
-      // If path parameter is undefined, throw an error instead of preserving the placeholder
-      if (value === undefined) {
-        throw new Error(`Missing required path parameter: ${key}`);
-      }
-      return String(value);
-    });
   }
 }
 
