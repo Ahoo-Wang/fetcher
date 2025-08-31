@@ -85,6 +85,7 @@ import {
   ResultExtractors,
 } from '@ahoo-wang/fetcher-decorator';
 import '@ahoo-wang/fetcher-eventstream';
+import { JsonServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 import { ChatRequest, ChatResponse } from './types';
 
 export const llmFetcherName = 'llm';
@@ -232,10 +233,8 @@ const fetcher = new Fetcher({
 // In responses with text/event-stream content type, 
 // Response objects will automatically have eventStream() and jsonEventStream() methods
 const response = await fetcher.get('/events');
-if (response.isEventStream) {
-  for await (const event of response.eventStream()) {
-    console.log('Received event:', event);
-  }
+for await (const event of response.requiredEventStream()) {
+  console.log('Received event:', event);
 }
 
 // Using jsonEventStream for JSON data
