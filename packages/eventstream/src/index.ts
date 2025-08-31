@@ -12,8 +12,7 @@
  */
 
 export * from './eventStreamConverter';
-export * from './eventStreamInterceptor';
 export * from './jsonServerSentEventTransformStream';
+export * from './responses';
 export * from './serverSentEventTransformStream';
 export * from './textLineTransformStream';
-export * from './types';
