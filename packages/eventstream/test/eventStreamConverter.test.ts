@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { toServerSentEventStream } from '../src/eventStreamConverter';
+import { toServerSentEventStream } from '../src';
 
 describe('eventStreamConverter.ts', () => {
   it('should throw error when response body is null', () => {
