@@ -11,8 +11,14 @@
  * limitations under the License.
  */
 
-import { ServerSentEventStream, toServerSentEventStream } from './eventStreamConverter';
-import { JsonServerSentEventStream, toJsonServerSentEventStream } from './jsonServerSentEventTransformStream';
+import {
+  ServerSentEventStream,
+  toServerSentEventStream,
+} from './eventStreamConverter';
+import {
+  JsonServerSentEventStream,
+  toJsonServerSentEventStream,
+} from './jsonServerSentEventTransformStream';
 import { CONTENT_TYPE_HEADER, ContentTypeValues } from '@ahoo-wang/fetcher';
 
 declare global {

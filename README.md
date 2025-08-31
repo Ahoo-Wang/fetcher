@@ -54,12 +54,14 @@ Power your real-time applications with Server-Sent Events support, specially des
 APIs:
 
 - **📡 Event Stream Conversion**: Converts `text/event-stream` responses to async generators of `ServerSentEvent` objects
-- **🔌 Interceptor Integration**: Automatically adds `eventStream()` method to responses with `text/event-stream` content
+- **🔌 Interceptor Integration**: Automatically adds `eventStream()` and `jsonEventStream()` methods to responses with
+  `text/event-stream` content
   type
 - **📋 SSE Parsing**: Parses Server-Sent Events according to the specification, including data, event, id, and retry
   fields
 - **🔄 Streaming Support**: Handles chunked data and multi-line events correctly
 - **💬 Comment Handling**: Properly ignores comment lines (lines starting with `:`) as per SSE specification
+- **🛡️ TypeScript Support**: Complete TypeScript type definitions
 - **⚡ Performance Optimized**: Efficient parsing and streaming for high-performance applications
 - **🤖 LLM Streaming Ready**: Native support for streaming responses from popular LLM APIs like OpenAI GPT, Claude, etc.
 

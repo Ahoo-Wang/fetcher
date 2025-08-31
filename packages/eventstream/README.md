@@ -23,6 +23,7 @@ APIs.
 - **💬 Comment Handling**: Properly ignores comment lines (lines starting with `:`) as per SSE specification
 - **🛡️ TypeScript Support**: Complete TypeScript type definitions
 - **⚡ Performance Optimized**: Efficient parsing and streaming for high-performance applications
+- **🤖 LLM Streaming Ready**: Native support for streaming responses from popular LLM APIs like OpenAI GPT, Claude, etc.
 
 ## 🚀 Quick Start
 
@@ -230,7 +231,7 @@ const fetcher = new Fetcher({
   baseURL: 'https://api.example.com',
 });
 
-// In responses with text/event-stream content type, 
+// In responses with text/event-stream content type,
 // Response objects will automatically have eventStream() and jsonEventStream() methods
 const response = await fetcher.get('/events');
 for await (const event of response.requiredEventStream()) {
