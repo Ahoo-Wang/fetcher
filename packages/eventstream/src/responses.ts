@@ -19,7 +19,7 @@ import {
   JsonServerSentEventStream,
   toJsonServerSentEventStream,
 } from './jsonServerSentEventTransformStream';
-import { CONTENT_TYPE_HEADER, ContentTypeValues } from '@ahoo-wang/fetcher';
+import { CONTENT_TYPE_HEADER, ContentTypeValues, FetcherError } from '@ahoo-wang/fetcher';
 
 declare global {
   interface Response {
@@ -150,7 +150,7 @@ Response.prototype.eventStream = function() {
 Response.prototype.requiredEventStream = function() {
   const eventStream = this.eventStream();
   if (!eventStream) {
-    throw new Error('Event stream is not available.');
+    throw new FetcherError(`Event stream is not available. Response content-type: [${this.contentType}]`);
   }
   return eventStream;
 };
@@ -182,7 +182,7 @@ Response.prototype.jsonEventStream = function <DATA>() {
 Response.prototype.requiredJsonEventStream = function <DATA>() {
   const eventStream = this.jsonEventStream<DATA>();
   if (!eventStream) {
-    throw new Error('Event stream is not available.');
+    throw new FetcherError(`Event stream is not available. Response content-type: [${this.contentType}]`);
   }
   return eventStream;
 };

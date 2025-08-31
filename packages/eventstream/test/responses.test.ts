@@ -143,7 +143,7 @@ describe('responses.ts', () => {
       const response = new Response('test', { headers });
 
       expect(() => response.requiredEventStream()).toThrow(
-        'Event stream is not available.',
+        'Event stream is not available. Response content-type: [application/json]',
       );
     });
   });
@@ -203,7 +203,7 @@ describe('responses.ts', () => {
       const response = new Response('test', { headers });
 
       expect(() => response.requiredJsonEventStream<any>()).toThrow(
-        'Event stream is not available.',
+        'Event stream is not available. Response content-type: [application/json]',
       );
     });
   });
