@@ -16,11 +16,35 @@ import {
   ServerSentEvent,
   ServerSentEventTransformStream,
 } from './serverSentEventTransformStream';
+import { FetcherError } from '@ahoo-wang/fetcher';
 
 /**
  * A ReadableStream of ServerSentEvent objects.
  */
 export type ServerSentEventStream = ReadableStream<ServerSentEvent>;
+
+/**
+ * Custom error class for event stream conversion errors.
+ * Thrown when there are issues converting a Response to a ServerSentEventStream.
+ */
+export class EventStreamConvertError extends FetcherError {
+  /**
+   * Creates a new EventStreamConvertError instance.
+   * @param response - The Response object associated with the error
+   * @param errorMsg - Optional error message describing what went wrong during conversion
+   * @param cause - Optional underlying error that caused this error
+   */
+  constructor(
+    public readonly response: Response,
+    errorMsg?: string,
+    cause?: Error | any,
+  ) {
+    super(errorMsg, cause);
+    this.name = 'EventStreamConvertError';
+    // Restore prototype chain for proper inheritance
+    Object.setPrototypeOf(this, EventStreamConvertError.prototype);
+  }
+}
 
 /**
  * Converts a Response object to a ServerSentEventStream.
@@ -38,7 +62,7 @@ export function toServerSentEventStream(
   response: Response,
 ): ServerSentEventStream {
   if (!response.body) {
-    throw new Error('Response body is null');
+    throw new EventStreamConvertError(response, 'Response body is null');
   }
 
   return response.body

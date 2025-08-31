@@ -12,8 +12,7 @@
  */
 
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { toServerSentEventStream } from '../src';
-import { toJsonServerSentEventStream } from '../src';
+import { EventStreamConvertError, toServerSentEventStream, toJsonServerSentEventStream } from '../src';
 import '../src/responses';
 import { CONTENT_TYPE_HEADER, ContentTypeValues } from '@ahoo-wang/fetcher';
 
@@ -142,9 +141,8 @@ describe('responses.ts', () => {
       headers.set(CONTENT_TYPE_HEADER, 'application/json');
       const response = new Response('test', { headers });
 
-      expect(() => response.requiredEventStream()).toThrow(
-        'Event stream is not available. Response content-type: [application/json]',
-      );
+      expect(() => response.requiredEventStream())
+        .toThrow(EventStreamConvertError);
     });
   });
 
@@ -202,9 +200,8 @@ describe('responses.ts', () => {
       headers.set(CONTENT_TYPE_HEADER, 'application/json');
       const response = new Response('test', { headers });
 
-      expect(() => response.requiredJsonEventStream<any>()).toThrow(
-        'Event stream is not available. Response content-type: [application/json]',
-      );
+      expect(() => response.requiredJsonEventStream<any>())
+        .toThrow(EventStreamConvertError);
     });
   });
 
