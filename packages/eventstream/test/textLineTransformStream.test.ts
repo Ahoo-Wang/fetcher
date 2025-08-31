@@ -15,7 +15,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   TextLineTransformer,
   TextLineTransformStream,
-} from '../src/textLineTransformStream';
+} from '../src';
 
 describe('textLineTransformStream.ts', () => {
   describe('TextLineTransformStream', () => {
