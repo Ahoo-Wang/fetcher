@@ -29,14 +29,18 @@ vi.mock('../src/jsonServerSentEventTransformStream', () => ({
 // Helper function to setup mocks
 function setupMocks() {
   // Setup mock to return a stream for event-stream content type
-  (toServerSentEventStream as any).mockImplementation((response: {
-    headers: { get: (arg0: string) => string | string[]; };
-  }) => {
-    if (response.headers.get(CONTENT_TYPE_HEADER)?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
-      return new ReadableStream();
-    }
-    return null;
-  });
+  (toServerSentEventStream as any).mockImplementation(
+    (response: { headers: { get: (arg0: string) => string | string[] } }) => {
+      if (
+        response.headers
+          .get(CONTENT_TYPE_HEADER)
+          ?.includes(ContentTypeValues.TEXT_EVENT_STREAM)
+      ) {
+        return new ReadableStream();
+      }
+      return null;
+    },
+  );
 }
 
 describe('responses.ts', () => {
@@ -92,7 +96,7 @@ describe('responses.ts', () => {
       const headers = new Headers();
       headers.set(CONTENT_TYPE_HEADER, '');
       const response = new Response('test', { headers });
-      
+
       expect(response.isEventStream).toBe(false);
     });
   });
@@ -138,14 +142,18 @@ describe('responses.ts', () => {
       headers.set(CONTENT_TYPE_HEADER, 'application/json');
       const response = new Response('test', { headers });
 
-      expect(() => response.requiredEventStream()).toThrow('Event stream is not available.');
+      expect(() => response.requiredEventStream()).toThrow(
+        'Event stream is not available.',
+      );
     });
   });
 
   describe('jsonEventStream method', () => {
     it('should return a JsonServerSentEventStream for event stream responses', () => {
       // Setup additional mock for JSON transformation
-      (toJsonServerSentEventStream as any).mockReturnValue(new ReadableStream());
+      (toJsonServerSentEventStream as any).mockReturnValue(
+        new ReadableStream(),
+      );
 
       const headers = new Headers();
       headers.set(CONTENT_TYPE_HEADER, ContentTypeValues.TEXT_EVENT_STREAM);
@@ -174,7 +182,9 @@ describe('responses.ts', () => {
   describe('requiredJsonEventStream method', () => {
     it('should return a JsonServerSentEventStream for event stream responses', () => {
       // Setup additional mock for JSON transformation
-      (toJsonServerSentEventStream as any).mockReturnValue(new ReadableStream());
+      (toJsonServerSentEventStream as any).mockReturnValue(
+        new ReadableStream(),
+      );
 
       const headers = new Headers();
       headers.set(CONTENT_TYPE_HEADER, ContentTypeValues.TEXT_EVENT_STREAM);
@@ -192,7 +202,9 @@ describe('responses.ts', () => {
       headers.set(CONTENT_TYPE_HEADER, 'application/json');
       const response = new Response('test', { headers });
 
-      expect(() => response.requiredJsonEventStream<any>()).toThrow('Event stream is not available.');
+      expect(() => response.requiredJsonEventStream<any>()).toThrow(
+        'Event stream is not available.',
+      );
     });
   });
 

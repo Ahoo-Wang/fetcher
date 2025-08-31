@@ -111,7 +111,10 @@ describe('ResultExtractor', () => {
         configurable: true,
         enumerable: true,
         value: () => {
-          throw new ExchangeError(new FetchExchange({} as any, mockRequest, noEventStreamResponse), 'ServerSentEventStream is not supported');
+          throw new ExchangeError(
+            new FetchExchange({} as any, mockRequest, noEventStreamResponse),
+            'ServerSentEventStream is not supported',
+          );
         },
       });
 
@@ -133,11 +136,15 @@ describe('ResultExtractor', () => {
 
       // Mock the requiredJsonEventStream function on the response
       const mockJsonEventStream = {} as JsonServerSentEventStream<any>;
-      Object.defineProperty(jsonEventStreamResponse, 'requiredJsonEventStream', {
-        configurable: true,
-        enumerable: true,
-        value: () => mockJsonEventStream,
-      });
+      Object.defineProperty(
+        jsonEventStreamResponse,
+        'requiredJsonEventStream',
+        {
+          configurable: true,
+          enumerable: true,
+          value: () => mockJsonEventStream,
+        },
+      );
 
       const jsonEventStreamExchange = new FetchExchange(
         {} as any,
@@ -152,13 +159,24 @@ describe('ResultExtractor', () => {
     it('should throw ExchangeError when server does not support JsonServerSentEventStream', () => {
       const noJsonEventStreamResponse = new Response('');
       // Mock the requiredJsonEventStream function to throw ExchangeError
-      Object.defineProperty(noJsonEventStreamResponse, 'requiredJsonEventStream', {
-        configurable: true,
-        enumerable: true,
-        value: () => {
-          throw new ExchangeError(new FetchExchange({} as any, mockRequest, noJsonEventStreamResponse), 'JsonServerSentEventStream is not supported');
+      Object.defineProperty(
+        noJsonEventStreamResponse,
+        'requiredJsonEventStream',
+        {
+          configurable: true,
+          enumerable: true,
+          value: () => {
+            throw new ExchangeError(
+              new FetchExchange(
+                {} as any,
+                mockRequest,
+                noJsonEventStreamResponse,
+              ),
+              'JsonServerSentEventStream is not supported',
+            );
+          },
         },
-      });
+      );
 
       const noJsonEventStreamExchange = new FetchExchange(
         {} as any,
