@@ -116,7 +116,7 @@ Object.defineProperty(Response.prototype, 'isEventStream', {
     if (!contentType) {
       return false;
     }
-    return contentType.toLowerCase().includes(ContentTypeValues.TEXT_EVENT_STREAM);
+    return contentType.includes(ContentTypeValues.TEXT_EVENT_STREAM);
   },
 });
 

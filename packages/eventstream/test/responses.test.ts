@@ -12,7 +12,8 @@
  */
 
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { toServerSentEventStream, toJsonServerSentEventStream } from '../src';
+import { toServerSentEventStream } from '../src';
+import { toJsonServerSentEventStream } from '../src';
 import '../src/responses';
 import { CONTENT_TYPE_HEADER, ContentTypeValues } from '@ahoo-wang/fetcher';
 
@@ -25,10 +26,22 @@ vi.mock('../src/jsonServerSentEventTransformStream', () => ({
   toJsonServerSentEventStream: vi.fn(),
 }));
 
+// Helper function to setup mocks
+function setupMocks() {
+  // Setup mock to return a stream for event-stream content type
+  (toServerSentEventStream as any).mockImplementation((response) => {
+    if (response.headers.get(CONTENT_TYPE_HEADER)?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
+      return new ReadableStream();
+    }
+    return null;
+  });
+}
+
 describe('responses.ts', () => {
   beforeEach(() => {
     // Clear all mocks before each test
     vi.clearAllMocks();
+    setupMocks();
   });
 
   describe('contentType property', () => {
@@ -65,18 +78,16 @@ describe('responses.ts', () => {
 
       expect(response.isEventStream).toBe(false);
     });
+
+    it('should return false when content-type header is not set', () => {
+      const response = new Response('test');
+
+      expect(response.isEventStream).toBe(false);
+    });
   });
 
   describe('eventStream method', () => {
     it('should return a ServerSentEventStream for event stream responses', () => {
-      // Setup mock to return a stream for event-stream content type
-      (toServerSentEventStream as any).mockImplementation((response) => {
-        if (response.headers.get(CONTENT_TYPE_HEADER)?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
-          return new ReadableStream();
-        }
-        return null;
-      });
-
       const headers = new Headers();
       headers.set(CONTENT_TYPE_HEADER, ContentTypeValues.TEXT_EVENT_STREAM);
       const response = new Response('test', { headers });
@@ -88,14 +99,6 @@ describe('responses.ts', () => {
     });
 
     it('should return null for non-event stream responses', () => {
-      // Setup mock to return a stream for event-stream content type
-      (toServerSentEventStream as any).mockImplementation((response) => {
-        if (response.headers.get(CONTENT_TYPE_HEADER)?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
-          return new ReadableStream();
-        }
-        return null;
-      });
-
       const headers = new Headers();
       headers.set(CONTENT_TYPE_HEADER, 'application/json');
       const response = new Response('test', { headers });
@@ -109,14 +112,6 @@ describe('responses.ts', () => {
 
   describe('requiredEventStream method', () => {
     it('should return a ServerSentEventStream for event stream responses', () => {
-      // Setup mock to return a stream for event-stream content type
-      (toServerSentEventStream as any).mockImplementation((response) => {
-        if (response.headers.get(CONTENT_TYPE_HEADER)?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
-          return new ReadableStream();
-        }
-        return null;
-      });
-
       const headers = new Headers();
       headers.set(CONTENT_TYPE_HEADER, ContentTypeValues.TEXT_EVENT_STREAM);
       const response = new Response('test', { headers });
@@ -128,14 +123,6 @@ describe('responses.ts', () => {
     });
 
     it('should throw an error for non-event stream responses', () => {
-      // Setup mock to return a stream for event-stream content type
-      (toServerSentEventStream as any).mockImplementation((response) => {
-        if (response.headers.get(CONTENT_TYPE_HEADER)?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
-          return new ReadableStream();
-        }
-        return null;
-      });
-
       const headers = new Headers();
       headers.set(CONTENT_TYPE_HEADER, 'application/json');
       const response = new Response('test', { headers });
@@ -146,13 +133,7 @@ describe('responses.ts', () => {
 
   describe('jsonEventStream method', () => {
     it('should return a JsonServerSentEventStream for event stream responses', () => {
-      // Setup mocks
-      (toServerSentEventStream as any).mockImplementation((response) => {
-        if (response.headers.get(CONTENT_TYPE_HEADER)?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
-          return new ReadableStream();
-        }
-        return null;
-      });
+      // Setup additional mock for JSON transformation
       (toJsonServerSentEventStream as any).mockReturnValue(new ReadableStream());
 
       const headers = new Headers();
@@ -167,15 +148,6 @@ describe('responses.ts', () => {
     });
 
     it('should return null for non-event stream responses', () => {
-      // Setup mock to return a stream for event-stream content type
-      (toServerSentEventStream as any).mockImplementation((response) => {
-        if (response.headers.get(CONTENT_TYPE_HEADER)?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
-          return new ReadableStream();
-        }
-        return null;
-      });
-      (toJsonServerSentEventStream as any).mockReturnValue(new ReadableStream());
-
       const headers = new Headers();
       headers.set(CONTENT_TYPE_HEADER, 'application/json');
       const response = new Response('test', { headers });
@@ -190,13 +162,7 @@ describe('responses.ts', () => {
 
   describe('requiredJsonEventStream method', () => {
     it('should return a JsonServerSentEventStream for event stream responses', () => {
-      // Setup mocks
-      (toServerSentEventStream as any).mockImplementation((response) => {
-        if (response.headers.get(CONTENT_TYPE_HEADER)?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
-          return new ReadableStream();
-        }
-        return null;
-      });
+      // Setup additional mock for JSON transformation
       (toJsonServerSentEventStream as any).mockReturnValue(new ReadableStream());
 
       const headers = new Headers();
@@ -211,15 +177,6 @@ describe('responses.ts', () => {
     });
 
     it('should throw an error for non-event stream responses', () => {
-      // Setup mock to return a stream for event-stream content type
-      (toServerSentEventStream as any).mockImplementation((response) => {
-        if (response.headers.get(CONTENT_TYPE_HEADER)?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
-          return new ReadableStream();
-        }
-        return null;
-      });
-      (toJsonServerSentEventStream as any).mockReturnValue(new ReadableStream());
-
       const headers = new Headers();
       headers.set(CONTENT_TYPE_HEADER, 'application/json');
       const response = new Response('test', { headers });

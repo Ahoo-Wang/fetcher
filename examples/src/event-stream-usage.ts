@@ -12,15 +12,12 @@
  */
 
 import { Fetcher } from '@ahoo-wang/fetcher';
-import { EventStreamInterceptor } from '@ahoo-wang/fetcher-eventstream';
+import '@ahoo-wang/fetcher-eventstream';
 
 // Create a Fetcher instance with EventStreamInterceptor
 const fetcher = new Fetcher({
   baseURL: 'https://jsonplaceholder.typicode.com',
 });
-
-// Add the event stream interceptor
-fetcher.interceptors.response.use(new EventStreamInterceptor());
 
 // Example: Simulate Server-Sent Events usage
 // In a real application, you would connect to an actual SSE endpoint
