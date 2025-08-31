@@ -12,7 +12,11 @@
  */
 
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { EventStreamConvertError, toServerSentEventStream, toJsonServerSentEventStream } from '../src';
+import {
+  EventStreamConvertError,
+  toServerSentEventStream,
+  toJsonServerSentEventStream,
+} from '../src';
 import '../src/responses';
 import { CONTENT_TYPE_HEADER, ContentTypeValues } from '@ahoo-wang/fetcher';
 
@@ -141,8 +145,9 @@ describe('responses.ts', () => {
       headers.set(CONTENT_TYPE_HEADER, 'application/json');
       const response = new Response('test', { headers });
 
-      expect(() => response.requiredEventStream())
-        .toThrow(EventStreamConvertError);
+      expect(() => response.requiredEventStream()).toThrow(
+        EventStreamConvertError,
+      );
     });
   });
 
@@ -200,8 +205,9 @@ describe('responses.ts', () => {
       headers.set(CONTENT_TYPE_HEADER, 'application/json');
       const response = new Response('test', { headers });
 
-      expect(() => response.requiredJsonEventStream<any>())
-        .toThrow(EventStreamConvertError);
+      expect(() => response.requiredJsonEventStream<any>()).toThrow(
+        EventStreamConvertError,
+      );
     });
   });
 

@@ -134,7 +134,7 @@ async function streamChatExample() {
 
 ### 📦 安装
 
-``` shell
+```shell
 # 安装核心包
 npm install @ahoo-wang/fetcher
 

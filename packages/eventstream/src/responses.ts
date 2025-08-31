@@ -151,7 +151,10 @@ Response.prototype.eventStream = function() {
 Response.prototype.requiredEventStream = function() {
   const eventStream = this.eventStream();
   if (!eventStream) {
-    throw new EventStreamConvertError(this, `Event stream is not available. Response content-type: [${this.contentType}]`);
+    throw new EventStreamConvertError(
+      this,
+      `Event stream is not available. Response content-type: [${this.contentType}]`,
+    );
   }
   return eventStream;
 };
@@ -183,7 +186,10 @@ Response.prototype.jsonEventStream = function <DATA>() {
 Response.prototype.requiredJsonEventStream = function <DATA>() {
   const eventStream = this.jsonEventStream<DATA>();
   if (!eventStream) {
-    throw new EventStreamConvertError(this, `Event stream is not available. Response content-type: [${this.contentType}]`);
+    throw new EventStreamConvertError(
+      this,
+      `Event stream is not available. Response content-type: [${this.contentType}]`,
+    );
   }
   return eventStream;
 };

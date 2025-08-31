@@ -56,7 +56,6 @@ export function combineURLs(baseURL: string, relativeURL: string) {
     : baseURL;
 }
 
-
 /**
  * Regular expression pattern to match path parameters in the format {paramName}
  *
@@ -125,7 +124,10 @@ export function extractPathParams(url: string): string[] {
  * }
  * ```
  */
-export function interpolateUrl(url: string, path?: Record<string, any> | null): string {
+export function interpolateUrl(
+  url: string,
+  path?: Record<string, any> | null,
+): string {
   if (!path) return url;
   return url.replace(PATH_PARAM_REGEX, (_, key) => {
     const value = path[key];
@@ -136,4 +138,3 @@ export function interpolateUrl(url: string, path?: Record<string, any> | null): 
     return String(value);
   });
 }
-

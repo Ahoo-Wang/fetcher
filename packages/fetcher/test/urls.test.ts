@@ -12,7 +12,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { isAbsoluteURL, combineURLs, extractPathParams, interpolateUrl } from '../src';
+import {
+  isAbsoluteURL,
+  combineURLs,
+  extractPathParams,
+  interpolateUrl,
+} from '../src';
 
 describe('urls.ts', () => {
   describe('isAbsoluteURL', () => {
@@ -70,12 +75,19 @@ describe('urls.ts', () => {
 
     it('should return array with one parameter when URL contains one path parameter', () => {
       expect(extractPathParams('/users/{id}')).toEqual(['id']);
-      expect(extractPathParams('https://api.example.com/users/{userId}')).toEqual(['userId']);
+      expect(
+        extractPathParams('https://api.example.com/users/{userId}'),
+      ).toEqual(['userId']);
     });
 
     it('should return array with multiple parameters when URL contains multiple path parameters', () => {
-      expect(extractPathParams('/users/{id}/posts/{postId}')).toEqual(['id', 'postId']);
-      expect(extractPathParams('https://api.example.com/{resource}/{id}/details')).toEqual(['resource', 'id']);
+      expect(extractPathParams('/users/{id}/posts/{postId}')).toEqual([
+        'id',
+        'postId',
+      ]);
+      expect(
+        extractPathParams('https://api.example.com/{resource}/{id}/details'),
+      ).toEqual(['resource', 'id']);
     });
 
     it('should return empty array when URL is empty string', () => {
@@ -83,40 +95,65 @@ describe('urls.ts', () => {
     });
 
     it('should extract parameters with special characters', () => {
-      expect(extractPathParams('/api/{version}/users/{user_id}/details')).toEqual(['version', 'user_id']);
-      expect(extractPathParams('/{category-name}/{sub-category}')).toEqual(['category-name', 'sub-category']);
+      expect(
+        extractPathParams('/api/{version}/users/{user_id}/details'),
+      ).toEqual(['version', 'user_id']);
+      expect(extractPathParams('/{category-name}/{sub-category}')).toEqual([
+        'category-name',
+        'sub-category',
+      ]);
     });
 
     it('should extract all parameters when URL contains only path parameters', () => {
-      expect(extractPathParams('{first}/{second}/{third}')).toEqual(['first', 'second', 'third']);
+      expect(extractPathParams('{first}/{second}/{third}')).toEqual([
+        'first',
+        'second',
+        'third',
+      ]);
     });
   });
 
   describe('interpolateUrl', () => {
     it('should return original URL when path parameters are not provided', () => {
-      expect(interpolateUrl('/users/{id}/posts/{postId}')).toBe('/users/{id}/posts/{postId}');
-      expect(interpolateUrl('/users/{id}/posts/{postId}', null)).toBe('/users/{id}/posts/{postId}');
-      expect(interpolateUrl('/users/{id}/posts/{postId}', undefined)).toBe('/users/{id}/posts/{postId}');
+      expect(interpolateUrl('/users/{id}/posts/{postId}')).toBe(
+        '/users/{id}/posts/{postId}',
+      );
+      expect(interpolateUrl('/users/{id}/posts/{postId}', null)).toBe(
+        '/users/{id}/posts/{postId}',
+      );
+      expect(interpolateUrl('/users/{id}/posts/{postId}', undefined)).toBe(
+        '/users/{id}/posts/{postId}',
+      );
     });
 
     it('should replace placeholders with provided values', () => {
       expect(interpolateUrl('/users/{id}', { id: 123 })).toBe('/users/123');
-      expect(interpolateUrl('/users/{id}/posts/{postId}', { id: 123, postId: 456 })).toBe('/users/123/posts/456');
-      expect(interpolateUrl('https://api.example.com/{resource}/{id}', {
-        resource: 'users',
-        id: 123,
-      })).toBe('https://api.example.com/users/123');
+      expect(
+        interpolateUrl('/users/{id}/posts/{postId}', { id: 123, postId: 456 }),
+      ).toBe('/users/123/posts/456');
+      expect(
+        interpolateUrl('https://api.example.com/{resource}/{id}', {
+          resource: 'users',
+          id: 123,
+        }),
+      ).toBe('https://api.example.com/users/123');
     });
 
     it('should handle different data types for parameter values', () => {
       expect(interpolateUrl('/items/{id}', { id: 'abc' })).toBe('/items/abc');
-      expect(interpolateUrl('/items/{flag}', { flag: true })).toBe('/items/true');
+      expect(interpolateUrl('/items/{flag}', { flag: true })).toBe(
+        '/items/true',
+      );
       expect(interpolateUrl('/items/{count}', { count: 0 })).toBe('/items/0');
     });
 
     it('should throw error when required path parameter is missing', () => {
-      expect(() => interpolateUrl('/users/{id}', { name: 'John' })).toThrow('Missing required path parameter: id');
-      expect(() => interpolateUrl('/users/{id}/posts/{postId}', { id: 123 })).toThrow('Missing required path parameter: postId');
+      expect(() => interpolateUrl('/users/{id}', { name: 'John' })).toThrow(
+        'Missing required path parameter: id',
+      );
+      expect(() =>
+        interpolateUrl('/users/{id}/posts/{postId}', { id: 123 }),
+      ).toThrow('Missing required path parameter: postId');
     });
   });
 });
