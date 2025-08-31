@@ -29,7 +29,9 @@ vi.mock('../src/jsonServerSentEventTransformStream', () => ({
 // Helper function to setup mocks
 function setupMocks() {
   // Setup mock to return a stream for event-stream content type
-  (toServerSentEventStream as any).mockImplementation((response) => {
+  (toServerSentEventStream as any).mockImplementation((response: {
+    headers: { get: (arg0: string) => string | string[]; };
+  }) => {
     if (response.headers.get(CONTENT_TYPE_HEADER)?.includes(ContentTypeValues.TEXT_EVENT_STREAM)) {
       return new ReadableStream();
     }
