@@ -82,8 +82,17 @@ describe('responses.ts', () => {
     });
 
     it('should return false when content-type header is not set', () => {
+      // Create a response without any headers
       const response = new Response('test');
 
+      expect(response.isEventStream).toBe(false);
+    });
+
+    it('should return false when content-type header is empty string', () => {
+      const headers = new Headers();
+      headers.set(CONTENT_TYPE_HEADER, '');
+      const response = new Response('test', { headers });
+      
       expect(response.isEventStream).toBe(false);
     });
   });
