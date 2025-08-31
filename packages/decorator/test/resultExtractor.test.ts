@@ -86,12 +86,12 @@ describe('ResultExtractor', () => {
     it('should return ServerSentEventStream when response supports event stream', () => {
       const eventStreamResponse = new Response('');
 
-      // Mock the eventStream function on the response
+      // Mock the requiredEventStream function on the response
       const mockEventStream = {} as ServerSentEventStream;
-      Object.defineProperty(eventStreamResponse, 'eventStream', {
+      Object.defineProperty(eventStreamResponse, 'requiredEventStream', {
         configurable: true,
         enumerable: true,
-        get: () => () => mockEventStream,
+        value: () => mockEventStream,
       });
 
       const eventStreamExchange = new FetchExchange(
@@ -106,11 +106,13 @@ describe('ResultExtractor', () => {
 
     it('should throw ExchangeError when server does not support ServerSentEventStream', () => {
       const noEventStreamResponse = new Response('');
-      // Ensure there's no eventStream function
-      Object.defineProperty(noEventStreamResponse, 'eventStream', {
+      // Mock the requiredEventStream function to throw ExchangeError
+      Object.defineProperty(noEventStreamResponse, 'requiredEventStream', {
         configurable: true,
         enumerable: true,
-        get: () => undefined,
+        value: () => {
+          throw new ExchangeError(new FetchExchange({} as any, mockRequest, noEventStreamResponse), 'ServerSentEventStream is not supported');
+        },
       });
 
       const noEventStreamExchange = new FetchExchange(
@@ -129,12 +131,12 @@ describe('ResultExtractor', () => {
     it('should return JsonServerSentEventStream when response supports json event stream', () => {
       const jsonEventStreamResponse = new Response('');
 
-      // Mock the jsonEventStream function on the response
+      // Mock the requiredJsonEventStream function on the response
       const mockJsonEventStream = {} as JsonServerSentEventStream<any>;
-      Object.defineProperty(jsonEventStreamResponse, 'jsonEventStream', {
+      Object.defineProperty(jsonEventStreamResponse, 'requiredJsonEventStream', {
         configurable: true,
         enumerable: true,
-        get: () => () => mockJsonEventStream,
+        value: () => mockJsonEventStream,
       });
 
       const jsonEventStreamExchange = new FetchExchange(
@@ -149,11 +151,13 @@ describe('ResultExtractor', () => {
 
     it('should throw ExchangeError when server does not support JsonServerSentEventStream', () => {
       const noJsonEventStreamResponse = new Response('');
-      // Ensure there's no jsonEventStream function
-      Object.defineProperty(noJsonEventStreamResponse, 'jsonEventStream', {
+      // Mock the requiredJsonEventStream function to throw ExchangeError
+      Object.defineProperty(noJsonEventStreamResponse, 'requiredJsonEventStream', {
         configurable: true,
         enumerable: true,
-        get: () => undefined,
+        value: () => {
+          throw new ExchangeError(new FetchExchange({} as any, mockRequest, noJsonEventStreamResponse), 'JsonServerSentEventStream is not supported');
+        },
       });
 
       const noJsonEventStreamExchange = new FetchExchange(
