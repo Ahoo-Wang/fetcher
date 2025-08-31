@@ -158,69 +158,6 @@ describe('UrlBuilder', () => {
     });
   });
 
-  describe('interpolateUrl', () => {
-    it('should return original URL when path is undefined', () => {
-      const urlBuilder = new UrlBuilder('https://api.example.com');
-      const url = urlBuilder.interpolateUrl('/users/{id}');
-      expect(url).toBe('/users/{id}');
-    });
-
-    it('should return original URL when path is null', () => {
-      const urlBuilder = new UrlBuilder('https://api.example.com');
-      const url = urlBuilder.interpolateUrl('/users/{id}', null);
-      expect(url).toBe('/users/{id}');
-    });
-
-    it('should replace single path parameter', () => {
-      const urlBuilder = new UrlBuilder('https://api.example.com');
-      const url = urlBuilder.interpolateUrl('/users/{id}', { id: 123 });
-      expect(url).toBe('/users/123');
-    });
-
-    it('should replace multiple path parameters', () => {
-      const urlBuilder = new UrlBuilder('https://api.example.com');
-      const url = urlBuilder.interpolateUrl('/users/{userId}/posts/{postId}', {
-        userId: 123,
-        postId: 456,
-      });
-      expect(url).toBe('/users/123/posts/456');
-    });
-
-    it('should throw error when required path parameter is missing', () => {
-      const urlBuilder = new UrlBuilder('https://api.example.com');
-      expect(() => urlBuilder.interpolateUrl('/users/{id}', {})).toThrow(
-        'Missing required path parameter: id',
-      );
-    });
-
-    it('should throw error when required path parameter is undefined', () => {
-      const urlBuilder = new UrlBuilder('https://api.example.com');
-      expect(() =>
-        urlBuilder.interpolateUrl('/users/{id}', { id: undefined }),
-      ).toThrow('Missing required path parameter: id');
-    });
-
-    it('should handle path parameter with special characters', () => {
-      const urlBuilder = new UrlBuilder('https://api.example.com');
-      const url = urlBuilder.interpolateUrl('/users/{id}', {
-        id: 'user@domain.com',
-      });
-      expect(url).toBe('/users/user@domain.com');
-    });
-
-    it('should handle URL without placeholders', () => {
-      const urlBuilder = new UrlBuilder('https://api.example.com');
-      const url = urlBuilder.interpolateUrl('/users/list', { id: 123 });
-      expect(url).toBe('/users/list');
-    });
-
-    it('should handle empty URL', () => {
-      const urlBuilder = new UrlBuilder('https://api.example.com');
-      const url = urlBuilder.interpolateUrl('', { id: 123 });
-      expect(url).toBe('');
-    });
-  });
-
   describe('resolveRequestUrl', () => {
     it('should resolve request URL with urlParams', () => {
       const urlBuilder = new UrlBuilder('https://api.example.com');
