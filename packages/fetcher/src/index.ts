@@ -28,5 +28,6 @@ export * from './types';
 export * from './urlBuilder';
 export * from './urlResolveInterceptor';
 export * from './urls';
+export * from './urlTemplateResolver';
 export * from './utils';
 export * from './validateStatusInterceptor';
