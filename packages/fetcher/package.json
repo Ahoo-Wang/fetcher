@@ -45,7 +45,8 @@
     "build": "vite build",
     "test": "vitest run --coverage",
     "lint": "eslint . --fix",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^3.2.4",
