@@ -106,17 +106,23 @@ async function streamChatExample() {
 
 First-class integration with the [Wow](https://github.com/Ahoo-Wang/Wow) CQRS/DDD framework:
 
-- **🚀 Command Client**: High-level client for sending commands to Wow services with both synchronous and streaming
-  responses
-- **🔍 Query Clients**: Specialized clients for querying snapshot and event stream data with comprehensive query
-  operations
-- **📡 Real-time Event Streaming**: Built-in support for Server-Sent Events to receive real-time command results and data
-  updates
-- **📦 Complete TypeScript Support**: Full type definitions for all Wow framework entities including commands, events,
-  and queries
-- **🧱 DDD Primitives**: Essential Domain-Driven Design building blocks including aggregates, events, and value objects
 - **🔄 CQRS Pattern Implementation**: First-class support for Command Query Responsibility Segregation architectural
   pattern
+- **🧱 DDD Primitives**: Essential Domain-Driven Design building blocks including aggregates, events, and value objects
+- **📦 Complete TypeScript Support**: Full type definitions for all Wow framework entities including commands, events,
+  and queries
+- **📡 Real-time Event Streaming**: Built-in support for Server-Sent Events to receive real-time command results and data
+  updates
+- **🚀 Command Client**: High-level client for sending commands to Wow services with both synchronous and streaming
+  responses
+- **🔍 Powerful Query DSL**: Rich query condition builder with comprehensive operator support for complex querying
+- **🔍 Query Clients**: Specialized clients for querying snapshot and event stream data with comprehensive query
+  operations:
+    - Counting resources
+    - Listing resources
+    - Streaming resources as Server-Sent Events
+    - Paging resources
+    - Retrieving single resources
 
 ### 🔐 [`@ahoo-wang/fetcher-cosec`](./packages/cosec) - Enterprise Security
 
