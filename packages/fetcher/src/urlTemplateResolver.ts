@@ -12,6 +12,62 @@
  */
 
 /**
+ * Enumeration of URL template path styles.
+ *
+ * This enum defines the supported URL template path styles for parameter resolution.
+ * Each style has its own pattern for defining path parameters in URL templates.
+ */
+export enum UrlTemplatePathStyle {
+  /**
+   * URI Template style following RFC 6570 specification.
+   * Uses curly braces to define parameters, e.g., /users/{id}/posts/{postId}
+   *
+   * @see https://www.rfc-editor.org/rfc/rfc6570.html
+   *
+   * @see {@link UriTemplateResolver}
+   */
+  UriTemplate,
+
+  /**
+   * Express.js style for defining route parameters.
+   * Uses colons to define parameters, e.g., /users/:id/posts/:postId
+   *
+   * @see {@link ExpressUrlTemplateResolver}
+   */
+  Express,
+}
+
+/**
+ * Gets the appropriate URL template resolver based on the specified style.
+ *
+ * This factory function returns a URL template resolver instance based on the requested style.
+ * If no style is specified or if the UriTemplate style is requested, it returns the default
+ * URI template resolver. If Express style is requested, it returns the Express-style resolver.
+ *
+ * @param style - The URL template path style to use (optional).
+ *                If not provided, defaults to UriTemplate style.
+ * @returns A UrlTemplateResolver instance corresponding to the requested style
+ *
+ * @example
+ * ```typescript
+ * // Get default URI template resolver
+ * const resolver = getUrlTemplateResolver();
+ *
+ * // Get URI template resolver explicitly
+ * const uriResolver = getUrlTemplateResolver(UrlTemplatePathStyle.UriTemplate);
+ *
+ * // Get Express-style resolver
+ * const expressResolver = getUrlTemplateResolver(UrlTemplatePathStyle.Express);
+ * ```
+ */
+export function getUrlTemplateResolver(style?: UrlTemplatePathStyle): UrlTemplateResolver {
+  if (style === UrlTemplatePathStyle.Express) {
+    return expressUrlTemplateResolver;
+  }
+  return uriTemplateResolver;
+}
+
+/**
  * Interface for resolving URL templates by extracting path parameters and replacing placeholders.
  *
  * This interface provides methods to work with URL templates that contain parameter placeholders.
@@ -187,7 +243,7 @@ export class UriTemplateResolver implements UrlTemplateResolver {
    * @param pathParams - Path parameter object used to replace placeholders in the URL
    * @returns Path string with placeholders replaced
    * @throws Error when required path parameters are missing
-   * 
+   *
    * @example
    * ```typescript
    * const resolver = uriTemplateResolver;
@@ -204,7 +260,7 @@ export class UriTemplateResolver implements UrlTemplateResolver {
    * const encodedUrl = resolver.resolve('/search/{query}', { query: 'hello world' });
    * // encodedUrl = '/search/hello%20world'
    * ```
-   * 
+   *
    * @example
    * ```typescript
    * // Missing required parameter throws an error
