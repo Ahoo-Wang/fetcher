@@ -3,7 +3,7 @@ import {
   expressUrlTemplateResolver,
   getUrlTemplateResolver,
   uriTemplateResolver,
-  UrlTemplatePathStyle,
+  UrlTemplateStyle,
 } from '../src';
 
 describe('getUrlTemplateResolver', () => {
@@ -13,27 +13,27 @@ describe('getUrlTemplateResolver', () => {
   });
 
   it('should return uriTemplateResolver when UriTemplate style is provided', () => {
-    const resolver = getUrlTemplateResolver(UrlTemplatePathStyle.UriTemplate);
+    const resolver = getUrlTemplateResolver(UrlTemplateStyle.UriTemplate);
     expect(resolver).toBe(uriTemplateResolver);
   });
 
   it('should return expressUrlTemplateResolver when Express style is provided', () => {
-    const resolver = getUrlTemplateResolver(UrlTemplatePathStyle.Express);
+    const resolver = getUrlTemplateResolver(UrlTemplateStyle.Express);
     expect(resolver).toBe(expressUrlTemplateResolver);
   });
 });
 
-describe('UrlTemplatePathStyle', () => {
+describe('UrlTemplateStyle', () => {
   it('should define UriTemplate enum value', () => {
-    expect(UrlTemplatePathStyle.UriTemplate).toBe(0);
+    expect(UrlTemplateStyle.UriTemplate).toBe(0);
   });
 
   it('should define Express enum value', () => {
-    expect(UrlTemplatePathStyle.Express).toBe(1);
+    expect(UrlTemplateStyle.Express).toBe(1);
   });
 
   it('should have correct enum length', () => {
-    expect(Object.keys(UrlTemplatePathStyle).length).toBe(4); // 2 values + 2 reverse mappings
+    expect(Object.keys(UrlTemplateStyle).length).toBe(4); // 2 values + 2 reverse mappings
   });
 });
 

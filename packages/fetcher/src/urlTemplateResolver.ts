@@ -17,7 +17,7 @@
  * This enum defines the supported URL template path styles for parameter resolution.
  * Each style has its own pattern for defining path parameters in URL templates.
  */
-export enum UrlTemplatePathStyle {
+export enum UrlTemplateStyle {
   /**
    * URI Template style following RFC 6570 specification.
    * Uses curly braces to define parameters, e.g., /users/{id}/posts/{postId}
@@ -60,8 +60,8 @@ export enum UrlTemplatePathStyle {
  * const expressResolver = getUrlTemplateResolver(UrlTemplatePathStyle.Express);
  * ```
  */
-export function getUrlTemplateResolver(style?: UrlTemplatePathStyle): UrlTemplateResolver {
-  if (style === UrlTemplatePathStyle.Express) {
+export function getUrlTemplateResolver(style?: UrlTemplateStyle): UrlTemplateResolver {
+  if (style === UrlTemplateStyle.Express) {
     return expressUrlTemplateResolver;
   }
   return uriTemplateResolver;
