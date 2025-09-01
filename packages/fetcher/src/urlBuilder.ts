@@ -15,7 +15,6 @@ import { combineURLs } from './urls';
 import { BaseURLCapable, FetchRequest } from './fetchRequest';
 import {
   getUrlTemplateResolver,
-  uriTemplateResolver,
   UrlTemplateResolver,
   UrlTemplateStyle,
 } from './urlTemplateResolver';
