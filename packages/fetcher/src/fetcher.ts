@@ -35,6 +35,7 @@ import { UrlTemplateStyle } from './urlTemplateResolver';
  * @example
  * ```typescript
  * const options: FetcherOptions = {
+ *   urlTemplateStyle: UrlTemplateStyle.UriTemplate,
  *   baseURL: 'https://api.example.com',
  *   headers: { 'Content-Type': 'application/json' },
  *   timeout: 5000,
