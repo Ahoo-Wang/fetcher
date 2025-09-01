@@ -1,8 +1,41 @@
-import { describe, it, beforeEach, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   expressUrlTemplateResolver,
+  getUrlTemplateResolver,
   uriTemplateResolver,
-} from '../src/urlTemplateResolver';
+  UrlTemplatePathStyle,
+} from '../src';
+
+describe('getUrlTemplateResolver', () => {
+  it('should return uriTemplateResolver when no style is provided', () => {
+    const resolver = getUrlTemplateResolver();
+    expect(resolver).toBe(uriTemplateResolver);
+  });
+
+  it('should return uriTemplateResolver when UriTemplate style is provided', () => {
+    const resolver = getUrlTemplateResolver(UrlTemplatePathStyle.UriTemplate);
+    expect(resolver).toBe(uriTemplateResolver);
+  });
+
+  it('should return expressUrlTemplateResolver when Express style is provided', () => {
+    const resolver = getUrlTemplateResolver(UrlTemplatePathStyle.Express);
+    expect(resolver).toBe(expressUrlTemplateResolver);
+  });
+});
+
+describe('UrlTemplatePathStyle', () => {
+  it('should define UriTemplate enum value', () => {
+    expect(UrlTemplatePathStyle.UriTemplate).toBe(0);
+  });
+
+  it('should define Express enum value', () => {
+    expect(UrlTemplatePathStyle.Express).toBe(1);
+  });
+
+  it('should have correct enum length', () => {
+    expect(Object.keys(UrlTemplatePathStyle).length).toBe(4); // 2 values + 2 reverse mappings
+  });
+});
 
 describe('UriTemplateResolver', () => {
 
