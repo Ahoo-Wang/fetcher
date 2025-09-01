@@ -11,8 +11,9 @@
  * limitations under the License.
  */
 
-import { combineURLs, interpolateUrl } from './urls';
+import { combineURLs } from './urls';
 import { BaseURLCapable, FetchRequest } from './fetchRequest';
+import { uriTemplateResolver, UrlTemplateResolver } from './urlTemplateResolver';
 
 /**
  * Container for URL parameters including path and query parameters.
@@ -71,19 +72,22 @@ export class UrlBuilder implements BaseURLCapable {
    * This is typically the root of your API endpoint (e.g., 'https://api.example.com').
    */
   readonly baseURL: string;
+  readonly urlTemplateResolver: UrlTemplateResolver;
 
   /**
    * Initializes a new UrlBuilder instance.
    *
    * @param baseURL - Base URL that all constructed URLs will be based on
    *
+   * @param urlTemplateResolver
    * @example
    * ```typescript
    * const urlBuilder = new UrlBuilder('https://api.example.com');
    * ```
    */
-  constructor(baseURL: string) {
+  constructor(baseURL: string, urlTemplateResolver: UrlTemplateResolver = uriTemplateResolver) {
     this.baseURL = baseURL;
+    this.urlTemplateResolver = urlTemplateResolver;
   }
 
   /**
@@ -108,7 +112,7 @@ export class UrlBuilder implements BaseURLCapable {
     const path = params?.path;
     const query = params?.query;
     const combinedURL = combineURLs(this.baseURL, url);
-    let finalUrl = interpolateUrl(combinedURL, path);
+    let finalUrl = this.urlTemplateResolver.resolve(combinedURL, path);
     if (query) {
       const queryString = new URLSearchParams(query).toString();
       if (queryString) {

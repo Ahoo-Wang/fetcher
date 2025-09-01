@@ -146,7 +146,7 @@ describe('UrlBuilder', () => {
       const url = urlBuilder.build('/users/{id}', {
         path: { id: 'user@domain.com' },
       });
-      expect(url).toBe('https://api.example.com/users/user@domain.com');
+      expect(url).toBe('https://api.example.com/users/user%40domain.com');
     });
 
     it('should handle URL with special characters in query parameters', () => {
