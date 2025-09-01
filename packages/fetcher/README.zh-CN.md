@@ -13,7 +13,7 @@
 ## 🌟 特性
 
 - **⚡ 超轻量级**：仅 2.8KiB min+gzip
-- **🧭 路径和查询参数**：内置支持路径（`{id}`）和查询参数
+- **🧭 路径和查询参数**：内置支持路径（`{id}`/`:id`）和查询参数
 - **🔗 拦截器系统**：请求、响应和错误拦截器的中间件模式
 - **⏱️ 超时控制**：可配置的请求超时和适当的错误处理
 - **🔄 Fetch API 兼容**：与原生 Fetch API 完全兼容
@@ -60,6 +60,50 @@ const userData = await response.json<User>();
 // 带自动 JSON 转换的 POST 请求
 const createUserResponse = await fetcher.post('/users', {
   body: { name: 'John Doe', email: 'john@example.com' },
+});
+```
+
+### URL 模板样式
+
+Fetcher 支持不同的 URL 模板样式来处理路径参数：
+
+1. **URI 模板样式**（默认）：使用花括号，例如 `/users/{id}/posts/{postId}`
+2. **Express 样式**：使用冒号，例如 `/users/:id/posts/:postId`
+
+您可以在创建 Fetcher 实例时配置 URL 模板样式：
+
+```typescript
+import { Fetcher, UrlTemplateStyle } from '@ahoo-wang/fetcher';
+
+// 默认 URI 模板样式
+const fetcher1 = new Fetcher({
+  baseURL: 'https://api.example.com'
+});
+
+// 显式指定 URI 模板样式
+const fetcher2 = new Fetcher({
+  baseURL: 'https://api.example.com',
+  urlTemplateStyle: UrlTemplateStyle.UriTemplate
+});
+
+// Express 样式
+const fetcher3 = new Fetcher({
+  baseURL: 'https://api.example.com',
+  urlTemplateStyle: UrlTemplateStyle.Express
+});
+
+// 使用 URI 模板样式
+const response1 = await fetcher1.get('/users/{id}', {
+  urlParams: {
+    path: { id: 123 }
+  }
+});
+
+// 使用 Express 样式
+const response2 = await fetcher3.get('/users/:id', {
+  urlParams: {
+    path: { id: 123 }
+  }
 });
 ```
 
@@ -253,6 +297,7 @@ new Fetcher(options ? : FetcherOptions);
 - `timeout`：请求超时时间（毫秒）
 - `headers`：默认请求头部
 - `interceptors`：用于请求、响应和错误处理的拦截器集合
+- `urlTemplateStyle`：用于路径参数解析的 URL 模板样式（默认：UriTemplate）
 
 #### 属性
 

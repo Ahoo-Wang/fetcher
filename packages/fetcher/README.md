@@ -13,7 +13,7 @@ The lightweight core that powers the entire Fetcher ecosystem. Ultra-lightweight
 ## 🌟 Features
 
 - **⚡ Ultra-Lightweight**: Only 2.8KiB min+gzip
-- **🧭 Path & Query Parameters**: Built-in support for path (`{id}`) and query parameters
+- **🧭 Path & Query Parameters**: Built-in support for path (`{id}`/`:id`) and query parameters
 - **🔗 Interceptor System**: Request, response, and error interceptors for middleware patterns
 - **⏱️ Timeout Control**: Configurable request timeouts with proper error handling
 - **🔄 Fetch API Compatible**: Fully compatible with the native Fetch API
@@ -60,6 +60,50 @@ const userData = await response.json<User>();
 // POST request with automatic JSON conversion
 const createUserResponse = await fetcher.post('/users', {
   body: { name: 'John Doe', email: 'john@example.com' },
+});
+```
+
+### URL Template Styles
+
+Fetcher supports different URL template styles for path parameters:
+
+1. **URI Template Style** (default): Uses curly braces, e.g., `/users/{id}/posts/{postId}`
+2. **Express Style**: Uses colons, e.g., `/users/:id/posts/:postId`
+
+You can configure the URL template style when creating a Fetcher instance:
+
+```typescript
+import { Fetcher, UrlTemplateStyle } from '@ahoo-wang/fetcher';
+
+// Default URI Template style
+const fetcher1 = new Fetcher({
+  baseURL: 'https://api.example.com'
+});
+
+// Explicit URI Template style
+const fetcher2 = new Fetcher({
+  baseURL: 'https://api.example.com',
+  urlTemplateStyle: UrlTemplateStyle.UriTemplate
+});
+
+// Express style
+const fetcher3 = new Fetcher({
+  baseURL: 'https://api.example.com',
+  urlTemplateStyle: UrlTemplateStyle.Express
+});
+
+// Usage with URI Template style
+const response1 = await fetcher1.get('/users/{id}', {
+  urlParams: {
+    path: { id: 123 }
+  }
+});
+
+// Usage with Express style
+const response2 = await fetcher3.get('/users/:id', {
+  urlParams: {
+    path: { id: 123 }
+  }
 });
 ```
 
@@ -264,6 +308,7 @@ new Fetcher(options ? : FetcherOptions);
 - `timeout`: Request timeout in milliseconds
 - `headers`: Default request headers
 - `interceptors`: Interceptor collection for request, response, and error handling
+- `urlTemplateStyle`: URL template style for path parameter resolution (default: UriTemplate)
 
 #### Properties
 
