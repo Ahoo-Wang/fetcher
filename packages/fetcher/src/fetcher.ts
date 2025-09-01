@@ -24,6 +24,7 @@ import {
   RequestHeadersCapable,
 } from './fetchRequest';
 import { InterceptorManager } from './interceptorManager';
+import { UrlTemplateStyle } from './urlTemplateResolver';
 
 /**
  * Configuration options for the Fetcher client.
@@ -45,6 +46,7 @@ export interface FetcherOptions
   extends BaseURLCapable,
     RequestHeadersCapable,
     TimeoutCapable {
+  urlTemplateStyle?: UrlTemplateStyle;
   interceptors?: InterceptorManager;
 }
 
@@ -92,7 +94,7 @@ export class Fetcher
    * @param options - Configuration options for the Fetcher instance
    */
   constructor(options: FetcherOptions = DEFAULT_OPTIONS) {
-    this.urlBuilder = new UrlBuilder(options.baseURL);
+    this.urlBuilder = new UrlBuilder(options.baseURL, options.urlTemplateStyle);
     this.headers = options.headers ?? DEFAULT_HEADERS;
     this.timeout = options.timeout;
     this.interceptors = options.interceptors ?? new InterceptorManager();

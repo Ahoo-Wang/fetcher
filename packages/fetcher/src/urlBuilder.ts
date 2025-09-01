@@ -13,7 +13,12 @@
 
 import { combineURLs } from './urls';
 import { BaseURLCapable, FetchRequest } from './fetchRequest';
-import { uriTemplateResolver, UrlTemplateResolver } from './urlTemplateResolver';
+import {
+  getUrlTemplateResolver,
+  uriTemplateResolver,
+  UrlTemplateResolver,
+  UrlTemplateStyle,
+} from './urlTemplateResolver';
 
 /**
  * Container for URL parameters including path and query parameters.
@@ -78,16 +83,22 @@ export class UrlBuilder implements BaseURLCapable {
    * Initializes a new UrlBuilder instance.
    *
    * @param baseURL - Base URL that all constructed URLs will be based on
-   *
-   * @param urlTemplateResolver
+   * @param urlTemplateStyle - Optional style configuration for URL template resolution.
+   *                           Determines how path parameters are parsed and resolved.
+   *                           Defaults to UriTemplate style if not specified.
+   * 
    * @example
    * ```typescript
+   * // Create a URL builder with default URI template style
    * const urlBuilder = new UrlBuilder('https://api.example.com');
+   *
+   * // Create a URL builder with Express-style template resolution
+   * const expressUrlBuilder = new UrlBuilder('https://api.example.com', UrlTemplateStyle.Express);
    * ```
    */
-  constructor(baseURL: string, urlTemplateResolver: UrlTemplateResolver = uriTemplateResolver) {
+  constructor(baseURL: string, urlTemplateStyle?: UrlTemplateStyle) {
     this.baseURL = baseURL;
-    this.urlTemplateResolver = urlTemplateResolver;
+    this.urlTemplateResolver = getUrlTemplateResolver(urlTemplateStyle);
   }
 
   /**
