@@ -12,7 +12,7 @@
  */
 
 import { FetchExchange } from '@ahoo-wang/fetcher';
-import {
+import type {
   JsonServerSentEventStream,
   ServerSentEventStream,
 } from '@ahoo-wang/fetcher-eventstream';

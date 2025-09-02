@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { TimeoutCapable } from './timeout';
-import { UrlParams } from './urlBuilder';
+import { type TimeoutCapable } from './timeout';
+import { type UrlParams } from './urlBuilder';
 
 /**
  * Interface for objects that can have a base URL

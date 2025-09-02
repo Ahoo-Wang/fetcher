@@ -12,9 +12,9 @@
  */
 
 import { Fetcher } from './fetcher';
-import { FetchRequest, RequestHeaders } from './fetchRequest';
+import type { FetchRequest, RequestHeaders } from './fetchRequest';
 import { ExchangeError } from './interceptorManager';
-import { UrlParams } from './urlBuilder';
+import { type UrlParams } from './urlBuilder';
 
 /**
  * Container for HTTP request/response data that flows through the interceptor chain.

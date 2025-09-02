@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { NamedCapable } from './types';
-import { DEFAULT_OPTIONS, Fetcher, FetcherOptions } from './fetcher';
+import { type NamedCapable } from './types';
+import { DEFAULT_OPTIONS, Fetcher, type FetcherOptions } from './fetcher';
 import { DEFAULT_FETCHER_NAME, fetcherRegistrar } from './fetcherRegistrar';
 
 /**

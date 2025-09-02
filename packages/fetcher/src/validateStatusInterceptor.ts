@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { ResponseInterceptor } from './interceptor';
+import { type ResponseInterceptor } from './interceptor';
 import { FetchExchange } from './fetchExchange';
 import { FetcherError } from './fetcherError';
 

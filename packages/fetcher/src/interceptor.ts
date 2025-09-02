@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { NamedCapable } from './types';
-import { OrderedCapable, toSorted } from './orderedCapable';
+import { type NamedCapable } from './types';
+import { type OrderedCapable, toSorted } from './orderedCapable';
 import { FetchExchange } from './fetchExchange';
 
 /**
