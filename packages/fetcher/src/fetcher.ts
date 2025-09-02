@@ -11,18 +11,17 @@
  * limitations under the License.
  */
 
-import { UrlBuilder, UrlBuilderCapable } from './urlBuilder';
-import { resolveTimeout, TimeoutCapable } from './timeout';
+import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder';
+import { resolveTimeout, type TimeoutCapable } from './timeout';
 import { FetchExchange } from './fetchExchange';
-import {
+import type {
   BaseURLCapable,
-  ContentTypeValues,
   FetchRequest,
   FetchRequestInit,
-  HttpMethod,
   RequestHeaders,
   RequestHeadersCapable,
 } from './fetchRequest';
+import { ContentTypeValues, HttpMethod } from './fetchRequest';
 import { InterceptorManager } from './interceptorManager';
 import { UrlTemplateStyle } from './urlTemplateResolver';
 

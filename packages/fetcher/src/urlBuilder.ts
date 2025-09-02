@@ -12,10 +12,10 @@
  */
 
 import { combineURLs } from './urls';
-import { BaseURLCapable, FetchRequest } from './fetchRequest';
+import type { BaseURLCapable, FetchRequest } from './fetchRequest';
 import {
   getUrlTemplateResolver,
-  UrlTemplateResolver,
+  type UrlTemplateResolver,
   UrlTemplateStyle,
 } from './urlTemplateResolver';
 
@@ -85,7 +85,7 @@ export class UrlBuilder implements BaseURLCapable {
    * @param urlTemplateStyle - Optional style configuration for URL template resolution.
    *                           Determines how path parameters are parsed and resolved.
    *                           Defaults to UriTemplate style if not specified.
-   * 
+   *
    * @example
    * ```typescript
    * // Create a URL builder with default URI template style

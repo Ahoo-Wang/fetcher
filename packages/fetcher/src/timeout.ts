@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { FetchRequest } from './fetchRequest';
+import { type FetchRequest } from './fetchRequest';
 import { FetcherError } from './fetcherError';
 
 /**

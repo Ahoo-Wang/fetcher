@@ -14,7 +14,7 @@
 import {
   FetchExchange,
   REQUEST_BODY_INTERCEPTOR_ORDER,
-  RequestInterceptor,
+  type RequestInterceptor,
 } from '@ahoo-wang/fetcher';
 import { CoSecHeaders, CoSecOptions } from './types';
 import { idGenerator } from './idGenerator';
@@ -86,7 +86,8 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;
     requestHeaders[CoSecHeaders.REQUEST_ID] = requestId;
     if (token && !requestHeaders[CoSecHeaders.AUTHORIZATION]) {
-      requestHeaders[CoSecHeaders.AUTHORIZATION] = `Bearer ${token.accessToken}`;
+      requestHeaders[CoSecHeaders.AUTHORIZATION] =
+        `Bearer ${token.accessToken}`;
     }
   }
 }

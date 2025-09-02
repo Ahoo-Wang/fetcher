@@ -15,18 +15,18 @@ import {
   fetcher,
   Fetcher,
   FetchExchange,
-  FetchRequest,
-  FetchRequestInit,
+  type FetchRequest,
+  type FetchRequestInit,
   mergeRequest,
-  NamedCapable,
-  RequestHeaders,
-  UrlParams,
+  type NamedCapable,
+  type RequestHeaders,
+  type UrlParams,
 } from '@ahoo-wang/fetcher';
 import { ApiMetadata } from './apiDecorator';
-import { EndpointMetadata, PathCapable } from './endpointDecorator';
+import { EndpointMetadata } from './endpointDecorator';
 import {
-  ParameterMetadata,
-  ParameterRequest,
+  type ParameterMetadata,
+  type ParameterRequest,
   ParameterType,
 } from './parameterDecorator';
 import { ResultExtractor, ResultExtractors } from './resultExtractor';

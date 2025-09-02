@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { ServerSentEvent } from './serverSentEventTransformStream';
+import { type ServerSentEvent } from './serverSentEventTransformStream';
 import { ServerSentEventStream } from './eventStreamConverter';
 
 export interface JsonServerSentEvent<DATA>

@@ -12,7 +12,7 @@
  */
 
 import { getStorage } from './inMemoryStorage';
-import { CompositeToken } from './tokenRefresher';
+import { type CompositeToken } from './tokenRefresher';
 
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 

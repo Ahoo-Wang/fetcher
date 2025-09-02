@@ -13,7 +13,7 @@
 
 import { TextLineTransformStream } from './textLineTransformStream';
 import {
-  ServerSentEvent,
+  type ServerSentEvent,
   ServerSentEventTransformStream,
 } from './serverSentEventTransformStream';
 import { FetcherError } from '@ahoo-wang/fetcher';

@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { CoSecOptions, ResponseCodes } from './types';
-import { FetchExchange, ResponseInterceptor } from '@ahoo-wang/fetcher';
+import { type CoSecOptions, ResponseCodes } from './types';
+import { FetchExchange, type ResponseInterceptor } from '@ahoo-wang/fetcher';
 
 /**
  * The name of the CoSecResponseInterceptor.

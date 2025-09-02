@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { FetchRequestInit } from './fetchRequest';
-import { UrlParams } from './urlBuilder';
+import { type FetchRequestInit } from './fetchRequest';
+import { type UrlParams } from './urlBuilder';
 import { mergeRecords } from './utils';
 
 /**

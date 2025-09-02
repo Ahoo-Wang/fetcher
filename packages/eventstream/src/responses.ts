@@ -13,11 +13,11 @@
 
 import {
   EventStreamConvertError,
-  ServerSentEventStream,
+  type ServerSentEventStream,
   toServerSentEventStream,
 } from './eventStreamConverter';
 import {
-  JsonServerSentEventStream,
+  type JsonServerSentEventStream,
   toJsonServerSentEventStream,
 } from './jsonServerSentEventTransformStream';
 import { CONTENT_TYPE_HEADER, ContentTypeValues } from '@ahoo-wang/fetcher';

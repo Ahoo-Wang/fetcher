@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { RequestInterceptor } from './interceptor';
+import { type RequestInterceptor } from './interceptor';
 import { FetchExchange } from './fetchExchange';
 import { ContentTypeValues } from './fetchRequest';
 import { URL_RESOLVE_INTERCEPTOR_ORDER } from './urlResolveInterceptor';
