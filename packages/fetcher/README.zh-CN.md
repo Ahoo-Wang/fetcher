@@ -77,33 +77,33 @@ import { Fetcher, UrlTemplateStyle } from '@ahoo-wang/fetcher';
 
 // 默认 URI 模板样式
 const fetcher1 = new Fetcher({
-  baseURL: 'https://api.example.com'
+  baseURL: 'https://api.example.com',
 });
 
 // 显式指定 URI 模板样式
 const fetcher2 = new Fetcher({
   baseURL: 'https://api.example.com',
-  urlTemplateStyle: UrlTemplateStyle.UriTemplate
+  urlTemplateStyle: UrlTemplateStyle.UriTemplate,
 });
 
 // Express 样式
 const fetcher3 = new Fetcher({
   baseURL: 'https://api.example.com',
-  urlTemplateStyle: UrlTemplateStyle.Express
+  urlTemplateStyle: UrlTemplateStyle.Express,
 });
 
 // 使用 URI 模板样式
 const response1 = await fetcher1.get('/users/{id}', {
   urlParams: {
-    path: { id: 123 }
-  }
+    path: { id: 123 },
+  },
 });
 
 // 使用 Express 样式
 const response2 = await fetcher3.get('/users/:id', {
   urlParams: {
-    path: { id: 123 }
-  }
+    path: { id: 123 },
+  },
 });
 ```
 

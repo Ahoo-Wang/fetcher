@@ -35,6 +35,6 @@ export default defineConfig({
     dts({
       outDirs: 'dist',
       tsconfigPath: './tsconfig.json',
-    })
+    }),
   ],
 });

@@ -159,7 +159,10 @@ describe('FetchExchange', () => {
       path: { id: 123 },
       query: { filter: 'active' },
     };
-    const request = { url: '/test', urlParams: existingUrlParams } as FetchRequest;
+    const request = {
+      url: '/test',
+      urlParams: existingUrlParams,
+    } as FetchRequest;
     const exchange = new FetchExchange(mockFetcher, request);
 
     // Verify urlParams already exists
@@ -172,5 +175,4 @@ describe('FetchExchange', () => {
     expect(urlParams).toBe(existingUrlParams);
     expect(exchange.request.urlParams).toBe(existingUrlParams);
   });
-
 });

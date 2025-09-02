@@ -38,7 +38,6 @@ describe('UrlTemplateStyle', () => {
 });
 
 describe('UriTemplateResolver', () => {
-
   describe('extractPathParams', () => {
     it('should extract single path parameter from URL template', () => {
       const result = uriTemplateResolver.extractPathParams('/users/{id}');
@@ -46,7 +45,9 @@ describe('UriTemplateResolver', () => {
     });
 
     it('should extract multiple path parameters from URL template', () => {
-      const result = uriTemplateResolver.extractPathParams('/users/{id}/posts/{postId}');
+      const result = uriTemplateResolver.extractPathParams(
+        '/users/{id}/posts/{postId}',
+      );
       expect(result).toEqual(['id', 'postId']);
     });
 
@@ -56,29 +57,40 @@ describe('UriTemplateResolver', () => {
     });
 
     it('should extract path parameters with special characters', () => {
-      const result = uriTemplateResolver.extractPathParams('/{category-name}/{sub_category}');
+      const result = uriTemplateResolver.extractPathParams(
+        '/{category-name}/{sub_category}',
+      );
       expect(result).toEqual(['category-name', 'sub_category']);
     });
 
     it('should extract path parameters from full URLs', () => {
-      const result = uriTemplateResolver.extractPathParams('https://api.example.com/{resource}/{id}');
+      const result = uriTemplateResolver.extractPathParams(
+        'https://api.example.com/{resource}/{id}',
+      );
       expect(result).toEqual(['resource', 'id']);
     });
   });
 
   describe('resolve', () => {
     it('should replace path parameters with values', () => {
-      const result = uriTemplateResolver.resolve('/users/{id}/posts/{postId}', { id: 123, postId: 456 });
+      const result = uriTemplateResolver.resolve('/users/{id}/posts/{postId}', {
+        id: 123,
+        postId: 456,
+      });
       expect(result).toBe('/users/123/posts/456');
     });
 
     it('should handle string parameter values', () => {
-      const result = uriTemplateResolver.resolve('/users/{username}', { username: 'john_doe' });
+      const result = uriTemplateResolver.resolve('/users/{username}', {
+        username: 'john_doe',
+      });
       expect(result).toBe('/users/john_doe');
     });
 
     it('should URL encode parameter values', () => {
-      const result = uriTemplateResolver.resolve('/search/{query}', { query: 'hello world' });
+      const result = uriTemplateResolver.resolve('/search/{query}', {
+        query: 'hello world',
+      });
       expect(result).toBe('/search/hello%20world');
     });
 
@@ -117,7 +129,6 @@ describe('UriTemplateResolver', () => {
 });
 
 describe('ExpressUrlTemplateResolver', () => {
-
   describe('extractPathParams', () => {
     it('should extract single path parameter from Express-style URL template', () => {
       const result = expressUrlTemplateResolver.extractPathParams('/users/:id');
@@ -125,19 +136,25 @@ describe('ExpressUrlTemplateResolver', () => {
     });
 
     it('should extract multiple path parameters from Express-style URL template', () => {
-      const result = expressUrlTemplateResolver.extractPathParams('/users/:id/posts/:postId');
+      const result = expressUrlTemplateResolver.extractPathParams(
+        '/users/:id/posts/:postId',
+      );
       expect(result).toEqual(['id', 'postId']);
     });
 
     it('should return empty array when no path parameters exist', () => {
-      const result = expressUrlTemplateResolver.extractPathParams('/users/profile');
+      const result =
+        expressUrlTemplateResolver.extractPathParams('/users/profile');
       expect(result).toEqual([]);
     });
   });
 
   describe('resolve', () => {
     it('should replace path parameters with values in Express-style templates', () => {
-      const result = expressUrlTemplateResolver.resolve('/users/:id/posts/:postId', { id: 123, postId: 456 });
+      const result = expressUrlTemplateResolver.resolve(
+        '/users/:id/posts/:postId',
+        { id: 123, postId: 456 },
+      );
       expect(result).toBe('/users/123/posts/456');
     });
 

@@ -60,7 +60,9 @@ export enum UrlTemplateStyle {
  * const expressResolver = getUrlTemplateResolver(UrlTemplatePathStyle.Express);
  * ```
  */
-export function getUrlTemplateResolver(style?: UrlTemplateStyle): UrlTemplateResolver {
+export function getUrlTemplateResolver(
+  style?: UrlTemplateStyle,
+): UrlTemplateResolver {
   if (style === UrlTemplateStyle.Express) {
     return expressUrlTemplateResolver;
   }
@@ -88,7 +90,6 @@ export function getUrlTemplateResolver(style?: UrlTemplateStyle): UrlTemplateRes
  * ```
  */
 export interface UrlTemplateResolver {
-
   /**
    * Extracts path parameters from the URL.
    * @param urlTemplate - The URL template string containing parameter placeholders
@@ -136,7 +137,6 @@ export interface UrlTemplateResolver {
    * ```
    */
   resolve(urlTemplate: string, pathParams?: Record<string, any> | null): string;
-
 }
 
 /**
@@ -148,7 +148,11 @@ export interface UrlTemplateResolver {
  * @returns The URL with placeholders replaced by actual values
  * @throws Error when required path parameters are missing
  */
-export function urlTemplateRegexResolve(urlTemplate: string, pathParamRegex: RegExp, pathParams?: Record<string, any> | null) {
+export function urlTemplateRegexResolve(
+  urlTemplate: string,
+  pathParamRegex: RegExp,
+  pathParams?: Record<string, any> | null,
+) {
   if (!pathParams) return urlTemplate;
   return urlTemplate.replace(pathParamRegex, (_, key) => {
     const value = pathParams[key];
@@ -167,7 +171,10 @@ export function urlTemplateRegexResolve(urlTemplate: string, pathParamRegex: Reg
  * @param pathParamRegex - Regular expression to match parameter placeholders
  * @returns An array of parameter names extracted from the URL template
  */
-export function urlTemplateRegexExtract(urlTemplate: string, pathParamRegex: RegExp): string[] {
+export function urlTemplateRegexExtract(
+  urlTemplate: string,
+  pathParamRegex: RegExp,
+): string[] {
   const matches: string[] = [];
   let match;
   while ((match = pathParamRegex.exec(urlTemplate)) !== null) {
@@ -233,7 +240,10 @@ export class UriTemplateResolver implements UrlTemplateResolver {
    * ```
    */
   extractPathParams(urlTemplate: string): string[] {
-    return urlTemplateRegexExtract(urlTemplate, UriTemplateResolver.PATH_PARAM_REGEX);
+    return urlTemplateRegexExtract(
+      urlTemplate,
+      UriTemplateResolver.PATH_PARAM_REGEX,
+    );
   }
 
   /**
@@ -272,8 +282,15 @@ export class UriTemplateResolver implements UrlTemplateResolver {
    * }
    * ```
    */
-  resolve(urlTemplate: string, pathParams?: Record<string, any> | null): string {
-    return urlTemplateRegexResolve(urlTemplate, UriTemplateResolver.PATH_PARAM_REGEX, pathParams);
+  resolve(
+    urlTemplate: string,
+    pathParams?: Record<string, any> | null,
+  ): string {
+    return urlTemplateRegexResolve(
+      urlTemplate,
+      UriTemplateResolver.PATH_PARAM_REGEX,
+      pathParams,
+    );
   }
 }
 
@@ -322,7 +339,10 @@ export class ExpressUrlTemplateResolver implements UrlTemplateResolver {
    * ```
    */
   extractPathParams(urlTemplate: string): string[] {
-    return urlTemplateRegexExtract(urlTemplate, ExpressUrlTemplateResolver.PATH_PARAM_REGEX);
+    return urlTemplateRegexExtract(
+      urlTemplate,
+      ExpressUrlTemplateResolver.PATH_PARAM_REGEX,
+    );
   }
 
   /**
@@ -357,8 +377,15 @@ export class ExpressUrlTemplateResolver implements UrlTemplateResolver {
    * }
    * ```
    */
-  resolve(urlTemplate: string, pathParams?: Record<string, any> | null): string {
-    return urlTemplateRegexResolve(urlTemplate, ExpressUrlTemplateResolver.PATH_PARAM_REGEX, pathParams);
+  resolve(
+    urlTemplate: string,
+    pathParams?: Record<string, any> | null,
+  ): string {
+    return urlTemplateRegexResolve(
+      urlTemplate,
+      ExpressUrlTemplateResolver.PATH_PARAM_REGEX,
+      pathParams,
+    );
   }
 }
 

@@ -12,10 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  isAbsoluteURL,
-  combineURLs,
-} from '../src';
+import { isAbsoluteURL, combineURLs } from '../src';
 
 describe('urls.ts', () => {
   describe('isAbsoluteURL', () => {
