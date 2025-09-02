@@ -79,10 +79,42 @@ describe('FetchExchange', () => {
     expect(exchange.hasResponse()).toBe(true);
     expect(exchange.requiredResponse).toBe(mockResponse);
   });
+
   it('should throw an error when trying to access requiredResponse without a response', () => {
     expect(() => {
       const exchange = new FetchExchange(mockFetcher, mockRequest);
       exchange.requiredResponse;
     }).toThrowError(ExchangeError);
+  });
+
+  it('should create headers object when ensureRequestHeaders is called and headers is undefined', () => {
+    const request = { url: '/test' } as FetchRequest;
+    const exchange = new FetchExchange(mockFetcher, request);
+
+    // Verify headers is initially undefined
+    expect(exchange.request.headers).toBeUndefined();
+
+    // Call ensureRequestHeaders
+    const headers = exchange.ensureRequestHeaders();
+
+    // Verify headers is now an empty object
+    expect(headers).toEqual({});
+    expect(exchange.request.headers).toBe(headers);
+  });
+
+  it('should return existing headers object when ensureRequestHeaders is called and headers exists', () => {
+    const existingHeaders = { 'Content-Type': 'application/json' };
+    const request = { url: '/test', headers: existingHeaders } as FetchRequest;
+    const exchange = new FetchExchange(mockFetcher, request);
+
+    // Verify headers already exists
+    expect(exchange.request.headers).toBe(existingHeaders);
+
+    // Call ensureRequestHeaders
+    const headers = exchange.ensureRequestHeaders();
+
+    // Verify the same object is returned
+    expect(headers).toBe(existingHeaders);
+    expect(exchange.request.headers).toBe(existingHeaders);
   });
 });
