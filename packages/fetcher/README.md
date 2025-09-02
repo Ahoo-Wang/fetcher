@@ -202,13 +202,7 @@ const success = fetcher.interceptors.request.use({
   name: 'auth-interceptor',
   order: 100,
   intercept(exchange) {
-    exchange.request = {
-      ...exchange.request,
-      headers: {
-        ...exchange.request.headers,
-        Authorization: 'Bearer ' + getAuthToken(),
-      },
-    };
+    exchange.request.headers.Authorization = 'Bearer ' + getAuthToken();
   },
 });
 
