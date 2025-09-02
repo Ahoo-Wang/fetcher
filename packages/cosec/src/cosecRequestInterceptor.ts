@@ -13,7 +13,6 @@
 
 import {
   FetchExchange,
-  FetchRequest,
   REQUEST_BODY_INTERCEPTOR_ORDER,
   RequestInterceptor,
 } from '@ahoo-wang/fetcher';
