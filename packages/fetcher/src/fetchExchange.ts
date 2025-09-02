@@ -14,6 +14,7 @@
 import { Fetcher } from './fetcher';
 import { FetchRequest, RequestHeaders } from './fetchRequest';
 import { ExchangeError } from './interceptorManager';
+import { UrlParams } from './urlBuilder';
 
 /**
  * Container for HTTP request/response data that flows through the interceptor chain.
@@ -119,6 +120,33 @@ export class FetchExchange {
       this.request.headers = {};
     }
     return this.request.headers;
+  }
+
+  /**
+   * Ensures that request URL parameters object exists with all required properties,
+   * creating them if necessary.
+   *
+   * This method checks if the request URL parameters object is present and initializes
+   * it with empty path and query objects if it's missing. It also ensures that both
+   * path and query sub-objects exist. This guarantees that URL parameters can be
+   * safely accessed and modified after calling this method.
+   *
+   * @returns The request URL parameters object with guaranteed non-null path and query properties
+   */
+  ensureRequestUrlParams(): Required<UrlParams> {
+    if (!this.request.urlParams) {
+      this.request.urlParams = {
+        path: {},
+        query: {},
+      };
+    }
+    if (!this.request.urlParams.path) {
+      this.request.urlParams.path = {};
+    }
+    if (!this.request.urlParams.query) {
+      this.request.urlParams.query = {};
+    }
+    return this.request.urlParams as Required<UrlParams>;
   }
 
   /**

@@ -117,4 +117,60 @@ describe('FetchExchange', () => {
     expect(headers).toBe(existingHeaders);
     expect(exchange.request.headers).toBe(existingHeaders);
   });
+
+  it('should create urlParams object with path and query when ensureRequestUrlParams is called and urlParams is undefined', () => {
+    const request = { url: '/test' } as FetchRequest;
+    const exchange = new FetchExchange(mockFetcher, request);
+
+    // Verify urlParams is initially undefined
+    expect(exchange.request.urlParams).toBeUndefined();
+
+    // Call ensureRequestUrlParams
+    const urlParams = exchange.ensureRequestUrlParams();
+
+    // Verify urlParams is now an object with empty path and query objects
+    expect(urlParams).toEqual({
+      path: {},
+      query: {},
+    });
+    expect(exchange.request.urlParams).toBe(urlParams);
+  });
+
+  it('should create path and query objects when ensureRequestUrlParams is called and urlParams exists but path/query are missing', () => {
+    const request = { url: '/test', urlParams: {} } as FetchRequest;
+    const exchange = new FetchExchange(mockFetcher, request);
+
+    // Verify urlParams exists but path and query are missing
+    expect(exchange.request.urlParams).toEqual({});
+    expect(exchange.request.urlParams?.path).toBeUndefined();
+    expect(exchange.request.urlParams?.query).toBeUndefined();
+
+    // Call ensureRequestUrlParams
+    const urlParams = exchange.ensureRequestUrlParams();
+
+    // Verify path and query objects were created
+    expect(urlParams.path).toEqual({});
+    expect(urlParams.query).toEqual({});
+    expect(exchange.request.urlParams).toBe(urlParams);
+  });
+
+  it('should return existing urlParams object when ensureRequestUrlParams is called and urlParams with path/query exists', () => {
+    const existingUrlParams = {
+      path: { id: 123 },
+      query: { filter: 'active' },
+    };
+    const request = { url: '/test', urlParams: existingUrlParams } as FetchRequest;
+    const exchange = new FetchExchange(mockFetcher, request);
+
+    // Verify urlParams already exists
+    expect(exchange.request.urlParams).toBe(existingUrlParams);
+
+    // Call ensureRequestUrlParams
+    const urlParams = exchange.ensureRequestUrlParams();
+
+    // Verify the same object is returned
+    expect(urlParams).toBe(existingUrlParams);
+    expect(exchange.request.urlParams).toBe(existingUrlParams);
+  });
+
 });
