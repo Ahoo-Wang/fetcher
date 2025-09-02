@@ -12,7 +12,7 @@
  */
 
 import { Fetcher } from './fetcher';
-import { FetchRequest } from './fetchRequest';
+import { FetchRequest, RequestHeaders } from './fetchRequest';
 import { ExchangeError } from './interceptorManager';
 
 /**
@@ -103,6 +103,22 @@ export class FetchExchange {
     this.request = request;
     this.response = response;
     this.error = error;
+  }
+
+  /**
+   * Ensures that request headers object exists, creating it if necessary.
+   *
+   * This method checks if the request headers object is present and initializes
+   * it as an empty object if it's missing. This guarantees that headers can
+   * be safely accessed and modified after calling this method.
+   *
+   * @returns The request headers object, guaranteed to be non-null
+   */
+  ensureRequestHeaders(): RequestHeaders {
+    if (!this.request.headers) {
+      this.request.headers = {};
+    }
+    return this.request.headers;
   }
 
   /**
