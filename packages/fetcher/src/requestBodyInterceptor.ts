@@ -125,19 +125,11 @@ export class RequestBodyInterceptor implements RequestInterceptor {
 
     // For plain objects, convert to JSON string
     // Also ensure Content-Type header is set to application/json
-    const modifiedRequest = { ...request };
-    modifiedRequest.body = JSON.stringify(request.body);
-
-    // Set Content-Type header
-    if (!modifiedRequest.headers) {
-      modifiedRequest.headers = {};
-    }
-
+    exchange.request.body = JSON.stringify(request.body);
     // Only set default Content-Type if not explicitly set
-    const headers = modifiedRequest.headers;
+    const headers = exchange.ensureRequestHeaders();
     if (!headers['Content-Type']) {
       headers['Content-Type'] = ContentTypeValues.APPLICATION_JSON;
     }
-    exchange.request = modifiedRequest;
   }
 }
