@@ -77,33 +77,33 @@ import { Fetcher, UrlTemplateStyle } from '@ahoo-wang/fetcher';
 
 // Default URI Template style
 const fetcher1 = new Fetcher({
-  baseURL: 'https://api.example.com'
+  baseURL: 'https://api.example.com',
 });
 
 // Explicit URI Template style
 const fetcher2 = new Fetcher({
   baseURL: 'https://api.example.com',
-  urlTemplateStyle: UrlTemplateStyle.UriTemplate
+  urlTemplateStyle: UrlTemplateStyle.UriTemplate,
 });
 
 // Express style
 const fetcher3 = new Fetcher({
   baseURL: 'https://api.example.com',
-  urlTemplateStyle: UrlTemplateStyle.Express
+  urlTemplateStyle: UrlTemplateStyle.Express,
 });
 
 // Usage with URI Template style
 const response1 = await fetcher1.get('/users/{id}', {
   urlParams: {
-    path: { id: 123 }
-  }
+    path: { id: 123 },
+  },
 });
 
 // Usage with Express style
 const response2 = await fetcher3.get('/users/:id', {
   urlParams: {
-    path: { id: 123 }
-  }
+    path: { id: 123 },
+  },
 });
 ```
 
