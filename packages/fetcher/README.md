@@ -12,7 +12,7 @@ The lightweight core that powers the entire Fetcher ecosystem. Ultra-lightweight
 
 ## 🌟 Features
 
-- **⚡ Ultra-Lightweight**: Only 2.8KiB min+gzip
+- **⚡ Ultra-Lightweight**: Only 3KiB min+gzip
 - **🧭 Path & Query Parameters**: Built-in support for path (`{id}`/`:id`) and query parameters
 - **🔗 Interceptor System**: Request, response, and error interceptors for middleware patterns
 - **⏱️ Timeout Control**: Configurable request timeouts with proper error handling

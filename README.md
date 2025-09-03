@@ -26,7 +26,7 @@ while maintaining an incredibly small footprint.
 
 The lightweight core that powers the entire ecosystem:
 
-- **⚡ Ultra-Lightweight**: Only 2.8KiB min+gzip - smaller than most alternatives
+- **⚡ Ultra-Lightweight**: Only 3KiB min+gzip - smaller than most alternatives
 - **🧭 Path & Query Parameters**: Built-in support for path (`{id}`/`:id`) and query parameters
 - **🔗 Interceptor System**: Request, response, and error interceptors with ordered execution for flexible middleware
   patterns
