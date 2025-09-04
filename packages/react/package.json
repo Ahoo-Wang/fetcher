@@ -38,7 +38,7 @@
   ],
   "scripts": {
     "build": "vite build",
-    "test": "vitest run --coverage",
+    "test": "vitest run",
     "lint": "eslint . --fix",
     "clean": "rm -rf dist"
   },
