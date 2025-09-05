@@ -155,11 +155,16 @@ export class FunctionMetadata implements NamedCapable {
     };
     let body: any = undefined;
     let signal: AbortSignal | null | undefined = undefined;
+    let abortController: AbortController | null | undefined = undefined;
     let parameterRequest: ParameterRequest = {};
     // Process parameters based on their decorators
     args.forEach((value, index) => {
       if (value instanceof AbortSignal) {
         signal = value;
+        return;
+      }
+      if (value instanceof AbortController) {
+        abortController = value;
         return;
       }
       const funParameter = this.parameters.get(index);
@@ -195,6 +200,7 @@ export class FunctionMetadata implements NamedCapable {
       body,
       timeout: this.resolveTimeout(),
       signal,
+      abortController,
     };
     const mergedRequest = mergeRequest(
       endpointRequest,
