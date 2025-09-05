@@ -33,7 +33,7 @@ describe('RequestBodyInterceptor', () => {
   it('should not modify request when body is undefined', () => {
     const interceptor = new RequestBodyInterceptor();
     const request = { url: '/test' };
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     interceptor.intercept(exchange);
 
@@ -43,7 +43,7 @@ describe('RequestBodyInterceptor', () => {
   it('should not modify request when body is null', () => {
     const interceptor = new RequestBodyInterceptor();
     const request = { url: '/test', body: null };
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     interceptor.intercept(exchange);
 
@@ -54,7 +54,7 @@ describe('RequestBodyInterceptor', () => {
     const interceptor = new RequestBodyInterceptor();
     const requestBody = 'test body';
     const request = { url: '/test', body: requestBody };
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     interceptor.intercept(exchange);
 
@@ -65,7 +65,7 @@ describe('RequestBodyInterceptor', () => {
     const interceptor = new RequestBodyInterceptor();
     const requestBody = new ArrayBuffer(8);
     const request = { url: '/test', body: requestBody };
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     interceptor.intercept(exchange);
 
@@ -76,7 +76,7 @@ describe('RequestBodyInterceptor', () => {
     const interceptor = new RequestBodyInterceptor();
     const requestBody = new Blob(['test']);
     const request = { url: '/test', body: requestBody };
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     interceptor.intercept(exchange);
 
@@ -87,7 +87,7 @@ describe('RequestBodyInterceptor', () => {
     const interceptor = new RequestBodyInterceptor();
     const requestBody = new URLSearchParams('key=value');
     const request = { url: '/test', body: requestBody };
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     interceptor.intercept(exchange);
 
@@ -99,7 +99,7 @@ describe('RequestBodyInterceptor', () => {
     const requestBody = new FormData();
     requestBody.append('key', 'value');
     const request = { url: '/test', body: requestBody };
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     interceptor.intercept(exchange);
 
@@ -110,7 +110,7 @@ describe('RequestBodyInterceptor', () => {
     const interceptor = new RequestBodyInterceptor();
     const requestBody = { name: 'test', value: 123 };
     const request = { url: '/test', body: requestBody };
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     interceptor.intercept(exchange);
 
@@ -128,7 +128,7 @@ describe('RequestBodyInterceptor', () => {
       body: requestBody,
       headers: { Authorization: 'Bearer token' },
     };
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     interceptor.intercept(exchange);
 
@@ -147,7 +147,7 @@ describe('RequestBodyInterceptor', () => {
       body: requestBody,
       headers: { 'Content-Type': 'text/plain' },
     };
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     interceptor.intercept(exchange);
 

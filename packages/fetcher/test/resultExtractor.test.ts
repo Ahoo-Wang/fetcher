@@ -18,13 +18,6 @@ import { Fetcher } from '../src';
 import { FetchRequest } from '../src';
 
 describe('ResultExtractor', () => {
-  const mockFetcher = {} as Fetcher;
-  const mockRequest = {} as FetchRequest;
-  const mockResponse = new Response(JSON.stringify({ data: 'test' }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
-
   it('should define ResultExtractor interface', () => {
     // This test just verifies the interface is properly defined
     const extractor: ResultExtractor<any> = (exchange: FetchExchange) => exchange;
@@ -39,7 +32,7 @@ describe('ResultExtractors', () => {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
-  const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
+  const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest, response: mockResponse });
 
   it('should export Exchange result extractor', () => {
     expect(ResultExtractors).toHaveProperty('Exchange');

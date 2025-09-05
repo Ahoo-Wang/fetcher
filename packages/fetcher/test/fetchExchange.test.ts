@@ -19,7 +19,7 @@ describe('FetchExchange', () => {
   const mockRequest = { url: '/test' } as FetchRequest;
 
   it('should create instance with required parameters', () => {
-    const exchange = new FetchExchange(mockFetcher, mockRequest);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest });
 
     expect(exchange.fetcher).toBe(mockFetcher);
     expect(exchange.request).toBe(mockRequest);
@@ -34,10 +34,12 @@ describe('FetchExchange', () => {
     const attributes = { test: 'value' };
 
     const exchange = new FetchExchange(
-      mockFetcher,
-      mockRequest,
-      mockResponse,
-      mockError,
+      {
+        fetcher: mockFetcher,
+        request: mockRequest,
+        response: mockResponse,
+        error: mockError,
+      },
     );
     exchange.attributes = attributes;
 
@@ -49,7 +51,7 @@ describe('FetchExchange', () => {
   });
 
   it('should return false for hasError when no error is present', () => {
-    const exchange = new FetchExchange(mockFetcher, mockRequest);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest });
 
     expect(exchange.hasError()).toBe(false);
   });
@@ -57,24 +59,25 @@ describe('FetchExchange', () => {
   it('should return true for hasError when error is present', () => {
     const mockError = new Error('test error');
     const exchange = new FetchExchange(
-      mockFetcher,
-      mockRequest,
-      undefined,
-      mockError,
+      {
+        fetcher: mockFetcher,
+        request: mockRequest,
+        error: mockError,
+      },
     );
 
     expect(exchange.hasError()).toBe(true);
   });
 
   it('should return false for hasResponse when no response is present', () => {
-    const exchange = new FetchExchange(mockFetcher, mockRequest);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest });
 
     expect(exchange.hasResponse()).toBe(false);
   });
 
   it('should return true for hasResponse when response is present', () => {
     const mockResponse = new Response('test');
-    const exchange = new FetchExchange(mockFetcher, mockRequest, mockResponse);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest, response: mockResponse });
 
     expect(exchange.hasResponse()).toBe(true);
     expect(exchange.requiredResponse).toBe(mockResponse);
@@ -82,14 +85,14 @@ describe('FetchExchange', () => {
 
   it('should throw an error when trying to access requiredResponse without a response', () => {
     expect(() => {
-      const exchange = new FetchExchange(mockFetcher, mockRequest);
+      const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest });
       exchange.requiredResponse;
     }).toThrowError(ExchangeError);
   });
 
   it('should create headers object when ensureRequestHeaders is called and headers is undefined', () => {
     const request = { url: '/test' } as FetchRequest;
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     // Verify headers is initially undefined
     expect(exchange.request.headers).toBeUndefined();
@@ -105,7 +108,7 @@ describe('FetchExchange', () => {
   it('should return existing headers object when ensureRequestHeaders is called and headers exists', () => {
     const existingHeaders = { 'Content-Type': 'application/json' };
     const request = { url: '/test', headers: existingHeaders } as FetchRequest;
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     // Verify headers already exists
     expect(exchange.request.headers).toBe(existingHeaders);
@@ -120,7 +123,7 @@ describe('FetchExchange', () => {
 
   it('should create urlParams object with path and query when ensureRequestUrlParams is called and urlParams is undefined', () => {
     const request = { url: '/test' } as FetchRequest;
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     // Verify urlParams is initially undefined
     expect(exchange.request.urlParams).toBeUndefined();
@@ -138,7 +141,7 @@ describe('FetchExchange', () => {
 
   it('should create path and query objects when ensureRequestUrlParams is called and urlParams exists but path/query are missing', () => {
     const request = { url: '/test', urlParams: {} } as FetchRequest;
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     // Verify urlParams exists but path and query are missing
     expect(exchange.request.urlParams).toEqual({});
@@ -163,7 +166,7 @@ describe('FetchExchange', () => {
       url: '/test',
       urlParams: existingUrlParams,
     } as FetchRequest;
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     // Verify urlParams already exists
     expect(exchange.request.urlParams).toBe(existingUrlParams);

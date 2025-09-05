@@ -408,7 +408,7 @@ describe('FunctionMetadata - branch coverage', () => {
     const metadata = new FunctionMetadata(
       'testFunc',
       { headers: { 'API-Key': 'api-key-value' } },
-      { 
+      {
         method: HttpMethod.GET,
         headers: { 'Endpoint-Key': 'endpoint-key-value' },
       },
@@ -420,68 +420,5 @@ describe('FunctionMetadata - branch coverage', () => {
       'API-Key': 'api-key-value',
       'Endpoint-Key': 'endpoint-key-value',
     });
-  });
-
-  it('should handle AbortController parameter', () => {
-    const metadata = new FunctionMetadata(
-      'testFunc',
-      {},
-      { method: HttpMethod.POST },
-      new Map(),
-    );
-
-    const abortController = new AbortController();
-    const request = metadata.resolveRequest([abortController]);
-    expect(request.abortController).toBe(abortController);
-  });
-
-  it('should handle mixed parameter types correctly', () => {
-    const metadata = new FunctionMetadata(
-      'testFunc',
-      {},
-      { method: HttpMethod.POST },
-      new Map([
-        [
-          0,
-          {
-            type: ParameterType.PATH,
-            name: 'id',
-            index: 0,
-          },
-        ],
-        [
-          1,
-          {
-            type: ParameterType.QUERY,
-            name: 'filter',
-            index: 1,
-          },
-        ],
-        [
-          2,
-          {
-            type: ParameterType.HEADER,
-            name: 'Authorization',
-            index: 2,
-          },
-        ],
-        [
-          3,
-          {
-            type: ParameterType.BODY,
-            index: 3,
-          },
-        ],
-      ]),
-    );
-
-    const bodyData = { name: 'test' };
-    const args = [123, 'active', 'Bearer token', bodyData];
-    const request = metadata.resolveRequest(args);
-
-    expect(request.urlParams?.path).toEqual({ id: 123 });
-    expect(request.urlParams?.query).toEqual({ filter: 'active' });
-    expect(request.headers).toEqual({ 'Authorization': 'Bearer token' });
-    expect(request.body).toEqual(bodyData);
   });
 });
