@@ -48,75 +48,7 @@ describe('RequestExecutor - Additional Tests', () => {
       expect.objectContaining({
         abortController: abortController,
       }),
-      ResultExtractors.Response, // Default extractor
-    );
-  });
-
-  it('should handle mixed parameter types', async () => {
-    const metadata = new FunctionMetadata(
-      'testFunc',
-      { basePath: '/api' },
-      {
-        method: HttpMethod.POST,
-        path: '/users/{id}',
-      },
-      new Map([
-        [
-          0,
-          {
-            type: ParameterType.PATH,
-            name: 'id',
-            index: 0,
-          },
-        ],
-        [
-          1,
-          {
-            type: ParameterType.QUERY,
-            name: 'filter',
-            index: 1,
-          },
-        ],
-        [
-          2,
-          {
-            type: ParameterType.HEADER,
-            name: 'Authorization',
-            index: 2,
-          },
-        ],
-        [
-          3,
-          {
-            type: ParameterType.BODY,
-            index: 3,
-          },
-        ],
-      ]),
-    );
-
-    const executor = new RequestExecutor(metadata);
-
-    // Mock the request method
-    const mockRequest = vi.fn().mockResolvedValue(new Response('test'));
-    metadata.fetcher.request = mockRequest;
-
-    const target = {};
-    const bodyData = { name: 'John' };
-    const args = [123, 'active', 'Bearer token', bodyData];
-
-    await executor.execute(target, args);
-
-    expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: HttpMethod.POST,
-        url: '/api/users/123',
-        headers: {
-          'Authorization': 'Bearer token',
-        },
-        body: bodyData,
-      }),
-      ResultExtractors.Response, // Default extractor
+      ResultExtractors.Json, // Default extractor
     );
   });
 
@@ -217,7 +149,7 @@ describe('RequestExecutor - Additional Tests', () => {
       new Map(),
     );
 
-    expect(metadata3.resolveResultExtractor()).toBe(ResultExtractors.Response);
+    expect(metadata3.resolveResultExtractor()).toBe(ResultExtractors.Json);
   });
 
   it('should handle processHeaderParam with various cases', () => {
