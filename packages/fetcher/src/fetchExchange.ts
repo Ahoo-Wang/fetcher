@@ -17,7 +17,7 @@ import { ExchangeError } from './interceptorManager';
 import { type UrlParams } from './urlBuilder';
 import { type RequiredBy } from './types';
 
-interface FetchExchangeInit {
+export interface FetchExchangeInit {
   /**
    * The Fetcher instance that initiated this exchange.
    */
