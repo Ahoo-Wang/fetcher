@@ -129,16 +129,16 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
 
   // Extract timeout from request
   if (!timeout) {
+    // When no timeout is set, but an abortController is provided, use its signal
+    if (request.abortController) {
+      requestInit.signal = request.abortController.signal;
+    }
     return fetch(url, requestInit);
   }
 
   // Create AbortController for fetch request cancellation
   const controller = request.abortController ?? new AbortController();
-  // Create a new request object to avoid modifying the original request object
-  const fetchRequest: RequestInit = {
-    ...requestInit,
-    signal: controller.signal,
-  };
+  requestInit.signal = controller.signal;
 
   // Timer resource management
   let timerId: ReturnType<typeof setTimeout> | null = null;
@@ -157,7 +157,7 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
 
   try {
     // Race between fetch request and timeout Promise
-    return await Promise.race([fetch(url, fetchRequest), timeoutPromise]);
+    return await Promise.race([fetch(url, requestInit), timeoutPromise]);
   } finally {
     // Clean up timer resources
     if (timerId) {

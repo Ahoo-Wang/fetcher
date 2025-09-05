@@ -123,6 +123,35 @@ describe('timeoutFetch', () => {
     globalThis.fetch = originalFetch;
   });
 
+  it('should use abortController signal when no timeout is specified but abortController is provided', async () => {
+    // Set up mock fetch
+    const mockFetch = vi.fn();
+    globalThis.fetch = mockFetch as any;
+    const response = new Response('test');
+    mockFetch.mockResolvedValue(response);
+
+    // Create an AbortController
+    const controller = new AbortController();
+
+    const request: FetchRequest = {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+      abortController: controller,
+    };
+
+    const result = await timeoutFetch(request);
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.example.com/test',
+      expect.objectContaining({
+        signal: controller.signal,
+      }),
+    );
+    expect(result).toBe(response);
+
+    // Restore original fetch
+    globalThis.fetch = originalFetch;
+  });
+
   it('should resolve normally when request completes before timeout', async () => {
     vi.useFakeTimers();
 
