@@ -54,28 +54,28 @@ describe('RequestExecutor', () => {
   describe('getTargetFetcher', () => {
     it('should return undefined when target is null', () => {
       const executor = new RequestExecutor(mockFunctionMetadata);
-      // @ts-ignore - accessing private method for testing
+      // @ts-expect-error - accessing private method for testing
       const result = executor.getTargetFetcher(null);
       expect(result).toBeUndefined();
     });
 
     it('should return undefined when target is not an object', () => {
       const executor = new RequestExecutor(mockFunctionMetadata);
-      // @ts-ignore - accessing private method for testing
+      // @ts-expect-error - accessing private method for testing
       const result = executor.getTargetFetcher('not-an-object');
       expect(result).toBeUndefined();
     });
 
     it('should return undefined when target has no fetcher property', () => {
       const executor = new RequestExecutor(mockFunctionMetadata);
-      // @ts-ignore - accessing private method for testing
+      // @ts-expect-error - accessing private method for testing
       const result = executor.getTargetFetcher({});
       expect(result).toBeUndefined();
     });
 
     it('should return undefined when target fetcher is not a Fetcher instance', () => {
       const executor = new RequestExecutor(mockFunctionMetadata);
-      // @ts-ignore - accessing private method for testing
+      // @ts-expect-error - accessing private method for testing
       const result = executor.getTargetFetcher({ fetcher: 'not-a-fetcher' });
       expect(result).toBeUndefined();
     });
@@ -83,7 +83,7 @@ describe('RequestExecutor', () => {
     it('should return fetcher when target has a valid Fetcher instance', () => {
       const executor = new RequestExecutor(mockFunctionMetadata);
       const mockFetcher = new MockFetcher();
-      // @ts-ignore - accessing private method for testing
+      // @ts-expect-error - accessing private method for testing
       const result = executor.getTargetFetcher({ fetcher: mockFetcher });
       expect(result).toBe(mockFetcher);
     });
