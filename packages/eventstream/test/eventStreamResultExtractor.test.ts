@@ -31,9 +31,11 @@ describe('EventStreamResultExtractor', () => {
     });
 
     const eventStreamExchange = new FetchExchange(
-      {} as any,
-      mockRequest,
-      eventStreamResponse,
+      {
+        fetcher: {} as any,
+        request: mockRequest,
+        response: eventStreamResponse,
+      },
     );
 
     const result = EventStreamResultExtractor(eventStreamExchange);
@@ -48,16 +50,20 @@ describe('EventStreamResultExtractor', () => {
       enumerable: true,
       value: () => {
         throw new ExchangeError(
-          new FetchExchange({} as any, mockRequest, noEventStreamResponse),
+          new FetchExchange({
+            fetcher: {} as any, request: mockRequest, response: noEventStreamResponse,
+          }),
           'ServerSentEventStream is not supported',
         );
       },
     });
 
     const noEventStreamExchange = new FetchExchange(
-      {} as any,
-      mockRequest,
-      noEventStreamResponse,
+      {
+        fetcher: {} as any,
+        request: mockRequest,
+        response: noEventStreamResponse,
+      },
     );
 
     expect(() => EventStreamResultExtractor(noEventStreamExchange)).toThrow(
@@ -84,9 +90,11 @@ describe('JsonEventStreamResultExtractor', () => {
     );
 
     const jsonEventStreamExchange = new FetchExchange(
-      {} as any,
-      mockRequest,
-      jsonEventStreamResponse,
+      {
+        fetcher: {} as any,
+        request: mockRequest,
+        response: jsonEventStreamResponse,
+      },
     );
 
     const result = JsonEventStreamResultExtractor(jsonEventStreamExchange);
@@ -105,9 +113,11 @@ describe('JsonEventStreamResultExtractor', () => {
         value: () => {
           throw new ExchangeError(
             new FetchExchange(
-              {} as any,
-              mockRequest,
-              noJsonEventStreamResponse,
+              {
+                fetcher: {} as any,
+                request: mockRequest,
+                response: noJsonEventStreamResponse,
+              },
             ),
             'JsonServerSentEventStream is not supported',
           );
@@ -116,9 +126,11 @@ describe('JsonEventStreamResultExtractor', () => {
     );
 
     const noJsonEventStreamExchange = new FetchExchange(
-      {} as any,
-      mockRequest,
-      noJsonEventStreamResponse,
+      {
+        fetcher: {} as any,
+        request: mockRequest,
+        response: noJsonEventStreamResponse,
+      },
     );
 
     expect(() =>

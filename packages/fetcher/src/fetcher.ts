@@ -128,11 +128,12 @@ export class Fetcher
    * @param request - Complete request configuration object
    * @param resultExtractor - Function to extract the desired result from the exchange.
    *                          Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   * @param attributes
    * @returns Promise that resolves to the extracted result based on resultExtractor
    * @throws Error if an unhandled error occurs during request processing
    */
   // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-  async request<R = FetchExchange>(request: FetchRequest, resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange): Promise<R> {
+  async request<R = FetchExchange>(request: FetchRequest, resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange, attributes?: Record<string, any>): Promise<R> {
     // Merge default headers and request-level headers. defensive copy
     const mergedHeaders = {
       ...this.headers,
@@ -144,10 +145,11 @@ export class Fetcher
       headers: mergedHeaders,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
-    const exchange: FetchExchange = new FetchExchange(this, fetchRequest);
+    const exchange: FetchExchange = new FetchExchange({ fetcher: this, request: fetchRequest, attributes });
     await this.interceptors.exchange(exchange);
     return resultExtractor(exchange);
   }
+
 
   /**
    * Internal helper method for making HTTP requests with a specific method.

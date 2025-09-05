@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { NamedCapable } from '../src/types';
+import { NamedCapable } from '../src';
 
 describe('types.ts', () => {
   it('should define NamedCapable interface', () => {

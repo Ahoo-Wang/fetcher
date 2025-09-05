@@ -70,7 +70,7 @@ describe('cosecResponseInterceptor.ts', () => {
 
       const mockFetcher = {} as Fetcher;
       const request = { url: '/test' };
-      const exchange = new FetchExchange(mockFetcher, request);
+      const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
       // No response in exchange
       await interceptor.intercept(exchange);
@@ -100,7 +100,7 @@ describe('cosecResponseInterceptor.ts', () => {
       const mockFetcher = {} as Fetcher;
       const request = { url: '/test' };
       const response = new Response('test', { status: 200 });
-      const exchange = new FetchExchange(mockFetcher, request, response);
+      const exchange = new FetchExchange({ fetcher: mockFetcher, request, response });
 
       await interceptor.intercept(exchange);
 
@@ -131,7 +131,7 @@ describe('cosecResponseInterceptor.ts', () => {
       const response = new Response('test', {
         status: ResponseCodes.UNAUTHORIZED,
       });
-      const exchange = new FetchExchange(mockFetcher, request, response);
+      const exchange = new FetchExchange({ fetcher: mockFetcher, request, response });
 
       await interceptor.intercept(exchange);
 
@@ -171,7 +171,7 @@ describe('cosecResponseInterceptor.ts', () => {
       const response = new Response('test', {
         status: ResponseCodes.UNAUTHORIZED,
       });
-      const exchange = new FetchExchange(mockFetcher, request, response);
+      const exchange = new FetchExchange({ fetcher: mockFetcher, request, response });
 
       // Set a current token
       const currentToken: CompositeToken = {
@@ -222,7 +222,7 @@ describe('cosecResponseInterceptor.ts', () => {
       const response = new Response('test', {
         status: ResponseCodes.UNAUTHORIZED,
       });
-      const exchange = new FetchExchange(mockFetcher, request, response);
+      const exchange = new FetchExchange({ fetcher: mockFetcher, request, response });
 
       // Set a current token
       const currentToken: CompositeToken = {

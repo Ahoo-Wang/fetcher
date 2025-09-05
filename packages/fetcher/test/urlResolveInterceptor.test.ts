@@ -41,7 +41,7 @@ describe('UrlResolveInterceptor', () => {
       },
     };
 
-    const exchange = new FetchExchange(fetcher, request);
+    const exchange = new FetchExchange({ fetcher, request });
 
     // Mock the urlBuilder.resolveRequestUrl method
     const resolvedUrl = 'https://api.example.com/users/123?filter=active';
@@ -59,7 +59,7 @@ describe('UrlResolveInterceptor', () => {
     const interceptor = new UrlResolveInterceptor();
 
     const request = { url: '/users' };
-    const exchange = new FetchExchange(fetcher, request);
+    const exchange = new FetchExchange({ fetcher, request });
 
     // Mock the urlBuilder.resolveRequestUrl method
     const resolvedUrl = 'https://api.example.com/users';

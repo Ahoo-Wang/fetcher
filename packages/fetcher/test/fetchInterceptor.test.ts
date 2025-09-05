@@ -31,7 +31,7 @@ describe('FetchInterceptor', () => {
     const interceptor = new FetchInterceptor();
     const mockFetcher = {} as Fetcher;
     const request = { url: 'https://api.example.com/test' };
-    const exchange = new FetchExchange(mockFetcher, request);
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
     const mockResponse = new Response('test response');
     const timeoutFetchSpy = vi
