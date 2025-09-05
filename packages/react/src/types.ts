@@ -12,6 +12,7 @@
  */
 
 import type { Fetcher } from '@ahoo-wang/fetcher';
+import { DependencyList } from 'react';
 
 /**
  * The state of a fetcher request.
@@ -53,7 +54,7 @@ export interface UseFetcherOptions {
   /**
    * Dependencies that should trigger a refetch when they change.
    */
-  deps?: any[];
+  deps?: DependencyList;
 
   /**
    * The fetcher instance to use for requests.
