@@ -50,7 +50,7 @@ describe('FunctionMetadata - branch coverage', () => {
       ]),
     );
 
-    const request = metadata.resolveRequest(['pathValue', 'queryValue']);
+    const request = metadata.resolveExchangeInit(['pathValue', 'queryValue']).request;
 
     expect(request.urlParams?.path).toEqual({ param0: 'pathValue' });
     expect(request.urlParams?.query).toEqual({ param1: 'queryValue' });
@@ -178,7 +178,7 @@ describe('FunctionMetadata - branch coverage', () => {
       ]),
     );
 
-    const request = metadata.resolveRequest(['pathValue']);
+    const request = metadata.resolveExchangeInit(['pathValue']).request;
     expect(request.urlParams?.path).toEqual({ param0: 'pathValue' });
   });
 
@@ -198,7 +198,7 @@ describe('FunctionMetadata - branch coverage', () => {
       ]),
     );
 
-    const request = metadata.resolveRequest(['queryValue']);
+    const request = metadata.resolveExchangeInit(['queryValue']).request;
     expect(request.urlParams?.query).toEqual({ param0: 'queryValue' });
   });
 
@@ -219,7 +219,7 @@ describe('FunctionMetadata - branch coverage', () => {
       ]),
     );
 
-    const request = metadata.resolveRequest([undefined]);
+    const request = metadata.resolveExchangeInit([undefined]).request;
     expect(request.headers).toEqual({});
   });
 
@@ -232,7 +232,7 @@ describe('FunctionMetadata - branch coverage', () => {
     );
 
     const abortController = new AbortController();
-    const request = metadata.resolveRequest([abortController.signal]);
+    const request = metadata.resolveExchangeInit([abortController.signal]).request;
     expect(request.signal).toBe(abortController.signal);
   });
 
@@ -280,7 +280,7 @@ describe('FunctionMetadata - branch coverage', () => {
     );
 
     // Should handle empty parameters without errors
-    const request = metadata.resolveRequest(['someValue']);
+    const request = metadata.resolveExchangeInit(['someValue']).request;
     expect(request).toBeDefined();
     expect(request.method).toBe(HttpMethod.GET);
   });
@@ -294,7 +294,7 @@ describe('FunctionMetadata - branch coverage', () => {
     );
 
     // Should handle case where parameters.get returns undefined
-    const request = metadata.resolveRequest(['value1', 'value2']);
+    const request = metadata.resolveExchangeInit(['value1', 'value2']).request;
     expect(request).toBeDefined();
     expect(request.method).toBe(HttpMethod.GET);
   });
@@ -316,7 +316,7 @@ describe('FunctionMetadata - branch coverage', () => {
     );
 
     const bodyData = { name: 'test', value: 123 };
-    const request = metadata.resolveRequest([bodyData]);
+    const request = metadata.resolveExchangeInit([bodyData]).request;
     expect(request.body).toEqual(bodyData);
   });
 
@@ -337,7 +337,7 @@ describe('FunctionMetadata - branch coverage', () => {
       ]),
     );
 
-    const request = metadata.resolveRequest(['Bearer token']);
+    const request = metadata.resolveExchangeInit(['Bearer token']).request;
     expect(request.headers).toEqual({ Authorization: 'Bearer token' });
   });
 
@@ -362,7 +362,7 @@ describe('FunctionMetadata - branch coverage', () => {
       body: { test: true },
     };
 
-    const request = metadata.resolveRequest([requestObject]);
+    const request = metadata.resolveExchangeInit([requestObject]).request;
     expect(request.headers).toEqual({ 'X-Custom': 'value' });
     expect(request.body).toEqual({ test: true });
   });
@@ -384,7 +384,7 @@ describe('FunctionMetadata - branch coverage', () => {
       ]),
     );
 
-    const request = metadata.resolveRequest([123]);
+    const request = metadata.resolveExchangeInit([123]).request;
     expect(request.urlParams?.path).toEqual({ id: 123 });
   });
 
@@ -405,7 +405,7 @@ describe('FunctionMetadata - branch coverage', () => {
       ]),
     );
 
-    const request = metadata.resolveRequest(['active']);
+    const request = metadata.resolveExchangeInit(['active']).request;
     expect(request.urlParams?.query).toEqual({ filter: 'active' });
   });
 
@@ -420,7 +420,7 @@ describe('FunctionMetadata - branch coverage', () => {
       new Map(),
     );
 
-    const request = metadata.resolveRequest([]);
+    const request = metadata.resolveExchangeInit([]).request;
     expect(request.headers).toEqual({
       'API-Key': 'api-key-value',
       'Endpoint-Key': 'endpoint-key-value',

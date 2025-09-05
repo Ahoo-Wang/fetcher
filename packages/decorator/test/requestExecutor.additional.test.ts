@@ -12,45 +12,10 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { RequestExecutor, FunctionMetadata, ParameterType } from '../src';
+import { FunctionMetadata, ParameterMetadata } from '../src';
 import { HttpMethod, ResultExtractors } from '@ahoo-wang/fetcher';
 
 describe('RequestExecutor - Additional Tests', () => {
-  it('should handle AbortController parameter', async () => {
-    const metadata = new FunctionMetadata(
-      'testFunc',
-      {},
-      { method: HttpMethod.POST },
-      new Map([
-        [
-          0,
-          {
-            type: ParameterType.REQUEST,
-            index: 0,
-          },
-        ],
-      ]),
-    );
-
-    const executor = new RequestExecutor(metadata);
-
-    // Mock the request method
-    const mockRequest = vi.fn().mockResolvedValue(new Response('test'));
-    metadata.fetcher.request = mockRequest;
-
-    const target = {};
-    const abortController = new AbortController();
-    const args = [abortController];
-
-    await executor.execute(target, args);
-
-    expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        abortController: abortController,
-      }),
-      ResultExtractors.Json, // Default extractor
-    );
-  });
 
   it('should handle resolvePath with various combinations', () => {
     // Test with parameter path
@@ -164,7 +129,7 @@ describe('RequestExecutor - Additional Tests', () => {
     const headers1: Record<string, string> = {};
     // @ts-expect-error - accessing private method for testing
     metadata.processHeaderParam(
-      { name: 'Authorization', index: 0 },
+      { name: 'Authorization', index: 0 } as ParameterMetadata,
       'Bearer token',
       headers1,
     );
@@ -174,7 +139,7 @@ describe('RequestExecutor - Additional Tests', () => {
     const headers2: Record<string, string> = {};
     // @ts-expect-error - accessing private method for testing
     metadata.processHeaderParam(
-      { name: 'Authorization', index: 0 },
+      { name: 'Authorization', index: 0 } as ParameterMetadata,
       undefined,
       headers2,
     );

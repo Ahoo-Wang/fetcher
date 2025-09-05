@@ -37,7 +37,7 @@ describe('FunctionMetadata.resolveRequest', () => {
       urlParams: { query: { filter: 'active' } },
       timeout: 5000,
     };
-    const request = metadata.resolveRequest([requestObject]);
+    const request = metadata.resolveExchangeInit([requestObject]).request;
     expect(request.headers).toEqual({
       'X-Custom': 'value',
     });
@@ -74,7 +74,7 @@ describe('FunctionMetadata.resolveRequest', () => {
       urlParams: { query: { filter: 'active' } },
       timeout: 5000,
     };
-    const request = metadata.resolveRequest([123, requestObject]);
+    const request = metadata.resolveExchangeInit([123, requestObject]).request;
 
     // Path parameter should be merged
     expect(request.urlParams?.path).toEqual({ id: 123 });
@@ -108,7 +108,7 @@ describe('FunctionMetadata.resolveRequest', () => {
       headers: { 'Content-Type': 'application/json' },
       body: { name: 'John' },
     };
-    const request = metadata.resolveRequest([requestObject]);
+    const request = metadata.resolveExchangeInit([requestObject]).request;
 
     // Parameter request should take precedence
     expect(request.method).toBe(HttpMethod.POST);
@@ -143,7 +143,7 @@ describe('FunctionMetadata.resolveRequest', () => {
     );
 
     const requestObject = {};
-    const request = metadata.resolveRequest([requestObject, 456]);
+    const request = metadata.resolveExchangeInit([requestObject, 456]).request;
 
     // Should fall back to endpoint configuration
     expect(request.method).toBe(HttpMethod.GET);
@@ -190,7 +190,7 @@ describe('FunctionMetadata.resolveRequest', () => {
       },
       headers: { Authorization: 'Bearer token' },
     };
-    const request = metadata.resolveRequest([requestObject, 789, 2]);
+    const request = metadata.resolveExchangeInit([requestObject, 789, 2]).request;
 
     // Should merge nested objects
     expect(request.urlParams?.path).toEqual({
