@@ -19,7 +19,7 @@ import {
   type FetchRequestInit,
   mergeRequest,
   type NamedCapable,
-  type RequestHeaders,
+  type RequestHeaders, ResultExtractor,
   type UrlParams,
 } from '@ahoo-wang/fetcher';
 import { ApiMetadata } from './apiDecorator';
@@ -29,8 +29,7 @@ import {
   type ParameterRequest,
   ParameterType,
 } from './parameterDecorator';
-import { ResultExtractor, ResultExtractors } from './resultExtractor';
-import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
+import { ResultExtractors } from './resultExtractor';
 import { getFetcher } from './fetcherCapable';
 
 /**
@@ -291,7 +290,7 @@ export class FunctionMetadata implements NamedCapable {
     return this.endpoint.timeout || this.api.timeout;
   }
 
-  resolveResultExtractor(): ResultExtractor {
+  resolveResultExtractor(): ResultExtractor<any> {
     return (
       this.endpoint.resultExtractor ||
       this.api.resultExtractor ||
@@ -356,11 +355,10 @@ export class RequestExecutor {
   async execute(
     target: any,
     args: any[],
-  ): Promise<FetchExchange | Response | any | ServerSentEventStream> {
+  ): Promise<any> {
     const fetcher = this.getTargetFetcher(target) || this.metadata.fetcher;
     const request = this.metadata.resolveRequest(args);
-    const exchange = await fetcher.request(request);
     const extractor = this.metadata.resolveResultExtractor();
-    return extractor(exchange);
+    return fetcher.request(request, extractor);
   }
 }
