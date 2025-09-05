@@ -133,6 +133,23 @@ describe('reflection', () => {
       const result = getParameterNames(weirdFunc);
       expect(result).toEqual([]);
     });
+    it('should handle function without matching closing parenthesis', () => {
+      // Create a function with normal signature
+      const func = function test(a: any, b: any) {
+        return a + b;
+      };
+      // Manually override the toString method to simulate a parsing issue
+      func.toString = () => 'function test(a, b';
+
+      // Should handle gracefully and return empty array or default
+      try {
+        const paramNames = getParameterNames(func);
+        expect(Array.isArray(paramNames)).toBe(true);
+      } catch (e) {
+        // If it throws, that's also valid behavior
+        expect(e).toBeInstanceOf(TypeError);
+      }
+    });
   });
 
   describe('getParameterName', () => {
@@ -219,5 +236,27 @@ describe('reflection', () => {
       const result = getParameterName(target, 'method', 0);
       expect(result).toBeUndefined();
     });
+
+    it('should handle parameter with colon', () => {
+      // Create a mock function that simulates having type annotations
+      const mockObj: any = {
+        testFunc: function(userId: string, options: object) {
+          return { userId, options };
+        },
+      };
+      // Override toString to simulate parameter with type annotation
+      mockObj.testFunc.toString = () => 'function testFunc(userId: string, options: object)';
+
+      // Should extract parameter name before colon
+      const paramName = getParameterName(mockObj, 'testFunc', 0);
+      expect(paramName).toBe('userId');
+    });
+
+    it('should return undefined when getParameterName fails', () => {
+      // Create a scenario where parameter name extraction fails
+      const result = getParameterName({} as any, 'nonexistent', 0);
+      expect(result).toBeUndefined();
+    });
+
   });
 });

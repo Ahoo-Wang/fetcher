@@ -440,4 +440,49 @@ describe('FunctionMetadata', () => {
       }).toThrow('@attributes() parameter must be an object');
     });
   });
+
+  it('should handle parameter without metadata', () => {
+    const apiMetadata = { basePath: '/api' };
+    const endpointMetadata = { method: HttpMethod.GET, path: '/users' };
+    const parameterMetadata = new Map<number, any>([
+      // Index 0 has no metadata in the map
+      [1, { type: ParameterType.PATH, name: 'id', index: 1 }],
+    ]);
+
+    const functionMetadata = new FunctionMetadata(
+      'getUsers',
+      apiMetadata,
+      endpointMetadata,
+      parameterMetadata,
+    );
+
+    // Should handle args with missing parameter metadata
+    const result = functionMetadata.resolveExchangeInit(['arg0', 'arg1']);
+    expect(result.request.urlParams?.path).toEqual({ id: 'arg1' });
+  });
+
+  it('should handle falsy parameter request values', () => {
+    const apiMetadata = { basePath: '/api' };
+    const endpointMetadata = { method: HttpMethod.GET, path: '/users' };
+    const parameterMetadata = new Map<number, any>([
+      [0, { type: ParameterType.REQUEST, index: 0 }],
+    ]);
+
+    const functionMetadata = new FunctionMetadata(
+      'getUsers',
+      apiMetadata,
+      endpointMetadata,
+      parameterMetadata,
+    );
+
+    // Should handle falsy request parameter values
+    const result1 = functionMetadata.resolveExchangeInit([null]);
+    expect(result1.request).toBeDefined();
+
+    const result2 = functionMetadata.resolveExchangeInit([undefined]);
+    expect(result2.request).toBeDefined();
+
+    const result3 = functionMetadata.resolveExchangeInit([false]);
+    expect(result3.request).toBeDefined();
+  });
 });
