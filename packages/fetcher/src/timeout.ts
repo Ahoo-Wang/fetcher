@@ -92,8 +92,9 @@ export function resolveTimeout(
  * Executes an HTTP request with optional timeout support.
  *
  * This function provides a wrapper around the native fetch API with added timeout functionality.
- * If a timeout is specified, it will create an AbortController to cancel the request if it exceeds the timeout.
- * If the request already has a signal, it will delegate to the native fetch API directly to avoid conflicts.
+ * - If a timeout is specified, it will create an AbortController to cancel the request if it exceeds the timeout.
+ * - If the request already has a signal, it will delegate to the native fetch API directly to avoid conflicts.
+ * - If the request has an abortController, it will be used instead of creating a new one.
  *
  * @param request - The request configuration including URL, method, headers, body, and optional timeout
  * @returns Promise that resolves to the Response object
@@ -125,19 +126,19 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   if (request.signal) {
     return fetch(url, requestInit);
   }
-  
+
   // Extract timeout from request
   if (!timeout) {
+    // When no timeout is set, but an abortController is provided, use its signal
+    if (request.abortController) {
+      requestInit.signal = request.abortController.signal;
+    }
     return fetch(url, requestInit);
   }
 
   // Create AbortController for fetch request cancellation
-  const controller = new AbortController();
-  // Create a new request object to avoid modifying the original request object
-  const fetchRequest: RequestInit = {
-    ...requestInit,
-    signal: controller.signal,
-  };
+  const controller = request.abortController ?? new AbortController();
+  requestInit.signal = controller.signal;
 
   // Timer resource management
   let timerId: ReturnType<typeof setTimeout> | null = null;
@@ -156,7 +157,7 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
 
   try {
     // Race between fetch request and timeout Promise
-    return await Promise.race([fetch(url, fetchRequest), timeoutPromise]);
+    return await Promise.race([fetch(url, requestInit), timeoutPromise]);
   } finally {
     // Clean up timer resources
     if (timerId) {
