@@ -17,7 +17,25 @@ import { ExchangeError } from './interceptorManager';
 import { type UrlParams } from './urlBuilder';
 import { type RequiredBy } from './types';
 
-export interface FetchExchangeInit {
+export interface AttributesCapable {
+  /**
+   * Shared attributes for passing data between interceptors.
+   *
+   * This property allows interceptors to share arbitrary data with each other.
+   * Interceptors can read from and write to this object to pass information
+   * along the interceptor chain.
+   *
+   * @remarks
+   * - This property is optional and may be undefined initially
+   * - Interceptors should initialize this property if they need to use it
+   * - Use string keys to avoid conflicts between different interceptors
+   * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
+   * - Be mindful of memory usage when storing large objects
+   */
+  attributes?: Record<string, any>;
+}
+
+export interface FetchExchangeInit extends AttributesCapable {
   /**
    * The Fetcher instance that initiated this exchange.
    */
@@ -37,22 +55,6 @@ export interface FetchExchangeInit {
    * Any error that occurred during the request processing, undefined if no error occurred.
    */
   error?: Error | any;
-
-  /**
-   * Shared attributes for passing data between interceptors.
-   *
-   * This property allows interceptors to share arbitrary data with each other.
-   * Interceptors can read from and write to this object to pass information
-   * along the interceptor chain.
-   *
-   * @remarks
-   * - This property is optional and may be undefined initially
-   * - Interceptors should initialize this property if they need to use it
-   * - Use string keys to avoid conflicts between different interceptors
-   * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
-   * - Be mindful of memory usage when storing large objects
-   */
-  attributes?: Record<string, any>;
 }
 
 /**
