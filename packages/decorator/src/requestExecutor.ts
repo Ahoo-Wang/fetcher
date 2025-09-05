@@ -11,11 +11,9 @@
  * limitations under the License.
  */
 import {
-  combineURLs,
+  combineURLs, Fetcher,
   fetcher,
-  Fetcher,
-  type FetchRequest,
-  type FetchRequestInit,
+  type FetchExchangeInit, FetchRequestInit,
   mergeRequest,
   type NamedCapable,
   type RequestHeaders,
@@ -40,6 +38,10 @@ import { getFetcher } from './fetcherCapable';
  * configuration, and parameter metadata.
  */
 export class FunctionMetadata implements NamedCapable {
+  private static readonly DEFAULT_ATTRIBUTES = {
+    'cache': 'default',
+    'credentials': 'same-origin',
+  };
   /**
    * Name of the function.
    */
@@ -146,7 +148,7 @@ export class FunctionMetadata implements NamedCapable {
    * // }
    * ```
    */
-  resolveRequest(args: any[]): FetchRequest {
+  resolveExchangeInit(args: any[]): Pick<FetchExchangeInit, 'request' | 'attributes'> {
     const pathParams: Record<string, any> = {};
     const queryParams: Record<string, any> = {};
     const headers: RequestHeaders = {
@@ -157,6 +159,9 @@ export class FunctionMetadata implements NamedCapable {
     let signal: AbortSignal | null | undefined = undefined;
     let abortController: AbortController | null | undefined = undefined;
     let parameterRequest: ParameterRequest = {};
+    const attributes: Record<string, any> = {
+      ...FunctionMetadata.DEFAULT_ATTRIBUTES,
+    };
     // Process parameters based on their decorators
     args.forEach((value, index) => {
       if (value instanceof AbortSignal) {
@@ -187,6 +192,12 @@ export class FunctionMetadata implements NamedCapable {
         case ParameterType.REQUEST:
           parameterRequest = this.processRequestParam(value);
           break;
+        case ParameterType.ATTRIBUTE:
+          this.processAttributeParam(funParameter, value, attributes);
+          break;
+        case ParameterType.ATTRIBUTES:
+          this.processAttributesParam(value, attributes);
+          break;
       }
     });
     const urlParams: UrlParams = {
@@ -208,7 +219,10 @@ export class FunctionMetadata implements NamedCapable {
     ) as any;
     const parameterPath = parameterRequest.path;
     mergedRequest.url = this.resolvePath(parameterPath);
-    return mergedRequest;
+    return {
+      request: mergedRequest,
+      attributes,
+    };
   }
 
   private processPathParam(
@@ -264,7 +278,40 @@ export class FunctionMetadata implements NamedCapable {
    * ```
    */
   private processRequestParam(value: any): ParameterRequest {
-    return value as ParameterRequest;
+    if (!value) {
+      return {};
+    }
+
+    const request = value as ParameterRequest;
+    // 确保请求对象中的属性被正确保留
+    return {
+      ...request,
+      headers: request.headers || {},
+      urlParams: request.urlParams || { path: {}, query: {} },
+    };
+  }
+
+
+  private processAttributeParam(
+    param: ParameterMetadata,
+    value: any,
+    attributes: Record<string, any>,
+  ) {
+    if (param.name && value !== undefined) {
+      attributes[param.name] = value;
+    }
+  }
+
+  private processAttributesParam(
+    value: any,
+    attributes: Record<string, any>,
+  ) {
+    if (typeof value !== 'object') {
+      throw new Error('@attributes() parameter must be an object');
+    }
+    Object.keys(value).forEach(key => {
+      attributes[key] = value[key];
+    });
   }
 
   /**
@@ -353,15 +400,42 @@ export class RequestExecutor {
    *
    * This method resolves the path and request configuration from the metadata
    * and arguments, then executes the request using the configured fetcher.
+   * It handles the complete request lifecycle from parameter processing to
+   * response extraction.
    *
-   * @param target - The target object that the method is called on
-   * @param args - The runtime arguments passed to the method
-   * @returns A Promise that resolves to the Response
+   * @param target - The target object that the method is called on.
+   *                 This can contain a custom fetcher instance in its 'fetcher' property.
+   * @param args - The runtime arguments passed to the decorated method.
+   *               These are mapped to request components based on parameter decorators.
+   * @returns A Promise that resolves to the extracted result based on the configured result extractor.
+   *          By default, this is the Response object, but can be customized to return
+   *          parsed JSON, the raw exchange object, or any other transformed result.
+   *
+   * @example
+   * ```typescript
+   * // Given a decorated service method:
+   * class UserService {
+   *   @get('/users/{id}')
+   *   getUser(@path('id') id: number): Promise<Response> {
+   *     // This method body is replaced by the executor at runtime
+   *   }
+   * }
+   *
+   * // When calling:
+   * const userService = new UserService();
+   * const response = await userService.getUser(123);
+   *
+   * // The execute method will:
+   * // 1. Resolve the path to '/users/123'
+   * // 2. Create a request with method 'GET'
+   * // 3. Execute the request using the configured fetcher
+   * // 4. Return the Response object
+   * ```
    */
   async execute(target: any, args: any[]): Promise<any> {
     const fetcher = this.getTargetFetcher(target) || this.metadata.fetcher;
-    const request = this.metadata.resolveRequest(args);
+    const exchangeInit = this.metadata.resolveExchangeInit(args);
     const extractor = this.metadata.resolveResultExtractor();
-    return fetcher.request(request, extractor);
+    return fetcher.request(exchangeInit.request, extractor, exchangeInit.attributes);
   }
 }
