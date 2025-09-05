@@ -223,9 +223,6 @@ importers:
       '@ahoo-wang/fetcher':
         specifier: workspace:*
         version: link:../fetcher
-      '@ahoo-wang/fetcher-decorator':
-        specifier: workspace:*
-        version: link:../decorator
       '@ahoo-wang/fetcher-eventstream':
         specifier: workspace:*
         version: link:../eventstream
