@@ -20,11 +20,7 @@ import type {
 import type { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
 import type { Condition } from './condition';
 import type { ClientOptions } from '../types';
-import { combineURLs, ContentTypeValues, HttpMethod } from '@ahoo-wang/fetcher';
-import {
-  type ResultExtractor,
-  ResultExtractors,
-} from '@ahoo-wang/fetcher-decorator';
+import { combineURLs, ContentTypeValues, HttpMethod, ResultExtractor, ResultExtractors } from '@ahoo-wang/fetcher';
 
 /**
  * Interface for generic query API operations.
@@ -107,7 +103,7 @@ export class QueryClient {
     path: string,
     query: Condition | ListQuery | PagedQuery | SingleQuery,
     accept: string = ContentTypeValues.APPLICATION_JSON,
-    extractor: ResultExtractor = ResultExtractors.Json,
+    extractor: ResultExtractor<any> = ResultExtractors.Json,
   ): Promise<R> {
     const url = combineURLs(this.options.basePath, path);
     const request = {

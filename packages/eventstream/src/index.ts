@@ -13,6 +13,7 @@
 
 export * from './eventStreamConverter';
 export * from './jsonServerSentEventTransformStream';
+export * from './eventStreamResultExtractor';
 export * from './responses';
 export * from './serverSentEventTransformStream';
 export * from './textLineTransformStream';

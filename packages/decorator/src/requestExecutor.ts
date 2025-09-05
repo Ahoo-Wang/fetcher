@@ -14,12 +14,11 @@ import {
   combineURLs,
   fetcher,
   Fetcher,
-  FetchExchange,
   type FetchRequest,
   type FetchRequestInit,
   mergeRequest,
   type NamedCapable,
-  type RequestHeaders,
+  type RequestHeaders, ResultExtractor,
   type UrlParams,
 } from '@ahoo-wang/fetcher';
 import { ApiMetadata } from './apiDecorator';
@@ -29,8 +28,7 @@ import {
   type ParameterRequest,
   ParameterType,
 } from './parameterDecorator';
-import { ResultExtractor, ResultExtractors } from './resultExtractor';
-import { ServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
+import { ResultExtractors } from './resultExtractor';
 import { getFetcher } from './fetcherCapable';
 
 /**
@@ -156,11 +154,16 @@ export class FunctionMetadata implements NamedCapable {
     };
     let body: any = undefined;
     let signal: AbortSignal | null | undefined = undefined;
+    let abortController: AbortController | null | undefined = undefined;
     let parameterRequest: ParameterRequest = {};
     // Process parameters based on their decorators
     args.forEach((value, index) => {
       if (value instanceof AbortSignal) {
         signal = value;
+        return;
+      }
+      if (value instanceof AbortController) {
+        abortController = value;
         return;
       }
       const funParameter = this.parameters.get(index);
@@ -196,6 +199,7 @@ export class FunctionMetadata implements NamedCapable {
       body,
       timeout: this.resolveTimeout(),
       signal,
+      abortController,
     };
     const mergedRequest = mergeRequest(
       endpointRequest,
@@ -291,7 +295,7 @@ export class FunctionMetadata implements NamedCapable {
     return this.endpoint.timeout || this.api.timeout;
   }
 
-  resolveResultExtractor(): ResultExtractor {
+  resolveResultExtractor(): ResultExtractor<any> {
     return (
       this.endpoint.resultExtractor ||
       this.api.resultExtractor ||
@@ -356,11 +360,10 @@ export class RequestExecutor {
   async execute(
     target: any,
     args: any[],
-  ): Promise<FetchExchange | Response | any | ServerSentEventStream> {
+  ): Promise<any> {
     const fetcher = this.getTargetFetcher(target) || this.metadata.fetcher;
     const request = this.metadata.resolveRequest(args);
-    const exchange = await fetcher.request(request);
     const extractor = this.metadata.resolveResultExtractor();
-    return extractor(exchange);
+    return fetcher.request(request, extractor);
   }
 }

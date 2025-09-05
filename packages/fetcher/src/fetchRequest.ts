@@ -130,6 +130,29 @@ export interface FetchRequestInit
    * ```
    */
   body?: BodyInit | Record<string, any> | string | null;
+
+  /**
+   * AbortController for this request.
+   * Used to cancel the request if needed.
+   *
+   * In timeout scenarios, if this property is provided, it will be used instead of creating a new AbortController.
+   * This allows the caller to provide a custom AbortController for more advanced cancellation scenarios.
+   *
+   * @example
+   * ```typescript
+   * // Provide a custom AbortController
+   * const controller = new AbortController();
+   * const request: FetchRequest = {
+   *   url: 'https://api.example.com/data',
+   *   method: 'GET',
+   *   abortController: controller
+   * };
+   *
+   * // Later, cancel the request
+   * controller.abort();
+   * ```
+   */
+  abortController?: AbortController;
 }
 
 /**

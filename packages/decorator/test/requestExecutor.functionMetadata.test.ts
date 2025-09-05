@@ -13,8 +13,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { FunctionMetadata, ParameterType } from '../src';
-import { fetcherRegistrar, HttpMethod, Fetcher } from '@ahoo-wang/fetcher';
-import { ResultExtractors } from '../src';
+import { fetcherRegistrar, HttpMethod, Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 
 // Mock fetcher
 const mockFetch = vi.fn();
@@ -293,5 +292,196 @@ describe('FunctionMetadata - branch coverage', () => {
     const request = metadata.resolveRequest(['value1', 'value2']);
     expect(request).toBeDefined();
     expect(request.method).toBe(HttpMethod.GET);
+  });
+
+  it('should handle body parameter type', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.POST },
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.BODY,
+            index: 0,
+          },
+        ],
+      ]),
+    );
+
+    const bodyData = { name: 'test', value: 123 };
+    const request = metadata.resolveRequest([bodyData]);
+    expect(request.body).toEqual(bodyData);
+  });
+
+  it('should handle header parameter with valid value', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.HEADER,
+            name: 'Authorization',
+            index: 0,
+          },
+        ],
+      ]),
+    );
+
+    const request = metadata.resolveRequest(['Bearer token']);
+    expect(request.headers).toEqual({ 'Authorization': 'Bearer token' });
+  });
+
+  it('should handle request parameter type', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.POST },
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.REQUEST,
+            index: 0,
+          },
+        ],
+      ]),
+    );
+
+    const requestObject = {
+      headers: { 'X-Custom': 'value' },
+      body: { test: true },
+    };
+
+    const request = metadata.resolveRequest([requestObject]);
+    expect(request.headers).toEqual({ 'X-Custom': 'value' });
+    expect(request.body).toEqual({ test: true });
+  });
+
+  it('should process path params correctly', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+      ]),
+    );
+
+    const request = metadata.resolveRequest([123]);
+    expect(request.urlParams?.path).toEqual({ id: 123 });
+  });
+
+  it('should process query params correctly', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.GET },
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.QUERY,
+            name: 'filter',
+            index: 0,
+          },
+        ],
+      ]),
+    );
+
+    const request = metadata.resolveRequest(['active']);
+    expect(request.urlParams?.query).toEqual({ filter: 'active' });
+  });
+
+  it('should merge api and endpoint headers', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      { headers: { 'API-Key': 'api-key-value' } },
+      { 
+        method: HttpMethod.GET,
+        headers: { 'Endpoint-Key': 'endpoint-key-value' },
+      },
+      new Map(),
+    );
+
+    const request = metadata.resolveRequest([]);
+    expect(request.headers).toEqual({
+      'API-Key': 'api-key-value',
+      'Endpoint-Key': 'endpoint-key-value',
+    });
+  });
+
+  it('should handle AbortController parameter', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.POST },
+      new Map(),
+    );
+
+    const abortController = new AbortController();
+    const request = metadata.resolveRequest([abortController]);
+    expect(request.abortController).toBe(abortController);
+  });
+
+  it('should handle mixed parameter types correctly', () => {
+    const metadata = new FunctionMetadata(
+      'testFunc',
+      {},
+      { method: HttpMethod.POST },
+      new Map([
+        [
+          0,
+          {
+            type: ParameterType.PATH,
+            name: 'id',
+            index: 0,
+          },
+        ],
+        [
+          1,
+          {
+            type: ParameterType.QUERY,
+            name: 'filter',
+            index: 1,
+          },
+        ],
+        [
+          2,
+          {
+            type: ParameterType.HEADER,
+            name: 'Authorization',
+            index: 2,
+          },
+        ],
+        [
+          3,
+          {
+            type: ParameterType.BODY,
+            index: 3,
+          },
+        ],
+      ]),
+    );
+
+    const bodyData = { name: 'test' };
+    const args = [123, 'active', 'Bearer token', bodyData];
+    const request = metadata.resolveRequest(args);
+
+    expect(request.urlParams?.path).toEqual({ id: 123 });
+    expect(request.urlParams?.query).toEqual({ filter: 'active' });
+    expect(request.headers).toEqual({ 'Authorization': 'Bearer token' });
+    expect(request.body).toEqual(bodyData);
   });
 });
