@@ -14,8 +14,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_OPTIONS,
-  Fetcher,
-  FetchError,
+  Fetcher, FetcherError,
   FetchRequest,
   HttpMethod,
 } from '../src';
@@ -235,7 +234,7 @@ describe('Fetcher', () => {
     exchangeSpy.mockRestore();
   });
 
-  it('should throw FetchError when no response is returned', async () => {
+  it('should throw FetcherError when no response is returned', async () => {
     const fetcher = new Fetcher();
 
     // Mock the interceptors.exchange method to not set a response
@@ -245,7 +244,7 @@ describe('Fetcher', () => {
         return exchange;
       });
 
-    await expect(fetcher.get('/users')).rejects.toThrow(FetchError);
+    await expect(fetcher.get('/users')).rejects.toThrow(FetcherError);
 
     // Clean up spy
     exchangeSpy.mockRestore();
