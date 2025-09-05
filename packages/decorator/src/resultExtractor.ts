@@ -15,12 +15,13 @@ import {
   ExchangeResultExtractor,
   JsonResultExtractor,
   ResponseResultExtractor,
-  ResultExtractor, TextResultExtractor,
+  ResultExtractor,
+  TextResultExtractor,
 } from '@ahoo-wang/fetcher';
 import {
-  EventStreamResultExtractor, JsonEventStreamResultExtractor,
+  EventStreamResultExtractor,
+  JsonEventStreamResultExtractor,
 } from '@ahoo-wang/fetcher-eventstream';
-
 
 /**
  * Interface with result extractor capability

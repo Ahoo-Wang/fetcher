@@ -18,7 +18,8 @@ import {
   type FetchRequestInit,
   mergeRequest,
   type NamedCapable,
-  type RequestHeaders, ResultExtractor,
+  type RequestHeaders,
+  ResultExtractor,
   type UrlParams,
 } from '@ahoo-wang/fetcher';
 import { ApiMetadata } from './apiDecorator';
@@ -357,10 +358,7 @@ export class RequestExecutor {
    * @param args - The runtime arguments passed to the method
    * @returns A Promise that resolves to the Response
    */
-  async execute(
-    target: any,
-    args: any[],
-  ): Promise<any> {
+  async execute(target: any, args: any[]): Promise<any> {
     const fetcher = this.getTargetFetcher(target) || this.metadata.fetcher;
     const request = this.metadata.resolveRequest(args);
     const extractor = this.metadata.resolveResultExtractor();

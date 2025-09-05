@@ -126,7 +126,10 @@ describe('InterceptorRegistry', () => {
 
   it('should execute interceptors in order', async () => {
     const registry = new InterceptorRegistry();
-    const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest });
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
 
     const interceptor1: Interceptor = {
       name: 'interceptor-1',
@@ -150,7 +153,10 @@ describe('InterceptorRegistry', () => {
 
   it('should execute interceptors in correct order when added in different order', async () => {
     const registry = new InterceptorRegistry();
-    const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest });
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
 
     const interceptor1: Interceptor = {
       name: 'interceptor-1',

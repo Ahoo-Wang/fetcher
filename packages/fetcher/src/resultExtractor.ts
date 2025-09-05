@@ -29,7 +29,9 @@ export interface ResultExtractor<R> {
  * @param exchange - The FetchExchange object to return
  * @returns The same FetchExchange object that was passed in
  */
-export const ExchangeResultExtractor: ResultExtractor<FetchExchange> = (exchange: FetchExchange) => {
+export const ExchangeResultExtractor: ResultExtractor<FetchExchange> = (
+  exchange: FetchExchange,
+) => {
   return exchange;
 };
 
@@ -38,7 +40,9 @@ export const ExchangeResultExtractor: ResultExtractor<FetchExchange> = (exchange
  * @param exchange - The FetchExchange containing the response
  * @returns The Response object from the exchange
  */
-export const ResponseResultExtractor: ResultExtractor<Response> = (exchange: FetchExchange) => {
+export const ResponseResultExtractor: ResultExtractor<Response> = (
+  exchange: FetchExchange,
+) => {
   return exchange.requiredResponse;
 };
 
@@ -47,7 +51,9 @@ export const ResponseResultExtractor: ResultExtractor<Response> = (exchange: Fet
  * @param exchange - The FetchExchange containing the response with JSON data
  * @returns A Promise that resolves to the parsed JSON data
  */
-export const JsonResultExtractor: ResultExtractor<Promise<any>> = (exchange: FetchExchange) => {
+export const JsonResultExtractor: ResultExtractor<Promise<any>> = (
+  exchange: FetchExchange,
+) => {
   return exchange.requiredResponse.json();
 };
 
@@ -56,7 +62,9 @@ export const JsonResultExtractor: ResultExtractor<Promise<any>> = (exchange: Fet
  * @param exchange - The FetchExchange containing the response with text data
  * @returns A Promise that resolves to the response body as a string
  */
-export const TextResultExtractor: ResultExtractor<Promise<string>> = (exchange: FetchExchange) => {
+export const TextResultExtractor: ResultExtractor<Promise<string>> = (
+  exchange: FetchExchange,
+) => {
   return exchange.requiredResponse.text();
 };
 

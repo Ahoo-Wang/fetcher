@@ -11,7 +11,6 @@
  * limitations under the License.
  */
 
-
 import { FetchExchange, ResultExtractor } from '@ahoo-wang/fetcher';
 import { ServerSentEventStream } from './eventStreamConverter';
 import { JsonServerSentEventStream } from './jsonServerSentEventTransformStream';
@@ -23,9 +22,9 @@ import { JsonServerSentEventStream } from './jsonServerSentEventTransformStream'
  * @returns Readable stream object of server-sent event stream
  * @throws ExchangeError exception when server does not support ServerSentEventStream
  */
-export const EventStreamResultExtractor: ResultExtractor<ServerSentEventStream> = (
-  exchange: FetchExchange,
-) => {
+export const EventStreamResultExtractor: ResultExtractor<
+  ServerSentEventStream
+> = (exchange: FetchExchange) => {
   return exchange.requiredResponse.requiredEventStream();
 };
 
@@ -36,9 +35,8 @@ export const EventStreamResultExtractor: ResultExtractor<ServerSentEventStream> 
  * @returns Readable stream object of JSON server-sent event stream
  * @throws ExchangeError exception when server does not support JsonServerSentEventStream
  */
-export const JsonEventStreamResultExtractor: ResultExtractor<JsonServerSentEventStream<any>> = (
-  exchange: FetchExchange,
-) => {
+export const JsonEventStreamResultExtractor: ResultExtractor<
+  JsonServerSentEventStream<any>
+> = (exchange: FetchExchange) => {
   return exchange.requiredResponse.requiredJsonEventStream();
 };
-

@@ -12,16 +12,17 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import {
-  ResultExtractors,
-} from '../src';
+import { ResultExtractors } from '../src';
 import {
   ExchangeResultExtractor,
   JsonResultExtractor,
   ResponseResultExtractor,
   TextResultExtractor,
 } from '@ahoo-wang/fetcher';
-import { EventStreamResultExtractor, JsonEventStreamResultExtractor } from '@ahoo-wang/fetcher-eventstream';
+import {
+  EventStreamResultExtractor,
+  JsonEventStreamResultExtractor,
+} from '@ahoo-wang/fetcher-eventstream';
 
 describe('ResultExtractors object', () => {
   it('should contain all result extractors', () => {

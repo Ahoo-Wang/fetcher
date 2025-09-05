@@ -19,7 +19,10 @@ describe('FetchExchange', () => {
   const mockRequest = { url: '/test' } as FetchRequest;
 
   it('should create instance with required parameters', () => {
-    const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest });
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
 
     expect(exchange.fetcher).toBe(mockFetcher);
     expect(exchange.request).toBe(mockRequest);
@@ -33,14 +36,12 @@ describe('FetchExchange', () => {
     const mockError = new Error('test error');
     const attributes = { test: 'value' };
 
-    const exchange = new FetchExchange(
-      {
-        fetcher: mockFetcher,
-        request: mockRequest,
-        response: mockResponse,
-        error: mockError,
-      },
-    );
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+      response: mockResponse,
+      error: mockError,
+    });
     exchange.attributes = attributes;
 
     expect(exchange.fetcher).toBe(mockFetcher);
@@ -51,33 +52,41 @@ describe('FetchExchange', () => {
   });
 
   it('should return false for hasError when no error is present', () => {
-    const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest });
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
 
     expect(exchange.hasError()).toBe(false);
   });
 
   it('should return true for hasError when error is present', () => {
     const mockError = new Error('test error');
-    const exchange = new FetchExchange(
-      {
-        fetcher: mockFetcher,
-        request: mockRequest,
-        error: mockError,
-      },
-    );
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+      error: mockError,
+    });
 
     expect(exchange.hasError()).toBe(true);
   });
 
   it('should return false for hasResponse when no response is present', () => {
-    const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest });
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
 
     expect(exchange.hasResponse()).toBe(false);
   });
 
   it('should return true for hasResponse when response is present', () => {
     const mockResponse = new Response('test');
-    const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest, response: mockResponse });
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+      response: mockResponse,
+    });
 
     expect(exchange.hasResponse()).toBe(true);
     expect(exchange.requiredResponse).toBe(mockResponse);
@@ -85,7 +94,10 @@ describe('FetchExchange', () => {
 
   it('should throw an error when trying to access requiredResponse without a response', () => {
     expect(() => {
-      const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest });
+      const exchange = new FetchExchange({
+        fetcher: mockFetcher,
+        request: mockRequest,
+      });
       exchange.requiredResponse;
     }).toThrowError(ExchangeError);
   });
