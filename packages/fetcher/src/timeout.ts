@@ -89,15 +89,16 @@ export function resolveTimeout(
 }
 
 /**
- * HTTP request method with timeout control.
+ * Executes an HTTP request with optional timeout support.
  *
- * Uses Promise.race to implement timeout control, initiating both
- * fetch request and timeout Promise simultaneously. When either Promise completes,
- * it returns the result or throws an exception.
+ * This function provides a wrapper around the native fetch API with added timeout functionality.
+ * If a timeout is specified, it will create an AbortController to cancel the request if it exceeds the timeout.
+ * If the request already has a signal, it will delegate to the native fetch API directly to avoid conflicts.
  *
- * @param request - The request initialization options
- * @returns Promise<Response> HTTP response Promise
- * @throws FetchTimeoutError Thrown when the request times out
+ * @param request - The request configuration including URL, method, headers, body, and optional timeout
+ * @returns Promise that resolves to the Response object
+ * @throws FetchTimeoutError if the request times out
+ * @throws TypeError for network errors
  *
  * @example
  * ```typescript
@@ -119,6 +120,12 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   const url = request.url;
   const timeout = request.timeout;
   const requestInit = request as RequestInit;
+
+  // If the request already has a signal, delegate to native fetch to avoid conflicts
+  if (request.signal) {
+    return fetch(url, requestInit);
+  }
+  
   // Extract timeout from request
   if (!timeout) {
     return fetch(url, requestInit);
