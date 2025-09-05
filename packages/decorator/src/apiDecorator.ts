@@ -12,17 +12,19 @@
  */
 
 import {
+  type AttributesCapable,
   Fetcher,
   type RequestHeaders,
   type RequestHeadersCapable,
   type TimeoutCapable,
 } from '@ahoo-wang/fetcher';
 import { ENDPOINT_METADATA_KEY } from './endpointDecorator';
-import { FunctionMetadata, RequestExecutor } from './requestExecutor';
+import { RequestExecutor } from './requestExecutor';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator';
 import 'reflect-metadata';
 import { type ResultExtractorCapable } from './resultExtractor';
 import { type FetcherCapable } from './fetcherCapable';
+import { FunctionMetadata } from './functionMetadata';
 
 /**
  * Metadata for class-level API configuration.
@@ -35,7 +37,7 @@ export interface ApiMetadata
   extends TimeoutCapable,
     RequestHeadersCapable,
     ResultExtractorCapable,
-    FetcherCapable {
+    FetcherCapable, AttributesCapable {
   /**
    * Base path for all endpoints in the class.
    *
