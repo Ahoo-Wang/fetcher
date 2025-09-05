@@ -14,7 +14,6 @@ import {
   combineURLs,
   fetcher,
   Fetcher,
-  FetchExchange,
   type FetchRequest,
   type FetchRequestInit,
   mergeRequest,
