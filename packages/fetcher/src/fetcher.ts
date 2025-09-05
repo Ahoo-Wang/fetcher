@@ -131,8 +131,8 @@ export class Fetcher
    * @returns Promise that resolves to the extracted result based on resultExtractor
    * @throws Error if an unhandled error occurs during request processing
    */
-  // @ts-ignore
-  async request<R = FetchExchange>(request: FetchRequest, resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange): Promise<R> {
+  // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
+  async request<R = FetchExchange>(request: FetchRequest, resultExtractor: ResultExtractor<R> = ExchangeResultExtractor): Promise<R> {
     // Merge default headers and request-level headers. defensive copy
     const mergedHeaders = {
       ...this.headers,
