@@ -20,7 +20,8 @@ import { FetchRequest } from '../src';
 describe('ResultExtractor', () => {
   it('should define ResultExtractor interface', () => {
     // This test just verifies the interface is properly defined
-    const extractor: ResultExtractor<any> = (exchange: FetchExchange) => exchange;
+    const extractor: ResultExtractor<any> = (exchange: FetchExchange) =>
+      exchange;
     expect(typeof extractor).toBe('function');
   });
 });
@@ -32,7 +33,11 @@ describe('ResultExtractors', () => {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
-  const exchange = new FetchExchange({ fetcher: mockFetcher, request: mockRequest, response: mockResponse });
+  const exchange = new FetchExchange({
+    fetcher: mockFetcher,
+    request: mockRequest,
+    response: mockResponse,
+  });
 
   it('should export Exchange result extractor', () => {
     expect(ResultExtractors).toHaveProperty('Exchange');
@@ -61,7 +66,9 @@ describe('ResultExtractors', () => {
   });
 
   it('Json extractor should return a promise that resolves to parsed JSON', async () => {
-    const jsonSpy = vi.spyOn(mockResponse, 'json').mockResolvedValue({ data: 'test' });
+    const jsonSpy = vi
+      .spyOn(mockResponse, 'json')
+      .mockResolvedValue({ data: 'test' });
     const resultPromise = ResultExtractors.Json(exchange);
     expect(resultPromise).toBeInstanceOf(Promise);
 
@@ -71,7 +78,9 @@ describe('ResultExtractors', () => {
   });
 
   it('Text extractor should return a promise that resolves to response text', async () => {
-    const textSpy = vi.spyOn(mockResponse, 'text').mockResolvedValue('test text');
+    const textSpy = vi
+      .spyOn(mockResponse, 'text')
+      .mockResolvedValue('test text');
     const resultPromise = ResultExtractors.Text(exchange);
     expect(resultPromise).toBeInstanceOf(Promise);
 

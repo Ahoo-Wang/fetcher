@@ -115,7 +115,11 @@ export class Fetcher
    * @returns Promise that resolves to the HTTP response
    * @throws FetchError if the request fails and no response is generated
    */
-  async fetch(url: string, request: FetchRequestInit = {}, attributes?: Record<string, any>): Promise<Response> {
+  async fetch(
+    url: string,
+    request: FetchRequestInit = {},
+    attributes?: Record<string, any>,
+  ): Promise<Response> {
     const fetchRequest = request as FetchRequest;
     fetchRequest.url = url;
     return this.request(fetchRequest, ResultExtractors.Response, attributes);
@@ -137,8 +141,12 @@ export class Fetcher
    * @returns Promise that resolves to the extracted result based on resultExtractor
    * @throws Error if an unhandled error occurs during request processing
    */
-  // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-  async request<R = FetchExchange>(request: FetchRequest, resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange, attributes?: Record<string, any>): Promise<R> {
+  async request<R = FetchExchange>(
+    request: FetchRequest,
+    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
+    resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange,
+    attributes?: Record<string, any>,
+  ): Promise<R> {
     // Merge default headers and request-level headers. defensive copy
     const mergedHeaders = {
       ...this.headers,
@@ -150,7 +158,10 @@ export class Fetcher
       headers: mergedHeaders,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
-    return this.exchange({ request: fetchRequest, attributes }, resultExtractor);
+    return this.exchange(
+      { request: fetchRequest, attributes },
+      resultExtractor,
+    );
   }
 
   /**
@@ -187,8 +198,11 @@ export class Fetcher
    * );
    * ```
    */
-  // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-  async exchange<R>(exchangeInit: Omit<FetchExchangeInit, 'fetcher'>, resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange): Promise<R> {
+  async exchange<R>(
+    exchangeInit: Omit<FetchExchangeInit, 'fetcher'>,
+    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
+    resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange,
+  ): Promise<R> {
     const exchange: FetchExchange = new FetchExchange({
       ...exchangeInit,
       fetcher: this,
@@ -217,11 +231,14 @@ export class Fetcher
     request: FetchRequestInit = {},
     attributes?: Record<string, any>,
   ): Promise<Response> {
-    return this.fetch(url, {
+    return this.fetch(
+      url,
+      {
         ...request,
         method,
       },
-      attributes);
+      attributes,
+    );
   }
 
   /**

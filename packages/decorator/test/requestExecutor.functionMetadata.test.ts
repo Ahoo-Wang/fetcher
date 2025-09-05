@@ -13,7 +13,12 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { FunctionMetadata, ParameterType } from '../src';
-import { fetcherRegistrar, HttpMethod, Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
+import {
+  fetcherRegistrar,
+  HttpMethod,
+  Fetcher,
+  ResultExtractors,
+} from '@ahoo-wang/fetcher';
 
 // Mock fetcher
 const mockFetch = vi.fn();
@@ -333,7 +338,7 @@ describe('FunctionMetadata - branch coverage', () => {
     );
 
     const request = metadata.resolveRequest(['Bearer token']);
-    expect(request.headers).toEqual({ 'Authorization': 'Bearer token' });
+    expect(request.headers).toEqual({ Authorization: 'Bearer token' });
   });
 
   it('should handle request parameter type', () => {

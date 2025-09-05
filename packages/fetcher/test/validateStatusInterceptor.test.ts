@@ -34,7 +34,11 @@ describe('ValidateStatusInterceptor', () => {
     const interceptor = new ValidateStatusInterceptor();
     const response = new Response('test', { status: 200 });
     const request = { url: '/test' };
-    const exchange = new FetchExchange({ fetcher: mockFetcher, request, response });
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request,
+      response,
+    });
 
     expect(() => interceptor.intercept(exchange)).not.toThrow();
   });
@@ -43,7 +47,11 @@ describe('ValidateStatusInterceptor', () => {
     const interceptor = new ValidateStatusInterceptor();
     const response = new Response('test', { status: 404 });
     const request = { url: '/test' };
-    const exchange = new FetchExchange({ fetcher: mockFetcher, request, response });
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request,
+      response,
+    });
 
     expect(() => interceptor.intercept(exchange)).toThrow(
       HttpStatusValidationError,
@@ -63,7 +71,11 @@ describe('ValidateStatusInterceptor', () => {
     const interceptor = new ValidateStatusInterceptor(validateStatus);
     const response = new Response('test', { status: 201 });
     const request = { url: '/test' };
-    const exchange = new FetchExchange({ fetcher: mockFetcher, request, response });
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request,
+      response,
+    });
 
     expect(() => interceptor.intercept(exchange)).toThrow(
       HttpStatusValidationError,
@@ -75,7 +87,11 @@ describe('ValidateStatusInterceptor', () => {
     const interceptor = new ValidateStatusInterceptor(validateStatus);
     const response = new Response('test', { status: 201 });
     const request = { url: '/test' };
-    const exchange = new FetchExchange({ fetcher: mockFetcher, request, response });
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request,
+      response,
+    });
 
     expect(() => interceptor.intercept(exchange)).not.toThrow();
   });
@@ -84,7 +100,11 @@ describe('ValidateStatusInterceptor', () => {
     const interceptor = new ValidateStatusInterceptor();
     const response = new Response('test', { status: 404 });
     const request = { url: 'https://api.example.com/test' };
-    const exchange = new FetchExchange({ fetcher: mockFetcher, request, response });
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request,
+      response,
+    });
 
     try {
       interceptor.intercept(exchange);

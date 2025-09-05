@@ -96,7 +96,8 @@ export interface FetchExchangeInit {
  * };
  * ```
  */
-export class FetchExchange implements RequiredBy<FetchExchangeInit, 'attributes'> {
+export class FetchExchange
+  implements RequiredBy<FetchExchangeInit, 'attributes'> {
   /**
    * The Fetcher instance that initiated this exchange.
    */
@@ -133,9 +134,7 @@ export class FetchExchange implements RequiredBy<FetchExchangeInit, 'attributes'
    */
   attributes: Record<string, any>;
 
-  constructor(
-    exchangeInit: FetchExchangeInit,
-  ) {
+  constructor(exchangeInit: FetchExchangeInit) {
     this.fetcher = exchangeInit.fetcher;
     this.request = exchangeInit.request;
     this.attributes = exchangeInit.attributes ?? {};

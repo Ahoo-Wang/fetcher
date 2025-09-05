@@ -163,13 +163,21 @@ describe('RequestExecutor - Additional Tests', () => {
     // Test with valid header
     const headers1: Record<string, string> = {};
     // @ts-expect-error - accessing private method for testing
-    metadata.processHeaderParam({ name: 'Authorization', index: 0 }, 'Bearer token', headers1);
-    expect(headers1).toEqual({ 'Authorization': 'Bearer token' });
+    metadata.processHeaderParam(
+      { name: 'Authorization', index: 0 },
+      'Bearer token',
+      headers1,
+    );
+    expect(headers1).toEqual({ Authorization: 'Bearer token' });
 
     // Test with undefined value
     const headers2: Record<string, string> = {};
     // @ts-expect-error - accessing private method for testing
-    metadata.processHeaderParam({ name: 'Authorization', index: 0 }, undefined, headers2);
+    metadata.processHeaderParam(
+      { name: 'Authorization', index: 0 },
+      undefined,
+      headers2,
+    );
     expect(headers2).toEqual({});
 
     // Test without name

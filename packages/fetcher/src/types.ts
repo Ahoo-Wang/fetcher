@@ -47,7 +47,8 @@ export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
  * type UserWithRequiredNameAndEmail = RequiredBy<User, 'name' | 'email'>;
  * // Result: { id: number; name: string; email: string; }
  */
-export type RequiredBy<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
+export type RequiredBy<T, K extends keyof T> = Omit<T, K> &
+  Required<Pick<T, K>>;
 
 /**
  * Interface representing a named capable entity

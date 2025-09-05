@@ -121,7 +121,9 @@ describe('RequestExecutor', () => {
     const targetFetcher = new Fetcher();
     targetFetcher.request = mockTargetRequest;
 
-    const mockMetadataRequest = vi.fn().mockResolvedValue(new Response('metadata'));
+    const mockMetadataRequest = vi
+      .fn()
+      .mockResolvedValue(new Response('metadata'));
     metadata.fetcher.request = mockMetadataRequest;
 
     const target = {
@@ -184,7 +186,7 @@ describe('RequestExecutor', () => {
 
   it('should handle request with custom result extractor', async () => {
     // Create a custom result extractor
-    const customExtractor = vi.fn((exchange) => {
+    const customExtractor = vi.fn(exchange => {
       return { custom: true, data: exchange.requiredResponse };
     });
 
