@@ -23,6 +23,7 @@ export * from './mergeRequest';
 export * from './namedFetcher';
 export * from './orderedCapable';
 export * from './requestBodyInterceptor';
+export * from './resultExtractor';
 export * from './timeout';
 export * from './types';
 export * from './urlBuilder';

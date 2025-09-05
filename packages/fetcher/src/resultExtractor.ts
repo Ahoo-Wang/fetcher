@@ -21,47 +21,48 @@ import { FetchExchange } from './fetchExchange';
  * @returns The extracted result of type R
  */
 export interface ResultExtractor<R> {
-  (exchange: FetchExchange): R;
+  (exchange: FetchExchange): R | Promise<R>;
 }
 
 /**
- * Collection of common result extractors.
- * Provides predefined functions for extracting different types of data from FetchExchange objects.
+ * Returns the original FetchExchange object.
+ * @param exchange - The FetchExchange object to return
+ * @returns The same FetchExchange object that was passed in
  */
-export namespace ResultExtractors {
-  /**
-   * Returns the original FetchExchange object.
-   * @param exchange - The FetchExchange object to return
-   * @returns The same FetchExchange object that was passed in
-   */
-  export const Exchange: ResultExtractor<FetchExchange> = (exchange: FetchExchange) => {
-    return exchange;
-  };
-  
-  /**
-   * Extracts the Response object from the exchange.
-   * @param exchange - The FetchExchange containing the response
-   * @returns The Response object from the exchange
-   */
-  export const Response: ResultExtractor<Response> = (exchange: FetchExchange) => {
-    return exchange.requiredResponse;
-  };
+export const ExchangeResultExtractor: ResultExtractor<FetchExchange> = (exchange: FetchExchange) => {
+  return exchange;
+};
 
-  /**
-   * Extracts and parses the response body as JSON.
-   * @param exchange - The FetchExchange containing the response with JSON data
-   * @returns A Promise that resolves to the parsed JSON data
-   */
-  export const Json: ResultExtractor<Promise<any>> = (exchange: FetchExchange) => {
-    return exchange.requiredResponse.json();
-  };
+/**
+ * Extracts the Response object from the exchange.
+ * @param exchange - The FetchExchange containing the response
+ * @returns The Response object from the exchange
+ */
+export const ResponseResultExtractor: ResultExtractor<Response> = (exchange: FetchExchange) => {
+  return exchange.requiredResponse;
+};
 
-  /**
-   * Extracts the response body as text.
-   * @param exchange - The FetchExchange containing the response with text data
-   * @returns A Promise that resolves to the response body as a string
-   */
-  export const Text: ResultExtractor<Promise<string>> = (exchange: FetchExchange) => {
-    return exchange.requiredResponse.text();
-  };
-}
+/**
+ * Extracts and parses the response body as JSON.
+ * @param exchange - The FetchExchange containing the response with JSON data
+ * @returns A Promise that resolves to the parsed JSON data
+ */
+export const JsonResultExtractor: ResultExtractor<Promise<any>> = (exchange: FetchExchange) => {
+  return exchange.requiredResponse.json();
+};
+
+/**
+ * Extracts the response body as text.
+ * @param exchange - The FetchExchange containing the response with text data
+ * @returns A Promise that resolves to the response body as a string
+ */
+export const TextResultExtractor: ResultExtractor<Promise<string>> = (exchange: FetchExchange) => {
+  return exchange.requiredResponse.text();
+};
+
+export const ResultExtractors = {
+  Exchange: ExchangeResultExtractor,
+  Response: ResponseResultExtractor,
+  Json: JsonResultExtractor,
+  Text: TextResultExtractor,
+};

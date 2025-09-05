@@ -24,6 +24,7 @@ import type {
 import { ContentTypeValues, HttpMethod } from './fetchRequest';
 import { InterceptorManager } from './interceptorManager';
 import { UrlTemplateStyle } from './urlTemplateResolver';
+import { ResultExtractor, ResultExtractors } from './resultExtractor';
 
 /**
  * Configuration options for the Fetcher client.
@@ -114,8 +115,7 @@ export class Fetcher
   async fetch(url: string, request: FetchRequestInit = {}): Promise<Response> {
     const fetchRequest = request as FetchRequest;
     fetchRequest.url = url;
-    const exchange = await this.request(fetchRequest);
-    return exchange.requiredResponse;
+    return this.request(fetchRequest, ResultExtractors.Response);
   }
 
   /**
@@ -126,10 +126,13 @@ export class Fetcher
    * for interceptor processing.
    *
    * @param request - Complete request configuration object
-   * @returns Promise that resolves to a FetchExchange containing request/response data
+   * @param resultExtractor - Function to extract the desired result from the exchange.
+   *                          Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   * @returns Promise that resolves to the extracted result based on resultExtractor
    * @throws Error if an unhandled error occurs during request processing
    */
-  async request(request: FetchRequest): Promise<FetchExchange> {
+  // @ts-ignore
+  async request<R = FetchExchange>(request: FetchRequest, resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange): Promise<R> {
     // Merge default headers and request-level headers. defensive copy
     const mergedHeaders = {
       ...this.headers,
@@ -142,7 +145,8 @@ export class Fetcher
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
     const exchange: FetchExchange = new FetchExchange(this, fetchRequest);
-    return this.interceptors.exchange(exchange);
+    await this.interceptors.exchange(exchange);
+    return resultExtractor(exchange);
   }
 
   /**

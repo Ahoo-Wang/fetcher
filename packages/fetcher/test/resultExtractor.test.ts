@@ -13,7 +13,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { FetchExchange } from '../src';
-import { ResultExtractor, ResultExtractors } from '../src/resultExtractor';
+import { ResultExtractor, ResultExtractors } from '../src';
 import { Fetcher } from '../src';
 import { FetchRequest } from '../src';
 
