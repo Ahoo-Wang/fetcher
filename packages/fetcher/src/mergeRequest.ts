@@ -89,7 +89,7 @@ export function mergeRequest(
   const body = second.body ?? first.body;
   const timeout = second.timeout ?? first.timeout;
   const signal = second.signal ?? first.signal;
-
+  const abortController = second.abortController ?? first.abortController;
   // Return merged request with second object's top-level properties taking precedence
   return {
     ...first,
@@ -100,5 +100,6 @@ export function mergeRequest(
     body,
     timeout,
     signal,
+    abortController,
   };
 }
