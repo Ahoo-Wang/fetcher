@@ -255,5 +255,86 @@ describe('cosecResponseInterceptor.ts', () => {
       const storedToken = tokenStorage.get();
       expect(storedToken).toBeNull();
     });
+
+    it('should handle concurrent refresh requests properly', async () => {
+      const tokenStorage = new TokenStorage(
+        'test-token-key',
+        new InMemoryStorage(),
+      );
+
+      const refreshPromise = new Promise<CompositeToken>((resolve) => {
+        setTimeout(() => {
+          resolve({
+            accessToken: 'new-access-token',
+            refreshToken: 'new-refresh-token',
+          });
+        }, 100);
+      });
+
+      const tokenRefresher: TokenRefresher = {
+        refresh: vi.fn().mockReturnValue(refreshPromise),
+      };
+
+      const options: CoSecOptions = {
+        appId: 'test-app-id',
+        deviceIdStorage: new DeviceIdStorage(
+          'test-device-key',
+          new InMemoryStorage(),
+        ),
+        tokenStorage,
+        tokenRefresher,
+      };
+
+      const interceptor = new CoSecResponseInterceptor(options);
+
+      const mockFetcher = {
+        request: vi.fn().mockResolvedValue({}),
+      } as unknown as Fetcher;
+
+      const request = { url: '/test' };
+      const response = new Response('test', {
+        status: ResponseCodes.UNAUTHORIZED,
+      });
+
+      const exchange1 = new FetchExchange({
+        fetcher: mockFetcher,
+        request,
+        response,
+      });
+
+      const exchange2 = new FetchExchange({
+        fetcher: mockFetcher,
+        request,
+        response,
+      });
+
+      // Set a current token
+      const currentToken: CompositeToken = {
+        accessToken: 'old-access-token',
+        refreshToken: 'old-refresh-token',
+      };
+      tokenStorage.set(currentToken);
+
+      // Call intercept concurrently
+      const interceptPromise1 = interceptor.intercept(exchange1);
+      const interceptPromise2 = interceptor.intercept(exchange2);
+
+      await Promise.all([interceptPromise1, interceptPromise2]);
+
+      // Verify token refresh was called only once
+      expect(tokenRefresher.refresh).toHaveBeenCalledTimes(1);
+      expect(tokenRefresher.refresh).toHaveBeenCalledWith(currentToken);
+
+      // Verify new token was stored
+      const newToken = tokenStorage.get();
+      expect(newToken).toEqual({
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+      });
+
+      // Verify requests were retried
+      expect(mockFetcher.request).toHaveBeenCalledTimes(2);
+      expect(mockFetcher.request).toHaveBeenCalledWith(request);
+    });
   });
 });
