@@ -98,7 +98,7 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
       // Attempt to refresh the token
       await this.refresh(currentToken);
       // Retry the original request with the new token
-      await exchange.fetcher.request(exchange.request);
+      await exchange.fetcher.interceptors.exchange(exchange);
     } catch (error) {
       // If token refresh fails, clear stored tokens and re-throw the error
       this.options.tokenStorage.clear();
