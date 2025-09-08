@@ -75,7 +75,7 @@ describe('cosecRequestInterceptor.ts', () => {
         },
       };
 
-      const exchange = new FetchExchange(mockFetcher, request);
+      const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
       // Mock deviceIdStorage.getOrCreate to return a specific value
       vi.spyOn(deviceIdStorage, 'getOrCreate').mockReturnValue(
@@ -127,7 +127,7 @@ describe('cosecRequestInterceptor.ts', () => {
         },
       };
 
-      const exchange = new FetchExchange(mockFetcher, request);
+      const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
       // Mock deviceIdStorage.getOrCreate to return a specific value
       vi.spyOn(deviceIdStorage, 'getOrCreate').mockReturnValue(
@@ -182,7 +182,7 @@ describe('cosecRequestInterceptor.ts', () => {
         },
       };
 
-      const exchange = new FetchExchange(mockFetcher, request);
+      const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
       // Mock deviceIdStorage.getOrCreate to return a specific value
       vi.spyOn(deviceIdStorage, 'getOrCreate').mockReturnValue(
@@ -227,7 +227,7 @@ describe('cosecRequestInterceptor.ts', () => {
         // No headers property
       };
 
-      const exchange = new FetchExchange(mockFetcher, request);
+      const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 
       // Mock deviceIdStorage.getOrCreate to return a specific value
       vi.spyOn(deviceIdStorage, 'getOrCreate').mockReturnValue(

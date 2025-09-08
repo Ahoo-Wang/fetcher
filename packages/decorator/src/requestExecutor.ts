@@ -10,301 +10,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  combineURLs,
-  fetcher,
-  Fetcher,
-  type FetchRequest,
-  type FetchRequestInit,
-  mergeRequest,
-  type NamedCapable,
-  type RequestHeaders, ResultExtractor,
-  type UrlParams,
-} from '@ahoo-wang/fetcher';
-import { ApiMetadata } from './apiDecorator';
-import { EndpointMetadata } from './endpointDecorator';
-import {
-  type ParameterMetadata,
-  type ParameterRequest,
-  ParameterType,
-} from './parameterDecorator';
-import { ResultExtractors } from './resultExtractor';
-import { getFetcher } from './fetcherCapable';
-
-/**
- * Metadata container for a function with HTTP endpoint decorators.
- *
- * Encapsulates all the metadata needed to execute an HTTP request
- * for a decorated method, including API-level defaults, endpoint-specific
- * configuration, and parameter metadata.
- */
-export class FunctionMetadata implements NamedCapable {
-  /**
-   * Name of the function.
-   */
-  name: string;
-
-  /**
-   * API-level metadata (class-level configuration).
-   */
-  api: ApiMetadata;
-
-  /**
-   * Endpoint-level metadata (method-level configuration).
-   */
-  endpoint: EndpointMetadata;
-
-  /**
-   * Metadata for method parameters.
-   *
-   * Defines the metadata stored for each parameter decorated with @path, @query,
-   * @header, or @body decorators. Stored as a Map keyed by parameter index.
-   *
-   * @remarks
-   * The metadata is stored as a Map<number, ParameterMetadata> where the key is
-   * the parameter index and the value is the parameter metadata. This ensures
-   * correct parameter ordering regardless of decorator application order.
-   */
-  parameters: Map<number, ParameterMetadata>;
-
-  /**
-   * Creates a new FunctionMetadata instance.
-   *
-   * @param name - The name of the function
-   * @param api - API-level metadata
-   * @param endpoint - Endpoint-level metadata
-   * @param parameters - Parameter metadata array
-   */
-  constructor(
-    name: string,
-    api: ApiMetadata,
-    endpoint: EndpointMetadata,
-    parameters: Map<number, ParameterMetadata>,
-  ) {
-    this.name = name;
-    this.api = api;
-    this.endpoint = endpoint;
-    this.parameters = parameters;
-  }
-
-  /**
-   * Gets the fetcher instance to use for this function.
-   *
-   * Returns the fetcher specified in the endpoint metadata, or the API metadata,
-   * or falls back to the default fetcher if none is specified.
-   *
-   * @returns The fetcher instance
-   */
-  get fetcher(): Fetcher {
-    return getFetcher(this.endpoint.fetcher ?? this.api.fetcher) ?? fetcher;
-  }
-
-  /**
-   * Resolves the request configuration from the method arguments.
-   *
-   * This method processes the runtime arguments according to the parameter metadata
-   * and constructs a FetcherRequest object with path parameters, query parameters,
-   * headers, body, and timeout. It handles various parameter types including:
-   * - Path parameters (@path decorator)
-   * - Query parameters (@query decorator)
-   * - Header parameters (@header decorator)
-   * - Body parameter (@body decorator)
-   * - Complete request object (@request decorator)
-   * - AbortSignal for request cancellation
-   *
-   * The method uses mergeRequest to combine the endpoint-specific configuration
-   * with the parameter-provided request object, where the parameter request
-   * takes precedence over endpoint configuration.
-   *
-   * @param args - The runtime arguments passed to the method
-   * @returns A FetcherRequest object with all request configuration
-   *
-   * @example
-   * ```typescript
-   * // For a method decorated like:
-   * @get('/users/{id}')
-   * getUser(
-   *   @path('id') id: number,
-   *   @query('include') include: string,
-   *   @header('Authorization') auth: string
-   * ): Promise<Response>
-   *
-   * // Calling with: getUser(123, 'profile', 'Bearer token')
-   * // Would produce a request with:
-   * // {
-   * //   method: 'GET',
-   * //   urlParams: {
-   * //     path: { id: 123 },
-   * //     query: { include: 'profile' }
-   * //   },
-   * //   headers: {
-   * //     'Authorization': 'Bearer token',
-   * //     ...apiHeaders,
-   * //     ...endpointHeaders
-   * //   }
-   * // }
-   * ```
-   */
-  resolveRequest(args: any[]): FetchRequest {
-    const pathParams: Record<string, any> = {};
-    const queryParams: Record<string, any> = {};
-    const headers: RequestHeaders = {
-      ...this.api.headers,
-      ...this.endpoint.headers,
-    };
-    let body: any = undefined;
-    let signal: AbortSignal | null | undefined = undefined;
-    let abortController: AbortController | null | undefined = undefined;
-    let parameterRequest: ParameterRequest = {};
-    // Process parameters based on their decorators
-    args.forEach((value, index) => {
-      if (value instanceof AbortSignal) {
-        signal = value;
-        return;
-      }
-      if (value instanceof AbortController) {
-        abortController = value;
-        return;
-      }
-      const funParameter = this.parameters.get(index);
-      if (!funParameter) {
-        return;
-      }
-      switch (funParameter.type) {
-        case ParameterType.PATH:
-          this.processPathParam(funParameter, value, pathParams);
-          break;
-        case ParameterType.QUERY:
-          this.processQueryParam(funParameter, value, queryParams);
-          break;
-        case ParameterType.HEADER:
-          this.processHeaderParam(funParameter, value, headers);
-          break;
-        case ParameterType.BODY:
-          body = value;
-          break;
-        case ParameterType.REQUEST:
-          parameterRequest = this.processRequestParam(value);
-          break;
-      }
-    });
-    const urlParams: UrlParams = {
-      path: pathParams,
-      query: queryParams,
-    };
-    const endpointRequest: FetchRequestInit = {
-      method: this.endpoint.method,
-      urlParams,
-      headers,
-      body,
-      timeout: this.resolveTimeout(),
-      signal,
-      abortController,
-    };
-    const mergedRequest = mergeRequest(
-      endpointRequest,
-      parameterRequest,
-    ) as any;
-    const parameterPath = parameterRequest.path;
-    mergedRequest.url = this.resolvePath(parameterPath);
-    return mergedRequest;
-  }
-
-  private processPathParam(
-    param: ParameterMetadata,
-    value: any,
-    path: Record<string, any>,
-  ) {
-    const paramName = param.name || `param${param.index}`;
-    path[paramName] = value;
-  }
-
-  private processQueryParam(
-    param: ParameterMetadata,
-    value: any,
-    query: Record<string, any>,
-  ) {
-    const paramName = param.name || `param${param.index}`;
-    query[paramName] = value;
-  }
-
-  private processHeaderParam(
-    param: ParameterMetadata,
-    value: any,
-    headers: RequestHeaders,
-  ) {
-    if (param.name && value !== undefined) {
-      headers[param.name] = String(value);
-    }
-  }
-
-  /**
-   * Processes a request parameter value.
-   *
-   * This method handles the @request() decorator parameter by casting
-   * the provided value to a FetcherRequest. The @request() decorator
-   * allows users to pass a complete FetcherRequest object to customize
-   * the request configuration.
-   *
-   * @param value - The value provided for the @request() parameter
-   * @returns The value cast to FetcherRequest type
-   *
-   * @example
-   * ```typescript
-   * @post('/users')
-   * createUsers(@request() request: FetcherRequest): Promise<Response>
-   *
-   * // Usage:
-   * const customRequest: FetcherRequest = {
-   *   headers: { 'X-Custom': 'value' },
-   *   timeout: 5000
-   * };
-   * await service.createUsers(customRequest);
-   * ```
-   */
-  private processRequestParam(value: any): ParameterRequest {
-    return value as ParameterRequest;
-  }
-
-  /**
-   * Resolves the complete path by combining base path and endpoint path
-   *
-   * @param parameterPath - Optional path parameter to use instead of endpoint path
-   * @returns The combined URL path
-   */
-  resolvePath(parameterPath?: string): string {
-    // Get the base path from endpoint, API, or default to empty string
-    const basePath = this.endpoint.basePath || this.api.basePath || '';
-
-    // Use provided parameter path or fallback to endpoint path
-    const endpointPath = parameterPath || this.endpoint.path || '';
-
-    // Combine the base path and endpoint path into a complete URL
-    return combineURLs(basePath, endpointPath);
-  }
-
-  /**
-   * Resolves the timeout for the request.
-   *
-   * Returns the timeout specified in the endpoint metadata, or the API metadata,
-   * or undefined if no timeout is specified.
-   *
-   * @returns The timeout value in milliseconds, or undefined
-   */
-  resolveTimeout(): number | undefined {
-    return this.endpoint.timeout || this.api.timeout;
-  }
-
-  resolveResultExtractor(): ResultExtractor<any> {
-    return (
-      this.endpoint.resultExtractor ||
-      this.api.resultExtractor ||
-      ResultExtractors.DEFAULT
-    );
-  }
-}
+import { Fetcher } from '@ahoo-wang/fetcher';
+import { FunctionMetadata } from './functionMetadata';
 
 const TARGET_FETCHER_PROPERTY = 'fetcher';
+
+export const DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__';
 
 /**
  * Executor for HTTP requests based on decorated method metadata.
@@ -352,18 +63,43 @@ export class RequestExecutor {
    *
    * This method resolves the path and request configuration from the metadata
    * and arguments, then executes the request using the configured fetcher.
+   * It handles the complete request lifecycle from parameter processing to
+   * response extraction.
    *
-   * @param target - The target object that the method is called on
-   * @param args - The runtime arguments passed to the method
-   * @returns A Promise that resolves to the Response
+   * @param target - The target object that the method is called on.
+   *                 This can contain a custom fetcher instance in its 'fetcher' property.
+   * @param args - The runtime arguments passed to the decorated method.
+   *               These are mapped to request components based on parameter decorators.
+   * @returns A Promise that resolves to the extracted result based on the configured result extractor.
+   *          By default, this is the Response object, but can be customized to return
+   *          parsed JSON, the raw exchange object, or any other transformed result.
+   *
+   * @example
+   * ```typescript
+   * // Given a decorated service method:
+   * class UserService {
+   *   @get('/users/{id}')
+   *   getUser(@path('id') id: number): Promise<Response> {
+   *     // This method body is replaced by the executor at runtime
+   *   }
+   * }
+   *
+   * // When calling:
+   * const userService = new UserService();
+   * const response = await userService.getUser(123);
+   *
+   * // The execute method will:
+   * // 1. Resolve the path to '/users/123'
+   * // 2. Create a request with method 'GET'
+   * // 3. Execute the request using the configured fetcher
+   * // 4. Return the Response object
+   * ```
    */
-  async execute(
-    target: any,
-    args: any[],
-  ): Promise<any> {
+  async execute(target: any, args: any[]): Promise<any> {
     const fetcher = this.getTargetFetcher(target) || this.metadata.fetcher;
-    const request = this.metadata.resolveRequest(args);
+    const exchangeInit = this.metadata.resolveExchangeInit(args);
+    exchangeInit.attributes[DECORATOR_TARGET_ATTRIBUTE_KEY] = target;
     const extractor = this.metadata.resolveResultExtractor();
-    return fetcher.request(request, extractor);
+    return fetcher.request(exchangeInit.request, extractor, exchangeInit.attributes);
   }
 }

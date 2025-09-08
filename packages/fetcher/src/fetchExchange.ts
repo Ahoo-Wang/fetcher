@@ -15,6 +15,47 @@ import { Fetcher } from './fetcher';
 import type { FetchRequest, RequestHeaders } from './fetchRequest';
 import { ExchangeError } from './interceptorManager';
 import { type UrlParams } from './urlBuilder';
+import { type RequiredBy } from './types';
+
+export interface AttributesCapable {
+  /**
+   * Shared attributes for passing data between interceptors.
+   *
+   * This property allows interceptors to share arbitrary data with each other.
+   * Interceptors can read from and write to this object to pass information
+   * along the interceptor chain.
+   *
+   * @remarks
+   * - This property is optional and may be undefined initially
+   * - Interceptors should initialize this property if they need to use it
+   * - Use string keys to avoid conflicts between different interceptors
+   * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
+   * - Be mindful of memory usage when storing large objects
+   */
+  attributes?: Record<string, any>;
+}
+
+export interface FetchExchangeInit extends AttributesCapable {
+  /**
+   * The Fetcher instance that initiated this exchange.
+   */
+  fetcher: Fetcher;
+
+  /**
+   * The request configuration including url, method, headers, body, etc.
+   */
+  request: FetchRequest;
+
+  /**
+   * The response object, undefined until the request completes successfully.
+   */
+  response?: Response;
+
+  /**
+   * Any error that occurred during the request processing, undefined if no error occurred.
+   */
+  error?: Error | any;
+}
 
 /**
  * Container for HTTP request/response data that flows through the interceptor chain.
@@ -57,7 +98,8 @@ import { type UrlParams } from './urlBuilder';
  * };
  * ```
  */
-export class FetchExchange {
+export class FetchExchange
+  implements RequiredBy<FetchExchangeInit, 'attributes'> {
   /**
    * The Fetcher instance that initiated this exchange.
    */
@@ -71,12 +113,12 @@ export class FetchExchange {
   /**
    * The response object, undefined until the request completes successfully.
    */
-  response: Response | undefined;
+  response?: Response;
 
   /**
    * Any error that occurred during the request processing, undefined if no error occurred.
    */
-  error: Error | any | undefined;
+  error?: Error | any;
 
   /**
    * Shared attributes for passing data between interceptors.
@@ -92,18 +134,14 @@ export class FetchExchange {
    * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
    * - Be mindful of memory usage when storing large objects
    */
-  attributes: Record<string, any> = {};
+  attributes: Record<string, any>;
 
-  constructor(
-    fetcher: Fetcher,
-    request: FetchRequest,
-    response?: Response,
-    error?: Error | any,
-  ) {
-    this.fetcher = fetcher;
-    this.request = request;
-    this.response = response;
-    this.error = error;
+  constructor(exchangeInit: FetchExchangeInit) {
+    this.fetcher = exchangeInit.fetcher;
+    this.request = exchangeInit.request;
+    this.attributes = exchangeInit.attributes ?? {};
+    this.response = exchangeInit.response;
+    this.error = exchangeInit.error;
   }
 
   /**

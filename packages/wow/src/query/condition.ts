@@ -14,6 +14,17 @@
 import { Operator } from './operator';
 
 /**
+ * Helper function to detect condition is validate or not
+ *
+ * @param condition - Condition
+ * @returns If condition is validate return true, otherwise return false
+ */
+export function isValidateCondition(
+  condition: Condition | undefined | null,
+): condition is Condition {
+  return !!condition;
+}
+/**
  * Condition option keys enumeration
  *
  * Defines standard option keys used in query conditions for special handling.
@@ -175,16 +186,21 @@ export enum DeletionState {
  *                   If multiple, combines them into an AND condition with flattening optimization.
  * @returns A condition with AND operator or an optimized condition based on the input
  */
-export function and(...conditions: Condition[]): Condition {
+export function and(
+  ...conditions: Array<Condition | undefined | null>
+): Condition {
   if (conditions.length === 0) {
     return all();
   }
   if (conditions.length === 1) {
-    return conditions[0];
+    return isValidateCondition(conditions[0]) ? conditions[0] : all();
   }
   const andChildren: Condition[] = [];
   conditions.forEach(condition => {
-    if (condition.operator === Operator.ALL) {
+    if (
+      condition?.operator === Operator.ALL ||
+      !isValidateCondition(condition)
+    ) {
       return;
     }
     if (condition.operator === Operator.AND && condition.children) {
@@ -202,11 +218,16 @@ export function and(...conditions: Condition[]): Condition {
  * @param conditions - Conditions to combine with OR
  * @returns A condition with OR operator
  */
-export function or(...conditions: Condition[]): Condition {
-  if (conditions.length === 0) {
+export function or(
+  ...conditions: Array<Condition | undefined | null>
+): Condition {
+  const validateConditions = conditions?.filter(condition =>
+    isValidateCondition(condition),
+  );
+  if (validateConditions.length === 0) {
     return all();
   }
-  return { operator: Operator.OR, children: conditions };
+  return { operator: Operator.OR, children: validateConditions };
 }
 
 /**

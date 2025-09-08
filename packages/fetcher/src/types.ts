@@ -31,6 +31,26 @@
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 /**
+ * Creates a new type by making specified properties of an existing type required.
+ *
+ * This utility type takes a type T and a set of keys K (which must be keys of T),
+ * and produces a new type where:
+ * - Properties not in K remain unchanged
+ * - Properties in K become required
+ *
+ * @template T - The original type to modify
+ * @template K - The keys of T that should become required
+ * @returns A new type with specified properties made required
+ *
+ * @example
+ * type User = { id: number; name?: string; email?: string; };
+ * type UserWithRequiredNameAndEmail = RequiredBy<User, 'name' | 'email'>;
+ * // Result: { id: number; name: string; email: string; }
+ */
+export type RequiredBy<T, K extends keyof T> = Omit<T, K> &
+  Required<Pick<T, K>>;
+
+/**
  * Interface representing a named capable entity
  * Types implementing this interface must provide a name property
  */

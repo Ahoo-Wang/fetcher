@@ -109,13 +109,20 @@ export class Fetcher
    *
    * @param url - The URL path for the request (relative to baseURL if set)
    * @param request - Request configuration including headers, body, parameters, etc.
+   * @param attributes - Optional shared attributes that can be accessed by interceptors
+   *                     throughout the request lifecycle. These attributes allow passing
+   *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    * @throws FetchError if the request fails and no response is generated
    */
-  async fetch(url: string, request: FetchRequestInit = {}): Promise<Response> {
+  async fetch(
+    url: string,
+    request: FetchRequestInit = {},
+    attributes?: Record<string, any>,
+  ): Promise<Response> {
     const fetchRequest = request as FetchRequest;
     fetchRequest.url = url;
-    return this.request(fetchRequest, ResultExtractors.Response);
+    return this.request(fetchRequest, ResultExtractors.Response, attributes);
   }
 
   /**
@@ -128,11 +135,18 @@ export class Fetcher
    * @param request - Complete request configuration object
    * @param resultExtractor - Function to extract the desired result from the exchange.
    *                          Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   * @param attributes - Optional shared attributes that can be accessed by interceptors
+   *                     throughout the request lifecycle. These attributes allow passing
+   *                     custom data between different interceptors.
    * @returns Promise that resolves to the extracted result based on resultExtractor
    * @throws Error if an unhandled error occurs during request processing
    */
-  // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-  async request<R = FetchExchange>(request: FetchRequest, resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange): Promise<R> {
+  async request<R = FetchExchange>(
+    request: FetchRequest,
+    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
+    resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange,
+    attributes?: Record<string, any>,
+  ): Promise<R> {
     // Merge default headers and request-level headers. defensive copy
     const mergedHeaders = {
       ...this.headers,
@@ -144,7 +158,11 @@ export class Fetcher
       headers: mergedHeaders,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
-    const exchange: FetchExchange = new FetchExchange(this, fetchRequest);
+    const exchange: FetchExchange = new FetchExchange({
+      fetcher: this,
+      request: fetchRequest,
+      attributes,
+    });
     await this.interceptors.exchange(exchange);
     return resultExtractor(exchange);
   }
@@ -158,17 +176,25 @@ export class Fetcher
    * @param method - The HTTP method to use for the request
    * @param url - The URL path for the request
    * @param request - Additional request options
+   * @param attributes - Optional shared attributes that can be accessed by interceptors
+   *                     throughout the request lifecycle. These attributes allow passing
+   *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
   private async methodFetch(
     method: HttpMethod,
     url: string,
     request: FetchRequestInit = {},
+    attributes?: Record<string, any>,
   ): Promise<Response> {
-    return this.fetch(url, {
-      ...request,
-      method,
-    });
+    return this.fetch(
+      url,
+      {
+        ...request,
+        method,
+      },
+      attributes,
+    );
   }
 
   /**
@@ -179,13 +205,17 @@ export class Fetcher
    *
    * @param url - The URL path for the request
    * @param request - Request options excluding method and body
+   * @param attributes - Optional shared attributes that can be accessed by interceptors
+   *                     throughout the request lifecycle. These attributes allow passing
+   *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
   async get(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
+    attributes?: Record<string, any>,
   ): Promise<Response> {
-    return this.methodFetch(HttpMethod.GET, url, request);
+    return this.methodFetch(HttpMethod.GET, url, request, attributes);
   }
 
   /**
@@ -195,13 +225,17 @@ export class Fetcher
    *
    * @param url - The URL path for the request
    * @param request - Request options including body and other parameters
+   * @param attributes - Optional shared attributes that can be accessed by interceptors
+   *                     throughout the request lifecycle. These attributes allow passing
+   *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
   async post(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
+    attributes?: Record<string, any>,
   ): Promise<Response> {
-    return this.methodFetch(HttpMethod.POST, url, request);
+    return this.methodFetch(HttpMethod.POST, url, request, attributes);
   }
 
   /**
@@ -211,13 +245,17 @@ export class Fetcher
    *
    * @param url - The URL path for the request
    * @param request - Request options including body and other parameters
+   * @param attributes - Optional shared attributes that can be accessed by interceptors
+   *                     throughout the request lifecycle. These attributes allow passing
+   *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
   async put(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
+    attributes?: Record<string, any>,
   ): Promise<Response> {
-    return this.methodFetch(HttpMethod.PUT, url, request);
+    return this.methodFetch(HttpMethod.PUT, url, request, attributes);
   }
 
   /**
@@ -227,13 +265,17 @@ export class Fetcher
    *
    * @param url - The URL path for the request
    * @param request - Request options excluding method and body
+   * @param attributes - Optional shared attributes that can be accessed by interceptors
+   *                     throughout the request lifecycle. These attributes allow passing
+   *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
   async delete(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
+    attributes?: Record<string, any>,
   ): Promise<Response> {
-    return this.methodFetch(HttpMethod.DELETE, url, request);
+    return this.methodFetch(HttpMethod.DELETE, url, request, attributes);
   }
 
   /**
@@ -243,13 +285,17 @@ export class Fetcher
    *
    * @param url - The URL path for the request
    * @param request - Request options including body and other parameters
+   * @param attributes - Optional shared attributes that can be accessed by interceptors
+   *                     throughout the request lifecycle. These attributes allow passing
+   *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
   async patch(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
+    attributes?: Record<string, any>,
   ): Promise<Response> {
-    return this.methodFetch(HttpMethod.PATCH, url, request);
+    return this.methodFetch(HttpMethod.PATCH, url, request, attributes);
   }
 
   /**
@@ -260,13 +306,17 @@ export class Fetcher
    *
    * @param url - The URL path for the request
    * @param request - Request options excluding method and body
+   * @param attributes - Optional shared attributes that can be accessed by interceptors
+   *                     throughout the request lifecycle. These attributes allow passing
+   *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
   async head(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
+    attributes?: Record<string, any>,
   ): Promise<Response> {
-    return this.methodFetch(HttpMethod.HEAD, url, request);
+    return this.methodFetch(HttpMethod.HEAD, url, request, attributes);
   }
 
   /**
@@ -277,12 +327,16 @@ export class Fetcher
    *
    * @param url - The URL path for the request
    * @param request - Request options excluding method and body
+   * @param attributes - Optional shared attributes that can be accessed by interceptors
+   *                     throughout the request lifecycle. These attributes allow passing
+   *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
   async options(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
+    attributes?: Record<string, any>,
   ): Promise<Response> {
-    return this.methodFetch(HttpMethod.OPTIONS, url, request);
+    return this.methodFetch(HttpMethod.OPTIONS, url, request, attributes);
   }
 }

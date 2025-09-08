@@ -14,7 +14,10 @@
 import { describe, expect, it } from 'vitest';
 import { JsonServerSentEventStream, ServerSentEventStream } from '../src';
 import { ExchangeError, FetchExchange, FetchRequest } from '@ahoo-wang/fetcher';
-import { EventStreamResultExtractor, JsonEventStreamResultExtractor } from '../src';
+import {
+  EventStreamResultExtractor,
+  JsonEventStreamResultExtractor,
+} from '../src';
 
 describe('EventStreamResultExtractor', () => {
   const mockRequest = { url: '/test' } as FetchRequest;
@@ -30,11 +33,11 @@ describe('EventStreamResultExtractor', () => {
       value: () => mockEventStream,
     });
 
-    const eventStreamExchange = new FetchExchange(
-      {} as any,
-      mockRequest,
-      eventStreamResponse,
-    );
+    const eventStreamExchange = new FetchExchange({
+      fetcher: {} as any,
+      request: mockRequest,
+      response: eventStreamResponse,
+    });
 
     const result = EventStreamResultExtractor(eventStreamExchange);
     expect(result).toBe(mockEventStream);
@@ -48,17 +51,21 @@ describe('EventStreamResultExtractor', () => {
       enumerable: true,
       value: () => {
         throw new ExchangeError(
-          new FetchExchange({} as any, mockRequest, noEventStreamResponse),
+          new FetchExchange({
+            fetcher: {} as any,
+            request: mockRequest,
+            response: noEventStreamResponse,
+          }),
           'ServerSentEventStream is not supported',
         );
       },
     });
 
-    const noEventStreamExchange = new FetchExchange(
-      {} as any,
-      mockRequest,
-      noEventStreamResponse,
-    );
+    const noEventStreamExchange = new FetchExchange({
+      fetcher: {} as any,
+      request: mockRequest,
+      response: noEventStreamResponse,
+    });
 
     expect(() => EventStreamResultExtractor(noEventStreamExchange)).toThrow(
       ExchangeError,
@@ -73,21 +80,17 @@ describe('JsonEventStreamResultExtractor', () => {
 
     // Mock the requiredJsonEventStream function on the response
     const mockJsonEventStream = {} as JsonServerSentEventStream<any>;
-    Object.defineProperty(
-      jsonEventStreamResponse,
-      'requiredJsonEventStream',
-      {
-        configurable: true,
-        enumerable: true,
-        value: () => mockJsonEventStream,
-      },
-    );
+    Object.defineProperty(jsonEventStreamResponse, 'requiredJsonEventStream', {
+      configurable: true,
+      enumerable: true,
+      value: () => mockJsonEventStream,
+    });
 
-    const jsonEventStreamExchange = new FetchExchange(
-      {} as any,
-      mockRequest,
-      jsonEventStreamResponse,
-    );
+    const jsonEventStreamExchange = new FetchExchange({
+      fetcher: {} as any,
+      request: mockRequest,
+      response: jsonEventStreamResponse,
+    });
 
     const result = JsonEventStreamResultExtractor(jsonEventStreamExchange);
     expect(result).toBe(mockJsonEventStream);
@@ -104,22 +107,22 @@ describe('JsonEventStreamResultExtractor', () => {
         enumerable: true,
         value: () => {
           throw new ExchangeError(
-            new FetchExchange(
-              {} as any,
-              mockRequest,
-              noJsonEventStreamResponse,
-            ),
+            new FetchExchange({
+              fetcher: {} as any,
+              request: mockRequest,
+              response: noJsonEventStreamResponse,
+            }),
             'JsonServerSentEventStream is not supported',
           );
         },
       },
     );
 
-    const noJsonEventStreamExchange = new FetchExchange(
-      {} as any,
-      mockRequest,
-      noJsonEventStreamResponse,
-    );
+    const noJsonEventStreamExchange = new FetchExchange({
+      fetcher: {} as any,
+      request: mockRequest,
+      response: noJsonEventStreamResponse,
+    });
 
     expect(() =>
       JsonEventStreamResultExtractor(noJsonEventStreamExchange),

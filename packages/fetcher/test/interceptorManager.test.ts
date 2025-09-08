@@ -39,7 +39,10 @@ describe('InterceptorManager', () => {
 
   it('should process exchange through request interceptors', async () => {
     const manager = new InterceptorManager();
-    const exchange = new FetchExchange(mockFetcher, mockRequest);
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
 
     // Mock intercept method of request registry
     const requestInterceptSpy = vi
@@ -56,7 +59,10 @@ describe('InterceptorManager', () => {
 
   it('should process exchange through response interceptors when request succeeds', async () => {
     const manager = new InterceptorManager();
-    const exchange = new FetchExchange(mockFetcher, mockRequest);
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
 
     // Mock intercept methods
     const requestInterceptSpy = vi
@@ -78,7 +84,10 @@ describe('InterceptorManager', () => {
 
   it('should process exchange through error interceptors when request fails', async () => {
     const manager = new InterceptorManager();
-    const exchange = new FetchExchange(mockFetcher, mockRequest);
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
 
     const error = new Error('Test error');
 
@@ -103,7 +112,10 @@ describe('InterceptorManager', () => {
 
   it('should return exchange when error interceptors clear the error', async () => {
     const manager = new InterceptorManager();
-    const exchange = new FetchExchange(mockFetcher, mockRequest);
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
 
     const error = new Error('Test error');
 
@@ -128,7 +140,10 @@ describe('InterceptorManager', () => {
 
   it('should throw ExchangeError when error is not handled by error interceptors', async () => {
     const manager = new InterceptorManager();
-    const exchange = new FetchExchange(mockFetcher, mockRequest);
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
 
     const error = new Error('Test error');
 
@@ -145,12 +160,11 @@ describe('ExchangeError', () => {
     const mockFetcher = {} as Fetcher;
     const mockRequest = { url: '/test' };
     const error = new Error('Original error');
-    const exchange = new FetchExchange(
-      mockFetcher,
-      mockRequest,
-      undefined,
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
       error,
-    );
+    });
 
     const exchangeError = new ExchangeError(exchange);
 
@@ -168,7 +182,11 @@ describe('ExchangeError', () => {
       status: 404,
       statusText: 'Not Found',
     });
-    const exchange = new FetchExchange(mockFetcher, mockRequest, response);
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+      response,
+    });
 
     const exchangeError = new ExchangeError(exchange);
 
@@ -178,7 +196,10 @@ describe('ExchangeError', () => {
   it('should create ExchangeError with default message when no error or response', () => {
     const mockFetcher = {} as Fetcher;
     const mockRequest = { url: 'https://api.example.com/test' };
-    const exchange = new FetchExchange(mockFetcher, mockRequest);
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
 
     const exchangeError = new ExchangeError(exchange);
 

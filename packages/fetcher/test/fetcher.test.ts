@@ -14,7 +14,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_OPTIONS,
-  Fetcher, FetcherError,
+  Fetcher,
+  FetcherError,
   FetchRequest,
   HttpMethod,
 } from '../src';
