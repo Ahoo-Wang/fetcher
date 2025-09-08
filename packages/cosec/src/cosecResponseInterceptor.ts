@@ -13,6 +13,7 @@
 
 import { type CoSecOptions, ResponseCodes } from './types';
 import { FetchExchange, type ResponseInterceptor } from '@ahoo-wang/fetcher';
+import { CompositeToken } from './tokenRefresher';
 
 /**
  * The name of the CoSecResponseInterceptor.
@@ -39,6 +40,7 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
   readonly name = COSEC_RESPONSE_INTERCEPTOR_NAME;
   readonly order = COSEC_RESPONSE_INTERCEPTOR_ORDER;
   private options: CoSecOptions;
+  private refreshInProgress?: Promise<CompositeToken>;
 
   /**
    * Creates a new CoSecResponseInterceptor instance.
@@ -46,6 +48,22 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
    */
   constructor(options: CoSecOptions) {
     this.options = options;
+  }
+
+  private async refresh(currentToken: CompositeToken): Promise<CompositeToken> {
+    let newToken: CompositeToken;
+    if (this.refreshInProgress) {
+      return this.refreshInProgress;
+    } else {
+      try {
+        this.refreshInProgress = this.options.tokenRefresher.refresh(currentToken);
+        newToken = await this.refreshInProgress;
+        this.options.tokenStorage.set(newToken);
+        return newToken;
+      } finally {
+        this.refreshInProgress = undefined;
+      }
+    }
   }
 
   /**
@@ -73,9 +91,7 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
 
     try {
       // Attempt to refresh the token
-      const newToken = await this.options.tokenRefresher.refresh(currentToken);
-      // Store the refreshed token
-      this.options.tokenStorage.set(newToken);
+      await this.refresh(currentToken);
       // Retry the original request with the new token
       await exchange.fetcher.request(exchange.request);
     } catch (error) {
