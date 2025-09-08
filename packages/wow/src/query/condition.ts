@@ -175,15 +175,20 @@ export enum DeletionState {
  *                   If multiple, combines them into an AND condition with flattening optimization.
  * @returns A condition with AND operator or an optimized condition based on the input
  */
-export function and(...conditions: Condition[]): Condition {
-  if (conditions.length === 0) {
+export function and(
+  ...conditions: Array<Condition | undefined | null>
+): Condition {
+  const validateConditions = conditions?.filter(
+    condition => condition !== undefined && condition !== null,
+  ) as Condition[];
+  if (validateConditions.length === 0) {
     return all();
   }
-  if (conditions.length === 1) {
-    return conditions[0];
+  if (validateConditions.length === 1) {
+    return validateConditions[0];
   }
   const andChildren: Condition[] = [];
-  conditions.forEach(condition => {
+  validateConditions.forEach(condition => {
     if (condition.operator === Operator.ALL) {
       return;
     }
@@ -202,11 +207,16 @@ export function and(...conditions: Condition[]): Condition {
  * @param conditions - Conditions to combine with OR
  * @returns A condition with OR operator
  */
-export function or(...conditions: Condition[]): Condition {
-  if (conditions.length === 0) {
+export function or(
+  ...conditions: Array<Condition | undefined | null>
+): Condition {
+  const validateConditions = conditions?.filter(
+    condition => condition !== undefined && condition !== null,
+  ) as Condition[];
+  if (validateConditions.length === 0) {
     return all();
   }
-  return { operator: Operator.OR, children: conditions };
+  return { operator: Operator.OR, children: validateConditions };
 }
 
 /**
