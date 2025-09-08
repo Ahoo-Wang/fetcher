@@ -172,6 +172,9 @@ describe('cosecResponseInterceptor.ts', () => {
       const interceptor = new CoSecResponseInterceptor(options);
 
       const mockFetcher = {
+        interceptors: {
+          exchange: vi.fn().mockResolvedValue(undefined),
+        },
         request: vi.fn().mockResolvedValue({}),
       } as unknown as Fetcher;
 
@@ -205,7 +208,7 @@ describe('cosecResponseInterceptor.ts', () => {
       });
 
       // Verify request was retried
-      expect(mockFetcher.request).toHaveBeenCalledWith(request);
+      expect(mockFetcher.interceptors.exchange).toHaveBeenCalledWith(exchange);
     });
 
     it('should clear token storage and re-throw error when token refresh fails', async () => {
@@ -229,7 +232,12 @@ describe('cosecResponseInterceptor.ts', () => {
 
       const interceptor = new CoSecResponseInterceptor(options);
 
-      const mockFetcher = {} as Fetcher;
+      const mockFetcher = {
+        interceptors: {
+          exchange: vi.fn().mockRejectedValue(new Error('Refresh failed')),
+        },
+      } as unknown as Fetcher;
+
       const request = { url: '/test' };
       const response = new Response('test', {
         status: ResponseCodes.UNAUTHORIZED,
@@ -288,6 +296,9 @@ describe('cosecResponseInterceptor.ts', () => {
       const interceptor = new CoSecResponseInterceptor(options);
 
       const mockFetcher = {
+        interceptors: {
+          exchange: vi.fn().mockResolvedValue(undefined),
+        },
         request: vi.fn().mockResolvedValue({}),
       } as unknown as Fetcher;
 
@@ -333,8 +344,9 @@ describe('cosecResponseInterceptor.ts', () => {
       });
 
       // Verify requests were retried
-      expect(mockFetcher.request).toHaveBeenCalledTimes(2);
-      expect(mockFetcher.request).toHaveBeenCalledWith(request);
+      expect(mockFetcher.interceptors.exchange).toHaveBeenCalledTimes(2);
+      expect(mockFetcher.interceptors.exchange).toHaveBeenCalledWith(exchange1);
+      expect(mockFetcher.interceptors.exchange).toHaveBeenCalledWith(exchange2);
     });
   });
 });
