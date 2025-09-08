@@ -51,19 +51,24 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
   }
 
   private async refresh(currentToken: CompositeToken): Promise<CompositeToken> {
-    let newToken: CompositeToken;
     if (this.refreshInProgress) {
       return this.refreshInProgress;
-    } else {
-      try {
-        this.refreshInProgress = this.options.tokenRefresher.refresh(currentToken);
-        newToken = await this.refreshInProgress;
+    }
+
+    this.refreshInProgress = this.options.tokenRefresher.refresh(currentToken)
+      .then(newToken => {
         this.options.tokenStorage.set(newToken);
         return newToken;
-      } finally {
+      })
+      .catch(error => {
+        this.options.tokenStorage.clear();
+        throw error;
+      })
+      .finally(() => {
         this.refreshInProgress = undefined;
-      }
-    }
+      });
+
+    return this.refreshInProgress;
   }
 
   /**
