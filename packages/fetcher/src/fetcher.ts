@@ -13,7 +13,7 @@
 
 import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, type TimeoutCapable } from './timeout';
-import { FetchExchange, type FetchExchangeInit } from './fetchExchange';
+import { FetchExchange } from './fetchExchange';
 import type {
   BaseURLCapable,
   FetchRequest,
@@ -158,54 +158,10 @@ export class Fetcher
       headers: mergedHeaders,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
-    return this.exchange(
-      { request: fetchRequest, attributes },
-      resultExtractor,
-    );
-  }
-
-  /**
-   * Executes an HTTP request exchange and processes the result using a result extractor.
-   *
-   * This method creates a FetchExchange object, runs it through the interceptor chain,
-   * and then applies a result extractor function to transform the exchange into the desired result type.
-   * It's the core method that powers all HTTP request functionality in the Fetcher.
-   *
-   * @template R - The type of result to return after processing the exchange
-   * @param exchangeInit - The initial configuration for the exchange, excluding fetcher, response, and error properties
-   * @param resultExtractor - A function that transforms the completed exchange into the desired result type.
-   *                          Defaults to returning the exchange object itself.
-   * @returns A Promise that resolves to the result of applying the resultExtractor to the completed exchange
-   *
-   * @example
-   * ```typescript
-   * // Basic usage with default result extractor (returns the exchange)
-   * const exchange = await fetcher.exchange({
-   *   request: { url: '/api/users', method: 'GET' }
-   * });
-   * console.log(exchange.response.status);
-   *
-   * // Using a custom result extractor to get the response object
-   * const response = await fetcher.exchange(
-   *   { request: { url: '/api/users', method: 'GET' } },
-   *   (exchange) => exchange.requiredResponse
-   * );
-   *
-   * // Using a built-in result extractor to get JSON data
-   * const users = await fetcher.exchange(
-   *   { request: { url: '/api/users', method: 'GET' } },
-   *   ResultExtractors.Json
-   * );
-   * ```
-   */
-  async exchange<R>(
-    exchangeInit: Omit<FetchExchangeInit, 'fetcher'>,
-    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-    resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange,
-  ): Promise<R> {
     const exchange: FetchExchange = new FetchExchange({
-      ...exchangeInit,
       fetcher: this,
+      request: fetchRequest,
+      attributes,
     });
     await this.interceptors.exchange(exchange);
     return resultExtractor(exchange);
