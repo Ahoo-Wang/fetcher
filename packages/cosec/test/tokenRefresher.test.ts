@@ -11,13 +11,17 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 import {
   AccessToken,
   CompositeToken,
   RefreshToken,
   TokenRefresher,
+  CoSecTokenRefresher,
+  CoSecTokenRefresherOptions,
 } from '../src';
+import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from '../src';
 
 describe('tokenRefresher.ts', () => {
   describe('AccessToken', () => {
@@ -66,6 +70,56 @@ describe('tokenRefresher.ts', () => {
 
       const result = await refresher.refresh(testToken);
       expect(result).toEqual(testToken);
+    });
+  });
+
+  describe('CoSecTokenRefresher', () => {
+    it('should create instance with options', () => {
+      const mockFetcher = {} as Fetcher;
+      const options: CoSecTokenRefresherOptions = {
+        fetcher: mockFetcher,
+        endpoint: '/test/endpoint',
+      };
+
+      const refresher = new CoSecTokenRefresher(options);
+
+      expect(refresher.options).toBe(options);
+      expect(refresher.options.fetcher).toBe(mockFetcher);
+      expect(refresher.options.endpoint).toBe('/test/endpoint');
+    });
+
+    it('should call fetcher.post with correct parameters when refreshing token', async () => {
+      const testToken: CompositeToken = {
+        accessToken: 'test-access-token',
+        refreshToken: 'test-refresh-token',
+      };
+
+      const resultToken: CompositeToken = {
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+      };
+
+      const mockPost = vi.fn().mockResolvedValue(resultToken);
+      const mockFetcher = {
+        post: mockPost,
+      } as unknown as Fetcher;
+
+      const options: CoSecTokenRefresherOptions = {
+        fetcher: mockFetcher,
+        endpoint: '/api/auth/refresh',
+      };
+
+      const refresher = new CoSecTokenRefresher(options);
+
+      const result = await refresher.refresh(testToken);
+
+      expect(mockPost).toHaveBeenCalledWith<Parameters<Fetcher['post']>>(
+        '/api/auth/refresh',
+        { body: testToken },
+        ResultExtractors.Json,
+        { [IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY]: true },
+      );
+      expect(result).toBe(resultToken);
     });
   });
 });
