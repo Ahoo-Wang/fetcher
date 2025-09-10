@@ -53,6 +53,10 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
   readonly order = COSEC_REQUEST_INTERCEPTOR_ORDER;
   private options: CoSecOptions;
 
+  /**
+   * Creates a new CoSecRequestInterceptor instance.
+   * @param options - The CoSec configuration options including appId, deviceIdStorage, and tokenManager
+   */
   constructor(options: CoSecOptions) {
     this.options = options;
   }
@@ -76,22 +80,42 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    * that the final request is properly authenticated before being sent over the network.
    * This execution order prevents authentication headers from being overwritten by
    * subsequent request processing interceptors.
+   *
+   * The method also handles token refreshing when the current token is expired but still refreshable.
+   * It will attempt to refresh the token before adding the Authorization header to the request.
    */
   async intercept(exchange: FetchExchange) {
+    // Generate a unique request ID for this request
     const requestId = idGenerator.generateId();
+
+    // Get or create a device ID
     const deviceId = this.options.deviceIdStorage.getOrCreate();
+
+    // Ensure request headers object exists
     const requestHeaders = exchange.ensureRequestHeaders();
+
+    // Add CoSec headers to the request
     requestHeaders[CoSecHeaders.APP_ID] = this.options.appId;
     requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;
     requestHeaders[CoSecHeaders.REQUEST_ID] = requestId;
+
+    // Get the current token from token manager
     let currentToken = this.options.tokenManager.currentToken;
+
+    // Skip if no token exists or Authorization header is already set
     if (!currentToken || requestHeaders[CoSecHeaders.AUTHORIZATION]) {
       return;
     }
+
+    // Refresh token if needed and refreshable
     if (currentToken.isRefreshNeeded && currentToken.isRefreshable) {
       await this.options.tokenManager.refresh();
     }
+
+    // Get the current token again (might have been refreshed)
     currentToken = this.options.tokenManager.currentToken;
+
+    // Add Authorization header if we have a token
     if (currentToken) {
       requestHeaders[CoSecHeaders.AUTHORIZATION] = `Bearer ${currentToken.access.token}`;
     }
