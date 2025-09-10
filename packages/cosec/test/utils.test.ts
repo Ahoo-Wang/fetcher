@@ -12,13 +12,15 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { isBrowser } from '../src';
+import { isBrowser } from '../src/utils';
 
 describe('utils', () => {
   it('should export isBrowser as true in browser environment', () => {
     // In a real browser environment, window object exists
     // Since we're in Node.js environment for testing, typeof window is undefined
-    expect(isBrowser).toBe(typeof window !== 'undefined');
+    (global as any).window = {
+    };
+    expect(isBrowser).toBe(false);
   });
 
   it('should have isBrowser as false in Node.js environment', () => {

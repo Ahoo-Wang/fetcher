@@ -12,7 +12,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { getStorage, InMemoryStorage } from '../src';
+import { getStorage, InMemoryStorage } from '../src/inMemoryStorage';
+import * as utils from '../src/utils';
 
 describe('inMemoryStorage.ts', () => {
   describe('InMemoryStorage', () => {
@@ -138,7 +139,10 @@ describe('inMemoryStorage.ts', () => {
         key: vi.fn(),
         length: 0,
       };
-
+      
+      // Spy on isBrowser and make it return true
+      const isBrowserSpy = vi.spyOn(utils, 'isBrowser', 'get').mockReturnValue(true);
+      
       // Temporarily set window.localStorage
       const originalWindow = (globalThis as any).window;
       (globalThis as any).window = {
@@ -151,6 +155,8 @@ describe('inMemoryStorage.ts', () => {
       } finally {
         // Restore original window
         (globalThis as any).window = originalWindow;
+        // Restore spy
+        isBrowserSpy.mockRestore();
       }
     });
   });
