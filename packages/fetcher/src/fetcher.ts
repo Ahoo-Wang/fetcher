@@ -165,7 +165,7 @@ export class Fetcher
       attributes,
     });
     await this.interceptors.exchange(exchange);
-    return exchange.getExtractedResult();
+    return exchange.typedExtractedResult();
   }
 
   /**
