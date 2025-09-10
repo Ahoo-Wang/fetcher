@@ -12,8 +12,7 @@
  */
 
 import { DeviceIdStorage } from './deviceIdStorage';
-import { TokenStorage } from './tokenStorage';
-import { TokenRefresher } from './tokenRefresher';
+import { JwtTokenManager } from './jwtTokenManager';
 
 /**
  * CoSec HTTP headers enumeration.
@@ -43,17 +42,7 @@ export interface CoSecOptions {
    */
   deviceIdStorage: DeviceIdStorage;
 
-  /**
-   * Token storage instance.
-   */
-  tokenStorage: TokenStorage;
-
-  /**
-   * Token refresher function.
-   *
-   * Takes a CompositeToken and returns a Promise that resolves to a new CompositeToken.
-   */
-  tokenRefresher: TokenRefresher;
+  jwtTokenManager: JwtTokenManager;
 }
 
 /**

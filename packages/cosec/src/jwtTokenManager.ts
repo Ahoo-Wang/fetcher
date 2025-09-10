@@ -27,8 +27,8 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
    * @param tokenRefresher The refresher used to refresh expired tokens
    */
   constructor(
-    private readonly tokenStorage: TokenStorage,
-    private readonly tokenRefresher: TokenRefresher,
+    public readonly tokenStorage: TokenStorage,
+    public readonly tokenRefresher: TokenRefresher,
   ) {
 
   }

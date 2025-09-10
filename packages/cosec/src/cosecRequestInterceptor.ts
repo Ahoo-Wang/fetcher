@@ -84,7 +84,7 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     requestHeaders[CoSecHeaders.APP_ID] = this.options.appId;
     requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;
     requestHeaders[CoSecHeaders.REQUEST_ID] = requestId;
-    const token = this.options.tokenStorage.get();
+    const token = this.options.jwtTokenManager.currentToken;
     if (token && !requestHeaders[CoSecHeaders.AUTHORIZATION]) {
       requestHeaders[CoSecHeaders.AUTHORIZATION] =
         `Bearer ${token.access.token}`;
