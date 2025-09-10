@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { ExchangeError, Fetcher, FetchExchange, FetchRequest } from '../src';
+import { ExchangeError, Fetcher, FetchExchange, FetchRequest, ResultExtractors } from '../src';
 
 describe('FetchExchange', () => {
   const mockFetcher = {} as Fetcher;
@@ -189,5 +189,59 @@ describe('FetchExchange', () => {
     // Verify the same object is returned
     expect(urlParams).toBe(existingUrlParams);
     expect(exchange.request.urlParams).toBe(existingUrlParams);
+  });
+
+  it('should use default result extractor when none is provided', () => {
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
+
+    expect(exchange.resultExtractor).toBe(ResultExtractors.Exchange);
+  });
+
+  it('should use provided result extractor', () => {
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+      resultExtractor: ResultExtractors.Response,
+    });
+
+    expect(exchange.resultExtractor).toBe(ResultExtractors.Response);
+  });
+
+  it('should cache extracted result', () => {
+    const mockResponse = new Response('test data');
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+      response: mockResponse,
+    });
+
+    // First call
+    const result1 = exchange.getExtractedResult();
+    expect(result1).toBe(exchange);
+
+    // Second call should return cached result
+    const result2 = exchange.getExtractedResult();
+    expect(result2).toBe(result1);
+    expect(result2).toBe(exchange);
+  });
+
+  it('should extract result with custom extractor', () => {
+    const mockResponse = new Response(JSON.stringify({ data: 'test' }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+      response: mockResponse,
+      resultExtractor: ResultExtractors.Json,
+    });
+
+    // This would normally be a Promise, but for testing purposes we're checking the function was called
+    const result = exchange.getExtractedResult();
+    expect(result).toBeInstanceOf(Promise);
   });
 });
