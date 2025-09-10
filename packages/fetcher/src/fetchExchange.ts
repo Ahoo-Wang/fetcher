@@ -244,7 +244,7 @@ export class FetchExchange
    *
    * @returns The extracted result or null if extraction failed
    */
-  getExtractedResult<R = any>(): R {
+  typedExtractedResult<R = any>(): R {
     if (this.cachedExtractedResult !== undefined) {
       return this.cachedExtractedResult;
     }

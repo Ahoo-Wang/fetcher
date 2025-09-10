@@ -219,11 +219,11 @@ describe('FetchExchange', () => {
     });
 
     // First call
-    const result1 = exchange.getExtractedResult();
+    const result1 = exchange.typedExtractedResult();
     expect(result1).toBe(exchange);
 
     // Second call should return cached result
-    const result2 = exchange.getExtractedResult();
+    const result2 = exchange.typedExtractedResult();
     expect(result2).toBe(result1);
     expect(result2).toBe(exchange);
   });
@@ -241,7 +241,7 @@ describe('FetchExchange', () => {
     });
 
     // This would normally be a Promise, but for testing purposes we're checking the function was called
-    const result = exchange.getExtractedResult();
+    const result = exchange.typedExtractedResult();
     expect(result).toBeInstanceOf(Promise);
   });
 });
