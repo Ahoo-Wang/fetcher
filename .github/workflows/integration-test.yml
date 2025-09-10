@@ -21,7 +21,7 @@ jobs:
           MONGO_INITDB_ROOT_PASSWORD: root
           MONGO_INITDB_DATABASE: wow_example_db
         options: >-
-          --health-cmd="mongo --username root --password root --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")'"
+          --health-cmd="mongo"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
