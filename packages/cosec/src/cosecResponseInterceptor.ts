@@ -40,7 +40,6 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
   readonly name = COSEC_RESPONSE_INTERCEPTOR_NAME;
   readonly order = COSEC_RESPONSE_INTERCEPTOR_ORDER;
   private options: CoSecOptions;
-  private refreshInProgress?: Promise<CompositeToken>;
 
   /**
    * Creates a new CoSecResponseInterceptor instance.
@@ -48,27 +47,6 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
    */
   constructor(options: CoSecOptions) {
     this.options = options;
-  }
-
-  private async refresh(currentToken: CompositeToken): Promise<CompositeToken> {
-    if (this.refreshInProgress) {
-      return this.refreshInProgress;
-    }
-
-    this.refreshInProgress = this.options.tokenRefresher.refresh(currentToken)
-      .then(newToken => {
-        this.options.tokenStorage.setCompositeToken(newToken);
-        return newToken;
-      })
-      .catch(error => {
-        this.options.tokenStorage.remove();
-        throw error;
-      })
-      .finally(() => {
-        this.refreshInProgress = undefined;
-      });
-
-    return this.refreshInProgress;
   }
 
   /**
@@ -87,21 +65,16 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
       return;
     }
 
-    // Get the current token from storage
-    const jwtToken = this.options.tokenStorage.get();
-    // If there's no current token, we can't refresh it
-    if (!jwtToken) {
+    if (!this.options.jwtTokenManager.isRefreshable) {
       return;
     }
-
     try {
-      // Attempt to refresh the token
-      await this.refresh(jwtToken.token);
+      await this.options.jwtTokenManager.refresh();
       // Retry the original request with the new token
       await exchange.fetcher.interceptors.exchange(exchange);
     } catch (error) {
       // If token refresh fails, clear stored tokens and re-throw the error
-      this.options.tokenStorage.remove();
+      this.options.jwtTokenManager.tokenStorage.remove();
       throw error;
     }
   }
