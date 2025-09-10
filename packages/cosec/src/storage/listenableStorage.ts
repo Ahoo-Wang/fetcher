@@ -23,7 +23,7 @@ export const STORAGE_EVENT_TYPE = 'storage';
 /**
  * A function that handles storage change events.
  */
-export type StorageListener = (event: StorageEvent) => void;
+export type StorageListener = (event: StorageEventInit) => void;
 
 /**
  * A function that removes a storage listener when called.
