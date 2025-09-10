@@ -14,3 +14,4 @@
 export * from './listenableStorage';
 export * from './browserListenableStorage';
 export * from './inMemoryListenableStorage';
+export * from './keyStorage';
