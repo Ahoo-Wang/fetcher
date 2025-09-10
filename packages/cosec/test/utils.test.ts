@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { isBrowser } from '../src/utils';
 
 describe('utils', () => {
@@ -20,10 +20,16 @@ describe('utils', () => {
     expect(isBrowser).toBe(false);
   });
 
-  it('should export isBrowser as true in browser environment', () => {
-    // This test describes the behavior in browser environment
-    // In a real browser environment, window object exists, so isBrowser should be true
-    // Since we're in Node.js environment for testing, we can't easily test the true case
-    // But the implementation is correct: export const isBrowser = typeof window !== 'undefined';
+  it('should export isBrowser as true in browser environment', async () => {
+    // Mock window object to simulate browser environment
+    const originalWindow = global.window;
+    global.window = {} as any;
+
+    // Re-import the module to get the updated isBrowser value
+    vi.resetModules();
+    const utils = await import('../src/utils');
+    expect(utils.isBrowser).toBe(true);
+    // Restore original window
+    global.window = originalWindow;
   });
 });
