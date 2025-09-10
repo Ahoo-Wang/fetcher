@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { ListenableStorage, RemoveStorageListener, STORAGE_EVENT_TYPE, StorageListener } from './listenableStorage';
+import { ListenableStorage, RemoveStorageListener, StorageListener } from './listenableStorage';
 import { isBrowser } from '../env';
 
 /**
@@ -104,10 +104,9 @@ export class InMemoryListenableStorage implements ListenableStorage {
       eventInit.url = eventInit.url || window.location.href;
     }
     eventInit.storageArea = this;
-    const event = new StorageEvent(STORAGE_EVENT_TYPE, eventInit);
     this.listeners.forEach(listener => {
       try {
-        listener(event);
+        listener(eventInit);
       } catch (error) {
         console.error('Error in storage change listener:', error);
       }

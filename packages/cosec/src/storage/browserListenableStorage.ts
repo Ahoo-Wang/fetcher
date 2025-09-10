@@ -39,7 +39,7 @@ export class BrowserListenableStorage implements ListenableStorage {
    * @returns A function that can be called to remove the listener
    */
   addListener(listener: StorageListener): RemoveStorageListener {
-    const wrapper: StorageListener = (event: StorageEvent) => {
+    const wrapper: StorageListener = (event: StorageEventInit) => {
       if (event.storageArea === this.storage) {
         listener(event);
       }
