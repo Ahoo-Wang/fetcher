@@ -11,37 +11,79 @@
  * limitations under the License.
  */
 
+/**
+ * The type of storage event used for listening to storage changes.
+ */
 export const STORAGE_EVENT_TYPE = 'storage';
 
+/**
+ * A function that handles storage change events.
+ */
 export type StorageListener = (event: StorageEvent) => void;
+
+/**
+ * A function that removes a storage listener when called.
+ */
 export type RemoveStorageListener = () => void;
 
+/**
+ * An interface that extends the native Storage interface with the ability to listen for storage changes.
+ */
 export interface ListenableStorage extends Storage {
+  /**
+   * Adds a listener for storage changes.
+   * @param listener - The listener function to be called when storage changes
+   * @returns A function that can be called to remove the listener
+   */
   addListener(listener: StorageListener): RemoveStorageListener;
 }
 
+/**
+ * An in-memory implementation of ListenableStorage that works in any environment.
+ * This implementation stores data in a Map and manually fires storage events when data changes.
+ */
 export class InMemoryListenableStorage implements ListenableStorage {
   private readonly store: Map<string, string> = new Map();
   private readonly listeners: Set<StorageListener> = new Set();
 
+  /**
+   * Gets the number of items stored in the storage.
+   */
   get length(): number {
     return this.store.size;
   }
 
+  /**
+   * Clears all items from the storage.
+   */
   clear(): void {
     this.store.clear();
   }
 
+  /**
+   * Gets an item from the storage.
+   * @param key - The key of the item to retrieve
+   * @returns The value of the item, or null if the item does not exist
+   */
   getItem(key: string): string | null {
     const value = this.store.get(key);
     return value !== undefined ? value : null;
   }
 
+  /**
+   * Gets the key at the specified index.
+   * @param index - The index of the key to retrieve
+   * @returns The key at the specified index, or null if the index is out of bounds
+   */
   key(index: number): string | null {
     const keys = Array.from(this.store.keys());
     return keys[index] || null;
   }
 
+  /**
+   * Removes an item from the storage.
+   * @param key - The key of the item to remove
+   */
   removeItem(key: string): void {
     const oldValue = this.getItem(key);
     if (this.store.has(key)) {
@@ -54,6 +96,11 @@ export class InMemoryListenableStorage implements ListenableStorage {
     }
   }
 
+  /**
+   * Sets an item in the storage.
+   * @param key - The key of the item to set
+   * @param value - The value to set
+   */
   setItem(key: string, value: string): void {
     const oldValue = this.getItem(key);
     this.store.set(key, value);
@@ -65,23 +112,19 @@ export class InMemoryListenableStorage implements ListenableStorage {
    * @param listener - The listener function to be called when storage changes
    * @returns A function that can be called to remove the listener
    */
-  addListener(listener: StorageListener): () => void {
+  addListener(listener: StorageListener): RemoveStorageListener {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
   /**
-   * Removes a listener for storage changes.
-   * @param listener - The listener function to remove
+   * Notifies all listeners of a storage change by creating and dispatching a StorageEvent.
+   * @param eventInit - The initialization object for the StorageEvent
    */
-  removeListener(listener: StorageListener): boolean {
-    return this.listeners.delete(listener);
-  }
-
   private notifyListeners(
     eventInit: StorageEventInit,
   ): void {
-    if (window) {
+    if (window && window.location) {
       eventInit.url = eventInit.url || window.location.href;
     }
     eventInit.storageArea = this;
@@ -96,15 +139,31 @@ export class InMemoryListenableStorage implements ListenableStorage {
   }
 }
 
+/**
+ * A wrapper around the browser's native Storage (localStorage or sessionStorage)
+ * that implements the ListenableStorage interface by using the browser's native storage events.
+ */
 export class BrowserListenableStorage implements ListenableStorage {
 
+  /**
+   * Creates a new BrowserListenableStorage instance.
+   * @param storage - The native Storage object to wrap (e.g., localStorage or sessionStorage)
+   */
   constructor(private readonly storage: Storage) {
   }
 
+  /**
+   * Gets the number of items stored in the storage.
+   */
   get length(): number {
     return this.storage.length;
   }
 
+  /**
+   * Adds a listener for storage changes.
+   * @param listener - The listener function to be called when storage changes
+   * @returns A function that can be called to remove the listener
+   */
   addListener(listener: StorageListener): RemoveStorageListener {
     const wrapper: StorageListener = (event: StorageEvent) => {
       if (event.storageArea === this.storage) {
@@ -115,26 +174,52 @@ export class BrowserListenableStorage implements ListenableStorage {
     return () => window.removeEventListener(STORAGE_EVENT_TYPE, wrapper);
   }
 
+  /**
+   * Clears all items from the storage.
+   */
   clear(): void {
     this.storage.clear();
   }
 
+  /**
+   * Gets an item from the storage.
+   * @param key - The key of the item to retrieve
+   * @returns The value of the item, or null if the item does not exist
+   */
   getItem(key: string): string | null {
     return this.storage.getItem(key);
   }
 
+  /**
+   * Gets the key at the specified index.
+   * @param index - The index of the key to retrieve
+   * @returns The key at the specified index, or null if the index is out of bounds
+   */
   key(index: number): string | null {
     return this.storage.key(index);
   }
 
+  /**
+   * Removes an item from the storage.
+   * @param key - The key of the item to remove
+   */
   removeItem(key: string): void {
-    return this.storage.removeItem(key);
+    this.storage.removeItem(key);
   }
 
-
+  /**
+   * Sets an item in the storage.
+   * @param key - The key of the item to set
+   * @param value - The value to set
+   */
   setItem(key: string, value: string): void {
-    return this.storage.setItem(key, value);
+    this.storage.setItem(key, value);
   }
-
-
 }
+
+export const getStorage = (): ListenableStorage => {
+  if (window) {
+    return new BrowserListenableStorage(window.localStorage);
+  }
+  return new InMemoryListenableStorage();
+};
