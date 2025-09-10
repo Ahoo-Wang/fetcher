@@ -77,17 +77,22 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    * This execution order prevents authentication headers from being overwritten by
    * subsequent request processing interceptors.
    */
-  intercept(exchange: FetchExchange) {
+  async intercept(exchange: FetchExchange) {
     const requestId = idGenerator.generateId();
     const deviceId = this.options.deviceIdStorage.getOrCreate();
     const requestHeaders = exchange.ensureRequestHeaders();
     requestHeaders[CoSecHeaders.APP_ID] = this.options.appId;
     requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;
     requestHeaders[CoSecHeaders.REQUEST_ID] = requestId;
-    const token = this.options.tokenManager.currentToken;
-    if (token && !requestHeaders[CoSecHeaders.AUTHORIZATION]) {
-      requestHeaders[CoSecHeaders.AUTHORIZATION] =
-        `Bearer ${token.access.token}`;
+    let currentToken = this.options.tokenManager.currentToken;
+    if (currentToken && !requestHeaders[CoSecHeaders.AUTHORIZATION]) {
+      if (currentToken.isRefreshNeeded && currentToken.isRefreshable) {
+        await this.options.tokenManager.refresh();
+      }
+      currentToken = this.options.tokenManager.currentToken;
+      if (currentToken) {
+        requestHeaders[CoSecHeaders.AUTHORIZATION] = `Bearer ${currentToken.access.token}`;
+      }
     }
   }
 }
