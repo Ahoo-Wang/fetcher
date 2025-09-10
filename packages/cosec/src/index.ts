@@ -17,6 +17,7 @@ export * from './cosecResponseInterceptor';
 export * from './deviceIdStorage';
 export * from './idGenerator';
 export * from './jwts';
+export * from './serializer';
 export * from './tokenRefresher';
 export * from './tokenStorage';
 export * from './types';
