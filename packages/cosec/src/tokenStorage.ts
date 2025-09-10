@@ -12,23 +12,25 @@
  */
 
 import { createListenableStorage, KeyStorage } from './storage';
-import { JwtCompositeToken, jwtCompositeTokenSerializer } from './jwtToken';
+import { JwtCompositeToken, JwtCompositeTokenSerializer, jwtCompositeTokenSerializer } from './jwtToken';
 import { CompositeToken } from './tokenRefresher';
+import { EarlyPeriodCapable } from './jwts';
 
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 
 /**
  * Storage class for managing access and refresh tokens.
  */
-export class TokenStorage extends KeyStorage<JwtCompositeToken> {
+export class TokenStorage extends KeyStorage<JwtCompositeToken> implements EarlyPeriodCapable {
 
   constructor(
     key: string = DEFAULT_COSEC_TOKEN_KEY,
+    public readonly earlyPeriod: number = 0,
   ) {
     super({
       key,
       storage: createListenableStorage(),
-      serializer: jwtCompositeTokenSerializer,
+      serializer: new JwtCompositeTokenSerializer(earlyPeriod),
     });
   }
 
