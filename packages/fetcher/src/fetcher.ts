@@ -119,8 +119,7 @@ export class Fetcher
    */
   async request<R = FetchExchange>(
     request: FetchRequest,
-    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-    resultExtractor: ResultExtractor<R> = ResultExtractors.Exchange,
+    resultExtractor: ResultExtractor<any> = ResultExtractors.Exchange,
     attributes?: Record<string, any>,
   ): Promise<R> {
     // Merge default headers and request-level headers. defensive copy
@@ -164,8 +163,7 @@ export class Fetcher
   async fetch<R = Response>(
     url: string,
     request: FetchRequestInit = {},
-    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-    resultExtractor: ResultExtractor<R> = ResultExtractors.Response,
+    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
     attributes?: Record<string, any>,
   ): Promise<R> {
     const fetchRequest = request as FetchRequest;
@@ -194,8 +192,7 @@ export class Fetcher
     method: HttpMethod,
     url: string,
     request: FetchRequestInit = {},
-    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-    resultExtractor: ResultExtractor<R> = ResultExtractors.Response,
+    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
     attributes?: Record<string, any>,
   ): Promise<R> {
     return this.fetch(
@@ -227,8 +224,7 @@ export class Fetcher
   async get<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
-    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-    resultExtractor: ResultExtractor<R> = ResultExtractors.Response,
+    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
     attributes?: Record<string, any>,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.GET, url, request, resultExtractor, attributes);
@@ -251,8 +247,7 @@ export class Fetcher
   async post<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-    resultExtractor: ResultExtractor<R> = ResultExtractors.Response,
+    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
     attributes?: Record<string, any>,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.POST, url, request, resultExtractor, attributes);
@@ -275,8 +270,7 @@ export class Fetcher
   async put<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-    resultExtractor: ResultExtractor<R> = ResultExtractors.Response,
+    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
     attributes?: Record<string, any>,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.PUT, url, request, resultExtractor, attributes);
@@ -299,8 +293,7 @@ export class Fetcher
   async delete<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-    resultExtractor: ResultExtractor<R> = ResultExtractors.Response,
+    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
     attributes?: Record<string, any>,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.DELETE, url, request, resultExtractor, attributes);
@@ -323,8 +316,7 @@ export class Fetcher
   async patch<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-    resultExtractor: ResultExtractor<R> = ResultExtractors.Response,
+    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
     attributes?: Record<string, any>,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.PATCH, url, request, resultExtractor, attributes);
@@ -348,8 +340,7 @@ export class Fetcher
   async head<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
-    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-    resultExtractor: ResultExtractor<R> = ResultExtractors.Response,
+    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
     attributes?: Record<string, any>,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.HEAD, url, request, resultExtractor, attributes);
@@ -373,8 +364,7 @@ export class Fetcher
   async options<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
-    // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
-    resultExtractor: ResultExtractor<R> = ResultExtractors.Response,
+    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
     attributes?: Record<string, any>,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.OPTIONS, url, request, resultExtractor, attributes);
