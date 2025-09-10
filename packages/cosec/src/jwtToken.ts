@@ -65,6 +65,22 @@ export class JwtCompositeToken {
               public readonly refresh: JwtToken<JwtPayload>,
   ) {
   }
+
+  /**
+   * Checks if the access token needs to be refreshed
+   * @returns true if the access token is expired, false otherwise
+   */
+  isRefreshNeeded(): boolean {
+    return this.access.isExpired();
+  }
+
+  /**
+   * Checks if the refresh token is still valid and can be used to refresh the access token
+   * @returns true if the refresh token is not expired, false otherwise
+   */
+  isRefreshable(): boolean {
+    return !this.refresh.isExpired();
+  }
 }
 
 /**

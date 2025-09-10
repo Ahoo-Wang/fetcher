@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { JwtToken, JwtCompositeToken, jwtCompositeTokenSerializer } from '../src';
-import { CoSecJwtPayload, JwtPayload } from '../src';
+import { JwtToken, JwtCompositeToken, jwtCompositeTokenSerializer } from '../src/jwtToken';
+import { CoSecJwtPayload, JwtPayload } from '../src/jwts';
 
 // Example JWT tokens for testing
 // Payload: {"sub":"1234567890","name":"John Doe","iat":1516239022}
@@ -9,6 +9,8 @@ const VALID_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkw
 const EXPIRED_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjJ9.4AdcjLYL060o32whA5hXbhqz1PLHes74IvyN8hIgFyM';
 // Payload: {"sub":"9876543210","name":"Jane Smith","iat":1516239022}
 const REFRESH_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ODc2NTQzMjEwIiwibmFtZSI6IkphbmUgU21pdGgiLCJpYXQiOjE1MTYyMzkwMjJ9.s3hOJN5F3zU8j39Jl2uomXRwGNfYLaqLv0J77hUQ0ko';
+// Expired refresh token
+const EXPIRED_REFRESH_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ODc2NTQzMjEwIiwibmFtZSI6IkphbmUgU21pdGgiLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTUxNjIzOTAyMn0.11Wm3b63C0Np198uB8X9zJjw9m8X9Q4J9p8X9Q4J9p8';
 
 describe('jwtToken', () => {
   describe('JwtToken', () => {
@@ -37,6 +39,36 @@ describe('jwtToken', () => {
 
       expect(compositeToken.access).toBe(accessToken);
       expect(compositeToken.refresh).toBe(refreshToken);
+    });
+
+    it('should correctly identify when refresh is needed', () => {
+      // Test with expired access token
+      const expiredAccessToken = new JwtToken<CoSecJwtPayload>(EXPIRED_JWT);
+      const refreshToken = new JwtToken<JwtPayload>(REFRESH_JWT);
+      const compositeToken1 = new JwtCompositeToken(expiredAccessToken, refreshToken);
+
+      expect(compositeToken1.isRefreshNeeded()).toBe(true);
+
+      // Test with valid access token
+      const validAccessToken = new JwtToken<CoSecJwtPayload>(VALID_JWT);
+      const compositeToken2 = new JwtCompositeToken(validAccessToken, refreshToken);
+
+      expect(compositeToken2.isRefreshNeeded()).toBe(false);
+    });
+
+    it('should correctly identify when token is refreshable', () => {
+      // Test with valid refresh token
+      const accessToken = new JwtToken<CoSecJwtPayload>(VALID_JWT);
+      const validRefreshToken = new JwtToken<JwtPayload>(REFRESH_JWT);
+      const compositeToken1 = new JwtCompositeToken(accessToken, validRefreshToken);
+
+      expect(compositeToken1.isRefreshable()).toBe(true);
+
+      // Test with expired refresh token
+      const expiredRefreshToken = new JwtToken<JwtPayload>(EXPIRED_REFRESH_JWT);
+      const compositeToken2 = new JwtCompositeToken(accessToken, expiredRefreshToken);
+
+      expect(compositeToken2.isRefreshable()).toBe(false);
     });
   });
 
