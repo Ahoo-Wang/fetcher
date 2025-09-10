@@ -70,7 +70,7 @@ fetcher.interceptors.response.use(
 async function makeAuthenticatedRequest() {
   try {
     // Store some initial tokens for testing
-    tokenStorage.set({
+    tokenStorage.setCompositeToken({
       accessToken: 'initial-access-token',
       refreshToken: 'initial-refresh-token',
     });
