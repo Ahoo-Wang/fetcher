@@ -123,7 +123,7 @@ export class FetchExchange
    */
   error?: Error | any;
 
-  private _extractedResult?: null | any | Promise<any>;
+  private cachedExtractedResult?: null | any | Promise<any>;
   /**
    * Shared attributes for passing data between interceptors.
    *
@@ -231,14 +231,14 @@ export class FetchExchange
   }
 
   get extractedResult(): any {
-    if (this._extractedResult !== undefined) {
-      return this._extractedResult;
+    if (this.cachedExtractedResult !== undefined) {
+      return this.cachedExtractedResult;
     }
     try {
-      this._extractedResult = this.resultExtractor(this);
+      this.cachedExtractedResult = this.resultExtractor(this);
     } catch (e) {
-      this._extractedResult = null;
+      this.cachedExtractedResult = null;
     }
-    return this._extractedResult;
+    return this.cachedExtractedResult;
   }
 }
