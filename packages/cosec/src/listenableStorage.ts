@@ -217,7 +217,13 @@ export class BrowserListenableStorage implements ListenableStorage {
   }
 }
 
-export const getStorage = (): ListenableStorage => {
+/**
+ * Factory function to get an appropriate ListenableStorage implementation based on the environment.
+ * In a browser environment, it returns a BrowserListenableStorage wrapping localStorage.
+ * In other environments, it returns an InMemoryListenableStorage.
+ * @returns A ListenableStorage instance suitable for the current environment
+ */
+export const createListenableStorage = (): ListenableStorage => {
   if (window) {
     return new BrowserListenableStorage(window.localStorage);
   }
