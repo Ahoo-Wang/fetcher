@@ -12,7 +12,7 @@
  */
 
 import { createListenableStorage, KeyStorage } from './storage';
-import { JwtCompositeToken, JwtCompositeTokenSerializer, jwtCompositeTokenSerializer } from './jwtToken';
+import { JwtCompositeToken, JwtCompositeTokenSerializer } from './jwtToken';
 import { CompositeToken } from './tokenRefresher';
 import { EarlyPeriodCapable } from './jwts';
 
