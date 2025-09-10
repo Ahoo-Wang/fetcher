@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { JwtToken, JwtCompositeToken, jwtCompositeTokenSerializer } from '../src/jwtToken';
-import { CoSecJwtPayload, JwtPayload } from '../src/jwts';
+import { JwtToken, JwtCompositeToken, jwtCompositeTokenSerializer } from '../src';
+import { JwtPayload } from '../src';
 
 // Example JWT tokens for testing
 // Payload: {"sub":"1234567890","name":"John Doe","iat":1516239022}
