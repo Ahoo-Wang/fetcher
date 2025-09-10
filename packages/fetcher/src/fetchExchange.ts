@@ -112,6 +112,10 @@ export class FetchExchange
    */
   request: FetchRequest;
 
+  /**
+   * The result extractor function used to transform the response into the desired format.
+   * Defaults to ResultExtractors.Exchange if not provided.
+   */
   resultExtractor: ResultExtractor<any>;
   /**
    * The response object, undefined until the request completes successfully.
@@ -123,6 +127,10 @@ export class FetchExchange
    */
   error?: Error | any;
 
+  /**
+   * Cached result of the extracted result to avoid repeated computations.
+   * Undefined when not yet computed, null when computation failed.
+   */
   private cachedExtractedResult?: null | any | Promise<any>;
   /**
    * Shared attributes for passing data between interceptors.
@@ -230,6 +238,12 @@ export class FetchExchange
     return this.response;
   }
 
+  /**
+   * Gets the extracted result by applying the result extractor to the exchange.
+   * The result is cached after the first computation.
+   *
+   * @returns The extracted result or null if extraction failed
+   */
   get extractedResult(): any {
     if (this.cachedExtractedResult !== undefined) {
       return this.cachedExtractedResult;
