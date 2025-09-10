@@ -13,10 +13,19 @@
 
 import { TokenStorage } from './tokenStorage';
 import { CompositeToken, TokenRefresher } from './tokenRefresher';
+import { JwtCompositeToken, RefreshTokenStatusCapable } from './jwtToken';
 
-export class JwtTokenManager {
+/**
+ * Manages JWT token refreshing operations and provides status information
+ */
+export class JwtTokenManager implements RefreshTokenStatusCapable {
   private refreshInProgress?: Promise<void>;
 
+  /**
+   * Creates a new JwtTokenManager instance
+   * @param tokenStorage The storage used to persist tokens
+   * @param tokenRefresher The refresher used to refresh expired tokens
+   */
   constructor(
     private readonly tokenStorage: TokenStorage,
     private readonly tokenRefresher: TokenRefresher,
@@ -24,9 +33,23 @@ export class JwtTokenManager {
 
   }
 
+  /**
+   * Gets the current JWT composite token from storage
+   * @returns The current token or null if none exists
+   */
+  get currentToken(): JwtCompositeToken | null {
+    return this.tokenStorage.get();
+  }
+
+  /**
+   * Refreshes the JWT token
+   * @param currentToken Optional current token to refresh. If not provided, uses the stored token.
+   * @returns Promise that resolves when refresh is complete
+   * @throws Error if no token is found or refresh fails
+   */
   async refresh(currentToken?: CompositeToken): Promise<void> {
     if (!currentToken) {
-      const jwtToken = this.tokenStorage.get();
+      const jwtToken = this.currentToken;
       if (!jwtToken) {
         throw new Error('No token found');
       }
@@ -51,5 +74,26 @@ export class JwtTokenManager {
     return this.refreshInProgress;
   }
 
+  /**
+   * Indicates if the current token needs to be refreshed
+   * @returns true if the access token is expired and needs refresh, false otherwise
+   */
+  get isRefreshNeeded(): boolean {
+    if (!this.currentToken) {
+      return false;
+    }
+    return this.currentToken.isRefreshNeeded;
+  }
+
+  /**
+   * Indicates if the current token can be refreshed
+   * @returns true if the refresh token is still valid, false otherwise
+   */
+  get isRefreshable(): boolean {
+    if (!this.currentToken) {
+      return false;
+    }
+    return this.currentToken.isRefreshable;
+  }
 
 }

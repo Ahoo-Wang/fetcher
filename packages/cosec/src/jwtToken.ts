@@ -15,6 +15,7 @@ import { CoSecJwtPayload, EarlyPeriodCapable, isTokenExpired, JwtPayload, parseJ
 import { Serializer } from './serializer';
 import { CompositeToken } from './tokenRefresher';
 
+
 /**
  * Interface for JWT token with typed payload
  * @template Payload The type of the JWT payload
@@ -52,10 +53,23 @@ export class JwtToken<Payload extends JwtPayload> implements IJwtToken<Payload> 
   }
 }
 
+export interface RefreshTokenStatusCapable {
+  /**
+   * Checks if the access token needs to be refreshed
+   * @returns true if the access token is expired, false otherwise
+   */
+  readonly isRefreshNeeded: boolean;
+  /**
+   * Checks if the refresh token is still valid and can be used to refresh the access token
+   * @returns true if the refresh token is not expired, false otherwise
+   */
+  readonly isRefreshable: boolean;
+}
+
 /**
  * Class representing a composite token containing both access and refresh tokens
  */
-export class JwtCompositeToken implements EarlyPeriodCapable {
+export class JwtCompositeToken implements EarlyPeriodCapable, RefreshTokenStatusCapable {
   public readonly access: JwtToken<CoSecJwtPayload>;
   public readonly refresh: JwtToken<JwtPayload>;
 
