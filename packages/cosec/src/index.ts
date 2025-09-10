@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+export * from './storage';
 export * from './cosecRequestInterceptor';
 export * from './cosecResponseInterceptor';
 export * from './deviceIdStorage';
