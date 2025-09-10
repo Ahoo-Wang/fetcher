@@ -23,7 +23,7 @@ export interface IJwtToken<Payload extends JwtPayload> {
   readonly token: string;
   readonly payload: Payload;
 
-  isExpired(): boolean;
+  isExpired: boolean;
 }
 
 /**
@@ -47,7 +47,7 @@ export class JwtToken<Payload extends JwtPayload> implements IJwtToken<Payload> 
    * Checks if the token is expired
    * @returns true if the token is expired, false otherwise
    */
-  isExpired(): boolean {
+  get isExpired(): boolean {
     return isTokenExpired(this.payload);
   }
 }
@@ -70,16 +70,16 @@ export class JwtCompositeToken {
    * Checks if the access token needs to be refreshed
    * @returns true if the access token is expired, false otherwise
    */
-  isRefreshNeeded(): boolean {
-    return this.access.isExpired();
+  get isRefreshNeeded(): boolean {
+    return this.access.isExpired;
   }
 
   /**
    * Checks if the refresh token is still valid and can be used to refresh the access token
    * @returns true if the refresh token is not expired, false otherwise
    */
-  isRefreshable(): boolean {
-    return !this.refresh.isExpired();
+  get isRefreshable(): boolean {
+    return !this.refresh.isExpired;
   }
 }
 
