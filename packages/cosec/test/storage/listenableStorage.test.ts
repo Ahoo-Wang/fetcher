@@ -8,7 +8,6 @@ import {
 import {
   createListenableStorage,
 } from '../../src';
-import * as utils from '../../src/utils';
 
 describe('createListenableStorage', () => {
   // Mock window and localStorage for testing
@@ -73,8 +72,6 @@ describe('createListenableStorage', () => {
 
   it('should create BrowserListenableStorage when window is available', () => {
     // Spy on isBrowser and make it return true
-    const isBrowserSpy = vi.spyOn(utils, 'isBrowser', 'get').mockReturnValue(true);
-    
     // Temporarily set window
     const originalWindow = (global as any).window;
     (global as any).window = {
@@ -87,8 +84,6 @@ describe('createListenableStorage', () => {
     } finally {
       // Restore original window
       (global as any).window = originalWindow;
-      // Restore spy
-      isBrowserSpy.mockRestore();
     }
   });
 

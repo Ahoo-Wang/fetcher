@@ -46,10 +46,10 @@ export class InMemoryStorage implements Storage {
   }
 }
 
-import { isBrowser } from './utils';
+import { isBrowser } from './env';
 
 export function getStorage(): Storage {
-  if (isBrowser && window.localStorage) {
+  if (isBrowser() && window.localStorage) {
     return window.localStorage;
   } else {
     // Use in-memory storage as fallback

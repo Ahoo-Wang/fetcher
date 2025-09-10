@@ -11,4 +11,6 @@
  * limitations under the License.
  */
 
-export const isBrowser = typeof window !== 'undefined';
+export function isBrowser(): boolean {
+  return typeof window !== 'undefined';
+}
