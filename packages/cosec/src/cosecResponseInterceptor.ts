@@ -13,7 +13,6 @@
 
 import { type CoSecOptions, ResponseCodes } from './types';
 import { FetchExchange, type ResponseInterceptor } from '@ahoo-wang/fetcher';
-import { CompositeToken } from './tokenRefresher';
 
 /**
  * The name of the CoSecResponseInterceptor.
@@ -65,16 +64,16 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
       return;
     }
 
-    if (!this.options.jwtTokenManager.isRefreshable) {
+    if (!this.options.tokenManager.isRefreshable) {
       return;
     }
     try {
-      await this.options.jwtTokenManager.refresh();
+      await this.options.tokenManager.refresh();
       // Retry the original request with the new token
       await exchange.fetcher.interceptors.exchange(exchange);
     } catch (error) {
       // If token refresh fails, clear stored tokens and re-throw the error
-      this.options.jwtTokenManager.tokenStorage.remove();
+      this.options.tokenManager.tokenStorage.remove();
       throw error;
     }
   }

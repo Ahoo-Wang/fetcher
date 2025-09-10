@@ -17,7 +17,7 @@ import {
   CoSecResponseInterceptor,
   DeviceIdStorage,
   TokenStorage,
-  CompositeToken,
+  CompositeToken, JwtTokenManager,
 } from '@ahoo-wang/fetcher-cosec';
 
 // Create storage instances
@@ -36,7 +36,7 @@ const tokenRefresher = {
     };
   },
 };
-
+const tokenManager = new JwtTokenManager(tokenStorage, tokenRefresher);
 // Create a Fetcher instance
 const fetcher = new Fetcher({
   baseURL: 'https://api.example.com',
@@ -47,12 +47,7 @@ fetcher.interceptors.request.use(
   new CoSecRequestInterceptor({
     appId: 'your-app-id',
     deviceIdStorage: deviceIdStorage,
-    tokenStorage: tokenStorage,
-    tokenRefresher: {
-      refresh(token: CompositeToken): Promise<CompositeToken> {
-        return Promise.reject('Token refresh failed');
-      },
-    },
+    tokenManager: tokenManager,
   }),
 );
 
@@ -61,8 +56,7 @@ fetcher.interceptors.response.use(
   new CoSecResponseInterceptor({
     appId: 'your-app-id',
     deviceIdStorage: deviceIdStorage,
-    tokenStorage: tokenStorage,
-    tokenRefresher: tokenRefresher,
+    tokenManager: tokenManager,
   }),
 );
 

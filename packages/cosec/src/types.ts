@@ -42,7 +42,7 @@ export interface CoSecOptions {
    */
   deviceIdStorage: DeviceIdStorage;
 
-  jwtTokenManager: JwtTokenManager;
+  tokenManager: JwtTokenManager;
 }
 
 /**
