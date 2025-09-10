@@ -21,4 +21,4 @@ export * from './inMemoryStorage';
 export * from './tokenRefresher';
 export * from './tokenStorage';
 export * from './types';
-export * from './utils';
+export * from './env';

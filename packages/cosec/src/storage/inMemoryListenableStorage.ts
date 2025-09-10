@@ -12,6 +12,7 @@
  */
 
 import { ListenableStorage, RemoveStorageListener, STORAGE_EVENT_TYPE, StorageListener } from './listenableStorage';
+import { isBrowser } from '../env';
 
 /**
  * An in-memory implementation of ListenableStorage that works in any environment.
@@ -99,7 +100,7 @@ export class InMemoryListenableStorage implements ListenableStorage {
   private notifyListeners(
     eventInit: StorageEventInit,
   ): void {
-    if (window && window.location) {
+    if (isBrowser() && window.location) {
       eventInit.url = eventInit.url || window.location.href;
     }
     eventInit.storageArea = this;

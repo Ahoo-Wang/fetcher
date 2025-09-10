@@ -13,7 +13,7 @@
 
 import { InMemoryListenableStorage } from './inMemoryListenableStorage';
 import { BrowserListenableStorage } from './browserListenableStorage';
-import { isBrowser } from '../utils';
+import { isBrowser } from '../env';
 
 /**
  * The type of storage event used for listening to storage changes.
@@ -53,7 +53,7 @@ export interface ListenableStorage extends Storage, StorageListenable {
  * @returns A ListenableStorage instance suitable for the current environment
  */
 export const createListenableStorage = (): ListenableStorage => {
-  if (isBrowser) {
+  if (isBrowser()) {
     return new BrowserListenableStorage(window.localStorage);
   }
   return new InMemoryListenableStorage();

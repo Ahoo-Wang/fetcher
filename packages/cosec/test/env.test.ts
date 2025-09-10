@@ -11,25 +11,21 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { isBrowser } from '../src';
 
-describe('utils', () => {
-  it('should export isBrowser as false in Node.js environment', () => {
-    // In Node.js environment, window is undefined, so isBrowser should be false
-    expect(isBrowser).toBe(false);
-  });
-
-  it('should export isBrowser as true in browser environment', async () => {
+describe('env', () => {
+  it('should export isBrowser as true in browser environment', () => {
     // Mock window object to simulate browser environment
     const originalWindow = global.window;
     global.window = {} as any;
-
-    // Re-import the module to get the updated isBrowser value
-    vi.resetModules();
-    const utils = await import('../src/utils');
-    expect(utils.isBrowser).toBe(true);
+    expect(isBrowser()).toBe(true);
     // Restore original window
     global.window = originalWindow;
+  });
+
+  it('should have isBrowser as false in Node.js environment', () => {
+    // In Node.js environment, window is undefined
+    expect(isBrowser()).toBe(false);
   });
 });
