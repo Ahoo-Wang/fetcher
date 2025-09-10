@@ -85,14 +85,15 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;
     requestHeaders[CoSecHeaders.REQUEST_ID] = requestId;
     let currentToken = this.options.tokenManager.currentToken;
-    if (currentToken && !requestHeaders[CoSecHeaders.AUTHORIZATION]) {
-      if (currentToken.isRefreshNeeded && currentToken.isRefreshable) {
-        await this.options.tokenManager.refresh();
-      }
-      currentToken = this.options.tokenManager.currentToken;
-      if (currentToken) {
-        requestHeaders[CoSecHeaders.AUTHORIZATION] = `Bearer ${currentToken.access.token}`;
-      }
+    if (!currentToken || requestHeaders[CoSecHeaders.AUTHORIZATION]) {
+      return;
+    }
+    if (currentToken.isRefreshNeeded && currentToken.isRefreshable) {
+      await this.options.tokenManager.refresh();
+    }
+    currentToken = this.options.tokenManager.currentToken;
+    if (currentToken) {
+      requestHeaders[CoSecHeaders.AUTHORIZATION] = `Bearer ${currentToken.access.token}`;
     }
   }
 }
