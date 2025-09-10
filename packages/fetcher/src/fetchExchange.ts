@@ -131,7 +131,7 @@ export class FetchExchange
    * Cached result of the extracted result to avoid repeated computations.
    * Undefined when not yet computed, null when computation failed.
    */
-  private cachedExtractedResult?: null | any | Promise<any>;
+  private cachedExtractedResult?: any | Promise<any>;
   /**
    * Shared attributes for passing data between interceptors.
    *
@@ -244,7 +244,7 @@ export class FetchExchange
    *
    * @returns The extracted result or null if extraction failed
    */
-  typedExtractedResult<R = any>(): R {
+  typedExtractedResult<R = any>(): R | Promise<R> {
     if (this.cachedExtractedResult !== undefined) {
       return this.cachedExtractedResult;
     }
