@@ -31,6 +31,8 @@ export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
 export const COSEC_REQUEST_INTERCEPTOR_ORDER =
   REQUEST_BODY_INTERCEPTOR_ORDER + 1000;
 
+export const IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY = 'Ignore-Refresh-Token';
+
 /**
  * Interceptor that automatically adds CoSec authentication headers to requests.
  *
@@ -108,7 +110,7 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     }
 
     // Refresh token if needed and refreshable
-    if (currentToken.isRefreshNeeded && currentToken.isRefreshable) {
+    if (!exchange.attributes[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY] && currentToken.isRefreshNeeded && currentToken.isRefreshable) {
       await this.options.tokenManager.refresh();
     }
 

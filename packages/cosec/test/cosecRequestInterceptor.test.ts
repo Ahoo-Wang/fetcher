@@ -69,6 +69,7 @@ describe('CoSecRequestInterceptor', () => {
     // Create mock exchange
     mockExchange = {
       request: {},
+      attributes: {},
       ensureRequestHeaders: vi.fn().mockReturnValue({}),
     } as unknown as FetchExchange;
   });
@@ -101,8 +102,12 @@ describe('CoSecRequestInterceptor', () => {
       access: {
         token: 'mock-access-token',
       },
-      isRefreshNeeded: false,
-      isRefreshable: true,
+      get isRefreshNeeded() {
+        return false;
+      },
+      get isRefreshable() {
+        return true;
+      },
     };
 
     // Mock tokenManager.currentToken getter
@@ -130,8 +135,12 @@ describe('CoSecRequestInterceptor', () => {
       access: {
         token: 'mock-access-token',
       },
-      isRefreshNeeded: false,
-      isRefreshable: true,
+      get isRefreshNeeded() {
+        return false;
+      },
+      get isRefreshable() {
+        return true;
+      },
     };
 
     // Mock tokenManager.currentToken getter
@@ -153,16 +162,24 @@ describe('CoSecRequestInterceptor', () => {
       access: {
         token: 'new-access-token',
       },
-      isRefreshNeeded: true,
-      isRefreshable: true,
+      get isRefreshNeeded() {
+        return true;
+      },
+      get isRefreshable() {
+        return true;
+      },
     };
 
     const refreshedToken = {
       access: {
         token: 'refreshed-access-token',
       },
-      isRefreshNeeded: false,
-      isRefreshable: true,
+      get isRefreshNeeded() {
+        return false;
+      },
+      get isRefreshable() {
+        return true;
+      },
     };
 
     // Mock tokenManager.currentToken getter to return different values
