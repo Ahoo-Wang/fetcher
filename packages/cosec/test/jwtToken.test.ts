@@ -24,10 +24,10 @@ describe('jwtToken', () => {
 
     it('should correctly identify expired tokens', () => {
       const expiredToken = new JwtToken<JwtPayload>(EXPIRED_JWT);
-      expect(expiredToken.isExpired()).toBe(true);
+      expect(expiredToken.isExpired).toBe(true);
 
       const validToken = new JwtToken<JwtPayload>(VALID_JWT);
-      expect(validToken.isExpired()).toBe(false);
+      expect(validToken.isExpired).toBe(false);
     });
   });
 
@@ -47,13 +47,13 @@ describe('jwtToken', () => {
       const refreshToken = new JwtToken<JwtPayload>(REFRESH_JWT);
       const compositeToken1 = new JwtCompositeToken(expiredAccessToken, refreshToken);
 
-      expect(compositeToken1.isRefreshNeeded()).toBe(true);
+      expect(compositeToken1.isRefreshNeeded).toBe(true);
 
       // Test with valid access token
       const validAccessToken = new JwtToken<CoSecJwtPayload>(VALID_JWT);
       const compositeToken2 = new JwtCompositeToken(validAccessToken, refreshToken);
 
-      expect(compositeToken2.isRefreshNeeded()).toBe(false);
+      expect(compositeToken2.isRefreshNeeded).toBe(false);
     });
 
     it('should correctly identify when token is refreshable', () => {
@@ -62,13 +62,13 @@ describe('jwtToken', () => {
       const validRefreshToken = new JwtToken<JwtPayload>(REFRESH_JWT);
       const compositeToken1 = new JwtCompositeToken(accessToken, validRefreshToken);
 
-      expect(compositeToken1.isRefreshable()).toBe(true);
+      expect(compositeToken1.isRefreshable).toBe(true);
 
       // Test with expired refresh token
       const expiredRefreshToken = new JwtToken<JwtPayload>(EXPIRED_REFRESH_JWT);
       const compositeToken2 = new JwtCompositeToken(accessToken, expiredRefreshToken);
 
-      expect(compositeToken2.isRefreshable()).toBe(false);
+      expect(compositeToken2.isRefreshable).toBe(false);
     });
   });
 
