@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { CoSecJwtPayload, isTokenExpired, JwtPayload, parseJwtPayload } from './jwts';
+import { CoSecJwtPayload, EarlyPeriodCapable, isTokenExpired, JwtPayload, parseJwtPayload } from './jwts';
 import { Serializer } from './serializer';
 import { CompositeToken } from './tokenRefresher';
 
@@ -19,7 +19,7 @@ import { CompositeToken } from './tokenRefresher';
  * Interface for JWT token with typed payload
  * @template Payload The type of the JWT payload
  */
-export interface IJwtToken<Payload extends JwtPayload> {
+export interface IJwtToken<Payload extends JwtPayload> extends EarlyPeriodCapable {
   readonly token: string;
   readonly payload: Payload;
 
@@ -35,10 +35,10 @@ export class JwtToken<Payload extends JwtPayload> implements IJwtToken<Payload> 
 
   /**
    * Creates a new JwtToken instance
-   * @param token The JWT token string
    */
   constructor(
     public readonly token: string,
+    public readonly earlyPeriod: number = 0,
   ) {
     this.payload = parseJwtPayload(token) as Payload;
   }
@@ -48,23 +48,23 @@ export class JwtToken<Payload extends JwtPayload> implements IJwtToken<Payload> 
    * @returns true if the token is expired, false otherwise
    */
   get isExpired(): boolean {
-    return isTokenExpired(this.payload);
+    return isTokenExpired(this.payload, this.earlyPeriod);
   }
 }
 
 /**
  * Class representing a composite token containing both access and refresh tokens
  */
-export class JwtCompositeToken {
+export class JwtCompositeToken implements EarlyPeriodCapable {
   public readonly access: JwtToken<CoSecJwtPayload>;
   public readonly refresh: JwtToken<JwtPayload>;
 
   /**
    * Creates a new JwtCompositeToken instance
    */
-  constructor(public readonly token: CompositeToken) {
-    this.access = new JwtToken(token.accessToken);
-    this.refresh = new JwtToken(token.refreshToken);
+  constructor(public readonly token: CompositeToken, public readonly earlyPeriod: number = 0) {
+    this.access = new JwtToken(token.accessToken, earlyPeriod);
+    this.refresh = new JwtToken(token.refreshToken, earlyPeriod);
   }
 
   /**
@@ -88,7 +88,10 @@ export class JwtCompositeToken {
 /**
  * Serializer for JwtCompositeToken that handles conversion to and from JSON strings
  */
-export class JwtCompositeTokenSerializer implements Serializer<string, JwtCompositeToken> {
+export class JwtCompositeTokenSerializer implements Serializer<string, JwtCompositeToken>, EarlyPeriodCapable {
+  constructor(public readonly earlyPeriod: number = 0) {
+  }
+
   /**
    * Deserializes a JSON string to a JwtCompositeToken
    * @param value The JSON string representation of a composite token
@@ -96,7 +99,7 @@ export class JwtCompositeTokenSerializer implements Serializer<string, JwtCompos
    */
   deserialize(value: string): JwtCompositeToken {
     const compositeToken = JSON.parse(value) as CompositeToken;
-    return new JwtCompositeToken(compositeToken);
+    return new JwtCompositeToken(compositeToken, this.earlyPeriod);
   }
 
   /**
@@ -109,7 +112,4 @@ export class JwtCompositeTokenSerializer implements Serializer<string, JwtCompos
   }
 }
 
-/**
- * Global instance of JwtCompositeTokenSerializer
- */
 export const jwtCompositeTokenSerializer = new JwtCompositeTokenSerializer();
