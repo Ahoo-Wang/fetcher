@@ -12,7 +12,7 @@
  */
 
 import { createListenableStorage, KeyStorage } from './storage';
-import { JwtCompositeToken, jwtCompositeTokenSerializer, JwtToken } from './jwtToken';
+import { JwtCompositeToken, jwtCompositeTokenSerializer } from './jwtToken';
 import { CompositeToken } from './tokenRefresher';
 
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
