@@ -16,6 +16,7 @@ import type { FetchRequest, RequestHeaders } from './fetchRequest';
 import { ExchangeError } from './interceptorManager';
 import { type UrlParams } from './urlBuilder';
 import { type RequiredBy } from './types';
+import { ResultExtractor, ResultExtractors } from './resultExtractor';
 
 export interface AttributesCapable {
   /**
@@ -45,6 +46,7 @@ export interface FetchExchangeInit extends AttributesCapable {
    * The request configuration including url, method, headers, body, etc.
    */
   request: FetchRequest;
+  resultExtractor?: ResultExtractor<any>;
 
   /**
    * The response object, undefined until the request completes successfully.
@@ -110,6 +112,7 @@ export class FetchExchange
    */
   request: FetchRequest;
 
+  resultExtractor: ResultExtractor<any>;
   /**
    * The response object, undefined until the request completes successfully.
    */
@@ -120,6 +123,7 @@ export class FetchExchange
    */
   error?: Error | any;
 
+  private _extractedResult?: null | any | Promise<any>;
   /**
    * Shared attributes for passing data between interceptors.
    *
@@ -139,6 +143,7 @@ export class FetchExchange
   constructor(exchangeInit: FetchExchangeInit) {
     this.fetcher = exchangeInit.fetcher;
     this.request = exchangeInit.request;
+    this.resultExtractor = exchangeInit.resultExtractor ?? ResultExtractors.Exchange;
     this.attributes = exchangeInit.attributes ?? {};
     this.response = exchangeInit.response;
     this.error = exchangeInit.error;
@@ -223,5 +228,17 @@ export class FetchExchange
       );
     }
     return this.response;
+  }
+
+  get extractedResult(): any {
+    if (this._extractedResult !== undefined) {
+      return this._extractedResult;
+    }
+    try {
+      this._extractedResult = this.resultExtractor(this);
+    } catch (e) {
+      this._extractedResult = null;
+    }
+    return this._extractedResult;
   }
 }
