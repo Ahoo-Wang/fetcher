@@ -244,15 +244,11 @@ export class FetchExchange
    *
    * @returns The extracted result or null if extraction failed
    */
-  get extractedResult(): any {
+  getExtractedResult<R = any>(): R {
     if (this.cachedExtractedResult !== undefined) {
       return this.cachedExtractedResult;
     }
-    try {
-      this.cachedExtractedResult = this.resultExtractor(this);
-    } catch (e) {
-      this.cachedExtractedResult = null;
-    }
+    this.cachedExtractedResult = this.resultExtractor(this);
     return this.cachedExtractedResult;
   }
 }
