@@ -20,7 +20,7 @@ import {
   CoSecOptions,
   CoSecRequestInterceptor,
   DeviceIdStorage,
-  InMemoryStorage,
+  InMemoryListenableStorage,
   TokenStorage,
 } from '../src';
 import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
@@ -32,9 +32,9 @@ describe('cosecRequestInterceptor.ts', () => {
         appId: 'test-app-id',
         deviceIdStorage: new DeviceIdStorage(
           'test-device-key',
-          new InMemoryStorage(),
+          new InMemoryListenableStorage(),
         ),
-        tokenStorage: new TokenStorage('test-token-key', new InMemoryStorage()),
+        tokenStorage: new TokenStorage('test-token-key', new InMemoryListenableStorage()),
         tokenRefresher: {
           refresh: async (token: CompositeToken) => token,
         },
@@ -49,11 +49,11 @@ describe('cosecRequestInterceptor.ts', () => {
     it('should add CoSec headers to request without token', () => {
       const deviceIdStorage = new DeviceIdStorage(
         'test-device-key',
-        new InMemoryStorage(),
+        new InMemoryListenableStorage(),
       );
       const tokenStorage = new TokenStorage(
         'test-token-key',
-        new InMemoryStorage(),
+        new InMemoryListenableStorage(),
       );
 
       const options: CoSecOptions = {
@@ -101,11 +101,11 @@ describe('cosecRequestInterceptor.ts', () => {
     it('should add CoSec headers to request with token', () => {
       const deviceIdStorage = new DeviceIdStorage(
         'test-device-key',
-        new InMemoryStorage(),
+        new InMemoryListenableStorage(),
       );
       const tokenStorage = new TokenStorage(
         'test-token-key',
-        new InMemoryStorage(),
+        new InMemoryListenableStorage(),
       );
 
       const options: CoSecOptions = {
@@ -155,11 +155,11 @@ describe('cosecRequestInterceptor.ts', () => {
     it('should preserve existing headers', () => {
       const deviceIdStorage = new DeviceIdStorage(
         'test-device-key',
-        new InMemoryStorage(),
+        new InMemoryListenableStorage(),
       );
       const tokenStorage = new TokenStorage(
         'test-token-key',
-        new InMemoryStorage(),
+        new InMemoryListenableStorage(),
       );
 
       const options: CoSecOptions = {
@@ -203,11 +203,11 @@ describe('cosecRequestInterceptor.ts', () => {
     it('should handle request without existing headers', () => {
       const deviceIdStorage = new DeviceIdStorage(
         'test-device-key',
-        new InMemoryStorage(),
+        new InMemoryListenableStorage(),
       );
       const tokenStorage = new TokenStorage(
         'test-token-key',
-        new InMemoryStorage(),
+        new InMemoryListenableStorage(),
       );
 
       const options: CoSecOptions = {

@@ -15,7 +15,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   CompositeToken,
   DEFAULT_COSEC_TOKEN_KEY,
-  InMemoryStorage,
+  InMemoryListenableStorage,
   TokenStorage,
 } from '../src';
 
@@ -28,21 +28,21 @@ describe('tokenStorage.ts', () => {
 
     it('should create TokenStorage with custom parameters', () => {
       const customKey = 'custom-token-key';
-      const customStorage = new InMemoryStorage();
+      const customStorage = new InMemoryListenableStorage();
       const storage = new TokenStorage(customKey, customStorage);
 
       expect(storage).toBeInstanceOf(TokenStorage);
     });
 
     it('should get null when no token is set', () => {
-      const storage = new TokenStorage('test-key', new InMemoryStorage());
+      const storage = new TokenStorage('test-key', new InMemoryListenableStorage());
       const result = storage.get();
 
       expect(result).toBeNull();
     });
 
     it('should set and get token', () => {
-      const storage = new TokenStorage('test-key', new InMemoryStorage());
+      const storage = new TokenStorage('test-key', new InMemoryListenableStorage());
       const token: CompositeToken = {
         accessToken: 'test-access-token',
         refreshToken: 'test-refresh-token',
@@ -55,7 +55,7 @@ describe('tokenStorage.ts', () => {
     });
 
     it('should clear stored token', () => {
-      const storage = new TokenStorage('test-key', new InMemoryStorage());
+      const storage = new TokenStorage('test-key', new InMemoryListenableStorage());
       const token: CompositeToken = {
         accessToken: 'test-access-token',
         refreshToken: 'test-refresh-token',

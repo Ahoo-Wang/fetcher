@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { getStorage } from './inMemoryStorage';
 import { idGenerator } from './idGenerator';
+import { createListenableStorage } from './storage';
 
 export const DEFAULT_COSEC_DEVICE_ID_KEY = 'cosec-device-id';
 
@@ -25,7 +25,7 @@ export class DeviceIdStorage {
 
   constructor(
     deviceIdKey: string = DEFAULT_COSEC_DEVICE_ID_KEY,
-    storage: Storage = getStorage(),
+    storage: Storage = createListenableStorage(),
   ) {
     this.deviceIdKey = deviceIdKey;
     this.storage = storage;

@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { getStorage } from './inMemoryStorage';
 import { type CompositeToken } from './tokenRefresher';
+import { createListenableStorage } from './storage';
 
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 
@@ -25,7 +25,7 @@ export class TokenStorage {
 
   constructor(
     tokenKey: string = DEFAULT_COSEC_TOKEN_KEY,
-    storage: Storage = getStorage(),
+    storage: Storage = createListenableStorage(),
   ) {
     this.tokenKey = tokenKey;
     this.storage = storage;
