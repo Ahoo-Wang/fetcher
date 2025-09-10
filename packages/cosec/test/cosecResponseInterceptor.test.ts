@@ -19,7 +19,6 @@ import {
   CoSecOptions,
   CoSecResponseInterceptor,
   DeviceIdStorage,
-  InMemoryListenableStorage,
   ResponseCodes,
   TokenRefresher,
   TokenStorage,
@@ -33,9 +32,8 @@ describe('cosecResponseInterceptor.ts', () => {
         appId: 'test-app-id',
         deviceIdStorage: new DeviceIdStorage(
           'test-device-key',
-          new InMemoryListenableStorage(),
         ),
-        tokenStorage: new TokenStorage('test-token-key', new InMemoryListenableStorage()),
+        tokenStorage: new TokenStorage('test-token-key'),
         tokenRefresher: {
           refresh: async (_token: CompositeToken) => ({
             accessToken: 'test-access-token',
@@ -55,9 +53,8 @@ describe('cosecResponseInterceptor.ts', () => {
         appId: 'test-app-id',
         deviceIdStorage: new DeviceIdStorage(
           'test-device-key',
-          new InMemoryListenableStorage(),
         ),
-        tokenStorage: new TokenStorage('test-token-key', new InMemoryListenableStorage()),
+        tokenStorage: new TokenStorage('test-token-key'),
         tokenRefresher: {
           refresh: async (_token: CompositeToken) => ({
             accessToken: 'test-access-token',
@@ -84,9 +81,8 @@ describe('cosecResponseInterceptor.ts', () => {
         appId: 'test-app-id',
         deviceIdStorage: new DeviceIdStorage(
           'test-device-key',
-          new InMemoryListenableStorage(),
         ),
-        tokenStorage: new TokenStorage('test-token-key', new InMemoryListenableStorage()),
+        tokenStorage: new TokenStorage('test-token-key'),
         tokenRefresher: {
           refresh: async (_token: CompositeToken) => ({
             accessToken: 'test-access-token',
@@ -117,9 +113,8 @@ describe('cosecResponseInterceptor.ts', () => {
         appId: 'test-app-id',
         deviceIdStorage: new DeviceIdStorage(
           'test-device-key',
-          new InMemoryListenableStorage(),
         ),
-        tokenStorage: new TokenStorage('test-token-key', new InMemoryListenableStorage()),
+        tokenStorage: new TokenStorage('test-token-key'),
         tokenRefresher: {
           refresh: async (_token: CompositeToken) => ({
             accessToken: 'test-access-token',
@@ -150,7 +145,6 @@ describe('cosecResponseInterceptor.ts', () => {
     it('should refresh token and retry request on 401 response', async () => {
       const tokenStorage = new TokenStorage(
         'test-token-key',
-        new InMemoryListenableStorage(),
       );
       const tokenRefresher: TokenRefresher = {
         refresh: vi.fn().mockImplementation(async (_token: CompositeToken) => ({
@@ -163,7 +157,6 @@ describe('cosecResponseInterceptor.ts', () => {
         appId: 'test-app-id',
         deviceIdStorage: new DeviceIdStorage(
           'test-device-key',
-          new InMemoryListenableStorage(),
         ),
         tokenStorage,
         tokenRefresher,
@@ -193,7 +186,7 @@ describe('cosecResponseInterceptor.ts', () => {
         accessToken: 'old-access-token',
         refreshToken: 'old-refresh-token',
       };
-      tokenStorage.set(currentToken);
+      tokenStorage.setCompositeToken(currentToken);
 
       await interceptor.intercept(exchange);
 
@@ -201,7 +194,7 @@ describe('cosecResponseInterceptor.ts', () => {
       expect(tokenRefresher.refresh).toHaveBeenCalledWith(currentToken);
 
       // Verify new token was stored
-      const newToken = tokenStorage.get();
+      const newToken = tokenStorage.get()!.token;
       expect(newToken).toEqual({
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
@@ -214,7 +207,6 @@ describe('cosecResponseInterceptor.ts', () => {
     it('should clear token storage and re-throw error when token refresh fails', async () => {
       const tokenStorage = new TokenStorage(
         'test-token-key',
-        new InMemoryListenableStorage(),
       );
       const tokenRefresher: TokenRefresher = {
         refresh: vi.fn().mockRejectedValue(new Error('Refresh failed')),
@@ -224,7 +216,6 @@ describe('cosecResponseInterceptor.ts', () => {
         appId: 'test-app-id',
         deviceIdStorage: new DeviceIdStorage(
           'test-device-key',
-          new InMemoryListenableStorage(),
         ),
         tokenStorage,
         tokenRefresher,
@@ -253,7 +244,7 @@ describe('cosecResponseInterceptor.ts', () => {
         accessToken: 'old-access-token',
         refreshToken: 'old-refresh-token',
       };
-      tokenStorage.set(currentToken);
+      tokenStorage.setCompositeToken(currentToken);
 
       await expect(interceptor.intercept(exchange)).rejects.toThrow(
         'Refresh failed',
@@ -267,7 +258,6 @@ describe('cosecResponseInterceptor.ts', () => {
     it('should handle concurrent refresh requests properly', async () => {
       const tokenStorage = new TokenStorage(
         'test-token-key',
-        new InMemoryListenableStorage(),
       );
 
       const refreshPromise = new Promise<CompositeToken>((resolve) => {
@@ -287,7 +277,6 @@ describe('cosecResponseInterceptor.ts', () => {
         appId: 'test-app-id',
         deviceIdStorage: new DeviceIdStorage(
           'test-device-key',
-          new InMemoryListenableStorage(),
         ),
         tokenStorage,
         tokenRefresher,
@@ -324,7 +313,7 @@ describe('cosecResponseInterceptor.ts', () => {
         accessToken: 'old-access-token',
         refreshToken: 'old-refresh-token',
       };
-      tokenStorage.set(currentToken);
+      tokenStorage.setCompositeToken(currentToken);
 
       // Call intercept concurrently
       const interceptPromise1 = interceptor.intercept(exchange1);
@@ -337,7 +326,7 @@ describe('cosecResponseInterceptor.ts', () => {
       expect(tokenRefresher.refresh).toHaveBeenCalledWith(currentToken);
 
       // Verify new token was stored
-      const newToken = tokenStorage.get();
+      const newToken = tokenStorage.get()!.token;
       expect(newToken).toEqual({
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',

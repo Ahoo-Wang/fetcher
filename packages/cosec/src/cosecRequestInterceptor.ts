@@ -80,14 +80,14 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
   intercept(exchange: FetchExchange) {
     const requestId = idGenerator.generateId();
     const deviceId = this.options.deviceIdStorage.getOrCreate();
-    const token = this.options.tokenStorage.get();
     const requestHeaders = exchange.ensureRequestHeaders();
     requestHeaders[CoSecHeaders.APP_ID] = this.options.appId;
     requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;
     requestHeaders[CoSecHeaders.REQUEST_ID] = requestId;
+    const token = this.options.tokenStorage.get();
     if (token && !requestHeaders[CoSecHeaders.AUTHORIZATION]) {
       requestHeaders[CoSecHeaders.AUTHORIZATION] =
-        `Bearer ${token.accessToken}`;
+        `Bearer ${token.access.token}`;
     }
   }
 }
