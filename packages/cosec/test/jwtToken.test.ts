@@ -33,40 +33,38 @@ describe('jwtToken', () => {
 
   describe('JwtCompositeToken', () => {
     it('should create a composite token with access and refresh tokens', () => {
-      const accessToken = new JwtToken<CoSecJwtPayload>(VALID_JWT);
-      const refreshToken = new JwtToken<JwtPayload>(REFRESH_JWT);
-      const compositeToken = new JwtCompositeToken(accessToken, refreshToken);
+      const compositeToken = new JwtCompositeToken({
+        accessToken: VALID_JWT,
+        refreshToken: REFRESH_JWT,
+      });
 
-      expect(compositeToken.access).toBe(accessToken);
-      expect(compositeToken.refresh).toBe(refreshToken);
+      expect(compositeToken.access.token).toBe(VALID_JWT);
+      expect(compositeToken.refresh.token).toBe(REFRESH_JWT);
     });
 
     it('should correctly identify when refresh is needed', () => {
       // Test with expired access token
-      const expiredAccessToken = new JwtToken<CoSecJwtPayload>(EXPIRED_JWT);
-      const refreshToken = new JwtToken<JwtPayload>(REFRESH_JWT);
-      const compositeToken1 = new JwtCompositeToken(expiredAccessToken, refreshToken);
+      const compositeToken1 = new JwtCompositeToken({
+        accessToken: EXPIRED_JWT,
+        refreshToken: REFRESH_JWT,
+      });
 
       expect(compositeToken1.isRefreshNeeded).toBe(true);
 
       // Test with valid access token
-      const validAccessToken = new JwtToken<CoSecJwtPayload>(VALID_JWT);
-      const compositeToken2 = new JwtCompositeToken(validAccessToken, refreshToken);
+      const compositeToken2 = new JwtCompositeToken({ accessToken: VALID_JWT, refreshToken: REFRESH_JWT });
 
       expect(compositeToken2.isRefreshNeeded).toBe(false);
     });
 
     it('should correctly identify when token is refreshable', () => {
       // Test with valid refresh token
-      const accessToken = new JwtToken<CoSecJwtPayload>(VALID_JWT);
-      const validRefreshToken = new JwtToken<JwtPayload>(REFRESH_JWT);
-      const compositeToken1 = new JwtCompositeToken(accessToken, validRefreshToken);
+      const compositeToken1 = new JwtCompositeToken({ accessToken: VALID_JWT, refreshToken: REFRESH_JWT });
 
       expect(compositeToken1.isRefreshable).toBe(true);
 
       // Test with expired refresh token
-      const expiredRefreshToken = new JwtToken<JwtPayload>(EXPIRED_REFRESH_JWT);
-      const compositeToken2 = new JwtCompositeToken(accessToken, expiredRefreshToken);
+      const compositeToken2 = new JwtCompositeToken({ accessToken: VALID_JWT, refreshToken: EXPIRED_REFRESH_JWT });
 
       expect(compositeToken2.isRefreshable).toBe(false);
     });
@@ -74,9 +72,10 @@ describe('jwtToken', () => {
 
   describe('jwtCompositeTokenSerializer', () => {
     it('should serialize a composite token to JSON string', () => {
-      const accessToken = new JwtToken<CoSecJwtPayload>(VALID_JWT);
-      const refreshToken = new JwtToken<JwtPayload>(REFRESH_JWT);
-      const compositeToken = new JwtCompositeToken(accessToken, refreshToken);
+      const compositeToken = new JwtCompositeToken({
+        accessToken: VALID_JWT,
+        refreshToken: REFRESH_JWT,
+      });
 
       const serialized = jwtCompositeTokenSerializer.serialize(compositeToken);
       const parsed = JSON.parse(serialized);

@@ -56,14 +56,15 @@ export class JwtToken<Payload extends JwtPayload> implements IJwtToken<Payload> 
  * Class representing a composite token containing both access and refresh tokens
  */
 export class JwtCompositeToken {
+  public readonly access: JwtToken<CoSecJwtPayload>;
+  public readonly refresh: JwtToken<JwtPayload>;
+
   /**
    * Creates a new JwtCompositeToken instance
-   * @param access The access token
-   * @param refresh The refresh token
    */
-  constructor(public readonly access: JwtToken<CoSecJwtPayload>,
-              public readonly refresh: JwtToken<JwtPayload>,
-  ) {
+  constructor(public readonly token: CompositeToken) {
+    this.access = new JwtToken(token.accessToken);
+    this.refresh = new JwtToken(token.refreshToken);
   }
 
   /**
@@ -81,6 +82,7 @@ export class JwtCompositeToken {
   get isRefreshable(): boolean {
     return !this.refresh.isExpired;
   }
+
 }
 
 /**
@@ -94,10 +96,7 @@ export class JwtCompositeTokenSerializer implements Serializer<string, JwtCompos
    */
   deserialize(value: string): JwtCompositeToken {
     const compositeToken = JSON.parse(value) as CompositeToken;
-    return new JwtCompositeToken(
-      new JwtToken(compositeToken.accessToken),
-      new JwtToken(compositeToken.refreshToken),
-    );
+    return new JwtCompositeToken(compositeToken);
   }
 
   /**
@@ -106,11 +105,7 @@ export class JwtCompositeTokenSerializer implements Serializer<string, JwtCompos
    * @returns A JSON string representation of the composite token
    */
   serialize(value: JwtCompositeToken): string {
-    const compositeToken = {
-      accessToken: value.access.token,
-      refreshToken: value.refresh.token,
-    };
-    return JSON.stringify(compositeToken);
+    return JSON.stringify(value.token);
   }
 }
 

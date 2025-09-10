@@ -57,11 +57,11 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
 
     this.refreshInProgress = this.options.tokenRefresher.refresh(currentToken)
       .then(newToken => {
-        this.options.tokenStorage.set(newToken);
+        this.options.tokenStorage.setCompositeToken(newToken);
         return newToken;
       })
       .catch(error => {
-        this.options.tokenStorage.clear();
+        this.options.tokenStorage.remove();
         throw error;
       })
       .finally(() => {
@@ -88,20 +88,20 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
     }
 
     // Get the current token from storage
-    const currentToken = this.options.tokenStorage.get();
+    const jwtToken = this.options.tokenStorage.get();
     // If there's no current token, we can't refresh it
-    if (!currentToken) {
+    if (!jwtToken) {
       return;
     }
 
     try {
       // Attempt to refresh the token
-      await this.refresh(currentToken);
+      await this.refresh(jwtToken.token);
       // Retry the original request with the new token
       await exchange.fetcher.interceptors.exchange(exchange);
     } catch (error) {
       // If token refresh fails, clear stored tokens and re-throw the error
-      this.options.tokenStorage.clear();
+      this.options.tokenStorage.remove();
       throw error;
     }
   }

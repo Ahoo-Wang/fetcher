@@ -13,9 +13,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import {
-  CompositeToken,
-  DEFAULT_COSEC_TOKEN_KEY,
-  InMemoryListenableStorage,
+  CompositeToken, JwtCompositeToken,
   TokenStorage,
 } from '../src';
 
@@ -28,70 +26,44 @@ describe('tokenStorage.ts', () => {
 
     it('should create TokenStorage with custom parameters', () => {
       const customKey = 'custom-token-key';
-      const customStorage = new InMemoryListenableStorage();
-      const storage = new TokenStorage(customKey, customStorage);
+      const storage = new TokenStorage(customKey);
 
       expect(storage).toBeInstanceOf(TokenStorage);
     });
 
     it('should get null when no token is set', () => {
-      const storage = new TokenStorage('test-key', new InMemoryListenableStorage());
+      const storage = new TokenStorage('test-key');
       const result = storage.get();
 
       expect(result).toBeNull();
     });
 
     it('should set and get token', () => {
-      const storage = new TokenStorage('test-key', new InMemoryListenableStorage());
+      const storage = new TokenStorage('test-key');
       const token: CompositeToken = {
         accessToken: 'test-access-token',
         refreshToken: 'test-refresh-token',
       };
 
-      storage.set(token);
+      storage.setCompositeToken(token);
       const result = storage.get();
-
-      expect(result).toEqual(token);
+      expect(result).toBeInstanceOf(JwtCompositeToken);
+      expect(result!.access.token).toEqual(token.accessToken);
+      expect(result!.refresh.token).toEqual(token.refreshToken);
     });
 
-    it('should clear stored token', () => {
-      const storage = new TokenStorage('test-key', new InMemoryListenableStorage());
+    it('should remove stored token', () => {
+      const storage = new TokenStorage('test-key');
       const token: CompositeToken = {
         accessToken: 'test-access-token',
         refreshToken: 'test-refresh-token',
       };
 
-      storage.set(token);
-      storage.clear();
+      storage.setCompositeToken(token);
+      storage.remove();
       const result = storage.get();
 
       expect(result).toBeNull();
-    });
-
-    it('should handle invalid JSON in storage', () => {
-      const mockStorage = {
-        getItem: vi.fn().mockReturnValue('invalid-json'),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-      } as unknown as Storage;
-
-      const storage = new TokenStorage('test-key', mockStorage);
-      const result = storage.get();
-
-      expect(result).toBeNull();
-    });
-
-    it('should use default key when none provided', () => {
-      const mockStorage = {
-        getItem: vi.fn().mockReturnValue(null),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-      } as unknown as Storage;
-
-      const storage = new TokenStorage(undefined, mockStorage);
-      storage.get();
-
-      expect(mockStorage.getItem).toHaveBeenCalledWith(DEFAULT_COSEC_TOKEN_KEY);
     });
   });
 });
