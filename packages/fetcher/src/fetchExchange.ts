@@ -120,7 +120,7 @@ export class FetchExchange
   /**
    * The response object, undefined until the request completes successfully.
    */
-  response?: Response;
+  private _response?: Response;
 
   /**
    * Any error that occurred during the request processing, undefined if no error occurred.
@@ -153,7 +153,7 @@ export class FetchExchange
     this.request = exchangeInit.request;
     this.resultExtractor = exchangeInit.resultExtractor ?? ResultExtractors.Exchange;
     this.attributes = exchangeInit.attributes ?? {};
-    this.response = exchangeInit.response;
+    this._response = exchangeInit.response;
     this.error = exchangeInit.error;
   }
 
@@ -207,6 +207,27 @@ export class FetchExchange
    */
   hasError(): boolean {
     return !!this.error;
+  }
+
+  /**
+   * Sets the response object for this exchange.
+   * Also invalidates the cached extracted result to ensure data consistency
+   * when the response changes.
+   *
+   * @param response - The Response object to set, or undefined to clear the response
+   */
+  set response(response: Response | undefined) {
+    this._response = response;
+    this.cachedExtractedResult = undefined;
+  }
+
+  /**
+   * Gets the response object for this exchange.
+   *
+   * @returns The response object if available, undefined otherwise
+   */
+  get response(): Response | undefined {
+    return this._response;
   }
 
   /**
