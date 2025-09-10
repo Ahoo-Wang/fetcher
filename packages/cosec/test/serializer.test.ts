@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { JsonSerializer, IdentitySerializer, jsonSerializer, identitySerializer } from '../src/serializer';
+import { JsonSerializer, IdentitySerializer, jsonSerializer, identitySerializer } from '../src';
 
 describe('serializer', () => {
   describe('JsonSerializer', () => {
