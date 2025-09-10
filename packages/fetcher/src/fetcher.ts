@@ -161,10 +161,11 @@ export class Fetcher
     const exchange: FetchExchange = new FetchExchange({
       fetcher: this,
       request: fetchRequest,
+      resultExtractor,
       attributes,
     });
     await this.interceptors.exchange(exchange);
-    return resultExtractor(exchange);
+    return exchange.extractedResult;
   }
 
   /**
