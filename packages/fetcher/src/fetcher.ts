@@ -190,7 +190,7 @@ export class Fetcher
    *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
-  private async methodFetch<R = FetchExchange>(
+  private async methodFetch<R = Response>(
     method: HttpMethod,
     url: string,
     request: FetchRequestInit = {},
@@ -224,7 +224,7 @@ export class Fetcher
    *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
-  async get<R = FetchExchange>(
+  async get<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
     // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
@@ -248,7 +248,7 @@ export class Fetcher
    *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
-  async post<R = FetchExchange>(
+  async post<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
     // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
@@ -272,7 +272,7 @@ export class Fetcher
    *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
-  async put<R = FetchExchange>(
+  async put<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
     // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
@@ -296,7 +296,7 @@ export class Fetcher
    *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
-  async delete<R = FetchExchange>(
+  async delete<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
     // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
@@ -320,7 +320,7 @@ export class Fetcher
    *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
-  async patch<R = FetchExchange>(
+  async patch<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
     // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
@@ -345,7 +345,7 @@ export class Fetcher
    *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
-  async head<R = FetchExchange>(
+  async head<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
     // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
@@ -370,7 +370,7 @@ export class Fetcher
    *                     custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
    */
-  async options<R = FetchExchange>(
+  async options<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
     // @ts-expect-error - Required to bypass type checking for resultExtractor default value assignment
