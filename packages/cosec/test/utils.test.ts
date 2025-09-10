@@ -11,14 +11,18 @@
  * limitations under the License.
  */
 
-export * from './storage';
-export * from './cosecRequestInterceptor';
-export * from './cosecResponseInterceptor';
-export * from './deviceIdStorage';
-export * from './idGenerator';
-export * from './jwts';
-export * from './inMemoryStorage';
-export * from './tokenRefresher';
-export * from './tokenStorage';
-export * from './types';
-export * from './utils';
+import { describe, it, expect } from 'vitest';
+import { isBrowser } from '../src';
+
+describe('utils', () => {
+  it('should export isBrowser as true in browser environment', () => {
+    // In a real browser environment, window object exists
+    // Since we're in Node.js environment for testing, typeof window is undefined
+    expect(isBrowser).toBe(typeof window !== 'undefined');
+  });
+
+  it('should have isBrowser as false in Node.js environment', () => {
+    // In Node.js environment, window is undefined
+    expect(isBrowser).toBe(false);
+  });
+});

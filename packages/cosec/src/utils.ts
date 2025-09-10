@@ -11,14 +11,4 @@
  * limitations under the License.
  */
 
-export * from './storage';
-export * from './cosecRequestInterceptor';
-export * from './cosecResponseInterceptor';
-export * from './deviceIdStorage';
-export * from './idGenerator';
-export * from './jwts';
-export * from './inMemoryStorage';
-export * from './tokenRefresher';
-export * from './tokenStorage';
-export * from './types';
-export * from './utils';
+export const isBrowser = typeof window !== 'undefined';
