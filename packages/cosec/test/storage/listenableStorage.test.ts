@@ -8,6 +8,7 @@ import {
 import {
   createListenableStorage,
 } from '../../src';
+import * as utils from '../../src/utils';
 
 describe('createListenableStorage', () => {
   // Mock window and localStorage for testing
@@ -71,9 +72,24 @@ describe('createListenableStorage', () => {
   });
 
   it('should create BrowserListenableStorage when window is available', () => {
-    (global as any).window.localStorage = mockLocalStorage;
-    const storage = createListenableStorage();
-    expect(storage).toBeInstanceOf(BrowserListenableStorage);
+    // Spy on isBrowser and make it return true
+    const isBrowserSpy = vi.spyOn(utils, 'isBrowser', 'get').mockReturnValue(true);
+    
+    // Temporarily set window
+    const originalWindow = (global as any).window;
+    (global as any).window = {
+      localStorage: mockLocalStorage,
+    };
+
+    try {
+      const storage = createListenableStorage();
+      expect(storage).toBeInstanceOf(BrowserListenableStorage);
+    } finally {
+      // Restore original window
+      (global as any).window = originalWindow;
+      // Restore spy
+      isBrowserSpy.mockRestore();
+    }
   });
 
   it('should create InMemoryListenableStorage when window is not available', () => {
