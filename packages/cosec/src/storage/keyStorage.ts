@@ -12,23 +12,23 @@
  */
 
 import { createListenableStorage, ListenableStorage, StorageListener } from './listenableStorage';
-import { IdentitySerializer, Serializer } from '../serializer';
+import { Serializer, typedIdentitySerializer } from '../serializer';
 
 /**
  * Options for configuring KeyStorage
  */
-export interface KeyStorageOptions {
+export interface KeyStorageOptions<Deserialized> {
   /**
    * The key used to store and retrieve values from storage
    */
   key: string;
-  
+
   /**
    * Optional serializer for converting values to and from storage format
    * Defaults to IdentitySerializer if not provided
    */
-  serializer?: Serializer<string>;
-  
+  serializer?: Serializer<string, Deserialized>;
+
   /**
    * Optional storage implementation
    * Defaults to the result of createListenableStorage() if not provided
@@ -43,10 +43,10 @@ export interface KeyStorageOptions {
  */
 export class KeyStorage<Deserialized> {
   private readonly key: string;
-  private readonly serializer: Serializer<string>;
+  private readonly serializer: Serializer<string, Deserialized>;
   private readonly storage: ListenableStorage;
   private cacheValue: Deserialized | null = null;
-  
+
   /**
    * Listener for storage change events
    * Invalidates the cache when the relevant key is modified
@@ -66,16 +66,16 @@ export class KeyStorage<Deserialized> {
    * @param value The serialized value to deserialize and cache
    */
   private refreshCache(value: string) {
-    this.cacheValue = this.serializer.deserialize<Deserialized>(value);
+    this.cacheValue = this.serializer.deserialize(value);
   }
 
   /**
    * Creates a new KeyStorage instance
    * @param options Configuration options for the storage
    */
-  constructor(options: KeyStorageOptions) {
+  constructor(options: KeyStorageOptions<Deserialized>) {
     this.key = options.key;
-    this.serializer = options.serializer ?? new IdentitySerializer<string>();
+    this.serializer = options.serializer ?? typedIdentitySerializer();
     this.storage = options.storage ?? createListenableStorage();
     this.storage.addListener(this.listener);
   }

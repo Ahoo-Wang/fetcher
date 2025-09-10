@@ -15,7 +15,7 @@
  * Interface for serializing and deserializing values
  * @template Serialized The type of the serialized value
  */
-export interface Serializer<Serialized> {
+export interface Serializer<Serialized, Deserialized> {
   /**
    * Serializes a value to the specified format
    * @param value The value to serialize
@@ -29,13 +29,13 @@ export interface Serializer<Serialized> {
    * @param value The value to deserialize
    * @returns The deserialized value
    */
-  deserialize<Deserialized>(value: Serialized): Deserialized;
+  deserialize(value: Serialized): Deserialized;
 }
 
 /**
  * Implementation of Serializer that uses JSON for serialization
  */
-export class JsonSerializer implements Serializer<string> {
+export class JsonSerializer implements Serializer<string, any> {
   /**
    * Serializes a value to a JSON string
    * @param value The value to serialize
@@ -60,7 +60,7 @@ export class JsonSerializer implements Serializer<string> {
  * Implementation of Serializer that performs no actual serialization
  * @template T The type of the value to pass through
  */
-export class IdentitySerializer<T> implements Serializer<T> {
+export class IdentitySerializer<T> implements Serializer<T, T> {
   /**
    * Returns the value as-is without serialization
    * @param value The value to pass through
@@ -76,10 +76,14 @@ export class IdentitySerializer<T> implements Serializer<T> {
    * @param value The value to pass through
    * @returns The same value that was passed in, cast to the target type
    */
-  deserialize<Deserialized>(value: T): Deserialized {
-    return value as unknown as Deserialized;
+  deserialize(value: T): T {
+    return value;
   }
 }
 
-export const jsonSerializer =new JsonSerializer()
-export const identitySerializer = new IdentitySerializer<any>()
+export const jsonSerializer = new JsonSerializer();
+export const identitySerializer = new IdentitySerializer<any>();
+
+export function typedIdentitySerializer<T>(): IdentitySerializer<T> {
+  return identitySerializer as IdentitySerializer<T>;
+}
