@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { isBrowser } from '../src/utils';
+import { isBrowser } from '../src';
 
 describe('utils', () => {
   it('should export isBrowser as false in Node.js environment', () => {
