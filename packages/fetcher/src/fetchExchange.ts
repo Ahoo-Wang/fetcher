@@ -34,7 +34,7 @@ export interface AttributesCapable {
    * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
    * - Be mindful of memory usage when storing large objects
    */
-  attributes?: Record<string, any> | Map<String, any>;
+  attributes?: Record<string, any> | Map<string, any>;
 }
 
 export interface FetchExchangeInit extends AttributesCapable {
