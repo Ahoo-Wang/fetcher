@@ -13,7 +13,7 @@
 
 import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, type TimeoutCapable } from './timeout';
-import { FetchExchange } from './fetchExchange';
+import { AttributesCapable, FetchExchange } from './fetchExchange';
 import type {
   BaseURLCapable,
   FetchRequest,
@@ -24,7 +24,7 @@ import type {
 import { ContentTypeValues, HttpMethod } from './fetchRequest';
 import { InterceptorManager } from './interceptorManager';
 import { UrlTemplateStyle } from './urlTemplateResolver';
-import { ResultExtractor, ResultExtractors } from './resultExtractor';
+import { ResultExtractor, ResultExtractorCapable, ResultExtractors } from './resultExtractor';
 
 /**
  * Configuration options for the Fetcher client.
@@ -59,6 +59,11 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
   baseURL: '',
   headers: DEFAULT_HEADERS,
 };
+
+
+export interface RequestOptions extends AttributesCapable, ResultExtractorCapable {
+}
+
 
 /**
  * HTTP client with support for interceptors, URL building, and timeout control.
@@ -119,8 +124,7 @@ export class Fetcher
    */
   async request<R = FetchExchange>(
     request: FetchRequest,
-    resultExtractor: ResultExtractor<any> = ResultExtractors.Exchange,
-    attributes?: Record<string, any> | Map<string, any>,
+    options: RequestOptions = { resultExtractor: ResultExtractors.Exchange, attributes: new Map() },
   ): Promise<R> {
     // Merge default headers and request-level headers. defensive copy
     const mergedHeaders = {
@@ -133,6 +137,7 @@ export class Fetcher
       headers: mergedHeaders,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
+    const { resultExtractor, attributes } = options;
     const exchange: FetchExchange = new FetchExchange({
       fetcher: this,
       request: fetchRequest,
@@ -163,12 +168,11 @@ export class Fetcher
   async fetch<R = Response>(
     url: string,
     request: FetchRequestInit = {},
-    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
-    attributes?: Record<string, any> | Map<string, any>,
+    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
   ): Promise<R> {
     const fetchRequest = request as FetchRequest;
     fetchRequest.url = url;
-    return this.request(fetchRequest, resultExtractor, attributes);
+    return this.request(fetchRequest, options);
   }
 
 
@@ -192,8 +196,7 @@ export class Fetcher
     method: HttpMethod,
     url: string,
     request: FetchRequestInit = {},
-    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
-    attributes?: Record<string, any> | Map<string, any>,
+    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
   ): Promise<R> {
     return this.fetch(
       url,
@@ -201,8 +204,7 @@ export class Fetcher
         ...request,
         method,
       },
-      resultExtractor,
-      attributes,
+      options,
     );
   }
 
@@ -224,10 +226,9 @@ export class Fetcher
   async get<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
-    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
-    attributes?: Record<string, any> | Map<string, any>,
+    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.GET, url, request, resultExtractor, attributes);
+    return this.methodFetch(HttpMethod.GET, url, request, options);
   }
 
   /**
@@ -247,10 +248,9 @@ export class Fetcher
   async post<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
-    attributes?: Record<string, any> | Map<string, any>,
+    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.POST, url, request, resultExtractor, attributes);
+    return this.methodFetch(HttpMethod.POST, url, request, options);
   }
 
   /**
@@ -270,10 +270,9 @@ export class Fetcher
   async put<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
-    attributes?: Record<string, any> | Map<string, any>,
+    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.PUT, url, request, resultExtractor, attributes);
+    return this.methodFetch(HttpMethod.PUT, url, request, options);
   }
 
   /**
@@ -293,10 +292,9 @@ export class Fetcher
   async delete<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
-    attributes?: Record<string, any> | Map<string, any>,
+    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.DELETE, url, request, resultExtractor, attributes);
+    return this.methodFetch(HttpMethod.DELETE, url, request, options);
   }
 
   /**
@@ -316,10 +314,9 @@ export class Fetcher
   async patch<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
-    attributes?: Record<string, any> | Map<string, any>,
+    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.PATCH, url, request, resultExtractor, attributes);
+    return this.methodFetch(HttpMethod.PATCH, url, request, options);
   }
 
   /**
@@ -340,10 +337,9 @@ export class Fetcher
   async head<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
-    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
-    attributes?: Record<string, any> | Map<string, any>,
+    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.HEAD, url, request, resultExtractor, attributes);
+    return this.methodFetch(HttpMethod.HEAD, url, request, options);
   }
 
   /**
@@ -364,9 +360,8 @@ export class Fetcher
   async options<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
-    resultExtractor: ResultExtractor<any> = ResultExtractors.Response,
-    attributes?: Record<string, any> | Map<string, any>,
+    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.OPTIONS, url, request, resultExtractor, attributes);
+    return this.methodFetch(HttpMethod.OPTIONS, url, request, options);
   }
 }
