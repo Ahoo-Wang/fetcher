@@ -140,7 +140,7 @@ export class Fetcher
       attributes,
     });
     await this.interceptors.exchange(exchange);
-    return exchange.typedExtractedResult();
+    return exchange.extractResult();
   }
 
   /**
