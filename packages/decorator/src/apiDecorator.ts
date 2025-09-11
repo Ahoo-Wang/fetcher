@@ -16,13 +16,13 @@ import {
   Fetcher,
   type RequestHeaders,
   type RequestHeadersCapable,
+  type ResultExtractorCapable,
   type TimeoutCapable,
 } from '@ahoo-wang/fetcher';
 import { ENDPOINT_METADATA_KEY } from './endpointDecorator';
 import { RequestExecutor } from './requestExecutor';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator';
 import 'reflect-metadata';
-import { type ResultExtractorCapable } from './resultExtractor';
 import { type FetcherCapable } from './fetcherCapable';
 import { FunctionMetadata } from './functionMetadata';
 

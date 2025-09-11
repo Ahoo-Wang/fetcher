@@ -25,6 +25,14 @@ export interface ResultExtractor<R> {
 }
 
 /**
+ * Interface with result extractor capability
+ * Defines an optional resultExtractor property
+ */
+export interface ResultExtractorCapable {
+  resultExtractor?: ResultExtractor<any>;
+}
+
+/**
  * Returns the original FetchExchange object.
  * @param exchange - The FetchExchange object to return
  * @returns The same FetchExchange object that was passed in
