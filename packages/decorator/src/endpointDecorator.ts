@@ -1,7 +1,6 @@
-import { HttpMethod } from '@ahoo-wang/fetcher';
+import { HttpMethod, type ResultExtractorCapable } from '@ahoo-wang/fetcher';
 import { type ApiMetadata } from './apiDecorator';
 import 'reflect-metadata';
-import { type ResultExtractorCapable } from './resultExtractor';
 
 export interface PathCapable {
   /**
