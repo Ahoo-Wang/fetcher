@@ -11,7 +11,13 @@
  * limitations under the License.
  */
 
-import { createListenableStorage, ListenableStorage, StorageListener } from './listenableStorage';
+import {
+  createListenableStorage,
+  ListenableStorage,
+  RemoveStorageListener,
+  StorageListenable,
+  StorageListener,
+} from './listenableStorage';
 import { Serializer, typedIdentitySerializer } from './serializer';
 
 /**
@@ -41,7 +47,7 @@ export interface KeyStorageOptions<Deserialized> {
  * Provides caching and automatic cache invalidation when the storage value changes
  * @template Deserialized The type of the value being stored
  */
-export class KeyStorage<Deserialized> {
+export class KeyStorage<Deserialized> implements StorageListenable {
   private readonly key: string;
   private readonly serializer: Serializer<string, Deserialized>;
   private readonly storage: ListenableStorage;
@@ -51,10 +57,7 @@ export class KeyStorage<Deserialized> {
    * Listener for storage change events
    * Invalidates the cache when the relevant key is modified
    */
-  private readonly listener: StorageListener = (event) => {
-    if (event.key !== this.key) {
-      return;
-    }
+  private readonly refreshCacheListener: StorageListener = (event) => {
     this.cacheValue = null;
     if (event.newValue) {
       this.refreshCache(event.newValue);
@@ -77,7 +80,17 @@ export class KeyStorage<Deserialized> {
     this.key = options.key;
     this.serializer = options.serializer ?? typedIdentitySerializer();
     this.storage = options.storage ?? createListenableStorage();
-    this.storage.addListener(this.listener);
+    this.addListener(this.refreshCacheListener);
+  }
+
+  addListener(listener: StorageListener): RemoveStorageListener {
+    const wrapper: StorageListener = (event: StorageEventInit) => {
+      if (event.key !== this.key) {
+        return;
+      }
+      listener(event);
+    };
+    return this.storage.addListener(wrapper);
   }
 
   /**
