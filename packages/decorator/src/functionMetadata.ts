@@ -15,7 +15,7 @@ import {
   combineURLs,
   Fetcher, fetcher,
   type FetchExchangeInit,
-  FetchRequestInit,
+  FetchRequestInit, mergeRecordToMap,
   mergeRequest,
   NamedCapable,
   type RequestHeaders,
@@ -197,7 +197,7 @@ export class FunctionMetadata implements NamedCapable {
     let signal: AbortSignal | null | undefined = undefined;
     let abortController: AbortController | null | undefined = undefined;
     let parameterRequest: ParameterRequest = {};
-    const attributes: Record<string, any> = this.resolveAttributes();
+    const attributes: Map<string, any> = this.resolveAttributes();
     // Process parameters based on their decorators
     args.forEach((value, index) => {
       if (value instanceof AbortSignal) {
