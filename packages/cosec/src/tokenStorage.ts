@@ -11,10 +11,10 @@
  * limitations under the License.
  */
 
-import { createListenableStorage, KeyStorage } from './storage';
 import { JwtCompositeToken, JwtCompositeTokenSerializer } from './jwtToken';
 import { CompositeToken } from './tokenRefresher';
 import { EarlyPeriodCapable } from './jwts';
+import { createListenableStorage, KeyStorage } from '@ahoo-wang/fetcher-storage';
 
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 

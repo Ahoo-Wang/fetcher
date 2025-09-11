@@ -12,7 +12,7 @@
  */
 
 import { createListenableStorage, ListenableStorage, StorageListener } from './listenableStorage';
-import { Serializer, typedIdentitySerializer } from '../serializer';
+import { Serializer, typedIdentitySerializer } from './serializer';
 
 /**
  * Options for configuring KeyStorage

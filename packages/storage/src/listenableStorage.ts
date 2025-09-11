@@ -13,7 +13,7 @@
 
 import { InMemoryListenableStorage } from './inMemoryListenableStorage';
 import { BrowserListenableStorage } from './browserListenableStorage';
-import { isBrowser } from '../env';
+import { isBrowser } from './env';
 
 /**
  * The type of storage event used for listening to storage changes.

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   InMemoryListenableStorage,
-} from '../../src';
-import type { StorageListener } from '../../src';
+} from '../src';
+import type { StorageListener } from '../src';
 
 describe('InMemoryListenableStorage', () => {
   // Mock window and localStorage for testing

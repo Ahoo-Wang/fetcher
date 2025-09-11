@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { KeyStorage } from '../../src';
-import { InMemoryListenableStorage } from '../../src';
-import { JsonSerializer } from '../../src';
+import { KeyStorage } from '../src';
+import { InMemoryListenableStorage } from '../src';
+import { JsonSerializer } from '../src';
 
 describe('KeyStorage', () => {
   const TEST_KEY = 'test-key';

@@ -12,8 +12,8 @@
  */
 
 import { CoSecJwtPayload, EarlyPeriodCapable, isTokenExpired, JwtPayload, parseJwtPayload } from './jwts';
-import { Serializer } from './serializer';
 import { CompositeToken } from './tokenRefresher';
+import { Serializer } from '@ahoo-wang/fetcher-storage';
 
 
 /**

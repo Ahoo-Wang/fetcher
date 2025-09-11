@@ -12,7 +12,7 @@
  */
 
 import { ListenableStorage, RemoveStorageListener, StorageListener } from './listenableStorage';
-import { isBrowser } from '../env';
+import { isBrowser } from './env';
 
 /**
  * An in-memory implementation of ListenableStorage that works in any environment.
