@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { Fetcher, fetcherRegistrar } from '@ahoo-wang/fetcher';
+import { Fetcher } from './fetcher';
+import { fetcherRegistrar } from './fetcherRegistrar';
 
 /**
  * Interface that defines a capability for objects that can have a fetcher.
@@ -30,12 +31,13 @@ export interface FetcherCapable {
  * Gets a Fetcher instance based on the provided fetcher parameter.
  *
  * @param fetcher - A string identifier or Fetcher instance to resolve
- * @returns A Fetcher instance if found, undefined otherwise
+ * @param defaultFetcher - The default Fetcher to use when fetcher is not provided, defaults to defaultNamedFetcher
+ * @returns A Fetcher instance if found, otherwise returns the default Fetcher
  */
-export function getFetcher(fetcher?: string | Fetcher): Fetcher | undefined {
-  // Return undefined if no fetcher is provided
+export function getFetcher(fetcher?: string | Fetcher, defaultFetcher?: Fetcher): Fetcher {
+  // Return default fetcher if no fetcher is provided
   if (!fetcher) {
-    return undefined;
+    return defaultFetcher ?? fetcherRegistrar.default;
   }
 
   // Return the fetcher directly if it's already a Fetcher instance,

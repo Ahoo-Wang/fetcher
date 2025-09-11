@@ -12,6 +12,7 @@
  */
 
 export * from './fetcher';
+export * from './fetcherCapable';
 export * from './fetcherError';
 export * from './fetcherRegistrar';
 export * from './fetchExchange';
