@@ -12,8 +12,8 @@
  */
 
 import { CoSecJwtPayload, EarlyPeriodCapable, isTokenExpired, JwtPayload, parseJwtPayload } from './jwts';
-import { Serializer } from './serializer';
 import { CompositeToken } from './tokenRefresher';
+import { Serializer } from '@ahoo-wang/fetcher-storage';
 
 
 /**
@@ -22,7 +22,7 @@ import { CompositeToken } from './tokenRefresher';
  */
 export interface IJwtToken<Payload extends JwtPayload> extends EarlyPeriodCapable {
   readonly token: string;
-  readonly payload: Payload;
+  readonly payload: Payload | null;
 
   isExpired: boolean;
 }
@@ -32,7 +32,7 @@ export interface IJwtToken<Payload extends JwtPayload> extends EarlyPeriodCapabl
  * @template Payload The type of the JWT payload
  */
 export class JwtToken<Payload extends JwtPayload> implements IJwtToken<Payload> {
-  public readonly payload: Payload;
+  public readonly payload: Payload | null;
 
   /**
    * Creates a new JwtToken instance
@@ -41,7 +41,7 @@ export class JwtToken<Payload extends JwtPayload> implements IJwtToken<Payload> 
     public readonly token: string,
     public readonly earlyPeriod: number = 0,
   ) {
-    this.payload = parseJwtPayload(token) as Payload;
+    this.payload = parseJwtPayload<Payload>(token);
   }
 
   /**
@@ -49,6 +49,9 @@ export class JwtToken<Payload extends JwtPayload> implements IJwtToken<Payload> 
    * @returns true if the token is expired, false otherwise
    */
   get isExpired(): boolean {
+    if (!this.payload) {
+      return true;
+    }
     return isTokenExpired(this.payload, this.earlyPeriod);
   }
 }

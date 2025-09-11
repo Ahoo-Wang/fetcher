@@ -11,7 +11,28 @@
  * limitations under the License.
  */
 
-export * from './listenableStorage';
-export * from './browserListenableStorage';
-export * from './inMemoryListenableStorage';
-export * from './keyStorage';
+import { defineConfig } from 'vite';
+import dts from 'unplugin-dts/vite';
+
+export default defineConfig({
+  build: {
+    sourcemap: true,
+    lib: {
+      entry: 'src/index.ts',
+      name: 'Fetcher',
+      fileName: format => `index.${format}.js`,
+    },
+    rollupOptions: {
+      external: [],
+      output: {
+        globals: {},
+      },
+    },
+  },
+  plugins: [
+    dts({
+      outDirs: 'dist',
+      tsconfigPath: './tsconfig.json',
+    }),
+  ],
+});
