@@ -98,8 +98,7 @@ export class RequestExecutor {
   async execute(target: any, args: any[]): Promise<any> {
     const fetcher = this.getTargetFetcher(target) || this.metadata.fetcher;
     const exchangeInit = this.metadata.resolveExchangeInit(args);
-    const attributes = exchangeInit.attributes as Map<string, any>;
-    attributes.set(DECORATOR_TARGET_ATTRIBUTE_KEY, target);
+    exchangeInit.attributes?.set(DECORATOR_TARGET_ATTRIBUTE_KEY, target);
     const extractor = this.metadata.resolveResultExtractor();
     return fetcher.request(exchangeInit.request, extractor, exchangeInit.attributes);
   }
