@@ -1,10 +1,14 @@
 # @ahoo-wang/fetcher-storage
 
-一个轻量级的跨环境存储库，具有变更事件监听功能。为浏览器 localStorage/sessionStorage 和内存存储提供一致的 API，并支持变更通知。
+[![npm version](https://img.shields.io/npm/v/@ahoo-wang/fetcher-storage.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)
+[![Build Status](https://github.com/Ahoo-Wang/fetcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Ahoo-Wang/fetcher/actions)
+[![codecov](https://codecov.io/gh/Ahoo-Wang/fetcher/graph/badge.svg?token=JGiWZ52CvJ)](https://codecov.io/gh/Ahoo-Wang/fetcher)
+[![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher-storage.svg)](https://github.com/Ahoo-Wang/fetcher/blob/main/LICENSE)
+[![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher-storage.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)
+[![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-storage)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-[![NPM version](https://img.shields.io/npm/v/@ahoo-wang/fetcher-storage.svg?style=flat-square)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)
-[![NPM downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher-storage.svg?style=flat-square)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)
-[![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher-storage.svg?style=flat-square)](https://github.com/Ahoo-Wang/fetcher/blob/master/LICENSE)
+一个轻量级的跨环境存储库，具有变更事件监听功能。为浏览器 localStorage/sessionStorage 和内存存储提供一致的 API，并支持变更通知。
 
 ## 特性
 
