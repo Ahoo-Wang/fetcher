@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   BrowserListenableStorage,
-} from '../../src';
+} from '../src';
 import {
   InMemoryListenableStorage,
-} from '../../src';
+} from '../src';
 import {
   createListenableStorage,
-} from '../../src';
+} from '../src';
 
 describe('createListenableStorage', () => {
   // Mock window and localStorage for testing

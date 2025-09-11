@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   BrowserListenableStorage,
-} from '../../src';
+} from '../src';
 import {
   STORAGE_EVENT_TYPE,
-} from '../../src';
+} from '../src';
 
 describe('BrowserListenableStorage', () => {
   // Mock window and localStorage for testing

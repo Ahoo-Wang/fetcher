@@ -12,8 +12,7 @@
  */
 
 import { idGenerator } from './idGenerator';
-import { createListenableStorage, KeyStorage } from './storage';
-import { IdentitySerializer } from './serializer';
+import { createListenableStorage, IdentitySerializer, KeyStorage } from '@ahoo-wang/fetcher-storage';
 
 export const DEFAULT_COSEC_DEVICE_ID_KEY = 'cosec-device-id';
 
