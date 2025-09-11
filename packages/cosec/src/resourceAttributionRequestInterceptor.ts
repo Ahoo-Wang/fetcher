@@ -14,6 +14,12 @@
 import { FetchExchange, RequestInterceptor } from '@ahoo-wang/fetcher';
 import { TokenStorage } from './tokenStorage';
 
+export interface ResourceAttributionOptions {
+  tenantId: string;
+  ownerId: string;
+  tokenStorage: TokenStorage;
+}
+
 export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME = 'ResourceAttributionRequestInterceptor';
 export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER;
 
@@ -22,20 +28,33 @@ export class ResourceAttributionRequestInterceptor implements RequestInterceptor
   readonly name = RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME;
   readonly order = RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER;
 
-  constructor(private readonly tokenStorage: TokenStorage) {
+  constructor(private readonly options: ResourceAttributionOptions) {
   }
 
   intercept(exchange: FetchExchange): void {
-    const currentToken = this.tokenStorage.get();
+    const currentToken = this.options.tokenStorage.get();
     if (!currentToken) {
       return;
     }
-    if (!currentToken.access.payload) {
+    const principal = currentToken.access.payload;
+    if (!principal) {
       return;
     }
-    const pathParams = exchange.ensureRequestUrlParams().path;
-
+    if (!principal.tenantId && !principal.sub) {
+      return;
+    }
+    const extractedPathParams = exchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams(exchange.request.url);
+    const tenantIdPathKey = this.options.tenantId;
+    const requestPathParams = exchange.ensureRequestUrlParams().path;
     const tenantId = currentToken.access.payload.tenantId;
-    pathParams['tenantId'] = currentToken.access.payload.tenantId;
+    if (tenantId && extractedPathParams.some(pathParam => pathParam === tenantIdPathKey) && !requestPathParams[tenantIdPathKey]) {
+      requestPathParams[tenantIdPathKey] = tenantId;
+    }
+    const ownerIdPathKey = this.options.ownerId;
+    const ownerId = currentToken.access.payload.sub;
+    if (ownerId && extractedPathParams.some(pathParam => pathParam === ownerIdPathKey) && !requestPathParams[ownerIdPathKey]) {
+      requestPathParams[ownerIdPathKey] = ownerId;
+    }
   }
+
 }
