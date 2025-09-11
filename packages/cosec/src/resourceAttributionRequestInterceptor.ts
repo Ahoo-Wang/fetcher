@@ -30,9 +30,12 @@ export class ResourceAttributionRequestInterceptor implements RequestInterceptor
     if (!currentToken) {
       return;
     }
+    if (!currentToken.access.payload) {
+      return;
+    }
     const pathParams = exchange.ensureRequestUrlParams().path;
 
-    const tenantId = currentToken.access?.payload.tenantId;
+    const tenantId = currentToken.access.payload.tenantId;
     pathParams['tenantId'] = currentToken.access.payload.tenantId;
   }
 }
