@@ -116,8 +116,10 @@ describe('tokenRefresher.ts', () => {
       expect(mockPost).toHaveBeenCalledWith<Parameters<Fetcher['post']>>(
         '/api/auth/refresh',
         { body: testToken },
-        ResultExtractors.Json,
-        new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]]),
+        {
+          resultExtractor: ResultExtractors.Json,
+          attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]]),
+        },
       );
       expect(result).toBe(resultToken);
     });

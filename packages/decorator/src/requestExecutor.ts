@@ -100,6 +100,6 @@ export class RequestExecutor {
     const exchangeInit = this.metadata.resolveExchangeInit(args);
     exchangeInit.attributes?.set(DECORATOR_TARGET_ATTRIBUTE_KEY, target);
     const extractor = this.metadata.resolveResultExtractor();
-    return fetcher.request(exchangeInit.request, extractor, exchangeInit.attributes);
+    return fetcher.request(exchangeInit.request, { resultExtractor: extractor, attributes: exchangeInit.attributes });
   }
 }
