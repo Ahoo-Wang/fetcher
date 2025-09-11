@@ -17,6 +17,7 @@ import { ExchangeError } from './interceptorManager';
 import { type UrlParams } from './urlBuilder';
 import { type RequiredBy } from './types';
 import { ResultExtractor, ResultExtractors } from './resultExtractor';
+import { mergeRecordToMap } from './utils';
 
 export interface AttributesCapable {
   /**
@@ -33,7 +34,7 @@ export interface AttributesCapable {
    * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
    * - Be mindful of memory usage when storing large objects
    */
-  attributes?: Record<string, any>;
+  attributes?: Record<string, any> | Map<String, any>;
 }
 
 export interface FetchExchangeInit extends AttributesCapable {
@@ -146,13 +147,13 @@ export class FetchExchange
    * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
    * - Be mindful of memory usage when storing large objects
    */
-  attributes: Record<string, any>;
+  attributes: Map<string, any>;
 
   constructor(exchangeInit: FetchExchangeInit) {
     this.fetcher = exchangeInit.fetcher;
     this.request = exchangeInit.request;
     this.resultExtractor = exchangeInit.resultExtractor ?? ResultExtractors.Exchange;
-    this.attributes = exchangeInit.attributes ?? {};
+    this.attributes = mergeRecordToMap(exchangeInit.attributes ?? new Map());
     this._response = exchangeInit.response;
     this.error = exchangeInit.error;
   }
