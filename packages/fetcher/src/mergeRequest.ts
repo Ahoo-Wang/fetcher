@@ -13,7 +13,7 @@
 
 import { type FetchRequestInit } from './fetchRequest';
 import { type UrlParams } from './urlBuilder';
-import { mergeRecords, mergeRecordToMap } from './utils';
+import { mergeRecords } from './utils';
 import { DEFAULT_REQUEST_OPTIONS, RequestOptions } from './fetcher';
 
 /**
