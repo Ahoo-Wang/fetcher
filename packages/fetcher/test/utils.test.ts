@@ -115,7 +115,7 @@ describe('utils', () => {
       const sourceMap = new Map([['a', 1], ['b', 2]]);
       const result = mergeRecordToMap(sourceMap);
 
-      expect(result).toBe(sourceMap);
+      expect(result).toEqual(sourceMap);
       expect(result.size).toBe(2);
       expect(result.get('a')).toBe(1);
       expect(result.get('b')).toBe(2);
@@ -146,7 +146,7 @@ describe('utils', () => {
       const sourceMap = new Map([['a', 1]]);
       const result = mergeRecordToMap(sourceMap);
 
-      expect(result).toBe(sourceMap);
+      expect(result).toEqual(sourceMap);
     });
   });
 });
