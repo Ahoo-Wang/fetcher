@@ -110,7 +110,7 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     }
 
     // Refresh token if needed and refreshable
-    if (!exchange.attributes[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY] && currentToken.isRefreshNeeded && currentToken.isRefreshable) {
+    if (!exchange.attributes.has(IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY) && currentToken.isRefreshNeeded && currentToken.isRefreshable) {
       await this.options.tokenManager.refresh();
     }
 

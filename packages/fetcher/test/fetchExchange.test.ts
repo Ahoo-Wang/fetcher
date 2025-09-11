@@ -28,13 +28,13 @@ describe('FetchExchange', () => {
     expect(exchange.request).toBe(mockRequest);
     expect(exchange.response).toBeUndefined();
     expect(exchange.error).toBeUndefined();
-    expect(exchange.attributes).toEqual({});
+    expect(exchange.attributes).toEqual(new Map());
   });
 
   it('should create instance with optional parameters', () => {
     const mockResponse = new Response('test');
     const mockError = new Error('test error');
-    const attributes = { test: 'value' };
+    const attributes = new Map([['test', 'value']]);
 
     const exchange = new FetchExchange({
       fetcher: mockFetcher,
