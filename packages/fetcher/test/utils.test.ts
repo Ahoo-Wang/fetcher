@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { mergeRecords } from '../src';
+import { mergeRecords, mergeRecordToMap } from '../src';
 
 describe('utils', () => {
   describe('mergeRecords', () => {
@@ -71,6 +71,68 @@ describe('utils', () => {
         number: 100,
         boolean: true,
       });
+    });
+  });
+
+  describe('mergeRecordToMap', () => {
+    it('should merge Record to new Map when target map is not provided', () => {
+      const record = { a: 1, b: 2 };
+      const result = mergeRecordToMap(record);
+
+      expect(result).toBeInstanceOf(Map);
+      expect(result.size).toBe(2);
+      expect(result.get('a')).toBe(1);
+      expect(result.get('b')).toBe(2);
+    });
+
+    it('should merge Record to existing Map', () => {
+      const record = { a: 1, b: 2 };
+      const targetMap = new Map([['c', 3]]);
+      const result = mergeRecordToMap(record, targetMap);
+
+      expect(result).toBe(targetMap);
+      expect(result.size).toBe(3);
+      expect(result.get('a')).toBe(1);
+      expect(result.get('b')).toBe(2);
+      expect(result.get('c')).toBe(3);
+    });
+
+    it('should merge Map to new Map when target map is not provided', () => {
+      const sourceMap = new Map([['a', 1], ['b', 2]]);
+      const result = mergeRecordToMap(sourceMap);
+
+      expect(result).toBe(sourceMap);
+      expect(result.size).toBe(2);
+      expect(result.get('a')).toBe(1);
+      expect(result.get('b')).toBe(2);
+    });
+
+    it('should merge Map to existing Map', () => {
+      const sourceMap = new Map([['a', 1], ['b', 2]]);
+      const targetMap = new Map([['c', 3]]);
+      const result = mergeRecordToMap(sourceMap, targetMap);
+
+      expect(result).toBe(targetMap);
+      expect(result.size).toBe(3);
+      expect(result.get('a')).toBe(1);
+      expect(result.get('b')).toBe(2);
+      expect(result.get('c')).toBe(3);
+    });
+
+    it('should create new Map when source is Record and target map is undefined', () => {
+      const record = { a: 1 };
+      const result = mergeRecordToMap(record, undefined);
+
+      expect(result).toBeInstanceOf(Map);
+      expect(result.size).toBe(1);
+      expect(result.get('a')).toBe(1);
+    });
+
+    it('should return source Map when target map is not provided', () => {
+      const sourceMap = new Map([['a', 1]]);
+      const result = mergeRecordToMap(sourceMap);
+
+      expect(result).toBe(sourceMap);
     });
   });
 });
