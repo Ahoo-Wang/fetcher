@@ -13,7 +13,8 @@
 
 import { type FetchRequestInit } from './fetchRequest';
 import { type UrlParams } from './urlBuilder';
-import { mergeRecords } from './utils';
+import { mergeRecords, mergeRecordToMap } from './utils';
+import { DEFAULT_REQUEST_OPTIONS, RequestOptions } from './fetcher';
 
 /**
  * Merges two FetcherRequest objects into one.
@@ -101,5 +102,26 @@ export function mergeRequest(
     timeout,
     signal,
     abortController,
+  };
+}
+
+/**
+ * Merges two request options objects into one, with the second object taking precedence over the first.
+ *
+ * @param first - The first request options object (optional)
+ * @param second - The second request options object which will override properties from the first (optional)
+ * @returns A new RequestOptions object with merged properties
+ */
+export function mergeRequestOptions(
+  first?: RequestOptions,
+  second?: RequestOptions,
+): RequestOptions {
+  if (second && second.resultExtractor && second.attributes) {
+    return second;
+  }
+  // Merge the options, prioritizing second over first, with defaults as fallback
+  return {
+    resultExtractor: second?.resultExtractor ?? first?.resultExtractor ?? DEFAULT_REQUEST_OPTIONS.resultExtractor,
+    attributes: second?.attributes ?? first?.attributes,
   };
 }

@@ -12,7 +12,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { HttpMethod, mergeRequest } from '../src';
+import { HttpMethod, mergeRequest, ResultExtractors } from '../src';
+import { mergeRequestOptions } from '../src/mergeRequest';
+import { DEFAULT_REQUEST_OPTIONS } from '../src/fetcher';
 
 describe('mergeRequest', () => {
   it('should return second request when first request is empty', () => {
@@ -188,5 +190,85 @@ describe('mergeRequest', () => {
 
     const result = mergeRequest(first, second);
     expect(result).toEqual({});
+  });
+});
+
+describe('mergeRequestOptions', () => {
+  it('should return default options when both parameters are undefined', () => {
+    const result = mergeRequestOptions(undefined, undefined);
+
+    expect(result.resultExtractor).toBe(DEFAULT_REQUEST_OPTIONS.resultExtractor);
+    expect(result.attributes).toBeUndefined();
+  });
+
+  it('should return first options when second is undefined', () => {
+    const first = {
+      resultExtractor: ResultExtractors.Response,
+      attributes: { test: 'value' },
+    };
+
+    const result = mergeRequestOptions(first, undefined);
+
+    expect(result.resultExtractor).toBe(first.resultExtractor);
+    expect(result.attributes).toBe(first.attributes);
+  });
+
+  it('should return second options when first is undefined', () => {
+    const second = {
+      resultExtractor: ResultExtractors.Response,
+      attributes: { test: 'value' },
+    };
+
+    const result = mergeRequestOptions(undefined, second);
+
+    expect(result.resultExtractor).toBe(second.resultExtractor);
+    expect(result.attributes).toBe(second.attributes);
+  });
+
+  it('should merge options with second taking precedence', () => {
+    const first = {
+      resultExtractor: ResultExtractors.Response,
+      attributes: { first: 'value1' },
+    };
+
+    const second = {
+      resultExtractor: ResultExtractors.Exchange,
+      attributes: { second: 'value2' },
+    };
+
+    const result = mergeRequestOptions(first, second);
+
+    expect(result.resultExtractor).toBe(second.resultExtractor);
+    expect(result.attributes).toBe(second.attributes);
+  });
+
+  it('should handle partial options correctly', () => {
+    const first = {
+      resultExtractor: ResultExtractors.Response,
+    };
+
+    const second = {
+      attributes: { test: 'value' },
+    };
+
+    const result = mergeRequestOptions(first, second);
+
+    expect(result.resultExtractor).toBe(first.resultExtractor);
+    expect(result.attributes).toBe(second.attributes);
+  });
+
+  it('should use default result extractor when neither options provide one', () => {
+    const first = {
+      attributes: { test: 'first' },
+    };
+
+    const second = {
+      attributes: { test: 'second' },
+    };
+
+    const result = mergeRequestOptions(first, second);
+
+    expect(result.resultExtractor).toBe(DEFAULT_REQUEST_OPTIONS.resultExtractor);
+    expect(result.attributes).toBe(second.attributes);
   });
 });

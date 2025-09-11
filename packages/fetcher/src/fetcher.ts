@@ -25,6 +25,7 @@ import { ContentTypeValues, HttpMethod } from './fetchRequest';
 import { InterceptorManager } from './interceptorManager';
 import { UrlTemplateStyle } from './urlTemplateResolver';
 import { ResultExtractorCapable, ResultExtractors } from './resultExtractor';
+import { mergeRequestOptions } from './mergeRequest';
 
 /**
  * Configuration options for the Fetcher client.
@@ -160,9 +161,9 @@ export class Fetcher
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
     const {
-      resultExtractor = DEFAULT_REQUEST_OPTIONS.resultExtractor,
-      attributes = DEFAULT_REQUEST_OPTIONS.attributes,
-    } = options ?? DEFAULT_REQUEST_OPTIONS;
+      resultExtractor,
+      attributes,
+    } = mergeRequestOptions(DEFAULT_REQUEST_OPTIONS, options);
     const exchange: FetchExchange = new FetchExchange({
       fetcher: this,
       request: fetchRequest,
@@ -184,7 +185,7 @@ export class Fetcher
    * @param request - Request configuration including headers, body, parameters, etc.
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -198,7 +199,7 @@ export class Fetcher
   ): Promise<R> {
     const fetchRequest = request as FetchRequest;
     fetchRequest.url = url;
-    return this.request(fetchRequest, options ?? DEFAULT_FETCH_OPTIONS);
+    return this.request(fetchRequest, mergeRequestOptions(DEFAULT_FETCH_OPTIONS, options));
   }
 
   /**
@@ -213,7 +214,7 @@ export class Fetcher
    * @param request - Additional request options
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -246,7 +247,7 @@ export class Fetcher
    * @param request - Request options excluding method and body
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -270,7 +271,7 @@ export class Fetcher
    * @param request - Request options including body and other parameters
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -294,7 +295,7 @@ export class Fetcher
    * @param request - Request options including body and other parameters
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -318,7 +319,7 @@ export class Fetcher
    * @param request - Request options including body and other parameters
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -342,7 +343,7 @@ export class Fetcher
    * @param request - Request options excluding method and body
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -367,7 +368,7 @@ export class Fetcher
    * @param request - Request options excluding method and body
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -392,7 +393,7 @@ export class Fetcher
    * @param request - Request options excluding method and body
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
