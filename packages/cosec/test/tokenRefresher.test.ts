@@ -117,7 +117,7 @@ describe('tokenRefresher.ts', () => {
         '/api/auth/refresh',
         { body: testToken },
         ResultExtractors.Json,
-        { [IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY]: true },
+        new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]]),
       );
       expect(result).toBe(resultToken);
     });

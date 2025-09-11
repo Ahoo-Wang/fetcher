@@ -69,7 +69,7 @@ describe('CoSecRequestInterceptor', () => {
     // Create mock exchange
     mockExchange = {
       request: {},
-      attributes: {},
+      attributes: new Map(),
       ensureRequestHeaders: vi.fn().mockReturnValue({}),
     } as unknown as FetchExchange;
   });
