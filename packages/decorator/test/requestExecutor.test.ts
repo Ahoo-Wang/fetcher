@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   HttpMethod,
   JsonResultExtractor,
-  ExchangeResultExtractor, NamedFetcher,
+  ExchangeResultExtractor, NamedFetcher, ResultExtractors,
 } from '@ahoo-wang/fetcher';
 import { RequestExecutor, DECORATOR_TARGET_ATTRIBUTE_KEY } from '../src';
 import { FunctionMetadata } from '../src';
@@ -112,8 +112,10 @@ describe('RequestExecutor', () => {
             query: { filter: 'active' },
           },
         }),
-        JsonResultExtractor,
-        expect.objectContaining(new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}]])),
+        {
+          resultExtractor: JsonResultExtractor,
+          attributes: new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}]]),
+        },
       );
     });
 
@@ -142,8 +144,10 @@ describe('RequestExecutor', () => {
             query: { filter: 'active' },
           },
         }),
-        JsonResultExtractor,
-        expect.objectContaining(new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}]])),
+        {
+          resultExtractor: JsonResultExtractor,
+          attributes: new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, target]]),
+        },
       );
       // Ensure metadata fetcher was not called
       expect(metadataFetcher.request).not.toHaveBeenCalled();
@@ -166,7 +170,6 @@ describe('RequestExecutor', () => {
       expect(result).toBe('endpoint extractor result');
       expect(mockFetcher.request).toHaveBeenCalledWith(
         expect.anything(),
-        ExchangeResultExtractor,
         expect.anything(),
       );
     });
@@ -193,8 +196,10 @@ describe('RequestExecutor', () => {
             query: {},
           },
         }),
-        JsonResultExtractor,
-        expect.objectContaining(new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}]])),
+        {
+          resultExtractor: JsonResultExtractor,
+          attributes: new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}]]),
+        },
       );
     });
 

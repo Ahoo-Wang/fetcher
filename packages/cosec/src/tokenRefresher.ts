@@ -82,8 +82,10 @@ export class CoSecTokenRefresher implements TokenRefresher {
     return this.options.fetcher.post<CompositeToken>(this.options.endpoint,
       {
         body: token,
-      }, ResultExtractors.Json,
-      new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]]),
+      }, {
+        resultExtractor: ResultExtractors.Json,
+        attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]]),
+      },
     );
   }
 }
