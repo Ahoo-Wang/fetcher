@@ -61,3 +61,26 @@ export function mergeRecords<V>(
   // Merge both records, with second taking precedence
   return { ...first, ...second };
 }
+
+/**
+ * Merge a Record object or Map object into a target Map
+ * @param record - Source data, can be either Record<string, V> or Map<string, V> type
+ * @param map - Target Map object, if not provided a new Map will be created
+ * @returns The merged Map object
+ */
+export function mergeRecordToMap<V>(record: Record<string, V> | Map<string, V>, map?: Map<string, V>): Map<string, V> {
+  if (record instanceof Map) {
+    if (!map) {
+      return record;
+    }
+    for (const [key, value] of record) {
+      map.set(key, value);
+    }
+    return map;
+  }
+  map ??= new Map();
+  for (const [key, value] of Object.entries(record)) {
+    map.set(key, value);
+  }
+  return map;
+}
