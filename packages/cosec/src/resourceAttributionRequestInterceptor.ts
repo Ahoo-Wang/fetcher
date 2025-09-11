@@ -46,13 +46,13 @@ export class ResourceAttributionRequestInterceptor implements RequestInterceptor
     const extractedPathParams = exchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams(exchange.request.url);
     const tenantIdPathKey = this.options.tenantId;
     const requestPathParams = exchange.ensureRequestUrlParams().path;
-    const tenantId = currentToken.access.payload.tenantId;
-    if (tenantId && extractedPathParams.some(pathParam => pathParam === tenantIdPathKey) && !requestPathParams[tenantIdPathKey]) {
+    const tenantId = principal.tenantId;
+    if (tenantId && extractedPathParams.includes(tenantIdPathKey) && !requestPathParams[tenantIdPathKey]) {
       requestPathParams[tenantIdPathKey] = tenantId;
     }
     const ownerIdPathKey = this.options.ownerId;
-    const ownerId = currentToken.access.payload.sub;
-    if (ownerId && extractedPathParams.some(pathParam => pathParam === ownerIdPathKey) && !requestPathParams[ownerIdPathKey]) {
+    const ownerId = principal.sub;
+    if (ownerId && extractedPathParams.includes(ownerIdPathKey) && !requestPathParams[ownerIdPathKey]) {
       requestPathParams[ownerIdPathKey] = ownerId;
     }
   }
