@@ -13,9 +13,9 @@
 
 import {
   combineURLs,
-  Fetcher, fetcher,
+  Fetcher,
   type FetchExchangeInit,
-  FetchRequestInit, mergeRecordToMap,
+  FetchRequestInit, getFetcher, mergeRecordToMap,
   mergeRequest,
   NamedCapable,
   type RequestHeaders,
@@ -25,7 +25,6 @@ import {
 import { ApiMetadata } from './apiDecorator';
 import { EndpointMetadata } from './endpointDecorator';
 import { ParameterMetadata, ParameterRequest, ParameterType } from './parameterDecorator';
-import { getFetcher } from './fetcherCapable';
 import { ResultExtractors } from './resultExtractor';
 
 /**
@@ -93,7 +92,7 @@ export class FunctionMetadata implements NamedCapable {
    * @returns The fetcher instance
    */
   get fetcher(): Fetcher {
-    return getFetcher(this.endpoint.fetcher ?? this.api.fetcher) ?? fetcher;
+    return getFetcher(this.endpoint.fetcher ?? this.api.fetcher);
   }
 
   /**

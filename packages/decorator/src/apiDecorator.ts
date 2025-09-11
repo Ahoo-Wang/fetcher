@@ -13,7 +13,7 @@
 
 import {
   type AttributesCapable,
-  Fetcher,
+  Fetcher, FetcherCapable,
   type RequestHeaders,
   type RequestHeadersCapable,
   type ResultExtractorCapable,
@@ -23,7 +23,6 @@ import { ENDPOINT_METADATA_KEY } from './endpointDecorator';
 import { RequestExecutor } from './requestExecutor';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator';
 import 'reflect-metadata';
-import { type FetcherCapable } from './fetcherCapable';
 import { FunctionMetadata } from './functionMetadata';
 
 /**
