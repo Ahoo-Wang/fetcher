@@ -260,16 +260,26 @@ export class FetchExchange
   }
 
   /**
+   * Extracts the result by applying the result extractor to the exchange.
+   * The result is cached after the first computation to avoid repeated computations.
+   *
+   * @returns The extracted result
+   */
+  extractResult<R>(): R {
+    if (this.cachedExtractedResult !== undefined) {
+      return this.cachedExtractedResult;
+    }
+    this.cachedExtractedResult = this.resultExtractor(this);
+    return this.cachedExtractedResult;
+  }
+
+  /**
    * Gets the extracted result by applying the result extractor to the exchange.
    * The result is cached after the first computation.
    *
    * @returns The extracted result or null if extraction failed
    */
   typedExtractedResult<R = any>(): R | Promise<R> {
-    if (this.cachedExtractedResult !== undefined) {
-      return this.cachedExtractedResult;
-    }
-    this.cachedExtractedResult = this.resultExtractor(this);
-    return this.cachedExtractedResult;
+    return this.extractResult<R>();
   }
 }
