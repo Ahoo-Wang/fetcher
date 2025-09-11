@@ -75,6 +75,20 @@ describe('utils', () => {
   });
 
   describe('mergeRecordToMap', () => {
+    it('should return new Map when record is falsy and target map is not provided', () => {
+      const result = mergeRecordToMap(undefined);
+      expect(result).toBeInstanceOf(Map);
+      expect(result.size).toBe(0);
+    });
+
+    it('should return target map when record is falsy', () => {
+      const targetMap = new Map([['a', 1]]);
+      const result = mergeRecordToMap(undefined, targetMap);
+      expect(result).toBe(targetMap);
+      expect(result.size).toBe(1);
+      expect(result.get('a')).toBe(1);
+    });
+    
     it('should merge Record to new Map when target map is not provided', () => {
       const record = { a: 1, b: 2 };
       const result = mergeRecordToMap(record);
