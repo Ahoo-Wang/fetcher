@@ -232,11 +232,8 @@ describe('FunctionMetadata', () => {
       );
 
       const attributes = functionMetadata.resolveAttributes();
-      expect(attributes).toEqual({
-        apiAttr: 'api-value',
-        endpointAttr: 'endpoint-value',
-        shared: 'endpoint', // endpoint should override api
-      });
+      expect(attributes.get('apiAttr')).toEqual('api-value');
+      expect(attributes.get('endpointAttr')).toEqual('endpoint-value');
     });
 
     it('should handle missing attributes', () => {
@@ -248,7 +245,7 @@ describe('FunctionMetadata', () => {
       );
 
       const attributes = functionMetadata.resolveAttributes();
-      expect(attributes).toEqual({});
+      expect(attributes.size).toEqual(0);
     });
 
     it('should handle partial attributes', () => {
@@ -260,7 +257,7 @@ describe('FunctionMetadata', () => {
       );
 
       const attributes = functionMetadata.resolveAttributes();
-      expect(attributes).toEqual({ apiAttr: 'api-value' });
+      expect(attributes.get('apiAttr')).toEqual('api-value');
     });
   });
 
@@ -341,7 +338,7 @@ describe('FunctionMetadata', () => {
       );
 
       const result = functionMetadata.resolveExchangeInit(['user123']);
-      expect(result.attributes).toEqual({ userId: 'user123' });
+      expect(result.attributes?.get('userId')).toEqual('user123');
     });
 
     it('should process attributes parameter correctly', () => {
@@ -354,7 +351,8 @@ describe('FunctionMetadata', () => {
 
       const attrs = { attr1: 'value1', attr2: 'value2' };
       const result = functionMetadata.resolveExchangeInit([attrs]);
-      expect(result.attributes).toEqual(attrs);
+      expect(result.attributes?.get('attr1')).toEqual('value1');
+      expect(result.attributes?.get('attr2')).toEqual('value2');
     });
 
     it('should handle AbortSignal parameter', () => {

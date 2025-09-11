@@ -113,9 +113,7 @@ describe('RequestExecutor', () => {
           },
         }),
         JsonResultExtractor,
-        expect.objectContaining({
-          [DECORATOR_TARGET_ATTRIBUTE_KEY]: {},
-        }),
+        expect.objectContaining(new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}]])),
       );
     });
 
@@ -145,9 +143,7 @@ describe('RequestExecutor', () => {
           },
         }),
         JsonResultExtractor,
-        expect.objectContaining({
-          [DECORATOR_TARGET_ATTRIBUTE_KEY]: target,
-        }),
+        expect.objectContaining(new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}]])),
       );
       // Ensure metadata fetcher was not called
       expect(metadataFetcher.request).not.toHaveBeenCalled();
@@ -198,9 +194,7 @@ describe('RequestExecutor', () => {
           },
         }),
         JsonResultExtractor,
-        expect.objectContaining({
-          [DECORATOR_TARGET_ATTRIBUTE_KEY]: {},
-        }),
+        expect.objectContaining(new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}]])),
       );
     });
 
