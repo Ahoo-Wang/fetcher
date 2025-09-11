@@ -69,19 +69,16 @@ export function mergeRecords<V>(
  * @returns The merged Map object
  */
 export function mergeRecordToMap<V>(record?: Record<string, V> | Map<string, V>, map?: Map<string, V>): Map<string, V> {
+  map ??= new Map();
   if (!record) {
-    return map ?? new Map();
+    return map;
   }
   if (record instanceof Map) {
-    if (!map) {
-      return record;
-    }
     for (const [key, value] of record) {
       map.set(key, value);
     }
     return map;
   }
-  map ??= new Map();
   for (const [key, value] of Object.entries(record)) {
     map.set(key, value);
   }
