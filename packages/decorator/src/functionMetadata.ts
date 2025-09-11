@@ -133,11 +133,9 @@ export class FunctionMetadata implements NamedCapable {
     );
   }
 
-  resolveAttributes(): Record<string, any> {
-    return {
-      ...this.api.attributes,
-      ...this.endpoint.attributes,
-    };
+  resolveAttributes(): Map<string, any> {
+    const resolvedAttributes = mergeRecordToMap(this.api.attributes);
+    return mergeRecordToMap(this.endpoint.attributes, resolvedAttributes);
   }
 
   /**
@@ -331,23 +329,21 @@ export class FunctionMetadata implements NamedCapable {
   private processAttributeParam(
     param: ParameterMetadata,
     value: any,
-    attributes: Record<string, any>,
+    attributes: Map<string, any>,
   ) {
     if (param.name && value !== undefined) {
-      attributes[param.name] = value;
+      attributes.set(param.name, value);
     }
   }
 
   private processAttributesParam(
     value: any,
-    attributes: Record<string, any>,
+    attributes: Map<string, any>,
   ) {
-    if (typeof value !== 'object') {
-      throw new Error('@attributes() parameter must be an object');
+    if (typeof value !== 'object' || value ! instanceof Map) {
+      throw new Error('@attributes() parameter must be an object or an Map');
     }
-    Object.keys(value).forEach(key => {
-      attributes[key] = value[key];
-    });
+    mergeRecordToMap(value, attributes);
   }
 
 }

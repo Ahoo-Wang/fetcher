@@ -153,7 +153,7 @@ export class FetchExchange
     this.fetcher = exchangeInit.fetcher;
     this.request = exchangeInit.request;
     this.resultExtractor = exchangeInit.resultExtractor ?? ResultExtractors.Exchange;
-    this.attributes = mergeRecordToMap(exchangeInit.attributes ?? new Map());
+    this.attributes = mergeRecordToMap(exchangeInit.attributes);
     this._response = exchangeInit.response;
     this.error = exchangeInit.error;
   }
