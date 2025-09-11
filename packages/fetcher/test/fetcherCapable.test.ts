@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { Fetcher } from '../src';
+import { DEFAULT_FETCHER_NAME, Fetcher } from '../src';
 import { fetcherRegistrar } from '../src';
 import { getFetcher, type FetcherCapable } from '../src';
 import { NamedFetcher } from '../src';
@@ -20,10 +20,11 @@ import { NamedFetcher } from '../src';
 describe('fetcherCapable', () => {
   let mockFetcher: Fetcher;
   let testFetcher: NamedFetcher;
-
+  let defaultFetcher: Fetcher;
   beforeEach(() => {
     mockFetcher = new Fetcher({ baseURL: 'https://api.example.com' });
     testFetcher = new NamedFetcher('test-fetcher', { baseURL: 'https://test.api.com' });
+    defaultFetcher = new NamedFetcher(DEFAULT_FETCHER_NAME);
   });
 
   afterEach(() => {
@@ -47,11 +48,13 @@ describe('fetcherCapable', () => {
     it('should return default fetcher when no fetcher provided', () => {
       const result = getFetcher();
       expect(result).toBeInstanceOf(NamedFetcher);
+      expect(result).toBe(defaultFetcher);
     });
 
     it('should return default fetcher when fetcher is undefined', () => {
       const result = getFetcher(undefined);
       expect(result).toBeInstanceOf(NamedFetcher);
+      expect(result).toBe(defaultFetcher);
     });
 
     it('should return provided Fetcher instance directly', () => {
