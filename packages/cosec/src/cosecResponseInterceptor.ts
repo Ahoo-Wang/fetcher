@@ -13,7 +13,6 @@
 
 import { type CoSecOptions, ResponseCodes } from './types';
 import { FetchExchange, type ResponseInterceptor } from '@ahoo-wang/fetcher';
-import { CompositeToken } from './tokenRefresher';
 
 /**
  * The name of the CoSecResponseInterceptor.
@@ -40,7 +39,6 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
   readonly name = COSEC_RESPONSE_INTERCEPTOR_NAME;
   readonly order = COSEC_RESPONSE_INTERCEPTOR_ORDER;
   private options: CoSecOptions;
-  private refreshInProgress?: Promise<CompositeToken>;
 
   /**
    * Creates a new CoSecResponseInterceptor instance.
@@ -48,27 +46,6 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
    */
   constructor(options: CoSecOptions) {
     this.options = options;
-  }
-
-  private async refresh(currentToken: CompositeToken): Promise<CompositeToken> {
-    if (this.refreshInProgress) {
-      return this.refreshInProgress;
-    }
-
-    this.refreshInProgress = this.options.tokenRefresher.refresh(currentToken)
-      .then(newToken => {
-        this.options.tokenStorage.set(newToken);
-        return newToken;
-      })
-      .catch(error => {
-        this.options.tokenStorage.clear();
-        throw error;
-      })
-      .finally(() => {
-        this.refreshInProgress = undefined;
-      });
-
-    return this.refreshInProgress;
   }
 
   /**
@@ -87,21 +64,16 @@ export class CoSecResponseInterceptor implements ResponseInterceptor {
       return;
     }
 
-    // Get the current token from storage
-    const currentToken = this.options.tokenStorage.get();
-    // If there's no current token, we can't refresh it
-    if (!currentToken) {
+    if (!this.options.tokenManager.isRefreshable) {
       return;
     }
-
     try {
-      // Attempt to refresh the token
-      await this.refresh(currentToken);
+      await this.options.tokenManager.refresh();
       // Retry the original request with the new token
       await exchange.fetcher.interceptors.exchange(exchange);
     } catch (error) {
       // If token refresh fails, clear stored tokens and re-throw the error
-      this.options.tokenStorage.clear();
+      this.options.tokenManager.tokenStorage.remove();
       throw error;
     }
   }

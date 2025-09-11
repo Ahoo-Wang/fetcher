@@ -11,236 +11,207 @@
  * limitations under the License.
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-  CompositeToken,
+  CoSecRequestInterceptor,
   COSEC_REQUEST_INTERCEPTOR_NAME,
   COSEC_REQUEST_INTERCEPTOR_ORDER,
-  CoSecHeaders,
-  CoSecOptions,
-  CoSecRequestInterceptor,
-  DeviceIdStorage,
-  InMemoryStorage,
-  TokenStorage,
 } from '../src';
-import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
+import { CoSecHeaders, type CoSecOptions } from '../src';
+import { FetchExchange } from '@ahoo-wang/fetcher';
+import { DeviceIdStorage } from '../src';
+import { JwtTokenManager } from '../src';
+import { TokenStorage } from '../src';
+import { TokenRefresher } from '../src';
+import { idGenerator } from '../src';
 
-describe('cosecRequestInterceptor.ts', () => {
-  describe('CoSecRequestInterceptor', () => {
-    it('should have correct name and order', () => {
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage: new DeviceIdStorage(
-          'test-device-key',
-          new InMemoryStorage(),
-        ),
-        tokenStorage: new TokenStorage('test-token-key', new InMemoryStorage()),
-        tokenRefresher: {
-          refresh: async (token: CompositeToken) => token,
-        },
-      };
+describe('CoSecRequestInterceptor', () => {
+  let mockDeviceIdStorage: DeviceIdStorage;
+  let mockTokenStorage: TokenStorage;
+  let mockTokenRefresher: TokenRefresher;
+  let mockTokenManager: JwtTokenManager;
+  let coSecOptions: CoSecOptions;
+  let interceptor: CoSecRequestInterceptor;
+  let mockExchange: FetchExchange;
 
-      const interceptor = new CoSecRequestInterceptor(options);
+  beforeEach(() => {
+    // Mock idGenerator
+    vi.spyOn(idGenerator, 'generateId').mockReturnValue('mock-request-id');
 
-      expect(interceptor.name).toBe(COSEC_REQUEST_INTERCEPTOR_NAME);
-      expect(interceptor.order).toBe(COSEC_REQUEST_INTERCEPTOR_ORDER);
+    // Create mock DeviceIdStorage
+    mockDeviceIdStorage = {
+      getOrCreate: vi.fn().mockReturnValue('mock-device-id'),
+    } as unknown as DeviceIdStorage;
+
+    // Create mock TokenStorage
+    mockTokenStorage = {
+      get: vi.fn(),
+    } as unknown as TokenStorage;
+
+    // Create mock TokenRefresher
+    mockTokenRefresher = {
+      refresh: vi.fn(),
+    } as unknown as TokenRefresher;
+
+    // Create mock JwtTokenManager
+    mockTokenManager = new JwtTokenManager(mockTokenStorage, mockTokenRefresher);
+
+    // Create CoSecOptions
+    coSecOptions = {
+      appId: 'test-app-id',
+      deviceIdStorage: mockDeviceIdStorage,
+      tokenManager: mockTokenManager,
+    } as CoSecOptions;
+
+    // Create interceptor
+    interceptor = new CoSecRequestInterceptor(coSecOptions);
+
+    // Create mock exchange
+    mockExchange = {
+      request: {},
+      attributes: new Map(),
+      ensureRequestHeaders: vi.fn().mockReturnValue({}),
+    } as unknown as FetchExchange;
+  });
+
+  it('should have correct name and order', () => {
+    expect(interceptor.name).toBe(COSEC_REQUEST_INTERCEPTOR_NAME);
+    expect(interceptor.order).toBe(COSEC_REQUEST_INTERCEPTOR_ORDER);
+  });
+
+  it('should add CoSec headers to request', async () => {
+    const mockHeaders: Record<string, string> = {};
+    mockExchange.ensureRequestHeaders = vi.fn().mockReturnValue(mockHeaders);
+
+    mockTokenStorage.get = vi.fn().mockReturnValue(null);
+
+    await interceptor.intercept(mockExchange);
+
+    expect(mockDeviceIdStorage.getOrCreate).toHaveBeenCalled();
+    expect(mockHeaders[CoSecHeaders.APP_ID]).toBe('test-app-id');
+    expect(mockHeaders[CoSecHeaders.DEVICE_ID]).toBe('mock-device-id');
+    expect(mockHeaders[CoSecHeaders.REQUEST_ID]).toBe('mock-request-id');
+    expect(mockHeaders[CoSecHeaders.AUTHORIZATION]).toBeUndefined();
+  });
+
+  it('should add Authorization header when token exists', async () => {
+    const mockHeaders: Record<string, string> = {};
+    mockExchange.ensureRequestHeaders = vi.fn().mockReturnValue(mockHeaders);
+
+    const mockToken = {
+      access: {
+        token: 'mock-access-token',
+      },
+      get isRefreshNeeded() {
+        return false;
+      },
+      get isRefreshable() {
+        return true;
+      },
+    };
+
+    // Mock tokenManager.currentToken getter
+    Object.defineProperty(mockTokenManager, 'currentToken', {
+      get: vi.fn().mockReturnValue(mockToken),
+      configurable: true,
     });
 
-    it('should add CoSec headers to request without token', () => {
-      const deviceIdStorage = new DeviceIdStorage(
-        'test-device-key',
-        new InMemoryStorage(),
-      );
-      const tokenStorage = new TokenStorage(
-        'test-token-key',
-        new InMemoryStorage(),
-      );
+    await interceptor.intercept(mockExchange);
 
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage,
-        tokenStorage,
-        tokenRefresher: {
-          refresh: async (token: CompositeToken) => token,
-        },
-      };
+    expect(mockDeviceIdStorage.getOrCreate).toHaveBeenCalled();
+    expect(mockHeaders[CoSecHeaders.APP_ID]).toBe('test-app-id');
+    expect(mockHeaders[CoSecHeaders.DEVICE_ID]).toBe('mock-device-id');
+    expect(mockHeaders[CoSecHeaders.REQUEST_ID]).toBe('mock-request-id');
+    expect(mockHeaders[CoSecHeaders.AUTHORIZATION]).toBe('Bearer mock-access-token');
+  });
 
-      const interceptor = new CoSecRequestInterceptor(options);
+  it('should not add Authorization header when it already exists', async () => {
+    const mockHeaders = {
+      [CoSecHeaders.AUTHORIZATION]: 'Existing Auth Header',
+    };
+    mockExchange.ensureRequestHeaders = vi.fn().mockReturnValue(mockHeaders);
 
-      const mockFetcher = {} as Fetcher;
-      const request = {
-        url: '/test',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
+    const mockToken = {
+      access: {
+        token: 'mock-access-token',
+      },
+      get isRefreshNeeded() {
+        return false;
+      },
+      get isRefreshable() {
+        return true;
+      },
+    };
 
-      const exchange = new FetchExchange({ fetcher: mockFetcher, request });
-
-      // Mock deviceIdStorage.getOrCreate to return a specific value
-      vi.spyOn(deviceIdStorage, 'getOrCreate').mockReturnValue(
-        'test-device-id',
-      );
-
-      interceptor.intercept(exchange);
-
-      expect(exchange.request.headers).toEqual({
-        'Content-Type': 'application/json',
-        [CoSecHeaders.APP_ID]: 'test-app-id',
-        [CoSecHeaders.DEVICE_ID]: 'test-device-id',
-        [CoSecHeaders.REQUEST_ID]: expect.any(String),
-      });
-
-      // Verify that requestId is a non-empty string
-      const requestId = exchange.request.headers?.[CoSecHeaders.REQUEST_ID];
-      expect(requestId).toBeDefined();
-      expect(typeof requestId).toBe('string');
-      expect(requestId!.length).toBeGreaterThan(0);
+    // Mock tokenManager.currentToken getter
+    Object.defineProperty(mockTokenManager, 'currentToken', {
+      get: vi.fn().mockReturnValue(mockToken),
+      configurable: true,
     });
 
-    it('should add CoSec headers to request with token', () => {
-      const deviceIdStorage = new DeviceIdStorage(
-        'test-device-key',
-        new InMemoryStorage(),
-      );
-      const tokenStorage = new TokenStorage(
-        'test-token-key',
-        new InMemoryStorage(),
-      );
+    await interceptor.intercept(mockExchange);
 
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage,
-        tokenStorage,
-        tokenRefresher: {
-          refresh: async (token: CompositeToken) => token,
-        },
-      };
+    expect(mockHeaders[CoSecHeaders.AUTHORIZATION]).toBe('Existing Auth Header');
+  });
 
-      const interceptor = new CoSecRequestInterceptor(options);
+  it('should refresh token when needed and refreshable', async () => {
+    const mockHeaders: Record<string, string> = {};
+    mockExchange.ensureRequestHeaders = vi.fn().mockReturnValue(mockHeaders);
 
-      const mockFetcher = {} as Fetcher;
-      const request = {
-        url: '/test',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
+    const mockToken = {
+      access: {
+        token: 'new-access-token',
+      },
+      get isRefreshNeeded() {
+        return true;
+      },
+      get isRefreshable() {
+        return true;
+      },
+    };
 
-      const exchange = new FetchExchange({ fetcher: mockFetcher, request });
+    const refreshedToken = {
+      access: {
+        token: 'refreshed-access-token',
+      },
+      get isRefreshNeeded() {
+        return false;
+      },
+      get isRefreshable() {
+        return true;
+      },
+    };
 
-      // Mock deviceIdStorage.getOrCreate to return a specific value
-      vi.spyOn(deviceIdStorage, 'getOrCreate').mockReturnValue(
-        'test-device-id',
-      );
-
-      // Set a token in storage
-      const token: CompositeToken = {
-        accessToken: 'test-access-token',
-        refreshToken: 'test-refresh-token',
-      };
-      tokenStorage.set(token);
-
-      interceptor.intercept(exchange);
-
-      expect(exchange.request.headers).toEqual({
-        'Content-Type': 'application/json',
-        [CoSecHeaders.APP_ID]: 'test-app-id',
-        [CoSecHeaders.DEVICE_ID]: 'test-device-id',
-        [CoSecHeaders.REQUEST_ID]: expect.any(String),
-        [CoSecHeaders.AUTHORIZATION]: 'Bearer test-access-token',
-      });
+    // Mock tokenManager.currentToken getter to return different values
+    let callCount = 0;
+    Object.defineProperty(mockTokenManager, 'currentToken', {
+      get: vi.fn(() => {
+        callCount++;
+        return callCount === 1 ? mockToken : refreshedToken;
+      }),
+      configurable: true,
     });
 
-    it('should preserve existing headers', () => {
-      const deviceIdStorage = new DeviceIdStorage(
-        'test-device-key',
-        new InMemoryStorage(),
-      );
-      const tokenStorage = new TokenStorage(
-        'test-token-key',
-        new InMemoryStorage(),
-      );
+    mockTokenManager.refresh = vi.fn().mockResolvedValue(undefined);
 
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage,
-        tokenStorage,
-        tokenRefresher: {
-          refresh: async (token: CompositeToken) => token,
-        },
-      };
+    await interceptor.intercept(mockExchange);
 
-      const interceptor = new CoSecRequestInterceptor(options);
+    expect(mockTokenManager.refresh).toHaveBeenCalled();
+    expect(mockHeaders[CoSecHeaders.AUTHORIZATION]).toBe('Bearer refreshed-access-token');
+  });
 
-      const mockFetcher = {} as Fetcher;
-      const request = {
-        url: '/test',
-        headers: {
-          'Custom-Header': 'custom-value',
-          'Another-Header': 'another-value',
-        },
-      };
+  it('should not add Authorization header when no token exists', async () => {
+    const mockHeaders: Record<string, string> = {};
+    mockExchange.ensureRequestHeaders = vi.fn().mockReturnValue(mockHeaders);
 
-      const exchange = new FetchExchange({ fetcher: mockFetcher, request });
-
-      // Mock deviceIdStorage.getOrCreate to return a specific value
-      vi.spyOn(deviceIdStorage, 'getOrCreate').mockReturnValue(
-        'test-device-id',
-      );
-
-      interceptor.intercept(exchange);
-
-      expect(exchange.request.headers).toEqual({
-        'Custom-Header': 'custom-value',
-        'Another-Header': 'another-value',
-        [CoSecHeaders.APP_ID]: 'test-app-id',
-        [CoSecHeaders.DEVICE_ID]: 'test-device-id',
-        [CoSecHeaders.REQUEST_ID]: expect.any(String),
-      });
+    // Mock tokenManager.currentToken getter to return null
+    Object.defineProperty(mockTokenManager, 'currentToken', {
+      get: vi.fn().mockReturnValue(null),
+      configurable: true,
     });
 
-    it('should handle request without existing headers', () => {
-      const deviceIdStorage = new DeviceIdStorage(
-        'test-device-key',
-        new InMemoryStorage(),
-      );
-      const tokenStorage = new TokenStorage(
-        'test-token-key',
-        new InMemoryStorage(),
-      );
+    await interceptor.intercept(mockExchange);
 
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage,
-        tokenStorage,
-        tokenRefresher: {
-          refresh: async (token: CompositeToken) => token,
-        },
-      };
-
-      const interceptor = new CoSecRequestInterceptor(options);
-
-      const mockFetcher = {} as Fetcher;
-      const request = {
-        url: '/test',
-        // No headers property
-      };
-
-      const exchange = new FetchExchange({ fetcher: mockFetcher, request });
-
-      // Mock deviceIdStorage.getOrCreate to return a specific value
-      vi.spyOn(deviceIdStorage, 'getOrCreate').mockReturnValue(
-        'test-device-id',
-      );
-
-      interceptor.intercept(exchange);
-
-      expect(exchange.request.headers).toEqual({
-        [CoSecHeaders.APP_ID]: 'test-app-id',
-        [CoSecHeaders.DEVICE_ID]: 'test-device-id',
-        [CoSecHeaders.REQUEST_ID]: expect.any(String),
-      });
-    });
+    expect(mockHeaders[CoSecHeaders.AUTHORIZATION]).toBeUndefined();
   });
 });

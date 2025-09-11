@@ -11,42 +11,22 @@
  * limitations under the License.
  */
 
-import { getStorage } from './inMemoryStorage';
 import { idGenerator } from './idGenerator';
+import { createListenableStorage, KeyStorage } from './storage';
+import { IdentitySerializer } from './serializer';
 
 export const DEFAULT_COSEC_DEVICE_ID_KEY = 'cosec-device-id';
 
 /**
  * Storage class for managing device identifiers.
  */
-export class DeviceIdStorage {
-  private readonly deviceIdKey: string;
-  private storage: Storage;
-
-  constructor(
-    deviceIdKey: string = DEFAULT_COSEC_DEVICE_ID_KEY,
-    storage: Storage = getStorage(),
-  ) {
-    this.deviceIdKey = deviceIdKey;
-    this.storage = storage;
-  }
-
-  /**
-   * Get the current device ID.
-   *
-   * @returns The current device ID or null if not set
-   */
-  get(): string | null {
-    return this.storage.getItem(this.deviceIdKey);
-  }
-
-  /**
-   * Set a device ID.
-   *
-   * @param deviceId - The device ID to set
-   */
-  set(deviceId: string): void {
-    this.storage.setItem(this.deviceIdKey, deviceId);
+export class DeviceIdStorage extends KeyStorage<string> {
+  constructor(key: string = DEFAULT_COSEC_DEVICE_ID_KEY) {
+    super({
+      key,
+      serializer: new IdentitySerializer<string>(),
+      storage: createListenableStorage(),
+    });
   }
 
   /**
@@ -75,10 +55,4 @@ export class DeviceIdStorage {
     return deviceId;
   }
 
-  /**
-   * Clear the stored device ID.
-   */
-  clear(): void {
-    this.storage.removeItem(this.deviceIdKey);
-  }
 }

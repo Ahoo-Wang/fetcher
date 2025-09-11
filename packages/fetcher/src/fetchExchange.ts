@@ -16,6 +16,8 @@ import type { FetchRequest, RequestHeaders } from './fetchRequest';
 import { ExchangeError } from './interceptorManager';
 import { type UrlParams } from './urlBuilder';
 import { type RequiredBy } from './types';
+import { ResultExtractor, ResultExtractors } from './resultExtractor';
+import { mergeRecordToMap } from './utils';
 
 export interface AttributesCapable {
   /**
@@ -32,7 +34,7 @@ export interface AttributesCapable {
    * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
    * - Be mindful of memory usage when storing large objects
    */
-  attributes?: Record<string, any>;
+  attributes?: Record<string, any> | Map<string, any>;
 }
 
 export interface FetchExchangeInit extends AttributesCapable {
@@ -45,6 +47,7 @@ export interface FetchExchangeInit extends AttributesCapable {
    * The request configuration including url, method, headers, body, etc.
    */
   request: FetchRequest;
+  resultExtractor?: ResultExtractor<any>;
 
   /**
    * The response object, undefined until the request completes successfully.
@@ -111,15 +114,25 @@ export class FetchExchange
   request: FetchRequest;
 
   /**
+   * The result extractor function used to transform the response into the desired format.
+   * Defaults to ResultExtractors.Exchange if not provided.
+   */
+  resultExtractor: ResultExtractor<any>;
+  /**
    * The response object, undefined until the request completes successfully.
    */
-  response?: Response;
+  private _response?: Response;
 
   /**
    * Any error that occurred during the request processing, undefined if no error occurred.
    */
   error?: Error | any;
 
+  /**
+   * Cached result of the extracted result to avoid repeated computations.
+   * Undefined when not yet computed, null when computation failed.
+   */
+  private cachedExtractedResult?: any | Promise<any>;
   /**
    * Shared attributes for passing data between interceptors.
    *
@@ -134,13 +147,14 @@ export class FetchExchange
    * - Consider namespacing your keys (e.g., 'mylib.retryCount' instead of 'retryCount')
    * - Be mindful of memory usage when storing large objects
    */
-  attributes: Record<string, any>;
+  attributes: Map<string, any>;
 
   constructor(exchangeInit: FetchExchangeInit) {
     this.fetcher = exchangeInit.fetcher;
     this.request = exchangeInit.request;
-    this.attributes = exchangeInit.attributes ?? {};
-    this.response = exchangeInit.response;
+    this.resultExtractor = exchangeInit.resultExtractor ?? ResultExtractors.Exchange;
+    this.attributes = mergeRecordToMap(exchangeInit.attributes);
+    this._response = exchangeInit.response;
     this.error = exchangeInit.error;
   }
 
@@ -197,6 +211,27 @@ export class FetchExchange
   }
 
   /**
+   * Sets the response object for this exchange.
+   * Also invalidates the cached extracted result to ensure data consistency
+   * when the response changes.
+   *
+   * @param response - The Response object to set, or undefined to clear the response
+   */
+  set response(response: Response | undefined) {
+    this._response = response;
+    this.cachedExtractedResult = undefined;
+  }
+
+  /**
+   * Gets the response object for this exchange.
+   *
+   * @returns The response object if available, undefined otherwise
+   */
+  get response(): Response | undefined {
+    return this._response;
+  }
+
+  /**
    * Checks if the exchange has a response.
    *
    * @returns true if a response is present, false otherwise
@@ -223,5 +258,19 @@ export class FetchExchange
       );
     }
     return this.response;
+  }
+
+  /**
+   * Extracts the result by applying the result extractor to the exchange.
+   * The result is cached after the first computation to avoid repeated computations.
+   *
+   * @returns The extracted result
+   */
+  extractResult<R>(): R | Promise<R> {
+    if (this.cachedExtractedResult !== undefined) {
+      return this.cachedExtractedResult;
+    }
+    this.cachedExtractedResult = this.resultExtractor(this);
+    return this.cachedExtractedResult;
   }
 }

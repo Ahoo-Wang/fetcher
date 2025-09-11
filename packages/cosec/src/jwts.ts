@@ -120,6 +120,13 @@ export function parseJwtPayload<T extends JwtPayload>(token: string): T | null {
   }
 }
 
+export interface EarlyPeriodCapable {
+  /**
+   * The time in seconds before actual expiration when the token should be considered expired (default: 0)
+   */
+  readonly earlyPeriod: number;
+}
+
 /**
  * Checks if a JWT token is expired based on its expiration time (exp claim).
  *

@@ -11,6 +11,9 @@
  * limitations under the License.
  */
 
+import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
+import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from './cosecRequestInterceptor';
+
 /**
  * Interface for access tokens.
  */
@@ -30,7 +33,8 @@ export interface RefreshToken {
  *
  * accessToken and refreshToken always appear in pairs, no need to split them.
  */
-export interface CompositeToken extends AccessToken, RefreshToken {}
+export interface CompositeToken extends AccessToken, RefreshToken {
+}
 
 /**
  * Interface for token refreshers.
@@ -45,4 +49,43 @@ export interface TokenRefresher {
    * @returns A Promise that resolves to a new CompositeToken
    */
   refresh(token: CompositeToken): Promise<CompositeToken>;
+}
+
+export interface CoSecTokenRefresherOptions {
+  fetcher: Fetcher;
+  endpoint: string;
+}
+
+/**
+ * CoSecTokenRefresher is a class that implements the TokenRefresher interface
+ * for refreshing composite tokens through a configured endpoint.
+ */
+export class CoSecTokenRefresher implements TokenRefresher {
+  /**
+   * Creates a new instance of CoSecTokenRefresher.
+   *
+   * @param options The configuration options for the token refresher including fetcher and endpoint
+   */
+  constructor(public readonly options: CoSecTokenRefresherOptions) {
+  }
+
+  /**
+   * Refresh the given token and return a new CompositeToken.
+   *
+   * @param token The token to refresh
+   * @returns A Promise that resolves to a new CompositeToken
+   */
+  refresh(token: CompositeToken): Promise<CompositeToken> {
+    // Send a POST request to the configured endpoint with the token as body
+    // and extract the response as JSON to return a new CompositeToken
+
+    return this.options.fetcher.post<CompositeToken>(this.options.endpoint,
+      {
+        body: token,
+      }, {
+        resultExtractor: ResultExtractors.Json,
+        attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]]),
+      },
+    );
+  }
 }

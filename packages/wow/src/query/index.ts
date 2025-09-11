@@ -20,3 +20,4 @@ export * from './queryApi';
 export * from './sort';
 export * from './event';
 export * from './snapshot';
+export * from './cursorQuery';

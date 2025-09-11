@@ -11,13 +11,7 @@
  * limitations under the License.
  */
 
-import { defineConfig } from 'vite';
-
-export default defineConfig({
-  server: {
-    port: 3000,
-  },
-  build: {
-    outDir: 'dist',
-  },
-});
+export * from './listenableStorage';
+export * from './browserListenableStorage';
+export * from './inMemoryListenableStorage';
+export * from './keyStorage';

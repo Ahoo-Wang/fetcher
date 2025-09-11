@@ -13,9 +13,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import {
-  DEFAULT_COSEC_DEVICE_ID_KEY,
   DeviceIdStorage,
-  InMemoryStorage,
 } from '../src';
 
 describe('deviceIdStorage.ts', () => {
@@ -27,21 +25,20 @@ describe('deviceIdStorage.ts', () => {
 
     it('should create DeviceIdStorage with custom parameters', () => {
       const customKey = 'custom-device-id-key';
-      const customStorage = new InMemoryStorage();
-      const storage = new DeviceIdStorage(customKey, customStorage);
+      const storage = new DeviceIdStorage(customKey);
 
       expect(storage).toBeInstanceOf(DeviceIdStorage);
     });
 
     it('should get null when no device ID is set', () => {
-      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+      const storage = new DeviceIdStorage('test-key');
       const result = storage.get();
 
       expect(result).toBeNull();
     });
 
     it('should set and get device ID', () => {
-      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+      const storage = new DeviceIdStorage('test-key');
       const deviceId = 'test-device-id';
 
       storage.set(deviceId);
@@ -51,7 +48,7 @@ describe('deviceIdStorage.ts', () => {
     });
 
     it('should generate device ID', () => {
-      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+      const storage = new DeviceIdStorage('test-key');
       const deviceId = storage.generateDeviceId();
 
       expect(deviceId).toBeDefined();
@@ -60,7 +57,7 @@ describe('deviceIdStorage.ts', () => {
     });
 
     it('should get existing device ID when available', () => {
-      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+      const storage = new DeviceIdStorage('test-key');
       const deviceId = 'existing-device-id';
 
       storage.set(deviceId);
@@ -70,7 +67,7 @@ describe('deviceIdStorage.ts', () => {
     });
 
     it('should generate and store new device ID when none exists', () => {
-      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+      const storage = new DeviceIdStorage('test-key');
       const result = storage.getOrCreate();
 
       expect(result).toBeDefined();
@@ -82,30 +79,15 @@ describe('deviceIdStorage.ts', () => {
       expect(stored).toBe(result);
     });
 
-    it('should clear stored device ID', () => {
-      const storage = new DeviceIdStorage('test-key', new InMemoryStorage());
+    it('should remove stored device ID', () => {
+      const storage = new DeviceIdStorage('test-key');
       const deviceId = 'test-device-id';
 
       storage.set(deviceId);
-      storage.clear();
+      storage.remove();
       const result = storage.get();
 
       expect(result).toBeNull();
-    });
-
-    it('should use default key when none provided', () => {
-      const mockStorage = {
-        getItem: vi.fn().mockReturnValue(null),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-      } as unknown as Storage;
-
-      const storage = new DeviceIdStorage(undefined, mockStorage);
-      storage.get();
-
-      expect(mockStorage.getItem).toHaveBeenCalledWith(
-        DEFAULT_COSEC_DEVICE_ID_KEY,
-      );
     });
   });
 });

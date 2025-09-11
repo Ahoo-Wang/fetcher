@@ -11,342 +11,159 @@
  * limitations under the License.
  */
 
-import { describe, expect, it, vi } from 'vitest';
-import {
-  CompositeToken,
-  COSEC_RESPONSE_INTERCEPTOR_NAME,
-  COSEC_RESPONSE_INTERCEPTOR_ORDER,
-  CoSecOptions,
-  CoSecResponseInterceptor,
-  DeviceIdStorage,
-  InMemoryStorage,
-  ResponseCodes,
-  TokenRefresher,
-  TokenStorage,
-} from '../src';
-import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { CoSecResponseInterceptor, COSEC_RESPONSE_INTERCEPTOR_NAME, COSEC_RESPONSE_INTERCEPTOR_ORDER } from '../src';
+import { ResponseCodes, type CoSecOptions } from '../src';
+import { FetchExchange, type Fetcher } from '@ahoo-wang/fetcher';
+import { JwtTokenManager } from '../src';
+import { TokenStorage } from '../src';
+import { TokenRefresher } from '../src';
 
-describe('cosecResponseInterceptor.ts', () => {
-  describe('CoSecResponseInterceptor', () => {
-    it('should have correct name and order', () => {
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage: new DeviceIdStorage(
-          'test-device-key',
-          new InMemoryStorage(),
-        ),
-        tokenStorage: new TokenStorage('test-token-key', new InMemoryStorage()),
-        tokenRefresher: {
-          refresh: async (_token: CompositeToken) => ({
-            accessToken: 'test-access-token',
-            refreshToken: 'test-refresh-token',
-          }),
-        },
-      };
+describe('CoSecResponseInterceptor', () => {
+  let mockFetcher: Fetcher;
+  let mockTokenStorage: TokenStorage;
+  let mockTokenRefresher: TokenRefresher;
+  let mockJwtTokenManager: JwtTokenManager;
+  let coSecOptions: CoSecOptions;
+  let interceptor: CoSecResponseInterceptor;
 
-      const interceptor = new CoSecResponseInterceptor(options);
+  beforeEach(() => {
+    mockFetcher = {
+      interceptors: {
+        exchange: vi.fn(),
+      },
+    } as unknown as Fetcher;
 
-      expect(interceptor.name).toBe(COSEC_RESPONSE_INTERCEPTOR_NAME);
-      expect(interceptor.order).toBe(COSEC_RESPONSE_INTERCEPTOR_ORDER);
-    });
+    mockTokenStorage = {
+      get: vi.fn(),
+      setCompositeToken: vi.fn(),
+      remove: vi.fn(),
+    } as unknown as TokenStorage;
 
-    it('should not intercept when there is no response', async () => {
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage: new DeviceIdStorage(
-          'test-device-key',
-          new InMemoryStorage(),
-        ),
-        tokenStorage: new TokenStorage('test-token-key', new InMemoryStorage()),
-        tokenRefresher: {
-          refresh: async (_token: CompositeToken) => ({
-            accessToken: 'test-access-token',
-            refreshToken: 'test-refresh-token',
-          }),
-        },
-      };
+    mockTokenRefresher = {
+      refresh: vi.fn(),
+    } as unknown as TokenRefresher;
 
-      const interceptor = new CoSecResponseInterceptor(options);
+    mockJwtTokenManager = new JwtTokenManager(mockTokenStorage, mockTokenRefresher);
+    // 使用 vi.spyOn 替代直接定义属性
+    const isRefreshableSpy = vi.spyOn(mockJwtTokenManager, 'isRefreshable', 'get').mockReturnValue(true);
 
-      const mockFetcher = {} as Fetcher;
-      const request = { url: '/test' };
-      const exchange = new FetchExchange({ fetcher: mockFetcher, request });
+    coSecOptions = {
+      appId: 'test-app-id',
+      deviceIdStorage: {} as any,
+      tokenManager: mockJwtTokenManager,
+    } as CoSecOptions;
 
-      // No response in exchange
-      await interceptor.intercept(exchange);
+    interceptor = new CoSecResponseInterceptor(coSecOptions);
+  });
 
-      // Should not throw and should not modify exchange
-      expect(exchange.response).toBeUndefined();
-    });
+  it('should have correct name and order', () => {
+    expect(interceptor.name).toBe(COSEC_RESPONSE_INTERCEPTOR_NAME);
+    expect(interceptor.order).toBe(COSEC_RESPONSE_INTERCEPTOR_ORDER);
+  });
 
-    it('should not intercept when response status is not 401', async () => {
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage: new DeviceIdStorage(
-          'test-device-key',
-          new InMemoryStorage(),
-        ),
-        tokenStorage: new TokenStorage('test-token-key', new InMemoryStorage()),
-        tokenRefresher: {
-          refresh: async (_token: CompositeToken) => ({
-            accessToken: 'test-access-token',
-            refreshToken: 'test-refresh-token',
-          }),
-        },
-      };
+  it('should not intercept when there is no response', async () => {
+    const exchange = {
+      response: undefined,
+    } as unknown as FetchExchange;
 
-      const interceptor = new CoSecResponseInterceptor(options);
+    await interceptor.intercept(exchange);
 
-      const mockFetcher = {} as Fetcher;
-      const request = { url: '/test' };
-      const response = new Response('test', { status: 200 });
-      const exchange = new FetchExchange({
-        fetcher: mockFetcher,
-        request,
-        response,
-      });
+    expect(mockTokenRefresher.refresh).not.toHaveBeenCalled();
+    expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
+  });
 
-      await interceptor.intercept(exchange);
+  it('should not intercept when response status is not 401', async () => {
+    const exchange = {
+      response: {
+        status: 200,
+      } as Response,
+    } as unknown as FetchExchange;
 
-      // Should not modify exchange
-      expect(exchange.response).toBe(response);
-    });
+    await interceptor.intercept(exchange);
 
-    it('should not intercept when there is no current token', async () => {
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage: new DeviceIdStorage(
-          'test-device-key',
-          new InMemoryStorage(),
-        ),
-        tokenStorage: new TokenStorage('test-token-key', new InMemoryStorage()),
-        tokenRefresher: {
-          refresh: async (_token: CompositeToken) => ({
-            accessToken: 'test-access-token',
-            refreshToken: 'test-refresh-token',
-          }),
-        },
-      };
+    expect(mockTokenRefresher.refresh).not.toHaveBeenCalled();
+    expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
+  });
 
-      const interceptor = new CoSecResponseInterceptor(options);
+  it('should not intercept when token is not refreshable', async () => {
+    // Mock isRefreshable to return false using spyOn
+    const isRefreshableSpy = vi.spyOn(mockJwtTokenManager, 'isRefreshable', 'get').mockReturnValue(false);
 
-      const mockFetcher = {} as Fetcher;
-      const request = { url: '/test' };
-      const response = new Response('test', {
+    const exchange = {
+      response: {
         status: ResponseCodes.UNAUTHORIZED,
-      });
-      const exchange = new FetchExchange({
-        fetcher: mockFetcher,
-        request,
-        response,
-      });
+      } as Response,
+    } as unknown as FetchExchange;
 
-      await interceptor.intercept(exchange);
+    await interceptor.intercept(exchange);
 
-      // Should not modify exchange
-      expect(exchange.response).toBe(response);
-    });
+    expect(mockTokenRefresher.refresh).not.toHaveBeenCalled();
+    expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
+  });
 
-    it('should refresh token and retry request on 401 response', async () => {
-      const tokenStorage = new TokenStorage(
-        'test-token-key',
-        new InMemoryStorage(),
-      );
-      const tokenRefresher: TokenRefresher = {
-        refresh: vi.fn().mockImplementation(async (_token: CompositeToken) => ({
-          accessToken: 'new-access-token',
-          refreshToken: 'new-refresh-token',
-        })),
-      };
-
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage: new DeviceIdStorage(
-          'test-device-key',
-          new InMemoryStorage(),
-        ),
-        tokenStorage,
-        tokenRefresher,
-      };
-
-      const interceptor = new CoSecResponseInterceptor(options);
-
-      const mockFetcher = {
-        interceptors: {
-          exchange: vi.fn().mockResolvedValue(undefined),
-        },
-        request: vi.fn().mockResolvedValue({}),
-      } as unknown as Fetcher;
-
-      const request = { url: '/test' };
-      const response = new Response('test', {
+  it('should attempt to refresh token and retry request on 401 response', async () => {
+    const exchange = {
+      response: {
         status: ResponseCodes.UNAUTHORIZED,
-      });
-      const exchange = new FetchExchange({
-        fetcher: mockFetcher,
-        request,
-        response,
-      });
+      } as Response,
+      fetcher: mockFetcher,
+    } as unknown as FetchExchange;
 
-      // Set a current token
-      const currentToken: CompositeToken = {
-        accessToken: 'old-access-token',
-        refreshToken: 'old-refresh-token',
-      };
-      tokenStorage.set(currentToken);
-
-      await interceptor.intercept(exchange);
-
-      // Verify token was refreshed
-      expect(tokenRefresher.refresh).toHaveBeenCalledWith(currentToken);
-
-      // Verify new token was stored
-      const newToken = tokenStorage.get();
-      expect(newToken).toEqual({
-        accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
-      });
-
-      // Verify request was retried
-      expect(mockFetcher.interceptors.exchange).toHaveBeenCalledWith(exchange);
+    mockTokenStorage.get = vi.fn().mockReturnValue({
+      token: 'current-token',
     });
 
-    it('should clear token storage and re-throw error when token refresh fails', async () => {
-      const tokenStorage = new TokenStorage(
-        'test-token-key',
-        new InMemoryStorage(),
-      );
-      const tokenRefresher: TokenRefresher = {
-        refresh: vi.fn().mockRejectedValue(new Error('Refresh failed')),
-      };
+    mockTokenRefresher.refresh = vi.fn().mockResolvedValue('new-token');
 
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage: new DeviceIdStorage(
-          'test-device-key',
-          new InMemoryStorage(),
-        ),
-        tokenStorage,
-        tokenRefresher,
-      };
+    await interceptor.intercept(exchange);
 
-      const interceptor = new CoSecResponseInterceptor(options);
+    expect(mockTokenStorage.get).toHaveBeenCalled();
+    expect(mockTokenRefresher.refresh).toHaveBeenCalledWith('current-token');
+    expect(mockFetcher.interceptors.exchange).toHaveBeenCalledWith(exchange);
+  });
 
-      const mockFetcher = {
-        interceptors: {
-          exchange: vi.fn().mockRejectedValue(new Error('Refresh failed')),
-        },
-      } as unknown as Fetcher;
-
-      const request = { url: '/test' };
-      const response = new Response('test', {
+  it('should clear tokens and throw error when token refresh fails', async () => {
+    const exchange = {
+      response: {
         status: ResponseCodes.UNAUTHORIZED,
-      });
-      const exchange = new FetchExchange({
-        fetcher: mockFetcher,
-        request,
-        response,
-      });
+      } as Response,
+      fetcher: mockFetcher,
+    } as unknown as FetchExchange;
 
-      // Set a current token
-      const currentToken: CompositeToken = {
-        accessToken: 'old-access-token',
-        refreshToken: 'old-refresh-token',
-      };
-      tokenStorage.set(currentToken);
+    const refreshError = new Error('Refresh failed');
 
-      await expect(interceptor.intercept(exchange)).rejects.toThrow(
-        'Refresh failed',
-      );
-
-      // Verify token was cleared
-      const storedToken = tokenStorage.get();
-      expect(storedToken).toBeNull();
+    mockTokenStorage.get = vi.fn().mockReturnValue({
+      token: 'current-token',
     });
 
-    it('should handle concurrent refresh requests properly', async () => {
-      const tokenStorage = new TokenStorage(
-        'test-token-key',
-        new InMemoryStorage(),
-      );
+    mockTokenRefresher.refresh = vi.fn().mockRejectedValue(refreshError);
 
-      const refreshPromise = new Promise<CompositeToken>((resolve) => {
-        setTimeout(() => {
-          resolve({
-            accessToken: 'new-access-token',
-            refreshToken: 'new-refresh-token',
-          });
-        }, 100);
-      });
+    await expect(interceptor.intercept(exchange)).rejects.toThrow('Refresh failed');
 
-      const tokenRefresher: TokenRefresher = {
-        refresh: vi.fn().mockReturnValue(refreshPromise),
-      };
+    expect(mockTokenStorage.get).toHaveBeenCalled();
+    expect(mockTokenRefresher.refresh).toHaveBeenCalledWith('current-token');
+    expect(mockTokenStorage.remove).toHaveBeenCalled();
+    expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
+  });
 
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage: new DeviceIdStorage(
-          'test-device-key',
-          new InMemoryStorage(),
-        ),
-        tokenStorage,
-        tokenRefresher,
-      };
-
-      const interceptor = new CoSecResponseInterceptor(options);
-
-      const mockFetcher = {
-        interceptors: {
-          exchange: vi.fn().mockResolvedValue(undefined),
-        },
-        request: vi.fn().mockResolvedValue({}),
-      } as unknown as Fetcher;
-
-      const request = { url: '/test' };
-      const response = new Response('test', {
+  it('should not attempt to refresh when no current token exists', async () => {
+    const exchange = {
+      response: {
         status: ResponseCodes.UNAUTHORIZED,
-      });
+      } as Response,
+      fetcher: mockFetcher,
+    } as unknown as FetchExchange;
 
-      const exchange1 = new FetchExchange({
-        fetcher: mockFetcher,
-        request,
-        response,
-      });
+    mockTokenStorage.get = vi.fn().mockReturnValue(null);
 
-      const exchange2 = new FetchExchange({
-        fetcher: mockFetcher,
-        request,
-        response,
-      });
+    const refreshError = new Error('No token found');
 
-      // Set a current token
-      const currentToken: CompositeToken = {
-        accessToken: 'old-access-token',
-        refreshToken: 'old-refresh-token',
-      };
-      tokenStorage.set(currentToken);
+    await expect(interceptor.intercept(exchange)).rejects.toThrow('No token found');
 
-      // Call intercept concurrently
-      const interceptPromise1 = interceptor.intercept(exchange1);
-      const interceptPromise2 = interceptor.intercept(exchange2);
-
-      await Promise.all([interceptPromise1, interceptPromise2]);
-
-      // Verify token refresh was called only once
-      expect(tokenRefresher.refresh).toHaveBeenCalledTimes(1);
-      expect(tokenRefresher.refresh).toHaveBeenCalledWith(currentToken);
-
-      // Verify new token was stored
-      const newToken = tokenStorage.get();
-      expect(newToken).toEqual({
-        accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
-      });
-
-      // Verify requests were retried
-      expect(mockFetcher.interceptors.exchange).toHaveBeenCalledTimes(2);
-      expect(mockFetcher.interceptors.exchange).toHaveBeenCalledWith(exchange1);
-      expect(mockFetcher.interceptors.exchange).toHaveBeenCalledWith(exchange2);
-    });
+    expect(mockTokenStorage.get).toHaveBeenCalled();
+    expect(mockTokenRefresher.refresh).not.toHaveBeenCalled();
+    expect(mockTokenStorage.remove).toHaveBeenCalled();
+    expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
   });
 });

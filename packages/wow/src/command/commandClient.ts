@@ -19,11 +19,10 @@ import {
 } from './commandResult';
 import {
   combineURLs,
-  ContentTypeValues,
-  ResultExtractor,
-  ResultExtractors,
+  ContentTypeValues, mergeRequestOptions, RequestOptions,
 } from '@ahoo-wang/fetcher';
 import { JsonEventStreamResultExtractor } from '@ahoo-wang/fetcher-eventstream';
+import { JSON_EVENT_STREAM_QUERY_REQUEST_OPTIONS, JSON_QUERY_REQUEST_OPTIONS } from '../query';
 
 /**
  * Command Client for sending commands to the server.
@@ -77,24 +76,26 @@ export class CommandClient {
    * @template R The type of the result to be returned
    * @param path - The endpoint path to send the command to
    * @param commandHttpRequest - The command HTTP request containing headers, method, and body
-   * @param extractor - Function to extract the result from the response, defaults to JSON extractor
-   * @param attributes - Optional shared attributes that can be accessed by interceptors
-   *                     throughout the request lifecycle. These attributes allow passing
-   *                     custom data between different interceptors.
+   * @param options - Request options including result extractor and attributes
+   * @param options.resultExtractor - Function to extract the desired result from the exchange.
+   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   * @param options.attributes - Optional shared attributes that can be accessed by interceptors
+   *                             throughout the request lifecycle. These attributes allow passing
+   *                             custom data between different interceptors.
    * @returns A promise that resolves to the extracted result of type R
    */
   protected async sendCommand<R>(
     path: string,
     commandHttpRequest: CommandRequest,
-    extractor: ResultExtractor<any> = ResultExtractors.Json,
-    attributes?: Record<string, any>,
+    options?: RequestOptions,
   ): Promise<R> {
     const url = combineURLs(this.options.basePath, path);
     const request = {
       ...commandHttpRequest,
       url: url,
     };
-    return await this.options.fetcher.request(request, extractor, attributes);
+
+    return await this.options.fetcher.request(request, mergeRequestOptions(JSON_QUERY_REQUEST_OPTIONS, options));
   }
 
   /**
@@ -123,7 +124,7 @@ export class CommandClient {
     commandHttpRequest: CommandRequest,
     attributes?: Record<string, any>,
   ): Promise<CommandResult> {
-    return this.sendCommand(path, commandHttpRequest, ResultExtractors.Json, attributes);
+    return this.sendCommand(path, commandHttpRequest, { attributes });
   }
 
   /**
@@ -167,8 +168,10 @@ export class CommandClient {
     return this.sendCommand(
       path,
       commandHttpRequest,
-      JsonEventStreamResultExtractor,
-      attributes,
+      mergeRequestOptions(JSON_EVENT_STREAM_QUERY_REQUEST_OPTIONS, {
+        resultExtractor: JsonEventStreamResultExtractor,
+        attributes,
+      }),
     );
   }
 }

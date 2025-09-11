@@ -11,60 +11,32 @@
  * limitations under the License.
  */
 
-import { getStorage } from './inMemoryStorage';
-import { type CompositeToken } from './tokenRefresher';
+import { createListenableStorage, KeyStorage } from './storage';
+import { JwtCompositeToken, JwtCompositeTokenSerializer } from './jwtToken';
+import { CompositeToken } from './tokenRefresher';
+import { EarlyPeriodCapable } from './jwts';
 
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 
 /**
  * Storage class for managing access and refresh tokens.
  */
-export class TokenStorage {
-  private readonly tokenKey: string;
-  private storage: Storage;
+export class TokenStorage extends KeyStorage<JwtCompositeToken> implements EarlyPeriodCapable {
 
   constructor(
-    tokenKey: string = DEFAULT_COSEC_TOKEN_KEY,
-    storage: Storage = getStorage(),
+    key: string = DEFAULT_COSEC_TOKEN_KEY,
+    public readonly earlyPeriod: number = 0,
   ) {
-    this.tokenKey = tokenKey;
-    this.storage = storage;
+    super({
+      key,
+      storage: createListenableStorage(),
+      serializer: new JwtCompositeTokenSerializer(earlyPeriod),
+    });
   }
 
-  /**
-   * Get the current access token.
-   *
-   * @returns The current composite token or null if not set
-   */
-  get(): CompositeToken | null {
-    const tokenStr = this.storage.getItem(this.tokenKey);
-    if (!tokenStr) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(tokenStr);
-    } catch (error) {
-      console.warn('Failed to get token from storage:', error);
-      this.clear();
-      return null;
-    }
-  }
-
-  /**
-   * Store a composite token.
-   *
-   * @param token - The composite token to store
-   */
-  set(token: CompositeToken): void {
-    const tokenStr = JSON.stringify(token);
-    this.storage.setItem(this.tokenKey, tokenStr);
-  }
-
-  /**
-   * Clear all tokens.
-   */
-  clear(): void {
-    this.storage.removeItem(this.tokenKey);
+  setCompositeToken(compositeToken: CompositeToken) {
+    this.set(
+      new JwtCompositeToken(compositeToken),
+    );
   }
 }
