@@ -24,7 +24,7 @@ import type {
 import { ContentTypeValues, HttpMethod } from './fetchRequest';
 import { InterceptorManager } from './interceptorManager';
 import { UrlTemplateStyle } from './urlTemplateResolver';
-import { ResultExtractor, ResultExtractorCapable, ResultExtractors } from './resultExtractor';
+import { ResultExtractorCapable, ResultExtractors } from './resultExtractor';
 
 /**
  * Configuration options for the Fetcher client.
@@ -64,7 +64,10 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
 export interface RequestOptions extends AttributesCapable, ResultExtractorCapable {
 }
 
-
+export const DEFAULT_REQUEST_OPTIONS: RequestOptions = { resultExtractor: ResultExtractors.Exchange };
+export const DEFAULT_FETCH_OPTIONS: RequestOptions = {
+  resultExtractor: ResultExtractors.Response,
+};
 /**
  * HTTP client with support for interceptors, URL building, and timeout control.
  *
@@ -124,7 +127,7 @@ export class Fetcher
    */
   async request<R = FetchExchange>(
     request: FetchRequest,
-    options: RequestOptions = { resultExtractor: ResultExtractors.Exchange, attributes: new Map() },
+    options: RequestOptions = DEFAULT_REQUEST_OPTIONS,
   ): Promise<R> {
     // Merge default headers and request-level headers. defensive copy
     const mergedHeaders = {
@@ -168,7 +171,7 @@ export class Fetcher
   async fetch<R = Response>(
     url: string,
     request: FetchRequestInit = {},
-    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
+    options: RequestOptions = DEFAULT_FETCH_OPTIONS,
   ): Promise<R> {
     const fetchRequest = request as FetchRequest;
     fetchRequest.url = url;
@@ -196,7 +199,7 @@ export class Fetcher
     method: HttpMethod,
     url: string,
     request: FetchRequestInit = {},
-    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
+    options: RequestOptions = DEFAULT_FETCH_OPTIONS,
   ): Promise<R> {
     return this.fetch(
       url,
@@ -226,7 +229,7 @@ export class Fetcher
   async get<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
-    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
+    options: RequestOptions = DEFAULT_FETCH_OPTIONS,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.GET, url, request, options);
   }
@@ -248,7 +251,7 @@ export class Fetcher
   async post<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
+    options: RequestOptions = DEFAULT_FETCH_OPTIONS,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.POST, url, request, options);
   }
@@ -270,7 +273,7 @@ export class Fetcher
   async put<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
+    options: RequestOptions = DEFAULT_FETCH_OPTIONS,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.PUT, url, request, options);
   }
@@ -292,7 +295,7 @@ export class Fetcher
   async delete<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
+    options: RequestOptions = DEFAULT_FETCH_OPTIONS,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.DELETE, url, request, options);
   }
@@ -314,7 +317,7 @@ export class Fetcher
   async patch<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method'> = {},
-    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
+    options: RequestOptions = DEFAULT_FETCH_OPTIONS,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.PATCH, url, request, options);
   }
@@ -337,7 +340,7 @@ export class Fetcher
   async head<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
-    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
+    options: RequestOptions = DEFAULT_FETCH_OPTIONS,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.HEAD, url, request, options);
   }
@@ -360,7 +363,7 @@ export class Fetcher
   async options<R = Response>(
     url: string,
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
-    options: RequestOptions = { resultExtractor: ResultExtractors.Response, attributes: new Map() },
+    options: RequestOptions = DEFAULT_FETCH_OPTIONS,
   ): Promise<R> {
     return this.methodFetch(HttpMethod.OPTIONS, url, request, options);
   }
