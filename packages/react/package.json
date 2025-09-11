@@ -44,7 +44,8 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "dependencies": {
-    "@ahoo-wang/fetcher": "workspace:*"
+    "@ahoo-wang/fetcher": "workspace:*",
+    "@ahoo-wang/fetcher-storage": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
