@@ -45,12 +45,6 @@ for package in packages/*/; do
   fi
 done
 
-# Also update examples package if it exists
-if [ -f "examples/package.json" ]; then
-  echo "Updating examples/package.json..."
-  node -e "$UPDATE_SCRIPT" examples/package.json "$VERSION"
-fi
-
 if [ -f "integration-test/package.json" ]; then
   echo "Updating integration-test/package.json..."
   node -e "$UPDATE_SCRIPT" integration-test/package.json "$VERSION"
