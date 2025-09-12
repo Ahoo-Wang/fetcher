@@ -40,13 +40,15 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
    * This method safely releases the reader lock by catching any potential errors.
    */
   releaseLock() {
-    if (this.locked) {
-      try {
-        this.reader.releaseLock();
-        this.locked = false;
-      } catch (error) {
+    if (!this._locked) return false;
 
-      }
+    try {
+      this.reader.releaseLock();
+      this._locked = false;
+      return true;
+    } catch (error) {
+      console.debug('Failed to release reader lock:', error);
+      return false;
     }
   }
 
@@ -86,13 +88,14 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
    * @returns A promise that resolves to a done IteratorResult.
    */
   async return(): Promise<IteratorResult<T>> {
-    // Release the reader lock when iteration is manually stopped
     try {
       await this.reader.cancel();
+    } catch (error) {
+      console.debug('Failed to cancel stream reader:', error);
     } finally {
       this.releaseLock();
     }
-    return { done: true, value: undefined };
+    return { done: true, value: undefined } as IteratorReturnResult<any>;
   }
 
   /**
@@ -104,6 +107,6 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
   async throw(error: any): Promise<IteratorResult<T>> {
     // Ensure the reader lock is released before throwing
     this.releaseLock();
-    return { done: true, value: undefined };
+    return { done: true, value: undefined } as IteratorReturnResult<any>;
   }
 }
