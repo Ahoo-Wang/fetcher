@@ -105,7 +105,7 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
    */
   async throw(error: any): Promise<IteratorResult<T>> {
     // Ensure the reader lock is released before throwing
-    console.debug('throwing error', error);
+    console.debug('Throwing error:', error);
     this.releaseLock();
     return { done: true, value: undefined };
   }
