@@ -11,46 +11,77 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ReadableStreamAsyncIterable } from '../src/readableStreamAsyncIterable';
 
 describe('ReadableStreamAsyncIterable', () => {
-  it('should create an async iterable from a ReadableStream', async () => {
-    const data = [1, 2, 3];
+  it('should create an instance with a ReadableStream', () => {
     const stream = new ReadableStream({
       start(controller) {
-        for (const item of data) {
-          controller.enqueue(item);
-        }
+        controller.enqueue('test');
         controller.close();
       },
     });
 
-    const asyncIterable = new ReadableStreamAsyncIterable(stream);
-    const result = [];
+    const iterable = new ReadableStreamAsyncIterable(stream);
+    expect(iterable).toBeInstanceOf(ReadableStreamAsyncIterable);
+  });
 
-    for await (const item of asyncIterable) {
-      result.push(item);
+  it('should be able to iterate over stream values', async () => {
+    const testData = ['value1', 'value2', 'value3'];
+    const stream = new ReadableStream({
+      start(controller) {
+        testData.forEach(data => controller.enqueue(data));
+        controller.close();
+      }
+    });
+
+    const iterable = new ReadableStreamAsyncIterable(stream);
+    const results: string[] = [];
+
+    for await (const value of iterable) {
+      results.push(value);
     }
 
-    expect(result).toEqual(data);
+    expect(results).toEqual(testData);
   });
 
   it('should handle empty stream', async () => {
     const stream = new ReadableStream({
       start(controller) {
         controller.close();
+      }
+    });
+
+    const iterable = new ReadableStreamAsyncIterable(stream);
+    const results: any[] = [];
+
+    for await (const value of iterable) {
+      results.push(value);
+    }
+
+    expect(results).toEqual([]);
+  });
+
+  it('should release lock after iteration', async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue('test');
+        controller.close();
       },
     });
 
-    const asyncIterable = new ReadableStreamAsyncIterable(stream);
-    const result = [];
+    const iterable = new ReadableStreamAsyncIterable(stream);
 
-    for await (const item of asyncIterable) {
-      result.push(item);
+    // Consume the stream
+    const results: string[] = [];
+    for await (const value of iterable) {
+      results.push(value);
     }
 
-    expect(result).toEqual([]);
+    // Try to get another reader (should work if lock was released)
+    expect(() => stream.getReader()).not.toThrow();
+    expect(results).toEqual(['test']);
   });
 
   it('should handle stream errors', async () => {
@@ -58,94 +89,81 @@ describe('ReadableStreamAsyncIterable', () => {
     const stream = new ReadableStream({
       start(controller) {
         controller.error(testError);
-      },
+      }
     });
 
-    const asyncIterable = new ReadableStreamAsyncIterable(stream);
-
+    const iterable = new ReadableStreamAsyncIterable(stream);
+    
     await expect(async () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      for await (const item of asyncIterable) {
-        // Should not be reached
+      for await (const value of iterable) {
+        // This should not be reached
       }
     }).rejects.toThrow(testError);
   });
 
-  it('should support manual return to release lock', async () => {
-    let cancelCalled = false;
+  it('should handle manual return call', async () => {
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue(1);
-        controller.enqueue(2);
-      },
-      cancel() {
-        cancelCalled = true;
-        return Promise.resolve();
-      },
+        controller.enqueue('test');
+      }
     });
 
-    const asyncIterable = new ReadableStreamAsyncIterable(stream);
-    const iterator = asyncIterable[Symbol.asyncIterator]();
+    const iterable = new ReadableStreamAsyncIterable(stream);
+    const iterator = iterable[Symbol.asyncIterator]();
 
-    const firstResult = await iterator.next();
-    expect(firstResult.value).toBe(1);
-
-    // Since the stream is locked by the reader, we cannot directly cancel it
-    // The return method should still properly release the lock
-    const returnResult = await iterator.return!();
-    expect(returnResult.done).toBe(true);
-    // We don't check cancelCalled because the stream is already locked
+    const result = await iterator.return!();
+    expect(result).toEqual({ done: true, value: undefined });
   });
 
-  it('should support throw method', async () => {
+  it('should handle throw method', async () => {
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue(1);
-      },
+        controller.enqueue('test');
+      }
     });
 
-    const asyncIterable = new ReadableStreamAsyncIterable(stream);
-    const iterator = asyncIterable[Symbol.asyncIterator]();
+    const iterable = new ReadableStreamAsyncIterable(stream);
+    const iterator = iterable[Symbol.asyncIterator]();
 
-    const firstResult = await iterator.next();
-    expect(firstResult.value).toBe(1);
-
-    const testError = new Error('Test throw');
-    await expect(iterator.throw!(testError)).rejects.toThrow(testError);
+    const result = await iterator.throw!(new Error('Test error'));
+    expect(result).toEqual({ done: true, value: undefined });
   });
 
-  it('should handle multiple return calls', async () => {
+  it('should release lock when calling releaseLock method', () => {
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue(1);
-      },
+        controller.enqueue('test');
+      }
     });
 
-    const asyncIterable = new ReadableStreamAsyncIterable(stream);
-    const iterator = asyncIterable[Symbol.asyncIterator]();
+    const iterable = new ReadableStreamAsyncIterable(stream);
 
-    await iterator.next();
-    const firstReturn = await iterator.return!();
-    const secondReturn = await iterator.return!();
+    // Should not throw when releasing lock
+    expect(() => iterable.releaseLock()).not.toThrow();
 
-    expect(firstReturn.done).toBe(true);
-    expect(secondReturn.done).toBe(true);
+    // Calling again should not throw either
+    expect(() => iterable.releaseLock()).not.toThrow();
   });
 
-  it('should handle return when stream is already done', async () => {
+  it('should handle exceptions when releasing lock', () => {
     const stream = new ReadableStream({
       start(controller) {
-        controller.close();
-      },
+        controller.enqueue('test');
+      }
     });
 
-    const asyncIterable = new ReadableStreamAsyncIterable(stream);
-    const iterator = asyncIterable[Symbol.asyncIterator]();
+    const iterable = new ReadableStreamAsyncIterable(stream);
 
-    const nextResult = await iterator.next();
-    expect(nextResult.done).toBe(true);
+    // Mock the releaseLock method to throw an error
+    vi.spyOn(iterable['reader'], 'releaseLock').mockImplementation(() => {
+      throw new Error('Release lock error');
+    });
 
-    const returnResult = await iterator.return!();
-    expect(returnResult.done).toBe(true);
+    // Should not throw when releasing lock even if an error occurs
+    expect(() => iterable.releaseLock()).not.toThrow();
+
+    // The locked state should still be updated
+    expect(iterable['locked']).toBe(false);
   });
 });

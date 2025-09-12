@@ -41,16 +41,13 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
    */
   releaseLock() {
     if (!this._locked) return false;
-
+    this._locked = false;
     try {
       this.reader.releaseLock();
       return true;
     } catch (error) {
       console.debug('Failed to release reader lock:', error);
       return false;
-    } finally {
-      // Always update the locked status, even if an exception occurs
-      this._locked = false;
     }
   }
 
