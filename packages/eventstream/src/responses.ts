@@ -21,6 +21,7 @@ import {
   toJsonServerSentEventStream,
 } from './jsonServerSentEventTransformStream';
 import { CONTENT_TYPE_HEADER, ContentTypeValues } from '@ahoo-wang/fetcher';
+import { ReadableStreamAsyncIterable } from './readableStreamAsyncIterable';
 
 declare global {
   interface Response {
@@ -193,3 +194,13 @@ Response.prototype.requiredJsonEventStream = function <DATA>() {
   }
   return eventStream;
 };
+
+// Check if ReadableStream already has [Symbol.asyncIterator] implemented
+const isReadableStreamAsyncIterableSupported = typeof ReadableStream.prototype[Symbol.asyncIterator] === 'function';
+
+// Add [Symbol.asyncIterator] to ReadableStream if not already implemented
+if (!isReadableStreamAsyncIterableSupported) {
+  ReadableStream.prototype[Symbol.asyncIterator] = function <R = any>() {
+    return new ReadableStreamAsyncIterable<R>(this as ReadableStream<R>);
+  };
+}

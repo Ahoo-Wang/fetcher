@@ -17,6 +17,7 @@
  */
 export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
   private readonly reader: ReadableStreamDefaultReader<T>;
+  private locked: boolean = true;
 
   /**
    * Creates a new ReadableStreamAsyncIterable instance.
@@ -26,56 +27,49 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
     this.reader = stream.getReader();
   }
 
-  /**
-   * Returns this instance as the async iterator.
-   * @returns This instance which implements the AsyncIterator interface.
-   */
+  releaseLock() {
+    if (this.locked) {
+      try {
+        this.reader.releaseLock();
+        this.locked = false;
+      } catch (error) {
+
+      }
+    }
+  }
+
   [Symbol.asyncIterator]() {
     return this;
   }
 
-  /**
-   * Gets the next value from the stream.
-   * @returns A promise that resolves to an IteratorResult.
-   */
   async next(): Promise<IteratorResult<T>> {
     try {
       const { done, value } = await this.reader.read();
       if (done) {
-        this.reader.releaseLock();
+        this.releaseLock();
         return { done: true, value: undefined };
       }
 
       return { done: false, value };
     } catch (error) {
-      this.reader.releaseLock();
+      this.releaseLock();
       throw error;
     }
   }
 
-  /**
-   * Releases the reader lock and cancels the stream when iteration is manually stopped.
-   * @returns A promise that resolves to an IteratorResult indicating completion.
-   */
   async return(): Promise<IteratorResult<T>> {
     // Release the reader lock when iteration is manually stopped
     try {
-      await this.stream.cancel();
-    } catch (e) {
-      console.error(e);
+      await this.reader.cancel();
     } finally {
-      this.reader.releaseLock();
+      this.releaseLock();
     }
     return { done: true, value: undefined };
   }
 
-  /**
-   * Releases the reader lock and throws the provided error.
-   * @param error - The error to throw.
-   * @returns A promise that resolves to an IteratorResult.
-   */
   async throw(error: any): Promise<IteratorResult<T>> {
-    this.reader.releaseLock();
-    throw error;
+    // Ensure the reader lock is released before throwing
+    this.releaseLock();
+    return { done: true, value: undefined };
   }
 }
