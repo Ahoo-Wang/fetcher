@@ -166,4 +166,79 @@ describe('ReadableStreamAsyncIterable', () => {
     // The locked state should still be updated
     expect(iterable['locked']).toBe(false);
   });
+
+  it('should handle exceptions when canceling stream reader in return method', async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue('test');
+      },
+    });
+
+    const iterable = new ReadableStreamAsyncIterable(stream);
+    const iterator = iterable[Symbol.asyncIterator]();
+
+    // Mock the cancel method to throw an error
+    vi.spyOn(iterable['reader'], 'cancel').mockImplementation(() => {
+      throw new Error('Cancel error');
+    });
+
+    // Should not throw when calling return even if cancel fails
+    const result = await iterator.return!();
+
+    // Should still return done result
+    expect(result).toEqual({ done: true, value: undefined });
+
+    // Lock should still be released
+    expect(iterable['locked']).toBe(false);
+  });
+
+  it('should handle calling return method when already unlocked', async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue('test');
+        controller.close();
+      },
+    });
+
+    const iterable = new ReadableStreamAsyncIterable(stream);
+
+    // Consume the stream to unlock it
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for await (const value of iterable) {
+      // Just consume the value
+    }
+
+    // Verify it's unlocked
+    expect(iterable['locked']).toBe(false);
+
+    // Calling return should still work
+    const iterator = iterable[Symbol.asyncIterator]();
+    const result = await iterator.return!();
+    expect(result).toEqual({ done: true, value: undefined });
+  });
+
+  it('should handle calling throw method when already unlocked', async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue('test');
+        controller.close();
+      },
+    });
+
+    const iterable = new ReadableStreamAsyncIterable(stream);
+
+    // Consume the stream to unlock it
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for await (const value of iterable) {
+      // Just consume the value
+    }
+
+    // Verify it's unlocked
+    expect(iterable['locked']).toBe(false);
+
+    // Calling throw should still work
+    const iterator = iterable[Symbol.asyncIterator]();
+    const result = await iterator.throw!(new Error('Test error'));
+    expect(result).toEqual({ done: true, value: undefined });
+  });
 });
