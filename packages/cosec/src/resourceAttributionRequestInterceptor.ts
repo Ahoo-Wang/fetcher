@@ -21,11 +21,11 @@ export interface ResourceAttributionOptions {
   /**
    * The path parameter key used for tenant ID in URL templates
    */
-  tenantId: string;
+  tenantId?: string;
   /**
    * The path parameter key used for owner ID in URL templates
    */
-  ownerId: string;
+  ownerId?: string;
   /**
    * Storage mechanism for retrieving current authentication tokens
    */
@@ -50,12 +50,18 @@ export class ResourceAttributionRequestInterceptor implements RequestInterceptor
 
   readonly name = RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME;
   readonly order = RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER;
+  private readonly tenantIdPathKey: string;
+  private readonly ownerIdPathKey: string;
+  private readonly tokenStorage: TokenStorage;
 
   /**
    * Creates a new ResourceAttributionRequestInterceptor
    * @param options - Configuration options for resource attribution including tenantId, ownerId and tokenStorage
    */
-  constructor(private readonly options: ResourceAttributionOptions) {
+  constructor({ tenantId = 'tenantId', ownerId = 'ownerId', tokenStorage }: ResourceAttributionOptions) {
+    this.tenantIdPathKey = tenantId;
+    this.ownerIdPathKey = ownerId;
+    this.tokenStorage = tokenStorage;
   }
 
   /**
@@ -64,7 +70,7 @@ export class ResourceAttributionRequestInterceptor implements RequestInterceptor
    * @param exchange - The fetch exchange containing the request information
    */
   intercept(exchange: FetchExchange): void {
-    const currentToken = this.options.tokenStorage.get();
+    const currentToken = this.tokenStorage.get();
     if (!currentToken) {
       return;
     }
@@ -78,7 +84,7 @@ export class ResourceAttributionRequestInterceptor implements RequestInterceptor
 
     // Extract path parameters from the URL template
     const extractedPathParams = exchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams(exchange.request.url);
-    const tenantIdPathKey = this.options.tenantId;
+    const tenantIdPathKey = this.tenantIdPathKey;
     const requestPathParams = exchange.ensureRequestUrlParams().path;
     const tenantId = principal.tenantId;
 
@@ -87,7 +93,7 @@ export class ResourceAttributionRequestInterceptor implements RequestInterceptor
       requestPathParams[tenantIdPathKey] = tenantId;
     }
 
-    const ownerIdPathKey = this.options.ownerId;
+    const ownerIdPathKey = this.ownerIdPathKey;
     const ownerId = principal.sub;
 
     // Add owner ID to path parameters if it's part of the URL template and not already provided
