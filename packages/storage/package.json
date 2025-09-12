@@ -44,12 +44,16 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "*",
-    "eslint": "*",
-    "prettier": "*",
     "typescript": "*",
+    "eslint": "*",
+    "@eslint/js": "*",
+    "typescript-eslint": "*",
+    "@vitest/coverage-v8": "*",
+    "globals": "*",
+    "prettier": "*",
     "unplugin-dts": "*",
     "vite": "*",
-    "vitest": "*"
+    "vitest": "*",
+    "vite-bundle-analyzer": "*"
   }
 }
