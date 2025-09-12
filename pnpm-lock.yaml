@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 importers:
+
   .:
     devDependencies:
       '@eslint/js':
@@ -129,9 +130,6 @@ importers:
       typescript-eslint:
         specifier: '*'
         version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
-      unplugin-dts:
-        specifier: '*'
-        version: 1.0.0-beta.6(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.3.2))
       vite:
         specifier: '*'
         version: 7.1.5(@types/node@24.3.2)
@@ -175,9 +173,6 @@ importers:
       typescript-eslint:
         specifier: '*'
         version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
-      unplugin-dts:
-        specifier: '*'
-        version: 1.0.0-beta.6(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.3.2))
       vite:
         specifier: '*'
         version: 7.1.5(@types/node@24.3.2)
@@ -215,9 +210,6 @@ importers:
       typescript-eslint:
         specifier: '*'
         version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
-      unplugin-dts:
-        specifier: '*'
-        version: 1.0.0-beta.6(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.3.2))
       vite:
         specifier: '*'
         version: 7.1.5(@types/node@24.3.2)
@@ -251,9 +243,6 @@ importers:
       typescript-eslint:
         specifier: '*'
         version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
-      unplugin-dts:
-        specifier: '*'
-        version: 1.0.0-beta.6(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.3.2))
       vite:
         specifier: '*'
         version: 7.1.5(@types/node@24.3.2)
@@ -287,9 +276,6 @@ importers:
       typescript-eslint:
         specifier: '*'
         version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
-      unplugin-dts:
-        specifier: '*'
-        version: 1.0.0-beta.6(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.3.2))
       vite:
         specifier: '*'
         version: 7.1.5(@types/node@24.3.2)
@@ -330,9 +316,6 @@ importers:
       typescript-eslint:
         specifier: '*'
         version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
-      unplugin-dts:
-        specifier: '*'
-        version: 1.0.0-beta.6(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.3.2))
       vite:
         specifier: '*'
         version: 7.1.5(@types/node@24.3.2)

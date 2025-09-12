@@ -56,7 +56,6 @@
     "@vitest/coverage-v8": "*",
     "globals": "*",
     "prettier": "*",
-    "unplugin-dts": "*",
     "vite": "*",
     "vitest": "*",
     "vite-bundle-analyzer": "*"
