@@ -15,7 +15,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 describe('readableStreams', () => {
   it('should export isReadableStreamAsyncIterableSupported as boolean', async () => {
-    // 删除可能存在的 [Symbol.asyncIterator] 实现以模拟不支持环境
+    // @ts-expect-error - TypeScript complains about deleting non-optional properties
     delete ReadableStream.prototype[Symbol.asyncIterator];
 
     // 清除模块缓存并重新导入
@@ -28,7 +28,7 @@ describe('readableStreams', () => {
   });
 
   it('should add [Symbol.asyncIterator] to ReadableStream when not implemented', async () => {
-    // 删除可能存在的 [Symbol.asyncIterator] 实现
+    // @ts-expect-error - TypeScript complains about deleting non-optional properties
     delete ReadableStream.prototype[Symbol.asyncIterator];
 
     // 清除模块缓存并重新导入
@@ -48,7 +48,7 @@ describe('readableStreams', () => {
   });
 
   it('should be able to iterate over stream when polyfill is added', async () => {
-    // 删除可能存在的 [Symbol.asyncIterator] 实现
+    // @ts-expect-error - TypeScript complains about deleting non-optional properties
     delete ReadableStream.prototype[Symbol.asyncIterator];
 
     // 清除模块缓存并重新导入
@@ -74,6 +74,7 @@ describe('readableStreams', () => {
   it('should not override [Symbol.asyncIterator] when already implemented', async () => {
     // 创建一个自定义的 [Symbol.asyncIterator] 实现
     const customSymbol = Symbol('customAsyncIterator');
+    // @ts-expect-error - TypeScript complains about deleting non-optional properties
     ReadableStream.prototype[Symbol.asyncIterator] = function() {
       return {
         [customSymbol]: true,
