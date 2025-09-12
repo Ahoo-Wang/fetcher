@@ -27,6 +27,10 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
     this.reader = stream.getReader();
   }
 
+  /**
+   * Releases the reader lock if currently locked.
+   * This method safely releases the reader lock by catching any potential errors.
+   */
   releaseLock() {
     if (this.locked) {
       try {
@@ -38,10 +42,21 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
     }
   }
 
+  /**
+   * Implements the AsyncIterable interface by returning this iterator.
+   * @returns The async iterator for this instance.
+   */
   [Symbol.asyncIterator]() {
     return this;
   }
 
+  /**
+   * Gets the next value from the stream.
+   * Reads the next chunk from the stream and returns it as an IteratorResult.
+   * If the stream is done, releases the lock and returns a done result.
+   * @returns A promise that resolves to an IteratorResult containing the next value or done status.
+   * @throws If an error occurs while reading from the stream.
+   */
   async next(): Promise<IteratorResult<T>> {
     try {
       const { done, value } = await this.reader.read();
@@ -57,6 +72,11 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
     }
   }
 
+  /**
+   * Implements the return method of the async iterator.
+   * Cancels the stream reader and releases the lock.
+   * @returns A promise that resolves to a done IteratorResult.
+   */
   async return(): Promise<IteratorResult<T>> {
     // Release the reader lock when iteration is manually stopped
     try {
@@ -67,6 +87,12 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
     return { done: true, value: undefined };
   }
 
+  /**
+   * Implements the throw method of the async iterator.
+   * Releases the lock and returns a done result.
+   * @param error - The error to be thrown.
+   * @returns A promise that resolves to a done IteratorResult.
+   */
   async throw(error: any): Promise<IteratorResult<T>> {
     // Ensure the reader lock is released before throwing
     this.releaseLock();
