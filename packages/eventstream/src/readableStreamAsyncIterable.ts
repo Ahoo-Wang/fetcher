@@ -17,7 +17,7 @@
  */
 export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
   private readonly reader: ReadableStreamDefaultReader<T>;
-  private locked: boolean = true;
+  private _locked: boolean = true;
 
   /**
    * Creates a new ReadableStreamAsyncIterable instance.
@@ -25,6 +25,14 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
    */
   constructor(private readonly stream: ReadableStream<T>) {
     this.reader = stream.getReader();
+  }
+
+  /**
+   * Gets the lock status of the reader.
+   * @returns True if the reader is currently locked, false otherwise.
+   */
+  get locked(): boolean {
+    return this._locked;
   }
 
   /**
