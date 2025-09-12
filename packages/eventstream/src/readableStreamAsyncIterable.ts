@@ -11,17 +11,33 @@
  * limitations under the License.
  */
 
+/**
+ * A wrapper class that converts a ReadableStream into an AsyncIterable.
+ * This allows consuming a ReadableStream using for-await...of loops.
+ */
 export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
   private readonly reader: ReadableStreamDefaultReader<T>;
 
+  /**
+   * Creates a new ReadableStreamAsyncIterable instance.
+   * @param stream - The ReadableStream to wrap.
+   */
   constructor(private readonly stream: ReadableStream<T>) {
     this.reader = stream.getReader();
   }
 
+  /**
+   * Returns this instance as the async iterator.
+   * @returns This instance which implements the AsyncIterator interface.
+   */
   [Symbol.asyncIterator]() {
     return this;
   }
 
+  /**
+   * Gets the next value from the stream.
+   * @returns A promise that resolves to an IteratorResult.
+   */
   async next(): Promise<IteratorResult<T>> {
     try {
       const { done, value } = await this.reader.read();
@@ -37,6 +53,10 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
     }
   }
 
+  /**
+   * Releases the reader lock and cancels the stream when iteration is manually stopped.
+   * @returns A promise that resolves to an IteratorResult indicating completion.
+   */
   async return(): Promise<IteratorResult<T>> {
     // Release the reader lock when iteration is manually stopped
     try {
@@ -49,6 +69,11 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
     return { done: true, value: undefined };
   }
 
+  /**
+   * Releases the reader lock and throws the provided error.
+   * @param error - The error to throw.
+   * @returns A promise that resolves to an IteratorResult.
+   */
   async throw(error: any): Promise<IteratorResult<T>> {
     this.reader.releaseLock();
     throw error;
