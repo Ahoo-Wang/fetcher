@@ -22,13 +22,39 @@ export interface AuthorizationInterceptorOptions extends JwtTokenManagerCapable 
 export const AUTHORIZATION_REQUEST_INTERCEPTOR_NAME = 'AuthorizationRequestInterceptor';
 export const AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER = COSEC_REQUEST_INTERCEPTOR_ORDER + 1000;
 
+/**
+ * Request interceptor that automatically adds Authorization header to requests.
+ *
+ * This interceptor handles JWT token management by:
+ * 1. Adding Authorization header with Bearer token if not already present
+ * 2. Refreshing tokens when needed and possible
+ * 3. Skipping refresh when explicitly requested via attributes
+ *
+ * The interceptor runs after CoSecRequestInterceptor but before FetchInterceptor in the chain.
+ */
 export class AuthorizationRequestInterceptor implements RequestInterceptor {
   readonly name = AUTHORIZATION_REQUEST_INTERCEPTOR_NAME;
   readonly order = AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER;
 
+  /**
+   * Creates an AuthorizationRequestInterceptor instance.
+   *
+   * @param options - Configuration options containing the token manager
+   */
   constructor(private readonly options: AuthorizationInterceptorOptions) {
   }
 
+  /**
+   * Intercepts the request exchange to add authorization headers.
+   *
+   * This method performs the following operations:
+   * 1. Checks if a token exists and if Authorization header is already set
+   * 2. Refreshes the token if needed, possible, and not explicitly ignored
+   * 3. Adds the Authorization header with Bearer token if a token is available
+   *
+   * @param exchange - The fetch exchange containing request information
+   * @returns Promise that resolves when the interception is complete
+   */
   async intercept(exchange: FetchExchange): Promise<void> {
     // Get the current token from token manager
     let currentToken = this.options.tokenManager.currentToken;
