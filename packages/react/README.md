@@ -31,13 +31,13 @@ npm install @ahoo-wang/fetcher-react
 The `useKeyStorage` hook provides state management for a KeyStorage instance. It subscribes to storage changes and
 returns the current value along with a setter function.
 
-```typescript
-import { useKeyStorage } from '@ahoo-wang/fetcher-react/storage';
-import { KeyStorage } from '@ahoo-wang/fetcher-react';
+```typescript jsx
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
   const keyStorage = new KeyStorage<string>({
-    key: 'my-key'
+    key: 'my-key',
   });
 
   const [value, setValue] = useKeyStorage(keyStorage);
@@ -45,27 +45,22 @@ const MyComponent = () => {
   return (
     <div>
       <p>Current
-  value: {
-    value
-  }
-  </p>
-  < button
-  onClick = {()
-=>
-  setValue('new value')
-}>
-  Update
-  Value
-  < /button>
-  < /div>
-)
-  ;
+        value: {value}
+      </p>
+      <button
+        onClick={() => setValue('new value')}>
+        Update
+        Value
+      </button>
+    </div>
+  )
+    ;
 };
 ```
 
 ### More Examples
 
-```typescript
+```typescript jsx
 // Working with different value types
 const numberStorage = new KeyStorage<number>({ key: 'counter' });
 const [count, setCount] = useKeyStorage(numberStorage);
@@ -84,7 +79,7 @@ const [user, setUser] = useKeyStorage(userStorage);
 
 ### useKeyStorage
 
-```typescript
+```typescript jsx
 function useKeyStorage<T>(keyStorage: KeyStorage<T>): [T | null, (value: T) => void]
 ```
 

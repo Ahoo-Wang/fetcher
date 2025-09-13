@@ -29,41 +29,33 @@ npm install @ahoo-wang/fetcher-react
 
 `useKeyStorage` hook 为 KeyStorage 实例提供状态管理。它订阅存储变化并返回当前值以及设置值的函数。
 
-```typescript
-import { useKeyStorage } from '@ahoo-wang/fetcher-react/storage';
+```typescript jsx
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
   const keyStorage = new KeyStorage<string>({
-    key: 'my-key'
+    key: 'my-key',
   });
 
   const [value, setValue] = useKeyStorage(keyStorage);
 
   return (
     <div>
-      <p>当前值
-:
-  {
-    value
-  }
-  </p>
-  < button
-  onClick = {()
-=>
-  setValue('new value')
-}>
-  更新值
-  < /button>
-  < /div>
-)
-  ;
+      <p>当前值 :{value}
+      </p>
+      < button
+        onClick={() => setValue('new value')}>
+        更新值
+      < /button>
+    < /div>
+  );
 };
 ```
 
 ### 更多示例
 
-```typescript
+```typescript jsx
 // 处理不同类型的值
 const numberStorage = new KeyStorage<number>({ key: 'counter' });
 const [count, setCount] = useKeyStorage(numberStorage);
@@ -82,7 +74,7 @@ const [user, setUser] = useKeyStorage(userStorage);
 
 ### useKeyStorage
 
-```typescript
+```typescript jsx
 function useKeyStorage<T>(keyStorage: KeyStorage<T>): [T | null, (value: T) => void]
 ```
 
