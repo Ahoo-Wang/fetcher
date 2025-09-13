@@ -90,17 +90,6 @@ declare global {
      */
     requiredJsonEventStream<DATA>(): JsonServerSentEventStream<DATA>;
   }
-
-  interface ReadableStream<R = any> {
-    /**
-     * Makes ReadableStream async iterable for use with for-await loops.
-     *
-     * This allows the stream to be consumed using `for await (const chunk of stream)` syntax.
-     *
-     * @returns An async iterator for the stream
-     */
-    [Symbol.asyncIterator](): AsyncIterator<R>;
-  }
 }
 
 /**

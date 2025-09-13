@@ -17,3 +17,5 @@ export * from './eventStreamResultExtractor';
 export * from './responses';
 export * from './serverSentEventTransformStream';
 export * from './textLineTransformStream';
+export * from './readableStreamAsyncIterable';
+export * from './readableStreams';
