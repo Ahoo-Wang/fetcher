@@ -23,7 +23,7 @@ import { JwtTokenManager } from '../src';
 import { TokenStorage } from '../src';
 import { TokenRefresher } from '../src';
 
-describe('CoSecResponseInterceptor', () => {
+describe('AuthorizationResponseInterceptor', () => {
   let mockFetcher: Fetcher;
   let mockTokenStorage: TokenStorage;
   let mockTokenRefresher: TokenRefresher;
