@@ -14,7 +14,6 @@ automatic re-rendering and loading states.
 ## Features
 
 - 🔄 **React Hooks**: Provides React hooks for seamless integration with Fetcher
-- 📦 **Lightweight**: Only 3KiB min+gzip
 - 🌐 **TypeScript Support**: Full TypeScript support with comprehensive type definitions
 - 🚀 **Modern**: Built with modern React patterns and best practices
 - 🧠 **Smart Caching**: Built-in caching and automatic revalidation

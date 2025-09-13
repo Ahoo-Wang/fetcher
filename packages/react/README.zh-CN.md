@@ -13,7 +13,6 @@ Fetcher 生态的 React 集成包。提供 React Hooks 和组件，实现无缝�
 ## 功能特性
 
 - 🔄 **React Hooks**: 提供 React hooks 与 Fetcher 无缝集成
-- 📦 **轻量级**: 仅 3KiB min+gzip
 - 🌐 **TypeScript 支持**: 完整的 TypeScript 支持和全面的类型定义
 - 🚀 **现代化**: 使用现代 React 模式和最佳实践构建
 - 🧠 **智能缓存**: 内置缓存和自动重新验证
