@@ -11,13 +11,16 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from 'vitest';
-import { deviceIdStorage, DeviceIdStorage } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  DeviceIdStorage,
+} from '../src';
 
 describe('deviceIdStorage.ts', () => {
   describe('DeviceIdStorage', () => {
     it('should create DeviceIdStorage with default parameters', () => {
-      expect(deviceIdStorage).toBeInstanceOf(DeviceIdStorage);
+      const storage = new DeviceIdStorage();
+      expect(storage).toBeInstanceOf(DeviceIdStorage);
     });
 
     it('should create DeviceIdStorage with custom parameters', () => {
