@@ -33,7 +33,7 @@ export function useKeyStorage<T>(
     () => keyStorage.get(),
     [keyStorage],
   );
-  const store = useSyncExternalStore(
+  const value = useSyncExternalStore(
     subscribe,
     getSnapshot,
     getSnapshot,
@@ -42,5 +42,5 @@ export function useKeyStorage<T>(
     (value: T) => keyStorage.set(value),
     [keyStorage],
   );
-  return [store, setValue];
+  return [value, setValue];
 }
