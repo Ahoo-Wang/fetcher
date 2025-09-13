@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
 /**
@@ -25,10 +25,22 @@ import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
 ): [T | null, (value: T) => void] {
-  const store = useSyncExternalStore(
-    keyStorage.addListener.bind(keyStorage),
-    keyStorage.get.bind(keyStorage),
-    keyStorage.get.bind(keyStorage),
+  const subscribe = useCallback(
+    (callback: () => void) => keyStorage.addListener(callback),
+    [keyStorage],
   );
-  return [store, keyStorage.set.bind(keyStorage)];
+  const getSnapshot = useCallback(
+    () => keyStorage.get(),
+    [keyStorage],
+  );
+  const store = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getSnapshot,
+  );
+  const setValue = useCallback(
+    (value: T) => keyStorage.set(value),
+    [keyStorage],
+  );
+  return [store, setValue];
 }
