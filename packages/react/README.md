@@ -17,7 +17,6 @@ automatic re-rendering and loading states.
 - 🌐 **TypeScript Support**: Full TypeScript support with comprehensive type definitions
 - 🚀 **Modern**: Built with modern React patterns and best practices
 - 🧠 **Smart Caching**: Built-in caching and automatic revalidation
-- 📡 **Real-time**: Automatic updates when data changes
 
 ## Installation
 
