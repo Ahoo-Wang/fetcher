@@ -13,15 +13,14 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import {
-  CompositeToken, JwtCompositeToken,
+  CompositeToken, JwtCompositeToken, tokenStorage,
   TokenStorage,
 } from '../src';
 
 describe('tokenStorage.ts', () => {
   describe('TokenStorage', () => {
     it('should create TokenStorage with default parameters', () => {
-      const storage = new TokenStorage();
-      expect(storage).toBeInstanceOf(TokenStorage);
+      expect(tokenStorage).toBeInstanceOf(TokenStorage);
     });
 
     it('should create TokenStorage with custom parameters', () => {
