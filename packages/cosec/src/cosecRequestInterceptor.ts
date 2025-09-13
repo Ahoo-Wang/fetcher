@@ -16,8 +16,11 @@ import {
   REQUEST_BODY_INTERCEPTOR_ORDER,
   type RequestInterceptor,
 } from '@ahoo-wang/fetcher';
-import { CoSecHeaders, CoSecOptions } from './types';
+import { AppIdCapable, CoSecHeaders, DeviceIdStorageCapable } from './types';
 import { idGenerator } from './idGenerator';
+
+export interface CoSecRequestOptions extends AppIdCapable, DeviceIdStorageCapable {
+}
 
 /**
  * The name of the CoSecRequestInterceptor.
@@ -53,13 +56,13 @@ export const IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY = 'Ignore-Refresh-Token';
 export class CoSecRequestInterceptor implements RequestInterceptor {
   readonly name = COSEC_REQUEST_INTERCEPTOR_NAME;
   readonly order = COSEC_REQUEST_INTERCEPTOR_ORDER;
-  private options: CoSecOptions;
+  private options: CoSecRequestOptions;
 
   /**
    * Creates a new CoSecRequestInterceptor instance.
    * @param options - The CoSec configuration options including appId, deviceIdStorage, and tokenManager
    */
-  constructor(options: CoSecOptions) {
+  constructor(options: CoSecRequestOptions) {
     this.options = options;
   }
 
@@ -101,25 +104,5 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;
     requestHeaders[CoSecHeaders.REQUEST_ID] = requestId;
 
-    // Get the current token from token manager
-    let currentToken = this.options.tokenManager.currentToken;
-
-    // Skip if no token exists or Authorization header is already set
-    if (!currentToken || requestHeaders[CoSecHeaders.AUTHORIZATION]) {
-      return;
-    }
-
-    // Refresh token if needed and refreshable
-    if (!exchange.attributes.has(IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY) && currentToken.isRefreshNeeded && currentToken.isRefreshable) {
-      await this.options.tokenManager.refresh();
-    }
-
-    // Get the current token again (might have been refreshed)
-    currentToken = this.options.tokenManager.currentToken;
-
-    // Add Authorization header if we have a token
-    if (currentToken) {
-      requestHeaders[CoSecHeaders.AUTHORIZATION] = `Bearer ${currentToken.access.token}`;
-    }
   }
 }

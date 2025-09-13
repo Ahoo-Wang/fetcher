@@ -28,21 +28,26 @@ export class ResponseCodes {
   static readonly UNAUTHORIZED = 401;
 }
 
-/**
- * CoSec options interface.
- */
-export interface CoSecOptions {
+export interface AppIdCapable {
   /**
    * Application ID to be sent in the CoSec-App-Id header.
    */
   appId: string;
+}
 
-  /**
-   * Device ID storage instance.
-   */
+export interface DeviceIdStorageCapable {
   deviceIdStorage: DeviceIdStorage;
+}
 
+export interface JwtTokenManagerCapable {
   tokenManager: JwtTokenManager;
+}
+
+/**
+ * CoSec options interface.
+ */
+export interface CoSecOptions extends AppIdCapable, DeviceIdStorageCapable, JwtTokenManagerCapable {
+
 }
 
 /**

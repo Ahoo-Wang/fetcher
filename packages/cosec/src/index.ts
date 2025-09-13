@@ -12,7 +12,7 @@
  */
 
 export * from './cosecRequestInterceptor';
-export * from './cosecResponseInterceptor';
+export * from './authorizationResponseInterceptor';
 export * from './deviceIdStorage';
 export * from './idGenerator';
 export * from './jwts';
