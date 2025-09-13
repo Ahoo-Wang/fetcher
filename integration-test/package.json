@@ -60,6 +60,7 @@
     "prettier": "*",
     "vite": "*",
     "vitest": "*",
-    "vite-bundle-analyzer": "*"
+    "vite-bundle-analyzer": "*",
+    "unplugin-dts": "*"
   }
 }
