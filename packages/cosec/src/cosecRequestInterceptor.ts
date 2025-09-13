@@ -42,7 +42,6 @@ export const IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY = 'Ignore-Refresh-Token';
  * This interceptor adds the following headers to each request:
  * - CoSec-Device-Id: Device identifier (stored in localStorage or generated)
  * - CoSec-App-Id: Application identifier
- * - Authorization: Bearer token
  * - CoSec-Request-Id: Unique request identifier for each request
  *
  * @remarks
@@ -73,7 +72,6 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    * - CoSec-App-Id: The application identifier from the CoSec options
    * - CoSec-Device-Id: A unique device identifier, either retrieved from storage or generated
    * - CoSec-Request-Id: A unique identifier for this specific request
-   * - Authorization: Bearer token if available in token storage
    *
    * @param exchange - The fetch exchange containing the request to process
    *
