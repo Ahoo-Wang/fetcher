@@ -12,7 +12,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CoSecResponseInterceptor, COSEC_RESPONSE_INTERCEPTOR_NAME, COSEC_RESPONSE_INTERCEPTOR_ORDER } from '../src';
+import {
+  AuthorizationResponseInterceptor,
+  AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME,
+  AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER,
+} from '../src';
 import { ResponseCodes, type CoSecOptions } from '../src';
 import { FetchExchange, type Fetcher } from '@ahoo-wang/fetcher';
 import { JwtTokenManager } from '../src';
@@ -25,7 +29,7 @@ describe('CoSecResponseInterceptor', () => {
   let mockTokenRefresher: TokenRefresher;
   let mockJwtTokenManager: JwtTokenManager;
   let coSecOptions: CoSecOptions;
-  let interceptor: CoSecResponseInterceptor;
+  let interceptor: AuthorizationResponseInterceptor;
 
   beforeEach(() => {
     mockFetcher = {
@@ -54,12 +58,12 @@ describe('CoSecResponseInterceptor', () => {
       tokenManager: mockJwtTokenManager,
     } as CoSecOptions;
 
-    interceptor = new CoSecResponseInterceptor(coSecOptions);
+    interceptor = new AuthorizationResponseInterceptor(coSecOptions);
   });
 
   it('should have correct name and order', () => {
-    expect(interceptor.name).toBe(COSEC_RESPONSE_INTERCEPTOR_NAME);
-    expect(interceptor.order).toBe(COSEC_RESPONSE_INTERCEPTOR_ORDER);
+    expect(interceptor.name).toBe(AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME);
+    expect(interceptor.order).toBe(AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER);
   });
 
   it('should not intercept when there is no response', async () => {

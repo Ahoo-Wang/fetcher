@@ -11,19 +11,22 @@
  * limitations under the License.
  */
 
-import { type CoSecOptions, ResponseCodes } from './types';
+import { ResponseCodes } from './types';
 import { FetchExchange, type ResponseInterceptor } from '@ahoo-wang/fetcher';
+import {
+  AuthorizationInterceptorOptions,
+} from './authorizationRequestInterceptor';
 
 /**
- * The name of the CoSecResponseInterceptor.
+ * The name of the AuthorizationResponseInterceptor.
  */
-export const COSEC_RESPONSE_INTERCEPTOR_NAME = 'CoSecResponseInterceptor';
+export const AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME = 'AuthorizationResponseInterceptor';
 
 /**
- * The order of the CoSecResponseInterceptor.
+ * The order of the AuthorizationResponseInterceptor.
  * Set to a high negative value to ensure it runs early in the interceptor chain.
  */
-export const COSEC_RESPONSE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
+export const AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
 
 /**
  * CoSecResponseInterceptor is responsible for handling unauthorized responses (401)
@@ -35,16 +38,16 @@ export const COSEC_RESPONSE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
  * 3. On successful refresh, stores the new token and retries the original request
  * 4. On refresh failure, clears stored tokens and propagates the error
  */
-export class CoSecResponseInterceptor implements ResponseInterceptor {
-  readonly name = COSEC_RESPONSE_INTERCEPTOR_NAME;
-  readonly order = COSEC_RESPONSE_INTERCEPTOR_ORDER;
-  private options: CoSecOptions;
+export class AuthorizationResponseInterceptor implements ResponseInterceptor {
+  readonly name = AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME;
+  readonly order = AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER;
+  private options: AuthorizationInterceptorOptions;
 
   /**
-   * Creates a new CoSecResponseInterceptor instance.
+   * Creates a new AuthorizationResponseInterceptor instance.
    * @param options - The CoSec configuration options including token storage and refresher
    */
-  constructor(options: CoSecOptions) {
+  constructor(options: AuthorizationInterceptorOptions) {
     this.options = options;
   }
 
