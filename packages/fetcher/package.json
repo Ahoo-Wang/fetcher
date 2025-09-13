@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Ultra-lightweight (2.8KiB min+gzip) HTTP client with built-in path parameters, query parameters, and Axios-like API. The foundation of the Fetcher ecosystem with powerful interceptor system and LLM streaming API support.",
   "keywords": [
     "fetch",
