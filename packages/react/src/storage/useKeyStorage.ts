@@ -26,9 +26,9 @@ export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
 ): [T | null, (value: T) => void] {
   const store = useSyncExternalStore(
-    keyStorage.addListener,
-    keyStorage.get,
-    keyStorage.get,
+    keyStorage.addListener.bind(keyStorage),
+    keyStorage.get.bind(keyStorage),
+    keyStorage.get.bind(keyStorage),
   );
-  return [store, keyStorage.set];
+  return [store, keyStorage.set.bind(keyStorage)];
 }

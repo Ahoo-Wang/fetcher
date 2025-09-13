@@ -1,11 +1,12 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
     "types": [
       "vitest/globals",
-      "@testing-library/jest-dom"
-    ]
+      "react",
+      "react-dom"
+    ],
+    "jsx": "react-jsx"
   },
   "include": [
     "../src/**/*",
