@@ -40,3 +40,5 @@ export class TokenStorage extends KeyStorage<JwtCompositeToken> implements Early
     );
   }
 }
+
+export const tokenStorage = new TokenStorage();

@@ -55,3 +55,5 @@ export class DeviceIdStorage extends KeyStorage<string> {
   }
 
 }
+
+export const deviceIdStorage = new DeviceIdStorage();
