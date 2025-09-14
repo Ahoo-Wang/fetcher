@@ -66,13 +66,13 @@ export interface UseFetcherResult<R> {
   loading: boolean;
 
   /** The FetchExchange object representing the ongoing fetch operation */
-  exchange: FetchExchange | unknown;
+  exchange?: FetchExchange;
 
   /** The data returned by the fetch operation, or undefined if not yet loaded or an error occurred */
-  result: R | undefined;
+  result?: R;
 
   /** Any error that occurred during the fetch operation, or undefined if no error */
-  error: Error | undefined | unknown;
+  error?: Error | unknown;
 
   /**
    * Function to manually trigger the fetch operation.
@@ -114,6 +114,9 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
         setResult(result);
       }
     } catch (error) {
+      if ((error as Error)?.name === 'AbortError') {
+        return;
+      }
       if (isMounted()) {
         setError(error);
       }
@@ -138,7 +141,7 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
       abortControllerRef.current?.abort();
       abortControllerRef.current = undefined;
     };
-  }, [execute, immediate, ...deps]);
+  }, [execute, immediate, request, ...deps]);
   return {
     loading, exchange, result, error, execute, cancel,
   };
