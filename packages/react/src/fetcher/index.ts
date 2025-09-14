@@ -11,4 +11,4 @@
  * limitations under the License.
  */
 
-export * from './useFetcher';
+export * from './useExchange';
