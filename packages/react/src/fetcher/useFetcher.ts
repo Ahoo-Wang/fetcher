@@ -89,7 +89,7 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | undefined | unknown>(undefined);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(undefined);
-  const [result, setResult] = useState<any>(undefined);
+  const [result, setResult] = useState<R | undefined>(undefined);
   const isMounted = useMountedState();
   const abortControllerRef = useRef<AbortController | undefined>();
 
@@ -109,7 +109,7 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
     try {
       const exchange = await currentFetcher.exchange(request, options);
       setExchange(exchange);
-      const result = exchange.extractResult<R>();
+      const result = await exchange.extractResult<R>();
       if (isMounted()) {
         setResult(result);
       }
@@ -123,7 +123,7 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
       }
       abortControllerRef.current = undefined;
     }
-  }, [deps, fetcher, isMounted]);
+  }, [fetcher, isMounted, ...deps]);
   /**
    * Cancel the ongoing fetch operation if one is in progress.
    */
