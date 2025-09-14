@@ -1,21 +1,3 @@
-import { useRef } from 'react';
-
-/**
- * A React hook that returns a function to check if the component is mounted.
- * Useful for avoiding state updates on unmounted components.
- */
-export function useMountedState(): () => boolean {
-  const isMounted = useRef(true);
-
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  return () => isMounted.current;
-}
-
 /*
  * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +11,6 @@ export function useMountedState(): () => boolean {
  * limitations under the License.
  */
 
-
 import {
   fetcher as defaultFetcher,
   FetcherCapable,
@@ -37,7 +18,8 @@ import {
   FetchRequest, getFetcher,
   RequestOptions,
 } from '@ahoo-wang/fetcher';
-import { DependencyList, useCallback, useEffect, useState } from 'react';
+import { DependencyList, useRef, useCallback, useEffect, useState } from 'react';
+import { useMountedState } from 'react-use';
 
 /**
  * Configuration options for the useFetcher hook.
@@ -114,7 +96,7 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
         setResult(result);
       }
     } catch (error) {
-      if ((error as Error)?.name === 'AbortError') {
+      if (error && typeof error === 'object' && (error as Error).name === 'AbortError') {
         return;
       }
       if (isMounted()) {
