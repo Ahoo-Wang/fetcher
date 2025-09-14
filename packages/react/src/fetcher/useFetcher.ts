@@ -21,6 +21,7 @@ import {
 } from '@ahoo-wang/fetcher';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DepsCapable } from '../types';
+import { useMountedState } from 'react-use';
 
 export interface UseFetcherOptions extends RequestOptions, FetcherCapable, DepsCapable {
 }
@@ -30,15 +31,18 @@ export interface UseFetcherResult<R> {
   exchange: FetchExchange | unknown;
   result: R | undefined;
   error: Error | undefined | unknown;
+  immediate?: boolean;
+  execute: () => Promise<void>;
   cancel: () => void;
 }
 
 export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions): UseFetcherResult<R> {
-  const { deps = [], fetcher = defaultFetcher } = options;
+  const { deps = [], fetcher = defaultFetcher, immediate = true } = options;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | undefined | unknown>(undefined);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(undefined);
   const [result, setResult] = useState<any>(undefined);
+  const isMounted = useMountedState();
   const abortControllerRef = useRef<AbortController | undefined>();
 
   const execute = useCallback(async () => {
@@ -53,25 +57,33 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
       const exchange = fetcher.exchange(request, options);
       setExchange(exchange);
       const result = (await exchange).extractResult<R>();
-      setResult(result);
+      if (isMounted()) {
+        setResult(result);
+      }
     } catch (error) {
-      setError(error);
+      if (isMounted()) {
+        setError(error);
+      }
     } finally {
-      setLoading(false);
+      if (isMounted()) {
+        setLoading(false);
+      }
       abortControllerRef.current = undefined;
     }
   }, [deps, fetcher]);
-  const cancel = () => {
+  const cancel = useCallback(() => {
     abortControllerRef.current?.abort();
-  };
+  }, []);
   useEffect(() => {
-    execute();
+    if (immediate) {
+      execute();
+    }
     return () => {
       abortControllerRef.current?.abort();
       abortControllerRef.current = undefined;
     };
-  }, [execute, ...deps]);
+  }, [execute, immediate, ...deps]);
   return {
-    loading, exchange, result, error, cancel,
+    loading, exchange, result, error, execute, cancel,
   };
 }
