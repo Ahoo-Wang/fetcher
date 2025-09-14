@@ -149,6 +149,22 @@ export class Fetcher
     request: FetchRequest,
     options?: RequestOptions,
   ): Promise<R> {
+    const fetchExchange = await this.exchange(request, options);
+    return fetchExchange.extractResult();
+  }
+
+  /**
+   * Processes an HTTP request through the Fetcher's internal workflow.
+   *
+   * This method creates a FetchExchange object and passes it through the interceptor chain.
+   * It handles header merging, timeout resolution, and result extractor configuration.
+   *
+   * @param request - The HTTP request configuration to process
+   * @param options - Optional request options including result extractor and attributes
+   * @returns Promise that resolves to the processed FetchExchange object
+   */
+  async exchange(request: FetchRequest,
+                 options?: RequestOptions): Promise<FetchExchange> {
     // Merge default headers and request-level headers. defensive copy
     const mergedHeaders = {
       ...this.headers,
@@ -170,8 +186,7 @@ export class Fetcher
       resultExtractor,
       attributes,
     });
-    await this.interceptors.exchange(exchange);
-    return exchange.extractResult();
+    return this.interceptors.exchange(exchange);
   }
 
   /**
