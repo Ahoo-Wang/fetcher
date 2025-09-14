@@ -54,7 +54,7 @@ export interface UseFetcherResult<R> {
   result?: R;
 
   /** Any error that occurred during the fetch operation, or undefined if no error */
-  error?: Error | unknown;
+  error?: unknown;
 
   /**
    * Function to manually trigger the fetch operation.
@@ -69,7 +69,7 @@ export interface UseFetcherResult<R> {
 export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions): UseFetcherResult<R> {
   const { deps = [], fetcher = defaultFetcher, immediate = true } = options || {};
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | undefined | unknown>(undefined);
+  const [error, setError] = useState<unknown>(undefined);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(undefined);
   const [result, setResult] = useState<R | undefined>(undefined);
   const isMounted = useMountedState();
@@ -86,17 +86,21 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
     }
     abortControllerRef.current = request.abortController ?? new AbortController();
     request.abortController = abortControllerRef.current;
-    setLoading(true);
-    setError(undefined);
+    if (isMounted()) {
+      setLoading(true);
+      setError(undefined);
+    }
     try {
       const exchange = await currentFetcher.exchange(request, options);
-      setExchange(exchange);
+      if (isMounted()) {
+        setExchange(exchange);
+      }
       const result = await exchange.extractResult<R>();
       if (isMounted()) {
         setResult(result);
       }
     } catch (error) {
-      if (error && typeof error === 'object' && (error as Error).name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         return;
       }
       if (isMounted()) {
@@ -106,9 +110,11 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
       if (isMounted()) {
         setLoading(false);
       }
-      abortControllerRef.current = undefined;
+      if (abortControllerRef.current === request.abortController) {
+        abortControllerRef.current = undefined;
+      }
     }
-  }, [fetcher, isMounted, ...deps]);
+  }, [currentFetcher, isMounted, options, ...deps]);
   /**
    * Cancel the ongoing fetch operation if one is in progress.
    */
@@ -123,7 +129,7 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
       abortControllerRef.current?.abort();
       abortControllerRef.current = undefined;
     };
-  }, [execute, immediate, request, ...deps]);
+  }, [execute, immediate, ...deps]);
   return {
     loading, exchange, result, error, execute, cancel,
   };
