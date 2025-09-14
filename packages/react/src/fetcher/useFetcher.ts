@@ -22,7 +22,6 @@ import {
 import { DependencyList, useCallback, useEffect, useRef, useState } from 'react';
 
 export interface UseFetcherOptions extends RequestOptions, FetcherCapable {
-  readonly prefetch?: boolean;
   readonly deps?: DependencyList;
 }
 
@@ -31,12 +30,11 @@ export interface UseFetcherResult<R> {
   exchange: FetchExchange | unknown;
   result: R | undefined;
   error: Error | undefined | unknown;
-  prefetch: () => Promise<void>;
   cancel: () => void;
 }
 
 export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions): UseFetcherResult<R> {
-  const { prefetch = true, deps = [], fetcher = defaultFetcher } = options;
+  const { deps = [], fetcher = defaultFetcher } = options;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | undefined | unknown>(undefined);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(undefined);
@@ -63,16 +61,16 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
       abortControllerRef.current = undefined;
     }
   }, [deps, fetcher]);
-
+  const cancel = () => {
+    abortControllerRef.current?.abort();
+  };
   useEffect(() => {
-    if (prefetch) {
-      execute();
-    }
+    execute();
     return () => {
       abortControllerRef.current?.abort();
     };
-  }, [prefetch, execute, ...deps]);
+  }, [execute, ...deps]);
   return {
-    loading, exchange, result, error,
+    loading, exchange, result, error, cancel,
   };
 }
