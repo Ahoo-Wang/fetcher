@@ -8,7 +8,11 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-Secure your applications with integrated authentication using the [CoSec](https://github.com/Ahoo-Wang/CoSec) framework.
+Support for CoSec authentication in Fetcher HTTP client.
+
+[CoSec](https://github.com/Ahoo-Wang/CoSec) is a comprehensive authentication and authorization framework.
+
+This package provides integration between the Fetcher HTTP client and the CoSec authentication framework.
 
 ## 🌟 Features
 
@@ -18,6 +22,7 @@ Secure your applications with integrated authentication using the [CoSec](https:
 - **🌈 Request Tracking**: Unique request ID generation for tracking
 - **💾 Token Storage**: Secure token storage management
 - **🛡️ TypeScript Support**: Complete TypeScript type definitions
+- **🔌 Pluggable Architecture**: Easy to integrate with existing applications
 
 ## 🚀 Quick Start
 
@@ -34,51 +39,14 @@ pnpm add @ahoo-wang/fetcher-cosec
 yarn add @ahoo-wang/fetcher-cosec
 ```
 
-### Integration Test Example: CoSec Integration
-
-The following example shows how to set up CoSec authentication, similar to the integration test in the Fetcher project.
-You can find the complete implementation
-in [integration-test/src/cosec/cosec.ts](../../integration-test/src/cosec/cosec.ts).
-
-```typescript
-import {
-  CompositeToken,
-  CoSecOptions,
-  CoSecRequestInterceptor,
-  CoSecResponseInterceptor,
-  DeviceIdStorage,
-  TokenRefresher,
-  TokenStorage,
-} from '@ahoo-wang/fetcher-cosec';
-
-export class MockTokenRefresher implements TokenRefresher {
-  refresh(_token: CompositeToken): Promise<CompositeToken> {
-    return Promise.reject('Token refresh failed');
-  }
-}
-
-const cosecOptions: CoSecOptions = {
-  appId: 'appId',
-  deviceIdStorage: new DeviceIdStorage(),
-  tokenStorage: new TokenStorage(),
-  tokenRefresher: new MockTokenRefresher(),
-};
-
-export const cosecRequestInterceptor = new CoSecRequestInterceptor(
-  cosecOptions,
-);
-export const cosecResponseInterceptor = new CoSecResponseInterceptor(
-  cosecOptions,
-);
-```
 
 ### Basic Setup
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
 import {
-  CoSecRequestInterceptor,
-  CoSecResponseInterceptor,
+  AuthorizationRequestInterceptor,
+  AuthorizationResponseInterceptor,
   DeviceIdStorage,
   TokenStorage,
   TokenRefresher,
@@ -116,7 +84,7 @@ const tokenRefresher: TokenRefresher = {
 
 // Add CoSec request interceptor
 fetcher.interceptors.request.use(
-  new CoSecRequestInterceptor({
+  new AuthorizationRequestInterceptor({
     appId: 'your-app-id',
     deviceIdStorage,
     tokenStorage,
@@ -126,7 +94,7 @@ fetcher.interceptors.request.use(
 
 // Add CoSec response interceptor
 fetcher.interceptors.response.use(
-  new CoSecResponseInterceptor({
+  new AuthorizationResponseInterceptor({
     appId: 'your-app-id',
     deviceIdStorage,
     tokenStorage,
@@ -176,23 +144,23 @@ The interceptor automatically adds the following headers to requests:
 
 ### Core Classes
 
-#### CoSecRequestInterceptor
+#### AuthorizationRequestInterceptor
 
 Adds CoSec authentication headers to outgoing requests.
 
 ```typescript
-new CoSecRequestInterceptor(options
+new AuthorizationRequestInterceptor(options
 :
 CoSecOptions
 )
 ```
 
-#### CoSecResponseInterceptor
+#### AuthorizationResponseInterceptor
 
 Handles token refresh when the server returns status code 401.
 
 ```typescript
-new CoSecResponseInterceptor(options
+new AuthorizationResponseInterceptor(options
 :
 CoSecOptions
 )
