@@ -121,7 +121,6 @@ describe('useFetcher', () => {
     expect(result.current.error).toBeUndefined();
   }, 10000);
 
-
   it('should not auto-execute if immediate is false', () => {
     const mockResult = 'data';
     const mockExchange: FetchExchange = {
@@ -138,4 +137,20 @@ describe('useFetcher', () => {
     expect(mockFetcher.exchange).not.toHaveBeenCalled();
   });
 
+  it('should auto-execute by default', () => {
+    const mockResult = 'data';
+    const mockExchange: FetchExchange = {
+      response: Promise.resolve(new Response()),
+      extractResult: vi.fn().mockResolvedValue(mockResult),
+    } as any;
+
+    const mockFetcher: Fetcher = {
+      exchange: vi.fn().mockResolvedValue(mockExchange),
+    };
+
+    renderHook(() => useFetcher(mockRequest, { fetcher: mockFetcher }));
+
+    // Should auto-execute by default (immediate = true by default)
+    expect(mockFetcher.exchange).toHaveBeenCalled();
+  });
 });
