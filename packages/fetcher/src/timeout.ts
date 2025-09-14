@@ -138,6 +138,7 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
 
   // Create AbortController for fetch request cancellation
   const controller = request.abortController ?? new AbortController();
+  request.abortController = controller;
   requestInit.signal = controller.signal;
 
   // Timer resource management
