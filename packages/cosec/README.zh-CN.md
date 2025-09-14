@@ -47,8 +47,8 @@ yarn add @ahoo-wang/fetcher-cosec
 import {
   CompositeToken,
   CoSecOptions,
-  CoSecRequestInterceptor,
-  CoSecResponseInterceptor,
+  AuthorizationRequestInterceptor,
+  AuthorizationResponseInterceptor,
   DeviceIdStorage,
   TokenRefresher,
   TokenStorage,
@@ -67,10 +67,10 @@ const cosecOptions: CoSecOptions = {
   tokenRefresher: new MockTokenRefresher(),
 };
 
-export const cosecRequestInterceptor = new CoSecRequestInterceptor(
+export const cosecRequestInterceptor = new AuthorizationRequestInterceptor(
   cosecOptions,
 );
-export const cosecResponseInterceptor = new CoSecResponseInterceptor(
+export const cosecResponseInterceptor = new AuthorizationResponseInterceptor(
   cosecOptions,
 );
 ```
