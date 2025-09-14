@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { ReadableStreamAsyncIterable } from '../src/readableStreamAsyncIterable';
+import { ReadableStreamAsyncIterable } from '../src';
 
 describe('ReadableStreamAsyncIterable', () => {
   it('should create an instance with a ReadableStream', () => {

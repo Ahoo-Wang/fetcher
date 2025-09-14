@@ -136,8 +136,5 @@ describe('NamedFetcher', () => {
     expect(fetcher).toBeInstanceOf(NamedFetcher);
     expect(fetcher).toBeInstanceOf(Fetcher);
     expect(fetcher.name).toBe(DEFAULT_FETCHER_NAME);
-
-    // Note: The default fetcher should be registered automatically when the module is imported
-    // We don't need to manually check registration as it happens during module initialization
   });
 });

@@ -33,8 +33,6 @@ describe('InterceptorManager', () => {
     expect(manager.request.interceptors).toHaveLength(3);
     expect(manager.response.interceptors).toHaveLength(1);
     expect(manager.error.interceptors).toHaveLength(0);
-    // Check that request registry has default interceptors
-    expect(manager.request).toBeDefined();
   });
 
   it('should process exchange through request interceptors', async () => {

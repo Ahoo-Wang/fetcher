@@ -16,7 +16,7 @@ import {
   AuthorizationRequestInterceptor,
   AUTHORIZATION_REQUEST_INTERCEPTOR_NAME,
   AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER,
-} from '../src/authorizationRequestInterceptor';
+} from '../src';
 import { CoSecHeaders, IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from '../src';
 import { FetchExchange } from '@ahoo-wang/fetcher';
 

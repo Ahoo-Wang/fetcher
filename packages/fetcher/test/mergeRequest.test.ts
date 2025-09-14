@@ -13,8 +13,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { HttpMethod, mergeRequest, ResultExtractors } from '../src';
-import { mergeRequestOptions } from '../src/mergeRequest';
-import { DEFAULT_REQUEST_OPTIONS } from '../src/fetcher';
+import { mergeRequestOptions } from '../src';
+import { DEFAULT_REQUEST_OPTIONS } from '../src';
 
 describe('mergeRequest', () => {
   it('should return second request when first request is empty', () => {
