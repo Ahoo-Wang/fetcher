@@ -11,125 +11,68 @@
  * limitations under the License.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { FetchRequest, Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
-import { fetcher as defaultFetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 
-type UseFetcherRequest =
-  | FetchRequest
-  | ((signal: AbortSignal) => FetchRequest | Promise<FetchRequest>);
+import {
+  fetcher as defaultFetcher,
+  FetcherCapable,
+  FetchExchange,
+  FetchRequest,
+  RequestOptions,
+} from '@ahoo-wang/fetcher';
+import { DependencyList, useCallback, useEffect, useRef, useState } from 'react';
 
-interface UseFetcherOptions<DataType> {
-  autoExecute?: boolean;
-  deps?: any[];
-  fetcher?: Fetcher;
+export interface UseFetcherOptions extends RequestOptions, FetcherCapable {
+  readonly prefetch?: boolean;
+  readonly deps?: DependencyList;
 }
 
-interface UseFetcherResult<DataType> {
+export interface UseFetcherResult<R> {
   loading: boolean;
-  data: DataType | undefined;
-  error: Error | undefined;
-  response: Response | undefined;
-  exchange: FetchExchange | undefined;
-  execute: () => Promise<FetchExchange | undefined>;
+  exchange: FetchExchange | unknown;
+  result: R | undefined;
+  error: Error | undefined | unknown;
+  prefetch: () => Promise<void>;
+  cancel: () => void;
 }
 
-export function useFetcher<DataType = any>(
-  request: UseFetcherRequest,
-  options: UseFetcherOptions<DataType> = {},
-): UseFetcherResult<DataType> {
-  const { autoExecute = true, deps = [], fetcher = defaultFetcher } = options;
+export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions): UseFetcherResult<R> {
+  const { prefetch = true, deps = [], fetcher = defaultFetcher } = options;
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | undefined>(undefined);
+  const [error, setError] = useState<Error | undefined | unknown>(undefined);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(undefined);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const [result, setResult] = useState<any>(undefined);
+  const abortControllerRef = useRef<AbortController | undefined>();
 
   const execute = useCallback(async () => {
-    // 取消之前的请求
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-
-    // 创建新的 AbortController
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
-
+    abortControllerRef.current = request.abortController ?? new AbortController();
+    request.abortController = abortControllerRef.current;
     setLoading(true);
     setError(undefined);
-
     try {
-      // 解析请求参数
-      const resolvedRequest = typeof request === 'function'
-        ? await request(signal)
-        : request;
-
-      // 如果请求中已经提供了 abortController，则使用它，否则使用我们创建的
-      const fetchRequest = resolvedRequest.abortController
-        ? resolvedRequest
-        : {
-          ...resolvedRequest,
-          abortController: abortControllerRef.current,
-        };
-
-      // 发起请求
-      const result = await fetcher.request<DataType>(
-        fetchRequest,
-        {
-          resultExtractor: ResultExtractors.Exchange,
-        },
-      );
-
-      // 检查是否已经取消
-      if (!signal.aborted) {
-        setExchange(result);
-        setResponse(result.response);
-
-        try {
-          // 尝试解析 JSON 数据
-          const jsonData = await result.extractResult();
-          setData(jsonData);
-        } catch (e) {
-          // 如果不是 JSON 数据，则忽略
-          setData(undefined);
-        }
-
-        return result;
-      }
-    } catch (err: any) {
-      // 检查是否已经取消
-      if (!signal.aborted) {
-        setError(err);
-      }
+      const exchange = fetcher.exchange(request, options);
+      setExchange(exchange);
+      const result = (await exchange).extractResult<R>();
+      setResult(result);
+    } catch (error) {
+      setError(error);
     } finally {
-      if (!signal.aborted) {
-        setLoading(false);
-        abortControllerRef.current = null;
-      }
+      setLoading(false);
+      abortControllerRef.current = undefined;
     }
+  }, [deps, fetcher]);
 
-    return undefined;
-  }, [request, fetcher]);
-
-  // 自动执行或依赖变化时执行
   useEffect(() => {
-    if (autoExecute) {
+    if (prefetch) {
       execute();
     }
-
     return () => {
-      // 组件卸载时取消请求
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      abortControllerRef.current?.abort();
     };
-  }, [autoExecute, execute, ...deps]);
-
+  }, [prefetch, execute, ...deps]);
   return {
-    loading,
-    data,
-    error,
-    response,
-    exchange,
-    execute,
+    loading, exchange, result, error,
   };
 }
