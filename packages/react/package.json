@@ -45,7 +45,8 @@
   },
   "dependencies": {
     "@ahoo-wang/fetcher": "workspace:*",
-    "@ahoo-wang/fetcher-storage": "workspace:*"
+    "@ahoo-wang/fetcher-storage": "workspace:*",
+    "react-use": "^17.6.0"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
