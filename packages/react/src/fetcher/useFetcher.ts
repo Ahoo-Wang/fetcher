@@ -1,3 +1,21 @@
+import { useRef } from 'react';
+
+/**
+ * A React hook that returns a function to check if the component is mounted.
+ * Useful for avoiding state updates on unmounted components.
+ */
+export function useMountedState(): () => boolean {
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  return () => isMounted.current;
+}
+
 /*
  * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,28 +34,58 @@ import {
   fetcher as defaultFetcher,
   FetcherCapable,
   FetchExchange,
-  FetchRequest,
+  FetchRequest, getFetcher,
   RequestOptions,
 } from '@ahoo-wang/fetcher';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { DepsCapable } from '../types';
-import { useMountedState } from 'react-use';
+import { DependencyList, useCallback, useEffect, useState } from 'react';
 
-export interface UseFetcherOptions extends RequestOptions, FetcherCapable, DepsCapable {
+/**
+ * Configuration options for the useFetcher hook.
+ * Extends RequestOptions and FetcherCapable interfaces.
+ */
+export interface UseFetcherOptions extends RequestOptions, FetcherCapable {
+  /**
+   * Dependencies list for the fetch operation.
+   * When provided, the hook will re-fetch when any of these values change.
+   */
+  readonly deps?: DependencyList;
+
+  /**
+   * Whether the fetch operation should execute immediately upon component mount.
+   * Defaults to true.
+   */
+  readonly immediate?: boolean;
 }
 
+/**
+ * The result object returned by the useFetcher hook.
+ * @template R - The type of the data returned by the fetch operation
+ */
 export interface UseFetcherResult<R> {
+  /** Indicates if the fetch operation is currently in progress */
   loading: boolean;
+
+  /** The FetchExchange object representing the ongoing fetch operation */
   exchange: FetchExchange | unknown;
+
+  /** The data returned by the fetch operation, or undefined if not yet loaded or an error occurred */
   result: R | undefined;
+
+  /** Any error that occurred during the fetch operation, or undefined if no error */
   error: Error | undefined | unknown;
-  immediate?: boolean;
+
+  /**
+   * Function to manually trigger the fetch operation.
+   * Useful for fetching data on demand rather than automatically.
+   */
   execute: () => Promise<void>;
+
+  /** Function to cancel the ongoing fetch operation */
   cancel: () => void;
 }
 
 export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions): UseFetcherResult<R> {
-  const { deps = [], fetcher = defaultFetcher, immediate = true } = options;
+  const { deps = [], fetcher = defaultFetcher, immediate = true } = options || {};
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | undefined | unknown>(undefined);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(undefined);
@@ -45,6 +93,11 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
   const isMounted = useMountedState();
   const abortControllerRef = useRef<AbortController | undefined>();
 
+  const currentFetcher = getFetcher(fetcher);
+  /**
+   * Execute the fetch operation.
+   * Cancels any ongoing fetch before starting a new one.
+   */
   const execute = useCallback(async () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -54,9 +107,9 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
     setLoading(true);
     setError(undefined);
     try {
-      const exchange = fetcher.exchange(request, options);
+      const exchange = await currentFetcher.exchange(request, options);
       setExchange(exchange);
-      const result = (await exchange).extractResult<R>();
+      const result = exchange.extractResult<R>();
       if (isMounted()) {
         setResult(result);
       }
@@ -70,7 +123,10 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
       }
       abortControllerRef.current = undefined;
     }
-  }, [deps, fetcher]);
+  }, [deps, fetcher, isMounted]);
+  /**
+   * Cancel the ongoing fetch operation if one is in progress.
+   */
   const cancel = useCallback(() => {
     abortControllerRef.current?.abort();
   }, []);
