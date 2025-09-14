@@ -19,10 +19,10 @@ import {
   FetchRequest,
   RequestOptions,
 } from '@ahoo-wang/fetcher';
-import { DependencyList, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { DepsCapable } from '../types';
 
-export interface UseFetcherOptions extends RequestOptions, FetcherCapable {
-  readonly deps?: DependencyList;
+export interface UseFetcherOptions extends RequestOptions, FetcherCapable, DepsCapable {
 }
 
 export interface UseFetcherResult<R> {
@@ -68,6 +68,7 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
     execute();
     return () => {
       abortControllerRef.current?.abort();
+      abortControllerRef.current = undefined;
     };
   }, [execute, ...deps]);
   return {
