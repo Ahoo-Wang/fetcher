@@ -12,10 +12,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { ExchangeError, Fetcher, FetchExchange, FetchRequest, ResultExtractors } from '../src';
+import { ExchangeError, Fetcher, FetchExchange, FetchRequest, NamedFetcher, ResultExtractors } from '../src';
 
 describe('FetchExchange', () => {
-  const mockFetcher = {} as Fetcher;
+  const mockFetcher = new NamedFetcher('mock-fetcher');
   const mockRequest = { url: '/test' } as FetchRequest;
 
   it('should create instance with required parameters', () => {
