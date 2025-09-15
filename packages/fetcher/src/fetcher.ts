@@ -62,7 +62,6 @@ export interface FetcherOptions
 }
 
 const DEFAULT_HEADERS: RequestHeaders = {
-  'Content-Type': ContentTypeValues.APPLICATION_JSON,
 };
 
 export const DEFAULT_OPTIONS: FetcherOptions = {
