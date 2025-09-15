@@ -14,8 +14,8 @@
 import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, type TimeoutCapable } from './timeout';
 import { AttributesCapable, FetchExchange } from './fetchExchange';
-import type {
-  BaseURLCapable,
+import {
+  BaseURLCapable, CONTENT_TYPE_HEADER, ContentTypeValues,
   FetchRequest,
   FetchRequestInit,
   RequestHeaders,
@@ -62,6 +62,7 @@ export interface FetcherOptions
 }
 
 const DEFAULT_HEADERS: RequestHeaders = {
+  [CONTENT_TYPE_HEADER]: ContentTypeValues.APPLICATION_JSON,
 };
 
 export const DEFAULT_OPTIONS: FetcherOptions = {

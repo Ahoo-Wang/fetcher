@@ -13,7 +13,7 @@
 
 import { type RequestInterceptor } from './interceptor';
 import { FetchExchange } from './fetchExchange';
-import { ContentTypeValues } from './fetchRequest';
+import { CONTENT_TYPE_HEADER, ContentTypeValues } from './fetchRequest';
 import { URL_RESOLVE_INTERCEPTOR_ORDER } from './urlResolveInterceptor';
 
 /**
@@ -109,7 +109,7 @@ export class RequestBodyInterceptor implements RequestInterceptor {
     if (typeof request.body !== 'object') {
       return;
     }
-
+    const headers = exchange.ensureRequestHeaders();
     // Check if it's a supported type
     if (
       request.body instanceof ArrayBuffer ||
@@ -120,16 +120,18 @@ export class RequestBodyInterceptor implements RequestInterceptor {
       request.body instanceof FormData ||
       request.body instanceof ReadableStream
     ) {
+      if (headers[CONTENT_TYPE_HEADER]) {
+        delete headers[CONTENT_TYPE_HEADER];
+      }
       return;
     }
 
     // For plain objects, convert to JSON string
     // Also ensure Content-Type header is set to application/json
     exchange.request.body = JSON.stringify(request.body);
-    // Only set default Content-Type if not explicitly set
-    const headers = exchange.ensureRequestHeaders();
-    if (!headers['Content-Type']) {
-      headers['Content-Type'] = ContentTypeValues.APPLICATION_JSON;
+
+    if (!headers[CONTENT_TYPE_HEADER]) {
+      headers[CONTENT_TYPE_HEADER] = ContentTypeValues.APPLICATION_JSON;
     }
   }
 }
