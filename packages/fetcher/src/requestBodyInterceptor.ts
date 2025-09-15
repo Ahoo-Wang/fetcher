@@ -62,10 +62,39 @@ export class RequestBodyInterceptor implements RequestInterceptor {
   readonly order = REQUEST_BODY_INTERCEPTOR_ORDER;
 
   /**
+   * Checks if the provided body is of a supported complex type that doesn't require JSON serialization.
+   *
+   * @param body - The request body to check
+   * @returns True if the body is an ArrayBuffer, TypedArray, DataView or ReadableStream, false otherwise
+   */
+  private isSupportedComplexBodyType(body: any): boolean {
+    return body instanceof ArrayBuffer ||
+      ArrayBuffer.isView(body) ||
+      body instanceof ReadableStream;
+  }
+
+  /**
+   * Checks if the provided body is of a type that automatically appends Content-Type header.
+   *
+   * @param body - The request body to check
+   * @returns True if the body is a Blob, File, FormData or URLSearchParams, false otherwise
+   */
+  private isAutoAppendContentType(body: any): boolean {
+    return body instanceof Blob ||
+      body instanceof File ||
+      body instanceof FormData ||
+      body instanceof URLSearchParams;
+  }
+
+  /**
    * Attempts to convert request body to a valid fetch API body type.
    *
-   * According to the Fetch API specification, body can be multiple types, but for
-   * plain objects, they need to be converted to JSON strings.
+   * This method follows a specific processing order to handle different types of request bodies:
+   * 1. Check if the body is null or undefined and return early if so
+   * 2. Check if the body is a non-object type and return early if so
+   * 3. Check if the body is a type that automatically appends Content-Type header
+   * 4. Check if the body is a supported complex type that doesn't require JSON serialization
+   * 5. For plain objects, convert to JSON string and set Content-Type header to application/json
    *
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#setting_a_body}
    *
@@ -110,19 +139,14 @@ export class RequestBodyInterceptor implements RequestInterceptor {
       return;
     }
     const headers = exchange.ensureRequestHeaders();
-    // Check if it's a supported type
-    if (
-      request.body instanceof ArrayBuffer ||
-      ArrayBuffer.isView(request.body) || // Includes TypedArray and DataView
-      request.body instanceof Blob ||
-      request.body instanceof File ||
-      request.body instanceof URLSearchParams ||
-      request.body instanceof FormData ||
-      request.body instanceof ReadableStream
-    ) {
+    if (this.isAutoAppendContentType(request.body)) {
       if (headers[CONTENT_TYPE_HEADER]) {
         delete headers[CONTENT_TYPE_HEADER];
       }
+      return;
+    }
+    // Check if it's a supported type
+    if (this.isSupportedComplexBodyType(request.body)) {
       return;
     }
 
