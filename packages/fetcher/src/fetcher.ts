@@ -130,32 +130,6 @@ export class Fetcher
   /**
    * Processes an HTTP request through the Fetcher's internal workflow.
    *
-   * This method prepares the request by merging headers and timeout settings,
-   * creates a FetchExchange object, and passes it through the exchange method
-   * for interceptor processing.
-   *
-   * @template R - The type of the result to be returned
-   * @param request - Complete request configuration object
-   * @param options - Request options including result extractor and attributes
-   * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
-   * @param options.attributes - Optional shared attributes that can be accessed by interceptors
-   *                             throughout the request lifecycle. These attributes allow passing
-   *                             custom data between different interceptors.
-   * @returns Promise that resolves to the extracted result based on resultExtractor
-   * @throws Error if an unhandled error occurs during request processing
-   */
-  async request<R = FetchExchange>(
-    request: FetchRequest,
-    options?: RequestOptions,
-  ): Promise<R> {
-    const fetchExchange = await this.exchange(request, options);
-    return fetchExchange.extractResult();
-  }
-
-  /**
-   * Processes an HTTP request through the Fetcher's internal workflow.
-   *
    * This method creates a FetchExchange object and passes it through the interceptor chain.
    * It handles header merging, timeout resolution, and result extractor configuration.
    *
@@ -187,6 +161,32 @@ export class Fetcher
       attributes,
     });
     return this.interceptors.exchange(exchange);
+  }
+
+  /**
+   * Processes an HTTP request through the Fetcher's internal workflow.
+   *
+   * This method prepares the request by merging headers and timeout settings,
+   * creates a FetchExchange object, and passes it through the exchange method
+   * for interceptor processing.
+   *
+   * @template R - The type of the result to be returned
+   * @param request - Complete request configuration object
+   * @param options - Request options including result extractor and attributes
+   * @param options.resultExtractor - Function to extract the desired result from the exchange.
+   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   * @param options.attributes - Optional shared attributes that can be accessed by interceptors
+   *                             throughout the request lifecycle. These attributes allow passing
+   *                             custom data between different interceptors.
+   * @returns Promise that resolves to the extracted result based on resultExtractor
+   * @throws Error if an unhandled error occurs during request processing
+   */
+  async request<R = FetchExchange>(
+    request: FetchRequest,
+    options?: RequestOptions,
+  ): Promise<R> {
+    const fetchExchange = await this.exchange(request, options);
+    return fetchExchange.extractResult();
   }
 
   /**
@@ -241,14 +241,12 @@ export class Fetcher
     request: FetchRequestInit = {},
     options?: RequestOptions,
   ): Promise<R> {
-    return this.fetch(
+    const mergedRequest: FetchRequest = {
+      ...request,
       url,
-      {
-        ...request,
-        method,
-      },
-      options,
-    );
+      method,
+    };
+    return this.request(mergedRequest, options);
   }
 
   /**
