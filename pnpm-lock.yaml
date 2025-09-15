@@ -4,42 +4,78 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@eslint/js':
+      specifier: ^9.35.0
+      version: 9.35.0
+    '@vitest/coverage-v8':
+      specifier: ^3.2.4
+      version: 3.2.4
+    eslint:
+      specifier: ^9.35.0
+      version: 9.35.0
+    globals:
+      specifier: ^16.4.0
+      version: 16.4.0
+    prettier:
+      specifier: ^3.6.2
+      version: 3.6.2
+    typescript:
+      specifier: ^5.9.2
+      version: 5.9.2
+    typescript-eslint:
+      specifier: ^8.43.0
+      version: 8.43.0
+    unplugin-dts:
+      specifier: 1.0.0-beta.6
+      version: 1.0.0-beta.6
+    vite:
+      specifier: ^7.1.5
+      version: 7.1.5
+    vite-bundle-analyzer:
+      specifier: ^1.2.3
+      version: 1.2.3
+    vitest:
+      specifier: ^3.2.4
+      version: 3.2.4
+
 importers:
 
   .:
     devDependencies:
       '@eslint/js':
-        specifier: ^9.35.0
+        specifier: 'catalog:'
         version: 9.35.0
       '@vitest/coverage-v8':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6)))
       eslint:
-        specifier: ^9.35.0
+        specifier: 'catalog:'
         version: 9.35.0
       globals:
-        specifier: ^16.4.0
+        specifier: 'catalog:'
         version: 16.4.0
       prettier:
-        specifier: ^3.6.2
+        specifier: 'catalog:'
         version: 3.6.2
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
       typescript-eslint:
-        specifier: ^8.43.0
+        specifier: 'catalog:'
         version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
       unplugin-dts:
-        specifier: 1.0.0-beta.6
+        specifier: 'catalog:'
         version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
       vite:
-        specifier: ^7.1.5
+        specifier: 'catalog:'
         version: 7.1.5(@types/node@24.4.0)
       vite-bundle-analyzer:
-        specifier: ^1.2.3
+        specifier: 'catalog:'
         version: 1.2.3
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6))
 
   integration-test:
@@ -60,20 +96,41 @@ importers:
         specifier: workspace:*
         version: link:../packages/wow
     devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.35.0
       '@types/node':
         specifier: ^24.3.0
         version: 24.4.0
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 3.2.4(vitest@3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6)))
+      eslint:
+        specifier: 'catalog:'
+        version: 9.35.0
+      globals:
+        specifier: 'catalog:'
+        version: 16.4.0
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
       unplugin-dts:
-        specifier: 1.0.0-beta.6
+        specifier: 'catalog:'
         version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
       vite:
-        specifier: ^7.1.3
+        specifier: 'catalog:'
         version: 7.1.5(@types/node@24.4.0)
+      vite-bundle-analyzer:
+        specifier: 'catalog:'
+        version: 1.2.3
       vitest:
-        specifier: ^3.0.5
+        specifier: 'catalog:'
         version: 3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6))
 
   packages/cosec:
@@ -88,26 +145,38 @@ importers:
         specifier: ^5.1.5
         version: 5.1.5
     devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.35.0
       '@vitest/coverage-v8':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6)))
       eslint:
-        specifier: ^9.33.0
+        specifier: 'catalog:'
         version: 9.35.0
+      globals:
+        specifier: 'catalog:'
+        version: 16.4.0
       prettier:
-        specifier: ^3.6.2
+        specifier: 'catalog:'
         version: 3.6.2
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
       unplugin-dts:
-        specifier: 1.0.0-beta.6
+        specifier: 'catalog:'
         version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
       vite:
-        specifier: ^7.1.3
+        specifier: 'catalog:'
         version: 7.1.5(@types/node@24.4.0)
+      vite-bundle-analyzer:
+        specifier: 'catalog:'
+        version: 1.2.3
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6))
 
   packages/decorator:
@@ -122,26 +191,38 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
     devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.35.0
       '@vitest/coverage-v8':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6)))
       eslint:
-        specifier: ^9.33.0
+        specifier: 'catalog:'
         version: 9.35.0
+      globals:
+        specifier: 'catalog:'
+        version: 16.4.0
       prettier:
-        specifier: ^3.6.2
+        specifier: 'catalog:'
         version: 3.6.2
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
       unplugin-dts:
-        specifier: 1.0.0-beta.6
+        specifier: 'catalog:'
         version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
       vite:
-        specifier: ^7.1.3
+        specifier: 'catalog:'
         version: 7.1.5(@types/node@24.4.0)
+      vite-bundle-analyzer:
+        specifier: 'catalog:'
+        version: 1.2.3
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6))
 
   packages/eventstream:
@@ -150,50 +231,74 @@ importers:
         specifier: workspace:*
         version: link:../fetcher
     devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.35.0
       '@vitest/coverage-v8':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6)))
       eslint:
-        specifier: ^9.33.0
+        specifier: 'catalog:'
         version: 9.35.0
+      globals:
+        specifier: 'catalog:'
+        version: 16.4.0
       prettier:
-        specifier: ^3.6.2
+        specifier: 'catalog:'
         version: 3.6.2
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
       unplugin-dts:
-        specifier: 1.0.0-beta.6
+        specifier: 'catalog:'
         version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
       vite:
-        specifier: ^7.1.3
+        specifier: 'catalog:'
         version: 7.1.5(@types/node@24.4.0)
+      vite-bundle-analyzer:
+        specifier: 'catalog:'
+        version: 1.2.3
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6))
 
   packages/fetcher:
     devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.35.0
       '@vitest/coverage-v8':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6)))
       eslint:
-        specifier: ^9.33.0
+        specifier: 'catalog:'
         version: 9.35.0
+      globals:
+        specifier: 'catalog:'
+        version: 16.4.0
       prettier:
-        specifier: ^3.6.2
+        specifier: 'catalog:'
         version: 3.6.2
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
       unplugin-dts:
-        specifier: 1.0.0-beta.6
+        specifier: 'catalog:'
         version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
       vite:
-        specifier: ^7.1.3
+        specifier: 'catalog:'
         version: 7.1.5(@types/node@24.4.0)
+      vite-bundle-analyzer:
+        specifier: 'catalog:'
+        version: 1.2.3
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6))
 
   packages/react:
@@ -208,6 +313,9 @@ importers:
         specifier: ^17.6.0
         version: 17.6.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
     devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.35.0
       '@testing-library/react':
         specifier: ^16.0.0
         version: 16.3.0(@testing-library/dom@9.3.4)(@types/react-dom@18.3.7(@types/react@18.3.24))(@types/react@18.3.24)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -218,40 +326,79 @@ importers:
         specifier: ^18.0.0
         version: 18.3.7(@types/react@18.3.24)
       '@vitest/coverage-v8':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6)))
+      eslint:
+        specifier: 'catalog:'
+        version: 9.35.0
+      globals:
+        specifier: 'catalog:'
+        version: 16.4.0
       jsdom:
         specifier: ^27.0.0
         version: 27.0.0(postcss@8.5.6)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
       react:
         specifier: ^18.0.0
         version: 18.3.1
       react-dom:
         specifier: ^18.0.0
         version: 18.3.1(react@18.3.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
+      unplugin-dts:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
+      vite:
+        specifier: 'catalog:'
+        version: 7.1.5(@types/node@24.4.0)
+      vite-bundle-analyzer:
+        specifier: 'catalog:'
+        version: 1.2.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6))
 
   packages/storage:
     devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.35.0
       '@vitest/coverage-v8':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6)))
       eslint:
-        specifier: ^9.33.0
+        specifier: 'catalog:'
         version: 9.35.0
+      globals:
+        specifier: 'catalog:'
+        version: 16.4.0
       prettier:
-        specifier: ^3.6.2
+        specifier: 'catalog:'
         version: 3.6.2
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
       unplugin-dts:
-        specifier: 1.0.0-beta.6
+        specifier: 'catalog:'
         version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
       vite:
-        specifier: ^7.1.3
+        specifier: 'catalog:'
         version: 7.1.5(@types/node@24.4.0)
+      vite-bundle-analyzer:
+        specifier: 'catalog:'
+        version: 1.2.3
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6))
 
   packages/wow:
@@ -263,26 +410,38 @@ importers:
         specifier: workspace:*
         version: link:../eventstream
     devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.35.0
       '@vitest/coverage-v8':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6)))
       eslint:
-        specifier: ^9.33.0
+        specifier: 'catalog:'
         version: 9.35.0
+      globals:
+        specifier: 'catalog:'
+        version: 16.4.0
       prettier:
-        specifier: ^3.6.2
+        specifier: 'catalog:'
         version: 3.6.2
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.43.0(eslint@9.35.0)(typescript@5.9.2)
       unplugin-dts:
-        specifier: 1.0.0-beta.6
+        specifier: 'catalog:'
         version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
       vite:
-        specifier: ^7.1.3
+        specifier: 'catalog:'
         version: 7.1.5(@types/node@24.4.0)
+      vite-bundle-analyzer:
+        specifier: 'catalog:'
+        version: 1.2.3
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6))
 
 packages:
