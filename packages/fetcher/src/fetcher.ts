@@ -21,7 +21,7 @@ import type {
   RequestHeaders,
   RequestHeadersCapable,
 } from './fetchRequest';
-import { ContentTypeValues, HttpMethod } from './fetchRequest';
+import { HttpMethod } from './fetchRequest';
 import { InterceptorManager } from './interceptorManager';
 import { UrlTemplateStyle } from './urlTemplateResolver';
 import { ResultExtractorCapable, ResultExtractors } from './resultExtractor';
@@ -211,9 +211,11 @@ export class Fetcher
     request: FetchRequestInit = {},
     options?: RequestOptions,
   ): Promise<R> {
-    const fetchRequest = request as FetchRequest;
-    fetchRequest.url = url;
-    return this.request(fetchRequest, mergeRequestOptions(DEFAULT_FETCH_OPTIONS, options));
+    const mergedRequest: FetchRequest = {
+      ...request,
+      url,
+    };
+    return this.request(mergedRequest, mergeRequestOptions(DEFAULT_FETCH_OPTIONS, options));
   }
 
   /**
