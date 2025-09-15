@@ -246,7 +246,7 @@ export class Fetcher
       url,
       method,
     };
-    return this.request(mergedRequest, options);
+    return this.request(mergedRequest, mergeRequestOptions(DEFAULT_FETCH_OPTIONS, options));
   }
 
   /**
