@@ -18,7 +18,7 @@ import {
   FetchRequest, getFetcher,
   RequestOptions,
 } from '@ahoo-wang/fetcher';
-import { DependencyList, useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { useMountedState } from 'react-use';
 
 /**
@@ -26,12 +26,6 @@ import { useMountedState } from 'react-use';
  * Extends RequestOptions and FetcherCapable interfaces.
  */
 export interface UseFetcherOptions extends RequestOptions, FetcherCapable {
-  /**
-   * Dependencies list for the fetch operation.
-   * When provided, the hook will re-fetch when any of these values change.
-   */
-  readonly deps?: DependencyList;
-
   /**
    * Whether the fetch operation should execute immediately upon component mount.
    * Defaults to true.
@@ -67,7 +61,7 @@ export interface UseFetcherResult<R> {
 }
 
 export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions): UseFetcherResult<R> {
-  const { deps = [], fetcher = defaultFetcher, immediate = true } = options || {};
+  const { fetcher = defaultFetcher, immediate = true } = options || {};
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(undefined);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(undefined);
@@ -114,7 +108,7 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
         abortControllerRef.current = undefined;
       }
     }
-  }, [currentFetcher, isMounted, options, ...deps]);
+  }, [currentFetcher, request, isMounted, options]);
   /**
    * Cancel the ongoing fetch operation if one is in progress.
    */
@@ -129,7 +123,7 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
       abortControllerRef.current?.abort();
       abortControllerRef.current = undefined;
     };
-  }, [execute, immediate, ...deps]);
+  }, [execute, request, immediate]);
   return {
     loading, exchange, result, error, execute, cancel,
   };
