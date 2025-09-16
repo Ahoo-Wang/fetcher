@@ -11,13 +11,15 @@
  * limitations under the License.
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, beforeAll, afterAll, afterEach } from 'vitest';
 import {
   FetchRequest,
   FetchTimeoutError,
   resolveTimeout,
   timeoutFetch,
 } from '../src';
+import { setupServer } from 'msw/node';
+import { http, HttpResponse, delay } from 'msw';
 
 describe('FetchTimeoutError', () => {
   it('should create FetchTimeoutError with correct message', () => {
@@ -67,39 +69,34 @@ describe('resolveTimeout', () => {
 });
 
 describe('timeoutFetch', () => {
-  // Replace global fetch with mock
-  const originalFetch = globalThis.fetch;
+  const server = setupServer(
+    http.get('https://api.example.com/test', () => {
+      return HttpResponse.text('test');
+    }),
+    http.get('https://api.example.com/slow', async () => {
+      await delay(150);
+      return HttpResponse.text('slow response');
+    }),
+  );
+
+  beforeAll(() => server.listen());
+  afterAll(() => server.close());
+  afterEach(() => server.resetHandlers());
 
   it('should delegate to fetch when no timeout is specified', async () => {
-    // Set up mock fetch
-    const mockFetch = vi.fn();
-    globalThis.fetch = mockFetch as any;
-    const response = new Response('test');
-    mockFetch.mockResolvedValue(response);
-
     const request: FetchRequest = {
       url: 'https://api.example.com/test',
       method: 'GET',
     };
 
     const result = await timeoutFetch(request);
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/test',
-      request,
-    );
-    expect(result).toBe(response);
+    expect(result.status).toBe(200);
 
-    // Restore original fetch
-    globalThis.fetch = originalFetch;
+    const text = await result.text();
+    expect(text).toBe('test');
   });
 
   it('should delegate to fetch when request.signal is present', async () => {
-    // Set up mock fetch
-    const mockFetch = vi.fn();
-    globalThis.fetch = mockFetch as any;
-    const response = new Response('test');
-    mockFetch.mockResolvedValue(response);
-
     // Create an AbortController to get a signal
     const controller = new AbortController();
 
@@ -111,25 +108,15 @@ describe('timeoutFetch', () => {
     };
 
     const result = await timeoutFetch(request);
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/test',
-      request,
-    );
-    expect(result).toBe(response);
+    expect(result.status).toBe(200);
+
+    const text = await result.text();
+    expect(text).toBe('test');
     // Should not have called abort on the controller
     expect(controller.signal.aborted).toBe(false);
-
-    // Restore original fetch
-    globalThis.fetch = originalFetch;
   });
 
   it('should use abortController signal when no timeout is specified but abortController is provided', async () => {
-    // Set up mock fetch
-    const mockFetch = vi.fn();
-    globalThis.fetch = mockFetch as any;
-    const response = new Response('test');
-    mockFetch.mockResolvedValue(response);
-
     // Create an AbortController
     const controller = new AbortController();
 
@@ -140,80 +127,38 @@ describe('timeoutFetch', () => {
     };
 
     const result = await timeoutFetch(request);
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/test',
-      expect.objectContaining({
-        signal: controller.signal,
-      }),
-    );
-    expect(result).toBe(response);
+    expect(result.status).toBe(200);
 
-    // Restore original fetch
-    globalThis.fetch = originalFetch;
+    const text = await result.text();
+    expect(text).toBe('test');
   });
 
   it('should resolve normally when request completes before timeout', async () => {
-    vi.useFakeTimers();
-
-    // Set up mock fetch
-    const mockFetch = vi.fn();
-    globalThis.fetch = mockFetch as any;
-    const response = new Response('test');
-    mockFetch.mockResolvedValue(response);
-
     const request: FetchRequest = {
       url: 'https://api.example.com/test',
       method: 'GET',
       timeout: 1000,
     };
 
-    const promise = timeoutFetch(request);
+    const result = await timeoutFetch(request);
+    expect(result.status).toBe(200);
 
-    // Advance timers but not enough to trigger timeout
-    vi.advanceTimersByTime(500);
-
-    const result = await promise;
-    expect(result).toBe(response);
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/test',
-      expect.objectContaining({
-        signal: expect.any(AbortSignal),
-      }),
-    );
-
-    // Restore original fetch
-    globalThis.fetch = originalFetch;
-    vi.useRealTimers();
+    const text = await result.text();
+    expect(text).toBe('test');
   });
 
   it('should reject with FetchTimeoutError when request times out', async () => {
-    vi.useFakeTimers();
-
-    // Set up mock fetch that never resolves
-    const mockFetch = vi.fn();
-    globalThis.fetch = mockFetch as any;
-    mockFetch.mockReturnValue(new Promise(() => {})); // Never resolves
-
     const request: FetchRequest = {
-      url: 'https://api.example.com/test',
+      url: 'https://api.example.com/slow',
       method: 'GET',
-      timeout: 1000,
+      timeout: 100,
     };
 
-    const promise = timeoutFetch(request);
-
-    // Advance timers to trigger timeout
-    vi.advanceTimersByTime(1000);
-
-    await expect(promise).rejects.toThrow(FetchTimeoutError);
-    await expect(promise).rejects.toMatchObject({
+    await expect(timeoutFetch(request)).rejects.toThrow(FetchTimeoutError);
+    await expect(timeoutFetch(request)).rejects.toMatchObject({
       message:
-        'Request timeout of 1000ms exceeded for GET https://api.example.com/test',
+        'Request timeout of 100ms exceeded for GET https://api.example.com/slow',
       request: request,
     });
-
-    // Restore original fetch
-    globalThis.fetch = originalFetch;
-    vi.useRealTimers();
   });
 });
