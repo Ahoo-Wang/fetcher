@@ -61,6 +61,7 @@
     "unplugin-dts": "catalog:",
     "vite": "catalog:",
     "vite-bundle-analyzer": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "msw": "catalog:"
   }
 }
