@@ -1,7 +1,7 @@
 {
-  "name": "@ahoo-wang/fetcher-react",
+  "name": "@ahoo-wang/fetcher-viewer",
   "version": "1.9.0",
-  "description": "React integration for Fetcher HTTP client. Provides React Hooks and components for seamless data fetching with automatic re-rendering and loading states.",
+  "description": "",
   "keywords": [
     "fetch",
     "http",
@@ -13,11 +13,11 @@
   ],
   "author": "Ahoo-Wang",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/master/packages/fetcher-react",
+  "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/master/packages/fetcher-viewer",
   "repository": {
     "type": "git",
     "url": "https://github.com/Ahoo-Wang/fetcher.git",
-    "directory": "packages/fetcher-react"
+    "directory": "packages/fetcher-viewer"
   },
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
@@ -47,6 +47,7 @@
   "dependencies": {
     "@ahoo-wang/fetcher": "workspace:*",
     "@ahoo-wang/fetcher-storage": "workspace:*",
+    "@ahoo-wang/fetcher-wow": "workspace:*",
     "react-use": "catalog:"
   },
   "peerDependencies": {

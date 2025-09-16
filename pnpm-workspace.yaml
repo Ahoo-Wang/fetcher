@@ -12,7 +12,15 @@ catalog:
   prettier: ^3.6.2
   typescript: ^5.9.2
   typescript-eslint: ^8.44.0
+  eslint-plugin-react-hooks: ^5.2.0
   unplugin-dts: 1.0.0-beta.6
   vite: ^7.1.5
   vite-bundle-analyzer: ^1.2.3
   vitest: ^3.2.4
+  "@testing-library/react": "^16.0.0"
+  "@types/react": "^18.0.0"
+  "@types/react-dom": "^18.0.0"
+  "jsdom": "^27.0.0"
+  "react": "^18.0.0"
+  "react-dom": "^18.0.0"
+  "react-use": "^17.6.0"
