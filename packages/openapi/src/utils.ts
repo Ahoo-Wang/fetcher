@@ -23,14 +23,6 @@ import { Response } from './responses';
 import { Parameter } from './parameters';
 
 /**
- * Utility type to convert path templates with parameters to TypeScript compatible types
- */
-export type PathWithParams<T extends string> =
-  T extends `${infer Start}{${infer Param}}${infer Rest}`
-    ? `${Start}${string}${PathWithParams<Rest>}`
-    : T;
-
-/**
  * Utility type to extract parameter names from path templates
  */
 export type ExtractPathParams<T extends string> =
@@ -80,8 +72,8 @@ export type ParametersToObject<P> =
                   ? { [K in N]: any }
                   : P extends { in: 'cookie'; name: infer N extends string }
                     ? { [K in N]?: any }
-                    : Record<string, never>  // 修改这里
-    : Record<string, never>;  // 修改这里
+                    : Record<string, never>
+    : Record<string, never>;
 
 /**
  * Type for request body content with proper content type specification
