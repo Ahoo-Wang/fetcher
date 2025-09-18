@@ -214,6 +214,31 @@ describe('Fetcher', () => {
     exchangeSpy.mockRestore();
   });
 
+  it('should make TRACE request', async () => {
+    const fetcher = new Fetcher();
+    const mockResponse = new Response(null, { status: 200 });
+
+    // Mock the interceptors.exchange method
+    const exchangeSpy = vi
+      .spyOn(fetcher.interceptors, 'exchange')
+      .mockImplementation(async exchange => {
+        exchange.response = mockResponse;
+        return exchange;
+      });
+
+    const response = await fetcher.trace('/users');
+
+    expect(response).toBe(mockResponse);
+    expect(exchangeSpy).toHaveBeenCalled();
+
+    // Verify that the method is correctly set to TRACE
+    const calledWithExchange = exchangeSpy.mock.calls[0][0];
+    expect(calledWithExchange.request.method).toBe(HttpMethod.TRACE);
+
+    // Clean up spy
+    exchangeSpy.mockRestore();
+  });
+
   it('should call fetch method with correct parameters', async () => {
     const fetcher = new Fetcher();
     const mockResponse = new Response('test');
