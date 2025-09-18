@@ -358,6 +358,52 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.4.0)(@vitest/ui@3.2.4)(jsdom@27.0.0(postcss@8.5.6))(msw@2.11.2(@types/node@24.4.0)(typescript@5.9.2))
 
+  packages/openapi:
+    dependencies:
+      '@ahoo-wang/fetcher':
+        specifier: workspace:*
+        version: link:../fetcher
+    devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.35.0
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 3.2.4(vitest@3.2.4)
+      '@vitest/ui':
+        specifier: 'catalog:'
+        version: 3.2.4(vitest@3.2.4)
+      eslint:
+        specifier: 'catalog:'
+        version: 9.35.0
+      globals:
+        specifier: 'catalog:'
+        version: 16.4.0
+      msw:
+        specifier: 'catalog:'
+        version: 2.11.2(@types/node@24.4.0)(typescript@5.9.2)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.44.0(eslint@9.35.0)(typescript@5.9.2)
+      unplugin-dts:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.9)(rollup@4.50.1)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
+      vite:
+        specifier: 'catalog:'
+        version: 7.1.5(@types/node@24.4.0)
+      vite-bundle-analyzer:
+        specifier: 'catalog:'
+        version: 1.2.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.4.0)(@vitest/ui@3.2.4)(jsdom@27.0.0(postcss@8.5.6))(msw@2.11.2(@types/node@24.4.0)(typescript@5.9.2))
+
   packages/react:
     dependencies:
       '@ahoo-wang/fetcher':
@@ -1466,15 +1512,6 @@ packages:
   data-urls@6.0.0:
     resolution: {integrity: sha512-BnBS08aLUM+DKamupXs3w2tJJoqU+AkaE/+6vQxi/G/DPmIZFJJp9Dkb1kM03AZx8ADehDUZgsNxju3mPXZYIA==}
     engines: {node: '>=20'}
-
-  debug@4.4.1:
-    resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
-    engines: {node: '>=6.0'}
-    peerDependencies:
-      supports-color: '*'
-    peerDependenciesMeta:
-      supports-color:
-        optional: true
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -3658,10 +3695,6 @@ snapshots:
       whatwg-mimetype: 4.0.0
       whatwg-url: 15.0.0
 
-  debug@4.4.1:
-    dependencies:
-      ms: 2.1.3
-
   debug@4.4.3:
     dependencies:
       ms: 2.1.3
@@ -4877,7 +4910,7 @@ snapshots:
   vite-node@3.2.4(@types/node@24.4.0):
     dependencies:
       cac: 6.7.14
-      debug: 4.4.1
+      debug: 4.4.3
       es-module-lexer: 1.7.0
       pathe: 2.0.3
       vite: 7.1.5(@types/node@24.4.0)
@@ -4918,7 +4951,7 @@ snapshots:
       '@vitest/spy': 3.2.4
       '@vitest/utils': 3.2.4
       chai: 5.3.3
-      debug: 4.4.1
+      debug: 4.4.3
       expect-type: 1.2.2
       magic-string: 0.30.19
       pathe: 2.0.3
