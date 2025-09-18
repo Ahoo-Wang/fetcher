@@ -11,11 +11,9 @@
  * limitations under the License.
  */
 
-import { OpenAPI } from '../../openAPI';
-import { createOpenAPIClient } from '../client';
-import { NamedFetcher } from '@ahoo-wang/fetcher';
+import { OpenAPI } from '../../src';
 
-const apiSpec: OpenAPI = {
+export const compensationOpenAPI: OpenAPI = {
   'openapi': '3.1.0',
   'info': {
     'title': 'Wow Compensation Service',
@@ -4941,16 +4939,3 @@ const apiSpec: OpenAPI = {
     },
   },
 };
-
-// 使用示例
-const client = createOpenAPIClient(apiSpec, {
-  baseURL: 'https://api.example.com',
-  fetcher: new NamedFetcher('hi'),
-});
-
-// 类型安全的调用
-client.request('/users/{id}', 'get', {
-  id: 123,
-}).then(response => {
-  console.log(response.data.name); // 类型安全，知道name是字符串
-});
