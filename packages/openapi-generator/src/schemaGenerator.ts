@@ -12,13 +12,16 @@
  */
 
 import { OpenAPI } from '@ahoo-wang/fetcher-openapi';
+import { Project } from 'ts-morph';
 
 export interface GeneratorOptions {
   readonly openAPI: OpenAPI;
+  readonly project: Project;
 }
 
-export class OpenAPIGenerator {
+export class SchemaGenerator {
   constructor(public readonly options: GeneratorOptions) {
+
   }
 
 }

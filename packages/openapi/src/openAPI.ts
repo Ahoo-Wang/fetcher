@@ -13,6 +13,8 @@
 
 /**
  * Root document type definitions for OpenAPI Specification
+ *
+ * @see [OpenAPI Specification](https://github.com/OAI/OpenAPI-Specification)
  */
 
 import { Info } from './info';
