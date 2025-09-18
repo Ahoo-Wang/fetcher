@@ -32,7 +32,7 @@ export type ParameterLocation = 'query' | 'header' | 'path' | 'cookie';
 /**
  * Primitive data types supported by JSON Schema
  */
-export type SchemaType = 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object';
+export type SchemaType = 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object' | 'null';
 
 /**
  * Additional external documentation
