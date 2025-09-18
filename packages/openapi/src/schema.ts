@@ -49,6 +49,7 @@ export interface XML {
 /**
  * The Schema Object allows the definition of input and output data types
  *
+ * @property $schema - The URI of the JSON Schema dialect used for validation
  * @property title - The title of the schema
  * @property description - A description of the schema
  * @property type - The data type of the schema
@@ -58,6 +59,8 @@ export interface XML {
  * @property writeOnly - Relevant only for Schema "properties" definitions
  * @property deprecated - Specifies that a schema is deprecated
  * @property example - A free-form property to include an example of an instance for this schema
+ * @property const - A value that the schema must exactly match
+ * @property default - The default value for this schema
  * @property minimum - The minimum value of the range (for numeric types)
  * @property maximum - The maximum value of the range (for numeric types)
  * @property exclusiveMinimum - Whether the minimum value is excluded from the range
@@ -85,16 +88,19 @@ export interface XML {
  * @property externalDocs - Additional external documentation for this schema
  */
 export interface Schema {
+  $schema?: string;
   // General properties
   title?: string;
   description?: string;
-  type?: SchemaType;
+  type?: SchemaType | SchemaType[];
   format?: string;
   nullable?: boolean;
   readOnly?: boolean;
   writeOnly?: boolean;
   deprecated?: boolean;
   example?: any;
+  const?: any;
+  default?: any;
 
   // Numeric constraints
   minimum?: number;

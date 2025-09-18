@@ -50,10 +50,10 @@ export interface License {
  * @property version - The version of the OpenAPI document
  */
 export interface Info {
-  title: string;
+  title?: string;
   description?: string;
   termsOfService?: string;
   contact?: Contact;
   license?: License;
-  version: string;
+  version?: string;
 }
