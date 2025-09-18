@@ -28,4 +28,3 @@ export * from './security';
 export * from './schema';
 export * from './tags';
 export * from './openAPI';
-export * from './utils';

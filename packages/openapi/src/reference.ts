@@ -28,11 +28,3 @@ export interface Reference {
  * Utility type to check if an object is a reference
  */
 export type IsReference<T> = T extends { $ref: string } ? T : never;
-
-/**
- * Utility type to extract component type from a reference string
- */
-export type ExtractComponentTypeFromRef<T> =
-  T extends { $ref: `#/components/${infer ComponentType}/${string}` }
-    ? ComponentType
-    : never;
