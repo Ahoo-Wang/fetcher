@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { OpenAPI } from '@ahoo-wang/fetcher-openapi';
+
 export interface GeneratorOptions {
   readonly openAPI: OpenAPI;
 }
@@ -18,6 +20,5 @@ export interface GeneratorOptions {
 export class OpenAPIGenerator {
   constructor(public readonly options: GeneratorOptions) {
   }
-
 
 }
