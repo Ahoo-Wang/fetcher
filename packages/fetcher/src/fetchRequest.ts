@@ -42,6 +42,7 @@ export enum HttpMethod {
   PATCH = 'PATCH',
   HEAD = 'HEAD',
   OPTIONS = 'OPTIONS',
+  TRACE = 'TRACE',
 }
 
 export const CONTENT_TYPE_HEADER = 'Content-Type';
