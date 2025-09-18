@@ -23,6 +23,6 @@ catalog:
   typescript: ^5.9.2
   typescript-eslint: ^8.44.0
   unplugin-dts: 1.0.0-beta.6
-  vite: ^7.1.5
+  vite: ^7.1.6
   vite-bundle-analyzer: ^1.2.3
   vitest: ^3.2.4
