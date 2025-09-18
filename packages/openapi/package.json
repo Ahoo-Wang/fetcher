@@ -1,7 +1,7 @@
 {
-  "name": "@ahoo-wang/openapi",
+  "name": "@ahoo-wang/fetcher-openapi",
   "version": "1.9.1",
-  "description": "",
+  "description": "OpenAPI Specification TypeScript types and utilities for Fetcher - A modern, ultra-lightweight HTTP client for browsers and Node.js. Provides complete TypeScript support with type inference for OpenAPI 3.x schemas.",
   "keywords": [
     "fetch",
     "http",
@@ -14,7 +14,15 @@
     "llm",
     "streaming",
     "sse",
-    "server-sent-events"
+    "server-sent-events",
+    "openapi",
+    "openapi3",
+    "swagger",
+    "types",
+    "type-inference",
+    "schema",
+    "api",
+    "rest"
   ],
   "author": "Ahoo-Wang",
   "license": "Apache-2.0",
@@ -39,7 +47,9 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "README.zh-CN.md"
   ],
   "scripts": {
     "build": "vite build",
@@ -48,9 +58,6 @@
     "lint": "eslint . --fix",
     "clean": "rm -rf dist",
     "analyze": "npx vite-bundle-analyzer -p auto"
-  },
-  "dependencies": {
-    "@ahoo-wang/fetcher": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
