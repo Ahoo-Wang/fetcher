@@ -421,4 +421,27 @@ export class Fetcher
   ): Promise<R> {
     return this.methodFetch(HttpMethod.OPTIONS, url, request, options);
   }
+
+  /**
+   * Sends an HTTP TRACE request to the specified URL and returns the response.
+   *
+   * The TRACE method is used to echo the received request for debugging purposes.
+   * This method automatically sets the HTTP method to TRACE and omits the request body
+   * since TRACE requests must not have a body according to the HTTP specification.
+   *
+   * @param url - The target URL for the TRACE request. Must be a valid absolute or relative URL.
+   * @param request - Request configuration options excluding 'method' and 'body' properties.
+   *                  Defaults to an empty object. Common properties include headers, cache settings, etc.
+   * @param options - Optional additional request parameters for extended functionality.
+   *                  May include custom handling logic or metadata for the request pipeline.
+   * @returns A Promise resolving to the response object of type R (defaults to Response).
+   *          The response contains status, headers, and body data from the TRACE request.
+   */
+  async trace<R = Response>(
+    url: string,
+    request: Omit<FetchRequestInit, 'method' | 'body'> = {},
+    options?: RequestOptions,
+  ): Promise<R> {
+    return this.methodFetch(HttpMethod.TRACE, url, request, options);
+  }
 }
