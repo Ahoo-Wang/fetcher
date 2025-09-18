@@ -1,10 +1,12 @@
 # @ahoo-wang/fetcher-openapi
 
-[![NPM Version](https://img.shields.io/npm/v/@ahoo-wang/fetcher-openapi)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openapi)
-[![NPM Downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher-openapi)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openapi)
-[![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher-openapi)](https://github.com/Ahoo-Wang/fetcher/blob/master/LICENSE)
-
-[English](./README.md) | 简体中文
+[![npm version](https://img.shields.io/npm/v/@ahoo-wang/fetcher-openapi.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openapi)
+[![Build Status](https://github.com/Ahoo-Wang/fetcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Ahoo-Wang/fetcher/actions)
+[![codecov](https://codecov.io/gh/Ahoo-Wang/fetcher/graph/badge.svg?token=JGiWZ52CvJ)](https://codecov.io/gh/Ahoo-Wang/fetcher)
+[![License](https://img.shields.io/npm/l/@ahoo-wang/fetcher-openapi.svg)](https://github.com/Ahoo-Wang/fetcher/blob/main/LICENSE)
+[![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher-openapi.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openapi)
+[![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-openapi)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openapi)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
 [Fetcher](https://github.com/Ahoo-Wang/fetcher) 的 OpenAPI 规范 TypeScript 类型和工具 - 一个现代、超轻量级的 HTTP 客户端。
 
