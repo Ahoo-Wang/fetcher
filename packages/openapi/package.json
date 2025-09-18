@@ -1,7 +1,7 @@
 {
   "name": "@ahoo-wang/fetcher-openapi",
   "version": "1.9.1",
-  "description": "OpenAPI Specification TypeScript types and utilities for Fetcher - A modern, ultra-lightweight HTTP client for browsers and Node.js. Provides complete TypeScript support with type inference for OpenAPI 3.x schemas.",
+  "description": "OpenAPI Specification TypeScript types for Fetcher - A modern, ultra-lightweight HTTP client for browsers and Node.js. Provides complete TypeScript support with type inference for OpenAPI 3.x schemas.",
   "keywords": [
     "fetch",
     "http",
@@ -71,7 +71,6 @@
     "unplugin-dts": "catalog:",
     "vite": "catalog:",
     "vite-bundle-analyzer": "catalog:",
-    "vitest": "catalog:",
-    "msw": "catalog:"
+    "vitest": "catalog:"
   }
 }
