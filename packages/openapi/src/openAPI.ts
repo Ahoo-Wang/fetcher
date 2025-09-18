@@ -45,5 +45,3 @@ export interface OpenAPI {
   tags?: Tag[];
   externalDocs?: ExternalDocumentation;
 }
-
-export default OpenAPI;
