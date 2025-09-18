@@ -37,7 +37,7 @@ export interface AttributesCapable {
   attributes?: Record<string, any> | Map<string, any>;
 }
 
-export interface FetchExchangeInit<R = any> extends AttributesCapable {
+export interface FetchExchangeInit extends AttributesCapable {
   /**
    * The Fetcher instance that initiated this exchange.
    */
@@ -47,7 +47,7 @@ export interface FetchExchangeInit<R = any> extends AttributesCapable {
    * The request configuration including url, method, headers, body, etc.
    */
   request: FetchRequest;
-  resultExtractor?: ResultExtractor<R>;
+  resultExtractor?: ResultExtractor<any>;
 
   /**
    * The response object, undefined until the request completes successfully.
@@ -101,8 +101,8 @@ export interface FetchExchangeInit<R = any> extends AttributesCapable {
  * };
  * ```
  */
-export class FetchExchange<R = any>
-  implements RequiredBy<FetchExchangeInit<R>, 'attributes'> {
+export class FetchExchange
+  implements RequiredBy<FetchExchangeInit, 'attributes'> {
   /**
    * The Fetcher instance that initiated this exchange.
    */
@@ -117,7 +117,7 @@ export class FetchExchange<R = any>
    * The result extractor function used to transform the response into the desired format.
    * Defaults to ResultExtractors.Exchange if not provided.
    */
-  resultExtractor: ResultExtractor<R>;
+  resultExtractor: ResultExtractor<any>;
   /**
    * The response object, undefined until the request completes successfully.
    */
@@ -132,7 +132,7 @@ export class FetchExchange<R = any>
    * Cached result of the extracted result to avoid repeated computations.
    * Undefined when not yet computed, null when computation failed.
    */
-  private cachedExtractedResult?: R | Promise<R>;
+  private cachedExtractedResult?: any | Promise<any>;
   /**
    * Shared attributes for passing data between interceptors.
    *
@@ -266,7 +266,7 @@ export class FetchExchange<R = any>
    *
    * @returns The extracted result
    */
-  extractResult(): R | Promise<R> {
+  extractResult<R>(): R | Promise<R> {
     if (this.cachedExtractedResult !== undefined) {
       return this.cachedExtractedResult;
     }

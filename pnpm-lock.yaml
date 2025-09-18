@@ -106,10 +106,10 @@ importers:
         version: 8.44.0(eslint@9.35.0)(typescript@5.9.2)
       unplugin-dts:
         specifier: 'catalog:'
-        version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.10)(rollup@4.50.2)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
+        version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.10)(rollup@4.50.2)(typescript@5.9.2)(vite@7.1.6(@types/node@24.4.0))
       vite:
         specifier: 'catalog:'
-        version: 7.1.5(@types/node@24.4.0)
+        version: 7.1.6(@types/node@24.4.0)
       vite-bundle-analyzer:
         specifier: 'catalog:'
         version: 1.2.3
@@ -386,10 +386,10 @@ importers:
         version: 8.44.0(eslint@9.35.0)(typescript@5.9.2)
       unplugin-dts:
         specifier: 'catalog:'
-        version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.10)(rollup@4.50.2)(typescript@5.9.2)(vite@7.1.6(@types/node@24.4.0))
+        version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.10)(rollup@4.50.2)(typescript@5.9.2)(vite@7.1.5(@types/node@24.4.0))
       vite:
         specifier: 'catalog:'
-        version: 7.1.6(@types/node@24.4.0)
+        version: 7.1.5(@types/node@24.4.0)
       vite-bundle-analyzer:
         specifier: 'catalog:'
         version: 1.2.3
