@@ -51,13 +51,13 @@ export type OperationHandler<T extends OpenAPI, Path extends keyof T['paths'], M
 /**
  * Type for operation parameters extracted from OpenAPI specification
  */
-export type OperationParams<Op extends Operation> =
+export  type OperationParams<Op extends Operation> =
   (Op['parameters'] extends Array<infer P>
     ? ParametersToObject<P>
-    : {}) &
+    : Record<string, never>) &
   (Op['requestBody'] extends RequestBody
     ? { body: RequestBodyContent<Op['requestBody']> }
-    : {});
+    : Record<string, never>);
 
 /**
  * Utility type to convert parameter arrays to parameter objects
@@ -80,8 +80,8 @@ export type ParametersToObject<P> =
                   ? { [K in N]: any }
                   : P extends { in: 'cookie'; name: infer N extends string }
                     ? { [K in N]?: any }
-                    : {}
-    : {};
+                    : Record<string, never>  // 修改这里
+    : Record<string, never>;  // 修改这里
 
 /**
  * Type for request body content with proper content type specification
