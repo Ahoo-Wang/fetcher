@@ -26,3 +26,4 @@ catalog:
   vite: ^7.1.6
   vite-bundle-analyzer: ^1.2.3
   vitest: ^3.2.4
+  ts-morph: ^27.0.0

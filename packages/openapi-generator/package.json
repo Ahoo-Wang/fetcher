@@ -1,6 +1,6 @@
 {
-  "name": "@ahoo-wang/openapi",
-  "version": "1.9.1",
+  "name": "@ahoo-wang/fetcher-openapi-generator",
+  "version": "1.9.2",
   "description": "",
   "keywords": [
     "fetch",
@@ -50,7 +50,8 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "dependencies": {
-    "@ahoo-wang/fetcher-openapi": "workspace:*"
+    "@ahoo-wang/fetcher-openapi": "workspace:*",
+    "ts-morph": "catalog:"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
