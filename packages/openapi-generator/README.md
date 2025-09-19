@@ -33,30 +33,36 @@
 
 `OpenAPI.components.schemas.[schemaKey]` , 其中 `schemaKey` 以 `wow.` 开头的为 Wow 内置的类型需要使用 Wow 内置类型：
 
-1. `wow.command.CommandResult`:  使用 @ahoo-wang/fetcher-wow 的 `CommandResult` 接口类型
-2. `wow.MessageHeaderSqlType`: `MessageHeaderSqlType`
-3. `wow.api.BindingError`: `BindingError`
-4. `wow.api.DefaultErrorInfo`: `ErrorInfo`
-5. `wow.api.command.DefaultDeleteAggregate`: `DeleteAggregate`
-6. `wow.api.command.DefaultRecoverAggregate`: `RecoverAggregate`
-7. `wow.api.messaging.FunctionInfoData`: `FunctionInfo`
-8. `wow.api.messaging.FunctionKind`: `FunctionKind`
-9. `wow.api.modeling.AggregateId`: `AggregateId`
-10. `wow.api.query.Condition`: `Condition`
-11. `wow.api.query.ListQuery`: `ListQuery`
-12. `wow.api.query.Operator`: `Operator`
-13. `wow.api.query.PagedQuery`: `PagedQuery`
-14. `wow.api.query.Pagination`: `Pagination`
-15. `wow.api.query.Projection`: `Projection`
-16. `wow.api.query.Sort`: `FieldSort`
-17. `wow.api.query.Sort.Direction`: `SortDirection`
-18. `wow.command.CommandStage`: `CommandStage`
-19. `wow.command.SimpleWaitSignal`: `WaitSignal`
-20. `wow.configuration.Aggregate`: `Aggregate`
-21. `wow.configuration.BoundedContext`: `BoundedContext`
-22. `wow.configuration.WowMetadata`: `WowMetadata`
-23. `wow.modeling.DomainEvent`: `DomainEvent`
-24. `wow.openapi.BatchResult`: `BatchResult`
+```typescript
+export const IMPORT_WOW_PATH = '@ahoo-wang/fetcher-wow';
+
+export const WOW_TYPE_MAPPING = {
+  'wow.command.CommandResult': 'CommandResult',
+  'wow.MessageHeaderSqlType': 'MessageHeaderSqlType',
+  'wow.api.BindingError': 'BindingError',
+  'wow.api.DefaultErrorInfo': 'ErrorInfo',
+  'wow.api.command.DefaultDeleteAggregate': 'DeleteAggregate',
+  'wow.api.command.DefaultRecoverAggregate': 'RecoverAggregate',
+  'wow.api.messaging.FunctionInfoData': 'FunctionInfo',
+  'wow.api.messaging.FunctionKind': 'FunctionKind',
+  'wow.api.modeling.AggregateId': 'AggregateId',
+  'wow.api.query.Condition': 'Condition',
+  'wow.api.query.ListQuery': 'ListQuery',
+  'wow.api.query.Operator': 'Operator',
+  'wow.api.query.PagedQuery': 'PagedQuery',
+  'wow.api.query.Pagination': 'Pagination',
+  'wow.api.query.Projection': 'Projection',
+  'wow.api.query.Sort': 'FieldSort',
+  'wow.api.query.Sort.Direction': 'SortDirection',
+  'wow.command.CommandStage': 'CommandStage',
+  'wow.command.SimpleWaitSignal': 'WaitSignal',
+  'wow.configuration.Aggregate': 'Aggregate',
+  'wow.configuration.BoundedContext': 'BoundedContext',
+  'wow.configuration.WowMetadata': 'WowMetadata',
+  'wow.modeling.DomainEvent': 'DomainEvent',
+  'wow.openapi.BatchResult': 'BatchResult',
+};
+```
 
 ## 模块组织
 
