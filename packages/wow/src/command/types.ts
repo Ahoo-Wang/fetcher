@@ -11,6 +11,9 @@
  * limitations under the License.
  */
 
+import { ErrorInfo, FunctionInfoCapable, Identifier } from '../types';
+import { PartialBy } from '@ahoo-wang/fetcher';
+
 /**
  * Command identifier interface
  *
@@ -109,7 +112,63 @@ export interface SignalTimeCapable {
  */
 export interface NullableAggregateVersionCapable {
   /**
-   * The aggregate version of the aggregate.
+   * Aggregate root version number
+   * - When command processing succeeds, this is the version number after the aggregate root has completed command processing
+   * - When command validation fails at the command gateway, this is null
+   * - When command execution fails in the command handler, this is the current version number of the aggregate root
    */
   aggregateVersion?: number;
+}
+
+
+/**
+ * Represents a target for compensation operations.
+ *
+ * This interface extends Identifier (with optional id) and FunctionInfoCapable to define
+ * the structure for objects that can be targeted for compensation operations. Compensation
+ * targets typically represent entities that can have operations reversed or corrected.
+ */
+export interface CompensationTarget extends PartialBy<Identifier, 'id'>, FunctionInfoCapable {
+
+}
+
+/**
+ * Represents a command to delete an aggregate.
+ *
+ * This interface defines the structure for commands that request the deletion of an aggregate.
+ * It is typically used in conjunction with other command interfaces to provide a complete
+ * command processing workflow.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface DeleteAggregate {
+}
+
+/**
+ * Represents a command to recover an aggregate.
+ *
+ * This interface defines the structure for commands that request the recovery of an aggregate,
+ * typically used in scenarios where an aggregate needs to be restored to a previous state
+ * or recovered from an error condition.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface RecoverAggregate {
+}
+
+/**
+ * Represents the result of a batch operation, containing information about
+ * the pagination and error status of the operation.
+ *
+ * Extends ErrorInfo to include error details if the batch operation failed.
+ */
+export interface BatchResult extends ErrorInfo {
+  /**
+   * The cursor or identifier for the next item after the current batch.
+   * Used for pagination to continue fetching the next batch of items.
+   */
+  after: string;
+
+  /**
+   * The number of items in the current batch.
+   */
+  size: number;
 }
