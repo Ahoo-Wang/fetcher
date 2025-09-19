@@ -9,7 +9,7 @@ export default defineConfig({
         index: resolve(__dirname, 'src/index.ts'),
         cli: resolve(__dirname, 'src/cli.ts'),
       },
-      formats: ['es', 'umd'],
+      formats: ['es', 'cjs'],
       name: 'FetcherOpenAPIGenerator',
     },
     rollupOptions: {
@@ -20,14 +20,9 @@ export default defineConfig({
         'commander',
         'ts-morph',
         'yaml',
+        'fs',
+        'path',
       ],
-      output: {
-        globals: {
-          commander: 'commander',
-          'ts-morph': 'tsMorph',
-          yaml: 'yaml',
-        },
-      },
     },
   },
   plugins: [
