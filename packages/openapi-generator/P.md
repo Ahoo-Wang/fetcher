@@ -25,73 +25,6 @@
 - Commander.js ：通过 Commander.js 提供友好的命令行界面
 - yaml
 
-## 模块职责划分
-
-```
-openapi-generator/
-├── src/
-│   ├── core/                    # 核心处理逻辑
-│   │   ├── generate-context.ts   # 整个生成过程共享该上下文: 保存Project、OpenAPI、以及已处理的 Schema、Operation、SourceFile 等
-│   │   ├── parser/             # OpenAPI 解析器
-│   │   │   ├── openapi-parser.ts
-│   │   │   ├── reference-resolver.ts
-│   │   │   └── schema-normalizer.ts
-│   │   ├── ast/                # AST 构建模块 (使用 ts-morph)
-│   │   │   ├── ast-builder.ts
-│   │   │   ├── interface-generator.ts
-│   │   │   ├── type-generator.ts
-│   │   │   ├── enum-generator.ts
-│   │   │   ├── client-generator.ts
-│   │   │   └── decorator-applier.ts
-│   │   ├── type-generator/     # TypeScript 类型生成逻辑
-│   │   │   ├── base-type-mapper.ts
-│   │   │   ├── schema-processor.ts
-│   │   │   ├── enum-processor.ts
-│   │   │   └── union-processor.ts
-│   │   └── path-organizer/     # 路径组织逻辑
-│   │       ├── module-grouper.ts
-│   │       └── naming-converter.ts
-│   ├── utils/                  # 工具函数
-│   │   ├── ast-utils.ts        # AST 操作辅助函数
-│   │   ├── file-utils.ts
-│   │   ├── logger.ts
-│   │   └── type-utils.ts
-│   ├── cli/                    # 命令行接口
-│   │   ├── index.ts
-│   │   ├── commands/
-│   │   │   └── generate.ts
-│   │   └── options/
-│   │       └── config.ts
-│   └── types/                  # 类型定义
-│       ├── openapi.ts
-│       ├── generator.ts
-│       └── config.ts
-├── tests/                      # 测试文件
-│   ├── unit/
-│   └── integration/
-└── dist/                       # 编译输出
-```
-
-### 关键模块职责说明（基于 ts-morph）
-
-#### 1. AST 构建模块 (core/ast)
-
-- **ast-builder.ts**: 主构建器，管理 ts-morph Project 和 SourceFile
-- **interface-generator.ts**: 使用 ts-morph 生成接口声明
-- **type-generator.ts**: 使用 ts-morph 生成类型别名
-- **enum-generator.ts**: 使用 ts-morph 生成枚举
-- **client-generator.ts**: 使用 ts-morph 生成 API 客户端类
-- **decorator-applier.ts**: 使用 ts-morph 应用装饰器
-
-#### 2. AST 工具模块 (utils/ast-utils)
-
-提供 ts-morph 操作的辅助函数：
-
-- 创建和操作节点
-- 处理导入声明
-- 管理类型引用
-- 格式化生成的代码
-
 ## OpenAPI Example
 
 [demo-openapi](test/demo.json)
@@ -100,30 +33,36 @@ openapi-generator/
 
 `OpenAPI.components.schemas.[schemaKey]` , 其中 `schemaKey` 以 `wow.` 开头的为 Wow 内置的类型需要使用 Wow 内置类型：
 
-1. `wow.command.CommandResult`:  使用 @ahoo-wang/fetcher-wow 的 `CommandResult` 接口类型
-2. `wow.MessageHeaderSqlType`: `MessageHeaderSqlType`
-3. `wow.api.BindingError`: `BindingError`
-4. `wow.api.DefaultErrorInfo`: `ErrorInfo`
-5. `wow.api.command.DefaultDeleteAggregate`: `DeleteAggregate`
-6. `wow.api.command.DefaultRecoverAggregate`: `RecoverAggregate`
-7. `wow.api.messaging.FunctionInfoData`: `FunctionInfo`
-8. `wow.api.messaging.FunctionKind`: `FunctionKind`
-9. `wow.api.modeling.AggregateId`: `AggregateId`
-10. `wow.api.query.Condition`: `Condition`
-11. `wow.api.query.ListQuery`: `ListQuery`
-12. `wow.api.query.Operator`: `Operator`
-13. `wow.api.query.PagedQuery`: `PagedQuery`
-14. `wow.api.query.Pagination`: `Pagination`
-15. `wow.api.query.Projection`: `Projection`
-16. `wow.api.query.Sort`: `FieldSort`
-17. `wow.api.query.Sort.Direction`: `SortDirection`
-18. `wow.command.CommandStage`: `CommandStage`
-19. `wow.command.SimpleWaitSignal`: `WaitSignal`
-20. `wow.configuration.Aggregate`: `Aggregate`
-21. `wow.configuration.BoundedContext`: `BoundedContext`
-22. `wow.configuration.WowMetadata`: `WowMetadata`
-23. `wow.modeling.DomainEvent`: `DomainEvent`
-24. `wow.openapi.BatchResult`: `BatchResult`
+```typescript
+export const IMPORT_WOW_PATH = '@ahoo-wang/fetcher-wow';
+
+export const WOW_TYPE_MAPPING = {
+  'wow.command.CommandResult': 'CommandResult',
+  'wow.MessageHeaderSqlType': 'MessageHeaderSqlType',
+  'wow.api.BindingError': 'BindingError',
+  'wow.api.DefaultErrorInfo': 'ErrorInfo',
+  'wow.api.command.DefaultDeleteAggregate': 'DeleteAggregate',
+  'wow.api.command.DefaultRecoverAggregate': 'RecoverAggregate',
+  'wow.api.messaging.FunctionInfoData': 'FunctionInfo',
+  'wow.api.messaging.FunctionKind': 'FunctionKind',
+  'wow.api.modeling.AggregateId': 'AggregateId',
+  'wow.api.query.Condition': 'Condition',
+  'wow.api.query.ListQuery': 'ListQuery',
+  'wow.api.query.Operator': 'Operator',
+  'wow.api.query.PagedQuery': 'PagedQuery',
+  'wow.api.query.Pagination': 'Pagination',
+  'wow.api.query.Projection': 'Projection',
+  'wow.api.query.Sort': 'FieldSort',
+  'wow.api.query.Sort.Direction': 'SortDirection',
+  'wow.command.CommandStage': 'CommandStage',
+  'wow.command.SimpleWaitSignal': 'WaitSignal',
+  'wow.configuration.Aggregate': 'Aggregate',
+  'wow.configuration.BoundedContext': 'BoundedContext',
+  'wow.configuration.WowMetadata': 'WowMetadata',
+  'wow.modeling.DomainEvent': 'DomainEvent',
+  'wow.openapi.BatchResult': 'BatchResult',
+};
+```
 
 ## 模块组织
 

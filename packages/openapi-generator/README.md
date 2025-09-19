@@ -3,11 +3,11 @@
 
 # @ahoo-wang/fetcher-openapi-generator
 
-基于 OpenAPI 规范的 TypeScript 代码生成器，专注于生成数据模型（Schema）、 请求和响应体类型定义 以及 ApiClient。
+基于 OpenAPI 规范的 TypeScript 代码生成器，专注于生成数据模型（Schema）。
 
 ## 功能特性
 
-- 根据 OpenAPI 规范生成 生成数据模型（Schema）、 请求和响应体类型定义 以及 ApiClient
+- 根据 OpenAPI 规范生成 生成数据模型（Schema）
 - 智能模块路径组织，根据命名规范自动分组
 - 支持 $ref 引用解析
 - 支持基本类型、数组、对象、联合类型和枚举类型
@@ -83,7 +83,6 @@ schemaKey 名称采用点号分隔的命名规范：
 - `serviceName.[aggregateName].[TypeName]`
 - `serviceName.[DtoName]`
 
-
 ### 模块组织规则
 
 1. 按照 `.` 分割 schema 名称
@@ -100,18 +99,3 @@ schemaKey 名称采用点号分隔的命名规范：
     - `example.AiMessage.Assistant` 生成接口 `AiMessageAssistant`
     - `example.AiMessage.Assistant.ToolCall` 生成接口 `AiMessageAssistantToolCall`
     - `example.AiMessage.System` 生成接口 `AiMessageSystem`
-
-### Client 模块组织与命名规范
-
-Client 按照 tags 组织。
-
-1. 按照 `.` 分割 tag 名称
-2. 最后的一个名称作为接口名称
-3. 当 单个 operation 存在多个 tag 时，多个 tag 相关的接口均需要写入接口函数
-
-例如：
-
-- `example.cart` : 写入 `cart/cartClient.ts` 文件中
-- `order-query-controller`: 写入 `./orderQueryControllerClient.ts`
-- `customer`: 写入 `./customerClient.ts`
-
