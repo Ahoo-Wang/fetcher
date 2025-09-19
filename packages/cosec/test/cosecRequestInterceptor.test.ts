@@ -54,7 +54,10 @@ describe('CoSecRequestInterceptor', () => {
     } as unknown as TokenRefresher;
 
     // Create mock JwtTokenManager
-    mockTokenManager = new JwtTokenManager(mockTokenStorage, mockTokenRefresher);
+    mockTokenManager = new JwtTokenManager(
+      mockTokenStorage,
+      mockTokenRefresher,
+    );
 
     // Create CoSecOptions
     coSecOptions = {
@@ -92,5 +95,4 @@ describe('CoSecRequestInterceptor', () => {
     expect(mockHeaders[CoSecHeaders.DEVICE_ID]).toBe('mock-device-id');
     expect(mockHeaders[CoSecHeaders.REQUEST_ID]).toBe('mock-request-id');
   });
-
 });

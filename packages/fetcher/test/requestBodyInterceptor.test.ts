@@ -16,7 +16,8 @@ import {
   CONTENT_TYPE_HEADER,
   ContentTypeValues,
   Fetcher,
-  FetchExchange, FetchRequest,
+  FetchExchange,
+  FetchRequest,
   REQUEST_BODY_INTERCEPTOR_NAME,
   REQUEST_BODY_INTERCEPTOR_ORDER,
   RequestBodyInterceptor,
@@ -112,7 +113,9 @@ describe('RequestBodyInterceptor', () => {
     const requestBody = new FormData();
     requestBody.append('key', 'value');
     const request: FetchRequest = {
-      url: '/test', body: requestBody, headers: {
+      url: '/test',
+      body: requestBody,
+      headers: {
         [CONTENT_TYPE_HEADER]: ContentTypeValues.APPLICATION_JSON,
       },
     };
@@ -121,7 +124,9 @@ describe('RequestBodyInterceptor', () => {
     interceptor.intercept(exchange);
 
     expect(exchange.request.body).toBe(requestBody);
-    expect(exchange.ensureRequestHeaders()[CONTENT_TYPE_HEADER]).toBeUndefined();
+    expect(
+      exchange.ensureRequestHeaders()[CONTENT_TYPE_HEADER],
+    ).toBeUndefined();
   });
 
   it('should convert plain object to JSON string and set Content-Type header', () => {

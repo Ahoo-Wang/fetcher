@@ -12,9 +12,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import {
-  DeviceIdStorage,
-} from '../src';
+import { DeviceIdStorage } from '../src';
 
 describe('deviceIdStorage.ts', () => {
   describe('DeviceIdStorage', () => {

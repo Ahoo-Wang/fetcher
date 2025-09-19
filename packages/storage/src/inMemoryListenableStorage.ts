@@ -11,7 +11,11 @@
  * limitations under the License.
  */
 
-import { ListenableStorage, RemoveStorageListener, StorageListener } from './listenableStorage';
+import {
+  ListenableStorage,
+  RemoveStorageListener,
+  StorageListener,
+} from './listenableStorage';
 import { isBrowser } from './env';
 
 /**
@@ -97,9 +101,7 @@ export class InMemoryListenableStorage implements ListenableStorage {
    * Notifies all listeners of a storage change by creating and dispatching a StorageEvent.
    * @param eventInit - The initialization object for the StorageEvent
    */
-  private notifyListeners(
-    eventInit: StorageEventInit,
-  ): void {
+  private notifyListeners(eventInit: StorageEventInit): void {
     if (isBrowser() && window.location) {
       eventInit.url = eventInit.url || window.location.href;
     }

@@ -168,7 +168,7 @@ describe('KeyStorage', () => {
 
     it('should clear cache when storage value is removed', () => {
       const testValue = 'test-value';
-      
+
       const keyStorage = new KeyStorage<string>({ key: TEST_KEY, storage });
       keyStorage.set(testValue);
 

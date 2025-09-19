@@ -78,7 +78,7 @@ describe('useKeyStorage', () => {
     act(() => {
       result.current[1](100);
     });
-    
+
     expect(result.current[0]).toBe(100);
   });
 });

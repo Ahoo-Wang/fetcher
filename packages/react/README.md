@@ -164,8 +164,8 @@ const [user, setUser] = useKeyStorage(userStorage);
 ```typescript
 function useFetcher<R>(
   request: FetchRequest,
-  options?: UseFetcherOptions
-): UseFetcherResult<R>
+  options?: UseFetcherOptions,
+): UseFetcherResult<R>;
 ```
 
 A React hook that provides data fetching capabilities with automatic state management.
@@ -193,7 +193,9 @@ An object containing:
 ### useKeyStorage
 
 ```typescript jsx
-function useKeyStorage<T>(keyStorage: KeyStorage<T>): [T | null, (value: T) => void]
+function useKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+): [T | null, (value: T) => void];
 ```
 
 A React hook that provides state management for a KeyStorage instance.

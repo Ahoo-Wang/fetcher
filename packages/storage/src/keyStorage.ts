@@ -57,7 +57,7 @@ export class KeyStorage<Deserialized> implements StorageListenable {
    * Listener for storage change events
    * Invalidates the cache when the relevant key is modified
    */
-  private readonly refreshCacheListener: StorageListener = (event) => {
+  private readonly refreshCacheListener: StorageListener = event => {
     this.cacheValue = null;
     if (event.newValue) {
       this.refreshCache(event.newValue);

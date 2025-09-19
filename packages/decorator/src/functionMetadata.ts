@@ -15,7 +15,9 @@ import {
   combineURLs,
   Fetcher,
   type FetchExchangeInit,
-  FetchRequestInit, getFetcher, mergeRecordToMap,
+  FetchRequestInit,
+  getFetcher,
+  mergeRecordToMap,
   mergeRequest,
   NamedCapable,
   type RequestHeaders,
@@ -24,7 +26,11 @@ import {
 } from '@ahoo-wang/fetcher';
 import { ApiMetadata } from './apiDecorator';
 import { EndpointMetadata } from './endpointDecorator';
-import { ParameterMetadata, ParameterRequest, ParameterType } from './parameterDecorator';
+import {
+  ParameterMetadata,
+  ParameterRequest,
+  ParameterType,
+} from './parameterDecorator';
 import { ResultExtractors } from './resultExtractor';
 
 /**
@@ -183,7 +189,9 @@ export class FunctionMetadata implements NamedCapable {
    * // }
    * ```
    */
-  resolveExchangeInit(args: any[]): Required<Pick<FetchExchangeInit, 'request' | 'attributes'>> {
+  resolveExchangeInit(
+    args: any[],
+  ): Required<Pick<FetchExchangeInit, 'request' | 'attributes'>> {
     const pathParams: Record<string, any> = {};
     const queryParams: Record<string, any> = {};
     const headers: RequestHeaders = {
@@ -324,7 +332,6 @@ export class FunctionMetadata implements NamedCapable {
     };
   }
 
-
   private processAttributeParam(
     param: ParameterMetadata,
     value: any,
@@ -335,14 +342,10 @@ export class FunctionMetadata implements NamedCapable {
     }
   }
 
-  private processAttributesParam(
-    value: any,
-    attributes: Map<string, any>,
-  ) {
-    if (typeof value !== 'object' || value ! instanceof Map) {
+  private processAttributesParam(value: any, attributes: Map<string, any>) {
+    if (typeof value !== 'object' || value! instanceof Map) {
       throw new Error('@attributes() parameter must be an object or an Map');
     }
     mergeRecordToMap(value, attributes);
   }
-
 }

@@ -27,7 +27,8 @@ declare global {
 }
 
 // Check if ReadableStream already has [Symbol.asyncIterator] implemented
-export const isReadableStreamAsyncIterableSupported = typeof ReadableStream.prototype[Symbol.asyncIterator] === 'function';
+export const isReadableStreamAsyncIterableSupported =
+  typeof ReadableStream.prototype[Symbol.asyncIterator] === 'function';
 
 // Add [Symbol.asyncIterator] to ReadableStream if not already implemented
 if (!isReadableStreamAsyncIterableSupported) {

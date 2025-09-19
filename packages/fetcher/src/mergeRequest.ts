@@ -121,7 +121,10 @@ export function mergeRequestOptions(
   }
   // Merge the options, prioritizing second over first, with defaults as fallback
   return {
-    resultExtractor: second?.resultExtractor ?? first?.resultExtractor ?? DEFAULT_REQUEST_OPTIONS.resultExtractor,
+    resultExtractor:
+      second?.resultExtractor ??
+      first?.resultExtractor ??
+      DEFAULT_REQUEST_OPTIONS.resultExtractor,
     attributes: second?.attributes ?? first?.attributes,
   };
 }

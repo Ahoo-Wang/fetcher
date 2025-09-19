@@ -1,16 +1,24 @@
 import { describe, it, expect } from 'vitest';
-import { JwtToken, JwtCompositeToken, jwtCompositeTokenSerializer } from '../src';
+import {
+  JwtToken,
+  JwtCompositeToken,
+  jwtCompositeTokenSerializer,
+} from '../src';
 import { JwtPayload } from '../src';
 
 // Example JWT tokens for testing
 // Payload: {"sub":"1234567890","name":"John Doe","iat":1516239022}
-const VALID_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+const VALID_JWT =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
 // Expired token with exp: 1516239022 (Saturday, January 27, 2018 1:30:22 PM GMT)
-const EXPIRED_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjJ9.4AdcjLYL060o32whA5hXbhqz1PLHes74IvyN8hIgFyM';
+const EXPIRED_JWT =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjJ9.4AdcjLYL060o32whA5hXbhqz1PLHes74IvyN8hIgFyM';
 // Payload: {"sub":"9876543210","name":"Jane Smith","iat":1516239022}
-const REFRESH_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ODc2NTQzMjEwIiwibmFtZSI6IkphbmUgU21pdGgiLCJpYXQiOjE1MTYyMzkwMjJ9.s3hOJN5F3zU8j39Jl2uomXRwGNfYLaqLv0J77hUQ0ko';
+const REFRESH_JWT =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ODc2NTQzMjEwIiwibmFtZSI6IkphbmUgU21pdGgiLCJpYXQiOjE1MTYyMzkwMjJ9.s3hOJN5F3zU8j39Jl2uomXRwGNfYLaqLv0J77hUQ0ko';
 // Expired refresh token
-const EXPIRED_REFRESH_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ODc2NTQzMjEwIiwibmFtZSI6IkphbmUgU21pdGgiLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTUxNjIzOTAyMn0.11Wm3b63C0Np198uB8X9zJjw9m8X9Q4J9p8X9Q4J9p8';
+const EXPIRED_REFRESH_JWT =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ODc2NTQzMjEwIiwibmFtZSI6IkphbmUgU21pdGgiLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTUxNjIzOTAyMn0.11Wm3b63C0Np198uB8X9zJjw9m8X9Q4J9p8X9Q4J9p8';
 // Invalid token - not enough parts
 const INVALID_JWT = 'invalid.token';
 
@@ -78,19 +86,28 @@ describe('jwtToken', () => {
       expect(compositeToken1.isRefreshNeeded).toBe(true);
 
       // Test with valid access token
-      const compositeToken2 = new JwtCompositeToken({ accessToken: VALID_JWT, refreshToken: REFRESH_JWT });
+      const compositeToken2 = new JwtCompositeToken({
+        accessToken: VALID_JWT,
+        refreshToken: REFRESH_JWT,
+      });
 
       expect(compositeToken2.isRefreshNeeded).toBe(false);
     });
 
     it('should correctly identify when token is refreshable', () => {
       // Test with valid refresh token
-      const compositeToken1 = new JwtCompositeToken({ accessToken: VALID_JWT, refreshToken: REFRESH_JWT });
+      const compositeToken1 = new JwtCompositeToken({
+        accessToken: VALID_JWT,
+        refreshToken: REFRESH_JWT,
+      });
 
       expect(compositeToken1.isRefreshable).toBe(true);
 
       // Test with expired refresh token
-      const compositeToken2 = new JwtCompositeToken({ accessToken: VALID_JWT, refreshToken: EXPIRED_REFRESH_JWT });
+      const compositeToken2 = new JwtCompositeToken({
+        accessToken: VALID_JWT,
+        refreshToken: EXPIRED_REFRESH_JWT,
+      });
 
       expect(compositeToken2.isRefreshable).toBe(false);
     });
@@ -116,7 +133,8 @@ describe('jwtToken', () => {
         refreshToken: REFRESH_JWT,
       });
 
-      const compositeToken = jwtCompositeTokenSerializer.deserialize(jsonString);
+      const compositeToken =
+        jwtCompositeTokenSerializer.deserialize(jsonString);
 
       expect(compositeToken.access.token).toBe(VALID_JWT);
       expect(compositeToken.refresh.token).toBe(REFRESH_JWT);

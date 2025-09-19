@@ -11,14 +11,18 @@
  * limitations under the License.
  */
 
-import { ListenableStorage, RemoveStorageListener, STORAGE_EVENT_TYPE, StorageListener } from './listenableStorage';
+import {
+  ListenableStorage,
+  RemoveStorageListener,
+  STORAGE_EVENT_TYPE,
+  StorageListener,
+} from './listenableStorage';
 
 /**
  * A wrapper around the browser's native Storage (localStorage or sessionStorage)
  * that implements the ListenableStorage interface by using the browser's native storage events.
  */
 export class BrowserListenableStorage implements ListenableStorage {
-
   /**
    * Creates a new BrowserListenableStorage instance.
    * @param storage - The native Storage object to wrap (e.g., localStorage or sessionStorage)

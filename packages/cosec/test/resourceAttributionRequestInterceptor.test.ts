@@ -40,7 +40,9 @@ describe('ResourceAttributionRequestInterceptor', () => {
       tokenStorage: mockTokenStorage,
     };
 
-    interceptor = new ResourceAttributionRequestInterceptor(resourceAttributionOptions);
+    interceptor = new ResourceAttributionRequestInterceptor(
+      resourceAttributionOptions,
+    );
 
     // Create mock exchange
     mockExchange = {
@@ -61,8 +63,12 @@ describe('ResourceAttributionRequestInterceptor', () => {
   });
 
   it('should have correct name and order', () => {
-    expect(interceptor.name).toBe(RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME);
-    expect(interceptor.order).toBe(RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER);
+    expect(interceptor.name).toBe(
+      RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME,
+    );
+    expect(interceptor.order).toBe(
+      RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER,
+    );
   });
 
   it('should not modify request when no token exists', () => {
@@ -71,7 +77,9 @@ describe('ResourceAttributionRequestInterceptor', () => {
     interceptor.intercept(mockExchange);
 
     expect(mockTokenStorage.get).toHaveBeenCalled();
-    expect(mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams).not.toHaveBeenCalled();
+    expect(
+      mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams,
+    ).not.toHaveBeenCalled();
   });
 
   it('should not modify request when token has no payload', () => {
@@ -86,7 +94,9 @@ describe('ResourceAttributionRequestInterceptor', () => {
     interceptor.intercept(mockExchange);
 
     expect(mockTokenStorage.get).toHaveBeenCalled();
-    expect(mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams).not.toHaveBeenCalled();
+    expect(
+      mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams,
+    ).not.toHaveBeenCalled();
   });
 
   it('should not modify request when payload has no tenantId and sub', () => {
@@ -101,7 +111,9 @@ describe('ResourceAttributionRequestInterceptor', () => {
     interceptor.intercept(mockExchange);
 
     expect(mockTokenStorage.get).toHaveBeenCalled();
-    expect(mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams).not.toHaveBeenCalled();
+    expect(
+      mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams,
+    ).not.toHaveBeenCalled();
   });
 
   it('should add tenantId and ownerId to path parameters', () => {
@@ -124,7 +136,9 @@ describe('ResourceAttributionRequestInterceptor', () => {
     interceptor.intercept(mockExchange);
 
     expect(mockTokenStorage.get).toHaveBeenCalled();
-    expect(mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams).toHaveBeenCalledWith(mockExchange.request.url);
+    expect(
+      mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams,
+    ).toHaveBeenCalledWith(mockExchange.request.url);
     expect(pathParams).toEqual({
       tenantId: 'test-tenant',
       ownerId: 'test-owner',
@@ -142,7 +156,9 @@ describe('ResourceAttributionRequestInterceptor', () => {
     } as unknown as JwtCompositeToken;
 
     vi.mocked(mockTokenStorage.get).mockReturnValue(mockToken);
-    vi.mocked(mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams).mockReturnValue(['tenantId']);
+    vi.mocked(
+      mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams,
+    ).mockReturnValue(['tenantId']);
 
     const pathParams = {};
     vi.mocked(mockExchange.ensureRequestUrlParams).mockReturnValue({
@@ -167,7 +183,9 @@ describe('ResourceAttributionRequestInterceptor', () => {
     } as unknown as JwtCompositeToken;
 
     vi.mocked(mockTokenStorage.get).mockReturnValue(mockToken);
-    vi.mocked(mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams).mockReturnValue(['ownerId']);
+    vi.mocked(
+      mockExchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams,
+    ).mockReturnValue(['ownerId']);
 
     const pathParams = {};
     vi.mocked(mockExchange.ensureRequestUrlParams).mockReturnValue({

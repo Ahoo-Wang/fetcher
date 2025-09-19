@@ -68,9 +68,11 @@ export class RequestBodyInterceptor implements RequestInterceptor {
    * @returns True if the body is an ArrayBuffer, TypedArray, DataView or ReadableStream, false otherwise
    */
   private isSupportedComplexBodyType(body: any): boolean {
-    return body instanceof ArrayBuffer ||
+    return (
+      body instanceof ArrayBuffer ||
       ArrayBuffer.isView(body) ||
-      body instanceof ReadableStream;
+      body instanceof ReadableStream
+    );
   }
 
   /**
@@ -80,10 +82,12 @@ export class RequestBodyInterceptor implements RequestInterceptor {
    * @returns True if the body is a Blob, File, FormData or URLSearchParams, false otherwise
    */
   private isAutoAppendContentType(body: any): boolean {
-    return body instanceof Blob ||
+    return (
+      body instanceof Blob ||
       body instanceof File ||
       body instanceof FormData ||
-      body instanceof URLSearchParams;
+      body instanceof URLSearchParams
+    );
   }
 
   /**

@@ -29,15 +29,8 @@ export function useKeyStorage<T>(
     (callback: () => void) => keyStorage.addListener(callback),
     [keyStorage],
   );
-  const getSnapshot = useCallback(
-    () => keyStorage.get(),
-    [keyStorage],
-  );
-  const value = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getSnapshot,
-  );
+  const getSnapshot = useCallback(() => keyStorage.get(), [keyStorage]);
+  const value = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const setValue = useCallback(
     (value: T) => keyStorage.set(value),
     [keyStorage],

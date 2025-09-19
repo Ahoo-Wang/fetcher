@@ -40,7 +40,7 @@ const MyComponent = () => {
 
   if (loading) return <div>加载中...</div>;
   if (error) return <div>错误: {error.message}</div>;
-  
+
   return (
     <div>
       <pre>{JSON.stringify(result, null, 2)}</pre>
@@ -71,7 +71,7 @@ const MyComponent = () => {
 
   if (loading) return <div>提交中...</div>;
   if (error) return <div>错误: {error.message}</div>;
-  
+
   return (
     <div>
       {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
@@ -96,7 +96,7 @@ const UserProfile = ({ userId }: { userId: string }) => {
 
   if (loading) return <div>加载中...</div>;
   if (error) return <div>错误: {error.message}</div>;
-  
+
   return (
     <div>
       <h1>{result?.name}</h1>
@@ -158,8 +158,8 @@ const [user, setUser] = useKeyStorage(userStorage);
 ```typescript
 function useFetcher<R>(
   request: FetchRequest,
-  options?: UseFetcherOptions
-): UseFetcherResult<R>
+  options?: UseFetcherOptions,
+): UseFetcherResult<R>;
 ```
 
 提供数据获取功能并自动管理状态的 React hook。
@@ -186,7 +186,9 @@ function useFetcher<R>(
 ### useKeyStorage
 
 ```typescript jsx
-function useKeyStorage<T>(keyStorage: KeyStorage<T>): [T | null, (value: T) => void]
+function useKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+): [T | null, (value: T) => void];
 ```
 
 为 KeyStorage 实例提供状态管理的 React hook。

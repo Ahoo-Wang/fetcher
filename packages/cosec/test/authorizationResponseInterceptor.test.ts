@@ -48,9 +48,14 @@ describe('AuthorizationResponseInterceptor', () => {
       refresh: vi.fn(),
     } as unknown as TokenRefresher;
 
-    mockJwtTokenManager = new JwtTokenManager(mockTokenStorage, mockTokenRefresher);
+    mockJwtTokenManager = new JwtTokenManager(
+      mockTokenStorage,
+      mockTokenRefresher,
+    );
     // 使用 vi.spyOn 替代直接定义属性
-    const isRefreshableSpy = vi.spyOn(mockJwtTokenManager, 'isRefreshable', 'get').mockReturnValue(true);
+    const isRefreshableSpy = vi
+      .spyOn(mockJwtTokenManager, 'isRefreshable', 'get')
+      .mockReturnValue(true);
 
     coSecOptions = {
       appId: 'test-app-id',
@@ -92,7 +97,9 @@ describe('AuthorizationResponseInterceptor', () => {
 
   it('should not intercept when token is not refreshable', async () => {
     // Mock isRefreshable to return false using spyOn
-    const isRefreshableSpy = vi.spyOn(mockJwtTokenManager, 'isRefreshable', 'get').mockReturnValue(false);
+    const isRefreshableSpy = vi
+      .spyOn(mockJwtTokenManager, 'isRefreshable', 'get')
+      .mockReturnValue(false);
 
     const exchange = {
       response: {
@@ -143,7 +150,9 @@ describe('AuthorizationResponseInterceptor', () => {
 
     mockTokenRefresher.refresh = vi.fn().mockRejectedValue(refreshError);
 
-    await expect(interceptor.intercept(exchange)).rejects.toThrow('Refresh failed');
+    await expect(interceptor.intercept(exchange)).rejects.toThrow(
+      'Refresh failed',
+    );
 
     expect(mockTokenStorage.get).toHaveBeenCalled();
     expect(mockTokenRefresher.refresh).toHaveBeenCalledWith('current-token');
@@ -163,7 +172,9 @@ describe('AuthorizationResponseInterceptor', () => {
 
     const refreshError = new Error('No token found');
 
-    await expect(interceptor.intercept(exchange)).rejects.toThrow('No token found');
+    await expect(interceptor.intercept(exchange)).rejects.toThrow(
+      'No token found',
+    );
 
     expect(mockTokenStorage.get).toHaveBeenCalled();
     expect(mockTokenRefresher.refresh).not.toHaveBeenCalled();

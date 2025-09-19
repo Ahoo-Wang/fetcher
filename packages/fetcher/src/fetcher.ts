@@ -15,7 +15,9 @@ import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, type TimeoutCapable } from './timeout';
 import { AttributesCapable, FetchExchange } from './fetchExchange';
 import {
-  BaseURLCapable, CONTENT_TYPE_HEADER, ContentTypeValues,
+  BaseURLCapable,
+  CONTENT_TYPE_HEADER,
+  ContentTypeValues,
   FetchRequest,
   FetchRequestInit,
   RequestHeaders,
@@ -73,10 +75,14 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
 /**
  * Options for individual requests.
  */
-export interface RequestOptions extends AttributesCapable, ResultExtractorCapable {
+export interface RequestOptions
+  extends AttributesCapable,
+    ResultExtractorCapable {
 }
 
-export const DEFAULT_REQUEST_OPTIONS: RequestOptions = { resultExtractor: ResultExtractors.Exchange };
+export const DEFAULT_REQUEST_OPTIONS: RequestOptions = {
+  resultExtractor: ResultExtractors.Exchange,
+};
 export const DEFAULT_FETCH_OPTIONS: RequestOptions = {
   resultExtractor: ResultExtractors.Response,
 };
@@ -137,8 +143,10 @@ export class Fetcher
    * @param options - Optional request options including result extractor and attributes
    * @returns Promise that resolves to the processed FetchExchange object
    */
-  async exchange(request: FetchRequest,
-                 options?: RequestOptions): Promise<FetchExchange> {
+  async exchange(
+    request: FetchRequest,
+    options?: RequestOptions,
+  ): Promise<FetchExchange> {
     // Merge default headers and request-level headers. defensive copy
     const mergedHeaders = {
       ...this.headers,
@@ -150,10 +158,10 @@ export class Fetcher
       headers: mergedHeaders,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
-    const {
-      resultExtractor,
-      attributes,
-    } = mergeRequestOptions(DEFAULT_REQUEST_OPTIONS, options);
+    const { resultExtractor, attributes } = mergeRequestOptions(
+      DEFAULT_REQUEST_OPTIONS,
+      options,
+    );
     const exchange: FetchExchange = new FetchExchange({
       fetcher: this,
       request: fetchRequest,
@@ -216,7 +224,10 @@ export class Fetcher
       ...request,
       url,
     };
-    return this.request(mergedRequest, mergeRequestOptions(DEFAULT_FETCH_OPTIONS, options));
+    return this.request(
+      mergedRequest,
+      mergeRequestOptions(DEFAULT_FETCH_OPTIONS, options),
+    );
   }
 
   /**
@@ -248,7 +259,10 @@ export class Fetcher
       url,
       method,
     };
-    return this.request(mergedRequest, mergeRequestOptions(DEFAULT_FETCH_OPTIONS, options));
+    return this.request(
+      mergedRequest,
+      mergeRequestOptions(DEFAULT_FETCH_OPTIONS, options),
+    );
   }
 
   /**

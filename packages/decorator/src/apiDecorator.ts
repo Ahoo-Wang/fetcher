@@ -13,7 +13,8 @@
 
 import {
   type AttributesCapable,
-  Fetcher, FetcherCapable,
+  Fetcher,
+  FetcherCapable,
   type RequestHeaders,
   type RequestHeadersCapable,
   type ResultExtractorCapable,
@@ -36,7 +37,8 @@ export interface ApiMetadata
   extends TimeoutCapable,
     RequestHeadersCapable,
     ResultExtractorCapable,
-    FetcherCapable, AttributesCapable {
+    FetcherCapable,
+    AttributesCapable {
   /**
    * Base path for all endpoints in the class.
    *

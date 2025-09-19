@@ -43,7 +43,6 @@ export interface StorageListenable {
  * An interface that extends the native Storage interface with the ability to listen for storage changes.
  */
 export interface ListenableStorage extends Storage, StorageListenable {
-
 }
 
 /**

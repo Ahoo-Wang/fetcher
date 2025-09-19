@@ -12,7 +12,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { JsonSerializer, IdentitySerializer, jsonSerializer, identitySerializer } from '../src';
+import {
+  JsonSerializer,
+  IdentitySerializer,
+  jsonSerializer,
+  identitySerializer,
+} from '../src';
 
 describe('serializer', () => {
   describe('JsonSerializer', () => {
@@ -20,7 +25,7 @@ describe('serializer', () => {
       const serializer = new JsonSerializer();
       const data = { name: 'test', value: 123 };
       const serialized = serializer.serialize(data);
-      
+
       expect(serialized).toBe(JSON.stringify(data));
     });
 
@@ -28,7 +33,7 @@ describe('serializer', () => {
       const serializer = new JsonSerializer();
       const data = '{"name":"test","value":123}';
       const deserialized = serializer.deserialize(data);
-      
+
       expect(deserialized).toEqual(JSON.parse(data));
     });
 
@@ -37,11 +42,11 @@ describe('serializer', () => {
       const numberData = 42;
       const stringData = 'hello';
       const booleanData = true;
-      
+
       const serializedNumber = serializer.serialize(numberData);
       const serializedString = serializer.serialize(stringData);
       const serializedBoolean = serializer.serialize(booleanData);
-      
+
       expect(serializer.deserialize(serializedNumber)).toBe(numberData);
       expect(serializer.deserialize(serializedString)).toBe(stringData);
       expect(serializer.deserialize(serializedBoolean)).toBe(booleanData);
@@ -52,7 +57,7 @@ describe('serializer', () => {
       const data = [1, 2, 3, 'test'];
       const serialized = serializer.serialize(data);
       const deserialized = serializer.deserialize(serialized);
-      
+
       expect(deserialized).toEqual(data);
     });
   });
@@ -62,7 +67,7 @@ describe('serializer', () => {
       const serializer = new IdentitySerializer<string>();
       const data = 'test-value';
       const serialized = serializer.serialize(data);
-      
+
       expect(serialized).toBe(data);
     });
 
@@ -70,7 +75,7 @@ describe('serializer', () => {
       const serializer = new IdentitySerializer<number>();
       const data = 42;
       const deserialized = serializer.deserialize(data);
-      
+
       expect(deserialized).toBe(data);
     });
 
@@ -79,7 +84,7 @@ describe('serializer', () => {
       const data = { name: 'test', value: 123 };
       const serialized = serializer.serialize(data);
       const deserialized = serializer.deserialize(data);
-      
+
       expect(serialized).toBe(data);
       expect(deserialized).toBe(data);
     });
@@ -94,7 +99,7 @@ describe('serializer', () => {
       const data = { name: 'test', value: 123 };
       const serialized = jsonSerializer.serialize(data);
       const deserialized = jsonSerializer.deserialize(serialized);
-      
+
       expect(deserialized).toEqual(data);
     });
   });
@@ -108,7 +113,7 @@ describe('serializer', () => {
       const data = 'test-value';
       const serialized = identitySerializer.serialize(data);
       const deserialized = identitySerializer.deserialize(data);
-      
+
       expect(serialized).toBe(data);
       expect(deserialized).toBe(data);
     });

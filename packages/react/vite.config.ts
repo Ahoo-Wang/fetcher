@@ -23,7 +23,12 @@ export default defineConfig({
       fileName: format => `index.${format}.js`,
     },
     rollupOptions: {
-      external: ['react', 'react-dom', '@ahoo-wang/fetcher', '@ahoo-wang/fetcher-storage'],
+      external: [
+        'react',
+        'react-dom',
+        '@ahoo-wang/fetcher',
+        '@ahoo-wang/fetcher-storage',
+      ],
       output: {
         globals: {
           react: 'React',
