@@ -56,7 +56,9 @@
   },
   "dependencies": {
     "@ahoo-wang/fetcher-openapi": "workspace:*",
-    "ts-morph": "^22.0.0"
+    "@ahoo-wang/fetcher-wow": "workspace:*",
+    "@ahoo-wang/fetcher-decorator": "workspace:*",
+    "ts-morph": "catalog:"
   },
   "devDependencies": {
     "vite-node": "^2.0.0"

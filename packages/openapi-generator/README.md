@@ -10,7 +10,7 @@
 - 智能模块路径组织，根据命名规范自动分组
 - 支持 $ref 引用解析
 - 支持基本类型、数组、对象、联合类型和枚举类型
-- 命令行支持
+- 命令行支持,支持通过 npx 运行
 
 ## 技术栈
 
@@ -19,6 +19,7 @@
 - typescript
 - @ahoo-wang/fetcher-openapi : 定义了 OpenAPI 规范类型
 - @ahoo-wang/fetcher-decorator : Fetcher HTTP 客户端的装饰器支持。使用 TypeScript 装饰器实现简洁、声明式的 API 服务定义。
+- @ahoo-wang/fetcher-wow : 内置的 Wow 类型定义系统，当识别 Wow 通用类型，替换为对应的类型
 - ts-morph ：使用 ts-morph 生成 TypeScript 文件
 - Commander.js ：通过 Commander.js 提供友好的命令行界面
 - yaml
@@ -41,23 +42,66 @@
 - utils: 工具类，提供一些常用的工具方法
 - cli: 命令行工具
 
-## 命名规范
+## OpenAPI Example
 
-生成器会根据 schema 名称的格式自动组织模块结构：
+[demo-openapi](test/demo.json)
 
-### Schema 名称格式
+## Wow 内置的类型
 
-Schema 名称采用点号分隔的命名规范：
+`OpenAPI.components.schemas.[schemaKey]` , 其中 `schemaKey` 以 `wow.` 开头的为 Wow 内置的类型需要使用 Wow 内置类型：
 
-- `serviceName.[aggregateName].[typeName]` 或者 `serviceName.[AggregateState]`
+1. `wow.command.CommandResult`:  使用 @ahoo-wang/fetcher-wow 的 `CommandResult` 接口类型
+2. `wow.MessageHeaderSqlType`: `MessageHeaderSqlType`
+3. `wow.api.BindingError`: `BindingError`
+4. `wow.api.DefaultErrorInfo`: `ErrorInfo`
+5. `wow.api.command.DefaultDeleteAggregate`: `DeleteAggregate`
+6. `wow.api.command.DefaultRecoverAggregate`: `RecoverAggregate`
+7. `wow.api.messaging.FunctionInfoData`: `FunctionInfo`
+8. `wow.api.messaging.FunctionKind`: `FunctionKind`
+9. `wow.api.modeling.AggregateId`: `AggregateId`
+10. `wow.api.query.Condition`: `Condition`
+11. `wow.api.query.ListQuery`: `ListQuery`
+12. `wow.api.query.Operator`: `Operator`
+13. `wow.api.query.PagedQuery`: `PagedQuery`
+14. `wow.api.query.Pagination`: `Pagination`
+15. `wow.api.query.Projection`: `Projection`
+16. `wow.api.query.Sort`: `FieldSort`
+17. `wow.api.query.Sort.Direction`: `SortDirection`
+18. `wow.command.CommandStage`: `CommandStage`
+19. `wow.command.SimpleWaitSignal`: `WaitSignal`
+20. `wow.configuration.Aggregate`: `Aggregate`
+21. `wow.configuration.BoundedContext`: `BoundedContext`
+22. `wow.configuration.WowMetadata`: `WowMetadata`
+23. `wow.modeling.DomainEvent`: `DomainEvent`
+24. `wow.openapi.BatchResult`: `BatchResult`
+
+## 模块组织
+
+通用规则：当遇到 `.` 时，标识目录层级。但如果分后后的名称为大写，则为接口名称
+
+- Schema 类型定义根据 , `schemaKey` 的命名规范自动组织模块结构
+    - 例如schemaKey： `example.cart.AddCartItem` 生成到 `cart/addCartItem.ts` 文件中
+- ApiClient 按照，tags 组织模块结构
+    - 例如按照，tags： `example.cart.AddCartItem` 生成到 `cart/addCartItem.ts` 文件中
+
+### Data Model 模块组织与命名规范
+
+#### Schema 名称格式
+
+`OpenAPI.components.schemas.[schemaKey]`
+schemaKey 名称采用点号分隔的命名规范：
+
+- `serviceName.[aggregateName].[TypeName]`
+- `serviceName.[DtoName]`
 
 例如：
 
-- `prajna.bot.BotCreated`
-- `prajna.BotState`
-- `prajna.AiMessage.Assistant`
-- `prajna.AiMessage.Assistant.ToolCall`
-- `prajna.AiMessage.System`
+- `example.cart.AddCartItem`
+- `example.cart.CartAggregatedCondition`
+- `example.cart.CartAggregatedDomainEventStream`
+- `example.AiMessage.Assistant.ToolCall`
+- `example.AiMessage.System`
+- `example.SecurityContext`
 
 ### 模块组织规则
 
