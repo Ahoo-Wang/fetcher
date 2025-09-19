@@ -26,21 +26,69 @@
 
 ## 模块职责划分
 
-- OpenAPIParser：解析器接口，负责解析 OpenAPI 规范. 支持 JSON、YAML 格式
-    - JsonOpenAPIParser: JSON 格式解析器
-    - YamlOpenAPIParser: YAML 格式解析器
-    - CompositeOpenAPIParser: 组合解析器，支持多个解析器进行组合
-- GenerateContext: 上下文类，负责生成器类之间的依赖关系
-- SchemaGenerator：生成器类，负责生成数据模型（Schema）的 TypeScript 类型定义
-- ApiClientGenerator：生成器类，负责生成 ApiClient
-- GenerateOptions: 生成器配置类，用于自定义生成器行为
-- OpenAPIGenerator：用户最终使用的生成器门面
-- ModuleGrouper : 模块分组类，负责将生成的 TypeScript 类型定义分组到对应的模块中
-- FilePathResolver: 文件路径解析类，负责将生成的 TypeScript 类型定义保存到对应的文件路径中
-- TypeMapper: 类型映射类，负责将 OpenAPI 类型映射到 TypeScript 类型
-- NamingResolver:
-- utils: 工具类，提供一些常用的工具方法
-- cli: 命令行工具
+```
+openapi-generator/
+├── src/
+│   ├── core/                    # 核心处理逻辑
+│   │   ├── parser/             # OpenAPI 解析器
+│   │   │   ├── openapi-parser.ts
+│   │   │   ├── reference-resolver.ts
+│   │   │   └── schema-normalizer.ts
+│   │   ├── ast/                # AST 构建模块 (使用 ts-morph)
+│   │   │   ├── ast-builder.ts
+│   │   │   ├── interface-generator.ts
+│   │   │   ├── type-generator.ts
+│   │   │   ├── enum-generator.ts
+│   │   │   ├── client-generator.ts
+│   │   │   └── decorator-applier.ts
+│   │   ├── type-generator/     # TypeScript 类型生成逻辑
+│   │   │   ├── base-type-mapper.ts
+│   │   │   ├── schema-processor.ts
+│   │   │   ├── enum-processor.ts
+│   │   │   └── union-processor.ts
+│   │   └── path-organizer/     # 路径组织逻辑
+│   │       ├── module-grouper.ts
+│   │       └── naming-converter.ts
+│   ├── utils/                  # 工具函数
+│   │   ├── ast-utils.ts        # AST 操作辅助函数
+│   │   ├── file-utils.ts
+│   │   ├── logger.ts
+│   │   └── type-utils.ts
+│   ├── cli/                    # 命令行接口
+│   │   ├── index.ts
+│   │   ├── commands/
+│   │   │   └── generate.ts
+│   │   └── options/
+│   │       └── config.ts
+│   └── types/                  # 类型定义
+│       ├── openapi.ts
+│       ├── generator.ts
+│       └── config.ts
+├── tests/                      # 测试文件
+│   ├── unit/
+│   └── integration/
+└── dist/                       # 编译输出
+```
+
+### 关键模块职责说明（基于 ts-morph）
+
+#### 1. AST 构建模块 (core/ast)
+
+- **ast-builder.ts**: 主构建器，管理 ts-morph Project 和 SourceFile
+- **interface-generator.ts**: 使用 ts-morph 生成接口声明
+- **type-generator.ts**: 使用 ts-morph 生成类型别名
+- **enum-generator.ts**: 使用 ts-morph 生成枚举
+- **client-generator.ts**: 使用 ts-morph 生成 API 客户端类
+- **decorator-applier.ts**: 使用 ts-morph 应用装饰器
+
+#### 2. AST 工具模块 (utils/ast-utils)
+
+提供 ts-morph 操作的辅助函数：
+
+- 创建和操作节点
+- 处理导入声明
+- 管理类型引用
+- 格式化生成的代码
 
 ## OpenAPI Example
 
@@ -111,23 +159,10 @@ schemaKey 名称采用点号分隔的命名规范：
 
 示例：
 
-- `prajna.bot.BotCreated` 生成 `prajna/bot.ts`，接口名为 `BotCreated`
-- `prajna.BotState` 生成 `prajna.ts`，接口名为 `BotState`
-- `prajna.AiMessage.Assistant`、`prajna.AiMessage.Assistant.ToolCall`、`prajna.AiMessage.System` 都生成到
-  `prajna/aiMessage.ts` 文件中：
-    - `prajna.AiMessage.Assistant` 生成接口 `Assistant`
-    - `prajna.AiMessage.Assistant.ToolCall` 生成接口 `AssistantToolCall`
-    - `prajna.AiMessage.System` 生成接口 `System`
-
-## 支持的类型
-
-- 基本类型：string, number, integer, boolean
-- 数组类型：type[]
-- 对象类型：{ prop: type }
-- 联合类型：type1 | type2
-- 枚举类型："value1" | "value2"
-- 引用类型：通过 $ref 引用其他 schema
-
-## License
-
-Apache License 2.0
+- `example.bot.BotCreated` 生成 `example/bot.ts`，接口名为 `BotCreated`
+- `example.BotState` 生成 `example.ts`，接口名为 `BotState`
+- `example.AiMessage.Assistant`、`example.AiMessage.Assistant.ToolCall`、`example.AiMessage.System` 都生成到
+  `example/aiMessage.ts` 文件中：
+    - `example.AiMessage.Assistant` 生成接口 `Assistant`
+    - `example.AiMessage.Assistant.ToolCall` 生成接口 `AssistantToolCall`
+    - `example.AiMessage.System` 生成接口 `System`
