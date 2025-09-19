@@ -11,21 +11,6 @@
  * limitations under the License.
  */
 
-export class TypeMapper {
-  private readonly typeMap: Record<string, string> = {
-    'string': 'string',
-    'number': 'number',
-    'boolean': 'boolean',
-    'object': 'object',
-    'array': 'Array',
-    'any': 'any',
-    'Date': 'Date',
-    'Buffer': 'Buffer',
-    'Blob': 'Blob',
-    'void': 'void',
-    'null': 'null',
-    'undefined': 'undefined',
-    'any[]': 'Array',
-    'object[]': 'Array',
-  };
+export class SchemaGenerator {
+
 }
