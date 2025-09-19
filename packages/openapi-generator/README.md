@@ -1,4 +1,5 @@
 你作为资深前端开发工程师，正在开发基于 OpenAPI 规范的 TypeScript 代码生成器。
+按照以下要求生成代码，要求模块职责清晰，自下而上的开发，即先开发小的基于模块，再逐步开发高层次模块代码，最终完成该lib。
 
 # @ahoo-wang/fetcher-openapi-generator
 
