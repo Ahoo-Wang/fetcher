@@ -60,7 +60,10 @@ describe('reflection', () => {
     });
 
     it('should handle async functions', () => {
-      async function asyncFunc(param1: string, param2: number): Promise<string> {
+      async function asyncFunc(
+        param1: string,
+        param2: number,
+      ): Promise<string> {
         return param1 + param2;
       }
 
@@ -80,7 +83,9 @@ describe('reflection', () => {
     });
 
     it('should throw TypeError for non-function inputs', () => {
-      expect(() => getParameterNames('not a function' as any)).toThrow(TypeError);
+      expect(() => getParameterNames('not a function' as any)).toThrow(
+        TypeError,
+      );
       expect(() => getParameterNames(123 as any)).toThrow(TypeError);
       expect(() => getParameterNames(null as any)).toThrow(TypeError);
       expect(() => getParameterNames(undefined as any)).toThrow(TypeError);
@@ -100,7 +105,10 @@ describe('reflection', () => {
     });
 
     it('should handle functions with destructuring parameters', () => {
-      function funcWithDestructuring({ a, b }: { a: string; b: number }, [c, d]: [boolean, string]) {
+      function funcWithDestructuring(
+        { a, b }: { a: string; b: number },
+        [c, d]: [boolean, string],
+      ) {
         return { a, b, c, d };
       }
 
@@ -119,7 +127,11 @@ describe('reflection', () => {
       }
 
       const result = getParameterNames(funcWithComplexParams);
-      expect(result).toEqual(['_privateParam', '$specialParam', 'paramWithUnderScore_']);
+      expect(result).toEqual([
+        '_privateParam',
+        '$specialParam',
+        'paramWithUnderScore_',
+      ]);
     });
 
     it('should return empty array when function parsing fails', () => {
@@ -245,7 +257,8 @@ describe('reflection', () => {
         },
       };
       // Override toString to simulate parameter with type annotation
-      mockObj.testFunc.toString = () => 'function testFunc(userId: string, options: object)';
+      mockObj.testFunc.toString = () =>
+        'function testFunc(userId: string, options: object)';
 
       // Should extract parameter name before colon
       const paramName = getParameterName(mockObj, 'testFunc', 0);
@@ -257,6 +270,5 @@ describe('reflection', () => {
       const result = getParameterName({} as any, 'nonexistent', 0);
       expect(result).toBeUndefined();
     });
-
   });
 });

@@ -2,7 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   HttpMethod,
   JsonResultExtractor,
-  ExchangeResultExtractor, NamedFetcher, ResultExtractors,
+  ExchangeResultExtractor,
+  NamedFetcher,
+  ResultExtractors,
 } from '@ahoo-wang/fetcher';
 import { RequestExecutor, DECORATOR_TARGET_ATTRIBUTE_KEY } from '../src';
 import { FunctionMetadata } from '../src';
@@ -155,7 +157,9 @@ describe('RequestExecutor', () => {
 
     it('should use endpoint result extractor when defined', async () => {
       const mockFetcher = new MockFetcher();
-      mockFetcher.request = vi.fn().mockResolvedValue('endpoint extractor result');
+      mockFetcher.request = vi
+        .fn()
+        .mockResolvedValue('endpoint extractor result');
 
       const metadataWithExtractor = new FunctionMetadata(
         'getUser',
@@ -205,7 +209,9 @@ describe('RequestExecutor', () => {
 
     it('should reject when fetcher request rejects', async () => {
       const mockFetcher = new MockFetcher();
-      mockFetcher.request = vi.fn().mockRejectedValue(new Error('Request failed'));
+      mockFetcher.request = vi
+        .fn()
+        .mockRejectedValue(new Error('Request failed'));
 
       const metadataWithFetcher = new FunctionMetadata(
         'getUser',
@@ -216,9 +222,9 @@ describe('RequestExecutor', () => {
 
       const executor = new RequestExecutor(metadataWithFetcher);
 
-      await expect(executor.execute({}, ['123', 'active']))
-        .rejects
-        .toThrow('Request failed');
+      await expect(executor.execute({}, ['123', 'active'])).rejects.toThrow(
+        'Request failed',
+      );
     });
   });
 });

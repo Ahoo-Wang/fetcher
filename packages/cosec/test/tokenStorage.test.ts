@@ -12,10 +12,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import {
-  CompositeToken, JwtCompositeToken,
-  TokenStorage,
-} from '../src';
+import { CompositeToken, JwtCompositeToken, TokenStorage } from '../src';
 
 describe('tokenStorage.ts', () => {
   describe('TokenStorage', () => {

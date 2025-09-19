@@ -33,7 +33,7 @@ describe('ReadableStreamAsyncIterable', () => {
       start(controller) {
         testData.forEach(data => controller.enqueue(data));
         controller.close();
-      }
+      },
     });
 
     const iterable = new ReadableStreamAsyncIterable(stream);
@@ -50,7 +50,7 @@ describe('ReadableStreamAsyncIterable', () => {
     const stream = new ReadableStream({
       start(controller) {
         controller.close();
-      }
+      },
     });
 
     const iterable = new ReadableStreamAsyncIterable(stream);
@@ -89,11 +89,11 @@ describe('ReadableStreamAsyncIterable', () => {
     const stream = new ReadableStream({
       start(controller) {
         controller.error(testError);
-      }
+      },
     });
 
     const iterable = new ReadableStreamAsyncIterable(stream);
-    
+
     await expect(async () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for await (const value of iterable) {
@@ -106,7 +106,7 @@ describe('ReadableStreamAsyncIterable', () => {
     const stream = new ReadableStream({
       start(controller) {
         controller.enqueue('test');
-      }
+      },
     });
 
     const iterable = new ReadableStreamAsyncIterable(stream);
@@ -120,7 +120,7 @@ describe('ReadableStreamAsyncIterable', () => {
     const stream = new ReadableStream({
       start(controller) {
         controller.enqueue('test');
-      }
+      },
     });
 
     const iterable = new ReadableStreamAsyncIterable(stream);
@@ -134,7 +134,7 @@ describe('ReadableStreamAsyncIterable', () => {
     const stream = new ReadableStream({
       start(controller) {
         controller.enqueue('test');
-      }
+      },
     });
 
     const iterable = new ReadableStreamAsyncIterable(stream);
@@ -150,7 +150,7 @@ describe('ReadableStreamAsyncIterable', () => {
     const stream = new ReadableStream({
       start(controller) {
         controller.enqueue('test');
-      }
+      },
     });
 
     const iterable = new ReadableStreamAsyncIterable(stream);

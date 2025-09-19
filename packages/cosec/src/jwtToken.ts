@@ -11,16 +11,22 @@
  * limitations under the License.
  */
 
-import { CoSecJwtPayload, EarlyPeriodCapable, isTokenExpired, JwtPayload, parseJwtPayload } from './jwts';
+import {
+  CoSecJwtPayload,
+  EarlyPeriodCapable,
+  isTokenExpired,
+  JwtPayload,
+  parseJwtPayload,
+} from './jwts';
 import { CompositeToken } from './tokenRefresher';
 import { Serializer } from '@ahoo-wang/fetcher-storage';
-
 
 /**
  * Interface for JWT token with typed payload
  * @template Payload The type of the JWT payload
  */
-export interface IJwtToken<Payload extends JwtPayload> extends EarlyPeriodCapable {
+export interface IJwtToken<Payload extends JwtPayload>
+  extends EarlyPeriodCapable {
   readonly token: string;
   readonly payload: Payload | null;
 
@@ -31,7 +37,8 @@ export interface IJwtToken<Payload extends JwtPayload> extends EarlyPeriodCapabl
  * Class representing a JWT token with typed payload
  * @template Payload The type of the JWT payload
  */
-export class JwtToken<Payload extends JwtPayload> implements IJwtToken<Payload> {
+export class JwtToken<Payload extends JwtPayload>
+  implements IJwtToken<Payload> {
   public readonly payload: Payload | null;
 
   /**
@@ -72,14 +79,18 @@ export interface RefreshTokenStatusCapable {
 /**
  * Class representing a composite token containing both access and refresh tokens
  */
-export class JwtCompositeToken implements EarlyPeriodCapable, RefreshTokenStatusCapable {
+export class JwtCompositeToken
+  implements EarlyPeriodCapable, RefreshTokenStatusCapable {
   public readonly access: JwtToken<CoSecJwtPayload>;
   public readonly refresh: JwtToken<JwtPayload>;
 
   /**
    * Creates a new JwtCompositeToken instance
    */
-  constructor(public readonly token: CompositeToken, public readonly earlyPeriod: number = 0) {
+  constructor(
+    public readonly token: CompositeToken,
+    public readonly earlyPeriod: number = 0,
+  ) {
     this.access = new JwtToken(token.accessToken, earlyPeriod);
     this.refresh = new JwtToken(token.refreshToken, earlyPeriod);
   }
@@ -99,13 +110,13 @@ export class JwtCompositeToken implements EarlyPeriodCapable, RefreshTokenStatus
   get isRefreshable(): boolean {
     return !this.refresh.isExpired;
   }
-
 }
 
 /**
  * Serializer for JwtCompositeToken that handles conversion to and from JSON strings
  */
-export class JwtCompositeTokenSerializer implements Serializer<string, JwtCompositeToken>, EarlyPeriodCapable {
+export class JwtCompositeTokenSerializer
+  implements Serializer<string, JwtCompositeToken>, EarlyPeriodCapable {
   constructor(public readonly earlyPeriod: number = 0) {
   }
 

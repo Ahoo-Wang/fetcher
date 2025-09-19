@@ -68,7 +68,10 @@ export function mergeRecords<V>(
  * @param map - Target Map object, if not provided a new Map will be created
  * @returns The merged Map object
  */
-export function mergeRecordToMap<V>(record?: Record<string, V> | Map<string, V>, map?: Map<string, V>): Map<string, V> {
+export function mergeRecordToMap<V>(
+  record?: Record<string, V> | Map<string, V>,
+  map?: Map<string, V>,
+): Map<string, V> {
   map ??= new Map();
   if (!record) {
     return map;

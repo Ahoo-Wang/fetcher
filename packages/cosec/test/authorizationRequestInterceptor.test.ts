@@ -90,16 +90,21 @@ describe('AuthorizationRequestInterceptor', () => {
 
     await interceptor.intercept(mockExchange as FetchExchange);
 
-    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBeUndefined();
+    expect(
+      mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION],
+    ).toBeUndefined();
   });
 
   it('should not modify existing Authorization header', async () => {
     mockTokenManager.currentToken = new MockToken({ token: 'test-token' });
-    mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION] = 'Existing Bearer token';
+    mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION] =
+      'Existing Bearer token';
 
     await interceptor.intercept(mockExchange as FetchExchange);
 
-    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe('Existing Bearer token');
+    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe(
+      'Existing Bearer token',
+    );
   });
 
   it('should set Authorization header when token exists and no header is set', async () => {
@@ -108,7 +113,9 @@ describe('AuthorizationRequestInterceptor', () => {
 
     await interceptor.intercept(mockExchange as FetchExchange);
 
-    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe('Bearer test-token');
+    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe(
+      'Bearer test-token',
+    );
   });
 
   it('should refresh token when token needs refresh and is refreshable', async () => {
@@ -118,7 +125,9 @@ describe('AuthorizationRequestInterceptor', () => {
     await interceptor.intercept(mockExchange as FetchExchange);
 
     expect(mockTokenManager.refreshCalled).toBe(true);
-    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe('Bearer refreshed-token');
+    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe(
+      'Bearer refreshed-token',
+    );
   });
 
   it('should not refresh token when token does not need refresh', async () => {
@@ -128,17 +137,25 @@ describe('AuthorizationRequestInterceptor', () => {
     await interceptor.intercept(mockExchange as FetchExchange);
 
     expect(mockTokenManager.refreshCalled).toBe(false);
-    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe('Bearer valid-token');
+    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe(
+      'Bearer valid-token',
+    );
   });
 
   it('should not refresh token when token is not refreshable', async () => {
-    const token = new MockToken({ token: 'non-refreshable-token' }, true, false);
+    const token = new MockToken(
+      { token: 'non-refreshable-token' },
+      true,
+      false,
+    );
     mockTokenManager.currentToken = token;
 
     await interceptor.intercept(mockExchange as FetchExchange);
 
     expect(mockTokenManager.refreshCalled).toBe(false);
-    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe('Bearer non-refreshable-token');
+    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe(
+      'Bearer non-refreshable-token',
+    );
   });
 
   it('should not refresh token when refresh is ignored by attribute', async () => {
@@ -149,7 +166,9 @@ describe('AuthorizationRequestInterceptor', () => {
     await interceptor.intercept(mockExchange as FetchExchange);
 
     expect(mockTokenManager.refreshCalled).toBe(false);
-    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe('Bearer expiring-token');
+    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBe(
+      'Bearer expiring-token',
+    );
   });
 
   it('should not set Authorization header when token becomes null after refresh', async () => {
@@ -162,7 +181,11 @@ describe('AuthorizationRequestInterceptor', () => {
     }
 
     const nullTokenManager = new MockTokenManagerWithNullRefresh();
-    nullTokenManager.currentToken = new MockToken({ token: 'old-token' }, true, true);
+    nullTokenManager.currentToken = new MockToken(
+      { token: 'old-token' },
+      true,
+      true,
+    );
 
     const interceptorWithNullToken = new AuthorizationRequestInterceptor({
       tokenManager: nullTokenManager,
@@ -171,6 +194,8 @@ describe('AuthorizationRequestInterceptor', () => {
     await interceptorWithNullToken.intercept(mockExchange as FetchExchange);
 
     expect(nullTokenManager.refreshCalled).toBe(true);
-    expect(mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION]).toBeUndefined();
+    expect(
+      mockExchange.requestHeaders[CoSecHeaders.AUTHORIZATION],
+    ).toBeUndefined();
   });
 });

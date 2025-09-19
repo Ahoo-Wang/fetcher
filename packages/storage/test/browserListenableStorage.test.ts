@@ -1,10 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import {
-  BrowserListenableStorage,
-} from '../src';
-import {
-  STORAGE_EVENT_TYPE,
-} from '../src';
+import { BrowserListenableStorage } from '../src';
+import { STORAGE_EVENT_TYPE } from '../src';
 
 describe('BrowserListenableStorage', () => {
   // Mock window and localStorage for testing
@@ -47,23 +43,35 @@ describe('BrowserListenableStorage', () => {
     (global as any).window = {
       location: mockWindowLocation,
       addEventListener: vi.fn((event, handler) => {
-        (global as any).window.eventListeners = (global as any).window.eventListeners || {};
-        (global as any).window.eventListeners[event] = (global as any).window.eventListeners[event] || [];
+        (global as any).window.eventListeners =
+          (global as any).window.eventListeners || {};
+        (global as any).window.eventListeners[event] =
+          (global as any).window.eventListeners[event] || [];
         (global as any).window.eventListeners[event].push(handler);
       }),
       removeEventListener: vi.fn((event, handler) => {
-        if ((global as any).window.eventListeners && (global as any).window.eventListeners[event]) {
-          const index = (global as any).window.eventListeners[event].indexOf(handler);
+        if (
+          (global as any).window.eventListeners &&
+          (global as any).window.eventListeners[event]
+        ) {
+          const index = (global as any).window.eventListeners[event].indexOf(
+            handler,
+          );
           if (index > -1) {
             (global as any).window.eventListeners[event].splice(index, 1);
           }
         }
       }),
-      dispatchEvent: vi.fn((event) => {
-        if ((global as any).window.eventListeners && (global as any).window.eventListeners[event.type]) {
-          (global as any).window.eventListeners[event.type].forEach((handler: Function) => {
-            handler(event);
-          });
+      dispatchEvent: vi.fn(event => {
+        if (
+          (global as any).window.eventListeners &&
+          (global as any).window.eventListeners[event.type]
+        ) {
+          (global as any).window.eventListeners[event.type].forEach(
+            (handler: Function) => {
+              handler(event);
+            },
+          );
         }
         return true;
       }),
@@ -123,10 +131,16 @@ describe('BrowserListenableStorage', () => {
     const listener = vi.fn();
 
     const removeListener = storage.addListener(listener);
-    expect(window.addEventListener).toHaveBeenCalledWith(STORAGE_EVENT_TYPE, expect.any(Function));
+    expect(window.addEventListener).toHaveBeenCalledWith(
+      STORAGE_EVENT_TYPE,
+      expect.any(Function),
+    );
 
     removeListener();
-    expect(window.removeEventListener).toHaveBeenCalledWith(STORAGE_EVENT_TYPE, expect.any(Function));
+    expect(window.removeEventListener).toHaveBeenCalledWith(
+      STORAGE_EVENT_TYPE,
+      expect.any(Function),
+    );
   });
 
   it('should only call listener for events from the wrapped storage', () => {
@@ -135,14 +149,18 @@ describe('BrowserListenableStorage', () => {
     storage.addListener(listener);
 
     // Event from the wrapped storage
-    const eventFromStorage = new StorageEvent(STORAGE_EVENT_TYPE, { storageArea: mockLocalStorage });
+    const eventFromStorage = new StorageEvent(STORAGE_EVENT_TYPE, {
+      storageArea: mockLocalStorage,
+    });
     window.dispatchEvent(eventFromStorage);
     expect(listener).toHaveBeenCalledWith(eventFromStorage);
 
     // Event from another storage
     listener.mockClear();
     const otherStorage = { ...mockLocalStorage };
-    const eventFromOtherStorage = new StorageEvent(STORAGE_EVENT_TYPE, { storageArea: otherStorage });
+    const eventFromOtherStorage = new StorageEvent(STORAGE_EVENT_TYPE, {
+      storageArea: otherStorage,
+    });
     window.dispatchEvent(eventFromOtherStorage);
     expect(listener).not.toHaveBeenCalled();
   });

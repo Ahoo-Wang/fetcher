@@ -197,7 +197,9 @@ describe('mergeRequestOptions', () => {
   it('should return default options when both parameters are undefined', () => {
     const result = mergeRequestOptions(undefined, undefined);
 
-    expect(result.resultExtractor).toBe(DEFAULT_REQUEST_OPTIONS.resultExtractor);
+    expect(result.resultExtractor).toBe(
+      DEFAULT_REQUEST_OPTIONS.resultExtractor,
+    );
     expect(result.attributes).toBeUndefined();
   });
 
@@ -268,7 +270,9 @@ describe('mergeRequestOptions', () => {
 
     const result = mergeRequestOptions(first, second);
 
-    expect(result.resultExtractor).toBe(DEFAULT_REQUEST_OPTIONS.resultExtractor);
+    expect(result.resultExtractor).toBe(
+      DEFAULT_REQUEST_OPTIONS.resultExtractor,
+    );
     expect(result.attributes).toBe(second.attributes);
   });
 });

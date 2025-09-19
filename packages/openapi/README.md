@@ -37,7 +37,7 @@ const openAPI: OpenAPI = {
   openapi: '3.0.1',
   info: {
     title: 'My API',
-    version: '1.0.0'
+    version: '1.0.0',
   },
   paths: {
     '/users': {
@@ -51,16 +51,16 @@ const openAPI: OpenAPI = {
                 schema: {
                   type: 'array',
                   items: {
-                    $ref: '#/components/schemas/User'
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+                    $ref: '#/components/schemas/User',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 };
 ```
 

@@ -19,7 +19,9 @@ import {
 import { AppIdCapable, CoSecHeaders, DeviceIdStorageCapable } from './types';
 import { idGenerator } from './idGenerator';
 
-export interface CoSecRequestOptions extends AppIdCapable, DeviceIdStorageCapable {
+export interface CoSecRequestOptions
+  extends AppIdCapable,
+    DeviceIdStorageCapable {
 }
 
 /**
@@ -101,6 +103,5 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     requestHeaders[CoSecHeaders.APP_ID] = this.options.appId;
     requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;
     requestHeaders[CoSecHeaders.REQUEST_ID] = requestId;
-
   }
 }

@@ -21,7 +21,6 @@ import { Server } from './server';
 import { PathItem } from './paths';
 import { Header } from './base-types';
 
-
 /**
  * The Link object represents a possible design-time link for a response
  *
@@ -40,7 +39,6 @@ export interface Link {
   description?: string;
   server?: Server;
 }
-
 
 /**
  * Describes a single response from an API Operation
