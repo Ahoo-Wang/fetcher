@@ -1,7 +1,7 @@
 {
   "name": "@ahoo-wang/fetcher-openapi-generator",
   "version": "1.9.2",
-  "description": "",
+  "description": "OpenAPI TypeScript Code Generator - Generates TypeScript types from OpenAPI schemas",
   "keywords": [
     "fetch",
     "http",
@@ -14,15 +14,19 @@
     "llm",
     "streaming",
     "sse",
-    "server-sent-events"
+    "server-sent-events",
+    "openapi",
+    "swagger",
+    "codegen",
+    "generator"
   ],
   "author": "Ahoo-Wang",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/master/packages/openapi",
+  "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/master/packages/openapi-generator",
   "repository": {
     "type": "git",
     "url": "https://github.com/Ahoo-Wang/fetcher.git",
-    "directory": "packages/openapi"
+    "directory": "packages/openapi-generator"
   },
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
@@ -47,25 +51,14 @@
     "test": "vitest run --coverage",
     "lint": "eslint . --fix",
     "clean": "rm -rf dist",
-    "analyze": "npx vite-bundle-analyzer -p auto"
+    "analyze": "npx vite-bundle-analyzer -p auto",
+    "generate:example": "vite-node src/example.ts"
   },
   "dependencies": {
     "@ahoo-wang/fetcher-openapi": "workspace:*",
-    "ts-morph": "catalog:"
+    "ts-morph": "^22.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
-    "@vitest/ui": "catalog:",
-    "eslint": "catalog:",
-    "globals": "catalog:",
-    "prettier": "catalog:",
-    "typescript": "catalog:",
-    "typescript-eslint": "catalog:",
-    "unplugin-dts": "catalog:",
-    "vite": "catalog:",
-    "vite-bundle-analyzer": "catalog:",
-    "vitest": "catalog:",
-    "msw": "catalog:"
+    "vite-node": "^2.0.0"
   }
 }

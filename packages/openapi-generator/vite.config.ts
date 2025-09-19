@@ -11,28 +11,24 @@
  * limitations under the License.
  */
 
+import { resolve } from 'path';
 import { defineConfig } from 'vite';
-import dts from 'unplugin-dts/vite';
 
 export default defineConfig({
   build: {
-    sourcemap: true,
     lib: {
-      entry: 'src/index.ts',
+      entry: resolve(__dirname, 'src/index.ts'),
       name: 'FetcherOpenAPIGenerator',
-      fileName: format => `index.${format}.js`,
+      fileName: (format) => `index.${format}.js`,
     },
     rollupOptions: {
-      external: [],
+      external: ['@ahoo-wang/fetcher-openapi', 'ts-morph'],
       output: {
-        globals: {},
-      },
-    },
-  },
-  plugins: [
-    dts({
-      outDirs: 'dist',
-      tsconfigPath: './tsconfig.json',
-    }),
-  ],
+        globals: {
+          '@ahoo-wang/fetcher-openapi': 'FetcherOpenAPI',
+          'ts-morph': 'TsMorph',
+        },
+      }
+    }
+  }
 });
