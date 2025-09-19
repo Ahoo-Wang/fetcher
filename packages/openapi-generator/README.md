@@ -31,6 +31,7 @@
 openapi-generator/
 ├── src/
 │   ├── core/                    # 核心处理逻辑
+│   │   ├── generate-context.ts   # 整个生成过程共享该上下文: 保存Project、OpenAPI、以及已处理的 Schema、Operation、SourceFile 等
 │   │   ├── parser/             # OpenAPI 解析器
 │   │   │   ├── openapi-parser.ts
 │   │   │   ├── reference-resolver.ts
@@ -129,7 +130,7 @@ openapi-generator/
 通用规则：当遇到 `.` 时，标识目录层级。但如果分后后的名称为大写，则为接口名称
 
 - Schema 类型定义根据 , `schemaKey` 的命名规范自动组织模块结构
-    - 例如schemaKey： `example.cart.AddCartItem` 生成到 `cart/addCartItem.ts` 文件中
+    - 例如schemaKey： `example.cart.AddCartItem` 生成到 `cart/types.ts` 文件中
 - ApiClient 按照，tags 组织模块结构
     - 例如按照，tags： `example.cart.AddCartItem` 生成到 `cart/addCartItem.ts` 文件中
 
