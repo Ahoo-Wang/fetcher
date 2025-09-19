@@ -10,13 +10,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { describe, expect, it, vi } from 'vitest';
+import { describe, it } from 'vitest';
 import { Project } from 'ts-morph';
 
 describe('project');
 it('create', async () => {
   const project = new Project({});
-  const sourceFile = project.createSourceFile('test.ts', '', { overwrite: true });
+  const sourceFile = project.createSourceFile('test.ts', '', {
+    overwrite: true,
+  });
 
   sourceFile.addImportDeclaration({
     moduleSpecifier: '@ahoo-wang/fetcher-wow',
@@ -34,7 +36,10 @@ it('create', async () => {
   //   namedImports: ['Test'],
   // });
 
-  const interfaceDef = sourceFile.addInterface({ name: 'TestInterface', isExported: true });
+  const interfaceDef = sourceFile.addInterface({
+    name: 'TestInterface',
+    isExported: true,
+  });
   interfaceDef.addProperty({
     name: 'name',
     type: 'string|null',
