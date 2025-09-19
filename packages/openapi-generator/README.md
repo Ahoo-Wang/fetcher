@@ -129,10 +129,10 @@ openapi-generator/
 
 通用规则：当遇到 `.` 时，标识目录层级。但如果分后后的名称为大写，则为接口名称
 
-- Schema 类型定义根据 , `schemaKey` 的命名规范自动组织模块结构
-    - 例如schemaKey： `example.cart.AddCartItem` 生成到 `cart/types.ts` 文件中
-- ApiClient 按照，tags 组织模块结构
-    - 例如按照，tags： `example.cart.AddCartItem` 生成到 `cart/addCartItem.ts` 文件中
+- DataModel Interface ,按照 Schema 类型定义，根据  `schemaKey` 的命名规范自动组织模块结构
+    - 例如 schemaKey： `example.cart.AddCartItem` 生成到 `cart/types.ts` 文件中
+- ApiClient 按照，tags 、 operation 组织模块结构
+    - 例如，tags： `example.cart` 生成 `cart/cartClient.ts` 文件中
 
 ### Data Model 模块组织与命名规范
 
@@ -144,14 +144,6 @@ schemaKey 名称采用点号分隔的命名规范：
 - `serviceName.[aggregateName].[TypeName]`
 - `serviceName.[DtoName]`
 
-例如：
-
-- `example.cart.AddCartItem`
-- `example.cart.CartAggregatedCondition`
-- `example.cart.CartAggregatedDomainEventStream`
-- `example.AiMessage.Assistant.ToolCall`
-- `example.AiMessage.System`
-- `example.SecurityContext`
 
 ### 模块组织规则
 
@@ -159,12 +151,28 @@ schemaKey 名称采用点号分隔的命名规范：
 2. 从第一个开头字符为大写的名称部分开始，作为接口名称
 3. 之前的路径部分作为文件路径组织
 
-示例：
+例如：
 
-- `example.bot.BotCreated` 生成 `example/bot.ts`，接口名为 `BotCreated`
-- `example.BotState` 生成 `example.ts`，接口名为 `BotState`
+- `example.cart.AddCartItem` : 写入 `cart/types.ts` 文件中
+- `example.cart.CartAggregatedCondition` : 写入 `cart/types.ts` 文件中
+- `example.cart.CartAggregatedDomainEventStream`: 写入 `cart/types.ts` 文件中
 - `example.AiMessage.Assistant`、`example.AiMessage.Assistant.ToolCall`、`example.AiMessage.System` 都生成到
-  `example/aiMessage.ts` 文件中：
-    - `example.AiMessage.Assistant` 生成接口 `Assistant`
-    - `example.AiMessage.Assistant.ToolCall` 生成接口 `AssistantToolCall`
-    - `example.AiMessage.System` 生成接口 `System`
+  `./types.ts` 文件中：
+    - `example.AiMessage.Assistant` 生成接口 `AiMessageAssistant`
+    - `example.AiMessage.Assistant.ToolCall` 生成接口 `AiMessageAssistantToolCall`
+    - `example.AiMessage.System` 生成接口 `AiMessageSystem`
+
+### Client 模块组织与命名规范
+
+Client 按照 tags 组织。
+
+1. 按照 `.` 分割 tag 名称
+2. 最后的一个名称作为接口名称
+3. 当 单个 operation 存在多个 tag 时，多个 tag 相关的接口均需要写入接口函数
+
+例如：
+
+- `example.cart` : 写入 `cart/cartClient.ts` 文件中
+- `order-query-controller`: 写入 `./orderQueryControllerClient.ts`
+- `customer`: 写入 `./customerClient.ts`
+
