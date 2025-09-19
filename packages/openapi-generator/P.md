@@ -1,72 +1,148 @@
-# OpenAPI TypeScript Code Generator
+你作为资深前端开发工程师，正在开发基于 OpenAPI 规范的 TypeScript 代码生成器。
+按照以下要求生成代码，要求模块职责清晰，自下而上的开发，即先开发小的基于模块，再逐步开发高层次模块代码，最终完成该lib。
 
-基于 OpenAPI 规范的 TypeScript 代码生成器，专注于生成数据模型（Schema）的 TypeScript 类型定义。
+# @ahoo-wang/fetcher-openapi-generator
+
+基于 OpenAPI 规范的 TypeScript 代码生成器，专注于生成数据模型（Schema）、 请求和响应体类型定义 以及 ApiClient。
 
 ## 功能特性
 
-- 根据 OpenAPI 规范生成 TypeScript 接口定义
+- 根据 OpenAPI 规范生成 生成数据模型（Schema）、 请求和响应体类型定义 以及 ApiClient
 - 智能模块路径组织，根据命名规范自动分组
 - 支持 $ref 引用解析
 - 支持基本类型、数组、对象、联合类型和枚举类型
+- 命令行支持,支持通过 npx 运行
 
-## 安装
+## 技术栈
 
-```bash
-npm install @ahoo-wang/fetcher-openapi-generator
+- vite
+- vitest
+- typescript
+- @ahoo-wang/fetcher-openapi : 定义了 OpenAPI 规范类型
+- @ahoo-wang/fetcher-decorator : Fetcher HTTP 客户端的装饰器支持。使用 TypeScript 装饰器实现简洁、声明式的 API 服务定义。
+- @ahoo-wang/fetcher-wow : 内置的 Wow 类型定义系统，当识别 Wow 通用类型，替换为对应的类型
+- ts-morph ：使用 ts-morph 生成 TypeScript 文件
+- Commander.js ：通过 Commander.js 提供友好的命令行界面
+- yaml
+
+## 模块职责划分
+
+```
+openapi-generator/
+├── src/
+│   ├── core/                    # 核心处理逻辑
+│   │   ├── generate-context.ts   # 整个生成过程共享该上下文: 保存Project、OpenAPI、以及已处理的 Schema、Operation、SourceFile 等
+│   │   ├── parser/             # OpenAPI 解析器
+│   │   │   ├── openapi-parser.ts
+│   │   │   ├── reference-resolver.ts
+│   │   │   └── schema-normalizer.ts
+│   │   ├── ast/                # AST 构建模块 (使用 ts-morph)
+│   │   │   ├── ast-builder.ts
+│   │   │   ├── interface-generator.ts
+│   │   │   ├── type-generator.ts
+│   │   │   ├── enum-generator.ts
+│   │   │   ├── client-generator.ts
+│   │   │   └── decorator-applier.ts
+│   │   ├── type-generator/     # TypeScript 类型生成逻辑
+│   │   │   ├── base-type-mapper.ts
+│   │   │   ├── schema-processor.ts
+│   │   │   ├── enum-processor.ts
+│   │   │   └── union-processor.ts
+│   │   └── path-organizer/     # 路径组织逻辑
+│   │       ├── module-grouper.ts
+│   │       └── naming-converter.ts
+│   ├── utils/                  # 工具函数
+│   │   ├── ast-utils.ts        # AST 操作辅助函数
+│   │   ├── file-utils.ts
+│   │   ├── logger.ts
+│   │   └── type-utils.ts
+│   ├── cli/                    # 命令行接口
+│   │   ├── index.ts
+│   │   ├── commands/
+│   │   │   └── generate.ts
+│   │   └── options/
+│   │       └── config.ts
+│   └── types/                  # 类型定义
+│       ├── openapi.ts
+│       ├── generator.ts
+│       └── config.ts
+├── tests/                      # 测试文件
+│   ├── unit/
+│   └── integration/
+└── dist/                       # 编译输出
 ```
 
-## 使用方法
+### 关键模块职责说明（基于 ts-morph）
 
-```typescript
-import { SchemaGenerator } from '@ahoo-wang/fetcher-openapi-generator';
-import { Project } from 'ts-morph';
-import type { OpenAPI } from '@ahoo-wang/fetcher-openapi';
+#### 1. AST 构建模块 (core/ast)
 
-// 创建 ts-morph 项目
-const project = new Project({
-  compilerOptions: {
-    target: ts.ScriptTarget.ES2020,
-    module: ts.ModuleKind.ESNext,
-    strict: true,
-    esModuleInterop: true,
-  }
-});
+- **ast-builder.ts**: 主构建器，管理 ts-morph Project 和 SourceFile
+- **interface-generator.ts**: 使用 ts-morph 生成接口声明
+- **type-generator.ts**: 使用 ts-morph 生成类型别名
+- **enum-generator.ts**: 使用 ts-morph 生成枚举
+- **client-generator.ts**: 使用 ts-morph 生成 API 客户端类
+- **decorator-applier.ts**: 使用 ts-morph 应用装饰器
 
-// OpenAPI 规范文档
-const openAPI: OpenAPI = {
-  // ... your OpenAPI spec
-};
+#### 2. AST 工具模块 (utils/ast-utils)
 
-// 创建生成器实例
-const generator = new SchemaGenerator({
-  openAPI,
-  project
-});
+提供 ts-morph 操作的辅助函数：
 
-// 生成 TypeScript 类型定义
-generator.generate();
+- 创建和操作节点
+- 处理导入声明
+- 管理类型引用
+- 格式化生成的代码
 
-// 保存生成的文件
-await project.save();
-```
+## OpenAPI Example
 
-## 命名规范
+[demo-openapi](test/demo.json)
 
-生成器会根据 schema 名称的格式自动组织模块结构：
+## Wow 内置的类型
 
-### Schema 名称格式
+`OpenAPI.components.schemas.[schemaKey]` , 其中 `schemaKey` 以 `wow.` 开头的为 Wow 内置的类型需要使用 Wow 内置类型：
 
-Schema 名称采用点号分隔的命名规范：
+1. `wow.command.CommandResult`:  使用 @ahoo-wang/fetcher-wow 的 `CommandResult` 接口类型
+2. `wow.MessageHeaderSqlType`: `MessageHeaderSqlType`
+3. `wow.api.BindingError`: `BindingError`
+4. `wow.api.DefaultErrorInfo`: `ErrorInfo`
+5. `wow.api.command.DefaultDeleteAggregate`: `DeleteAggregate`
+6. `wow.api.command.DefaultRecoverAggregate`: `RecoverAggregate`
+7. `wow.api.messaging.FunctionInfoData`: `FunctionInfo`
+8. `wow.api.messaging.FunctionKind`: `FunctionKind`
+9. `wow.api.modeling.AggregateId`: `AggregateId`
+10. `wow.api.query.Condition`: `Condition`
+11. `wow.api.query.ListQuery`: `ListQuery`
+12. `wow.api.query.Operator`: `Operator`
+13. `wow.api.query.PagedQuery`: `PagedQuery`
+14. `wow.api.query.Pagination`: `Pagination`
+15. `wow.api.query.Projection`: `Projection`
+16. `wow.api.query.Sort`: `FieldSort`
+17. `wow.api.query.Sort.Direction`: `SortDirection`
+18. `wow.command.CommandStage`: `CommandStage`
+19. `wow.command.SimpleWaitSignal`: `WaitSignal`
+20. `wow.configuration.Aggregate`: `Aggregate`
+21. `wow.configuration.BoundedContext`: `BoundedContext`
+22. `wow.configuration.WowMetadata`: `WowMetadata`
+23. `wow.modeling.DomainEvent`: `DomainEvent`
+24. `wow.openapi.BatchResult`: `BatchResult`
 
-- `serviceName.[aggregateName].[typeName]` 或者 `serviceName.[AggregateState]`
+## 模块组织
 
-例如：
+通用规则：当遇到 `.` 时，标识目录层级。但如果分后后的名称为大写，则为接口名称
 
-- `prajna.bot.BotCreated`
-- `prajna.BotState`
-- `prajna.AiMessage.Assistant`
-- `prajna.AiMessage.Assistant.ToolCall`
-- `prajna.AiMessage.System`
+- DataModel Interface ,按照 Schema 类型定义，根据  `schemaKey` 的命名规范自动组织模块结构
+    - 例如 schemaKey： `example.cart.AddCartItem` 生成到 `cart/types.ts` 文件中
+- ApiClient 按照，tags 、 operation 组织模块结构
+    - 例如，tags： `example.cart` 生成 `cart/cartClient.ts` 文件中
+
+### Data Model 模块组织与命名规范
+
+#### Schema 名称格式
+
+`OpenAPI.components.schemas.[schemaKey]`
+schemaKey 名称采用点号分隔的命名规范：
+
+- `serviceName.[aggregateName].[TypeName]`
+- `serviceName.[DtoName]`
 
 ### 模块组织规则
 
@@ -74,25 +150,28 @@ Schema 名称采用点号分隔的命名规范：
 2. 从第一个开头字符为大写的名称部分开始，作为接口名称
 3. 之前的路径部分作为文件路径组织
 
-示例：
+例如：
 
-- `prajna.bot.BotCreated` 生成 `prajna/bot.ts`，接口名为 `BotCreated`
-- `prajna.BotState` 生成 `prajna.ts`，接口名为 `BotState`
-- `prajna.AiMessage.Assistant`、`prajna.AiMessage.Assistant.ToolCall`、`prajna.AiMessage.System` 都生成到
-  `prajna/aiMessage.ts` 文件中：
-    - `prajna.AiMessage.Assistant` 生成接口 `Assistant`
-    - `prajna.AiMessage.Assistant.ToolCall` 生成接口 `AssistantToolCall`
-    - `prajna.AiMessage.System` 生成接口 `System`
+- `example.cart.AddCartItem` : 写入 `cart/types.ts` 文件中
+- `example.cart.CartAggregatedCondition` : 写入 `cart/types.ts` 文件中
+- `example.cart.CartAggregatedDomainEventStream`: 写入 `cart/types.ts` 文件中
+- `example.AiMessage.Assistant`、`example.AiMessage.Assistant.ToolCall`、`example.AiMessage.System` 都生成到
+  `./types.ts` 文件中：
+    - `example.AiMessage.Assistant` 生成接口 `AiMessageAssistant`
+    - `example.AiMessage.Assistant.ToolCall` 生成接口 `AiMessageAssistantToolCall`
+    - `example.AiMessage.System` 生成接口 `AiMessageSystem`
 
-## 支持的类型
+### Client 模块组织与命名规范
 
-- 基本类型：string, number, integer, boolean
-- 数组类型：type[]
-- 对象类型：{ prop: type }
-- 联合类型：type1 | type2
-- 枚举类型："value1" | "value2"
-- 引用类型：通过 $ref 引用其他 schema
+Client 按照 tags 组织。
 
-## License
+1. 按照 `.` 分割 tag 名称
+2. 最后的一个名称作为接口名称
+3. 当 单个 operation 存在多个 tag 时，多个 tag 相关的接口均需要写入接口函数
 
-Apache License 2.0
+例如：
+
+- `example.cart` : 写入 `cart/cartClient.ts` 文件中
+- `order-query-controller`: 写入 `./orderQueryControllerClient.ts`
+- `customer`: 写入 `./customerClient.ts`
+
