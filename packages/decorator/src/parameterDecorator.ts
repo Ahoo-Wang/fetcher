@@ -72,7 +72,6 @@ export enum ParameterType {
    */
   REQUEST = 'request',
 
-
   /**
    * Attribute parameter that will be used as a single attribute in the request attributes.
    *
@@ -88,7 +87,7 @@ export enum ParameterType {
    * by interceptors throughout the request lifecycle. This is useful for
    * sharing contextual information between different parts of the request processing.
    */
-  ATTRIBUTES = 'attributes'
+  ATTRIBUTES = 'attributes',
 }
 
 /**

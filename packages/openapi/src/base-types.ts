@@ -22,7 +22,15 @@ import { MediaType } from './parameters';
 /**
  * HTTP methods as defined in the OpenAPI specification
  */
-export type HTTPMethod = 'get' | 'put' | 'post' | 'delete' | 'options' | 'head' | 'patch' | 'trace';
+export type HTTPMethod =
+  | 'get'
+  | 'put'
+  | 'post'
+  | 'delete'
+  | 'options'
+  | 'head'
+  | 'patch'
+  | 'trace';
 
 /**
  * Supported parameter locations in HTTP requests
@@ -32,7 +40,14 @@ export type ParameterLocation = 'query' | 'header' | 'path' | 'cookie';
 /**
  * Primitive data types supported by JSON Schema
  */
-export type SchemaType = 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object' | 'null';
+export type SchemaType =
+  | 'string'
+  | 'number'
+  | 'integer'
+  | 'boolean'
+  | 'array'
+  | 'object'
+  | 'null';
 
 /**
  * Additional external documentation

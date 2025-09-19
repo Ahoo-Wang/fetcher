@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import {
-  InMemoryListenableStorage,
-} from '../src';
+import { InMemoryListenableStorage } from '../src';
 import type { StorageListener } from '../src';
 
 describe('InMemoryListenableStorage', () => {
@@ -36,23 +34,35 @@ describe('InMemoryListenableStorage', () => {
     (global as any).window = {
       location: mockWindowLocation,
       addEventListener: vi.fn((event, handler) => {
-        (global as any).window.eventListeners = (global as any).window.eventListeners || {};
-        (global as any).window.eventListeners[event] = (global as any).window.eventListeners[event] || [];
+        (global as any).window.eventListeners =
+          (global as any).window.eventListeners || {};
+        (global as any).window.eventListeners[event] =
+          (global as any).window.eventListeners[event] || [];
         (global as any).window.eventListeners[event].push(handler);
       }),
       removeEventListener: vi.fn((event, handler) => {
-        if ((global as any).window.eventListeners && (global as any).window.eventListeners[event]) {
-          const index = (global as any).window.eventListeners[event].indexOf(handler);
+        if (
+          (global as any).window.eventListeners &&
+          (global as any).window.eventListeners[event]
+        ) {
+          const index = (global as any).window.eventListeners[event].indexOf(
+            handler,
+          );
           if (index > -1) {
             (global as any).window.eventListeners[event].splice(index, 1);
           }
         }
       }),
-      dispatchEvent: vi.fn((event) => {
-        if ((global as any).window.eventListeners && (global as any).window.eventListeners[event.type]) {
-          (global as any).window.eventListeners[event.type].forEach((handler: Function) => {
-            handler(event);
-          });
+      dispatchEvent: vi.fn(event => {
+        if (
+          (global as any).window.eventListeners &&
+          (global as any).window.eventListeners[event.type]
+        ) {
+          (global as any).window.eventListeners[event.type].forEach(
+            (handler: Function) => {
+              handler(event);
+            },
+          );
         }
         return true;
       }),

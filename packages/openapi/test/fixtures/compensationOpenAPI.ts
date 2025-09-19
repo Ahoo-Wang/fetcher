@@ -14,115 +14,112 @@
 import { OpenAPI } from '../../src';
 
 export const compensationOpenAPI: OpenAPI = {
-  'openapi': '3.1.0',
-  'info': {
-    'title': 'Wow Compensation Service',
-    'description': 'A Modern Reactive CQRS Architecture Microservice development framework based on DDD and EventSourcing.',
-    'contact': {
-      'name': 'Ahoo Wang',
-      'url': 'https://github.com/Ahoo-Wang/Wow',
+  openapi: '3.1.0',
+  info: {
+    title: 'Wow Compensation Service',
+    description:
+      'A Modern Reactive CQRS Architecture Microservice development framework based on DDD and EventSourcing.',
+    contact: {
+      name: 'Ahoo Wang',
+      url: 'https://github.com/Ahoo-Wang/Wow',
     },
-    'license': {
-      'name': 'Apache 2.0',
-      'url': 'https://github.com/Ahoo-Wang/Wow/blob/main/LICENSE',
+    license: {
+      name: 'Apache 2.0',
+      url: 'https://github.com/Ahoo-Wang/Wow/blob/main/LICENSE',
     },
-    'version': '6.1.6',
+    version: '6.1.6',
   },
-  'servers': [
+  servers: [
     {
-      'url': 'http://compensation-service.dev.svc.cluster.local',
-      'description': 'Generated server url',
+      url: 'http://compensation-service.dev.svc.cluster.local',
+      description: 'Generated server url',
     },
   ],
-  'tags': [
+  tags: [
     {
-      'name': 'Actuator',
-      'description': 'Monitor and interact',
-      'externalDocs': {
-        'description': 'Spring Boot Actuator Web API Documentation',
-        'url': 'https://docs.spring.io/spring-boot/docs/current/actuator-api/html/',
+      name: 'Actuator',
+      description: 'Monitor and interact',
+      externalDocs: {
+        description: 'Spring Boot Actuator Web API Documentation',
+        url: 'https://docs.spring.io/spring-boot/docs/current/actuator-api/html/',
       },
     },
     {
-      'name': 'wow',
-      'description': 'Wow framework internal interface',
+      name: 'wow',
+      description: 'Wow framework internal interface',
     },
     {
-      'name': 'compensation.execution_failed',
+      name: 'compensation.execution_failed',
     },
   ],
-  'paths': {
+  paths: {
     '/actuator/health/{path}': {
-      'get': {
-        'tags': [
-          'Actuator',
-        ],
-        'summary': 'Actuator web endpoint \'health-path\'',
-        'operationId': 'health',
-        'parameters': [
+      get: {
+        tags: ['Actuator'],
+        summary: 'Actuator web endpoint \'health-path\'',
+        operationId: 'health',
+        parameters: [
           {
-            'name': 'path',
-            'in': 'path',
-            'required': true,
-            'schema': {
-              'type': 'array',
-              'items': {
-                'type': 'string',
+            name: 'path',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'array',
+              items: {
+                type: 'string',
               },
             },
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            'description': 'OK',
-            'content': {
+            description: 'OK',
+            content: {
               'application/vnd.spring-boot.actuator.v3+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/vnd.spring-boot.actuator.v2+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
             },
           },
           '404': {
-            'description': 'Not Found',
+            description: 'Not Found',
           },
         },
       },
     },
     '/actuator/health': {
-      'get': {
-        'tags': [
-          'Actuator',
-        ],
-        'summary': 'Actuator web endpoint \'health\'',
-        'operationId': 'health_1',
-        'responses': {
+      get: {
+        tags: ['Actuator'],
+        summary: 'Actuator web endpoint \'health\'',
+        operationId: 'health_1',
+        responses: {
           '200': {
-            'description': 'OK',
-            'content': {
+            description: 'OK',
+            content: {
               'application/vnd.spring-boot.actuator.v3+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/vnd.spring-boot.actuator.v2+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
             },
@@ -131,73 +128,69 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/actuator/cosidStringGenerator/{name}': {
-      'get': {
-        'tags': [
-          'Actuator',
-        ],
-        'summary': 'Actuator web endpoint \'cosidStringGenerator-name\'',
-        'operationId': 'generateAsString',
-        'parameters': [
+      get: {
+        tags: ['Actuator'],
+        summary: 'Actuator web endpoint \'cosidStringGenerator-name\'',
+        operationId: 'generateAsString',
+        parameters: [
           {
-            'name': 'name',
-            'in': 'path',
-            'required': true,
-            'schema': {
-              'type': 'string',
+            name: 'name',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
             },
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            'description': 'OK',
-            'content': {
+            description: 'OK',
+            content: {
               'application/vnd.spring-boot.actuator.v3+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/vnd.spring-boot.actuator.v2+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
             },
           },
           '404': {
-            'description': 'Not Found',
+            description: 'Not Found',
           },
         },
       },
     },
     '/actuator/cosidStringGenerator': {
-      'get': {
-        'tags': [
-          'Actuator',
-        ],
-        'summary': 'Actuator web endpoint \'cosidStringGenerator\'',
-        'operationId': 'shareGenerateAsString',
-        'responses': {
+      get: {
+        tags: ['Actuator'],
+        summary: 'Actuator web endpoint \'cosidStringGenerator\'',
+        operationId: 'shareGenerateAsString',
+        responses: {
           '200': {
-            'description': 'OK',
-            'content': {
+            description: 'OK',
+            content: {
               'application/vnd.spring-boot.actuator.v3+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/vnd.spring-boot.actuator.v2+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
             },
@@ -206,73 +199,69 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/actuator/cosidGenerator/{name}': {
-      'get': {
-        'tags': [
-          'Actuator',
-        ],
-        'summary': 'Actuator web endpoint \'cosidGenerator-name\'',
-        'operationId': 'generate',
-        'parameters': [
+      get: {
+        tags: ['Actuator'],
+        summary: 'Actuator web endpoint \'cosidGenerator-name\'',
+        operationId: 'generate',
+        parameters: [
           {
-            'name': 'name',
-            'in': 'path',
-            'required': true,
-            'schema': {
-              'type': 'string',
+            name: 'name',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
             },
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            'description': 'OK',
-            'content': {
+            description: 'OK',
+            content: {
               'application/vnd.spring-boot.actuator.v3+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/vnd.spring-boot.actuator.v2+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
             },
           },
           '404': {
-            'description': 'Not Found',
+            description: 'Not Found',
           },
         },
       },
     },
     '/actuator/cosidGenerator': {
-      'get': {
-        'tags': [
-          'Actuator',
-        ],
-        'summary': 'Actuator web endpoint \'cosidGenerator\'',
-        'operationId': 'shareGenerate',
-        'responses': {
+      get: {
+        tags: ['Actuator'],
+        summary: 'Actuator web endpoint \'cosidGenerator\'',
+        operationId: 'shareGenerate',
+        responses: {
           '200': {
-            'description': 'OK',
-            'content': {
+            description: 'OK',
+            content: {
               'application/vnd.spring-boot.actuator.v3+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/vnd.spring-boot.actuator.v2+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
             },
@@ -281,98 +270,92 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/actuator/cosid/{name}': {
-      'get': {
-        'tags': [
-          'Actuator',
-        ],
-        'summary': 'Actuator web endpoint \'cosid-name\'',
-        'operationId': 'getStat',
-        'parameters': [
+      get: {
+        tags: ['Actuator'],
+        summary: 'Actuator web endpoint \'cosid-name\'',
+        operationId: 'getStat',
+        parameters: [
           {
-            'name': 'name',
-            'in': 'path',
-            'required': true,
-            'schema': {
-              'type': 'string',
+            name: 'name',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
             },
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            'description': 'OK',
-            'content': {
+            description: 'OK',
+            content: {
               'application/vnd.spring-boot.actuator.v3+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/vnd.spring-boot.actuator.v2+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
             },
           },
           '404': {
-            'description': 'Not Found',
+            description: 'Not Found',
           },
         },
       },
-      'delete': {
-        'tags': [
-          'Actuator',
-        ],
-        'summary': 'Actuator web endpoint \'cosid-name\'',
-        'operationId': 'remove',
-        'parameters': [
+      delete: {
+        tags: ['Actuator'],
+        summary: 'Actuator web endpoint \'cosid-name\'',
+        operationId: 'remove',
+        parameters: [
           {
-            'name': 'name',
-            'in': 'path',
-            'required': true,
-            'schema': {
-              'type': 'string',
+            name: 'name',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
             },
           },
         ],
-        'responses': {
+        responses: {
           '204': {
-            'description': 'No Content',
+            description: 'No Content',
           },
           '404': {
-            'description': 'Not Found',
+            description: 'Not Found',
           },
         },
       },
     },
     '/actuator/cosid': {
-      'get': {
-        'tags': [
-          'Actuator',
-        ],
-        'summary': 'Actuator web endpoint \'cosid\'',
-        'operationId': 'stat',
-        'responses': {
+      get: {
+        tags: ['Actuator'],
+        summary: 'Actuator web endpoint \'cosid\'',
+        operationId: 'stat',
+        responses: {
           '200': {
-            'description': 'OK',
-            'content': {
+            description: 'OK',
+            content: {
               'application/vnd.spring-boot.actuator.v3+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/vnd.spring-boot.actuator.v2+json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
               'application/json': {
-                'schema': {
-                  'type': 'object',
+                schema: {
+                  type: 'object',
                 },
               },
             },
@@ -381,37 +364,35 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/actuator': {
-      'get': {
-        'tags': [
-          'Actuator',
-        ],
-        'summary': 'Actuator root web endpoint',
-        'operationId': 'links',
-        'responses': {
+      get: {
+        tags: ['Actuator'],
+        summary: 'Actuator root web endpoint',
+        operationId: 'links',
+        responses: {
           '200': {
-            'description': 'OK',
-            'content': {
+            description: 'OK',
+            content: {
               'application/vnd.spring-boot.actuator.v3+json': {
-                'schema': {
-                  'type': 'object',
-                  'additionalProperties': {
-                    '$ref': '#/components/schemas/compensation.StringLinkMap',
+                schema: {
+                  type: 'object',
+                  additionalProperties: {
+                    $ref: '#/components/schemas/compensation.StringLinkMap',
                   },
                 },
               },
               'application/vnd.spring-boot.actuator.v2+json': {
-                'schema': {
-                  'type': 'object',
-                  'additionalProperties': {
-                    '$ref': '#/components/schemas/compensation.StringLinkMap',
+                schema: {
+                  type: 'object',
+                  additionalProperties: {
+                    $ref: '#/components/schemas/compensation.StringLinkMap',
                   },
                 },
               },
               'application/json': {
-                'schema': {
-                  'type': 'object',
-                  'additionalProperties': {
-                    '$ref': '#/components/schemas/compensation.StringLinkMap',
+                schema: {
+                  type: 'object',
+                  additionalProperties: {
+                    $ref: '#/components/schemas/compensation.StringLinkMap',
                   },
                 },
               },
@@ -421,155 +402,149 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/wow/command/wait': {
-      'summary': 'The receiving endpoint of the wait signal',
-      'description': '',
-      'post': {
-        'tags': [
-          'wow',
-        ],
-        'summary': 'The receiving endpoint of the wait signal',
-        'description': '',
-        'operationId': 'wow.command.wait',
-        'parameters': [],
-        'requestBody': {
-          'content': {
+      summary: 'The receiving endpoint of the wait signal',
+      description: '',
+      post: {
+        tags: ['wow'],
+        summary: 'The receiving endpoint of the wait signal',
+        description: '',
+        operationId: 'wow.command.wait',
+        parameters: [],
+        requestBody: {
+          content: {
             'application/json': {
-              'schema': {
-                '$ref': '#/components/schemas/wow.command.SimpleWaitSignal',
+              schema: {
+                $ref: '#/components/schemas/wow.command.SimpleWaitSignal',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            'description': 'Ok',
-            'content': {},
+            description: 'Ok',
+            content: {},
           },
         },
       },
     },
     '/wow/command/send': {
-      'summary': 'Unified Sending Endpoint For Command Messages',
-      'description': '',
-      'post': {
-        'tags': [
-          'wow',
-        ],
-        'summary': 'Unified Sending Endpoint For Command Messages',
-        'description': '',
-        'operationId': 'wow.command.send',
-        'parameters': [
+      summary: 'Unified Sending Endpoint For Command Messages',
+      description: '',
+      post: {
+        tags: ['wow'],
+        summary: 'Unified Sending Endpoint For Command Messages',
+        description: '',
+        operationId: 'wow.command.send',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.Command-Type',
+            $ref: '#/components/parameters/wow.Command-Type',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Timout',
+            $ref: '#/components/parameters/wow.Command-Wait-Timout',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Id',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Version',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Version',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Request-Id',
+            $ref: '#/components/parameters/wow.Command-Request-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Local-First',
+            $ref: '#/components/parameters/wow.Command-Local-First',
           },
           {
-            '$ref': '#/components/parameters/wow.Accept',
+            $ref: '#/components/parameters/wow.Accept',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Tenant-Id',
+            $ref: '#/components/parameters/wow.Command-Tenant-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Owner-Id',
+            $ref: '#/components/parameters/wow.Command-Owner-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Context',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Name',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Name',
           },
         ],
-        'requestBody': {
-          'description': 'Command Message Body',
-          'content': {
+        requestBody: {
+          description: 'Command Message Body',
+          content: {
             'application/json': {
-              'schema': {
-                'type': 'object',
+              schema: {
+                type: 'object',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CommandOk',
+            $ref: '#/components/responses/wow.CommandOk',
           },
           '400': {
-            '$ref': '#/components/responses/wow.CommandBadRequest',
+            $ref: '#/components/responses/wow.CommandBadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.CommandNotFound',
+            $ref: '#/components/responses/wow.CommandNotFound',
           },
           '409': {
-            '$ref': '#/components/responses/wow.CommandVersionConflict',
+            $ref: '#/components/responses/wow.CommandVersionConflict',
           },
           '429': {
-            '$ref': '#/components/responses/wow.CommandTooManyRequests',
+            $ref: '#/components/responses/wow.CommandTooManyRequests',
           },
           '408': {
-            '$ref': '#/components/responses/wow.CommandRequestTimeout',
+            $ref: '#/components/responses/wow.CommandRequestTimeout',
           },
           '410': {
-            '$ref': '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
+            $ref: '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
           },
         },
       },
     },
     '/wow/metadata': {
-      'summary': 'Get Wow Metadata',
-      'description': '',
-      'get': {
-        'tags': [
-          'wow',
-        ],
-        'summary': 'Get Wow Metadata',
-        'description': '',
-        'operationId': 'wow.metadata.get',
-        'parameters': [],
-        'responses': {
+      summary: 'Get Wow Metadata',
+      description: '',
+      get: {
+        tags: ['wow'],
+        summary: 'Get Wow Metadata',
+        description: '',
+        operationId: 'wow.metadata.get',
+        parameters: [],
+        responses: {
           '200': {
-            'description': 'The Wow Metadata.',
-            'content': {
+            description: 'The Wow Metadata.',
+            content: {
               'application/json': {
-                'schema': {
-                  '$ref': '#/components/schemas/wow.configuration.WowMetadata',
+                schema: {
+                  $ref: '#/components/schemas/wow.configuration.WowMetadata',
                 },
               },
             },
@@ -578,23 +553,21 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/wow/id/global': {
-      'summary': 'Generate Global ID',
-      'description': '',
-      'get': {
-        'tags': [
-          'wow',
-        ],
-        'summary': 'Generate Global ID',
-        'description': '',
-        'operationId': 'wow.global_id.generate',
-        'parameters': [],
-        'responses': {
+      summary: 'Generate Global ID',
+      description: '',
+      get: {
+        tags: ['wow'],
+        summary: 'Generate Global ID',
+        description: '',
+        operationId: 'wow.global_id.generate',
+        parameters: [],
+        responses: {
           '200': {
-            'description': 'The generated global ID',
-            'content': {
+            description: 'The generated global ID',
+            content: {
               'text/plain': {
-                'schema': {
-                  'type': 'string',
+                schema: {
+                  type: 'string',
                 },
               },
             },
@@ -603,27 +576,25 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/wow/bi/script': {
-      'summary': 'Generate BI Sync Script',
-      'description': '',
-      'get': {
-        'tags': [
-          'wow',
-        ],
-        'summary': 'Generate BI Sync Script',
-        'description': '',
-        'operationId': 'wow.bi_script.generate',
-        'parameters': [
+      summary: 'Generate BI Sync Script',
+      description: '',
+      get: {
+        tags: ['wow'],
+        summary: 'Generate BI Sync Script',
+        description: '',
+        operationId: 'wow.bi_script.generate',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.Wow-BI-Header-Sql-Type',
+            $ref: '#/components/parameters/wow.Wow-BI-Header-Sql-Type',
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            'description': 'The generated BI synchronization script.',
-            'content': {
+            description: 'The generated BI synchronization script.',
+            content: {
               'application/sql': {
-                'schema': {
-                  'type': 'string',
+                schema: {
+                  type: 'string',
                 },
               },
             },
@@ -632,951 +603,929 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/execution_failed/create_execution_failed': {
-      'summary': 'create_execution_failed',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'create_execution_failed',
-        'description': '',
-        'operationId': 'compensation.execution_failed.create_execution_failed',
-        'parameters': [
+      summary: 'create_execution_failed',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'create_execution_failed',
+        description: '',
+        operationId: 'compensation.execution_failed.create_execution_failed',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Timout',
+            $ref: '#/components/parameters/wow.Command-Wait-Timout',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Id',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Version',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Version',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Request-Id',
+            $ref: '#/components/parameters/wow.Command-Request-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Local-First',
+            $ref: '#/components/parameters/wow.Command-Local-First',
           },
           {
-            '$ref': '#/components/parameters/wow.Accept',
+            $ref: '#/components/parameters/wow.Accept',
           },
         ],
-        'requestBody': {
-          'description': 'create_execution_failed',
-          'content': {
+        requestBody: {
+          description: 'create_execution_failed',
+          content: {
             'application/json': {
-              'schema': {
-                '$ref': '#/components/schemas/compensation.execution_failed.CreateExecutionFailed',
+              schema: {
+                $ref: '#/components/schemas/compensation.execution_failed.CreateExecutionFailed',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CommandOk',
+            $ref: '#/components/responses/wow.CommandOk',
           },
           '400': {
-            '$ref': '#/components/responses/wow.CommandBadRequest',
+            $ref: '#/components/responses/wow.CommandBadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.CommandNotFound',
+            $ref: '#/components/responses/wow.CommandNotFound',
           },
           '409': {
-            '$ref': '#/components/responses/wow.CommandVersionConflict',
+            $ref: '#/components/responses/wow.CommandVersionConflict',
           },
           '429': {
-            '$ref': '#/components/responses/wow.CommandTooManyRequests',
+            $ref: '#/components/responses/wow.CommandTooManyRequests',
           },
           '408': {
-            '$ref': '#/components/responses/wow.CommandRequestTimeout',
+            $ref: '#/components/responses/wow.CommandRequestTimeout',
           },
           '410': {
-            '$ref': '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
+            $ref: '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
           },
         },
       },
     },
     '/execution_failed/{id}/prepare_compensation': {
-      'summary': 'prepare_compensation',
-      'description': '',
-      'put': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'prepare_compensation',
-        'description': '',
-        'operationId': 'compensation.execution_failed.prepare_compensation',
-        'parameters': [
+      summary: 'prepare_compensation',
+      description: '',
+      put: {
+        tags: ['compensation.execution_failed'],
+        summary: 'prepare_compensation',
+        description: '',
+        operationId: 'compensation.execution_failed.prepare_compensation',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Timout',
+            $ref: '#/components/parameters/wow.Command-Wait-Timout',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Id',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Version',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Version',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Request-Id',
+            $ref: '#/components/parameters/wow.Command-Request-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Local-First',
+            $ref: '#/components/parameters/wow.Command-Local-First',
           },
           {
-            '$ref': '#/components/parameters/wow.Accept',
+            $ref: '#/components/parameters/wow.Accept',
           },
         ],
-        'requestBody': {
-          'description': 'prepare_compensation',
-          'content': {
+        requestBody: {
+          description: 'prepare_compensation',
+          content: {
             'application/json': {
-              'schema': {
-                '$ref': '#/components/schemas/compensation.execution_failed.PrepareCompensation',
+              schema: {
+                $ref: '#/components/schemas/compensation.execution_failed.PrepareCompensation',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CommandOk',
+            $ref: '#/components/responses/wow.CommandOk',
           },
           '400': {
-            '$ref': '#/components/responses/wow.CommandBadRequest',
+            $ref: '#/components/responses/wow.CommandBadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.CommandNotFound',
+            $ref: '#/components/responses/wow.CommandNotFound',
           },
           '409': {
-            '$ref': '#/components/responses/wow.CommandVersionConflict',
+            $ref: '#/components/responses/wow.CommandVersionConflict',
           },
           '429': {
-            '$ref': '#/components/responses/wow.CommandTooManyRequests',
+            $ref: '#/components/responses/wow.CommandTooManyRequests',
           },
           '408': {
-            '$ref': '#/components/responses/wow.CommandRequestTimeout',
+            $ref: '#/components/responses/wow.CommandRequestTimeout',
           },
           '410': {
-            '$ref': '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
+            $ref: '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
           },
         },
       },
     },
     '/execution_failed/{id}/force_prepare_compensation': {
-      'summary': 'force_prepare_compensation',
-      'description': '',
-      'put': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'force_prepare_compensation',
-        'description': '',
-        'operationId': 'compensation.execution_failed.force_prepare_compensation',
-        'parameters': [
+      summary: 'force_prepare_compensation',
+      description: '',
+      put: {
+        tags: ['compensation.execution_failed'],
+        summary: 'force_prepare_compensation',
+        description: '',
+        operationId: 'compensation.execution_failed.force_prepare_compensation',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Timout',
+            $ref: '#/components/parameters/wow.Command-Wait-Timout',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Id',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Version',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Version',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Request-Id',
+            $ref: '#/components/parameters/wow.Command-Request-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Local-First',
+            $ref: '#/components/parameters/wow.Command-Local-First',
           },
           {
-            '$ref': '#/components/parameters/wow.Accept',
+            $ref: '#/components/parameters/wow.Accept',
           },
         ],
-        'requestBody': {
-          'description': 'force_prepare_compensation',
-          'content': {
+        requestBody: {
+          description: 'force_prepare_compensation',
+          content: {
             'application/json': {
-              'schema': {
-                '$ref': '#/components/schemas/compensation.execution_failed.ForcePrepareCompensation',
+              schema: {
+                $ref: '#/components/schemas/compensation.execution_failed.ForcePrepareCompensation',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CommandOk',
+            $ref: '#/components/responses/wow.CommandOk',
           },
           '400': {
-            '$ref': '#/components/responses/wow.CommandBadRequest',
+            $ref: '#/components/responses/wow.CommandBadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.CommandNotFound',
+            $ref: '#/components/responses/wow.CommandNotFound',
           },
           '409': {
-            '$ref': '#/components/responses/wow.CommandVersionConflict',
+            $ref: '#/components/responses/wow.CommandVersionConflict',
           },
           '429': {
-            '$ref': '#/components/responses/wow.CommandTooManyRequests',
+            $ref: '#/components/responses/wow.CommandTooManyRequests',
           },
           '408': {
-            '$ref': '#/components/responses/wow.CommandRequestTimeout',
+            $ref: '#/components/responses/wow.CommandRequestTimeout',
           },
           '410': {
-            '$ref': '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
+            $ref: '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
           },
         },
       },
     },
     '/execution_failed/{id}/apply_execution_success': {
-      'summary': 'apply_execution_success',
-      'description': '',
-      'put': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'apply_execution_success',
-        'description': '',
-        'operationId': 'compensation.execution_failed.apply_execution_success',
-        'parameters': [
+      summary: 'apply_execution_success',
+      description: '',
+      put: {
+        tags: ['compensation.execution_failed'],
+        summary: 'apply_execution_success',
+        description: '',
+        operationId: 'compensation.execution_failed.apply_execution_success',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Timout',
+            $ref: '#/components/parameters/wow.Command-Wait-Timout',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Id',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Version',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Version',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Request-Id',
+            $ref: '#/components/parameters/wow.Command-Request-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Local-First',
+            $ref: '#/components/parameters/wow.Command-Local-First',
           },
           {
-            '$ref': '#/components/parameters/wow.Accept',
+            $ref: '#/components/parameters/wow.Accept',
           },
         ],
-        'requestBody': {
-          'description': 'apply_execution_success',
-          'content': {
+        requestBody: {
+          description: 'apply_execution_success',
+          content: {
             'application/json': {
-              'schema': {
-                '$ref': '#/components/schemas/compensation.execution_failed.ApplyExecutionSuccess',
+              schema: {
+                $ref: '#/components/schemas/compensation.execution_failed.ApplyExecutionSuccess',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CommandOk',
+            $ref: '#/components/responses/wow.CommandOk',
           },
           '400': {
-            '$ref': '#/components/responses/wow.CommandBadRequest',
+            $ref: '#/components/responses/wow.CommandBadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.CommandNotFound',
+            $ref: '#/components/responses/wow.CommandNotFound',
           },
           '409': {
-            '$ref': '#/components/responses/wow.CommandVersionConflict',
+            $ref: '#/components/responses/wow.CommandVersionConflict',
           },
           '429': {
-            '$ref': '#/components/responses/wow.CommandTooManyRequests',
+            $ref: '#/components/responses/wow.CommandTooManyRequests',
           },
           '408': {
-            '$ref': '#/components/responses/wow.CommandRequestTimeout',
+            $ref: '#/components/responses/wow.CommandRequestTimeout',
           },
           '410': {
-            '$ref': '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
+            $ref: '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
           },
         },
       },
     },
     '/execution_failed/{id}/apply_execution_failed': {
-      'summary': 'apply_execution_failed',
-      'description': '',
-      'put': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'apply_execution_failed',
-        'description': '',
-        'operationId': 'compensation.execution_failed.apply_execution_failed',
-        'parameters': [
+      summary: 'apply_execution_failed',
+      description: '',
+      put: {
+        tags: ['compensation.execution_failed'],
+        summary: 'apply_execution_failed',
+        description: '',
+        operationId: 'compensation.execution_failed.apply_execution_failed',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Timout',
+            $ref: '#/components/parameters/wow.Command-Wait-Timout',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Id',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Version',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Version',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Request-Id',
+            $ref: '#/components/parameters/wow.Command-Request-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Local-First',
+            $ref: '#/components/parameters/wow.Command-Local-First',
           },
           {
-            '$ref': '#/components/parameters/wow.Accept',
+            $ref: '#/components/parameters/wow.Accept',
           },
         ],
-        'requestBody': {
-          'description': 'apply_execution_failed',
-          'content': {
+        requestBody: {
+          description: 'apply_execution_failed',
+          content: {
             'application/json': {
-              'schema': {
-                '$ref': '#/components/schemas/compensation.execution_failed.ApplyExecutionFailed',
+              schema: {
+                $ref: '#/components/schemas/compensation.execution_failed.ApplyExecutionFailed',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CommandOk',
+            $ref: '#/components/responses/wow.CommandOk',
           },
           '400': {
-            '$ref': '#/components/responses/wow.CommandBadRequest',
+            $ref: '#/components/responses/wow.CommandBadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.CommandNotFound',
+            $ref: '#/components/responses/wow.CommandNotFound',
           },
           '409': {
-            '$ref': '#/components/responses/wow.CommandVersionConflict',
+            $ref: '#/components/responses/wow.CommandVersionConflict',
           },
           '429': {
-            '$ref': '#/components/responses/wow.CommandTooManyRequests',
+            $ref: '#/components/responses/wow.CommandTooManyRequests',
           },
           '408': {
-            '$ref': '#/components/responses/wow.CommandRequestTimeout',
+            $ref: '#/components/responses/wow.CommandRequestTimeout',
           },
           '410': {
-            '$ref': '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
+            $ref: '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
           },
         },
       },
     },
     '/execution_failed/{id}/apply_retry_spec': {
-      'summary': 'apply_retry_spec',
-      'description': '',
-      'put': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'apply_retry_spec',
-        'description': '',
-        'operationId': 'compensation.execution_failed.apply_retry_spec',
-        'parameters': [
+      summary: 'apply_retry_spec',
+      description: '',
+      put: {
+        tags: ['compensation.execution_failed'],
+        summary: 'apply_retry_spec',
+        description: '',
+        operationId: 'compensation.execution_failed.apply_retry_spec',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Timout',
+            $ref: '#/components/parameters/wow.Command-Wait-Timout',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Id',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Version',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Version',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Request-Id',
+            $ref: '#/components/parameters/wow.Command-Request-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Local-First',
+            $ref: '#/components/parameters/wow.Command-Local-First',
           },
           {
-            '$ref': '#/components/parameters/wow.Accept',
+            $ref: '#/components/parameters/wow.Accept',
           },
         ],
-        'requestBody': {
-          'description': 'apply_retry_spec',
-          'content': {
+        requestBody: {
+          description: 'apply_retry_spec',
+          content: {
             'application/json': {
-              'schema': {
-                '$ref': '#/components/schemas/compensation.execution_failed.ApplyRetrySpec',
+              schema: {
+                $ref: '#/components/schemas/compensation.execution_failed.ApplyRetrySpec',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CommandOk',
+            $ref: '#/components/responses/wow.CommandOk',
           },
           '400': {
-            '$ref': '#/components/responses/wow.CommandBadRequest',
+            $ref: '#/components/responses/wow.CommandBadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.CommandNotFound',
+            $ref: '#/components/responses/wow.CommandNotFound',
           },
           '409': {
-            '$ref': '#/components/responses/wow.CommandVersionConflict',
+            $ref: '#/components/responses/wow.CommandVersionConflict',
           },
           '429': {
-            '$ref': '#/components/responses/wow.CommandTooManyRequests',
+            $ref: '#/components/responses/wow.CommandTooManyRequests',
           },
           '408': {
-            '$ref': '#/components/responses/wow.CommandRequestTimeout',
+            $ref: '#/components/responses/wow.CommandRequestTimeout',
           },
           '410': {
-            '$ref': '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
+            $ref: '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
           },
         },
       },
     },
     '/execution_failed/{id}/change_function': {
-      'summary': 'change_function',
-      'description': '',
-      'put': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'change_function',
-        'description': '',
-        'operationId': 'compensation.execution_failed.change_function',
-        'parameters': [
+      summary: 'change_function',
+      description: '',
+      put: {
+        tags: ['compensation.execution_failed'],
+        summary: 'change_function',
+        description: '',
+        operationId: 'compensation.execution_failed.change_function',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Timout',
+            $ref: '#/components/parameters/wow.Command-Wait-Timout',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Id',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Version',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Version',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Request-Id',
+            $ref: '#/components/parameters/wow.Command-Request-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Local-First',
+            $ref: '#/components/parameters/wow.Command-Local-First',
           },
           {
-            '$ref': '#/components/parameters/wow.Accept',
+            $ref: '#/components/parameters/wow.Accept',
           },
         ],
-        'requestBody': {
-          'description': 'change_function',
-          'content': {
+        requestBody: {
+          description: 'change_function',
+          content: {
             'application/json': {
-              'schema': {
-                '$ref': '#/components/schemas/compensation.execution_failed.ChangeFunction',
+              schema: {
+                $ref: '#/components/schemas/compensation.execution_failed.ChangeFunction',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CommandOk',
+            $ref: '#/components/responses/wow.CommandOk',
           },
           '400': {
-            '$ref': '#/components/responses/wow.CommandBadRequest',
+            $ref: '#/components/responses/wow.CommandBadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.CommandNotFound',
+            $ref: '#/components/responses/wow.CommandNotFound',
           },
           '409': {
-            '$ref': '#/components/responses/wow.CommandVersionConflict',
+            $ref: '#/components/responses/wow.CommandVersionConflict',
           },
           '429': {
-            '$ref': '#/components/responses/wow.CommandTooManyRequests',
+            $ref: '#/components/responses/wow.CommandTooManyRequests',
           },
           '408': {
-            '$ref': '#/components/responses/wow.CommandRequestTimeout',
+            $ref: '#/components/responses/wow.CommandRequestTimeout',
           },
           '410': {
-            '$ref': '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
+            $ref: '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
           },
         },
       },
     },
     '/execution_failed/{id}/mark_recoverable': {
-      'summary': 'mark_recoverable',
-      'description': '',
-      'put': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'mark_recoverable',
-        'description': '',
-        'operationId': 'compensation.execution_failed.mark_recoverable',
-        'parameters': [
+      summary: 'mark_recoverable',
+      description: '',
+      put: {
+        tags: ['compensation.execution_failed'],
+        summary: 'mark_recoverable',
+        description: '',
+        operationId: 'compensation.execution_failed.mark_recoverable',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Timout',
+            $ref: '#/components/parameters/wow.Command-Wait-Timout',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Id',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Version',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Version',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Request-Id',
+            $ref: '#/components/parameters/wow.Command-Request-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Local-First',
+            $ref: '#/components/parameters/wow.Command-Local-First',
           },
           {
-            '$ref': '#/components/parameters/wow.Accept',
+            $ref: '#/components/parameters/wow.Accept',
           },
         ],
-        'requestBody': {
-          'description': 'mark_recoverable',
-          'content': {
+        requestBody: {
+          description: 'mark_recoverable',
+          content: {
             'application/json': {
-              'schema': {
-                '$ref': '#/components/schemas/compensation.execution_failed.MarkRecoverable',
+              schema: {
+                $ref: '#/components/schemas/compensation.execution_failed.MarkRecoverable',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CommandOk',
+            $ref: '#/components/responses/wow.CommandOk',
           },
           '400': {
-            '$ref': '#/components/responses/wow.CommandBadRequest',
+            $ref: '#/components/responses/wow.CommandBadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.CommandNotFound',
+            $ref: '#/components/responses/wow.CommandNotFound',
           },
           '409': {
-            '$ref': '#/components/responses/wow.CommandVersionConflict',
+            $ref: '#/components/responses/wow.CommandVersionConflict',
           },
           '429': {
-            '$ref': '#/components/responses/wow.CommandTooManyRequests',
+            $ref: '#/components/responses/wow.CommandTooManyRequests',
           },
           '408': {
-            '$ref': '#/components/responses/wow.CommandRequestTimeout',
+            $ref: '#/components/responses/wow.CommandRequestTimeout',
           },
           '410': {
-            '$ref': '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
+            $ref: '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
           },
         },
       },
     },
     '/execution_failed/{id}': {
-      'summary': 'Delete aggregate',
-      'description': '',
-      'delete': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Delete aggregate',
-        'description': '',
-        'operationId': 'compensation.execution_failed.default_delete_aggregate',
-        'parameters': [
+      summary: 'Delete aggregate',
+      description: '',
+      delete: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Delete aggregate',
+        description: '',
+        operationId: 'compensation.execution_failed.default_delete_aggregate',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Timout',
+            $ref: '#/components/parameters/wow.Command-Wait-Timout',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Id',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Version',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Version',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Request-Id',
+            $ref: '#/components/parameters/wow.Command-Request-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Local-First',
+            $ref: '#/components/parameters/wow.Command-Local-First',
           },
           {
-            '$ref': '#/components/parameters/wow.Accept',
+            $ref: '#/components/parameters/wow.Accept',
           },
         ],
-        'requestBody': {
-          'description': 'Delete aggregate',
-          'content': {
+        requestBody: {
+          description: 'Delete aggregate',
+          content: {
             'application/json': {
-              'schema': {
-                '$ref': '#/components/schemas/wow.api.command.DefaultDeleteAggregate',
+              schema: {
+                $ref: '#/components/schemas/wow.api.command.DefaultDeleteAggregate',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CommandOk',
+            $ref: '#/components/responses/wow.CommandOk',
           },
           '400': {
-            '$ref': '#/components/responses/wow.CommandBadRequest',
+            $ref: '#/components/responses/wow.CommandBadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.CommandNotFound',
+            $ref: '#/components/responses/wow.CommandNotFound',
           },
           '409': {
-            '$ref': '#/components/responses/wow.CommandVersionConflict',
+            $ref: '#/components/responses/wow.CommandVersionConflict',
           },
           '429': {
-            '$ref': '#/components/responses/wow.CommandTooManyRequests',
+            $ref: '#/components/responses/wow.CommandTooManyRequests',
           },
           '408': {
-            '$ref': '#/components/responses/wow.CommandRequestTimeout',
+            $ref: '#/components/responses/wow.CommandRequestTimeout',
           },
           '410': {
-            '$ref': '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
+            $ref: '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
           },
         },
       },
     },
     '/execution_failed/{id}/recover': {
-      'summary': 'Recover deleted aggregate',
-      'description': '',
-      'put': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Recover deleted aggregate',
-        'description': '',
-        'operationId': 'compensation.execution_failed.default_recover_aggregate',
-        'parameters': [
+      summary: 'Recover deleted aggregate',
+      description: '',
+      put: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Recover deleted aggregate',
+        description: '',
+        operationId: 'compensation.execution_failed.default_recover_aggregate',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Timout',
+            $ref: '#/components/parameters/wow.Command-Wait-Timout',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Stage',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Stage',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Context',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Context',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Processor',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Processor',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Wait-Tail-Function',
+            $ref: '#/components/parameters/wow.Command-Wait-Tail-Function',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Id',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Aggregate-Version',
+            $ref: '#/components/parameters/wow.Command-Aggregate-Version',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Request-Id',
+            $ref: '#/components/parameters/wow.Command-Request-Id',
           },
           {
-            '$ref': '#/components/parameters/wow.Command-Local-First',
+            $ref: '#/components/parameters/wow.Command-Local-First',
           },
           {
-            '$ref': '#/components/parameters/wow.Accept',
+            $ref: '#/components/parameters/wow.Accept',
           },
         ],
-        'requestBody': {
-          'description': 'Recover deleted aggregate',
-          'content': {
+        requestBody: {
+          description: 'Recover deleted aggregate',
+          content: {
             'application/json': {
-              'schema': {
-                '$ref': '#/components/schemas/wow.api.command.DefaultRecoverAggregate',
+              schema: {
+                $ref: '#/components/schemas/wow.api.command.DefaultRecoverAggregate',
               },
             },
           },
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CommandOk',
+            $ref: '#/components/responses/wow.CommandOk',
           },
           '400': {
-            '$ref': '#/components/responses/wow.CommandBadRequest',
+            $ref: '#/components/responses/wow.CommandBadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.CommandNotFound',
+            $ref: '#/components/responses/wow.CommandNotFound',
           },
           '409': {
-            '$ref': '#/components/responses/wow.CommandVersionConflict',
+            $ref: '#/components/responses/wow.CommandVersionConflict',
           },
           '429': {
-            '$ref': '#/components/responses/wow.CommandTooManyRequests',
+            $ref: '#/components/responses/wow.CommandTooManyRequests',
           },
           '408': {
-            '$ref': '#/components/responses/wow.CommandRequestTimeout',
+            $ref: '#/components/responses/wow.CommandRequestTimeout',
           },
           '410': {
-            '$ref': '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
+            $ref: '#/components/responses/wow.CommandIllegalAccessDeletedAggregate',
           },
         },
       },
     },
     '/execution_failed/{id}/state/tracing': {
-      'summary': 'Get Aggregate Tracing',
-      'description': '',
-      'get': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Get Aggregate Tracing',
-        'description': '',
-        'operationId': 'compensation.execution_failed.aggregate_tracing.get',
-        'parameters': [
+      summary: 'Get Aggregate Tracing',
+      description: '',
+      get: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Get Aggregate Tracing',
+        description: '',
+        operationId: 'compensation.execution_failed.aggregate_tracing.get',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            'description': 'Get Aggregate Tracing',
-            'headers': {
+            description: 'Get Aggregate Tracing',
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  'type': 'array',
-                  'items': {
-                    '$ref': '#/components/schemas/compensation.ExecutionFailedStateStateEvent',
+                schema: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/compensation.ExecutionFailedStateStateEvent',
                   },
                 },
               },
@@ -1586,276 +1535,260 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/execution_failed/{id}/state': {
-      'summary': 'Load State Aggregate',
-      'description': '',
-      'get': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Load State Aggregate',
-        'description': '',
-        'operationId': 'compensation.execution_failed.aggregate.load',
-        'parameters': [
+      summary: 'Load State Aggregate',
+      description: '',
+      get: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Load State Aggregate',
+        description: '',
+        operationId: 'compensation.execution_failed.aggregate.load',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            'description': 'Load State Aggregate',
-            'headers': {
+            description: 'Load State Aggregate',
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  '$ref': '#/components/schemas/compensation.ExecutionFailedState',
+                schema: {
+                  $ref: '#/components/schemas/compensation.ExecutionFailedState',
                 },
               },
             },
           },
           '400': {
-            '$ref': '#/components/responses/wow.BadRequest',
+            $ref: '#/components/responses/wow.BadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.NotFound',
+            $ref: '#/components/responses/wow.NotFound',
           },
         },
       },
     },
     '/execution_failed/{id}/state/{version}': {
-      'summary': 'Load Versioned State Aggregate',
-      'description': '',
-      'get': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Load Versioned State Aggregate',
-        'description': '',
-        'operationId': 'compensation.execution_failed.versioned_aggregate.load',
-        'parameters': [
+      summary: 'Load Versioned State Aggregate',
+      description: '',
+      get: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Load Versioned State Aggregate',
+        description: '',
+        operationId: 'compensation.execution_failed.versioned_aggregate.load',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.version',
+            $ref: '#/components/parameters/wow.version',
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            'description': 'Load Versioned State Aggregate',
-            'headers': {
+            description: 'Load Versioned State Aggregate',
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  '$ref': '#/components/schemas/compensation.ExecutionFailedState',
+                schema: {
+                  $ref: '#/components/schemas/compensation.ExecutionFailedState',
                 },
               },
             },
           },
           '400': {
-            '$ref': '#/components/responses/wow.BadRequest',
+            $ref: '#/components/responses/wow.BadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.NotFound',
+            $ref: '#/components/responses/wow.NotFound',
           },
         },
       },
     },
     '/execution_failed/{id}/state/time/{createTime}': {
-      'summary': 'Load Time Based State Aggregate',
-      'description': '',
-      'get': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Load Time Based State Aggregate',
-        'description': '',
-        'operationId': 'compensation.execution_failed.time_based_aggregate.load',
-        'parameters': [
+      summary: 'Load Time Based State Aggregate',
+      description: '',
+      get: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Load Time Based State Aggregate',
+        description: '',
+        operationId: 'compensation.execution_failed.time_based_aggregate.load',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.createTime',
+            $ref: '#/components/parameters/wow.createTime',
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            'description': 'Load Time Based State Aggregate',
-            'headers': {
+            description: 'Load Time Based State Aggregate',
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  '$ref': '#/components/schemas/compensation.ExecutionFailedState',
+                schema: {
+                  $ref: '#/components/schemas/compensation.ExecutionFailedState',
                 },
               },
             },
           },
           '400': {
-            '$ref': '#/components/responses/wow.BadRequest',
+            $ref: '#/components/responses/wow.BadRequest',
           },
           '404': {
-            '$ref': '#/components/responses/wow.NotFound',
+            $ref: '#/components/responses/wow.NotFound',
           },
         },
       },
     },
     '/execution_failed/{id}/snapshot': {
-      'summary': 'Get Snapshot',
-      'description': '',
-      'get': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Get Snapshot',
-        'description': '',
-        'operationId': 'compensation.execution_failed.snapshot.load',
-        'parameters': [
+      summary: 'Get Snapshot',
+      description: '',
+      get: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Get Snapshot',
+        description: '',
+        operationId: 'compensation.execution_failed.snapshot.load',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            'headers': {
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  '$ref': '#/components/schemas/compensation.ExecutionFailedStateSnapshot',
+                schema: {
+                  $ref: '#/components/schemas/compensation.ExecutionFailedStateSnapshot',
                 },
               },
             },
           },
           '404': {
-            '$ref': '#/components/responses/wow.NotFound',
+            $ref: '#/components/responses/wow.NotFound',
           },
         },
       },
-      'put': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Regenerate Aggregate Snapshot',
-        'description': '',
-        'operationId': 'compensation.execution_failed.snapshot.regenerate',
-        'parameters': [
+      put: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Regenerate Aggregate Snapshot',
+        description: '',
+        operationId: 'compensation.execution_failed.snapshot.regenerate',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
         ],
-        'responses': {
+        responses: {
           '200': {},
           '404': {
-            '$ref': '#/components/responses/wow.NotFound',
+            $ref: '#/components/responses/wow.NotFound',
           },
         },
       },
     },
     '/execution_failed/snapshot/{afterId}/{limit}': {
-      'summary': 'Batch Regenerate Aggregate Snapshot',
-      'description': '',
-      'put': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Batch Regenerate Aggregate Snapshot',
-        'description': '',
-        'operationId': 'compensation.execution_failed.snapshot.batch_regenerate',
-        'parameters': [
+      summary: 'Batch Regenerate Aggregate Snapshot',
+      description: '',
+      put: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Batch Regenerate Aggregate Snapshot',
+        description: '',
+        operationId: 'compensation.execution_failed.snapshot.batch_regenerate',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.afterId',
+            $ref: '#/components/parameters/wow.afterId',
           },
           {
-            '$ref': '#/components/parameters/wow.limit',
+            $ref: '#/components/parameters/wow.limit',
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.BatchResult',
+            $ref: '#/components/responses/wow.BatchResult',
           },
           '408': {
-            '$ref': '#/components/responses/wow.RequestTimeout',
+            $ref: '#/components/responses/wow.RequestTimeout',
           },
         },
       },
     },
     '/execution_failed/snapshot/count': {
-      'summary': 'Count Snapshot',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Count Snapshot',
-        'description': '',
-        'operationId': 'compensation.execution_failed.snapshot.count',
-        'parameters': [],
-        'requestBody': {
-          '$ref': '#/components/requestBodies/compensation.execution_failed.CountQuery',
+      summary: 'Count Snapshot',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Count Snapshot',
+        description: '',
+        operationId: 'compensation.execution_failed.snapshot.count',
+        parameters: [],
+        requestBody: {
+          $ref: '#/components/requestBodies/compensation.execution_failed.CountQuery',
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CountQuery',
+            $ref: '#/components/responses/wow.CountQuery',
           },
           '408': {
-            '$ref': '#/components/responses/wow.RequestTimeout',
+            $ref: '#/components/responses/wow.RequestTimeout',
           },
           '429': {
-            '$ref': '#/components/responses/wow.TooManyRequests',
+            $ref: '#/components/responses/wow.TooManyRequests',
           },
         },
       },
     },
     '/execution_failed/snapshot/list': {
-      'summary': 'List Query Snapshot',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'List Query Snapshot',
-        'description': '',
-        'operationId': 'compensation.execution_failed.snapshot.list_query',
-        'parameters': [],
-        'requestBody': {
-          '$ref': '#/components/requestBodies/compensation.execution_failed.ListQuery',
+      summary: 'List Query Snapshot',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'List Query Snapshot',
+        description: '',
+        operationId: 'compensation.execution_failed.snapshot.list_query',
+        parameters: [],
+        requestBody: {
+          $ref: '#/components/requestBodies/compensation.execution_failed.ListQuery',
         },
-        'responses': {
+        responses: {
           '200': {
-            'headers': {
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  'type': 'array',
-                  'items': {
-                    '$ref': '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshot',
+                schema: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshot',
                   },
                 },
               },
               'text/event-stream': {
-                'schema': {
-                  'type': 'array',
-                  'items': {
-                    '$ref': '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshotServerSentEventNonNullData',
+                schema: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshotServerSentEventNonNullData',
                   },
                 },
               },
@@ -1865,40 +1798,38 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/execution_failed/snapshot/list/state': {
-      'summary': 'List Query Snapshot State',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'List Query Snapshot State',
-        'description': '',
-        'operationId': 'compensation.execution_failed.snapshot_state.list_query',
-        'parameters': [],
-        'requestBody': {
-          '$ref': '#/components/requestBodies/compensation.execution_failed.ListQuery',
+      summary: 'List Query Snapshot State',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'List Query Snapshot State',
+        description: '',
+        operationId: 'compensation.execution_failed.snapshot_state.list_query',
+        parameters: [],
+        requestBody: {
+          $ref: '#/components/requestBodies/compensation.execution_failed.ListQuery',
         },
-        'responses': {
+        responses: {
           '200': {
-            'headers': {
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  'type': 'array',
-                  'items': {
-                    '$ref': '#/components/schemas/compensation.ExecutionFailedState',
+                schema: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/compensation.ExecutionFailedState',
                   },
                 },
               },
               'text/event-stream': {
-                'schema': {
-                  'type': 'array',
-                  'items': {
-                    '$ref': '#/components/schemas/compensation.ExecutionFailedStateServerSentEventNonNullData',
+                schema: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/compensation.ExecutionFailedStateServerSentEventNonNullData',
                   },
                 },
               },
@@ -1908,30 +1839,28 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/execution_failed/snapshot/paged': {
-      'summary': 'Paged Query Snapshot',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Paged Query Snapshot',
-        'description': '',
-        'operationId': 'compensation.execution_failed.snapshot.paged_query',
-        'parameters': [],
-        'requestBody': {
-          '$ref': '#/components/requestBodies/compensation.execution_failed.PagedQuery',
+      summary: 'Paged Query Snapshot',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Paged Query Snapshot',
+        description: '',
+        operationId: 'compensation.execution_failed.snapshot.paged_query',
+        parameters: [],
+        requestBody: {
+          $ref: '#/components/requestBodies/compensation.execution_failed.PagedQuery',
         },
-        'responses': {
+        responses: {
           '200': {
-            'headers': {
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  '$ref': '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshotPagedList',
+                schema: {
+                  $ref: '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshotPagedList',
                 },
               },
             },
@@ -1940,30 +1869,28 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/execution_failed/snapshot/paged/state': {
-      'summary': 'Paged Query Snapshot State',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Paged Query Snapshot State',
-        'description': '',
-        'operationId': 'compensation.execution_failed.snapshot_state.paged_query',
-        'parameters': [],
-        'requestBody': {
-          '$ref': '#/components/requestBodies/compensation.execution_failed.PagedQuery',
+      summary: 'Paged Query Snapshot State',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Paged Query Snapshot State',
+        description: '',
+        operationId: 'compensation.execution_failed.snapshot_state.paged_query',
+        parameters: [],
+        requestBody: {
+          $ref: '#/components/requestBodies/compensation.execution_failed.PagedQuery',
         },
-        'responses': {
+        responses: {
           '200': {
-            'headers': {
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  '$ref': '#/components/schemas/compensation.ExecutionFailedStatePagedList',
+                schema: {
+                  $ref: '#/components/schemas/compensation.ExecutionFailedStatePagedList',
                 },
               },
             },
@@ -1972,117 +1899,111 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/execution_failed/snapshot/single': {
-      'summary': 'Single Snapshot',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Single Snapshot',
-        'description': '',
-        'operationId': 'compensation.execution_failed.snapshot.single',
-        'parameters': [],
-        'requestBody': {
-          '$ref': '#/components/requestBodies/compensation.execution_failed.SingleQuery',
+      summary: 'Single Snapshot',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Single Snapshot',
+        description: '',
+        operationId: 'compensation.execution_failed.snapshot.single',
+        parameters: [],
+        requestBody: {
+          $ref: '#/components/requestBodies/compensation.execution_failed.SingleQuery',
         },
-        'responses': {
+        responses: {
           '200': {
-            'headers': {
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  '$ref': '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshot',
+                schema: {
+                  $ref: '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshot',
                 },
               },
             },
           },
           '404': {
-            '$ref': '#/components/responses/wow.NotFound',
+            $ref: '#/components/responses/wow.NotFound',
           },
         },
       },
     },
     '/execution_failed/snapshot/single/state': {
-      'summary': 'Single Snapshot State',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Single Snapshot State',
-        'description': '',
-        'operationId': 'compensation.execution_failed.snapshot_state.single',
-        'parameters': [],
-        'requestBody': {
-          '$ref': '#/components/requestBodies/compensation.execution_failed.SingleQuery',
+      summary: 'Single Snapshot State',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Single Snapshot State',
+        description: '',
+        operationId: 'compensation.execution_failed.snapshot_state.single',
+        parameters: [],
+        requestBody: {
+          $ref: '#/components/requestBodies/compensation.execution_failed.SingleQuery',
         },
-        'responses': {
+        responses: {
           '200': {
-            'headers': {
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  '$ref': '#/components/schemas/compensation.ExecutionFailedState',
+                schema: {
+                  $ref: '#/components/schemas/compensation.ExecutionFailedState',
                 },
               },
             },
           },
           '404': {
-            '$ref': '#/components/responses/wow.NotFound',
+            $ref: '#/components/responses/wow.NotFound',
           },
         },
       },
     },
     '/execution_failed/{id}/event/{headVersion}/{tailVersion}': {
-      'summary': 'Load Event Stream',
-      'description': '',
-      'get': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Load Event Stream',
-        'description': '',
-        'operationId': 'compensation.execution_failed.event_stream.load',
-        'parameters': [
+      summary: 'Load Event Stream',
+      description: '',
+      get: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Load Event Stream',
+        description: '',
+        operationId: 'compensation.execution_failed.event_stream.load',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.headVersion',
+            $ref: '#/components/parameters/wow.headVersion',
           },
           {
-            '$ref': '#/components/parameters/wow.tailVersion',
+            $ref: '#/components/parameters/wow.tailVersion',
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            'headers': {
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  'type': 'array',
-                  'items': {
-                    '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStream',
+                schema: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStream',
                   },
                 },
               },
               'text/event-stream': {
-                'schema': {
-                  'type': 'array',
-                  'items': {
-                    '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStreamServerSentEventNonNullData',
+                schema: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStreamServerSentEventNonNullData',
                   },
                 },
               },
@@ -2092,40 +2013,38 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/execution_failed/event/list': {
-      'summary': 'List Query Event Stream',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'List Query Event Stream',
-        'description': '',
-        'operationId': 'compensation.execution_failed.event.list_query',
-        'parameters': [],
-        'requestBody': {
-          '$ref': '#/components/requestBodies/wow.ListQuery',
+      summary: 'List Query Event Stream',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'List Query Event Stream',
+        description: '',
+        operationId: 'compensation.execution_failed.event.list_query',
+        parameters: [],
+        requestBody: {
+          $ref: '#/components/requestBodies/wow.ListQuery',
         },
-        'responses': {
+        responses: {
           '200': {
-            'headers': {
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  'type': 'array',
-                  'items': {
-                    '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStream',
+                schema: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStream',
                   },
                 },
               },
               'text/event-stream': {
-                'schema': {
-                  'type': 'array',
-                  'items': {
-                    '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStreamServerSentEventNonNullData',
+                schema: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStreamServerSentEventNonNullData',
                   },
                 },
               },
@@ -2135,30 +2054,28 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/execution_failed/event/paged': {
-      'summary': 'Paged Query Event Stream',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Paged Query Event Stream',
-        'description': '',
-        'operationId': 'compensation.execution_failed.event.paged_query',
-        'parameters': [],
-        'requestBody': {
-          '$ref': '#/components/requestBodies/wow.PagedQuery',
+      summary: 'Paged Query Event Stream',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Paged Query Event Stream',
+        description: '',
+        operationId: 'compensation.execution_failed.event.paged_query',
+        parameters: [],
+        requestBody: {
+          $ref: '#/components/requestBodies/wow.PagedQuery',
         },
-        'responses': {
+        responses: {
           '200': {
-            'headers': {
+            headers: {
               'Wow-Error-Code': {
-                '$ref': '#/components/headers/wow.Wow-Error-Code',
+                $ref: '#/components/headers/wow.Wow-Error-Code',
               },
             },
-            'content': {
+            content: {
               'application/json': {
-                'schema': {
-                  '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStreamPagedList',
+                schema: {
+                  $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStreamPagedList',
                 },
               },
             },
@@ -2167,172 +2084,165 @@ export const compensationOpenAPI: OpenAPI = {
       },
     },
     '/execution_failed/event/count': {
-      'summary': 'Count Event Stream',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Count Event Stream',
-        'description': '',
-        'operationId': 'compensation.execution_failed.event.count',
-        'parameters': [],
-        'requestBody': {
-          '$ref': '#/components/requestBodies/wow.CountQuery',
+      summary: 'Count Event Stream',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Count Event Stream',
+        description: '',
+        operationId: 'compensation.execution_failed.event.count',
+        parameters: [],
+        requestBody: {
+          $ref: '#/components/requestBodies/wow.CountQuery',
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CountQuery',
+            $ref: '#/components/responses/wow.CountQuery',
           },
         },
       },
     },
     '/execution_failed/{id}/{version}/compensate': {
-      'summary': 'Event Compensate',
-      'description': '',
-      'put': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Event Compensate',
-        'description': '',
-        'operationId': 'compensation.execution_failed.compensate',
-        'parameters': [
+      summary: 'Event Compensate',
+      description: '',
+      put: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Event Compensate',
+        description: '',
+        operationId: 'compensation.execution_failed.compensate',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.id',
+            $ref: '#/components/parameters/wow.id',
           },
           {
-            '$ref': '#/components/parameters/wow.version',
+            $ref: '#/components/parameters/wow.version',
           },
         ],
-        'requestBody': {
-          '$ref': '#/components/requestBodies/wow.CompensationTarget',
+        requestBody: {
+          $ref: '#/components/requestBodies/wow.CompensationTarget',
         },
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.CompensationTarget',
+            $ref: '#/components/responses/wow.CompensationTarget',
           },
           '400': {
-            '$ref': '#/components/responses/wow.BadRequest',
+            $ref: '#/components/responses/wow.BadRequest',
           },
         },
       },
     },
     '/execution_failed/state/{afterId}/{limit}': {
-      'summary': 'Resend State Event',
-      'description': '',
-      'post': {
-        'tags': [
-          'compensation.execution_failed',
-        ],
-        'summary': 'Resend State Event',
-        'description': '',
-        'operationId': 'compensation.execution_failed.state_event.resend',
-        'parameters': [
+      summary: 'Resend State Event',
+      description: '',
+      post: {
+        tags: ['compensation.execution_failed'],
+        summary: 'Resend State Event',
+        description: '',
+        operationId: 'compensation.execution_failed.state_event.resend',
+        parameters: [
           {
-            '$ref': '#/components/parameters/wow.afterId',
+            $ref: '#/components/parameters/wow.afterId',
           },
           {
-            '$ref': '#/components/parameters/wow.limit',
+            $ref: '#/components/parameters/wow.limit',
           },
         ],
-        'responses': {
+        responses: {
           '200': {
-            '$ref': '#/components/responses/wow.BatchResult',
+            $ref: '#/components/responses/wow.BatchResult',
           },
           '408': {
-            '$ref': '#/components/responses/wow.RequestTimeout',
+            $ref: '#/components/responses/wow.RequestTimeout',
           },
         },
       },
     },
   },
-  'components': {
-    'schemas': {
+  components: {
+    schemas: {
       'compensation.ApiVersion': {
-        'type': 'string',
-        'enum': [
-          'V2',
-          'V3',
-        ],
+        type: 'string',
+        enum: ['V2', 'V3'],
       },
       'compensation.ExecutionFailedAggregatedCondition': {
-        'type': 'object',
-        'properties': {
-          'children': {
-            'type': 'array',
-            'default': '[]',
-            'items': {
-              '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedCondition',
+        type: 'object',
+        properties: {
+          children: {
+            type: 'array',
+            default: '[]',
+            items: {
+              $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedCondition',
             },
           },
-          'field': {
-            '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedFields',
+          field: {
+            $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedFields',
           },
-          'operator': {
-            '$ref': '#/components/schemas/wow.api.query.Operator',
-            'default': 'ALL',
+          operator: {
+            $ref: '#/components/schemas/wow.api.query.Operator',
+            default: 'ALL',
           },
-          'options': {
-            '$ref': '#/components/schemas/compensation.StringObjectMap',
-            'default': '{}',
+          options: {
+            $ref: '#/components/schemas/compensation.StringObjectMap',
+            default: '{}',
           },
-          'value': {},
+          value: {},
         },
       },
       'compensation.ExecutionFailedAggregatedDomainEventStream': {
-        'type': 'object',
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        'properties': {
-          'id': {
-            'type': 'string',
-            'description': 'The ID of the domain event stream.',
-            'minLength': 1,
+        type: 'object',
+        $schema: 'https://json-schema.org/draft/2020-12/schema',
+        properties: {
+          id: {
+            type: 'string',
+            description: 'The ID of the domain event stream.',
+            minLength: 1,
           },
-          'contextName': {
-            'type': 'string',
-            'description': 'The name of the context to which the domain event stream belongs',
-            'minLength': 1,
+          contextName: {
+            type: 'string',
+            description:
+              'The name of the context to which the domain event stream belongs',
+            minLength: 1,
           },
-          'aggregateName': {
-            'type': 'string',
-            'description': 'The name of the aggregate to which the domain event stream belongs',
-            'minLength': 1,
+          aggregateName: {
+            type: 'string',
+            description:
+              'The name of the aggregate to which the domain event stream belongs',
+            minLength: 1,
           },
-          'header': {
-            'type': 'object',
-            'additionalProperties': true,
-            'description': 'message header',
-            'properties': {
-              'user_agent': {
-                'type': 'string',
-                'description': 'user agent',
+          header: {
+            type: 'object',
+            additionalProperties: true,
+            description: 'message header',
+            properties: {
+              user_agent: {
+                type: 'string',
+                description: 'user agent',
               },
-              'remote_ip': {
-                'type': 'string',
-                'description': 'remote ip',
+              remote_ip: {
+                type: 'string',
+                description: 'remote ip',
               },
-              'trace_id': {
-                'type': 'string',
-                'description': 'trace id',
+              trace_id: {
+                type: 'string',
+                description: 'trace id',
               },
-              'command_operator': {
-                'type': 'string',
-                'description': 'command operator',
+              command_operator: {
+                type: 'string',
+                description: 'command operator',
               },
-              'local_first': {
-                'type': 'boolean',
-                'description': 'local first',
+              local_first: {
+                type: 'boolean',
+                description: 'local first',
               },
-              'command_wait_endpoint': {
-                'type': 'string',
-                'format': 'url',
-                'description': 'command wait endpoint',
+              command_wait_endpoint: {
+                type: 'string',
+                format: 'url',
+                description: 'command wait endpoint',
               },
-              'command_wait_stage': {
-                'type': 'string',
-                'default': 'PROCESSED',
-                'enum': [
+              command_wait_stage: {
+                type: 'string',
+                default: 'PROCESSED',
+                enum: [
                   'SENT',
                   'PROCESSED',
                   'SNAPSHOT',
@@ -2343,318 +2253,288 @@ export const compensationOpenAPI: OpenAPI = {
               },
             },
           },
-          'tenantId': {
-            'type': 'string',
-            'description': 'The tenant id of the aggregate',
-            'minLength': 1,
+          tenantId: {
+            type: 'string',
+            description: 'The tenant id of the aggregate',
+            minLength: 1,
           },
-          'aggregateId': {
-            'type': 'string',
-            'description': 'The id of the aggregate',
-            'minLength': 1,
+          aggregateId: {
+            type: 'string',
+            description: 'The id of the aggregate',
+            minLength: 1,
           },
-          'ownerId': {
-            'type': 'string',
-            'default': '',
-            'description': 'The owner ID of the aggregate resource',
+          ownerId: {
+            type: 'string',
+            default: '',
+            description: 'The owner ID of the aggregate resource',
           },
-          'commandId': {
-            'type': 'string',
-            'description': 'The ID of the command message.',
-            'minLength': 1,
+          commandId: {
+            type: 'string',
+            description: 'The ID of the command message.',
+            minLength: 1,
           },
-          'requestId': {
-            'type': 'string',
-            'description': 'The request ID of the command message, which is used to check the idempotency of the command message',
-            'minLength': 1,
+          requestId: {
+            type: 'string',
+            description:
+              'The request ID of the command message, which is used to check the idempotency of the command message',
+            minLength: 1,
           },
-          'version': {
-            'type': 'integer',
-            'format': 'int32',
-            'description': 'The version of the domain event stream',
+          version: {
+            type: 'integer',
+            format: 'int32',
+            description: 'The version of the domain event stream',
           },
-          'body': {
-            'type': 'array',
-            'description': 'A list of domain events for the domain event stream',
-            'items': {
-              'anyOf': [
+          body: {
+            type: 'array',
+            description: 'A list of domain events for the domain event stream',
+            items: {
+              anyOf: [
                 {
-                  'type': 'object',
-                  'description': 'The body of the domain event',
-                  'properties': {
-                    'id': {
-                      'type': 'string',
-                      'description': 'The ID of the domain event.',
-                      'minLength': 1,
+                  type: 'object',
+                  description: 'The body of the domain event',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      description: 'The ID of the domain event.',
+                      minLength: 1,
                     },
-                    'name': {
-                      'type': 'string',
-                      'const': 'compensation_prepared',
-                      'description': 'The name of the domain event',
-                      'minLength': 1,
+                    name: {
+                      type: 'string',
+                      const: 'compensation_prepared',
+                      description: 'The name of the domain event',
+                      minLength: 1,
                     },
-                    'revision': {
-                      'type': 'string',
-                      'default': '0.0.1',
-                      'description': 'The revision number of the domain event',
+                    revision: {
+                      type: 'string',
+                      default: '0.0.1',
+                      description: 'The revision number of the domain event',
                     },
-                    'bodyType': {
-                      'type': 'string',
-                      'const': 'me.ahoo.wow.compensation.api.CompensationPrepared',
-                      'description': 'The fully qualified name of the domain event body',
+                    bodyType: {
+                      type: 'string',
+                      const:
+                        'me.ahoo.wow.compensation.api.CompensationPrepared',
+                      description:
+                        'The fully qualified name of the domain event body',
                     },
-                    'body': {
-                      '$ref': '#/components/schemas/compensation.execution_failed.CompensationPrepared',
+                    body: {
+                      $ref: '#/components/schemas/compensation.execution_failed.CompensationPrepared',
                     },
                   },
-                  'required': [
-                    'body',
-                    'bodyType',
-                    'id',
-                    'name',
-                    'revision',
-                  ],
-                  'title': 'compensation_prepared',
+                  required: ['body', 'bodyType', 'id', 'name', 'revision'],
+                  title: 'compensation_prepared',
                 },
                 {
-                  'type': 'object',
-                  'description': 'The body of the domain event',
-                  'properties': {
-                    'id': {
-                      'type': 'string',
-                      'description': 'The ID of the domain event.',
-                      'minLength': 1,
+                  type: 'object',
+                  description: 'The body of the domain event',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      description: 'The ID of the domain event.',
+                      minLength: 1,
                     },
-                    'name': {
-                      'type': 'string',
-                      'const': 'execution_failed_applied',
-                      'description': 'The name of the domain event',
-                      'minLength': 1,
+                    name: {
+                      type: 'string',
+                      const: 'execution_failed_applied',
+                      description: 'The name of the domain event',
+                      minLength: 1,
                     },
-                    'revision': {
-                      'type': 'string',
-                      'default': '0.0.1',
-                      'description': 'The revision number of the domain event',
+                    revision: {
+                      type: 'string',
+                      default: '0.0.1',
+                      description: 'The revision number of the domain event',
                     },
-                    'bodyType': {
-                      'type': 'string',
-                      'const': 'me.ahoo.wow.compensation.api.ExecutionFailedApplied',
-                      'description': 'The fully qualified name of the domain event body',
+                    bodyType: {
+                      type: 'string',
+                      const:
+                        'me.ahoo.wow.compensation.api.ExecutionFailedApplied',
+                      description:
+                        'The fully qualified name of the domain event body',
                     },
-                    'body': {
-                      '$ref': '#/components/schemas/compensation.execution_failed.ExecutionFailedApplied',
+                    body: {
+                      $ref: '#/components/schemas/compensation.execution_failed.ExecutionFailedApplied',
                     },
                   },
-                  'required': [
-                    'body',
-                    'bodyType',
-                    'id',
-                    'name',
-                    'revision',
-                  ],
-                  'title': 'execution_failed_applied',
+                  required: ['body', 'bodyType', 'id', 'name', 'revision'],
+                  title: 'execution_failed_applied',
                 },
                 {
-                  'type': 'object',
-                  'description': 'The body of the domain event',
-                  'properties': {
-                    'id': {
-                      'type': 'string',
-                      'description': 'The ID of the domain event.',
-                      'minLength': 1,
+                  type: 'object',
+                  description: 'The body of the domain event',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      description: 'The ID of the domain event.',
+                      minLength: 1,
                     },
-                    'name': {
-                      'type': 'string',
-                      'const': 'execution_failed_created',
-                      'description': 'The name of the domain event',
-                      'minLength': 1,
+                    name: {
+                      type: 'string',
+                      const: 'execution_failed_created',
+                      description: 'The name of the domain event',
+                      minLength: 1,
                     },
-                    'revision': {
-                      'type': 'string',
-                      'default': '0.0.1',
-                      'description': 'The revision number of the domain event',
+                    revision: {
+                      type: 'string',
+                      default: '0.0.1',
+                      description: 'The revision number of the domain event',
                     },
-                    'bodyType': {
-                      'type': 'string',
-                      'const': 'me.ahoo.wow.compensation.api.ExecutionFailedCreated',
-                      'description': 'The fully qualified name of the domain event body',
+                    bodyType: {
+                      type: 'string',
+                      const:
+                        'me.ahoo.wow.compensation.api.ExecutionFailedCreated',
+                      description:
+                        'The fully qualified name of the domain event body',
                     },
-                    'body': {
-                      '$ref': '#/components/schemas/compensation.execution_failed.ExecutionFailedCreated',
+                    body: {
+                      $ref: '#/components/schemas/compensation.execution_failed.ExecutionFailedCreated',
                     },
                   },
-                  'required': [
-                    'body',
-                    'bodyType',
-                    'id',
-                    'name',
-                    'revision',
-                  ],
-                  'title': 'execution_failed_created',
+                  required: ['body', 'bodyType', 'id', 'name', 'revision'],
+                  title: 'execution_failed_created',
                 },
                 {
-                  'type': 'object',
-                  'description': 'The body of the domain event',
-                  'properties': {
-                    'id': {
-                      'type': 'string',
-                      'description': 'The ID of the domain event.',
-                      'minLength': 1,
+                  type: 'object',
+                  description: 'The body of the domain event',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      description: 'The ID of the domain event.',
+                      minLength: 1,
                     },
-                    'name': {
-                      'type': 'string',
-                      'const': 'execution_success_applied',
-                      'description': 'The name of the domain event',
-                      'minLength': 1,
+                    name: {
+                      type: 'string',
+                      const: 'execution_success_applied',
+                      description: 'The name of the domain event',
+                      minLength: 1,
                     },
-                    'revision': {
-                      'type': 'string',
-                      'default': '0.0.1',
-                      'description': 'The revision number of the domain event',
+                    revision: {
+                      type: 'string',
+                      default: '0.0.1',
+                      description: 'The revision number of the domain event',
                     },
-                    'bodyType': {
-                      'type': 'string',
-                      'const': 'me.ahoo.wow.compensation.api.ExecutionSuccessApplied',
-                      'description': 'The fully qualified name of the domain event body',
+                    bodyType: {
+                      type: 'string',
+                      const:
+                        'me.ahoo.wow.compensation.api.ExecutionSuccessApplied',
+                      description:
+                        'The fully qualified name of the domain event body',
                     },
-                    'body': {
-                      '$ref': '#/components/schemas/compensation.execution_failed.ExecutionSuccessApplied',
+                    body: {
+                      $ref: '#/components/schemas/compensation.execution_failed.ExecutionSuccessApplied',
                     },
                   },
-                  'required': [
-                    'body',
-                    'bodyType',
-                    'id',
-                    'name',
-                    'revision',
-                  ],
-                  'title': 'execution_success_applied',
+                  required: ['body', 'bodyType', 'id', 'name', 'revision'],
+                  title: 'execution_success_applied',
                 },
                 {
-                  'type': 'object',
-                  'description': 'The body of the domain event',
-                  'properties': {
-                    'id': {
-                      'type': 'string',
-                      'description': 'The ID of the domain event.',
-                      'minLength': 1,
+                  type: 'object',
+                  description: 'The body of the domain event',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      description: 'The ID of the domain event.',
+                      minLength: 1,
                     },
-                    'name': {
-                      'type': 'string',
-                      'const': 'function_changed',
-                      'description': 'The name of the domain event',
-                      'minLength': 1,
+                    name: {
+                      type: 'string',
+                      const: 'function_changed',
+                      description: 'The name of the domain event',
+                      minLength: 1,
                     },
-                    'revision': {
-                      'type': 'string',
-                      'default': '0.0.1',
-                      'description': 'The revision number of the domain event',
+                    revision: {
+                      type: 'string',
+                      default: '0.0.1',
+                      description: 'The revision number of the domain event',
                     },
-                    'bodyType': {
-                      'type': 'string',
-                      'const': 'me.ahoo.wow.compensation.api.FunctionChanged',
-                      'description': 'The fully qualified name of the domain event body',
+                    bodyType: {
+                      type: 'string',
+                      const: 'me.ahoo.wow.compensation.api.FunctionChanged',
+                      description:
+                        'The fully qualified name of the domain event body',
                     },
-                    'body': {
-                      '$ref': '#/components/schemas/compensation.execution_failed.FunctionChanged',
+                    body: {
+                      $ref: '#/components/schemas/compensation.execution_failed.FunctionChanged',
                     },
                   },
-                  'required': [
-                    'body',
-                    'bodyType',
-                    'id',
-                    'name',
-                    'revision',
-                  ],
-                  'title': 'function_changed',
+                  required: ['body', 'bodyType', 'id', 'name', 'revision'],
+                  title: 'function_changed',
                 },
                 {
-                  'type': 'object',
-                  'description': 'The body of the domain event',
-                  'properties': {
-                    'id': {
-                      'type': 'string',
-                      'description': 'The ID of the domain event.',
-                      'minLength': 1,
+                  type: 'object',
+                  description: 'The body of the domain event',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      description: 'The ID of the domain event.',
+                      minLength: 1,
                     },
-                    'name': {
-                      'type': 'string',
-                      'const': 'recoverable_marked',
-                      'description': 'The name of the domain event',
-                      'minLength': 1,
+                    name: {
+                      type: 'string',
+                      const: 'recoverable_marked',
+                      description: 'The name of the domain event',
+                      minLength: 1,
                     },
-                    'revision': {
-                      'type': 'string',
-                      'default': '0.0.1',
-                      'description': 'The revision number of the domain event',
+                    revision: {
+                      type: 'string',
+                      default: '0.0.1',
+                      description: 'The revision number of the domain event',
                     },
-                    'bodyType': {
-                      'type': 'string',
-                      'const': 'me.ahoo.wow.compensation.api.RecoverableMarked',
-                      'description': 'The fully qualified name of the domain event body',
+                    bodyType: {
+                      type: 'string',
+                      const: 'me.ahoo.wow.compensation.api.RecoverableMarked',
+                      description:
+                        'The fully qualified name of the domain event body',
                     },
-                    'body': {
-                      '$ref': '#/components/schemas/compensation.execution_failed.RecoverableMarked',
+                    body: {
+                      $ref: '#/components/schemas/compensation.execution_failed.RecoverableMarked',
                     },
                   },
-                  'required': [
-                    'body',
-                    'bodyType',
-                    'id',
-                    'name',
-                    'revision',
-                  ],
-                  'title': 'recoverable_marked',
+                  required: ['body', 'bodyType', 'id', 'name', 'revision'],
+                  title: 'recoverable_marked',
                 },
                 {
-                  'type': 'object',
-                  'description': 'The body of the domain event',
-                  'properties': {
-                    'id': {
-                      'type': 'string',
-                      'description': 'The ID of the domain event.',
-                      'minLength': 1,
+                  type: 'object',
+                  description: 'The body of the domain event',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      description: 'The ID of the domain event.',
+                      minLength: 1,
                     },
-                    'name': {
-                      'type': 'string',
-                      'const': 'retry_spec_applied',
-                      'description': 'The name of the domain event',
-                      'minLength': 1,
+                    name: {
+                      type: 'string',
+                      const: 'retry_spec_applied',
+                      description: 'The name of the domain event',
+                      minLength: 1,
                     },
-                    'revision': {
-                      'type': 'string',
-                      'default': '0.0.1',
-                      'description': 'The revision number of the domain event',
+                    revision: {
+                      type: 'string',
+                      default: '0.0.1',
+                      description: 'The revision number of the domain event',
                     },
-                    'bodyType': {
-                      'type': 'string',
-                      'const': 'me.ahoo.wow.compensation.api.RetrySpecApplied',
-                      'description': 'The fully qualified name of the domain event body',
+                    bodyType: {
+                      type: 'string',
+                      const: 'me.ahoo.wow.compensation.api.RetrySpecApplied',
+                      description:
+                        'The fully qualified name of the domain event body',
                     },
-                    'body': {
-                      '$ref': '#/components/schemas/compensation.execution_failed.RetrySpecApplied',
+                    body: {
+                      $ref: '#/components/schemas/compensation.execution_failed.RetrySpecApplied',
                     },
                   },
-                  'required': [
-                    'body',
-                    'bodyType',
-                    'id',
-                    'name',
-                    'revision',
-                  ],
-                  'title': 'retry_spec_applied',
+                  required: ['body', 'bodyType', 'id', 'name', 'revision'],
+                  title: 'retry_spec_applied',
                 },
               ],
             },
-            'minItems': 1,
+            minItems: 1,
           },
-          'createTime': {
-            'type': 'integer',
-            'format': 'int64',
-            'description': 'The time when the domain event stream was created',
+          createTime: {
+            type: 'integer',
+            format: 'int64',
+            description: 'The time when the domain event stream was created',
           },
         },
-        'required': [
+        required: [
           'aggregateId',
           'aggregateName',
           'body',
@@ -2667,57 +2547,44 @@ export const compensationOpenAPI: OpenAPI = {
         ],
       },
       'compensation.ExecutionFailedAggregatedDomainEventStreamPagedList': {
-        'type': 'object',
-        'properties': {
-          'list': {
-            'type': 'array',
-            'items': {
-              '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStream',
+        type: 'object',
+        properties: {
+          list: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStream',
             },
           },
-          'total': {
-            'type': 'integer',
-            'format': 'int64',
+          total: {
+            type: 'integer',
+            format: 'int64',
           },
         },
-        'required': [
-          'list',
-          'total',
-        ],
+        required: ['list', 'total'],
       },
-      'compensation.ExecutionFailedAggregatedDomainEventStreamServerSentEventNonNullData': {
-        'type': 'object',
-        'properties': {
-          'data': {
-            '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStream',
+      'compensation.ExecutionFailedAggregatedDomainEventStreamServerSentEventNonNullData':
+        {
+          type: 'object',
+          properties: {
+            data: {
+              $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedDomainEventStream',
+            },
+            event: {
+              type: ['string', 'null'],
+            },
+            id: {
+              type: ['string', 'null'],
+            },
+            retry: {
+              type: ['integer', 'null'],
+              format: 'int32',
+            },
           },
-          'event': {
-            'type': [
-              'string',
-              'null',
-            ],
-          },
-          'id': {
-            'type': [
-              'string',
-              'null',
-            ],
-          },
-          'retry': {
-            'type': [
-              'integer',
-              'null',
-            ],
-            'format': 'int32',
-          },
+          required: ['data'],
         },
-        'required': [
-          'data',
-        ],
-      },
       'compensation.ExecutionFailedAggregatedFields': {
-        'type': 'string',
-        'enum': [
+        type: 'string',
+        enum: [
           '',
           'aggregateId',
           'tenantId',
@@ -2770,184 +2637,179 @@ export const compensationOpenAPI: OpenAPI = {
         ],
       },
       'compensation.ExecutionFailedAggregatedListQuery': {
-        'type': 'object',
-        'properties': {
-          'condition': {
-            '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedCondition',
+        type: 'object',
+        properties: {
+          condition: {
+            $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedCondition',
           },
-          'limit': {
-            'type': 'integer',
-            'format': 'int32',
-            'default': '10',
+          limit: {
+            type: 'integer',
+            format: 'int32',
+            default: '10',
           },
-          'projection': {
-            '$ref': '#/components/schemas/wow.api.query.Projection',
+          projection: {
+            $ref: '#/components/schemas/wow.api.query.Projection',
           },
-          'sort': {
-            'type': 'array',
-            'default': '[]',
-            'items': {
-              '$ref': '#/components/schemas/wow.api.query.Sort',
+          sort: {
+            type: 'array',
+            default: '[]',
+            items: {
+              $ref: '#/components/schemas/wow.api.query.Sort',
             },
           },
         },
-        'required': [
-          'condition',
-        ],
+        required: ['condition'],
       },
       'compensation.ExecutionFailedAggregatedPagedQuery': {
-        'type': 'object',
-        'properties': {
-          'condition': {
-            '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedCondition',
+        type: 'object',
+        properties: {
+          condition: {
+            $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedCondition',
           },
-          'pagination': {
-            '$ref': '#/components/schemas/wow.api.query.Pagination',
+          pagination: {
+            $ref: '#/components/schemas/wow.api.query.Pagination',
           },
-          'projection': {
-            '$ref': '#/components/schemas/wow.api.query.Projection',
+          projection: {
+            $ref: '#/components/schemas/wow.api.query.Projection',
           },
-          'sort': {
-            'type': 'array',
-            'default': '[]',
-            'items': {
-              '$ref': '#/components/schemas/wow.api.query.Sort',
+          sort: {
+            type: 'array',
+            default: '[]',
+            items: {
+              $ref: '#/components/schemas/wow.api.query.Sort',
             },
           },
         },
-        'required': [
-          'condition',
-        ],
+        required: ['condition'],
       },
       'compensation.ExecutionFailedAggregatedSingleQuery': {
-        'type': 'object',
-        'properties': {
-          'condition': {
-            '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedCondition',
+        type: 'object',
+        properties: {
+          condition: {
+            $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedCondition',
           },
-          'projection': {
-            '$ref': '#/components/schemas/wow.api.query.Projection',
+          projection: {
+            $ref: '#/components/schemas/wow.api.query.Projection',
           },
-          'sort': {
-            'type': 'array',
-            'default': '[]',
-            'items': {
-              '$ref': '#/components/schemas/wow.api.query.Sort',
+          sort: {
+            type: 'array',
+            default: '[]',
+            items: {
+              $ref: '#/components/schemas/wow.api.query.Sort',
             },
           },
         },
-        'required': [
-          'condition',
-        ],
+        required: ['condition'],
       },
       'compensation.ExecutionFailedState': {
-        'type': 'object',
-        'properties': {
-          'error': {
-            '$ref': '#/components/schemas/compensation.execution_failed.ErrorDetails',
-            'readOnly': true,
+        type: 'object',
+        properties: {
+          error: {
+            $ref: '#/components/schemas/compensation.execution_failed.ErrorDetails',
+            readOnly: true,
           },
-          'eventId': {
-            '$ref': '#/components/schemas/compensation.execution_failed.EventId',
-            'readOnly': true,
+          eventId: {
+            $ref: '#/components/schemas/compensation.execution_failed.EventId',
+            readOnly: true,
           },
-          'executeAt': {
-            'type': 'integer',
-            'format': 'int64',
+          executeAt: {
+            type: 'integer',
+            format: 'int64',
           },
-          'function': {
-            '$ref': '#/components/schemas/wow.api.messaging.FunctionInfoData',
-            'readOnly': true,
+          function: {
+            $ref: '#/components/schemas/wow.api.messaging.FunctionInfoData',
+            readOnly: true,
           },
-          'id': {
-            'type': 'string',
+          id: {
+            type: 'string',
           },
-          'recoverable': {
-            '$ref': '#/components/schemas/wow.api.RecoverableType',
+          recoverable: {
+            $ref: '#/components/schemas/wow.api.RecoverableType',
           },
-          'retrySpec': {
-            '$ref': '#/components/schemas/compensation.execution_failed.RetrySpec',
-            'readOnly': true,
+          retrySpec: {
+            $ref: '#/components/schemas/compensation.execution_failed.RetrySpec',
+            readOnly: true,
           },
-          'retryState': {
-            '$ref': '#/components/schemas/compensation.execution_failed.RetryState',
-            'readOnly': true,
+          retryState: {
+            $ref: '#/components/schemas/compensation.execution_failed.RetryState',
+            readOnly: true,
           },
-          'status': {
-            '$ref': '#/components/schemas/compensation.execution_failed.ExecutionFailedStatus',
+          status: {
+            $ref: '#/components/schemas/compensation.execution_failed.ExecutionFailedStatus',
           },
-          'isBelowRetryThreshold': {
-            'type': 'boolean',
-            'readOnly': true,
+          isBelowRetryThreshold: {
+            type: 'boolean',
+            readOnly: true,
           },
-          'isRetryable': {
-            'type': 'boolean',
-            'readOnly': true,
+          isRetryable: {
+            type: 'boolean',
+            readOnly: true,
           },
         },
-        'required': [
-          'id',
-        ],
+        required: ['id'],
       },
       'compensation.ExecutionFailedStateMaterializedSnapshot': {
-        'type': 'object',
-        'properties': {
-          'aggregateId': {
-            'type': 'string',
+        type: 'object',
+        properties: {
+          aggregateId: {
+            type: 'string',
           },
-          'aggregateName': {
-            'type': 'string',
+          aggregateName: {
+            type: 'string',
           },
-          'contextName': {
-            'type': 'string',
+          contextName: {
+            type: 'string',
           },
-          'deleted': {
-            'type': 'boolean',
-            'description': 'Whether the aggregate is deleted.',
+          deleted: {
+            type: 'boolean',
+            description: 'Whether the aggregate is deleted.',
           },
-          'eventId': {
-            'type': 'string',
-            'description': 'The event id of the aggregate.',
+          eventId: {
+            type: 'string',
+            description: 'The event id of the aggregate.',
           },
-          'eventTime': {
-            'type': 'integer',
-            'format': 'int64',
-            'description': 'The last event time of the aggregate, represented as a Unix timestamp in milliseconds.',
+          eventTime: {
+            type: 'integer',
+            format: 'int64',
+            description:
+              'The last event time of the aggregate, represented as a Unix timestamp in milliseconds.',
           },
-          'firstEventTime': {
-            'type': 'integer',
-            'format': 'int64',
-            'description': 'The first event time of the aggregate, represented as a Unix timestamp in milliseconds.',
+          firstEventTime: {
+            type: 'integer',
+            format: 'int64',
+            description:
+              'The first event time of the aggregate, represented as a Unix timestamp in milliseconds.',
           },
-          'firstOperator': {
-            'type': 'string',
-            'description': 'The first operator of the aggregate.',
+          firstOperator: {
+            type: 'string',
+            description: 'The first operator of the aggregate.',
           },
-          'operator': {
-            'type': 'string',
-            'description': 'The last operator of the aggregate.',
+          operator: {
+            type: 'string',
+            description: 'The last operator of the aggregate.',
           },
-          'ownerId': {
-            'type': 'string',
+          ownerId: {
+            type: 'string',
           },
-          'snapshotTime': {
-            'type': 'integer',
-            'format': 'int64',
-            'description': 'The snapshot time of the aggregate, represented as a Unix timestamp in milliseconds.',
+          snapshotTime: {
+            type: 'integer',
+            format: 'int64',
+            description:
+              'The snapshot time of the aggregate, represented as a Unix timestamp in milliseconds.',
           },
-          'state': {
-            '$ref': '#/components/schemas/compensation.ExecutionFailedState',
-            'description': 'The state of the aggregate.',
+          state: {
+            $ref: '#/components/schemas/compensation.ExecutionFailedState',
+            description: 'The state of the aggregate.',
           },
-          'tenantId': {
-            'type': 'string',
+          tenantId: {
+            type: 'string',
           },
-          'version': {
-            'type': 'integer',
-            'format': 'int32',
+          version: {
+            type: 'integer',
+            format: 'int32',
           },
         },
-        'required': [
+        required: [
           'aggregateId',
           'aggregateName',
           'contextName',
@@ -2964,208 +2826,183 @@ export const compensationOpenAPI: OpenAPI = {
         ],
       },
       'compensation.ExecutionFailedStateMaterializedSnapshotPagedList': {
-        'type': 'object',
-        'properties': {
-          'list': {
-            'type': 'array',
-            'items': {
-              '$ref': '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshot',
+        type: 'object',
+        properties: {
+          list: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshot',
             },
           },
-          'total': {
-            'type': 'integer',
-            'format': 'int64',
+          total: {
+            type: 'integer',
+            format: 'int64',
           },
         },
-        'required': [
-          'list',
-          'total',
-        ],
+        required: ['list', 'total'],
       },
-      'compensation.ExecutionFailedStateMaterializedSnapshotServerSentEventNonNullData': {
-        'type': 'object',
-        'properties': {
-          'data': {
-            '$ref': '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshot',
+      'compensation.ExecutionFailedStateMaterializedSnapshotServerSentEventNonNullData':
+        {
+          type: 'object',
+          properties: {
+            data: {
+              $ref: '#/components/schemas/compensation.ExecutionFailedStateMaterializedSnapshot',
+            },
+            event: {
+              type: ['string', 'null'],
+            },
+            id: {
+              type: ['string', 'null'],
+            },
+            retry: {
+              type: ['integer', 'null'],
+              format: 'int32',
+            },
           },
-          'event': {
-            'type': [
-              'string',
-              'null',
-            ],
-          },
-          'id': {
-            'type': [
-              'string',
-              'null',
-            ],
-          },
-          'retry': {
-            'type': [
-              'integer',
-              'null',
-            ],
-            'format': 'int32',
-          },
+          required: ['data'],
         },
-        'required': [
-          'data',
-        ],
-      },
       'compensation.ExecutionFailedStatePagedList': {
-        'type': 'object',
-        'properties': {
-          'list': {
-            'type': 'array',
-            'items': {
-              '$ref': '#/components/schemas/compensation.ExecutionFailedState',
+        type: 'object',
+        properties: {
+          list: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/compensation.ExecutionFailedState',
             },
           },
-          'total': {
-            'type': 'integer',
-            'format': 'int64',
+          total: {
+            type: 'integer',
+            format: 'int64',
           },
         },
-        'required': [
-          'list',
-          'total',
-        ],
+        required: ['list', 'total'],
       },
       'compensation.ExecutionFailedStateServerSentEventNonNullData': {
-        'type': 'object',
-        'properties': {
-          'data': {
-            '$ref': '#/components/schemas/compensation.ExecutionFailedState',
+        type: 'object',
+        properties: {
+          data: {
+            $ref: '#/components/schemas/compensation.ExecutionFailedState',
           },
-          'event': {
-            'type': [
-              'string',
-              'null',
-            ],
+          event: {
+            type: ['string', 'null'],
           },
-          'id': {
-            'type': [
-              'string',
-              'null',
-            ],
+          id: {
+            type: ['string', 'null'],
           },
-          'retry': {
-            'type': [
-              'integer',
-              'null',
-            ],
-            'format': 'int32',
+          retry: {
+            type: ['integer', 'null'],
+            format: 'int32',
           },
         },
-        'required': [
-          'data',
-        ],
+        required: ['data'],
       },
       'compensation.ExecutionFailedStateSnapshot': {
-        'type': 'object',
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        'properties': {
-          'contextName': {
-            'type': 'string',
-            'description': 'The name of the context to which the snapshot belongs',
-            'minLength': 1,
+        type: 'object',
+        $schema: 'https://json-schema.org/draft/2020-12/schema',
+        properties: {
+          contextName: {
+            type: 'string',
+            description:
+              'The name of the context to which the snapshot belongs',
+            minLength: 1,
           },
-          'aggregateName': {
-            'type': 'string',
-            'description': 'The name of the aggregate to which the snapshot belongs',
-            'minLength': 1,
+          aggregateName: {
+            type: 'string',
+            description:
+              'The name of the aggregate to which the snapshot belongs',
+            minLength: 1,
           },
-          'tenantId': {
-            'type': 'string',
-            'description': 'The tenant id of the aggregate',
-            'minLength': 1,
+          tenantId: {
+            type: 'string',
+            description: 'The tenant id of the aggregate',
+            minLength: 1,
           },
-          'aggregateId': {
-            'type': 'string',
-            'description': 'The id of the aggregate',
-            'minLength': 1,
+          aggregateId: {
+            type: 'string',
+            description: 'The id of the aggregate',
+            minLength: 1,
           },
-          'ownerId': {
-            'type': 'string',
-            'default': '',
-            'description': 'The owner ID of the aggregate resource',
+          ownerId: {
+            type: 'string',
+            default: '',
+            description: 'The owner ID of the aggregate resource',
           },
-          'version': {
-            'type': 'integer',
-            'format': 'int32',
-            'description': 'The version of the snapshot',
+          version: {
+            type: 'integer',
+            format: 'int32',
+            description: 'The version of the snapshot',
           },
-          'eventId': {
-            'type': 'string',
-            'description': 'The ID of the domain event stream.',
-            'minLength': 1,
+          eventId: {
+            type: 'string',
+            description: 'The ID of the domain event stream.',
+            minLength: 1,
           },
-          'firstOperator': {
-            'type': 'string',
-            'description': 'The first person who operates the aggregate is the creator',
+          firstOperator: {
+            type: 'string',
+            description:
+              'The first person who operates the aggregate is the creator',
           },
-          'operator': {
-            'type': 'string',
-            'description': 'The last person who operates the aggregate',
+          operator: {
+            type: 'string',
+            description: 'The last person who operates the aggregate',
           },
-          'firstEventTime': {
-            'type': 'integer',
-            'format': 'int64',
-            'description': 'The first event time of the aggregate, which is the time it was created',
+          firstEventTime: {
+            type: 'integer',
+            format: 'int64',
+            description:
+              'The first event time of the aggregate, which is the time it was created',
           },
-          'state': {
-            'type': 'object',
-            'description': 'The state data of the aggregate',
-            'properties': {
-              'error': {
-                '$ref': '#/components/schemas/compensation.execution_failed.ErrorDetails',
-                'readOnly': true,
+          state: {
+            type: 'object',
+            description: 'The state data of the aggregate',
+            properties: {
+              error: {
+                $ref: '#/components/schemas/compensation.execution_failed.ErrorDetails',
+                readOnly: true,
               },
-              'eventId': {
-                '$ref': '#/components/schemas/compensation.execution_failed.EventId',
-                'readOnly': true,
+              eventId: {
+                $ref: '#/components/schemas/compensation.execution_failed.EventId',
+                readOnly: true,
               },
-              'executeAt': {
-                'type': 'integer',
-                'format': 'int64',
+              executeAt: {
+                type: 'integer',
+                format: 'int64',
               },
-              'function': {
-                '$ref': '#/components/schemas/wow.api.messaging.FunctionInfoData',
-                'readOnly': true,
+              function: {
+                $ref: '#/components/schemas/wow.api.messaging.FunctionInfoData',
+                readOnly: true,
               },
-              'id': {
-                'type': 'string',
+              id: {
+                type: 'string',
               },
-              'recoverable': {
-                '$ref': '#/components/schemas/wow.api.RecoverableType',
+              recoverable: {
+                $ref: '#/components/schemas/wow.api.RecoverableType',
               },
-              'retrySpec': {
-                '$ref': '#/components/schemas/compensation.execution_failed.RetrySpec',
-                'readOnly': true,
+              retrySpec: {
+                $ref: '#/components/schemas/compensation.execution_failed.RetrySpec',
+                readOnly: true,
               },
-              'retryState': {
-                '$ref': '#/components/schemas/compensation.execution_failed.RetryState',
-                'readOnly': true,
+              retryState: {
+                $ref: '#/components/schemas/compensation.execution_failed.RetryState',
+                readOnly: true,
               },
-              'status': {
-                '$ref': '#/components/schemas/compensation.execution_failed.ExecutionFailedStatus',
+              status: {
+                $ref: '#/components/schemas/compensation.execution_failed.ExecutionFailedStatus',
               },
             },
-            'required': [
-              'id',
-            ],
+            required: ['id'],
           },
-          'deleted': {
-            'type': 'boolean',
-            'description': 'Whether the aggregate has been deleted',
+          deleted: {
+            type: 'boolean',
+            description: 'Whether the aggregate has been deleted',
           },
-          'snapshotTime': {
-            'type': 'integer',
-            'format': 'int64',
-            'description': 'The snapshot time of the aggregate',
+          snapshotTime: {
+            type: 'integer',
+            format: 'int64',
+            description: 'The snapshot time of the aggregate',
           },
         },
-        'required': [
+        required: [
           'aggregateId',
           'aggregateName',
           'contextName',
@@ -3182,58 +3019,60 @@ export const compensationOpenAPI: OpenAPI = {
         ],
       },
       'compensation.ExecutionFailedStateStateEvent': {
-        'type': 'object',
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        'properties': {
-          'id': {
-            'type': 'string',
-            'description': 'The ID of the domain event stream.',
-            'minLength': 1,
+        type: 'object',
+        $schema: 'https://json-schema.org/draft/2020-12/schema',
+        properties: {
+          id: {
+            type: 'string',
+            description: 'The ID of the domain event stream.',
+            minLength: 1,
           },
-          'contextName': {
-            'type': 'string',
-            'description': 'The name of the context to which the domain event stream belongs',
-            'minLength': 1,
+          contextName: {
+            type: 'string',
+            description:
+              'The name of the context to which the domain event stream belongs',
+            minLength: 1,
           },
-          'aggregateName': {
-            'type': 'string',
-            'description': 'The name of the aggregate to which the domain event stream belongs',
-            'minLength': 1,
+          aggregateName: {
+            type: 'string',
+            description:
+              'The name of the aggregate to which the domain event stream belongs',
+            minLength: 1,
           },
-          'header': {
-            'type': 'object',
-            'additionalProperties': true,
-            'description': 'message header',
-            'properties': {
-              'user_agent': {
-                'type': 'string',
-                'description': 'user agent',
+          header: {
+            type: 'object',
+            additionalProperties: true,
+            description: 'message header',
+            properties: {
+              user_agent: {
+                type: 'string',
+                description: 'user agent',
               },
-              'remote_ip': {
-                'type': 'string',
-                'description': 'remote ip',
+              remote_ip: {
+                type: 'string',
+                description: 'remote ip',
               },
-              'trace_id': {
-                'type': 'string',
-                'description': 'trace id',
+              trace_id: {
+                type: 'string',
+                description: 'trace id',
               },
-              'command_operator': {
-                'type': 'string',
-                'description': 'command operator',
+              command_operator: {
+                type: 'string',
+                description: 'command operator',
               },
-              'local_first': {
-                'type': 'boolean',
-                'description': 'local first',
+              local_first: {
+                type: 'boolean',
+                description: 'local first',
               },
-              'command_wait_endpoint': {
-                'type': 'string',
-                'format': 'url',
-                'description': 'command wait endpoint',
+              command_wait_endpoint: {
+                type: 'string',
+                format: 'url',
+                description: 'command wait endpoint',
               },
-              'command_wait_stage': {
-                'type': 'string',
-                'default': 'PROCESSED',
-                'enum': [
+              command_wait_stage: {
+                type: 'string',
+                default: 'PROCESSED',
+                enum: [
                   'SENT',
                   'PROCESSED',
                   'SNAPSHOT',
@@ -3244,138 +3083,134 @@ export const compensationOpenAPI: OpenAPI = {
               },
             },
           },
-          'tenantId': {
-            'type': 'string',
-            'description': 'The tenant id of the aggregate',
-            'minLength': 1,
+          tenantId: {
+            type: 'string',
+            description: 'The tenant id of the aggregate',
+            minLength: 1,
           },
-          'aggregateId': {
-            'type': 'string',
-            'description': 'The id of the aggregate',
-            'minLength': 1,
+          aggregateId: {
+            type: 'string',
+            description: 'The id of the aggregate',
+            minLength: 1,
           },
-          'ownerId': {
-            'type': 'string',
-            'default': '',
-            'description': 'The owner ID of the aggregate resource',
+          ownerId: {
+            type: 'string',
+            default: '',
+            description: 'The owner ID of the aggregate resource',
           },
-          'commandId': {
-            'type': 'string',
-            'description': 'The ID of the command message.',
-            'minLength': 1,
+          commandId: {
+            type: 'string',
+            description: 'The ID of the command message.',
+            minLength: 1,
           },
-          'requestId': {
-            'type': 'string',
-            'description': 'The request ID of the command message, which is used to check the idempotency of the command message',
-            'minLength': 1,
+          requestId: {
+            type: 'string',
+            description:
+              'The request ID of the command message, which is used to check the idempotency of the command message',
+            minLength: 1,
           },
-          'version': {
-            'type': 'integer',
-            'format': 'int32',
-            'description': 'The version of the domain event stream',
+          version: {
+            type: 'integer',
+            format: 'int32',
+            description: 'The version of the domain event stream',
           },
-          'body': {
-            'type': 'array',
-            'description': 'A list of domain events for the domain event stream',
-            'items': {
-              'type': 'object',
-              'description': 'The body of the domain event',
-              'properties': {
-                'id': {
-                  'type': 'string',
-                  'description': 'The ID of the domain event.',
-                  'minLength': 1,
+          body: {
+            type: 'array',
+            description: 'A list of domain events for the domain event stream',
+            items: {
+              type: 'object',
+              description: 'The body of the domain event',
+              properties: {
+                id: {
+                  type: 'string',
+                  description: 'The ID of the domain event.',
+                  minLength: 1,
                 },
-                'name': {
-                  'type': 'string',
-                  'description': 'The name of the domain event',
-                  'minLength': 1,
+                name: {
+                  type: 'string',
+                  description: 'The name of the domain event',
+                  minLength: 1,
                 },
-                'revision': {
-                  'type': 'string',
-                  'description': 'The revision number of the domain event',
+                revision: {
+                  type: 'string',
+                  description: 'The revision number of the domain event',
                 },
-                'bodyType': {
-                  'type': 'string',
-                  'description': 'The fully qualified name of the domain event body',
+                bodyType: {
+                  type: 'string',
+                  description:
+                    'The fully qualified name of the domain event body',
                 },
-                'body': {
-                  'type': 'object',
-                  'description': 'The message body of the domain event',
+                body: {
+                  type: 'object',
+                  description: 'The message body of the domain event',
                 },
               },
-              'required': [
-                'body',
-                'bodyType',
-                'id',
-                'name',
-                'revision',
-              ],
+              required: ['body', 'bodyType', 'id', 'name', 'revision'],
             },
-            'minItems': 1,
+            minItems: 1,
           },
-          'createTime': {
-            'type': 'integer',
-            'format': 'int64',
-            'description': 'The time when the domain event stream was created',
+          createTime: {
+            type: 'integer',
+            format: 'int64',
+            description: 'The time when the domain event stream was created',
           },
-          'firstOperator': {
-            'type': 'string',
-            'description': 'The first person who operates the aggregate is the creator',
+          firstOperator: {
+            type: 'string',
+            description:
+              'The first person who operates the aggregate is the creator',
           },
-          'firstEventTime': {
-            'type': 'integer',
-            'format': 'int64',
-            'description': 'The first event time of the aggregate, which is the time it was created',
+          firstEventTime: {
+            type: 'integer',
+            format: 'int64',
+            description:
+              'The first event time of the aggregate, which is the time it was created',
           },
-          'state': {
-            'type': 'object',
-            'description': 'The state data of the aggregate',
-            'properties': {
-              'error': {
-                '$ref': '#/components/schemas/compensation.execution_failed.ErrorDetails',
-                'readOnly': true,
+          state: {
+            type: 'object',
+            description: 'The state data of the aggregate',
+            properties: {
+              error: {
+                $ref: '#/components/schemas/compensation.execution_failed.ErrorDetails',
+                readOnly: true,
               },
-              'eventId': {
-                '$ref': '#/components/schemas/compensation.execution_failed.EventId',
-                'readOnly': true,
+              eventId: {
+                $ref: '#/components/schemas/compensation.execution_failed.EventId',
+                readOnly: true,
               },
-              'executeAt': {
-                'type': 'integer',
-                'format': 'int64',
+              executeAt: {
+                type: 'integer',
+                format: 'int64',
               },
-              'function': {
-                '$ref': '#/components/schemas/wow.api.messaging.FunctionInfoData',
-                'readOnly': true,
+              function: {
+                $ref: '#/components/schemas/wow.api.messaging.FunctionInfoData',
+                readOnly: true,
               },
-              'id': {
-                'type': 'string',
+              id: {
+                type: 'string',
               },
-              'recoverable': {
-                '$ref': '#/components/schemas/wow.api.RecoverableType',
+              recoverable: {
+                $ref: '#/components/schemas/wow.api.RecoverableType',
               },
-              'retrySpec': {
-                '$ref': '#/components/schemas/compensation.execution_failed.RetrySpec',
-                'readOnly': true,
+              retrySpec: {
+                $ref: '#/components/schemas/compensation.execution_failed.RetrySpec',
+                readOnly: true,
               },
-              'retryState': {
-                '$ref': '#/components/schemas/compensation.execution_failed.RetryState',
-                'readOnly': true,
+              retryState: {
+                $ref: '#/components/schemas/compensation.execution_failed.RetryState',
+                readOnly: true,
               },
-              'status': {
-                '$ref': '#/components/schemas/compensation.execution_failed.ExecutionFailedStatus',
+              status: {
+                $ref: '#/components/schemas/compensation.execution_failed.ExecutionFailedStatus',
               },
             },
-            'required': [
-              'id',
-            ],
+            required: ['id'],
           },
-          'deleted': {
-            'type': 'boolean',
-            'description': 'Whether the aggregate has been deleted',
+          deleted: {
+            type: 'boolean',
+            description: 'Whether the aggregate has been deleted',
           },
         },
-        'required': [
+        required: [
           'aggregateId',
           'aggregateName',
           'body',
@@ -3392,256 +3227,222 @@ export const compensationOpenAPI: OpenAPI = {
         ],
       },
       'compensation.Link': {
-        'type': 'object',
-        'properties': {
-          'href': {
-            'type': 'string',
+        type: 'object',
+        properties: {
+          href: {
+            type: 'string',
           },
-          'templated': {
-            'type': 'boolean',
+          templated: {
+            type: 'boolean',
           },
         },
       },
       'compensation.SecurityContext': {
-        'type': 'object',
+        type: 'object',
       },
       'compensation.StringLinkMap': {
-        'type': 'object',
-        'additionalProperties': {
-          '$ref': '#/components/schemas/compensation.Link',
+        type: 'object',
+        additionalProperties: {
+          $ref: '#/components/schemas/compensation.Link',
         },
       },
       'compensation.StringObjectMap': {
-        'type': 'object',
+        type: 'object',
       },
       'compensation.WebServerNamespace': {
-        'type': 'object',
-        'properties': {
-          'value': {
-            'type': 'string',
+        type: 'object',
+        properties: {
+          value: {
+            type: 'string',
           },
         },
       },
       'compensation.execution_failed.ApplyExecutionFailed': {
-        'type': 'object',
-        'properties': {
-          'error': {
-            '$ref': '#/components/schemas/compensation.execution_failed.ErrorDetails',
+        type: 'object',
+        properties: {
+          error: {
+            $ref: '#/components/schemas/compensation.execution_failed.ErrorDetails',
           },
-          'executeAt': {
-            'type': 'integer',
-            'format': 'int64',
+          executeAt: {
+            type: 'integer',
+            format: 'int64',
           },
-          'recoverable': {
-            '$ref': '#/components/schemas/wow.api.RecoverableType',
+          recoverable: {
+            $ref: '#/components/schemas/wow.api.RecoverableType',
           },
         },
-        'required': [
-          'error',
-          'executeAt',
-        ],
+        required: ['error', 'executeAt'],
       },
       'compensation.execution_failed.ApplyExecutionSuccess': {
-        'type': 'object',
-        'properties': {
-          'executeAt': {
-            'type': 'integer',
-            'format': 'int64',
+        type: 'object',
+        properties: {
+          executeAt: {
+            type: 'integer',
+            format: 'int64',
           },
         },
-        'required': [
-          'executeAt',
-        ],
+        required: ['executeAt'],
       },
       'compensation.execution_failed.ApplyRetrySpec': {
-        'type': 'object',
-        'properties': {
-          'executionTimeout': {
-            'type': 'integer',
-            'format': 'int32',
+        type: 'object',
+        properties: {
+          executionTimeout: {
+            type: 'integer',
+            format: 'int32',
           },
-          'maxRetries': {
-            'type': 'integer',
-            'format': 'int32',
+          maxRetries: {
+            type: 'integer',
+            format: 'int32',
           },
-          'minBackoff': {
-            'type': 'integer',
-            'format': 'int32',
+          minBackoff: {
+            type: 'integer',
+            format: 'int32',
           },
         },
-        'required': [
-          'executionTimeout',
-          'maxRetries',
-          'minBackoff',
-        ],
+        required: ['executionTimeout', 'maxRetries', 'minBackoff'],
       },
       'compensation.execution_failed.ChangeFunction': {
-        'type': 'object',
-        'properties': {
-          'contextName': {
-            'type': 'string',
+        type: 'object',
+        properties: {
+          contextName: {
+            type: 'string',
           },
-          'functionKind': {
-            '$ref': '#/components/schemas/wow.api.messaging.FunctionKind',
+          functionKind: {
+            $ref: '#/components/schemas/wow.api.messaging.FunctionKind',
           },
-          'name': {
-            'type': 'string',
+          name: {
+            type: 'string',
           },
-          'processorName': {
-            'type': 'string',
+          processorName: {
+            type: 'string',
           },
         },
-        'required': [
-          'contextName',
-          'functionKind',
-          'name',
-          'processorName',
-        ],
+        required: ['contextName', 'functionKind', 'name', 'processorName'],
       },
       'compensation.execution_failed.CompensationPrepared': {
-        'type': 'object',
-        'properties': {
-          'eventId': {
-            '$ref': '#/components/schemas/compensation.execution_failed.EventId',
+        type: 'object',
+        properties: {
+          eventId: {
+            $ref: '#/components/schemas/compensation.execution_failed.EventId',
           },
-          'function': {
-            '$ref': '#/components/schemas/wow.api.messaging.FunctionInfoData',
+          function: {
+            $ref: '#/components/schemas/wow.api.messaging.FunctionInfoData',
           },
-          'retryState': {
-            '$ref': '#/components/schemas/compensation.execution_failed.RetryState',
+          retryState: {
+            $ref: '#/components/schemas/compensation.execution_failed.RetryState',
           },
         },
-        'required': [
-          'eventId',
-          'function',
-          'retryState',
-        ],
+        required: ['eventId', 'function', 'retryState'],
       },
       'compensation.execution_failed.CreateExecutionFailed': {
-        'type': 'object',
-        'properties': {
-          'error': {
-            '$ref': '#/components/schemas/compensation.execution_failed.ErrorDetails',
+        type: 'object',
+        properties: {
+          error: {
+            $ref: '#/components/schemas/compensation.execution_failed.ErrorDetails',
           },
-          'eventId': {
-            '$ref': '#/components/schemas/compensation.execution_failed.EventId',
+          eventId: {
+            $ref: '#/components/schemas/compensation.execution_failed.EventId',
           },
-          'executeAt': {
-            'type': 'integer',
-            'format': 'int64',
+          executeAt: {
+            type: 'integer',
+            format: 'int64',
           },
-          'function': {
-            '$ref': '#/components/schemas/wow.api.messaging.FunctionInfoData',
+          function: {
+            $ref: '#/components/schemas/wow.api.messaging.FunctionInfoData',
           },
-          'recoverable': {
-            '$ref': '#/components/schemas/wow.api.RecoverableType',
+          recoverable: {
+            $ref: '#/components/schemas/wow.api.RecoverableType',
           },
-          'retrySpec': {
-            '$ref': '#/components/schemas/compensation.execution_failed.RetrySpec-nullable',
+          retrySpec: {
+            $ref: '#/components/schemas/compensation.execution_failed.RetrySpec-nullable',
           },
         },
-        'required': [
-          'error',
-          'eventId',
-          'executeAt',
-          'function',
-        ],
+        required: ['error', 'eventId', 'executeAt', 'function'],
       },
       'compensation.execution_failed.ErrorDetails': {
-        'type': 'object',
-        'properties': {
-          'bindingErrors': {
-            'type': 'array',
-            'items': {
-              '$ref': '#/components/schemas/wow.api.BindingError',
+        type: 'object',
+        properties: {
+          bindingErrors: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/wow.api.BindingError',
             },
           },
-          'errorCode': {
-            'type': 'string',
+          errorCode: {
+            type: 'string',
           },
-          'errorMsg': {
-            'type': 'string',
+          errorMsg: {
+            type: 'string',
           },
-          'stackTrace': {
-            'type': 'string',
+          stackTrace: {
+            type: 'string',
           },
-          'succeeded': {
-            'type': 'boolean',
-            'readOnly': true,
+          succeeded: {
+            type: 'boolean',
+            readOnly: true,
           },
         },
-        'required': [
-          'errorCode',
-          'errorMsg',
-          'stackTrace',
-        ],
+        required: ['errorCode', 'errorMsg', 'stackTrace'],
       },
       'compensation.execution_failed.EventId': {
-        'type': 'object',
-        'properties': {
-          'aggregateId': {
-            '$ref': '#/components/schemas/wow.api.modeling.AggregateId',
+        type: 'object',
+        properties: {
+          aggregateId: {
+            $ref: '#/components/schemas/wow.api.modeling.AggregateId',
           },
-          'id': {
-            'type': 'string',
+          id: {
+            type: 'string',
           },
-          'version': {
-            'type': 'integer',
-            'format': 'int32',
+          version: {
+            type: 'integer',
+            format: 'int32',
           },
         },
-        'required': [
-          'aggregateId',
-          'id',
-          'version',
-        ],
+        required: ['aggregateId', 'id', 'version'],
       },
       'compensation.execution_failed.ExecutionFailedApplied': {
-        'type': 'object',
-        'properties': {
-          'error': {
-            '$ref': '#/components/schemas/compensation.execution_failed.ErrorDetails',
+        type: 'object',
+        properties: {
+          error: {
+            $ref: '#/components/schemas/compensation.execution_failed.ErrorDetails',
           },
-          'executeAt': {
-            'type': 'integer',
-            'format': 'int64',
+          executeAt: {
+            type: 'integer',
+            format: 'int64',
           },
-          'recoverable': {
-            '$ref': '#/components/schemas/wow.api.RecoverableType',
+          recoverable: {
+            $ref: '#/components/schemas/wow.api.RecoverableType',
           },
         },
-        'required': [
-          'error',
-          'executeAt',
-        ],
+        required: ['error', 'executeAt'],
       },
       'compensation.execution_failed.ExecutionFailedCreated': {
-        'type': 'object',
-        'properties': {
-          'error': {
-            '$ref': '#/components/schemas/compensation.execution_failed.ErrorDetails',
+        type: 'object',
+        properties: {
+          error: {
+            $ref: '#/components/schemas/compensation.execution_failed.ErrorDetails',
           },
-          'eventId': {
-            '$ref': '#/components/schemas/compensation.execution_failed.EventId',
+          eventId: {
+            $ref: '#/components/schemas/compensation.execution_failed.EventId',
           },
-          'executeAt': {
-            'type': 'integer',
-            'format': 'int64',
+          executeAt: {
+            type: 'integer',
+            format: 'int64',
           },
-          'function': {
-            '$ref': '#/components/schemas/wow.api.messaging.FunctionInfoData',
+          function: {
+            $ref: '#/components/schemas/wow.api.messaging.FunctionInfoData',
           },
-          'recoverable': {
-            '$ref': '#/components/schemas/wow.api.RecoverableType',
+          recoverable: {
+            $ref: '#/components/schemas/wow.api.RecoverableType',
           },
-          'retrySpec': {
-            '$ref': '#/components/schemas/compensation.execution_failed.RetrySpec',
+          retrySpec: {
+            $ref: '#/components/schemas/compensation.execution_failed.RetrySpec',
           },
-          'retryState': {
-            '$ref': '#/components/schemas/compensation.execution_failed.RetryState',
+          retryState: {
+            $ref: '#/components/schemas/compensation.execution_failed.RetryState',
           },
         },
-        'required': [
+        required: [
           'error',
           'eventId',
           'executeAt',
@@ -3651,336 +3452,278 @@ export const compensationOpenAPI: OpenAPI = {
         ],
       },
       'compensation.execution_failed.ExecutionFailedStatus': {
-        'type': 'string',
-        'enum': [
-          'FAILED',
-          'PREPARED',
-          'SUCCEEDED',
-        ],
+        type: 'string',
+        enum: ['FAILED', 'PREPARED', 'SUCCEEDED'],
       },
       'compensation.execution_failed.ExecutionSuccessApplied': {
-        'type': 'object',
-        'properties': {
-          'executeAt': {
-            'type': 'integer',
-            'format': 'int64',
+        type: 'object',
+        properties: {
+          executeAt: {
+            type: 'integer',
+            format: 'int64',
           },
         },
-        'required': [
-          'executeAt',
-        ],
+        required: ['executeAt'],
       },
       'compensation.execution_failed.ForcePrepareCompensation': {
-        'type': 'object',
+        type: 'object',
       },
       'compensation.execution_failed.FunctionChanged': {
-        'type': 'object',
-        'properties': {
-          'contextName': {
-            'type': 'string',
+        type: 'object',
+        properties: {
+          contextName: {
+            type: 'string',
           },
-          'functionKind': {
-            '$ref': '#/components/schemas/wow.api.messaging.FunctionKind',
+          functionKind: {
+            $ref: '#/components/schemas/wow.api.messaging.FunctionKind',
           },
-          'name': {
-            'type': 'string',
+          name: {
+            type: 'string',
           },
-          'processorName': {
-            'type': 'string',
+          processorName: {
+            type: 'string',
           },
         },
-        'required': [
-          'contextName',
-          'functionKind',
-          'name',
-          'processorName',
-        ],
+        required: ['contextName', 'functionKind', 'name', 'processorName'],
       },
       'compensation.execution_failed.MarkRecoverable': {
-        'type': 'object',
-        'properties': {
-          'recoverable': {
-            '$ref': '#/components/schemas/wow.api.RecoverableType',
+        type: 'object',
+        properties: {
+          recoverable: {
+            $ref: '#/components/schemas/wow.api.RecoverableType',
           },
         },
-        'required': [
-          'recoverable',
-        ],
+        required: ['recoverable'],
       },
       'compensation.execution_failed.PrepareCompensation': {
-        'type': 'object',
+        type: 'object',
       },
       'compensation.execution_failed.RecoverableMarked': {
-        'type': 'object',
-        'properties': {
-          'recoverable': {
-            '$ref': '#/components/schemas/wow.api.RecoverableType',
+        type: 'object',
+        properties: {
+          recoverable: {
+            $ref: '#/components/schemas/wow.api.RecoverableType',
           },
         },
-        'required': [
-          'recoverable',
-        ],
+        required: ['recoverable'],
       },
       'compensation.execution_failed.RetrySpec': {
-        'type': 'object',
-        'properties': {
-          'executionTimeout': {
-            'type': 'integer',
-            'format': 'int32',
+        type: 'object',
+        properties: {
+          executionTimeout: {
+            type: 'integer',
+            format: 'int32',
           },
-          'maxRetries': {
-            'type': 'integer',
-            'format': 'int32',
+          maxRetries: {
+            type: 'integer',
+            format: 'int32',
           },
-          'minBackoff': {
-            'type': 'integer',
-            'format': 'int32',
+          minBackoff: {
+            type: 'integer',
+            format: 'int32',
           },
         },
-        'required': [
-          'executionTimeout',
-          'maxRetries',
-          'minBackoff',
-        ],
+        required: ['executionTimeout', 'maxRetries', 'minBackoff'],
       },
       'compensation.execution_failed.RetrySpec-nullable': {
-        'anyOf': [
+        anyOf: [
           {
-            'type': 'null',
+            type: 'null',
           },
           {
-            '$ref': '#/components/schemas/compensation.execution_failed.RetrySpec',
+            $ref: '#/components/schemas/compensation.execution_failed.RetrySpec',
           },
         ],
       },
       'compensation.execution_failed.RetrySpecApplied': {
-        'type': 'object',
-        'properties': {
-          'executionTimeout': {
-            'type': 'integer',
-            'format': 'int32',
+        type: 'object',
+        properties: {
+          executionTimeout: {
+            type: 'integer',
+            format: 'int32',
           },
-          'maxRetries': {
-            'type': 'integer',
-            'format': 'int32',
+          maxRetries: {
+            type: 'integer',
+            format: 'int32',
           },
-          'minBackoff': {
-            'type': 'integer',
-            'format': 'int32',
+          minBackoff: {
+            type: 'integer',
+            format: 'int32',
           },
         },
-        'required': [
-          'executionTimeout',
-          'maxRetries',
-          'minBackoff',
-        ],
+        required: ['executionTimeout', 'maxRetries', 'minBackoff'],
       },
       'compensation.execution_failed.RetryState': {
-        'type': 'object',
-        'properties': {
-          'nextRetryAt': {
-            'type': 'integer',
-            'format': 'int64',
+        type: 'object',
+        properties: {
+          nextRetryAt: {
+            type: 'integer',
+            format: 'int64',
           },
-          'retries': {
-            'type': 'integer',
-            'format': 'int32',
+          retries: {
+            type: 'integer',
+            format: 'int32',
           },
-          'retryAt': {
-            'type': 'integer',
-            'format': 'int64',
+          retryAt: {
+            type: 'integer',
+            format: 'int64',
           },
-          'timeoutAt': {
-            'type': 'integer',
-            'format': 'int64',
+          timeoutAt: {
+            type: 'integer',
+            format: 'int64',
           },
         },
-        'required': [
-          'nextRetryAt',
-          'retries',
-          'retryAt',
-          'timeoutAt',
-        ],
+        required: ['nextRetryAt', 'retries', 'retryAt', 'timeoutAt'],
       },
       'wow.MessageHeaderSqlType': {
-        'type': 'string',
-        'enum': [
-          'MAP',
-          'STRING',
-        ],
+        type: 'string',
+        enum: ['MAP', 'STRING'],
       },
       'wow.api.BindingError': {
-        'type': 'object',
-        'properties': {
-          'msg': {
-            'type': 'string',
+        type: 'object',
+        properties: {
+          msg: {
+            type: 'string',
           },
-          'name': {
-            'type': 'string',
+          name: {
+            type: 'string',
           },
         },
-        'required': [
-          'msg',
-          'name',
-        ],
+        required: ['msg', 'name'],
       },
       'wow.api.DefaultErrorInfo': {
-        'type': 'object',
-        'properties': {
-          'bindingErrors': {
-            'type': 'array',
-            'items': {
-              '$ref': '#/components/schemas/wow.api.BindingError',
+        type: 'object',
+        properties: {
+          bindingErrors: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/wow.api.BindingError',
             },
           },
-          'errorCode': {
-            'type': 'string',
+          errorCode: {
+            type: 'string',
           },
-          'errorMsg': {
-            'type': 'string',
+          errorMsg: {
+            type: 'string',
           },
-          'succeeded': {
-            'type': 'boolean',
-            'readOnly': true,
+          succeeded: {
+            type: 'boolean',
+            readOnly: true,
           },
         },
-        'required': [
-          'errorCode',
-        ],
+        required: ['errorCode'],
       },
       'wow.api.RecoverableType': {
-        'type': 'string',
-        'enum': [
-          'RECOVERABLE',
-          'UNRECOVERABLE',
-          'UNKNOWN',
-        ],
+        type: 'string',
+        enum: ['RECOVERABLE', 'UNRECOVERABLE', 'UNKNOWN'],
       },
       'wow.api.command.DefaultDeleteAggregate': {
-        'type': 'object',
+        type: 'object',
       },
       'wow.api.command.DefaultRecoverAggregate': {
-        'type': 'object',
+        type: 'object',
       },
       'wow.api.messaging.FunctionInfoData': {
-        'type': 'object',
-        'properties': {
-          'contextName': {
-            'type': 'string',
+        type: 'object',
+        properties: {
+          contextName: {
+            type: 'string',
           },
-          'functionKind': {
-            '$ref': '#/components/schemas/wow.api.messaging.FunctionKind',
+          functionKind: {
+            $ref: '#/components/schemas/wow.api.messaging.FunctionKind',
           },
-          'name': {
-            'type': 'string',
+          name: {
+            type: 'string',
           },
-          'processorName': {
-            'type': 'string',
+          processorName: {
+            type: 'string',
           },
         },
-        'required': [
-          'contextName',
-          'functionKind',
-          'name',
-          'processorName',
-        ],
+        required: ['contextName', 'functionKind', 'name', 'processorName'],
       },
       'wow.api.messaging.FunctionKind': {
-        'type': 'string',
-        'enum': [
-          'COMMAND',
-          'SOURCING',
-          'EVENT',
-          'STATE_EVENT',
-          'ERROR',
-        ],
+        type: 'string',
+        enum: ['COMMAND', 'SOURCING', 'EVENT', 'STATE_EVENT', 'ERROR'],
       },
       'wow.api.modeling.AggregateId': {
-        'type': 'object',
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        'properties': {
-          'contextName': {
-            'type': 'string',
-            'description': 'aggregate context name',
-            'minLength': 1,
+        type: 'object',
+        $schema: 'https://json-schema.org/draft/2020-12/schema',
+        properties: {
+          contextName: {
+            type: 'string',
+            description: 'aggregate context name',
+            minLength: 1,
           },
-          'aggregateName': {
-            'type': 'string',
-            'description': 'aggregate name',
-            'minLength': 1,
+          aggregateName: {
+            type: 'string',
+            description: 'aggregate name',
+            minLength: 1,
           },
-          'tenantId': {
-            'type': 'string',
-            'default': '(0)',
-            'description': 'aggregate tenant id',
-            'minLength': 1,
+          tenantId: {
+            type: 'string',
+            default: '(0)',
+            description: 'aggregate tenant id',
+            minLength: 1,
           },
-          'aggregateId': {
-            'type': 'string',
-            'description': 'aggregate id',
-            'minLength': 1,
+          aggregateId: {
+            type: 'string',
+            description: 'aggregate id',
+            minLength: 1,
           },
         },
-        'required': [
-          'aggregateId',
-          'aggregateName',
-          'contextName',
-          'tenantId',
-        ],
+        required: ['aggregateId', 'aggregateName', 'contextName', 'tenantId'],
       },
       'wow.api.query.Condition': {
-        'type': 'object',
-        'properties': {
-          'children': {
-            'type': 'array',
-            'default': '[]',
-            'items': {
-              '$ref': '#/components/schemas/wow.api.query.Condition',
+        type: 'object',
+        properties: {
+          children: {
+            type: 'array',
+            default: '[]',
+            items: {
+              $ref: '#/components/schemas/wow.api.query.Condition',
             },
           },
-          'field': {
-            'type': 'string',
+          field: {
+            type: 'string',
           },
-          'operator': {
-            '$ref': '#/components/schemas/wow.api.query.Operator',
-            'default': 'ALL',
+          operator: {
+            $ref: '#/components/schemas/wow.api.query.Operator',
+            default: 'ALL',
           },
-          'options': {
-            '$ref': '#/components/schemas/compensation.StringObjectMap',
-            'default': '{}',
+          options: {
+            $ref: '#/components/schemas/compensation.StringObjectMap',
+            default: '{}',
           },
-          'value': {},
+          value: {},
         },
       },
       'wow.api.query.ListQuery': {
-        'type': 'object',
-        'properties': {
-          'condition': {
-            '$ref': '#/components/schemas/wow.api.query.Condition',
+        type: 'object',
+        properties: {
+          condition: {
+            $ref: '#/components/schemas/wow.api.query.Condition',
           },
-          'limit': {
-            'type': 'integer',
-            'format': 'int32',
-            'default': '10',
+          limit: {
+            type: 'integer',
+            format: 'int32',
+            default: '10',
           },
-          'projection': {
-            '$ref': '#/components/schemas/wow.api.query.Projection',
+          projection: {
+            $ref: '#/components/schemas/wow.api.query.Projection',
           },
-          'sort': {
-            'type': 'array',
-            'default': '[]',
-            'items': {
-              '$ref': '#/components/schemas/wow.api.query.Sort',
+          sort: {
+            type: 'array',
+            default: '[]',
+            items: {
+              $ref: '#/components/schemas/wow.api.query.Sort',
             },
           },
         },
-        'required': [
-          'condition',
-        ],
+        required: ['condition'],
       },
       'wow.api.query.Operator': {
-        'type': 'string',
-        'enum': [
+        type: 'string',
+        enum: [
           'AND',
           'OR',
           'NOR',
@@ -4025,154 +3768,140 @@ export const compensationOpenAPI: OpenAPI = {
         ],
       },
       'wow.api.query.PagedQuery': {
-        'type': 'object',
-        'properties': {
-          'condition': {
-            '$ref': '#/components/schemas/wow.api.query.Condition',
+        type: 'object',
+        properties: {
+          condition: {
+            $ref: '#/components/schemas/wow.api.query.Condition',
           },
-          'pagination': {
-            '$ref': '#/components/schemas/wow.api.query.Pagination',
+          pagination: {
+            $ref: '#/components/schemas/wow.api.query.Pagination',
           },
-          'projection': {
-            '$ref': '#/components/schemas/wow.api.query.Projection',
+          projection: {
+            $ref: '#/components/schemas/wow.api.query.Projection',
           },
-          'sort': {
-            'type': 'array',
-            'default': '[]',
-            'items': {
-              '$ref': '#/components/schemas/wow.api.query.Sort',
+          sort: {
+            type: 'array',
+            default: '[]',
+            items: {
+              $ref: '#/components/schemas/wow.api.query.Sort',
             },
           },
         },
-        'required': [
-          'condition',
-        ],
+        required: ['condition'],
       },
       'wow.api.query.Pagination': {
-        'type': 'object',
-        'properties': {
-          'index': {
-            'type': 'integer',
-            'format': 'int32',
-            'default': '1',
+        type: 'object',
+        properties: {
+          index: {
+            type: 'integer',
+            format: 'int32',
+            default: '1',
           },
-          'size': {
-            'type': 'integer',
-            'format': 'int32',
-            'default': '10',
+          size: {
+            type: 'integer',
+            format: 'int32',
+            default: '10',
           },
         },
-        'required': [
-          'index',
-          'size',
-        ],
+        required: ['index', 'size'],
       },
       'wow.api.query.Projection': {
-        'type': 'object',
-        'properties': {
-          'exclude': {
-            'type': 'array',
-            'default': '[]',
-            'items': {
-              'type': 'string',
+        type: 'object',
+        properties: {
+          exclude: {
+            type: 'array',
+            default: '[]',
+            items: {
+              type: 'string',
             },
           },
-          'include': {
-            'type': 'array',
-            'default': '[]',
-            'items': {
-              'type': 'string',
+          include: {
+            type: 'array',
+            default: '[]',
+            items: {
+              type: 'string',
             },
           },
         },
       },
       'wow.api.query.Sort': {
-        'type': 'object',
-        'properties': {
-          'direction': {
-            '$ref': '#/components/schemas/wow.api.query.Sort.Direction',
+        type: 'object',
+        properties: {
+          direction: {
+            $ref: '#/components/schemas/wow.api.query.Sort.Direction',
           },
-          'field': {
-            'type': 'string',
+          field: {
+            type: 'string',
           },
         },
-        'required': [
-          'direction',
-          'field',
-        ],
+        required: ['direction', 'field'],
       },
       'wow.api.query.Sort.Direction': {
-        'type': 'string',
-        'enum': [
-          'ASC',
-          'DESC',
-        ],
+        type: 'string',
+        enum: ['ASC', 'DESC'],
       },
       'wow.command.CommandResult': {
-        'type': 'object',
-        'properties': {
-          'aggregateId': {
-            'type': 'string',
+        type: 'object',
+        properties: {
+          aggregateId: {
+            type: 'string',
           },
-          'aggregateName': {
-            'type': 'string',
+          aggregateName: {
+            type: 'string',
           },
-          'aggregateVersion': {
-            'type': [
-              'integer',
-              'null',
-            ],
-            'format': 'int32',
+          aggregateVersion: {
+            type: ['integer', 'null'],
+            format: 'int32',
           },
-          'bindingErrors': {
-            'type': 'array',
-            'items': {
-              '$ref': '#/components/schemas/wow.api.BindingError',
+          bindingErrors: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/wow.api.BindingError',
             },
           },
-          'commandId': {
-            'type': 'string',
+          commandId: {
+            type: 'string',
           },
-          'contextName': {
-            'type': 'string',
+          contextName: {
+            type: 'string',
           },
-          'errorCode': {
-            'type': 'string',
+          errorCode: {
+            type: 'string',
           },
-          'errorMsg': {
-            'type': 'string',
+          errorMsg: {
+            type: 'string',
           },
-          'function': {
-            '$ref': '#/components/schemas/wow.api.messaging.FunctionInfoData',
+          function: {
+            $ref: '#/components/schemas/wow.api.messaging.FunctionInfoData',
           },
-          'id': {
-            'type': 'string',
+          id: {
+            type: 'string',
           },
-          'requestId': {
-            'type': 'string',
+          requestId: {
+            type: 'string',
           },
-          'result': {
-            '$ref': '#/components/schemas/compensation.StringObjectMap',
+          result: {
+            $ref: '#/components/schemas/compensation.StringObjectMap',
           },
-          'signalTime': {
-            'type': 'integer',
-            'format': 'int64',
+          signalTime: {
+            type: 'integer',
+            format: 'int64',
           },
-          'stage': {
-            '$ref': '#/components/schemas/wow.command.CommandStage',
+          stage: {
+            $ref: '#/components/schemas/wow.command.CommandStage',
           },
-          'tenantId': {
-            'type': 'string',
+          tenantId: {
+            type: 'string',
           },
-          'waitCommandId': {
-            'type': 'string',
+          waitCommandId: {
+            type: 'string',
           },
-          'succeeded': {
-            'type': 'boolean',
-            'readOnly': true,
+          succeeded: {
+            type: 'boolean',
+            readOnly: true,
           },
         },
-        'required': [
+        required: [
           'aggregateId',
           'aggregateName',
           'commandId',
@@ -4186,8 +3915,8 @@ export const compensationOpenAPI: OpenAPI = {
         ],
       },
       'wow.command.CommandStage': {
-        'type': 'string',
-        'enum': [
+        type: 'string',
+        enum: [
           'SENT',
           'PROCESSED',
           'SNAPSHOT',
@@ -4197,64 +3926,61 @@ export const compensationOpenAPI: OpenAPI = {
         ],
       },
       'wow.command.SimpleWaitSignal': {
-        'type': 'object',
-        'properties': {
-          'aggregateId': {
-            '$ref': '#/components/schemas/wow.api.modeling.AggregateId',
+        type: 'object',
+        properties: {
+          aggregateId: {
+            $ref: '#/components/schemas/wow.api.modeling.AggregateId',
           },
-          'aggregateVersion': {
-            'type': [
-              'integer',
-              'null',
-            ],
-            'format': 'int32',
+          aggregateVersion: {
+            type: ['integer', 'null'],
+            format: 'int32',
           },
-          'bindingErrors': {
-            'type': 'array',
-            'items': {
-              '$ref': '#/components/schemas/wow.api.BindingError',
+          bindingErrors: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/wow.api.BindingError',
             },
           },
-          'commandId': {
-            'type': 'string',
+          commandId: {
+            type: 'string',
           },
-          'commands': {
-            'type': 'array',
-            'items': {
-              'type': 'string',
+          commands: {
+            type: 'array',
+            items: {
+              type: 'string',
             },
           },
-          'errorCode': {
-            'type': 'string',
+          errorCode: {
+            type: 'string',
           },
-          'errorMsg': {
-            'type': 'string',
+          errorMsg: {
+            type: 'string',
           },
-          'function': {
-            '$ref': '#/components/schemas/wow.api.messaging.FunctionInfoData',
+          function: {
+            $ref: '#/components/schemas/wow.api.messaging.FunctionInfoData',
           },
-          'id': {
-            'type': 'string',
+          id: {
+            type: 'string',
           },
-          'result': {
-            '$ref': '#/components/schemas/compensation.StringObjectMap',
+          result: {
+            $ref: '#/components/schemas/compensation.StringObjectMap',
           },
-          'signalTime': {
-            'type': 'integer',
-            'format': 'int64',
+          signalTime: {
+            type: 'integer',
+            format: 'int64',
           },
-          'stage': {
-            '$ref': '#/components/schemas/wow.command.CommandStage',
+          stage: {
+            $ref: '#/components/schemas/wow.command.CommandStage',
           },
-          'waitCommandId': {
-            'type': 'string',
+          waitCommandId: {
+            type: 'string',
           },
-          'succeeded': {
-            'type': 'boolean',
-            'readOnly': true,
+          succeeded: {
+            type: 'boolean',
+            readOnly: true,
           },
         },
-        'required': [
+        required: [
           'aggregateId',
           'commandId',
           'function',
@@ -4264,161 +3990,145 @@ export const compensationOpenAPI: OpenAPI = {
         ],
       },
       'wow.configuration.Aggregate': {
-        'type': 'object',
-        'properties': {
-          'commands': {
-            'type': 'array',
-            'items': {
-              'type': 'string',
+        type: 'object',
+        properties: {
+          commands: {
+            type: 'array',
+            items: {
+              type: 'string',
             },
           },
-          'events': {
-            'type': 'array',
-            'items': {
-              'type': 'string',
+          events: {
+            type: 'array',
+            items: {
+              type: 'string',
             },
           },
-          'id': {
-            'type': [
-              'string',
-              'null',
-            ],
+          id: {
+            type: ['string', 'null'],
           },
-          'scopes': {
-            'type': 'array',
-            'items': {
-              'type': 'string',
+          scopes: {
+            type: 'array',
+            items: {
+              type: 'string',
             },
           },
-          'tenantId': {
-            'type': [
-              'string',
-              'null',
-            ],
+          tenantId: {
+            type: ['string', 'null'],
           },
-          'type': {
-            'type': [
-              'string',
-              'null',
-            ],
+          type: {
+            type: ['string', 'null'],
           },
         },
       },
       'wow.configuration.BoundedContext': {
-        'type': 'object',
-        'properties': {
-          'aggregates': {
-            '$ref': '#/components/schemas/wow.configuration.StringAggregateMap',
+        type: 'object',
+        properties: {
+          aggregates: {
+            $ref: '#/components/schemas/wow.configuration.StringAggregateMap',
           },
-          'alias': {
-            'type': [
-              'string',
-              'null',
-            ],
+          alias: {
+            type: ['string', 'null'],
           },
-          'description': {
-            'type': 'string',
+          description: {
+            type: 'string',
           },
-          'scopes': {
-            'type': 'array',
-            'items': {
-              'type': 'string',
+          scopes: {
+            type: 'array',
+            items: {
+              type: 'string',
             },
           },
         },
       },
       'wow.configuration.StringAggregateMap': {
-        'type': 'object',
-        'additionalProperties': {
-          '$ref': '#/components/schemas/wow.configuration.Aggregate',
+        type: 'object',
+        additionalProperties: {
+          $ref: '#/components/schemas/wow.configuration.Aggregate',
         },
       },
       'wow.configuration.StringBoundedContextMap': {
-        'type': 'object',
-        'additionalProperties': {
-          '$ref': '#/components/schemas/wow.configuration.BoundedContext',
+        type: 'object',
+        additionalProperties: {
+          $ref: '#/components/schemas/wow.configuration.BoundedContext',
         },
       },
       'wow.configuration.WowMetadata': {
-        'type': 'object',
-        'properties': {
-          'contexts': {
-            '$ref': '#/components/schemas/wow.configuration.StringBoundedContextMap',
+        type: 'object',
+        properties: {
+          contexts: {
+            $ref: '#/components/schemas/wow.configuration.StringBoundedContextMap',
           },
         },
       },
       'wow.messaging.CompensationTarget': {
-        'type': 'object',
-        'properties': {
-          'function': {
-            '$ref': '#/components/schemas/wow.api.messaging.FunctionInfoData',
+        type: 'object',
+        properties: {
+          function: {
+            $ref: '#/components/schemas/wow.api.messaging.FunctionInfoData',
           },
-          'id': {
-            'type': 'string',
+          id: {
+            type: 'string',
           },
         },
-        'required': [
-          'function',
-        ],
+        required: ['function'],
       },
       'wow.openapi.BatchResult': {
-        'type': 'object',
-        'properties': {
-          'afterId': {
-            'type': 'string',
+        type: 'object',
+        properties: {
+          afterId: {
+            type: 'string',
           },
-          'errorCode': {
-            'type': 'string',
+          errorCode: {
+            type: 'string',
           },
-          'errorMsg': {
-            'type': 'string',
+          errorMsg: {
+            type: 'string',
           },
-          'size': {
-            'type': 'integer',
-            'format': 'int32',
+          size: {
+            type: 'integer',
+            format: 'int32',
           },
-          'bindingErrors': {
-            'type': 'array',
-            'items': {
-              '$ref': '#/components/schemas/wow.api.BindingError',
+          bindingErrors: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/wow.api.BindingError',
             },
-            'readOnly': true,
+            readOnly: true,
           },
-          'succeeded': {
-            'type': 'boolean',
-            'readOnly': true,
+          succeeded: {
+            type: 'boolean',
+            readOnly: true,
           },
         },
-        'required': [
-          'afterId',
-          'size',
-        ],
+        required: ['afterId', 'size'],
       },
     },
-    'responses': {
+    responses: {
       'wow.CommandOk': {
-        'description': '',
-        'headers': {
+        description: '',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.command.CommandResult',
+            schema: {
+              $ref: '#/components/schemas/wow.command.CommandResult',
             },
           },
           'text/event-stream': {
-            'schema': {
-              'anyOf': [
+            schema: {
+              anyOf: [
                 {
-                  '$ref': '#/components/schemas/wow.command.CommandResult',
+                  $ref: '#/components/schemas/wow.command.CommandResult',
                 },
                 {
-                  'type': 'string',
-                  'description': 'This value is returned when the task fails to be executed',
-                  'title': 'error',
+                  type: 'string',
+                  description:
+                    'This value is returned when the task fails to be executed',
+                  title: 'error',
                 },
               ],
             },
@@ -4426,514 +4136,516 @@ export const compensationOpenAPI: OpenAPI = {
         },
       },
       'wow.CommandBadRequest': {
-        'description': 'Command Bad Request',
-        'headers': {
+        description: 'Command Bad Request',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.command.CommandResult',
+            schema: {
+              $ref: '#/components/schemas/wow.command.CommandResult',
             },
           },
         },
       },
       'wow.CommandNotFound': {
-        'description': 'Aggregate Not Found',
-        'headers': {
+        description: 'Aggregate Not Found',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.command.CommandResult',
+            schema: {
+              $ref: '#/components/schemas/wow.command.CommandResult',
             },
           },
         },
       },
       'wow.CommandVersionConflict': {
-        'description': 'Command Version Conflict',
-        'headers': {
+        description: 'Command Version Conflict',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.command.CommandResult',
+            schema: {
+              $ref: '#/components/schemas/wow.command.CommandResult',
             },
           },
         },
       },
       'wow.CommandTooManyRequests': {
-        'description': 'Command Too Many Requests',
-        'headers': {
+        description: 'Command Too Many Requests',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.command.CommandResult',
+            schema: {
+              $ref: '#/components/schemas/wow.command.CommandResult',
             },
           },
         },
       },
       'wow.CommandRequestTimeout': {
-        'description': 'Command Request Timeout',
-        'headers': {
+        description: 'Command Request Timeout',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.command.CommandResult',
+            schema: {
+              $ref: '#/components/schemas/wow.command.CommandResult',
             },
           },
         },
       },
       'wow.CommandIllegalAccessDeletedAggregate': {
-        'description': 'Illegal Access Deleted Aggregate',
-        'headers': {
+        description: 'Illegal Access Deleted Aggregate',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.command.CommandResult',
+            schema: {
+              $ref: '#/components/schemas/wow.command.CommandResult',
             },
           },
         },
       },
       'wow.BadRequest': {
-        'description': 'Bad Request',
-        'headers': {
+        description: 'Bad Request',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.api.DefaultErrorInfo',
+            schema: {
+              $ref: '#/components/schemas/wow.api.DefaultErrorInfo',
             },
           },
         },
       },
       'wow.NotFound': {
-        'description': 'Not Found',
-        'headers': {
+        description: 'Not Found',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.api.DefaultErrorInfo',
+            schema: {
+              $ref: '#/components/schemas/wow.api.DefaultErrorInfo',
             },
           },
         },
       },
       'wow.CountQuery': {
-        'headers': {
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              'type': 'integer',
-              'format': 'int64',
+            schema: {
+              type: 'integer',
+              format: 'int64',
             },
           },
         },
       },
       'wow.RequestTimeout': {
-        'description': 'Request Timeout',
-        'headers': {
+        description: 'Request Timeout',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.api.DefaultErrorInfo',
+            schema: {
+              $ref: '#/components/schemas/wow.api.DefaultErrorInfo',
             },
           },
         },
       },
       'wow.TooManyRequests': {
-        'description': 'Too Many Requests',
-        'headers': {
+        description: 'Too Many Requests',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.api.DefaultErrorInfo',
+            schema: {
+              $ref: '#/components/schemas/wow.api.DefaultErrorInfo',
             },
           },
         },
       },
       'wow.CompensationTarget': {
-        'description': 'Number of event streams compensated',
-        'headers': {
+        description: 'Number of event streams compensated',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'text/plain': {
-            'schema': {
-              'type': 'integer',
-              'format': 'int32',
+            schema: {
+              type: 'integer',
+              format: 'int32',
             },
           },
         },
       },
       'wow.BatchResult': {
-        'description': 'Batch Result',
-        'headers': {
+        description: 'Batch Result',
+        headers: {
           'Wow-Error-Code': {
-            '$ref': '#/components/headers/wow.Wow-Error-Code',
+            $ref: '#/components/headers/wow.Wow-Error-Code',
           },
         },
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.openapi.BatchResult',
+            schema: {
+              $ref: '#/components/schemas/wow.openapi.BatchResult',
             },
           },
         },
       },
     },
-    'parameters': {
+    parameters: {
       'wow.Command-Type': {
-        'name': 'Command-Type',
-        'in': 'header',
-        'description': 'The fully qualified name of the command message body',
-        'required': true,
-        'schema': {
-          'type': 'string',
+        name: 'Command-Type',
+        in: 'header',
+        description: 'The fully qualified name of the command message body',
+        required: true,
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Wait-Stage': {
-        'name': 'Command-Wait-Stage',
-        'in': 'header',
-        'schema': {
-          '$ref': '#/components/schemas/wow.command.CommandStage',
+        name: 'Command-Wait-Stage',
+        in: 'header',
+        schema: {
+          $ref: '#/components/schemas/wow.command.CommandStage',
         },
       },
       'wow.Command-Wait-Context': {
-        'name': 'Command-Wait-Context',
-        'in': 'header',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Wait-Context',
+        in: 'header',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Wait-Processor': {
-        'name': 'Command-Wait-Processor',
-        'in': 'header',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Wait-Processor',
+        in: 'header',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Wait-Function': {
-        'name': 'Command-Wait-Function',
-        'in': 'header',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Wait-Function',
+        in: 'header',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Wait-Timout': {
-        'name': 'Command-Wait-Timout',
-        'in': 'header',
-        'description': 'Command timeout period. Milliseconds',
-        'schema': {
-          'type': 'integer',
-          'format': 'int32',
+        name: 'Command-Wait-Timout',
+        in: 'header',
+        description: 'Command timeout period. Milliseconds',
+        schema: {
+          type: 'integer',
+          format: 'int32',
         },
       },
       'wow.Command-Wait-Tail-Stage': {
-        'name': 'Command-Wait-Tail-Stage',
-        'in': 'header',
-        'schema': {
-          '$ref': '#/components/schemas/wow.command.CommandStage',
+        name: 'Command-Wait-Tail-Stage',
+        in: 'header',
+        schema: {
+          $ref: '#/components/schemas/wow.command.CommandStage',
         },
       },
       'wow.Command-Wait-Tail-Context': {
-        'name': 'Command-Wait-Tail-Context',
-        'in': 'header',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Wait-Tail-Context',
+        in: 'header',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Wait-Tail-Processor': {
-        'name': 'Command-Wait-Tail-Processor',
-        'in': 'header',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Wait-Tail-Processor',
+        in: 'header',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Wait-Tail-Function': {
-        'name': 'Command-Wait-Tail-Function',
-        'in': 'header',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Wait-Tail-Function',
+        in: 'header',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Aggregate-Id': {
-        'name': 'Command-Aggregate-Id',
-        'in': 'header',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Aggregate-Id',
+        in: 'header',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Aggregate-Version': {
-        'name': 'Command-Aggregate-Version',
-        'in': 'header',
-        'description': 'The version of the target aggregate, which is used to control version conflicts',
-        'schema': {
-          'type': 'integer',
-          'format': 'int32',
+        name: 'Command-Aggregate-Version',
+        in: 'header',
+        description:
+          'The version of the target aggregate, which is used to control version conflicts',
+        schema: {
+          type: 'integer',
+          format: 'int32',
         },
       },
       'wow.Command-Request-Id': {
-        'name': 'Command-Request-Id',
-        'in': 'header',
-        'description': 'The request ID of the command message, which is used to check the idempotency of the command message',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Request-Id',
+        in: 'header',
+        description:
+          'The request ID of the command message, which is used to check the idempotency of the command message',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Local-First': {
-        'name': 'Command-Local-First',
-        'in': 'header',
-        'description': 'Whether to enable local priority mode, if false, it will be turned off, and the default is true.',
-        'schema': {
-          'type': 'boolean',
+        name: 'Command-Local-First',
+        in: 'header',
+        description:
+          'Whether to enable local priority mode, if false, it will be turned off, and the default is true.',
+        schema: {
+          type: 'boolean',
         },
       },
       'wow.Accept': {
-        'name': 'Accept',
-        'in': 'header',
-        'schema': {
-          'type': 'string',
-          'default': 'application/json',
-          'enum': [
-            'application/json',
-            'text/event-stream',
-          ],
+        name: 'Accept',
+        in: 'header',
+        schema: {
+          type: 'string',
+          default: 'application/json',
+          enum: ['application/json', 'text/event-stream'],
         },
       },
       'wow.Command-Tenant-Id': {
-        'name': 'Command-Tenant-Id',
-        'in': 'header',
-        'description': 'The tenant ID of the aggregate',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Tenant-Id',
+        in: 'header',
+        description: 'The tenant ID of the aggregate',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Owner-Id': {
-        'name': 'Command-Owner-Id',
-        'in': 'header',
-        'description': 'The owner ID of the aggregate resource',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Owner-Id',
+        in: 'header',
+        description: 'The owner ID of the aggregate resource',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Aggregate-Context': {
-        'name': 'Command-Aggregate-Context',
-        'in': 'header',
-        'description': 'The name of the context to which the command message belongs',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Aggregate-Context',
+        in: 'header',
+        description:
+          'The name of the context to which the command message belongs',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Command-Aggregate-Name': {
-        'name': 'Command-Aggregate-Name',
-        'in': 'header',
-        'description': 'The name of the aggregate to which the command message belongs',
-        'schema': {
-          'type': 'string',
+        name: 'Command-Aggregate-Name',
+        in: 'header',
+        description:
+          'The name of the aggregate to which the command message belongs',
+        schema: {
+          type: 'string',
         },
       },
       'wow.Wow-BI-Header-Sql-Type': {
-        'name': 'Wow-BI-Header-Sql-Type',
-        'in': 'header',
-        'description': 'The type of BI Message header.',
-        'schema': {
-          '$ref': '#/components/schemas/wow.MessageHeaderSqlType',
+        name: 'Wow-BI-Header-Sql-Type',
+        in: 'header',
+        description: 'The type of BI Message header.',
+        schema: {
+          $ref: '#/components/schemas/wow.MessageHeaderSqlType',
         },
       },
       'wow.id': {
-        'name': 'id',
-        'in': 'path',
-        'required': true,
-        'schema': {
-          'type': 'string',
-          'description': 'aggregate id',
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: {
+          type: 'string',
+          description: 'aggregate id',
         },
       },
       'wow.version': {
-        'name': 'version',
-        'in': 'path',
-        'required': true,
-        'schema': {
-          'type': 'integer',
-          'format': 'int32',
-          'description': 'aggregate version',
-          'example': 2147483646,
+        name: 'version',
+        in: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+          format: 'int32',
+          description: 'aggregate version',
+          example: 2147483646,
         },
       },
       'wow.createTime': {
-        'name': 'createTime',
-        'in': 'path',
-        'required': true,
-        'schema': {
-          'type': 'integer',
-          'format': 'int32',
+        name: 'createTime',
+        in: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+          format: 'int32',
         },
       },
       'wow.afterId': {
-        'name': 'afterId',
-        'in': 'path',
-        'required': true,
-        'schema': {
-          'type': 'string',
-          'description': 'The ID of the last record in the batch.',
-          'example': '(0)',
+        name: 'afterId',
+        in: 'path',
+        required: true,
+        schema: {
+          type: 'string',
+          description: 'The ID of the last record in the batch.',
+          example: '(0)',
         },
       },
       'wow.limit': {
-        'name': 'limit',
-        'in': 'path',
-        'required': true,
-        'schema': {
-          'type': 'integer',
-          'format': 'int32',
-          'description': 'The size of batch.',
-          'example': 2147483646,
+        name: 'limit',
+        in: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+          format: 'int32',
+          description: 'The size of batch.',
+          example: 2147483646,
         },
       },
       'wow.headVersion': {
-        'name': 'headVersion',
-        'in': 'path',
-        'required': true,
-        'schema': {
-          'type': 'integer',
-          'format': 'int32',
-          'description': 'The head version of the aggregate.',
-          'example': 1,
+        name: 'headVersion',
+        in: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+          format: 'int32',
+          description: 'The head version of the aggregate.',
+          example: 1,
         },
       },
       'wow.tailVersion': {
-        'name': 'tailVersion',
-        'in': 'path',
-        'required': true,
-        'schema': {
-          'type': 'integer',
-          'format': 'int32',
-          'description': 'The tail version of the aggregate.',
-          'example': 2147483646,
+        name: 'tailVersion',
+        in: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+          format: 'int32',
+          description: 'The tail version of the aggregate.',
+          example: 2147483646,
         },
       },
     },
-    'requestBodies': {
+    requestBodies: {
       'compensation.execution_failed.CountQuery': {
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedCondition',
+            schema: {
+              $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedCondition',
             },
           },
         },
       },
       'compensation.execution_failed.ListQuery': {
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedListQuery',
+            schema: {
+              $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedListQuery',
             },
           },
         },
       },
       'compensation.execution_failed.PagedQuery': {
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedPagedQuery',
+            schema: {
+              $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedPagedQuery',
             },
           },
         },
       },
       'compensation.execution_failed.SingleQuery': {
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/compensation.ExecutionFailedAggregatedSingleQuery',
+            schema: {
+              $ref: '#/components/schemas/compensation.ExecutionFailedAggregatedSingleQuery',
             },
           },
         },
       },
       'wow.ListQuery': {
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.api.query.ListQuery',
+            schema: {
+              $ref: '#/components/schemas/wow.api.query.ListQuery',
             },
           },
         },
       },
       'wow.PagedQuery': {
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.api.query.PagedQuery',
+            schema: {
+              $ref: '#/components/schemas/wow.api.query.PagedQuery',
             },
           },
         },
       },
       'wow.CountQuery': {
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.api.query.Condition',
+            schema: {
+              $ref: '#/components/schemas/wow.api.query.Condition',
             },
           },
         },
       },
       'wow.CompensationTarget': {
-        'content': {
+        content: {
           'application/json': {
-            'schema': {
-              '$ref': '#/components/schemas/wow.messaging.CompensationTarget',
+            schema: {
+              $ref: '#/components/schemas/wow.messaging.CompensationTarget',
             },
           },
         },
       },
     },
-    'headers': {
+    headers: {
       'wow.Wow-Error-Code': {
-        'description': 'Error code',
-        'schema': {
-          'type': 'string',
-          'example': 'Ok',
+        description: 'Error code',
+        schema: {
+          type: 'string',
+          example: 'Ok',
         },
       },
     },

@@ -39,7 +39,6 @@ pnpm add @ahoo-wang/fetcher-cosec
 yarn add @ahoo-wang/fetcher-cosec
 ```
 
-
 ### Basic Setup
 
 ```typescript

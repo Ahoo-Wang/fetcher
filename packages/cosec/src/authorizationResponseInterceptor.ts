@@ -13,20 +13,20 @@
 
 import { ResponseCodes } from './types';
 import { FetchExchange, type ResponseInterceptor } from '@ahoo-wang/fetcher';
-import {
-  AuthorizationInterceptorOptions,
-} from './authorizationRequestInterceptor';
+import { AuthorizationInterceptorOptions } from './authorizationRequestInterceptor';
 
 /**
  * The name of the AuthorizationResponseInterceptor.
  */
-export const AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME = 'AuthorizationResponseInterceptor';
+export const AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME =
+  'AuthorizationResponseInterceptor';
 
 /**
  * The order of the AuthorizationResponseInterceptor.
  * Set to a high negative value to ensure it runs early in the interceptor chain.
  */
-export const AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
+export const AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER =
+  Number.MIN_SAFE_INTEGER + 1000;
 
 /**
  * CoSecResponseInterceptor is responsible for handling unauthorized responses (401)

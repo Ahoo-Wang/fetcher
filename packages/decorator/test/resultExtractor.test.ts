@@ -11,7 +11,6 @@ import {
 } from '@ahoo-wang/fetcher-eventstream';
 import { ResultExtractors } from '../src';
 
-
 describe('ResultExtractors', () => {
   it('should contain all expected result extractors', () => {
     expect(ResultExtractors.Exchange).toBe(ExchangeResultExtractor);
@@ -19,7 +18,9 @@ describe('ResultExtractors', () => {
     expect(ResultExtractors.Json).toBe(JsonResultExtractor);
     expect(ResultExtractors.Text).toBe(TextResultExtractor);
     expect(ResultExtractors.EventStream).toBe(EventStreamResultExtractor);
-    expect(ResultExtractors.JsonEventStream).toBe(JsonEventStreamResultExtractor);
+    expect(ResultExtractors.JsonEventStream).toBe(
+      JsonEventStreamResultExtractor,
+    );
     expect(ResultExtractors.DEFAULT).toBe(JsonResultExtractor);
   });
 });

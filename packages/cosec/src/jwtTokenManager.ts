@@ -30,7 +30,6 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
     public readonly tokenStorage: TokenStorage,
     public readonly tokenRefresher: TokenRefresher,
   ) {
-
   }
 
   /**
@@ -59,7 +58,8 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
       return this.refreshInProgress;
     }
 
-    this.refreshInProgress = this.tokenRefresher.refresh(currentToken)
+    this.refreshInProgress = this.tokenRefresher
+      .refresh(currentToken)
       .then(newToken => {
         this.tokenStorage.setCompositeToken(newToken);
       })
@@ -95,5 +95,4 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
     }
     return this.currentToken.isRefreshable;
   }
-
 }

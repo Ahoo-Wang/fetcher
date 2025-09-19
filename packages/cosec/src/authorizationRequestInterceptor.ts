@@ -12,15 +12,21 @@
  */
 
 import { FetchExchange, RequestInterceptor } from '@ahoo-wang/fetcher';
-import { COSEC_REQUEST_INTERCEPTOR_ORDER, IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from './cosecRequestInterceptor';
+import {
+  COSEC_REQUEST_INTERCEPTOR_ORDER,
+  IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
+} from './cosecRequestInterceptor';
 import { CoSecHeaders, JwtTokenManagerCapable } from './types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface AuthorizationInterceptorOptions extends JwtTokenManagerCapable {
+export interface AuthorizationInterceptorOptions
+  extends JwtTokenManagerCapable {
 }
 
-export const AUTHORIZATION_REQUEST_INTERCEPTOR_NAME = 'AuthorizationRequestInterceptor';
-export const AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER = COSEC_REQUEST_INTERCEPTOR_ORDER + 1000;
+export const AUTHORIZATION_REQUEST_INTERCEPTOR_NAME =
+  'AuthorizationRequestInterceptor';
+export const AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER =
+  COSEC_REQUEST_INTERCEPTOR_ORDER + 1000;
 
 /**
  * Request interceptor that automatically adds Authorization header to requests.
@@ -67,7 +73,11 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
     }
 
     // Refresh token if needed and refreshable
-    if (!exchange.attributes.has(IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY) && currentToken.isRefreshNeeded && currentToken.isRefreshable) {
+    if (
+      !exchange.attributes.has(IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY) &&
+      currentToken.isRefreshNeeded &&
+      currentToken.isRefreshable
+    ) {
       await this.options.tokenManager.refresh();
     }
 
@@ -76,8 +86,8 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
 
     // Add Authorization header if we have a token
     if (currentToken) {
-      requestHeaders[CoSecHeaders.AUTHORIZATION] = `Bearer ${currentToken.access.token}`;
+      requestHeaders[CoSecHeaders.AUTHORIZATION] =
+        `Bearer ${currentToken.access.token}`;
     }
-
   }
 }

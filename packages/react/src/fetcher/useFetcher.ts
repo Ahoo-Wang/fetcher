@@ -15,7 +15,8 @@ import {
   fetcher as defaultFetcher,
   FetcherCapable,
   FetchExchange,
-  FetchRequest, getFetcher,
+  FetchRequest,
+  getFetcher,
   RequestOptions,
 } from '@ahoo-wang/fetcher';
 import { useRef, useCallback, useEffect, useState } from 'react';
@@ -60,11 +61,16 @@ export interface UseFetcherResult<R> {
   cancel: () => void;
 }
 
-export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions): UseFetcherResult<R> {
+export function useFetcher<R>(
+  request: FetchRequest,
+  options?: UseFetcherOptions,
+): UseFetcherResult<R> {
   const { fetcher = defaultFetcher, immediate = true } = options || {};
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(undefined);
-  const [exchange, setExchange] = useState<FetchExchange | undefined>(undefined);
+  const [exchange, setExchange] = useState<FetchExchange | undefined>(
+    undefined,
+  );
   const [result, setResult] = useState<R | undefined>(undefined);
   const isMounted = useMountedState();
   const abortControllerRef = useRef<AbortController | undefined>();
@@ -78,7 +84,8 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    abortControllerRef.current = request.abortController ?? new AbortController();
+    abortControllerRef.current =
+      request.abortController ?? new AbortController();
     request.abortController = abortControllerRef.current;
     if (isMounted()) {
       setLoading(true);
@@ -125,6 +132,11 @@ export function useFetcher<R>(request: FetchRequest, options?: UseFetcherOptions
     };
   }, [execute, request, immediate]);
   return {
-    loading, exchange, result, error, execute, cancel,
+    loading,
+    exchange,
+    result,
+    error,
+    execute,
+    cancel,
   };
 }

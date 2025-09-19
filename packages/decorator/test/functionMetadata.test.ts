@@ -3,7 +3,8 @@ import {
   HttpMethod,
   JsonResultExtractor,
   ExchangeResultExtractor,
-  fetcher, NamedFetcher,
+  fetcher,
+  NamedFetcher,
 } from '@ahoo-wang/fetcher';
 import { FunctionMetadata } from '../src';
 import { ParameterType, type ParameterMetadata } from '../src';
@@ -122,12 +123,7 @@ describe('FunctionMetadata', () => {
     });
 
     it('should handle empty paths', () => {
-      const functionMetadata = new FunctionMetadata(
-        'test',
-        {},
-        {},
-        new Map(),
-      );
+      const functionMetadata = new FunctionMetadata('test', {}, {}, new Map());
 
       const path = functionMetadata.resolvePath();
       expect(path).toBe('');
@@ -237,12 +233,7 @@ describe('FunctionMetadata', () => {
     });
 
     it('should handle missing attributes', () => {
-      const functionMetadata = new FunctionMetadata(
-        'test',
-        {},
-        {},
-        new Map(),
-      );
+      const functionMetadata = new FunctionMetadata('test', {}, {}, new Map());
 
       const attributes = functionMetadata.resolveAttributes();
       expect(attributes.size).toEqual(0);
@@ -291,7 +282,9 @@ describe('FunctionMetadata', () => {
         'test',
         {},
         { method: HttpMethod.GET },
-        new Map([[0, { type: ParameterType.HEADER, name: 'Authorization', index: 0 }]]),
+        new Map([
+          [0, { type: ParameterType.HEADER, name: 'Authorization', index: 0 }],
+        ]),
       );
 
       const result = functionMetadata.resolveExchangeInit(['Bearer token']);
@@ -334,7 +327,9 @@ describe('FunctionMetadata', () => {
         'test',
         {},
         { method: HttpMethod.GET },
-        new Map([[0, { type: ParameterType.ATTRIBUTE, name: 'userId', index: 0 }]]),
+        new Map([
+          [0, { type: ParameterType.ATTRIBUTE, name: 'userId', index: 0 }],
+        ]),
       );
 
       const result = functionMetadata.resolveExchangeInit(['user123']);

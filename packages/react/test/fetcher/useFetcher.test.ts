@@ -16,17 +16,13 @@ import { renderHook, act } from '@testing-library/react';
 
 // Import before mocks
 import { useFetcher } from '../../src';
-import {
-  FetchRequest,
-  Fetcher,
-  FetchExchange,
-} from '@ahoo-wang/fetcher';
+import { FetchRequest, Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
 
 // Mock useMountedState to always return true (component is mounted)
 vi.mock('react-use/lib/useMountedState', () => () => () => true);
 
 // Mock getFetcher to return the provided fetcher
-vi.mock('@ahoo-wang/fetcher', async (importOriginal) => {
+vi.mock('@ahoo-wang/fetcher', async importOriginal => {
   const actual: any = await importOriginal();
   return {
     ...actual,
@@ -51,7 +47,9 @@ describe('useFetcher', () => {
   });
 
   it('should initialize with default state', () => {
-    const { result } = renderHook(() => useFetcher(mockRequest, { immediate: false }));
+    const { result } = renderHook(() =>
+      useFetcher(mockRequest, { immediate: false }),
+    );
 
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeUndefined();
@@ -72,7 +70,12 @@ describe('useFetcher', () => {
       exchange: vi.fn().mockResolvedValue(mockExchange),
     };
 
-    const { result } = renderHook(() => useFetcher<string>(mockRequest, { fetcher: mockFetcher, immediate: false }));
+    const { result } = renderHook(() =>
+      useFetcher<string>(mockRequest, {
+        fetcher: mockFetcher,
+        immediate: false,
+      }),
+    );
 
     await act(async () => {
       await result.current.execute();
@@ -92,7 +95,9 @@ describe('useFetcher', () => {
       exchange: vi.fn().mockRejectedValue(error),
     };
 
-    const { result } = renderHook(() => useFetcher(mockRequest, { fetcher: mockFetcher, immediate: false }));
+    const { result } = renderHook(() =>
+      useFetcher(mockRequest, { fetcher: mockFetcher, immediate: false }),
+    );
 
     await act(async () => {
       await result.current.execute();
@@ -111,7 +116,9 @@ describe('useFetcher', () => {
       exchange: vi.fn().mockRejectedValue(abortError),
     };
 
-    const { result } = renderHook(() => useFetcher(mockRequest, { fetcher: mockFetcher, immediate: false }));
+    const { result } = renderHook(() =>
+      useFetcher(mockRequest, { fetcher: mockFetcher, immediate: false }),
+    );
 
     await act(async () => {
       await result.current.execute();
@@ -132,7 +139,9 @@ describe('useFetcher', () => {
       exchange: vi.fn().mockResolvedValue(mockExchange),
     };
 
-    renderHook(() => useFetcher(mockRequest, { immediate: false, fetcher: mockFetcher }));
+    renderHook(() =>
+      useFetcher(mockRequest, { immediate: false, fetcher: mockFetcher }),
+    );
 
     expect(mockFetcher.exchange).not.toHaveBeenCalled();
   });

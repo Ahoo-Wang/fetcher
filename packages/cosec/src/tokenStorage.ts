@@ -14,15 +14,19 @@
 import { JwtCompositeToken, JwtCompositeTokenSerializer } from './jwtToken';
 import { CompositeToken } from './tokenRefresher';
 import { EarlyPeriodCapable } from './jwts';
-import { createListenableStorage, KeyStorage } from '@ahoo-wang/fetcher-storage';
+import {
+  createListenableStorage,
+  KeyStorage,
+} from '@ahoo-wang/fetcher-storage';
 
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 
 /**
  * Storage class for managing access and refresh tokens.
  */
-export class TokenStorage extends KeyStorage<JwtCompositeToken> implements EarlyPeriodCapable {
-
+export class TokenStorage
+  extends KeyStorage<JwtCompositeToken>
+  implements EarlyPeriodCapable {
   constructor(
     key: string = DEFAULT_COSEC_TOKEN_KEY,
     public readonly earlyPeriod: number = 0,
@@ -35,8 +39,6 @@ export class TokenStorage extends KeyStorage<JwtCompositeToken> implements Early
   }
 
   setCompositeToken(compositeToken: CompositeToken) {
-    this.set(
-      new JwtCompositeToken(compositeToken),
-    );
+    this.set(new JwtCompositeToken(compositeToken));
   }
 }

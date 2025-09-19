@@ -41,7 +41,7 @@ storage.setItem('key', 'value');
 const value = storage.getItem('key');
 
 // 监听存储变更
-const removeListener = storage.addListener((event) => {
+const removeListener = storage.addListener(event => {
   console.log('存储变更:', event);
 });
 
@@ -55,8 +55,8 @@ removeListener();
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
 // 为特定键创建存储
-const userStorage = new KeyStorage<{ name: string, age: number }>({
-  key: 'user'
+const userStorage = new KeyStorage<{ name: string; age: number }>({
+  key: 'user',
 });
 
 // 设置和获取值
@@ -64,7 +64,7 @@ userStorage.set({ name: 'John', age: 30 });
 const user = userStorage.get(); // {name: 'John', age: 30}
 
 // 监听此特定键的变更
-const removeListener = userStorage.addListener((event) => {
+const removeListener = userStorage.addListener(event => {
   console.log('用户变更:', event.newValue);
 });
 ```
@@ -76,7 +76,7 @@ import { KeyStorage, JsonSerializer } from '@ahoo-wang/fetcher-storage';
 
 const jsonStorage = new KeyStorage<any>({
   key: 'data',
-  serializer: new JsonSerializer()
+  serializer: new JsonSerializer(),
 });
 
 jsonStorage.set({ message: 'Hello World' });
@@ -86,7 +86,10 @@ const data = jsonStorage.get(); // {message: 'Hello World'}
 ### 环境特定的存储
 
 ```typescript
-import { BrowserListenableStorage, InMemoryListenableStorage } from '@ahoo-wang/fetcher-storage';
+import {
+  BrowserListenableStorage,
+  InMemoryListenableStorage,
+} from '@ahoo-wang/fetcher-storage';
 
 // 浏览器存储（包装 localStorage 或 sessionStorage）
 const browserStorage = new BrowserListenableStorage(localStorage);

@@ -23,7 +23,9 @@ describe('fetcherCapable', () => {
   let defaultFetcher: Fetcher;
   beforeEach(() => {
     mockFetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-    testFetcher = new NamedFetcher('test-fetcher', { baseURL: 'https://test.api.com' });
+    testFetcher = new NamedFetcher('test-fetcher', {
+      baseURL: 'https://test.api.com',
+    });
     defaultFetcher = new NamedFetcher(DEFAULT_FETCHER_NAME);
   });
 
@@ -80,7 +82,9 @@ describe('fetcherCapable', () => {
     });
 
     it('should return custom default fetcher when provided', () => {
-      const customDefault = new Fetcher({ baseURL: 'https://custom.default.com' });
+      const customDefault = new Fetcher({
+        baseURL: 'https://custom.default.com',
+      });
       const result = getFetcher(undefined, customDefault);
       expect(result).toBe(customDefault);
     });

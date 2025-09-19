@@ -42,7 +42,7 @@ storage.setItem('key', 'value');
 const value = storage.getItem('key');
 
 // Listen for storage changes
-const removeListener = storage.addListener((event) => {
+const removeListener = storage.addListener(event => {
   console.log('Storage changed:', event);
 });
 
@@ -56,8 +56,8 @@ removeListener();
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
 // Create a storage for a specific key
-const userStorage = new KeyStorage<{ name: string, age: number }>({
-  key: 'user'
+const userStorage = new KeyStorage<{ name: string; age: number }>({
+  key: 'user',
 });
 
 // Set and get values
@@ -65,7 +65,7 @@ userStorage.set({ name: 'John', age: 30 });
 const user = userStorage.get(); // {name: 'John', age: 30}
 
 // Listen for changes to this specific key
-const removeListener = userStorage.addListener((event) => {
+const removeListener = userStorage.addListener(event => {
   console.log('User changed:', event.newValue);
 });
 ```
@@ -77,7 +77,7 @@ import { KeyStorage, JsonSerializer } from '@ahoo-wang/fetcher-storage';
 
 const jsonStorage = new KeyStorage<any>({
   key: 'data',
-  serializer: new JsonSerializer()
+  serializer: new JsonSerializer(),
 });
 
 jsonStorage.set({ message: 'Hello World' });
@@ -87,7 +87,10 @@ const data = jsonStorage.get(); // {message: 'Hello World'}
 ### Environment-specific Storage
 
 ```typescript
-import { BrowserListenableStorage, InMemoryListenableStorage } from '@ahoo-wang/fetcher-storage';
+import {
+  BrowserListenableStorage,
+  InMemoryListenableStorage,
+} from '@ahoo-wang/fetcher-storage';
 
 // Browser storage (wraps localStorage or sessionStorage)
 const browserStorage = new BrowserListenableStorage(localStorage);

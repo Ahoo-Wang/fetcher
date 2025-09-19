@@ -88,7 +88,7 @@ describe('utils', () => {
       expect(result.size).toBe(1);
       expect(result.get('a')).toBe(1);
     });
-    
+
     it('should merge Record to new Map when target map is not provided', () => {
       const record = { a: 1, b: 2 };
       const result = mergeRecordToMap(record);
@@ -112,7 +112,10 @@ describe('utils', () => {
     });
 
     it('should merge Map to new Map when target map is not provided', () => {
-      const sourceMap = new Map([['a', 1], ['b', 2]]);
+      const sourceMap = new Map([
+        ['a', 1],
+        ['b', 2],
+      ]);
       const result = mergeRecordToMap(sourceMap);
 
       expect(result).toEqual(sourceMap);
@@ -122,7 +125,10 @@ describe('utils', () => {
     });
 
     it('should merge Map to existing Map', () => {
-      const sourceMap = new Map([['a', 1], ['b', 2]]);
+      const sourceMap = new Map([
+        ['a', 1],
+        ['b', 2],
+      ]);
       const targetMap = new Map([['c', 3]]);
       const result = mergeRecordToMap(sourceMap, targetMap);
 

@@ -12,7 +12,14 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { ExchangeError, Fetcher, FetchExchange, FetchRequest, NamedFetcher, ResultExtractors } from '../src';
+import {
+  ExchangeError,
+  Fetcher,
+  FetchExchange,
+  FetchRequest,
+  NamedFetcher,
+  ResultExtractors,
+} from '../src';
 
 describe('FetchExchange', () => {
   const mockFetcher = new NamedFetcher('mock-fetcher');

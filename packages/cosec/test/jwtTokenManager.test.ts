@@ -44,9 +44,7 @@ describe('JwtTokenManager', () => {
   });
 
   it('should throw error when no token found', async () => {
-    await expect(jwtTokenManager.refresh())
-      .rejects
-      .toThrow('No token found');
+    await expect(jwtTokenManager.refresh()).rejects.toThrow('No token found');
   });
 
   it('should prevent concurrent refresh requests', async () => {
@@ -67,7 +65,9 @@ describe('JwtTokenManager', () => {
       resolvePromise = resolve;
     });
 
-    vi.mocked(tokenRefresher.refresh).mockReturnValueOnce(refreshPromise as any);
+    vi.mocked(tokenRefresher.refresh).mockReturnValueOnce(
+      refreshPromise as any,
+    );
 
     // Act
     const firstRefreshPromise = jwtTokenManager.refresh(compositeToken);
@@ -120,9 +120,7 @@ describe('JwtTokenManager', () => {
     vi.mocked(tokenRefresher.refresh).mockRejectedValueOnce(error);
 
     // Act & Assert
-    await expect(jwtTokenManager.refresh())
-      .rejects
-      .toThrow('Refresh failed');
+    await expect(jwtTokenManager.refresh()).rejects.toThrow('Refresh failed');
 
     expect(tokenStorage.get()).toBeNull();
   });
@@ -159,9 +157,9 @@ describe('JwtTokenManager', () => {
     vi.mocked(tokenRefresher.refresh).mockRejectedValueOnce(error);
 
     // Act & Assert
-    await expect(jwtTokenManager.refresh(compositeToken))
-      .rejects
-      .toThrow('Refresh failed');
+    await expect(jwtTokenManager.refresh(compositeToken)).rejects.toThrow(
+      'Refresh failed',
+    );
 
     expect((jwtTokenManager as any).refreshInProgress).toBeUndefined();
   });
