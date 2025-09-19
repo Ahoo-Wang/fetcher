@@ -19,7 +19,6 @@
 - vitest
 - typescript
 - @ahoo-wang/fetcher-openapi : 定义了 OpenAPI 规范类型
-- @ahoo-wang/fetcher-decorator : Fetcher HTTP 客户端的装饰器支持。使用 TypeScript 装饰器实现简洁、声明式的 API 服务定义。
 - @ahoo-wang/fetcher-wow : 内置的 Wow 类型定义系统，当识别 Wow 通用类型，替换为对应的类型
 - ts-morph ：使用 ts-morph 生成 TypeScript 文件
 - Commander.js ：通过 Commander.js 提供友好的命令行界面
