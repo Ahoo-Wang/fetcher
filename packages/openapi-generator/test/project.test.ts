@@ -99,8 +99,8 @@ describe('OpenAPI Generator', () => {
       'utf-8',
     );
 
-    // Check that Wow types are extended correctly
-    expect(wowTypesContent).toContain('extends MessageHeaderSqlType');
+    // Check that Wow types are imported correctly
+    expect(wowTypesContent).toContain('import { MessageHeaderSqlType } from "@ahoo-wang/fetcher-wow"');
   });
 
   it('should organize files according to schema naming conventions', () => {

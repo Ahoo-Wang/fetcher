@@ -11,22 +11,50 @@
  * limitations under the License.
  */
 
-
 import { Reference, Schema } from '@ahoo-wang/fetcher-openapi';
 import { ModelDefinition } from '@/model/modelDefinition.ts';
 import { ModuleInfoResolver } from '@/module/moduleInfoResolver.ts';
 import { DependencyDefinition } from '@/module/dependencyDefinition.ts';
-import { isReference } from '@/utils.ts';
+import { isReference, getSchemaKey } from '@/utils.ts';
+import { WOW_TYPE_MAPPING, IMPORT_WOW_PATH } from '@/model/wowTypeMapping.ts';
 
 export class ModelResolver {
   constructor(private readonly moduleInfoResolver: ModuleInfoResolver) {
   }
 
   resolve(key: string, schema: Schema): ModelDefinition {
-    if (schema.type !== 'object') {
-      throw new Error(`Schema ${key} is not object type. Actual type: ${schema.type}`);
+    // Check if this is a Wow type that should be mapped
+    const wowType = this.resolveWowType(key);
+    if (wowType) {
+      return {
+        name: wowType,
+        title: schema.title,
+        description: schema.description,
+        isReference: true,
+        dependencies: [
+          {
+            moduleSpecifier: IMPORT_WOW_PATH,
+            namedImports: new Set([wowType]),
+          },
+        ],
+        type: 'object',
+      };
     }
+
     const moduleInfo = this.moduleInfoResolver.resolve(key);
+
+    if (!schema.properties && schema.type !== 'object') {
+      // Handle non-object schemas (like enums, primitives used as models)
+      return {
+        name: moduleInfo.name,
+        title: schema.title,
+        description: schema.description,
+        isReference: false,
+        dependencies: [],
+        type: this.resolveType(schema),
+      };
+    }
+
     if (!schema.properties) {
       return {
         name: moduleInfo.name,
@@ -34,27 +62,11 @@ export class ModelResolver {
         description: schema.description,
         isReference: false,
         dependencies: [],
-        type: schema.type,
-        required: schema.required || [],
+        type: schema.type || 'object',
       };
     }
-    const dependencies: DependencyDefinition[] = [];
-    const modelProperties = new Map<string, string>();
 
-    for (const [propName, propSchema] of Object.entries(schema.properties)) {
-      if (isReference(propSchema)) {
-        const dependency = this.resolveReference(propSchema as Reference);
-        dependencies.push(dependency);
-        // 正确获取Set中的第一个（也是唯一一个）元素
-        const firstName = dependency.namedImports.values().next().value;
-        modelProperties.set(propName, firstName);
-      } else if ((propSchema as Schema).type) {
-        modelProperties.set(propName, (propSchema as Schema).type);
-      } else {
-        // 处理没有明确类型的属性
-        modelProperties.set(propName, 'unknown');
-      }
-    }
+    const { properties, dependencies } = this.resolveProperties(schema);
 
     return {
       name: moduleInfo.name,
@@ -62,19 +74,141 @@ export class ModelResolver {
       description: schema.description,
       isReference: false,
       dependencies,
-      properties: modelProperties,
-      type: schema.type,
-      required: schema.required || [],
+      properties,
+      type: schema.type || 'object',
     };
   }
 
-  resolveProperties(schema: Schema): Map<string, string> {
+  resolveProperties(schema: Schema): {
+    properties: Map<string, string>;
+    dependencies: DependencyDefinition[];
+  } {
+    const properties = new Map<string, string>();
+    const dependencies: DependencyDefinition[] = [];
 
+    if (!schema.properties) {
+      return { properties, dependencies };
+    }
+
+    for (const [propName, propSchema] of Object.entries(schema.properties)) {
+      const propType = this.resolveType(propSchema);
+      properties.set(propName, propType);
+
+      // Collect dependencies if the property references other schemas
+      if (isReference(propSchema)) {
+        const dependency = this.resolveReference(propSchema as Reference);
+        // Check if this dependency is already in the list
+        const existingDep = dependencies.find(
+          d => d.moduleSpecifier === dependency.moduleSpecifier,
+        );
+        if (existingDep) {
+          dependency.namedImports.forEach(name =>
+            existingDep.namedImports.add(name),
+          );
+        } else {
+          dependencies.push(dependency);
+        }
+      }
+    }
+
+    return { properties, dependencies };
   }
 
+  resolveType(schema: Schema | Reference): string {
+    if (isReference(schema)) {
+      const ref = schema as Reference;
+      const schemaKey = getSchemaKey(ref.$ref);
+
+      // Check if it's a Wow type
+      const wowType = this.resolveWowType(schemaKey);
+      if (wowType) {
+        return wowType;
+      }
+
+      // Otherwise, resolve to the interface name
+      const moduleInfo = this.moduleInfoResolver.resolve(schemaKey);
+      return moduleInfo.name;
+    }
+
+    const s = schema as Schema;
+
+    // Handle union types (oneOf, anyOf, allOf)
+    if (s.oneOf) {
+      return s.oneOf.map(subSchema => this.resolveType(subSchema)).join(' | ');
+    }
+
+    if (s.anyOf) {
+      return s.anyOf.map(subSchema => this.resolveType(subSchema)).join(' | ');
+    }
+
+    if (s.allOf) {
+      // For allOf, we typically want to extend the first type
+      if (s.allOf.length > 0) {
+        return this.resolveType(s.allOf[0]);
+      }
+    }
+
+    // Handle arrays
+    if (s.type === 'array') {
+      if (s.items) {
+        return `${this.resolveType(s.items)}[]`;
+      }
+      return 'any[]';
+    }
+
+    // Handle enums
+    if (s.enum && Array.isArray(s.enum)) {
+      return s.enum
+        .map(value =>
+          typeof value === 'string' ? `'${value}'` : value.toString(),
+        )
+        .join(' | ');
+    }
+
+    // Handle primitive types
+    if (s.type) {
+      if (Array.isArray(s.type)) {
+        return s.type.join(' | ');
+      }
+
+      switch (s.type) {
+        case 'integer':
+          return 'number';
+        case 'null':
+          return 'null';
+        default:
+          return s.type;
+      }
+    }
+
+    // Handle objects without explicit type
+    if (s.properties) {
+      return 'object';
+    }
+
+    return 'any';
+  }
 
   resolveReference(schema: Reference): DependencyDefinition {
-    const moduleInfo = this.moduleInfoResolver.resolve(schema.$ref);
-    return { moduleSpecifier: moduleInfo.path, namedImports: new Set([moduleInfo.name]) };
+    const schemaKey = getSchemaKey(schema.$ref);
+
+    // Check if it's a Wow type
+    const wowType = this.resolveWowType(schemaKey);
+    if (wowType) {
+      return {
+        moduleSpecifier: IMPORT_WOW_PATH,
+        namedImports: new Set([wowType]),
+      };
+    }
+
+    const moduleInfo = this.moduleInfoResolver.resolve(schemaKey);
+    return {
+      moduleSpecifier: moduleInfo.path,
+      namedImports: new Set([moduleInfo.name]),
+    };
+  }
+
+  private resolveWowType(schemaKey: string): string | null {
+    return (WOW_TYPE_MAPPING as any)[schemaKey] || null;
   }
 }

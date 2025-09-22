@@ -28,5 +28,6 @@ export interface EndpointDefinition extends Named, PartialBy<DescriptionCapable,
 
 export interface ClientDefinition extends Named, PartialBy<DescriptionCapable, 'description'> {
   name: string;
+  tag: string;
   endpoints: EndpointDefinition[];
 }

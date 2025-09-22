@@ -11,11 +11,9 @@
  * limitations under the License.
  */
 
-
 import { ModuleInfo } from '@/module/moduleDefinition.ts';
 
 export class ModuleInfoResolver {
-
   resolve(key: string): ModuleInfo {
     if (key === '') {
       throw new Error('Module key name cannot be empty');
@@ -23,19 +21,33 @@ export class ModuleInfoResolver {
     const parts = key.split('.');
     let moduleName = '';
     let modulePath = '';
+
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
       const firstChar = part[0];
-      if (firstChar === firstChar.toUpperCase()) {
-        modulePath = modulePath + part.charAt(0).toLowerCase() + part.slice(1);
+
+      if (
+        firstChar === firstChar.toUpperCase() &&
+        firstChar !== firstChar.toLowerCase()
+      ) {
+        // Found the type name (starts with uppercase)
         moduleName = part;
         break;
       }
-      modulePath = modulePath + '/' + part;
-      if (i === parts.length) {
-        moduleName = part;
+
+      // Build path with leading slash
+      if (modulePath === '') {
+        modulePath = part;
+      } else {
+        modulePath = modulePath + '/' + part;
       }
     }
+
+    // If no uppercase part found, use the last part as module name
+    if (moduleName === '') {
+      moduleName = parts[parts.length - 1];
+    }
+
     return {
       name: moduleName,
       path: modulePath,

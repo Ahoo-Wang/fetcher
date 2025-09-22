@@ -19,16 +19,21 @@ import { isReference } from '@/utils.ts';
 import { ClientResolver } from '@/client/clientResolver.ts';
 
 export class ModuleResolver {
-  public readonly modules: Map<string, ModuleDefinition> = new Map<string, ModuleDefinition>();
+  public readonly modules: Map<string, ModuleDefinition> = new Map<
+    string,
+    ModuleDefinition
+  >();
 
-  constructor(private readonly moduleInfoResolver: ModuleInfoResolver,
-              private readonly modelResolver: ModelResolver,
-              private readonly clientResolver: ClientResolver) {
+  constructor(
+    private readonly moduleInfoResolver: ModuleInfoResolver,
+    private readonly modelResolver: ModelResolver,
+    private readonly clientResolver: ClientResolver,
+  ) {
   }
 
   private getOrCreateModule(key: string): ModuleDefinition {
     const moduleInfo = this.moduleInfoResolver.resolve(key);
-    let module = this.modules.get(moduleInfo.name);
+    let module = this.modules.get(moduleInfo.path);
     if (!module) {
       module = new ModuleDefinition(moduleInfo.name, moduleInfo.path);
       this.modules.set(moduleInfo.path, module);
@@ -43,7 +48,14 @@ export class ModuleResolver {
       });
     }
     if (openAPI.paths) {
-      this.clientResolver.resolve(openAPI.paths);
+      const clients = this.clientResolver.resolve(openAPI.paths);
+      clients.forEach(client => {
+        // For clients, use just the last part of the tag as the module key
+        const tagParts = client.tag.split('.');
+        const moduleKey = tagParts[tagParts.length - 1];
+        const module = this.getOrCreateModule(moduleKey);
+        module.addClient(client);
+      });
     }
   }
 

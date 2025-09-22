@@ -1,5 +1,11 @@
 你作为资深前端开发工程师，正在开发基于 OpenAPI 规范的 TypeScript 代码生成器。
-按照以下要求生成代码，要求模块职责清晰，自下而上的开发，即先开发小的基于模块，再逐步开发高层次模块代码，最终完成该lib。
+按照以下要求生成代码，要求模块职责清晰，自下而上的开发，即先开发小的基于模块，再逐步开发高层次模块代码，最终完成该lib:
+
+1. 将 输入文件解析为 OpenAPI 对象
+2. 将 OpenAPI 解析为 模块定义
+    1. 数据模型定义
+    2. 客户端定义
+3. 基于定义文件，生成代码
 
 # @ahoo-wang/fetcher-openapi-generator
 
@@ -92,11 +98,11 @@ schemaKey 名称采用点号分隔的命名规范：
 
 例如：
 
-- `example.cart.AddCartItem` : 写入 `cart/types.ts` 文件中
-- `example.cart.CartAggregatedCondition` : 写入 `cart/types.ts` 文件中
-- `example.cart.CartAggregatedDomainEventStream`: 写入 `cart/types.ts` 文件中
+- `example.cart.AddCartItem` : 写入 `example/cart/types.ts` 文件中
+- `example.cart.CartAggregatedCondition` : 写入 `example/cart/types.ts` 文件中
+- `example.cart.CartAggregatedDomainEventStream`: 写入 `example/cart/types.ts` 文件中
 - `example.AiMessage.Assistant`、`example.AiMessage.Assistant.ToolCall`、`example.AiMessage.System` 都生成到
-  `./types.ts` 文件中：
+  `example/types.ts` 文件中：
     - `example.AiMessage.Assistant` 生成接口 `AiMessageAssistant`
     - `example.AiMessage.Assistant.ToolCall` 生成接口 `AiMessageAssistantToolCall`
     - `example.AiMessage.System` 生成接口 `AiMessageSystem`
