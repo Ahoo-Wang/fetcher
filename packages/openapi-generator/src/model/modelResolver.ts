@@ -46,8 +46,7 @@ export class ModelResolver {
         dependencies.push(dependency);
         modelProperties.set(propName, dependency.namedImports);
       } else {
-        propSchema as Schema;
-        modelProperties.set(propName, propSchema.type);
+        modelProperties.set(propName, (propSchema as Schema).type);
       }
     }
 

@@ -16,6 +16,6 @@ import { ClientDefinition } from '@/client/clientDefinition.ts';
 
 export class ClientResolver {
   resolve(paths: Paths): ClientDefinition[] {
-    throw paths;
+    return [];
   }
 }
