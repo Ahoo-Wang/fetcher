@@ -32,6 +32,7 @@ import {
   ParameterType,
 } from './parameterDecorator';
 import { ResultExtractors } from './resultExtractor';
+import { EndpointReturnType } from './endpointReturnTypeCapable';
 
 /**
  * Metadata container for a function with HTTP endpoint decorators.
@@ -141,6 +142,10 @@ export class FunctionMetadata implements NamedCapable {
   resolveAttributes(): Map<string, any> {
     const resolvedAttributes = mergeRecordToMap(this.api.attributes);
     return mergeRecordToMap(this.endpoint.attributes, resolvedAttributes);
+  }
+
+  resolveEndpointReturnType(): EndpointReturnType {
+    return this.endpoint.returnType || this.api.returnType || EndpointReturnType.RESULT;
   }
 
   /**

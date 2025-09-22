@@ -25,6 +25,7 @@ import { RequestExecutor } from './requestExecutor';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator';
 import 'reflect-metadata';
 import { FunctionMetadata } from './functionMetadata';
+import { EndpointReturnTypeCapable } from './endpointReturnTypeCapable';
 
 /**
  * Metadata for class-level API configuration.
@@ -38,7 +39,7 @@ export interface ApiMetadata
     RequestHeadersCapable,
     ResultExtractorCapable,
     FetcherCapable,
-    AttributesCapable {
+    AttributesCapable, EndpointReturnTypeCapable {
   /**
    * Base path for all endpoints in the class.
    *
