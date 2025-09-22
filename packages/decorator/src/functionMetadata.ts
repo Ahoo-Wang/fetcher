@@ -241,9 +241,6 @@ export class FunctionMetadata implements NamedCapable {
         case ParameterType.ATTRIBUTE:
           this.processAttributeParam(funParameter, value, attributes);
           break;
-        case ParameterType.ATTRIBUTES:
-          this.processAttributesParam(value, attributes);
-          break;
       }
     });
     const urlParams: UrlParams = {
@@ -354,15 +351,12 @@ export class FunctionMetadata implements NamedCapable {
     value: any,
     attributes: Map<string, any>,
   ) {
+    if (typeof value === 'object' || value instanceof Map) {
+      mergeRecordToMap(value, attributes);
+      return;
+    }
     if (param.name && value !== undefined) {
       attributes.set(param.name, value);
     }
-  }
-
-  private processAttributesParam(value: any, attributes: Map<string, any>) {
-    if (typeof value !== 'object' || value! instanceof Map) {
-      throw new Error('@attributes() parameter must be an object or an Map');
-    }
-    mergeRecordToMap(value, attributes);
   }
 }
