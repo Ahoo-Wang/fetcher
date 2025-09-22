@@ -63,8 +63,12 @@ describe('OpenAPI Generator', () => {
 
     // Check that Wow types are imported when used
     expect(cartTypesContent).toContain(
-      'import { Operator } from "@ahoo-wang/fetcher-wow"',
+      'import { Operator, Projection, FieldSort, Pagination } from "@ahoo-wang/fetcher-wow"',
     );
+
+    // Check that Projection and FieldSort are imported
+    expect(cartTypesContent).toContain('Projection');
+    expect(cartTypesContent).toContain('FieldSort');
   });
 
   it('should generate correct client classes', () => {

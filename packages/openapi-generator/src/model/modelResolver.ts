@@ -94,21 +94,9 @@ export class ModelResolver {
       const propType = this.resolveType(propSchema);
       properties.set(propName, propType);
 
-      // Collect dependencies if the property references other schemas
-      if (isReference(propSchema)) {
-        const dependency = this.resolveReference(propSchema as Reference);
-        // Check if this dependency is already in the list
-        const existingDep = dependencies.find(
-          d => d.moduleSpecifier === dependency.moduleSpecifier,
-        );
-        if (existingDep) {
-          dependency.namedImports.forEach(name =>
-            existingDep.namedImports.add(name),
-          );
-        } else {
-          dependencies.push(dependency);
-        }
-      }
+      // Collect dependencies recursively from the property schema
+      const propDependencies = this.collectDependencies(propSchema);
+      this.mergeDependencies(dependencies, propDependencies);
     }
 
     return { properties, dependencies };
@@ -134,11 +122,15 @@ export class ModelResolver {
 
     // Handle union types (oneOf, anyOf, allOf)
     if (s.oneOf) {
-      return s.oneOf.map(subSchema => this.resolveType(subSchema)).join(' | ');
+      const types = s.oneOf.map(subSchema => this.resolveType(subSchema));
+      const uniqueTypes = [...new Set(types)];
+      return uniqueTypes.join(' | ');
     }
 
     if (s.anyOf) {
-      return s.anyOf.map(subSchema => this.resolveType(subSchema)).join(' | ');
+      const types = s.anyOf.map(subSchema => this.resolveType(subSchema));
+      const uniqueTypes = [...new Set(types)];
+      return uniqueTypes.join(' | ');
     }
 
     if (s.allOf) {
@@ -168,7 +160,16 @@ export class ModelResolver {
     // Handle primitive types
     if (s.type) {
       if (Array.isArray(s.type)) {
-        return s.type.join(' | ');
+        return s.type.map(type => {
+          switch (type) {
+            case 'integer':
+              return 'number';
+            case 'null':
+              return 'null';
+            default:
+              return type;
+          }
+        }).join(' | ');
       }
 
       switch (s.type) {
@@ -208,6 +209,67 @@ export class ModelResolver {
     };
   }
 
+  private collectDependencies(schema: Schema | Reference): DependencyDefinition[] {
+    const dependencies: DependencyDefinition[] = [];
+
+    if (isReference(schema)) {
+      const dependency = this.resolveReference(schema as Reference);
+      dependencies.push(dependency);
+    } else {
+      const s = schema as Schema;
+
+      // Handle arrays
+      if (s.type === 'array' && s.items) {
+        const itemDeps = this.collectDependencies(s.items);
+        this.mergeDependencies(dependencies, itemDeps);
+      }
+
+      // Handle union types
+      if (s.oneOf) {
+        s.oneOf.forEach(subSchema => {
+          const subDeps = this.collectDependencies(subSchema);
+          this.mergeDependencies(dependencies, subDeps);
+        });
+      }
+
+      if (s.anyOf) {
+        s.anyOf.forEach(subSchema => {
+          const subDeps = this.collectDependencies(subSchema);
+          this.mergeDependencies(dependencies, subDeps);
+        });
+      }
+
+      if (s.allOf) {
+        s.allOf.forEach(subSchema => {
+          const subDeps = this.collectDependencies(subSchema);
+          this.mergeDependencies(dependencies, subDeps);
+        });
+      }
+
+      // Handle properties
+      if (s.properties) {
+        for (const propSchema of Object.values(s.properties)) {
+          const propDeps = this.collectDependencies(propSchema);
+          this.mergeDependencies(dependencies, propDeps);
+        }
+      }
+    }
+
+    return dependencies;
+  }
+
+  private mergeDependencies(target: DependencyDefinition[], source: DependencyDefinition[]): void {
+    for (const dep of source) {
+      const existingDep = target.find(
+        d => d.moduleSpecifier === dep.moduleSpecifier,
+      );
+      if (existingDep) {
+        dep.namedImports.forEach(name => existingDep.namedImports.add(name));
+      } else {
+        target.push(dep);
+      }
+    }
+  }
   private resolveWowType(schemaKey: string): string | null {
     return (WOW_TYPE_MAPPING as any)[schemaKey] || null;
   }

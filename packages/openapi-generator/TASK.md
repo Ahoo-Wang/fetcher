@@ -121,3 +121,11 @@ Client 按照 tags 组织。
 - `order-query-controller`: 写入 `./orderQueryControllerClient.ts`
 - `customer`: 写入 `./customerClient.ts`
 
+#### 函数规范
+
+函数名称基于 operationId。
+
+函数名称采用驼峰命名法，函数参数采用 PascalCase 命名法。
+
+
+

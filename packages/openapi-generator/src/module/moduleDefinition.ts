@@ -46,9 +46,11 @@ export class ModuleDefinition implements ModuleInfo {
       this.dependencies.set(dep.moduleSpecifier, dependency);
     }
 
-    dependency.namedImports.forEach((namedImport) => {
+    console.log('before add', dep.moduleSpecifier, [...dependency.namedImports]);
+    dep.namedImports.forEach((namedImport) => {
       dependency.namedImports.add(namedImport);
     });
+    console.log('after add', dep.moduleSpecifier, [...dependency.namedImports]);
   }
 
   addDependencies(deps: DependencyDefinition[]): void {
