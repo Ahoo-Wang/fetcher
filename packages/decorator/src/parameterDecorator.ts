@@ -80,14 +80,6 @@ export enum ParameterType {
    * information that can be accessed by interceptors.
    */
   ATTRIBUTE = 'attribute',
-  /**
-   * Attributes parameter that will be used as the request attributes.
-   *
-   * The attributes parameter allows passing custom data that can be accessed
-   * by interceptors throughout the request lifecycle. This is useful for
-   * sharing contextual information between different parts of the request processing.
-   */
-  ATTRIBUTES = 'attributes',
 }
 
 /**
@@ -323,23 +315,4 @@ export function request() {
  */
 export function attribute(name: string = '') {
   return parameter(ParameterType.ATTRIBUTE, name);
-}
-
-/**
- * Parameter decorator for adding multiple attributes to the request.
- *
- * This decorator allows you to pass an entire object as attributes that can be accessed
- * by interceptors during the request lifecycle. The parameter should be an object whose
- * properties will be merged into the request attributes.
- *
- * @returns A parameter decorator function
- *
- * @example
- * ```typescript
- * @get('/users/{id}')
- * getUser(@path('id') id: string, @attributes() attrs: Record<string, any>): Promise<Response>
- * ```
- */
-export function attributes() {
-  return parameter(ParameterType.ATTRIBUTES);
 }
