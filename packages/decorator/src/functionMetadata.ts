@@ -274,7 +274,7 @@ export class FunctionMetadata implements NamedCapable {
   private processHttpParam(param: ParameterMetadata,
                            value: any,
                            params: Record<string, any>) {
-    if (value === undefined) {
+    if (value === undefined || value === null) {
       return;
     }
     if (typeof value === 'object') {
