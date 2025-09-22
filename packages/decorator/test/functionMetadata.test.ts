@@ -341,7 +341,7 @@ describe('FunctionMetadata', () => {
         'test',
         {},
         { method: HttpMethod.GET },
-        new Map([[0, { type: ParameterType.ATTRIBUTES, index: 0 }]]),
+        new Map([[0, { type: ParameterType.ATTRIBUTE, index: 0 }]]),
       );
 
       const attrs = { attr1: 'value1', attr2: 'value2' };
@@ -495,21 +495,6 @@ describe('FunctionMetadata', () => {
 
       // Arrays are objects, so Object.entries will create entries for indices
       expect(params).toEqual({ '0': 'item1', '1': 'item2' });
-    });
-  });
-
-  describe('processAttributesParam', () => {
-    it('should throw error when attributes parameter is not an object', () => {
-      const functionMetadata = new FunctionMetadata(
-        'test',
-        {},
-        { method: HttpMethod.GET },
-        new Map([[0, { type: ParameterType.ATTRIBUTES, index: 0 }]]),
-      );
-
-      expect(() => {
-        functionMetadata.resolveExchangeInit(['not-an-object']);
-      }).toThrow('@attributes() parameter must be an object');
     });
   });
 

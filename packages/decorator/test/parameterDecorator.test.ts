@@ -9,7 +9,6 @@ import {
   body,
   request,
   attribute,
-  attributes,
   PARAMETER_METADATA_KEY,
   type ParameterMetadata,
 } from '../src';
@@ -23,7 +22,6 @@ class TestClass {
     bodyParam: any,
     requestParam: any,
     attrParam: string,
-    attrsParam: Record<string, any>,
   ) {
     return {
       pathParam,
@@ -32,7 +30,6 @@ class TestClass {
       bodyParam,
       requestParam,
       attrParam,
-      attrsParam,
     };
   }
 }
@@ -46,7 +43,6 @@ describe('parameterDecorator', () => {
       expect(ParameterType.BODY).toBe('body');
       expect(ParameterType.REQUEST).toBe('request');
       expect(ParameterType.ATTRIBUTE).toBe('attribute');
-      expect(ParameterType.ATTRIBUTES).toBe('attributes');
     });
   });
 
@@ -321,26 +317,6 @@ describe('parameterDecorator', () => {
       const paramMetadata = metadata.get(5)!;
       expect(paramMetadata.type).toBe(ParameterType.ATTRIBUTE);
       expect(paramMetadata.name).toBe('attrParam');
-    });
-  });
-
-  describe('attributes', () => {
-    it('should create attributes parameter decorator', () => {
-      const decorator = attributes();
-      const target = new TestClass();
-
-      decorator(target, 'testMethod', 6);
-
-      const metadata: Map<number, ParameterMetadata> = Reflect.getMetadata(
-        PARAMETER_METADATA_KEY,
-        target,
-        'testMethod',
-      );
-
-      expect(metadata).toBeDefined();
-      const paramMetadata = metadata.get(6)!;
-      expect(paramMetadata.type).toBe(ParameterType.ATTRIBUTES);
-      expect(paramMetadata.name).toBe('attrsParam');
     });
   });
 });
