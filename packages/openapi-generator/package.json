@@ -54,6 +54,7 @@
     "generate": "node dist/cli.js generate -i test/demo-spec.json -o test-output"
   },
   "dependencies": {
+    "@ahoo-wang/fetcher": "workspace:*",
     "@ahoo-wang/fetcher-decorator": "workspace:*",
     "@ahoo-wang/fetcher-openapi": "workspace:*",
     "@ahoo-wang/fetcher-wow": "workspace:*",

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { program } from 'commander';
-import { generate } from './index';
+
 
 program
   .name('fetcher-openapi-generator')
@@ -15,7 +15,7 @@ program
   .requiredOption('-o, --output <path>', 'Output directory path')
   .action(options => {
     try {
-      generate(options.input, options.output);
+
       console.log('Code generation completed successfully!');
     } catch (error) {
       console.error('Error during code generation:', error);
