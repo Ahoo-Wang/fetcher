@@ -127,5 +127,9 @@ Client 按照 tags 组织。
 
 函数名称采用驼峰命名法，函数参数采用 PascalCase 命名法。
 
+```ts
+export class 
+```
+
 
 
