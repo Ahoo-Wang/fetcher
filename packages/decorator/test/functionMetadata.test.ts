@@ -341,7 +341,7 @@ describe('FunctionMetadata', () => {
         'test',
         {},
         { method: HttpMethod.GET },
-        new Map([[0, { type: ParameterType.ATTRIBUTES, index: 0 }]]),
+        new Map([[0, { type: ParameterType.ATTRIBUTE, index: 0 }]]),
       );
 
       const attrs = { attr1: 'value1', attr2: 'value2' };
@@ -419,18 +419,82 @@ describe('FunctionMetadata', () => {
     });
   });
 
-  describe('processAttributesParam', () => {
-    it('should throw error when attributes parameter is not an object', () => {
+  describe('processHttpParam', () => {
+    it('should not modify params when value is undefined', () => {
       const functionMetadata = new FunctionMetadata(
         'test',
         {},
         { method: HttpMethod.GET },
-        new Map([[0, { type: ParameterType.ATTRIBUTES, index: 0 }]]),
+        new Map(),
       );
 
-      expect(() => {
-        functionMetadata.resolveExchangeInit(['not-an-object']);
-      }).toThrow('@attributes() parameter must be an object');
+      const params: Record<string, any> = { existing: 'value' };
+      // @ts-expect-error - accessing private method for testing
+      functionMetadata.processHttpParam({ name: 'test', index: 0 }, undefined, params);
+
+      expect(params).toEqual({ existing: 'value' });
+    });
+
+    it('should expand object properties to params', () => {
+      const functionMetadata = new FunctionMetadata(
+        'test',
+        {},
+        { method: HttpMethod.GET },
+        new Map(),
+      );
+
+      const params: Record<string, any> = {};
+      // @ts-expect-error - accessing private method for testing
+      functionMetadata.processHttpParam({ name: 'test', index: 0 }, { key1: 'value1', key2: 'value2' }, params);
+
+      expect(params).toEqual({ key1: 'value1', key2: 'value2' });
+    });
+
+    it('should use param name when value is a primitive type', () => {
+      const functionMetadata = new FunctionMetadata(
+        'test',
+        {},
+        { method: HttpMethod.GET },
+        new Map(),
+      );
+
+      const params: Record<string, any> = {};
+      // @ts-expect-error - accessing private method for testing
+      functionMetadata.processHttpParam({ name: 'customParam', index: 0 }, 'testValue', params);
+
+      expect(params).toEqual({ customParam: 'testValue' });
+    });
+
+    it('should use param index when name is not available', () => {
+      const functionMetadata = new FunctionMetadata(
+        'test',
+        {},
+        { method: HttpMethod.GET },
+        new Map(),
+      );
+
+      const params: Record<string, any> = {};
+      // @ts-expect-error - accessing private method for testing
+      functionMetadata.processHttpParam({ name: undefined, index: 2 }, 42, params);
+
+      expect(params).toEqual({ param2: 42 });
+    });
+
+
+    it('should handle array as object', () => {
+      const functionMetadata = new FunctionMetadata(
+        'test',
+        {},
+        { method: HttpMethod.GET },
+        new Map(),
+      );
+
+      const params: Record<string, any> = {};
+      // @ts-expect-error - accessing private method for testing
+      functionMetadata.processHttpParam({ name: 'test', index: 0 }, ['item1', 'item2'], params);
+
+      // Arrays are objects, so Object.entries will create entries for indices
+      expect(params).toEqual({ '0': 'item1', '1': 'item2' });
     });
   });
 

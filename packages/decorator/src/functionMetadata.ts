@@ -32,6 +32,7 @@ import {
   ParameterType,
 } from './parameterDecorator';
 import { ResultExtractors } from './resultExtractor';
+import { EndpointReturnType } from './endpointReturnTypeCapable';
 
 /**
  * Metadata container for a function with HTTP endpoint decorators.
@@ -143,6 +144,10 @@ export class FunctionMetadata implements NamedCapable {
     return mergeRecordToMap(this.endpoint.attributes, resolvedAttributes);
   }
 
+  resolveEndpointReturnType(): EndpointReturnType {
+    return this.endpoint.returnType || this.api.returnType || EndpointReturnType.RESULT;
+  }
+
   /**
    * Resolves the request configuration from the method arguments.
    *
@@ -236,9 +241,6 @@ export class FunctionMetadata implements NamedCapable {
         case ParameterType.ATTRIBUTE:
           this.processAttributeParam(funParameter, value, attributes);
           break;
-        case ParameterType.ATTRIBUTES:
-          this.processAttributesParam(value, attributes);
-          break;
       }
     });
     const urlParams: UrlParams = {
@@ -266,13 +268,28 @@ export class FunctionMetadata implements NamedCapable {
     };
   }
 
+  private processHttpParam(param: ParameterMetadata,
+                           value: any,
+                           params: Record<string, any>) {
+    if (value === undefined || value === null) {
+      return;
+    }
+    if (typeof value === 'object') {
+      Object.entries(value).forEach(([key, value]) => {
+        params[key] = value;
+      });
+      return;
+    }
+    const paramName = param.name || `param${param.index}`;
+    params[paramName] = value;
+  }
+
   private processPathParam(
     param: ParameterMetadata,
     value: any,
     path: Record<string, any>,
   ) {
-    const paramName = param.name || `param${param.index}`;
-    path[paramName] = value;
+    this.processHttpParam(param, value, path);
   }
 
   private processQueryParam(
@@ -280,8 +297,7 @@ export class FunctionMetadata implements NamedCapable {
     value: any,
     query: Record<string, any>,
   ) {
-    const paramName = param.name || `param${param.index}`;
-    query[paramName] = value;
+    this.processHttpParam(param, value, query);
   }
 
   private processHeaderParam(
@@ -289,9 +305,7 @@ export class FunctionMetadata implements NamedCapable {
     value: any,
     headers: RequestHeaders,
   ) {
-    if (param.name && value !== undefined) {
-      headers[param.name] = String(value);
-    }
+    this.processHttpParam(param, value, headers);
   }
 
   /**
@@ -337,15 +351,12 @@ export class FunctionMetadata implements NamedCapable {
     value: any,
     attributes: Map<string, any>,
   ) {
+    if (typeof value === 'object' || value instanceof Map) {
+      mergeRecordToMap(value, attributes);
+      return;
+    }
     if (param.name && value !== undefined) {
       attributes.set(param.name, value);
     }
-  }
-
-  private processAttributesParam(value: any, attributes: Map<string, any>) {
-    if (typeof value !== 'object' || value! instanceof Map) {
-      throw new Error('@attributes() parameter must be an object or an Map');
-    }
-    mergeRecordToMap(value, attributes);
   }
 }
