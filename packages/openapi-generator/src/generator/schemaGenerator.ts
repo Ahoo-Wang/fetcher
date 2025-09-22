@@ -37,7 +37,7 @@ export function generateSchemas(
           extends: [schema.wowType],
         });
       } else {
-        generateSchemaInterface(sourceFile, schema);
+        generateSchemaInterface(sourceFile, schema, openapi.schemas);
       }
     }
 
@@ -52,8 +52,13 @@ export function generateSchemas(
   }
 }
 
-function generateSchemaInterface(sourceFile: any, schema: ParsedSchema): void {
+function generateSchemaInterface(
+  sourceFile: any,
+  schema: ParsedSchema,
+  schemas: Record<string, ParsedSchema>,
+): void {
   const properties: any[] = [];
+  const wowTypes = new Set<string>();
 
   if (schema.schema.properties) {
     for (const [propName, propSchema] of Object.entries(
@@ -63,7 +68,7 @@ function generateSchemaInterface(sourceFile: any, schema: ParsedSchema): void {
 
       const property = {
         name: propName,
-        type: getTypeFromSchema(propSchema),
+        type: getTypeFromSchema(propSchema, schemas, wowTypes),
         hasQuestionToken: !schema.schema.required?.includes(propName),
       };
       properties.push(property);
@@ -75,12 +80,48 @@ function generateSchemaInterface(sourceFile: any, schema: ParsedSchema): void {
     isExported: true,
     properties,
   });
+
+  // Add imports for Wow types used in this interface
+  if (wowTypes.size > 0) {
+    sourceFile.addImportDeclaration({
+      moduleSpecifier: IMPORT_WOW_PATH,
+      namedImports: Array.from(wowTypes),
+    });
+  }
 }
 
-function getTypeFromSchema(schema: any): string {
+function getTypeFromSchema(
+  schema: any,
+  schemas: Record<string, ParsedSchema>,
+  wowTypes?: Set<string>,
+): string {
+  if (!schema || typeof schema !== 'object') {
+    return 'any';
+  }
+
+  // Handle $ref references
+  if (schema.$ref) {
+    const refKey = schema.$ref.replace('#/components/schemas/', '');
+    const refSchema = schemas[refKey];
+    if (refSchema) {
+      // For Wow types, use the Wow type directly
+      if (refSchema.isWowType && refSchema.wowType) {
+        if (wowTypes) {
+          wowTypes.add(refSchema.wowType);
+        }
+        return refSchema.wowType;
+      }
+      return refSchema.interfaceName;
+    }
+    return 'any';
+  }
+
   if (schema.type) {
     switch (schema.type) {
       case 'string':
+        if (schema.enum) {
+          return schema.enum.map((val: any) => `'${val}'`).join(' | ');
+        }
         return 'string';
       case 'number':
       case 'integer':
@@ -89,23 +130,42 @@ function getTypeFromSchema(schema: any): string {
         return 'boolean';
       case 'array':
         const itemsType = schema.items
-          ? getTypeFromSchema(schema.items)
+          ? getTypeFromSchema(schema.items, schemas, wowTypes)
           : 'any';
         return `${itemsType}[]`;
       case 'object':
+        if (schema.properties) {
+          // Generate inline interface for complex objects
+          const props = Object.entries(schema.properties)
+            .map(([key, propSchema]: [string, any]) => {
+              const isRequired = schema.required?.includes(key);
+              const type = getTypeFromSchema(propSchema, schemas, wowTypes);
+              return `${key}${isRequired ? '' : '?'}: ${type}`;
+            })
+            .join('; ');
+          return `{ ${props} }`;
+        }
+        if (schema.additionalProperties) {
+          const valueType = getTypeFromSchema(
+            schema.additionalProperties,
+            schemas,
+            wowTypes,
+          );
+          return `Record<string, ${valueType}>`;
+        }
         return 'Record<string, any>';
       default:
         return 'any';
     }
   }
 
-  if (schema.enum) {
-    return schema.enum.map((val: any) => `'${val}'`).join(' | ');
-  }
-
   if (schema.oneOf || schema.anyOf || schema.allOf) {
-    const schemas = schema.oneOf || schema.anyOf || schema.allOf || [];
-    return schemas.map((s: any) => getTypeFromSchema(s)).join(' | ');
+    const schemasList = schema.oneOf || schema.anyOf || schema.allOf || [];
+    const types = schemasList.map((s: any) =>
+      getTypeFromSchema(s, schemas, wowTypes),
+    );
+    const joiner = schema.oneOf ? ' | ' : schema.anyOf ? ' | ' : ' & ';
+    return types.join(joiner);
   }
 
   return 'any';

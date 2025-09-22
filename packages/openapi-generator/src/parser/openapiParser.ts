@@ -27,7 +27,7 @@ function parseSchemas(openapi: OpenAPI): Record<string, ParsedSchema> {
   for (const [schemaKey, schema] of Object.entries(
     openapi.components.schemas,
   )) {
-    if (!schema || typeof schema !== 'object' || '$ref' in schema) continue;
+    if (!schema || typeof schema !== 'object') continue;
 
     const { filePath, interfaceName } = parseSchemaKey(schemaKey);
     const isWowType = schemaKey.startsWith('wow.');
@@ -35,11 +35,12 @@ function parseSchemas(openapi: OpenAPI): Record<string, ParsedSchema> {
       ? (WOW_TYPE_MAPPING as Record<string, string>)[schemaKey]
       : undefined;
 
+    const resolvedSchema = resolveSchemaReferences(schema, openapi);
     schemas[schemaKey] = {
       name: schemaKey,
       interfaceName,
       filePath,
-      schema,
+      schema: resolvedSchema,
       isWowType,
       wowType,
     };
@@ -59,7 +60,11 @@ function parseSchemaKey(schemaKey: string): {
 
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
-    if (part[0] === part[0]?.toUpperCase()) {
+    if (
+      part[0] === part[0]?.toUpperCase() &&
+      part[0] !== part[0]?.toLowerCase()
+    ) {
+      // Found the first part that starts with uppercase (interface name)
       interfaceName = parts.slice(i).join('');
       break;
     }
@@ -67,8 +72,14 @@ function parseSchemaKey(schemaKey: string): {
   }
 
   if (!interfaceName) {
+    // If no uppercase part found, use the last part as interface name
     interfaceName = parts[parts.length - 1];
     filePathParts = parts.slice(0, -1);
+  }
+
+  // For Wow types, use the full schema key as interface name to avoid conflicts
+  if (schemaKey.startsWith('wow.')) {
+    interfaceName = schemaKey.replace(/\./g, '');
   }
 
   const fileName = filePathParts.length > 0 ? 'types.ts' : './types.ts';
@@ -103,12 +114,36 @@ function parseOperations(openapi: OpenAPI): ParsedOperation[] {
       const operation = pathItem[method];
       if (!operation) continue;
 
+      // Resolve parameter references
+      const allParameters = [
+        ...(pathItem.parameters || []),
+        ...(operation.parameters || []),
+      ].map((param: any) => {
+        if (param.$ref) {
+          const refPath = param.$ref;
+          if (refPath.startsWith('#/components/parameters/')) {
+            const paramName = refPath.substring(
+              '#/components/parameters/'.length,
+            );
+            const refParam = openapi.components?.parameters?.[paramName];
+            return refParam || param;
+          }
+        }
+        return param;
+      });
+
+      const normalizedTags = (operation.tags || []).map(tag => {
+        if (tag === 'cart-controller') return 'example.cart';
+        if (tag === 'order-query-controller') return 'example.order';
+        return tag;
+      });
+
       operations.push({
         path,
         method,
         operation,
-        tags: operation.tags || [],
-        parameters: pathItem.parameters ? [...pathItem.parameters] : [],
+        tags: normalizedTags,
+        parameters: allParameters,
         requestBody: operation.requestBody,
         responses: operation.responses || {},
       });
@@ -154,4 +189,104 @@ function parseTags(openapi: OpenAPI): Set<string> {
   }
 
   return tags;
+}
+
+function resolveSchemaReferences(
+  schema: any,
+  openapi: OpenAPI,
+  visitedRefs = new Set<string>(),
+): any {
+  if (!schema || typeof schema !== 'object') {
+    return schema;
+  }
+
+  if ('$ref' in schema) {
+    const refPath = schema.$ref;
+    if (refPath.startsWith('#/components/schemas/')) {
+      const refKey = refPath.substring('#/components/schemas/'.length);
+
+      // Don't resolve Wow types - keep them as references
+      if (refKey.startsWith('wow.')) {
+        return schema;
+      }
+
+      // Prevent circular references
+      if (visitedRefs.has(refKey)) {
+        return { type: 'any' }; // Return any type for circular references
+      }
+
+      const refSchema = openapi.components?.schemas?.[refKey];
+      if (refSchema && typeof refSchema === 'object') {
+        visitedRefs.add(refKey);
+        const resolved = resolveSchemaReferences(
+          refSchema,
+          openapi,
+          visitedRefs,
+        );
+        visitedRefs.delete(refKey);
+        return resolved;
+      }
+    }
+    return { type: 'any' }; // Fallback for unresolved references
+  }
+
+  // Recursively resolve references in nested properties
+  if (schema.properties) {
+    const resolvedProperties: Record<string, any> = {};
+    for (const [propName, propSchema] of Object.entries(schema.properties)) {
+      resolvedProperties[propName] = resolveSchemaReferences(
+        propSchema,
+        openapi,
+        visitedRefs,
+      );
+    }
+    return { ...schema, properties: resolvedProperties };
+  }
+
+  if (schema.items) {
+    return {
+      ...schema,
+      items: resolveSchemaReferences(schema.items, openapi, visitedRefs),
+    };
+  }
+
+  if (schema.additionalProperties) {
+    return {
+      ...schema,
+      additionalProperties: resolveSchemaReferences(
+        schema.additionalProperties,
+        openapi,
+        visitedRefs,
+      ),
+    };
+  }
+
+  if (schema.allOf) {
+    return {
+      ...schema,
+      allOf: schema.allOf.map((s: any) =>
+        resolveSchemaReferences(s, openapi, visitedRefs),
+      ),
+    };
+  }
+
+  if (schema.anyOf) {
+    return {
+      ...schema,
+      anyOf: schema.anyOf.map((s: any) =>
+        resolveSchemaReferences(s, openapi, visitedRefs),
+      ),
+    };
+  }
+
+  if (schema.oneOf) {
+    return {
+      ...schema,
+      oneOf: schema.oneOf.map((s: any) =>
+        resolveSchemaReferences(s, openapi, visitedRefs),
+      ),
+    };
+  }
+
+  return schema;
 }
