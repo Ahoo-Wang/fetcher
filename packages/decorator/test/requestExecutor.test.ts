@@ -4,9 +4,8 @@ import {
   JsonResultExtractor,
   ExchangeResultExtractor,
   NamedFetcher,
-  ResultExtractors,
 } from '@ahoo-wang/fetcher';
-import { RequestExecutor, DECORATOR_TARGET_ATTRIBUTE_KEY } from '../src';
+import { RequestExecutor, DECORATOR_TARGET_ATTRIBUTE_KEY, EndpointReturnType } from '../src';
 import { FunctionMetadata } from '../src';
 import { ParameterType, type ParameterMetadata } from '../src';
 
@@ -16,7 +15,9 @@ class MockFetcher extends NamedFetcher {
     super('mock-fetcher');
   }
 
-  request = vi.fn().mockResolvedValue('mock response');
+  exchange = vi.fn().mockResolvedValue({
+    extractResult: vi.fn(),
+  });
 }
 
 describe('RequestExecutor', () => {
@@ -102,10 +103,8 @@ describe('RequestExecutor', () => {
       );
 
       const executor = new RequestExecutor(metadataWithFetcher);
-      const result = await executor.execute({}, ['123', 'active']);
-
-      expect(result).toBe('mock response');
-      expect(mockFetcher.request).toHaveBeenCalledWith(
+      await executor.execute({}, ['123', 'active']);
+      expect(mockFetcher.exchange).toHaveBeenCalledWith(
         expect.objectContaining({
           method: HttpMethod.GET,
           url: '/api/v1/users/{id}', // URL template is not processed by FunctionMetadata
@@ -134,10 +133,8 @@ describe('RequestExecutor', () => {
 
       const executor = new RequestExecutor(metadataWithFetcher);
       const target = { fetcher: targetFetcher };
-      const result = await executor.execute(target, ['123', 'active']);
-
-      expect(result).toBe('mock response');
-      expect(targetFetcher.request).toHaveBeenCalledWith(
+      await executor.execute(target, ['123', 'active']);
+      expect(targetFetcher.exchange).toHaveBeenCalledWith(
         expect.objectContaining({
           method: HttpMethod.GET,
           url: '/api/v1/users/{id}', // URL template is not processed by FunctionMetadata
@@ -152,27 +149,26 @@ describe('RequestExecutor', () => {
         },
       );
       // Ensure metadata fetcher was not called
-      expect(metadataFetcher.request).not.toHaveBeenCalled();
+      expect(metadataFetcher.exchange).not.toHaveBeenCalled();
     });
 
-    it('should use endpoint result extractor when defined', async () => {
+    it('should use endpoint result type when defined', async () => {
       const mockFetcher = new MockFetcher();
-      mockFetcher.request = vi
+      mockFetcher.exchange = vi
         .fn()
         .mockResolvedValue('endpoint extractor result');
 
       const metadataWithExtractor = new FunctionMetadata(
         'getUser',
-        { ...mockApiMetadata, fetcher: mockFetcher },
+        { ...mockApiMetadata, fetcher: mockFetcher, returnType: EndpointReturnType.EXCHANGE },
         { ...mockEndpointMetadata, resultExtractor: ExchangeResultExtractor },
         mockParameterMetadata,
       );
 
       const executor = new RequestExecutor(metadataWithExtractor);
       const result = await executor.execute({}, ['123', 'active']);
-
       expect(result).toBe('endpoint extractor result');
-      expect(mockFetcher.request).toHaveBeenCalledWith(
+      expect(mockFetcher.exchange).toHaveBeenCalledWith(
         expect.anything(),
         expect.anything(),
       );
@@ -188,10 +184,9 @@ describe('RequestExecutor', () => {
       );
 
       const executor = new RequestExecutor(metadataWithoutParams);
-      const result = await executor.execute({}, []);
+      await executor.execute({}, []);
 
-      expect(result).toBe('mock response');
-      expect(mockFetcher.request).toHaveBeenCalledWith(
+      expect(mockFetcher.exchange).toHaveBeenCalledWith(
         expect.objectContaining({
           method: HttpMethod.GET,
           url: '/api/v1/users',
@@ -207,9 +202,9 @@ describe('RequestExecutor', () => {
       );
     });
 
-    it('should reject when fetcher request rejects', async () => {
+    it('should reject when fetcher exchange rejects', async () => {
       const mockFetcher = new MockFetcher();
-      mockFetcher.request = vi
+      mockFetcher.exchange = vi
         .fn()
         .mockRejectedValue(new Error('Request failed'));
 

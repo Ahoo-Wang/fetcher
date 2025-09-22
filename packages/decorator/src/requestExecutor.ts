@@ -12,6 +12,7 @@
  */
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { FunctionMetadata } from './functionMetadata';
+import { EndpointReturnType } from './endpointReturnTypeCapable';
 
 const TARGET_FETCHER_PROPERTY = 'fetcher';
 
@@ -100,9 +101,14 @@ export class RequestExecutor {
     const exchangeInit = this.metadata.resolveExchangeInit(args);
     exchangeInit.attributes?.set(DECORATOR_TARGET_ATTRIBUTE_KEY, target);
     const extractor = this.metadata.resolveResultExtractor();
-    return fetcher.request(exchangeInit.request, {
+    const endpointReturnType = this.metadata.resolveEndpointReturnType();
+    const exchange = await fetcher.exchange(exchangeInit.request, {
       resultExtractor: extractor,
       attributes: exchangeInit.attributes,
     });
+    if (endpointReturnType === EndpointReturnType.EXCHANGE) {
+      return exchange;
+    }
+    return exchange.extractResult();
   }
 }
