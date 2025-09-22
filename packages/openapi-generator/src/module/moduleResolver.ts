@@ -12,7 +12,7 @@
  */
 
 import { OpenAPI, Reference, Schema } from '@ahoo-wang/fetcher-openapi';
-import { ModuleDefinition, ModuleInfo } from '@/module/moduleDefinition.ts';
+import { ModuleDefinition } from '@/module/moduleDefinition.ts';
 import { ModuleInfoResolver } from '@/module/moduleInfoResolver.ts';
 import { ModelResolver } from '@/model/modelResolver.ts';
 import { isReference } from '@/utils.ts';

@@ -15,7 +15,7 @@ import { Paths } from '@ahoo-wang/fetcher-openapi';
 import { ClientDefinition } from '@/client/clientDefinition.ts';
 
 export class ClientResolver {
-  resolve(paths: Paths): ClientDefinition[] {
+  resolve(_paths: Paths): ClientDefinition[] {
     return [];
   }
 }

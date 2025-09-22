@@ -24,7 +24,7 @@ export class ModelResolver {
 
   resolve(key: string, schema: Schema): ModelDefinition {
     if (schema.type !== 'object') {
-      throw new Error(`${key} is not object type.`);
+      throw new Error(`Schema ${key} is not object type. Actual type: ${schema.type}`);
     }
     const moduleInfo = this.moduleInfoResolver.resolve(key);
     if (!schema.properties) {
@@ -35,6 +35,7 @@ export class ModelResolver {
         isReference: false,
         dependencies: [],
         type: schema.type,
+        required: schema.required || [],
       };
     }
     const dependencies: DependencyDefinition[] = [];
@@ -44,9 +45,14 @@ export class ModelResolver {
       if (isReference(propSchema)) {
         const dependency = this.resolveReference(propSchema as Reference);
         dependencies.push(dependency);
-        modelProperties.set(propName, dependency.namedImports);
-      } else {
+        // 正确获取Set中的第一个（也是唯一一个）元素
+        const firstName = dependency.namedImports.values().next().value;
+        modelProperties.set(propName, firstName);
+      } else if ((propSchema as Schema).type) {
         modelProperties.set(propName, (propSchema as Schema).type);
+      } else {
+        // 处理没有明确类型的属性
+        modelProperties.set(propName, 'unknown');
       }
     }
 
@@ -58,7 +64,12 @@ export class ModelResolver {
       dependencies,
       properties: modelProperties,
       type: schema.type,
+      required: schema.required || [],
     };
+  }
+
+  resolveProperties(schema: Schema): Map<string, string> {
+
   }
 
 
