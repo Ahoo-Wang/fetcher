@@ -9,6 +9,11 @@ import { type FetchRequestInit } from '@ahoo-wang/fetcher';
  * Defines the different types of parameters that can be used
  * in API method decorators to specify how arguments should be handled
  * in the HTTP request.
+ *
+ * PATH, QUERY, and HEADER parameter types support plain objects (Record) which will be expanded
+ * into multiple parameters with the object's key-value pairs.
+ *
+ * ATTRIBUTE parameter type supports primitive types, plain objects (Record), and Map objects.
  */
 export enum ParameterType {
   /**
@@ -17,10 +22,17 @@ export enum ParameterType {
    * Path parameters are used to specify dynamic parts of the URL path.
    * They are defined using curly braces in the endpoint path.
    *
+   * Supports both primitive values and plain objects. When a plain object is passed,
+   * its key-value pairs will be expanded into multiple path parameters.
+   *
    * @example
    * ```typescript
    * @get('/users/{id}')
    * getUser(@path('id') userId: string): Promise<Response>
+   *
+   * // With object expansion
+   * @get('/users/{id}/posts/{postId}')
+   * getUserPost(@path() params: { id: string, postId: string }): Promise<Response>
    * ```
    */
   PATH = 'path',
@@ -31,10 +43,17 @@ export enum ParameterType {
    * Query parameters are used to pass non-hierarchical data to the server.
    * They appear after the '?' in the URL.
    *
+   * Supports both primitive values and plain objects. When a plain object is passed,
+   * its key-value pairs will be expanded into multiple query parameters.
+   *
    * @example
    * ```typescript
    * @get('/users')
    * getUsers(@query('limit') limit: number): Promise<Response>
+   *
+   * // With object expansion
+   * @get('/users')
+   * getUsers(@query() filters: { limit: number, offset: number, sort: string }): Promise<Response>
    * ```
    */
   QUERY = 'query',
@@ -45,10 +64,17 @@ export enum ParameterType {
    * Header parameters are used to pass metadata about the request,
    * such as authentication tokens or content type information.
    *
+   * Supports both primitive values and plain objects. When a plain object is passed,
+   * its key-value pairs will be expanded into multiple header parameters.
+   *
    * @example
    * ```typescript
    * @get('/users')
    * getUsers(@header('Authorization') token: string): Promise<Response>
+   *
+   * // With object expansion
+   * @get('/users')
+   * getUsers(@header() headers: { 'X-API-Key': string, 'X-Version': string }): Promise<Response>
    * ```
    */
   HEADER = 'header',
@@ -78,6 +104,24 @@ export enum ParameterType {
    * The attribute parameter allows passing a single key-value pair that will be added
    * to the request attributes object. This is useful for passing specific contextual
    * information that can be accessed by interceptors.
+   *
+   * Supports primitive types, plain objects (Record), and Map objects.
+   * When a plain object is passed, its key-value pairs will be expanded into multiple attributes.
+   * When a Map is passed, its entries will be added to the attributes.
+   *
+   * @example
+   * ```typescript
+   * @get('/users/{id}')
+   * getUser(@path('id') id: string, @attribute('userId') userId: string): Promise<Response>
+   *
+   * // With object expansion
+   * @get('/users/{id}')
+   * getUser(@path('id') id: string, @attribute() metadata: { userId: string, timestamp: number }): Promise<Response>
+   *
+   * // With Map
+   * @get('/users/{id}')
+   * getUser(@path('id') id: string, @attribute() attributes: Map<string, any>): Promise<Response>
+   * ```
    */
   ATTRIBUTE = 'attribute',
 }
@@ -124,7 +168,15 @@ export const PARAMETER_METADATA_KEY = Symbol('parameter:metadata');
  * The name is optional - if not provided, it will be automatically extracted
  * from the method parameter name using reflection.
  *
- * @param type - The type of parameter (PATH, QUERY, HEADER, or BODY)
+ * Different parameter types support different value types:
+ * - PATH, QUERY, HEADER: Support primitive types and plain objects (Record).
+ *   Plain objects will be expanded into multiple parameters.
+ * - BODY: Accepts any value to be sent as the request body.
+ * - ATTRIBUTE: Supports primitive types, plain objects (Record), and Map objects.
+ *   Plain objects will be expanded into multiple attributes, and Map objects will
+ *   have their entries added to the attributes collection.
+ *
+ * @param type - The type of parameter (PATH, QUERY, HEADER, BODY, REQUEST, ATTRIBUTE)
  * @param name - The name of the parameter (used for path, query, and header parameters, optional - auto-extracted if not provided)
  * @returns A parameter decorator function
  *
@@ -137,6 +189,10 @@ export const PARAMETER_METADATA_KEY = Symbol('parameter:metadata');
  * // With auto-extracted name
  * @get('/users/{userId}')
  * getUser(@parameter(ParameterType.PATH) userId: string): Promise<Response>
+ *
+ * // With object expansion for PATH parameters
+ * @get('/users/{id}/posts/{postId}')
+ * getUserPost(@parameter(ParameterType.PATH) params: { id: string, postId: string }): Promise<Response>
  * ```
  */
 export function parameter(type: ParameterType, name: string = '') {
@@ -177,6 +233,9 @@ export function parameter(type: ParameterType, name: string = '') {
  * The name is optional - if not provided, it will be automatically extracted
  * from the method parameter name using reflection.
  *
+ * Supports both primitive values and plain objects. When a plain object is passed,
+ * its key-value pairs will be expanded into multiple path parameters.
+ *
  * @param name - The name of the path parameter (optional, auto-extracted if not provided)
  * @returns A parameter decorator function
  *
@@ -189,6 +248,10 @@ export function parameter(type: ParameterType, name: string = '') {
  * // With auto-extracted name
  * @get('/users/{userId}')
  * getUser(@path() userId: string): Promise<Response>
+ *
+ * // With object expansion
+ * @get('/users/{id}/posts/{postId}')
+ * getUserPost(@path() params: { id: string, postId: string }): Promise<Response>
  * ```
  */
 export function path(name: string = '') {
@@ -202,6 +265,9 @@ export function path(name: string = '') {
  * The name is optional - if not provided, it will be automatically extracted
  * from the method parameter name using reflection.
  *
+ * Supports both primitive values and plain objects. When a plain object is passed,
+ * its key-value pairs will be expanded into multiple query parameters.
+ *
  * @param name - The name of the query parameter (optional, auto-extracted if not provided)
  * @returns A parameter decorator function
  *
@@ -214,6 +280,10 @@ export function path(name: string = '') {
  * // With auto-extracted name
  * @get('/users')
  * getUsers(@query() limit: number): Promise<Response>
+ *
+ * // With object expansion
+ * @get('/users')
+ * getUsers(@query() filters: { limit: number, offset: number, sort: string }): Promise<Response>
  * ```
  */
 export function query(name: string = '') {
@@ -227,6 +297,9 @@ export function query(name: string = '') {
  * The name is optional - if not provided, it will be automatically extracted
  * from the method parameter name using reflection.
  *
+ * Supports both primitive values and plain objects. When a plain object is passed,
+ * its key-value pairs will be expanded into multiple header parameters.
+ *
  * @param name - The name of the header parameter (optional, auto-extracted if not provided)
  * @returns A parameter decorator function
  *
@@ -239,6 +312,10 @@ export function query(name: string = '') {
  * // With auto-extracted name
  * @get('/users')
  * getUsers(@header() authorization: string): Promise<Response>
+ *
+ * // With object expansion
+ * @get('/users')
+ * getUsers(@header() headers: { 'X-API-Key': string, 'X-Version': string }): Promise<Response>
  * ```
  */
 export function header(name: string = '') {
@@ -300,6 +377,10 @@ export function request() {
  * by interceptors during the request lifecycle. If no name is provided, the parameter's
  * property name will be used as the attribute key.
  *
+ * Supports primitive types, plain objects (Record), and Map objects.
+ * When a plain object is passed, its key-value pairs will be expanded into multiple attributes.
+ * When a Map is passed, its entries will be added to the attributes collection.
+ *
  * @param name - Optional name for the attribute. If not provided, the parameter's property name will be used.
  * @returns A parameter decorator function
  *
@@ -311,6 +392,14 @@ export function request() {
  * // Using property name as attribute key
  * @get('/users/{id}')
  * getUser(@path('id') id: string, @attribute() userId: string): Promise<Response>
+ *
+ * // With object expansion
+ * @get('/users/{id}')
+ * getUser(@path('id') id: string, @attribute() metadata: { userId: string, timestamp: number }): Promise<Response>
+ *
+ * // With Map
+ * @get('/users/{id}')
+ * getUser(@path('id') id: string, @attribute() attributes: Map<string, any>): Promise<Response>
  * ```
  */
 export function attribute(name: string = '') {
