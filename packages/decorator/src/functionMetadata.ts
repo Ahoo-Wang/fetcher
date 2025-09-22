@@ -271,13 +271,28 @@ export class FunctionMetadata implements NamedCapable {
     };
   }
 
+  private processHttpParam(param: ParameterMetadata,
+                           value: any,
+                           params: Record<string, any>) {
+    if (value === undefined) {
+      return;
+    }
+    if (typeof value === 'object') {
+      Object.entries(value).forEach(([key, value]) => {
+        params[key] = value;
+      });
+      return;
+    }
+    const paramName = param.name || `param${param.index}`;
+    params[paramName] = value;
+  }
+
   private processPathParam(
     param: ParameterMetadata,
     value: any,
     path: Record<string, any>,
   ) {
-    const paramName = param.name || `param${param.index}`;
-    path[paramName] = value;
+    this.processHttpParam(param, value, path);
   }
 
   private processQueryParam(
@@ -285,8 +300,7 @@ export class FunctionMetadata implements NamedCapable {
     value: any,
     query: Record<string, any>,
   ) {
-    const paramName = param.name || `param${param.index}`;
-    query[paramName] = value;
+    this.processHttpParam(param, value, query);
   }
 
   private processHeaderParam(
@@ -294,9 +308,7 @@ export class FunctionMetadata implements NamedCapable {
     value: any,
     headers: RequestHeaders,
   ) {
-    if (param.name && value !== undefined) {
-      headers[param.name] = String(value);
-    }
+    this.processHttpParam(param, value, headers);
   }
 
   /**
