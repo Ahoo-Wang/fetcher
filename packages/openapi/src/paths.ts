@@ -23,6 +23,7 @@ import { Responses } from './responses';
 import { Callback } from './responses';
 import { SecurityRequirement } from './security';
 import { ExternalDocumentation } from './base-types';
+import { Extensible } from './extensions';
 
 /**
  * Describes a single API operation on a path
@@ -40,7 +41,7 @@ import { ExternalDocumentation } from './base-types';
  * @property security - Declaration of which security mechanisms can be used for this operation
  * @property servers - Alternative server array to service this operation
  */
-export interface Operation {
+export interface Operation extends Extensible {
   tags?: string[];
   summary?: string;
   description?: string;
@@ -72,7 +73,7 @@ export interface Operation {
  * @property servers - Alternative server array to service all operations in this path
  * @property parameters - List of parameters that are applicable for all operations in this path
  */
-export interface PathItem {
+export interface PathItem extends Extensible {
   $ref?: string;
   summary?: string;
   description?: string;
@@ -91,6 +92,6 @@ export interface PathItem {
 /**
  * Holds the relative paths to the individual endpoints and their operations
  */
-export interface Paths {
+export interface Paths extends Extensible {
   [path: string]: PathItem;
 }

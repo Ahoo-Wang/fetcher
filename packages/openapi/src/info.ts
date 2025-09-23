@@ -15,6 +15,8 @@
  * API metadata type definitions for OpenAPI Specification
  */
 
+import { Extensible } from './extensions';
+
 /**
  * Contact information for the exposed API
  *
@@ -22,7 +24,7 @@
  * @property url - The URL pointing to the contact information
  * @property email - The email address of the contact person/organization
  */
-export interface Contact {
+export interface Contact extends Extensible {
   name?: string;
   url?: string;
   email?: string;
@@ -34,7 +36,7 @@ export interface Contact {
  * @property name - The license name used for the API
  * @property url - A URL to the license used for the API
  */
-export interface License {
+export interface License extends Extensible {
   name: string;
   url?: string;
 }
@@ -49,7 +51,7 @@ export interface License {
  * @property license - The license information for the exposed API
  * @property version - The version of the OpenAPI document
  */
-export interface Info {
+export interface Info extends Extensible {
   title?: string;
   description?: string;
   termsOfService?: string;

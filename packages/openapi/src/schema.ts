@@ -17,6 +17,7 @@
 
 import { ExternalDocumentation, SchemaType } from './base-types';
 import { Reference } from './reference';
+import { Extensible } from './extensions';
 
 /**
  * Adds support for polymorphism using discriminator
@@ -24,7 +25,7 @@ import { Reference } from './reference';
  * @property propertyName - The name of the property in the payload that will hold the discriminator value
  * @property mapping - An object to hold mappings between payload values and schema names or references
  */
-export interface Discriminator {
+export interface Discriminator extends Extensible {
   propertyName: string;
   mapping?: Record<string, string>;
 }
@@ -38,7 +39,7 @@ export interface Discriminator {
  * @property attribute - Declares whether the property definition translates to an attribute instead of an element
  * @property wrapped - MAY be used only for an array definition and signifies whether the array is wrapped
  */
-export interface XML {
+export interface XML extends Extensible {
   name?: string;
   namespace?: string;
   prefix?: string;
@@ -87,7 +88,7 @@ export interface XML {
  * @property xml - Additional metadata for XML formatting
  * @property externalDocs - Additional external documentation for this schema
  */
-export interface Schema {
+export interface Schema extends Extensible {
   $schema?: string;
   // General properties
   title?: string;

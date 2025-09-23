@@ -20,6 +20,7 @@ import { MediaType } from './parameters';
 import { Server } from './server';
 import { PathItem } from './paths';
 import { Header } from './base-types';
+import { Extensible } from './extensions';
 
 /**
  * The Link object represents a possible design-time link for a response
@@ -31,7 +32,7 @@ import { Header } from './base-types';
  * @property description - A description of the link
  * @property server - A server object to be used by the target operation
  */
-export interface Link {
+export interface Link extends Extensible {
   operationRef?: string;
   operationId?: string;
   parameters?: Record<string, any>;
@@ -48,7 +49,7 @@ export interface Link {
  * @property content - A map containing descriptions of potential response payloads
  * @property links - A map of operations links that can be followed from the response
  */
-export interface Response {
+export interface Response extends Extensible {
   description?: string;
   headers?: Record<string, Header | Reference>;
   content?: Record<string, MediaType>;
@@ -58,7 +59,7 @@ export interface Response {
 /**
  * A container for the expected responses of an operation
  */
-export interface Responses {
+export interface Responses extends Extensible {
   default?: Response | Reference;
 
   [httpCode: string]: Response | Reference | undefined;
@@ -67,6 +68,6 @@ export interface Responses {
 /**
  * A map of possible out-of-band callbacks related to the parent operation
  */
-export interface Callback {
+export interface Callback extends Extensible {
   [expression: string]: PathItem;
 }

@@ -15,6 +15,8 @@
  * Server configuration type definitions for OpenAPI Specification
  */
 
+import { Extensible } from './extensions';
+
 /**
  * Server variable for URL template substitution
  *
@@ -22,7 +24,7 @@
  * @property default - The default value to use for substitution
  * @property description - An optional description for the server variable
  */
-export interface ServerVariable {
+export interface ServerVariable extends Extensible {
   enum?: string[];
   default: string;
   description?: string;
@@ -35,7 +37,7 @@ export interface ServerVariable {
  * @property description - An optional string describing the host designated by the URL
  * @property variables - A map between a variable name and its value
  */
-export interface Server {
+export interface Server extends Extensible {
   url: string;
   description?: string;
   variables?: Record<string, ServerVariable>;
