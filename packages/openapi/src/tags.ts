@@ -12,6 +12,7 @@
  */
 
 import { ExternalDocumentation } from './base-types';
+import { Extensible } from './extensions';
 
 /**
  * Adds metadata to a single tag that is used by the Operation Object
@@ -20,7 +21,7 @@ import { ExternalDocumentation } from './base-types';
  * @property description - A description for the tag
  * @property externalDocs - Additional external documentation for this tag
  */
-export interface Tag {
+export interface Tag extends Extensible {
   name: string;
   description?: string;
   externalDocs?: ExternalDocumentation;

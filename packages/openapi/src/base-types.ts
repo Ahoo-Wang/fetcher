@@ -18,6 +18,7 @@
 import { Schema } from './schema';
 import { Reference } from './reference';
 import { MediaType } from './parameters';
+import { Extensible } from './extensions';
 
 /**
  * HTTP methods as defined in the OpenAPI specification
@@ -55,7 +56,7 @@ export type SchemaType =
  * @property description - A description of the target documentation
  * @property url - The URL for the target documentation
  */
-export interface ExternalDocumentation {
+export interface ExternalDocumentation extends Extensible {
   description?: string;
   url: string;
 }
@@ -68,7 +69,7 @@ export interface ExternalDocumentation {
  * @property value - Embedded literal example
  * @property externalValue - A URL that points to the literal example
  */
-export interface Example {
+export interface Example extends Extensible {
   summary?: string;
   description?: string;
   value?: any;
@@ -78,7 +79,7 @@ export interface Example {
 /**
  * The Header Object follows the structure of the Parameter Object
  */
-export interface Header {
+export interface Header extends Extensible {
   description?: string;
   required?: boolean;
   deprecated?: boolean;

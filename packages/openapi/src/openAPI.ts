@@ -22,6 +22,7 @@ import { Components } from './components';
 import { SecurityRequirement } from './security';
 import { Tag } from './tags';
 import { ExternalDocumentation } from './base-types';
+import { Extensible } from './extensions';
 
 /**
  * Root document object for the OpenAPI specification
@@ -35,7 +36,7 @@ import { ExternalDocumentation } from './base-types';
  * @property tags - A list of tags used by the specification with additional metadata
  * @property externalDocs - Additional external documentation
  */
-export interface OpenAPI {
+export interface OpenAPI extends Extensible {
   openapi: string;
   info: Info;
   servers?: Server[];

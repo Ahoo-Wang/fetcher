@@ -18,6 +18,7 @@
 import { Example, Header, ParameterLocation } from './base-types';
 import { Reference } from './reference';
 import { Schema } from './schema';
+import { Extensible } from './extensions';
 
 /**
  * Describes a single operation parameter
@@ -36,7 +37,7 @@ import { Schema } from './schema';
  * @property examples - Examples of the parameter's potential value
  * @property content - A map containing the representations for the parameter
  */
-export interface Parameter {
+export interface Parameter extends Extensible {
   name: string;
   in: ParameterLocation;
   description?: string;
@@ -59,7 +60,7 @@ export interface Parameter {
  * @property content - The content of the request body
  * @property required - Determines if the request body is required in the request
  */
-export interface RequestBody {
+export interface RequestBody extends Extensible {
   description?: string;
   content: Record<string, MediaType>;
   required?: boolean;
@@ -73,7 +74,7 @@ export interface RequestBody {
  * @property examples - Examples of the media type
  * @property encoding - A map between a property name and its encoding information
  */
-export interface MediaType {
+export interface MediaType extends Extensible {
   schema?: Schema | Reference;
   example?: any;
   examples?: Record<string, Example | Reference>;
@@ -89,7 +90,7 @@ export interface MediaType {
  * @property explode - When true, property values of type array or object generate separate parameters
  * @property allowReserved - Determines whether the parameter value should allow reserved characters
  */
-export interface Encoding {
+export interface Encoding extends Extensible {
   contentType?: string;
   headers?: Record<string, Header | Reference>;
   style?: string;

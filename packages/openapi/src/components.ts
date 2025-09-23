@@ -24,6 +24,7 @@ import { SecurityScheme } from './security';
 import { Link } from './responses';
 import { Callback } from './responses';
 import { Example, Header } from './base-types';
+import { Extensible } from './extensions';
 
 /**
  * Holds a set of reusable objects for different aspects of the OAS
@@ -38,7 +39,7 @@ import { Example, Header } from './base-types';
  * @property links - An object to hold reusable Link Objects
  * @property callbacks - An object to hold reusable Callback Objects
  */
-export interface Components {
+export interface Components extends Extensible {
   schemas?: Record<string, Schema | Reference>;
   responses?: Record<string, Response | Reference>;
   parameters?: Record<string, Parameter | Reference>;
