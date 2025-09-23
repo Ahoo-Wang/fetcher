@@ -7,4 +7,3 @@ export * from './reflection';
 export * from './requestExecutor';
 export * from './generated';
 export * from './resultExtractor';
-export * from './lifeCycle';
