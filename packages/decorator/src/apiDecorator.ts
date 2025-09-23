@@ -133,7 +133,7 @@ function bindExecutor<T extends new (...args: any[]) => any>(
 
   // Replace method with actual implementation
   constructor.prototype[functionName] = function(...args: unknown[]) {
-    let requestExecutor: RequestExecutor = buildRequestExecutor(this, functionMetadata);
+    const requestExecutor: RequestExecutor = buildRequestExecutor(this, functionMetadata);
     return requestExecutor.execute(args);
   };
 }
