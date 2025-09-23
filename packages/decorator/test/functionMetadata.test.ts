@@ -4,11 +4,10 @@ import {
   JsonResultExtractor,
   ExchangeResultExtractor,
   fetcher,
-  NamedFetcher,
+  NamedFetcher, ResultExtractors,
 } from '@ahoo-wang/fetcher';
 import { FunctionMetadata } from '../src';
 import { ParameterType, type ParameterMetadata } from '../src';
-import { ResultExtractors } from '../src';
 
 // Mock classes for testing
 class MockFetcher extends NamedFetcher {
@@ -214,7 +213,7 @@ describe('FunctionMetadata', () => {
       );
 
       const extractor = functionMetadata.resolveResultExtractor();
-      expect(extractor).toBe(ResultExtractors.DEFAULT);
+      expect(extractor).toBe(ResultExtractors.Json);
     });
   });
 
