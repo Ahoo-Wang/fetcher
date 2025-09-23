@@ -112,3 +112,8 @@ export class RequestExecutor {
     return exchange.extractResult();
   }
 }
+
+
+export interface RequestExecutorCapable {
+  requestExecutor: RequestExecutor;
+}

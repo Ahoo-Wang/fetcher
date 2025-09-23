@@ -74,6 +74,13 @@ export interface ApiMetadata
   fetcher?: string | Fetcher;
 }
 
+export interface ApiMetadataCapable {
+  /**
+   * API metadata for the class.
+   */
+  apiMetadata: ApiMetadata;
+}
+
 export const API_METADATA_KEY = Symbol('api:metadata');
 
 /**
@@ -114,7 +121,7 @@ function bindExecutor<T extends new (...args: any[]) => any>(
     ) || new Map();
 
   // Create function metadata
-  const functionMetadata = new FunctionMetadata(
+  const functionMetadata: FunctionMetadata = new FunctionMetadata(
     functionName,
     apiMetadata,
     endpointMetadata,
@@ -122,12 +129,39 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   );
 
   // Create request executor
-  const requestExecutor = new RequestExecutor(functionMetadata);
+
 
   // Replace method with actual implementation
   constructor.prototype[functionName] = function(...args: unknown[]) {
+    let requestExecutor: RequestExecutor = buildRequestExecutor(this, functionMetadata);
     return requestExecutor.execute(this, args);
   };
+}
+
+export function buildRequestExecutor(
+  target: any,
+  defaultFunctionMetadata: FunctionMetadata,
+): RequestExecutor {
+  let requestExecutor: RequestExecutor = target['requestExecutor'];
+  if (requestExecutor) {
+    return requestExecutor;
+  }
+  let apiMetadata: ApiMetadata = target['apiMetadata'];
+  if (!apiMetadata) {
+    requestExecutor = new RequestExecutor(defaultFunctionMetadata);
+    target['requestExecutor'] = requestExecutor;
+    return requestExecutor;
+  }
+  requestExecutor = new RequestExecutor(
+    new FunctionMetadata(
+      defaultFunctionMetadata.name,
+      apiMetadata,
+      defaultFunctionMetadata.endpoint,
+      defaultFunctionMetadata.parameters,
+    ),
+  );
+  target['requestExecutor'] = requestExecutor;
+  return requestExecutor;
 }
 
 export function api(
