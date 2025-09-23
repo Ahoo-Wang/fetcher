@@ -26,29 +26,27 @@ export const DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__';
  * and executes it using the appropriate fetcher.
  */
 export class RequestExecutor {
-  private readonly metadata: FunctionMetadata;
 
   /**
    * Creates a new RequestExecutor instance.
    *
    * @param metadata - The function metadata containing all request information
    */
-  constructor(metadata: FunctionMetadata) {
-    this.metadata = metadata;
+  constructor(private readonly target: any,
+              private readonly metadata: FunctionMetadata) {
   }
 
   /**
    * Retrieves the fetcher instance from the target object.
    *
-   * @param target - The target object that may contain a fetcher property
    * @returns The fetcher instance if exists, otherwise undefined
    */
-  private getTargetFetcher(target: any): Fetcher | undefined {
-    if (!target || typeof target !== 'object') {
+  private getTargetFetcher(): Fetcher | undefined {
+    if (!this.target || typeof this.target !== 'object') {
       return undefined;
     }
     // Extract the fetcher property from the target object
-    const fetcher = target[TARGET_FETCHER_PROPERTY];
+    const fetcher = this.target[TARGET_FETCHER_PROPERTY];
 
     // Validate that the fetcher is an instance of the Fetcher class
     if (fetcher instanceof Fetcher) {
@@ -96,10 +94,10 @@ export class RequestExecutor {
    * // 4. Return the Response object
    * ```
    */
-  async execute(target: any, args: any[]): Promise<any> {
-    const fetcher = this.getTargetFetcher(target) || this.metadata.fetcher;
+  async execute(args: any[]): Promise<any> {
+    const fetcher = this.getTargetFetcher() || this.metadata.fetcher;
     const exchangeInit = this.metadata.resolveExchangeInit(args);
-    exchangeInit.attributes?.set(DECORATOR_TARGET_ATTRIBUTE_KEY, target);
+    exchangeInit.attributes?.set(DECORATOR_TARGET_ATTRIBUTE_KEY, this.target);
     const extractor = this.metadata.resolveResultExtractor();
     const endpointReturnType = this.metadata.resolveEndpointReturnType();
     const exchange = await fetcher.exchange(exchangeInit.request, {
@@ -114,6 +112,6 @@ export class RequestExecutor {
 }
 
 
-export interface RequestExecutorCapable {
-  requestExecutor: RequestExecutor;
+export interface RequestExecutorsCapable {
+  requestExecutors: Map<String, RequestExecutor>;
 }

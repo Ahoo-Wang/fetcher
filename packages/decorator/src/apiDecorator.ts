@@ -134,7 +134,7 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   // Replace method with actual implementation
   constructor.prototype[functionName] = function(...args: unknown[]) {
     let requestExecutor: RequestExecutor = buildRequestExecutor(this, functionMetadata);
-    return requestExecutor.execute(this, args);
+    return requestExecutor.execute(args);
   };
 }
 
@@ -142,7 +142,12 @@ export function buildRequestExecutor(
   target: any,
   defaultFunctionMetadata: FunctionMetadata,
 ): RequestExecutor {
-  let requestExecutor: RequestExecutor = target['requestExecutor'];
+  let requestExecutors: Map<string, RequestExecutor> = target['requestExecutors'];
+  if (!requestExecutors) {
+    requestExecutors = new Map<string, RequestExecutor>();
+    target['requestExecutors'] = requestExecutors;
+  }
+  let requestExecutor = requestExecutors.get(defaultFunctionMetadata.name);
   if (requestExecutor) {
     return requestExecutor;
   }
@@ -151,6 +156,7 @@ export function buildRequestExecutor(
     apiMetadata = { ...defaultFunctionMetadata.api };
   }
   requestExecutor = new RequestExecutor(
+    target,
     new FunctionMetadata(
       defaultFunctionMetadata.name,
       apiMetadata,
@@ -158,7 +164,7 @@ export function buildRequestExecutor(
       defaultFunctionMetadata.parameters,
     ),
   );
-  target['requestExecutor'] = requestExecutor;
+  requestExecutors.set(defaultFunctionMetadata.name, requestExecutor);
   return requestExecutor;
 }
 
