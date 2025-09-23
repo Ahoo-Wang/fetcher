@@ -113,5 +113,5 @@ export class RequestExecutor {
 
 
 export interface RequestExecutorsCapable {
-  requestExecutors: Map<String, RequestExecutor>;
+  requestExecutors: Map<string, RequestExecutor>;
 }
