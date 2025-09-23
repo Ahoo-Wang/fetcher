@@ -16,7 +16,7 @@ import {
   Fetcher,
   type FetchExchangeInit,
   FetchRequestInit,
-  getFetcher,
+  getFetcher, JsonResultExtractor,
   mergeRecordToMap,
   mergeRequest,
   NamedCapable,
@@ -31,7 +31,6 @@ import {
   ParameterRequest,
   ParameterType,
 } from './parameterDecorator';
-import { ResultExtractors } from './resultExtractor';
 import { EndpointReturnType } from './endpointReturnTypeCapable';
 
 /**
@@ -135,7 +134,7 @@ export class FunctionMetadata implements NamedCapable {
     return (
       this.endpoint.resultExtractor ||
       this.api.resultExtractor ||
-      ResultExtractors.DEFAULT
+      JsonResultExtractor
     );
   }
 

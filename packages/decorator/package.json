@@ -48,7 +48,6 @@
   },
   "dependencies": {
     "@ahoo-wang/fetcher": "workspace:*",
-    "@ahoo-wang/fetcher-eventstream": "workspace:*",
     "reflect-metadata": "catalog:"
   },
   "devDependencies": {
