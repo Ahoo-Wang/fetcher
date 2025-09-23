@@ -17,7 +17,7 @@ import {
   FunctionInfo,
   BindingError,
   AggregateId,
-  Condition, DomainEventStream, ListQuery, PagedList, PagedQuery, SingleQuery, MaterializedSnapshot,
+  Condition, DomainEventStream, ListQuery, PagedList, PagedQuery, SingleQuery, MaterializedSnapshot, StateEvent,
 } from '@ahoo-wang/fetcher-wow';
 import { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
 
@@ -170,22 +170,20 @@ export interface ExecutionFailedStateSnapshot extends MaterializedSnapshot<Execu
 
 }
 
-export interface ExecutionFailedStateStateEvent {
+export interface ExecutionFailedStateStateEvent extends StateEvent<ExecutionFailedState> {
   id: string;
   contextName: string;
   aggregateName: string;
-  header: object;
   tenantId: string;
   aggregateId: string;
   ownerId: string;
   commandId: string;
   requestId: string;
   version: number;
-  body: object[];
   createTime: number;
   firstOperator: string;
   firstEventTime: number;
-  state: object;
+  state: ExecutionFailedState;
   deleted: boolean;
 }
 
