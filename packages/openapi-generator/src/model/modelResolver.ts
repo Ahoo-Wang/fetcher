@@ -104,8 +104,7 @@ export class ModelResolver {
 
   resolveType(schema: Schema | Reference): string {
     if (isReference(schema)) {
-      const ref = schema as Reference;
-      const schemaKey = getSchemaKey(ref.$ref);
+      const schemaKey = getSchemaKey(schema.$ref);
 
       // Check if it's a Wow type
       const wowType = this.resolveWowType(schemaKey);

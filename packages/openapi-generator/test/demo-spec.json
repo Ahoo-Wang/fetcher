@@ -11,7 +11,10 @@
       "name": "Apache 2.0",
       "url": "https://github.com/Ahoo-Wang/Wow/blob/main/LICENSE"
     },
-    "version": "6.1.8"
+    "version": "6.1.9",
+    "x-wow-version": "6.1.9",
+    "x-wow-context-name": "compensation-service",
+    "x-wow-context-alias": "compensation"
   },
   "servers": [
     {
@@ -2387,7 +2390,14 @@
             "$ref": "#/components/schemas/wow.api.RecoverableType"
           },
           "retrySpec": {
-            "$ref": "#/components/schemas/compensation.execution_failed.RetrySpec-nullable"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/compensation.execution_failed.RetrySpec"
+              }
+            ]
           }
         },
         "required": [
@@ -2464,7 +2474,7 @@
             "default": "ALL"
           },
           "options": {
-            "$ref": "#/components/schemas/compensation.StringObjectMap",
+            "$ref": "#/components/schemas/wow.api.query.ConditionOptions",
             "default": "{}"
           },
           "value": {}
@@ -3728,16 +3738,6 @@
           "minBackoff"
         ]
       },
-      "compensation.execution_failed.RetrySpec-nullable": {
-        "anyOf": [
-          {
-            "type": "null"
-          },
-          {
-            "$ref": "#/components/schemas/compensation.execution_failed.RetrySpec"
-          }
-        ]
-      },
       "compensation.execution_failed.RetrySpecApplied": {
         "type": "object",
         "properties": {
@@ -3931,10 +3931,29 @@
             "default": "ALL"
           },
           "options": {
-            "$ref": "#/components/schemas/compensation.StringObjectMap",
+            "$ref": "#/components/schemas/wow.api.query.ConditionOptions",
             "default": "{}"
           },
           "value": {}
+        }
+      },
+      "wow.api.query.ConditionOptions": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "ignoreCase": {
+            "type": "boolean",
+            "description": "Whether to ignore case in string comparisons"
+          },
+          "datePattern": {
+            "type": "string",
+            "description": "Date pattern for date formatting"
+          },
+          "zoneId": {
+            "type": "string",
+            "description": "Time zone ID for date operations"
+          }
         }
       },
       "wow.api.query.ListQuery": {

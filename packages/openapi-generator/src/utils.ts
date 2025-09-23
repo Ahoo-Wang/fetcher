@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { SchemaType } from '@ahoo-wang/fetcher-openapi';
+import { Reference, SchemaType } from '@ahoo-wang/fetcher-openapi';
 
 const PRIMITIVE_TYPES: SchemaType[] = ['string', 'number', 'integer', 'boolean', 'null'];
 
@@ -22,7 +22,7 @@ export function isPrimitive(type: SchemaType | SchemaType[]): boolean {
   return PRIMITIVE_TYPES.includes(type);
 }
 
-export function isReference(schema: any): boolean {
+export function isReference(schema: any): schema is Reference {
   return (schema as any).$ref !== undefined;
 }
 
