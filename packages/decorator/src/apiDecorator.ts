@@ -148,9 +148,7 @@ export function buildRequestExecutor(
   }
   let apiMetadata: ApiMetadata = target['apiMetadata'];
   if (!apiMetadata) {
-    requestExecutor = new RequestExecutor(defaultFunctionMetadata);
-    target['requestExecutor'] = requestExecutor;
-    return requestExecutor;
+    apiMetadata = { ...defaultFunctionMetadata.api };
   }
   requestExecutor = new RequestExecutor(
     new FunctionMetadata(
