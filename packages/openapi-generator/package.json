@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-openapi-generator",
-  "version": "1.0.0",
+  "version": "1.9.6",
   "description": "OpenAPI Specification TypeScript code generator for Fetcher - A modern, ultra-lightweight HTTP client for browsers and Node.js. Generates data models, request/response types, and ApiClient from OpenAPI specifications.",
   "keywords": [
     "fetch",
