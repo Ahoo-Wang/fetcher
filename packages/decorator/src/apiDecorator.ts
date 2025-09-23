@@ -78,7 +78,7 @@ export interface ApiMetadataCapable {
   /**
    * API metadata for the class.
    */
-  apiMetadata: ApiMetadata;
+  readonly apiMetadata?: ApiMetadata;
 }
 
 export const API_METADATA_KEY = Symbol('api:metadata');
