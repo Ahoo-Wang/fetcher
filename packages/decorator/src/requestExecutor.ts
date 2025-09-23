@@ -16,6 +16,14 @@ import { EndpointReturnType } from './endpointReturnTypeCapable';
 export const DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__';
 
 /**
+ * Interface that defines a contract for objects that can hold request executors.
+ * This allows objects to maintain a map of named request executors for reuse.
+ */
+export interface RequestExecutorsCapable {
+  requestExecutors: Map<string, RequestExecutor>;
+}
+
+/**
  * Executor for HTTP requests based on decorated method metadata.
  *
  * This class is responsible for executing HTTP requests based on the metadata
@@ -85,8 +93,4 @@ export class RequestExecutor {
     }
     return exchange.extractResult();
   }
-}
-
-export interface RequestExecutorsCapable {
-  requestExecutors: Map<string, RequestExecutor>;
 }

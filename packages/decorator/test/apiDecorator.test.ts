@@ -174,6 +174,13 @@ describe('apiDecorator', () => {
       // Methods without @endpoint decorator should remain unchanged
       expect(testApi.notDecoratedMethod()).toBe('not decorated');
     });
+
+    it('should bind executor to decorated methods', () => {
+      const testApi = new TestApi();
+      // Decorated methods should be replaced with functions
+      expect(typeof testApi.getUsers).toBe('function');
+      expect(typeof testApi.getUser).toBe('function');
+    });
   });
 
   describe('buildRequestExecutor', () => {
@@ -213,7 +220,7 @@ describe('apiDecorator', () => {
     it('should merge api metadata correctly', () => {
       const testApi: any = new TestApi();
       // Add target api metadata
-      testApi.apiMetadata = {
+      testApi.apiMetadata = { 
         basePath: '/target',
         headers: { 'X-Target': 'value' },
       };
