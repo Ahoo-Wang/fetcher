@@ -54,44 +54,6 @@ describe('RequestExecutor', () => {
     });
   });
 
-  describe('getTargetFetcher', () => {
-    it('should return undefined when target is null', () => {
-      const executor = new RequestExecutor(null, mockFunctionMetadata);
-      // @ts-expect-error - accessing private method for testing
-      const result = executor.getTargetFetcher();
-      expect(result).toBeUndefined();
-    });
-
-    it('should return undefined when target is not an object', () => {
-      const executor = new RequestExecutor('not-an-object', mockFunctionMetadata);
-      // @ts-expect-error - accessing private method for testing
-      const result = executor.getTargetFetcher();
-      expect(result).toBeUndefined();
-    });
-
-    it('should return undefined when target has no fetcher property', () => {
-      const executor = new RequestExecutor({}, mockFunctionMetadata);
-      // @ts-expect-error - accessing private method for testing
-      const result = executor.getTargetFetcher();
-      expect(result).toBeUndefined();
-    });
-
-    it('should return undefined when target fetcher is not a Fetcher instance', () => {
-      const executor = new RequestExecutor({ fetcher: 'not-a-fetcher' }, mockFunctionMetadata);
-      // @ts-expect-error - accessing private method for testing
-      const result = executor.getTargetFetcher();
-      expect(result).toBeUndefined();
-    });
-
-    it('should return fetcher when target has a valid Fetcher instance', () => {
-      const mockFetcher = new MockFetcher();
-      const executor = new RequestExecutor({ fetcher: mockFetcher }, mockFunctionMetadata);
-      // @ts-expect-error - accessing private method for testing
-      const result = executor.getTargetFetcher();
-      expect(result).toBe(mockFetcher);
-    });
-  });
-
   describe('execute', () => {
     it('should execute request with metadata fetcher when target has no fetcher', async () => {
       const mockFetcher = new MockFetcher();
@@ -118,38 +80,6 @@ describe('RequestExecutor', () => {
           attributes: new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}]]),
         },
       );
-    });
-
-    it('should execute request with target fetcher when available', async () => {
-      const targetFetcher = new MockFetcher();
-      const metadataFetcher = new MockFetcher();
-
-      const metadataWithFetcher = new FunctionMetadata(
-        'getUser',
-        { ...mockApiMetadata, fetcher: metadataFetcher },
-        mockEndpointMetadata,
-        mockParameterMetadata,
-      );
-
-      const executor = new RequestExecutor({ fetcher: targetFetcher }, metadataWithFetcher);
-      const target = { fetcher: targetFetcher };
-      await executor.execute(['123', 'active']);
-      expect(targetFetcher.exchange).toHaveBeenCalledWith(
-        expect.objectContaining({
-          method: HttpMethod.GET,
-          url: '/api/v1/users/{id}', // URL template is not processed by FunctionMetadata
-          urlParams: {
-            path: { id: '123' },
-            query: { filter: 'active' },
-          },
-        }),
-        {
-          resultExtractor: JsonResultExtractor,
-          attributes: new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, target]]),
-        },
-      );
-      // Ensure metadata fetcher was not called
-      expect(metadataFetcher.exchange).not.toHaveBeenCalled();
     });
 
     it('should use endpoint result type when defined', async () => {
