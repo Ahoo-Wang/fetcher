@@ -16,6 +16,7 @@
  */
 
 import { ParameterLocation } from './base-types';
+import { Extensible } from './extensions';
 
 /**
  * Configuration details for a supported OAuth Flow
@@ -25,7 +26,7 @@ import { ParameterLocation } from './base-types';
  * @property refreshUrl - The URL to be used for obtaining refresh tokens
  * @property scopes - The available scopes for the OAuth2 security scheme
  */
-export interface OAuthFlow {
+export interface OAuthFlow extends Extensible {
   authorizationUrl?: string;
   tokenUrl?: string;
   refreshUrl?: string;
@@ -40,7 +41,7 @@ export interface OAuthFlow {
  * @property clientCredentials - Configuration for the OAuth Client Credentials flow
  * @property authorizationCode - Configuration for the OAuth Authorization Code flow
  */
-export interface OAuthFlows {
+export interface OAuthFlows extends Extensible {
   implicit?: OAuthFlow;
   password?: OAuthFlow;
   clientCredentials?: OAuthFlow;
@@ -59,7 +60,7 @@ export interface OAuthFlows {
  * @property flows - An object containing configuration information for the flow types supported
  * @property openIdConnectUrl - OpenId Connect URL to discover OAuth2 configuration values
  */
-export interface SecurityScheme {
+export interface SecurityScheme extends Extensible {
   type: 'apiKey' | 'http' | 'oauth2' | 'openIdConnect';
   description?: string;
   name?: string;
@@ -73,6 +74,6 @@ export interface SecurityScheme {
 /**
  * Lists the required security schemes to execute this operation
  */
-export interface SecurityRequirement {
+export interface SecurityRequirement extends Extensible {
   [name: string]: string[];
 }
