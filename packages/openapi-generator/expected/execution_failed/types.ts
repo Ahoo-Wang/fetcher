@@ -17,12 +17,9 @@ import {
   FunctionInfo,
   BindingError,
   AggregateId,
-  Operator,
-  ConditionOptions,
-  Projection,
-  FieldSort,
-  Pagination, Condition, DomainEventStream, ListQuery,
+  Condition, DomainEventStream, ListQuery, PagedList, PagedQuery, SingleQuery, MaterializedSnapshot,
 } from '@ahoo-wang/fetcher-wow';
+import { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
 
 export interface ApplyExecutionFailed {
   error: ErrorDetails;
@@ -80,7 +77,6 @@ export interface ExecutionFailedAggregatedCondition extends Condition<ExecutionF
 
 }
 
-
 export interface ExecutionFailedAggregatedDomainEventStream
   extends DomainEventStream<CompensationPrepared |
     ExecutionFailedApplied | ExecutionFailedCreated | ExecutionSuccessApplied
@@ -88,40 +84,27 @@ export interface ExecutionFailedAggregatedDomainEventStream
 
 }
 
-export interface ExecutionFailedAggregatedDomainEventStreamPagedList {
-  list: ExecutionFailedAggregatedDomainEventStream[];
-  total: number;
+export interface ExecutionFailedAggregatedDomainEventStreamPagedList extends PagedList<ExecutionFailedAggregatedDomainEventStream> {
+
 }
 
-export interface ExecutionFailedAggregatedDomainEventStreamServerSentEventNonNullData {
-  data: ExecutionFailedAggregatedDomainEventStream;
-  event: string | null;
-  id: string | null;
-  retry: number | null;
+export interface ExecutionFailedAggregatedDomainEventStreamServerSentEventNonNullData extends JsonServerSentEvent<ExecutionFailedAggregatedDomainEventStream> {
+
 }
 
 export enum ExecutionFailedAggregatedFields {
   aggregateId = 'aggregateId'
 }
 
-export interface ExecutionFailedAggregatedListQuery extends ListQuery {
-  condition: ExecutionFailedAggregatedCondition;
-  limit: number;
-  projection: Projection;
-  sort: FieldSort[];
+export interface ExecutionFailedAggregatedListQuery extends ListQuery<ExecutionFailedAggregatedFields> {
+
 }
 
-export interface ExecutionFailedAggregatedPagedQuery {
-  condition: ExecutionFailedAggregatedCondition;
-  pagination: Pagination;
-  projection: Projection;
-  sort: FieldSort[];
+export interface ExecutionFailedAggregatedPagedQuery extends PagedQuery<ExecutionFailedAggregatedFields> {
+
 }
 
-export interface ExecutionFailedAggregatedSingleQuery {
-  condition: ExecutionFailedAggregatedCondition;
-  projection: Projection;
-  sort: FieldSort[];
+export interface ExecutionFailedAggregatedSingleQuery extends SingleQuery<ExecutionFailedAggregatedFields> {
 }
 
 export interface ExecutionFailedApplied {
@@ -171,44 +154,20 @@ export interface ExecutionFailedStateMaterializedSnapshot {
   version: number;
 }
 
-export interface ExecutionFailedStateMaterializedSnapshotPagedList {
-  list: ExecutionFailedStateMaterializedSnapshot[];
-  total: number;
+export interface ExecutionFailedStateMaterializedSnapshotPagedList extends PagedList<ExecutionFailedStateMaterializedSnapshot> {
 }
 
-export interface ExecutionFailedStateMaterializedSnapshotServerSentEventNonNullData {
-  data: ExecutionFailedStateMaterializedSnapshot;
-  event: string | null;
-  id: string | null;
-  retry: number | null;
+export interface ExecutionFailedStateMaterializedSnapshotServerSentEventNonNullData extends JsonServerSentEvent<ExecutionFailedStateMaterializedSnapshot> {
 }
 
-export interface ExecutionFailedStatePagedList {
-  list: ExecutionFailedState[];
-  total: number;
+export interface ExecutionFailedStatePagedList extends PagedList<ExecutionFailedState> {
 }
 
-export interface ExecutionFailedStateServerSentEventNonNullData {
-  data: ExecutionFailedState;
-  event: string | null;
-  id: string | null;
-  retry: number | null;
+export interface ExecutionFailedStateServerSentEventNonNullData extends JsonServerSentEvent<ExecutionFailedState> {
 }
 
-export interface ExecutionFailedStateSnapshot {
-  contextName: string;
-  aggregateName: string;
-  tenantId: string;
-  aggregateId: string;
-  ownerId: string;
-  version: number;
-  eventId: string;
-  firstOperator: string;
-  operator: string;
-  firstEventTime: number;
-  state: object;
-  deleted: boolean;
-  snapshotTime: number;
+export interface ExecutionFailedStateSnapshot extends MaterializedSnapshot<ExecutionFailedState> {
+
 }
 
 export interface ExecutionFailedStateStateEvent {
