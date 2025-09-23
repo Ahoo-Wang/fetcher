@@ -48,46 +48,46 @@ describe('RequestExecutor', () => {
   );
 
   describe('constructor', () => {
-    it('should create RequestExecutor instance with metadata', () => {
-      const executor = new RequestExecutor(mockFunctionMetadata);
+    it('should create RequestExecutor instance with target and metadata', () => {
+      const executor = new RequestExecutor({}, mockFunctionMetadata);
       expect(executor).toBeInstanceOf(RequestExecutor);
     });
   });
 
   describe('getTargetFetcher', () => {
     it('should return undefined when target is null', () => {
-      const executor = new RequestExecutor(mockFunctionMetadata);
+      const executor = new RequestExecutor(null, mockFunctionMetadata);
       // @ts-expect-error - accessing private method for testing
-      const result = executor.getTargetFetcher(null);
+      const result = executor.getTargetFetcher();
       expect(result).toBeUndefined();
     });
 
     it('should return undefined when target is not an object', () => {
-      const executor = new RequestExecutor(mockFunctionMetadata);
+      const executor = new RequestExecutor('not-an-object', mockFunctionMetadata);
       // @ts-expect-error - accessing private method for testing
-      const result = executor.getTargetFetcher('not-an-object');
+      const result = executor.getTargetFetcher();
       expect(result).toBeUndefined();
     });
 
     it('should return undefined when target has no fetcher property', () => {
-      const executor = new RequestExecutor(mockFunctionMetadata);
+      const executor = new RequestExecutor({}, mockFunctionMetadata);
       // @ts-expect-error - accessing private method for testing
-      const result = executor.getTargetFetcher({});
+      const result = executor.getTargetFetcher();
       expect(result).toBeUndefined();
     });
 
     it('should return undefined when target fetcher is not a Fetcher instance', () => {
-      const executor = new RequestExecutor(mockFunctionMetadata);
+      const executor = new RequestExecutor({ fetcher: 'not-a-fetcher' }, mockFunctionMetadata);
       // @ts-expect-error - accessing private method for testing
-      const result = executor.getTargetFetcher({ fetcher: 'not-a-fetcher' });
+      const result = executor.getTargetFetcher();
       expect(result).toBeUndefined();
     });
 
     it('should return fetcher when target has a valid Fetcher instance', () => {
-      const executor = new RequestExecutor(mockFunctionMetadata);
       const mockFetcher = new MockFetcher();
+      const executor = new RequestExecutor({ fetcher: mockFetcher }, mockFunctionMetadata);
       // @ts-expect-error - accessing private method for testing
-      const result = executor.getTargetFetcher({ fetcher: mockFetcher });
+      const result = executor.getTargetFetcher();
       expect(result).toBe(mockFetcher);
     });
   });
@@ -102,8 +102,8 @@ describe('RequestExecutor', () => {
         mockParameterMetadata,
       );
 
-      const executor = new RequestExecutor(metadataWithFetcher);
-      await executor.execute({}, ['123', 'active']);
+      const executor = new RequestExecutor({}, metadataWithFetcher);
+      await executor.execute(['123', 'active']);
       expect(mockFetcher.exchange).toHaveBeenCalledWith(
         expect.objectContaining({
           method: HttpMethod.GET,
@@ -131,9 +131,9 @@ describe('RequestExecutor', () => {
         mockParameterMetadata,
       );
 
-      const executor = new RequestExecutor(metadataWithFetcher);
+      const executor = new RequestExecutor({ fetcher: targetFetcher }, metadataWithFetcher);
       const target = { fetcher: targetFetcher };
-      await executor.execute(target, ['123', 'active']);
+      await executor.execute(['123', 'active']);
       expect(targetFetcher.exchange).toHaveBeenCalledWith(
         expect.objectContaining({
           method: HttpMethod.GET,
@@ -165,8 +165,8 @@ describe('RequestExecutor', () => {
         mockParameterMetadata,
       );
 
-      const executor = new RequestExecutor(metadataWithExtractor);
-      const result = await executor.execute({}, ['123', 'active']);
+      const executor = new RequestExecutor({}, metadataWithExtractor);
+      const result = await executor.execute(['123', 'active']);
       expect(result).toBe('endpoint extractor result');
       expect(mockFetcher.exchange).toHaveBeenCalledWith(
         expect.anything(),
@@ -183,8 +183,8 @@ describe('RequestExecutor', () => {
         new Map(),
       );
 
-      const executor = new RequestExecutor(metadataWithoutParams);
-      await executor.execute({}, []);
+      const executor = new RequestExecutor({}, metadataWithoutParams);
+      await executor.execute([]);
 
       expect(mockFetcher.exchange).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -215,9 +215,9 @@ describe('RequestExecutor', () => {
         mockParameterMetadata,
       );
 
-      const executor = new RequestExecutor(metadataWithFetcher);
+      const executor = new RequestExecutor({}, metadataWithFetcher);
 
-      await expect(executor.execute({}, ['123', 'active'])).rejects.toThrow(
+      await expect(executor.execute(['123', 'active'])).rejects.toThrow(
         'Request failed',
       );
     });
