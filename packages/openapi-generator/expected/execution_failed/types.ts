@@ -137,21 +137,8 @@ export interface ExecutionFailedState {
   isRetryable: boolean;
 }
 
-export interface ExecutionFailedStateMaterializedSnapshot {
-  aggregateId: string;
-  aggregateName: string;
-  contextName: string;
-  deleted: boolean;
-  eventId: string;
-  eventTime: number;
-  firstEventTime: number;
-  firstOperator: string;
-  operator: string;
-  ownerId: string;
-  snapshotTime: number;
-  state: ExecutionFailedState;
-  tenantId: string;
-  version: number;
+export interface ExecutionFailedStateMaterializedSnapshot extends MaterializedSnapshot<ExecutionFailedState> {
+
 }
 
 export interface ExecutionFailedStateMaterializedSnapshotPagedList extends PagedList<ExecutionFailedStateMaterializedSnapshot> {
@@ -171,20 +158,6 @@ export interface ExecutionFailedStateSnapshot extends MaterializedSnapshot<Execu
 }
 
 export interface ExecutionFailedStateStateEvent extends StateEvent<ExecutionFailedState> {
-  id: string;
-  contextName: string;
-  aggregateName: string;
-  tenantId: string;
-  aggregateId: string;
-  ownerId: string;
-  commandId: string;
-  requestId: string;
-  version: number;
-  createTime: number;
-  firstOperator: string;
-  firstEventTime: number;
-  state: ExecutionFailedState;
-  deleted: boolean;
 }
 
 export interface ExecutionFailedStatus {
