@@ -10,11 +10,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Fetcher } from '@ahoo-wang/fetcher';
 import { FunctionMetadata } from './functionMetadata';
 import { EndpointReturnType } from './endpointReturnTypeCapable';
-
-const TARGET_FETCHER_PROPERTY = 'fetcher';
 
 export const DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__';
 
