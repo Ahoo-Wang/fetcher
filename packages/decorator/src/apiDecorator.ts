@@ -130,6 +130,32 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   };
 }
 
+/**
+ * Decorates a constructor to support lifecycle hooks.
+ *
+ * @param constructor - The original constructor
+ * @param metadata - The API metadata
+ * @returns A new constructor with lifecycle support
+ */
+export function decoratedApi<T extends new (...args: any[]) => any>(
+  constructor: T,
+  metadata: ApiMetadata,
+): T {
+  const originalConstructor = constructor;
+  const newConstructor: any = function(...args: any[]) {
+    const instance = new (originalConstructor as any)(...args);
+    if (typeof instance.onInit === 'function') {
+      instance.onInit(metadata);
+    }
+    return instance;
+  };
+
+  newConstructor.prototype = originalConstructor.prototype;
+  newConstructor.prototype.constructor = newConstructor;
+  Object.setPrototypeOf(newConstructor, originalConstructor);
+  return newConstructor as T;
+}
+
 export function api(
   basePath: string = '',
   metadata: Omit<ApiMetadata, 'basePath'> = {},
@@ -148,6 +174,6 @@ export function api(
       bindExecutor(constructor, functionName, apiMetadata);
     });
 
-    return constructor;
+    return decoratedApi(constructor, apiMetadata);
   };
 }
