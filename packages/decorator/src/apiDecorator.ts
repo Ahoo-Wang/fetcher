@@ -151,15 +151,13 @@ export function buildRequestExecutor(
   if (requestExecutor) {
     return requestExecutor;
   }
-  let apiMetadata: ApiMetadata = target['apiMetadata'];
-  if (!apiMetadata) {
-    apiMetadata = { ...defaultFunctionMetadata.api };
-  }
+  const targetApiMetadata: ApiMetadata = target['apiMetadata'];
+  const mergedApiMetadata: ApiMetadata = { ...defaultFunctionMetadata.api, ...targetApiMetadata };
   requestExecutor = new RequestExecutor(
     target,
     new FunctionMetadata(
       defaultFunctionMetadata.name,
-      apiMetadata,
+      mergedApiMetadata,
       defaultFunctionMetadata.endpoint,
       defaultFunctionMetadata.parameters,
     ),
