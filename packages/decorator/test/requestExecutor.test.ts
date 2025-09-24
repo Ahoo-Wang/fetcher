@@ -5,7 +5,12 @@ import {
   ExchangeResultExtractor,
   NamedFetcher,
 } from '@ahoo-wang/fetcher';
-import { RequestExecutor, DECORATOR_TARGET_ATTRIBUTE_KEY, EndpointReturnType } from '../src';
+import {
+  RequestExecutor,
+  DECORATOR_TARGET_ATTRIBUTE_KEY,
+  EndpointReturnType,
+  DECORATOR_METADATA_ATTRIBUTE_KEY,
+} from '../src';
 import { FunctionMetadata } from '../src';
 import { ParameterType, type ParameterMetadata } from '../src';
 
@@ -77,7 +82,7 @@ describe('RequestExecutor', () => {
         }),
         {
           resultExtractor: JsonResultExtractor,
-          attributes: new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}]]),
+          attributes: new Map<string, any>([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}], [DECORATOR_METADATA_ATTRIBUTE_KEY, metadataWithFetcher]]),
         },
       );
     });
@@ -127,7 +132,7 @@ describe('RequestExecutor', () => {
         }),
         {
           resultExtractor: JsonResultExtractor,
-          attributes: new Map([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}]]),
+          attributes: new Map<string, any>([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}], [DECORATOR_METADATA_ATTRIBUTE_KEY, metadataWithoutParams]]),
         },
       );
     });
