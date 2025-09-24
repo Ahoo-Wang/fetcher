@@ -1,5 +1,5 @@
 {
-  "name": "@ahoo-wang/fetcher-openapi-generator",
+  "name": "@ahoo-wang/fetcher-generator",
   "version": "1.9.6",
   "description": "OpenAPI Specification TypeScript code generator for Fetcher - A modern, ultra-lightweight HTTP client for browsers and Node.js. Generates data models, request/response types, and ApiClient from OpenAPI specifications.",
   "keywords": [
@@ -17,11 +17,11 @@
   ],
   "author": "Ahoo-Wang",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/master/packages/openapi-generator",
+  "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/master/packages/generator",
   "repository": {
     "type": "git",
     "url": "https://github.com/Ahoo-Wang/fetcher.git",
-    "directory": "packages/openapi-generator"
+    "directory": "packages/generator"
   },
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
@@ -31,7 +31,7 @@
   "module": "./dist/index.es.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "fetcher-openapi-generator": "./dist/cli.js"
+    "fetcher-generator": "./dist/cli.js"
   },
   "exports": {
     ".": {

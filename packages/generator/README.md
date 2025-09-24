@@ -1,4 +1,4 @@
-# @ahoo-wang/fetcher-openapi-generator
+# @ahoo-wang/fetcher-generator
 
 基于 OpenAPI 规范的 TypeScript 代码生成器，专注于生成数据模型（Schema）、 请求和响应体类型定义 以及 ApiClient。
 
@@ -25,7 +25,7 @@
 ## 安装
 
 ```bash
-npm install @ahoo-wang/fetcher-openapi-generator
+npm install @ahoo-wang/fetcher-generator
 ```
 
 ## 使用
@@ -33,13 +33,13 @@ npm install @ahoo-wang/fetcher-openapi-generator
 ### 命令行使用
 
 ```bash
-npx @ahoo-wang/fetcher-openapi-generator -i openapi.json -o src/generated
+npx @ahoo-wang/fetcher-generator -i openapi.json -o src/generated
 ```
 
 ### API 使用
 
 ```typescript
-import { generate } from '@ahoo-wang/fetcher-openapi-generator';
+import { generate } from '@ahoo-wang/fetcher-generator';
 
 const openapiSpec = {
   // your OpenAPI specification

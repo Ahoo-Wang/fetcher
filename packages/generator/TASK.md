@@ -7,7 +7,7 @@
     2. 客户端定义
 3. 基于定义文件，生成代码
 
-# @ahoo-wang/fetcher-openapi-generator
+# @ahoo-wang/fetcher-generator
 
 基于 OpenAPI 规范的 TypeScript 代码生成器，专注于生成数据模型（Schema）、 请求和响应体类型定义 以及 ApiClient。
 
@@ -127,9 +127,7 @@ Client 按照 tags 组织。
 
 函数名称采用驼峰命名法，函数参数采用 PascalCase 命名法。
 
-```ts
-export class 
-```
+
 
 
 
