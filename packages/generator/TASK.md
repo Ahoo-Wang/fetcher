@@ -5,6 +5,8 @@
 2. 将 OpenAPI 解析为 模块定义
     1. 数据模型定义
     2. 客户端定义
+        1. 命令客户端
+        2. 查询客户端
 3. 基于定义文件，生成代码
 
 # @ahoo-wang/fetcher-generator
@@ -34,7 +36,11 @@
 
 ## OpenAPI Example
 
-[demo-openapi](test/demo.json)
+[demo-openapi](test/compensation-spec.json)
+
+## 预期生成的模块文件
+
+[expected](expected/execution_failed)
 
 ## Wow 内置的类型
 
