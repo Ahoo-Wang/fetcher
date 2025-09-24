@@ -15,12 +15,14 @@ export default defineConfig({
         cli: resolve(__dirname, 'src/cli.ts'),
       },
       formats: ['es', 'cjs'],
-      name: 'FetcherOpenAPIGenerator',
+      name: 'FetcherGenerator',
     },
     rollupOptions: {
       external: [
-        '@ahoo-wang/fetcher-openapi',
+        '@ahoo-wang/fetcher',
+        '@ahoo-wang/fetcher-eventstream',
         '@ahoo-wang/fetcher-decorator',
+        '@ahoo-wang/fetcher-openapi',
         '@ahoo-wang/fetcher-wow',
         'commander',
         'ts-morph',
