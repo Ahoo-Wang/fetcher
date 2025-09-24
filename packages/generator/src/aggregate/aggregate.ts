@@ -14,10 +14,20 @@
 
 import { Operation, Schema } from '@ahoo-wang/fetcher-openapi';
 import { HttpMethod } from '@ahoo-wang/fetcher';
-import { NamedAggregate, type NamedBoundedContext } from '@ahoo-wang/fetcher-wow';
+import { Named, NamedAggregate, type NamedBoundedContext } from '@ahoo-wang/fetcher-wow';
 
-export interface CommandDefinition {
+export interface CommandDefinition extends Named {
+  /**
+   * command name
+   */
+  name: string;
+  /**
+   * command endpoint path
+   */
   path: string;
+  /**
+   * command http method
+   */
   method: HttpMethod;
   operation: Operation;
 }
