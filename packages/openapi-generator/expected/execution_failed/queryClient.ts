@@ -13,12 +13,12 @@
 
 import { EventStreamQueryClient, SnapshotQueryClient } from '@ahoo-wang/fetcher-wow';
 import {
-  ExecutionFailedAggregatedDomainEventTypes,
+  ExecutionFailedAggregatedDomainEventTypes, ExecutionFailedAggregatedFields,
   ExecutionFailedState,
 } from './types.ts';
 import { ApiMetadata } from '@ahoo-wang/fetcher-decorator';
 
-export class ExecutionFailedSnapshotQueryClient extends SnapshotQueryClient<ExecutionFailedState> {
+export class ExecutionFailedSnapshotQueryClient extends SnapshotQueryClient<ExecutionFailedState, ExecutionFailedAggregatedFields> {
   constructor(apiMetadata: ApiMetadata = { basePath: 'execution_failed' }) {
     super(apiMetadata);
   }
