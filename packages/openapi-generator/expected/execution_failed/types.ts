@@ -77,10 +77,12 @@ export interface ExecutionFailedAggregatedCondition extends Condition<ExecutionF
 
 }
 
+export type ExecutionFailedAggregatedDomainEventTypes = CompensationPrepared |
+  ExecutionFailedApplied | ExecutionFailedCreated | ExecutionSuccessApplied
+  | FunctionChanged | RecoverableMarked | RetrySpecApplied
+
 export interface ExecutionFailedAggregatedDomainEventStream
-  extends DomainEventStream<CompensationPrepared |
-    ExecutionFailedApplied | ExecutionFailedCreated | ExecutionSuccessApplied
-    | FunctionChanged | RecoverableMarked | RetrySpecApplied> {
+  extends DomainEventStream<ExecutionFailedAggregatedDomainEventTypes> {
 
 }
 
@@ -93,7 +95,7 @@ export interface ExecutionFailedAggregatedDomainEventStreamServerSentEventNonNul
 }
 
 export enum ExecutionFailedAggregatedFields {
-  aggregateId = 'aggregateId'
+  AGGREGATE_ID = 'aggregateId'
 }
 
 export interface ExecutionFailedAggregatedListQuery extends ListQuery<ExecutionFailedAggregatedFields> {
