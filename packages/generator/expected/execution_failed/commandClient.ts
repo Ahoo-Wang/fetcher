@@ -25,7 +25,8 @@ import {
   post, put,
   request,
 } from '@ahoo-wang/fetcher-decorator';
-import type {
+import {
+  AGGREGATE_NAME,
   ApplyExecutionFailed,
   ApplyExecutionSuccess, ApplyRetrySpec, ChangeFunction,
   CreateExecutionFailed,
@@ -37,7 +38,7 @@ import { JsonEventStreamResultExtractor } from '@ahoo-wang/fetcher-eventstream';
 
 @api()
 export class ExecutionFailedCommandClient implements ApiMetadataCapable {
-  constructor(public readonly apiMetadata: ApiMetadata = { basePath: 'execution_failed' }) {
+  constructor(public readonly apiMetadata: ApiMetadata = { basePath: AGGREGATE_NAME }) {
 
   }
 

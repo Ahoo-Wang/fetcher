@@ -21,6 +21,8 @@ import {
 } from '@ahoo-wang/fetcher-wow';
 import { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
 
+export const AGGREGATE_NAME = 'execution_failed';
+
 export interface ApplyExecutionFailed {
   error: ErrorDetails;
   executeAt: number;
