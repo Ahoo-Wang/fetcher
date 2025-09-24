@@ -74,6 +74,13 @@ export interface ApiMetadata
   fetcher?: string | Fetcher;
 }
 
+export interface ApiMetadataCapable {
+  /**
+   * API metadata for the class.
+   */
+  readonly apiMetadata?: ApiMetadata;
+}
+
 export const API_METADATA_KEY = Symbol('api:metadata');
 
 /**
@@ -114,7 +121,7 @@ function bindExecutor<T extends new (...args: any[]) => any>(
     ) || new Map();
 
   // Create function metadata
-  const functionMetadata = new FunctionMetadata(
+  const functionMetadata: FunctionMetadata = new FunctionMetadata(
     functionName,
     apiMetadata,
     endpointMetadata,
@@ -122,12 +129,41 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   );
 
   // Create request executor
-  const requestExecutor = new RequestExecutor(functionMetadata);
+
 
   // Replace method with actual implementation
   constructor.prototype[functionName] = function(...args: unknown[]) {
-    return requestExecutor.execute(this, args);
+    const requestExecutor: RequestExecutor = buildRequestExecutor(this, functionMetadata);
+    return requestExecutor.execute(args);
   };
+}
+
+export function buildRequestExecutor(
+  target: any,
+  defaultFunctionMetadata: FunctionMetadata,
+): RequestExecutor {
+  let requestExecutors: Map<string, RequestExecutor> = target['requestExecutors'];
+  if (!requestExecutors) {
+    requestExecutors = new Map<string, RequestExecutor>();
+    target['requestExecutors'] = requestExecutors;
+  }
+  let requestExecutor = requestExecutors.get(defaultFunctionMetadata.name);
+  if (requestExecutor) {
+    return requestExecutor;
+  }
+  const targetApiMetadata: ApiMetadata = target['apiMetadata'];
+  const mergedApiMetadata: ApiMetadata = { ...defaultFunctionMetadata.api, ...targetApiMetadata };
+  requestExecutor = new RequestExecutor(
+    target,
+    new FunctionMetadata(
+      defaultFunctionMetadata.name,
+      mergedApiMetadata,
+      defaultFunctionMetadata.endpoint,
+      defaultFunctionMetadata.parameters,
+    ),
+  );
+  requestExecutors.set(defaultFunctionMetadata.name, requestExecutor);
+  return requestExecutor;
 }
 
 export function api(

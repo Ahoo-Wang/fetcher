@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-wow",
-  "version": "1.9.6",
+  "version": "2.0.0",
   "description": "Support for Wow(https://github.com/Ahoo-Wang/Wow) in Fetcher",
   "keywords": [
     "fetch",
@@ -47,7 +47,8 @@
   },
   "dependencies": {
     "@ahoo-wang/fetcher": "workspace:*",
-    "@ahoo-wang/fetcher-eventstream": "workspace:*"
+    "@ahoo-wang/fetcher-eventstream": "workspace:*",
+    "@ahoo-wang/fetcher-decorator": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

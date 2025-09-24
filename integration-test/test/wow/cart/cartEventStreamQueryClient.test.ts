@@ -14,7 +14,7 @@
 import { HttpMethod } from '@ahoo-wang/fetcher';
 import {
   all,
-  CommandHttpHeaders,
+  CommandHeaders,
   CommandStage,
   ErrorCodes,
   ListQuery,
@@ -30,9 +30,10 @@ import {
 } from '../../../src/wow';
 
 const command: AddCartItemCommand = {
+  path: CartCommandEndpoints.addCartItem,
   method: HttpMethod.POST,
   headers: {
-    [CommandHttpHeaders.WAIT_STAGE]: CommandStage.SNAPSHOT,
+    [CommandHeaders.WAIT_STAGE]: CommandStage.SNAPSHOT,
   },
   body: {
     productId: 'productId',
@@ -40,7 +41,6 @@ const command: AddCartItemCommand = {
   },
 };
 const commandResult = await cartCommandClient.send(
-  CartCommandEndpoints.addCartItem,
   command,
 );
 expect(commandResult.errorCode).toBe(ErrorCodes.SUCCEEDED);

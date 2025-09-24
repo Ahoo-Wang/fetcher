@@ -10,13 +10,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Fetcher } from '@ahoo-wang/fetcher';
 import { FunctionMetadata } from './functionMetadata';
 import { EndpointReturnType } from './endpointReturnTypeCapable';
 
-const TARGET_FETCHER_PROPERTY = 'fetcher';
-
 export const DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__';
+export const DECORATOR_METADATA_ATTRIBUTE_KEY = '__decorator_metadata__';
+
+/**
+ * Interface that defines a contract for objects that can hold request executors.
+ * This allows objects to maintain a map of named request executors for reuse.
+ */
+export interface RequestExecutorsCapable {
+  requestExecutors: Map<string, RequestExecutor>;
+}
 
 /**
  * Executor for HTTP requests based on decorated method metadata.
@@ -26,37 +32,15 @@ export const DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__';
  * and executes it using the appropriate fetcher.
  */
 export class RequestExecutor {
-  private readonly metadata: FunctionMetadata;
 
   /**
    * Creates a new RequestExecutor instance.
-   *
+   * @param target - The target object that the method is called on.
+   *                 This can contain a custom fetcher instance in its 'fetcher' property.
    * @param metadata - The function metadata containing all request information
    */
-  constructor(metadata: FunctionMetadata) {
-    this.metadata = metadata;
-  }
-
-  /**
-   * Retrieves the fetcher instance from the target object.
-   *
-   * @param target - The target object that may contain a fetcher property
-   * @returns The fetcher instance if exists, otherwise undefined
-   */
-  private getTargetFetcher(target: any): Fetcher | undefined {
-    if (!target || typeof target !== 'object') {
-      return undefined;
-    }
-    // Extract the fetcher property from the target object
-    const fetcher = target[TARGET_FETCHER_PROPERTY];
-
-    // Validate that the fetcher is an instance of the Fetcher class
-    if (fetcher instanceof Fetcher) {
-      return fetcher;
-    }
-
-    // Return undefined if no valid fetcher instance is found
-    return undefined;
+  constructor(private readonly target: any,
+              private readonly metadata: FunctionMetadata) {
   }
 
   /**
@@ -67,8 +51,7 @@ export class RequestExecutor {
    * It handles the complete request lifecycle from parameter processing to
    * response extraction.
    *
-   * @param target - The target object that the method is called on.
-   *                 This can contain a custom fetcher instance in its 'fetcher' property.
+
    * @param args - The runtime arguments passed to the decorated method.
    *               These are mapped to request components based on parameter decorators.
    * @returns A Promise that resolves to the extracted result based on the configured result extractor.
@@ -96,10 +79,11 @@ export class RequestExecutor {
    * // 4. Return the Response object
    * ```
    */
-  async execute(target: any, args: any[]): Promise<any> {
-    const fetcher = this.getTargetFetcher(target) || this.metadata.fetcher;
+  async execute(args: any[]): Promise<any> {
+    const fetcher = this.metadata.fetcher;
     const exchangeInit = this.metadata.resolveExchangeInit(args);
-    exchangeInit.attributes?.set(DECORATOR_TARGET_ATTRIBUTE_KEY, target);
+    exchangeInit.attributes?.set(DECORATOR_TARGET_ATTRIBUTE_KEY, this.target);
+    exchangeInit.attributes?.set(DECORATOR_METADATA_ATTRIBUTE_KEY, this.metadata);
     const extractor = this.metadata.resolveResultExtractor();
     const endpointReturnType = this.metadata.resolveEndpointReturnType();
     const exchange = await fetcher.exchange(exchangeInit.request, {
