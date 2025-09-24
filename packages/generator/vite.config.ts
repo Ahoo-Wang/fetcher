@@ -3,11 +3,6 @@ import dts from 'unplugin-dts/vite';
 import { resolve } from 'path';
 
 export default defineConfig({
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-    },
-  },
   build: {
     lib: {
       entry: {
