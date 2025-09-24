@@ -14,6 +14,7 @@ import { FunctionMetadata } from './functionMetadata';
 import { EndpointReturnType } from './endpointReturnTypeCapable';
 
 export const DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__';
+export const DECORATOR_METADATA_ATTRIBUTE_KEY = '__decorator_metadata__';
 
 /**
  * Interface that defines a contract for objects that can hold request executors.
@@ -82,6 +83,7 @@ export class RequestExecutor {
     const fetcher = this.metadata.fetcher;
     const exchangeInit = this.metadata.resolveExchangeInit(args);
     exchangeInit.attributes?.set(DECORATOR_TARGET_ATTRIBUTE_KEY, this.target);
+    exchangeInit.attributes?.set(DECORATOR_METADATA_ATTRIBUTE_KEY, this.metadata);
     const extractor = this.metadata.resolveResultExtractor();
     const endpointReturnType = this.metadata.resolveEndpointReturnType();
     const exchange = await fetcher.exchange(exchangeInit.request, {
