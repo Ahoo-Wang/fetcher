@@ -33,7 +33,7 @@
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
   },
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.17.1",
   "devDependencies": {
     "@eslint/js": "catalog:",
     "@vitest/coverage-v8": "catalog:",
