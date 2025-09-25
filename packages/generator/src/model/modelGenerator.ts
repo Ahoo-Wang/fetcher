@@ -14,13 +14,13 @@
 import { OpenAPI, Schema, Reference } from '@ahoo-wang/fetcher-openapi';
 import { Project, SourceFile } from 'ts-morph';
 import { ModelInfo, resolveModelInfo } from '@/model/naming.ts';
-import { combineURLs } from '@ahoo-wang/fetcher';
 import { isEnum } from '@/utils/schemas.ts';
 import { GenerateContext } from '@/types.ts';
 import { AggregateDefinition } from '@/aggregate';
-import { WOW_TYPE_MAPPING } from '@/model/wowTypeMapping.ts';
+import { IMPORT_WOW_PATH, WOW_TYPE_MAPPING } from '@/model/wowTypeMapping.ts';
+import { extractComponentKey, isReference } from '@/utils';
+import { addImport, addImportModelInfo, getOrCreateSourceFile } from '@/utils/sourceFiles.ts';
 
-const MODEL_FILE_NAME = 'types.ts';
 
 export class ModelGenerator implements GenerateContext {
   readonly project: Project;
@@ -36,15 +36,7 @@ export class ModelGenerator implements GenerateContext {
   }
 
   private getOrCreateSourceFile(modelInfo: ModelInfo): SourceFile {
-    let fileName = combineURLs(modelInfo.path, MODEL_FILE_NAME);
-    fileName = combineURLs(this.outputDir, fileName);
-    const file = this.project.getSourceFile(fileName);
-    if (file) {
-      return file;
-    }
-    return this.project.createSourceFile(fileName, '', {
-      overwrite: true,
-    });
+    return getOrCreateSourceFile(this.project, this.outputDir, modelInfo);
   }
 
   generate() {
@@ -74,6 +66,9 @@ export class ModelGenerator implements GenerateContext {
     }
     // Handle other schema types (arrays, primitives) as type aliases
     this.processTypeAlias(modelInfo, sourceFile, schema);
+    sourceFile.organizeImports();
+    sourceFile.fixMissingImports();
+    sourceFile.fixUnusedIdentifiers();
   }
 
   processEnum(
@@ -109,7 +104,7 @@ export class ModelGenerator implements GenerateContext {
     const required = schema.required || [];
 
     for (const [propName, propSchema] of Object.entries(schema.properties)) {
-      const propType = this.resolveType(propSchema);
+      const propType = this.resolveType(modelInfo, sourceFile, propSchema);
       const isOptional = !required.includes(propName);
       properties[propName] = isOptional ? `${propType} | undefined` : propType;
     }
@@ -133,11 +128,11 @@ export class ModelGenerator implements GenerateContext {
     let unionType: string | null = null;
 
     if (schema.allOf) {
-      unionType = schema.allOf.map(s => this.resolveType(s)).join(' & ');
+      unionType = schema.allOf.map(s => this.resolveType(modelInfo, sourceFile, s)).join(' & ');
     } else if (schema.anyOf) {
-      unionType = schema.anyOf.map(s => this.resolveType(s)).join(' | ');
+      unionType = schema.anyOf.map(s => this.resolveType(modelInfo, sourceFile, s)).join(' | ');
     } else if (schema.oneOf) {
-      unionType = schema.oneOf.map(s => this.resolveType(s)).join(' | ');
+      unionType = schema.oneOf.map(s => this.resolveType(modelInfo, sourceFile, s)).join(' | ');
     }
 
     if (!unionType) {
@@ -157,7 +152,7 @@ export class ModelGenerator implements GenerateContext {
     sourceFile: SourceFile,
     schema: Schema,
   ) {
-    const type = this.resolveType(schema);
+    const type = this.resolveType(modelInfo, sourceFile, schema);
     sourceFile.addTypeAlias({
       name: modelInfo.name,
       type,
@@ -165,13 +160,13 @@ export class ModelGenerator implements GenerateContext {
     });
   }
 
-  private resolveType(schema: Schema | Reference): string {
-    if (this.isReference(schema)) {
-      return this.resolveReference(schema);
+  private resolveType(modelInfo: ModelInfo, sourceFile: SourceFile, schema: Schema | Reference): string {
+    if (isReference(schema)) {
+      return this.resolveReference(modelInfo, sourceFile, schema);
     }
 
     if (schema.type === 'array') {
-      const itemType = schema.items ? this.resolveType(schema.items) : 'any';
+      const itemType = schema.items ? this.resolveType(modelInfo, sourceFile, schema.items) : 'any';
       return `${itemType}[]`;
     }
 
@@ -191,29 +186,24 @@ export class ModelGenerator implements GenerateContext {
 
     // Handle nullable
     if (schema.nullable) {
-      return `${this.resolveType({ ...schema, nullable: false })} | null`;
+      return `${this.resolveType(modelInfo, sourceFile, { ...schema, nullable: false })} | null`;
     }
 
     return 'any';
   }
 
-  private isReference(schema: Schema | Reference): schema is Reference {
-    return '$ref' in schema;
-  }
 
-  private resolveReference(ref: Reference): string {
-    const refPath = ref.$ref;
-    if (refPath.startsWith('#/components/schemas/')) {
-      const schemaKey = refPath.substring('#/components/schemas/'.length);
-      const mappedType =
-        WOW_TYPE_MAPPING[schemaKey as keyof typeof WOW_TYPE_MAPPING];
-      if (mappedType) {
-        return mappedType;
-      }
-      const modelInfo = resolveModelInfo(schemaKey);
-      return modelInfo.name;
+  private resolveReference(modelInfo: ModelInfo, sourceFile: SourceFile, ref: Reference): string {
+    const schemaKey = extractComponentKey(ref);
+    const refModelInfo = resolveModelInfo(schemaKey);
+    const mappedType =
+      WOW_TYPE_MAPPING[schemaKey as keyof typeof WOW_TYPE_MAPPING];
+    if (mappedType) {
+      addImport(sourceFile, IMPORT_WOW_PATH, [mappedType]);
+      return mappedType;
     }
-    return 'any';
+    addImportModelInfo(modelInfo, sourceFile, this.outputDir, refModelInfo);
+    return refModelInfo.name;
   }
 
   private getPrimitiveType(type: string): string {
