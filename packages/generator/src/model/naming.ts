@@ -22,14 +22,13 @@ export interface ModelInfo extends Named {
 }
 
 /**
- * Resolves model information from a schema key.
+ * @example
  *
- * This function parses a dot-separated schema key and extracts the model name and path.
- * It assumes that the model name is the first part that starts with an uppercase letter.
- * All parts before the model name are treated as the path.
- *
- * @param schemaKey - The dot-separated schema key (e.g., "com.example.User")
- * @returns ModelInfo object containing the parsed name and path
+ * - "wow.api.BindingError" -> `{path:'/wow/api',name:'BindingError'}`
+ * - "compensation.ApiVersion" -> `{path:'/compensation',name:'ApiVersion'}`
+ * - "ai.AiMessage.Assistant" -> `{path:'/ai',name:'AiMessageAssistant'}`
+ * - "Result" -> `{path:'/',name:'Result'}`
+ * @param schemaKey
  */
 export function resolveModelInfo(schemaKey: string): ModelInfo {
   const parts = schemaKey.split('.');
