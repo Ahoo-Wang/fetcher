@@ -14,8 +14,10 @@
 import { OpenAPIParser } from '@/parser/openAPIParser.ts';
 import { OpenAPI } from '@ahoo-wang/fetcher-openapi';
 import { Project } from 'ts-morph';
+import { AggregateDefinition } from '@/aggregate';
 
 export interface GeneratorOptions {
+  readonly project: Project;
   readonly inputPath: string;
   readonly  outputDir: string;
   readonly parser: OpenAPIParser;
@@ -25,4 +27,5 @@ export interface GenerateContext {
   openAPI: OpenAPI;
   project: Project;
   outputDir: string;
+  aggregates: Map<string, AggregateDefinition>;
 }

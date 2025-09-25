@@ -12,22 +12,27 @@
  */
 
 import { ModelGenerator } from '@/model';
-import { Project } from 'ts-morph';
 import { GenerateContext, GeneratorOptions } from '@/types.ts';
+import { AggregateResolver } from '@/aggregate';
+import { Project } from 'ts-morph';
 
 export class CodeGenerator {
 
-  private readonly project: Project = new Project();
-
+  private readonly project: Project;
 
   constructor(private readonly options: GeneratorOptions) {
+    this.project = options.project;
   }
 
   async generate(): Promise<void> {
+    const openAPI = this.options.parser.parse(this.options.inputPath)!;
+    const aggregateResolver = new AggregateResolver(openAPI);
+    const aggregates = aggregateResolver.resolve();
     const context: GenerateContext = {
-      openAPI: this.options.parser.parse(this.options.inputPath)!,
+      openAPI: openAPI,
       project: this.project,
       outputDir: this.options.outputDir,
+      aggregates,
     };
     const modelGenerator = new ModelGenerator(context);
     modelGenerator.generate();
