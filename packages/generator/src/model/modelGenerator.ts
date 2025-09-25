@@ -62,7 +62,8 @@ export class ModelGenerator implements GenerateContext {
     if (isEnum(schema)) {
       sourceFile.addEnum({
         name: modelInfo.name,
-        members: schema.enum.map(value => ({
+        isExported: true,
+        members: schema.enum.filter(value => typeof value === 'string' && value.length > 0).map(value => ({
           name: value,
           initializer: `'${value}'`,
         })),
