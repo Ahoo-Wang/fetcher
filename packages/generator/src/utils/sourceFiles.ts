@@ -23,8 +23,8 @@ export function getModelFileName(outputDir: string, modelInfo: ModelInfo): strin
   return combineURLs(outputDir, fileName);
 }
 
-export function getOrCreateSourceFile(project: Project, outputDir: string, modelInfo: ModelInfo): SourceFile {
-  const fileName = getModelFileName(outputDir, modelInfo);
+export function getOrCreateSourceFile(project: Project, outputDir: string, filePath: string): SourceFile {
+  const fileName = combineURLs(outputDir, filePath);
   const file = project.getSourceFile(fileName);
   if (file) {
     return file;
@@ -50,11 +50,15 @@ export function addImport(sourceFile: SourceFile, moduleSpecifier: string, named
   });
 }
 
-export function addImportModelInfo(modelInfo: ModelInfo, sourceFile: SourceFile, outputDir: string, refModelInfo: ModelInfo) {
+export function addImportRefModel(sourceFile: SourceFile, outputDir: string, refModelInfo: ModelInfo) {
   const fileName = getModelFileName(outputDir, refModelInfo);
+  const moduleSpecifier = combineURLs(IMPORT_ALIAS, fileName);
+  addImport(sourceFile, moduleSpecifier, [refModelInfo.name]);
+}
+
+export function addImportModelInfo(modelInfo: ModelInfo, sourceFile: SourceFile, outputDir: string, refModelInfo: ModelInfo) {
   if (modelInfo.path === refModelInfo.path) {
     return;
   }
-  const moduleSpecifier = combineURLs(IMPORT_ALIAS, fileName);
-  addImport(sourceFile, moduleSpecifier, [refModelInfo.name]);
+  addImportRefModel(sourceFile, outputDir, refModelInfo);
 }

@@ -16,6 +16,7 @@ import { GenerateContext, GeneratorOptions } from '@/types.ts';
 import { AggregateResolver } from '@/aggregate';
 import { Project } from 'ts-morph';
 import { openAPIParser } from '@/parser/openAPIParser.ts';
+import { ClientGenerator } from '@/client/clientGenerator.ts';
 
 export class CodeGenerator {
 
@@ -38,6 +39,8 @@ export class CodeGenerator {
     };
     const modelGenerator = new ModelGenerator(context);
     modelGenerator.generate();
+    const clientGenerator = new ClientGenerator(context);
+    clientGenerator.generate();
     await this.project.save();
   }
 }

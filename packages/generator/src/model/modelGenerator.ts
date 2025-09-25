@@ -28,7 +28,7 @@ import { IMPORT_WOW_PATH, WOW_TYPE_MAPPING } from '@/model/wowTypeMapping.ts';
 import { extractComponentKey, isReference } from '@/utils';
 import {
   addImport,
-  addImportModelInfo,
+  addImportModelInfo, getModelFileName,
   getOrCreateSourceFile,
 } from '@/utils/sourceFiles.ts';
 
@@ -55,7 +55,8 @@ export class ModelGenerator implements GenerateContext {
   }
 
   private getOrCreateSourceFile(modelInfo: ModelInfo): SourceFile {
-    return getOrCreateSourceFile(this.project, this.outputDir, modelInfo);
+    let fileName = getModelFileName(this.outputDir, modelInfo);
+    return getOrCreateSourceFile(this.project, this.outputDir, fileName);
   }
 
   /**
