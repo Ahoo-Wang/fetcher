@@ -358,46 +358,7 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.4.0)(@vitest/ui@3.2.4)(jsdom@27.0.0(postcss@8.5.6))(msw@2.11.2(@types/node@24.4.0)(typescript@5.9.2))(yaml@2.8.1)
 
-  packages/openapi:
-    devDependencies:
-      '@eslint/js':
-        specifier: 'catalog:'
-        version: 9.36.0
-      '@vitest/coverage-v8':
-        specifier: 'catalog:'
-        version: 3.2.4(vitest@3.2.4)
-      '@vitest/ui':
-        specifier: 'catalog:'
-        version: 3.2.4(vitest@3.2.4)
-      eslint:
-        specifier: 'catalog:'
-        version: 9.36.0
-      globals:
-        specifier: 'catalog:'
-        version: 16.4.0
-      prettier:
-        specifier: 'catalog:'
-        version: 3.6.2
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.2
-      typescript-eslint:
-        specifier: 'catalog:'
-        version: 8.44.1(eslint@9.36.0)(typescript@5.9.2)
-      unplugin-dts:
-        specifier: 'catalog:'
-        version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.10)(rollup@4.52.2)(typescript@5.9.2)(vite@7.1.7(@types/node@24.4.0)(yaml@2.8.1))
-      vite:
-        specifier: 'catalog:'
-        version: 7.1.7(@types/node@24.4.0)(yaml@2.8.1)
-      vite-bundle-analyzer:
-        specifier: 'catalog:'
-        version: 1.2.3
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.4(@types/node@24.4.0)(@vitest/ui@3.2.4)(jsdom@27.0.0(postcss@8.5.6))(msw@2.11.2(@types/node@24.4.0)(typescript@5.9.2))(yaml@2.8.1)
-
-  packages/openapi-generator:
+  packages/generator:
     dependencies:
       '@ahoo-wang/fetcher':
         specifier: workspace:*
@@ -466,6 +427,45 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.18.6)(@vitest/ui@3.2.4)(jsdom@27.0.0(postcss@8.5.6))(msw@2.11.2(@types/node@22.18.6)(typescript@5.9.2))(yaml@2.8.1)
+
+  packages/openapi:
+    devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.36.0
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 3.2.4(vitest@3.2.4)
+      '@vitest/ui':
+        specifier: 'catalog:'
+        version: 3.2.4(vitest@3.2.4)
+      eslint:
+        specifier: 'catalog:'
+        version: 9.36.0
+      globals:
+        specifier: 'catalog:'
+        version: 16.4.0
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.44.1(eslint@9.36.0)(typescript@5.9.2)
+      unplugin-dts:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.6(@microsoft/api-extractor@7.43.0(@types/node@24.4.0))(esbuild@0.25.10)(rollup@4.52.2)(typescript@5.9.2)(vite@7.1.7(@types/node@24.4.0)(yaml@2.8.1))
+      vite:
+        specifier: 'catalog:'
+        version: 7.1.7(@types/node@24.4.0)(yaml@2.8.1)
+      vite-bundle-analyzer:
+        specifier: 'catalog:'
+        version: 1.2.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.4.0)(@vitest/ui@3.2.4)(jsdom@27.0.0(postcss@8.5.6))(msw@2.11.2(@types/node@24.4.0)(typescript@5.9.2))(yaml@2.8.1)
 
   packages/react:
     dependencies:
