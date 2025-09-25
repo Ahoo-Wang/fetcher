@@ -27,7 +27,7 @@ export interface ModelInfo extends Named {
  * This function parses a dot-separated schema key and extracts the model name and path.
  * It assumes that the model name is the first part that starts with an uppercase letter.
  * All parts before the model name are treated as the path.
- * 
+ *
  * @example
  *
  * - "wow.api.BindingError" -> {path:'/wow/api',name:'BindingError'}
@@ -42,40 +42,32 @@ export function resolveModelInfo(schemaKey: string): ModelInfo {
   if (!schemaKey) {
     return { name: '', path: '/' };
   }
-  
+
   const parts = schemaKey.split('.');
-  let name = '';
-  const pathParts: string[] = [];
+  let modelNameIndex = -1;
 
+  // Find the first part that starts with an uppercase letter
   for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-    const firstChar = part[0];
-
-    if (
-      firstChar === firstChar.toUpperCase() &&
-      firstChar !== firstChar.toLowerCase()
-    ) {
-      // Found the type name (starts with uppercase)
-      name = part;
+    if (parts[i] && /^[A-Z]/.test(parts[i])) {
+      modelNameIndex = i;
       break;
     }
-
-    // Collect path parts
-    pathParts.push(part);
   }
 
-  // If no uppercase part found, use the last part as module name
-  if (name === '') {
-    name = parts[parts.length - 1];
+  // If no part starts with uppercase letter, treat the whole thing as the name
+  if (modelNameIndex === -1) {
+    return { name: schemaKey, path: '/' };
   }
 
-  // Build path with leading slash
-  const path = pathParts.length > 0 ? '/' + pathParts.join('/') : '/';
+  // Construct the path from parts before the model name
+  const pathParts = parts.slice(0, modelNameIndex);
+  const path = pathParts.length > 0 ? `/${pathParts.join('/')}` : '/';
 
-  return {
-    name: name,
-    path: path,
-  };
+  // Construct the model name from the remaining parts
+  const nameParts = parts.slice(modelNameIndex);
+  const name = nameParts.join('');
+
+  return { name, path };
 }
 
 /**
@@ -83,22 +75,36 @@ export function resolveModelInfo(schemaKey: string): ModelInfo {
  *
  * This function takes a string and converts it to PascalCase by:
  * 1. Splitting on common separators (_, -, ., or whitespace)
- * 2. Capitalizing the first letter of each part
- * 3. Joining all parts together
+ * 2. Filtering out empty parts and non-alphabetic parts
+ * 3. Capitalizing the first letter of each part
+ * 4. Joining all parts together
+ *
+ * @example
+ * pascalCase("hello-world") // "HelloWorld"
+ * pascalCase("hello_world") // "HelloWorld"
+ * pascalCase("hello.world") // "HelloWorld"
+ * pascalCase("hello world") // "HelloWorld"
+ * pascalCase("hello--world") // "HelloWorld"
+ * pascalCase("hello123-world") // "Hello123World"
  *
  * @param name - The string to convert to PascalCase
  * @returns The PascalCase formatted string
  */
 export function pascalCase(name: string): string {
   if (!name) {
-    return '';
+    return name;
   }
-
   return name
-    .split(/[-_\s.]+/) // Split on hyphens, underscores, periods, or whitespace
+    .split(/[-_\s.]+/)
+    .filter(part => part.length > 0)
     .map(part => {
       if (part.length === 0) return '';
-      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+      const firstChar = part.charAt(0);
+      const rest = part.slice(1);
+      return (
+        (/[a-zA-Z]/.test(firstChar) ? firstChar.toUpperCase() : firstChar) +
+        rest.toLowerCase()
+      );
     })
     .join('');
 }
