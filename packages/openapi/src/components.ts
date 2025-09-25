@@ -40,15 +40,15 @@ import { Extensible } from './extensions';
  * @property callbacks - An object to hold reusable Callback Objects
  */
 export interface Components extends Extensible {
-  schemas?: Record<string, Schema | Reference>;
-  responses?: Record<string, Response | Reference>;
-  parameters?: Record<string, Parameter | Reference>;
+  schemas?: Record<string, Schema>;
+  responses?: Record<string, Response>;
+  parameters?: Record<string, Parameter>;
   examples?: Record<string, Example | Reference>;
-  requestBodies?: Record<string, RequestBody | Reference>;
+  requestBodies?: Record<string, RequestBody>;
   headers?: Record<string, Header | Reference>;
-  securitySchemes?: Record<string, SecurityScheme | Reference>;
-  links?: Record<string, Link | Reference>;
-  callbacks?: Record<string, Callback | Reference>;
+  securitySchemes?: Record<string, SecurityScheme>;
+  links?: Record<string, Link>;
+  callbacks?: Record<string, Callback>;
 }
 
 /**
