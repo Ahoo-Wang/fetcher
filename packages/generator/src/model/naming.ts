@@ -74,11 +74,11 @@ const NAMING_SEPARATORS = /[-_\s.]+|(?=[A-Z])/;
 
 /**
  * Converts a string or array of strings to PascalCase format.
- *
+ * 
  * This function takes a string or array of strings and converts them to PascalCase format
  * by splitting the input based on common naming separators and capitalizing the first
  * letter of each part.
- *
+ * 
  * @param name - A string or array of strings to convert to PascalCase
  * @returns The PascalCase formatted string
  */
