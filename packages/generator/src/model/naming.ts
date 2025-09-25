@@ -73,23 +73,13 @@ export function resolveModelInfo(schemaKey: string): ModelInfo {
 const NAMING_SEPARATORS = /[-_\s.]+|(?=[A-Z])/;
 
 /**
- * Converts a string to PascalCase format.
+ * Converts a string or array of strings to PascalCase format.
  *
- * This function takes a string and converts it to PascalCase by:
- * 1. Splitting on common separators (_, -, ., or whitespace)
- * 2. Filtering out empty parts and non-alphabetic parts
- * 3. Capitalizing the first letter of each part
- * 4. Joining all parts together
+ * This function takes a string or array of strings and converts them to PascalCase format
+ * by splitting the input based on common naming separators and capitalizing the first
+ * letter of each part.
  *
- * @example
- * pascalCase("hello-world") // "HelloWorld"
- * pascalCase("hello_world") // "HelloWorld"
- * pascalCase("hello.world") // "HelloWorld"
- * pascalCase("hello world") // "HelloWorld"
- * pascalCase("hello--world") // "HelloWorld"
- * pascalCase("hello123-world") // "Hello123World"
- *
- * @param name - The string to convert to PascalCase
+ * @param name - A string or array of strings to convert to PascalCase
  * @returns The PascalCase formatted string
  */
 export function pascalCase(name: string | string[]): string {
@@ -98,8 +88,10 @@ export function pascalCase(name: string | string[]): string {
   }
   let names: string[];
   if (Array.isArray(name)) {
+    // If input is an array, split each element by naming separators and flatten the result
     names = name.flatMap(part => part.split(NAMING_SEPARATORS));
   } else {
+    // If input is a string, split it by naming separators
     names = name.split(NAMING_SEPARATORS);
   }
   return names
