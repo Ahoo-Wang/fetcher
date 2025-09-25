@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Components, Reference, RequestBody, Response, Schema } from '@ahoo-wang/fetcher-openapi';
+import { Components, Parameter, Reference, RequestBody, Response, Schema } from '@ahoo-wang/fetcher-openapi';
 
 export const COMPONENTS_PREFIX = '#/components/';
 export const COMPONENTS_HEADERS_REF = `${COMPONENTS_PREFIX}headers/`;
@@ -37,4 +37,9 @@ export function extractResponse(reference: Reference, components: Components): R
 export function extractRequestBody(reference: Reference, components: Components): RequestBody | undefined {
   const componentKey = extractComponentKey(reference);
   return components.requestBodies?.[componentKey];
+}
+
+export function extractParameter(reference: Reference, components: Components): Parameter | undefined {
+  const componentKey = extractComponentKey(reference);
+  return components.parameters?.[componentKey];
 }

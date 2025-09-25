@@ -12,7 +12,7 @@
  */
 
 
-import { HTTPMethod, Operation, Reference, Tag } from '@ahoo-wang/fetcher-openapi';
+import { HTTPMethod, Operation, Parameter, Reference, Tag } from '@ahoo-wang/fetcher-openapi';
 import { AliasAggregate, Named } from '@ahoo-wang/fetcher-wow';
 
 export interface CommandDefinition extends Named {
@@ -25,9 +25,19 @@ export interface CommandDefinition extends Named {
    */
   path: string;
   /**
+   * command path parameters
+   */
+  pathParameters?: Parameter[];
+  /**
    * command http method
    */
   method: HTTPMethod;
+  summary?: string;
+  description?: string;
+  /**
+   * command body schema
+   */
+  schema: Reference;
   operation: Operation;
 }
 
@@ -41,6 +51,9 @@ export interface EventDefinition extends Named {
    */
   title: string;
 
+  /**
+   * event body schema
+   */
   schema: Reference;
 }
 
