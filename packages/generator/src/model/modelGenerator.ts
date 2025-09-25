@@ -17,6 +17,7 @@ import { ModelInfo, resolveModelInfo } from '@/model/naming.ts';
 import { combineURLs } from '@ahoo-wang/fetcher';
 import { isEnum } from '@/utils/schemas.ts';
 import { GenerateContext } from '@/types.ts';
+import { AggregateDefinition } from '@/aggregate';
 
 const MODEL_FILE_NAME = 'types.ts';
 
@@ -24,11 +25,13 @@ export class ModelGenerator implements GenerateContext {
   readonly project: Project;
   readonly openAPI: OpenAPI;
   readonly outputDir: string;
+  readonly aggregates: Map<string, AggregateDefinition>;
 
   constructor(context: GenerateContext) {
     this.project = context.project;
     this.openAPI = context.openAPI;
     this.outputDir = context.outputDir;
+    this.aggregates = context.aggregates;
   }
 
   private getOrCreateSourceFile(modelInfo: ModelInfo): SourceFile {
