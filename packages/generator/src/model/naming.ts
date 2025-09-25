@@ -22,18 +22,30 @@ export interface ModelInfo extends Named {
 }
 
 /**
+ * Resolves model information from a schema key.
+ *
+ * This function parses a dot-separated schema key and extracts the model name and path.
+ * It assumes that the model name is the first part that starts with an uppercase letter.
+ * All parts before the model name are treated as the path.
+ * 
  * @example
  *
- * - "wow.api.BindingError" -> `{path:'/wow/api',name:'BindingError'}`
- * - "compensation.ApiVersion" -> `{path:'/compensation',name:'ApiVersion'}`
- * - "ai.AiMessage.Assistant" -> `{path:'/ai',name:'AiMessageAssistant'}`
- * - "Result" -> `{path:'/',name:'Result'}`
- * @param schemaKey
+ * - "wow.api.BindingError" -> {path:'/wow/api',name:'BindingError'}
+ * - "compensation.ApiVersion" -> {path:'/compensation',name:'ApiVersion'}
+ * - "ai.AiMessage.Assistant" -> {path:'/ai',name:'AiMessageAssistant'}
+ * - "Result" -> {path:'/',name:'Result'}
+ *
+ * @param schemaKey - The dot-separated schema key (e.g., "com.example.User")
+ * @returns ModelInfo object containing the parsed name and path
  */
 export function resolveModelInfo(schemaKey: string): ModelInfo {
+  if (!schemaKey) {
+    return { name: '', path: '/' };
+  }
+  
   const parts = schemaKey.split('.');
   let name = '';
-  let path = '';
+  const pathParts: string[] = [];
 
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
@@ -48,18 +60,17 @@ export function resolveModelInfo(schemaKey: string): ModelInfo {
       break;
     }
 
-    // Build path with leading slash
-    if (path === '') {
-      path = part;
-    } else {
-      path = path + '/' + part;
-    }
+    // Collect path parts
+    pathParts.push(part);
   }
 
   // If no uppercase part found, use the last part as module name
   if (name === '') {
     name = parts[parts.length - 1];
   }
+
+  // Build path with leading slash
+  const path = pathParts.length > 0 ? '/' + pathParts.join('/') : '/';
 
   return {
     name: name,
