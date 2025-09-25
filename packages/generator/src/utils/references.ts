@@ -16,3 +16,4 @@ import { Reference } from '@ahoo-wang/fetcher-openapi';
 export function isReference(schema: any): schema is Reference {
   return (schema as any).$ref !== undefined;
 }
+

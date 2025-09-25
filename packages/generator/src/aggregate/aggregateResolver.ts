@@ -18,7 +18,7 @@ import { operationIdToCommandName, tagsToAggregates } from '@/aggregate/naming.t
 import { ContentTypeValues, PartialBy } from '@ahoo-wang/fetcher';
 import {
   extractOkResponse, extractOperationOkResponseJsonSchema,
-  extractOperations, isReference,
+  extractOperations, isReference, keySchema,
   MethodOperation,
 } from '@/utils';
 import { extractParameter, extractRequestBody, extractSchema } from '@/utils';
@@ -81,6 +81,9 @@ export class AggregateResolver {
     }
     const requestBody = operation.requestBody as RequestBody;
     const commandRefSchema = requestBody.content[ContentTypeValues.APPLICATION_JSON].schema as Reference;
+    const commandKeyedSchema = keySchema(commandRefSchema, this.openAPI.components!);
+    commandKeyedSchema.schema.title = commandKeyedSchema.schema.title || operation.summary;
+    commandKeyedSchema.schema.description = commandKeyedSchema.schema.description || operation.description;
     const commandDefinition: CommandDefinition = {
       name: commandName,
       method: methodOperation.method,
@@ -88,7 +91,7 @@ export class AggregateResolver {
       pathParameters,
       summary: operation.summary,
       description: operation.description,
-      schema: commandRefSchema,
+      schema: commandKeyedSchema,
       operation: operation,
     };
     operation.tags?.forEach((tag) => {
@@ -104,16 +107,17 @@ export class AggregateResolver {
     if (!operation.operationId?.endsWith('.snapshot_state.single')) {
       return;
     }
-    const state = extractOperationOkResponseJsonSchema(operation);
-    if (!isReference(state)) {
+    const stateRefSchema = extractOperationOkResponseJsonSchema(operation);
+    if (!isReference(stateRefSchema)) {
       return;
     }
+    const stateKeyedSchema = keySchema(stateRefSchema, this.openAPI.components!);
     operation.tags?.forEach((tag) => {
       const aggregate = this.aggregates.get(tag);
       if (!aggregate) {
         return;
       }
-      aggregate.state = state;
+      aggregate.state = stateKeyedSchema;
     });
   }
 
@@ -138,10 +142,12 @@ export class AggregateResolver {
       const eventTitle = domainEventSchema.title;
       const eventName = domainEventSchema.properties.name.const;
       const eventBodySchema = domainEventSchema.properties.body;
+      const eventBodyKeyedSchema = keySchema(eventBodySchema, this.openAPI.components!);
+      eventBodyKeyedSchema.schema.title = eventBodyKeyedSchema.schema.title || domainEventSchema.title;
       return {
         title: eventTitle,
         name: eventName,
-        schema: eventBodySchema,
+        schema: eventBodyKeyedSchema,
       };
     });
 
@@ -167,12 +173,13 @@ export class AggregateResolver {
     const conditionRefSchema = requestBody.content[ContentTypeValues.APPLICATION_JSON].schema as Reference;
     const conditionSchema = extractSchema(conditionRefSchema, this.openAPI.components) as Schema;
     const fieldRefSchema = conditionSchema.properties?.field as Reference;
+    const fieldKeyedSchema = keySchema(fieldRefSchema, this.openAPI.components);
     operation.tags?.forEach((tag) => {
       const aggregate = this.aggregates.get(tag);
       if (!aggregate) {
         return;
       }
-      aggregate.fields = fieldRefSchema;
+      aggregate.fields = fieldKeyedSchema;
     });
   }
 }

@@ -12,8 +12,9 @@
  */
 
 
-import { HTTPMethod, Operation, Parameter, Reference, Tag } from '@ahoo-wang/fetcher-openapi';
+import { HTTPMethod, Operation, Parameter, Tag } from '@ahoo-wang/fetcher-openapi';
 import { AliasAggregate, Named } from '@ahoo-wang/fetcher-wow';
+import { KeySchema } from '@/utils';
 
 export interface CommandDefinition extends Named {
   /**
@@ -37,7 +38,7 @@ export interface CommandDefinition extends Named {
   /**
    * command body schema
    */
-  schema: Reference;
+  schema: KeySchema;
   operation: Operation;
 }
 
@@ -54,7 +55,7 @@ export interface EventDefinition extends Named {
   /**
    * event body schema
    */
-  schema: Reference;
+  schema: KeySchema;
 }
 
 export interface TagAliasAggregate extends AliasAggregate {
@@ -67,11 +68,11 @@ export interface AggregateDefinition {
   /**
    * State Aggregate Root Schema
    */
-  state: Reference;
+  state: KeySchema;
   /**
    * state aggregate fields for query
    */
-  fields: Reference;
+  fields: KeySchema;
   /**
    * command name -> command definition
    */

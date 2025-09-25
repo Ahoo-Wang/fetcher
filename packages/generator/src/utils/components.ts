@@ -21,6 +21,11 @@ export const COMPONENTS_REQUEST_BODIES_REF = `${COMPONENTS_PREFIX}requestBodies/
 export const COMPONENTS_RESPONSES_REF = `${COMPONENTS_PREFIX}responses/`;
 export const COMPONENTS_SCHEMAS_REF = `${COMPONENTS_PREFIX}schemas/`;
 
+export interface KeySchema {
+  key: string;
+  schema: Schema;
+}
+
 export function extractComponentKey(reference: Reference): string {
   return reference.$ref.split('/').pop() as string;
 }
@@ -43,4 +48,12 @@ export function extractRequestBody(reference: Reference, components: Components)
 export function extractParameter(reference: Reference, components: Components): Parameter | undefined {
   const componentKey = extractComponentKey(reference);
   return components.parameters?.[componentKey];
+}
+
+export function keySchema(reference: Reference, components: Components): KeySchema {
+  const componentKey = extractComponentKey(reference);
+  return {
+    key: componentKey,
+    schema: extractSchema(reference, components)!,
+  };
 }
