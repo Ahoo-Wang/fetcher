@@ -65,10 +65,12 @@ export function resolveModelInfo(schemaKey: string): ModelInfo {
 
   // Construct the model name from the remaining parts
   const nameParts = parts.slice(modelNameIndex);
-  const name = nameParts.join('');
+  const name = pascalCase(nameParts);
 
   return { name, path };
 }
+
+const NAMING_SEPARATORS: RegExp = /[-_\s.]+/;
 
 /**
  * Converts a string to PascalCase format.
@@ -90,12 +92,17 @@ export function resolveModelInfo(schemaKey: string): ModelInfo {
  * @param name - The string to convert to PascalCase
  * @returns The PascalCase formatted string
  */
-export function pascalCase(name: string): string {
-  if (!name) {
-    return name;
+export function pascalCase(name: string | string[]): string {
+  if (name === '' || name.length === 0) {
+    return '';
   }
-  return name
-    .split(/[-_\s.]+/)
+  let names: string[];
+  if (Array.isArray(name)) {
+    names = name.flatMap(part => part.split(NAMING_SEPARATORS));
+  } else {
+    names = name.split(NAMING_SEPARATORS);
+  }
+  return names
     .filter(part => part.length > 0)
     .map(part => {
       if (part.length === 0) return '';
