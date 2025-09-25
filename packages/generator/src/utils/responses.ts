@@ -11,21 +11,20 @@
  * limitations under the License.
  */
 
-import { Reference, SchemaType } from '@ahoo-wang/fetcher-openapi';
+import { Reference, Schema, Response } from '@ahoo-wang/fetcher-openapi';
+import { ContentTypeValues } from '@ahoo-wang/fetcher';
+import { isReference } from '@/utils/references.ts';
 
-const PRIMITIVE_TYPES: SchemaType[] = ['string', 'number', 'integer', 'boolean', 'null'];
-
-export function isPrimitive(type: SchemaType | SchemaType[]): boolean {
-  if (Array.isArray(type)) {
-    return false;
+export function extractOkResponseJsonSchema(okResponse?: Response | Reference): Schema | Reference | undefined {
+  if (!okResponse) {
+    return;
   }
-  return PRIMITIVE_TYPES.includes(type);
-}
+  if (isReference(okResponse)) {
+    return undefined;
+  }
 
-export function isReference(schema: any): schema is Reference {
-  return (schema as any).$ref !== undefined;
-}
-
-export function getSchemaKey(ref: string): string {
-  return ref.split('/').pop() as string;
+  if (!okResponse.content) {
+    return undefined;
+  }
+  return okResponse.content[ContentTypeValues.APPLICATION_JSON].schema;
 }

@@ -14,14 +14,14 @@
 import { OpenAPI, Operation, Parameter, Reference, RequestBody, Schema } from '@ahoo-wang/fetcher-openapi';
 import { AggregateDefinition, CommandDefinition, EventDefinition } from './aggregate.ts';
 import { operationIdToCommandName, tagsToAggregates } from '@/aggregate/naming.ts';
-import { isReference } from '@/utils.ts';
+
 import { ContentTypeValues, PartialBy } from '@ahoo-wang/fetcher';
 import {
   extractOkResponse, extractOperationOkResponseJsonSchema,
-  extractOperations,
+  extractOperations, isReference,
   MethodOperation,
-} from '@/aggregate/operationExtractor.ts';
-import { extractParameter, extractRequestBody, extractSchema } from '@/aggregate/referenceExtractor.ts';
+} from '@/utils';
+import { extractParameter, extractRequestBody, extractSchema } from '@/utils';
 import { EventStreamSchema } from '@/aggregate/types.ts';
 
 

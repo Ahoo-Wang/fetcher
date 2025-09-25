@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+
 import { Components, Parameter, Reference, RequestBody, Response, Schema } from '@ahoo-wang/fetcher-openapi';
 
 export const COMPONENTS_PREFIX = '#/components/';

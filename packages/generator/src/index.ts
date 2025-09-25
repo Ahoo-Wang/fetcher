@@ -15,7 +15,6 @@ import { openAPIParser } from '@/parser/openAPIParser.ts';
 import { ModuleResolver } from '@/module/moduleResolver.ts';
 import { ModuleInfoResolver } from '@/module/moduleInfoResolver.ts';
 import { ModelResolver } from '@/model/modelResolver.ts';
-import { ClientResolver } from '@/client/clientResolver.ts';
 import { CodeGenerator } from '@/codeGenerator.ts';
 import { Project } from 'ts-morph';
 
@@ -29,7 +28,6 @@ export function generate(inputPath: string, outputDir: string): void {
   const moduleResolver = new ModuleResolver(
     new ModuleInfoResolver(),
     modelResolver,
-    new ClientResolver(modelResolver),
   );
 
   moduleResolver.resolve(openAPI);

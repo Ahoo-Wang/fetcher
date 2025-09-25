@@ -15,8 +15,8 @@ import { Reference, Schema } from '@ahoo-wang/fetcher-openapi';
 import { ModelDefinition } from '@/model/modelDefinition.ts';
 import { ModuleInfoResolver } from '@/module/moduleInfoResolver.ts';
 import { DependencyDefinition } from '@/module/dependencyDefinition.ts';
-import { isReference, getSchemaKey } from '@/utils.ts';
 import { WOW_TYPE_MAPPING, IMPORT_WOW_PATH } from '@/model/wowTypeMapping.ts';
+import { extractComponentKey, isReference } from '@/utils';
 
 export class ModelResolver {
   constructor(private readonly moduleInfoResolver: ModuleInfoResolver) {
@@ -104,7 +104,7 @@ export class ModelResolver {
 
   resolveType(schema: Schema | Reference): string {
     if (isReference(schema)) {
-      const schemaKey = getSchemaKey(schema.$ref);
+      const schemaKey = extractComponentKey(schema);
 
       // Check if it's a Wow type
       const wowType = this.resolveWowType(schemaKey);
@@ -190,7 +190,7 @@ export class ModelResolver {
   }
 
   resolveReference(schema: Reference): DependencyDefinition {
-    const schemaKey = getSchemaKey(schema.$ref);
+    const schemaKey = extractComponentKey(schema);
 
     // Check if it's a Wow type
     const wowType = this.resolveWowType(schemaKey);
@@ -269,6 +269,7 @@ export class ModelResolver {
       }
     }
   }
+
   private resolveWowType(schemaKey: string): string | null {
     return (WOW_TYPE_MAPPING as any)[schemaKey] || null;
   }

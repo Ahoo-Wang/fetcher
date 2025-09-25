@@ -12,7 +12,7 @@
  */
 
 import { HTTPMethod, Operation, PathItem, Reference, Response, Schema } from '@ahoo-wang/fetcher-openapi';
-import { extractOkResponseJsonSchema } from '@/aggregate/responseExtractor.ts';
+import { extractOkResponseJsonSchema } from '@/utils/responses.ts';
 
 export interface MethodOperation {
   method: HTTPMethod;

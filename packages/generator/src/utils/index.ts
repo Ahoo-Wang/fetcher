@@ -11,20 +11,7 @@
  * limitations under the License.
  */
 
-import { Reference, Schema, Response } from '@ahoo-wang/fetcher-openapi';
-import { isReference } from '@/utils.ts';
-import { ContentTypeValues } from '@ahoo-wang/fetcher';
-
-export function extractOkResponseJsonSchema(okResponse?: Response | Reference): Schema | Reference | undefined {
-  if (!okResponse) {
-    return;
-  }
-  if (isReference(okResponse)) {
-    return undefined;
-  }
-
-  if (!okResponse.content) {
-    return undefined;
-  }
-  return okResponse.content[ContentTypeValues.APPLICATION_JSON].schema;
-}
+export * from './components';
+export * from './operations';
+export * from './references';
+export * from './responses';

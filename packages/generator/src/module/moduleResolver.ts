@@ -15,8 +15,7 @@ import { OpenAPI, Reference, Schema } from '@ahoo-wang/fetcher-openapi';
 import { ModuleDefinition } from '@/module/moduleDefinition.ts';
 import { ModuleInfoResolver } from '@/module/moduleInfoResolver.ts';
 import { ModelResolver } from '@/model/modelResolver.ts';
-import { isReference } from '@/utils.ts';
-import { ClientResolver } from '@/client/clientResolver.ts';
+import { isReference } from '@/utils';
 
 export class ModuleResolver {
   public readonly modules: Map<string, ModuleDefinition> = new Map<
@@ -27,7 +26,6 @@ export class ModuleResolver {
   constructor(
     private readonly moduleInfoResolver: ModuleInfoResolver,
     private readonly modelResolver: ModelResolver,
-    private readonly clientResolver: ClientResolver,
   ) {
   }
 
@@ -45,16 +43,6 @@ export class ModuleResolver {
     if (openAPI.components?.schemas) {
       Object.entries(openAPI.components?.schemas).forEach(([key, value]) => {
         this.resolveSchema(key, value);
-      });
-    }
-    if (openAPI.paths) {
-      const clients = this.clientResolver.resolve(openAPI.paths);
-      clients.forEach(client => {
-        // For clients, use just the last part of the tag as the module key
-        const tagParts = client.tag.split('.');
-        const moduleKey = tagParts[tagParts.length - 1];
-        const module = this.getOrCreateModule(moduleKey);
-        module.addClient(client);
       });
     }
   }

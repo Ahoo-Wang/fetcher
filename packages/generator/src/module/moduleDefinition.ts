@@ -14,7 +14,6 @@
 import { Named } from '@ahoo-wang/fetcher-wow';
 import { ModelDefinition } from '@/model/modelDefinition.ts';
 import { DependencyDefinition } from '@/module/dependencyDefinition.ts';
-import { ClientDefinition } from '@/client/clientDefinition.ts';
 
 export interface ModuleInfo extends Named {
   /**
@@ -32,7 +31,6 @@ export class ModuleDefinition implements ModuleInfo {
   public readonly path: string;
   public readonly models: Map<string, ModelDefinition> = new Map<string, ModelDefinition>();
   public readonly dependencies: Map<string, DependencyDefinition> = new Map<string, DependencyDefinition>();
-  public readonly clients: Map<string, ClientDefinition> = new Map<string, ClientDefinition>();
 
   constructor(name: string, path: string) {
     this.name = name;
@@ -79,16 +77,4 @@ export class ModuleDefinition implements ModuleInfo {
     return Array.from(this.models.values());
   }
 
-  addClient(client: ClientDefinition): boolean {
-    if (this.clients.has(client.name)) {
-      return false;
-    }
-    this.addDependencies(client.endpoints.flatMap((endpoint) => endpoint.dependencies));
-    this.clients.set(client.name, client);
-    return true;
-  }
-
-  getClients(): ClientDefinition[] {
-    return Array.from(this.clients.values());
-  }
 }
