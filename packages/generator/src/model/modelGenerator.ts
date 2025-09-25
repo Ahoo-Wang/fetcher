@@ -12,7 +12,14 @@
  */
 
 import { OpenAPI, Schema, Reference } from '@ahoo-wang/fetcher-openapi';
-import { Project, SourceFile } from 'ts-morph';
+import {
+  EnumDeclaration,
+  InterfaceDeclaration,
+  JSDocableNode,
+  Project,
+  SourceFile,
+  TypeAliasDeclaration,
+} from 'ts-morph';
 import { ModelInfo, resolveModelInfo } from '@/model/naming.ts';
 import { isEnum } from '@/utils/schemas.ts';
 import { GenerateContext } from '@/types.ts';
@@ -92,18 +99,36 @@ export class ModelGenerator implements GenerateContext {
   generateKeyedSchema(schemaKey: string, schema: Schema): SourceFile {
     const modelInfo = resolveModelInfo(schemaKey);
     const sourceFile = this.getOrCreateSourceFile(modelInfo);
-    if (this.processEnum(modelInfo, sourceFile, schema)) {
-      return sourceFile;
+    const node = this.process(modelInfo, sourceFile, schema);
+    if (schema.title) {
+      node.addJsDoc({
+        description: schema.title,
+      });
     }
-    if (this.processObject(modelInfo, sourceFile, schema)) {
-      return sourceFile;
+    if (schema.description) {
+      node.addJsDoc({
+        description: schema.description,
+      });
     }
-    if (this.processUnion(modelInfo, sourceFile, schema)) {
-      return sourceFile;
-    }
-    // Handle other schema types (arrays, primitives) as type aliases
-    this.processTypeAlias(modelInfo, sourceFile, schema);
     return sourceFile;
+  }
+
+  private process(modelInfo: ModelInfo,
+                  sourceFile: SourceFile,
+                  schema: Schema) {
+    let declaration: JSDocableNode | undefined = this.processEnum(modelInfo, sourceFile, schema);
+    if (declaration) {
+      return declaration;
+    }
+    declaration = this.processObject(modelInfo, sourceFile, schema);
+    if (declaration) {
+      return declaration;
+    }
+    declaration = this.processUnion(modelInfo, sourceFile, schema);
+    if (declaration) {
+      return declaration;
+    }
+    return this.processTypeAlias(modelInfo, sourceFile, schema);
   }
 
   /**
@@ -122,11 +147,11 @@ export class ModelGenerator implements GenerateContext {
     modelInfo: ModelInfo,
     sourceFile: SourceFile,
     schema: Schema,
-  ): boolean {
+  ): EnumDeclaration | undefined {
     if (!isEnum(schema)) {
-      return false;
+      return undefined;
     }
-    sourceFile.addEnum({
+    return sourceFile.addEnum({
       name: modelInfo.name,
       isExported: true,
       members: schema.enum
@@ -136,7 +161,6 @@ export class ModelGenerator implements GenerateContext {
           initializer: `'${value}'`,
         })),
     });
-    return true;
   }
 
   /**
@@ -155,9 +179,9 @@ export class ModelGenerator implements GenerateContext {
     modelInfo: ModelInfo,
     sourceFile: SourceFile,
     schema: Schema,
-  ): boolean {
+  ): InterfaceDeclaration | undefined {
     if (schema.type !== 'object' || !schema.properties) {
-      return false;
+      return undefined;
     }
     const properties: Record<string, string> = {};
     const required = schema.required || [];
@@ -168,7 +192,7 @@ export class ModelGenerator implements GenerateContext {
       properties[propName] = isOptional ? `${propType} | undefined` : propType;
     }
 
-    sourceFile.addInterface({
+    return sourceFile.addInterface({
       name: modelInfo.name,
       isExported: true,
       properties: Object.entries(properties).map(([name, type]) => ({
@@ -176,7 +200,6 @@ export class ModelGenerator implements GenerateContext {
         type,
       })),
     });
-    return true;
   }
 
   /**
@@ -197,7 +220,7 @@ export class ModelGenerator implements GenerateContext {
     modelInfo: ModelInfo,
     sourceFile: SourceFile,
     schema: Schema,
-  ): boolean {
+  ): TypeAliasDeclaration | undefined {
     let unionType: string | null = null;
 
     if (schema.allOf) {
@@ -215,15 +238,14 @@ export class ModelGenerator implements GenerateContext {
     }
 
     if (!unionType) {
-      return false;
+      return undefined;
     }
 
-    sourceFile.addTypeAlias({
+    return sourceFile.addTypeAlias({
       name: modelInfo.name,
       type: unionType,
       isExported: true,
     });
-    return true;
   }
 
   /**
@@ -242,9 +264,9 @@ export class ModelGenerator implements GenerateContext {
     modelInfo: ModelInfo,
     sourceFile: SourceFile,
     schema: Schema,
-  ) {
+  ): TypeAliasDeclaration {
     const type = this.resolveType(modelInfo, sourceFile, schema);
-    sourceFile.addTypeAlias({
+    return sourceFile.addTypeAlias({
       name: modelInfo.name,
       type,
       isExported: true,
