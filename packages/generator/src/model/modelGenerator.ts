@@ -28,6 +28,11 @@ import {
 /**
  * Generates TypeScript models from OpenAPI schemas.
  * Handles enum, object, union, and type alias generation.
+ *
+ * @property project - The ts-morph project instance
+ * @property openAPI - The OpenAPI specification
+ * @property outputDir - The output directory for generated files
+ * @property aggregates - Map of aggregate definitions
  */
 export class ModelGenerator implements GenerateContext {
   readonly project: Project;
@@ -49,6 +54,10 @@ export class ModelGenerator implements GenerateContext {
   /**
    * Generates models for all schemas in the OpenAPI specification.
    * Skips schemas with keys starting with 'wow.'.
+   *
+   * @remarks
+   * This method iterates through all schemas in the OpenAPI specification
+   * and generates corresponding TypeScript models for each one.
    */
   generate() {
     const schemas = this.openAPI.components?.schemas;
@@ -59,36 +68,55 @@ export class ModelGenerator implements GenerateContext {
       if (schemaKey.startsWith('wow.')) {
         return;
       }
-      this.generateKeyedSchema(schemaKey, schema);
+      const sourceFile = this.generateKeyedSchema(schemaKey, schema);
+      sourceFile.organizeImports();
+      sourceFile.fixMissingImports();
+      sourceFile.fixUnusedIdentifiers();
     });
   }
 
   /**
    * Generates a model for a specific schema key.
    * Processes enums, objects, unions, and type aliases in order.
+   *
+   * @param schemaKey - The key of the schema to generate
+   * @param schema - The schema definition
+   *
+   * @remarks
+   * The generation process follows this order:
+   * 1. Enum processing
+   * 2. Object processing
+   * 3. Union processing
+   * 4. Type alias processing
    */
-  generateKeyedSchema(schemaKey: string, schema: Schema) {
+  generateKeyedSchema(schemaKey: string, schema: Schema): SourceFile {
     const modelInfo = resolveModelInfo(schemaKey);
     const sourceFile = this.getOrCreateSourceFile(modelInfo);
     if (this.processEnum(modelInfo, sourceFile, schema)) {
-      return;
+      return sourceFile;
     }
     if (this.processObject(modelInfo, sourceFile, schema)) {
-      return;
+      return sourceFile;
     }
     if (this.processUnion(modelInfo, sourceFile, schema)) {
-      return;
+      return sourceFile;
     }
     // Handle other schema types (arrays, primitives) as type aliases
     this.processTypeAlias(modelInfo, sourceFile, schema);
-    sourceFile.organizeImports();
-    sourceFile.fixMissingImports();
-    sourceFile.fixUnusedIdentifiers();
+    return sourceFile;
   }
 
   /**
    * Processes enum schemas and generates TypeScript enums.
+   *
+   * @param modelInfo - The model information
+   * @param sourceFile - The source file to add the enum to
+   * @param schema - The enum schema
    * @returns true if the schema was processed as an enum, false otherwise
+   *
+   * @remarks
+   * This method filters out non-string enum values and generates
+   * a TypeScript enum with string literal initializers.
    */
   processEnum(
     modelInfo: ModelInfo,
@@ -113,7 +141,15 @@ export class ModelGenerator implements GenerateContext {
 
   /**
    * Processes object schemas and generates TypeScript interfaces.
+   *
+   * @param modelInfo - The model information
+   * @param sourceFile - The source file to add the interface to
+   * @param schema - The object schema
    * @returns true if the schema was processed as an object, false otherwise
+   *
+   * @remarks
+   * This method handles optional properties by checking the required array
+   * and adds undefined union types for optional properties.
    */
   processObject(
     modelInfo: ModelInfo,
@@ -145,7 +181,17 @@ export class ModelGenerator implements GenerateContext {
 
   /**
    * Processes union schemas (allOf, anyOf, oneOf) and generates TypeScript type aliases.
+   *
+   * @param modelInfo - The model information
+   * @param sourceFile - The source file to add the type alias to
+   * @param schema - The union schema
    * @returns true if the schema was processed as a union, false otherwise
+   *
+   * @remarks
+   * This method handles three types of unions:
+   * - allOf: Generates intersection types (&)
+   * - anyOf: Generates union types (|)
+   * - oneOf: Generates union types (|)
    */
   processUnion(
     modelInfo: ModelInfo,
@@ -182,6 +228,15 @@ export class ModelGenerator implements GenerateContext {
 
   /**
    * Processes type alias schemas and generates TypeScript type aliases.
+   *
+   * @param modelInfo - The model information
+   * @param sourceFile - The source file to add the type alias to
+   * @param schema - The schema to process
+   *
+   * @remarks
+   * This method is used as a fallback for schemas that don't match
+   * enum, object, or union patterns. It resolves the type and creates
+   * a simple type alias.
    */
   processTypeAlias(
     modelInfo: ModelInfo,
@@ -199,6 +254,19 @@ export class ModelGenerator implements GenerateContext {
   /**
    * Resolves the TypeScript type for a given schema or reference.
    * Handles arrays, objects, primitives, and references.
+   *
+   * @param modelInfo - The model information
+   * @param sourceFile - The source file for import management
+   * @param schema - The schema or reference to resolve
+   * @returns The resolved TypeScript type as a string
+   *
+   * @remarks
+   * This method handles various schema types:
+   * - References: Resolves to imported types
+   * - Arrays: Resolves item types and adds array notation
+   * - Objects: Resolves to Record<string, any> for generic objects
+   * - Primitives: Maps to TypeScript primitives
+   * - Nullable: Adds null union type
    */
   private resolveType(
     modelInfo: ModelInfo,
@@ -241,6 +309,15 @@ export class ModelGenerator implements GenerateContext {
   /**
    * Resolves a reference to another schema.
    * Handles mapped types and imports.
+   *
+   * @param modelInfo - The current model information
+   * @param sourceFile - The source file for import management
+   * @param ref - The reference to resolve
+   * @returns The resolved type name
+   *
+   * @remarks
+   * This method checks for mapped types first (WOW_TYPE_MAPPING).
+   * If not found, it adds an import for the referenced model.
    */
   private resolveReference(
     modelInfo: ModelInfo,
@@ -261,6 +338,17 @@ export class ModelGenerator implements GenerateContext {
 
   /**
    * Maps OpenAPI primitive types to TypeScript types.
+   *
+   * @param type - The OpenAPI primitive type
+   * @returns The corresponding TypeScript type
+   *
+   * @remarks
+   * This method handles the following mappings:
+   * - string -> string
+   * - number/integer -> number
+   * - boolean -> boolean
+   * - null -> null
+   * - All others -> any
    */
   private getPrimitiveType(type: string): string {
     switch (type) {
