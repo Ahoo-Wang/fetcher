@@ -72,7 +72,7 @@ export function resolveModelInfo(schemaKey: string): ModelInfo {
  * Converts a string to PascalCase format.
  *
  * This function takes a string and converts it to PascalCase by:
- * 1. Splitting on common separators (_, -, or whitespace)
+ * 1. Splitting on common separators (_, -, ., or whitespace)
  * 2. Capitalizing the first letter of each part
  * 3. Joining all parts together
  *
@@ -85,7 +85,7 @@ export function pascalCase(name: string): string {
   }
 
   return name
-    .split(/[-_\s]+/) // Split on hyphens, underscores, or whitespace
+    .split(/[-_\s.]+/) // Split on hyphens, underscores, periods, or whitespace
     .map(part => {
       if (part.length === 0) return '';
       return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
