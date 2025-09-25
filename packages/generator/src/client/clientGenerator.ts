@@ -15,7 +15,7 @@ import { GenerateContext } from '@/types.ts';
 import { Project, SourceFile } from 'ts-morph';
 import { OpenAPI } from '@ahoo-wang/fetcher-openapi';
 import { AggregateDefinition } from '@/aggregate';
-import { pascalCase, resolveModelInfo } from '@/model';
+import { IMPORT_WOW_PATH, pascalCase, resolveModelInfo } from '@/model';
 import { addImport, addImportRefModel, getOrCreateSourceFile } from '@/utils/sourceFiles.ts';
 
 export class ClientGenerator implements GenerateContext {
@@ -50,7 +50,7 @@ export class ClientGenerator implements GenerateContext {
   }
 
   processSnapshotQueryClient(sourceFile: SourceFile, aggregate: AggregateDefinition) {
-    addImport(sourceFile, '@ahoo-wang/fetcher-wow', ['SnapshotQueryClient']);
+    addImport(sourceFile, IMPORT_WOW_PATH, ['SnapshotQueryClient']);
     const snapshotQueryClientName = `${pascalCase(aggregate.aggregate.aggregateName)}SnapshotQueryClient`;
     const stateModelInfo = resolveModelInfo(aggregate.state.key);
     const fieldsModelInfo = resolveModelInfo(aggregate.fields.key);
@@ -64,7 +64,7 @@ export class ClientGenerator implements GenerateContext {
   }
 
   processEventStreamQueryClient(sourceFile: SourceFile, aggregate: AggregateDefinition) {
-    addImport(sourceFile, '@ahoo-wang/fetcher-wow', ['EventStreamQueryClient']);
+    addImport(sourceFile, IMPORT_WOW_PATH, ['EventStreamQueryClient']);
     const snapshotQueryClientName = `${pascalCase(aggregate.aggregate.aggregateName)}EventQueryClient`;
     const stateModelInfo = resolveModelInfo(aggregate.state.key);
     addImportRefModel(sourceFile, this.outputDir, stateModelInfo);

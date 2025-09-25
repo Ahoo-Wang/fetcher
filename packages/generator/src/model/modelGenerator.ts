@@ -76,11 +76,7 @@ export class ModelGenerator implements GenerateContext {
       if (schemaKey.startsWith('wow.')) {
         return;
       }
-      const sourceFile = this.generateKeyedSchema(schemaKey, schema);
-      sourceFile.formatText();
-      sourceFile.organizeImports();
-      sourceFile.fixMissingImports();
-      sourceFile.fixUnusedIdentifiers();
+      this.generateKeyedSchema(schemaKey, schema);
     });
   }
 
