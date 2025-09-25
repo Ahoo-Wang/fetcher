@@ -76,6 +76,7 @@ export class ModelGenerator implements GenerateContext {
         return;
       }
       const sourceFile = this.generateKeyedSchema(schemaKey, schema);
+      sourceFile.formatText();
       sourceFile.organizeImports();
       sourceFile.fixMissingImports();
       sourceFile.fixUnusedIdentifiers();
