@@ -12,9 +12,8 @@
  */
 
 
-import { Operation, Schema } from '@ahoo-wang/fetcher-openapi';
-import { HttpMethod } from '@ahoo-wang/fetcher';
-import { Named, NamedAggregate, type NamedBoundedContext } from '@ahoo-wang/fetcher-wow';
+import { HTTPMethod, Operation, Reference, Tag } from '@ahoo-wang/fetcher-openapi';
+import { AliasAggregate, AliasBoundedContext, Named } from '@ahoo-wang/fetcher-wow';
 
 export interface CommandDefinition extends Named {
   /**
@@ -28,34 +27,51 @@ export interface CommandDefinition extends Named {
   /**
    * command http method
    */
-  method: HttpMethod;
+  method: HTTPMethod;
   operation: Operation;
 }
 
+export interface EventDefinition extends Named {
+  /**
+   * event name
+   */
+  name: string;
+  /**
+   * event title
+   */
+  title: string;
+
+  schema: Reference;
+}
+
+export interface TagAliasAggregate extends AliasAggregate {
+  tag: Tag;
+}
+
+
 export interface AggregateDefinition {
-  aggregate: NamedAggregate;
+  aggregate: TagAliasAggregate;
   /**
    * State Aggregate Root Schema
    */
-  state: Schema;
+  state: Reference;
   /**
    * state aggregate fields for query
    */
-  fields: Schema;
+  fields: Reference;
   /**
    * command name -> command definition
    */
   commands: Map<string, CommandDefinition>;
   /**
-   * event type name -> event schema
+   * event name -> event schema
    */
-  events: Map<string, Schema>;
+  events: Map<string, EventDefinition>;
 }
 
-export interface BoundedContextDefinition extends NamedBoundedContext {
-  contextAlias: string;
+export interface BoundedContextDefinition extends AliasBoundedContext {
   /**
-   * aggregate name -> aggregate definition
+   * aggregate tag name -> aggregate definition
    */
   aggregates: Map<string, AggregateDefinition>;
 }

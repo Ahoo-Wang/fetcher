@@ -11,10 +11,11 @@
  * limitations under the License.
  */
 
-import { Paths, Operation, HTTPMethod, Schema } from '@ahoo-wang/fetcher-openapi';
+import { Paths, Schema } from '@ahoo-wang/fetcher-openapi';
 import { ClientDefinition, EndpointDefinition } from '@/client/clientDefinition.ts';
 import { ModelResolver } from '@/model/modelResolver.ts';
 import { isReference } from '@/utils.ts';
+import { extractOperations } from '@/aggregate/operationExtractor.ts';
 
 export class ClientResolver {
   constructor(private readonly modelResolver: ModelResolver) {
@@ -24,16 +25,7 @@ export class ClientResolver {
     const clientsByTag = new Map<string, ClientDefinition>();
 
     for (const [path, pathItem] of Object.entries(paths)) {
-      const operations: Array<{ method: HTTPMethod; operation: Operation }> = [
-        { method: 'get', operation: pathItem.get },
-        { method: 'put', operation: pathItem.put },
-        { method: 'post', operation: pathItem.post },
-        { method: 'delete', operation: pathItem.delete },
-        { method: 'options', operation: pathItem.options },
-        { method: 'head', operation: pathItem.head },
-        { method: 'patch', operation: pathItem.patch },
-        { method: 'trace', operation: pathItem.trace },
-      ].filter(({ operation }) => operation !== undefined) as Array<{ method: HTTPMethod; operation: Operation }>;
+      const operations = extractOperations(pathItem);
 
       for (const { method, operation } of operations) {
         if (!operation.tags || operation.tags.length === 0) {
