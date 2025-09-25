@@ -18,7 +18,7 @@ import { AggregateResolver } from '@/aggregate/aggregateResolver.ts';
 // This test ensures that all exports are properly defined
 describe('spec', () => {
   it('resolve', async () => {
-    const openAPI = openAPIParser.parse('../compensation-spec.json');
+    const openAPI = openAPIParser.parse('test/compensation-spec.json');
     expect(openAPI).toBeDefined();
     const aggregateResolver = new AggregateResolver(openAPI!);
     const aggregates = aggregateResolver.resolve();

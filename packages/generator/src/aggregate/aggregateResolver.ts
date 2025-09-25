@@ -83,8 +83,9 @@ export class AggregateResolver {
     const commandRefSchema = requestBody.content[ContentTypeValues.APPLICATION_JSON].schema as Reference;
     const commandDefinition: CommandDefinition = {
       name: commandName,
-      path,
       method: methodOperation.method,
+      path,
+      pathParameters,
       summary: operation.summary,
       description: operation.description,
       schema: commandRefSchema,

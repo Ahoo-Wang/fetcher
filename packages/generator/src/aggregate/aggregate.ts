@@ -21,17 +21,17 @@ export interface CommandDefinition extends Named {
    */
   name: string;
   /**
+   * command http method
+   */
+  method: HTTPMethod;
+  /**
    * command endpoint path
    */
   path: string;
   /**
    * command path parameters
    */
-  pathParameters?: Parameter[];
-  /**
-   * command http method
-   */
-  method: HTTPMethod;
+  pathParameters: Parameter[];
   summary?: string;
   description?: string;
   /**

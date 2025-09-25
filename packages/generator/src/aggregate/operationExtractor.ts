@@ -20,7 +20,7 @@ export interface MethodOperation {
 }
 
 export function extractOperations(pathItem: PathItem): MethodOperation[] {
-  const operations: Array<{ method: HTTPMethod; operation: Operation }> = [
+  return [
     { method: 'get', operation: pathItem.get },
     { method: 'put', operation: pathItem.put },
     { method: 'post', operation: pathItem.post },
@@ -30,7 +30,6 @@ export function extractOperations(pathItem: PathItem): MethodOperation[] {
     { method: 'patch', operation: pathItem.patch },
     { method: 'trace', operation: pathItem.trace },
   ].filter(({ operation }) => operation !== undefined) as Array<{ method: HTTPMethod; operation: Operation }>;
-  return operations;
 }
 
 export function extractOkResponse(operation: Operation): Response | Reference | undefined {
