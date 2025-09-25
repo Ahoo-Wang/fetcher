@@ -13,14 +13,12 @@
 
 import { Reference, Schema } from '@ahoo-wang/fetcher-openapi';
 import { ModelDefinition } from '@/model/modelDefinition.ts';
-import { ModuleInfoResolver } from '@/module/moduleInfoResolver.ts';
 import { DependencyDefinition } from '@/module/dependencyDefinition.ts';
 import { WOW_TYPE_MAPPING, IMPORT_WOW_PATH } from '@/model/wowTypeMapping.ts';
 import { extractComponentKey, isReference } from '@/utils';
+import { resolveModelInfo } from '@/model/naming.ts';
 
 export class ModelResolver {
-  constructor(private readonly moduleInfoResolver: ModuleInfoResolver) {
-  }
 
   resolve(key: string, schema: Schema): ModelDefinition {
     // Check if this is a Wow type that should be mapped
@@ -41,7 +39,7 @@ export class ModelResolver {
       };
     }
 
-    const moduleInfo = this.moduleInfoResolver.resolve(key);
+    const moduleInfo = resolveModelInfo(key);
 
     if (!schema.properties && schema.type !== 'object') {
       // Handle non-object schemas (like enums, primitives used as models)
@@ -113,7 +111,7 @@ export class ModelResolver {
       }
 
       // Otherwise, resolve to the interface name
-      const moduleInfo = this.moduleInfoResolver.resolve(schemaKey);
+      const moduleInfo = resolveModelInfo(schemaKey);
       return moduleInfo.name;
     }
 
@@ -201,7 +199,7 @@ export class ModelResolver {
       };
     }
 
-    const moduleInfo = this.moduleInfoResolver.resolve(schemaKey);
+    const moduleInfo = resolveModelInfo(schemaKey);
     return {
       moduleSpecifier: moduleInfo.path,
       namedImports: new Set([moduleInfo.name]),

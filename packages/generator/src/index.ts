@@ -13,7 +13,6 @@
 
 import { openAPIParser } from '@/parser/openAPIParser.ts';
 import { ModuleResolver } from '@/module/moduleResolver.ts';
-import { ModuleInfoResolver } from '@/module/moduleInfoResolver.ts';
 import { ModelResolver } from '@/model/modelResolver.ts';
 import { CodeGenerator } from '@/codeGenerator.ts';
 import { Project } from 'ts-morph';
@@ -24,9 +23,8 @@ export function generate(inputPath: string, outputDir: string): void {
     throw new Error('OpenAPI specification is invalid');
   }
 
-  const modelResolver = new ModelResolver(new ModuleInfoResolver());
+  const modelResolver = new ModelResolver();
   const moduleResolver = new ModuleResolver(
-    new ModuleInfoResolver(),
     modelResolver,
   );
 

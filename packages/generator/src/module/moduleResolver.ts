@@ -13,9 +13,9 @@
 
 import { OpenAPI, Reference, Schema } from '@ahoo-wang/fetcher-openapi';
 import { ModuleDefinition } from '@/module/moduleDefinition.ts';
-import { ModuleInfoResolver } from '@/module/moduleInfoResolver.ts';
 import { ModelResolver } from '@/model/modelResolver.ts';
 import { isReference } from '@/utils';
+import { resolveModelInfo } from '@/model/naming.ts';
 
 export class ModuleResolver {
   public readonly modules: Map<string, ModuleDefinition> = new Map<
@@ -24,13 +24,12 @@ export class ModuleResolver {
   >();
 
   constructor(
-    private readonly moduleInfoResolver: ModuleInfoResolver,
     private readonly modelResolver: ModelResolver,
   ) {
   }
 
   private getOrCreateModule(key: string): ModuleDefinition {
-    const moduleInfo = this.moduleInfoResolver.resolve(key);
+    const moduleInfo = resolveModelInfo(key);
     let module = this.modules.get(moduleInfo.path);
     if (!module) {
       module = new ModuleDefinition(moduleInfo.name, moduleInfo.path);

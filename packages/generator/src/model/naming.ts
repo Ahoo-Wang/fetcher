@@ -70,7 +70,7 @@ export function resolveModelInfo(schemaKey: string): ModelInfo {
   return { name, path };
 }
 
-const NAMING_SEPARATORS: RegExp = /[-_\s.]+/;
+const NAMING_SEPARATORS = /[-_\s.]+|(?=[A-Z])/;
 
 /**
  * Converts a string to PascalCase format.
