@@ -62,18 +62,24 @@ export class ModelGenerator implements GenerateContext {
   generateKeyedSchema(schemaKey: string, schema: Schema) {
     const modelInfo = resolveModelInfo(schemaKey);
     const sourceFile = this.getOrCreateSourceFile(modelInfo);
-    if (isEnum(schema)) {
-      sourceFile.addEnum({
-        name: modelInfo.name,
-        isExported: true,
-        members: schema.enum.filter(value => typeof value === 'string' && value.length > 0).map(value => ({
-          name: value,
-          initializer: `'${value}'`,
-        })),
-      });
+    if (this.processEnum(modelInfo, sourceFile, schema)) {
       return;
     }
   }
 
+  processEnum(modelInfo: ModelInfo, sourceFile: SourceFile, schema: Schema): boolean {
+    if (!isEnum(schema)) {
+      return false;
+    }
+    sourceFile.addEnum({
+      name: modelInfo.name,
+      isExported: true,
+      members: schema.enum.filter(value => typeof value === 'string' && value.length > 0).map(value => ({
+        name: value,
+        initializer: `'${value}'`,
+      })),
+    });
+    return true;
+  }
 
 }
