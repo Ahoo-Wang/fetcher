@@ -20,7 +20,7 @@ export interface GeneratorOptions {
   readonly project: Project;
   readonly inputPath: string;
   readonly  outputDir: string;
-  readonly parser: OpenAPIParser;
+  readonly parser?: OpenAPIParser;
 }
 
 export interface GenerateContext {

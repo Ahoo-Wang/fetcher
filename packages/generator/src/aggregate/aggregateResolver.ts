@@ -54,6 +54,9 @@ export class AggregateResolver {
 
   commands(path: string, methodOperation: MethodOperation) {
     const operation = methodOperation.operation;
+    if (operation.operationId === 'wow.command.send') {
+      return;
+    }
     const commandName = operationIdToCommandName(operation.operationId);
     if (!commandName) {
       return;
