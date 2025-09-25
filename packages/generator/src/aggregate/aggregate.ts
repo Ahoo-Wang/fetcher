@@ -13,7 +13,7 @@
 
 
 import { HTTPMethod, Operation, Reference, Tag } from '@ahoo-wang/fetcher-openapi';
-import { AliasAggregate, AliasBoundedContext, Named } from '@ahoo-wang/fetcher-wow';
+import { AliasAggregate, Named } from '@ahoo-wang/fetcher-wow';
 
 export interface CommandDefinition extends Named {
   /**
@@ -67,11 +67,4 @@ export interface AggregateDefinition {
    * event name -> event schema
    */
   events: Map<string, EventDefinition>;
-}
-
-export interface BoundedContextDefinition extends AliasBoundedContext {
-  /**
-   * aggregate tag name -> aggregate definition
-   */
-  aggregates: Map<string, AggregateDefinition>;
 }

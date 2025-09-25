@@ -13,11 +13,11 @@
 
 import { Project } from 'ts-morph';
 import { OpenAPI } from '@ahoo-wang/fetcher-openapi';
-import { BoundedContextDefinition } from '@/aggregate/aggregate.ts';
+import { AggregateDefinition } from '@/aggregate/aggregate.ts';
 
 export interface GenerateContext {
   outDir: string;
   project: Project;
   openAPI: OpenAPI;
-  boundedContext: BoundedContextDefinition;
+  aggregates: Map<string, AggregateDefinition>;
 }
