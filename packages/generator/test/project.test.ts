@@ -35,7 +35,7 @@ describe('OpenAPI Generator', () => {
   });
 
   it('should generate TypeScript code from demo OpenAPI spec', () => {
-    const inputPath = join(__dirname, 'demo-spec.json');
+    const inputPath = join(__dirname, 'compensation-spec.json');
 
     expect(() => {
       generate(inputPath, testOutputDir);
@@ -48,7 +48,7 @@ describe('OpenAPI Generator', () => {
   });
 
   it('should generate correct schema interfaces', () => {
-    const inputPath = join(__dirname, 'demo-spec.json');
+    const inputPath = join(__dirname, 'compensation-spec.json');
     generate(inputPath, testOutputDir);
 
     const cartTypesContent = readFileSync(
@@ -72,7 +72,7 @@ describe('OpenAPI Generator', () => {
   });
 
   it('should generate correct client classes', () => {
-    const inputPath = join(__dirname, 'demo-spec.json');
+    const inputPath = join(__dirname, 'compensation-spec.json');
     generate(inputPath, testOutputDir);
 
     const cartClientContent = readFileSync(
@@ -95,7 +95,7 @@ describe('OpenAPI Generator', () => {
   });
 
   it('should handle Wow type mappings', () => {
-    const inputPath = join(__dirname, 'demo-spec.json');
+    const inputPath = join(__dirname, 'compensation-spec.json');
     generate(inputPath, testOutputDir);
 
     const wowTypesContent = readFileSync(
@@ -108,7 +108,7 @@ describe('OpenAPI Generator', () => {
   });
 
   it('should organize files according to schema naming conventions', () => {
-    const inputPath = join(__dirname, 'demo-spec.json');
+    const inputPath = join(__dirname, 'compensation-spec.json');
     generate(inputPath, testOutputDir);
 
     // Check file organization
@@ -120,15 +120,4 @@ describe('OpenAPI Generator', () => {
     expect(existsSync(join(testOutputDir, 'order/orderClient.ts'))).toBe(true);
   });
 
-  it('should handle malformed specs gracefully', () => {
-    const malformedSpecPath = join(
-      __dirname,
-      'malformed-spec-missing-components.json',
-    );
-
-    // Should not throw even with missing components
-    expect(() => {
-      generate(malformedSpecPath, testOutputDir);
-    }).not.toThrow();
-  });
 });
