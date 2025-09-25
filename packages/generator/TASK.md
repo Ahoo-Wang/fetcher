@@ -40,7 +40,7 @@
 
 ## 预期生成的模块文件
 
-[expected](expected/execution_failed)
+[expected](expected/compensation/execution_failed)
 
 ## Wow 内置的类型
 

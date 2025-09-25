@@ -12,4 +12,4 @@
  */
 
 export * from './boundedContext.ts';
-export * from './execution_failed/index.ts';
+export * from './execution_failed';

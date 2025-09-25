@@ -11,6 +11,6 @@
  * limitations under the License.
  */
 
-export * from './commandClient';
-export * from './types';
-export * from './queryClient';
+export * from './commandClient.ts';
+export * from './types.ts';
+export * from './queryClient.ts';
