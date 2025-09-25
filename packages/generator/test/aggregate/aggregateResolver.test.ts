@@ -11,3 +11,17 @@
  * limitations under the License.
  */
 
+import { describe, expect, it } from 'vitest';
+import { openAPIParser } from '@/parser/openAPIParser.ts';
+import { AggregateResolver } from '@/aggregate/aggregateResolver.ts';
+
+// This test ensures that all exports are properly defined
+describe('spec', () => {
+  it('resolve', async () => {
+    const openAPI = openAPIParser.parse('../compensation-spec.json');
+    expect(openAPI).toBeDefined();
+    const aggregateResolver = new AggregateResolver(openAPI!);
+    const aggregates = aggregateResolver.resolve();
+    expect(aggregates).toMatchSnapshot();
+  });
+});
