@@ -11,22 +11,18 @@
  * limitations under the License.
  */
 
-import { DescriptionCapable, Named } from '@ahoo-wang/fetcher-wow';
-import { DependencyDefinition } from '@/module/dependencyDefinition.ts';
-import { PartialBy } from '@ahoo-wang/fetcher';
+import { OpenAPIParser } from '@/parser/openAPIParser.ts';
+import { OpenAPI } from '@ahoo-wang/fetcher-openapi';
+import { Project } from 'ts-morph';
 
-/**
- * Data model definition
- */
-export interface ModelDefinition extends Named, PartialBy<DescriptionCapable, 'description'> {
-  title?: string;
-  isReference: boolean;
-  dependencies: DependencyDefinition[];
-  /**
-   * interface name
-   */
-  name: string;
-  type: string | string[];
-  properties?: Map<string, string>;
+export interface GeneratorOptions {
+  readonly inputPath: string;
+  readonly  outputDir: string;
+  readonly parser: OpenAPIParser;
 }
 
+export interface GenerateContext {
+  openAPI: OpenAPI;
+  project: Project;
+  outputDir: string;
+}

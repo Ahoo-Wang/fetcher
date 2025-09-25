@@ -11,24 +11,26 @@
  * limitations under the License.
  */
 
-import { openAPIParser } from '@/parser/openAPIParser.ts';
-import { ModuleResolver } from '@/module/moduleResolver.ts';
-import { ModelResolver } from '@/model/modelResolver.ts';
-import { CodeGenerator } from '@/codeGenerator.ts';
+import { ModelGenerator } from '@/model';
 import { Project } from 'ts-morph';
+import { GenerateContext, GeneratorOptions } from '@/types.ts';
 
-export function generate(inputPath: string, outputDir: string): void {
-  const openAPI = openAPIParser.parse(inputPath);
-  if (!openAPI) {
-    throw new Error('OpenAPI specification is invalid');
+export class CodeGenerator {
+
+  private readonly project: Project = new Project();
+
+
+  constructor(private readonly options: GeneratorOptions) {
   }
 
-  const modelResolver = new ModelResolver();
-  const moduleResolver = new ModuleResolver(
-    modelResolver,
-  );
-
-  moduleResolver.resolve(openAPI);
-  const codeGenerator = new CodeGenerator(outputDir, new Project());
-  codeGenerator.generate(moduleResolver.getModules());
+  async generate(): Promise<void> {
+    const context: GenerateContext = {
+      openAPI: this.options.parser.parse(this.options.inputPath)!,
+      project: this.project,
+      outputDir: this.options.outputDir,
+    };
+    const modelGenerator = new ModelGenerator(context);
+    modelGenerator.generate();
+    await this.project.save();
+  }
 }

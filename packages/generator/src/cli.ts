@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 import { program } from 'commander';
-import { generate } from '@/index.ts';
+import { CodeGenerator } from '@/index.ts';
+import { GeneratorOptions } from '@/types.ts';
+import { openAPIParser } from '@/parser/openAPIParser.ts';
 
 program
   .name('fetcher-openapi-generator')
@@ -13,9 +15,15 @@ program
   .description('Generate TypeScript code from OpenAPI specification')
   .requiredOption('-i, --input <path>', 'Input OpenAPI specification file path')
   .requiredOption('-o, --output <path>', 'Output directory path')
-  .action(options => {
+  .action(async options => {
     try {
-      generate(options.input, options.output);
+      const generatorOptions: GeneratorOptions = {
+        inputPath: options.input,
+        outputDir: options.output,
+        parser: openAPIParser,
+      };
+      const codeGenerator = new CodeGenerator(generatorOptions);
+      await codeGenerator.generate();
       console.log('Code generation completed successfully!');
     } catch (error) {
       console.error('Error during code generation:', error);

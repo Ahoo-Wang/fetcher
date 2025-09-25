@@ -11,13 +11,6 @@
  * limitations under the License.
  */
 
-import { Project } from 'ts-morph';
-import { OpenAPI } from '@ahoo-wang/fetcher-openapi';
-import { AggregateDefinition } from '@/aggregate/aggregate.ts';
-
-export interface GenerateContext {
-  outDir: string;
-  project: Project;
-  openAPI: OpenAPI;
-  aggregates: Map<string, AggregateDefinition>;
-}
+export * from './modelGenerator.ts';
+export * from './naming.ts';
+export * from './wowTypeMapping.ts';

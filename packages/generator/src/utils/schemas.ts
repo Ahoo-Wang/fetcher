@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { SchemaType } from '@ahoo-wang/fetcher-openapi';
+import { Schema, SchemaType } from '@ahoo-wang/fetcher-openapi';
 
 const PRIMITIVE_TYPES: SchemaType[] = ['string', 'number', 'integer', 'boolean', 'null'];
 
@@ -22,3 +22,6 @@ export function isPrimitive(type: SchemaType | SchemaType[]): boolean {
   return PRIMITIVE_TYPES.includes(type);
 }
 
+export function isEnum(schema: Schema): schema is Schema & { enum: any[] } {
+  return Array.isArray(schema.enum);
+}
