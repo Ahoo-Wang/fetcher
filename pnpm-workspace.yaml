@@ -11,6 +11,7 @@ catalog:
   '@types/yaml': ^1.9.7
   '@vitest/coverage-v8': ^3.2.4
   '@vitest/ui': ^3.2.4
+  commander: ^12.1.0
   eslint: ^9.36.0
   eslint-plugin-react-hooks: ^5.2.0
   globals: ^16.4.0
@@ -21,12 +22,11 @@ catalog:
   react-dom: ^18.0.0
   react-use: ^17.6.0
   reflect-metadata: ^0.2.2
+  ts-morph: ^24.0.0
   typescript: ^5.9.2
   typescript-eslint: ^8.44.1
   unplugin-dts: 1.0.0-beta.6
   vite: ^7.1.7
   vite-bundle-analyzer: ^1.2.3
   vitest: ^3.2.4
-  commander: ^12.1.0
   yaml: ^2.3.1
-  ts-morph: ^24.0.0
