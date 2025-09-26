@@ -16,7 +16,8 @@ import {
   Fetcher,
   type FetchExchangeInit,
   FetchRequestInit,
-  getFetcher, JsonResultExtractor,
+  getFetcher,
+  JsonResultExtractor,
   mergeRecordToMap,
   mergeRequest,
   NamedCapable,
@@ -144,7 +145,11 @@ export class FunctionMetadata implements NamedCapable {
   }
 
   resolveEndpointReturnType(): EndpointReturnType {
-    return this.endpoint.returnType || this.api.returnType || EndpointReturnType.RESULT;
+    return (
+      this.endpoint.returnType ||
+      this.api.returnType ||
+      EndpointReturnType.RESULT
+    );
   }
 
   /**
@@ -267,9 +272,11 @@ export class FunctionMetadata implements NamedCapable {
     };
   }
 
-  private processHttpParam(param: ParameterMetadata,
-                           value: any,
-                           params: Record<string, any>) {
+  private processHttpParam(
+    param: ParameterMetadata,
+    value: any,
+    params: Record<string, any>,
+  ) {
     if (value === undefined || value === null) {
       return;
     }

@@ -4,7 +4,8 @@ import {
   JsonResultExtractor,
   ExchangeResultExtractor,
   fetcher,
-  NamedFetcher, ResultExtractors,
+  NamedFetcher,
+  ResultExtractors,
 } from '@ahoo-wang/fetcher';
 import { FunctionMetadata } from '../src';
 import { ParameterType, type ParameterMetadata } from '../src';
@@ -429,7 +430,11 @@ describe('FunctionMetadata', () => {
 
       const params: Record<string, any> = { existing: 'value' };
       // @ts-expect-error - accessing private method for testing
-      functionMetadata.processHttpParam({ name: 'test', index: 0 }, undefined, params);
+      functionMetadata.processHttpParam(
+        { name: 'test', index: 0 },
+        undefined,
+        params,
+      );
 
       expect(params).toEqual({ existing: 'value' });
     });
@@ -444,7 +449,11 @@ describe('FunctionMetadata', () => {
 
       const params: Record<string, any> = {};
       // @ts-expect-error - accessing private method for testing
-      functionMetadata.processHttpParam({ name: 'test', index: 0 }, { key1: 'value1', key2: 'value2' }, params);
+      functionMetadata.processHttpParam(
+        { name: 'test', index: 0 },
+        { key1: 'value1', key2: 'value2' },
+        params,
+      );
 
       expect(params).toEqual({ key1: 'value1', key2: 'value2' });
     });
@@ -459,7 +468,11 @@ describe('FunctionMetadata', () => {
 
       const params: Record<string, any> = {};
       // @ts-expect-error - accessing private method for testing
-      functionMetadata.processHttpParam({ name: 'customParam', index: 0 }, 'testValue', params);
+      functionMetadata.processHttpParam(
+        { name: 'customParam', index: 0 },
+        'testValue',
+        params,
+      );
 
       expect(params).toEqual({ customParam: 'testValue' });
     });
@@ -474,11 +487,14 @@ describe('FunctionMetadata', () => {
 
       const params: Record<string, any> = {};
       // @ts-expect-error - accessing private method for testing
-      functionMetadata.processHttpParam({ name: undefined, index: 2 }, 42, params);
+      functionMetadata.processHttpParam(
+        { name: undefined, index: 2 },
+        42,
+        params,
+      );
 
       expect(params).toEqual({ param2: 42 });
     });
-
 
     it('should handle array as object', () => {
       const functionMetadata = new FunctionMetadata(
@@ -490,7 +506,11 @@ describe('FunctionMetadata', () => {
 
       const params: Record<string, any> = {};
       // @ts-expect-error - accessing private method for testing
-      functionMetadata.processHttpParam({ name: 'test', index: 0 }, ['item1', 'item2'], params);
+      functionMetadata.processHttpParam(
+        { name: 'test', index: 0 },
+        ['item1', 'item2'],
+        params,
+      );
 
       // Arrays are objects, so Object.entries will create entries for indices
       expect(params).toEqual({ '0': 'item1', '1': 'item2' });

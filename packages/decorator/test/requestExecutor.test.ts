@@ -82,7 +82,10 @@ describe('RequestExecutor', () => {
         }),
         {
           resultExtractor: JsonResultExtractor,
-          attributes: new Map<string, any>([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}], [DECORATOR_METADATA_ATTRIBUTE_KEY, metadataWithFetcher]]),
+          attributes: new Map<string, any>([
+            [DECORATOR_TARGET_ATTRIBUTE_KEY, {}],
+            [DECORATOR_METADATA_ATTRIBUTE_KEY, metadataWithFetcher],
+          ]),
         },
       );
     });
@@ -95,7 +98,11 @@ describe('RequestExecutor', () => {
 
       const metadataWithExtractor = new FunctionMetadata(
         'getUser',
-        { ...mockApiMetadata, fetcher: mockFetcher, returnType: EndpointReturnType.EXCHANGE },
+        {
+          ...mockApiMetadata,
+          fetcher: mockFetcher,
+          returnType: EndpointReturnType.EXCHANGE,
+        },
         { ...mockEndpointMetadata, resultExtractor: ExchangeResultExtractor },
         mockParameterMetadata,
       );
@@ -132,7 +139,10 @@ describe('RequestExecutor', () => {
         }),
         {
           resultExtractor: JsonResultExtractor,
-          attributes: new Map<string, any>([[DECORATOR_TARGET_ATTRIBUTE_KEY, {}], [DECORATOR_METADATA_ATTRIBUTE_KEY, metadataWithoutParams]]),
+          attributes: new Map<string, any>([
+            [DECORATOR_TARGET_ATTRIBUTE_KEY, {}],
+            [DECORATOR_METADATA_ATTRIBUTE_KEY, metadataWithoutParams],
+          ]),
         },
       );
     });
