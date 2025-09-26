@@ -39,7 +39,8 @@ export interface ApiMetadata
     RequestHeadersCapable,
     ResultExtractorCapable,
     FetcherCapable,
-    AttributesCapable, EndpointReturnTypeCapable {
+    AttributesCapable,
+    EndpointReturnTypeCapable {
   /**
    * Base path for all endpoints in the class.
    *
@@ -130,10 +131,12 @@ function bindExecutor<T extends new (...args: any[]) => any>(
 
   // Create request executor
 
-
   // Replace method with actual implementation
   constructor.prototype[functionName] = function(...args: unknown[]) {
-    const requestExecutor: RequestExecutor = buildRequestExecutor(this, functionMetadata);
+    const requestExecutor: RequestExecutor = buildRequestExecutor(
+      this,
+      functionMetadata,
+    );
     return requestExecutor.execute(args);
   };
 }
@@ -142,7 +145,8 @@ export function buildRequestExecutor(
   target: any,
   defaultFunctionMetadata: FunctionMetadata,
 ): RequestExecutor {
-  let requestExecutors: Map<string, RequestExecutor> = target['requestExecutors'];
+  let requestExecutors: Map<string, RequestExecutor> =
+    target['requestExecutors'];
   if (!requestExecutors) {
     requestExecutors = new Map<string, RequestExecutor>();
     target['requestExecutors'] = requestExecutors;
@@ -152,7 +156,10 @@ export function buildRequestExecutor(
     return requestExecutor;
   }
   const targetApiMetadata: ApiMetadata = target['apiMetadata'];
-  const mergedApiMetadata: ApiMetadata = { ...defaultFunctionMetadata.api, ...targetApiMetadata };
+  const mergedApiMetadata: ApiMetadata = {
+    ...defaultFunctionMetadata.api,
+    ...targetApiMetadata,
+  };
   requestExecutor = new RequestExecutor(
     target,
     new FunctionMetadata(

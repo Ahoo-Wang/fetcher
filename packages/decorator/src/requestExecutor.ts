@@ -32,15 +32,16 @@ export interface RequestExecutorsCapable {
  * and executes it using the appropriate fetcher.
  */
 export class RequestExecutor {
-
   /**
    * Creates a new RequestExecutor instance.
    * @param target - The target object that the method is called on.
    *                 This can contain a custom fetcher instance in its 'fetcher' property.
    * @param metadata - The function metadata containing all request information
    */
-  constructor(private readonly target: any,
-              private readonly metadata: FunctionMetadata) {
+  constructor(
+    private readonly target: any,
+    private readonly metadata: FunctionMetadata,
+  ) {
   }
 
   /**
@@ -83,7 +84,10 @@ export class RequestExecutor {
     const fetcher = this.metadata.fetcher;
     const exchangeInit = this.metadata.resolveExchangeInit(args);
     exchangeInit.attributes?.set(DECORATOR_TARGET_ATTRIBUTE_KEY, this.target);
-    exchangeInit.attributes?.set(DECORATOR_METADATA_ATTRIBUTE_KEY, this.metadata);
+    exchangeInit.attributes?.set(
+      DECORATOR_METADATA_ATTRIBUTE_KEY,
+      this.metadata,
+    );
     const extractor = this.metadata.resolveResultExtractor();
     const endpointReturnType = this.metadata.resolveEndpointReturnType();
     const exchange = await fetcher.exchange(exchangeInit.request, {

@@ -13,7 +13,7 @@
 
 export enum EndpointReturnType {
   EXCHANGE = 'Exchange',
-  RESULT = 'Result'
+  RESULT = 'Result',
 }
 
 export interface EndpointReturnTypeCapable {
