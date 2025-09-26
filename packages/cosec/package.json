@@ -49,7 +49,7 @@
   "dependencies": {
     "@ahoo-wang/fetcher": "workspace:*",
     "@ahoo-wang/fetcher-storage": "workspace:*",
-    "nanoid": "^5.1.5"
+    "nanoid": "catalog:"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
