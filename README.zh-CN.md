@@ -95,6 +95,34 @@ async function streamChatExample() {
 }
 ```
 
+### 🔧 [`@ahoo-wang/fetcher-generator`](./packages/generator) - OpenAPI 代码生成器
+
+从 OpenAPI 规范生成 TypeScript 代码，专为 WOW 领域驱动设计框架打造：
+
+- **🎯 OpenAPI 3.0+ 支持**：完整支持 OpenAPI 3.0+ 规范（JSON/YAML）
+- **📦 TypeScript 代码生成**：生成类型安全的 TypeScript 接口、枚举和类
+- **🏗️ 领域驱动设计**：专为 WOW 框架打造，支持聚合、命令、查询和领域事件
+- **🔧 CLI 工具**：易用的命令行界面，用于代码生成
+- **🎨 装饰器式 API**：生成装饰器式的客户端类，实现清晰的 API 交互
+- **📋 全面的模型**：处理复杂的模式，包括联合、交集、枚举和引用
+- **🚀 Fetcher 生态集成**：无缝集成 Fetcher 生态系统包
+- **📊 进度日志**：生成过程中的友好日志记录和进度指示器
+- **📁 自动索引生成**：自动生成 index.ts 文件，实现清晰的模块组织
+- **🌐 远程规范支持**：直接从 HTTP/HTTPS URL 加载 OpenAPI 规范
+- **🎭 事件流**：生成常规和事件流命令客户端
+
+### 💾 [`@ahoo-wang/fetcher-storage`](./packages/storage) - 跨环境存储
+
+轻量级跨环境存储库，具有变更事件监听功能：
+
+- **🌐 跨环境支持**：为浏览器 localStorage/sessionStorage 和内存存储提供一致的 API
+- **📦 超轻量级**：仅 ~1KB gzip - 最小化占用空间
+- **🔔 存储变更事件**：通过事件驱动架构监听存储变更
+- **🔄 自动环境检测**：自动选择合适的存储实现
+- **🛠️ 基于键的存储**：高效的基于键的存储，内置缓存
+- **🔧 自定义序列化**：支持自定义序列化策略
+- **📝 TypeScript 支持**：完整的 TypeScript 定义，实现类型安全的存储操作
+
 ### 🧩 [`@ahoo-wang/fetcher-wow`](./packages/wow) - CQRS/DDD 框架支持
 
 与 [Wow](https://github.com/Ahoo-Wang/Wow) CQRS/DDD 框架的一流集成：
@@ -132,6 +160,7 @@ async function streamChatExample() {
 | [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **装饰器支持**<br/>声明式 API 服务定义                                           | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
 | [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **实时流和 LLM 支持**<br/>Server-Sent Events (SSE) 支持，原生 LLM 流式 API 集成     | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
 | [`@ahoo-wang/fetcher-generator`](./packages/generator)     | **OpenAPI 代码生成器**<br/>从 OpenAPI 规范生成 TypeScript 代码，专为 WOW 领域驱动设计框架打造 | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-generator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-generator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     |
+| [`@ahoo-wang/fetcher-storage`](./packages/storage)         | **跨环境存储**<br/>轻量级存储库，具有浏览器和 Node.js 的变更事件监听功能                        | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-storage.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-storage)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)         |
 | [`@ahoo-wang/fetcher-wow`](./packages/wow)                 | **CQRS/DDD 框架支持**<br/>与 Wow CQRS/DDD 框架的一流集成                         | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-wow.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-wow)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 |
 | [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | **企业安全**<br/>CoSec 认证集成                                              | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
 
