@@ -150,6 +150,9 @@ importers:
         specifier: workspace:*
         version: link:../packages/wow
     devDependencies:
+      '@ahoo-wang/fetcher-generator':
+        specifier: workspace:*
+        version: link:../packages/generator
       '@eslint/js':
         specifier: 'catalog:'
         version: 9.36.0
