@@ -60,6 +60,7 @@ jobs:
         run: pnpm build
 
       - name: Generate Code
+        working-directory: ./integration-test
         run: pnpm generate
 
       - name: Test
