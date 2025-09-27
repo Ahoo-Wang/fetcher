@@ -95,22 +95,6 @@ async function streamChatExample() {
 }
 ```
 
-### 🔧 [`@ahoo-wang/fetcher-generator`](./packages/generator) - OpenAPI 代码生成器
-
-从 OpenAPI 规范生成 TypeScript 代码，专为 WOW 领域驱动设计框架打造：
-
-- **🎯 OpenAPI 3.0+ 支持**：完整支持 OpenAPI 3.0+ 规范（JSON/YAML）
-- **📦 TypeScript 代码生成**：生成类型安全的 TypeScript 接口、枚举和类
-- **🏗️ 领域驱动设计**：专为 WOW 框架打造，支持聚合、命令、查询和领域事件
-- **🔧 CLI 工具**：易用的命令行界面，用于代码生成
-- **🎨 装饰器式 API**：生成装饰器式的客户端类，实现清晰的 API 交互
-- **📋 全面的模型**：处理复杂的模式，包括联合、交集、枚举和引用
-- **🚀 Fetcher 生态集成**：无缝集成 Fetcher 生态系统包
-- **📊 进度日志**：生成过程中的友好日志记录和进度指示器
-- **📁 自动索引生成**：自动生成 index.ts 文件，实现清晰的模块组织
-- **🌐 远程规范支持**：直接从 HTTP/HTTPS URL 加载 OpenAPI 规范
-- **🎭 事件流**：生成常规和事件流命令客户端
-
 ### 🧩 [`@ahoo-wang/fetcher-wow`](./packages/wow) - CQRS/DDD 框架支持
 
 与 [Wow](https://github.com/Ahoo-Wang/Wow) CQRS/DDD 框架的一流集成：
@@ -122,11 +106,11 @@ async function streamChatExample() {
 - **🔄 CQRS 模式实现**：对命令查询责任分离架构模式的一流支持
 - **🧱 DDD 基础构件**：基本的领域驱动设计构建块，包括聚合、事件和值对象
 - **🔍 查询客户端**：专门用于查询快照和事件流数据的客户端，支持全面的查询操作：
-  - 资源计数
-  - 资源列表查询
-  - 以服务器发送事件形式流式传输资源
-  - 资源分页
-  - 单个资源检索
+    - 资源计数
+    - 资源列表查询
+    - 以服务器发送事件形式流式传输资源
+    - 资源分页
+    - 单个资源检索
 
 ### 🔐 [`@ahoo-wang/fetcher-cosec`](./packages/cosec) - 企业安全
 
@@ -142,14 +126,14 @@ async function streamChatExample() {
 
 <div align="center">
 
-| 包                                                         | 描述                                                                                          | 版本                                                                                                                                    | 大小                                                                                                                                                   |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`@ahoo-wang/fetcher`](./packages/fetcher)                 | **核心 HTTP 客户端**<br/>具有 Axios 类似 API 的超轻量级基础                                   | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
-| [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **装饰器支持**<br/>声明式 API 服务定义                                                        | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
-| [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **实时流和 LLM 支持**<br/>Server-Sent Events (SSE) 支持，原生 LLM 流式 API 集成               | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
+| 包                                                          | 描述                                                                   | 版本                                                                                                                                      | 大小                                                                                                                                                     |
+|------------------------------------------------------------|----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`@ahoo-wang/fetcher`](./packages/fetcher)                 | **核心 HTTP 客户端**<br/>具有 Axios 类似 API 的超轻量级基础                          | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
+| [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **装饰器支持**<br/>声明式 API 服务定义                                           | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
+| [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **实时流和 LLM 支持**<br/>Server-Sent Events (SSE) 支持，原生 LLM 流式 API 集成     | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
 | [`@ahoo-wang/fetcher-generator`](./packages/generator)     | **OpenAPI 代码生成器**<br/>从 OpenAPI 规范生成 TypeScript 代码，专为 WOW 领域驱动设计框架打造 | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-generator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-generator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     |
-| [`@ahoo-wang/fetcher-wow`](./packages/wow)                 | **CQRS/DDD 框架支持**<br/>与 Wow CQRS/DDD 框架的一流集成                                      | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-wow.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-wow)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 |
-| [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | **企业安全**<br/>CoSec 认证集成                                                               | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
+| [`@ahoo-wang/fetcher-wow`](./packages/wow)                 | **CQRS/DDD 框架支持**<br/>与 Wow CQRS/DDD 框架的一流集成                         | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-wow.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-wow)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 |
+| [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | **企业安全**<br/>CoSec 认证集成                                              | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
 
 </div>
 
