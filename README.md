@@ -118,6 +118,18 @@ Generate type-safe TypeScript code from OpenAPI specifications for WOW domain-dr
 - **🌐 Remote Spec Support**: Load OpenAPI specs directly from HTTP/HTTPS URLs
 - **🎭 Event Streaming**: Generates both regular and event-stream command clients
 
+### 💾 [`@ahoo-wang/fetcher-storage`](./packages/storage) - Cross-Environment Storage
+
+A lightweight, cross-environment storage library with change event listening capabilities:
+
+- **🌐 Cross-Environment Support**: Consistent API for browser localStorage/sessionStorage and in-memory storage
+- **📦 Ultra-Lightweight**: Only ~1KB gzip - minimal footprint
+- **🔔 Storage Change Events**: Listen for storage changes with event-driven architecture
+- **🔄 Automatic Environment Detection**: Automatically selects appropriate storage implementation
+- **🛠️ Key-Based Storage**: Efficient key-based storage with built-in caching
+- **🔧 Custom Serialization**: Support for custom serialization strategies
+- **📝 TypeScript Support**: Full TypeScript definitions for type-safe storage operations
+
 ### 🧩 [`@ahoo-wang/fetcher-wow`](./packages/wow) - CQRS/DDD Framework Support
 
 First-class integration with the [Wow](https://github.com/Ahoo-Wang/Wow) CQRS/DDD framework:
@@ -160,6 +172,7 @@ Secure your applications with integrated authentication:
 | [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **Decorator Support**<br/>Declarative API service definitions                                                        | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
 | [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **Real-Time Streaming & LLM Support**<br/>Server-Sent Events (SSE) support with native LLM streaming API integration | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
 | [`@ahoo-wang/fetcher-generator`](./packages/generator)     | **OpenAPI Code Generator**<br/>TypeScript code generator from OpenAPI specs for WOW domain-driven design framework   | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-generator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-generator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     |
+| [`@ahoo-wang/fetcher-storage`](./packages/storage)         | **Cross-Environment Storage**<br/>Lightweight storage library with change event listening for browser & Node.js      | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-storage.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-storage)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)         |
 | [`@ahoo-wang/fetcher-wow`](./packages/wow)                 | **CQRS/DDD Framework Support**<br/>First-class integration with the Wow CQRS/DDD framework                           | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-wow.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-wow)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 |
 | [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | **Enterprise Security**<br/>CoSec authentication integration                                                         | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
 
