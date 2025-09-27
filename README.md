@@ -102,6 +102,22 @@ async function streamChatExample() {
 }
 ```
 
+### 🔧 [`@ahoo-wang/fetcher-generator`](./packages/generator) - OpenAPI Code Generator
+
+Generate type-safe TypeScript code from OpenAPI specifications for WOW domain-driven design framework:
+
+- **🎯 OpenAPI 3.0+ Support**: Full support for OpenAPI 3.0+ specifications (JSON/YAML)
+- **📦 TypeScript Code Generation**: Generates type-safe TypeScript interfaces, enums, and classes
+- **🏗️ Domain-Driven Design**: Specialized for WOW framework with aggregates, commands, queries, and domain events
+- **🔧 CLI Tool**: Easy-to-use command-line interface for code generation
+- **🎨 Decorator-Based APIs**: Generates decorator-based client classes for clean API interactions
+- **📋 Comprehensive Models**: Handles complex schemas including unions, intersections, enums, and references
+- **🚀 Fetcher Integration**: Seamlessly integrates with the Fetcher ecosystem packages
+- **📊 Progress Logging**: Friendly logging with progress indicators during generation
+- **📁 Auto Index Generation**: Automatically generates index.ts files for clean module organization
+- **🌐 Remote Spec Support**: Load OpenAPI specs directly from HTTP/HTTPS URLs
+- **🎭 Event Streaming**: Generates both regular and event-stream command clients
+
 ### 🧩 [`@ahoo-wang/fetcher-wow`](./packages/wow) - CQRS/DDD Framework Support
 
 First-class integration with the [Wow](https://github.com/Ahoo-Wang/Wow) CQRS/DDD framework:
@@ -143,6 +159,7 @@ Secure your applications with integrated authentication:
 | [`@ahoo-wang/fetcher`](./packages/fetcher)                 | **Core HTTP Client**<br/>Ultra-lightweight foundation with Axios-like API                                            | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
 | [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **Decorator Support**<br/>Declarative API service definitions                                                        | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
 | [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **Real-Time Streaming & LLM Support**<br/>Server-Sent Events (SSE) support with native LLM streaming API integration | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
+| [`@ahoo-wang/fetcher-generator`](./packages/generator)     | **OpenAPI Code Generator**<br/>TypeScript code generator from OpenAPI specs for WOW domain-driven design framework   | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-generator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-generator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     |
 | [`@ahoo-wang/fetcher-wow`](./packages/wow)                 | **CQRS/DDD Framework Support**<br/>First-class integration with the Wow CQRS/DDD framework                           | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-wow.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-wow)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 |
 | [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | **Enterprise Security**<br/>CoSec authentication integration                                                         | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
 
