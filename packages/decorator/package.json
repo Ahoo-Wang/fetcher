@@ -47,7 +47,7 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "workspace:"
+    "@ahoo-wang/fetcher": "workspace:^"
   },
   "dependencies": {
     "reflect-metadata": "catalog:"

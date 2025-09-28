@@ -135,23 +135,23 @@ importers:
   integration-test:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../packages/fetcher
       '@ahoo-wang/fetcher-cosec':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../packages/cosec
       '@ahoo-wang/fetcher-decorator':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../packages/decorator
       '@ahoo-wang/fetcher-eventstream':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../packages/eventstream
       '@ahoo-wang/fetcher-wow':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../packages/wow
     devDependencies:
       '@ahoo-wang/fetcher-generator':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../packages/generator
       '@eslint/js':
         specifier: 'catalog:'
@@ -196,10 +196,10 @@ importers:
   packages/cosec:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: 'workspace:'
+        specifier: workspace:^
         version: link:../fetcher
       '@ahoo-wang/fetcher-storage':
-        specifier: 'workspace:'
+        specifier: workspace:^
         version: link:../storage
       nanoid:
         specifier: 'catalog:'
@@ -245,7 +245,7 @@ importers:
   packages/decorator:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: 'workspace:'
+        specifier: workspace:^
         version: link:../fetcher
       reflect-metadata:
         specifier: 'catalog:'
@@ -294,7 +294,7 @@ importers:
   packages/eventstream:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: 'workspace:'
+        specifier: workspace:^
         version: link:../fetcher
     devDependencies:
       '@eslint/js':
@@ -488,10 +488,10 @@ importers:
   packages/react:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../fetcher
       '@ahoo-wang/fetcher-storage':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../storage
       react-use:
         specifier: 'catalog:'
@@ -597,13 +597,13 @@ importers:
   packages/viewer:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../fetcher
       '@ahoo-wang/fetcher-storage':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../storage
       '@ahoo-wang/fetcher-wow':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../wow
       react-use:
         specifier: 'catalog:'
@@ -670,13 +670,13 @@ importers:
   packages/wow:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: 'workspace:'
+        specifier: workspace:^
         version: link:../fetcher
       '@ahoo-wang/fetcher-decorator':
-        specifier: 'workspace:'
+        specifier: workspace:^
         version: link:../decorator
       '@ahoo-wang/fetcher-eventstream':
-        specifier: 'workspace:'
+        specifier: workspace:^
         version: link:../eventstream
     devDependencies:
       '@eslint/js':
