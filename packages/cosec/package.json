@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-cosec",
-  "version": "2.3.2",
+  "version": "2.3.5",
   "description": "CoSec authentication integration for Fetcher HTTP client with enterprise-grade security features. Provides automatic token management, device ID persistence, and request tracking.",
   "keywords": [
     "fetch",
@@ -46,9 +46,11 @@
     "clean": "rm -rf dist",
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
+  "peerDependencies": {
+    "@ahoo-wang/fetcher": "workspace:^2.3.4",
+    "@ahoo-wang/fetcher-storage": "workspace:^2.3.4"
+  },
   "dependencies": {
-    "@ahoo-wang/fetcher": "workspace:*",
-    "@ahoo-wang/fetcher-storage": "workspace:*",
     "nanoid": "catalog:"
   },
   "devDependencies": {

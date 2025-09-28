@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-viewer",
-  "version": "2.3.2",
+  "version": "2.3.5",
   "description": "",
   "keywords": [
     "fetch",
@@ -45,9 +45,9 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "dependencies": {
-    "@ahoo-wang/fetcher": "workspace:*",
-    "@ahoo-wang/fetcher-storage": "workspace:*",
-    "@ahoo-wang/fetcher-wow": "workspace:*",
+    "@ahoo-wang/fetcher": "workspace:^2.3.4",
+    "@ahoo-wang/fetcher-storage": "workspace:^2.3.4",
+    "@ahoo-wang/fetcher-wow": "workspace:^2.3.4",
     "react-use": "catalog:"
   },
   "peerDependencies": {
