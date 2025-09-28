@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-cosec",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "CoSec authentication integration for Fetcher HTTP client with enterprise-grade security features. Provides automatic token management, device ID persistence, and request tracking.",
   "keywords": [
     "fetch",
