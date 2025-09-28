@@ -55,11 +55,11 @@
     "generate": "node dist/cli.js generate -i test/demo-spec.json -o test-output"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "^2.3.0",
-    "@ahoo-wang/fetcher-eventstream": "^2.3.0",
-    "@ahoo-wang/fetcher-decorator": "^2.3.0",
-    "@ahoo-wang/fetcher-openapi": "^2.3.0",
-    "@ahoo-wang/fetcher-wow": "^2.3.0"
+    "@ahoo-wang/fetcher": "workspace:",
+    "@ahoo-wang/fetcher-eventstream": "workspace:",
+    "@ahoo-wang/fetcher-decorator": "workspace:",
+    "@ahoo-wang/fetcher-openapi": "workspace:",
+    "@ahoo-wang/fetcher-wow": "workspace:"
   },
   "dependencies": {
     "ts-morph": "catalog:",

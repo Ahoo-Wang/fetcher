@@ -196,11 +196,11 @@ importers:
   packages/cosec:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../fetcher
       '@ahoo-wang/fetcher-storage':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../storage
       nanoid:
         specifier: 'catalog:'
         version: 5.1.6
@@ -245,8 +245,8 @@ importers:
   packages/decorator:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../fetcher
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -294,8 +294,8 @@ importers:
   packages/eventstream:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../fetcher
     devDependencies:
       '@eslint/js':
         specifier: 'catalog:'
@@ -379,20 +379,20 @@ importers:
   packages/generator:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../fetcher
       '@ahoo-wang/fetcher-decorator':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../decorator
       '@ahoo-wang/fetcher-eventstream':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../eventstream
       '@ahoo-wang/fetcher-openapi':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../openapi
       '@ahoo-wang/fetcher-wow':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../wow
       commander:
         specifier: 'catalog:'
         version: 14.0.1
@@ -670,14 +670,14 @@ importers:
   packages/wow:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../fetcher
       '@ahoo-wang/fetcher-decorator':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../decorator
       '@ahoo-wang/fetcher-eventstream':
-        specifier: ^2.3.0
-        version: 2.3.1
+        specifier: 'workspace:'
+        version: link:../eventstream
     devDependencies:
       '@eslint/js':
         specifier: 'catalog:'
@@ -717,24 +717,6 @@ importers:
         version: 3.2.4(@types/node@24.5.2)(@vitest/ui@3.2.4)(jsdom@27.0.0(postcss@8.5.6))(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(yaml@2.8.1)
 
 packages:
-
-  '@ahoo-wang/fetcher-decorator@2.3.1':
-    resolution: {integrity: sha512-gIAwj+fcdjfB/+h2BOGXrNEn2bqtE4+j0KXYWF4Na/jHf14iYD91H2c0RClNdaqigCMvmds9RCtxA0Yef4hIng==}
-
-  '@ahoo-wang/fetcher-eventstream@2.3.1':
-    resolution: {integrity: sha512-JoUMs5dwU7oCF3yo0CH92cgvp+UVBxl5OA2kzdicEJpj5iSaP5NDqUrQ9Gb+zu/CWJ+CH9N6ILljGm31tp+7jQ==}
-
-  '@ahoo-wang/fetcher-openapi@2.3.1':
-    resolution: {integrity: sha512-fzoP7sg7mhUxlDrBbpqtHkPx0qlkq+vsnIkJNory1lKklIKgmEC/ZFG9OqBVweHCK2p4Hd7+Lv0CZ9OQM2BR+A==}
-
-  '@ahoo-wang/fetcher-storage@2.3.1':
-    resolution: {integrity: sha512-BuqO1tirjxilcvL+7U4ls2sCSA5Pl+LGP7FUvbxYa7F6RrwLCLJXQoqp/WsSCR5MaHpPCAYuiYf22tn8fmJIhQ==}
-
-  '@ahoo-wang/fetcher-wow@2.3.1':
-    resolution: {integrity: sha512-vXmIcTUq+BBf34zs4WKziY1MtrCH8nVBnzrczwMtNKdcOOjGi7VaUNke+AWl9iBcnoACGYDsIp100ApksceSfA==}
-
-  '@ahoo-wang/fetcher@2.3.1':
-    resolution: {integrity: sha512-A6WDZbgXoLtNhMO3gYypu+Q+AR3q/muedGWz6zZ1M25U9bOsfX1Y2zCHK1wMYvrJbhcsj/GBsf9MKqS3rJJhaA==}
 
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
@@ -2976,27 +2958,6 @@ packages:
     hasBin: true
 
 snapshots:
-
-  '@ahoo-wang/fetcher-decorator@2.3.1':
-    dependencies:
-      '@ahoo-wang/fetcher': 2.3.1
-      reflect-metadata: 0.2.2
-
-  '@ahoo-wang/fetcher-eventstream@2.3.1':
-    dependencies:
-      '@ahoo-wang/fetcher': 2.3.1
-
-  '@ahoo-wang/fetcher-openapi@2.3.1': {}
-
-  '@ahoo-wang/fetcher-storage@2.3.1': {}
-
-  '@ahoo-wang/fetcher-wow@2.3.1':
-    dependencies:
-      '@ahoo-wang/fetcher': 2.3.1
-      '@ahoo-wang/fetcher-decorator': 2.3.1
-      '@ahoo-wang/fetcher-eventstream': 2.3.1
-
-  '@ahoo-wang/fetcher@2.3.1': {}
 
   '@ampproject/remapping@2.3.0':
     dependencies:
