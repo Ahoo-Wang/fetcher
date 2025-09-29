@@ -1,7 +1,7 @@
 import { getParameterName } from './reflection';
 import 'reflect-metadata';
 import { type PathCapable } from './endpointDecorator';
-import { type FetchRequestInit } from '@ahoo-wang/fetcher';
+import { type FetchRequestInit, RequestBodyType } from '@ahoo-wang/fetcher';
 
 /**
  * Parameter types for decorator parameters.
@@ -348,7 +348,7 @@ export function body() {
  * the @request() decorator. This allows full customization of
  * the HTTP request including method, headers, body, and URL parameters.
  */
-export interface ParameterRequest extends FetchRequestInit, PathCapable {
+export interface ParameterRequest<BODY extends RequestBodyType = RequestBodyType> extends FetchRequestInit<BODY>, PathCapable {
 }
 
 /**
