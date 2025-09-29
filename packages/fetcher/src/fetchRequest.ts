@@ -78,6 +78,8 @@ export interface RequestHeadersCapable {
   headers?: RequestHeaders;
 }
 
+export type RequestBodyType = BodyInit | Record<string, any> | string | null;
+
 /**
  * Fetcher request configuration interface
  *
@@ -100,7 +102,7 @@ export interface RequestHeadersCapable {
  * const response = await fetcher.fetch('/users/{id}', request);
  * ```
  */
-export interface FetchRequestInit
+export interface FetchRequestInit<BODY extends RequestBodyType = RequestBodyType>
   extends TimeoutCapable,
     RequestHeadersCapable,
     Omit<RequestInit, 'body' | 'headers'> {
@@ -130,7 +132,7 @@ export interface FetchRequestInit
    * };
    * ```
    */
-  body?: BodyInit | Record<string, any> | string | null;
+  body?: BODY;
 
   /**
    * AbortController for this request.
@@ -162,7 +164,7 @@ export interface FetchRequestInit
  * Extends FetchRequestInit with a required URL property.
  * Represents a complete request configuration ready to be executed.
  */
-export interface FetchRequest extends FetchRequestInit {
+export interface FetchRequest<BODY extends RequestBodyType = RequestBodyType> extends FetchRequestInit<BODY> {
   /**
    * The URL for this request
    */
