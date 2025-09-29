@@ -488,10 +488,10 @@ importers:
   packages/react:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^
+        specifier: workspace:^2.3.4
         version: link:../fetcher
       '@ahoo-wang/fetcher-storage':
-        specifier: workspace:^
+        specifier: workspace:^2.3.4
         version: link:../storage
       react-use:
         specifier: 'catalog:'
