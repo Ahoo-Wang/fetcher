@@ -55,6 +55,18 @@ describe('ResultExtractors', () => {
     expect(ResultExtractors).toHaveProperty('Text');
   });
 
+  it('should export Blob result extractor', () => {
+    expect(ResultExtractors).toHaveProperty('Blob');
+  });
+
+  it('should export ArrayBuffer result extractor', () => {
+    expect(ResultExtractors).toHaveProperty('ArrayBuffer');
+  });
+
+  it('should export Bytes result extractor', () => {
+    expect(ResultExtractors).toHaveProperty('Bytes');
+  });
+
   it('Exchange extractor should return the original exchange', () => {
     const result = ResultExtractors.Exchange(exchange);
     expect(result).toBe(exchange);
@@ -87,5 +99,44 @@ describe('ResultExtractors', () => {
     const result = await resultPromise;
     expect(result).toBe('test text');
     expect(textSpy).toHaveBeenCalled();
+  });
+
+  it('Blob extractor should return a promise that resolves to response blob', async () => {
+    const blob = new Blob(['test'], { type: 'text/plain' });
+    const blobSpy = vi
+      .spyOn(mockResponse, 'blob')
+      .mockResolvedValue(blob);
+    const resultPromise = ResultExtractors.Blob(exchange);
+    expect(resultPromise).toBeInstanceOf(Promise);
+
+    const result = await resultPromise;
+    expect(result).toBe(blob);
+    expect(blobSpy).toHaveBeenCalled();
+  });
+
+  it('ArrayBuffer extractor should return a promise that resolves to response arrayBuffer', async () => {
+    const buffer = new ArrayBuffer(8);
+    const arrayBufferSpy = vi
+      .spyOn(mockResponse, 'arrayBuffer')
+      .mockResolvedValue(buffer);
+    const resultPromise = ResultExtractors.ArrayBuffer(exchange);
+    expect(resultPromise).toBeInstanceOf(Promise);
+
+    const result = await resultPromise;
+    expect(result).toBe(buffer);
+    expect(arrayBufferSpy).toHaveBeenCalled();
+  });
+
+  it('Bytes extractor should return a promise that resolves to response bytes', async () => {
+    const bytes = new Uint8Array([1, 2, 3, 4]);
+    const bytesSpy = vi
+      .spyOn(mockResponse, 'bytes')
+      .mockResolvedValue(bytes);
+    const resultPromise = ResultExtractors.Bytes(exchange);
+    expect(resultPromise).toBeInstanceOf(Promise);
+
+    const result = await resultPromise;
+    expect(result).toBe(bytes);
+    expect(bytesSpy).toHaveBeenCalled();
   });
 });
