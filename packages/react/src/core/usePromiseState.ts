@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useMountedState } from 'react-use';
 
 /**
@@ -111,7 +111,8 @@ export function usePromiseState<R = unknown, E = unknown>(
   const [result, setResult] = useState<R | undefined>(undefined);
   const [error, setErrorState] = useState<E | undefined>(undefined);
   const isMounted = useMountedState();
-
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
   const setLoadingFn = useCallback(() => {
     if (isMounted()) {
       setStatus(PromiseStatus.LOADING);
@@ -125,10 +126,10 @@ export function usePromiseState<R = unknown, E = unknown>(
         setResult(result);
         setStatus(PromiseStatus.SUCCESS);
         setErrorState(undefined);
-        options?.onSuccess?.(result);
+        optionsRef.current?.onSuccess?.(result);
       }
     },
-    [isMounted, options],
+    [isMounted],
   );
 
   const setErrorFn = useCallback(
@@ -137,10 +138,10 @@ export function usePromiseState<R = unknown, E = unknown>(
         setErrorState(error);
         setStatus(PromiseStatus.ERROR);
         setResult(undefined);
-        options?.onError?.(error);
+        optionsRef.current?.onError?.(error);
       }
     },
-    [isMounted, options],
+    [isMounted],
   );
 
   const setIdleFn = useCallback(() => {
