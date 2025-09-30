@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useMountedState } from 'react-use';
 import { usePromiseState, PromiseState } from './usePromiseState';
 
@@ -111,12 +111,12 @@ export function useExecutePromise<R = unknown, E = unknown>(): UseExecutePromise
     }
   }, [state, isMounted]);
 
-  return {
+  return useMemo(() => ({
     loading: state.loading,
     result: state.result,
     error: state.error,
     execute,
     reset,
     status: state.status,
-  };
+  }), [state.loading, state.result, state.error, execute, reset, state.status]);
 }
