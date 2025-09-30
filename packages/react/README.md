@@ -70,14 +70,20 @@ const MyComponent = () => {
   };
 
   const handleFetch = () => {
-    execute(fetchData);
+    execute(fetchData); // Using a promise supplier
+  };
+
+  const handleDirectPromise = () => {
+    const promise = fetch('/api/data').then(res => res.text());
+    execute(promise); // Using a direct promise
   };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
   return (
     <div>
-      <button onClick={handleFetch}>Fetch Data</button>
+      <button onClick={handleFetch}>Fetch with Supplier</button>
+      <button onClick={handleDirectPromise}>Fetch with Promise</button>
       <button onClick={reset}>Reset</button>
       {result && <p>{result}</p>}
     </div>

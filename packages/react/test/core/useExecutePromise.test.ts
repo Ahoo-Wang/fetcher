@@ -119,4 +119,20 @@ describe('useExecutePromise', () => {
     expect(result.current.result).toBe(mockResult);
     expect(result.current.error).toBeUndefined();
   });
+
+  it('should execute a direct promise', async () => {
+    const mockResult = 'direct promise result';
+    const mockPromise = Promise.resolve(mockResult);
+
+    const { result } = renderHook(() => useExecutePromise<string>());
+
+    await act(async () => {
+      await result.current.execute(mockPromise);
+    });
+
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.result).toBe(mockResult);
+    expect(result.current.error).toBeUndefined();
+  });
 });
