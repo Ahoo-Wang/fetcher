@@ -69,14 +69,20 @@ const MyComponent = () => {
   };
 
   const handleFetch = () => {
-    execute(fetchData);
+    execute(fetchData); // 使用 promise supplier
+  };
+
+  const handleDirectPromise = () => {
+    const promise = fetch('/api/data').then(res => res.text());
+    execute(promise); // 使用直接 promise
   };
 
   if (loading) return <div>加载中...</div>;
   if (error) return <div>错误: {error.message}</div>;
   return (
     <div>
-      <button onClick={handleFetch}>获取数据</button>
+      <button onClick={handleFetch}>使用 Supplier 获取</button>
+      <button onClick={handleDirectPromise}>使用 Promise 获取</button>
       <button onClick={reset}>重置</button>
       {result && <p>{result}</p>}
     </div>
