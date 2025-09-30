@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMountedState } from 'react-use';
 
 /**
@@ -150,8 +150,7 @@ export function usePromiseState<R = unknown, E = unknown>(
       setResult(undefined);
     }
   }, [isMounted]);
-
-  return {
+  return useMemo(() => ({
     status,
     loading: status === PromiseStatus.LOADING,
     result,
@@ -160,5 +159,5 @@ export function usePromiseState<R = unknown, E = unknown>(
     setSuccess: setSuccessFn,
     setError: setErrorFn,
     setIdle: setIdleFn,
-  };
+  }), [status, result, error, setLoadingFn, setSuccessFn, setErrorFn, setIdleFn]);
 }
