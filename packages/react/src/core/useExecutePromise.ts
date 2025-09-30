@@ -14,6 +14,7 @@
 import { useCallback, useMemo } from 'react';
 import { useMountedState } from 'react-use';
 import { usePromiseState, PromiseState } from './usePromiseState';
+import { useRequestId } from './useRequestId';
 
 /**
  * Type definition for a function that returns a Promise
@@ -25,7 +26,8 @@ export type PromiseSupplier<R> = () => Promise<R>;
  * Interface defining the return type of useExecutePromise hook
  * @template R - The type of the result value
  */
-export interface UseExecutePromiseReturn<R, E = unknown> extends PromiseState<R, E> {
+export interface UseExecutePromiseReturn<R, E = unknown>
+  extends PromiseState<R, E> {
   /** Function to execute a promise supplier or promise */
   execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<R>;
   /** Function to reset the state to initial values */
@@ -69,9 +71,10 @@ export interface UseExecutePromiseReturn<R, E = unknown> extends PromiseState<R,
  * }
  * ```
  */
-export function useExecutePromise<R = unknown, E = unknown>(): UseExecutePromiseReturn<R, E> {
-  const state = usePromiseState<R, E>();
+export function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R> {
+  const state = usePromiseState<R>();
   const isMounted = useMountedState();
+  const requestId = useRequestId();
 
   /**
    * Execute a promise supplier or promise and manage its state
@@ -83,23 +86,24 @@ export function useExecutePromise<R = unknown, E = unknown>(): UseExecutePromise
       if (!isMounted()) {
         throw new Error('Component is unmounted');
       }
+      const currentRequestId = requestId.generate();
       state.setLoading();
       try {
         const promise = typeof input === 'function' ? input() : input;
         const data = await promise;
 
-        if (isMounted()) {
+        if (isMounted() && requestId.isLatest(currentRequestId)) {
           state.setSuccess(data);
         }
         return data;
       } catch (err) {
-        if (isMounted()) {
-          state.setError(err as E);
+        if (isMounted() && requestId.isLatest(currentRequestId)) {
+          state.setError(err);
         }
         throw err;
       }
     },
-    [state, isMounted],
+    [state, isMounted, requestId],
   );
 
   /**
@@ -111,12 +115,15 @@ export function useExecutePromise<R = unknown, E = unknown>(): UseExecutePromise
     }
   }, [state, isMounted]);
 
-  return useMemo(() => ({
-    loading: state.loading,
-    result: state.result,
-    error: state.error,
-    execute,
-    reset,
-    status: state.status,
-  }), [state.loading, state.result, state.error, execute, reset, state.status]);
+  return useMemo(
+    () => ({
+      loading: state.loading,
+      result: state.result,
+      error: state.error,
+      execute,
+      reset,
+      status: state.status,
+    }),
+    [state.loading, state.result, state.error, execute, reset, state.status],
+  );
 }

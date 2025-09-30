@@ -135,4 +135,30 @@ describe('useExecutePromise', () => {
     expect(result.current.result).toBe(mockResult);
     expect(result.current.error).toBeUndefined();
   });
+
+  it('should handle race conditions by ignoring stale requests', async () => {
+    const { result } = renderHook(() => useExecutePromise<string>());
+
+    // Start first request (slow)
+    const firstPromise = new Promise<string>(resolve => {
+      setTimeout(() => resolve('first result'), 100);
+    });
+
+    // Start second request (fast)
+    const secondPromise = Promise.resolve('second result');
+
+    // Execute first (slow)
+    act(() => {
+      result.current.execute(firstPromise);
+    });
+
+    // Execute second (fast), should override
+    await act(async () => {
+      await result.current.execute(secondPromise);
+    });
+
+    // Should have second result, not first
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
+    expect(result.current.result).toBe('second result');
+  });
 });
