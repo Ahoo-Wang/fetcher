@@ -21,10 +21,7 @@ import {
 } from '@ahoo-wang/fetcher';
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { useMountedState } from 'react-use';
-import {
-  PromiseState,
-  usePromiseState,
-} from '../core';
+import { PromiseState, usePromiseState, useRequestId } from '../core';
 
 /**
  * Configuration options for the useFetcher hook.
@@ -76,6 +73,7 @@ export function useFetcher<R, E = unknown>(
   );
   const isMounted = useMountedState();
   const abortControllerRef = useRef<AbortController | undefined>();
+  const requestId = useRequestId();
 
   const currentFetcher = getFetcher(fetcher);
   /**
@@ -90,14 +88,15 @@ export function useFetcher<R, E = unknown>(
       abortControllerRef.current =
         request.abortController ?? new AbortController();
       request.abortController = abortControllerRef.current;
+      const currentRequestId = requestId.generate();
       state.setLoading();
       try {
         const exchange = await currentFetcher.exchange(request, options);
-        if (isMounted()) {
+        if (isMounted() && requestId.isLatest(currentRequestId)) {
           setExchange(exchange);
         }
         const result = await exchange.extractResult<R>();
-        if (isMounted()) {
+        if (isMounted() && requestId.isLatest(currentRequestId)) {
           state.setSuccess(result);
         }
       } catch (error) {
@@ -107,7 +106,7 @@ export function useFetcher<R, E = unknown>(
           }
           return;
         }
-        if (isMounted()) {
+        if (isMounted() && requestId.isLatest(currentRequestId)) {
           state.setError(error as E);
         }
       } finally {
@@ -116,7 +115,7 @@ export function useFetcher<R, E = unknown>(
         }
       }
     },
-    [currentFetcher, isMounted, options, state],
+    [currentFetcher, isMounted, options, state, requestId],
   );
 
   useEffect(() => {
