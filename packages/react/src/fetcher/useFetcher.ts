@@ -21,7 +21,7 @@ import {
 } from '@ahoo-wang/fetcher';
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { useMountedState } from 'react-use';
-import { UseExecutePromiseReturn, usePromiseState } from '../core';
+import { PromiseState, usePromiseState } from '../core';
 
 /**
  * Configuration options for the useFetcher hook.
@@ -30,7 +30,7 @@ import { UseExecutePromiseReturn, usePromiseState } from '../core';
 export interface UseFetcherOptions extends RequestOptions, FetcherCapable {
 }
 
-export interface UseFetcherReturn<R> extends Omit<UseExecutePromiseReturn<R>, 'execute'> {
+export interface UseFetcherReturn<R> extends PromiseState<R> {
   /** The FetchExchange object representing the ongoing fetch operation */
   exchange?: FetchExchange;
   execute: (request: FetchRequest) => Promise<void>;

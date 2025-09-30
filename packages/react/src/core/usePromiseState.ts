@@ -53,8 +53,6 @@ export interface UsePromiseStateOptions<R> {
  * @template R - The type of result
  */
 export interface UsePromiseStateReturn<R> extends PromiseState<R> {
-  /** The error value */
-  error: unknown | undefined;
   /** Set status to LOADING */
   setLoading: () => void;
   /** Set status to SUCCESS with result */
