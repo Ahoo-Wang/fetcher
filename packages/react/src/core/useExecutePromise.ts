@@ -24,6 +24,11 @@ export type PromiseSupplier<R> = () => Promise<R>;
 /**
  * Interface defining the return type of useExecutePromise hook
  * @template R - The type of the result value
+ *
+ * @example
+ * ```typescript
+ * const { loading, result, error, execute, reset } = useExecutePromise<string>();
+ * ```
  */
 export interface UseExecutePromiseReturn<R> extends PromiseState<R> {
   /** Function to execute a promise supplier */
@@ -36,6 +41,38 @@ export interface UseExecutePromiseReturn<R> extends PromiseState<R> {
  * A React hook for managing asynchronous operations with proper state handling
  * @template R - The type of the result value
  * @returns An object containing the current state and control functions
+ *
+ * @example
+ * ```typescript
+ * import { useExecutePromise } from '@ahoo-wang/fetcher-react';
+ *
+ * function MyComponent() {
+ *   const { loading, result, error, execute, reset } = useExecutePromise<string>();
+ *
+ *   const fetchData = async () => {
+ *     const response = await fetch('/api/data');
+ *     return response.text();
+ *   };
+ *
+ *   const handleFetch = () => {
+ *     execute(fetchData);
+ *   };
+ *
+ *   const handleReset = () => {
+ *     reset();
+ *   };
+ *
+ *   if (loading) return <div>Loading...</div>;
+ *   if (error) return <div>Error: {error.message}</div>;
+ *   return (
+ *     <div>
+ *       <button onClick={handleFetch}>Fetch Data</button>
+ *       <button onClick={handleReset}>Reset</button>
+ *       {result && <p>{result}</p>}
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R> {
   const state = usePromiseState<R>();
