@@ -92,6 +92,32 @@ const MyComponent = () => {
 };
 ```
 
+### useLatest Hook
+
+The `useLatest` hook returns the latest value, useful for accessing the current value in async callbacks.
+
+```typescript jsx
+import { useLatest } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const [count, setCount] = useState(0);
+  const latestCount = useLatest(count);
+
+  const handleAsync = async () => {
+    await someAsyncOperation();
+    console.log('Latest count:', latestCount.current); // Always the latest
+  };
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(c => c + 1)}>Increment</button>
+      <button onClick={handleAsync}>Async Log</button>
+    </div>
+  );
+};
+```
+
 ### useRequestId Hook
 
 The `useRequestId` hook provides request ID management for preventing race conditions in async operations.
@@ -252,6 +278,26 @@ An object containing:
 - `error`: The error value
 - `execute`: Function to execute a promise supplier or promise
 - `reset`: Function to reset the state to initial values
+
+### useLatest
+
+```typescript
+function useLatest<T>(value: T): T;
+```
+
+A React hook that returns the latest value, useful for accessing the current value in async callbacks.
+
+**Type Parameters:**
+
+- `T`: The type of the value
+
+**Parameters:**
+
+- `value`: The value to track
+
+**Returns:**
+
+The latest value
 
 ### useRequestId
 
