@@ -23,7 +23,7 @@ vi.mock('react-use/lib/useMountedState', () => () => () => true);
 
 // Mock fetcher
 vi.mock('@ahoo-wang/fetcher', () => ({
-  fetcher: {},
+  fetcherRegistrar: {},
   getFetcher: vi.fn(),
 }));
 
