@@ -38,6 +38,15 @@ export interface PromiseState<R> {
 /**
  * Options for configuring usePromiseState behavior
  * @template R - The type of result
+ *
+ * @example
+ * ```typescript
+ * const options: UsePromiseStateOptions<string> = {
+ *   initialStatus: PromiseStatus.IDLE,
+ *   onSuccess: (result) => console.log('Success:', result),
+ *   onError: (error) => console.error('Error:', error),
+ * };
+ * ```
  */
 export interface UsePromiseStateOptions<R> {
   /** Initial status, defaults to IDLE */
@@ -68,6 +77,30 @@ export interface UsePromiseStateReturn<R> extends PromiseState<R> {
  * @template R - The type of result
  * @param options - Configuration options
  * @returns State management object
+ *
+ * @example
+ * ```typescript
+ * import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
+ *
+ * function MyComponent() {
+ *   const { status, loading, result, error, setSuccess, setError, setIdle } = usePromiseState<string>();
+ *
+ *   const handleSuccess = () => setSuccess('Data loaded');
+ *   const handleError = () => setError(new Error('Failed to load'));
+ *
+ *   return (
+ *     <div>
+ *       <button onClick={handleSuccess}>Set Success</button>
+ *       <button onClick={handleError}>Set Error</button>
+ *       <button onClick={setIdle}>Reset</button>
+ *       <p>Status: {status}</p>
+ *       {loading && <p>Loading...</p>}
+ *       {result && <p>Result: {result}</p>}
+ *       {error && <p>Error: {error.message}</p>}
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function usePromiseState<R = unknown>(
   options?: UsePromiseStateOptions<R>,
