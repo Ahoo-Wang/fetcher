@@ -117,7 +117,7 @@ describe('usePromiseState', () => {
   });
 
   it('should handle different result and error types', () => {
-    const { result } = renderHook(() => usePromiseState<number, string>());
+    const { result } = renderHook(() => usePromiseState<number>());
 
     act(() => {
       result.current.setSuccess(42);

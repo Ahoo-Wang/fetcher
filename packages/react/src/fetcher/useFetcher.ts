@@ -57,8 +57,7 @@ export function useFetcher<R>(
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      abortControllerRef.current =
-        request.abortController ?? new AbortController();
+      abortControllerRef.current = request.abortController ?? new AbortController();
       request.abortController = abortControllerRef.current;
       state.setLoading();
       try {
