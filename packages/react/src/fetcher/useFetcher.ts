@@ -27,11 +27,7 @@ import { useMountedState } from 'react-use';
  * Extends RequestOptions and FetcherCapable interfaces.
  */
 export interface UseFetcherOptions extends RequestOptions, FetcherCapable {
-  /**
-   * Whether the fetch operation should execute immediately upon component mount.
-   * Defaults to true.
-   */
-  readonly immediate?: boolean;
+
 }
 
 /**
@@ -51,21 +47,16 @@ export interface UseFetcherResult<R> {
   /** Any error that occurred during the fetch operation, or undefined if no error */
   error?: unknown;
 
-  /**
-   * Function to manually trigger the fetch operation.
-   * Useful for fetching data on demand rather than automatically.
-   */
-  execute: () => Promise<void>;
+  execute: (request: FetchRequest) => Promise<void>;
 
   /** Function to cancel the ongoing fetch operation */
   cancel: () => void;
 }
 
 export function useFetcher<R>(
-  request: FetchRequest,
   options?: UseFetcherOptions,
 ): UseFetcherResult<R> {
-  const { fetcher = defaultFetcher, immediate = true } = options || {};
+  const { fetcher = defaultFetcher } = options || {};
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(undefined);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(
@@ -80,7 +71,7 @@ export function useFetcher<R>(
    * Execute the fetch operation.
    * Cancels any ongoing fetch before starting a new one.
    */
-  const execute = useCallback(async () => {
+  const execute = useCallback(async (request: FetchRequest) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -115,7 +106,7 @@ export function useFetcher<R>(
         abortControllerRef.current = undefined;
       }
     }
-  }, [currentFetcher, request, isMounted, options]);
+  }, [currentFetcher, isMounted, options]);
   /**
    * Cancel the ongoing fetch operation if one is in progress.
    */
@@ -123,14 +114,11 @@ export function useFetcher<R>(
     abortControllerRef.current?.abort();
   }, []);
   useEffect(() => {
-    if (immediate) {
-      execute();
-    }
     return () => {
       abortControllerRef.current?.abort();
       abortControllerRef.current = undefined;
     };
-  }, [execute, request, immediate]);
+  }, [execute]);
   return {
     loading,
     exchange,
