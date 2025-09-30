@@ -15,8 +15,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // Import before mocks
-import { useFetcher } from '../../src/fetcher';
-import { PromiseStatus } from '../../src/core';
+import { useFetcher } from '../../src';
+import { PromiseStatus } from '../../src';
 
 // Mock useMountedState to always return true (component is mounted)
 vi.mock('react-use/lib/useMountedState', () => () => () => true);

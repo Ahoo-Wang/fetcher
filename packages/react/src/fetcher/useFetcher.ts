@@ -21,7 +21,10 @@ import {
 } from '@ahoo-wang/fetcher';
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { useMountedState } from 'react-use';
-import { PromiseState, usePromiseState } from '../core';
+import {
+  PromiseState,
+  usePromiseState,
+} from '../core';
 
 /**
  * Configuration options for the useFetcher hook.
@@ -36,6 +39,33 @@ export interface UseFetcherReturn<R> extends PromiseState<R> {
   execute: (request: FetchRequest) => Promise<void>;
 }
 
+/**
+ * A React hook for managing asynchronous operations with proper state handling
+ * @param options - Configuration options for the fetcher
+ * @returns An object containing the current state and control functions
+ *
+ * @example
+ * ```typescript
+ * import { useFetcher } from '@ahoo-wang/fetcher-react';
+ *
+ * function MyComponent() {
+ *   const { loading, result, error, execute } = useFetcher<string>();
+ *
+ *   const handleFetch = () => {
+ *     execute({ url: '/api/data', method: 'GET' });
+ *   };
+ *
+ *   if (loading) return <div>Loading...</div>;
+ *   if (error) return <div>Error: {error.message}</div>;
+ *   return (
+ *     <div>
+ *       <button onClick={handleFetch}>Fetch Data</button>
+ *       {result && <p>{result}</p>}
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
 export function useFetcher<R>(
   options?: UseFetcherOptions,
 ): UseFetcherReturn<R> {
@@ -57,7 +87,8 @@ export function useFetcher<R>(
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      abortControllerRef.current = request.abortController ?? new AbortController();
+      abortControllerRef.current =
+        request.abortController ?? new AbortController();
       request.abortController = abortControllerRef.current;
       state.setLoading();
       try {
