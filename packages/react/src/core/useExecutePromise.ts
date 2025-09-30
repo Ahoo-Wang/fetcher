@@ -24,15 +24,10 @@ export type PromiseSupplier<R> = () => Promise<R>;
 /**
  * Interface defining the return type of useExecutePromise hook
  * @template R - The type of the result value
- *
- * @example
- * ```typescript
- * const { loading, result, error, execute, reset } = useExecutePromise<string>();
- * ```
  */
 export interface UseExecutePromiseReturn<R> extends PromiseState<R> {
-  /** Function to execute a promise supplier */
-  execute: (provider: PromiseSupplier<R>) => Promise<R>;
+  /** Function to execute a promise supplier or promise */
+  execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<R>;
   /** Function to reset the state to initial values */
   reset: () => void;
 }
@@ -79,18 +74,19 @@ export function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R> {
   const isMounted = useMountedState();
 
   /**
-   * Execute a promise supplier and manage its state
-   * @param provider - A function that returns a Promise to be executed
+   * Execute a promise supplier or promise and manage its state
+   * @param input - A function that returns a Promise or a Promise to be executed
    * @returns A Promise that resolves with the result of the executed promise
    */
   const execute = useCallback(
-    async (provider: PromiseSupplier<R>): Promise<R> => {
+    async (input: PromiseSupplier<R> | Promise<R>): Promise<R> => {
       if (!isMounted()) {
         throw new Error('Component is unmounted');
       }
       state.setLoading();
       try {
-        const data = await provider();
+        const promise = typeof input === 'function' ? input() : input;
+        const data = await promise;
 
         if (isMounted()) {
           state.setSuccess(data);
