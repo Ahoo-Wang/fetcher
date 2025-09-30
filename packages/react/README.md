@@ -91,6 +91,41 @@ const MyComponent = () => {
 };
 ```
 
+### useRequestId Hook
+
+The `useRequestId` hook provides request ID management for preventing race conditions in async operations.
+
+```typescript jsx
+import { useRequestId } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { generate, isLatest, invalidate } = useRequestId();
+
+  const handleFetch = async () => {
+    const requestId = generate();
+
+    try {
+      const result = await fetchData();
+
+      if (isLatest(requestId)) {
+        setData(result);
+      }
+    } catch (error) {
+      if (isLatest(requestId)) {
+        setError(error);
+      }
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleFetch}>Fetch Data</button>
+      <button onClick={invalidate}>Cancel Ongoing</button>
+    </div>
+  );
+};
+```
+
 ### useFetcher Hook
 
 The `useFetcher` hook provides data fetching capabilities with automatic state management.
@@ -214,8 +249,26 @@ An object containing:
 - `loading`: Indicates if currently loading
 - `result`: The result value
 - `error`: The error value
-- `execute`: Function to execute a promise supplier
+- `execute`: Function to execute a promise supplier or promise
 - `reset`: Function to reset the state to initial values
+
+### useRequestId
+
+```typescript
+function useRequestId(): UseRequestIdReturn;
+```
+
+A React hook for managing request IDs and race condition protection.
+
+**Returns:**
+
+An object containing:
+
+- `generate`: Generate a new request ID and get the current one
+- `current`: Get the current request ID without generating a new one
+- `isLatest`: Check if a given request ID is the latest
+- `invalidate`: Invalidate current request ID (mark as stale)
+- `reset`: Reset request ID counter
 
 ### useFetcher
 

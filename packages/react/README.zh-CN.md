@@ -90,6 +90,41 @@ const MyComponent = () => {
 };
 ```
 
+### useRequestId Hook
+
+`useRequestId` hook 提供请求ID管理，用于防止异步操作中的竞态条件。
+
+```typescript jsx
+import { useRequestId } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { generate, isLatest, invalidate } = useRequestId();
+
+  const handleFetch = async () => {
+    const requestId = generate();
+
+    try {
+      const result = await fetchData();
+
+      if (isLatest(requestId)) {
+        setData(result);
+      }
+    } catch (error) {
+      if (isLatest(requestId)) {
+        setError(error);
+      }
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleFetch}>获取数据</button>
+      <button onClick={invalidate}>取消进行中</button>
+    </div>
+  );
+};
+```
+
 ### useFetcher Hook
 
 `useFetcher` hook 提供数据获取功能，具有自动状态管理。
@@ -209,8 +244,26 @@ function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R>;
 - `loading`: 指示当前是否加载中
 - `result`: 结果值
 - `error`: 错误值
-- `execute`: 执行 promise 提供者的函数
+- `execute`: 执行 promise supplier 或 promise 的函数
 - `reset`: 重置状态到初始值的函数
+
+### useRequestId
+
+```typescript
+function useRequestId(): UseRequestIdReturn;
+```
+
+用于管理请求ID和竞态条件保护的 React hook。
+
+**返回值:**
+
+包含以下属性的对象：
+
+- `generate`: 生成新请求ID并获取当前ID
+- `current`: 获取当前请求ID而不生成新ID
+- `isLatest`: 检查给定请求ID是否为最新
+- `invalidate`: 使当前请求ID失效（标记为过时）
+- `reset`: 重置请求ID计数器
 
 ### useFetcher
 
