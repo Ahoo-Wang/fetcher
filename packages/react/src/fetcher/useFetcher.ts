@@ -12,7 +12,7 @@
  */
 
 import {
-  fetcher as defaultFetcher,
+  fetcherRegistrar,
   FetcherCapable,
   FetchExchange,
   FetchRequest,
@@ -66,7 +66,7 @@ export interface UseFetcherReturn<R, E = unknown> extends PromiseState<R, E> {
 export function useFetcher<R, E = unknown>(
   options?: UseFetcherOptions,
 ): UseFetcherReturn<R, E> {
-  const { fetcher = defaultFetcher } = options || {};
+  const { fetcher = fetcherRegistrar.default } = options || {};
   const state = usePromiseState<R, E>();
   const [exchange, setExchange] = useState<FetchExchange | undefined>(
     undefined,
