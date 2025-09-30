@@ -25,7 +25,7 @@ export type PromiseSupplier<R> = () => Promise<R>;
  * Interface defining the return type of useExecutePromise hook
  * @template R - The type of the result value
  */
-export interface UseExecutePromiseReturn<R> extends PromiseState<R> {
+export interface UseExecutePromiseReturn<R, E = unknown> extends PromiseState<R, E> {
   /** Function to execute a promise supplier or promise */
   execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<R>;
   /** Function to reset the state to initial values */
@@ -69,8 +69,8 @@ export interface UseExecutePromiseReturn<R> extends PromiseState<R> {
  * }
  * ```
  */
-export function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R> {
-  const state = usePromiseState<R>();
+export function useExecutePromise<R = unknown, E = unknown>(): UseExecutePromiseReturn<R, E> {
+  const state = usePromiseState<R, E>();
   const isMounted = useMountedState();
 
   /**
@@ -94,7 +94,7 @@ export function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R> {
         return data;
       } catch (err) {
         if (isMounted()) {
-          state.setError(err);
+          state.setError(err as E);
         }
         throw err;
       }
