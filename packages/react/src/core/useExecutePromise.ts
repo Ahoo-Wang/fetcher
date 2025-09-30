@@ -71,8 +71,8 @@ export interface UseExecutePromiseReturn<R, E = unknown>
  * }
  * ```
  */
-export function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R> {
-  const state = usePromiseState<R>();
+export function useExecutePromise<R = unknown, E = unknown>(): UseExecutePromiseReturn<R, E> {
+  const state = usePromiseState<R, E>();
   const isMounted = useMountedState();
   const requestId = useRequestId();
 
@@ -98,7 +98,7 @@ export function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R> {
         return data;
       } catch (err) {
         if (isMounted() && requestId.isLatest(currentRequestId)) {
-          state.setError(err);
+          state.setError(err as E);
         }
         throw err;
       }
