@@ -19,7 +19,7 @@ import {
   getFetcher,
   RequestOptions,
 } from '@ahoo-wang/fetcher';
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { useMountedState } from 'react-use';
 import { PromiseState, usePromiseState, useRequestId } from '../core';
 
@@ -124,9 +124,9 @@ export function useFetcher<R, E = unknown>(
       abortControllerRef.current = undefined;
     };
   }, []);
-  return {
+  return useMemo(() => ({
     ...state,
     exchange,
     execute,
-  };
+  }), [state, exchange, execute]);
 }
