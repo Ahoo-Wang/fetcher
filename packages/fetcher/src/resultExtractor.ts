@@ -34,6 +34,8 @@ export interface ResultExtractorCapable {
 
 /**
  * Returns the original FetchExchange object.
+ * This extractor is useful when you need access to the entire exchange object,
+ * including request, response, and any additional metadata.
  * @param exchange - The FetchExchange object to return
  * @returns The same FetchExchange object that was passed in
  */
@@ -45,6 +47,8 @@ export const ExchangeResultExtractor: ResultExtractor<FetchExchange> = (
 
 /**
  * Extracts the Response object from the exchange.
+ * This extractor is useful when you need direct access to the raw Response object
+ * to perform custom processing or access response metadata.
  * @param exchange - The FetchExchange containing the response
  * @returns The Response object from the exchange
  */
@@ -56,6 +60,7 @@ export const ResponseResultExtractor: ResultExtractor<Response> = (
 
 /**
  * Extracts and parses the response body as JSON.
+ * This is the most common extractor for API responses that return JSON data.
  * @param exchange - The FetchExchange containing the response with JSON data
  * @returns A Promise that resolves to the parsed JSON data
  */
@@ -67,6 +72,7 @@ export const JsonResultExtractor: ResultExtractor<Promise<any>> = (
 
 /**
  * Extracts the response body as text.
+ * This extractor is useful for responses that return plain text content.
  * @param exchange - The FetchExchange containing the response with text data
  * @returns A Promise that resolves to the response body as a string
  */
@@ -76,9 +82,79 @@ export const TextResultExtractor: ResultExtractor<Promise<string>> = (
   return exchange.requiredResponse.text();
 };
 
+/**
+ * Extracts the response body as a Blob.
+ * This extractor is useful for binary data such as images, files, or other
+ * non-text content that needs to be handled as a Blob.
+ * @param exchange - The FetchExchange containing the response with Blob data
+ * @returns A Promise that resolves to the response body as a Blob
+ */
+export const BlobResultExtractor: ResultExtractor<Promise<Blob>> = (
+  exchange: FetchExchange,
+) => {
+  return exchange.requiredResponse.blob();
+};
+
+/**
+ * Extracts the response body as an ArrayBuffer.
+ * This extractor is useful for binary data that needs to be processed
+ * as an ArrayBuffer, such as when working with raw binary data or
+ * performing low-level data operations.
+ * @param exchange - The FetchExchange containing the response with ArrayBuffer data
+ * @returns A Promise that resolves to the response body as an ArrayBuffer
+ */
+export const ArrayBufferResultExtractor: ResultExtractor<Promise<ArrayBuffer>> = (
+  exchange: FetchExchange,
+) => {
+  return exchange.requiredResponse.arrayBuffer();
+};
+
+/**
+ * Extracts the response body as a Uint8Array.
+ * This extractor is useful for binary data that needs to be processed
+ * as a byte array, such as when working with protocol buffers or other
+ * binary serialization formats.
+ * @param exchange - The FetchExchange containing the response with byte data
+ * @returns A Promise that resolves to the response body as a Uint8Array
+ */
+export const BytesResultExtractor: ResultExtractor<Promise<Uint8Array<ArrayBuffer>>> = (
+  exchange: FetchExchange,
+) => {
+  return exchange.requiredResponse.bytes();
+};
+
+/**
+ * Collection of commonly used result extractors.
+ * Provides convenient access to various result extraction strategies
+ * for processing HTTP responses.
+ */
 export const ResultExtractors = {
+  /**
+   * Returns the original FetchExchange object
+   */
   Exchange: ExchangeResultExtractor,
+  /**
+   * Extracts the raw Response object
+   */
   Response: ResponseResultExtractor,
+  /**
+   * Parses and returns response body as JSON
+   */
   Json: JsonResultExtractor,
+  /**
+   * Returns response body as text
+   */
   Text: TextResultExtractor,
+  /**
+   * Returns response body as a Blob
+   */
+  Blob: BlobResultExtractor,
+  /**
+   * Returns response body as an ArrayBuffer
+   */
+  ArrayBuffer: ArrayBufferResultExtractor,
+  /**
+   * Returns response body as a Uint8Array
+   */
+  Bytes: BytesResultExtractor,
 };
