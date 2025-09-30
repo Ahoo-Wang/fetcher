@@ -17,6 +17,7 @@ automatic re-rendering and loading states.
 - 🌐 **TypeScript Support**: Full TypeScript support with comprehensive type definitions
 - 🚀 **Modern**: Built with modern React patterns and best practices
 - 🧠 **Smart Caching**: Built-in caching and automatic revalidation
+- ⚡ **Promise State Management**: Hooks for managing async operations and promise states
 
 ## Installation
 
@@ -26,19 +27,77 @@ npm install @ahoo-wang/fetcher-react
 
 ## Usage
 
+### usePromiseState Hook
+
+The `usePromiseState` hook provides state management for promise operations without execution logic.
+
+```typescript jsx
+import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { status, loading, result, error, setSuccess, setError, setIdle } = usePromiseState<string>();
+
+  const handleSuccess = () => setSuccess('Data loaded');
+  const handleError = () => setError(new Error('Failed to load'));
+
+  return (
+    <div>
+      <button onClick={handleSuccess}>Set Success</button>
+      <button onClick={handleError}>Set Error</button>
+      <button onClick={setIdle}>Reset</button>
+      <p>Status: {status}</p>
+      {loading && <p>Loading...</p>}
+      {result && <p>Result: {result}</p>}
+      {error && <p>Error: {error.message}</p>}
+    </div>
+  );
+};
+```
+
+### useExecutePromise Hook
+
+The `useExecutePromise` hook manages asynchronous operations with automatic state handling.
+
+```typescript jsx
+import { useExecutePromise } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { loading, result, error, execute, reset } = useExecutePromise<string>();
+
+  const fetchData = async () => {
+    const response = await fetch('/api/data');
+    return response.text();
+  };
+
+  const handleFetch = () => {
+    execute(fetchData);
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  return (
+    <div>
+      <button onClick={handleFetch}>Fetch Data</button>
+      <button onClick={reset}>Reset</button>
+      {result && <p>{result}</p>}
+    </div>
+  );
+};
+```
+
 ### useFetcher Hook
 
-The `useFetcher` hook provides a convenient way to fetch data in React components with automatic state management for
-loading, error, and result states.
+The `useFetcher` hook provides data fetching capabilities with automatic state management.
 
 ```typescript jsx
 import { useFetcher } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const { loading, error, result, execute, cancel } = useFetcher({
-    url: '/api/users',
-    method: 'GET'
-  });
+  const { loading, error, result, execute } = useFetcher<string>();
+
+  const handleFetch = () => {
+    execute({ url: '/api/users', method: 'GET' });
+  };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -46,63 +105,7 @@ const MyComponent = () => {
   return (
     <div>
       <pre>{JSON.stringify(result, null, 2)}</pre>
-      <button onClick={execute}>Refresh</button>
-      <button onClick={cancel}>Cancel</button>
-    </div>
-  );
-};
-```
-
-### Manual Execution
-
-To manually control when the fetch occurs, set the `immediate` option to `false`:
-
-```typescript jsx
-import { useFetcher } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { loading, error, result, execute } = useFetcher({
-    url: '/api/users',
-    method: 'POST',
-    body: JSON.stringify({ name: 'John' })
-  }, { immediate: false });
-
-  const handleSubmit = async () => {
-    await execute();
-  };
-
-  if (loading) return <div>Submitting...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-
-  return (
-    <div>
-      {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
-      <button onClick={handleSubmit}>Submit</button>
-    </div>
-  );
-};
-```
-
-### Custom Dependencies
-
-You can specify dependencies that will trigger a refetch when they change:
-
-```typescript jsx
-import { useFetcher } from '@ahoo-wang/fetcher-react';
-
-const UserProfile = ({ userId }: { userId: string }) => {
-  const { loading, error, result } = useFetcher({
-    url: `/api/users/${userId}`,
-    method: 'GET'
-  }, { deps: [userId] });
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-
-  return (
-    <div>
-      <h1>{result?.name}</h1>
-      <p>{result?.email}</p>
+      <button onClick={handleFetch}>Fetch Data</button>
     </div>
   );
 };
@@ -159,36 +162,78 @@ const [user, setUser] = useKeyStorage(userStorage);
 
 ## API Reference
 
-### useFetcher
+### usePromiseState
 
 ```typescript
-function useFetcher<R>(
-  request: FetchRequest,
-  options?: UseFetcherOptions,
-): UseFetcherResult<R>;
+function usePromiseState<R = unknown>(
+  options?: UsePromiseStateOptions<R>,
+): UsePromiseStateReturn<R>;
 ```
 
-A React hook that provides data fetching capabilities with automatic state management.
+A React hook for managing promise state without execution logic.
 
 **Parameters:**
 
-- `request`: The fetch request configuration
-- `options`: Configuration options for the fetch operation
-    - `deps`: Dependencies list for the fetch operation. When provided, the hook will re-fetch when any of these values
-      change.
-    - `immediate`: Whether the fetch operation should execute immediately upon component mount. Defaults to `true`.
+- `options`: Configuration options
+    - `initialStatus`: Initial status, defaults to IDLE
+    - `onSuccess`: Callback invoked on success
+    - `onError`: Callback invoked on error
+
+**Returns:**
+
+An object containing:
+
+- `status`: Current status (IDLE, LOADING, SUCCESS, ERROR)
+- `loading`: Indicates if currently loading
+- `result`: The result value
+- `error`: The error value
+- `setLoading`: Set status to LOADING
+- `setSuccess`: Set status to SUCCESS with result
+- `setError`: Set status to ERROR with error
+- `setIdle`: Set status to IDLE
+
+### useExecutePromise
+
+```typescript
+function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R>;
+```
+
+A React hook for managing asynchronous operations with proper state handling.
+
+**Returns:**
+
+An object containing:
+
+- `status`: Current status
+- `loading`: Indicates if currently loading
+- `result`: The result value
+- `error`: The error value
+- `execute`: Function to execute a promise supplier
+- `reset`: Function to reset the state to initial values
+
+### useFetcher
+
+```typescript
+function useFetcher<R>(options?: UseFetcherOptions): UseFetcherReturn<R>;
+```
+
+A React hook for managing asynchronous fetch operations with proper state handling.
+
+**Parameters:**
+
+- `options`: Configuration options
     - `fetcher`: Custom fetcher instance to use. Defaults to the default fetcher.
 
 **Returns:**
 
 An object containing:
 
-- `loading`: Indicates if the fetch operation is currently in progress
-- `exchange`: The FetchExchange object representing the ongoing fetch operation
-- `result`: The data returned by the fetch operation
-- `error`: Any error that occurred during the fetch operation
-- `execute`: Function to manually trigger the fetch operation
-- `cancel`: Function to cancel the ongoing fetch operation
+- `status`: Current status
+- `loading`: Indicates if currently loading
+- `result`: The result value
+- `error`: The error value
+- `exchange`: The FetchExchange object
+- `execute`: Function to execute a fetch request
 
 ### useKeyStorage
 

@@ -16,6 +16,7 @@ Fetcher 生态的 React 集成包。提供 React Hooks 和组件，实现无缝�
 - 🌐 **TypeScript 支持**: 完整的 TypeScript 支持和全面的类型定义
 - 🚀 **现代化**: 使用现代 React 模式和最佳实践构建
 - 🧠 **智能缓存**: 内置缓存和自动重新验证
+- ⚡ **Promise 状态管理**: 用于管理异步操作和 promise 状态的 hooks
 
 ## 安装
 
@@ -25,18 +26,77 @@ npm install @ahoo-wang/fetcher-react
 
 ## 使用方法
 
+### usePromiseState Hook
+
+`usePromiseState` hook 提供 promise 操作的状态管理，无执行逻辑。
+
+```typescript jsx
+import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { status, loading, result, error, setSuccess, setError, setIdle } = usePromiseState<string>();
+
+  const handleSuccess = () => setSuccess('数据加载成功');
+  const handleError = () => setError(new Error('加载失败'));
+
+  return (
+    <div>
+      <button onClick={handleSuccess}>设置成功</button>
+      <button onClick={handleError}>设置错误</button>
+      <button onClick={setIdle}>重置</button>
+      <p>状态: {status}</p>
+      {loading && <p>加载中...</p>}
+      {result && <p>结果: {result}</p>}
+      {error && <p>错误: {error.message}</p>}
+    </div>
+  );
+};
+```
+
+### useExecutePromise Hook
+
+`useExecutePromise` hook 管理异步操作，具有自动状态处理。
+
+```typescript jsx
+import { useExecutePromise } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { loading, result, error, execute, reset } = useExecutePromise<string>();
+
+  const fetchData = async () => {
+    const response = await fetch('/api/data');
+    return response.text();
+  };
+
+  const handleFetch = () => {
+    execute(fetchData);
+  };
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+  return (
+    <div>
+      <button onClick={handleFetch}>获取数据</button>
+      <button onClick={reset}>重置</button>
+      {result && <p>{result}</p>}
+    </div>
+  );
+};
+```
+
 ### useFetcher Hook
 
-`useFetcher` hook 提供了一种在 React 组件中获取数据的便捷方式，具有自动管理加载、错误和结果状态的功能。
+`useFetcher` hook 提供数据获取功能，具有自动状态管理。
 
 ```typescript jsx
 import { useFetcher } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const { loading, error, result, execute, cancel } = useFetcher({
-    url: '/api/users',
-    method: 'GET'
-  });
+  const { loading, error, result, execute } = useFetcher<string>();
+
+  const handleFetch = () => {
+    execute({ url: '/api/users', method: 'GET' });
+  };
 
   if (loading) return <div>加载中...</div>;
   if (error) return <div>错误: {error.message}</div>;
@@ -44,63 +104,7 @@ const MyComponent = () => {
   return (
     <div>
       <pre>{JSON.stringify(result, null, 2)}</pre>
-      <button onClick={execute}>刷新</button>
-      <button onClick={cancel}>取消</button>
-    </div>
-  );
-};
-```
-
-### 手动执行
-
-要手动控制获取数据的时机，请将 `immediate` 选项设置为 `false`：
-
-```typescript jsx
-import { useFetcher } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { loading, error, result, execute } = useFetcher({
-    url: '/api/users',
-    method: 'POST',
-    body: JSON.stringify({ name: 'John' })
-  }, { immediate: false });
-
-  const handleSubmit = async () => {
-    await execute();
-  };
-
-  if (loading) return <div>提交中...</div>;
-  if (error) return <div>错误: {error.message}</div>;
-
-  return (
-    <div>
-      {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
-      <button onClick={handleSubmit}>提交</button>
-    </div>
-  );
-};
-```
-
-### 自定义依赖项
-
-您可以指定依赖项，当它们发生变化时会触发重新获取：
-
-```typescript jsx
-import { useFetcher } from '@ahoo-wang/fetcher-react';
-
-const UserProfile = ({ userId }: { userId: string }) => {
-  const { loading, error, result } = useFetcher({
-    url: `/api/users/${userId}`,
-    method: 'GET'
-  }, { deps: [userId] });
-
-  if (loading) return <div>加载中...</div>;
-  if (error) return <div>错误: {error.message}</div>;
-
-  return (
-    <div>
-      <h1>{result?.name}</h1>
-      <p>{result?.email}</p>
+      <button onClick={handleFetch}>获取数据</button>
     </div>
   );
 };
@@ -153,35 +157,78 @@ const [user, setUser] = useKeyStorage(userStorage);
 
 ## API 参考
 
-### useFetcher
+### usePromiseState
 
 ```typescript
-function useFetcher<R>(
-  request: FetchRequest,
-  options?: UseFetcherOptions,
-): UseFetcherResult<R>;
+function usePromiseState<R = unknown>(
+  options?: UsePromiseStateOptions<R>,
+): UsePromiseStateReturn<R>;
 ```
 
-提供数据获取功能并自动管理状态的 React hook。
+用于管理 promise 状态的 React hook，无执行逻辑。
 
 **参数:**
 
-- `request`: 获取数据的请求配置
-- `options`: 获取数据操作的配置选项
-    - `deps`: 获取数据操作的依赖项列表。提供时，当这些值中的任何一个发生变化时，hook 将重新获取数据。
-    - `immediate`: 获取数据操作是否应在组件挂载时立即执行。默认为 `true`。
+- `options`: 配置选项
+    - `initialStatus`: 初始状态，默认为 IDLE
+    - `onSuccess`: 成功时调用的回调
+    - `onError`: 错误时调用的回调
+
+**返回值:**
+
+包含以下属性的对象：
+
+- `status`: 当前状态 (IDLE, LOADING, SUCCESS, ERROR)
+- `loading`: 指示当前是否加载中
+- `result`: 结果值
+- `error`: 错误值
+- `setLoading`: 设置状态为 LOADING
+- `setSuccess`: 设置状态为 SUCCESS 并提供结果
+- `setError`: 设置状态为 ERROR 并提供错误
+- `setIdle`: 设置状态为 IDLE
+
+### useExecutePromise
+
+```typescript
+function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R>;
+```
+
+用于管理异步操作的 React hook，具有适当的状态处理。
+
+**返回值:**
+
+包含以下属性的对象：
+
+- `status`: 当前状态
+- `loading`: 指示当前是否加载中
+- `result`: 结果值
+- `error`: 错误值
+- `execute`: 执行 promise 提供者的函数
+- `reset`: 重置状态到初始值的函数
+
+### useFetcher
+
+```typescript
+function useFetcher<R>(options?: UseFetcherOptions): UseFetcherReturn<R>;
+```
+
+用于管理异步获取操作的 React hook，具有适当的状态处理。
+
+**参数:**
+
+- `options`: 配置选项
     - `fetcher`: 要使用的自定义获取器实例。默认为默认获取器。
 
 **返回值:**
 
 包含以下属性的对象：
 
-- `loading`: 指示获取数据操作当前是否正在进行中
-- `exchange`: 代表正在进行的获取数据操作的 FetchExchange 对象
-- `result`: 获取数据操作返回的数据
-- `error`: 获取数据操作期间发生的任何错误
-- `execute`: 手动触发获取数据操作的函数
-- `cancel`: 取消正在进行的获取数据操作的函数
+- `status`: 当前状态
+- `loading`: 指示当前是否加载中
+- `result`: 结果值
+- `error`: 错误值
+- `exchange`: FetchExchange 对象
+- `execute`: 执行获取请求的函数
 
 ### useKeyStorage
 
