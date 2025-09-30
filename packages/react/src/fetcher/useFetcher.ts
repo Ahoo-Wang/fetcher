@@ -21,13 +21,13 @@ import {
 } from '@ahoo-wang/fetcher';
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { useMountedState } from 'react-use';
-import { PromiseState, usePromiseState, useRequestId } from '../core';
+import { PromiseState, usePromiseState, UsePromiseStateOptions, useRequestId } from '../core';
 
 /**
  * Configuration options for the useFetcher hook.
  * Extends RequestOptions and FetcherCapable interfaces.
  */
-export interface UseFetcherOptions extends RequestOptions, FetcherCapable {
+export interface UseFetcherOptions<R, E = unknown> extends RequestOptions, FetcherCapable, UsePromiseStateOptions<R, E> {
 }
 
 export interface UseFetcherReturn<R, E = unknown> extends PromiseState<R, E> {
@@ -64,10 +64,10 @@ export interface UseFetcherReturn<R, E = unknown> extends PromiseState<R, E> {
  * ```
  */
 export function useFetcher<R, E = unknown>(
-  options?: UseFetcherOptions,
+  options?: UseFetcherOptions<R, E>,
 ): UseFetcherReturn<R, E> {
   const { fetcher = fetcherRegistrar.default } = options || {};
-  const state = usePromiseState<R, E>();
+  const state = usePromiseState<R, E>(options);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(
     undefined,
   );

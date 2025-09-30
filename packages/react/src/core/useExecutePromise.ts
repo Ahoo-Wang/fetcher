@@ -13,7 +13,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useMountedState } from 'react-use';
-import { usePromiseState, PromiseState } from './usePromiseState';
+import { usePromiseState, PromiseState, UsePromiseStateOptions } from './usePromiseState';
 import { useRequestId } from './useRequestId';
 
 /**
@@ -71,8 +71,8 @@ export interface UseExecutePromiseReturn<R, E = unknown>
  * }
  * ```
  */
-export function useExecutePromise<R = unknown, E = unknown>(): UseExecutePromiseReturn<R, E> {
-  const state = usePromiseState<R, E>();
+export function useExecutePromise<R = unknown, E = unknown>(options?: UsePromiseStateOptions<R, E>): UseExecutePromiseReturn<R, E> {
+  const state = usePromiseState<R, E>(options);
   const isMounted = useMountedState();
   const requestId = useRequestId();
 
