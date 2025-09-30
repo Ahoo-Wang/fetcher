@@ -55,7 +55,7 @@ const MyComponent = () => {
 
 ### useExecutePromise Hook
 
-`useExecutePromise` hook 管理异步操作，具有自动状态处理。
+`useExecutePromise` hook 管理异步操作，具有自动状态处理和内置竞态条件保护。
 
 ```typescript jsx
 import { useExecutePromise } from '@ahoo-wang/fetcher-react';

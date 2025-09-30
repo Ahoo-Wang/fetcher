@@ -56,7 +56,8 @@ const MyComponent = () => {
 
 ### useExecutePromise Hook
 
-The `useExecutePromise` hook manages asynchronous operations with automatic state handling.
+The `useExecutePromise` hook manages asynchronous operations with automatic state handling and built-in race condition
+protection.
 
 ```typescript jsx
 import { useExecutePromise } from '@ahoo-wang/fetcher-react';
