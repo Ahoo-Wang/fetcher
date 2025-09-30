@@ -36,7 +36,6 @@ export interface UseFetcherReturn<R> extends PromiseState<R> {
   execute: (request: FetchRequest) => Promise<void>;
 }
 
-
 export function useFetcher<R>(
   options?: UseFetcherOptions,
 ): UseFetcherReturn<R> {

@@ -11,5 +11,6 @@
  * limitations under the License.
  */
 
+export * from './core';
 export * from './storage';
 export * from './fetcher';

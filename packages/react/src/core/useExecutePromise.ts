@@ -13,7 +13,7 @@
 
 import { useCallback } from 'react';
 import { useMountedState } from 'react-use';
-import { usePromiseState, PromiseStatus, PromiseState } from './usePromiseState';
+import { usePromiseState, PromiseState } from './usePromiseState';
 
 /**
  * Type definition for a function that returns a Promise
