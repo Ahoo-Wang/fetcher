@@ -11,18 +11,9 @@
  * limitations under the License.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useMountedState } from 'react-use';
-
-/**
- * Enumeration of possible promise execution states
- */
-export enum PromiseStatus {
-  IDLE = 'idle',
-  LOADING = 'loading',
-  SUCCESS = 'success',
-  ERROR = 'error',
-}
+import { usePromiseState, PromiseStatus } from './usePromiseState';
 
 /**
  * Type definition for a function that returns a Promise
@@ -31,10 +22,10 @@ export enum PromiseStatus {
 export type PromiseSupplier<R> = () => Promise<R>;
 
 /**
- * Interface defining the state and actions returned by useExecutePromise hook
+ * Interface defining the return type of useExecutePromise hook
  * @template R - The type of the result value
  */
-export interface UseExecutePromiseState<R> {
+export interface UseExecutePromiseReturn<R> {
   /** Current status of the promise execution */
   status: PromiseStatus;
   /** Indicates if a promise is currently being executed */
@@ -54,10 +45,8 @@ export interface UseExecutePromiseState<R> {
  * @template R - The type of the result value
  * @returns An object containing the current state and control functions
  */
-export function useExecutePromise<R = unknown>(): UseExecutePromiseState<R> {
-  const [status, setStatus] = useState<PromiseStatus>(PromiseStatus.IDLE);
-  const [error, setError] = useState<unknown>(undefined);
-  const [result, setResult] = useState<R | undefined>(undefined);
+export function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R> {
+  const state = usePromiseState<R>();
   const isMounted = useMountedState();
 
   /**
@@ -65,48 +54,44 @@ export function useExecutePromise<R = unknown>(): UseExecutePromiseState<R> {
    * @param provider - A function that returns a Promise to be executed
    * @returns A Promise that resolves with the result of the executed promise
    */
-  const execute = useCallback(async (provider: PromiseSupplier<R>): Promise<R> => {
-    if (!isMounted()) {
-      throw new Error('Component is unmounted');
-    }
-    setStatus(PromiseStatus.LOADING);
-    setError(undefined);
-    try {
-      const data = await provider();
+  const execute = useCallback(
+    async (provider: PromiseSupplier<R>): Promise<R> => {
+      if (!isMounted()) {
+        throw new Error('Component is unmounted');
+      }
+      state.setLoading();
+      try {
+        const data = await provider();
 
-      if (isMounted()) {
-        setResult(data);
-        setStatus(PromiseStatus.SUCCESS);
-        setError(undefined);
+        if (isMounted()) {
+          state.setSuccess(data);
+        }
+        return data;
+      } catch (err) {
+        if (isMounted()) {
+          state.setError(err);
+        }
+        throw err;
       }
-      return data;
-    } catch (err) {
-      if (isMounted()) {
-        setError(err);
-        setStatus(PromiseStatus.ERROR);
-        setResult(undefined);
-      }
-      throw err;
-    }
-  }, []);
+    },
+    [state, isMounted],
+  );
 
   /**
    * Reset the state to initial values
    */
   const reset = useCallback(() => {
     if (isMounted()) {
-      setStatus(PromiseStatus.IDLE);
-      setError(undefined);
-      setResult(undefined);
+      state.setIdle();
     }
-  }, []);
+  }, [state, isMounted]);
 
   return {
-    loading: status === PromiseStatus.LOADING,
-    result,
-    error,
+    loading: state.loading,
+    result: state.result,
+    error: state.error,
     execute,
     reset,
-    status,
+    status: state.status,
   };
 }
