@@ -74,7 +74,7 @@ catalogs:
       version: 5.9.2
     typescript-eslint:
       specifier: ^8.45.0
-      version: 8.44.1
+      version: 8.45.0
     unplugin-dts:
       specifier: 1.0.0-beta.6
       version: 1.0.0-beta.6
@@ -493,6 +493,9 @@ importers:
       '@ahoo-wang/fetcher-storage':
         specifier: workspace:^2.3.4
         version: link:../storage
+      '@ahoo-wang/fetcher-wow':
+        specifier: workspace:^2.3.4
+        version: link:../wow
       react-use:
         specifier: 'catalog:'
         version: 17.6.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)

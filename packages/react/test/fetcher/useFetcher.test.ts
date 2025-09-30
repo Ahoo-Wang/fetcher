@@ -16,150 +16,133 @@ import { renderHook, act } from '@testing-library/react';
 
 // Import before mocks
 import { useFetcher } from '../../src';
-import { FetchRequest, Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
+import { PromiseStatus } from '../../src';
 
 // Mock useMountedState to always return true (component is mounted)
 vi.mock('react-use/lib/useMountedState', () => () => () => true);
 
-// Mock getFetcher to return the provided fetcher
-vi.mock('@ahoo-wang/fetcher', async importOriginal => {
-  const actual: any = await importOriginal();
-  return {
-    ...actual,
-    getFetcher: (fetcher: any) => fetcher,
-  };
-});
+// Mock fetcher
+vi.mock('@ahoo-wang/fetcher', () => ({
+  fetcher: {},
+  getFetcher: vi.fn(),
+}));
 
 describe('useFetcher', () => {
-  const mockRequest: FetchRequest = { url: '/test' };
-  let originalAbortController: any;
+  let mockExchange: any;
+  let mockFetcher: any;
 
-  beforeEach(() => {
-    // 保存原始 AbortController
-    originalAbortController = global.AbortController;
-    vi.clearAllMocks();
+  beforeEach(async () => {
+    mockExchange = {
+      extractResult: vi.fn(),
+    };
+    mockFetcher = {
+      exchange: vi.fn().mockResolvedValue(mockExchange),
+    };
+    const { getFetcher } = await import('@ahoo-wang/fetcher');
+    vi.mocked(getFetcher).mockReturnValue(mockFetcher);
   });
 
   afterEach(() => {
-    // 恢复原始 AbortController
-    global.AbortController = originalAbortController;
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should initialize with default state', () => {
-    const { result } = renderHook(() =>
-      useFetcher(mockRequest, { immediate: false }),
-    );
+    const { result } = renderHook(() => useFetcher<string>());
 
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeUndefined();
     expect(result.current.result).toBeUndefined();
     expect(result.current.exchange).toBeUndefined();
     expect(typeof result.current.execute).toBe('function');
-    expect(typeof result.current.cancel).toBe('function');
   });
 
   it('should execute fetch successfully', async () => {
     const mockResult = 'success data';
-    const mockExchange: FetchExchange = {
-      response: Promise.resolve(new Response()),
-      extractResult: vi.fn().mockResolvedValue(mockResult),
-    } as any;
+    mockExchange.extractResult.mockResolvedValue(mockResult);
 
-    const mockFetcher: Fetcher = {
-      exchange: vi.fn().mockResolvedValue(mockExchange),
-    };
+    const { result } = renderHook(() => useFetcher<string>());
 
-    const { result } = renderHook(() =>
-      useFetcher<string>(mockRequest, {
-        fetcher: mockFetcher,
-        immediate: false,
-      }),
-    );
+    const request = { url: '/test' };
 
     await act(async () => {
-      await result.current.execute();
+      await result.current.execute(request);
     });
 
+    expect(mockFetcher.exchange).toHaveBeenCalledWith(request, undefined);
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeUndefined();
-    expect(result.current.exchange).toBe(mockExchange);
     expect(result.current.result).toBe(mockResult);
-    // 检查调用参数，忽略options参数
-    expect(mockFetcher.exchange).toHaveBeenCalled();
-  }, 10000);
+    expect(result.current.exchange).toBe(mockExchange);
+  });
 
   it('should handle fetch error', async () => {
     const error = new Error('fetch failed');
-    const mockFetcher: Fetcher = {
-      exchange: vi.fn().mockRejectedValue(error),
-    };
+    mockExchange.extractResult.mockRejectedValue(error);
 
-    const { result } = renderHook(() =>
-      useFetcher(mockRequest, { fetcher: mockFetcher, immediate: false }),
-    );
+    const { result } = renderHook(() => useFetcher<string>());
+
+    const request = { url: '/test' };
 
     await act(async () => {
-      await result.current.execute();
+      await result.current.execute(request);
     });
 
+    expect(result.current.status).toBe(PromiseStatus.ERROR);
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe(error);
     expect(result.current.result).toBeUndefined();
-    expect(result.current.exchange).toBeUndefined();
-  }, 10000);
-
-  it('should ignore AbortError', async () => {
-    const abortError = new Error('AbortError');
-    abortError.name = 'AbortError';
-    const mockFetcher: Fetcher = {
-      exchange: vi.fn().mockRejectedValue(abortError),
-    };
-
-    const { result } = renderHook(() =>
-      useFetcher(mockRequest, { fetcher: mockFetcher, immediate: false }),
-    );
-
-    await act(async () => {
-      await result.current.execute();
-    });
-
-    expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBeUndefined();
-  }, 10000);
-
-  it('should not auto-execute if immediate is false', () => {
-    const mockResult = 'data';
-    const mockExchange: FetchExchange = {
-      response: Promise.resolve(new Response()),
-      extractResult: vi.fn().mockResolvedValue(mockResult),
-    } as any;
-
-    const mockFetcher: Fetcher = {
-      exchange: vi.fn().mockResolvedValue(mockExchange),
-    };
-
-    renderHook(() =>
-      useFetcher(mockRequest, { immediate: false, fetcher: mockFetcher }),
-    );
-
-    expect(mockFetcher.exchange).not.toHaveBeenCalled();
   });
 
-  it('should auto-execute by default', () => {
-    const mockResult = 'data';
-    const mockExchange: FetchExchange = {
-      response: Promise.resolve(new Response()),
-      extractResult: vi.fn().mockResolvedValue(mockResult),
-    } as any;
+  it('should handle abort error', async () => {
+    const abortError = new Error('Aborted');
+    abortError.name = 'AbortError';
+    mockExchange.extractResult.mockRejectedValue(abortError);
 
-    const mockFetcher: Fetcher = {
-      exchange: vi.fn().mockResolvedValue(mockExchange),
+    const { result } = renderHook(() => useFetcher<string>());
+
+    const request = { url: '/test' };
+
+    await act(async () => {
+      await result.current.execute(request);
+    });
+
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.result).toBeUndefined();
+  });
+
+  it('should cancel previous request when executing new one', async () => {
+    const mockResult1 = 'result1';
+    const mockResult2 = 'result2';
+    const mockExchange1 = {
+      extractResult: vi.fn().mockResolvedValue(mockResult1),
+    };
+    const mockExchange2 = {
+      extractResult: vi.fn().mockResolvedValue(mockResult2),
     };
 
-    renderHook(() => useFetcher(mockRequest, { fetcher: mockFetcher }));
+    mockFetcher.exchange
+      .mockResolvedValueOnce(mockExchange1)
+      .mockResolvedValueOnce(mockExchange2);
 
-    // Should auto-execute by default (immediate = true by default)
-    expect(mockFetcher.exchange).toHaveBeenCalled();
+    const { result } = renderHook(() => useFetcher<string>());
+
+    const request1 = { url: '/test1' };
+    const request2 = { url: '/test2' };
+
+    // Start first request
+    act(() => {
+      result.current.execute(request1);
+    });
+
+    // Start second request, should cancel first
+    await act(async () => {
+      await result.current.execute(request2);
+    });
+
+    expect(result.current.result).toBe(mockResult2);
   });
 });

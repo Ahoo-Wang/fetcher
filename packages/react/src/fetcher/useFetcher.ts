@@ -21,57 +21,59 @@ import {
 } from '@ahoo-wang/fetcher';
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { useMountedState } from 'react-use';
+import {
+  PromiseState,
+  usePromiseState,
+} from '../core';
 
 /**
  * Configuration options for the useFetcher hook.
  * Extends RequestOptions and FetcherCapable interfaces.
  */
 export interface UseFetcherOptions extends RequestOptions, FetcherCapable {
-  /**
-   * Whether the fetch operation should execute immediately upon component mount.
-   * Defaults to true.
-   */
-  readonly immediate?: boolean;
+}
+
+export interface UseFetcherReturn<R> extends PromiseState<R> {
+  /** The FetchExchange object representing the ongoing fetch operation */
+  exchange?: FetchExchange;
+  execute: (request: FetchRequest) => Promise<void>;
 }
 
 /**
- * The result object returned by the useFetcher hook.
- * @template R - The type of the data returned by the fetch operation
+ * A React hook for managing asynchronous operations with proper state handling
+ * @param options - Configuration options for the fetcher
+ * @returns An object containing the current state and control functions
+ *
+ * @example
+ * ```typescript
+ * import { useFetcher } from '@ahoo-wang/fetcher-react';
+ *
+ * function MyComponent() {
+ *   const { loading, result, error, execute } = useFetcher<string>();
+ *
+ *   const handleFetch = () => {
+ *     execute({ url: '/api/data', method: 'GET' });
+ *   };
+ *
+ *   if (loading) return <div>Loading...</div>;
+ *   if (error) return <div>Error: {error.message}</div>;
+ *   return (
+ *     <div>
+ *       <button onClick={handleFetch}>Fetch Data</button>
+ *       {result && <p>{result}</p>}
+ *     </div>
+ *   );
+ * }
+ * ```
  */
-export interface UseFetcherResult<R> {
-  /** Indicates if the fetch operation is currently in progress */
-  loading: boolean;
-
-  /** The FetchExchange object representing the ongoing fetch operation */
-  exchange?: FetchExchange;
-
-  /** The data returned by the fetch operation, or undefined if not yet loaded or an error occurred */
-  result?: R;
-
-  /** Any error that occurred during the fetch operation, or undefined if no error */
-  error?: unknown;
-
-  /**
-   * Function to manually trigger the fetch operation.
-   * Useful for fetching data on demand rather than automatically.
-   */
-  execute: () => Promise<void>;
-
-  /** Function to cancel the ongoing fetch operation */
-  cancel: () => void;
-}
-
 export function useFetcher<R>(
-  request: FetchRequest,
   options?: UseFetcherOptions,
-): UseFetcherResult<R> {
-  const { fetcher = defaultFetcher, immediate = true } = options || {};
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<unknown>(undefined);
+): UseFetcherReturn<R> {
+  const { fetcher = defaultFetcher } = options || {};
+  const state = usePromiseState<R>();
   const [exchange, setExchange] = useState<FetchExchange | undefined>(
     undefined,
   );
-  const [result, setResult] = useState<R | undefined>(undefined);
   const isMounted = useMountedState();
   const abortControllerRef = useRef<AbortController | undefined>();
 
@@ -80,63 +82,52 @@ export function useFetcher<R>(
    * Execute the fetch operation.
    * Cancels any ongoing fetch before starting a new one.
    */
-  const execute = useCallback(async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current =
-      request.abortController ?? new AbortController();
-    request.abortController = abortControllerRef.current;
-    if (isMounted()) {
-      setLoading(true);
-      setError(undefined);
-    }
-    try {
-      const exchange = await currentFetcher.exchange(request, options);
-      if (isMounted()) {
-        setExchange(exchange);
+  const execute = useCallback(
+    async (request: FetchRequest) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-      const result = await exchange.extractResult<R>();
-      if (isMounted()) {
-        setResult(result);
+      abortControllerRef.current =
+        request.abortController ?? new AbortController();
+      request.abortController = abortControllerRef.current;
+      state.setLoading();
+      try {
+        const exchange = await currentFetcher.exchange(request, options);
+        if (isMounted()) {
+          setExchange(exchange);
+        }
+        const result = await exchange.extractResult<R>();
+        if (isMounted()) {
+          state.setSuccess(result);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          if (isMounted()) {
+            state.setIdle();
+          }
+          return;
+        }
+        if (isMounted()) {
+          state.setError(error);
+        }
+      } finally {
+        if (abortControllerRef.current === request.abortController) {
+          abortControllerRef.current = undefined;
+        }
       }
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        return;
-      }
-      if (isMounted()) {
-        setError(error);
-      }
-    } finally {
-      if (isMounted()) {
-        setLoading(false);
-      }
-      if (abortControllerRef.current === request.abortController) {
-        abortControllerRef.current = undefined;
-      }
-    }
-  }, [currentFetcher, request, isMounted, options]);
-  /**
-   * Cancel the ongoing fetch operation if one is in progress.
-   */
-  const cancel = useCallback(() => {
-    abortControllerRef.current?.abort();
-  }, []);
+    },
+    [currentFetcher, isMounted, options, state],
+  );
+
   useEffect(() => {
-    if (immediate) {
-      execute();
-    }
     return () => {
       abortControllerRef.current?.abort();
       abortControllerRef.current = undefined;
     };
-  }, [execute, request, immediate]);
+  }, []);
   return {
-    loading,
+    ...state,
     exchange,
-    result,
-    error,
     execute,
-    cancel,
   };
 }
