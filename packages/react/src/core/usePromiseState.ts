@@ -24,7 +24,7 @@ export enum PromiseStatus {
   ERROR = 'error',
 }
 
-export interface PromiseState<R> {
+export interface PromiseState<R, E = unknown> {
   /** Current status of the promise */
   status: PromiseStatus;
   /** Indicates if currently loading */
@@ -32,7 +32,7 @@ export interface PromiseState<R> {
   /** The result value */
   result: R | undefined;
   /** The error value */
-  error: unknown | undefined;
+  error: E | undefined;
 }
 
 /**
@@ -48,26 +48,26 @@ export interface PromiseState<R> {
  * };
  * ```
  */
-export interface UsePromiseStateOptions<R> {
+export interface UsePromiseStateOptions<R, E = unknown> {
   /** Initial status, defaults to IDLE */
   initialStatus?: PromiseStatus;
   /** Callback invoked on success */
   onSuccess?: (result: R) => void;
   /** Callback invoked on error */
-  onError?: (error: unknown) => void;
+  onError?: (error: E) => void;
 }
 
 /**
  * Return type for usePromiseState hook
  * @template R - The type of result
  */
-export interface UsePromiseStateReturn<R> extends PromiseState<R> {
+export interface UsePromiseStateReturn<R, E = unknown> extends PromiseState<R, E> {
   /** Set status to LOADING */
   setLoading: () => void;
   /** Set status to SUCCESS with result */
   setSuccess: (result: R) => void;
   /** Set status to ERROR with error */
-  setError: (error: unknown) => void;
+  setError: (error: E) => void;
   /** Set status to IDLE */
   setIdle: () => void;
 }
@@ -102,14 +102,14 @@ export interface UsePromiseStateReturn<R> extends PromiseState<R> {
  * }
  * ```
  */
-export function usePromiseState<R = unknown>(
-  options?: UsePromiseStateOptions<R>,
-): UsePromiseStateReturn<R> {
+export function usePromiseState<R = unknown, E = unknown>(
+  options?: UsePromiseStateOptions<R, E>,
+): UsePromiseStateReturn<R, E> {
   const [status, setStatus] = useState<PromiseStatus>(
     options?.initialStatus ?? PromiseStatus.IDLE,
   );
   const [result, setResult] = useState<R | undefined>(undefined);
-  const [error, setErrorState] = useState<unknown | undefined>(undefined);
+  const [error, setErrorState] = useState<E | undefined>(undefined);
   const isMounted = useMountedState();
 
   const setLoadingFn = useCallback(() => {
@@ -132,7 +132,7 @@ export function usePromiseState<R = unknown>(
   );
 
   const setErrorFn = useCallback(
-    (error: unknown) => {
+    (error: E) => {
       if (isMounted()) {
         setErrorState(error);
         setStatus(PromiseStatus.ERROR);
