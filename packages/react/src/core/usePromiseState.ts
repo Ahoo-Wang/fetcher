@@ -24,6 +24,17 @@ export enum PromiseStatus {
   ERROR = 'error',
 }
 
+export interface PromiseState<R> {
+  /** Current status of the promise */
+  status: PromiseStatus;
+  /** Indicates if currently loading */
+  loading: boolean;
+  /** The result value */
+  result: R | undefined;
+  /** The error value */
+  error: unknown | undefined;
+}
+
 /**
  * Options for configuring usePromiseState behavior
  * @template R - The type of result
@@ -41,13 +52,7 @@ export interface UsePromiseStateOptions<R> {
  * Return type for usePromiseState hook
  * @template R - The type of result
  */
-export interface UsePromiseStateReturn<R> {
-  /** Current status of the promise */
-  status: PromiseStatus;
-  /** Indicates if currently loading */
-  loading: boolean;
-  /** The result value */
-  result: R | undefined;
+export interface UsePromiseStateReturn<R> extends PromiseState<R> {
   /** The error value */
   error: unknown | undefined;
   /** Set status to LOADING */

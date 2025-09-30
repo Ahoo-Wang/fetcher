@@ -13,7 +13,7 @@
 
 import { useCallback } from 'react';
 import { useMountedState } from 'react-use';
-import { usePromiseState, PromiseStatus } from './usePromiseState';
+import { usePromiseState, PromiseStatus, PromiseState } from './usePromiseState';
 
 /**
  * Type definition for a function that returns a Promise
@@ -25,15 +25,7 @@ export type PromiseSupplier<R> = () => Promise<R>;
  * Interface defining the return type of useExecutePromise hook
  * @template R - The type of the result value
  */
-export interface UseExecutePromiseReturn<R> {
-  /** Current status of the promise execution */
-  status: PromiseStatus;
-  /** Indicates if a promise is currently being executed */
-  loading: boolean;
-  /** The result of the last successfully executed promise */
-  result: R | undefined;
-  /** The error from the last failed promise execution */
-  error: unknown | undefined;
+export interface UseExecutePromiseReturn<R> extends PromiseState<R> {
   /** Function to execute a promise supplier */
   execute: (provider: PromiseSupplier<R>) => Promise<R>;
   /** Function to reset the state to initial values */
