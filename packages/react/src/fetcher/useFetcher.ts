@@ -33,7 +33,7 @@ import {
 export interface UseFetcherOptions extends RequestOptions, FetcherCapable {
 }
 
-export interface UseFetcherReturn<R> extends PromiseState<R> {
+export interface UseFetcherReturn<R, E = unknown> extends PromiseState<R, E> {
   /** The FetchExchange object representing the ongoing fetch operation */
   exchange?: FetchExchange;
   execute: (request: FetchRequest) => Promise<void>;
@@ -66,11 +66,11 @@ export interface UseFetcherReturn<R> extends PromiseState<R> {
  * }
  * ```
  */
-export function useFetcher<R>(
+export function useFetcher<R, E = unknown>(
   options?: UseFetcherOptions,
-): UseFetcherReturn<R> {
+): UseFetcherReturn<R, E> {
   const { fetcher = defaultFetcher } = options || {};
-  const state = usePromiseState<R>();
+  const state = usePromiseState<R, E>();
   const [exchange, setExchange] = useState<FetchExchange | undefined>(
     undefined,
   );
@@ -108,7 +108,7 @@ export function useFetcher<R>(
           return;
         }
         if (isMounted()) {
-          state.setError(error);
+          state.setError(error as E);
         }
       } finally {
         if (abortControllerRef.current === request.abortController) {
