@@ -36,6 +36,13 @@ export interface PromiseState<R, E = unknown> {
   error: E | undefined;
 }
 
+export interface UsePromiseCallback<R, E = unknown> {
+  /** Callback invoked on success */
+  onSuccess?: (result: R) => void;
+  /** Callback invoked on error */
+  onError?: (error: E) => void;
+}
+
 /**
  * Options for configuring usePromiseState behavior
  * @template R - The type of result
@@ -49,13 +56,9 @@ export interface PromiseState<R, E = unknown> {
  * };
  * ```
  */
-export interface UsePromiseStateOptions<R, E = unknown> {
+export interface UsePromiseStateOptions<R, E = unknown> extends UsePromiseCallback<R, E> {
   /** Initial status, defaults to IDLE */
   initialStatus?: PromiseStatus;
-  /** Callback invoked on success */
-  onSuccess?: (result: R) => void;
-  /** Callback invoked on error */
-  onError?: (error: E) => void;
 }
 
 /**
