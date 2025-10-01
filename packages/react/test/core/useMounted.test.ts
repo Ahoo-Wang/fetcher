@@ -13,7 +13,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useMounted } from '../../src/core';
+import { useMounted } from '../../src';
 
 describe('useMounted', () => {
   it('should return a function that returns true when component is mounted', () => {
