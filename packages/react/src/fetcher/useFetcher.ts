@@ -21,13 +21,22 @@ import {
 } from '@ahoo-wang/fetcher';
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { useMountedState } from 'react-use';
-import { PromiseState, usePromiseState, UsePromiseStateOptions, useRequestId } from '../core';
+import {
+  PromiseState,
+  useLatest,
+  usePromiseState,
+  UsePromiseStateOptions,
+  useRequestId,
+} from '../core';
 
 /**
  * Configuration options for the useFetcher hook.
  * Extends RequestOptions and FetcherCapable interfaces.
  */
-export interface UseFetcherOptions<R, E = unknown> extends RequestOptions, FetcherCapable, UsePromiseStateOptions<R, E> {
+export interface UseFetcherOptions<R, E = unknown>
+  extends RequestOptions,
+    FetcherCapable,
+    UsePromiseStateOptions<R, E> {
 }
 
 export interface UseFetcherReturn<R, E = unknown> extends PromiseState<R, E> {
@@ -74,7 +83,7 @@ export function useFetcher<R, E = unknown>(
   const isMounted = useMountedState();
   const abortControllerRef = useRef<AbortController | undefined>();
   const requestId = useRequestId();
-
+  const latestOptions = useLatest(options);
   const currentFetcher = getFetcher(fetcher);
   /**
    * Execute the fetch operation.
@@ -91,7 +100,10 @@ export function useFetcher<R, E = unknown>(
       const currentRequestId = requestId.generate();
       state.setLoading();
       try {
-        const exchange = await currentFetcher.exchange(request, options);
+        const exchange = await currentFetcher.exchange(
+          request,
+          latestOptions.current,
+        );
         if (isMounted() && requestId.isLatest(currentRequestId)) {
           setExchange(exchange);
         }
@@ -115,7 +127,7 @@ export function useFetcher<R, E = unknown>(
         }
       }
     },
-    [currentFetcher, isMounted, options, state, requestId],
+    [currentFetcher, isMounted, state, requestId],
   );
 
   useEffect(() => {
@@ -124,9 +136,12 @@ export function useFetcher<R, E = unknown>(
       abortControllerRef.current = undefined;
     };
   }, []);
-  return useMemo(() => ({
-    ...state,
-    exchange,
-    execute,
-  }), [state, exchange, execute]);
+  return useMemo(
+    () => ({
+      ...state,
+      exchange,
+      execute,
+    }),
+    [state, exchange, execute],
+  );
 }
