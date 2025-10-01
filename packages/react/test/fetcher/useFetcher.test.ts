@@ -145,4 +145,29 @@ describe('useFetcher', () => {
 
     expect(result.current.result).toBe(mockResult2);
   });
+
+  it('should abort ongoing request when component unmounts', async () => {
+    const mockResult = 'success data';
+    mockExchange.extractResult.mockResolvedValue(mockResult);
+
+    // Mock AbortController
+    const mockAbort = vi.fn();
+    global.AbortController = vi.fn().mockImplementation(() => ({
+      abort: mockAbort,
+    }));
+
+    const { result, unmount } = renderHook(() => useFetcher<string>());
+
+    const request = { url: '/test' };
+
+    // Start a request
+    act(() => {
+      result.current.execute(request);
+    });
+
+    // Unmount the component, should abort the request
+    unmount();
+
+    expect(mockAbort).toHaveBeenCalled();
+  });
 });

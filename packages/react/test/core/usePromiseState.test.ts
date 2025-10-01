@@ -147,4 +147,67 @@ describe('usePromiseState', () => {
     expect(result.current.result).toBe('async success');
     expect(mockOnSuccess).toHaveBeenCalledWith('async success');
   });
+
+  it('should handle onSuccess callback errors gracefully', async () => {
+    const callbackError = new Error('callback failed');
+    const mockOnSuccess = vi.fn().mockRejectedValue(callbackError);
+
+    // Spy on console.warn to verify it's called
+    const consoleWarnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => {
+      });
+
+    const { result } = renderHook(() =>
+      usePromiseState<string>({
+        onSuccess: mockOnSuccess,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.setSuccess('test result');
+    });
+
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
+    expect(result.current.result).toBe('test result');
+    expect(mockOnSuccess).toHaveBeenCalledWith('test result');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      'PromiseState onSuccess callback error:',
+      callbackError,
+    );
+
+    consoleWarnSpy.mockRestore();
+  });
+
+  it('should handle onError callback errors gracefully', async () => {
+    const callbackError = new Error('callback failed');
+    const mockOnError = vi.fn().mockRejectedValue(callbackError);
+    const stateError = new Error('state error');
+
+    // Spy on console.warn to verify it's called
+    const consoleWarnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => {
+      });
+
+    const { result } = renderHook(() =>
+      usePromiseState<string>({
+        onError: mockOnError,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.setError(stateError);
+    });
+
+    expect(result.current.status).toBe(PromiseStatus.ERROR);
+    expect(result.current.error).toBe(stateError);
+    expect(mockOnError).toHaveBeenCalledWith(stateError);
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      'PromiseState onError callback error:',
+      callbackError,
+    );
+
+    consoleWarnSpy.mockRestore();
+  });
 });
