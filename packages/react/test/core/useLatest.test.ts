@@ -16,23 +16,23 @@ import { renderHook } from '@testing-library/react';
 import { useLatest } from '../../src/core';
 
 describe('useLatest', () => {
-  it('should return the initial value', () => {
+  it('should return a ref with the initial value', () => {
     const { result } = renderHook(() => useLatest(42));
-    expect(result.current).toBe(42);
+    expect(result.current.current).toBe(42);
   });
 
-  it('should return the latest value after updates', () => {
+  it('should return a ref with the latest value after updates', () => {
     const { result, rerender } = renderHook(({ value }) => useLatest(value), {
       initialProps: { value: 1 },
     });
 
-    expect(result.current).toBe(1);
+    expect(result.current.current).toBe(1);
 
     rerender({ value: 2 });
-    expect(result.current).toBe(2);
+    expect(result.current.current).toBe(2);
 
     rerender({ value: 3 });
-    expect(result.current).toBe(3);
+    expect(result.current.current).toBe(3);
   });
 
   it('should work with object values', () => {
@@ -40,10 +40,10 @@ describe('useLatest', () => {
       initialProps: { value: { key: 'initial' } },
     });
 
-    expect(result.current).toEqual({ key: 'initial' });
+    expect(result.current.current).toEqual({ key: 'initial' });
 
     rerender({ value: { key: 'updated' } });
-    expect(result.current).toEqual({ key: 'updated' });
+    expect(result.current.current).toEqual({ key: 'updated' });
   });
 
   it('should work with array values', () => {
@@ -51,9 +51,9 @@ describe('useLatest', () => {
       initialProps: { value: [1, 2] },
     });
 
-    expect(result.current).toEqual([1, 2]);
+    expect(result.current.current).toEqual([1, 2]);
 
     rerender({ value: [3, 4, 5] });
-    expect(result.current).toEqual([3, 4, 5]);
+    expect(result.current.current).toEqual([3, 4, 5]);
   });
 });

@@ -13,6 +13,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useMountedState } from 'react-use';
+import { useLatest } from './useLatest';
 
 /**
  * Enumeration of possible promise execution states
@@ -61,7 +62,8 @@ export interface UsePromiseStateOptions<R, E = unknown> {
  * Return type for usePromiseState hook
  * @template R - The type of result
  */
-export interface UsePromiseStateReturn<R, E = unknown> extends PromiseState<R, E> {
+export interface UsePromiseStateReturn<R, E = unknown>
+  extends PromiseState<R, E> {
   /** Set status to LOADING */
   setLoading: () => void;
   /** Set status to SUCCESS with result */
@@ -111,8 +113,7 @@ export function usePromiseState<R = unknown, E = unknown>(
   const [result, setResult] = useState<R | undefined>(undefined);
   const [error, setErrorState] = useState<E | undefined>(undefined);
   const isMounted = useMountedState();
-  const optionsRef = useRef(options);
-  optionsRef.current = options;
+  const latestOptions = useLatest(options);
   const setLoadingFn = useCallback(() => {
     if (isMounted()) {
       setStatus(PromiseStatus.LOADING);
@@ -126,7 +127,7 @@ export function usePromiseState<R = unknown, E = unknown>(
         setResult(result);
         setStatus(PromiseStatus.SUCCESS);
         setErrorState(undefined);
-        optionsRef.current?.onSuccess?.(result);
+        latestOptions.current?.onSuccess?.(result);
       }
     },
     [isMounted],
@@ -138,7 +139,7 @@ export function usePromiseState<R = unknown, E = unknown>(
         setErrorState(error);
         setStatus(PromiseStatus.ERROR);
         setResult(undefined);
-        optionsRef.current?.onError?.(error);
+        latestOptions.current?.onError?.(error);
       }
     },
     [isMounted],
@@ -151,14 +152,17 @@ export function usePromiseState<R = unknown, E = unknown>(
       setResult(undefined);
     }
   }, [isMounted]);
-  return useMemo(() => ({
-    status,
-    loading: status === PromiseStatus.LOADING,
-    result,
-    error,
-    setLoading: setLoadingFn,
-    setSuccess: setSuccessFn,
-    setError: setErrorFn,
-    setIdle: setIdleFn,
-  }), [status, result, error, setLoadingFn, setSuccessFn, setErrorFn, setIdleFn]);
+  return useMemo(
+    () => ({
+      status,
+      loading: status === PromiseStatus.LOADING,
+      result,
+      error,
+      setLoading: setLoadingFn,
+      setSuccess: setSuccessFn,
+      setError: setErrorFn,
+      setIdle: setIdleFn,
+    }),
+    [status, result, error, setLoadingFn, setSuccessFn, setErrorFn, setIdleFn],
+  );
 }
