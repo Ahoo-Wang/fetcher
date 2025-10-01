@@ -20,6 +20,12 @@ import {
 } from './usePromiseState';
 import { useRequestId } from './useRequestId';
 
+
+export interface UseExecutePromiseOptions<R, E = unknown> extends UsePromiseStateOptions<R, E> {
+
+  propagateError?: boolean;
+}
+
 /**
  * Type definition for a function that returns a Promise
  * @template R - The type of value the promise will resolve to
@@ -76,7 +82,7 @@ export interface UseExecutePromiseReturn<R, E = unknown>
  * ```
  */
 export function useExecutePromise<R = unknown, E = unknown>(
-  options?: UsePromiseStateOptions<R, E>,
+  options?: UseExecutePromiseOptions<R, E>,
 ): UseExecutePromiseReturn<R, E> {
   const state = usePromiseState<R, E>(options);
   const isMounted = useMounted();
