@@ -127,7 +127,7 @@ export function useFetcher<R, E = unknown>(
         }
       }
     },
-    [currentFetcher, isMounted, state, requestId],
+    [currentFetcher, isMounted, latestOptions, state, requestId],
   );
 
   useEffect(() => {

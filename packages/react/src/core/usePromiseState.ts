@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMountedState } from 'react-use';
 import { useLatest } from './useLatest';
 
@@ -130,7 +130,7 @@ export function usePromiseState<R = unknown, E = unknown>(
         latestOptions.current?.onSuccess?.(result);
       }
     },
-    [isMounted],
+    [isMounted, latestOptions],
   );
 
   const setErrorFn = useCallback(
@@ -142,7 +142,7 @@ export function usePromiseState<R = unknown, E = unknown>(
         latestOptions.current?.onError?.(error);
       }
     },
-    [isMounted],
+    [isMounted, latestOptions],
   );
 
   const setIdleFn = useCallback(() => {
