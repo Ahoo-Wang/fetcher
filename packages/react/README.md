@@ -166,8 +166,14 @@ const MyComponent = () => {
   // Using options supplier for dynamic configuration
   const optionsSupplier = () => ({
     initialStatus: PromiseStatus.IDLE,
-    onSuccess: (result: string) => console.log('Success:', result),
-    onError: (error) => console.error('Error:', error),
+    onSuccess: async (result: string) => {
+      await saveToAnalytics(result);
+      console.log('Success:', result);
+    },
+    onError: async (error) => {
+      await logErrorToServer(error);
+      console.error('Error:', error);
+    },
   });
 
   const { setSuccess, setError } = usePromiseState<string>(optionsSupplier);
@@ -383,8 +389,8 @@ suppliers.
 
 - `options`: Configuration options or supplier function
     - `initialStatus`: Initial status, defaults to IDLE
-    - `onSuccess`: Callback invoked on success
-    - `onError`: Callback invoked on error
+    - `onSuccess`: Callback invoked on success (can be async)
+    - `onError`: Callback invoked on error (can be async)
 
 **Returns:**
 

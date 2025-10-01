@@ -163,8 +163,14 @@ const MyComponent = () => {
   // 使用选项供应商进行动态配置
   const optionsSupplier = () => ({
     initialStatus: PromiseStatus.IDLE,
-    onSuccess: (result: string) => console.log('成功:', result),
-    onError: (error) => console.error('错误:', error),
+    onSuccess: async (result: string) => {
+      await saveToAnalytics(result);
+      console.log('成功:', result);
+    },
+    onError: async (error) => {
+      await logErrorToServer(error);
+      console.error('错误:', error);
+    },
   });
 
   const { setSuccess, setError } = usePromiseState<string>(optionsSupplier);
@@ -372,8 +378,8 @@ function usePromiseState<R = unknown, E = unknown>(
 
 - `options`: 配置选项或供应商函数
     - `initialStatus`: 初始状态，默认为 IDLE
-    - `onSuccess`: 成功时调用的回调
-    - `onError`: 错误时调用的回调
+    - `onSuccess`: 成功时调用的回调（可以是异步的）
+    - `onError`: 错误时调用的回调（可以是异步的）
 
 **返回值:**
 

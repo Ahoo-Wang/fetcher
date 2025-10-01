@@ -62,14 +62,14 @@ describe('usePromiseState', () => {
     expect(result.current.error).toBeUndefined();
   });
 
-  it('should set success state and call onSuccess callback', () => {
+  it('should set success state and call onSuccess callback', async () => {
     const mockResult = 'test result';
     const { result } = renderHook(() =>
       usePromiseState<string>({ onSuccess: mockOnSuccess }),
     );
 
-    act(() => {
-      result.current.setSuccess(mockResult);
+    await act(async () => {
+      await result.current.setSuccess(mockResult);
     });
 
     expect(result.current.status).toBe(PromiseStatus.SUCCESS);
@@ -79,14 +79,14 @@ describe('usePromiseState', () => {
     expect(mockOnSuccess).toHaveBeenCalledWith(mockResult);
   });
 
-  it('should set error state and call onError callback', () => {
+  it('should set error state and call onError callback', async () => {
     const mockError = new Error('test error');
     const { result } = renderHook(() =>
       usePromiseState<string>({ onError: mockOnError }),
     );
 
-    act(() => {
-      result.current.setError(mockError);
+    await act(async () => {
+      await result.current.setError(mockError);
     });
 
     expect(result.current.status).toBe(PromiseStatus.ERROR);
@@ -96,12 +96,12 @@ describe('usePromiseState', () => {
     expect(mockOnError).toHaveBeenCalledWith(mockError);
   });
 
-  it('should set idle state', () => {
+  it('should set idle state', async () => {
     const { result } = renderHook(() => usePromiseState<string>());
 
     // First set to success
-    act(() => {
-      result.current.setSuccess('test');
+    await act(async () => {
+      await result.current.setSuccess('test');
     });
     expect(result.current.status).toBe(PromiseStatus.SUCCESS);
 
@@ -116,17 +116,35 @@ describe('usePromiseState', () => {
     expect(result.current.error).toBeUndefined();
   });
 
-  it('should handle different result and error types', () => {
+  it('should handle different result and error types', async () => {
     const { result } = renderHook(() => usePromiseState<number>());
 
-    act(() => {
-      result.current.setSuccess(42);
+    await act(async () => {
+      await result.current.setSuccess(42);
     });
     expect(result.current.result).toBe(42);
 
-    act(() => {
-      result.current.setError('custom error');
+    await act(async () => {
+      await result.current.setError('custom error');
     });
     expect(result.current.error).toBe('custom error');
+  });
+
+  it('should support async callbacks', async () => {
+    const mockOnSuccess = vi.fn().mockResolvedValue(undefined);
+
+    const { result } = renderHook(() =>
+      usePromiseState<string>({
+        onSuccess: mockOnSuccess,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.setSuccess('async success');
+    });
+
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
+    expect(result.current.result).toBe('async success');
+    expect(mockOnSuccess).toHaveBeenCalledWith('async success');
   });
 });
