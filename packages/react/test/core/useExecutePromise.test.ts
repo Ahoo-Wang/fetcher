@@ -64,7 +64,8 @@ describe('useExecutePromise', () => {
     const { result } = renderHook(() => useExecutePromise<string>());
 
     await act(async () => {
-      await expect(result.current.execute(mockProvider)).rejects.toThrow(error);
+      const resolvedValue = await result.current.execute(mockProvider);
+      expect(resolvedValue).toBe(error);
     });
 
     expect(mockProvider).toHaveBeenCalled();
