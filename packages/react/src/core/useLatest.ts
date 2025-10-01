@@ -14,11 +14,11 @@
 import { useRef } from 'react';
 
 /**
- * A React hook that returns the latest value, useful for accessing the current value in async callbacks.
+ * A React hook that returns a ref containing the latest value, useful for accessing the current value in async callbacks.
  *
  * @template T - The type of the value
  * @param value - The value to track
- * @returns The latest value
+ * @returns A ref object containing the latest value
  *
  * @example
  * ```typescript
@@ -43,8 +43,8 @@ import { useRef } from 'react';
  * };
  * ```
  */
-export function useLatest<T>(value: T): T {
+export function useLatest<T>(value: T) {
   const ref = useRef(value);
   ref.current = value;
-  return ref.current;
+  return ref;
 }
