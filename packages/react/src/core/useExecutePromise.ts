@@ -13,7 +13,11 @@
 
 import { useCallback, useMemo } from 'react';
 import { useMountedState } from 'react-use';
-import { usePromiseState, PromiseState, UsePromiseStateOptions } from './usePromiseState';
+import {
+  usePromiseState,
+  PromiseState,
+  UsePromiseStateOptions,
+} from './usePromiseState';
 import { useRequestId } from './useRequestId';
 
 /**
@@ -71,7 +75,9 @@ export interface UseExecutePromiseReturn<R, E = unknown>
  * }
  * ```
  */
-export function useExecutePromise<R = unknown, E = unknown>(options?: UsePromiseStateOptions<R, E>): UseExecutePromiseReturn<R, E> {
+export function useExecutePromise<R = unknown, E = unknown>(
+  options?: UsePromiseStateOptions<R, E>,
+): UseExecutePromiseReturn<R, E> {
   const state = usePromiseState<R, E>(options);
   const isMounted = useMountedState();
   const requestId = useRequestId();
@@ -93,12 +99,12 @@ export function useExecutePromise<R = unknown, E = unknown>(options?: UsePromise
         const data = await promise;
 
         if (isMounted() && requestId.isLatest(currentRequestId)) {
-          state.setSuccess(data);
+          await state.setSuccess(data);
         }
         return data;
       } catch (err) {
         if (isMounted() && requestId.isLatest(currentRequestId)) {
-          state.setError(err as E);
+          await state.setError(err as E);
         }
         throw err;
       }

@@ -109,7 +109,7 @@ export function useFetcher<R, E = unknown>(
         }
         const result = await exchange.extractResult<R>();
         if (isMounted() && requestId.isLatest(currentRequestId)) {
-          state.setSuccess(result);
+          await state.setSuccess(result);
         }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
@@ -119,7 +119,7 @@ export function useFetcher<R, E = unknown>(
           return;
         }
         if (isMounted() && requestId.isLatest(currentRequestId)) {
-          state.setError(error as E);
+          await state.setError(error as E);
         }
       } finally {
         if (abortControllerRef.current === request.abortController) {

@@ -37,10 +37,10 @@ export interface PromiseState<R, E = unknown> {
 }
 
 export interface PromiseStateCallbacks<R, E = unknown> {
-  /** Callback invoked on success */
-  onSuccess?: (result: R) => void;
-  /** Callback invoked on error */
-  onError?: (error: E) => void;
+  /** Callback invoked on success (can be async) */
+  onSuccess?: (result: R) => void | Promise<void>;
+  /** Callback invoked on error (can be async) */
+  onError?: (error: E) => void | Promise<void>;
 }
 
 /**
@@ -52,11 +52,15 @@ export interface PromiseStateCallbacks<R, E = unknown> {
  * const options: UsePromiseStateOptions<string> = {
  *   initialStatus: PromiseStatus.IDLE,
  *   onSuccess: (result) => console.log('Success:', result),
- *   onError: (error) => console.error('Error:', error),
+ *   onError: async (error) => {
+ *     await logErrorToServer(error);
+ *     console.error('Error:', error);
+ *   },
  * };
  * ```
  */
-export interface UsePromiseStateOptions<R, E = unknown> extends PromiseStateCallbacks<R, E> {
+export interface UsePromiseStateOptions<R, E = unknown>
+  extends PromiseStateCallbacks<R, E> {
   /** Initial status, defaults to IDLE */
   initialStatus?: PromiseStatus;
 }
@@ -70,9 +74,9 @@ export interface UsePromiseStateReturn<R, E = unknown>
   /** Set status to LOADING */
   setLoading: () => void;
   /** Set status to SUCCESS with result */
-  setSuccess: (result: R) => void;
+  setSuccess: (result: R) => Promise<void>;
   /** Set status to ERROR with error */
-  setError: (error: E) => void;
+  setError: (error: E) => Promise<void>;
   /** Set status to IDLE */
   setIdle: () => void;
 }
@@ -125,24 +129,34 @@ export function usePromiseState<R = unknown, E = unknown>(
   }, [isMounted]);
 
   const setSuccessFn = useCallback(
-    (result: R) => {
+    async (result: R) => {
       if (isMounted()) {
         setResult(result);
         setStatus(PromiseStatus.SUCCESS);
         setErrorState(undefined);
-        latestOptions.current?.onSuccess?.(result);
+        try {
+          await latestOptions.current?.onSuccess?.(result);
+        } catch (callbackError) {
+          // Log callback errors but don't affect state
+          console.warn('PromiseState onSuccess callback error:', callbackError);
+        }
       }
     },
     [isMounted, latestOptions],
   );
 
   const setErrorFn = useCallback(
-    (error: E) => {
+    async (error: E) => {
       if (isMounted()) {
         setErrorState(error);
         setStatus(PromiseStatus.ERROR);
         setResult(undefined);
-        latestOptions.current?.onError?.(error);
+        try {
+          await latestOptions.current?.onError?.(error);
+        } catch (callbackError) {
+          // Log callback errors but don't affect state
+          console.warn('PromiseState onError callback error:', callbackError);
+        }
       }
     },
     [isMounted, latestOptions],
