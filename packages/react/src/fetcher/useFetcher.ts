@@ -20,7 +20,7 @@ import {
   RequestOptions,
 } from '@ahoo-wang/fetcher';
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
-import { useMountedState } from 'react-use';
+import { useMounted } from '../core/useMounted';
 import {
   PromiseState,
   useLatest,
@@ -80,7 +80,7 @@ export function useFetcher<R, E = unknown>(
   const [exchange, setExchange] = useState<FetchExchange | undefined>(
     undefined,
   );
-  const isMounted = useMountedState();
+  const isMounted = useMounted();
   const abortControllerRef = useRef<AbortController | undefined>();
   const requestId = useRequestId();
   const latestOptions = useLatest(options);

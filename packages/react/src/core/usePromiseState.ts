@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
-import { useMountedState } from 'react-use';
+import { useMounted } from './useMounted';
 import { useLatest } from './useLatest';
 
 /**
@@ -119,7 +119,7 @@ export function usePromiseState<R = unknown, E = unknown>(
   );
   const [result, setResult] = useState<R | undefined>(undefined);
   const [error, setErrorState] = useState<E | undefined>(undefined);
-  const isMounted = useMountedState();
+  const isMounted = useMounted();
   const latestOptions = useLatest(options);
   const setLoadingFn = useCallback(() => {
     if (isMounted()) {
