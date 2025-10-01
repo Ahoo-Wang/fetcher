@@ -19,8 +19,8 @@ import {
   getFetcher,
   RequestOptions,
 } from '@ahoo-wang/fetcher';
-import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { useMounted } from '../core/useMounted';
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import {
   PromiseState,
   useLatest,

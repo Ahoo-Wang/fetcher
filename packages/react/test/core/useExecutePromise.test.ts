@@ -17,6 +17,9 @@ import { renderHook, act } from '@testing-library/react';
 // Import before mocks
 import { useExecutePromise, PromiseStatus } from '../../src';
 
+// Mock useMounted to always return true (component is mounted)
+vi.mock('../../src/core/useMounted', () => ({ useMounted: () => () => true }));
+
 describe('useExecutePromise', () => {
   beforeEach(() => {
     vi.clearAllMocks();
