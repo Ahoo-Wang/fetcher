@@ -36,7 +36,7 @@ export interface PromiseState<R, E = unknown> {
   error: E | undefined;
 }
 
-export interface UsePromiseCallback<R, E = unknown> {
+export interface PromiseStateCallbacks<R, E = unknown> {
   /** Callback invoked on success */
   onSuccess?: (result: R) => void;
   /** Callback invoked on error */
@@ -56,7 +56,7 @@ export interface UsePromiseCallback<R, E = unknown> {
  * };
  * ```
  */
-export interface UsePromiseStateOptions<R, E = unknown> extends UsePromiseCallback<R, E> {
+export interface UsePromiseStateOptions<R, E = unknown> extends PromiseStateCallbacks<R, E> {
   /** Initial status, defaults to IDLE */
   initialStatus?: PromiseStatus;
 }
