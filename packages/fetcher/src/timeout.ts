@@ -124,7 +124,7 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
 
   // If the request already has a signal, delegate to native fetch to avoid conflicts
   if (request.signal) {
-    return fetch(url, requestInit);
+    return await fetch(url, requestInit);
   }
 
   // Extract timeout from request
@@ -133,7 +133,7 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
     if (request.abortController) {
       requestInit.signal = request.abortController.signal;
     }
-    return fetch(url, requestInit);
+    return await fetch(url, requestInit);
   }
 
   // Create AbortController for fetch request cancellation
