@@ -39,7 +39,7 @@ import { useRef, useEffect, useCallback } from 'react';
  */
 export function useMounted() {
   const isMountedRef = useRef(false);
-  const isMounted = useCallback(() => isMountedRef.current, []);
+  const isMountedFn = useCallback(() => isMountedRef.current, []);
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -47,5 +47,5 @@ export function useMounted() {
     };
   }, []);
 
-  return isMounted;
+  return isMountedFn;
 }
