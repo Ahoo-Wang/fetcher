@@ -13,11 +13,25 @@ automatic re-rendering and loading states.
 
 ## Features
 
-- 🔄 **React Hooks**: Provides React hooks for seamless integration with Fetcher
-- 🌐 **TypeScript Support**: Full TypeScript support with comprehensive type definitions
-- 🚀 **Modern**: Built with modern React patterns and best practices
-- 🧠 **Smart Caching**: Built-in caching and automatic revalidation
-- ⚡ **Promise State Management**: Hooks for managing async operations and promise states
+- 🚀 **Data Fetching**: Complete HTTP client integration with React hooks
+- 🔄 **Promise State Management**: Advanced async operation handling with race condition protection
+- 🛡️ **Type Safety**: Full TypeScript support with comprehensive type definitions
+- ⚡ **Performance**: Optimized with useMemo, useCallback, and smart dependency management
+- 🎯 **Options Flexibility**: Support for both static options and dynamic option suppliers
+- 🔧 **Developer Experience**: Built-in loading states, error handling, and automatic re-rendering
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+    - [useFetcher Hook](#usefetcher-hook)
+    - [useExecutePromise Hook](#useexecutepromise-hook)
+    - [usePromiseState Hook](#usepromisestate-hook)
+    - [useRequestId Hook](#userequestid-hook)
+    - [useLatest Hook](#uselatest-hook)
+    - [useKeyStorage Hook](#usekeystorage-hook)
+- [API Reference](#api-reference)
+- [License](#license)
 
 ## Installation
 
@@ -25,30 +39,53 @@ automatic re-rendering and loading states.
 npm install @ahoo-wang/fetcher-react
 ```
 
-## Usage
+## Quick Start
 
-### usePromiseState Hook
-
-The `usePromiseState` hook provides state management for promise operations without execution logic.
+Get started with `@ahoo-wang/fetcher-react` in just a few lines:
 
 ```typescript jsx
-import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
+import { useFetcher } from '@ahoo-wang/fetcher-react';
 
-const MyComponent = () => {
-  const { status, loading, result, error, setSuccess, setError, setIdle } = usePromiseState<string>();
-
-  const handleSuccess = () => setSuccess('Data loaded');
-  const handleError = () => setError(new Error('Failed to load'));
+function App() {
+  const { loading, result, error, execute } = useFetcher();
 
   return (
     <div>
-      <button onClick={handleSuccess}>Set Success</button>
-      <button onClick={handleError}>Set Error</button>
-      <button onClick={setIdle}>Reset</button>
-      <p>Status: {status}</p>
+      <button onClick={() => execute({ url: '/api/data', method: 'GET' })}>
+        Fetch Data
+      </button>
       {loading && <p>Loading...</p>}
-      {result && <p>Result: {result}</p>}
+      {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
       {error && <p>Error: {error.message}</p>}
+    </div>
+  );
+}
+```
+
+## Usage
+
+### useFetcher Hook
+
+The `useFetcher` hook provides complete data fetching capabilities with automatic state management, race condition
+protection, and flexible configuration options.
+
+```typescript jsx
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { loading, error, result, execute } = useFetcher<string>();
+
+  const handleFetch = () => {
+    execute({ url: '/api/users', method: 'GET' });
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <pre>{JSON.stringify(result, null, 2)}</pre>
+      <button onClick={handleFetch}>Fetch Data</button>
     </div>
   );
 };
@@ -56,8 +93,8 @@ const MyComponent = () => {
 
 ### useExecutePromise Hook
 
-The `useExecutePromise` hook manages asynchronous operations with automatic state handling and built-in race condition
-protection.
+The `useExecutePromise` hook manages asynchronous operations with automatic state handling, built-in race condition
+protection, and support for promise state options.
 
 ```typescript jsx
 import { useExecutePromise } from '@ahoo-wang/fetcher-react';
@@ -92,27 +129,53 @@ const MyComponent = () => {
 };
 ```
 
-### useLatest Hook
+### usePromiseState Hook
 
-The `useLatest` hook returns the latest value, useful for accessing the current value in async callbacks.
+The `usePromiseState` hook provides state management for promise operations without execution logic. Supports both
+static options and dynamic option suppliers.
 
 ```typescript jsx
-import { useLatest } from '@ahoo-wang/fetcher-react';
+import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const [count, setCount] = useState(0);
-  const latestCount = useLatest(count);
+  const { status, loading, result, error, setSuccess, setError, setIdle } = usePromiseState<string>();
 
-  const handleAsync = async () => {
-    await someAsyncOperation();
-    console.log('Latest count:', latestCount.current); // Always the latest
-  };
+  const handleSuccess = () => setSuccess('Data loaded');
+  const handleError = () => setError(new Error('Failed to load'));
 
   return (
     <div>
-      <p>Count: {count}</p>
-      <button onClick={() => setCount(c => c + 1)}>Increment</button>
-      <button onClick={handleAsync}>Async Log</button>
+      <button onClick={handleSuccess}>Set Success</button>
+      <button onClick={handleError}>Set Error</button>
+      <button onClick={setIdle}>Reset</button>
+      <p>Status: {status}</p>
+      {loading && <p>Loading...</p>}
+      {result && <p>Result: {result}</p>}
+      {error && <p>Error: {error.message}</p>}
+    </div>
+  );
+};
+```
+
+#### usePromiseState with Options Supplier
+
+```typescript jsx
+import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  // Using options supplier for dynamic configuration
+  const optionsSupplier = () => ({
+    initialStatus: PromiseStatus.IDLE,
+    onSuccess: (result: string) => console.log('Success:', result),
+    onError: (error) => console.error('Error:', error),
+  });
+
+  const { setSuccess, setError } = usePromiseState<string>(optionsSupplier);
+
+  return (
+    <div>
+      <button onClick={() => setSuccess('Dynamic success!')}>Set Success</button>
+      <button onClick={() => setError(new Error('Dynamic error!'))}>Set Error</button>
     </div>
   );
 };
@@ -153,27 +216,28 @@ const MyComponent = () => {
 };
 ```
 
-### useFetcher Hook
+### useLatest Hook
 
-The `useFetcher` hook provides data fetching capabilities with automatic state management.
+The `useLatest` hook returns a ref containing the latest value, useful for accessing the current value in async
+callbacks.
 
 ```typescript jsx
-import { useFetcher } from '@ahoo-wang/fetcher-react';
+import { useLatest } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const { loading, error, result, execute } = useFetcher<string>();
+  const [count, setCount] = useState(0);
+  const latestCount = useLatest(count);
 
-  const handleFetch = () => {
-    execute({ url: '/api/users', method: 'GET' });
+  const handleAsync = async () => {
+    await someAsyncOperation();
+    console.log('Latest count:', latestCount.current); // Always the latest
   };
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <div>
-      <pre>{JSON.stringify(result, null, 2)}</pre>
-      <button onClick={handleFetch}>Fetch Data</button>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(c => c + 1)}>Increment</button>
+      <button onClick={handleAsync}>Async Log</button>
     </div>
   );
 };
@@ -230,19 +294,94 @@ const [user, setUser] = useKeyStorage(userStorage);
 
 ## API Reference
 
-### usePromiseState
+### useFetcher
 
 ```typescript
-function usePromiseState<R = unknown>(
-  options?: UsePromiseStateOptions<R>,
-): UsePromiseStateReturn<R>;
+function useFetcher<R = unknown, E = unknown>(
+  options?: UseFetcherOptions<R, E> | UseFetcherOptionsSupplier<R, E>,
+): UseFetcherReturn<R, E>;
 ```
 
-A React hook for managing promise state without execution logic.
+A React hook for managing asynchronous fetch operations with proper state handling, race condition protection, and
+flexible configuration.
+
+**Type Parameters:**
+
+- `R`: The type of the result
+- `E`: The type of the error (defaults to `unknown`)
+
+**Parameters:**
+
+- `options`: Configuration options or supplier function
+    - `fetcher`: Custom fetcher instance to use. Defaults to the default fetcher.
+    - `initialStatus`: Initial status, defaults to IDLE
+    - `onSuccess`: Callback invoked on success
+    - `onError`: Callback invoked on error
+
+**Returns:**
+
+An object containing:
+
+- `status`: Current status (IDLE, LOADING, SUCCESS, ERROR)
+- `loading`: Indicates if currently loading
+- `result`: The result value
+- `error`: The error value
+- `exchange`: The FetchExchange object representing the ongoing fetch operation
+- `execute`: Function to execute a fetch request
+
+### useExecutePromise
+
+```typescript
+function useExecutePromise<R = unknown, E = unknown>(
+  options?: UseExecutePromiseOptions<R, E>,
+): UseExecutePromiseReturn<R, E>;
+```
+
+A React hook for managing asynchronous operations with proper state handling, race condition protection, and promise
+state options.
+
+**Type Parameters:**
+
+- `R`: The type of the result
+- `E`: The type of the error (defaults to `unknown`)
 
 **Parameters:**
 
 - `options`: Configuration options
+    - `initialStatus`: Initial status, defaults to IDLE
+    - `onSuccess`: Callback invoked on success
+    - `onError`: Callback invoked on error
+
+**Returns:**
+
+An object containing:
+
+- `status`: Current status (IDLE, LOADING, SUCCESS, ERROR)
+- `loading`: Indicates if currently loading
+- `result`: The result value
+- `error`: The error value
+- `execute`: Function to execute a promise supplier or promise
+- `reset`: Function to reset the state to initial values
+
+### usePromiseState
+
+```typescript
+function usePromiseState<R = unknown, E = unknown>(
+  options?: UsePromiseStateOptions<R, E> | UsePromiseStateOptionsSupplier<R, E>,
+): UsePromiseStateReturn<R, E>;
+```
+
+A React hook for managing promise state without execution logic. Supports both static options and dynamic option
+suppliers.
+
+**Type Parameters:**
+
+- `R`: The type of the result
+- `E`: The type of the error (defaults to `unknown`)
+
+**Parameters:**
+
+- `options`: Configuration options or supplier function
     - `initialStatus`: Initial status, defaults to IDLE
     - `onSuccess`: Callback invoked on success
     - `onError`: Callback invoked on error
@@ -260,52 +399,13 @@ An object containing:
 - `setError`: Set status to ERROR with error
 - `setIdle`: Set status to IDLE
 
-### useExecutePromise
-
-```typescript
-function useExecutePromise<R = unknown>(): UseExecutePromiseReturn<R>;
-```
-
-A React hook for managing asynchronous operations with proper state handling.
-
-**Returns:**
-
-An object containing:
-
-- `status`: Current status
-- `loading`: Indicates if currently loading
-- `result`: The result value
-- `error`: The error value
-- `execute`: Function to execute a promise supplier or promise
-- `reset`: Function to reset the state to initial values
-
-### useLatest
-
-```typescript
-function useLatest<T>(value: T): T;
-```
-
-A React hook that returns the latest value, useful for accessing the current value in async callbacks.
-
-**Type Parameters:**
-
-- `T`: The type of the value
-
-**Parameters:**
-
-- `value`: The value to track
-
-**Returns:**
-
-The latest value
-
 ### useRequestId
 
 ```typescript
 function useRequestId(): UseRequestIdReturn;
 ```
 
-A React hook for managing request IDs and race condition protection.
+A React hook for managing request IDs and race condition protection in async operations.
 
 **Returns:**
 
@@ -317,29 +417,26 @@ An object containing:
 - `invalidate`: Invalidate current request ID (mark as stale)
 - `reset`: Reset request ID counter
 
-### useFetcher
+### useLatest
 
 ```typescript
-function useFetcher<R>(options?: UseFetcherOptions): UseFetcherReturn<R>;
+function useLatest<T>(value: T): { current: T };
 ```
 
-A React hook for managing asynchronous fetch operations with proper state handling.
+A React hook that returns a ref object containing the latest value, useful for accessing the current value in async
+callbacks.
+
+**Type Parameters:**
+
+- `T`: The type of the value
 
 **Parameters:**
 
-- `options`: Configuration options
-    - `fetcher`: Custom fetcher instance to use. Defaults to the default fetcher.
+- `value`: The value to track
 
 **Returns:**
 
-An object containing:
-
-- `status`: Current status
-- `loading`: Indicates if currently loading
-- `result`: The result value
-- `error`: The error value
-- `exchange`: The FetchExchange object
-- `execute`: Function to execute a fetch request
+A ref object with a `current` property containing the latest value
 
 ### useKeyStorage
 
