@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { useMountedState } from 'react-use';
+import { useMounted } from './useMounted';
 import {
   usePromiseState,
   PromiseState,
@@ -79,7 +79,7 @@ export function useExecutePromise<R = unknown, E = unknown>(
   options?: UsePromiseStateOptions<R, E>,
 ): UseExecutePromiseReturn<R, E> {
   const state = usePromiseState<R, E>(options);
-  const isMounted = useMountedState();
+  const isMounted = useMounted();
   const requestId = useRequestId();
 
   /**

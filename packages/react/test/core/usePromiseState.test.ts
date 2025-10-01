@@ -17,9 +17,6 @@ import { renderHook, act } from '@testing-library/react';
 // Import before mocks
 import { usePromiseState, PromiseStatus } from '../../src';
 
-// Mock useMountedState to always return true (component is mounted)
-vi.mock('react-use/lib/useMountedState', () => () => () => true);
-
 describe('usePromiseState', () => {
   let mockOnSuccess: ReturnType<typeof vi.fn>;
   let mockOnError: ReturnType<typeof vi.fn>;

@@ -15,3 +15,4 @@ export * from './useExecutePromise';
 export * from './usePromiseState';
 export * from './useRequestId';
 export * from './useLatest';
+export * from './useMounted';
