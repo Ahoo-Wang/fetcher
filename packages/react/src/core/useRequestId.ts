@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 
 /**
  * Return type for useRequestId hook
@@ -90,12 +90,13 @@ export function useRequestId(): UseRequestIdReturn {
   const reset = useCallback((): void => {
     requestIdRef.current = 0;
   }, []);
-
-  return {
-    generate,
-    current,
-    isLatest,
-    invalidate,
-    reset,
-  };
+  return useMemo(() => {
+    return {
+      generate,
+      current,
+      isLatest,
+      invalidate,
+      reset,
+    };
+  }, [generate, current, isLatest, invalidate, reset]);
 }
