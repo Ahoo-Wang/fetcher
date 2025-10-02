@@ -97,6 +97,6 @@ export class RequestExecutor {
     if (endpointReturnType === EndpointReturnType.EXCHANGE) {
       return exchange;
     }
-    return exchange.extractResult();
+    return await exchange.extractResult();
   }
 }

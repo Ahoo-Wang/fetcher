@@ -168,7 +168,7 @@ export class Fetcher
       resultExtractor,
       attributes,
     });
-    return this.interceptors.exchange(exchange);
+    return await this.interceptors.exchange(exchange);
   }
 
   /**
@@ -194,7 +194,7 @@ export class Fetcher
     options?: RequestOptions,
   ): Promise<R> {
     const fetchExchange = await this.exchange(request, options);
-    return fetchExchange.extractResult();
+    return await fetchExchange.extractResult();
   }
 
   /**
@@ -224,7 +224,7 @@ export class Fetcher
       ...request,
       url,
     };
-    return this.request(
+    return await this.request(
       mergedRequest,
       mergeRequestOptions(DEFAULT_FETCH_OPTIONS, options),
     );
@@ -259,7 +259,7 @@ export class Fetcher
       url,
       method,
     };
-    return this.request(
+    return await this.request(
       mergedRequest,
       mergeRequestOptions(DEFAULT_FETCH_OPTIONS, options),
     );
@@ -287,7 +287,7 @@ export class Fetcher
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
     options?: RequestOptions,
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.GET, url, request, options);
+    return await this.methodFetch(HttpMethod.GET, url, request, options);
   }
 
   /**
@@ -311,7 +311,7 @@ export class Fetcher
     request: Omit<FetchRequestInit, 'method'> = {},
     options?: RequestOptions,
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.PUT, url, request, options);
+    return await this.methodFetch(HttpMethod.PUT, url, request, options);
   }
 
   /**
@@ -335,7 +335,7 @@ export class Fetcher
     request: Omit<FetchRequestInit, 'method'> = {},
     options?: RequestOptions,
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.POST, url, request, options);
+    return await this.methodFetch(HttpMethod.POST, url, request, options);
   }
 
   /**
@@ -359,7 +359,7 @@ export class Fetcher
     request: Omit<FetchRequestInit, 'method'> = {},
     options?: RequestOptions,
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.PATCH, url, request, options);
+    return await this.methodFetch(HttpMethod.PATCH, url, request, options);
   }
 
   /**
@@ -383,7 +383,7 @@ export class Fetcher
     request: Omit<FetchRequestInit, 'method'> = {},
     options?: RequestOptions,
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.DELETE, url, request, options);
+    return await this.methodFetch(HttpMethod.DELETE, url, request, options);
   }
 
   /**
@@ -408,7 +408,7 @@ export class Fetcher
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
     options?: RequestOptions,
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.HEAD, url, request, options);
+    return await this.methodFetch(HttpMethod.HEAD, url, request, options);
   }
 
   /**
@@ -433,7 +433,7 @@ export class Fetcher
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
     options?: RequestOptions,
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.OPTIONS, url, request, options);
+    return await this.methodFetch(HttpMethod.OPTIONS, url, request, options);
   }
 
   /**
@@ -456,6 +456,6 @@ export class Fetcher
     request: Omit<FetchRequestInit, 'method' | 'body'> = {},
     options?: RequestOptions,
   ): Promise<R> {
-    return this.methodFetch(HttpMethod.TRACE, url, request, options);
+    return await this.methodFetch(HttpMethod.TRACE, url, request, options);
   }
 }
