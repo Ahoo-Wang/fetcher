@@ -267,11 +267,11 @@ export class FetchExchange
    *
    * @returns The extracted result
    */
-  extractResult<R>(): R | Promise<R> {
+  async extractResult<R>(): Promise<R> {
     if (this.cachedExtractedResult !== undefined) {
-      return this.cachedExtractedResult;
+      return await this.cachedExtractedResult;
     }
     this.cachedExtractedResult = this.resultExtractor(this);
-    return this.cachedExtractedResult;
+    return await this.cachedExtractedResult;
   }
 }
