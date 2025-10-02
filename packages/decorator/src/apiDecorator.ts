@@ -132,12 +132,12 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   // Create request executor
 
   // Replace method with actual implementation
-  constructor.prototype[functionName] = function(...args: unknown[]) {
+  constructor.prototype[functionName] = async function(...args: unknown[]) {
     const requestExecutor: RequestExecutor = buildRequestExecutor(
       this,
       functionMetadata,
     );
-    return requestExecutor.execute(args);
+    return await requestExecutor.execute(args);
   };
 }
 
