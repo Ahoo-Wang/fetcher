@@ -19,7 +19,7 @@ import {
   getFetcher,
   RequestOptions,
 } from '@ahoo-wang/fetcher';
-import { useMounted } from '../core/useMounted';
+import { useMounted } from '../core';
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import {
   PromiseState,
