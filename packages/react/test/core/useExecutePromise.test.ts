@@ -64,7 +64,8 @@ describe('useExecutePromise', () => {
     const { result } = renderHook(() => useExecutePromise<string>());
 
     await act(async () => {
-      await expect(result.current.execute(mockProvider)).rejects.toThrow(error);
+      const resolvedValue = await result.current.execute(mockProvider);
+      expect(resolvedValue).toBe(error);
     });
 
     expect(mockProvider).toHaveBeenCalled();
@@ -167,5 +168,62 @@ describe('useExecutePromise', () => {
     // Since useMountedState is mocked to always return true, we'll skip this test for now
     // as the line is covered by the logic but hard to test with current mocking setup
     expect(true).toBe(true); // Placeholder test
+  });
+
+  it('should propagate error when propagateError is true', async () => {
+    const error = new Error('propagate error');
+    const mockProvider = vi.fn().mockRejectedValue(error);
+
+    const { result } = renderHook(() =>
+      useExecutePromise<string>({ propagateError: true }),
+    );
+
+    await act(async () => {
+      await expect(result.current.execute(mockProvider)).rejects.toThrow(error);
+    });
+
+    expect(mockProvider).toHaveBeenCalled();
+    expect(result.current.status).toBe(PromiseStatus.ERROR);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe(error);
+    expect(result.current.result).toBeUndefined();
+  });
+
+  it('should not propagate error when propagateError is false', async () => {
+    const error = new Error('do not propagate');
+    const mockProvider = vi.fn().mockRejectedValue(error);
+
+    const { result } = renderHook(() =>
+      useExecutePromise<string>({ propagateError: false }),
+    );
+
+    await act(async () => {
+      const resolvedValue = await result.current.execute(mockProvider);
+      expect(resolvedValue).toBe(error);
+    });
+
+    expect(mockProvider).toHaveBeenCalled();
+    expect(result.current.status).toBe(PromiseStatus.ERROR);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe(error);
+    expect(result.current.result).toBeUndefined();
+  });
+
+  it('should default to not propagate error when propagateError is undefined', async () => {
+    const error = new Error('default behavior');
+    const mockProvider = vi.fn().mockRejectedValue(error);
+
+    const { result } = renderHook(() => useExecutePromise<string>({}));
+
+    await act(async () => {
+      const resolvedValue = await result.current.execute(mockProvider);
+      expect(resolvedValue).toBe(error);
+    });
+
+    expect(mockProvider).toHaveBeenCalled();
+    expect(result.current.status).toBe(PromiseStatus.ERROR);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe(error);
+    expect(result.current.result).toBeUndefined();
   });
 });

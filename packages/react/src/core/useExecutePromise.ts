@@ -20,6 +20,16 @@ import {
 } from './usePromiseState';
 import { useRequestId } from './useRequestId';
 
+export interface UseExecutePromiseOptions<R, E = unknown>
+  extends UsePromiseStateOptions<R, E> {
+  /**
+   * Whether to propagate errors thrown by the promise.
+   * If true, the execute function will throw errors.
+   * If false (default), the execute function will return the error as the result instead of throwing.
+   */
+  propagateError?: boolean;
+}
+
 /**
  * Type definition for a function that returns a Promise
  * @template R - The type of value the promise will resolve to
@@ -32,8 +42,11 @@ export type PromiseSupplier<R> = () => Promise<R>;
  */
 export interface UseExecutePromiseReturn<R, E = unknown>
   extends PromiseState<R, E> {
-  /** Function to execute a promise supplier or promise */
-  execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<R>;
+  /**
+   * Function to execute a promise supplier or promise.
+   * Returns a promise that resolves to the result on success, or the error if propagateError is false.
+   */
+  execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<R | E>;
   /** Function to reset the state to initial values */
   reset: () => void;
 }
@@ -41,6 +54,8 @@ export interface UseExecutePromiseReturn<R, E = unknown>
 /**
  * A React hook for managing asynchronous operations with proper state handling
  * @template R - The type of the result value
+ * @template E - The type of the error value
+ * @param options - Configuration options for the hook
  * @returns An object containing the current state and control functions
  *
  * @example
@@ -73,10 +88,18 @@ export interface UseExecutePromiseReturn<R, E = unknown>
  *     </div>
  *   );
  * }
+ *
+ * // Example with propagateError set to true
+ * const { execute } = useExecutePromise<string>({ propagateError: true });
+ * try {
+ *   await execute(fetchData);
+ * } catch (err) {
+ *   console.error('Error occurred:', err);
+ * }
  * ```
  */
 export function useExecutePromise<R = unknown, E = unknown>(
-  options?: UsePromiseStateOptions<R, E>,
+  options?: UseExecutePromiseOptions<R, E>,
 ): UseExecutePromiseReturn<R, E> {
   const state = usePromiseState<R, E>(options);
   const isMounted = useMounted();
@@ -85,10 +108,10 @@ export function useExecutePromise<R = unknown, E = unknown>(
   /**
    * Execute a promise supplier or promise and manage its state
    * @param input - A function that returns a Promise or a Promise to be executed
-   * @returns A Promise that resolves with the result of the executed promise
+   * @returns A Promise that resolves with the result on success, or the error if propagateError is false
    */
   const execute = useCallback(
-    async (input: PromiseSupplier<R> | Promise<R>): Promise<R> => {
+    async (input: PromiseSupplier<R> | Promise<R>): Promise<R | E> => {
       if (!isMounted()) {
         throw new Error('Component is unmounted');
       }
@@ -106,10 +129,13 @@ export function useExecutePromise<R = unknown, E = unknown>(
         if (isMounted() && requestId.isLatest(currentRequestId)) {
           await state.setError(err as E);
         }
-        throw err;
+        if (options?.propagateError) {
+          throw err;
+        }
+        return err as E;
       }
     },
-    [state, isMounted, requestId],
+    [state, isMounted, requestId, options],
   );
 
   /**

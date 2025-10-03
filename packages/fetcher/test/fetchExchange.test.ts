@@ -217,7 +217,7 @@ describe('FetchExchange', () => {
     expect(exchange.resultExtractor).toBe(ResultExtractors.Response);
   });
 
-  it('should cache extracted result', () => {
+  it('should cache extracted result', async () => {
     const mockResponse = new Response('test data');
     const exchange = new FetchExchange({
       fetcher: mockFetcher,
@@ -226,11 +226,11 @@ describe('FetchExchange', () => {
     });
 
     // First call
-    const result1 = exchange.extractResult();
+    const result1 = await exchange.extractResult();
     expect(result1).toBe(exchange);
 
     // Second call should return cached result
-    const result2 = exchange.extractResult();
+    const result2 = await exchange.extractResult();
     expect(result2).toBe(result1);
     expect(result2).toBe(exchange);
   });
