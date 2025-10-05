@@ -19,6 +19,7 @@ import {
   UsePromiseStateOptions,
 } from './usePromiseState';
 import { useRequestId } from './useRequestId';
+import { FetcherError } from '@ahoo-wang/fetcher';
 
 export interface UseExecutePromiseOptions<R, E = unknown>
   extends UsePromiseStateOptions<R, E> {
@@ -40,7 +41,7 @@ export type PromiseSupplier<R> = () => Promise<R>;
  * Interface defining the return type of useExecutePromise hook
  * @template R - The type of the result value
  */
-export interface UseExecutePromiseReturn<R, E = unknown>
+export interface UseExecutePromiseReturn<R, E = FetcherError>
   extends PromiseState<R, E> {
   /**
    * Function to execute a promise supplier or promise.
@@ -98,7 +99,7 @@ export interface UseExecutePromiseReturn<R, E = unknown>
  * }
  * ```
  */
-export function useExecutePromise<R = unknown, E = unknown>(
+export function useExecutePromise<R = unknown, E = FetcherError>(
   options?: UseExecutePromiseOptions<R, E>,
 ): UseExecutePromiseReturn<R, E> {
   const state = usePromiseState<R, E>(options);

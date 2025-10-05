@@ -367,6 +367,36 @@ const MyComponent = () => {
 };
 ```
 
+#### Auto Execute Example
+
+```typescript jsx
+import { useListQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+    list: async (listQuery) => fetchListData(listQuery),
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+  // You can still manually trigger it with execute() or update conditions
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <ul>
+        {result?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
 ### usePagedQuery Hook
 
 The `usePagedQuery` hook manages paged queries with state management for conditions, projections, pagination, and
@@ -415,6 +445,46 @@ const MyComponent = () => {
 };
 ```
 
+#### Auto Execute Example
+
+```typescript jsx
+import { usePagedQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition, setPagination } = usePagedQuery({
+    initialQuery: {
+      condition: {},
+      pagination: { index: 1, size: 10 },
+      projection: {},
+      sort: []
+    },
+    query: async (pagedQuery) => fetchPagedData(pagedQuery),
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <ul>
+        {result?.data?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
+      <button onClick={() => setPagination({ index: result?.pagination?.index! - 1, size: 10 })} disabled={result?.pagination?.index === 1}>
+        Previous
+      </button>
+      <button onClick={() => setPagination({ index: result?.pagination?.index! + 1, size: 10 })}>
+        Next
+      </button>
+    </div>
+  );
+};
+```
+
 ### useSingleQuery Hook
 
 The `useSingleQuery` hook manages single item queries with state management for conditions, projections, and sorting.
@@ -448,6 +518,31 @@ const MyComponent = () => {
 };
 ```
 
+#### Auto Execute Example
+
+```typescript jsx
+import { useSingleQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useSingleQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [] },
+    query: async (singleQuery) => fetchSingleData(singleQuery),
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      {result && <p>User: {result.name}</p>}
+    </div>
+  );
+};
+```
+
 ### useCountQuery Hook
 
 The `useCountQuery` hook manages count queries with state management for conditions.
@@ -475,6 +570,31 @@ const MyComponent = () => {
   return (
     <div>
       <button onClick={handleCountActive}>Count Active Items</button>
+      <p>Total: {result}</p>
+    </div>
+  );
+};
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useCountQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useCountQuery({
+    initialCondition: {},
+    count: async (condition) => fetchCount(condition),
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
       <p>Total: {result}</p>
     </div>
   );
@@ -527,12 +647,56 @@ const MyComponent = () => {
 };
 ```
 
+#### Auto Execute Example
+
+```typescript jsx
+import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListStreamQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
+    listStream: async (listQuery) => fetchListStream(listQuery),
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  useEffect(() => {
+    if (result) {
+      const reader = result.getReader();
+      const readStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            console.log('Received:', value);
+            // Process the stream event
+          }
+        } catch (error) {
+          console.error('Stream error:', error);
+        }
+      };
+      readStream();
+    }
+  }, [result]);
+
+  // The query will execute automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      {/* Stream is already started automatically */}
+    </div>
+  );
+};
+```
+
 ## API Reference
 
 ### useFetcher
 
 ```typescript
-function useFetcher<R = unknown, E = unknown>(
+function useFetcher<R = unknown, E = FetcherError>(
   options?: UseFetcherOptions<R, E> | UseFetcherOptionsSupplier<R, E>,
 ): UseFetcherReturn<R, E>;
 ```
@@ -543,7 +707,7 @@ flexible configuration.
 **Type Parameters:**
 
 - `R`: The type of the result
-- `E`: The type of the error (defaults to `unknown`)
+- `E`: The type of the error (defaults to `FetcherError`)
 
 **Parameters:**
 
@@ -567,7 +731,7 @@ An object containing:
 ### useExecutePromise
 
 ```typescript
-function useExecutePromise<R = unknown, E = unknown>(
+function useExecutePromise<R = unknown, E = FetcherError>(
   options?: UseExecutePromiseOptions<R, E>,
 ): UseExecutePromiseReturn<R, E>;
 ```
@@ -578,7 +742,7 @@ state options.
 **Type Parameters:**
 
 - `R`: The type of the result
-- `E`: The type of the error (defaults to `unknown`)
+- `E`: The type of the error (defaults to `FetcherError`)
 
 **Parameters:**
 
@@ -601,7 +765,7 @@ An object containing:
 ### usePromiseState
 
 ```typescript
-function usePromiseState<R = unknown, E = unknown>(
+function usePromiseState<R = unknown, E = FetcherError>(
   options?: UsePromiseStateOptions<R, E> | UsePromiseStateOptionsSupplier<R, E>,
 ): UsePromiseStateReturn<R, E>;
 ```
@@ -612,7 +776,7 @@ suppliers.
 **Type Parameters:**
 
 - `R`: The type of the result
-- `E`: The type of the error (defaults to `unknown`)
+- `E`: The type of the error (defaults to `FetcherError`)
 
 **Parameters:**
 
@@ -694,7 +858,7 @@ A React hook that provides state management for a KeyStorage instance.
 ### useListQuery
 
 ```typescript
-function useListQuery<R, FIELDS extends string = string, E = unknown>(
+function useListQuery<R, FIELDS extends string = string, E = FetcherError>(
   options: UseListQueryOptions<R, FIELDS, E>,
 ): UseListQueryReturn<R, FIELDS, E>;
 ```
@@ -705,7 +869,7 @@ A React hook for managing list queries with state management for conditions, pro
 
 - `R`: The type of the result items in the list
 - `FIELDS`: The type of the fields used in conditions and projections
-- `E`: The type of the error (defaults to `unknown`)
+- `E`: The type of the error (defaults to `FetcherError`)
 
 **Parameters:**
 
@@ -719,7 +883,7 @@ An object containing promise state, execute function, and setters for condition,
 ### usePagedQuery
 
 ```typescript
-function usePagedQuery<R, FIELDS extends string = string, E = unknown>(
+function usePagedQuery<R, FIELDS extends string = string, E = FetcherError>(
   options: UsePagedQueryOptions<R, FIELDS, E>,
 ): UsePagedQueryReturn<R, FIELDS, E>;
 ```
@@ -730,7 +894,7 @@ A React hook for managing paged queries with state management for conditions, pr
 
 - `R`: The type of the result items in the paged list
 - `FIELDS`: The type of the fields used in conditions and projections
-- `E`: The type of the error (defaults to `unknown`)
+- `E`: The type of the error (defaults to `FetcherError`)
 
 **Parameters:**
 
@@ -744,7 +908,7 @@ An object containing promise state, execute function, and setters for condition,
 ### useSingleQuery
 
 ```typescript
-function useSingleQuery<R, FIELDS extends string = string, E = unknown>(
+function useSingleQuery<R, FIELDS extends string = string, E = FetcherError>(
   options: UseSingleQueryOptions<R, FIELDS, E>,
 ): UseSingleQueryReturn<R, FIELDS, E>;
 ```
@@ -755,7 +919,7 @@ A React hook for managing single queries with state management for conditions, p
 
 - `R`: The type of the result
 - `FIELDS`: The type of the fields used in conditions and projections
-- `E`: The type of the error (defaults to `unknown`)
+- `E`: The type of the error (defaults to `FetcherError`)
 
 **Parameters:**
 
@@ -769,7 +933,7 @@ An object containing promise state, execute function, and setters for condition,
 ### useCountQuery
 
 ```typescript
-function useCountQuery<FIELDS extends string = string, E = unknown>(
+function useCountQuery<FIELDS extends string = string, E = FetcherError>(
   options: UseCountQueryOptions<FIELDS, E>,
 ): UseCountQueryReturn<FIELDS, E>;
 ```
@@ -779,7 +943,7 @@ A React hook for managing count queries with state management for conditions.
 **Type Parameters:**
 
 - `FIELDS`: The type of the fields used in conditions
-- `E`: The type of the error (defaults to `unknown`)
+- `E`: The type of the error (defaults to `FetcherError`)
 
 **Parameters:**
 
@@ -793,7 +957,11 @@ An object containing promise state, execute function, and setter for condition.
 ### useListStreamQuery
 
 ```typescript
-function useListStreamQuery<R, FIELDS extends string = string, E = unknown>(
+function useListStreamQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
   options: UseListStreamQueryOptions<R, FIELDS, E>,
 ): UseListStreamQueryReturn<R, FIELDS, E>;
 ```
@@ -805,7 +973,7 @@ Returns a readable stream of JSON server-sent events.
 
 - `R`: The type of the result items in the stream events
 - `FIELDS`: The type of the fields used in conditions and projections
-- `E`: The type of the error (defaults to `unknown`)
+- `E`: The type of the error (defaults to `FetcherError`)
 
 **Parameters:**
 
