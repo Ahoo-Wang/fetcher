@@ -49,6 +49,7 @@
   "dependencies": {},
   "peerDependencies": {
     "@ahoo-wang/fetcher": "workspace:^2.3.4",
+    "@ahoo-wang/fetcher-eventstream": "workspace:^2.3.4",
     "@ahoo-wang/fetcher-storage": "workspace:^2.3.4",
     "@ahoo-wang/fetcher-wow": "workspace:^2.3.4",
     "react": ">=16.8.0",
