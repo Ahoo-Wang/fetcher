@@ -23,7 +23,6 @@ import {
 import {
   useExecutePromise,
   UsePromiseStateOptions,
-  PromiseState,
   useLatest, UseExecutePromiseReturn,
 } from '../core';
 import { useCallback, useState } from 'react';
