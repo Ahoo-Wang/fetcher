@@ -29,6 +29,12 @@ vi.mock('../../src/core', () => ({
   useLatest: vi.fn(),
 }));
 
+// Mock the core hooks
+vi.mock('../../src/core', () => ({
+  useExecutePromise: vi.fn(),
+  useLatest: vi.fn(),
+}));
+
 import { useExecutePromise, useLatest } from '../../src';
 
 describe('useListQuery', () => {
