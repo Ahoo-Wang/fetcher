@@ -83,15 +83,34 @@ const MyComponent = () => {
 
   const handleFetch = () => {
     execute({ url: '/api/users', method: 'GET' });
-  };
+};
+```
+
+#### 自动执行示例
+
+```typescript jsx
+import { useListQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+    list: async (listQuery) => fetchListData(listQuery),
+    autoExecute: true, // 在组件挂载时自动执行
+  });
+
+  // 查询将在组件挂载时自动执行
+  // 您仍然可以通过 execute() 手动触发或更新条件
 
   if (loading) return <div>加载中...</div>;
   if (error) return <div>错误: {error.message}</div>;
 
   return (
     <div>
-      <pre>{JSON.stringify(result, null, 2)}</pre>
-      <button onClick={handleFetch}>获取数据</button>
+      <ul>
+        {result?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
     </div>
   );
 };
@@ -676,6 +695,7 @@ function useListQuery<R, FIELDS extends string = string, E = unknown>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 list 函数的配置选项
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
 
 **返回值:**
 
@@ -700,6 +720,7 @@ function usePagedQuery<R, FIELDS extends string = string, E = unknown>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 query 函数的配置选项
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
 
 **返回值:**
 
@@ -724,6 +745,7 @@ function useSingleQuery<R, FIELDS extends string = string, E = unknown>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 query 函数的配置选项
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
 
 **返回值:**
 
@@ -747,6 +769,7 @@ function useCountQuery<FIELDS extends string = string, E = unknown>(
 **参数:**
 
 - `options`: 包含 initialCondition 和 count 函数的配置选项
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
 
 **返回值:**
 
@@ -771,6 +794,7 @@ function useListStreamQuery<R, FIELDS extends string = string, E = unknown>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 listStream 函数的配置选项
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
 
 **返回值:**
 
