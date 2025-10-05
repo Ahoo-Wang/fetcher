@@ -97,7 +97,12 @@ const CONTENT_TYPE_PROPERTY_NAME = 'contentType';
  * Defines the contentType property on Response prototype.
  * This property provides a convenient way to access the Content-Type header value.
  */
-if (!Response.prototype.hasOwnProperty(CONTENT_TYPE_PROPERTY_NAME)) {
+if (
+  !Object.prototype.hasOwnProperty.call(
+    Response.prototype,
+    CONTENT_TYPE_PROPERTY_NAME,
+  )
+) {
   Object.defineProperty(Response.prototype, CONTENT_TYPE_PROPERTY_NAME, {
     get() {
       return this.headers.get(CONTENT_TYPE_HEADER);
@@ -111,7 +116,12 @@ const IS_EVENT_STREAM_PROPERTY_NAME = 'isEventStream';
  * Defines the isEventStream property on Response prototype.
  * This property checks if the response has a Content-Type header indicating it's an event stream.
  */
-if (!Response.prototype.hasOwnProperty(IS_EVENT_STREAM_PROPERTY_NAME)) {
+if (
+  !Object.prototype.hasOwnProperty.call(
+    Response.prototype,
+    IS_EVENT_STREAM_PROPERTY_NAME,
+  )
+) {
   Object.defineProperty(Response.prototype, IS_EVENT_STREAM_PROPERTY_NAME, {
     get() {
       const contentType = this.contentType;
@@ -130,7 +140,7 @@ if (!Response.prototype.hasOwnProperty(IS_EVENT_STREAM_PROPERTY_NAME)) {
  *
  * @returns A ServerSentEventStream if the response is an event stream, null otherwise
  */
-if (!Response.prototype.hasOwnProperty('eventStream')) {
+if (!Object.prototype.hasOwnProperty.call(Response.prototype, 'eventStream')) {
   Response.prototype.eventStream = function() {
     if (!this.isEventStream) {
       return null;
@@ -147,16 +157,23 @@ if (!Response.prototype.hasOwnProperty('eventStream')) {
  * @returns A ServerSentEventStream if the response is an event stream
  * @throws {Error} if the response is not an event stream
  */
-Response.prototype.requiredEventStream = function() {
-  const eventStream = this.eventStream();
-  if (!eventStream) {
-    throw new EventStreamConvertError(
-      this,
-      `Event stream is not available. Response content-type: [${this.contentType}]`,
-    );
-  }
-  return eventStream;
-};
+if (
+  !Object.prototype.hasOwnProperty.call(
+    Response.prototype,
+    'requiredEventStream',
+  )
+) {
+  Response.prototype.requiredEventStream = function() {
+    const eventStream = this.eventStream();
+    if (!eventStream) {
+      throw new EventStreamConvertError(
+        this,
+        `Event stream is not available. Response content-type: [${this.contentType}]`,
+      );
+    }
+    return eventStream;
+  };
+}
 
 /**
  * Implementation of the jsonEventStream method for Response objects.
@@ -165,13 +182,17 @@ Response.prototype.requiredEventStream = function() {
  * @template DATA - The type of the JSON data in the server-sent events
  * @returns A JsonServerSentEventStream if the response is an event stream, null otherwise
  */
-Response.prototype.jsonEventStream = function <DATA>() {
-  const eventStream = this.eventStream();
-  if (!eventStream) {
-    return null;
-  }
-  return toJsonServerSentEventStream<DATA>(eventStream);
-};
+if (
+  !Object.prototype.hasOwnProperty.call(Response.prototype, 'jsonEventStream')
+) {
+  Response.prototype.jsonEventStream = function <DATA>() {
+    const eventStream = this.eventStream();
+    if (!eventStream) {
+      return null;
+    }
+    return toJsonServerSentEventStream<DATA>(eventStream);
+  };
+}
 
 /**
  * Implementation of the requiredJsonEventStream method for Response objects.
@@ -182,13 +203,20 @@ Response.prototype.jsonEventStream = function <DATA>() {
  * @returns A JsonServerSentEventStream if the response is an event stream
  * @throws {Error} if the response is not an event stream
  */
-Response.prototype.requiredJsonEventStream = function <DATA>() {
-  const eventStream = this.jsonEventStream<DATA>();
-  if (!eventStream) {
-    throw new EventStreamConvertError(
-      this,
-      `Event stream is not available. Response content-type: [${this.contentType}]`,
-    );
-  }
-  return eventStream;
-};
+if (
+  !Object.prototype.hasOwnProperty.call(
+    Response.prototype,
+    'requiredJsonEventStream',
+  )
+) {
+  Response.prototype.requiredJsonEventStream = function <DATA>() {
+    const eventStream = this.jsonEventStream<DATA>();
+    if (!eventStream) {
+      throw new EventStreamConvertError(
+        this,
+        `Event stream is not available. Response content-type: [${this.contentType}]`,
+      );
+    }
+    return eventStream;
+  };
+}
