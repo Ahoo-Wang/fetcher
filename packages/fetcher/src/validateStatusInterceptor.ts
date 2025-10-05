@@ -13,7 +13,7 @@
 
 import { type ResponseInterceptor } from './interceptor';
 import { FetchExchange } from './fetchExchange';
-import { FetcherError } from './fetcherError';
+import { ExchangeError } from './fetcherError';
 
 /**
  * Error thrown when response status validation fails.
@@ -21,9 +21,10 @@ import { FetcherError } from './fetcherError';
  * This error is thrown by ValidateStatusInterceptor when the response status
  * does not pass the validation defined by the validateStatus function.
  */
-export class HttpStatusValidationError extends FetcherError {
-  constructor(public readonly exchange: FetchExchange) {
+export class HttpStatusValidationError extends ExchangeError {
+  constructor(exchange: FetchExchange) {
     super(
+      exchange,
       `Request failed with status code ${exchange.response?.status} for ${exchange.request.url}`,
     );
     this.name = 'HttpStatusValidationError';

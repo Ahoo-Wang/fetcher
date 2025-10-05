@@ -13,11 +13,11 @@
 
 import { Fetcher } from './fetcher';
 import type { FetchRequest, RequestHeaders } from './fetchRequest';
-import { ExchangeError } from './interceptorManager';
 import { type UrlParams } from './urlBuilder';
 import { type RequiredBy } from './types';
 import { ResultExtractor, ResultExtractors } from './resultExtractor';
 import { mergeRecordToMap } from './utils';
+import { ExchangeError } from './fetcherError';
 
 export interface AttributesCapable {
   /**

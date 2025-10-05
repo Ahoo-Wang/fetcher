@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { FetchExchange } from './fetchExchange';
+
 /**
  * Base error class for all Fetcher-related errors.
  *
@@ -55,5 +57,49 @@ export class FetcherError extends Error {
 
     // Set prototype for instanceof checks to work correctly
     Object.setPrototypeOf(this, FetcherError.prototype);
+  }
+}
+
+/**
+ * Custom error class for FetchExchange related errors.
+ *
+ * This error is thrown when there are issues with the HTTP exchange process,
+ * such as when a request fails and no response is generated. It provides
+ * comprehensive information about the failed request through the exchange object.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await fetcher.get('/api/users');
+ * } catch (error) {
+ *   if (error instanceof ExchangeError) {
+ *     console.log('Request URL:', error.exchange.request.url);
+ *     console.log('Request method:', error.exchange.request.method);
+ *     if (error.exchange.error) {
+ *       console.log('Underlying error:', error.exchange.error);
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export class ExchangeError extends FetcherError {
+  /**
+   * Creates a new ExchangeError instance.
+   *
+   * @param exchange - The FetchExchange object containing request/response/error information.
+   * @param errorMsg - An optional error message.
+   */
+  constructor(
+    public readonly exchange: FetchExchange,
+    errorMsg?: string,
+  ) {
+    const errorMessage =
+      errorMsg ||
+      exchange.error?.message ||
+      exchange.response?.statusText ||
+      `Request to ${exchange.request.url} failed during exchange`;
+    super(errorMessage, exchange.error);
+    this.name = 'ExchangeError';
+    Object.setPrototypeOf(this, ExchangeError.prototype);
   }
 }
