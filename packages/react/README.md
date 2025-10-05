@@ -84,15 +84,34 @@ const MyComponent = () => {
 
   const handleFetch = () => {
     execute({ url: '/api/users', method: 'GET' });
-  };
+};
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useListQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+    list: async (listQuery) => fetchListData(listQuery),
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+  // You can still manually trigger it with execute() or update conditions
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
   return (
     <div>
-      <pre>{JSON.stringify(result, null, 2)}</pre>
-      <button onClick={handleFetch}>Fetch Data</button>
+      <ul>
+        {result?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
     </div>
   );
 };
@@ -691,6 +710,7 @@ A React hook for managing list queries with state management for conditions, pro
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and list function
+    - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
 
 **Returns:**
 
@@ -715,6 +735,7 @@ A React hook for managing paged queries with state management for conditions, pr
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and query function
+    - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
 
 **Returns:**
 
@@ -739,6 +760,7 @@ A React hook for managing single queries with state management for conditions, p
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and query function
+    - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
 
 **Returns:**
 
@@ -762,6 +784,7 @@ A React hook for managing count queries with state management for conditions.
 **Parameters:**
 
 - `options`: Configuration options including initialCondition and count function
+    - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
 
 **Returns:**
 
@@ -787,6 +810,7 @@ Returns a readable stream of JSON server-sent events.
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and listStream function
+    - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
 
 **Returns:**
 
