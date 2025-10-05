@@ -14,6 +14,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMounted } from './useMounted';
 import { useLatest } from './useLatest';
+import { FetcherError } from '@ahoo-wang/fetcher';
 
 /**
  * Enumeration of possible promise execution states
@@ -59,7 +60,7 @@ export interface PromiseStateCallbacks<R, E = unknown> {
  * };
  * ```
  */
-export interface UsePromiseStateOptions<R, E = unknown>
+export interface UsePromiseStateOptions<R, E = FetcherError>
   extends PromiseStateCallbacks<R, E> {
   /** Initial status, defaults to IDLE */
   initialStatus?: PromiseStatus;
@@ -69,7 +70,7 @@ export interface UsePromiseStateOptions<R, E = unknown>
  * Return type for usePromiseState hook
  * @template R - The type of result
  */
-export interface UsePromiseStateReturn<R, E = unknown>
+export interface UsePromiseStateReturn<R, E = FetcherError>
   extends PromiseState<R, E> {
   /** Set status to LOADING */
   setLoading: () => void;
@@ -111,7 +112,7 @@ export interface UsePromiseStateReturn<R, E = unknown>
  * }
  * ```
  */
-export function usePromiseState<R = unknown, E = unknown>(
+export function usePromiseState<R = unknown, E = FetcherError>(
   options?: UsePromiseStateOptions<R, E>,
 ): UsePromiseStateReturn<R, E> {
   const [status, setStatus] = useState<PromiseStatus>(

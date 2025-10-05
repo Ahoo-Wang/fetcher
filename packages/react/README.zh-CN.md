@@ -531,7 +531,7 @@ function useFetcher<R = unknown, E = unknown>(
 **类型参数:**
 
 - `R`: 结果的类型
-- `E`: 错误的类型（默认为 `unknown`）
+- `E`: 错误的类型（默认为 `FetcherError`）
 
 **参数:**
 
@@ -565,7 +565,7 @@ function useExecutePromise<R = unknown, E = unknown>(
 **类型参数:**
 
 - `R`: 结果的类型
-- `E`: 错误的类型（默认为 `unknown`）
+- `E`: 错误的类型（默认为 `FetcherError`）
 
 **参数:**
 
@@ -598,7 +598,7 @@ function usePromiseState<R = unknown, E = unknown>(
 **类型参数:**
 
 - `R`: 结果的类型
-- `E`: 错误的类型（默认为 `unknown`）
+- `E`: 错误的类型（默认为 `FetcherError`）
 
 **参数:**
 
@@ -679,7 +679,7 @@ function useKeyStorage<T>(
 ### useListQuery
 
 ```typescript
-function useListQuery<R, FIELDS extends string = string, E = unknown>(
+function useListQuery<R, FIELDS extends string = string, E = FetcherError>(
   options: UseListQueryOptions<R, FIELDS, E>,
 ): UseListQueryReturn<R, FIELDS, E>;
 ```
@@ -690,7 +690,7 @@ function useListQuery<R, FIELDS extends string = string, E = unknown>(
 
 - `R`: 列表中结果项的类型
 - `FIELDS`: 用于条件和投影的字段类型
-- `E`: 错误的类型（默认为 `unknown`）
+- `E`: 错误的类型（默认为 `FetcherError`）
 
 **参数:**
 
@@ -715,7 +715,7 @@ function usePagedQuery<R, FIELDS extends string = string, E = unknown>(
 
 - `R`: 分页列表中结果项的类型
 - `FIELDS`: 用于条件和投影的字段类型
-- `E`: 错误的类型（默认为 `unknown`）
+- `E`: 错误的类型（默认为 `FetcherError`）
 
 **参数:**
 
@@ -740,7 +740,7 @@ function useSingleQuery<R, FIELDS extends string = string, E = unknown>(
 
 - `R`: 结果的类型
 - `FIELDS`: 用于条件和投影的字段类型
-- `E`: 错误的类型（默认为 `unknown`）
+- `E`: 错误的类型（默认为 `FetcherError`）
 
 **参数:**
 
@@ -754,7 +754,7 @@ function useSingleQuery<R, FIELDS extends string = string, E = unknown>(
 ### useCountQuery
 
 ```typescript
-function useCountQuery<FIELDS extends string = string, E = unknown>(
+function useCountQuery<FIELDS extends string = string, E = FetcherError>(
   options: UseCountQueryOptions<FIELDS, E>,
 ): UseCountQueryReturn<FIELDS, E>;
 ```
@@ -764,7 +764,7 @@ function useCountQuery<FIELDS extends string = string, E = unknown>(
 **类型参数:**
 
 - `FIELDS`: 用于条件的字段类型
-- `E`: 错误的类型（默认为 `unknown`）
+- `E`: 错误的类型（默认为 `FetcherError`）
 
 **参数:**
 
@@ -778,7 +778,11 @@ function useCountQuery<FIELDS extends string = string, E = unknown>(
 ### useListStreamQuery
 
 ```typescript
-function useListStreamQuery<R, FIELDS extends string = string, E = unknown>(
+function useListStreamQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
   options: UseListStreamQueryOptions<R, FIELDS, E>,
 ): UseListStreamQueryReturn<R, FIELDS, E>;
 ```
@@ -789,7 +793,7 @@ function useListStreamQuery<R, FIELDS extends string = string, E = unknown>(
 
 - `R`: 流事件中结果项的类型
 - `FIELDS`: 用于条件和投影的字段类型
-- `E`: 错误的类型（默认为 `unknown`）
+- `E`: 错误的类型（默认为 `FetcherError`）
 
 **参数:**
 
