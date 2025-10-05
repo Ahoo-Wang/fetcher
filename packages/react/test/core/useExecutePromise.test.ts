@@ -226,4 +226,25 @@ describe('useExecutePromise', () => {
     expect(result.current.error).toBe(error);
     expect(result.current.result).toBeUndefined();
   });
+
+  it('should throw error when component is unmounted', async () => {
+    const mockProvider = vi.fn().mockResolvedValue('success');
+
+    // Temporarily mock useMounted to return false (component is unmounted)
+    const useMountedModule = await import('../../src/core/useMounted');
+    const originalUseMounted = useMountedModule.useMounted;
+    useMountedModule.useMounted = vi.fn(() => () => false);
+
+    const { result } = renderHook(() => useExecutePromise<string>({}));
+
+    // Try to execute when component is unmounted
+    await expect(result.current.execute(mockProvider)).rejects.toThrow(
+      'Component is unmounted',
+    );
+
+    expect(mockProvider).not.toHaveBeenCalled();
+
+    // Restore original mock
+    useMountedModule.useMounted = originalUseMounted;
+  });
 });
