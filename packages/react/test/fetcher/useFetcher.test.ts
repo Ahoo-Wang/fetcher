@@ -22,10 +22,14 @@ import { PromiseStatus } from '../../src';
 vi.mock('../../src/core/useMounted', () => ({ useMounted: () => () => true }));
 
 // Mock fetcher
-vi.mock('@ahoo-wang/fetcher', () => ({
-  fetcherRegistrar: {},
-  getFetcher: vi.fn(),
-}));
+vi.mock('@ahoo-wang/fetcher', async importOriginal => {
+  const actual = await importOriginal<typeof import('@ahoo-wang/fetcher')>();
+  return {
+    ...actual,
+    fetcherRegistrar: {},
+    getFetcher: vi.fn(),
+  };
+});
 
 describe('useFetcher', () => {
   let mockExchange: any;
