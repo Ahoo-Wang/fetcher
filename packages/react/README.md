@@ -19,6 +19,7 @@ automatic re-rendering and loading states.
 - ⚡ **Performance**: Optimized with useMemo, useCallback, and smart dependency management
 - 🎯 **Options Flexibility**: Support for both static options and dynamic option suppliers
 - 🔧 **Developer Experience**: Built-in loading states, error handling, and automatic re-rendering
+- 📊 **Advanced Query Hooks**: Specialized hooks for list, paged, single, count, and stream queries with state management
 
 ## Table of Contents
 
@@ -30,6 +31,12 @@ automatic re-rendering and loading states.
     - [useRequestId Hook](#userequestid-hook)
     - [useLatest Hook](#uselatest-hook)
     - [useKeyStorage Hook](#usekeystorage-hook)
+    - [Wow Query Hooks](#wow-query-hooks)
+        - [useListQuery Hook](#uselistquery-hook)
+        - [usePagedQuery Hook](#usepagedquery-hook)
+        - [useSingleQuery Hook](#usesinglequery-hook)
+        - [useCountQuery Hook](#usecountquery-hook)
+        - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [API Reference](#api-reference)
 - [License](#license)
 
@@ -298,6 +305,209 @@ const userStorage = new KeyStorage<User>({ key: 'current-user' });
 const [user, setUser] = useKeyStorage(userStorage);
 ```
 
+## Wow Query Hooks
+
+The Wow Query Hooks provide advanced data querying capabilities with built-in state management for conditions,
+projections, sorting, pagination, and limits. These hooks are designed to work with the `@ahoo-wang/fetcher-wow` package
+for complex query operations.
+
+### useListQuery Hook
+
+The `useListQuery` hook manages list queries with state management for conditions, projections, sorting, and limits.
+
+```typescript jsx
+import { useListQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition, setLimit } = useListQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+    list: async (listQuery) => {
+      // Your list fetching logic here
+      return fetchListData(listQuery);
+    },
+  });
+
+  const handleSearch = (searchTerm: string) => {
+    setCondition({ name: { $regex: searchTerm } });
+    execute();
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <input onChange={(e) => handleSearch(e.target.value)} placeholder="Search..." />
+      <ul>
+        {result?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
+### usePagedQuery Hook
+
+The `usePagedQuery` hook manages paged queries with state management for conditions, projections, pagination, and
+sorting.
+
+```typescript jsx
+import { usePagedQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition, setPagination } = usePagedQuery({
+    initialQuery: {
+      condition: {},
+      pagination: { index: 1, size: 10 },
+      projection: {},
+      sort: []
+    },
+    query: async (pagedQuery) => {
+      // Your paged fetching logic here
+      return fetchPagedData(pagedQuery);
+    },
+  });
+
+  const handlePageChange = (page: number) => {
+    setPagination({ index: page, size: 10 });
+    execute();
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <ul>
+        {result?.data?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
+      <button onClick={() => handlePageChange(result?.pagination?.index! - 1)} disabled={result?.pagination?.index === 1}>
+        Previous
+      </button>
+      <button onClick={() => handlePageChange(result?.pagination?.index! + 1)}>
+        Next
+      </button>
+    </div>
+  );
+};
+```
+
+### useSingleQuery Hook
+
+The `useSingleQuery` hook manages single item queries with state management for conditions, projections, and sorting.
+
+```typescript jsx
+import { useSingleQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useSingleQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [] },
+    query: async (singleQuery) => {
+      // Your single item fetching logic here
+      return fetchSingleData(singleQuery);
+    },
+  });
+
+  const handleFetchUser = (userId: string) => {
+    setCondition({ id: userId });
+    execute();
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <button onClick={() => handleFetchUser('123')}>Fetch User</button>
+      {result && <p>User: {result.name}</p>}
+    </div>
+  );
+};
+```
+
+### useCountQuery Hook
+
+The `useCountQuery` hook manages count queries with state management for conditions.
+
+```typescript jsx
+import { useCountQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useCountQuery({
+    initialCondition: {},
+    count: async (condition) => {
+      // Your count fetching logic here
+      return fetchCount(condition);
+    },
+  });
+
+  const handleCountActive = () => {
+    setCondition({ status: 'active' });
+    execute();
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <button onClick={handleCountActive}>Count Active Items</button>
+      <p>Total: {result}</p>
+    </div>
+  );
+};
+```
+
+### useListStreamQuery Hook
+
+The `useListStreamQuery` hook manages list stream queries that return a readable stream of server-sent events.
+
+```typescript jsx
+import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListStreamQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
+    listStream: async (listQuery) => {
+      // Your stream fetching logic here
+      return fetchListStream(listQuery);
+    },
+  });
+
+  useEffect(() => {
+    if (result) {
+      const reader = result.getReader();
+      const readStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            console.log('Received:', value);
+            // Process the stream event
+          }
+        } catch (error) {
+          console.error('Stream error:', error);
+        }
+      };
+      readStream();
+    }
+  }, [result]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <button onClick={execute}>Start Stream</button>
+    </div>
+  );
+};
+```
+
 ## API Reference
 
 ### useFetcher
@@ -461,6 +671,126 @@ A React hook that provides state management for a KeyStorage instance.
 **Returns:**
 
 - A tuple containing the current stored value and a function to update it
+
+### useListQuery
+
+```typescript
+function useListQuery<R, FIELDS extends string = string, E = unknown>(
+  options: UseListQueryOptions<R, FIELDS, E>,
+): UseListQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for managing list queries with state management for conditions, projections, sorting, and limits.
+
+**Type Parameters:**
+
+- `R`: The type of the result items in the list
+- `FIELDS`: The type of the fields used in conditions and projections
+- `E`: The type of the error (defaults to `unknown`)
+
+**Parameters:**
+
+- `options`: Configuration options including initialQuery and list function
+
+**Returns:**
+
+An object containing promise state, execute function, and setters for condition, projection, sort, and limit.
+
+### usePagedQuery
+
+```typescript
+function usePagedQuery<R, FIELDS extends string = string, E = unknown>(
+  options: UsePagedQueryOptions<R, FIELDS, E>,
+): UsePagedQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for managing paged queries with state management for conditions, projections, pagination, and sorting.
+
+**Type Parameters:**
+
+- `R`: The type of the result items in the paged list
+- `FIELDS`: The type of the fields used in conditions and projections
+- `E`: The type of the error (defaults to `unknown`)
+
+**Parameters:**
+
+- `options`: Configuration options including initialQuery and query function
+
+**Returns:**
+
+An object containing promise state, execute function, and setters for condition, projection, pagination, and sort.
+
+### useSingleQuery
+
+```typescript
+function useSingleQuery<R, FIELDS extends string = string, E = unknown>(
+  options: UseSingleQueryOptions<R, FIELDS, E>,
+): UseSingleQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for managing single queries with state management for conditions, projections, and sorting.
+
+**Type Parameters:**
+
+- `R`: The type of the result
+- `FIELDS`: The type of the fields used in conditions and projections
+- `E`: The type of the error (defaults to `unknown`)
+
+**Parameters:**
+
+- `options`: Configuration options including initialQuery and query function
+
+**Returns:**
+
+An object containing promise state, execute function, and setters for condition, projection, and sort.
+
+### useCountQuery
+
+```typescript
+function useCountQuery<FIELDS extends string = string, E = unknown>(
+  options: UseCountQueryOptions<FIELDS, E>,
+): UseCountQueryReturn<FIELDS, E>;
+```
+
+A React hook for managing count queries with state management for conditions.
+
+**Type Parameters:**
+
+- `FIELDS`: The type of the fields used in conditions
+- `E`: The type of the error (defaults to `unknown`)
+
+**Parameters:**
+
+- `options`: Configuration options including initialCondition and count function
+
+**Returns:**
+
+An object containing promise state, execute function, and setter for condition.
+
+### useListStreamQuery
+
+```typescript
+function useListStreamQuery<R, FIELDS extends string = string, E = unknown>(
+  options: UseListStreamQueryOptions<R, FIELDS, E>,
+): UseListStreamQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for managing list stream queries with state management for conditions, projections, sorting, and limits.
+Returns a readable stream of JSON server-sent events.
+
+**Type Parameters:**
+
+- `R`: The type of the result items in the stream events
+- `FIELDS`: The type of the fields used in conditions and projections
+- `E`: The type of the error (defaults to `unknown`)
+
+**Parameters:**
+
+- `options`: Configuration options including initialQuery and listStream function
+
+**Returns:**
+
+An object containing promise state, execute function, and setters for condition, projection, sort, and limit.
 
 ## License
 

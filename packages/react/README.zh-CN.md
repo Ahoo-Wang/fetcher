@@ -18,18 +18,25 @@ Fetcher 生态的 React 集成包。提供 React Hooks 和组件，实现无缝�
 - ⚡ **性能优化**: 使用 useMemo、useCallback 和智能依赖管理进行优化
 - 🎯 **选项灵活性**: 支持静态选项和动态选项供应商
 - 🔧 **开发者体验**: 内置加载状态、错误处理和自动重新渲染
+- 📊 **高级查询 Hooks**: 专门用于列表、分页、单个、计数和流查询的 hooks，具有状态管理功能
 
 ## 目录
 
 - [安装](#安装)
 - [快速开始](#快速开始)
 - [使用方法](#使用方法)
-    - [useFetcher Hook](#usefetcher-hook)
-    - [useExecutePromise Hook](#useexecutepromise-hook)
-    - [usePromiseState Hook](#usepromisestate-hook)
-    - [useRequestId Hook](#userequestid-hook)
-    - [useLatest Hook](#uselatest-hook)
-    - [useKeyStorage Hook](#usekeystorage-hook)
+  - [useFetcher Hook](#usefetcher-hook)
+  - [useExecutePromise Hook](#useexecutepromise-hook)
+  - [usePromiseState Hook](#usepromisestate-hook)
+  - [useRequestId Hook](#userequestid-hook)
+  - [useLatest Hook](#uselatest-hook)
+  - [useKeyStorage Hook](#usekeystorage-hook)
+  - [Wow 查询 Hooks](#wow-查询-hooks)
+    - [useListQuery Hook](#uselistquery-hook)
+    - [usePagedQuery Hook](#usepagedquery-hook)
+    - [useSingleQuery Hook](#usesinglequery-hook)
+    - [useCountQuery Hook](#usecountquery-hook)
+    - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [API 参考](#api-参考)
 - [许可证](#许可证)
 
@@ -290,6 +297,206 @@ const userStorage = new KeyStorage<User>({ key: 'current-user' });
 const [user, setUser] = useKeyStorage(userStorage);
 ```
 
+## Wow 查询 Hooks
+
+Wow 查询 Hooks 提供高级数据查询功能，具有内置的状态管理，用于条件、投影、排序、分页和限制。这些 hooks 专为与 `@ahoo-wang/fetcher-wow` 包配合使用而设计，用于复杂的查询操作。
+
+### useListQuery Hook
+
+`useListQuery` hook 管理列表查询，具有条件、投影、排序和限制的状态管理。
+
+```typescript jsx
+import { useListQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition, setLimit } = useListQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+    list: async (listQuery) => {
+      // 您的列表获取逻辑
+      return fetchListData(listQuery);
+    },
+  });
+
+  const handleSearch = (searchTerm: string) => {
+    setCondition({ name: { $regex: searchTerm } });
+    execute();
+  };
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <input onChange={(e) => handleSearch(e.target.value)} placeholder="搜索..." />
+      <ul>
+        {result?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
+### usePagedQuery Hook
+
+`usePagedQuery` hook 管理分页查询，具有条件、投影、分页和排序的状态管理。
+
+```typescript jsx
+import { usePagedQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition, setPagination } = usePagedQuery({
+    initialQuery: {
+      condition: {},
+      pagination: { index: 1, size: 10 },
+      projection: {},
+      sort: []
+    },
+    query: async (pagedQuery) => {
+      // 您的分页获取逻辑
+      return fetchPagedData(pagedQuery);
+    },
+  });
+
+  const handlePageChange = (page: number) => {
+    setPagination({ index: page, size: 10 });
+    execute();
+  };
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <ul>
+        {result?.data?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
+      <button onClick={() => handlePageChange(result?.pagination?.index! - 1)} disabled={result?.pagination?.index === 1}>
+        上一页
+      </button>
+      <button onClick={() => handlePageChange(result?.pagination?.index! + 1)}>
+        下一页
+      </button>
+    </div>
+  );
+};
+```
+
+### useSingleQuery Hook
+
+`useSingleQuery` hook 管理单个查询，具有条件、投影和排序的状态管理。
+
+```typescript jsx
+import { useSingleQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useSingleQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [] },
+    query: async (singleQuery) => {
+      // 您的单个获取逻辑
+      return fetchSingleData(singleQuery);
+    },
+  });
+
+  const handleFetchUser = (userId: string) => {
+    setCondition({ id: userId });
+    execute();
+  };
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <button onClick={() => handleFetchUser('123')}>获取用户</button>
+      {result && <p>用户: {result.name}</p>}
+    </div>
+  );
+};
+```
+
+### useCountQuery Hook
+
+`useCountQuery` hook 管理计数查询，具有条件的状态管理。
+
+```typescript jsx
+import { useCountQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useCountQuery({
+    initialCondition: {},
+    count: async (condition) => {
+      // 您的计数获取逻辑
+      return fetchCount(condition);
+    },
+  });
+
+  const handleCountActive = () => {
+    setCondition({ status: 'active' });
+    execute();
+  };
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <button onClick={handleCountActive}>计数活跃项目</button>
+      <p>总数: {result}</p>
+    </div>
+  );
+};
+```
+
+### useListStreamQuery Hook
+
+`useListStreamQuery` hook 管理列表流查询，返回服务器发送事件的 readable stream。
+
+```typescript jsx
+import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListStreamQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
+    listStream: async (listQuery) => {
+      // 您的流获取逻辑
+      return fetchListStream(listQuery);
+    },
+  });
+
+  useEffect(() => {
+    if (result) {
+      const reader = result.getReader();
+      const readStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            console.log('接收到:', value);
+            // 处理流事件
+          }
+        } catch (error) {
+          console.error('流错误:', error);
+        }
+      };
+      readStream();
+    }
+  }, [result]);
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <button onClick={execute}>开始流</button>
+    </div>
+  );
+};
+```
+
 ## API 参考
 
 ### useFetcher
@@ -310,10 +517,10 @@ function useFetcher<R = unknown, E = unknown>(
 **参数:**
 
 - `options`: 配置选项或供应商函数
-    - `fetcher`: 要使用的自定义获取器实例。默认为默认获取器。
-    - `initialStatus`: 初始状态，默认为 IDLE
-    - `onSuccess`: 成功时调用的回调
-    - `onError`: 错误时调用的回调
+  - `fetcher`: 要使用的自定义获取器实例。默认为默认获取器。
+  - `initialStatus`: 初始状态，默认为 IDLE
+  - `onSuccess`: 成功时调用的回调
+  - `onError`: 错误时调用的回调
 
 **返回值:**
 
@@ -344,9 +551,9 @@ function useExecutePromise<R = unknown, E = unknown>(
 **参数:**
 
 - `options`: 配置选项
-    - `initialStatus`: 初始状态，默认为 IDLE
-    - `onSuccess`: 成功时调用的回调
-    - `onError`: 错误时调用的回调
+  - `initialStatus`: 初始状态，默认为 IDLE
+  - `onSuccess`: 成功时调用的回调
+  - `onError`: 错误时调用的回调
 
 **返回值:**
 
@@ -377,9 +584,9 @@ function usePromiseState<R = unknown, E = unknown>(
 **参数:**
 
 - `options`: 配置选项或供应商函数
-    - `initialStatus`: 初始状态，默认为 IDLE
-    - `onSuccess`: 成功时调用的回调（可以是异步的）
-    - `onError`: 错误时调用的回调（可以是异步的）
+  - `initialStatus`: 初始状态，默认为 IDLE
+  - `onSuccess`: 成功时调用的回调（可以是异步的）
+  - `onError`: 错误时调用的回调（可以是异步的）
 
 **返回值:**
 
@@ -449,6 +656,125 @@ function useKeyStorage<T>(
 **返回值:**
 
 - 包含当前存储值和更新函数的元组
+
+### useListQuery
+
+```typescript
+function useListQuery<R, FIELDS extends string = string, E = unknown>(
+  options: UseListQueryOptions<R, FIELDS, E>,
+): UseListQueryReturn<R, FIELDS, E>;
+```
+
+用于管理列表查询的 React hook，具有条件、投影、排序和限制的状态管理。
+
+**类型参数:**
+
+- `R`: 列表中结果项的类型
+- `FIELDS`: 用于条件和投影的字段类型
+- `E`: 错误的类型（默认为 `unknown`）
+
+**参数:**
+
+- `options`: 包含 initialQuery 和 list 函数的配置选项
+
+**返回值:**
+
+包含 promise 状态、execute 函数以及条件、投影、排序和限制设置器的对象。
+
+### usePagedQuery
+
+```typescript
+function usePagedQuery<R, FIELDS extends string = string, E = unknown>(
+  options: UsePagedQueryOptions<R, FIELDS, E>,
+): UsePagedQueryReturn<R, FIELDS, E>;
+```
+
+用于管理分页查询的 React hook，具有条件、投影、分页和排序的状态管理。
+
+**类型参数:**
+
+- `R`: 分页列表中结果项的类型
+- `FIELDS`: 用于条件和投影的字段类型
+- `E`: 错误的类型（默认为 `unknown`）
+
+**参数:**
+
+- `options`: 包含 initialQuery 和 query 函数的配置选项
+
+**返回值:**
+
+包含 promise 状态、execute 函数以及条件、投影、分页和排序设置器的对象。
+
+### useSingleQuery
+
+```typescript
+function useSingleQuery<R, FIELDS extends string = string, E = unknown>(
+  options: UseSingleQueryOptions<R, FIELDS, E>,
+): UseSingleQueryReturn<R, FIELDS, E>;
+```
+
+用于管理单个查询的 React hook，具有条件、投影和排序的状态管理。
+
+**类型参数:**
+
+- `R`: 结果的类型
+- `FIELDS`: 用于条件和投影的字段类型
+- `E`: 错误的类型（默认为 `unknown`）
+
+**参数:**
+
+- `options`: 包含 initialQuery 和 query 函数的配置选项
+
+**返回值:**
+
+包含 promise 状态、execute 函数以及条件、投影和排序设置器的对象。
+
+### useCountQuery
+
+```typescript
+function useCountQuery<FIELDS extends string = string, E = unknown>(
+  options: UseCountQueryOptions<FIELDS, E>,
+): UseCountQueryReturn<FIELDS, E>;
+```
+
+用于管理计数查询的 React hook，具有条件的状态管理。
+
+**类型参数:**
+
+- `FIELDS`: 用于条件的字段类型
+- `E`: 错误的类型（默认为 `unknown`）
+
+**参数:**
+
+- `options`: 包含 initialCondition 和 count 函数的配置选项
+
+**返回值:**
+
+包含 promise 状态、execute 函数以及条件设置器的对象。
+
+### useListStreamQuery
+
+```typescript
+function useListStreamQuery<R, FIELDS extends string = string, E = unknown>(
+  options: UseListStreamQueryOptions<R, FIELDS, E>,
+): UseListStreamQueryReturn<R, FIELDS, E>;
+```
+
+用于管理列表流查询的 React hook，具有条件、投影、排序和限制的状态管理。返回 JSON 服务器发送事件的 readable stream。
+
+**类型参数:**
+
+- `R`: 流事件中结果项的类型
+- `FIELDS`: 用于条件和投影的字段类型
+- `E`: 错误的类型（默认为 `unknown`）
+
+**参数:**
+
+- `options`: 包含 initialQuery 和 listStream 函数的配置选项
+
+**返回值:**
+
+包含 promise 状态、execute 函数以及条件、投影、排序和限制设置器的对象。
 
 ## 许可证
 
