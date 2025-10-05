@@ -3,7 +3,7 @@ packages:
   - integration-test
 
 catalog:
-  '@eslint/js': ^9.36.0
+  '@eslint/js': ^9.37.0
   '@testing-library/react': ^16.0.0
   '@types/node': ^24.5.2
   '@types/react': ^18.0.0
@@ -11,7 +11,7 @@ catalog:
   '@vitest/coverage-v8': ^3.2.4
   '@vitest/ui': ^3.2.4
   commander: ^14.0.0
-  eslint: ^9.36.0
+  eslint: ^9.37.0
   eslint-plugin-react-hooks: ^5.2.0
   globals: ^16.4.0
   jsdom: ^27.0.0
@@ -26,7 +26,7 @@ catalog:
   typescript: ^5.9.3
   typescript-eslint: ^8.45.0
   unplugin-dts: 1.0.0-beta.6
-  vite: ^7.1.7
+  vite: ^7.1.9
   vite-bundle-analyzer: ^1.2.3
   vitest: ^3.2.4
   yaml: ^2.3.1
