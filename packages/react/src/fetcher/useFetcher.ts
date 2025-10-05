@@ -17,7 +17,7 @@ import {
   FetchExchange,
   FetchRequest,
   getFetcher,
-  RequestOptions,
+  RequestOptions, FetcherError,
 } from '@ahoo-wang/fetcher';
 import { useMounted } from '../core';
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
@@ -33,13 +33,13 @@ import {
  * Configuration options for the useFetcher hook.
  * Extends RequestOptions and FetcherCapable interfaces.
  */
-export interface UseFetcherOptions<R, E = unknown>
+export interface UseFetcherOptions<R, E = FetcherError>
   extends RequestOptions,
     FetcherCapable,
     UsePromiseStateOptions<R, E> {
 }
 
-export interface UseFetcherReturn<R, E = unknown> extends PromiseState<R, E> {
+export interface UseFetcherReturn<R, E = FetcherError> extends PromiseState<R, E> {
   /** The FetchExchange object representing the ongoing fetch operation */
   exchange?: FetchExchange;
   execute: (request: FetchRequest) => Promise<void>;
@@ -72,7 +72,7 @@ export interface UseFetcherReturn<R, E = unknown> extends PromiseState<R, E> {
  * }
  * ```
  */
-export function useFetcher<R, E = unknown>(
+export function useFetcher<R, E = FetcherError>(
   options?: UseFetcherOptions<R, E>,
 ): UseFetcherReturn<R, E> {
   const { fetcher = fetcherRegistrar.default } = options || {};
