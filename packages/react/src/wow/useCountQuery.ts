@@ -12,12 +12,8 @@
  */
 
 import { Condition } from '@ahoo-wang/fetcher-wow';
-import {
-  useExecutePromise,
-  UsePromiseStateOptions,
-  useLatest, UseExecutePromiseReturn,
-} from '../core';
-import { useCallback, useState } from 'react';
+import { UsePromiseStateOptions, UseExecutePromiseReturn } from '../core';
+import { useQuery } from './useQuery';
 
 /**
  * Options for the useCountQuery hook.
@@ -86,24 +82,15 @@ export interface UseCountQueryReturn<
 export function useCountQuery<FIELDS extends string = string, E = unknown>(
   options: UseCountQueryOptions<FIELDS, E>,
 ): UseCountQueryReturn<FIELDS> {
-  const { initialCondition } = options;
-  const promiseState = useExecutePromise<number, E>(options);
-  const [condition, setCondition] = useState(initialCondition);
-  const latestOptions = useLatest(options);
-  const countExecutor = useCallback(async (): Promise<number> => {
-    return latestOptions.current.count(
-      condition,
-      latestOptions.current.attributes,
-    );
-  }, [condition, latestOptions]);
+  const { initialCondition, count } = options;
 
-  const execute = useCallback(() => {
-    return promiseState.execute(countExecutor);
-  }, [promiseState, countExecutor]);
-
-  return {
-    ...promiseState,
-    execute,
-    setCondition,
-  };
+  return useQuery<number, Condition<FIELDS>, E>({
+    ...options,
+    initialQuery: initialCondition,
+    stateFields: {
+      condition: { initialValue: initialCondition },
+    },
+    buildQuery: ({ condition }) => condition,
+    executeQuery: count,
+  }) as UseCountQueryReturn<FIELDS, E>;
 }

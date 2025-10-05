@@ -18,12 +18,8 @@ import {
   singleQuery,
   FieldSort,
 } from '@ahoo-wang/fetcher-wow';
-import {
-  useExecutePromise,
-  UsePromiseStateOptions,
-  useLatest, UseExecutePromiseReturn,
-} from '../core';
-import { useCallback, useState } from 'react';
+import { UsePromiseStateOptions, UseExecutePromiseReturn } from '../core';
+import { useQuery } from './useQuery';
 
 /**
  * Options for the useSingleQuery hook.
@@ -107,33 +103,18 @@ export interface UseSingleQueryReturn<
 export function useSingleQuery<R, FIELDS extends string = string, E = unknown>(
   options: UseSingleQueryOptions<R, FIELDS, E>,
 ): UseSingleQueryReturn<R, FIELDS> {
-  const { initialQuery } = options;
-  const promiseState = useExecutePromise<R, E>(options);
-  const [condition, setCondition] = useState(initialQuery.condition);
-  const [projection, setProjection] = useState(initialQuery.projection);
-  const [sort, setSort] = useState(initialQuery.sort);
-  const latestOptions = useLatest(options);
-  const queryExecutor = useCallback(async (): Promise<R> => {
-    const queryRequest = singleQuery({
-      condition,
-      projection,
-      sort,
-    });
-    return latestOptions.current.query(
-      queryRequest,
-      latestOptions.current.attributes,
-    );
-  }, [condition, projection, sort, latestOptions]);
+  const { initialQuery, query } = options;
 
-  const execute = useCallback(() => {
-    return promiseState.execute(queryExecutor);
-  }, [promiseState, queryExecutor]);
-
-  return {
-    ...promiseState,
-    execute,
-    setCondition,
-    setProjection,
-    setSort,
-  };
+  return useQuery<R, SingleQuery<FIELDS>, E>({
+    ...options,
+    initialQuery,
+    stateFields: {
+      condition: { initialValue: initialQuery.condition },
+      projection: { initialValue: initialQuery.projection },
+      sort: { initialValue: initialQuery.sort },
+    },
+    buildQuery: ({ condition, projection, sort }) =>
+      singleQuery({ condition, projection, sort }),
+    executeQuery: query,
+  }) as UseSingleQueryReturn<R, FIELDS, E>;
 }

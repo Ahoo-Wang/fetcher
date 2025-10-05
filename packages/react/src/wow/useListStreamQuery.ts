@@ -19,12 +19,8 @@ import {
   FieldSort,
 } from '@ahoo-wang/fetcher-wow';
 import type { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
-import {
-  useExecutePromise,
-  UsePromiseStateOptions,
-  useLatest, UseExecutePromiseReturn,
-} from '../core';
-import { useCallback, useState } from 'react';
+import { UsePromiseStateOptions, UseExecutePromiseReturn } from '../core';
+import { useQuery } from './useQuery';
 
 /**
  * Options for the useListStreamQuery hook.
@@ -124,41 +120,21 @@ export function useListStreamQuery<
 >(
   options: UseListStreamQueryOptions<R, FIELDS, E>,
 ): UseListStreamQueryReturn<R, FIELDS> {
-  const { initialQuery } = options;
-  const promiseState = useExecutePromise<
-    ReadableStream<JsonServerSentEvent<R>>,
-    E
-  >(options);
-  const [condition, setCondition] = useState(initialQuery.condition);
-  const [projection, setProjection] = useState(initialQuery.projection);
-  const [sort, setSort] = useState(initialQuery.sort);
-  const [limit, setLimit] = useState(initialQuery.limit);
-  const latestOptions = useLatest(options);
-  const streamExecutor = useCallback(async (): Promise<
-    ReadableStream<JsonServerSentEvent<R>>
-  > => {
-    const queryRequest = listQuery({
-      condition,
-      projection,
-      sort,
-      limit,
-    });
-    return latestOptions.current.listStream(
-      queryRequest,
-      latestOptions.current.attributes,
-    );
-  }, [condition, projection, sort, limit, latestOptions]);
+  const { initialQuery, listStream } = options;
 
-  const execute = useCallback(() => {
-    return promiseState.execute(streamExecutor);
-  }, [promiseState, streamExecutor]);
-
-  return {
-    ...promiseState,
-    execute,
-    setCondition,
-    setProjection,
-    setSort,
-    setLimit,
-  };
+  return useQuery<ReadableStream<JsonServerSentEvent<R>>, ListQuery<FIELDS>, E>(
+    {
+      ...options,
+      initialQuery,
+      stateFields: {
+        condition: { initialValue: initialQuery.condition },
+        projection: { initialValue: initialQuery.projection },
+        sort: { initialValue: initialQuery.sort },
+        limit: { initialValue: initialQuery.limit },
+      },
+      buildQuery: ({ condition, projection, sort, limit }) =>
+        listQuery({ condition, projection, sort, limit }),
+      executeQuery: listStream,
+    },
+  ) as UseListStreamQueryReturn<R, FIELDS, E>;
 }

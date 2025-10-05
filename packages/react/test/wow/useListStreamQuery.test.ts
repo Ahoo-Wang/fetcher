@@ -63,7 +63,12 @@ describe('useListStreamQuery', () => {
       reset: mockReset,
     });
     (useLatest as any).mockReturnValue({
-      current: { listStream: mockListStreamFn, attributes: {} },
+      current: {
+        listStream: mockListStreamFn,
+        attributes: {},
+        buildQuery: vi.fn().mockReturnValue(initialQuery),
+        executeQuery: mockListStreamFn,
+      },
     });
   });
 
@@ -186,7 +191,12 @@ describe('useListStreamQuery', () => {
   it('should pass attributes to listStream function', async () => {
     const attributes = { token: 'abc' };
     (useLatest as any).mockReturnValue({
-      current: { listStream: mockListStreamFn, attributes },
+      current: {
+        listStream: mockListStreamFn,
+        attributes,
+        buildQuery: vi.fn().mockReturnValue(initialQuery),
+        executeQuery: mockListStreamFn,
+      },
     });
 
     const { result } = renderHook(() =>

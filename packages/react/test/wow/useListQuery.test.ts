@@ -63,7 +63,12 @@ describe('useListQuery', () => {
       reset: mockReset,
     });
     (useLatest as any).mockReturnValue({
-      current: { list: mockListFn, attributes: {} },
+      current: {
+        list: mockListFn,
+        attributes: {},
+        buildQuery: vi.fn().mockReturnValue(initialQuery),
+        executeQuery: mockListFn,
+      },
     });
   });
 
@@ -186,7 +191,12 @@ describe('useListQuery', () => {
   it('should pass attributes to list function', async () => {
     const attributes = { token: 'abc' };
     (useLatest as any).mockReturnValue({
-      current: { list: mockListFn, attributes },
+      current: {
+        list: mockListFn,
+        attributes,
+        buildQuery: vi.fn().mockReturnValue(initialQuery),
+        executeQuery: mockListFn,
+      },
     });
 
     const { result } = renderHook(() =>

@@ -18,12 +18,8 @@ import {
   listQuery,
   FieldSort,
 } from '@ahoo-wang/fetcher-wow';
-import {
-  useExecutePromise,
-  UsePromiseStateOptions,
-  useLatest, UseExecutePromiseReturn,
-} from '../core';
-import { useCallback, useState } from 'react';
+import { UsePromiseStateOptions, UseExecutePromiseReturn } from '../core';
+import { useQuery } from './useQuery';
 
 /**
  * Options for the useListQuery hook.
@@ -112,36 +108,19 @@ export interface UseListQueryReturn<
 export function useListQuery<R, FIELDS extends string = string, E = unknown>(
   options: UseListQueryOptions<R, FIELDS, E>,
 ): UseListQueryReturn<R, FIELDS> {
-  const { initialQuery } = options;
-  const promiseState = useExecutePromise<R[], E>(options);
-  const [condition, setCondition] = useState(initialQuery.condition);
-  const [projection, setProjection] = useState(initialQuery.projection);
-  const [sort, setSort] = useState(initialQuery.sort);
-  const [limit, setLimit] = useState(initialQuery.limit);
-  const latestOptions = useLatest(options);
-  const listExecutor = useCallback(async (): Promise<R[]> => {
-    const queryRequest = listQuery({
-      condition,
-      projection,
-      sort,
-      limit,
-    });
-    return latestOptions.current.list(
-      queryRequest,
-      latestOptions.current.attributes,
-    );
-  }, [condition, projection, sort, limit, latestOptions]);
+  const { initialQuery, list } = options;
 
-  const execute = useCallback(() => {
-    return promiseState.execute(listExecutor);
-  }, [promiseState, listExecutor]);
-
-  return {
-    ...promiseState,
-    execute,
-    setCondition,
-    setProjection,
-    setSort,
-    setLimit,
-  };
+  return useQuery<R[], ListQuery<FIELDS>, E>({
+    ...options,
+    initialQuery,
+    stateFields: {
+      condition: { initialValue: initialQuery.condition },
+      projection: { initialValue: initialQuery.projection },
+      sort: { initialValue: initialQuery.sort },
+      limit: { initialValue: initialQuery.limit },
+    },
+    buildQuery: ({ condition, projection, sort, limit }) =>
+      listQuery({ condition, projection, sort, limit }),
+    executeQuery: list,
+  }) as UseListQueryReturn<R, FIELDS, E>;
 }

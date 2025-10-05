@@ -20,12 +20,8 @@ import {
   Projection,
   FieldSort,
 } from '@ahoo-wang/fetcher-wow';
-import {
-  useExecutePromise,
-  UsePromiseStateOptions,
-  useLatest, UseExecutePromiseReturn,
-} from '../core';
-import { useCallback, useState } from 'react';
+import { UsePromiseStateOptions, UseExecutePromiseReturn } from '../core';
+import { useQuery } from './useQuery';
 
 /**
  * Options for the usePagedQuery hook.
@@ -114,36 +110,23 @@ export interface UsePagedQueryReturn<
 export function usePagedQuery<R, FIELDS extends string = string, E = unknown>(
   options: UsePagedQueryOptions<R, FIELDS, E>,
 ): UsePagedQueryReturn<R, FIELDS> {
-  const { initialQuery } = options;
-  const promiseState = useExecutePromise<PagedList<R>, E>(options);
-  const [condition, setCondition] = useState(initialQuery.condition);
-  const [pagination, setPagination] = useState(initialQuery.pagination);
-  const [projection, setProjection] = useState(initialQuery.projection);
-  const [sort, setSort] = useState(initialQuery.sort);
-  const latestOptions = useLatest(options);
-  const queryExecutor = useCallback(async (): Promise<PagedList<R>> => {
-    const queryRequest = pagedQuery({
-      condition,
-      pagination,
-      projection,
-      sort,
-    });
-    return latestOptions.current.query(
-      queryRequest,
-      latestOptions.current.attributes,
-    );
-  }, [condition, projection, pagination, sort, latestOptions]);
+  const { initialQuery, query, attributes, onSuccess, onError, initialStatus } =
+    options;
 
-  const execute = useCallback(() => {
-    return promiseState.execute(queryExecutor);
-  }, [promiseState, queryExecutor]);
-
-  return {
-    ...promiseState,
-    execute,
-    setCondition,
-    setProjection,
-    setPagination,
-    setSort,
-  };
+  return useQuery<PagedList<R>, PagedQuery<FIELDS>, E>({
+    initialQuery,
+    stateFields: {
+      condition: { initialValue: initialQuery.condition },
+      pagination: { initialValue: initialQuery.pagination },
+      projection: { initialValue: initialQuery.projection },
+      sort: { initialValue: initialQuery.sort },
+    },
+    buildQuery: ({ condition, pagination, projection, sort }) =>
+      pagedQuery({ condition, pagination, projection, sort }),
+    executeQuery: query,
+    attributes,
+    onSuccess,
+    onError,
+    initialStatus,
+  }) as UsePagedQueryReturn<R, FIELDS, E>;
 }

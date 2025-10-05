@@ -48,7 +48,12 @@ describe('useCountQuery', () => {
       reset: mockReset,
     });
     (useLatest as any).mockReturnValue({
-      current: { count: mockCountFn, attributes: {} },
+      current: {
+        count: mockCountFn,
+        attributes: {},
+        buildQuery: vi.fn().mockReturnValue(initialCondition),
+        executeQuery: mockCountFn,
+      },
     });
   });
 
@@ -115,7 +120,12 @@ describe('useCountQuery', () => {
   it('should pass attributes to count function', async () => {
     const attributes = { token: 'abc' };
     (useLatest as any).mockReturnValue({
-      current: { count: mockCountFn, attributes },
+      current: {
+        count: mockCountFn,
+        attributes,
+        buildQuery: vi.fn().mockReturnValue(initialCondition),
+        executeQuery: mockCountFn,
+      },
     });
 
     const { result } = renderHook(() =>

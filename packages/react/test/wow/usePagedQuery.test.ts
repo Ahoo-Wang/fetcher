@@ -65,7 +65,12 @@ describe('usePagedQuery', () => {
       reset: mockReset,
     });
     (useLatest as any).mockReturnValue({
-      current: { query: mockQuery, attributes: {} },
+      current: {
+        query: mockQuery,
+        attributes: {},
+        buildQuery: vi.fn().mockReturnValue(initialQuery),
+        executeQuery: mockQuery,
+      },
     });
   });
 
@@ -190,7 +195,12 @@ describe('usePagedQuery', () => {
   it('should pass attributes to query function', async () => {
     const attributes = { token: 'abc' };
     (useLatest as any).mockReturnValue({
-      current: { query: mockQuery, attributes },
+      current: {
+        query: mockQuery,
+        attributes,
+        buildQuery: vi.fn().mockReturnValue(initialQuery),
+        executeQuery: mockQuery,
+      },
     });
 
     const { result } = renderHook(() =>
