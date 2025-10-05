@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-storage",
-  "version": "2.6.13",
+  "version": "2.6.15",
   "description": "A lightweight, cross-environment storage library with change event listening capabilities. Provides consistent API for browser localStorage/sessionStorage and in-memory storage with change notifications.",
   "keywords": [
     "storage",
