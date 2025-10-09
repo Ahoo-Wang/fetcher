@@ -94,7 +94,7 @@ import { useListQuery } from '@ahoo-wang/fetcher-react';
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition } = useListQuery({
     initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
-    list: async (listQuery) => fetchListData(listQuery),
+    execute: async (listQuery) => fetchListData(listQuery),
     autoExecute: true, // 在组件挂载时自动执行
   });
 
@@ -330,8 +330,8 @@ import { useListQuery } from '@ahoo-wang/fetcher-react';
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition, setLimit } = useListQuery({
     initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
-    list: async (listQuery) => {
-      // 您的列表获取逻辑
+    execute: async (listQuery) => {
+      // Your list fetching logic here
       return fetchListData(listQuery);
     },
   });
@@ -372,8 +372,8 @@ const MyComponent = () => {
       projection: {},
       sort: []
     },
-    query: async (pagedQuery) => {
-      // 您的分页获取逻辑
+    execute: async (pagedQuery) => {
+      // Your paged fetching logic here
       return fetchPagedData(pagedQuery);
     },
   });
@@ -389,7 +389,7 @@ const MyComponent = () => {
   return (
     <div>
       <ul>
-        {result?.data?.map((item, index) => (
+        {result?.list?.map((item, index) => (
           <li key={index}>{item.name}</li>
         ))}
       </ul>
@@ -414,7 +414,7 @@ import { useSingleQuery } from '@ahoo-wang/fetcher-react';
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition } = useSingleQuery({
     initialQuery: { condition: {}, projection: {}, sort: [] },
-    query: async (singleQuery) => {
+    execute: async (singleQuery) => {
       // 您的单个获取逻辑
       return fetchSingleData(singleQuery);
     },
@@ -446,8 +446,8 @@ import { useCountQuery } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition } = useCountQuery({
-    initialCondition: {},
-    count: async (condition) => {
+    initialQuery: {},
+    execute: async (condition) => {
       // 您的计数获取逻辑
       return fetchCount(condition);
     },
@@ -480,7 +480,7 @@ import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition } = useListStreamQuery({
     initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
-    listStream: async (listQuery) => {
+    execute: async (listQuery) => {
       // 您的流获取逻辑
       return fetchListStream(listQuery);
     },
@@ -768,7 +768,7 @@ function useCountQuery<FIELDS extends string = string, E = FetcherError>(
 
 **参数:**
 
-- `options`: 包含 initialCondition 和 count 函数的配置选项
+- `options`: 包含 initialQuery 和 execute 函数的配置选项
   - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
 
 **返回值:**
