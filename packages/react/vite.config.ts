@@ -39,6 +39,9 @@ export default defineConfig({
       },
     },
   },
+  esbuild: {
+    keepNames: true,
+  },
   plugins: [
     dts({
       outDirs: 'dist',
