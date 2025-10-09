@@ -13,7 +13,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useLatest } from '../../src/core';
+import { useLatest } from '../../src';
 
 describe('useLatest', () => {
   it('should return a ref with the initial value', () => {

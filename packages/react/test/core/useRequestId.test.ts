@@ -13,7 +13,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useRequestId } from '../../src/core';
+import { useRequestId } from '../../src';
 
 describe('useRequestId', () => {
   it('should initialize with request ID 0', () => {
