@@ -1,6 +1,6 @@
 # @ahoo-wang/fetcher-react
 
-Fetcher 生态的 React 集成包。提供 React Hooks 和组件，实现无缝的数据获取，支持自动重新渲染和加载状态。
+🚀 **强大的 React 数据获取库** - 无缝集成 HTTP 请求与 React hooks，具备自动状态管理、竞态条件保护和 TypeScript 支持。非常适合需要强大数据获取能力的现代 React 应用程序。
 
 [![npm version](https://img.shields.io/npm/v/@ahoo-wang/fetcher-react.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-react)
 [![Build Status](https://github.com/Ahoo-Wang/fetcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Ahoo-Wang/fetcher/actions)
@@ -37,6 +37,7 @@ Fetcher 生态的 React 集成包。提供 React Hooks 和组件，实现无缝�
     - [useSingleQuery Hook](#usesinglequery-hook)
     - [useCountQuery Hook](#usecountquery-hook)
     - [useListStreamQuery Hook](#useliststreamquery-hook)
+- [最佳实践](#最佳实践)
 - [API 参考](#api-参考)
 - [许可证](#许可证)
 
@@ -45,6 +46,11 @@ Fetcher 生态的 React 集成包。提供 React Hooks 和组件，实现无缝�
 ```bash
 npm install @ahoo-wang/fetcher-react
 ```
+
+### 要求
+
+- React 16.8+ (hooks 支持)
+- TypeScript 4.0+ (完整类型安全)
 
 ## 快速开始
 
@@ -515,6 +521,32 @@ const MyComponent = () => {
   );
 };
 ```
+
+## 最佳实践
+
+### 性能优化
+
+- 谨慎使用 `autoExecute: true`，避免在挂载时进行不必要的请求
+- 当启用 `autoExecute` 时，使用 `setQuery` 更新查询以触发自动重新执行
+- 在 `execute` 函数中记忆化昂贵的计算
+
+### 错误处理
+
+- 始终在组件中处理加载和错误状态
+- 使用自定义错误类型以更好地分类错误
+- 为瞬时故障实现重试逻辑
+
+### 类型安全
+
+- 为查询参数和结果定义严格的接口
+- 在整个应用程序中一致使用泛型类型
+- 启用严格 TypeScript 模式以获得最大安全性
+
+### 状态管理
+
+- 与全局状态管理结合使用（Redux、Zustand）以处理复杂应用
+- 使用 `useKeyStorage` 进行持久化的客户端数据存储
+- 实现乐观更新以改善用户体验
 
 ## API 参考
 

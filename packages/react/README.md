@@ -1,7 +1,8 @@
 # @ahoo-wang/fetcher-react
 
-React Integration Package Fetcher Ecosystem. Provides React Hooks and components for seamless data fetching with
-automatic re-rendering and loading states.
+🚀 **Powerful React Data Fetching Library** - Seamlessly integrate HTTP requests with React hooks, featuring automatic
+state management, race condition protection, and TypeScript support. Perfect for modern React applications requiring
+robust data fetching capabilities.
 
 [![npm version](https://img.shields.io/npm/v/@ahoo-wang/fetcher-react.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-react)
 [![Build Status](https://github.com/Ahoo-Wang/fetcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Ahoo-Wang/fetcher/actions)
@@ -37,6 +38,7 @@ automatic re-rendering and loading states.
         - [useSingleQuery Hook](#usesinglequery-hook)
         - [useCountQuery Hook](#usecountquery-hook)
         - [useListStreamQuery Hook](#useliststreamquery-hook)
+- [Best Practices](#best-practices)
 - [API Reference](#api-reference)
 - [License](#license)
 
@@ -45,6 +47,11 @@ automatic re-rendering and loading states.
 ```bash
 npm install @ahoo-wang/fetcher-react
 ```
+
+### Requirements
+
+- React 16.8+ (hooks support)
+- TypeScript 4.0+ (for full type safety)
 
 ## Quick Start
 
@@ -690,6 +697,32 @@ const MyComponent = () => {
   );
 };
 ```
+
+## Best Practices
+
+### Performance Optimization
+
+- Use `autoExecute: true` sparingly to avoid unnecessary requests on mount
+- Leverage `setQuery` for query updates when `autoExecute` is enabled to trigger automatic re-execution
+- Memoize expensive computations in your `execute` functions
+
+### Error Handling
+
+- Always handle loading and error states in your components
+- Use custom error types for better error categorization
+- Implement retry logic for transient failures
+
+### Type Safety
+
+- Define strict interfaces for your query parameters and results
+- Use generic types consistently across your application
+- Enable strict TypeScript mode for maximum safety
+
+### State Management
+
+- Combine with global state management (Redux, Zustand) for complex apps
+- Use `useKeyStorage` for persistent client-side data
+- Implement optimistic updates for better UX
 
 ## API Reference
 
