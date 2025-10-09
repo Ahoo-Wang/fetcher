@@ -102,10 +102,10 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
 export function useExecutePromise<R = unknown, E = FetcherError>(
   options?: UseExecutePromiseOptions<R, E>,
 ): UseExecutePromiseReturn<R, E> {
-  const state = usePromiseState<R, E>(options);
+  const { loading, result, error, status, setLoading, setSuccess, setError, setIdle } = usePromiseState<R, E>(options);
   const isMounted = useMounted();
   const requestId = useRequestId();
-
+  const propagateError = options?.propagateError;
   /**
    * Execute a promise supplier or promise and manage its state
    * @param input - A function that returns a Promise or a Promise to be executed
@@ -117,26 +117,26 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
         throw new Error('Component is unmounted');
       }
       const currentRequestId = requestId.generate();
-      state.setLoading();
+      setLoading();
       try {
         const promise = typeof input === 'function' ? input() : input;
         const data = await promise;
 
         if (isMounted() && requestId.isLatest(currentRequestId)) {
-          await state.setSuccess(data);
+          await setSuccess(data);
         }
         return data;
       } catch (err) {
         if (isMounted() && requestId.isLatest(currentRequestId)) {
-          await state.setError(err as E);
+          await setError(err as E);
         }
-        if (options?.propagateError) {
+        if (propagateError) {
           throw err;
         }
         return err as E;
       }
     },
-    [state, isMounted, requestId, options],
+    [setLoading, setSuccess, setError, isMounted, requestId, propagateError],
   );
 
   /**
@@ -144,19 +144,19 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
    */
   const reset = useCallback(() => {
     if (isMounted()) {
-      state.setIdle();
+      setIdle();
     }
-  }, [state, isMounted]);
+  }, [setIdle, isMounted]);
 
   return useMemo(
     () => ({
-      loading: state.loading,
-      result: state.result,
-      error: state.error,
+      loading: loading,
+      result: result,
+      error: error,
       execute,
       reset,
-      status: state.status,
+      status: status,
     }),
-    [state.loading, state.result, state.error, execute, reset, state.status],
+    [loading, result, error, execute, reset, status],
   );
 }
