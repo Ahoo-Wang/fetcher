@@ -13,6 +13,6 @@
     "rootDir": "src"
   },
   "include": [
-    "src"
+    "src/**/*"
   ]
 }
