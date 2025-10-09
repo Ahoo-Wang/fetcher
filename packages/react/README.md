@@ -340,7 +340,7 @@ import { useListQuery } from '@ahoo-wang/fetcher-react';
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition, setLimit } = useListQuery({
     initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
-    list: async (listQuery) => {
+    execute: async (listQuery) => {
       // Your list fetching logic here
       return fetchListData(listQuery);
     },
@@ -375,7 +375,7 @@ import { useListQuery } from '@ahoo-wang/fetcher-react';
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition } = useListQuery({
     initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
-    list: async (listQuery) => fetchListData(listQuery),
+    execute: async (listQuery) => fetchListData(listQuery),
     autoExecute: true, // Automatically execute on component mount
   });
 
@@ -413,7 +413,7 @@ const MyComponent = () => {
       projection: {},
       sort: []
     },
-    query: async (pagedQuery) => {
+    execute: async (pagedQuery) => {
       // Your paged fetching logic here
       return fetchPagedData(pagedQuery);
     },
@@ -430,7 +430,7 @@ const MyComponent = () => {
   return (
     <div>
       <ul>
-        {result?.data?.map((item, index) => (
+        {result?.list?.map((item, index) => (
           <li key={index}>{item.name}</li>
         ))}
       </ul>
@@ -458,7 +458,7 @@ const MyComponent = () => {
       projection: {},
       sort: []
     },
-    query: async (pagedQuery) => fetchPagedData(pagedQuery),
+    execute: async (pagedQuery) => fetchPagedData(pagedQuery),
     autoExecute: true, // Automatically execute on component mount
   });
 
@@ -470,7 +470,7 @@ const MyComponent = () => {
   return (
     <div>
       <ul>
-        {result?.data?.map((item, index) => (
+        {result?.list?.map((item, index) => (
           <li key={index}>{item.name}</li>
         ))}
       </ul>
@@ -495,7 +495,7 @@ import { useSingleQuery } from '@ahoo-wang/fetcher-react';
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition } = useSingleQuery({
     initialQuery: { condition: {}, projection: {}, sort: [] },
-    query: async (singleQuery) => {
+    execute: async (singleQuery) => {
       // Your single item fetching logic here
       return fetchSingleData(singleQuery);
     },
@@ -526,7 +526,7 @@ import { useSingleQuery } from '@ahoo-wang/fetcher-react';
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition } = useSingleQuery({
     initialQuery: { condition: {}, projection: {}, sort: [] },
-    query: async (singleQuery) => fetchSingleData(singleQuery),
+    execute: async (singleQuery) => fetchSingleData(singleQuery),
     autoExecute: true, // Automatically execute on component mount
   });
 
@@ -552,8 +552,8 @@ import { useCountQuery } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition } = useCountQuery({
-    initialCondition: {},
-    count: async (condition) => {
+    initialQuery: {},
+    execute: async (condition) => {
       // Your count fetching logic here
       return fetchCount(condition);
     },
@@ -583,8 +583,8 @@ import { useCountQuery } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition } = useCountQuery({
-    initialCondition: {},
-    count: async (condition) => fetchCount(condition),
+    initialQuery: {},
+    execute: async (condition) => fetchCount(condition),
     autoExecute: true, // Automatically execute on component mount
   });
 
@@ -611,7 +611,7 @@ import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition } = useListStreamQuery({
     initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
-    listStream: async (listQuery) => {
+    execute: async (listQuery) => {
       // Your stream fetching logic here
       return fetchListStream(listQuery);
     },
@@ -655,7 +655,7 @@ import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
 const MyComponent = () => {
   const { result, loading, error, execute, setCondition } = useListStreamQuery({
     initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
-    listStream: async (listQuery) => fetchListStream(listQuery),
+    execute: async (listQuery) => fetchListStream(listQuery),
     autoExecute: true, // Automatically execute on component mount
   });
 
@@ -947,7 +947,7 @@ A React hook for managing count queries with state management for conditions.
 
 **Parameters:**
 
-- `options`: Configuration options including initialCondition and count function
+- `options`: Configuration options including initialQuery and execute function
     - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
 
 **Returns:**
