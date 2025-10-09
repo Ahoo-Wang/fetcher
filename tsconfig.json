@@ -19,8 +19,6 @@
   "include": ["packages/*/src"],
   "exclude": [
     "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.test.tsx"
+    "dist"
   ]
 }
