@@ -45,14 +45,17 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "dependencies": {
-    "@ahoo-wang/fetcher": "workspace:^2.3.4",
-    "@ahoo-wang/fetcher-storage": "workspace:^2.3.4",
-    "@ahoo-wang/fetcher-wow": "workspace:^2.3.4",
     "react-use": "catalog:"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react-dom": ">=16.8.0",
+    "antd": "catalog:",
+    "@ahoo-wang/fetcher": "workspace:^2.3.4",
+    "@ahoo-wang/fetcher-storage": "workspace:^2.3.4",
+    "@ahoo-wang/fetcher-wow": "workspace:^2.3.4",
+    "@ahoo-wang/fetcher-react": "workspace:^2.8.0",
+    "@ahoo-wang/fetcher-openapi": "workspace:^2.3.4"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
