@@ -79,7 +79,7 @@ interface StorageDemoProps {
   initialValue?: string;
 }
 
-const StorageDemo: React.FC<StorageDemoProps> = ({ initialValue = '' }) => {
+function StorageDemo({ initialValue = '' }: StorageDemoProps) {
   const storage = React.useMemo(() => new MockStorage<string>(), []);
   const [storedValue, setStoredValue] = useSimpleStorage(storage);
   const [inputValue, setInputValue] = React.useState(initialValue);
@@ -134,7 +134,7 @@ const StorageDemo: React.FC<StorageDemoProps> = ({ initialValue = '' }) => {
       </Space>
     </Card>
   );
-};
+}
 
 const meta: Meta<typeof StorageDemo> = {
   title: 'React/Hooks/useKeyStorage',

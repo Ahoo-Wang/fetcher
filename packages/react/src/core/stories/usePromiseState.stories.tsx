@@ -24,10 +24,10 @@ interface PromiseStateDemoProps {
   showCallbacks?: boolean;
 }
 
-const PromiseStateDemo: React.FC<PromiseStateDemoProps> = ({
-                                                             initialStatus = PromiseStatus.IDLE,
-                                                             showCallbacks = false,
-                                                           }) => {
+function PromiseStateDemo({
+                            initialStatus = PromiseStatus.IDLE,
+                            showCallbacks = false,
+                          }: PromiseStateDemoProps) {
   const {
     status,
     loading,
@@ -124,7 +124,7 @@ const PromiseStateDemo: React.FC<PromiseStateDemoProps> = ({
       </Space>
     </Card>
   );
-};
+}
 
 const meta: Meta<typeof PromiseStateDemo> = {
   title: 'React/Hooks/usePromiseState',
