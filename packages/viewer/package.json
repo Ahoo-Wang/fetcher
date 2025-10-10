@@ -76,6 +76,7 @@
     "@types/react-dom": "catalog:",
     "jsdom": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:"
   }
 }

@@ -13,6 +13,7 @@
 
 import { defineConfig } from 'vite';
 import dts from 'unplugin-dts/vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   build: {
@@ -44,5 +45,6 @@ export default defineConfig({
       outDirs: 'dist',
       tsconfigPath: './tsconfig.json',
     }),
+    react(),
   ],
 });
