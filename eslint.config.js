@@ -1,3 +1,6 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from 'eslint-plugin-storybook';
+
 /*
  * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,11 +18,9 @@ import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
-  {
+export default tseslint.config({
     ignores: ['**/dist/**', '**/**.test.ts', '**/node_modules/**'],
-  },
-  {
+  }, {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
@@ -29,13 +30,11 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
     },
-  },
-  // 为 integration-test 添加特定配置
+  }, // 为 integration-test 添加特定配置
   {
     files: ['integration-test/**/*.{ts,tsx}'],
     rules: {
       // 可以为集成测试设置特定规则
       '@typescript-eslint/no-unused-vars': 'off',
     },
-  },
-);
+  }, storybook.configs['flat/recommended']);

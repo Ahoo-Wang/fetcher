@@ -18,7 +18,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/**.test.ts', '**/node_modules/**'],
+    ignores: ['**/dist/**', '**/**.test.ts', '**/**.stories.tsx', '**/node_modules/**'],
   },
   {
     files: ['**/*.{ts,tsx}'],
