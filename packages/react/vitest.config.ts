@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { defineConfig, mergeConfig } from 'vitest/config';
+import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
 import viteConfig from './vite.config';
 
 export default mergeConfig(
@@ -21,7 +21,7 @@ export default mergeConfig(
       environment: 'jsdom',
       globals: true,
       coverage: {
-        reporter: ['text', 'json', 'html'],
+        exclude: [...configDefaults.exclude, '**/**.stories.tsx'],
       },
     },
   }),
