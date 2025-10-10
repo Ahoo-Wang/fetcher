@@ -12,83 +12,21 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, Card, Typography, Space, Input, Alert } from 'antd';
+import { useKeyStorage } from '../useKeyStorage';
+import { InMemoryListenableStorage, KeyStorage } from '@ahoo-wang/fetcher-storage';
 
 const { Text } = Typography;
 
-// Simple storage simulation for demonstration
-interface SimpleStorage<T> {
-  get(): T | null;
+const keyStorage = new KeyStorage<string>({
+  key: 'useKeyStorageDemo',
+  storage: new InMemoryListenableStorage(),
+});
 
-  set(value: T): void;
-
-  addListener(callback: () => void): () => void;
-}
-
-// Mock storage implementation
-class MockStorage<T> implements SimpleStorage<T> {
-  private value: T | null = null;
-  private listeners: (() => void)[] = [];
-
-  get(): T | null {
-    return this.value;
-  }
-
-  set(value: T): void {
-    this.value = value;
-    this.listeners.forEach(listener => listener());
-  }
-
-  addListener(callback: () => void): () => void {
-    this.listeners.push(callback);
-    return () => {
-      const index = this.listeners.indexOf(callback);
-      if (index > -1) {
-        this.listeners.splice(index, 1);
-      }
-    };
-  }
-}
-
-// Simplified storage hook for demo
-function useSimpleStorage<T>(
-  storage: SimpleStorage<T>,
-): [T | null, (value: T) => void] {
-  const [value, setValue] = React.useState<T | null>(() => storage.get());
-
-  React.useEffect(() => {
-    const unsubscribe = storage.addListener(() => {
-      setValue(storage.get());
-    });
-    return unsubscribe;
-  }, [storage]);
-
-  const setStoredValue = React.useCallback(
-    (value: T) => {
-      storage.set(value);
-    },
-    [storage],
-  );
-
-  return [value, setStoredValue];
-}
-
-// Component that demonstrates storage hook
-interface StorageDemoProps {
-  initialValue?: string;
-}
-
-function StorageDemo({ initialValue = '' }: StorageDemoProps) {
-  const storage = React.useMemo(() => new MockStorage<string>(), []);
-  const [storedValue, setStoredValue] = useSimpleStorage(storage);
-  const [inputValue, setInputValue] = React.useState(initialValue);
-
-  React.useEffect(() => {
-    if (initialValue && !storedValue) {
-      setStoredValue(initialValue);
-    }
-  }, [initialValue, storedValue, setStoredValue]);
+function StorageDemo() {
+  const [storedValue, setStoredValue] = useKeyStorage(keyStorage);
+  const [inputValue, setInputValue] = useState(storedValue ?? '');
 
   const handleSetValue = () => {
     setStoredValue(inputValue);
@@ -149,25 +87,11 @@ const meta: Meta<typeof StorageDemo> = {
     },
   },
   tags: ['autodocs'],
-  argTypes: {
-    initialValue: {
-      control: 'text',
-      description: 'Initial value to set in storage',
-    },
-  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: {
-    initialValue: 'Hello World',
-  },
-};
+export const Default: Story = {};
 
-export const Empty: Story = {
-  args: {
-    initialValue: '',
-  },
-};
+

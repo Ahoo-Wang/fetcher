@@ -26,7 +26,9 @@ export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
 ): [T | null, (value: T) => void] {
   const subscribe = useCallback(
-    (callback: () => void) => keyStorage.addListener(callback),
+    (callback: () => void) => {
+      return keyStorage.addListener(callback);
+    },
     [keyStorage],
   );
   const getSnapshot = useCallback(() => keyStorage.get(), [keyStorage]);
