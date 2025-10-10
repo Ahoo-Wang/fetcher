@@ -25,11 +25,11 @@ interface MockApiResponseProps {
   shouldFail?: boolean;
 }
 
-const MockApiResponse: React.FC<MockApiResponseProps> = ({
-                                                           url,
-                                                           delay = 1000,
-                                                           shouldFail = false,
-                                                         }) => {
+function MockApiResponse({
+                           url,
+                           delay = 1000,
+                           shouldFail = false,
+                         }: MockApiResponseProps) {
   const { loading, result, error, execute } = useFetcher<string>();
 
   const handleFetch = () => {
@@ -76,7 +76,7 @@ const MockApiResponse: React.FC<MockApiResponseProps> = ({
       </Space>
     </Card>
   );
-};
+}
 
 const meta: Meta<typeof MockApiResponse> = {
   title: 'React/Hooks/useFetcher',

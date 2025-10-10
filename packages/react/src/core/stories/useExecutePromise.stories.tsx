@@ -23,9 +23,9 @@ interface ExecutePromiseDemoProps {
   propagateError?: boolean;
 }
 
-const ExecutePromiseDemo: React.FC<ExecutePromiseDemoProps> = ({
-                                                                 propagateError = false,
-                                                               }) => {
+function ExecutePromiseDemo({
+                              propagateError = false,
+                            }: ExecutePromiseDemoProps) {
   const { loading, result, error, execute, reset, status } =
     useExecutePromise<string>({
       propagateError,
@@ -110,7 +110,7 @@ const ExecutePromiseDemo: React.FC<ExecutePromiseDemoProps> = ({
       </Space>
     </Card>
   );
-};
+}
 
 const meta: Meta<typeof ExecutePromiseDemo> = {
   title: 'React/Hooks/useExecutePromise',
