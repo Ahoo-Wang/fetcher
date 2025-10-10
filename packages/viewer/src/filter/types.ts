@@ -12,7 +12,6 @@
  */
 
 import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
-import { Schema } from '@ahoo-wang/fetcher-openapi';
 import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
 import { Ref } from 'react';
 
