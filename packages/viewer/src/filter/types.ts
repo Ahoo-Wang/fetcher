@@ -16,21 +16,22 @@ import { Schema } from '@ahoo-wang/fetcher-openapi';
 import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
 import { Ref } from 'react';
 
-export interface ConditionField extends NamedCapable, Schema {
+/**
+ * @see {@link Schema}
+ */
+export interface ConditionField extends NamedCapable {
   label: string;
-}
-
-export interface FriendlyCondition {
-  condition: Condition;
-  friendly: string;
+  type: string;
+  format?: string;
 }
 
 export interface ConditionFilterCallbacks {
-  getCondition(): FriendlyCondition;
+  getCondition(): Condition;
 }
 
 export interface ConditionFilterProps extends AttributesCapable {
   field: ConditionField;
+  placeholder?: string;
   operator: Operator;
   ref: Ref<ConditionFilterCallbacks>;
 }
