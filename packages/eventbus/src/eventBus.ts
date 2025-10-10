@@ -19,7 +19,7 @@ export interface EventBus<Events extends Record<EventType, unknown>> {
    * Registers an event handler for the specified event type.
    * @param type - The event type to listen for
    * @param handler - The handler function to call when the event is emitted
-   * @returns A function to unregister the event handler
+   * @returns A function to remove the event handler
    */
   on<Key extends EventType>(
     type: Key,
@@ -30,21 +30,23 @@ export interface EventBus<Events extends Record<EventType, unknown>> {
    * Registers a one-time event handler that will be automatically removed after the first emission.
    * @param type - The event type to listen for
    * @param handler - The handler function to call when the event is emitted
+   * @returns A function to remove the event handler
    */
   once<Key extends EventType>(
     type: Key,
     handler: EventHandler<Events[Key]>,
-  ): void;
+  ): () => void;
 
   /**
    * Removes an event handler for the specified event type.
    * @param type - The event type to stop listening for
    * @param handler - The handler function to remove
+   * @returns True if the handler was removed, false otherwise
    */
   off<Key extends EventType>(
     type: Key,
     handler: EventHandler<Events[Key]>,
-  ): void;
+  ): boolean;
 
   /**
    * Emits an event to all registered handlers for the specified event type.
