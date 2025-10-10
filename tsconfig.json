@@ -4,6 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -16,7 +17,10 @@
     "composite": true,
     "incremental": true
   },
-  "include": ["packages/*/src"],
+  "include": [
+    "packages/*/src",
+    ".storybook"
+  ],
   "exclude": [
     "node_modules",
     "dist"
