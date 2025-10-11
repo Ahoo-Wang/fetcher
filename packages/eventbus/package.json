@@ -1,9 +1,15 @@
 {
   "name": "@ahoo-wang/fetcher-eventbus",
   "version": "2.8.3",
-  "description": "",
+  "description": "A TypeScript event bus library with serial, parallel, and broadcast implementations",
   "keywords": [
-    "eventbus"
+    "eventbus",
+    "typescript",
+    "event",
+    "bus",
+    "broadcast",
+    "serial",
+    "parallel"
   ],
   "author": "Ahoo-Wang",
   "license": "Apache-2.0",
