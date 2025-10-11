@@ -28,12 +28,10 @@ import {
   Badge,
   Divider,
 } from 'antd';
-import {
-  SerialTypedEventBus,
-  ParallelTypedEventBus,
-  BroadcastTypedEventBus,
-  EventBus,
-} from '../index';
+import { SerialTypedEventBus } from '../serialTypedEventBus';
+import { ParallelTypedEventBus } from '../parallelTypedEventBus';
+import { BroadcastTypedEventBus } from '../broadcastTypedEventBus';
+import { EventBus } from '../eventBus';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
