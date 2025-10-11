@@ -34,7 +34,7 @@ const UseFetcherDemo: React.FC = () => {
   const [logs, setLogs] = useState<string[]>([]);
   const [form] = Form.useForm();
 
-  const { loading, result, error, execute } = useFetcher<unknown>({
+  const { loading, result, error, execute, exchange } = useFetcher<unknown>({
     resultExtractor: ResultExtractors.Json,
   });
 
@@ -57,7 +57,10 @@ const UseFetcherDemo: React.FC = () => {
     try {
       await execute(request);
       setResponse(JSON.stringify(result, null, 2));
-      setLogs(prev => [...prev, `${values.method} request successful`]);
+      setLogs(prev => [
+        ...prev,
+        `${values.method} request to ${exchange?.request.url} successful`,
+      ]);
     } catch (err) {
       setResponse(`Error: ${error?.message || err}`);
       setLogs(prev => [
@@ -80,10 +83,11 @@ const UseFetcherDemo: React.FC = () => {
           layout="vertical"
           onFinish={handleRequest}
           initialValues={{
-            url: 'https://jsonplaceholder.typicode.com/posts/1',
+            url: 'https://jsonplaceholder.typicode.com/posts/{id}',
             method: 'GET',
             body: '{"title": "foo", "body": "bar", "userId": 1}',
             headers: '{"Content-Type": "application/json"}',
+            urlParams: '{"path":{"id":1}}',
             timeout: 5000,
           }}
         >
@@ -103,6 +107,9 @@ const UseFetcherDemo: React.FC = () => {
           </Form.Item>
           <Form.Item label="Headers" name="headers">
             <Input.TextArea placeholder="JSON headers" rows={2} />
+          </Form.Item>
+          <Form.Item label="URL Params" name="urlParams">
+            <Input.TextArea placeholder="JSON urlParams" rows={2} />
           </Form.Item>
           <Form.Item label="Timeout (ms)" name="timeout">
             <InputNumber min={0} />
