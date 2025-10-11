@@ -85,10 +85,10 @@ const FetcherDemo: React.FC = () => {
       const response = await fetcher.get(url, request);
       const result = await response.json();
       setResponse(JSON.stringify(result, null, 2));
-      setLogs(prev => [...prev, 'POST request successful']);
+      setLogs(prev => [...prev, `POST request to ${response.url} successful`]);
     } catch (error) {
       setResponse(`Error: ${error}`);
-      setLogs(prev => [...prev, `POST request failed: ${error}`]);
+      setLogs(prev => [...prev, `POST request  failed: ${error}`]);
     } finally {
       setLoading(false);
     }
@@ -113,10 +113,11 @@ const FetcherDemo: React.FC = () => {
             }
           }}
           initialValues={{
-            url: 'https://jsonplaceholder.typicode.com/posts/1',
+            url: 'https://jsonplaceholder.typicode.com/posts/{id}',
             method: 'GET',
             body: '{"name": "John Doe", "email": "john@example.com"}',
             headers: '{"Content-Type": "application/json"}',
+            urlParams: '{"path":{"id":1}}',
             timeout: 5000,
           }}
         >
