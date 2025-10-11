@@ -17,17 +17,25 @@ import { EventHandler, EventType } from './types';
 /**
  * Broadcast implementation of TypedEventBus using BroadcastChannel API
  *
- * Provides cross-tab/window event broadcasting. Events are emitted locally and broadcasted
- * to other tabs/windows via BroadcastChannel. Incoming broadcasts are handled by the delegate.
+ * Enables cross-tab/window event broadcasting within the same origin. Events are first emitted
+ * locally via the delegate, then broadcasted to other tabs/windows. Incoming broadcasts from
+ * other tabs are handled by the delegate as well.
+ *
+ * Note: BroadcastChannel is only supported in modern browsers and requires same-origin policy.
  *
  * @template EVENT - The type of events this bus handles
  *
  * @example
  * ```typescript
- * const delegate = new SerialTypedEventBus<string>('test');
+ * const delegate = new SerialTypedEventBus<string>('user-events');
  * const bus = new BroadcastTypedEventBus(delegate);
- * bus.on({ name: 'handler', order: 1, handle: (event) => console.log(event) });
- * await bus.emit('hello'); // Emits locally and broadcasts to other tabs
+ * bus.on({ name: 'user-login', order: 1, handle: (event) => console.log('User logged in:', event) });
+ * await bus.emit('john-doe'); // Emits locally and broadcasts to other tabs
+ * ```
+ *
+ * @example Custom channel name
+ * ```typescript
+ * const bus = new BroadcastTypedEventBus(delegate, 'my-custom-channel');
  * ```
  */
 export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
@@ -38,10 +46,14 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    * Creates a broadcast typed event bus
    *
    * @param delegate - The underlying TypedEventBus for local event handling
+   * @param channel - Optional custom BroadcastChannel name; defaults to `_broadcast_:{type}`
    */
-  constructor(private readonly delegate: TypedEventBus<EVENT>) {
+  constructor(
+    private readonly delegate: TypedEventBus<EVENT>,
+    channel?: string,
+  ) {
     this.type = delegate.type;
-    const channelName = `_broadcast_:${this.type}`;
+    const channelName = channel ?? `_broadcast_:${this.type}`;
     this.broadcastChannel = new BroadcastChannel(channelName);
     this.broadcastChannel.onmessage = async event => {
       try {
