@@ -13,51 +13,61 @@
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React from 'react';
+import { Typography, Card, Row, Col, Space } from 'antd';
 
 // Demo component showing decorator usage examples
 const DecoratorDemo: React.FC = () => {
   return (
-    <div style={{ padding: '20px', maxWidth: '800px' }}>
-      <h2>Decorator API Documentation</h2>
-      <p>
-        The Fetcher decorator package provides a clean, declarative way to
-        define HTTP services with automatic parameter binding and type safety.
-      </p>
+    <div style={{ padding: '24px', maxWidth: '900px' }}>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div>
+          <Typography.Title level={2}>
+            Decorator API Documentation
+          </Typography.Title>
+          <Typography.Paragraph>
+            The Fetcher decorator package provides a clean, declarative way to
+            define HTTP services with automatic parameter binding and type
+            safety.
+          </Typography.Paragraph>
+        </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h3>Key Features</h3>
-        <ul>
-          <li>
-            <strong>Class-based service definitions</strong> - Define APIs as
-            TypeScript classes
-          </li>
-          <li>
-            <strong>Automatic parameter binding</strong> - Path, query, header,
-            and body parameters are automatically bound
-          </li>
-          <li>
-            <strong>Type-safe method implementations</strong> - Full TypeScript
-            support with inferred types
-          </li>
-          <li>
-            <strong>Decorator-driven configuration</strong> - Use decorators to
-            configure HTTP methods and endpoints
-          </li>
-        </ul>
-      </div>
+        <Card>
+          <Typography.Title level={3}>Key Features</Typography.Title>
+          <ul style={{ paddingLeft: '20px' }}>
+            <li>
+              <strong>Class-based service definitions</strong> - Define APIs as
+              TypeScript classes
+            </li>
+            <li>
+              <strong>Automatic parameter binding</strong> - Path, query,
+              header, and body parameters are automatically bound
+            </li>
+            <li>
+              <strong>Type-safe method implementations</strong> - Full
+              TypeScript support with inferred types
+            </li>
+            <li>
+              <strong>Decorator-driven configuration</strong> - Use decorators
+              to configure HTTP methods and endpoints
+            </li>
+          </ul>
+        </Card>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h3>Example Usage</h3>
-        <pre
-          style={{
-            background: '#f6f8fa',
-            padding: '16px',
-            borderRadius: '6px',
-            overflow: 'auto',
-            fontSize: '14px',
-            lineHeight: '1.4',
-          }}
-        >{`import { NamedFetcher } from '@ahoo-wang/fetcher';
+        <Card>
+          <Typography.Title level={3}>Example Usage</Typography.Title>
+          <pre
+            style={{
+              background: '#f6f8fa',
+              border: '1px solid #d1d9e0',
+              borderRadius: '6px',
+              padding: '16px',
+              overflow: 'auto',
+              fontFamily:
+                'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+              fontSize: '14px',
+              lineHeight: '1.4',
+            }}
+          >{`import { NamedFetcher } from '@ahoo-wang/fetcher';
 import {
   api,
   get,
@@ -107,107 +117,96 @@ class UserService {
 const userService = new UserService();
 const users = await userService.getUsers(10);
 const user = await userService.getUser(1);`}</pre>
-      </div>
+        </Card>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h3>Available Decorators</h3>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '10px',
-          }}
-        >
-          <div
-            style={{
-              padding: '10px',
-              border: '1px solid #e1e5e9',
-              borderRadius: '4px',
-            }}
-          >
-            <strong>@api(basePath, options)</strong>
-            <p>Class decorator to define the base API path and configuration</p>
-          </div>
-          <div
-            style={{
-              padding: '10px',
-              border: '1px solid #e1e5e9',
-              borderRadius: '4px',
-            }}
-          >
-            <strong>@get(path)</strong>
-            <p>Method decorator for GET requests</p>
-          </div>
-          <div
-            style={{
-              padding: '10px',
-              border: '1px solid #e1e5e9',
-              borderRadius: '4px',
-            }}
-          >
-            <strong>@post(path)</strong>
-            <p>Method decorator for POST requests</p>
-          </div>
-          <div
-            style={{
-              padding: '10px',
-              border: '1px solid #e1e5e9',
-              borderRadius: '4px',
-            }}
-          >
-            <strong>@put(path)</strong>
-            <p>Method decorator for PUT requests</p>
-          </div>
-          <div
-            style={{
-              padding: '10px',
-              border: '1px solid #e1e5e9',
-              borderRadius: '4px',
-            }}
-          >
-            <strong>@del(path)</strong>
-            <p>Method decorator for DELETE requests</p>
-          </div>
-          <div
-            style={{
-              padding: '10px',
-              border: '1px solid #e1e5e9',
-              borderRadius: '4px',
-            }}
-          >
-            <strong>@path(param)</strong>
-            <p>Parameter decorator for URL path variables</p>
-          </div>
-          <div
-            style={{
-              padding: '10px',
-              border: '1px solid #e1e5e9',
-              borderRadius: '4px',
-            }}
-          >
-            <strong>@query(param)</strong>
-            <p>Parameter decorator for query parameters</p>
-          </div>
-          <div
-            style={{
-              padding: '10px',
-              border: '1px solid #e1e5e9',
-              borderRadius: '4px',
-            }}
-          >
-            <strong>@body()</strong>
-            <p>Parameter decorator for request body</p>
-          </div>
-        </div>
-      </div>
+        <Card>
+          <Typography.Title level={3}>Available Decorators</Typography.Title>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Card size="small" hoverable>
+                <Typography.Text strong>
+                  @api(basePath, options)
+                </Typography.Text>
+                <br />
+                <Typography.Text type="secondary">
+                  Class decorator to define the base API path and configuration
+                </Typography.Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Card size="small" hoverable>
+                <Typography.Text strong>@get(path)</Typography.Text>
+                <br />
+                <Typography.Text type="secondary">
+                  Method decorator for GET requests
+                </Typography.Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Card size="small" hoverable>
+                <Typography.Text strong>@post(path)</Typography.Text>
+                <br />
+                <Typography.Text type="secondary">
+                  Method decorator for POST requests
+                </Typography.Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Card size="small" hoverable>
+                <Typography.Text strong>@put(path)</Typography.Text>
+                <br />
+                <Typography.Text type="secondary">
+                  Method decorator for PUT requests
+                </Typography.Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Card size="small" hoverable>
+                <Typography.Text strong>@del(path)</Typography.Text>
+                <br />
+                <Typography.Text type="secondary">
+                  Method decorator for DELETE requests
+                </Typography.Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Card size="small" hoverable>
+                <Typography.Text strong>@path(param)</Typography.Text>
+                <br />
+                <Typography.Text type="secondary">
+                  Parameter decorator for URL path variables
+                </Typography.Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Card size="small" hoverable>
+                <Typography.Text strong>@query(param)</Typography.Text>
+                <br />
+                <Typography.Text type="secondary">
+                  Parameter decorator for query parameters
+                </Typography.Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Card size="small" hoverable>
+                <Typography.Text strong>@body()</Typography.Text>
+                <br />
+                <Typography.Text type="secondary">
+                  Parameter decorator for request body
+                </Typography.Text>
+              </Card>
+            </Col>
+          </Row>
+        </Card>
 
-      <div style={{ fontSize: '14px', color: '#666' }}>
-        <p>
-          <strong>Note:</strong> Decorators are a TypeScript experimental
-          feature. Make sure your tsconfig.json includes
-          "experimentalDecorators": true and "emitDecoratorMetadata": true.
-        </p>
-      </div>
+        <Card>
+          <Typography.Text type="secondary">
+            <strong>Note:</strong> Decorators are a TypeScript experimental
+            feature. Make sure your tsconfig.json includes
+            "experimentalDecorators": true and "emitDecoratorMetadata": true.
+          </Typography.Text>
+        </Card>
+      </Space>
     </div>
   );
 };

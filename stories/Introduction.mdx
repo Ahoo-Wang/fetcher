@@ -1,31 +1,32 @@
 import { Meta } from '@storybook/addon-docs/blocks';
+import { Typography, Card, Row, Col, Space } from 'antd';
 
 <Meta title="Introduction" />
 
-<div className="sb-container">
-  <div className='sb-section-title'>
-    # 🚀 Fetcher
+<div style={{ padding: '24px' }}>
+  <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <div>
+      <Typography.Title level={1}>
+        🚀 Fetcher
+      </Typography.Title>
+      <Typography.Text strong style={{ fontSize: '18px' }}>
+        Ultra-lightweight • Modular • TypeScript-First • Interceptor-Powered • LLM Streaming API Support
+      </Typography.Text>
+    </div>
 
-    **Ultra-lightweight • Modular • TypeScript-First • Interceptor-Powered • LLM Streaming API Support**
-
-  </div>
-
-  <div className="sb-section">
-    <div className="sb-section-item">
-      <h4 className="sb-section-item-heading">Why Fetcher?</h4>
-      <p className="sb-section-item-paragraph">
+    <Card>
+      <Typography.Title level={4}>Why Fetcher?</Typography.Title>
+      <Typography.Paragraph>
         Fetcher is not just another HTTP client—it's a complete ecosystem designed
         for modern web development with native LLM streaming API support. Built on
         the native Fetch API, Fetcher provides an Axios-like experience with
         powerful features while maintaining an incredibly small footprint.
-      </p>
-    </div>
-  </div>
+      </Typography.Paragraph>
+    </Card>
 
-  <div className="sb-section">
-    <div className="sb-section-item">
-      <h4 className="sb-section-item-heading">Core Features</h4>
-      <ul>
+    <Card>
+      <Typography.Title level={4}>Core Features</Typography.Title>
+      <ul style={{ paddingLeft: '20px' }}>
         <li>
           <strong>⚡ Ultra-Lightweight</strong>: Only 3KiB min+gzip - smaller than
           most alternatives
@@ -63,53 +64,84 @@ import { Meta } from '@storybook/addon-docs/blocks';
           instance for quick start
         </li>
       </ul>
-    </div>
-  </div>
+    </Card>
 
-  <div className="sb-section">
-    <div className="sb-section-item">
-      <h4 className="sb-section-item-heading">Package Ecosystem</h4>
-      <div className="sb-features-grid">
-        <div className="sb-grid-item">
-          <h5>@ahoo-wang/fetcher</h5>
-          <p>Core HTTP Client - Ultra-lightweight foundation</p>
-        </div>
-        <div className="sb-grid-item">
-          <h5>@ahoo-wang/fetcher-decorator</h5>
-          <p>Decorator Support - Declarative API service definitions</p>
-        </div>
-        <div className="sb-grid-item">
-          <h5>@ahoo-wang/fetcher-eventstream</h5>
-          <p>Real-Time Streaming & LLM Support - Server-Sent Events support</p>
-        </div>
-        <div className="sb-grid-item">
-          <h5>@ahoo-wang/fetcher-eventbus</h5>
-          <p>Event Bus System - Cross-tab communication</p>
-        </div>
-        <div className="sb-grid-item">
-          <h5>@ahoo-wang/fetcher-storage</h5>
-          <p>Cross-Environment Storage - Lightweight storage library</p>
-        </div>
-        <div className="sb-grid-item">
-          <h5>@ahoo-wang/fetcher-react</h5>
-          <p>React Integration - Hooks and components for data fetching</p>
-        </div>
-        <div className="sb-grid-item">
-          <h5>@ahoo-wang/fetcher-wow</h5>
-          <p>CQRS/DDD Framework Support - Integration with Wow framework</p>
-        </div>
-        <div className="sb-grid-item">
-          <h5>@ahoo-wang/fetcher-cosec</h5>
-          <p>Enterprise Security - CoSec authentication integration</p>
-        </div>
-      </div>
-    </div>
-  </div>
+    <Card>
+      <Typography.Title level={4}>Package Ecosystem</Typography.Title>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} md={8} lg={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher</Typography.Text>
+            <br />
+            <Typography.Text type="secondary">Core HTTP Client - Ultra-lightweight foundation</Typography.Text>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8} lg={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-decorator</Typography.Text>
+            <br />
+            <Typography.Text type="secondary">Decorator Support - Declarative API service definitions</Typography.Text>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8} lg={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-eventstream</Typography.Text>
+            <br />
+            <Typography.Text type="secondary">Real-Time Streaming & LLM Support - Server-Sent Events
+              support</Typography.Text>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8} lg={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-eventbus</Typography.Text>
+            <br />
+            <Typography.Text type="secondary">Event Bus System - Cross-tab communication</Typography.Text>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8} lg={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-storage</Typography.Text>
+            <br />
+            <Typography.Text type="secondary">Cross-Environment Storage - Lightweight storage library</Typography.Text>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8} lg={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-react</Typography.Text>
+            <br />
+            <Typography.Text type="secondary">React Integration - Hooks and components for data
+              fetching</Typography.Text>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8} lg={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-wow</Typography.Text>
+            <br />
+            <Typography.Text type="secondary">CQRS/DDD Framework Support - Integration with Wow
+              framework</Typography.Text>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8} lg={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-cosec</Typography.Text>
+            <br />
+            <Typography.Text type="secondary">Enterprise Security - CoSec authentication integration</Typography.Text>
+          </Card>
+        </Col>
+      </Row>
+    </Card>
 
-  <div className="sb-section">
-    <div className="sb-section-item">
-      <h4 className="sb-section-item-heading">Quick Start</h4>
-      <pre><code>{`import { Fetcher } from '@ahoo-wang/fetcher';
+    <Card>
+      <Typography.Title level={4}>Quick Start</Typography.Title>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '14px'
+      }}>{`import { Fetcher } from '@ahoo-wang/fetcher';
 
       // Create a fetcher instance
       const fetcher = new Fetcher({
@@ -124,90 +156,8 @@ import { Meta } from '@storybook/addon-docs/blocks';
       query: { include: 'profile' },
       },
       });
-      const userData = await response.json<User>();`}</code></pre>
+      const userData = await response.json<User>();`}</pre>
+    </Card>
 
-    </div>
-
-  </div>
+  </Space>
 </div>
-
-<style>
-  {`
-.sb-container {
-  margin-bottom: 48px;
-}
-
-  .sb-section {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .sb-section-title {
-    margin-bottom: 32px;
-    font-size: 2rem;
-    font-weight: bold;
-  }
-
-  .sb-section-item {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .sb-section-item-heading {
-    padding-top: 20px !important;
-    padding-bottom: 5px !important;
-    margin: 0 !important;
-    font-size: 1.5rem;
-  }
-
-  .sb-section-item-paragraph {
-    margin: 0;
-    padding-bottom: 10px;
-  }
-
-  .sb-features-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-gap: 20px;
-  }
-
-  .sb-grid-item {
-    padding: 16px;
-    border: 1px solid #e1e5e9;
-    border-radius: 6px;
-    background: #fff;
-  }
-
-  .sb-grid-item h5 {
-    margin: 0 0 8px 0;
-    font-size: 1.1rem;
-  }
-
-  .sb-grid-item p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #666;
-  }
-
-  pre {
-    background: #f6f8fa;
-    border: 1px solid #d1d9e0;
-    border-radius: 6px;
-    padding: 16px;
-    overflow-x: auto;
-  }
-
-  code {
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 0.9rem;
-  }
-
-  @media screen and (max-width: 600px) {
-    .sb-features-grid {
-      grid-template-columns: repeat(1, 1fr);
-    }
-  }
-`}
-</style>
