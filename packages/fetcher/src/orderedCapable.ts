@@ -11,24 +11,47 @@
  * limitations under the License.
  */
 
+const DEFAULT_ORDER = 0;
+
 /**
- * OrderedCapable Interface
+ * Interface for objects that can be ordered
  *
- * Interface that provides ordering capability for types that implement it.
- * Implementing types must provide an order property to determine execution order.
- * Lower numerical values have higher priority, and elements with the same value
- * maintain their relative order.
+ * This interface allows objects to specify their execution or display order.
+ * Objects implementing this interface can be sorted using the `toSorted` function.
+ * Lower order values indicate higher priority (executed/displayed first).
+ *
+ * @example
+ * ```typescript
+ * const interceptor: OrderedCapable = { order: 10 };
+ * const highPriority: OrderedCapable = { order: -5 };
+ * ```
  */
 export interface OrderedCapable {
   /**
-   * Order value
+   * Optional order value for sorting
    *
-   * Lower numerical values have higher priority. Negative numbers, zero, and
-   * positive numbers are all supported.
-   * When multiple elements have the same order value, their relative order
-   * will remain unchanged (stable sort).
+   * - Lower values have higher priority (sorted first)
+   * - Supports negative, zero, and positive numbers
+   * - Defaults to 0 if undefined
+   * - Equal values maintain original relative order (stable sort)
+   *
+   * @default 0
    */
-  order: number;
+  order?: number;
+}
+
+/**
+ * Comparator function for sorting OrderedCapable elements
+ *
+ * Compares two elements based on their order property. Elements with lower order values
+ * are sorted first. If order is undefined, defaults to DEFAULT_ORDER (0).
+ *
+ * @param a - First element to compare
+ * @param b - Second element to compare
+ * @returns Negative if a < b, positive if a > b, zero if equal
+ */
+export function sortOrder<T extends OrderedCapable>(a: T, b: T): number {
+  return (a.order ?? DEFAULT_ORDER) - (b.order ?? DEFAULT_ORDER);
 }
 
 /**
@@ -64,7 +87,7 @@ export function toSorted<T extends OrderedCapable>(
   filter?: (item: T) => boolean,
 ): T[] {
   if (filter) {
-    return array.filter(filter).sort((a, b) => a.order - b.order);
+    return array.filter(filter).sort(sortOrder);
   }
-  return [...array].sort((a, b) => a.order - b.order);
+  return [...array].sort(sortOrder);
 }
