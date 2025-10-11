@@ -14,6 +14,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { KeyStorage, KeyStorageOptions } from '../src';
 import { JsonSerializer } from '../src';
+import { nameGenerator } from '@ahoo-wang/fetcher-eventbus';
 
 // Mock Storage
 const mockStorage = {
@@ -178,7 +179,7 @@ describe('KeyStorage', () => {
   describe('error handling', () => {
     it('should handle serializer deserialize error gracefully', () => {
       const badSerializer = {
-        serialize: (value: any) => value,
+        serialize: (_value: any) => 'dummy',
         deserialize: (value: string) => {
           throw new Error('Deserialize error');
         },
@@ -236,12 +237,15 @@ describe('KeyStorage', () => {
 
   describe('destroy', () => {
     it('should remove the internal event handler', () => {
+      const generateSpy = vi.spyOn(nameGenerator, 'generate');
+      generateSpy.mockReturnValue('KeyStorage');
       const ks = new KeyStorage({ key: 'destroyKey', storage: mockStorage });
       // Mock the eventBus off method
       const mockOff = vi.fn();
       (ks as any).eventBus.off = mockOff;
       ks.destroy();
       expect(mockOff).toHaveBeenCalledWith('KeyStorage');
+      generateSpy.mockRestore();
     });
   });
 });
