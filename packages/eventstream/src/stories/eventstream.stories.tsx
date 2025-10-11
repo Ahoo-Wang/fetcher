@@ -11,24 +11,33 @@
  * limitations under the License.
  */
 
+import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import React from 'react';
+import {
+  Card,
+  Typography,
+  Space,
+  Button,
+  Input,
+  Row,
+  Col,
+  Tag,
+  Alert,
+  List,
+  Descriptions,
+  Tabs,
+} from 'antd';
+
+const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
+const { TabPane } = Tabs;
 
 // Note: EventStreamInterceptor is not exported, using direct prototype extension
 
-// Demo component
 const EventStreamDemo: React.FC = () => {
-  const [result, setResult] = React.useState<string>(
-    'Click a button to test event streaming',
-  );
-  const [loading, setLoading] = React.useState(false);
-  const [logs, setLogs] = React.useState<string[]>([]);
-
-  // Note: In real usage, EventStreamInterceptor would be added here
-  // const fetcher = new Fetcher({
-  //   baseURL: 'https://jsonplaceholder.typicode.com',
-  // });
-  // fetcher.interceptors.response.use(new EventStreamInterceptor());
+  const [result, setResult] = useState('');
+  const [logs, setLogs] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const addLog = (message: string) => {
     setLogs(prev => [
@@ -38,17 +47,28 @@ const EventStreamDemo: React.FC = () => {
   };
 
   const handleGenericSSE = async () => {
-    setLoading(true);
-    setResult('Testing generic Server-Sent Events...');
-    addLog('Starting generic SSE test');
-
     try {
-      // This would normally connect to a real SSE endpoint
-      // For demo purposes, we'll simulate the behavior
+      setLoading(true);
+      setResult('Testing generic Server-Sent Events...');
+      addLog('Starting generic SSE test');
+
+      // Simulate generic SSE events
       const mockEvents = [
-        { data: '{"message": "Event 1"}', event: 'update', id: '1' },
-        { data: '{"message": "Event 2"}', event: 'update', id: '2' },
-        { data: '{"message": "Event 3"}', event: 'complete', id: '3' },
+        {
+          data: '{"message": "Event 1", "timestamp": "2024-01-01T10:00:00Z"}',
+          event: 'update',
+          id: '1',
+        },
+        {
+          data: '{"message": "Event 2", "timestamp": "2024-01-01T10:00:01Z"}',
+          event: 'update',
+          id: '2',
+        },
+        {
+          data: '{"message": "Event 3", "timestamp": "2024-01-01T10:00:02Z"}',
+          event: 'complete',
+          id: '3',
+        },
       ];
 
       let eventCount = 0;
@@ -70,16 +90,25 @@ const EventStreamDemo: React.FC = () => {
   };
 
   const handleJSONSSE = async () => {
-    setLoading(true);
-    setResult('Testing JSON Server-Sent Events...');
-    addLog('Starting JSON SSE test');
-
     try {
+      setLoading(true);
+      setResult('Testing JSON Server-Sent Events...');
+      addLog('Starting JSON SSE test (LLM streaming)');
+
       // Simulate JSON SSE events (like from LLM APIs)
       const mockEvents = [
-        { choices: [{ delta: { content: 'Hello' } }] },
-        { choices: [{ delta: { content: ' world' } }] },
-        { choices: [{ delta: { content: '!' } }] },
+        {
+          choices: [{ delta: { content: 'Hello' }, finish_reason: null }],
+          created: Date.now(),
+        },
+        {
+          choices: [{ delta: { content: ' world' }, finish_reason: null }],
+          created: Date.now() + 100,
+        },
+        {
+          choices: [{ delta: { content: '!' }, finish_reason: 'stop' }],
+          created: Date.now() + 200,
+        },
       ];
 
       let fullContent = '';
@@ -102,27 +131,31 @@ const EventStreamDemo: React.FC = () => {
   };
 
   const handleTextStreaming = async () => {
-    setLoading(true);
-    setResult('Testing text line streaming...');
-    addLog('Starting text streaming test');
-
     try {
+      setLoading(true);
+      setResult('Testing text line streaming...');
+      addLog('Starting text streaming test');
+
       // Simulate text line processing
       const mockLines = [
-        'Line 1: This is the first line',
-        'Line 2: This is the second line',
-        'Line 3: This is the third line',
+        'data: {"chunk": "This is"}',
+        'data: {"chunk": " a streaming"}',
+        'data: {"chunk": " text response"}',
+        'data: {"chunk": "."}',
       ];
 
       let lineCount = 0;
+      let fullText = '';
       for (const line of mockLines) {
         await new Promise(resolve => setTimeout(resolve, 800));
         lineCount++;
-        addLog(`Processed line ${lineCount}: ${line}`);
-        setResult(`Processed ${lineCount} lines`);
+        const chunk = JSON.parse(line.replace('data: ', '')).chunk;
+        fullText += chunk;
+        addLog(`Processed line ${lineCount}: ${chunk}`);
+        setResult(`Streaming text: "${fullText}"`);
       }
 
-      setResult('Text streaming test completed');
+      setResult(`Final text: "${fullText}"`);
       addLog('Text streaming test completed');
     } catch (error) {
       setResult(`Error: ${error}`);
@@ -132,175 +165,270 @@ const EventStreamDemo: React.FC = () => {
     }
   };
 
-  const clearLogs = () => {
-    setLogs([]);
-    setResult('Logs cleared');
-  };
-
   return (
-    <div style={{ padding: '20px', maxWidth: '800px' }}>
-      <h2>Event Stream Demo</h2>
-      <p>
-        This demo shows how to use Fetcher's event streaming capabilities for
-        real-time data and LLM responses.
-      </p>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Card>
+        <Title level={3}>📡 Server-Sent Events & Streaming</Title>
+        <Paragraph>
+          Powerful event streaming capabilities with native LLM API integration.
+          Handle real-time data streams, Server-Sent Events, and streaming
+          responses from AI models.
+        </Paragraph>
+      </Card>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h3>Streaming Tests</h3>
-        <div
-          style={{
-            display: 'flex',
-            gap: '10px',
-            flexWrap: 'wrap',
-            marginBottom: '10px',
-          }}
-        >
-          <button
-            onClick={handleGenericSSE}
-            disabled={loading}
-            style={{
-              padding: '8px 16px',
-              background: '#007acc',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-            }}
-          >
-            Test Generic SSE
-          </button>
-          <button
-            onClick={handleJSONSSE}
-            disabled={loading}
-            style={{
-              padding: '8px 16px',
-              background: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-            }}
-          >
-            Test JSON SSE (LLM)
-          </button>
-          <button
-            onClick={handleTextStreaming}
-            disabled={loading}
-            style={{
-              padding: '8px 16px',
-              background: '#ffc107',
-              color: 'black',
-              border: 'none',
-              borderRadius: '4px',
-            }}
-          >
-            Test Text Streaming
-          </button>
-          <button
-            onClick={clearLogs}
-            style={{
-              padding: '8px 16px',
-              background: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-            }}
-          >
-            Clear Logs
-          </button>
-        </div>
-      </div>
+      <Alert
+        message="⚡ Real-time Streaming"
+        description="Process Server-Sent Events, JSON streams, and text streams with automatic parsing and transformation."
+        type="info"
+        showIcon
+        style={{ marginBottom: 24 }}
+      />
 
-      <div style={{ marginBottom: '20px' }}>
-        <h3>Result</h3>
-        <div
-          style={{
-            background: '#f5f5f5',
-            padding: '10px',
-            borderRadius: '4px',
-            minHeight: '40px',
-            fontSize: '14px',
-          }}
-        >
-          {loading ? 'Processing...' : result}
-        </div>
-      </div>
-
-      <div>
-        <h3>Event Logs</h3>
-        <div
-          style={{
-            background: '#f8f9fa',
-            border: '1px solid #dee2e6',
-            borderRadius: '4px',
-            maxHeight: '300px',
-            overflow: 'auto',
-          }}
-        >
-          {logs.length === 0 ? (
-            <div style={{ padding: '10px', color: '#6c757d' }}>
-              No events yet
-            </div>
-          ) : (
-            logs.map((log, index) => (
-              <div
-                key={index}
-                style={{
-                  padding: '8px 10px',
-                  borderBottom:
-                    index < logs.length - 1 ? '1px solid #dee2e6' : 'none',
-                  fontSize: '12px',
-                  fontFamily: 'monospace',
-                }}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={8}>
+          <Card title="🌐 Generic SSE" size="small">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Text>Standard Server-Sent Events with event types and IDs</Text>
+              <Button
+                onClick={handleGenericSSE}
+                type="primary"
+                block
+                loading={loading}
               >
-                {log}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+                Test Generic SSE
+              </Button>
+            </Space>
+          </Card>
+        </Col>
 
-      <div style={{ marginTop: '20px', fontSize: '14px', color: '#666' }}>
-        <p>
-          <strong>Note:</strong> This demo simulates event streaming behavior.
-          In a real application, you would connect to actual Server-Sent Events
-          endpoints.
-        </p>
-        <p>
-          <strong>LLM Integration:</strong> The JSON SSE test demonstrates how
-          to handle streaming responses from Large Language Models like OpenAI
-          GPT, Claude, etc.
-        </p>
-      </div>
-    </div>
+        <Col xs={24} md={8}>
+          <Card title="🤖 JSON SSE (LLM)" size="small">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Text>JSON streaming for AI models (OpenAI, Claude, etc.)</Text>
+              <Button
+                onClick={handleJSONSSE}
+                type="primary"
+                block
+                loading={loading}
+              >
+                Test LLM Streaming
+              </Button>
+            </Space>
+          </Card>
+        </Col>
+
+        <Col xs={24} md={8}>
+          <Card title="📄 Text Streaming" size="small">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Text>Line-by-line text processing and streaming</Text>
+              <Button
+                onClick={handleTextStreaming}
+                type="primary"
+                block
+                loading={loading}
+              >
+                Test Text Streaming
+              </Button>
+            </Space>
+          </Card>
+        </Col>
+      </Row>
+
+      <Card title="📋 Code Examples" size="small">
+        <Tabs defaultActiveKey="1">
+          <TabPane tab="Server-Sent Events" key="1">
+            <pre
+              style={{
+                background: '#f6f8fa',
+                border: '1px solid #d1d9e0',
+                borderRadius: '6px',
+                padding: '16px',
+                overflow: 'auto',
+                fontFamily:
+                  'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+                fontSize: '14px',
+              }}
+            >
+              {`// Server-Sent Events endpoint
+const fetcher = new Fetcher({
+  baseURL: 'https://api.example.com'
+});
+
+// Get SSE stream
+const response = await fetcher.get('/events', {
+  headers: { Accept: 'text/event-stream' }
+});
+
+// Process events
+for await (const event of response.body) {
+  console.log('Event:', event);
+}`}
+            </pre>
+          </TabPane>
+
+          <TabPane tab="LLM Streaming" key="2">
+            <pre
+              style={{
+                background: '#f6f8fa',
+                border: '1px solid #d1d9e0',
+                borderRadius: '6px',
+                padding: '16px',
+                overflow: 'auto',
+                fontFamily:
+                  'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+                fontSize: '14px',
+              }}
+            >
+              {`// OpenAI-style streaming
+const fetcher = new Fetcher({
+  baseURL: 'https://api.openai.com/v1'
+});
+
+const response = await fetcher.post('/chat/completions', {
+  body: {
+    model: 'gpt-3.5-turbo',
+    messages: [{ role: 'user', content: 'Hello!' }],
+    stream: true
+  },
+  headers: { 'Content-Type': 'application/json' }
+});
+
+// Process streaming response
+let fullContent = '';
+for await (const chunk of response.body) {
+  const content = chunk.choices[0]?.delta?.content;
+  if (content) {
+    fullContent += content;
+    console.log('Token:', content);
+  }
+}`}
+            </pre>
+          </TabPane>
+
+          <TabPane tab="Transform Streams" key="3">
+            <List
+              size="small"
+              dataSource={[
+                'ServerSentEventTransformStream - Parse SSE format',
+                'JsonServerSentEventTransformStream - Parse JSON SSE',
+                'TextLineTransformStream - Process text lines',
+                'EventStreamConverter - Convert between formats',
+              ]}
+              renderItem={item => <List.Item>{item}</List.Item>}
+            />
+          </TabPane>
+        </Tabs>
+      </Card>
+
+      <Card title="📊 Stream Result" size="small">
+        <TextArea
+          rows={4}
+          value={result}
+          readOnly
+          placeholder="Streaming results will appear here..."
+        />
+      </Card>
+
+      <Card title="Activity Log" size="small">
+        <TextArea
+          rows={8}
+          value={logs.join('\n')}
+          readOnly
+          placeholder="Event logs will appear here..."
+        />
+      </Card>
+
+      <Card>
+        <Title level={4}>Key Features</Title>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12}>
+            <Space direction="vertical">
+              <div>
+                <Tag color="blue">🌐 SSE Support</Tag>
+                <Text> Native Server-Sent Events processing</Text>
+              </div>
+              <div>
+                <Tag color="green">🤖 LLM Integration</Tag>
+                <Text> Built-in support for AI streaming APIs</Text>
+              </div>
+              <div>
+                <Tag color="orange">🔄 Transform Streams</Tag>
+                <Text> Automatic parsing and data transformation</Text>
+              </div>
+            </Space>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Space direction="vertical">
+              <div>
+                <Tag color="purple">📄 Text Processing</Tag>
+                <Text> Line-by-line text stream handling</Text>
+              </div>
+              <div>
+                <Tag color="red">⚡ Real-time</Tag>
+                <Text> Asynchronous iteration over streams</Text>
+              </div>
+              <div>
+                <Tag color="cyan">🔧 Extensible</Tag>
+                <Text> Custom transform streams supported</Text>
+              </div>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      <Card>
+        <Title level={4}>Architecture Overview</Title>
+        <Descriptions
+          bordered
+          size="small"
+          column={1}
+          items={[
+            {
+              key: 'transform-streams',
+              label: 'Transform Streams',
+              children:
+                'Web Streams API based processing pipelines that parse and transform streaming data in real-time.',
+            },
+            {
+              key: 'event-parsing',
+              label: 'Event Parsing',
+              children:
+                'Automatic parsing of Server-Sent Events format with support for event types, IDs, and data fields.',
+            },
+            {
+              key: 'json-streaming',
+              label: 'JSON Streaming',
+              children:
+                'Specialized handling for JSON-based streaming protocols used by LLM APIs and real-time applications.',
+            },
+            {
+              key: 'async-iteration',
+              label: 'Async Iteration',
+              children:
+                'Native async iteration support over ReadableStreams for seamless consumption of streaming data.',
+            },
+          ]}
+        />
+      </Card>
+    </Space>
   );
 };
 
-// More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
-const meta = {
-  title: 'EventStream/EventStream',
-  component: EventStreamDemo,
+const meta: Meta = {
+  title: 'EventStream/Server-Sent Events',
   parameters: {
-    layout: 'padded',
     docs: {
       description: {
         component:
-          'EventStream provides powerful Server-Sent Events support with native LLM streaming API integration.',
+          'Powerful Server-Sent Events support with native LLM streaming API integration. Handle real-time data streams, SSE events, and streaming responses from AI models.',
       },
     },
   },
-  tags: ['autodocs'],
-} satisfies Meta<typeof EventStreamDemo>;
+};
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj;
 
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
-export const BasicUsage: Story = {
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Demonstrates basic usage of EventStream for handling Server-Sent Events and LLM streaming responses.',
-      },
-    },
-  },
+export const Default: Story = {
+  render: () => <EventStreamDemo />,
 };

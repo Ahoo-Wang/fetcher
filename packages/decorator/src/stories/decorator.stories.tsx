@@ -11,63 +11,60 @@
  * limitations under the License.
  */
 
-import type { Meta, StoryObj } from '@storybook/react-vite';
 import React from 'react';
-import { Typography, Card, Row, Col, Space } from 'antd';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import {
+  Card,
+  Typography,
+  Space,
+  Row,
+  Col,
+  Tag,
+  Alert,
+  List,
+  Descriptions,
+  Tabs,
+} from 'antd';
 
-// Demo component showing decorator usage examples
+const { Title, Text, Paragraph } = Typography;
+const { TabPane } = Tabs;
+
 const DecoratorDemo: React.FC = () => {
   return (
-    <div style={{ padding: '24px', maxWidth: '900px' }}>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <div>
-          <Typography.Title level={2}>
-            Decorator API Documentation
-          </Typography.Title>
-          <Typography.Paragraph>
-            The Fetcher decorator package provides a clean, declarative way to
-            define HTTP services with automatic parameter binding and type
-            safety.
-          </Typography.Paragraph>
-        </div>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Card>
+        <Title level={3}>🏷️ Declarative API Decorators</Title>
+        <Paragraph>
+          Clean, type-safe HTTP service definitions using TypeScript decorators.
+          Automatic parameter binding for paths, queries, headers, and request
+          bodies.
+        </Paragraph>
+      </Card>
 
-        <Card>
-          <Typography.Title level={3}>Key Features</Typography.Title>
-          <ul style={{ paddingLeft: '20px' }}>
-            <li>
-              <strong>Class-based service definitions</strong> - Define APIs as
-              TypeScript classes
-            </li>
-            <li>
-              <strong>Automatic parameter binding</strong> - Path, query,
-              header, and body parameters are automatically bound
-            </li>
-            <li>
-              <strong>Type-safe method implementations</strong> - Full
-              TypeScript support with inferred types
-            </li>
-            <li>
-              <strong>Decorator-driven configuration</strong> - Use decorators
-              to configure HTTP methods and endpoints
-            </li>
-          </ul>
-        </Card>
+      <Alert
+        message="✨ Key Benefits"
+        description="Type-safe APIs, automatic parameter binding, declarative configuration, and clean service definitions."
+        type="info"
+        showIcon
+        style={{ marginBottom: 24 }}
+      />
 
-        <Card>
-          <Typography.Title level={3}>Example Usage</Typography.Title>
-          <pre
-            style={{
-              background: '#f6f8fa',
-              border: '1px solid #d1d9e0',
-              borderRadius: '6px',
-              padding: '16px',
-              overflow: 'auto',
-              fontFamily:
-                'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
-              fontSize: '14px',
-              lineHeight: '1.4',
-            }}
-          >{`import { NamedFetcher } from '@ahoo-wang/fetcher';
+      <Card title="📋 Code Examples" size="small">
+        <Tabs defaultActiveKey="1">
+          <TabPane tab="Basic Service Definition" key="1">
+            <pre
+              style={{
+                background: '#f6f8fa',
+                border: '1px solid #d1d9e0',
+                borderRadius: '6px',
+                padding: '16px',
+                overflow: 'auto',
+                fontFamily:
+                  'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+                fontSize: '14px',
+              }}
+            >
+              {`import { NamedFetcher } from '@ahoo-wang/fetcher';
 import {
   api,
   get,
@@ -101,122 +98,200 @@ class UserService {
   createUser(@body() user: Omit<User, 'id'>): Promise<User> {
     throw new Error('Auto-generated method');
   }
-
-  @put('/{id}')
-  updateUser(@path('id') id: number, @body() user: Partial<User>): Promise<User> {
-    throw new Error('Auto-generated method');
-  }
-
-  @del('/{id}')
-  deleteUser(@path('id') id: number): Promise<void> {
-    throw new Error('Auto-generated method');
-  }
 }
 
 // Use the service
 const userService = new UserService();
 const users = await userService.getUsers(10);
-const user = await userService.getUser(1);`}</pre>
-        </Card>
+const user = await userService.getUser(1);`}
+            </pre>
+          </TabPane>
 
-        <Card>
-          <Typography.Title level={3}>Available Decorators</Typography.Title>
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Card size="small" hoverable>
-                <Typography.Text strong>
-                  @api(basePath, options)
-                </Typography.Text>
-                <br />
-                <Typography.Text type="secondary">
-                  Class decorator to define the base API path and configuration
-                </Typography.Text>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Card size="small" hoverable>
-                <Typography.Text strong>@get(path)</Typography.Text>
-                <br />
-                <Typography.Text type="secondary">
-                  Method decorator for GET requests
-                </Typography.Text>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Card size="small" hoverable>
-                <Typography.Text strong>@post(path)</Typography.Text>
-                <br />
-                <Typography.Text type="secondary">
-                  Method decorator for POST requests
-                </Typography.Text>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Card size="small" hoverable>
-                <Typography.Text strong>@put(path)</Typography.Text>
-                <br />
-                <Typography.Text type="secondary">
-                  Method decorator for PUT requests
-                </Typography.Text>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Card size="small" hoverable>
-                <Typography.Text strong>@del(path)</Typography.Text>
-                <br />
-                <Typography.Text type="secondary">
-                  Method decorator for DELETE requests
-                </Typography.Text>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Card size="small" hoverable>
-                <Typography.Text strong>@path(param)</Typography.Text>
-                <br />
-                <Typography.Text type="secondary">
-                  Parameter decorator for URL path variables
-                </Typography.Text>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Card size="small" hoverable>
-                <Typography.Text strong>@query(param)</Typography.Text>
-                <br />
-                <Typography.Text type="secondary">
-                  Parameter decorator for query parameters
-                </Typography.Text>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Card size="small" hoverable>
-                <Typography.Text strong>@body()</Typography.Text>
-                <br />
-                <Typography.Text type="secondary">
-                  Parameter decorator for request body
-                </Typography.Text>
-              </Card>
-            </Col>
-          </Row>
-        </Card>
+          <TabPane tab="Parameter Types" key="2">
+            <List
+              size="small"
+              dataSource={[
+                '@path("id") - URL path parameters: /users/{id}',
+                '@query("limit") - Query parameters: ?limit=10',
+                '@body() - Request body (JSON)',
+                '@header("Authorization") - HTTP headers',
+                '@attribute("custom") - Interceptor attributes',
+              ]}
+              renderItem={item => <List.Item>{item}</List.Item>}
+            />
+          </TabPane>
 
-        <Card>
-          <Typography.Text type="secondary">
-            <strong>Note:</strong> Decorators are a TypeScript experimental
-            feature. Make sure your tsconfig.json includes
-            "experimentalDecorators": true and "emitDecoratorMetadata": true.
-          </Typography.Text>
-        </Card>
-      </Space>
-    </div>
+          <TabPane tab="HTTP Methods" key="3">
+            <List
+              size="small"
+              dataSource={[
+                '@get("/path") - GET requests',
+                '@post("/path") - POST requests',
+                '@put("/path") - PUT requests',
+                '@del("/path") - DELETE requests',
+                '@patch("/path") - PATCH requests',
+                '@head("/path") - HEAD requests',
+                '@options("/path") - OPTIONS requests',
+              ]}
+              renderItem={item => <List.Item>{item}</List.Item>}
+            />
+          </TabPane>
+        </Tabs>
+      </Card>
+
+      <Card title="🏗️ Available Decorators" size="small">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={8}>
+            <Card size="small" hoverable>
+              <Text strong>@api(basePath, options)</Text>
+              <br />
+              <Text type="secondary">
+                Class decorator to define the base API path and configuration
+              </Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Card size="small" hoverable>
+              <Text strong>@get(path)</Text>
+              <br />
+              <Text type="secondary">Method decorator for GET requests</Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Card size="small" hoverable>
+              <Text strong>@post(path)</Text>
+              <br />
+              <Text type="secondary">Method decorator for POST requests</Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Card size="small" hoverable>
+              <Text strong>@put(path)</Text>
+              <br />
+              <Text type="secondary">Method decorator for PUT requests</Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Card size="small" hoverable>
+              <Text strong>@del(path)</Text>
+              <br />
+              <Text type="secondary">Method decorator for DELETE requests</Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Card size="small" hoverable>
+              <Text strong>@path(param)</Text>
+              <br />
+              <Text type="secondary">
+                Parameter decorator for URL path variables
+              </Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Card size="small" hoverable>
+              <Text strong>@query(param)</Text>
+              <br />
+              <Text type="secondary">
+                Parameter decorator for query parameters
+              </Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Card size="small" hoverable>
+              <Text strong>@body()</Text>
+              <br />
+              <Text type="secondary">Parameter decorator for request body</Text>
+            </Card>
+          </Col>
+        </Row>
+      </Card>
+
+      <Card>
+        <Title level={4}>Key Features</Title>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12}>
+            <Space direction="vertical">
+              <div>
+                <Tag color="blue">🏗️ Class-based APIs</Tag>
+                <Text> Define HTTP services as TypeScript classes</Text>
+              </div>
+              <div>
+                <Tag color="green">🔗 Auto Parameter Binding</Tag>
+                <Text> Automatic mapping of parameters to HTTP elements</Text>
+              </div>
+              <div>
+                <Tag color="orange">📝 Type Safety</Tag>
+                <Text> Full TypeScript support with inferred types</Text>
+              </div>
+            </Space>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Space direction="vertical">
+              <div>
+                <Tag color="purple">⚙️ Declarative Config</Tag>
+                <Text> Configure APIs using intuitive decorators</Text>
+              </div>
+              <div>
+                <Tag color="red">🔄 Interceptor Support</Tag>
+                <Text> Works seamlessly with Fetcher interceptors</Text>
+              </div>
+              <div>
+                <Tag color="cyan">📚 IDE Support</Tag>
+                <Text> Excellent autocomplete and refactoring support</Text>
+              </div>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      <Card>
+        <Title level={4}>Architecture Overview</Title>
+        <Descriptions
+          bordered
+          size="small"
+          column={1}
+          items={[
+            {
+              key: 'metadata',
+              label: 'Metadata Collection',
+              children:
+                'Decorators collect configuration metadata at class and method levels, stored using reflect-metadata.',
+            },
+            {
+              key: 'parameter-binding',
+              label: 'Parameter Binding',
+              children:
+                'Method parameters are automatically mapped to HTTP elements (paths, queries, headers, body) based on decorators.',
+            },
+            {
+              key: 'request-execution',
+              label: 'Request Execution',
+              children:
+                'The RequestExecutor processes decorated methods, builds HTTP requests, and executes them through Fetcher.',
+            },
+            {
+              key: 'type-inference',
+              label: 'Type Inference',
+              children:
+                'TypeScript compiler infers return types and parameter types from decorator metadata and interface definitions.',
+            },
+          ]}
+        />
+      </Card>
+
+      <Alert
+        message="⚠️ TypeScript Configuration Required"
+        description='Decorators are an experimental TypeScript feature. Ensure your tsconfig.json includes: "experimentalDecorators": true and "emitDecoratorMetadata": true.'
+        type="warning"
+        showIcon
+      />
+    </Space>
   );
 };
 
-// More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
-const meta = {
-  title: 'Decorator/Decorator',
-  component: DecoratorDemo,
+const meta: Meta = {
+  title: 'Decorator/Declarative APIs',
   parameters: {
-    layout: 'padded',
     docs: {
       description: {
         component:
@@ -224,20 +299,11 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
-} satisfies Meta<typeof DecoratorDemo>;
+};
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj;
 
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
-export const BasicUsage: Story = {
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Demonstrates basic usage of Fetcher decorators for creating type-safe API services.',
-      },
-    },
-  },
+export const Default: Story = {
+  render: () => <DecoratorDemo />,
 };
