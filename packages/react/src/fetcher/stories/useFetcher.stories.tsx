@@ -73,7 +73,7 @@ const UseFetcherDemo: React.FC = () => {
   };
 
   return (
-    <Card title="useFetcher Demo" style={{ width: '100%', maxWidth: '1200px' }}>
+    <Card title="useFetcher Demo" style={{ minWidth: 600, maxWidth: 800 }}>
       <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
         <Form
           form={form}

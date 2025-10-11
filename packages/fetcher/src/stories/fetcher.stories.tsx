@@ -100,7 +100,7 @@ const FetcherDemo: React.FC = () => {
   };
 
   return (
-    <Card title="Fetcher Demo" style={{ width: '100%', maxWidth: '1200px' }}>
+    <Card title="Fetcher Demo" style={{ minWidth: 600, maxWidth: 800 }}>
       <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
         <Form
           form={form}
