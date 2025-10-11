@@ -13,10 +13,19 @@
 
 import { InMemoryStorage } from './inMemoryStorage';
 
+/**
+ * Checks if the current environment is a browser.
+ * @returns True if running in a browser environment, false otherwise
+ */
 export function isBrowser(): boolean {
   return typeof window !== 'undefined';
 }
 
+/**
+ * Gets the appropriate storage implementation based on the environment.
+ * Returns localStorage in browser environments if available, InMemoryStorage otherwise.
+ * @returns A Storage-compatible object
+ */
 export const getStorage = (): Storage => {
   if (isBrowser()) {
     return window.localStorage;
