@@ -47,6 +47,150 @@ import { Typography, Card, Row, Col, Space } from 'antd';
     </Card>
 
     <Card>
+      <Typography.Title level={4}>Framework Integrations</Typography.Title>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} md={8}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-react</Typography.Text>
+            <br />
+            <Typography.Text type="secondary" strong>React Hooks</Typography.Text>
+            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
+              <li>React hooks for HTTP operations</li>
+              <li>Promise state management</li>
+              <li>Query and mutation hooks</li>
+              <li>Real-time data streaming</li>
+              <li>Automatic error handling</li>
+            </ul>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-wow</Typography.Text>
+            <br />
+            <Typography.Text type="secondary" strong>Wow CQRS Framework</Typography.Text>
+            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
+              <li>CQRS pattern implementation</li>
+              <li>DDD primitives support</li>
+              <li>Real-time event streaming</li>
+              <li>Command and query clients</li>
+              <li>Advanced query DSL</li>
+            </ul>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-cosec</Typography.Text>
+            <br />
+            <Typography.Text type="secondary" strong>CoSec Authentication</Typography.Text>
+            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
+              <li>Automatic authentication headers</li>
+              <li>Device ID management</li>
+              <li>Token refresh handling</li>
+              <li>Request tracking</li>
+              <li>Secure token storage</li>
+            </ul>
+          </Card>
+        </Col>
+      </Row>
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>Utility Packages</Typography.Title>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} md={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-eventbus</Typography.Text>
+            <br />
+            <Typography.Text type="secondary" strong>Event Bus System</Typography.Text>
+            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
+              <li>Serial/parallel execution</li>
+              <li>Cross-tab broadcasting</li>
+              <li>Type-safe event handling</li>
+              <li>Async event support</li>
+              <li>One-time handlers</li>
+            </ul>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-eventstream</Typography.Text>
+            <br />
+            <Typography.Text type="secondary" strong>Event Streaming</Typography.Text>
+            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
+              <li>Server-Sent Events support</li>
+              <li>Real-time data streaming</li>
+              <li>Event converter system</li>
+              <li>LLM client integration</li>
+              <li>Stream processing</li>
+            </ul>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-storage</Typography.Text>
+            <br />
+            <Typography.Text type="secondary" strong>Storage Utilities</Typography.Text>
+            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
+              <li>Key-based storage</li>
+              <li>Multiple storage backends</li>
+              <li>Reactive storage updates</li>
+              <li>Type-safe storage</li>
+              <li>Storage synchronization</li>
+            </ul>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-openapi</Typography.Text>
+            <br />
+            <Typography.Text type="secondary" strong>OpenAPI Integration</Typography.Text>
+            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
+              <li>OpenAPI spec parsing</li>
+              <li>Automatic client generation</li>
+              <li>Type-safe API clients</li>
+              <li>Schema validation</li>
+              <li>API documentation</li>
+            </ul>
+          </Card>
+        </Col>
+      </Row>
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>Development Tools</Typography.Title>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-generator</Typography.Text>
+            <br />
+            <Typography.Text type="secondary" strong>Code Generation</Typography.Text>
+            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
+              <li>Automatic code generation</li>
+              <li>API client scaffolding</li>
+              <li>Type definition generation</li>
+              <li>Build-time optimization</li>
+              <li>Custom generator plugins</li>
+            </ul>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Card size="small" hoverable>
+            <Typography.Text strong>@ahoo-wang/fetcher-viewer</Typography.Text>
+            <br />
+            <Typography.Text type="secondary" strong>API Viewer</Typography.Text>
+            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
+              <li>Interactive API exploration</li>
+              <li>Request/response visualization</li>
+              <li>API documentation viewer</li>
+              <li>Testing interface</li>
+              <li>Developer tools integration</li>
+            </ul>
+          </Card>
+        </Col>
+      </Row>
+    </Card>
+
+    <Card>
       <Typography.Title level={4}>Architecture Principles</Typography.Title>
       <ul style={{ paddingLeft: '20px' }}>
         <li><strong>Modular Design</strong>: Core package with optional extensions</li>
