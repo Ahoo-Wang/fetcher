@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useKeyStorage } from '../../src';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
@@ -49,17 +49,19 @@ describe('useKeyStorage', () => {
     expect(result.current[0]).toBe('test-value');
   });
 
-  it('should update the value when setter is called', () => {
+  it('should update the value when setter is called', async () => {
     const { result } = renderHook(() => useKeyStorage(keyStorage));
 
     act(() => {
       result.current[1]('new-value');
     });
 
-    expect(result.current[0]).toBe('new-value');
+    await waitFor(() => {
+      expect(result.current[0]).toBe('new-value');
+    });
   });
 
-  it('should work with different value types', () => {
+  it('should work with different value types', async () => {
     const numberKeyStorage = new KeyStorage<number>({
       key: 'number-key',
       storage: listenableStorage,
@@ -71,6 +73,8 @@ describe('useKeyStorage', () => {
       result.current[1](42);
     });
 
-    expect(result.current[0]).toBe(42);
+    await waitFor(() => {
+      expect(result.current[0]).toBe(42);
+    });
   });
 });

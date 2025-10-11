@@ -19,6 +19,7 @@ import { BroadcastTypedEventBus, SerialTypedEventBus } from '@ahoo-wang/fetcher-
 
 export const DEFAULT_COSEC_DEVICE_ID_KEY = 'cosec-device-id';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface DeviceIdStorageOptions extends KeyStorageOptions<string> {
 }
 
