@@ -16,20 +16,22 @@ import { EventHandler, EventType } from './types';
 import { toSorted } from '@ahoo-wang/fetcher';
 
 /**
- * In-memory implementation of TypedEventBus
+ * Serial implementation of TypedEventBus
  *
- * Provides an in-memory event bus that manages event handlers with ordering and once-only execution.
+ * Provides an in-memory event bus that executes event handlers serially in order of priority.
+ * Supports ordering and once-only execution of handlers.
  *
  * @template EVENT - The type of events this bus handles
  *
  * @example
  * ```typescript
- * const bus = new InMemoryTypedEventBus<string>('test');
+ * const bus = new SerialTypedEventBus<string>('test');
  * bus.on({ name: 'handler1', order: 1, handle: (event) => console.log(event) });
- * await bus.emit('hello');
+ * bus.on({ name: 'handler2', order: 2, handle: (event) => console.log('second', event) });
+ * await bus.emit('hello'); // handler1 executes first, then handler2
  * ```
  */
-export class InMemoryTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
+export class SerialTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   private sortedHandlers: EventHandler<EVENT>[] = [];
 
   /**
@@ -48,7 +50,7 @@ export class InMemoryTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   }
 
   /**
-   * Emits an event to all registered handlers in parallel
+   * Emits an event to all registered handlers serially
    *
    * Handlers are executed in order of their priority. Once-only handlers are removed after execution.
    * Errors in individual handlers are logged but do not stop other handlers.
