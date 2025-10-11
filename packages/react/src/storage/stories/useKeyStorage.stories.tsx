@@ -16,14 +16,19 @@ import React, { useState } from 'react';
 import { Button, Card, Typography, Space, Input, Alert } from 'antd';
 import { useKeyStorage } from '../useKeyStorage';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { BroadcastTypedEventBus, SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
 const { Text } = Typography;
 
-const keyStorage = new KeyStorage<string>({
-  key: 'useKeyStorageDemo',
-});
+export interface StorageDemoProps {
+  keyStorage: KeyStorage<string>;
+}
 
-function StorageDemo() {
+function StorageDemo({
+                       keyStorage = new KeyStorage<string>({
+                         key: 'useKeyStorageDemo',
+                       }),
+                     }: StorageDemoProps) {
   const [storedValue, setStoredValue] = useKeyStorage(keyStorage);
   const [inputValue, setInputValue] = useState(storedValue ?? '');
 
@@ -92,5 +97,14 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const Broadcast: Story = {
+  args: {
+    keyStorage: new KeyStorage<string>({
+      key: 'useKeyStorageDemo',
+      eventBus: new BroadcastTypedEventBus(new SerialTypedEventBus('Broadcast')),
+    }),
+  },
+};
 
 
