@@ -28,14 +28,18 @@ export default defineConfig({
         'react',
         'react-dom',
         '@ahoo-wang/fetcher',
+        '@ahoo-wang/fetcher-eventstream',
         '@ahoo-wang/fetcher-storage',
+        '@ahoo-wang/fetcher-wow',
       ],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
           '@ahoo-wang/fetcher': 'Fetcher',
+          '@ahoo-wang/fetcher-eventstream': 'FetcherEventStream',
           '@ahoo-wang/fetcher-storage': 'FetcherStorage',
+          '@ahoo-wang/fetcher-wow': 'FetcherWow',
         },
       },
     },
