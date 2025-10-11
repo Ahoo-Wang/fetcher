@@ -61,7 +61,7 @@ describe('orderedCapable.ts', () => {
         { order: 1 },
       ];
 
-      const sortedItems = toSorted(items, item => item.order > 3);
+      const sortedItems = toSorted(items, item => (item.order ?? 0) > 3);
 
       expect(sortedItems).toHaveLength(3);
       expect(sortedItems[0].order).toBe(5);
@@ -119,9 +119,26 @@ describe('orderedCapable.ts', () => {
     it('should handle filter that returns no items', () => {
       const items: OrderedCapable[] = [{ order: 10 }, { order: 20 }];
 
-      const sortedItems = toSorted(items, item => item.order < 5);
+      const sortedItems = toSorted(items, item => (item.order ?? 0) < 5);
 
       expect(sortedItems).toHaveLength(0);
+    });
+
+    it('should handle undefined order values as default 0', () => {
+      const items: OrderedCapable[] = [
+        { order: 5 },
+        {},
+        { order: -1 },
+        { order: 10 },
+      ];
+
+      const sortedItems = toSorted(items);
+
+      expect(sortedItems).toHaveLength(4);
+      expect(sortedItems[0].order).toBe(-1);
+      expect(sortedItems[1].order).toBeUndefined();
+      expect(sortedItems[2].order).toBe(5);
+      expect(sortedItems[3].order).toBe(10);
     });
   });
 });
