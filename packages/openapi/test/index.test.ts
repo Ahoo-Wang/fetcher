@@ -12,9 +12,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
-
+import { compensationOpenAPI } from './fixtures/compensationOpenAPI';
 // This test ensures that all exports are properly defined
 describe('index.ts', () => {
+  it('should export the correct OpenAPI', () => {
+    expect(compensationOpenAPI).toBeDefined();
+  });
   it('should export all required modules', async () => {
     // Dynamically import the index file to check exports
     const module = await import('../src/index');
