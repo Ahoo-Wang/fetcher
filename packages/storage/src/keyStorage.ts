@@ -17,6 +17,7 @@ import {
   SerialTypedEventBus,
   TypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
+import { getStorage } from './env';
 
 export interface StorageEvent<Deserialized> {
   newValue?: Deserialized | null;
@@ -91,7 +92,7 @@ export class KeyStorage<Deserialized>
   constructor(options: KeyStorageOptions<Deserialized>) {
     this.key = options.key;
     this.serializer = options.serializer ?? typedIdentitySerializer();
-    this.storage = options.storage ?? window.localStorage;
+    this.storage = options.storage ?? getStorage();
     this.eventBus =
       options.eventBus ??
       new SerialTypedEventBus<StorageEvent<Deserialized>>(

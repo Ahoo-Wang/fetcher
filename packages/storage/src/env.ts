@@ -11,6 +11,15 @@
  * limitations under the License.
  */
 
-export * from './env';
-export * from './keyStorage';
-export * from './serializer';
+import { InMemoryStorage } from './inMemoryStorage';
+
+export function isBrowser(): boolean {
+  return typeof window !== 'undefined';
+}
+
+export const getStorage = (): Storage => {
+  if (isBrowser()) {
+    return window.localStorage;
+  }
+  return new InMemoryStorage();
+};
