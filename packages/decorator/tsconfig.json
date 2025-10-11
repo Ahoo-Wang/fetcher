@@ -6,6 +6,7 @@
       "ES2020",
       "DOM"
     ],
+    "jsx": "react-jsx",
     "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
@@ -25,6 +26,7 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "**/*.stories.tsx"
   ]
 }

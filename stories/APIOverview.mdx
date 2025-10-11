@@ -1,0 +1,269 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="API Overview" />
+
+<div className="sb-container">
+  <div className='sb-section-title'>
+    # 📦 API Overview
+
+    Comprehensive guide to Fetcher's package ecosystem and their capabilities
+
+  </div>
+
+  <div className="sb-section">
+    <div className="sb-section-item">
+      <h4 className="sb-section-item-heading">Core Packages</h4>
+      <div className="sb-features-grid">
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher</h5>
+          <p>
+            <strong>Core HTTP Client</strong>
+          </p>
+          <ul>
+            <li>Ultra-lightweight HTTP client (3KiB)</li>
+            <li>Path/query parameter support</li>
+            <li>Ordered interceptor system</li>
+            <li>Timeout and error handling</li>
+            <li>TypeScript-first design</li>
+          </ul>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-decorator</h5>
+          <p>
+            <strong>Declarative APIs</strong>
+          </p>
+          <ul>
+            <li>Class-based service definitions</li>
+            <li>Automatic parameter binding</li>
+            <li>Decorator-driven configuration</li>
+            <li>Type-safe method implementations</li>
+            <li>Metadata system for customization</li>
+          </ul>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-eventstream</h5>
+          <p>
+            <strong>Real-Time Streaming</strong>
+          </p>
+          <ul>
+            <li>Server-Sent Events (SSE) support</li>
+            <li>LLM streaming API integration</li>
+            <li>Async generator interfaces</li>
+            <li>Automatic response transformation</li>
+            <li>Event parsing and validation</li>
+          </ul>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-eventbus</h5>
+          <p>
+            <strong>Event Bus System</strong>
+          </p>
+          <ul>
+            <li>Serial and parallel execution</li>
+            <li>Cross-tab broadcasting</li>
+            <li>Type-safe event handling</li>
+            <li>Priority-based ordering</li>
+            <li>Async event processing</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div className="sb-section">
+    <div className="sb-section-item">
+      <h4 className="sb-section-item-heading">Integration Packages</h4>
+      <div className="sb-features-grid">
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-storage</h5>
+          <p>
+            <strong>Cross-Environment Storage</strong>
+          </p>
+          <ul>
+            <li>Browser localStorage/sessionStorage</li>
+            <li>In-memory storage fallback</li>
+            <li>Key-based storage API</li>
+            <li>Storage change events</li>
+            <li>Automatic environment detection</li>
+          </ul>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-react</h5>
+          <p>
+            <strong>React Integration</strong>
+          </p>
+          <ul>
+            <li>Custom React hooks</li>
+            <li>Automatic re-rendering</li>
+            <li>Data fetching utilities</li>
+            <li>Error and loading states</li>
+            <li>TypeScript integration</li>
+          </ul>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-wow</h5>
+          <p>
+            <strong>CQRS/DDD Framework</strong>
+          </p>
+          <ul>
+            <li>Command Query Responsibility Segregation</li>
+            <li>Domain-Driven Design primitives</li>
+            <li>Event streaming support</li>
+            <li>Advanced query DSL</li>
+            <li>Wow framework integration</li>
+          </ul>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-cosec</h5>
+          <p>
+            <strong>Enterprise Security</strong>
+          </p>
+          <ul>
+            <li>CoSec authentication</li>
+            <li>Automatic token refresh</li>
+            <li>Device ID management</li>
+            <li>Request tracking</li>
+            <li>Secure token storage</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div className="sb-section">
+    <div className="sb-section-item">
+      <h4 className="sb-section-item-heading">Development Tools</h4>
+      <div className="sb-features-grid">
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-generator</h5>
+          <p>
+            <strong>OpenAPI Code Generator</strong>
+          </p>
+          <ul>
+            <li>OpenAPI 3.0+ support</li>
+            <li>TypeScript code generation</li>
+            <li>WOW framework integration</li>
+            <li>CLI tool interface</li>
+            <li>Decorator-based APIs</li>
+          </ul>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-openapi</h5>
+          <p>
+            <strong>OpenAPI Types</strong>
+          </p>
+          <ul>
+            <li>Complete TypeScript definitions</li>
+            <li>OpenAPI specification types</li>
+            <li>Schema validation</li>
+            <li>Complex type handling</li>
+            <li>Reference resolution</li>
+          </ul>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-viewer</h5>
+          <p>
+            <strong>Data Visualization</strong>
+          </p>
+          <ul>
+            <li>Data display components</li>
+            <li>Interactive filtering</li>
+            <li>Customizable views</li>
+            <li>Integration utilities</li>
+            <li>React-based UI</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div className="sb-section">
+    <div className="sb-section-item">
+      <h4 className="sb-section-item-heading">Architecture Principles</h4>
+      <ul>
+        <li><strong>Modular Design</strong>: Core package with optional extensions</li>
+        <li><strong>TypeScript First</strong>: Complete type safety throughout</li>
+        <li><strong>Interceptor Pattern</strong>: Flexible middleware system</li>
+        <li><strong>Native Compatibility</strong>: Built on Fetch API</li>
+        <li><strong>Framework Agnostic</strong>: Works with any JavaScript framework</li>
+        <li><strong>Performance Focused</strong>: Minimal bundle size and optimal execution</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<style>
+  {`
+.sb-container {
+  margin-bottom: 48px;
+}
+
+  .sb-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .sb-section-title {
+    margin-bottom: 32px;
+    font-size: 2rem;
+    font-weight: bold;
+  }
+
+  .sb-section-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sb-section-item-heading {
+    padding-top: 20px !important;
+    padding-bottom: 5px !important;
+    margin: 0 !important;
+    font-size: 1.5rem;
+  }
+
+  .sb-features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 20px;
+  }
+
+  .sb-grid-item {
+    padding: 16px;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    background: #fff;
+  }
+
+  .sb-grid-item h5 {
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+    color: #0366d6;
+  }
+
+  .sb-grid-item p {
+    margin: 0 0 12px 0;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #24292e;
+  }
+
+  .sb-grid-item ul {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .sb-grid-item li {
+    margin-bottom: 4px;
+  }
+
+  @media screen and (max-width: 600px) {
+    .sb-features-grid {
+      grid-template-columns: repeat(1, 1fr);
+    }
+  }
+`}
+</style>

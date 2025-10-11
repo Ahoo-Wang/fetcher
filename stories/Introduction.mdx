@@ -1,0 +1,213 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Introduction" />
+
+<div className="sb-container">
+  <div className='sb-section-title'>
+    # 🚀 Fetcher
+
+    **Ultra-lightweight • Modular • TypeScript-First • Interceptor-Powered • LLM Streaming API Support**
+
+  </div>
+
+  <div className="sb-section">
+    <div className="sb-section-item">
+      <h4 className="sb-section-item-heading">Why Fetcher?</h4>
+      <p className="sb-section-item-paragraph">
+        Fetcher is not just another HTTP client—it's a complete ecosystem designed
+        for modern web development with native LLM streaming API support. Built on
+        the native Fetch API, Fetcher provides an Axios-like experience with
+        powerful features while maintaining an incredibly small footprint.
+      </p>
+    </div>
+  </div>
+
+  <div className="sb-section">
+    <div className="sb-section-item">
+      <h4 className="sb-section-item-heading">Core Features</h4>
+      <ul>
+        <li>
+          <strong>⚡ Ultra-Lightweight</strong>: Only 3KiB min+gzip - smaller than
+          most alternatives
+        </li>
+        <li>
+          <strong>🧭 Path & Query Parameters</strong>: Built-in support for path
+          (`{id}`/`:id`) and query parameters
+        </li>
+        <li>
+          <strong>🔗 Interceptor System</strong>: Request, response, and error
+          interceptors with ordered execution
+        </li>
+        <li>
+          <strong>⏱️ Timeout Control</strong>: Configurable request timeouts with
+          proper error handling
+        </li>
+        <li>
+          <strong>🔄 Fetch API Compatible</strong>: Fully compatible with the
+          native Fetch API
+        </li>
+        <li>
+          <strong>🛡️ TypeScript Support</strong>: Complete TypeScript definitions
+          for type-safe development
+        </li>
+        <li>
+          <strong>🧩 Modular Architecture</strong>: Lightweight core with optional
+          extension packages
+        </li>
+        <li>
+          <strong>📦 Named Fetcher Support</strong>: Automatic registration and
+          retrieval of fetcher instances
+        </li>
+        <li>
+          <strong>⚙️ Default Fetcher</strong>: Pre-configured default fetcher
+          instance for quick start
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div className="sb-section">
+    <div className="sb-section-item">
+      <h4 className="sb-section-item-heading">Package Ecosystem</h4>
+      <div className="sb-features-grid">
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher</h5>
+          <p>Core HTTP Client - Ultra-lightweight foundation</p>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-decorator</h5>
+          <p>Decorator Support - Declarative API service definitions</p>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-eventstream</h5>
+          <p>Real-Time Streaming & LLM Support - Server-Sent Events support</p>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-eventbus</h5>
+          <p>Event Bus System - Cross-tab communication</p>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-storage</h5>
+          <p>Cross-Environment Storage - Lightweight storage library</p>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-react</h5>
+          <p>React Integration - Hooks and components for data fetching</p>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-wow</h5>
+          <p>CQRS/DDD Framework Support - Integration with Wow framework</p>
+        </div>
+        <div className="sb-grid-item">
+          <h5>@ahoo-wang/fetcher-cosec</h5>
+          <p>Enterprise Security - CoSec authentication integration</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div className="sb-section">
+    <div className="sb-section-item">
+      <h4 className="sb-section-item-heading">Quick Start</h4>
+      <pre><code>{`import { Fetcher } from '@ahoo-wang/fetcher';
+
+      // Create a fetcher instance
+      const fetcher = new Fetcher({
+      baseURL: 'https://api.example.com',
+      timeout: 5000,
+      });
+
+      // GET request with path and query parameters
+      const response = await fetcher.get('/users/{id}', {
+      urlParams: {
+      path: { id: 123 },
+      query: { include: 'profile' },
+      },
+      });
+      const userData = await response.json<User>();`}</code></pre>
+
+    </div>
+
+  </div>
+</div>
+
+<style>
+  {`
+.sb-container {
+  margin-bottom: 48px;
+}
+
+  .sb-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .sb-section-title {
+    margin-bottom: 32px;
+    font-size: 2rem;
+    font-weight: bold;
+  }
+
+  .sb-section-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sb-section-item-heading {
+    padding-top: 20px !important;
+    padding-bottom: 5px !important;
+    margin: 0 !important;
+    font-size: 1.5rem;
+  }
+
+  .sb-section-item-paragraph {
+    margin: 0;
+    padding-bottom: 10px;
+  }
+
+  .sb-features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 20px;
+  }
+
+  .sb-grid-item {
+    padding: 16px;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    background: #fff;
+  }
+
+  .sb-grid-item h5 {
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+  }
+
+  .sb-grid-item p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
+  }
+
+  pre {
+    background: #f6f8fa;
+    border: 1px solid #d1d9e0;
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+  }
+
+  code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.9rem;
+  }
+
+  @media screen and (max-width: 600px) {
+    .sb-features-grid {
+      grid-template-columns: repeat(1, 1fr);
+    }
+  }
+`}
+</style>
