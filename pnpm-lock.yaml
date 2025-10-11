@@ -653,6 +653,10 @@ importers:
         version: 3.2.4(@types/node@24.5.2)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.0.0(postcss@8.5.6))(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.3))(yaml@2.8.1)
 
   packages/storage:
+    dependencies:
+      '@ahoo-wang/fetcher-eventbus':
+        specifier: workspace:^2.8.5
+        version: link:../eventbus
     devDependencies:
       '@eslint/js':
         specifier: 'catalog:'
