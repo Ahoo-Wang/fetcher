@@ -11,14 +11,34 @@
  * limitations under the License.
  */
 
-import {
-  createListenableStorage,
-  ListenableStorage,
-  RemoveStorageListener,
-  StorageListenable,
-  StorageListener,
-} from './listenableStorage';
 import { Serializer, typedIdentitySerializer } from './serializer';
+import {
+  EventHandler,
+  SerialTypedEventBus,
+  TypedEventBus,
+  BroadcastTypedEventBus,
+} from '@ahoo-wang/fetcher-eventbus';
+
+export interface StorageEvent<Deserialized> {
+  newValue?: Deserialized | null;
+  oldValue?: Deserialized | null;
+}
+
+/**
+ * A function that removes a storage listener when called.
+ */
+export type RemoveStorageListener = () => void;
+
+export interface StorageListenable<Deserialized> {
+  /**
+   * Adds a listener for storage changes.
+   * @param listener - The listener function to be called when storage changes
+   * @returns A function that can be called to remove the listener
+   */
+  addListener(
+    listener: EventHandler<StorageEvent<Deserialized>>,
+  ): RemoveStorageListener;
+}
 
 /**
  * Options for configuring KeyStorage
@@ -36,10 +56,14 @@ export interface KeyStorageOptions<Deserialized> {
   serializer?: Serializer<string, Deserialized>;
 
   /**
-   * Optional storage implementation
-   * Defaults to the result of createListenableStorage() if not provided
+   * Optional storage instance. Defaults to localStorage
    */
-  storage?: ListenableStorage;
+  storage?: Storage;
+
+  /**
+   * Optional event bus for cross-tab communication. Defaults to BroadcastTypedEventBus
+   */
+  eventBus?: TypedEventBus<StorageEvent<Deserialized>>;
 }
 
 /**
@@ -47,22 +71,14 @@ export interface KeyStorageOptions<Deserialized> {
  * Provides caching and automatic cache invalidation when the storage value changes
  * @template Deserialized The type of the value being stored
  */
-export class KeyStorage<Deserialized> implements StorageListenable {
+export class KeyStorage<Deserialized>
+  implements StorageListenable<Deserialized>
+{
   private readonly key: string;
   private readonly serializer: Serializer<string, Deserialized>;
-  private readonly storage: ListenableStorage;
+  private readonly storage: Storage;
+  private readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
   private cacheValue: Deserialized | null = null;
-
-  /**
-   * Listener for storage change events
-   * Invalidates the cache when the relevant key is modified
-   */
-  private readonly refreshCacheListener: StorageListener = event => {
-    this.cacheValue = null;
-    if (event.newValue) {
-      this.refreshCache(event.newValue);
-    }
-  };
 
   /**
    * Refreshes the cached value by deserializing the provided string
@@ -79,25 +95,25 @@ export class KeyStorage<Deserialized> implements StorageListenable {
   constructor(options: KeyStorageOptions<Deserialized>) {
     this.key = options.key;
     this.serializer = options.serializer ?? typedIdentitySerializer();
-    this.storage = options.storage ?? createListenableStorage();
-    this.addListener(this.refreshCacheListener);
+    this.storage = options.storage ?? window.localStorage;
+    this.eventBus =
+      options.eventBus ??
+      new SerialTypedEventBus<StorageEvent<Deserialized>>(this.key);
+    this.eventBus.on({
+      name: 'KeyStorage',
+      handle: (event: StorageEvent<Deserialized>) => {
+        this.cacheValue = event.newValue ?? null;
+      },
+    });
   }
 
-  addListener(listener: StorageListener): RemoveStorageListener {
-    const wrapper: StorageListener = (event: StorageEventInit) => {
-      if (event.key !== this.key) {
-        return;
-      }
-      listener(event);
-    };
-    return this.storage.addListener(wrapper);
+  addListener(
+    listener: EventHandler<StorageEvent<Deserialized>>,
+  ): RemoveStorageListener {
+    this.eventBus.on(listener);
+    return () => this.eventBus.off(listener.name);
   }
 
-  /**
-   * Gets the value associated with the key from storage
-   * Uses cached value if available, otherwise retrieves from storage and caches it
-   * @returns The deserialized value or null if no value is found
-   */
   get(): Deserialized | null {
     if (this.cacheValue) {
       return this.cacheValue;
@@ -110,23 +126,24 @@ export class KeyStorage<Deserialized> implements StorageListenable {
     return this.cacheValue;
   }
 
-  /**
-   * Sets the value associated with the key in storage
-   * Also updates the cached value
-   * @param value The value to serialize and store
-   */
   set(value: Deserialized): void {
+    const oldValue = this.get();
     const serialized = this.serializer.serialize(value);
     this.storage.setItem(this.key, serialized);
     this.cacheValue = value;
+    this.eventBus.emit({
+      newValue: value,
+      oldValue: oldValue,
+    });
   }
 
-  /**
-   * Removes the value associated with the key from storage
-   * Also clears the cached value
-   */
   remove(): void {
+    const oldValue = this.get();
     this.storage.removeItem(this.key);
     this.cacheValue = null;
+    this.eventBus.emit({
+      oldValue: oldValue,
+      newValue: null,
+    });
   }
 }
