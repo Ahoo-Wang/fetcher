@@ -27,7 +27,10 @@ export function useKeyStorage<T>(
 ): [T | null, (value: T) => void] {
   const subscribe = useCallback(
     (callback: () => void) => {
-      return keyStorage.addListener(callback);
+      return keyStorage.addListener({
+        name: 'useKeyStorage',
+        handle: callback,
+      });
     },
     [keyStorage],
   );
