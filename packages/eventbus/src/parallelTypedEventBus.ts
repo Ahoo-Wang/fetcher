@@ -108,4 +108,8 @@ export class ParallelTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
     this.eventHandlers = [...original, handler];
     return true;
   }
+
+  destroy() {
+    this.eventHandlers = [];
+  }
 }
