@@ -41,10 +41,8 @@ export class TokenStorage
     },
   ) {
     super({
-      key: options.key,
       serializer: new JwtCompositeTokenSerializer(options.earlyPeriod),
-      storage: options.storage,
-      eventBus: options.eventBus,
+      ...options,
     });
     this.earlyPeriod = options.earlyPeriod ?? 0;
   }
