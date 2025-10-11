@@ -26,10 +26,6 @@ import {
   List,
   Descriptions,
   Tabs,
-  Form,
-  Select,
-  InputNumber,
-  Spin,
 } from 'antd';
 import { Fetcher } from '../fetcher';
 
