@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+const DEFAULT_ORDER = 0;
+
 /**
  * OrderedCapable Interface
  *
@@ -28,7 +30,12 @@ export interface OrderedCapable {
    * When multiple elements have the same order value, their relative order
    * will remain unchanged (stable sort).
    */
-  order: number;
+  order?: number;
+}
+
+
+function sortOrder<T extends OrderedCapable>(a: T, b: T): number {
+  return (a.order ?? DEFAULT_ORDER) - (b.order ?? DEFAULT_ORDER);
 }
 
 /**
@@ -64,7 +71,7 @@ export function toSorted<T extends OrderedCapable>(
   filter?: (item: T) => boolean,
 ): T[] {
   if (filter) {
-    return array.filter(filter).sort((a, b) => a.order - b.order);
+    return array.filter(filter).sort(sortOrder);
   }
-  return [...array].sort((a, b) => a.order - b.order);
+  return [...array].sort(sortOrder);
 }
