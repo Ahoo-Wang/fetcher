@@ -13,23 +13,25 @@
 
 import { idGenerator } from './idGenerator';
 import {
-  createListenableStorage,
-  IdentitySerializer,
-  KeyStorage,
+  KeyStorage, KeyStorageOptions,
 } from '@ahoo-wang/fetcher-storage';
+import { BroadcastTypedEventBus, SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
 export const DEFAULT_COSEC_DEVICE_ID_KEY = 'cosec-device-id';
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface DeviceIdStorageOptions extends KeyStorageOptions<string> {
+}
 
 /**
  * Storage class for managing device identifiers.
  */
 export class DeviceIdStorage extends KeyStorage<string> {
-  constructor(key: string = DEFAULT_COSEC_DEVICE_ID_KEY) {
-    super({
-      key,
-      serializer: new IdentitySerializer<string>(),
-      storage: createListenableStorage(),
-    });
+  constructor(options: DeviceIdStorageOptions = {
+    key: DEFAULT_COSEC_DEVICE_ID_KEY,
+    eventBus: new BroadcastTypedEventBus(new SerialTypedEventBus(DEFAULT_COSEC_DEVICE_ID_KEY)),
+  }) {
+    super(options);
   }
 
   /**

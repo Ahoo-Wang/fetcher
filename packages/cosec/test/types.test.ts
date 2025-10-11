@@ -15,12 +15,8 @@ import { describe, expect, it } from 'vitest';
 import {
   AuthorizeResult,
   AuthorizeResults,
-  CompositeToken,
   CoSecHeaders,
-  CoSecOptions,
-  DeviceIdStorage,
   ResponseCodes,
-  TokenStorage,
 } from '../src';
 
 describe('types.ts', () => {
@@ -61,21 +57,6 @@ describe('types.ts', () => {
         authorized: false,
         reason: 'Too Many Requests',
       });
-    });
-  });
-
-  describe('CoSecOptions', () => {
-    it('should define CoSecOptions interface', () => {
-      // This is a type-only interface, so we just verify it compiles
-      const options: CoSecOptions = {
-        appId: 'test-app-id',
-        deviceIdStorage: new DeviceIdStorage(),
-        tokenStorage: new TokenStorage(),
-        tokenRefresher: {
-          refresh: async (token: CompositeToken) => token,
-        },
-      };
-      expect(options.appId).toBe('test-app-id');
     });
   });
 

@@ -48,6 +48,7 @@
   },
   "peerDependencies": {
     "@ahoo-wang/fetcher": "workspace:^2.3.4",
+    "@ahoo-wang/fetcher-eventbus": "workspace:^2.8.5",
     "@ahoo-wang/fetcher-storage": "workspace:^2.3.4"
   },
   "dependencies": {

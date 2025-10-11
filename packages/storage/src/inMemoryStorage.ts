@@ -11,20 +11,8 @@
  * limitations under the License.
  */
 
-import {
-  ListenableStorage,
-  RemoveStorageListener,
-  StorageListener,
-} from './listenableStorage';
-import { isBrowser } from './env';
-
-/**
- * An in-memory implementation of ListenableStorage that works in any environment.
- * This implementation stores data in a Map and manually fires storage events when data changes.
- */
-export class InMemoryListenableStorage implements ListenableStorage {
+export class InMemoryStorage implements Storage {
   private readonly store: Map<string, string> = new Map();
-  private readonly listeners: Set<StorageListener> = new Set();
 
   /**
    * Gets the number of items stored in the storage.
@@ -65,15 +53,7 @@ export class InMemoryListenableStorage implements ListenableStorage {
    * @param key - The key of the item to remove
    */
   removeItem(key: string): void {
-    const oldValue = this.getItem(key);
-    if (this.store.has(key)) {
-      this.store.delete(key);
-      this.notifyListeners({
-        key,
-        oldValue,
-        newValue: null,
-      });
-    }
+    this.store.delete(key);
   }
 
   /**
@@ -82,36 +62,6 @@ export class InMemoryListenableStorage implements ListenableStorage {
    * @param value - The value to set
    */
   setItem(key: string, value: string): void {
-    const oldValue = this.getItem(key);
     this.store.set(key, value);
-    this.notifyListeners({ key, oldValue, newValue: value });
-  }
-
-  /**
-   * Adds a listener for storage changes.
-   * @param listener - The listener function to be called when storage changes
-   * @returns A function that can be called to remove the listener
-   */
-  addListener(listener: StorageListener): RemoveStorageListener {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  }
-
-  /**
-   * Notifies all listeners of a storage change by creating and dispatching a StorageEvent.
-   * @param eventInit - The initialization object for the StorageEvent
-   */
-  private notifyListeners(eventInit: StorageEventInit): void {
-    if (isBrowser() && window.location) {
-      eventInit.url = eventInit.url || window.location.href;
-    }
-    eventInit.storageArea = this;
-    this.listeners.forEach(listener => {
-      try {
-        listener(eventInit);
-      } catch (error) {
-        console.error('Error in storage change listener:', error);
-      }
-    });
   }
 }

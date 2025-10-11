@@ -8,9 +8,21 @@ describe('JwtTokenManager', () => {
   let tokenStorage: TokenStorage;
   let tokenRefresher: TokenRefresher;
   let jwtTokenManager: JwtTokenManager;
+  let mockStorage: Storage;
 
   beforeEach(() => {
-    tokenStorage = new TokenStorage();
+    mockStorage = {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+      key: vi.fn(),
+      length: 0,
+    };
+    tokenStorage = new TokenStorage({
+      key: 'test-token',
+      storage: mockStorage,
+    });
     tokenRefresher = { refresh: vi.fn() } as unknown as TokenRefresher;
     jwtTokenManager = new JwtTokenManager(tokenStorage, tokenRefresher);
   });

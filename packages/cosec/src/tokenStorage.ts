@@ -15,11 +15,16 @@ import { JwtCompositeToken, JwtCompositeTokenSerializer } from './jwtToken';
 import { CompositeToken } from './tokenRefresher';
 import { EarlyPeriodCapable } from './jwts';
 import {
-  createListenableStorage,
-  KeyStorage,
+  KeyStorage, KeyStorageOptions,
 } from '@ahoo-wang/fetcher-storage';
+import { PartialBy } from '@ahoo-wang/fetcher';
+import { BroadcastTypedEventBus, SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
+
+export interface TokenStorageOptions extends Omit<KeyStorageOptions<JwtCompositeToken>, 'serializer'>, PartialBy<EarlyPeriodCapable, 'earlyPeriod'> {
+
+}
 
 /**
  * Storage class for managing access and refresh tokens.
@@ -27,15 +32,19 @@ export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 export class TokenStorage
   extends KeyStorage<JwtCompositeToken>
   implements EarlyPeriodCapable {
+  public readonly earlyPeriod: number;
+
   constructor(
-    key: string = DEFAULT_COSEC_TOKEN_KEY,
-    public readonly earlyPeriod: number = 0,
+    options: TokenStorageOptions = {
+      key: DEFAULT_COSEC_TOKEN_KEY,
+      eventBus: new BroadcastTypedEventBus(new SerialTypedEventBus(DEFAULT_COSEC_TOKEN_KEY)),
+    },
   ) {
     super({
-      key,
-      storage: createListenableStorage(),
-      serializer: new JwtCompositeTokenSerializer(earlyPeriod),
+      serializer: new JwtCompositeTokenSerializer(options.earlyPeriod),
+      ...options,
     });
+    this.earlyPeriod = options.earlyPeriod ?? 0;
   }
 
   setCompositeToken(compositeToken: CompositeToken) {

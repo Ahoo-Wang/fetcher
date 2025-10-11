@@ -1,183 +1,251 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { KeyStorage } from '../src';
-import { InMemoryListenableStorage } from '../src';
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { KeyStorage, KeyStorageOptions } from '../src';
 import { JsonSerializer } from '../src';
+import { nameGenerator } from '@ahoo-wang/fetcher-eventbus';
+
+// Mock Storage
+const mockStorage = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+  key: vi.fn(),
+  length: 0,
+};
+
+// Mock BroadcastChannel
+const mockBroadcastChannel = {
+  postMessage: vi.fn(),
+  close: vi.fn(),
+  onmessage: null,
+};
+
+vi.stubGlobal(
+  'BroadcastChannel',
+  vi.fn(() => mockBroadcastChannel),
+);
+vi.stubGlobal('window', { localStorage: mockStorage });
 
 describe('KeyStorage', () => {
-  const TEST_KEY = 'test-key';
-  let storage: InMemoryListenableStorage;
+  let keyStorage: KeyStorage<string>;
+  let options: KeyStorageOptions<string>;
 
   beforeEach(() => {
-    storage = new InMemoryListenableStorage();
+    vi.clearAllMocks();
+    mockStorage.getItem.mockReturnValue(null);
+    mockStorage.setItem.mockImplementation(() => {});
+    mockStorage.removeItem.mockImplementation(() => {});
+    mockBroadcastChannel.postMessage.mockImplementation(() => {});
+    mockBroadcastChannel.close.mockImplementation(() => {});
+
+    options = {
+      key: 'testKey',
+      serializer: new JsonSerializer(),
+      storage: mockStorage as any,
+    };
+    keyStorage = new KeyStorage(options);
   });
 
   describe('constructor', () => {
-    it('should create instance with default options', () => {
-      const keyStorage = new KeyStorage<string>({ key: TEST_KEY });
-      expect(keyStorage).toBeInstanceOf(KeyStorage);
+    it('should initialize with provided options', () => {
+      expect(keyStorage).toBeDefined();
     });
 
-    it('should create instance with custom storage', () => {
-      const keyStorage = new KeyStorage<string>({
-        key: TEST_KEY,
-        storage,
-      });
-      expect(keyStorage).toBeInstanceOf(KeyStorage);
+    it('should use default serializer if not provided', () => {
+      const ks = new KeyStorage({ key: 'test' });
+      expect(ks).toBeDefined();
     });
 
-    it('should create instance with custom serializer', () => {
-      const keyStorage = new KeyStorage<string>({
-        key: TEST_KEY,
-        serializer: new JsonSerializer(),
-      });
-      expect(keyStorage).toBeInstanceOf(KeyStorage);
+    it('should use default storage if not provided', () => {
+      const ks = new KeyStorage({ key: 'test' });
+      expect(ks).toBeDefined();
     });
   });
 
   describe('get', () => {
-    it('should return null when no value is stored', () => {
-      const keyStorage = new KeyStorage<string>({ key: TEST_KEY, storage });
-      expect(keyStorage.get()).toBeNull();
+    it('should return null when no value in storage', () => {
+      mockStorage.getItem.mockReturnValue(null);
+      const result = keyStorage.get();
+      expect(result).toBeNull();
+      expect(mockStorage.getItem).toHaveBeenCalledWith('testKey');
     });
 
-    it('should return stored value', () => {
-      const testValue = 'test-value';
-      storage.setItem(TEST_KEY, testValue);
-      const keyStorage = new KeyStorage<string>({ key: TEST_KEY, storage });
-      expect(keyStorage.get()).toBe(testValue);
+    it('should deserialize and return value from storage', () => {
+      const storedValue = JSON.stringify('test value');
+      mockStorage.getItem.mockReturnValue(storedValue);
+      const result = keyStorage.get();
+      expect(result).toBe('test value');
+      expect(mockStorage.getItem).toHaveBeenCalledWith('testKey');
     });
 
-    it('should use cache when available', () => {
-      const testValue = 'test-value';
-      storage.setItem(TEST_KEY, testValue);
-      const keyStorage = new KeyStorage<string>({ key: TEST_KEY, storage });
-
-      // First call retrieves from storage
-      const value1 = keyStorage.get();
-      expect(value1).toBe(testValue);
-
-      // Second call should use cache
-      const value2 = keyStorage.get();
-      expect(value2).toBe(testValue);
-      expect(value1).toBe(value2);
-    });
-
-    it('should deserialize complex objects with custom serializer', () => {
-      const testObj = { name: 'test', value: 123 };
-      const keyStorage = new KeyStorage<typeof testObj>({
-        key: TEST_KEY,
-        storage,
-        serializer: new JsonSerializer(),
-      });
-
-      keyStorage.set(testObj);
-      const retrieved = keyStorage.get();
-      expect(retrieved).toEqual(testObj);
+    it('should use cached value on subsequent calls', () => {
+      const storedValue = JSON.stringify('cached value');
+      mockStorage.getItem.mockReturnValue(storedValue);
+      keyStorage.get(); // First call caches
+      mockStorage.getItem.mockClear();
+      const result = keyStorage.get(); // Second call uses cache
+      expect(result).toBe('cached value');
+      expect(mockStorage.getItem).not.toHaveBeenCalled();
     });
   });
 
   describe('set', () => {
-    it('should store value in storage', () => {
-      const testValue = 'test-value';
-      const keyStorage = new KeyStorage<string>({ key: TEST_KEY, storage });
-      keyStorage.set(testValue);
-
-      expect(storage.getItem(TEST_KEY)).toBe(testValue);
+    it('should serialize and store value', () => {
+      keyStorage.set('new value');
+      expect(mockStorage.setItem).toHaveBeenCalledWith(
+        'testKey',
+        JSON.stringify('new value'),
+      );
     });
 
     it('should update cache', () => {
-      const testValue = 'test-value';
-      const keyStorage = new KeyStorage<string>({ key: TEST_KEY, storage });
-      keyStorage.set(testValue);
-
-      expect(keyStorage.get()).toBe(testValue);
+      keyStorage.set('new value');
+      mockStorage.getItem.mockClear();
+      const result = keyStorage.get();
+      expect(result).toBe('new value');
+      expect(mockStorage.getItem).not.toHaveBeenCalled();
     });
 
-    it('should serialize complex objects with custom serializer', () => {
-      const testObj = { name: 'test', value: 123 };
-      const keyStorage = new KeyStorage<typeof testObj>({
-        key: TEST_KEY,
-        storage,
-        serializer: new JsonSerializer(),
-      });
-
-      keyStorage.set(testObj);
-      expect(storage.getItem(TEST_KEY)).toBe(JSON.stringify(testObj));
+    it('should emit event with new and old values', async () => {
+      const listener = vi.fn();
+      keyStorage.addListener({ name: 'test', handle: listener });
+      keyStorage.set('new value');
+      await vi.waitFor(() =>
+        expect(listener).toHaveBeenCalledWith({
+          newValue: 'new value',
+          oldValue: null,
+        }),
+      );
     });
   });
 
   describe('remove', () => {
-    it('should remove value from storage', () => {
-      const testValue = 'test-value';
-      storage.setItem(TEST_KEY, testValue);
-
-      const keyStorage = new KeyStorage<string>({ key: TEST_KEY, storage });
+    it('should remove item from storage', () => {
       keyStorage.remove();
-
-      expect(storage.getItem(TEST_KEY)).toBeNull();
+      expect(mockStorage.removeItem).toHaveBeenCalledWith('testKey');
     });
 
     it('should clear cache', () => {
-      const testValue = 'test-value';
-      const keyStorage = new KeyStorage<string>({ key: TEST_KEY, storage });
-      keyStorage.set(testValue);
-
-      expect(keyStorage.get()).toBe(testValue);
-
+      keyStorage.set('value');
       keyStorage.remove();
-      expect(keyStorage.get()).toBeNull();
+      mockStorage.getItem.mockReturnValue(null);
+      const result = keyStorage.get();
+      expect(result).toBeNull();
+    });
+
+    it('should emit event with old value', async () => {
+      keyStorage.set('old value');
+      const listener = vi.fn();
+      keyStorage.addListener({ name: 'test', handle: listener });
+      keyStorage.remove();
+      await vi.waitFor(() =>
+        expect(listener).toHaveBeenCalledWith({
+          newValue: null,
+          oldValue: 'old value',
+        }),
+      );
     });
   });
 
-  describe('cache invalidation', () => {
-    it('should invalidate cache when storage changes', () => {
-      const testValue1 = 'value-1';
-      const testValue2 = 'value-2';
-
-      const keyStorage = new KeyStorage<string>({ key: TEST_KEY, storage });
-      keyStorage.set(testValue1);
-
-      // Verify initial value and caching
-      expect(keyStorage.get()).toBe(testValue1);
-
-      // Update storage directly (simulating external change)
-      // This will trigger the storage listener which invalidates the cache
-      storage.setItem(TEST_KEY, testValue2);
-
-      // Cache should be invalidated by the storage event and return new value
-      expect(keyStorage.get()).toBe(testValue2);
+  describe('addListener', () => {
+    it('should add listener and return remove function', () => {
+      const listener = vi.fn();
+      const remove = keyStorage.addListener({ name: 'test', handle: listener });
+      expect(typeof remove).toBe('function');
+      remove();
     });
 
-    it('should not invalidate cache for different keys', () => {
-      const OTHER_KEY = 'other-key';
-      const testValue1 = 'value-1';
-      const testValue2 = 'value-2';
+    it('should call listener when event emitted', async () => {
+      const listener = vi.fn();
+      keyStorage.addListener({ name: 'test', handle: listener });
+      keyStorage.set('value');
+      await vi.waitFor(() => expect(listener).toHaveBeenCalled());
+    });
+  });
 
-      const keyStorage = new KeyStorage<string>({ key: TEST_KEY, storage });
-      keyStorage.set(testValue1);
-
-      // Verify initial value
-      expect(keyStorage.get()).toBe(testValue1);
-
-      // Change different key - this should not affect our key storage
-      storage.setItem(OTHER_KEY, testValue2);
-
-      // Should still return original value
-      expect(keyStorage.get()).toBe(testValue1);
+  describe('error handling', () => {
+    it('should handle serializer deserialize error gracefully', () => {
+      const badSerializer = {
+        serialize: (_value: any) => 'dummy',
+        deserialize: (value: string) => {
+          throw new Error('Deserialize error');
+        },
+      };
+      const ks = new KeyStorage({
+        key: 'badKey',
+        serializer: badSerializer as any,
+        storage: mockStorage,
+      });
+      mockStorage.getItem.mockReturnValue('bad data');
+      expect(() => ks.get()).toThrow('Deserialize error');
     });
 
-    it('should clear cache when storage value is removed', () => {
-      const testValue = 'test-value';
+    it('should handle storage getItem error', () => {
+      mockStorage.getItem.mockImplementation(() => {
+        throw new Error('Storage error');
+      });
+      expect(() => keyStorage.get()).toThrow('Storage error');
+    });
 
-      const keyStorage = new KeyStorage<string>({ key: TEST_KEY, storage });
-      keyStorage.set(testValue);
+    it('should handle storage setItem error', () => {
+      mockStorage.setItem.mockImplementation(() => {
+        throw new Error('Set error');
+      });
+      expect(() => keyStorage.set('value')).toThrow('Set error');
+    });
 
-      expect(keyStorage.get()).toBe(testValue);
+    it('should handle storage removeItem error', () => {
+      mockStorage.removeItem.mockImplementation(() => {
+        throw new Error('Remove error');
+      });
+      expect(() => keyStorage.remove()).toThrow('Remove error');
+    });
+  });
 
-      // Remove item - this will trigger the storage listener which invalidates the cache
-      storage.removeItem(TEST_KEY);
+  describe('custom eventBus', () => {
+    it('should use custom eventBus', () => {
+      const customEventBus = {
+        type: 'custom',
+        handlers: [],
+        on: vi.fn(),
+        off: vi.fn(),
+        emit: vi.fn().mockResolvedValue(undefined),
+        destroy: vi.fn(),
+      };
+      const ks = new KeyStorage({
+        key: 'customKey',
+        eventBus: customEventBus as any,
+        storage: mockStorage,
+      });
+      ks.set('value');
+      expect(customEventBus.emit).toHaveBeenCalled();
+    });
+  });
 
-      expect(keyStorage.get()).toBeNull();
+  describe('destroy', () => {
+    it('should remove the internal event handler', () => {
+      const generateSpy = vi.spyOn(nameGenerator, 'generate');
+      generateSpy.mockReturnValue('KeyStorage');
+      const ks = new KeyStorage({ key: 'destroyKey', storage: mockStorage });
+      // Mock the eventBus off method
+      const mockOff = vi.fn();
+      (ks as any).eventBus.off = mockOff;
+      ks.destroy();
+      expect(mockOff).toHaveBeenCalledWith('KeyStorage');
+      generateSpy.mockRestore();
     });
   });
 });

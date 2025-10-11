@@ -11,81 +11,136 @@
  * limitations under the License.
  */
 
-import { describe, expect, it, vi } from 'vitest';
-import { DeviceIdStorage } from '../src';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { DeviceIdStorage, DEFAULT_COSEC_DEVICE_ID_KEY } from '../src';
 
-describe('deviceIdStorage.ts', () => {
-  describe('DeviceIdStorage', () => {
-    it('should create DeviceIdStorage with default parameters', () => {
-      const storage = new DeviceIdStorage();
-      expect(storage).toBeInstanceOf(DeviceIdStorage);
+// Mock Storage
+const mockStorage = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+  key: vi.fn(),
+  length: 0,
+};
+
+// Mock BroadcastChannel
+const mockBroadcastChannel = {
+  postMessage: vi.fn(),
+  close: vi.fn(),
+  onmessage: null,
+};
+
+vi.stubGlobal(
+  'BroadcastChannel',
+  vi.fn(() => mockBroadcastChannel),
+);
+vi.stubGlobal('window', { localStorage: mockStorage });
+
+// Mock idGenerator
+vi.mock('../src/idGenerator', () => ({
+  idGenerator: {
+    generateId: vi.fn(() => 'generated-device-id'),
+  },
+}));
+
+describe('DeviceIdStorage', () => {
+  let deviceIdStorage: DeviceIdStorage;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockStorage.getItem.mockReturnValue(null);
+    mockStorage.setItem.mockImplementation(() => {
+    });
+    mockStorage.removeItem.mockImplementation(() => {
+    });
+    mockBroadcastChannel.postMessage.mockImplementation(() => {
+    });
+    mockBroadcastChannel.close.mockImplementation(() => {
     });
 
-    it('should create DeviceIdStorage with custom parameters', () => {
-      const customKey = 'custom-device-id-key';
-      const storage = new DeviceIdStorage(customKey);
+    deviceIdStorage = new DeviceIdStorage({
+      key: DEFAULT_COSEC_DEVICE_ID_KEY,
+      storage: mockStorage as any,
+    });
+  });
 
-      expect(storage).toBeInstanceOf(DeviceIdStorage);
+  describe('constructor', () => {
+    it('should initialize with default options', () => {
+      const defaultStorage = new DeviceIdStorage();
+      expect(defaultStorage).toBeDefined();
     });
 
-    it('should get null when no device ID is set', () => {
-      const storage = new DeviceIdStorage('test-key');
-      const result = storage.get();
+    it('should initialize with custom options', () => {
+      const customStorage = new DeviceIdStorage({
+        key: 'custom-key',
+        storage: mockStorage as any,
+      });
+      expect(customStorage).toBeDefined();
+    });
+  });
 
-      expect(result).toBeNull();
+  describe('generateDeviceId', () => {
+    it('should generate a new device ID', () => {
+      const deviceId = deviceIdStorage.generateDeviceId();
+      expect(deviceId).toBe('generated-device-id');
+    });
+  });
+
+  describe('getOrCreate', () => {
+    it('should return existing device ID if available', () => {
+      mockStorage.getItem.mockReturnValue('existing-device-id');
+      const deviceId = deviceIdStorage.getOrCreate();
+      expect(deviceId).toBe('existing-device-id');
+      expect(mockStorage.setItem).not.toHaveBeenCalled();
     });
 
-    it('should set and get device ID', () => {
-      const storage = new DeviceIdStorage('test-key');
-      const deviceId = 'test-device-id';
+    it('should generate and store new device ID if none exists', () => {
+      mockStorage.getItem.mockReturnValue(null);
+      const deviceId = deviceIdStorage.getOrCreate();
+      expect(deviceId).toBe('generated-device-id');
+      expect(mockStorage.setItem).toHaveBeenCalledWith(
+        DEFAULT_COSEC_DEVICE_ID_KEY,
+        'generated-device-id',
+      );
+    });
+  });
 
-      storage.set(deviceId);
-      const result = storage.get();
-
-      expect(result).toBe(deviceId);
+  describe('inherited KeyStorage methods', () => {
+    it('should get device ID', () => {
+      mockStorage.getItem.mockReturnValue('stored-device-id');
+      const deviceId = deviceIdStorage.get();
+      expect(deviceId).toBe('stored-device-id');
     });
 
-    it('should generate device ID', () => {
-      const storage = new DeviceIdStorage('test-key');
-      const deviceId = storage.generateDeviceId();
-
-      expect(deviceId).toBeDefined();
-      expect(typeof deviceId).toBe('string');
-      expect(deviceId.length).toBeGreaterThan(0);
+    it('should set device ID', () => {
+      deviceIdStorage.set('new-device-id');
+      expect(mockStorage.setItem).toHaveBeenCalledWith(
+        DEFAULT_COSEC_DEVICE_ID_KEY,
+        'new-device-id',
+      );
     });
 
-    it('should get existing device ID when available', () => {
-      const storage = new DeviceIdStorage('test-key');
-      const deviceId = 'existing-device-id';
-
-      storage.set(deviceId);
-      const result = storage.getOrCreate();
-
-      expect(result).toBe(deviceId);
+    it('should remove device ID', () => {
+      deviceIdStorage.remove();
+      expect(mockStorage.removeItem).toHaveBeenCalledWith(
+        DEFAULT_COSEC_DEVICE_ID_KEY,
+      );
     });
 
-    it('should generate and store new device ID when none exists', () => {
-      const storage = new DeviceIdStorage('test-key');
-      const result = storage.getOrCreate();
-
-      expect(result).toBeDefined();
-      expect(typeof result).toBe('string');
-      expect(result.length).toBeGreaterThan(0);
-
-      // Verify it's stored
-      const stored = storage.get();
-      expect(stored).toBe(result);
+    it('should add listener', () => {
+      const listener = vi.fn();
+      const remove = deviceIdStorage.addListener({
+        name: 'test',
+        handle: listener,
+      });
+      expect(typeof remove).toBe('function');
+      remove();
     });
 
-    it('should remove stored device ID', () => {
-      const storage = new DeviceIdStorage('test-key');
-      const deviceId = 'test-device-id';
-
-      storage.set(deviceId);
-      storage.remove();
-      const result = storage.get();
-
-      expect(result).toBeNull();
+    it('should destroy', () => {
+      deviceIdStorage.destroy();
+      // destroy removes the internal handler, but since it's mocked, just ensure no error
     });
   });
 });
