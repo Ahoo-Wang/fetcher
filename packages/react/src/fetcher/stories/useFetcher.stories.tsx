@@ -36,6 +36,19 @@ const UseFetcherDemo: React.FC = () => {
 
   const { loading, result, error, execute, exchange } = useFetcher<unknown>({
     resultExtractor: ResultExtractors.Json,
+    onSuccess: () => {
+      setLogs(prev => [
+        ...prev,
+        `${exchange?.request.method} request to ${exchange?.request.url} successful`,
+      ]);
+    },
+    onError: (e) => {
+      setResponse(`Error: ${error?.message || e}`);
+      setLogs(prev => [
+        ...prev,
+        `${exchange?.request.method} request to ${exchange?.request.url}  failed: ${e?.message || e}`,
+      ]);
+    },
   });
 
   const handleRequest = async (values: any) => {
@@ -50,24 +63,15 @@ const UseFetcherDemo: React.FC = () => {
     if (values.headers) {
       request.headers = JSON.parse(values.headers);
     }
+    if (values.urlParams) {
+      request.urlParams = JSON.parse(values.urlParams);
+    }
     if (values.timeout) {
       request.timeout = values.timeout;
     }
     setLogs(prev => [...prev, `Sending ${values.method} request to ${url}`]);
-    try {
-      await execute(request);
-      setResponse(JSON.stringify(result, null, 2));
-      setLogs(prev => [
-        ...prev,
-        `${values.method} request to ${exchange?.request.url} successful`,
-      ]);
-    } catch (err) {
-      setResponse(`Error: ${error?.message || err}`);
-      setLogs(prev => [
-        ...prev,
-        `${values.method} request failed: ${error?.message || err}`,
-      ]);
-    }
+    await execute(request);
+    setResponse(JSON.stringify(result, null, 2));
   };
 
   const clearLogs = () => {

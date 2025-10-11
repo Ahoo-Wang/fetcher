@@ -55,7 +55,7 @@ const FetcherDemo: React.FC = () => {
       const response = await fetcher.get(url, request);
       const result = await response.json();
       setResponse(JSON.stringify(result, null, 2));
-      setLogs(prev => [...prev, 'GET request successful']);
+      setLogs(prev => [...prev, `GET request to ${response.url} successful`]);
     } catch (error) {
       setResponse(`Error: ${error}`);
       setLogs(prev => [...prev, `GET request failed: ${error}`]);
