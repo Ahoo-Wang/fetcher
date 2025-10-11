@@ -68,14 +68,14 @@ export class EventBus<Events extends Record<EventType, unknown>> {
    *
    * @template Key - The event type
    * @param type - The event type
-   * @param handler - The event handler to remove
+   * @param name - The name of the event handler to remove
    * @returns true if a handler was removed, false otherwise
    */
   off<Key extends EventType>(
     type: Key,
-    handler: EventHandler<Events[Key]>,
+    name: string,
   ): boolean {
-    return this.buses.get(type)?.off(handler.name) ?? false;
+    return this.buses.get(type)?.off(name) ?? false;
   }
 
   /**
