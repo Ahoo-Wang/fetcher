@@ -46,13 +46,13 @@ describe('EventBus', () => {
     const bus = new EventBus<{ test: string }>(supplier);
     const handler = { name: 'h1', order: 1, handle: vi.fn() };
     bus.on('test', handler);
-    expect(bus.off('test', handler)).toBe(true);
+    expect(bus.off('test', handler.name)).toBe(true);
   });
 
   it('should not remove non-existent handler', () => {
     const bus = new EventBus<{ test: string }>(supplier);
     const handler = { name: 'h1', order: 1, handle: vi.fn() };
-    expect(bus.off('test', handler)).toBe(false);
+    expect(bus.off('test', handler.name)).toBe(false);
   });
 
   it('should emit event', async () => {
