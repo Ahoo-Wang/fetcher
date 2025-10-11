@@ -14,19 +14,14 @@
 
 import { EventHandler, EventType } from './types';
 
-export interface EventBus<Events extends Record<EventType, unknown>> {
-  on<Key extends EventType>(
-    type: Key,
-    handler: EventHandler<Events[Key]>,
-  ): boolean;
+export interface TypedEventBus<EVENT> {
+  type: EventType;
+  handlers: EventHandler<EVENT>[];
 
-  off<Key extends EventType>(
-    type: Key,
-    handler: EventHandler<Events[Key]>,
-  ): boolean;
+  on(handler: EventHandler<EVENT>): boolean;
 
-  emit<Key extends EventType>(
-    type: Key,
-    event: Events[Key],
-  ): void | Promise<void>;
+  off(name: string): boolean;
+
+  emit(event: EVENT): Promise<void>;
+
 }
