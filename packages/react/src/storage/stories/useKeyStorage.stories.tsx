@@ -12,11 +12,14 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button, Card, Typography, Space, Input, Alert } from 'antd';
 import { useKeyStorage } from '../useKeyStorage';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
-import { BroadcastTypedEventBus, SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
+import {
+  BroadcastTypedEventBus,
+  SerialTypedEventBus,
+} from '@ahoo-wang/fetcher-eventbus';
 
 const { Text } = Typography;
 
@@ -70,8 +73,8 @@ function StorageDemo({
         />
 
         <Text type="secondary">
-          This demonstrates a storage hook similar to useKeyStorage for managing
-          key-based storage with automatic state synchronization.
+          This hook automatically synchronizes state with localStorage changes,
+          including cross-tab updates when using broadcast event bus.
         </Text>
       </Space>
     </Card>
@@ -86,25 +89,45 @@ const meta: Meta<typeof StorageDemo> = {
     docs: {
       description: {
         component:
-          'A React hook that provides state management for storage, automatically synchronizing with storage changes.',
+          'A React hook that provides state management for key-based storage, automatically synchronizing with storage changes across components and tabs.',
       },
     },
   },
   tags: ['autodocs'],
+  argTypes: {
+    keyStorage: {
+      description: 'The KeyStorage instance to manage',
+      control: { type: 'object' },
+    },
+  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
-
-export const Broadcast: Story = {
+export const Default: Story = {
   args: {
     keyStorage: new KeyStorage<string>({
       key: 'useKeyStorageDemo',
-      eventBus: new BroadcastTypedEventBus(new SerialTypedEventBus('Broadcast')),
     }),
   },
 };
 
-
+export const Broadcast: Story = {
+  args: {
+    keyStorage: new KeyStorage<string>({
+      key: 'useKeyStorageBroadcastDemo',
+      eventBus: new BroadcastTypedEventBus(
+        new SerialTypedEventBus('Broadcast'),
+      ),
+    }),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Demonstrates cross-tab synchronization using BroadcastTypedEventBus. Changes made in one tab will be reflected in other tabs automatically.',
+      },
+    },
+  },
+};
