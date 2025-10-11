@@ -14,7 +14,7 @@ consistent API for browser localStorage and in-memory storage with change notifi
 ## Features
 
 - 🌐 Cross-environment support (Browser & Node.js)
-- 📦 Ultra-lightweight (~2KB gzip)
+- 📦 Ultra-lightweight (~1KB gzip)
 - 🔔 Storage change event listening
 - 🔄 Automatic environment detection with fallback
 - 🛠️ Key-based storage with caching and serialization
