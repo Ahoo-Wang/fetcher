@@ -13,7 +13,7 @@
 
 import { Serializer, typedIdentitySerializer } from './serializer';
 import {
-  EventHandler,
+  EventHandler, nameGenerator,
   SerialTypedEventBus,
   TypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
@@ -78,7 +78,7 @@ export class KeyStorage<Deserialized>
   private readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
   private cacheValue: Deserialized | null = null;
   private readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> = {
-    name: 'KeyStorage',
+    name: nameGenerator.generate('KeyStorage'),
     handle: (event: StorageEvent<Deserialized>) => {
       this.cacheValue = event.newValue ?? null;
     },

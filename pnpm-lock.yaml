@@ -584,6 +584,9 @@ importers:
       '@ahoo-wang/fetcher':
         specifier: workspace:^2.3.4
         version: link:../fetcher
+      '@ahoo-wang/fetcher-eventbus':
+        specifier: workspace:^2.8.8
+        version: link:../eventbus
       '@ahoo-wang/fetcher-eventstream':
         specifier: workspace:^2.3.4
         version: link:../eventstream

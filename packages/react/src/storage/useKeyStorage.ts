@@ -13,6 +13,7 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { nameGenerator } from '@ahoo-wang/fetcher-eventbus';
 
 /**
  * A React hook that provides state management for a KeyStorage instance.
@@ -28,7 +29,7 @@ export function useKeyStorage<T>(
   const subscribe = useCallback(
     (callback: () => void) => {
       return keyStorage.addListener({
-        name: 'useKeyStorage',
+        name: nameGenerator.generate('useKeyStorage'),
         handle: callback,
       });
     },

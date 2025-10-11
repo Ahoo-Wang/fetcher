@@ -15,13 +15,12 @@ import type { Meta, StoryObj } from '@storybook/react';
 import React, { useState } from 'react';
 import { Button, Card, Typography, Space, Input, Alert } from 'antd';
 import { useKeyStorage } from '../useKeyStorage';
-import { InMemoryListenableStorage, KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
 const { Text } = Typography;
 
 const keyStorage = new KeyStorage<string>({
   key: 'useKeyStorageDemo',
-  storage: new InMemoryListenableStorage(),
 });
 
 function StorageDemo() {
