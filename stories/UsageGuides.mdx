@@ -1,5 +1,5 @@
 import { Meta } from '@storybook/addon-docs/blocks';
-import { Typography, Card, Space } from 'antd';
+import { Typography, Card, Space, List, Alert, Divider } from 'antd';
 
 <Meta title="Usage Guides" />
 
@@ -11,6 +11,30 @@ import { Typography, Card, Space } from 'antd';
       </Typography.Title>
       <Typography.Text>Practical examples and patterns for using Fetcher in your applications</Typography.Text>
     </div>
+
+    <Alert
+      message="🚀 Quick Start"
+      description="Choose your integration level: Core HTTP client, Declarative APIs, or Framework-specific hooks"
+      type="info"
+      showIcon
+      style={{ marginBottom: 24 }}
+    />
+
+    <Card>
+      <Typography.Title level={4}>📋 Key Concepts</Typography.Title>
+      <List
+        size="small"
+        dataSource={[
+          '**Fetcher Instance**: Core HTTP client with interceptors and configuration',
+          '**Named Fetcher**: Pre-configured fetcher instances for different APIs',
+          '**Decorators**: Declarative API service definitions with automatic implementation',
+          '**Interceptors**: Middleware for requests and responses (auth, logging, etc.)',
+          '**Event Streaming**: Real-time data handling with Server-Sent Events',
+          '**React Hooks**: Data fetching with automatic re-rendering and state management'
+        ]}
+        renderItem={(item) => <List.Item><span dangerouslySetInnerHTML={{ __html: item }} /></List.Item>}
+      />
+    </Card>
 
     <Card>
       <Typography.Title level={4}>Basic HTTP Client</Typography.Title>
@@ -390,6 +414,56 @@ userId: 'user-123',
 for await (const event of userEvents) {
 console.log('User event:', event);
 }`}</pre>
+
+    </Card>
+
+    <Divider />
+
+    <Card>
+      <Typography.Title level={4}>💡 Best Practices</Typography.Title>
+      <Space direction="vertical" size="medium">
+        <div>
+          <Typography.Text strong>🔧 Configuration</Typography.Text>
+          <List
+            size="small"
+            dataSource={[
+              'Use named fetchers for different API endpoints',
+              'Configure timeouts appropriately for your use case',
+              'Set up interceptors for cross-cutting concerns (auth, logging)',
+              'Use environment variables for base URLs and secrets'
+            ]}
+            renderItem={(item) => <List.Item>{item}</List.Item>}
+          />
+        </div>
+
+        <div>
+          <Typography.Text strong>🎯 Error Handling</Typography.Text>
+          <List
+            size="small"
+            dataSource={[
+              'Implement response interceptors for centralized error handling',
+              'Use try-catch blocks for expected errors',
+              'Handle network failures gracefully with retry logic',
+              'Provide meaningful error messages to users'
+            ]}
+            renderItem={(item) => <List.Item>{item}</List.Item>}
+          />
+        </div>
+
+        <div>
+          <Typography.Text strong>⚡ Performance</Typography.Text>
+          <List
+            size="small"
+            dataSource={[
+              'Reuse fetcher instances instead of creating new ones',
+              'Use appropriate timeouts to prevent hanging requests',
+              'Implement caching strategies for frequently accessed data',
+              'Consider request/response compression for large payloads'
+            ]}
+            renderItem={(item) => <List.Item>{item}</List.Item>}
+          />
+        </div>
+      </Space>
     </Card>
 
   </Space>

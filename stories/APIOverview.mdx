@@ -1,5 +1,5 @@
 import { Meta } from '@storybook/addon-docs/blocks';
-import { Typography, Card, Row, Col, Space } from 'antd';
+import { Typography, Card, Row, Col, Space, List } from 'antd';
 
 <Meta title="API Overview" />
 
@@ -20,13 +20,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
             <Typography.Text strong>@ahoo-wang/fetcher</Typography.Text>
             <br />
             <Typography.Text type="secondary" strong>Core HTTP Client</Typography.Text>
-            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-              <li>Ultra-lightweight HTTP client (3KiB)</li>
-              <li>Path/query parameter support</li>
-              <li>Ordered interceptor system</li>
-              <li>Timeout and error handling</li>
-              <li>TypeScript-first design</li>
-            </ul>
+             <List
+               size="small"
+               dataSource={[
+                 'Ultra-lightweight HTTP client (3KiB)',
+                 'Path/query parameter support',
+                 'Ordered interceptor system',
+                 'Timeout and error handling',
+                 'TypeScript-first design'
+               ]}
+               renderItem={(item) => <List.Item>{item}</List.Item>}
+               style={{ marginTop: 8 }}
+             />
           </Card>
         </Col>
         <Col xs={24} sm={12}>
@@ -34,13 +39,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
             <Typography.Text strong>@ahoo-wang/fetcher-decorator</Typography.Text>
             <br />
             <Typography.Text type="secondary" strong>Declarative APIs</Typography.Text>
-            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-              <li>Class-based service definitions</li>
-              <li>Automatic parameter binding</li>
-              <li>Decorator-driven configuration</li>
-              <li>Type-safe method implementations</li>
-              <li>Metadata system for customization</li>
-            </ul>
+             <List
+               size="small"
+               dataSource={[
+                 'Class-based service definitions',
+                 'Automatic parameter binding',
+                 'Decorator-driven configuration',
+                 'Type-safe method implementations',
+                 'Metadata system for customization'
+               ]}
+               renderItem={(item) => <List.Item>{item}</List.Item>}
+               style={{ marginTop: 8 }}
+             />
           </Card>
         </Col>
       </Row>
@@ -54,13 +64,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
             <Typography.Text strong>@ahoo-wang/fetcher-react</Typography.Text>
             <br />
             <Typography.Text type="secondary" strong>React Hooks</Typography.Text>
-            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-              <li>React hooks for HTTP operations</li>
-              <li>Promise state management</li>
-              <li>Query and mutation hooks</li>
-              <li>Real-time data streaming</li>
-              <li>Automatic error handling</li>
-            </ul>
+            <List
+              size="small"
+              dataSource={[
+                'React hooks for HTTP operations',
+                'Promise state management',
+                'Query and mutation hooks',
+                'Real-time data streaming',
+                'Automatic error handling'
+              ]}
+              renderItem={(item) => <List.Item>{item}</List.Item>}
+              style={{ marginTop: 8 }}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
@@ -68,13 +83,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
             <Typography.Text strong>@ahoo-wang/fetcher-wow</Typography.Text>
             <br />
             <Typography.Text type="secondary" strong>Wow CQRS Framework</Typography.Text>
-            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-              <li>CQRS pattern implementation</li>
-              <li>DDD primitives support</li>
-              <li>Real-time event streaming</li>
-              <li>Command and query clients</li>
-              <li>Advanced query DSL</li>
-            </ul>
+            <List
+              size="small"
+              dataSource={[
+                'CQRS pattern implementation',
+                'DDD primitives support',
+                'Real-time event streaming',
+                'Command and query clients',
+                'Advanced query DSL'
+              ]}
+              renderItem={(item) => <List.Item>{item}</List.Item>}
+              style={{ marginTop: 8 }}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
@@ -82,13 +102,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
             <Typography.Text strong>@ahoo-wang/fetcher-cosec</Typography.Text>
             <br />
             <Typography.Text type="secondary" strong>CoSec Authentication</Typography.Text>
-            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-              <li>Automatic authentication headers</li>
-              <li>Device ID management</li>
-              <li>Token refresh handling</li>
-              <li>Request tracking</li>
-              <li>Secure token storage</li>
-            </ul>
+            <List
+              size="small"
+              dataSource={[
+                'Automatic authentication headers',
+                'Device ID management',
+                'Token refresh handling',
+                'Request tracking',
+                'Secure token storage'
+              ]}
+              renderItem={(item) => <List.Item>{item}</List.Item>}
+              style={{ marginTop: 8 }}
+            />
           </Card>
         </Col>
       </Row>
@@ -102,13 +127,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
             <Typography.Text strong>@ahoo-wang/fetcher-eventbus</Typography.Text>
             <br />
             <Typography.Text type="secondary" strong>Event Bus System</Typography.Text>
-            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-              <li>Serial/parallel execution</li>
-              <li>Cross-tab broadcasting</li>
-              <li>Type-safe event handling</li>
-              <li>Async event support</li>
-              <li>One-time handlers</li>
-            </ul>
+            <List
+              size="small"
+              dataSource={[
+                'Serial/parallel execution',
+                'Cross-tab broadcasting',
+                'Type-safe event handling',
+                'Async event support',
+                'One-time handlers'
+              ]}
+              renderItem={(item) => <List.Item>{item}</List.Item>}
+              style={{ marginTop: 8 }}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
@@ -116,13 +146,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
             <Typography.Text strong>@ahoo-wang/fetcher-eventstream</Typography.Text>
             <br />
             <Typography.Text type="secondary" strong>Event Streaming</Typography.Text>
-            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-              <li>Server-Sent Events support</li>
-              <li>Real-time data streaming</li>
-              <li>Event converter system</li>
-              <li>LLM client integration</li>
-              <li>Stream processing</li>
-            </ul>
+            <List
+              size="small"
+              dataSource={[
+                'Server-Sent Events support',
+                'Real-time data streaming',
+                'Event converter system',
+                'LLM client integration',
+                'Stream processing'
+              ]}
+              renderItem={(item) => <List.Item>{item}</List.Item>}
+              style={{ marginTop: 8 }}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
@@ -130,13 +165,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
             <Typography.Text strong>@ahoo-wang/fetcher-storage</Typography.Text>
             <br />
             <Typography.Text type="secondary" strong>Storage Utilities</Typography.Text>
-            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-              <li>Key-based storage</li>
-              <li>Multiple storage backends</li>
-              <li>Reactive storage updates</li>
-              <li>Type-safe storage</li>
-              <li>Storage synchronization</li>
-            </ul>
+            <List
+              size="small"
+              dataSource={[
+                'Key-based storage',
+                'Multiple storage backends',
+                'Reactive storage updates',
+                'Type-safe storage',
+                'Storage synchronization'
+              ]}
+              renderItem={(item) => <List.Item>{item}</List.Item>}
+              style={{ marginTop: 8 }}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
@@ -144,13 +184,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
             <Typography.Text strong>@ahoo-wang/fetcher-openapi</Typography.Text>
             <br />
             <Typography.Text type="secondary" strong>OpenAPI Integration</Typography.Text>
-            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-              <li>OpenAPI spec parsing</li>
-              <li>Automatic client generation</li>
-              <li>Type-safe API clients</li>
-              <li>Schema validation</li>
-              <li>API documentation</li>
-            </ul>
+            <List
+              size="small"
+              dataSource={[
+                'OpenAPI spec parsing',
+                'Automatic client generation',
+                'Type-safe API clients',
+                'Schema validation',
+                'API documentation'
+              ]}
+              renderItem={(item) => <List.Item>{item}</List.Item>}
+              style={{ marginTop: 8 }}
+            />
           </Card>
         </Col>
       </Row>
@@ -164,13 +209,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
             <Typography.Text strong>@ahoo-wang/fetcher-generator</Typography.Text>
             <br />
             <Typography.Text type="secondary" strong>Code Generation</Typography.Text>
-            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-              <li>Automatic code generation</li>
-              <li>API client scaffolding</li>
-              <li>Type definition generation</li>
-              <li>Build-time optimization</li>
-              <li>Custom generator plugins</li>
-            </ul>
+            <List
+              size="small"
+              dataSource={[
+                'Automatic code generation',
+                'API client scaffolding',
+                'Type definition generation',
+                'Build-time optimization',
+                'Custom generator plugins'
+              ]}
+              renderItem={(item) => <List.Item>{item}</List.Item>}
+              style={{ marginTop: 8 }}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12}>
@@ -178,13 +228,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
             <Typography.Text strong>@ahoo-wang/fetcher-viewer</Typography.Text>
             <br />
             <Typography.Text type="secondary" strong>API Viewer</Typography.Text>
-            <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-              <li>Interactive API exploration</li>
-              <li>Request/response visualization</li>
-              <li>API documentation viewer</li>
-              <li>Testing interface</li>
-              <li>Developer tools integration</li>
-            </ul>
+            <List
+              size="small"
+              dataSource={[
+                'Interactive API exploration',
+                'Request/response visualization',
+                'API documentation viewer',
+                'Testing interface',
+                'Developer tools integration'
+              ]}
+              renderItem={(item) => <List.Item>{item}</List.Item>}
+              style={{ marginTop: 8 }}
+            />
           </Card>
         </Col>
       </Row>
@@ -192,14 +247,18 @@ import { Typography, Card, Row, Col, Space } from 'antd';
 
     <Card>
       <Typography.Title level={4}>Architecture Principles</Typography.Title>
-      <ul style={{ paddingLeft: '20px' }}>
-        <li><strong>Modular Design</strong>: Core package with optional extensions</li>
-        <li><strong>TypeScript First</strong>: Complete type safety throughout</li>
-        <li><strong>Interceptor Pattern</strong>: Flexible middleware system</li>
-        <li><strong>Native Compatibility</strong>: Built on Fetch API</li>
-        <li><strong>Framework Agnostic</strong>: Works with any JavaScript framework</li>
-        <li><strong>Performance Focused</strong>: Minimal bundle size and optimal execution</li>
-      </ul>
+      <List
+        size="small"
+        dataSource={[
+          '**Modular Design**: Core package with optional extensions',
+          '**TypeScript First**: Complete type safety throughout',
+          '**Interceptor Pattern**: Flexible middleware system',
+          '**Native Compatibility**: Built on Fetch API',
+          '**Framework Agnostic**: Works with any JavaScript framework',
+          '**Performance Focused**: Minimal bundle size and optimal execution'
+        ]}
+        renderItem={(item) => <List.Item><span dangerouslySetInnerHTML={{ __html: item }} /></List.Item>}
+      />
     </Card>
 
   </Space>
