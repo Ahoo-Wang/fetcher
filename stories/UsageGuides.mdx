@@ -1,61 +1,76 @@
 import { Meta } from '@storybook/addon-docs/blocks';
+import { Typography, Card, Space } from 'antd';
 
 <Meta title="Usage Guides" />
 
-<div className="sb-container">
-  <div className='sb-section-title'>
-    # 📚 Usage Guides
-
-    Practical examples and patterns for using Fetcher in your applications
-
-  </div>
-
-  <div className="sb-section">
-    <div className="sb-section-item">
-      <h4 className="sb-section-item-heading">Basic HTTP Client</h4>
-      <p className="sb-section-item-paragraph">Get started with the core Fetcher package for simple HTTP requests.</p>
-      <pre><code>{`import { Fetcher } from '@ahoo-wang/fetcher';
-
-      // Create a fetcher instance
-      const fetcher = new Fetcher({
-      baseURL: 'https://jsonplaceholder.typicode.com',
-      timeout: 5000,
-      });
-
-      // GET request with path parameters
-      const user = await fetcher.get('/users/{id}', {
-      urlParams: {
-      path: { id: 1 },
-      },
-      });
-
-      // POST request with JSON body
-      const newPost = await fetcher.post('/posts', {
-      body: {
-      title: 'New Post',
-      body: 'Post content',
-      userId: 1,
-      },
-      });
-
-      // PUT request with query parameters
-      const updatedPost = await fetcher.put('/posts/{id}', {
-      urlParams: {
-      path: { id: 1 },
-      query: { \_method: 'PUT' },
-      },
-      body: { title: 'Updated Title' },
-      });`}</code></pre>
-
+<div style={{ padding: '24px' }}>
+  <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <div>
+      <Typography.Title level={1}>
+        📚 Usage Guides
+      </Typography.Title>
+      <Typography.Text>Practical examples and patterns for using Fetcher in your applications</Typography.Text>
     </div>
 
-  </div>
+    <Card>
+      <Typography.Title level={4}>Basic HTTP Client</Typography.Title>
+      <Typography.Paragraph>Get started with the core Fetcher package for simple HTTP requests.</Typography.Paragraph>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '14px'
+      }}>{`import { Fetcher } from '@ahoo-wang/fetcher';
 
-  <div className="sb-section">
-    <div className="sb-section-item">
-      <h4 className="sb-section-item-heading">Declarative API Services</h4>
-      <p className="sb-section-item-paragraph">Use decorators to create clean, type-safe service classes.</p>
-      <pre><code>{`import { NamedFetcher } from '@ahoo-wang/fetcher';
+// Create a fetcher instance
+const fetcher = new Fetcher({
+baseURL: 'https://jsonplaceholder.typicode.com',
+timeout: 5000,
+});
+
+// GET request with path parameters
+const user = await fetcher.get('/users/{id}', {
+urlParams: {
+path: { id: 1 },
+},
+});
+
+// POST request with JSON body
+const newPost = await fetcher.post('/posts', {
+body: {
+title: 'New Post',
+body: 'Post content',
+userId: 1,
+},
+});
+
+// PUT request with query parameters
+const updatedPost = await fetcher.put('/posts/{id}', {
+urlParams: {
+path: { id: 1 },
+query: { \_method: 'PUT' },
+},
+body: { title: 'Updated Title' },
+});`}</pre>
+
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>Declarative API Services</Typography.Title>
+      <Typography.Paragraph>Use decorators to create clean, type-safe service classes.</Typography.Paragraph>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '14px'
+      }}>{`import { NamedFetcher } from '@ahoo-wang/fetcher';
+
 import {
   api,
   get,
@@ -67,346 +82,315 @@ import {
   body,
 } from '@ahoo-wang/fetcher-decorator';
 
-      // Register a named fetcher
-      const apiFetcher = new NamedFetcher('api', {
-      baseURL: 'https://jsonplaceholder.typicode.com',
-      });
+// Register a named fetcher
+const apiFetcher = new NamedFetcher('api', {
+baseURL: 'https://jsonplaceholder.typicode.com',
+});
 
-      // Define service with decorators
-      @api('/users', { fetcher: 'api' })
-      class UserService {
-      @get('/')
-      getUsers(@query('limit') limit?: number): Promise<User[]> {
-      throw new Error('Auto-generated method');
-      }
+// Define service with decorators
+@api('/users', { fetcher: 'api' })
+class UserService {
+@get('/')
+getUsers(@query('limit') limit?: number): Promise<User[]> {
+throw new Error('Auto-generated method');
+}
 
-      @get('/{id}')
-      getUser(@path('id') id: number): Promise<User> {
-      throw new Error('Auto-generated method');
-      }
+@get('/{id}')
+getUser(@path('id') id: number): Promise<User> {
+throw new Error('Auto-generated method');
+}
 
-      @post('/')
-      createUser(@body() user: Omit<User, 'id'>): Promise<User> {
-      throw new Error('Auto-generated method');
-      }
+@post('/')
+createUser(@body() user: Omit<User, 'id'>): Promise<User> {
+throw new Error('Auto-generated method');
+}
 
-      @put('/{id}')
-      updateUser(@path('id') id: number, @body() user: Partial<User>): Promise<User> {
-      throw new Error('Auto-generated method');
-      }
+@put('/{id}')
+updateUser(@path('id') id: number, @body() user: Partial<User>): Promise<User> {
+throw new Error('Auto-generated method');
+}
 
-      @del('/{id}')
-      deleteUser(@path('id') id: number): Promise<void> {
-      throw new Error('Auto-generated method');
-      }
-      }
+@del('/{id}')
+deleteUser(@path('id') id: number): Promise<void> {
+throw new Error('Auto-generated method');
+}
+}
 
-      // Use the service
-      const userService = new UserService();
-      const users = await userService.getUsers(10);
-      const user = await userService.getUser(1);`}</code></pre>
+// Use the service
+const userService = new UserService();
+const users = await userService.getUsers(10);
+const user = await userService.getUser(1);`}</pre>
 
-    </div>
+    </Card>
 
-  </div>
+    <Card>
+      <Typography.Title level={4}>Real-Time Streaming & LLM Support</Typography.Title>
+      <Typography.Paragraph>Handle Server-Sent Events and streaming LLM responses.</Typography.Paragraph>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '14px'
+      }}>{`import { Fetcher } from '@ahoo-wang/fetcher';
 
-  <div className="sb-section">
-    <div className="sb-section-item">
-      <h4 className="sb-section-item-heading">Real-Time Streaming & LLM Support</h4>
-      <p className="sb-section-item-paragraph">Handle Server-Sent Events and streaming LLM responses.</p>
-      <pre><code>{`import { Fetcher } from '@ahoo-wang/fetcher';
 import { EventStreamInterceptor } from '@ahoo-wang/fetcher-eventstream';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 fetcher.interceptors.response.use(new EventStreamInterceptor());
 
-      // Generic SSE streaming
-      const eventStream = await fetcher.get('/events');
-      if (eventStream.eventStream) {
-      for await (const event of eventStream.eventStream()) {
-      console.log('Event:', event.data, event.event, event.id);
-      }
-      }
-
-      // LLM streaming (OpenAI-style)
-      const llmResponse = await fetcher.post('/chat/completions', {
-      body: {
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: 'Hello!' }],
-      stream: true,
-      },
-      });
-
-      if (llmResponse.jsonEventStream) {
-      for await (const event of llmResponse.jsonEventStream<ChatCompletionChunk>()) {
-      const content = event.data.choices[0]?.delta?.content || '';
-      process.stdout.write(content); // Real-time output
-      }
-      }`}</code></pre>
-
-    </div>
-
-  </div>
-
-  <div className="sb-section">
-    <div className="sb-section-item">
-      <h4 className="sb-section-item-heading">Event Bus for Cross-Tab Communication</h4>
-      <p className="sb-section-item-paragraph">Use the event bus for local and cross-tab event handling.</p>
-      <pre><code>{`import {
-  BroadcastTypedEventBus,
-  SerialTypedEventBus,
-} from '@ahoo-wang/fetcher-eventbus';
-
-      // Define event types
-      interface AppEvents {
-      'user-action': { action: string; userId: number };
-      'data-updated': { type: string; id: number };
-      }
-
-      // Create delegate for local event handling
-      const delegate = new SerialTypedEventBus<AppEvents>('app-events');
-
-      // Create broadcast event bus for cross-tab communication
-      const eventBus = new BroadcastTypedEventBus(delegate);
-
-      // Add event handlers
-      eventBus.on({
-      name: 'user-action',
-      order: 1,
-      handle: async (event) => {
-      console.log('User action:', event.action);
-      // Handle user action
-      },
-      });
-
-      eventBus.on({
-      name: 'data-updated',
-      order: 2,
-      handle: async (event) => {
-      console.log('Data updated:', event.type, event.id);
-      // Refresh data or update UI
-      },
-      });
-
-      // Emit events (local and cross-tab)
-      await eventBus.emit('user-action', { action: 'login', userId: 123 });
-      await eventBus.emit('data-updated', { type: 'user', id: 123 });`}</code></pre>
-
-    </div>
-
-  </div>
-
-  <div className="sb-section">
-    <div className="sb-section-item">
-      <h4 className="sb-section-item-heading">Powerful Interceptors</h4>
-      <p className="sb-section-item-paragraph">Add middleware for authentication, logging, and error handling.</p>
-      <pre><code>{`import { Fetcher } from '@ahoo-wang/fetcher';
-
-      const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-
-      // Request interceptor for authentication
-      fetcher.interceptors.request.use({
-      name: 'auth-interceptor',
-      order: 100,
-      intercept(exchange) {
-      const token = localStorage.getItem('auth-token');
-      if (token) {
-      exchange.request.headers.Authorization = \`Bearer \${token}\`;
-      }
-      },
-      });
-
-      // Request interceptor for request ID
-      fetcher.interceptors.request.use({
-      name: 'request-id-interceptor',
-      order: 50,
-      intercept(exchange) {
-      exchange.request.headers['X-Request-ID'] = generateRequestId();
-      },
-      });
-
-      // Response interceptor for logging
-      fetcher.interceptors.response.use({
-      name: 'logging-interceptor',
-      order: 10,
-      intercept(exchange) {
-      console.log(\`\${exchange.request.method} \${exchange.request.url} - \${exchange.response.status}\`);
-      },
-      });
-
-      // Response interceptor for error handling
-      fetcher.interceptors.response.use({
-      name: 'error-interceptor',
-      order: 1,
-      intercept(exchange) {
-      if (!exchange.response.ok) {
-      throw new Error(\`HTTP \${exchange.response.status}: \${exchange.response.statusText}\`);
-      }
-      },
-      });`}</code></pre>
-
-    </div>
-
-  </div>
-
-  <div className="sb-section">
-    <div className="sb-section-item">
-      <h4 className="sb-section-item-heading">React Integration</h4>
-      <p className="sb-section-item-paragraph">Use React hooks for data fetching with automatic re-rendering.</p>
-      <pre><code>{`import { useFetcher } from '@ahoo-wang/fetcher-react';
-
-      function UserProfile({ userId }: { userId: number }) {
-      const { data, loading, error } = useFetcher(
-      \`/users/\${userId}\`,
-      { method: 'GET' },
-      [userId] // Dependencies for re-fetching
-      );
-
-      if (loading) return <div>Loading...</div>;
-      if (error) return <div>Error: {error.message}</div>;
-      if (!data) return <div>No data</div>;
-
-      return (
-
-      <div>
-        <h2>{data.name}</h2>
-        <p>{data.email}</p>
-      </div>
-      ); }
-
-      // Custom hook for user operations
-      function useUserActions() {
-      const fetcher = useFetcher();
-
-      const createUser = useCallback(async (userData: UserData) => {
-      return await fetcher('/users', {
-      method: 'POST',
-      body: userData,
-      });
-      }, [fetcher]);
-
-      const updateUser = useCallback(async (id: number, userData: Partial<UserData>) => {
-      return await fetcher(\`/users/\${id}\`, {
-      method: 'PUT',
-      body: userData,
-      });
-      }, [fetcher]);
-
-      return { createUser, updateUser };
-      }`}</code></pre>
-
-    </div>
-
-  </div>
-
-  <div className="sb-section">
-    <div className="sb-section-item">
-      <h4 className="sb-section-item-heading">CQRS/DDD with Wow Framework</h4>
-      <p className="sb-section-item-paragraph">Use command and query clients for domain-driven design.</p>
-      <pre><code>{`import {
-  CommandClient,
-  SnapshotQueryClient,
-  EventStreamQueryClient,
-} from '@ahoo-wang/fetcher-wow';
-
-      const commandClient = new CommandClient({
-      baseURL: 'https://api.example.com/commands',
-      });
-
-      const queryClient = new SnapshotQueryClient({
-      baseURL: 'https://api.example.com/queries',
-      });
-
-      const streamClient = new EventStreamQueryClient({
-      baseURL: 'https://api.example.com/streams',
-      });
-
-      // Send commands
-      const result = await commandClient.send('CreateUser', {
-      userId: 'user-123',
-      email: 'user@example.com',
-      name: 'John Doe',
-      });
-
-      // Query snapshots
-      const users = await queryClient.list('UserSummary', {
-      page: 1,
-      size: 20,
-      sort: 'name',
-      });
-
-      const user = await queryClient.single('UserDetails', {
-      userId: 'user-123',
-      });
-
-      // Stream events
-      const userEvents = await streamClient.stream('UserEvents', {
-      userId: 'user-123',
-      });
-
-      for await (const event of userEvents) {
-      console.log('User event:', event);
-      }`}</code></pre>
-
-    </div>
-
-  </div>
-</div>
-
-<style>
-  {`
-.sb-container {
-  margin-bottom: 48px;
+// Generic SSE streaming
+const eventStream = await fetcher.get('/events');
+if (eventStream.eventStream) {
+for await (const event of eventStream.eventStream()) {
+console.log('Event:', event.data, event.event, event.id);
+}
 }
 
-  .sb-section {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
+// LLM streaming (OpenAI-style)
+const llmResponse = await fetcher.post('/chat/completions', {
+body: {
+model: 'gpt-3.5-turbo',
+messages: [{ role: 'user', content: 'Hello!' }],
+stream: true,
+},
+});
 
-  .sb-section-title {
-    margin-bottom: 32px;
-    font-size: 2rem;
-    font-weight: bold;
-  }
+if (llmResponse.jsonEventStream) {
+for await (const event of llmResponse.jsonEventStream<ChatCompletionChunk>()) {
+const content = event.data.choices[0]?.delta?.content || '';
+process.stdout.write(content); // Real-time output
+}
+}`}</pre>
 
-  .sb-section-item {
-    display: flex;
-    flex-direction: column;
-  }
+    </Card>
 
-  .sb-section-item-heading {
-    padding-top: 20px !important;
-    padding-bottom: 5px !important;
-    margin: 0 !important;
-    font-size: 1.5rem;
-  }
+    <Card>
+      <Typography.Title level={4}>Event Bus for Cross-Tab Communication</Typography.Title>
+      <Typography.Paragraph>Use the event bus for local and cross-tab event handling.</Typography.Paragraph>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '14px'
+      }}>{`import {
 
-  .sb-section-item-paragraph {
-    margin: 0 0 16px 0;
-    color: #666;
-  }
+BroadcastTypedEventBus,
+SerialTypedEventBus,
+} from '@ahoo-wang/fetcher-eventbus';
 
-  pre {
-    background: #f6f8fa;
-    border: 1px solid #d1d9e0;
-    border-radius: 6px;
-    padding: 16px;
-    overflow-x: auto;
-    margin: 16px 0;
-  }
+// Define event types
+interface AppEvents {
+'user-action': { action: string; userId: number };
+'data-updated': { type: string; id: number };
+}
 
-  code {
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 0.9rem;
-  }
+// Create delegate for local event handling
+const delegate = new SerialTypedEventBus<AppEvents>('app-events');
 
-  @media screen and (max-width: 600px) {
-    .sb-section {
-      flex-direction: column;
-    }
-  }
-`}
-</style>
+// Create broadcast event bus for cross-tab communication
+const eventBus = new BroadcastTypedEventBus(delegate);
+
+// Add event handlers
+eventBus.on({
+name: 'user-action',
+order: 1,
+handle: async (event) => {
+console.log('User action:', event.action);
+// Handle user action
+},
+});
+
+eventBus.on({
+name: 'data-updated',
+order: 2,
+handle: async (event) => {
+console.log('Data updated:', event.type, event.id);
+// Refresh data or update UI
+},
+});
+
+// Emit events (local and cross-tab)
+await eventBus.emit('user-action', { action: 'login', userId: 123 });
+await eventBus.emit('data-updated', { type: 'user', id: 123 });`}</pre>
+
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>Powerful Interceptors</Typography.Title>
+      <Typography.Paragraph>Add middleware for authentication, logging, and error handling.</Typography.Paragraph>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '14px'
+      }}>{`import { Fetcher } from '@ahoo-wang/fetcher';
+
+const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
+
+// Request interceptor for authentication
+fetcher.interceptors.request.use({
+name: 'auth-interceptor',
+order: 100,
+intercept(exchange) {
+const token = localStorage.getItem('auth-token');
+if (token) {
+exchange.request.headers.Authorization = \`Bearer \${token}\`;
+}
+},
+});
+
+// Request interceptor for request ID
+fetcher.interceptors.request.use({
+name: 'request-id-interceptor',
+order: 50,
+intercept(exchange) {
+exchange.request.headers['X-Request-ID'] = generateRequestId();
+},
+});
+
+// Response interceptor for logging
+fetcher.interceptors.response.use({
+name: 'logging-interceptor',
+order: 10,
+intercept(exchange) {
+console.log(\`\${exchange.request.method} \${exchange.request.url} - \${exchange.response.status}\`);
+},
+});
+
+// Response interceptor for error handling
+fetcher.interceptors.response.use({
+name: 'error-interceptor',
+order: 1,
+intercept(exchange) {
+if (!exchange.response.ok) {
+throw new Error(\`HTTP \${exchange.response.status}: \${exchange.response.statusText}\`);
+}
+},
+});`}</pre>
+
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>React Integration</Typography.Title>
+      <Typography.Paragraph>Use React hooks for data fetching with automatic re-rendering.</Typography.Paragraph>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '14px'
+      }}>{`import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+function UserProfile({ userId }: { userId: number }) {
+const { data, loading, error } = useFetcher(
+\`/users/\${userId}\`,
+{ method: 'GET' },
+[userId] // Dependencies for re-fetching
+);
+
+if (loading) return <div>Loading...</div>;
+if (error) return <div>Error: {error.message}</div>;
+if (!data) return <div>No data</div>;
+
+return (
+
+<div>
+  <h2>{data.name}</h2>
+  <p>{data.email}</p>
+</div>
+); }
+
+// Custom hook for user operations
+function useUserActions() {
+const fetcher = useFetcher();
+
+const createUser = useCallback(async (userData: UserData) => {
+return await fetcher('/users', {
+method: 'POST',
+body: userData,
+});
+}, [fetcher]);
+
+const updateUser = useCallback(async (id: number, userData: Partial<UserData>) => {
+return await fetcher(\`/users/\${id}\`, {
+method: 'PUT',
+body: userData,
+});
+}, [fetcher]);
+
+return { createUser, updateUser };
+}`}</pre>
+
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>CQRS/DDD with Wow Framework</Typography.Title>
+      <Typography.Paragraph>Use command and query clients for domain-driven design.</Typography.Paragraph>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '14px'
+      }}>{`import {
+
+CommandClient,
+SnapshotQueryClient,
+EventStreamQueryClient,
+} from '@ahoo-wang/fetcher-wow';
+
+const commandClient = new CommandClient({
+baseURL: 'https://api.example.com/commands',
+});
+
+const queryClient = new SnapshotQueryClient({
+baseURL: 'https://api.example.com/queries',
+});
+
+const streamClient = new EventStreamQueryClient({
+baseURL: 'https://api.example.com/streams',
+});
+
+// Send commands
+const result = await commandClient.send('CreateUser', {
+userId: 'user-123',
+email: 'user@example.com',
+name: 'John Doe',
+});
+
+// Query snapshots
+const users = await queryClient.list('UserSummary', {
+page: 1,
+size: 20,
+sort: 'name',
+});
+
+const user = await queryClient.single('UserDetails', {
+userId: 'user-123',
+});
+
+// Stream events
+const userEvents = await streamClient.stream('UserEvents', {
+userId: 'user-123',
+});
+
+for await (const event of userEvents) {
+console.log('User event:', event);
+}`}</pre>
+    </Card>
+
+  </Space>
+</div>
