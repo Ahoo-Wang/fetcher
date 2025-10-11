@@ -45,14 +45,10 @@ describe('KeyStorage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStorage.getItem.mockReturnValue(null);
-    mockStorage.setItem.mockImplementation(() => {
-    });
-    mockStorage.removeItem.mockImplementation(() => {
-    });
-    mockBroadcastChannel.postMessage.mockImplementation(() => {
-    });
-    mockBroadcastChannel.close.mockImplementation(() => {
-    });
+    mockStorage.setItem.mockImplementation(() => {});
+    mockStorage.removeItem.mockImplementation(() => {});
+    mockBroadcastChannel.postMessage.mockImplementation(() => {});
+    mockBroadcastChannel.close.mockImplementation(() => {});
 
     options = {
       key: 'testKey',
@@ -176,6 +172,76 @@ describe('KeyStorage', () => {
       keyStorage.addListener({ name: 'test', handle: listener });
       keyStorage.set('value');
       await vi.waitFor(() => expect(listener).toHaveBeenCalled());
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle serializer deserialize error gracefully', () => {
+      const badSerializer = {
+        serialize: (value: any) => value,
+        deserialize: (value: string) => {
+          throw new Error('Deserialize error');
+        },
+      };
+      const ks = new KeyStorage({
+        key: 'badKey',
+        serializer: badSerializer as any,
+        storage: mockStorage,
+      });
+      mockStorage.getItem.mockReturnValue('bad data');
+      expect(() => ks.get()).toThrow('Deserialize error');
+    });
+
+    it('should handle storage getItem error', () => {
+      mockStorage.getItem.mockImplementation(() => {
+        throw new Error('Storage error');
+      });
+      expect(() => keyStorage.get()).toThrow('Storage error');
+    });
+
+    it('should handle storage setItem error', () => {
+      mockStorage.setItem.mockImplementation(() => {
+        throw new Error('Set error');
+      });
+      expect(() => keyStorage.set('value')).toThrow('Set error');
+    });
+
+    it('should handle storage removeItem error', () => {
+      mockStorage.removeItem.mockImplementation(() => {
+        throw new Error('Remove error');
+      });
+      expect(() => keyStorage.remove()).toThrow('Remove error');
+    });
+  });
+
+  describe('custom eventBus', () => {
+    it('should use custom eventBus', () => {
+      const customEventBus = {
+        type: 'custom',
+        handlers: [],
+        on: vi.fn(),
+        off: vi.fn(),
+        emit: vi.fn().mockResolvedValue(undefined),
+        destroy: vi.fn(),
+      };
+      const ks = new KeyStorage({
+        key: 'customKey',
+        eventBus: customEventBus as any,
+        storage: mockStorage,
+      });
+      ks.set('value');
+      expect(customEventBus.emit).toHaveBeenCalled();
+    });
+  });
+
+  describe('destroy', () => {
+    it('should remove the internal event handler', () => {
+      const ks = new KeyStorage({ key: 'destroyKey', storage: mockStorage });
+      // Mock the eventBus off method
+      const mockOff = vi.fn();
+      (ks as any).eventBus.off = mockOff;
+      ks.destroy();
+      expect(mockOff).toHaveBeenCalledWith('KeyStorage');
     });
   });
 });
