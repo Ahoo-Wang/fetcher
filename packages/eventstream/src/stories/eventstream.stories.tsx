@@ -14,7 +14,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React from 'react';
 
-import { Fetcher } from '@ahoo-wang/fetcher';
 // Note: EventStreamInterceptor is not exported, using direct prototype extension
 
 // Demo component
@@ -25,11 +24,10 @@ const EventStreamDemo: React.FC = () => {
   const [loading, setLoading] = React.useState(false);
   const [logs, setLogs] = React.useState<string[]>([]);
 
-  const fetcher = new Fetcher({
-    baseURL: 'https://jsonplaceholder.typicode.com',
-  });
-
   // Note: In real usage, EventStreamInterceptor would be added here
+  // const fetcher = new Fetcher({
+  //   baseURL: 'https://jsonplaceholder.typicode.com',
+  // });
   // fetcher.interceptors.response.use(new EventStreamInterceptor());
 
   const addLog = (message: string) => {
