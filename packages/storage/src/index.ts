@@ -13,4 +13,5 @@
 
 export * from './env';
 export * from './keyStorage';
+export * from './inMemoryStorage';
 export * from './serializer';
