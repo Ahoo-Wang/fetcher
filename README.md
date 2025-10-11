@@ -48,6 +48,20 @@ Transform your API interactions with clean, declarative service definitions:
 - **⚡ Automatic Implementation**: Methods automatically implemented with HTTP calls
 - **📦 Metadata System**: Rich metadata support for advanced customization
 
+### 🎯 [`@ahoo-wang/fetcher-eventbus`](./packages/eventbus) - Event Bus System
+
+A TypeScript event bus library providing multiple implementations for handling events: serial execution, parallel
+execution, and cross-tab broadcasting.
+
+- **🔄 Serial Execution**: Execute event handlers in order of priority
+- **⚡ Parallel Execution**: Run event handlers concurrently for better performance
+- **🌐 Cross-Tab Broadcasting**: Broadcast events across browser tabs using BroadcastChannel API
+- **📦 Generic Event Bus**: Manage multiple event types with lazy loading
+- **🔧 Type-Safe**: Full TypeScript support with strict typing
+- **🧵 Async Support**: Handle both synchronous and asynchronous event handlers
+- **🔄 Once Handlers**: Support for one-time event handlers
+- **🛡️ Error Handling**: Robust error handling with logging
+
 ### 📡 [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) - Real-Time Streaming & LLM Support
 
 Power your real-time applications with Server-Sent Events support, specially designed for Large Language Model streaming
@@ -189,7 +203,7 @@ Secure your applications with integrated authentication:
 npm install @ahoo-wang/fetcher
 
 # Or install with all extensions including LLM streaming support
-npm install @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-cosec
+npm install @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-cosec
 
 # Using pnpm (recommended)
 pnpm add @ahoo-wang/fetcher
@@ -329,6 +343,31 @@ if (llmResponse.jsonEventStream) {
 }
 ```
 
+#### Event Bus for Cross-Tab Communication
+
+```typescript
+import {
+  BroadcastTypedEventBus,
+  SerialTypedEventBus,
+} from '@ahoo-wang/fetcher-eventbus';
+
+// Create a delegate for local event handling
+const delegate = new SerialTypedEventBus<string>('shared-events');
+
+// Create broadcast event bus for cross-tab communication
+const eventBus = new BroadcastTypedEventBus(delegate);
+
+// Add event handler
+eventBus.on({
+  name: 'user-action',
+  order: 1,
+  handle: action => console.log('User action:', action),
+});
+
+// Emit event locally and broadcast to other tabs
+await eventBus.emit('button-clicked');
+```
+
 ## 🎯 Integration Test Examples
 
 Explore comprehensive, production-ready implementations in our [integration-test](./integration-test) directory:
@@ -356,6 +395,12 @@ Explore comprehensive, production-ready implementations in our [integration-test
 - **Declarative Services** - Clean, maintainable API service layers using TypeScript decorators
 - **Metadata Extensions** - Custom metadata for advanced use cases
 - **Type-Safe APIs** - Full TypeScript integration with automatic type inference
+
+### 🎯 Event Bus Patterns
+
+- **Cross-Tab Communication** - Seamless event broadcasting between browser tabs
+- **Typed Event Handling** - Type-safe event management with priority ordering
+- **Async Event Processing** - Support for both synchronous and asynchronous event handlers
 
 ## 🏗️ Development & Contributing
 
