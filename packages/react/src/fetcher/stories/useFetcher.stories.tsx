@@ -12,72 +12,151 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import React from 'react';
+import React, { useState } from 'react';
 import { useFetcher } from '../useFetcher';
-import { Button, Card, Typography, Space, Alert } from 'antd';
+import {
+  Button,
+  Card,
+  List,
+  Space,
+  Typography,
+  Spin,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+} from 'antd';
 import { ResultExtractors } from '@ahoo-wang/fetcher';
 
-const { Title, Text } = Typography;
+// Demo component
+const UseFetcherDemo: React.FC = () => {
+  const [response, setResponse] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [form] = Form.useForm();
 
-// Mock API response component
-interface MockApiResponseProps {
-  url: string;
-  timeout?: number;
-}
+  const { loading, result, error, execute } = useFetcher<unknown>({
+    resultExtractor: ResultExtractors.Json,
+  });
 
-function MockApiResponse({ url, timeout = 5000 }: MockApiResponseProps) {
-  const { loading, result, error, execute } = useFetcher<unknown>({ resultExtractor: ResultExtractors.Json });
-
-  const handleFetch = () => {
-    execute({
+  const handleRequest = async (values: any) => {
+    const url = values.url || 'https://jsonplaceholder.typicode.com/posts/1';
+    const request: any = {
       url,
-      method: 'GET',
-      timeout,
-    });
+      method: values.method || 'GET',
+    };
+    if (values.body && values.method !== 'GET') {
+      request.body = JSON.parse(values.body);
+    }
+    if (values.headers) {
+      request.headers = JSON.parse(values.headers);
+    }
+    if (values.timeout) {
+      request.timeout = values.timeout;
+    }
+    setLogs(prev => [...prev, `Sending ${values.method} request to ${url}`]);
+    try {
+      await execute(request);
+      setResponse(JSON.stringify(result, null, 2));
+      setLogs(prev => [...prev, `${values.method} request successful`]);
+    } catch (err) {
+      setResponse(`Error: ${error?.message || err}`);
+      setLogs(prev => [
+        ...prev,
+        `${values.method} request failed: ${error?.message || err}`,
+      ]);
+    }
+  };
+
+  const clearLogs = () => {
+    setLogs([]);
+    setResponse(null);
   };
 
   return (
-    <Card title="useFetcher Demo" style={{ width: 400 }}>
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <Button
-          type="primary"
-          onClick={handleFetch}
-          loading={loading}
-          disabled={loading}
+    <Card title="useFetcher Demo" style={{ width: '100%', maxWidth: '1200px' }}>
+      <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleRequest}
+          initialValues={{
+            url: 'https://jsonplaceholder.typicode.com/posts/1',
+            method: 'GET',
+            body: '{"title": "foo", "body": "bar", "userId": 1}',
+            headers: '{"Content-Type": "application/json"}',
+            timeout: 5000,
+          }}
         >
-          {loading ? 'Fetching...' : 'Fetch Data'}
-        </Button>
-
-        {result !== undefined && (
-          <Alert
-            message="Success"
-            description={<pre>{JSON.stringify(result, null, 2)}</pre>}
-            type="success"
-            showIcon
+          <Form.Item label="URL" name="url">
+            <Input placeholder="Enter URL" />
+          </Form.Item>
+          <Form.Item label="Method" name="method">
+            <Select placeholder="Select method">
+              <Select.Option value="GET">GET</Select.Option>
+              <Select.Option value="POST">POST</Select.Option>
+              <Select.Option value="PUT">PUT</Select.Option>
+              <Select.Option value="DELETE">DELETE</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="Body (for POST/PUT)" name="body">
+            <Input.TextArea placeholder="JSON body" rows={3} />
+          </Form.Item>
+          <Form.Item label="Headers" name="headers">
+            <Input.TextArea placeholder="JSON headers" rows={2} />
+          </Form.Item>
+          <Form.Item label="Timeout (ms)" name="timeout">
+            <InputNumber min={0} />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                Send Request
+              </Button>
+              <Button onClick={clearLogs}>Clear</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+        <div>
+          <Typography.Title level={5}>Response:</Typography.Title>
+          {loading ? (
+            <Spin />
+          ) : (
+            <pre
+              style={{
+                background: '#f5f5f5',
+                padding: 10,
+                borderRadius: 4,
+                maxHeight: 200,
+                overflow: 'auto',
+              }}
+            >
+              {response || 'No response yet'}
+            </pre>
+          )}
+        </div>
+        <div>
+          <Typography.Title level={5}>Logs:</Typography.Title>
+          <List
+            size="small"
+            bordered
+            dataSource={logs}
+            renderItem={(item, index) => (
+              <List.Item key={index}>
+                <Typography.Text>{item}</Typography.Text>
+              </List.Item>
+            )}
+            locale={{ emptyText: 'No logs yet' }}
+            style={{ maxHeight: 200, overflow: 'auto' }}
           />
-        )}
-
-        {error && (
-          <Alert
-            message="Error"
-            description={error.message}
-            type="error"
-            showIcon
-          />
-        )}
-
-        <Text type="secondary">
-          This demonstrates the useFetcher hook with loading states, success,
-          and error handling.
-        </Text>
+        </div>
       </Space>
     </Card>
   );
-}
+};
 
-const meta: Meta<typeof MockApiResponse> = {
+const meta: Meta<typeof UseFetcherDemo> = {
   title: 'React/Hooks/useFetcher',
-  component: MockApiResponse,
+  component: UseFetcherDemo,
   parameters: {
     layout: 'centered',
     docs: {
@@ -88,44 +167,18 @@ const meta: Meta<typeof MockApiResponse> = {
     },
   },
   tags: ['autodocs'],
-  argTypes: {
-    url: {
-      control: 'text',
-      description: 'The URL to fetch data from',
-    },
-    timeout: {
-      control: { type: 'number', min: 0, max: 10000 },
-      description: 'Timeout in milliseconds for the fetch request',
-    },
-  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: {
-    url: 'https://jsonplaceholder.typicode.com/posts/1',
-    timeout: 5000,
-  },
-};
-export const TimeOut: Story = {
-  args: {
-    url: 'https://jsonplaceholder.typicode.com/posts/1',
-    timeout: 1,
-  },
-};
-
-export const WithError: Story = {
-  args: {
-    url: 'https://jsonplaceholder.typicode.com/invalid-endpoint',
-    timeout: 5000,
-  },
-};
-
-export const SlowResponse: Story = {
-  args: {
-    url: 'https://jsonplaceholder.typicode.com/posts',
-    timeout: 10000,
+export const BasicUsage: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Demonstrates basic usage of useFetcher hook with form inputs for request parameters.',
+      },
+    },
   },
 };
