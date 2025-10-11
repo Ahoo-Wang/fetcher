@@ -15,27 +15,24 @@ import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
 import { useFetcher } from '../useFetcher';
 import { Button, Card, Typography, Space, Alert } from 'antd';
+import { ResultExtractors } from '@ahoo-wang/fetcher';
 
 const { Title, Text } = Typography;
 
 // Mock API response component
 interface MockApiResponseProps {
   url: string;
-  delay?: number;
-  shouldFail?: boolean;
+  timeout?: number;
 }
 
-function MockApiResponse({
-                           url,
-                           delay = 1000,
-                           shouldFail = false,
-                         }: MockApiResponseProps) {
-  const { loading, result, error, execute } = useFetcher<string>();
+function MockApiResponse({ url, timeout = 5000 }: MockApiResponseProps) {
+  const { loading, result, error, execute } = useFetcher<unknown>({ resultExtractor: ResultExtractors.Json });
 
   const handleFetch = () => {
     execute({
       url,
       method: 'GET',
+      timeout,
     });
   };
 
@@ -51,10 +48,10 @@ function MockApiResponse({
           {loading ? 'Fetching...' : 'Fetch Data'}
         </Button>
 
-        {result && (
+        {result !== undefined && (
           <Alert
             message="Success"
-            description={`Response: ${result}`}
+            description={<pre>{JSON.stringify(result, null, 2)}</pre>}
             type="success"
             showIcon
           />
@@ -96,13 +93,9 @@ const meta: Meta<typeof MockApiResponse> = {
       control: 'text',
       description: 'The URL to fetch data from',
     },
-    delay: {
-      control: { type: 'number', min: 0, max: 5000 },
-      description: 'Delay in milliseconds for the mock response',
-    },
-    shouldFail: {
-      control: 'boolean',
-      description: 'Whether the mock request should fail',
+    timeout: {
+      control: { type: 'number', min: 0, max: 10000 },
+      description: 'Timeout in milliseconds for the fetch request',
     },
   },
 };
@@ -112,24 +105,27 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    url: '/api/data',
-    delay: 1000,
-    shouldFail: false,
+    url: 'https://jsonplaceholder.typicode.com/posts/1',
+    timeout: 5000,
+  },
+};
+export const TimeOut: Story = {
+  args: {
+    url: 'https://jsonplaceholder.typicode.com/posts/1',
+    timeout: 1,
   },
 };
 
 export const WithError: Story = {
   args: {
-    url: '/api/error',
-    delay: 500,
-    shouldFail: true,
+    url: 'https://jsonplaceholder.typicode.com/invalid-endpoint',
+    timeout: 5000,
   },
 };
 
 export const SlowResponse: Story = {
   args: {
-    url: '/api/slow',
-    delay: 3000,
-    shouldFail: false,
+    url: 'https://jsonplaceholder.typicode.com/posts',
+    timeout: 10000,
   },
 };
