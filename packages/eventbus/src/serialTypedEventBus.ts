@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { TypedEventBus } from './typedEventBus';
 import { EventHandler, EventType } from './types';
 import { toSorted } from '@ahoo-wang/fetcher';
+import { AbstractTypedEventBus } from './abstractTypedEventBus';
 
 /**
  * Serial implementation of TypedEventBus
@@ -31,8 +31,7 @@ import { toSorted } from '@ahoo-wang/fetcher';
  * await bus.emit('hello'); // handler1 executes first, then handler2
  * ```
  */
-export class SerialTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
-  private sortedHandlers: EventHandler<EVENT>[] = [];
+export class SerialTypedEventBus<EVENT> extends AbstractTypedEventBus<EVENT> {
 
   /**
    * Creates an in-memory typed event bus
@@ -40,13 +39,7 @@ export class SerialTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    * @param type - The event type identifier for this bus
    */
   constructor(public readonly type: EventType) {
-  }
-
-  /**
-   * Gets a copy of all registered event handlers, sorted by order
-   */
-  get handlers(): EventHandler<EVENT>[] {
-    return [...this.sortedHandlers];
+    super();
   }
 
   /**
@@ -59,20 +52,15 @@ export class SerialTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    */
   async emit(event: EVENT): Promise<void> {
     const onceHandlers: EventHandler<EVENT>[] = [];
-    for (const handler of this.sortedHandlers) {
-      try {
-        await handler.handle(event);
-      } catch (e) {
-        console.warn(`Event handler error for ${handler.name}:`, e);
-      } finally {
-        if (handler.once) {
-          onceHandlers.push(handler);
-        }
+    for (const handler of this.eventHandlers) {
+      await this.handleEvent(handler, event);
+      if (handler.once) {
+        onceHandlers.push(handler);
       }
     }
     if (onceHandlers.length > 0) {
-      this.sortedHandlers = toSorted(
-        this.sortedHandlers.filter(item => !onceHandlers.includes(item)),
+      this.eventHandlers = toSorted(
+        this.eventHandlers.filter(item => !onceHandlers.includes(item)),
       );
     }
   }
@@ -84,11 +72,11 @@ export class SerialTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    * @returns true if a handler was removed, false otherwise
    */
   off(name: string): boolean {
-    const original = this.sortedHandlers;
+    const original = this.eventHandlers;
     if (!original.some(item => item.name === name)) {
       return false;
     }
-    this.sortedHandlers = toSorted(original, item => item.name !== name);
+    this.eventHandlers = toSorted(original, item => item.name !== name);
     return true;
   }
 
@@ -101,15 +89,11 @@ export class SerialTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    * @returns true if the handler was added, false if a handler with the same name already exists
    */
   on(handler: EventHandler<EVENT>): boolean {
-    const original = this.sortedHandlers;
+    const original = this.eventHandlers;
     if (original.some(item => item.name === handler.name)) {
       return false;
     }
-    this.sortedHandlers = toSorted([...original, handler]);
+    this.eventHandlers = toSorted([...original, handler]);
     return true;
-  }
-
-  destroy() {
-    this.sortedHandlers = [];
   }
 }
