@@ -11,22 +11,13 @@
  * limitations under the License.
  */
 
+import { type NamedCapable, OrderedCapable } from '@ahoo-wang/fetcher';
 
-import { EventHandler, EventType } from './types';
+export type EventType = string | symbol;
 
-export interface EventBus<Events extends Record<EventType, unknown>> {
-  on<Key extends EventType>(
-    type: Key,
-    handler: EventHandler<Events[Key]>,
-  ): boolean;
 
-  off<Key extends EventType>(
-    type: Key,
-    handler: EventHandler<Events[Key]>,
-  ): boolean;
+export interface EventHandler<EVENT> extends NamedCapable, OrderedCapable {
+  once?: boolean;
 
-  emit<Key extends EventType>(
-    type: Key,
-    event: Events[Key],
-  ): void | Promise<void>;
+  handle(event: EVENT): void | Promise<void>;
 }
