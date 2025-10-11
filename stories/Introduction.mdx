@@ -143,20 +143,20 @@ import { Typography, Card, Row, Col, Space } from 'antd';
         fontSize: '14px'
       }}>{`import { Fetcher } from '@ahoo-wang/fetcher';
 
-// Create a fetcher instance
-const fetcher = new Fetcher({
-baseURL: 'https://api.example.com',
-timeout: 5000,
-});
+      // Create a fetcher instance
+      const fetcher = new Fetcher({
+      baseURL: 'https://api.example.com',
+      timeout: 5000,
+      });
 
-// GET request with path and query parameters
-const response = await fetcher.get('/users/{id}', {
-urlParams: {
-path: { id: 123 },
-query: { include: 'profile' },
-},
-});
-const userData = await response.json<User>();`}</pre>
+      // GET request with path and query parameters
+      const response = await fetcher.get('/users/{id}', {
+      urlParams: {
+      path: { id: 123 },
+      query: { include: 'profile' },
+      },
+      });
+      const userData = await response.json<User>();`}</pre>
     </Card>
 
   </Space>
