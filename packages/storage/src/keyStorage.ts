@@ -60,7 +60,7 @@ export interface KeyStorageOptions<Deserialized> {
   storage?: Storage;
 
   /**
-   * Optional event bus for cross-tab communication. Defaults to BroadcastTypedEventBus
+   * Optional event bus for cross-tab communication. Defaults to SerialTypedEventBus
    */
   eventBus?: TypedEventBus<StorageEvent<Deserialized>>;
 }
@@ -77,6 +77,12 @@ export class KeyStorage<Deserialized>
   private readonly storage: Storage;
   private readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
   private cacheValue: Deserialized | null = null;
+  private readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> = {
+    name: 'KeyStorage',
+    handle: (event: StorageEvent<Deserialized>) => {
+      this.cacheValue = event.newValue ?? null;
+    },
+  };
 
   /**
    * Creates a new KeyStorage instance
@@ -87,13 +93,11 @@ export class KeyStorage<Deserialized>
     this.serializer = options.serializer ?? typedIdentitySerializer();
     this.storage = options.storage ?? window.localStorage;
     this.eventBus =
-      options.eventBus ?? new SerialTypedEventBus<StorageEvent<Deserialized>>(`KeyStorage:${this.key}`);
-    this.eventBus.on({
-      name: 'KeyStorage',
-      handle: (event: StorageEvent<Deserialized>) => {
-        this.cacheValue = event.newValue ?? null;
-      },
-    });
+      options.eventBus ??
+      new SerialTypedEventBus<StorageEvent<Deserialized>>(
+        `KeyStorage:${this.key}`,
+      );
+    this.eventBus.on(this.keyStorageHandler);
   }
 
   addListener(
@@ -134,5 +138,9 @@ export class KeyStorage<Deserialized>
       oldValue: oldValue,
       newValue: null,
     });
+  }
+
+  destroy() {
+    this.eventBus.off(this.keyStorageHandler.name);
   }
 }
