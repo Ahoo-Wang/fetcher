@@ -8,17 +8,17 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-storage)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-一个轻量级的跨环境存储库，具有变更事件监听功能。为浏览器 localStorage/sessionStorage 和内存存储提供一致的 API，并支持变更通知。
+一个轻量级的跨环境存储库，具有基于键的存储和自动环境检测功能。为浏览器 localStorage 和内存存储提供一致的 API，并支持变更通知。
 
 ## 特性
 
 - 🌐 跨环境支持（浏览器和 Node.js）
-- 📦 超轻量级（~1KB gzip）
+- 📦 超轻量级（~2KB gzip）
 - 🔔 存储变更事件监听
-- 🔄 自动环境检测
-- 🛠️ 基于键的存储和缓存
+- 🔄 自动环境检测和降级处理
+- 🛠️ 基于键的存储、缓存和序列化
 - 🔧 自定义序列化支持
-- 📝 TypeScript 支持
+- 📝 完整的 TypeScript 支持
 
 ## 安装
 
@@ -28,25 +28,20 @@ npm install @ahoo-wang/fetcher-storage
 
 ## 使用方法
 
-### 基本用法
+### 环境检测和存储选择
 
 ```typescript
-import { createListenableStorage } from '@ahoo-wang/fetcher-storage';
+import { getStorage, isBrowser } from '@ahoo-wang/fetcher-storage';
 
-// 自动选择合适的存储实现
-const storage = createListenableStorage();
+// 检查是否在浏览器环境中运行
+console.log('是否为浏览器:', isBrowser());
 
-// 像使用常规 Storage API 一样使用
+// 获取当前环境的合适存储
+const storage = getStorage(); // 浏览器中使用 localStorage，Node.js 中使用 InMemoryStorage
+
+// 像标准 Storage API 一样使用
 storage.setItem('key', 'value');
 const value = storage.getItem('key');
-
-// 监听存储变更
-const removeListener = storage.addListener(event => {
-  console.log('存储变更:', event);
-});
-
-// 不再需要时移除监听器
-removeListener();
 ```
 
 ### 基于键的存储和缓存
@@ -54,19 +49,22 @@ removeListener();
 ```typescript
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
-// 为特定键创建存储
+// 为特定键创建类型化的存储
 const userStorage = new KeyStorage<{ name: string; age: number }>({
   key: 'user',
 });
 
-// 设置和获取值
+// 设置和获取值，自动缓存
 userStorage.set({ name: 'John', age: 30 });
 const user = userStorage.get(); // {name: 'John', age: 30}
 
 // 监听此特定键的变更
 const removeListener = userStorage.addListener(event => {
-  console.log('用户变更:', event.newValue);
+  console.log('用户变更:', event.newValue, '来自:', event.oldValue);
 });
+
+// 使用完毕后清理
+removeListener();
 ```
 
 ### 自定义序列化
@@ -74,58 +72,112 @@ const removeListener = userStorage.addListener(event => {
 ```typescript
 import { KeyStorage, JsonSerializer } from '@ahoo-wang/fetcher-storage';
 
+// 使用 JSON 序列化（默认）
 const jsonStorage = new KeyStorage<any>({
   key: 'data',
   serializer: new JsonSerializer(),
 });
 
-jsonStorage.set({ message: 'Hello World' });
-const data = jsonStorage.get(); // {message: 'Hello World'}
+jsonStorage.set({ message: 'Hello World', timestamp: Date.now() });
+const data = jsonStorage.get(); // {message: 'Hello World', timestamp: 1234567890}
 ```
 
-### 环境特定的存储
+### 内存存储
 
 ```typescript
-import {
-  BrowserListenableStorage,
-  InMemoryListenableStorage,
-} from '@ahoo-wang/fetcher-storage';
+import { InMemoryStorage } from '@ahoo-wang/fetcher-storage';
 
-// 浏览器存储（包装 localStorage 或 sessionStorage）
-const browserStorage = new BrowserListenableStorage(localStorage);
+// 创建内存存储（在任何环境中都能工作）
+const memoryStorage = new InMemoryStorage();
 
-// 内存存储（在任何环境中都能工作）
-const memoryStorage = new InMemoryListenableStorage();
+// 像标准 Storage API 一样使用
+memoryStorage.setItem('temp', 'data');
+console.log(memoryStorage.getItem('temp')); // 'data'
+console.log(memoryStorage.length); // 1
 ```
 
-## API
+### 高级配置
 
-### createListenableStorage()
+```typescript
+import { KeyStorage, InMemoryStorage } from '@ahoo-wang/fetcher-storage';
 
-工厂函数，根据环境自动返回合适的存储实现：
+// 自定义存储和事件总线
+const customStorage = new KeyStorage<string>({
+  key: 'custom',
+  storage: new InMemoryStorage(), // 使用内存存储而不是 localStorage
+  // eventBus: customEventBus, // 自定义事件总线用于通知
+});
+```
 
-- 浏览器环境：包装 localStorage 的 `BrowserListenableStorage`
-- 非浏览器环境：`InMemoryListenableStorage`
+## API 参考
 
-### ListenableStorage
+### 环境工具
 
-扩展了原生 `Storage` 接口，增加了事件监听功能：
+#### `isBrowser(): boolean`
 
-- `addListener(listener: StorageListener): RemoveStorageListener`
-- 所有标准 `Storage` 方法（`getItem`、`setItem`、`removeItem` 等）
+检查当前环境是否为浏览器。
+
+#### `getStorage(): Storage`
+
+返回合适的存储实现：
+
+- 浏览器：`window.localStorage`（带可用性检查）
+- 非浏览器：`InMemoryStorage` 实例
 
 ### KeyStorage
 
-用于管理与特定键关联的单个值的存储包装器：
+用于管理类型化值、缓存和变更通知的存储包装器。
 
-- 自动缓存和缓存失效
-- 键特定的事件监听
-- 自定义序列化支持
+```typescript
+new KeyStorage<T>(options: KeyStorageOptions<T>)
+```
+
+#### 选项
+
+- `key: string` - 存储键
+- `serializer?: Serializer<string, T>` - 自定义序列化器（默认：JsonSerializer）
+- `storage?: Storage` - 自定义存储（默认：getStorage()）
+- `eventBus?: TypedEventBus<StorageEvent<T>>` - 自定义事件总线
+
+#### 方法
+
+- `get(): T | null` - 获取缓存的值
+- `set(value: T): void` - 设置值并缓存和通知
+- `remove(): void` - 移除值并清除缓存
+- `addListener(handler: EventHandler<StorageEvent<T>>): RemoveStorageListener` - 添加变更监听器
+
+### InMemoryStorage
+
+Storage 接口的内存实现。
+
+```typescript
+new InMemoryStorage();
+```
+
+使用 Map 实现所有标准 Storage 方法。
 
 ### 序列化器
 
-- `JsonSerializer`：将值序列化为 JSON 字符串
-- `IdentitySerializer`：不进行修改直接传递值
+#### `JsonSerializer`
+
+将值序列化为 JSON 字符串。
+
+#### `typedIdentitySerializer<T>()`
+
+恒等序列化器，直接传递值而不修改。
+
+## TypeScript 支持
+
+完整的 TypeScript 支持，包括泛型和类型推断：
+
+```typescript
+// 类型化存储
+const userStorage = new KeyStorage<User>({ key: 'user' });
+
+// 类型安全操作
+userStorage.set({ id: 1, name: 'John' });
+const user = userStorage.get(); // User | null
+```
 
 ## 许可证
 

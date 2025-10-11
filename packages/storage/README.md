@@ -8,18 +8,18 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-storage)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-A lightweight, cross-environment storage library with change event listening capabilities. Provides consistent API for
-browser localStorage/sessionStorage and in-memory storage with change notifications.
+A lightweight, cross-environment storage library with key-based storage and automatic environment detection. Provides
+consistent API for browser localStorage and in-memory storage with change notifications.
 
 ## Features
 
 - 🌐 Cross-environment support (Browser & Node.js)
-- 📦 Ultra-lightweight (~1KB gzip)
+- 📦 Ultra-lightweight (~2KB gzip)
 - 🔔 Storage change event listening
-- 🔄 Automatic environment detection
-- 🛠️ Key-based storage with caching
+- 🔄 Automatic environment detection with fallback
+- 🛠️ Key-based storage with caching and serialization
 - 🔧 Custom serialization support
-- 📝 TypeScript support
+- 📝 Full TypeScript support
 
 ## Installation
 
@@ -29,25 +29,20 @@ npm install @ahoo-wang/fetcher-storage
 
 ## Usage
 
-### Basic Usage
+### Environment Detection and Storage Selection
 
 ```typescript
-import { createListenableStorage } from '@ahoo-wang/fetcher-storage';
+import { getStorage, isBrowser } from '@ahoo-wang/fetcher-storage';
 
-// Automatically selects the appropriate storage implementation
-const storage = createListenableStorage();
+// Check if running in browser
+console.log('Is browser:', isBrowser());
 
-// Use like regular Storage API
+// Get appropriate storage for current environment
+const storage = getStorage(); // localStorage in browser, InMemoryStorage in Node.js
+
+// Use like standard Storage API
 storage.setItem('key', 'value');
 const value = storage.getItem('key');
-
-// Listen for storage changes
-const removeListener = storage.addListener(event => {
-  console.log('Storage changed:', event);
-});
-
-// Remove listener when no longer needed
-removeListener();
 ```
 
 ### Key-based Storage with Caching
@@ -55,19 +50,22 @@ removeListener();
 ```typescript
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
-// Create a storage for a specific key
+// Create typed storage for a specific key
 const userStorage = new KeyStorage<{ name: string; age: number }>({
   key: 'user',
 });
 
-// Set and get values
+// Set and get values with automatic caching
 userStorage.set({ name: 'John', age: 30 });
 const user = userStorage.get(); // {name: 'John', age: 30}
 
 // Listen for changes to this specific key
 const removeListener = userStorage.addListener(event => {
-  console.log('User changed:', event.newValue);
+  console.log('User changed:', event.newValue, 'from:', event.oldValue);
 });
+
+// Clean up when done
+removeListener();
 ```
 
 ### Custom Serialization
@@ -75,58 +73,115 @@ const removeListener = userStorage.addListener(event => {
 ```typescript
 import { KeyStorage, JsonSerializer } from '@ahoo-wang/fetcher-storage';
 
+// Use JSON serialization (default)
 const jsonStorage = new KeyStorage<any>({
   key: 'data',
   serializer: new JsonSerializer(),
 });
 
-jsonStorage.set({ message: 'Hello World' });
-const data = jsonStorage.get(); // {message: 'Hello World'}
+jsonStorage.set({ message: 'Hello World', timestamp: Date.now() });
+const data = jsonStorage.get(); // {message: 'Hello World', timestamp: 1234567890}
 ```
 
-### Environment-specific Storage
+### In-Memory Storage
 
 ```typescript
-import {
-  BrowserListenableStorage,
-  InMemoryListenableStorage,
-} from '@ahoo-wang/fetcher-storage';
+import { InMemoryStorage } from '@ahoo-wang/fetcher-storage';
 
-// Browser storage (wraps localStorage or sessionStorage)
-const browserStorage = new BrowserListenableStorage(localStorage);
+// Create in-memory storage (works in any environment)
+const memoryStorage = new InMemoryStorage();
 
-// In-memory storage (works in any environment)
-const memoryStorage = new InMemoryListenableStorage();
+// Use like standard Storage API
+memoryStorage.setItem('temp', 'data');
+console.log(memoryStorage.getItem('temp')); // 'data'
+console.log(memoryStorage.length); // 1
 ```
 
-## API
+### Advanced Configuration
 
-### createListenableStorage()
+```typescript
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
-Factory function that automatically returns the appropriate storage implementation based on the environment:
+// Custom storage and event bus
+const customStorage = new KeyStorage<string>({
+  key: 'custom',
+  storage: new InMemoryStorage(), // Use in-memory instead of localStorage
+  // eventBus: customEventBus, // Custom event bus for notifications
+});
+```
 
-- Browser environment: `BrowserListenableStorage` wrapping `localStorage`
-- Non-browser environment: `InMemoryListenableStorage`
+## API Reference
 
-### ListenableStorage
+### Environment Utilities
 
-Extends the native `Storage` interface with event listening capabilities:
+#### `isBrowser(): boolean`
 
-- `addListener(listener: StorageListener): RemoveStorageListener`
-- All standard `Storage` methods (`getItem`, `setItem`, `removeItem`, etc.)
+Checks if the current environment is a browser.
+
+#### `getStorage(): Storage`
+
+Returns the appropriate storage implementation:
+
+- Browser: `window.localStorage` (with availability check)
+- Non-browser: `InMemoryStorage` instance
 
 ### KeyStorage
 
-A storage wrapper for managing a single value associated with a specific key:
+A storage wrapper for managing typed values with caching and change notifications.
 
-- Automatic caching with cache invalidation
-- Key-specific event listening
-- Custom serialization support
+```typescript
+new KeyStorage<T>(options
+:
+KeyStorageOptions<T>
+)
+```
+
+#### Options
+
+- `key: string` - Storage key
+- `serializer?: Serializer<string, T>` - Custom serializer (default: JsonSerializer)
+- `storage?: Storage` - Custom storage (default: getStorage())
+- `eventBus?: TypedEventBus<StorageEvent<T>>` - Custom event bus
+
+#### Methods
+
+- `get(): T | null` - Get cached value
+- `set(value: T): void` - Set value with caching and notification
+- `remove(): void` - Remove value and clear cache
+- `addListener(handler: EventHandler<StorageEvent<T>>): RemoveStorageListener` - Add change listener
+
+### InMemoryStorage
+
+In-memory implementation of the Storage interface.
+
+```typescript
+new InMemoryStorage();
+```
+
+Implements all standard Storage methods with Map-based storage.
 
 ### Serializers
 
-- `JsonSerializer`: Serializes values to/from JSON strings
-- `IdentitySerializer`: Passes values through without modification
+#### `JsonSerializer`
+
+Serializes values to/from JSON strings.
+
+#### `typedIdentitySerializer<T>()`
+
+Identity serializer that passes values through unchanged.
+
+## TypeScript Support
+
+Full TypeScript support with generics and type inference:
+
+```typescript
+// Typed storage
+const userStorage = new KeyStorage<User>({ key: 'user' });
+
+// Type-safe operations
+userStorage.set({ id: 1, name: 'John' });
+const user = userStorage.get(); // User | null
+```
 
 ## License
 
