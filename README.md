@@ -178,8 +178,6 @@ Secure your applications with integrated authentication:
 
 ## 📦 Package Ecosystem
 
-<div align="center">
-
 | Package                                                    | Description                                                                                                              | Version                                                                                                                                 | Size                                                                                                                                                   |
 |------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`@ahoo-wang/fetcher`](./packages/fetcher)                 | **Core HTTP Client**<br/>Ultra-lightweight foundation with Axios-like API                                                | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
@@ -192,7 +190,6 @@ Secure your applications with integrated authentication:
 | [`@ahoo-wang/fetcher-wow`](./packages/wow)                 | **CQRS/DDD Framework Support**<br/>First-class integration with the Wow CQRS/DDD framework                               | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-wow.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-wow)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 |
 | [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | **Enterprise Security**<br/>CoSec authentication integration                                                             | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
 
-</div>
 
 ## 🚀 Getting Started
 
