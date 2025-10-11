@@ -90,6 +90,9 @@ export interface CoSecJwtPayload extends JwtPayload {
  */
 export function parseJwtPayload<T extends JwtPayload>(token: string): T | null {
   try {
+    if (typeof token !== 'string') {
+      return null;
+    }
     const parts = token.split('.');
     if (parts.length !== 3) {
       return null;
