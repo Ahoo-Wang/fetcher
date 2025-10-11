@@ -16,7 +16,6 @@ import {
   EventHandler,
   SerialTypedEventBus,
   TypedEventBus,
-  BroadcastTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
 
 export interface StorageEvent<Deserialized> {
@@ -72,21 +71,12 @@ export interface KeyStorageOptions<Deserialized> {
  * @template Deserialized The type of the value being stored
  */
 export class KeyStorage<Deserialized>
-  implements StorageListenable<Deserialized>
-{
+  implements StorageListenable<Deserialized> {
   private readonly key: string;
   private readonly serializer: Serializer<string, Deserialized>;
   private readonly storage: Storage;
   private readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
   private cacheValue: Deserialized | null = null;
-
-  /**
-   * Refreshes the cached value by deserializing the provided string
-   * @param value The serialized value to deserialize and cache
-   */
-  private refreshCache(value: string) {
-    this.cacheValue = this.serializer.deserialize(value);
-  }
 
   /**
    * Creates a new KeyStorage instance
@@ -97,8 +87,7 @@ export class KeyStorage<Deserialized>
     this.serializer = options.serializer ?? typedIdentitySerializer();
     this.storage = options.storage ?? window.localStorage;
     this.eventBus =
-      options.eventBus ??
-      new SerialTypedEventBus<StorageEvent<Deserialized>>(this.key);
+      options.eventBus ?? new SerialTypedEventBus<StorageEvent<Deserialized>>(`KeyStorage:${this.key}`);
     this.eventBus.on({
       name: 'KeyStorage',
       handle: (event: StorageEvent<Deserialized>) => {
@@ -122,7 +111,7 @@ export class KeyStorage<Deserialized>
     if (!value) {
       return null;
     }
-    this.refreshCache(value);
+    this.cacheValue = this.serializer.deserialize(value);
     return this.cacheValue;
   }
 
