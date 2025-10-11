@@ -11,7 +11,6 @@ import {
   message,
   Tabs,
   Alert,
-  Progress,
   Tag,
   Row,
   Col,
@@ -19,7 +18,6 @@ import {
   Divider,
   Select,
   Switch,
-  Table,
   Badge,
 } from 'antd';
 import { KeyStorage, type StorageEvent } from '../keyStorage';
@@ -29,7 +27,7 @@ import {
   typedIdentitySerializer,
   type Serializer,
 } from '../serializer';
-import { isBrowser, getStorage } from '../env';
+import { isBrowser } from '../env';
 import type { EventHandler } from '@ahoo-wang/fetcher-eventbus';
 import {
   BroadcastTypedEventBus,
@@ -191,13 +189,13 @@ const EnhancedStorageDemo: React.FC = () => {
     if (isBrowser()) {
       try {
         let size = 0;
-        for (let key in localStorage) {
-          if (localStorage.hasOwnProperty(key)) {
+        for (const key in localStorage) {
+          if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
             size += localStorage[key].length + key.length;
           }
         }
         setStorageSize(size);
-      } catch (e) {
+      } catch {
         setStorageSize(0);
       }
     }
@@ -303,7 +301,7 @@ const EnhancedStorageDemo: React.FC = () => {
 
   // Serializer demo
   const handleSerializerDemo = useCallback(() => {
-    let testData: any = {
+    const testData: any = {
       message: 'Hello World',
       timestamp: Date.now(),
       nested: { value: 42 },
@@ -888,7 +886,7 @@ const EnhancedStorageDemo: React.FC = () => {
 };
 
 const meta: Meta<typeof EnhancedStorageDemo> = {
-  title: 'Storage/Enhanced Storage Demo',
+  title: 'Storage/Enhanced Storage',
   component: EnhancedStorageDemo,
   parameters: {
     layout: 'fullscreen',
@@ -937,13 +935,12 @@ This comprehensive demo showcases all the powerful features of the @ahoo-wang/fe
       },
     },
   },
-  tags: ['autodocs'],
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const EnhancedDemo: Story = {
+export const Default: Story = {
   args: {},
   parameters: {
     docs: {

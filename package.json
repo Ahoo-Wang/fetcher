@@ -18,8 +18,8 @@
     "clean": "pnpm -r clean",
     "init": "sh ./scripts/init.sh",
     "update-version": "sh ./scripts/update-all-versions.sh",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "storybook": "storybook dev --docs -p 6006",
+    "build-storybook": "storybook build --docs"
   },
   "keywords": [
     "fetcher",

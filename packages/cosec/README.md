@@ -292,6 +292,286 @@ secureFetcher.interceptors.response.use(
 const response = await secureFetcher.get('/api/user/profile');
 ```
 
+### Advanced Token Refresh
+
+```typescript
+import { CoSecTokenRefresher } from '@ahoo-wang/fetcher-cosec';
+
+// Custom token refresher with retry logic
+class ResilientTokenRefresher extends CoSecTokenRefresher {
+  async refresh(token: CompositeToken): Promise<CompositeToken> {
+    const maxRetries = 3;
+    let lastError: Error;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Add exponential backoff
+        if (attempt > 1) {
+          await new Promise(resolve =>
+            setTimeout(resolve, Math.pow(2, attempt) * 1000),
+          );
+        }
+
+        const response = await this.options.fetcher.post<CompositeToken>(
+          this.options.endpoint,
+          { body: token },
+          {
+            resultExtractor: ResultExtractors.Json,
+            attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]]),
+          },
+        );
+
+        return response;
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Token refresh attempt ${attempt} failed:`, error);
+
+        // Don't retry on authentication errors
+        if (error.status === 401 || error.status === 403) {
+          throw error;
+        }
+      }
+    }
+
+    throw lastError!;
+  }
+}
+```
+
+### Multi-Tenant Authentication
+
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+import {
+  AuthorizationRequestInterceptor,
+  AuthorizationResponseInterceptor,
+  DeviceIdStorage,
+  TokenStorage,
+  JwtTokenManager,
+} from '@ahoo-wang/fetcher-cosec';
+
+// Tenant configuration
+interface TenantConfig {
+  id: string;
+  appId: string;
+  baseURL: string;
+  refreshEndpoint: string;
+}
+
+// Create tenant-specific fetcher
+function createTenantFetcher(tenant: TenantConfig) {
+  const fetcher = new Fetcher({
+    baseURL: tenant.baseURL,
+  });
+
+  // Tenant-specific storage with prefixed keys
+  const tokenStorage = new TokenStorage(`tenant-${tenant.id}`);
+  const deviceStorage = new DeviceIdStorage(`tenant-${tenant.id}`);
+
+  // Tenant-specific token refresher
+  const tokenRefresher = new CoSecTokenRefresher({
+    fetcher,
+    endpoint: tenant.refreshEndpoint,
+  });
+
+  const tokenManager = new JwtTokenManager(tokenStorage, tokenRefresher);
+
+  // Add interceptors with tenant context
+  fetcher.interceptors.request.use(
+    new AuthorizationRequestInterceptor({
+      tokenManager,
+      appId: tenant.appId,
+      deviceIdStorage: deviceStorage,
+    }),
+  );
+
+  fetcher.interceptors.response.use(
+    new AuthorizationResponseInterceptor({
+      tokenManager,
+      appId: tenant.appId,
+      deviceIdStorage: deviceStorage,
+    }),
+  );
+
+  return fetcher;
+}
+
+// Usage
+const tenantA = createTenantFetcher({
+  id: 'tenant-a',
+  appId: 'app-a-id',
+  baseURL: 'https://api-tenant-a.example.com',
+  refreshEndpoint: '/auth/refresh',
+});
+
+const tenantB = createTenantFetcher({
+  id: 'tenant-b',
+  appId: 'app-b-id',
+  baseURL: 'https://api-tenant-b.example.com',
+  refreshEndpoint: '/auth/refresh',
+});
+
+// Each tenant maintains isolated authentication state
+const userProfileA = await tenantA.get('/user/profile');
+const userProfileB = await tenantB.get('/user/profile');
+```
+
+### Error Handling and Recovery
+
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+import {
+  AuthorizationRequestInterceptor,
+  AuthorizationResponseInterceptor,
+  TokenStorage,
+  DeviceIdStorage,
+  JwtTokenManager,
+} from '@ahoo-wang/fetcher-cosec';
+
+// Enhanced error handling
+class AuthErrorHandler {
+  static handleAuthError(error: any, tokenManager: JwtTokenManager) {
+    if (error.status === 401) {
+      // Token expired - clear stored tokens
+      tokenManager.tokenStorage.remove();
+
+      // Redirect to login or trigger re-authentication
+      window.location.href = '/login?reason=expired';
+    } else if (error.status === 403) {
+      // Forbidden - insufficient permissions
+      console.error('Access forbidden:', error);
+      // Show permission error UI
+    } else if (error.status === 429) {
+      // Rate limited
+      console.warn('Rate limited, retrying after delay...');
+      // Implement retry logic
+    } else {
+      // Network or other errors
+      console.error('Authentication error:', error);
+    }
+  }
+}
+
+// Create fetcher with error handling
+const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
+
+const tokenManager = new JwtTokenManager(new TokenStorage(), tokenRefresher);
+
+// Add response interceptor with error handling
+fetcher.interceptors.response.use(
+  new AuthorizationResponseInterceptor({
+    tokenManager,
+    appId: 'your-app-id',
+    deviceIdStorage: new DeviceIdStorage(),
+  }),
+  // Add error handler after auth interceptor
+  {
+    onRejected: error => {
+      AuthErrorHandler.handleAuthError(error, tokenManager);
+      throw error; // Re-throw to maintain error chain
+    },
+  },
+);
+```
+
+### Performance Monitoring
+
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+import {
+  AuthorizationRequestInterceptor,
+  TokenStorage,
+  JwtTokenManager,
+} from '@ahoo-wang/fetcher-cosec';
+
+// Performance monitoring interceptor
+class AuthPerformanceMonitor {
+  private metrics = {
+    tokenRefreshCount: 0,
+    averageRefreshTime: 0,
+    totalRefreshTime: 0,
+    interceptorOverhead: 0,
+  };
+
+  recordTokenRefresh(duration: number) {
+    this.metrics.tokenRefreshCount++;
+    this.metrics.totalRefreshTime += duration;
+    this.metrics.averageRefreshTime =
+      this.metrics.totalRefreshTime / this.metrics.tokenRefreshCount;
+
+    // Report to monitoring service
+    console.log(
+      `Token refresh: ${duration}ms (avg: ${this.metrics.averageRefreshTime.toFixed(2)}ms)`,
+    );
+  }
+
+  recordInterceptorOverhead(duration: number) {
+    this.metrics.interceptorOverhead = duration;
+  }
+
+  getMetrics() {
+    return { ...this.metrics };
+  }
+}
+
+// Create performance monitor
+const performanceMonitor = new AuthPerformanceMonitor();
+
+// Enhanced token refresher with monitoring
+const tokenRefresher = {
+  async refresh(token: CompositeToken): Promise<CompositeToken> {
+    const startTime = performance.now();
+
+    try {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(token),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Refresh failed: ${response.status}`);
+      }
+
+      const newToken = await response.json();
+
+      const duration = performance.now() - startTime;
+      performanceMonitor.recordTokenRefresh(duration);
+
+      return newToken;
+    } catch (error) {
+      const duration = performance.now() - startTime;
+      performanceMonitor.recordTokenRefresh(duration);
+      throw error;
+    }
+  },
+};
+
+// Create fetcher with monitoring
+const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
+
+const tokenManager = new JwtTokenManager(new TokenStorage(), tokenRefresher);
+
+// Add request interceptor with performance monitoring
+fetcher.interceptors.request.use(
+  new AuthorizationRequestInterceptor({ tokenManager }),
+  // Monitor interceptor performance
+  {
+    onFulfilled: async config => {
+      const startTime = performance.now();
+      // Process request
+      const result = await config;
+      const duration = performance.now() - startTime;
+      performanceMonitor.recordInterceptorOverhead(duration);
+      return result;
+    },
+  },
+);
+
+// Access metrics
+console.log('Auth Performance Metrics:', performanceMonitor.getMetrics());
+```
+
 ## 🧪 Testing
 
 ```bash

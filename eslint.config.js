@@ -32,7 +32,7 @@ export default tseslint.config({
     },
   }, // 为 integration-test 添加特定配置
   {
-    files: ['integration-test/**/*.{ts,tsx}'],
+    files: ['integration-test/**/*.{ts,tsx}', '**/*.stories.tsx'],
     rules: {
       // 可以为集成测试设置特定规则
       '@typescript-eslint/no-unused-vars': 'off',
