@@ -15,4 +15,5 @@ export * from './eventBus';
 export * from './parallelTypedEventBus';
 export * from './serialTypedEventBus';
 export * from './typedEventBus';
+export * from './broadcastTypedEventBus';
 export * from './types';

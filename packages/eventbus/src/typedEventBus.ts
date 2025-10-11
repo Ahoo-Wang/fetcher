@@ -24,4 +24,5 @@ export interface TypedEventBus<EVENT> {
 
   emit(event: EVENT): Promise<void>;
 
+  destroy(): void;
 }

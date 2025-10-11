@@ -108,4 +108,8 @@ export class SerialTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
     this.sortedHandlers = toSorted([...original, handler]);
     return true;
   }
+
+  destroy() {
+    this.sortedHandlers = [];
+  }
 }
