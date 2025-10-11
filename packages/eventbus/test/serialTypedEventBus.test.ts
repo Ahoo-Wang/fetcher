@@ -113,4 +113,13 @@ describe('SerialTypedEventBus', () => {
     expect(handlers[0].name).toBe('h1');
     expect(handlers[1].name).toBe('h2');
   });
+
+  it('should destroy by clearing handlers', () => {
+    const bus = new SerialTypedEventBus<string>('test');
+    const handler = { name: 'h1', order: 1, handle: vi.fn() };
+    bus.on(handler);
+    expect(bus.handlers.length).toBe(1);
+    bus.destroy();
+    expect(bus.handlers.length).toBe(0);
+  });
 });

@@ -11,18 +11,49 @@
  * limitations under the License.
  */
 
-
 import { EventHandler, EventType } from './types';
 
+/**
+ * Interface for typed event buses that handle events of a specific type
+ *
+ * @template EVENT - The type of events this bus handles
+ */
 export interface TypedEventBus<EVENT> {
+  /**
+   * The event type identifier for this bus
+   */
   type: EventType;
+
+  /**
+   * Gets a copy of all registered event handlers
+   */
   handlers: EventHandler<EVENT>[];
 
+  /**
+   * Adds an event handler if not already present
+   *
+   * @param handler - The event handler to add
+   * @returns true if the handler was added, false if a handler with the same name already exists
+   */
   on(handler: EventHandler<EVENT>): boolean;
 
+  /**
+   * Removes an event handler by name
+   *
+   * @param name - The name of the handler to remove
+   * @returns true if a handler was removed, false otherwise
+   */
   off(name: string): boolean;
 
+  /**
+   * Emits an event to all registered handlers
+   *
+   * @param event - The event to emit
+   */
   emit(event: EVENT): Promise<void>;
 
+  /**
+   * Cleans up resources used by the event bus
+   */
   destroy(): void;
 }

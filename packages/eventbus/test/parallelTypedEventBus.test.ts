@@ -115,4 +115,13 @@ describe('ParallelTypedEventBus', () => {
     expect(handlers.some(h => h.name === 'h1')).toBe(true);
     expect(handlers.some(h => h.name === 'h2')).toBe(true);
   });
+
+  it('should destroy by clearing handlers', () => {
+    const bus = new ParallelTypedEventBus<string>('test');
+    const handler = { name: 'h1', order: 1, handle: vi.fn() };
+    bus.on(handler);
+    expect(bus.handlers.length).toBe(1);
+    bus.destroy();
+    expect(bus.handlers.length).toBe(0);
+  });
 });
