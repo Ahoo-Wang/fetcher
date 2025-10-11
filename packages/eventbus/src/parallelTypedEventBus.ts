@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { TypedEventBus } from './typedEventBus';
 import { EventHandler, EventType } from './types';
+import { AbstractTypedEventBus } from './abstractTypedEventBus';
 
 /**
  * Parallel implementation of TypedEventBus
@@ -30,8 +30,7 @@ import { EventHandler, EventType } from './types';
  * await bus.emit('hello'); // Both handlers execute in parallel
  * ```
  */
-export class ParallelTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
-  private eventHandlers: EventHandler<EVENT>[] = [];
+export class ParallelTypedEventBus<EVENT> extends AbstractTypedEventBus<EVENT> {
 
   /**
    * Creates a parallel typed event bus
@@ -39,13 +38,7 @@ export class ParallelTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    * @param type - The event type identifier for this bus
    */
   constructor(public readonly type: EventType) {
-  }
-
-  /**
-   * Gets a copy of all registered event handlers, sorted by order
-   */
-  get handlers(): EventHandler<EVENT>[] {
-    return [...this.eventHandlers];
+    super();
   }
 
   /**
@@ -59,14 +52,9 @@ export class ParallelTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   async emit(event: EVENT): Promise<void> {
     const onceHandlers: EventHandler<EVENT>[] = [];
     const promises = this.eventHandlers.map(async handler => {
-      try {
-        await handler.handle(event);
-      } catch (e) {
-        console.warn(`Event handler error for ${handler.name}:`, e);
-      } finally {
-        if (handler.once) {
-          onceHandlers.push(handler);
-        }
+      await this.handleEvent(handler, event);
+      if (handler.once) {
+        onceHandlers.push(handler);
       }
     });
     await Promise.all(promises);
@@ -107,9 +95,5 @@ export class ParallelTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
     }
     this.eventHandlers = [...original, handler];
     return true;
-  }
-
-  destroy() {
-    this.eventHandlers = [];
   }
 }
