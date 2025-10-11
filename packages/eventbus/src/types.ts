@@ -13,7 +13,7 @@
 
 import { type NamedCapable, OrderedCapable } from '@ahoo-wang/fetcher';
 
-export type EventType = string | symbol;
+export type EventType = string;
 
 
 export interface EventHandler<EVENT> extends NamedCapable, OrderedCapable {

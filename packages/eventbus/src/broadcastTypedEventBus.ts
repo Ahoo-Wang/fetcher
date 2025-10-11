@@ -25,7 +25,7 @@ import { EventHandler, EventType } from './types';
  * @example
  * ```typescript
  * const delegate = new SerialTypedEventBus<string>('test');
- * const bus = new BroadcastTypedEventBus('my-channel', delegate);
+ * const bus = new BroadcastTypedEventBus(delegate);
  * bus.on({ name: 'handler', order: 1, handle: (event) => console.log(event) });
  * await bus.emit('hello'); // Emits locally and broadcasts to other tabs
  * ```
@@ -37,18 +37,19 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   /**
    * Creates a broadcast typed event bus
    *
-   * @param channel - The BroadcastChannel name for cross-tab communication
    * @param delegate - The underlying TypedEventBus for local event handling
    */
-  constructor(
-    channel: string,
-    private readonly delegate: TypedEventBus<EVENT>,
-  ) {
-    this.broadcastChannel = new BroadcastChannel(channel);
-    this.broadcastChannel.onmessage = event => {
-      this.delegate.emit(event.data);
-    };
+  constructor(private readonly delegate: TypedEventBus<EVENT>) {
     this.type = delegate.type;
+    const channelName = `_broadcast_:${this.type}`;
+    this.broadcastChannel = new BroadcastChannel(channelName);
+    this.broadcastChannel.onmessage = async event => {
+      try {
+        await this.delegate.emit(event.data);
+      } catch (e) {
+        console.warn(`Broadcast event handler error for ${this.type}:`, e);
+      }
+    };
   }
 
   /**
