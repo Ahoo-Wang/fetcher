@@ -1,138 +1,225 @@
 import { Meta } from '@storybook/addon-docs/blocks';
-import { Typography, Card, Row, Col, Space } from 'antd';
+import { Typography, Card, Row, Col, Space, Badge, Divider, Table } from 'antd';
 
 <Meta title="Introduction" />
 
 <div style={{ padding: '24px' }}>
   <Space direction="vertical" size="large" style={{ width: '100%' }}>
-    <div>
-      <Typography.Title level={1}>
+    <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+      <Typography.Title level={1} style={{ marginBottom: '16px' }}>
         🚀 Fetcher
       </Typography.Title>
-      <Typography.Text strong style={{ fontSize: '18px' }}>
+
+      <div style={{ marginBottom: '16px' }}>
+        <Space size="small">
+          <Badge status="success" text="npm version" />
+          <Badge status="processing" text="Build Status" />
+          <Badge status="warning" text="codecov" />
+          <Badge status="default" text="License" />
+          <Badge status="error" text="npm downloads" />
+          <Badge status="processing" text="npm bundle size" />
+        </Space>
+      </div>
+
+      <Typography.Text strong style={{ fontSize: '18px', display: 'block', marginBottom: '24px' }}>
         Ultra-lightweight • Modular • TypeScript-First • Interceptor-Powered • LLM Streaming API Support
       </Typography.Text>
     </div>
 
     <Card>
-      <Typography.Title level={4}>Why Fetcher?</Typography.Title>
+      <Typography.Title level={2}>🌟 Why Fetcher?</Typography.Title>
       <Typography.Paragraph>
-        Fetcher is not just another HTTP client—it's a complete ecosystem designed
-        for modern web development with native LLM streaming API support. Built on
-        the native Fetch API, Fetcher provides an Axios-like experience with
-        powerful features while maintaining an incredibly small footprint.
+        Fetcher is not just another HTTP client—it's a complete ecosystem designed for modern web development with
+        native LLM
+        streaming API support. Built on the native Fetch API, Fetcher provides an Axios-like experience with powerful
+        features
+        while maintaining an incredibly small footprint.
       </Typography.Paragraph>
     </Card>
 
     <Card>
-      <Typography.Title level={4}>Core Features</Typography.Title>
+      <Typography.Title level={2}>🚀 Core Features</Typography.Title>
+
+      <Typography.Title level={3}>🎯 @ahoo-wang/fetcher - The Foundation</Typography.Title>
+      <Typography.Paragraph>
+        The lightweight core that powers the entire ecosystem:
+      </Typography.Paragraph>
       <ul style={{ paddingLeft: '20px' }}>
-        <li>
-          <strong>⚡ Ultra-Lightweight</strong>: Only 3KiB min+gzip - smaller than
-          most alternatives
+        <li><strong>⚡ Ultra-Lightweight</strong>: Only 3KiB min+gzip - smaller than most alternatives</li>
+        <li><strong>🧭 Path & Query Parameters</strong>: Built-in support for path (`{id}`/`:id`) and query parameters
         </li>
-        <li>
-          <strong>🧭 Path & Query Parameters</strong>: Built-in support for path
-          (`{id}`/`:id`) and query parameters
+        <li><strong>🔗 Interceptor System</strong>: Request, response, and error interceptors with ordered execution for
+          flexible middleware patterns
         </li>
-        <li>
-          <strong>🔗 Interceptor System</strong>: Request, response, and error
-          interceptors with ordered execution
+        <li><strong>⏱️ Timeout Control</strong>: Configurable request timeouts with proper error handling</li>
+        <li><strong>🔄 Fetch API Compatible</strong>: Fully compatible with the native Fetch API</li>
+        <li><strong>🛡️ TypeScript Support</strong>: Complete TypeScript definitions for type-safe development</li>
+        <li><strong>🧩 Modular Architecture</strong>: Lightweight core with optional extension packages</li>
+        <li><strong>📦 Named Fetcher Support</strong>: Automatic registration and retrieval of fetcher instances</li>
+        <li><strong>⚙️ Default Fetcher</strong>: Pre-configured default fetcher instance for quick start</li>
+      </ul>
+
+      <Divider />
+
+      <Typography.Title level={3}>🎨 @ahoo-wang/fetcher-decorator - Declarative APIs</Typography.Title>
+      <Typography.Paragraph>
+        Transform your API interactions with clean, declarative service definitions:
+      </Typography.Paragraph>
+      <ul style={{ paddingLeft: '20px' }}>
+        <li><strong>🎨 Clean API Definitions</strong>: Define HTTP services using intuitive decorators</li>
+        <li><strong>🧭 Automatic Parameter Binding</strong>: Path, query, header, and body parameters automatically bound
         </li>
-        <li>
-          <strong>⏱️ Timeout Control</strong>: Configurable request timeouts with
-          proper error handling
+        <li><strong>⏱️ Configurable Timeouts</strong>: Per-method and per-class timeout settings</li>
+        <li><strong>🔗 Fetcher Integration</strong>: Seamless integration with Fetcher's named fetcher system</li>
+        <li><strong>⚡ Automatic Implementation</strong>: Methods automatically implemented with HTTP calls</li>
+        <li><strong>📦 Metadata System</strong>: Rich metadata support for advanced customization</li>
+      </ul>
+
+      <Divider />
+
+      <Typography.Title level={3}>🎯 @ahoo-wang/fetcher-eventbus - Event Bus System</Typography.Title>
+      <Typography.Paragraph>
+        A TypeScript event bus library providing multiple implementations for handling events: serial execution,
+        parallel
+        execution, and cross-tab broadcasting.
+      </Typography.Paragraph>
+      <ul style={{ paddingLeft: '20px' }}>
+        <li><strong>🔄 Serial Execution</strong>: Execute event handlers in order of priority</li>
+        <li><strong>⚡ Parallel Execution</strong>: Run event handlers concurrently for better performance</li>
+        <li><strong>🌐 Cross-Tab Broadcasting</strong>: Broadcast events across browser tabs using BroadcastChannel API
         </li>
-        <li>
-          <strong>🔄 Fetch API Compatible</strong>: Fully compatible with the
-          native Fetch API
-        </li>
-        <li>
-          <strong>🛡️ TypeScript Support</strong>: Complete TypeScript definitions
-          for type-safe development
-        </li>
-        <li>
-          <strong>🧩 Modular Architecture</strong>: Lightweight core with optional
-          extension packages
-        </li>
-        <li>
-          <strong>📦 Named Fetcher Support</strong>: Automatic registration and
-          retrieval of fetcher instances
-        </li>
-        <li>
-          <strong>⚙️ Default Fetcher</strong>: Pre-configured default fetcher
-          instance for quick start
-        </li>
+        <li><strong>📦 Generic Event Bus</strong>: Manage multiple event types with lazy loading</li>
+        <li><strong>🔧 Type-Safe</strong>: Full TypeScript support with strict typing</li>
+        <li><strong>🧵 Async Support</strong>: Handle both synchronous and asynchronous event handlers</li>
+        <li><strong>🔄 Once Handlers</strong>: Support for one-time event handlers</li>
+        <li><strong>🛡️ Error Handling</strong>: Robust error handling with logging</li>
       </ul>
     </Card>
 
     <Card>
-      <Typography.Title level={4}>Package Ecosystem</Typography.Title>
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Card size="small" hoverable>
-            <Typography.Text strong>@ahoo-wang/fetcher</Typography.Text>
-            <br />
-            <Typography.Text type="secondary">Core HTTP Client - Ultra-lightweight foundation</Typography.Text>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Card size="small" hoverable>
-            <Typography.Text strong>@ahoo-wang/fetcher-decorator</Typography.Text>
-            <br />
-            <Typography.Text type="secondary">Decorator Support - Declarative API service definitions</Typography.Text>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Card size="small" hoverable>
-            <Typography.Text strong>@ahoo-wang/fetcher-eventstream</Typography.Text>
-            <br />
-            <Typography.Text type="secondary">Real-Time Streaming & LLM Support - Server-Sent Events
-              support</Typography.Text>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Card size="small" hoverable>
-            <Typography.Text strong>@ahoo-wang/fetcher-eventbus</Typography.Text>
-            <br />
-            <Typography.Text type="secondary">Event Bus System - Cross-tab communication</Typography.Text>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Card size="small" hoverable>
-            <Typography.Text strong>@ahoo-wang/fetcher-storage</Typography.Text>
-            <br />
-            <Typography.Text type="secondary">Cross-Environment Storage - Lightweight storage library</Typography.Text>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Card size="small" hoverable>
-            <Typography.Text strong>@ahoo-wang/fetcher-react</Typography.Text>
-            <br />
-            <Typography.Text type="secondary">React Integration - Hooks and components for data
-              fetching</Typography.Text>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Card size="small" hoverable>
-            <Typography.Text strong>@ahoo-wang/fetcher-wow</Typography.Text>
-            <br />
-            <Typography.Text type="secondary">CQRS/DDD Framework Support - Integration with Wow
-              framework</Typography.Text>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Card size="small" hoverable>
-            <Typography.Text strong>@ahoo-wang/fetcher-cosec</Typography.Text>
-            <br />
-            <Typography.Text type="secondary">Enterprise Security - CoSec authentication integration</Typography.Text>
-          </Card>
-        </Col>
-      </Row>
+      <Typography.Title level={2}>📦 Package Ecosystem</Typography.Title>
+
+      <Table
+        dataSource={[
+          {
+            key: '1',
+            package: '@ahoo-wang/fetcher',
+            description: '**Core HTTP Client**<br/>Ultra-lightweight foundation',
+            version: '![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)',
+            size: '![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)'
+          },
+          {
+            key: '2',
+            package: '@ahoo-wang/fetcher-decorator',
+            description: '**Decorator Support**<br/>Declarative API service definitions',
+            version: '![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)',
+            size: '![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)'
+          },
+          {
+            key: '3',
+            package: '@ahoo-wang/fetcher-eventstream',
+            description: '**Real-Time Streaming & LLM Support**<br/>Server-Sent Events (SSE) support',
+            version: '![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)',
+            size: '![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)'
+          },
+          {
+            key: '4',
+            package: '@ahoo-wang/fetcher-eventbus',
+            description: '**Event Bus System**<br/>Cross-tab communication',
+            version: '![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventbus.svg)',
+            size: '![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventbus)'
+          },
+          {
+            key: '5',
+            package: '@ahoo-wang/fetcher-storage',
+            description: '**Cross-Environment Storage**<br/>Lightweight storage library',
+            version: '![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-storage.svg)',
+            size: '![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-storage)'
+          },
+          {
+            key: '6',
+            package: '@ahoo-wang/fetcher-react',
+            description: '**React Integration**<br/>Hooks and components for data fetching',
+            version: '![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-react.svg)',
+            size: '![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-react)'
+          },
+          {
+            key: '7',
+            package: '@ahoo-wang/fetcher-wow',
+            description: '**CQRS/DDD Framework Support**<br/>Integration with Wow framework',
+            version: '![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-wow.svg)',
+            size: '![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-wow)'
+          },
+          {
+            key: '8',
+            package: '@ahoo-wang/fetcher-cosec',
+            description: '**Enterprise Security**<br/>CoSec authentication integration',
+            version: '![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)',
+            size: '![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)'
+          }
+        ]}
+        columns={[
+          {
+            title: 'Package',
+            dataIndex: 'package',
+            key: 'package',
+            width: 200,
+          },
+          {
+            title: 'Description',
+            dataIndex: 'description',
+            key: 'description',
+            width: 300,
+          },
+          {
+            title: 'Version',
+            dataIndex: 'version',
+            key: 'version',
+            width: 150,
+          },
+          {
+            title: 'Size',
+            dataIndex: 'size',
+            key: 'size',
+            width: 150,
+          },
+        ]}
+        pagination={false}
+        size="small"
+      />
     </Card>
 
     <Card>
-      <Typography.Title level={4}>Quick Start</Typography.Title>
+      <Typography.Title level={2}>🚀 Getting Started</Typography.Title>
+
+      <Typography.Title level={3}>📦 Installation</Typography.Title>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '14px'
+      }}>{`# Install the core package
+
+      npm install @ahoo-wang/fetcher
+
+      # Or install with all extensions including LLM streaming support
+
+      npm install @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-cosec
+
+      # Using pnpm (recommended)
+
+      pnpm add @ahoo-wang/fetcher
+
+      # Using yarn
+
+      yarn add @ahoo-wang/fetcher`}</pre>
+
+      <Typography.Title level={3}>⚡ Quick Examples</Typography.Title>
+
+      <Typography.Title level={4}>Basic HTTP Client</Typography.Title>
       <pre style={{
         background: '#f6f8fa',
         border: '1px solid #d1d9e0',
@@ -143,20 +230,25 @@ import { Typography, Card, Row, Col, Space } from 'antd';
         fontSize: '14px'
       }}>{`import { Fetcher } from '@ahoo-wang/fetcher';
 
-      // Create a fetcher instance
-      const fetcher = new Fetcher({
-      baseURL: 'https://api.example.com',
-      timeout: 5000,
-      });
+// Create a fetcher instance
+const fetcher = new Fetcher({
+baseURL: 'https://api.example.com',
+timeout: 5000,
+});
 
-      // GET request with path and query parameters
-      const response = await fetcher.get('/users/{id}', {
-      urlParams: {
-      path: { id: 123 },
-      query: { include: 'profile' },
-      },
-      });
-      const userData = await response.json<User>();`}</pre>
+// GET request with path and query parameters
+const response = await fetcher.get('/users/{id}', {
+urlParams: {
+path: { id: 123 },
+query: { include: 'profile' },
+},
+});
+const userData = await response.json<User>();
+
+      // POST request with automatic JSON conversion
+      const createUserResponse = await fetcher.post('/users', {
+      body: { name: 'John Doe', email: 'john@example.com' },
+      });`}</pre>
     </Card>
 
   </Space>
