@@ -23,10 +23,11 @@ export default defineConfig({
       fileName: format => `index.${format}.js`,
     },
     rollupOptions: {
-      external: ['@ahoo-wang/fetcher', 'nanoid'],
+      external: ['@ahoo-wang/fetcher', '@ahoo-wang/fetcher-storage', 'nanoid'],
       output: {
         globals: {
           '@ahoo-wang/fetcher': 'Fetcher',
+          '@ahoo-wang/fetcher-storage': 'FetcherStorage',
           nanoid: 'nanoid',
         },
       },
