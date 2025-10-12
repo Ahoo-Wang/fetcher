@@ -20,160 +20,375 @@ import {
   List,
   Space,
   Typography,
-  Spin,
   Form,
   Input,
-  InputNumber,
   Select,
+  Tabs,
+  Alert,
+  Badge,
+  Statistic,
+  Row,
+  Col,
+  Tag,
 } from 'antd';
 import { ResultExtractors } from '@ahoo-wang/fetcher';
 
-// Demo component
-const UseFetcherDemo: React.FC = () => {
-  const [response, setResponse] = useState<string | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
+const { Title, Text, Paragraph } = Typography;
+const { TabPane } = Tabs;
+const { Option } = Select;
+
+// Mock API endpoints for demonstration
+const MOCK_ENDPOINTS = {
+  users: 'https://jsonplaceholder.typicode.com/users',
+  posts: 'https://jsonplaceholder.typicode.com/posts',
+  todos: 'https://jsonplaceholder.typicode.com/todos',
+};
+
+// Enhanced Interactive Demo Component
+const ComprehensiveFetcherDemo: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('interactive');
+  const [logs, setLogs] = useState<any[]>([]);
+  const [requestHistory, setRequestHistory] = useState<any[]>([]);
   const [form] = Form.useForm();
 
-  const { loading, result, error, execute, exchange } = useFetcher<unknown>({
-    resultExtractor: ResultExtractors.Json,
-    onSuccess: () => {
-      setLogs(prev => [
-        ...prev,
-        `${exchange?.request.method} request to ${exchange?.request.url} successful`,
-      ]);
-    },
-    onError: (e) => {
-      setResponse(`Error: ${error?.message || e}`);
-      setLogs(prev => [
-        ...prev,
-        `${exchange?.request.method} request to ${exchange?.request.url}  failed: ${e?.message || e}`,
-      ]);
-    },
-  });
+  // Main fetcher instance
+  const { loading, result, error, execute, exchange, status } =
+    useFetcher<any>({
+      resultExtractor: ResultExtractors.Json,
+      onSuccess: () => {
+        const logEntry = {
+          timestamp: new Date().toLocaleTimeString(),
+          type: 'success',
+          method: exchange?.request.method,
+          url: exchange?.request.url,
+          status: '✅ Success',
+        };
+        setLogs(prev => [logEntry, ...prev.slice(0, 9)]);
+        setRequestHistory(prev => [logEntry, ...prev.slice(0, 9)]);
+      },
+      onError: e => {
+        const logEntry = {
+          timestamp: new Date().toLocaleTimeString(),
+          type: 'error',
+          method: exchange?.request.method,
+          url: exchange?.request.url,
+          status: '❌ Failed',
+          error: e?.message || String(e),
+        };
+        setLogs(prev => [logEntry, ...prev.slice(0, 9)]);
+        setRequestHistory(prev => [logEntry, ...prev.slice(0, 9)]);
+      },
+    });
 
   const handleRequest = async (values: any) => {
-    const url = values.url || 'https://jsonplaceholder.typicode.com/posts/1';
+    const url = values.url || MOCK_ENDPOINTS.users;
     const request: any = {
       url,
       method: values.method || 'GET',
     };
+
     if (values.body && values.method !== 'GET') {
-      request.body = JSON.parse(values.body);
+      try {
+        request.body = JSON.parse(values.body);
+      } catch {
+        request.body = values.body;
+      }
     }
+
     if (values.headers) {
-      request.headers = JSON.parse(values.headers);
+      try {
+        request.headers = JSON.parse(values.headers);
+      } catch {
+        request.headers = values.headers;
+      }
     }
-    if (values.urlParams) {
-      request.urlParams = JSON.parse(values.urlParams);
-    }
-    if (values.timeout) {
-      request.timeout = values.timeout;
-    }
-    setLogs(prev => [...prev, `Sending ${values.method} request to ${url}`]);
+
     await execute(request);
-    setResponse(JSON.stringify(result, null, 2));
   };
 
   const clearLogs = () => {
     setLogs([]);
-    setResponse(null);
+    setRequestHistory([]);
+  };
+
+  const loadPreset = (endpoint: string) => {
+    form.setFieldsValue({
+      url: endpoint,
+      method: 'GET',
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'idle':
+        return 'default';
+      case 'loading':
+        return 'processing';
+      case 'success':
+        return 'success';
+      case 'error':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusIcon = (type: string) => {
+    switch (type) {
+      case 'success':
+        return '✅';
+      case 'error':
+        return '❌';
+      default:
+        return '🔄';
+    }
   };
 
   return (
-    <Card title="useFetcher Demo" style={{ minWidth: 600, maxWidth: 800 }}>
-      <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleRequest}
-          initialValues={{
-            url: 'https://jsonplaceholder.typicode.com/posts/{id}',
-            method: 'GET',
-            body: '{"title": "foo", "body": "bar", "userId": 1}',
-            headers: '{"Content-Type": "application/json"}',
-            urlParams: '{"path":{"id":1}}',
-            timeout: 5000,
-          }}
-        >
-          <Form.Item label="URL" name="url">
-            <Input placeholder="Enter URL" />
-          </Form.Item>
-          <Form.Item label="Method" name="method">
-            <Select placeholder="Select method">
-              <Select.Option value="GET">GET</Select.Option>
-              <Select.Option value="POST">POST</Select.Option>
-              <Select.Option value="PUT">PUT</Select.Option>
-              <Select.Option value="DELETE">DELETE</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item label="Body (for POST/PUT)" name="body">
-            <Input.TextArea placeholder="JSON body" rows={3} />
-          </Form.Item>
-          <Form.Item label="Headers" name="headers">
-            <Input.TextArea placeholder="JSON headers" rows={2} />
-          </Form.Item>
-          <Form.Item label="URL Params" name="urlParams">
-            <Input.TextArea placeholder="JSON urlParams" rows={2} />
-          </Form.Item>
-          <Form.Item label="Timeout (ms)" name="timeout">
-            <InputNumber min={0} />
-          </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" loading={loading}>
-                Send Request
-              </Button>
-              <Button onClick={clearLogs}>Clear</Button>
-            </Space>
-          </Form.Item>
-        </Form>
-        <div>
-          <Typography.Title level={5}>Response:</Typography.Title>
-          {loading ? (
-            <Spin />
-          ) : (
-            <pre
-              style={{
-                background: '#f5f5f5',
-                padding: 10,
-                borderRadius: 4,
-                maxHeight: 200,
-                overflow: 'auto',
-              }}
-            >
-              {response || 'No response yet'}
-            </pre>
-          )}
-        </div>
-        <div>
-          <Typography.Title level={5}>Logs:</Typography.Title>
-          <List
-            size="small"
-            bordered
-            dataSource={logs}
-            renderItem={(item, index) => (
-              <List.Item key={index}>
-                <Typography.Text>{item}</Typography.Text>
-              </List.Item>
-            )}
-            locale={{ emptyText: 'No logs yet' }}
-            style={{ maxHeight: 200, overflow: 'auto' }}
-          />
-        </div>
-      </Space>
-    </Card>
+    <Space
+      direction="vertical"
+      size="large"
+      style={{ width: '100%', maxWidth: 1200 }}
+    >
+      <Card>
+        <Title level={2}>🚀 Comprehensive useFetcher Demo</Title>
+        <Paragraph>
+          Interactive demonstration of the useFetcher hook with advanced
+          features including request history, error handling, and performance
+          monitoring.
+        </Paragraph>
+      </Card>
+
+      <Tabs activeKey={activeTab} onChange={setActiveTab} size="large">
+        <TabPane tab="🎯 Interactive Testing" key="interactive">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={12}>
+              <Card title="Request Configuration" size="small">
+                <Form
+                  form={form}
+                  layout="vertical"
+                  onFinish={handleRequest}
+                  initialValues={{
+                    url: MOCK_ENDPOINTS.users,
+                    method: 'GET',
+                    body: '{"title": "foo", "body": "bar", "userId": 1}',
+                    headers: '{"Content-Type": "application/json"}',
+                  }}
+                >
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    <div>
+                      <Text strong>Quick Presets:</Text>
+                      <Space style={{ marginTop: 8 }}>
+                        {Object.entries(MOCK_ENDPOINTS).map(([key, url]) => (
+                          <Button
+                            key={key}
+                            size="small"
+                            onClick={() => loadPreset(url)}
+                          >
+                            {key.toUpperCase()}
+                          </Button>
+                        ))}
+                      </Space>
+                    </div>
+
+                    <Form.Item label="URL" name="url">
+                      <Input placeholder="Enter API endpoint URL" />
+                    </Form.Item>
+
+                    <Form.Item label="Method" name="method">
+                      <Select>
+                        <Option value="GET">GET</Option>
+                        <Option value="POST">POST</Option>
+                        <Option value="PUT">PUT</Option>
+                        <Option value="DELETE">DELETE</Option>
+                        <Option value="PATCH">PATCH</Option>
+                      </Select>
+                    </Form.Item>
+
+                    <Form.Item label="Request Body (JSON)" name="body">
+                      <Input.TextArea rows={3} placeholder='{"key": "value"}' />
+                    </Form.Item>
+
+                    <Form.Item label="Headers (JSON)" name="headers">
+                      <Input.TextArea
+                        rows={2}
+                        placeholder='{"Authorization": "Bearer token"}'
+                      />
+                    </Form.Item>
+
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      loading={loading}
+                      block
+                    >
+                      {loading ? 'Sending Request...' : 'Send Request'}
+                    </Button>
+                  </Space>
+                </Form>
+              </Card>
+            </Col>
+
+            <Col xs={24} lg={12}>
+              <Card title="Response & Status" size="small">
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <div>
+                    <Text strong>Status: </Text>
+                    <Badge
+                      status={getStatusColor(status)}
+                      text={status.toUpperCase()}
+                    />
+                  </div>
+
+                  {result && (
+                    <Alert
+                      message="Success Response"
+                      description="Response received successfully"
+                      type="success"
+                      showIcon
+                    />
+                  )}
+
+                  {error && (
+                    <Alert
+                      message="Error Response"
+                      description={error.message}
+                      type="error"
+                      showIcon
+                    />
+                  )}
+                </Space>
+              </Card>
+
+              <Card
+                title="Request History"
+                size="small"
+                style={{ marginTop: 16 }}
+              >
+                <List
+                  size="small"
+                  dataSource={logs}
+                  renderItem={(item, index) => (
+                    <List.Item key={index}>
+                      <Space>
+                        <Text>{getStatusIcon(item.type)}</Text>
+                        <Text>{item.timestamp}</Text>
+                        <Tag color={item.type === 'success' ? 'green' : 'red'}>
+                          {item.method}
+                        </Tag>
+                        <Text ellipsis style={{ maxWidth: 200 }}>
+                          {item.url}
+                        </Text>
+                      </Space>
+                    </List.Item>
+                  )}
+                  locale={{ emptyText: 'No requests yet' }}
+                  style={{ maxHeight: 200, overflow: 'auto' }}
+                />
+                <Button
+                  onClick={clearLogs}
+                  size="small"
+                  style={{ marginTop: 8 }}
+                >
+                  Clear History
+                </Button>
+              </Card>
+            </Col>
+          </Row>
+        </TabPane>
+
+        <TabPane tab="📊 Performance Metrics" key="metrics">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <Card title="Request Statistics" size="small">
+                <Row gutter={[16, 8]}>
+                  <Col span={12}>
+                    <Statistic
+                      title="Total Requests"
+                      value={requestHistory.length}
+                    />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="Success Count"
+                      value={
+                        requestHistory.filter(r => r.type === 'success').length
+                      }
+                    />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="Error Count"
+                      value={
+                        requestHistory.filter(r => r.type === 'error').length
+                      }
+                    />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="Success Rate"
+                      value={
+                        requestHistory.length > 0
+                          ? Math.round(
+                              (requestHistory.filter(r => r.type === 'success')
+                                .length /
+                                requestHistory.length) *
+                                100,
+                            )
+                          : 0
+                      }
+                      suffix="%"
+                    />
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Card title="Recent Activity" size="small">
+                <List
+                  size="small"
+                  dataSource={requestHistory.slice(0, 5)}
+                  renderItem={(item, index) => (
+                    <List.Item key={index}>
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        <Space>
+                          <Text>{getStatusIcon(item.type)}</Text>
+                          <Text strong>{item.method}</Text>
+                          <Text>{item.status}</Text>
+                          <Text type="secondary">{item.timestamp}</Text>
+                        </Space>
+                        <Text ellipsis style={{ maxWidth: 300 }}>
+                          {item.url}
+                        </Text>
+                        {item.error && (
+                          <Text type="danger" style={{ fontSize: '12px' }}>
+                            {item.error}
+                          </Text>
+                        )}
+                      </Space>
+                    </List.Item>
+                  )}
+                  locale={{ emptyText: 'No activity yet' }}
+                />
+              </Card>
+            </Col>
+          </Row>
+        </TabPane>
+      </Tabs>
+    </Space>
   );
 };
 
-const meta: Meta<typeof UseFetcherDemo> = {
+const meta: Meta<typeof ComprehensiveFetcherDemo> = {
   title: 'React/Hooks/useFetcher',
-  component: UseFetcherDemo,
+  component: ComprehensiveFetcherDemo,
   parameters: {
-    layout: 'centered',
+    layout: 'fullscreen',
     docs: {
       description: {
         component:
-          'A React hook for managing asynchronous fetch operations with proper state handling.',
+          'A powerful React hook for managing asynchronous fetch operations with comprehensive state handling, race condition protection, and advanced features like request history and performance monitoring.',
       },
     },
   },
@@ -183,12 +398,12 @@ const meta: Meta<typeof UseFetcherDemo> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const BasicUsage: Story = {
+export const ComprehensiveDemo: Story = {
   parameters: {
     docs: {
       description: {
         story:
-          'Demonstrates basic usage of useFetcher hook with form inputs for request parameters.',
+          'Complete interactive demonstration showcasing all useFetcher capabilities including request building, error handling, and performance monitoring.',
       },
     },
   },

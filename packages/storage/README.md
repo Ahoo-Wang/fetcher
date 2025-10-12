@@ -134,6 +134,590 @@ const dateStorage = new KeyStorage<{ createdAt: Date; data: string }>({
 });
 ```
 
+## 🚀 Advanced Usage Examples
+
+### Reactive Storage with RxJS Integration
+
+Create reactive storage that integrates with RxJS observables:
+
+```typescript
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { map, distinctUntilChanged } from 'rxjs/operators';
+
+class ReactiveKeyStorage<T> extends KeyStorage<T> {
+  private subject: BehaviorSubject<T | null>;
+
+  constructor(options: any) {
+    super(options);
+    this.subject = new BehaviorSubject<T | null>(this.get());
+  }
+
+  // Override set to emit changes
+  set(value: T): void {
+    super.set(value);
+    this.subject.next(value);
+  }
+
+  // Get observable for reactive updates
+  asObservable(): Observable<T | null> {
+    return this.subject.asObservable();
+  }
+
+  // Get observable for specific property
+  select<R>(selector: (value: T | null) => R): Observable<R> {
+    return this.subject.pipe(map(selector), distinctUntilChanged());
+  }
+}
+
+// Usage
+const userStorage = new ReactiveKeyStorage<{ name: string; theme: string }>({
+  key: 'user-preferences',
+});
+
+// React to all changes
+userStorage.asObservable().subscribe(preferences => {
+  console.log('User preferences changed:', preferences);
+});
+
+// React to specific property changes
+userStorage
+  .select(prefs => prefs?.theme)
+  .subscribe(theme => {
+    document.body.className = `theme-${theme}`;
+  });
+
+// Update storage (will trigger observers)
+userStorage.set({ name: 'John', theme: 'dark' });
+```
+
+### Encrypted Storage with Web Crypto API
+
+Implement secure encrypted storage for sensitive data:
+
+```typescript
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+
+class EncryptedSerializer {
+  private keyPromise: Promise<CryptoKey>;
+
+  constructor(password: string) {
+    this.keyPromise = this.deriveKey(password);
+  }
+
+  private async deriveKey(password: string): Promise<CryptoKey> {
+    const encoder = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      'PBKDF2',
+      false,
+      ['deriveBits', 'deriveKey'],
+    );
+
+    return crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: encoder.encode('fetcher-storage-salt'),
+        iterations: 100000,
+        hash: 'SHA-256',
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt'],
+    );
+  }
+
+  async serialize(value: any): Promise<string> {
+    const key = await this.keyPromise;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify(value));
+
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      data,
+    );
+
+    // Combine IV and encrypted data
+    const combined = new Uint8Array(iv.length + encrypted.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(encrypted), iv.length);
+
+    return btoa(String.fromCharCode(...combined));
+  }
+
+  async deserialize(value: string): Promise<any> {
+    const key = await this.keyPromise;
+    const combined = new Uint8Array(
+      atob(value)
+        .split('')
+        .map(c => c.charCodeAt(0)),
+    );
+
+    const iv = combined.slice(0, 12);
+    const encrypted = combined.slice(12);
+
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      encrypted,
+    );
+
+    const decoder = new TextDecoder();
+    return JSON.parse(decoder.decode(decrypted));
+  }
+}
+
+// Usage (only works in secure contexts - HTTPS)
+const secureStorage = new KeyStorage<any>({
+  key: 'sensitive-data',
+  serializer: new EncryptedSerializer('user-password'),
+});
+
+// Store encrypted data
+secureStorage.set({ apiKey: 'secret-key', tokens: ['token1', 'token2'] });
+
+// Retrieve decrypted data
+const data = secureStorage.get();
+console.log(data); // { apiKey: 'secret-key', tokens: [...] }
+```
+
+### Storage Migration and Versioning
+
+Handle storage schema migrations across app versions:
+
+```typescript
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+
+interface StorageVersion {
+  version: number;
+  migrate: (data: any) => any;
+}
+
+class VersionedKeyStorage<T> extends KeyStorage<T> {
+  private migrations: StorageVersion[] = [];
+
+  constructor(options: any, migrations: StorageVersion[] = []) {
+    super(options);
+    this.migrations = migrations.sort((a, b) => a.version - b.version);
+  }
+
+  get(): T | null {
+    const rawData = super.get();
+    if (!rawData) return null;
+
+    return this.migrateData(rawData);
+  }
+
+  private migrateData(data: any): T {
+    const currentVersion = data.__version || 0;
+    let migratedData = { ...data };
+
+    // Remove version marker for clean data
+    delete migratedData.__version;
+
+    // Apply migrations in order
+    for (const migration of this.migrations) {
+      if (currentVersion < migration.version) {
+        migratedData = migration.migrate(migratedData);
+        migratedData.__version = migration.version;
+      }
+    }
+
+    // Save migrated data
+    if (migratedData.__version !== currentVersion) {
+      super.set(migratedData);
+    }
+
+    delete migratedData.__version;
+    return migratedData;
+  }
+}
+
+// Define migrations
+const migrations: StorageVersion[] = [
+  {
+    version: 1,
+    migrate: data => ({
+      ...data,
+      // Add default theme if missing
+      theme: data.theme || 'light',
+    }),
+  },
+  {
+    version: 2,
+    migrate: data => ({
+      ...data,
+      // Rename property
+      preferences: data.settings || {},
+      settings: undefined,
+    }),
+  },
+  {
+    version: 3,
+    migrate: data => ({
+      ...data,
+      // Add timestamps
+      createdAt: data.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
+  },
+];
+
+// Usage
+const userPrefsStorage = new VersionedKeyStorage<{
+  name: string;
+  theme: string;
+  preferences: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}>(
+  {
+    key: 'user-preferences',
+  },
+  migrations,
+);
+
+// Data will be automatically migrated when accessed
+const prefs = userPrefsStorage.get();
+```
+
+### Cross-Tab Communication with Shared Storage
+
+Implement cross-tab communication using storage events:
+
+```typescript
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+
+interface TabMessage {
+  id: string;
+  type: string;
+  payload: any;
+  timestamp: number;
+  sourceTab: string;
+}
+
+class CrossTabMessenger {
+  private storage: KeyStorage<TabMessage[]>;
+  private tabId: string;
+  private listeners: Map<string, (message: TabMessage) => void> = new Map();
+
+  constructor(channelName: string = 'cross-tab-messages') {
+    this.tabId = `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    this.storage = new KeyStorage<TabMessage[]>({
+      key: channelName,
+    });
+
+    // Listen for storage changes
+    this.storage.subscribe(messages => {
+      if (!messages) return;
+
+      // Process new messages
+      messages.forEach(message => {
+        if (message.sourceTab !== this.tabId) {
+          this.notifyListeners(message.type, message);
+        }
+      });
+    });
+
+    // Initialize storage if empty
+    if (!this.storage.get()) {
+      this.storage.set([]);
+    }
+  }
+
+  // Send message to other tabs
+  broadcast(type: string, payload: any) {
+    const messages = this.storage.get() || [];
+    const message: TabMessage = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type,
+      payload,
+      timestamp: Date.now(),
+      sourceTab: this.tabId,
+    };
+
+    // Add message and keep only recent messages
+    const updatedMessages = [...messages, message].slice(-50);
+    this.storage.set(updatedMessages);
+  }
+
+  // Listen for messages
+  on(type: string, callback: (message: TabMessage) => void) {
+    this.listeners.set(type, callback);
+  }
+
+  // Remove listener
+  off(type: string) {
+    this.listeners.delete(type);
+  }
+
+  private notifyListeners(type: string, message: TabMessage) {
+    const listener = this.listeners.get(type);
+    if (listener) {
+      listener(message);
+    }
+  }
+
+  // Get current tab ID
+  getTabId(): string {
+    return this.tabId;
+  }
+}
+
+// Usage
+const messenger = new CrossTabMessenger('app-messages');
+
+// Listen for user login events
+messenger.on('user-logged-in', message => {
+  console.log('User logged in from another tab:', message.payload);
+  // Update current tab's state
+  updateUserState(message.payload.user);
+});
+
+// Broadcast user actions
+function onUserLogin(user: any) {
+  messenger.broadcast('user-logged-in', { user, tabId: messenger.getTabId() });
+}
+```
+
+### Performance Monitoring and Analytics
+
+Add performance tracking to storage operations:
+
+```typescript
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+
+interface PerformanceMetrics {
+  operation: string;
+  duration: number;
+  timestamp: number;
+  success: boolean;
+  error?: string;
+}
+
+class MonitoredKeyStorage<T> extends KeyStorage<T> {
+  private metrics: PerformanceMetrics[] = [];
+  private readonly maxMetrics = 100;
+
+  constructor(options: any) {
+    super(options);
+  }
+
+  set(value: T): void {
+    const startTime = performance.now();
+    try {
+      super.set(value);
+      this.recordMetric('set', performance.now() - startTime, true);
+    } catch (error) {
+      this.recordMetric(
+        'set',
+        performance.now() - startTime,
+        false,
+        String(error),
+      );
+      throw error;
+    }
+  }
+
+  get(): T | null {
+    const startTime = performance.now();
+    try {
+      const result = super.get();
+      this.recordMetric('get', performance.now() - startTime, true);
+      return result;
+    } catch (error) {
+      this.recordMetric(
+        'get',
+        performance.now() - startTime,
+        false,
+        String(error),
+      );
+      throw error;
+    }
+  }
+
+  private recordMetric(
+    operation: string,
+    duration: number,
+    success: boolean,
+    error?: string,
+  ) {
+    this.metrics.push({
+      operation,
+      duration,
+      timestamp: Date.now(),
+      success,
+      error,
+    });
+
+    // Keep only recent metrics
+    if (this.metrics.length > this.maxMetrics) {
+      this.metrics = this.metrics.slice(-this.maxMetrics);
+    }
+  }
+
+  // Get performance statistics
+  getPerformanceStats() {
+    const total = this.metrics.length;
+    const successful = this.metrics.filter(m => m.success).length;
+    const failed = total - successful;
+
+    const avgDuration =
+      this.metrics.reduce((sum, m) => sum + m.duration, 0) / total;
+    const maxDuration = Math.max(...this.metrics.map(m => m.duration));
+    const minDuration = Math.min(...this.metrics.map(m => m.duration));
+
+    return {
+      total,
+      successful,
+      failed,
+      successRate: successful / total,
+      avgDuration,
+      maxDuration,
+      minDuration,
+      recentErrors: this.metrics
+        .filter(m => !m.success)
+        .slice(-5)
+        .map(m => ({
+          operation: m.operation,
+          error: m.error,
+          timestamp: m.timestamp,
+        })),
+    };
+  }
+
+  // Export metrics for analysis
+  exportMetrics(): PerformanceMetrics[] {
+    return [...this.metrics];
+  }
+
+  // Clear metrics
+  clearMetrics() {
+    this.metrics = [];
+  }
+}
+
+// Usage
+const monitoredStorage = new MonitoredKeyStorage<any>({
+  key: 'app-data',
+});
+
+// Use normally
+monitoredStorage.set({ user: 'john', settings: {} });
+const data = monitoredStorage.get();
+
+// Get performance insights
+const stats = monitoredStorage.getPerformanceStats();
+console.log('Storage Performance:', stats);
+
+// Export for further analysis
+const metrics = monitoredStorage.exportMetrics();
+```
+
+### Integration with State Management Libraries
+
+Examples of integrating storage with popular state management solutions:
+
+#### With Redux
+
+```typescript
+import { createStore, combineReducers } from 'redux';
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+
+// Storage-backed reducer
+function createPersistentReducer(reducer: any, storageKey: string) {
+  const storage = new KeyStorage({
+    key: storageKey,
+  });
+
+  // Load initial state from storage
+  const initialState = storage.get() || reducer(undefined, { type: '@@INIT' });
+
+  return (state = initialState, action: any) => {
+    const newState = reducer(state, action);
+
+    // Persist state changes (debounced)
+    if (action.type !== '@@INIT') {
+      setTimeout(() => storage.set(newState), 100);
+    }
+
+    return newState;
+  };
+}
+
+// Usage
+const userReducer = (state = { name: '', loggedIn: false }, action: any) => {
+  switch (action.type) {
+    case 'LOGIN':
+      return { ...state, name: action.payload.name, loggedIn: true };
+    case 'LOGOUT':
+      return { ...state, name: '', loggedIn: false };
+    default:
+      return state;
+  }
+};
+
+const rootReducer = combineReducers({
+  user: createPersistentReducer(userReducer, 'redux-user-state'),
+});
+
+const store = createStore(rootReducer);
+
+// State is automatically persisted and restored
+```
+
+#### With Zustand
+
+```typescript
+import { create } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+
+interface AppState {
+  user: { name: string; email: string } | null;
+  theme: 'light' | 'dark';
+  login: (user: { name: string; email: string }) => void;
+  logout: () => void;
+  setTheme: (theme: 'light' | 'dark') => void;
+}
+
+const storage = new KeyStorage<AppState['user']>({
+  key: 'zustand-user',
+});
+
+export const useAppStore = create<AppState>()(
+  subscribeWithSelector((set, get) => ({
+    user: storage.get(),
+    theme: 'light',
+
+    login: user => {
+      set({ user });
+      storage.set(user);
+    },
+
+    logout: () => {
+      set({ user: null });
+      storage.set(null);
+    },
+
+    setTheme: theme => set({ theme }),
+  })),
+);
+
+// Auto-persist theme changes
+useAppStore.subscribe(
+  state => state.theme,
+  theme => {
+    const themeStorage = new KeyStorage({ key: 'app-theme' });
+    themeStorage.set(theme);
+  },
+);
+```
+
 ## API Reference
 
 ### Environment Utilities

@@ -1,4 +1,3 @@
-<div align="center">
 
 # 🚀 Fetcher
 
@@ -12,7 +11,7 @@
 
 **Ultra-lightweight • Modular • TypeScript-First • Interceptor-Powered • LLM Streaming API Support**
 
-</div>
+
 
 ## 🌟 Why Fetcher?
 

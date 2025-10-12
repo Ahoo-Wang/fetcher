@@ -26,18 +26,18 @@ robust data fetching capabilities.
 
 - [Installation](#installation)
 - [Usage](#usage)
-    - [useFetcher Hook](#usefetcher-hook)
-    - [useExecutePromise Hook](#useexecutepromise-hook)
-    - [usePromiseState Hook](#usepromisestate-hook)
-    - [useRequestId Hook](#userequestid-hook)
-    - [useLatest Hook](#uselatest-hook)
-    - [useKeyStorage Hook](#usekeystorage-hook)
-    - [Wow Query Hooks](#wow-query-hooks)
-        - [useListQuery Hook](#uselistquery-hook)
-        - [usePagedQuery Hook](#usepagedquery-hook)
-        - [useSingleQuery Hook](#usesinglequery-hook)
-        - [useCountQuery Hook](#usecountquery-hook)
-        - [useListStreamQuery Hook](#useliststreamquery-hook)
+  - [useFetcher Hook](#usefetcher-hook)
+  - [useExecutePromise Hook](#useexecutepromise-hook)
+  - [usePromiseState Hook](#usepromisestate-hook)
+  - [useRequestId Hook](#userequestid-hook)
+  - [useLatest Hook](#uselatest-hook)
+  - [useKeyStorage Hook](#usekeystorage-hook)
+  - [Wow Query Hooks](#wow-query-hooks)
+    - [useListQuery Hook](#uselistquery-hook)
+    - [usePagedQuery Hook](#usepagedquery-hook)
+    - [useSingleQuery Hook](#usesinglequery-hook)
+    - [useCountQuery Hook](#usecountquery-hook)
+    - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [Best Practices](#best-practices)
 - [API Reference](#api-reference)
 - [License](#license)
@@ -724,6 +724,478 @@ const MyComponent = () => {
 - Use `useKeyStorage` for persistent client-side data
 - Implement optimistic updates for better UX
 
+## 🚀 Advanced Usage Examples
+
+### Custom Hook Composition
+
+Create reusable hooks by composing multiple fetcher-react hooks:
+
+```typescript jsx
+import { useFetcher, usePromiseState, useLatest } from '@ahoo-wang/fetcher-react';
+import { useCallback, useEffect } from 'react';
+
+function useUserProfile(userId: string) {
+  const latestUserId = useLatest(userId);
+  const { loading, result: profile, error, execute } = useFetcher();
+
+  const fetchProfile = useCallback(() => {
+    execute({
+      url: `/api/users/${latestUserId.current}`,
+      method: 'GET'
+    });
+  }, [execute, latestUserId]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchProfile();
+    }
+  }, [userId, fetchProfile]);
+
+  return { profile, loading, error, refetch: fetchProfile };
+}
+
+// Usage
+function UserProfile({ userId }: { userId: string }) {
+  const { profile, loading, error, refetch } = useUserProfile(userId);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>{profile?.name}</h2>
+      <button onClick={refetch}>Refresh</button>
+    </div>
+  );
+}
+```
+
+### Error Boundaries Integration
+
+Integrate with React Error Boundaries for better error handling:
+
+```typescript jsx
+import { Component, ErrorInfo, ReactNode } from 'react';
+
+class FetchErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Fetch error boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || <div>Something went wrong.</div>;
+    }
+
+    return this.props.children;
+  }
+}
+
+// Usage with hooks
+function DataComponent() {
+  const { result, loading, error, execute } = useFetcher();
+
+  // Error will be caught by boundary if thrown
+  if (error) {
+    throw error;
+  }
+
+  return (
+    <div>
+      {loading ? 'Loading...' : JSON.stringify(result)}
+    </div>
+  );
+}
+
+// Wrap components that use fetcher hooks
+function App() {
+  return (
+    <FetchErrorBoundary fallback={<div>Failed to load data</div>}>
+      <DataComponent />
+    </FetchErrorBoundary>
+  );
+}
+```
+
+### Suspense Integration
+
+Use with React Suspense for better loading states:
+
+```typescript jsx
+import { Suspense, useState } from 'react';
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+// Create a resource that throws a promise
+function createDataResource<T>(promise: Promise<T>) {
+  let status = 'pending';
+  let result: T;
+  let error: Error;
+
+  const suspender = promise.then(
+    (data) => {
+      status = 'success';
+      result = data;
+    },
+    (err) => {
+      status = 'error';
+      error = err;
+    }
+  );
+
+  return {
+    read() {
+      if (status === 'pending') {
+        throw suspender;
+      } else if (status === 'error') {
+        throw error;
+      } else {
+        return result;
+      }
+    }
+  };
+}
+
+function DataComponent({ resource }: { resource: any }) {
+  const data = resource.read(); // This will throw if pending
+  return <div>{JSON.stringify(data)}</div>;
+}
+
+function App() {
+  const [resource, setResource] = useState<any>(null);
+
+  const handleFetch = () => {
+    const { execute } = useFetcher();
+    const promise = execute({ url: '/api/data', method: 'GET' });
+    setResource(createDataResource(promise));
+  };
+
+  return (
+    <div>
+      <button onClick={handleFetch}>Fetch Data</button>
+      <Suspense fallback={<div>Loading...</div>}>
+        {resource && <DataComponent resource={resource} />}
+      </Suspense>
+    </div>
+  );
+}
+```
+
+### Performance Optimization Patterns
+
+Advanced patterns for optimal performance:
+
+```typescript jsx
+import { useMemo, useCallback, useRef } from 'react';
+import { useListQuery } from '@ahoo-wang/fetcher-react';
+
+function OptimizedDataTable({ filters, sortBy }) {
+  // Memoize query configuration to prevent unnecessary re-executions
+  const queryConfig = useMemo(() => ({
+    condition: filters,
+    sort: [{ field: sortBy, order: 'asc' }],
+    limit: 50
+  }), [filters, sortBy]);
+
+  const { result, loading, execute, setCondition } = useListQuery({
+    initialQuery: queryConfig,
+    execute: useCallback(async (query) => {
+      // Debounce API calls
+      await new Promise(resolve => setTimeout(resolve, 300));
+      return fetchData(query);
+    }, []),
+    autoExecute: true
+  });
+
+  // Use ref to track latest filters without causing re-renders
+  const filtersRef = useRef(filters);
+
+  useEffect(() => {
+    filtersRef.current = filters;
+  });
+
+  // Debounced search
+  const debouncedSearch = useMemo(
+    () => debounce((searchTerm: string) => {
+      setCondition({ ...filtersRef.current, search: searchTerm });
+    }, 500),
+    [setCondition]
+  );
+
+  return (
+    <div>
+      <input
+        onChange={(e) => debouncedSearch(e.target.value)}
+        placeholder="Search..."
+      />
+      {loading ? 'Loading...' : (
+        <table>
+          <tbody>
+            {result?.map(item => (
+              <tr key={item.id}>
+                <td>{item.name}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+// Debounce utility
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+```
+
+### Real-World Integration Examples
+
+Complete examples showing integration with popular libraries:
+
+#### With React Query (TanStack Query)
+
+```typescript jsx
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+function useUserData(userId: string) {
+  return useQuery({
+    queryKey: ['user', userId],
+    queryFn: async () => {
+      const { execute } = useFetcher();
+      const result = await execute({
+        url: `/api/users/${userId}`,
+        method: 'GET'
+      });
+      return result;
+    }
+  });
+}
+
+function UserProfile({ userId }: { userId: string }) {
+  const { data, isLoading, error } = useUserData(userId);
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return <div>Welcome, {data.name}!</div>;
+}
+```
+
+#### With Redux Toolkit
+
+```typescript jsx
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+const fetchUserData = createAsyncThunk(
+  'user/fetchData',
+  async (userId: string) => {
+    const { execute } = useFetcher();
+    return await execute({
+      url: `/api/users/${userId}`,
+      method: 'GET'
+    });
+  }
+);
+
+const userSlice = createSlice({
+  name: 'user',
+  initialState: { data: null, loading: false, error: null },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchUserData.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchUserData.fulfilled, (state, action) => {
+        state.loading = false;
+        state.data = action.payload;
+      })
+      .addCase(fetchUserData.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      });
+  }
+});
+
+function UserComponent({ userId }: { userId: string }) {
+  const dispatch = useDispatch();
+  const { data, loading, error } = useSelector((state) => state.user);
+
+  useEffect(() => {
+    dispatch(fetchUserData(userId));
+  }, [userId, dispatch]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return <div>{data?.name}</div>;
+}
+```
+
+#### With Zustand
+
+```typescript jsx
+import { create } from 'zustand';
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+interface UserStore {
+  user: any;
+  loading: boolean;
+  error: string | null;
+  fetchUser: (userId: string) => Promise<void>;
+}
+
+const useUserStore = create<UserStore>((set) => ({
+  user: null,
+  loading: false,
+  error: null,
+  fetchUser: async (userId) => {
+    set({ loading: true, error: null });
+    try {
+      const { execute } = useFetcher();
+      const user = await execute({
+        url: `/api/users/${userId}`,
+        method: 'GET'
+      });
+      set({ user, loading: false });
+    } catch (error) {
+      set({ error: error.message, loading: false });
+    }
+  }
+}));
+
+function UserComponent({ userId }: { userId: string }) {
+  const { user, loading, error, fetchUser } = useUserStore();
+
+  useEffect(() => {
+    fetchUser(userId);
+  }, [userId, fetchUser]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return <div>{user?.name}</div>;
+}
+```
+
+### Testing Patterns
+
+Comprehensive testing examples for hooks:
+
+```typescript jsx
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { useFetcher, useListQuery } from '@ahoo-wang/fetcher-react';
+
+// Mock fetcher
+jest.mock('@ahoo-wang/fetcher', () => ({
+  Fetcher: jest.fn().mockImplementation(() => ({
+    request: jest.fn(),
+  })),
+}));
+
+describe('useFetcher', () => {
+  it('should handle successful fetch', async () => {
+    const mockData = { id: 1, name: 'Test' };
+    const mockFetcher = { request: jest.fn().mockResolvedValue(mockData) };
+
+    const { result } = renderHook(() => useFetcher({ fetcher: mockFetcher }));
+
+    act(() => {
+      result.current.execute({ url: '/api/test', method: 'GET' });
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.result).toEqual(mockData);
+      expect(result.current.error).toBe(null);
+    });
+  });
+
+  it('should handle fetch error', async () => {
+    const mockError = new Error('Network error');
+    const mockFetcher = { request: jest.fn().mockRejectedValue(mockError) };
+
+    const { result } = renderHook(() => useFetcher({ fetcher: mockFetcher }));
+
+    act(() => {
+      result.current.execute({ url: '/api/test', method: 'GET' });
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.error).toEqual(mockError);
+      expect(result.current.result).toBe(null);
+    });
+  });
+});
+
+describe('useListQuery', () => {
+  it('should manage query state', async () => {
+    const mockData = [{ id: 1, name: 'Item 1' }];
+    const mockExecute = jest.fn().mockResolvedValue(mockData);
+
+    const { result } = renderHook(() =>
+      useListQuery({
+        initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+        execute: mockExecute,
+      }),
+    );
+
+    act(() => {
+      result.current.execute();
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.result).toEqual(mockData);
+    });
+
+    expect(mockExecute).toHaveBeenCalledWith({
+      condition: {},
+      projection: {},
+      sort: [],
+      limit: 10,
+    });
+  });
+
+  it('should update condition', () => {
+    const { result } = renderHook(() =>
+      useListQuery({
+        initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+        execute: jest.fn(),
+      }),
+    );
+
+    act(() => {
+      result.current.setCondition({ status: 'active' });
+    });
+
+    expect(result.current.condition).toEqual({ status: 'active' });
+  });
+});
+```
+
 ## API Reference
 
 ### useFetcher
@@ -745,10 +1217,10 @@ flexible configuration.
 **Parameters:**
 
 - `options`: Configuration options or supplier function
-    - `fetcher`: Custom fetcher instance to use. Defaults to the default fetcher.
-    - `initialStatus`: Initial status, defaults to IDLE
-    - `onSuccess`: Callback invoked on success
-    - `onError`: Callback invoked on error
+  - `fetcher`: Custom fetcher instance to use. Defaults to the default fetcher.
+  - `initialStatus`: Initial status, defaults to IDLE
+  - `onSuccess`: Callback invoked on success
+  - `onError`: Callback invoked on error
 
 **Returns:**
 
@@ -780,9 +1252,9 @@ state options.
 **Parameters:**
 
 - `options`: Configuration options
-    - `initialStatus`: Initial status, defaults to IDLE
-    - `onSuccess`: Callback invoked on success
-    - `onError`: Callback invoked on error
+  - `initialStatus`: Initial status, defaults to IDLE
+  - `onSuccess`: Callback invoked on success
+  - `onError`: Callback invoked on error
 
 **Returns:**
 
@@ -814,9 +1286,9 @@ suppliers.
 **Parameters:**
 
 - `options`: Configuration options or supplier function
-    - `initialStatus`: Initial status, defaults to IDLE
-    - `onSuccess`: Callback invoked on success (can be async)
-    - `onError`: Callback invoked on error (can be async)
+  - `initialStatus`: Initial status, defaults to IDLE
+  - `onSuccess`: Callback invoked on success (can be async)
+  - `onError`: Callback invoked on error (can be async)
 
 **Returns:**
 
@@ -907,7 +1379,7 @@ A React hook for managing list queries with state management for conditions, pro
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and list function
-    - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
 
 **Returns:**
 
@@ -932,7 +1404,7 @@ A React hook for managing paged queries with state management for conditions, pr
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and query function
-    - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
 
 **Returns:**
 
@@ -957,7 +1429,7 @@ A React hook for managing single queries with state management for conditions, p
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and query function
-    - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
 
 **Returns:**
 
@@ -981,7 +1453,7 @@ A React hook for managing count queries with state management for conditions.
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and execute function
-    - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
 
 **Returns:**
 
@@ -1011,7 +1483,7 @@ Returns a readable stream of JSON server-sent events.
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and listStream function
-    - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
 
 **Returns:**
 

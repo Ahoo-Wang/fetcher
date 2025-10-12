@@ -284,6 +284,504 @@ fetcher.interceptors.request.use({
 // 3. auth-interceptor (order: 50)
 ```
 
+## 🚀 Advanced Usage Examples
+
+### Custom Result Extractors
+
+Create custom result extractors for different response formats:
+
+```typescript
+import { Fetcher, ResultExtractor } from '@ahoo-wang/fetcher';
+
+// Custom XML extractor
+class XmlResultExtractor implements ResultExtractor<string> {
+  async extract(response: Response): Promise<string> {
+    const text = await response.text();
+    // Parse XML and return as string (simplified example)
+    return text;
+  }
+}
+
+// Custom GraphQL extractor
+class GraphQLErrorExtractor implements ResultExtractor<any> {
+  async extract(response: Response): Promise<any> {
+    const data = await response.json();
+
+    if (data.errors && data.errors.length > 0) {
+      throw new Error(`GraphQL Error: ${data.errors[0].message}`);
+    }
+
+    return data.data;
+  }
+}
+
+// Usage
+const fetcher = new Fetcher({
+  baseURL: 'https://api.example.com',
+  resultExtractor: new GraphQLErrorExtractor(),
+});
+
+// GraphQL query
+const result = await fetcher.post('/graphql', {
+  body: {
+    query: `query { user(id: "123") { name email } }`,
+  },
+});
+```
+
+### Advanced Interceptor Patterns
+
+Implement complex interceptor patterns for enterprise applications:
+
+```typescript
+import { Fetcher, FetchInterceptor } from '@ahoo-wang/fetcher';
+
+// Request signing interceptor (e.g., AWS Signature V4)
+class RequestSigningInterceptor implements FetchInterceptor {
+  name = 'request-signer';
+  order = 50;
+
+  async intercept(exchange: any) {
+    const { request } = exchange;
+
+    // Generate signature based on request
+    const signature = await this.generateSignature(request);
+
+    // Add signature to headers
+    request.headers['Authorization'] = `AWS4-HMAC-SHA256 ${signature}`;
+
+    return exchange;
+  }
+
+  private async generateSignature(request: any): Promise<string> {
+    // Implementation of AWS Signature V4 or similar
+    // This is a simplified example
+    const timestamp = new Date().toISOString();
+    return `Credential=key/${timestamp}/region/service/aws4_request`;
+  }
+}
+
+// Circuit breaker interceptor
+class CircuitBreakerInterceptor implements FetchInterceptor {
+  name = 'circuit-breaker';
+  order = 25;
+
+  private failures = 0;
+  private lastFailureTime = 0;
+  private readonly threshold = 5;
+  private readonly timeout = 60000; // 1 minute
+
+  async intercept(exchange: any) {
+    // Check if circuit is open
+    if (this.isCircuitOpen()) {
+      throw new Error('Circuit breaker is open');
+    }
+
+    try {
+      // Proceed with request
+      const result = await exchange.proceed();
+
+      // Reset on success
+      this.failures = 0;
+      return result;
+    } catch (error) {
+      // Record failure
+      this.failures++;
+      this.lastFailureTime = Date.now();
+      throw error;
+    }
+  }
+
+  private isCircuitOpen(): boolean {
+    if (this.failures < this.threshold) {
+      return false;
+    }
+
+    // Check if timeout has passed
+    return Date.now() - this.lastFailureTime < this.timeout;
+  }
+}
+
+// Usage
+const fetcher = new Fetcher({
+  baseURL: 'https://api.example.com',
+});
+
+fetcher.interceptors.request.use(new RequestSigningInterceptor());
+fetcher.interceptors.request.use(new CircuitBreakerInterceptor());
+```
+
+### Multi-Environment Configuration
+
+Create environment-specific fetcher configurations:
+
+```typescript
+import { Fetcher, NamedFetcher } from '@ahoo-wang/fetcher';
+
+type Environment = 'development' | 'staging' | 'production';
+
+interface EnvironmentConfig {
+  baseURL: string;
+  timeout: number;
+  retryConfig?: {
+    maxRetries: number;
+    retryDelay: number;
+  };
+}
+
+const environmentConfigs: Record<Environment, EnvironmentConfig> = {
+  development: {
+    baseURL: 'http://localhost:3000/api',
+    timeout: 30000,
+    retryConfig: { maxRetries: 0, retryDelay: 0 },
+  },
+  staging: {
+    baseURL: 'https://api-staging.example.com',
+    timeout: 10000,
+    retryConfig: { maxRetries: 2, retryDelay: 1000 },
+  },
+  production: {
+    baseURL: 'https://api.example.com',
+    timeout: 5000,
+    retryConfig: { maxRetries: 3, retryDelay: 2000 },
+  },
+};
+
+class EnvironmentAwareFetcher extends NamedFetcher {
+  constructor(name: string, environment: Environment) {
+    const config = environmentConfigs[environment];
+
+    super(name, {
+      baseURL: config.baseURL,
+      timeout: config.timeout,
+      // Add other environment-specific configurations
+    });
+
+    // Add environment-specific interceptors
+    if (environment === 'production') {
+      this.interceptors.request.use({
+        name: 'production-monitoring',
+        order: 1,
+        intercept(exchange) {
+          // Add production monitoring headers
+          exchange.request.headers['X-Environment'] = 'production';
+          exchange.request.headers['X-Request-Id'] = crypto.randomUUID();
+        },
+      });
+    }
+  }
+}
+
+// Usage
+const currentEnv = (process.env.NODE_ENV as Environment) || 'development';
+const apiFetcher = new EnvironmentAwareFetcher('api', currentEnv);
+```
+
+### Request Batching and Deduplication
+
+Implement request batching to reduce network overhead:
+
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+
+class RequestBatcher {
+  private queue: Map<string, any[]> = new Map();
+  private timeoutId: NodeJS.Timeout | null = null;
+  private readonly batchDelay = 100; // ms
+
+  constructor(private fetcher: Fetcher) {}
+
+  async batchRequest<T>(
+    endpoint: string,
+    data: any,
+    batchKey?: string,
+  ): Promise<T> {
+    const key = batchKey || endpoint;
+
+    return new Promise((resolve, reject) => {
+      if (!this.queue.has(key)) {
+        this.queue.set(key, []);
+      }
+
+      this.queue.get(key)!.push({ data, resolve, reject });
+
+      // Schedule batch execution
+      if (!this.timeoutId) {
+        this.timeoutId = setTimeout(
+          () => this.executeBatch(key),
+          this.batchDelay,
+        );
+      }
+    });
+  }
+
+  private async executeBatch(key: string) {
+    const requests = this.queue.get(key);
+    if (!requests || requests.length === 0) return;
+
+    this.queue.delete(key);
+    this.timeoutId = null;
+
+    try {
+      // Execute batch request
+      const batchData = requests.map(r => r.data);
+      const response = await this.fetcher.post(`/${key}/batch`, {
+        body: { requests: batchData },
+      });
+
+      const results = await response.json();
+
+      // Resolve individual promises
+      requests.forEach((request, index) => {
+        if (results[index]?.success) {
+          request.resolve(results[index].data);
+        } else {
+          request.reject(
+            new Error(results[index]?.error || 'Batch request failed'),
+          );
+        }
+      });
+    } catch (error) {
+      // Reject all promises in batch
+      requests.forEach(request => request.reject(error));
+    }
+  }
+}
+
+// Usage
+const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
+const batcher = new RequestBatcher(fetcher);
+
+// Batch multiple user updates
+const results = await Promise.all([
+  batcher.batchRequest('users', { id: 1, name: 'John' }),
+  batcher.batchRequest('users', { id: 2, name: 'Jane' }),
+  batcher.batchRequest('users', { id: 3, name: 'Bob' }),
+]);
+```
+
+### Custom Error Handling and Retry Logic
+
+Implement sophisticated error handling with exponential backoff:
+
+```typescript
+import { Fetcher, FetcherError } from '@ahoo-wang/fetcher';
+
+class ExponentialBackoffRetry {
+  constructor(
+    private maxRetries: number = 3,
+    private baseDelay: number = 1000,
+    private maxDelay: number = 30000,
+  ) {}
+
+  async execute<T>(operation: () => Promise<T>): Promise<T> {
+    let lastError: Error;
+
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error as Error;
+
+        if (attempt === this.maxRetries) {
+          break; // Don't retry on last attempt
+        }
+
+        // Check if error is retryable
+        if (!this.isRetryableError(error)) {
+          break;
+        }
+
+        // Calculate delay with exponential backoff and jitter
+        const delay = Math.min(
+          this.baseDelay * Math.pow(2, attempt) + Math.random() * 1000,
+          this.maxDelay,
+        );
+
+        console.log(
+          `Retrying in ${delay}ms (attempt ${attempt + 1}/${this.maxRetries})`,
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError!;
+  }
+
+  private isRetryableError(error: any): boolean {
+    // Retry on network errors, 5xx server errors, and timeouts
+    if (error instanceof FetcherError) {
+      return (
+        error.name === 'FetchTimeoutError' ||
+        (error.response && error.response.status >= 500) ||
+        !error.response // Network error
+      );
+    }
+
+    // Retry on network-related errors
+    return error.name === 'TypeError' || error.message.includes('fetch');
+  }
+}
+
+// Enhanced fetcher with retry logic
+class ResilientFetcher extends Fetcher {
+  private retryHandler = new ExponentialBackoffRetry();
+
+  async request<T = any>(request: any): Promise<T> {
+    return this.retryHandler.execute(() => super.request<T>(request));
+  }
+}
+
+// Usage
+const fetcher = new ResilientFetcher({
+  baseURL: 'https://api.example.com',
+  timeout: 5000,
+});
+
+// This will automatically retry on failures
+try {
+  const data = await fetcher.get('/unreliable-endpoint');
+  console.log('Success:', data);
+} catch (error) {
+  console.error('All retries failed:', error);
+}
+```
+
+### Integration with Popular Libraries
+
+Examples of integrating Fetcher with popular JavaScript libraries:
+
+#### With Axios Compatibility Layer
+
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+
+// Axios-compatible wrapper
+class AxiosCompatibleFetcher {
+  constructor(private fetcher: Fetcher) {}
+
+  async get(url: string, config?: any) {
+    return this.fetcher.get(url, config);
+  }
+
+  async post(url: string, data?: any, config?: any) {
+    return this.fetcher.post(url, { ...config, body: data });
+  }
+
+  async put(url: string, data?: any, config?: any) {
+    return this.fetcher.put(url, { ...config, body: data });
+  }
+
+  async delete(url: string, config?: any) {
+    return this.fetcher.delete(url, config);
+  }
+
+  // Add interceptors in Axios style
+  interceptors = {
+    request: {
+      use: (interceptor: any) => {
+        this.fetcher.interceptors.request.use({
+          name: 'axios-compat',
+          order: 100,
+          intercept: interceptor,
+        });
+      },
+    },
+    response: {
+      use: (interceptor: any) => {
+        this.fetcher.interceptors.response.use({
+          name: 'axios-compat',
+          order: 100,
+          intercept: interceptor,
+        });
+      },
+    },
+  };
+}
+
+// Usage
+const axiosLike = new AxiosCompatibleFetcher(
+  new Fetcher({ baseURL: 'https://api.example.com' }),
+);
+
+// Use like Axios
+const response = await axiosLike.get('/users');
+```
+
+#### With React Query Integration
+
+```typescript
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Fetcher } from '@ahoo-wang/fetcher';
+
+const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
+
+// Custom hooks for React Query
+function useApiQuery(key: string, endpoint: string) {
+  return useQuery({
+    queryKey: [key],
+    queryFn: async () => {
+      const response = await fetcher.get(endpoint);
+      return response.json();
+    },
+    retry: (failureCount, error) => {
+      // Custom retry logic based on error type
+      if (error instanceof FetcherError && error.response?.status === 404) {
+        return false; // Don't retry 404s
+      }
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+}
+
+function useApiMutation(endpoint: string, method: 'POST' | 'PUT' | 'DELETE' = 'POST') {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetcher.request({
+        url: endpoint,
+        method,
+        body: data,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error) => {
+      // Custom error handling
+      console.error('Mutation failed:', error);
+    },
+  });
+}
+
+// Usage in React component
+function UserManagement() {
+  const { data: users, isLoading } = useApiQuery('users', '/users');
+  const createUser = useApiMutation('/users', 'POST');
+
+  const handleCreateUser = async (userData: any) => {
+    try {
+      await createUser.mutateAsync(userData);
+      message.success('User created successfully');
+    } catch (error) {
+      message.error('Failed to create user');
+    }
+  };
+
+  if (isLoading) return <div>Loading...</div>;
+
+  return (
+    <div>
+      {/* User management UI */}
+    </div>
+  );
+}
+```
+
 ## 📚 API Reference
 
 ### Fetcher Class
