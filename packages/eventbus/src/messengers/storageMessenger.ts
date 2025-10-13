@@ -17,6 +17,8 @@ export interface StorageMessengerOptions {
   channelName: string;
   /** Storage instance to use. Defaults to localStorage */
   storage?: Storage;
+  ttl: number;
+  cleanupInterval?: number;
 }
 
 export interface StorageMessage {
@@ -44,8 +46,10 @@ export class StorageMessenger implements CrossTabMessenger {
   private messageHandler?: CrossTabMessageHandler;
   private readonly messageKeyPrefix: string;
   private messageCounter = 0;
+  private readonly cleanupInterval: number;
+  private cleanupTimer?: number;
   private readonly storageEventHandler = (event: StorageEvent) => {
-    if (!event.key?.startsWith(this.messageKeyPrefix) || !event.newValue) {
+    if (event.storageArea !== this.storage || !event.key?.startsWith(this.messageKeyPrefix) || !event.newValue) {
       return;
     }
     try {
@@ -60,6 +64,7 @@ export class StorageMessenger implements CrossTabMessenger {
     this.channelName = options.channelName;
     this.storage = options.storage ?? localStorage;
     this.messageKeyPrefix = `_storage_msg_${this.channelName}`;
+    this.cleanupInterval = options.cleanupInterval ?? 1000;
     window.addEventListener('storage', this.storageEventHandler);
   }
 
@@ -71,7 +76,7 @@ export class StorageMessenger implements CrossTabMessenger {
     const storageMessage: StorageMessage = { data: message, timestamp: Date.now() };
     this.storage.setItem(key, JSON.stringify(storageMessage));
     // Delay removal to ensure all listeners have processed the event
-    setTimeout(() => this.storage.removeItem(key), 100);
+    setTimeout(() => this.storage.removeItem(key), this.cleanupInterval);
   }
 
   /**
