@@ -35,6 +35,7 @@ export default tseslint.config({
     files: ['integration-test/**/*.{ts,tsx}', '**/*.stories.tsx'],
     rules: {
       // 可以为集成测试设置特定规则
+      '@typescript-eslint/no-empty-object-type':'off',
       '@typescript-eslint/no-unused-vars': 'off',
     },
   }, storybook.configs['flat/recommended']);
