@@ -11,45 +11,75 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BroadcastTypedEventBus } from '../src';
 import { SerialTypedEventBus } from '../src';
+import {
+  createCrossTabMessenger,
+} from '../src';
+
+// Mock the createCrossTabMessenger function
+vi.mock('../src/messengers/crossTabMessenger', () => ({
+  createCrossTabMessenger: vi.fn(),
+}));
 
 describe('BroadcastTypedEventBus', () => {
-  let mockBroadcastChannel: any;
+  let mockMessenger: any;
   let delegate: SerialTypedEventBus<string>;
+  let createCrossTabMessengerMock: any;
 
   beforeEach(() => {
-    mockBroadcastChannel = {
+    mockMessenger = {
       postMessage: vi.fn(),
       close: vi.fn(),
-      onmessage: null,
+      set onmessage(handler: any) {
+        this._onmessage = handler;
+      },
+      get onmessage() {
+        return this._onmessage;
+      },
+      _onmessage: null,
+      // Simulate calling the handler with event.data
+      triggerMessage: function (event: any) {
+        if (this._onmessage) {
+          this._onmessage(event.data);
+        }
+      },
     };
-    global.BroadcastChannel = vi.fn(() => mockBroadcastChannel);
+
+    createCrossTabMessengerMock = vi.mocked(createCrossTabMessenger);
+    createCrossTabMessengerMock.mockReturnValue(mockMessenger);
+
     delegate = new SerialTypedEventBus<string>('test');
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should create a bus with type from delegate', () => {
-    const bus = new BroadcastTypedEventBus(delegate);
+    const bus = new BroadcastTypedEventBus({
+      delegate,
+      messenger: mockMessenger,
+    });
     expect(bus.type).toBe('test');
-    expect(global.BroadcastChannel).toHaveBeenCalledWith('_broadcast_:test');
+    expect(createCrossTabMessengerMock).not.toHaveBeenCalled();
   });
 
   it('should set onmessage to emit on delegate', async () => {
-    new BroadcastTypedEventBus(delegate);
+    new BroadcastTypedEventBus({ delegate, messenger: mockMessenger });
     const handler = { name: 'h1', order: 1, handle: vi.fn() };
     delegate.on(handler);
 
     // Simulate receiving a message
-    await mockBroadcastChannel.onmessage({ data: 'event' });
+    mockMessenger.triggerMessage({ data: 'event' });
 
     expect(handler.handle).toHaveBeenCalledWith('event');
   });
 
   it('should log errors in onmessage', async () => {
-    new BroadcastTypedEventBus(delegate);
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {
-    });
+    new BroadcastTypedEventBus({ delegate, messenger: mockMessenger });
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const handler = {
       name: 'h1',
       order: 1,
@@ -60,7 +90,7 @@ describe('BroadcastTypedEventBus', () => {
     delegate.on(handler);
 
     // Simulate receiving a message that causes error
-    await mockBroadcastChannel.onmessage({ data: 'event' });
+    mockMessenger.triggerMessage({ data: 'event' });
 
     expect(consoleWarn).toHaveBeenCalledWith(
       'Event handler error for h1:',
@@ -70,21 +100,30 @@ describe('BroadcastTypedEventBus', () => {
   });
 
   it('should delegate handlers', () => {
-    const bus = new BroadcastTypedEventBus(delegate);
+    const bus = new BroadcastTypedEventBus({
+      delegate,
+      messenger: mockMessenger,
+    });
     const handler = { name: 'h1', order: 1, handle: vi.fn() };
     bus.on(handler);
     expect(bus.handlers).toEqual(delegate.handlers);
   });
 
   it('should delegate on', () => {
-    const bus = new BroadcastTypedEventBus(delegate);
+    const bus = new BroadcastTypedEventBus({
+      delegate,
+      messenger: mockMessenger,
+    });
     const handler = { name: 'h1', order: 1, handle: vi.fn() };
     expect(bus.on(handler)).toBe(true);
     expect(delegate.handlers.length).toBe(1);
   });
 
   it('should delegate off', () => {
-    const bus = new BroadcastTypedEventBus(delegate);
+    const bus = new BroadcastTypedEventBus({
+      delegate,
+      messenger: mockMessenger,
+    });
     const handler = { name: 'h1', order: 1, handle: vi.fn() };
     bus.on(handler);
     expect(bus.off('h1')).toBe(true);
@@ -92,19 +131,49 @@ describe('BroadcastTypedEventBus', () => {
   });
 
   it('should emit locally and broadcast', async () => {
-    const bus = new BroadcastTypedEventBus(delegate);
+    const bus = new BroadcastTypedEventBus({
+      delegate,
+      messenger: mockMessenger,
+    });
     const handler = { name: 'h1', order: 1, handle: vi.fn() };
     bus.on(handler);
 
     await bus.emit('event');
 
     expect(handler.handle).toHaveBeenCalledWith('event');
-    expect(mockBroadcastChannel.postMessage).toHaveBeenCalledWith('event');
+    expect(mockMessenger.postMessage).toHaveBeenCalledWith('event');
   });
 
-  it('should destroy by closing BroadcastChannel', () => {
-    const bus = new BroadcastTypedEventBus(delegate);
+  it('should destroy by closing messenger', () => {
+    const bus = new BroadcastTypedEventBus({
+      delegate,
+      messenger: mockMessenger,
+    });
     bus.destroy();
-    expect(mockBroadcastChannel.close).toHaveBeenCalled();
+    expect(mockMessenger.close).toHaveBeenCalled();
+  });
+
+  describe('options constructor', () => {
+    it('should use custom messenger from options', () => {
+      const customMessenger = {
+        postMessage: vi.fn(),
+        close: vi.fn(),
+        set onmessage(handler: any) {
+          this._onmessage = handler;
+        },
+        get onmessage() {
+          return this._onmessage;
+        },
+        _onmessage: null,
+      };
+
+      const bus = new BroadcastTypedEventBus({
+        delegate,
+        messenger: customMessenger,
+      });
+
+      expect(createCrossTabMessengerMock).not.toHaveBeenCalled();
+      expect(bus.type).toBe('test');
+    });
   });
 });

@@ -13,6 +13,19 @@
 
 import { TypedEventBus } from './typedEventBus';
 import { EventHandler, EventType } from './types';
+import { CrossTabMessenger } from './messengers';
+
+/**
+ * Options for creating a BroadcastTypedEventBus
+ *
+ * @template EVENT - The type of events this bus handles
+ */
+export interface BroadcastTypedEventBusOptions<EVENT> {
+  /** The underlying TypedEventBus for local event handling */
+  delegate: TypedEventBus<EVENT>;
+  /** Custom messenger for cross-tab communication */
+  messenger: CrossTabMessenger;
+}
 
 /**
  * Broadcast implementation of TypedEventBus using BroadcastChannel API
@@ -25,42 +38,34 @@ import { EventHandler, EventType } from './types';
  *
  * @template EVENT - The type of events this bus handles
  *
- * @example
+ * @example Using options object
  * ```typescript
  * const delegate = new SerialTypedEventBus<string>('user-events');
- * const bus = new BroadcastTypedEventBus(delegate);
+ * const messenger = createCrossTabMessenger('my-channel');
+ * const bus = new BroadcastTypedEventBus({
+ *   delegate,
+ *   messenger
+ * });
  * bus.on({ name: 'user-login', order: 1, handle: (event) => console.log('User logged in:', event) });
  * await bus.emit('john-doe'); // Emits locally and broadcasts to other tabs
- * ```
- *
- * @example Custom channel name
- * ```typescript
- * const bus = new BroadcastTypedEventBus(delegate, 'my-custom-channel');
  * ```
  */
 export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   public readonly type: EventType;
-  private readonly broadcastChannel: BroadcastChannel;
+  private readonly delegate: TypedEventBus<EVENT>;
+  private messenger: CrossTabMessenger;
 
   /**
    * Creates a broadcast typed event bus
    *
-   * @param delegate - The underlying TypedEventBus for local event handling
-   * @param channel - Optional custom BroadcastChannel name; defaults to `_broadcast_:{type}`
+   * @param options - Configuration options for the event bus
    */
-  constructor(
-    private readonly delegate: TypedEventBus<EVENT>,
-    channel?: string,
-  ) {
-    this.type = delegate.type;
-    const channelName = channel ?? `_broadcast_:${this.type}`;
-    this.broadcastChannel = new BroadcastChannel(channelName);
-    this.broadcastChannel.onmessage = async event => {
-      try {
-        await this.delegate.emit(event.data);
-      } catch (e) {
-        console.warn(`Broadcast event handler error for ${this.type}:`, e);
-      }
+  constructor(options: BroadcastTypedEventBusOptions<EVENT>) {
+    this.delegate = options.delegate;
+    this.type = this.delegate.type;
+    this.messenger = options.messenger;
+    this.messenger.onmessage = async (event: EVENT) => {
+      await this.delegate.emit(event);
     };
   }
 
@@ -78,7 +83,7 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    */
   async emit(event: EVENT): Promise<void> {
     await this.delegate.emit(event);
-    this.broadcastChannel.postMessage(event);
+    this.messenger.postMessage(event);
   }
 
   /**
@@ -102,9 +107,9 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   }
 
   /**
-   * Cleans up resources by closing the BroadcastChannel
+   * Cleans up resources by closing the messenger
    */
-  destroy() {
-    this.broadcastChannel.close();
+  destroy(): void {
+    this.messenger.close();
   }
 }
