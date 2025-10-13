@@ -15,3 +15,4 @@ export * from './ConditionFilter';
 export * from './conditionFilterRegistry';
 export * from './IdConditionFilter';
 export * from './types';
+export * from './FallbackConditionFilter';

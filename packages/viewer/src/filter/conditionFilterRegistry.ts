@@ -11,7 +11,6 @@
  * limitations under the License.
  */
 
-
 import { ConditionFilterComponent } from './types';
 
 export class ConditionFilterRegistry {

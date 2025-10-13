@@ -11,24 +11,13 @@
  * limitations under the License.
  */
 
+import { Alert } from 'antd';
 import React from 'react';
-import { ConditionFilterProps } from './types';
-import { conditionFilterRegistry } from './conditionFilterRegistry';
-import { FallbackConditionFilter } from './FallbackConditionFilter';
 
-export interface TypedConditionFilterProps
-  extends ConditionFilterProps {
+export interface FallbackConditionFilterProps {
   type: string;
 }
 
-export const ConditionFilter = React.memo(
-  (props: TypedConditionFilterProps) => {
-    const FilterComponent = conditionFilterRegistry.get(props.type);
-    if (!FilterComponent) {
-      return <FallbackConditionFilter type={props.type} />;
-    }
-    return <FilterComponent {...props} />;
-  },
-);
-
-ConditionFilter.displayName = 'ConditionFilter';
+export function FallbackConditionFilter(props: FallbackConditionFilterProps) {
+  return <Alert message={`Unsupported filter type:[${props.type}]`} type="warning" showIcon />;
+}
