@@ -74,7 +74,7 @@ export class StorageMessenger implements CrossTabMessenger {
    * Send a message to other tabs/windows via localStorage
    */
   postMessage(message: any): void {
-    const key = `${this.messageKeyPrefix}_${this.generateMessageKey()}`;
+    const key = this.generateMessageKey();
     const storageMessage: StorageMessage = {
       data: message,
       timestamp: Date.now(),
