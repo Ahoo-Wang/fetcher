@@ -50,14 +50,10 @@ describe('DeviceIdStorage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStorage.getItem.mockReturnValue(null);
-    mockStorage.setItem.mockImplementation(() => {
-    });
-    mockStorage.removeItem.mockImplementation(() => {
-    });
-    mockBroadcastChannel.postMessage.mockImplementation(() => {
-    });
-    mockBroadcastChannel.close.mockImplementation(() => {
-    });
+    mockStorage.setItem.mockImplementation(() => {});
+    mockStorage.removeItem.mockImplementation(() => {});
+    mockBroadcastChannel.postMessage.mockImplementation(() => {});
+    mockBroadcastChannel.close.mockImplementation(() => {});
 
     deviceIdStorage = new DeviceIdStorage({
       key: DEFAULT_COSEC_DEVICE_ID_KEY,
@@ -67,7 +63,17 @@ describe('DeviceIdStorage', () => {
 
   describe('constructor', () => {
     it('should initialize with default options', () => {
-      const defaultStorage = new DeviceIdStorage();
+      // Mock eventBus for test environment
+      const mockEventBus = {
+        emit: vi.fn(),
+        on: vi.fn(),
+        off: vi.fn(),
+        destroy: vi.fn(),
+      };
+      const defaultStorage = new DeviceIdStorage({
+        key: 'test-device-id',
+        eventBus: mockEventBus as any,
+      });
       expect(defaultStorage).toBeDefined();
     });
 
