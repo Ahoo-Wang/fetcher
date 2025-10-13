@@ -11,21 +11,17 @@
  * limitations under the License.
  */
 
-import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
-import viteConfig from './vite.config';
+import { Condition, OperatorLocale } from '@ahoo-wang/fetcher-wow';
 
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
-    test: {
-      environment: 'jsdom',
-      globals: true,
-      coverage: {
-        exclude: [...configDefaults.exclude, '**/**.stories.tsx',
-          'src/filter/IdConditionFilter.tsx', //TODO
-          'src/filter/friendlyCondition.ts', //TODO
-        ],
-      },
-    },
-  }),
-);
+export function friendlyCondition(label: string, operatorLocale: OperatorLocale, condition: Condition) {
+  const friendlyParts = [];
+  friendlyParts.push(label);
+  friendlyParts.push(operatorLocale[condition.operator!]);
+  const value = condition.value;
+  if (Array.isArray(condition.value)) {
+    friendlyParts.push(value.join(', '));
+  } else {
+    friendlyParts.push(value);
+  }
+  return friendlyParts.join(' ');
+}

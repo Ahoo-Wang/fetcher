@@ -12,9 +12,11 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import React from 'react';
+import React, { useState } from 'react';
 import { IdConditionFilter } from '../IdConditionFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
+import { ConditionFilterValue } from '../types';
+import { Card, Typography } from 'antd';
 
 const meta: Meta<typeof IdConditionFilter> = {
   title: 'Viewer/Filter/IdConditionFilter',
@@ -34,15 +36,15 @@ const meta: Meta<typeof IdConditionFilter> = {
       control: 'object',
       description: 'The field configuration for the filter',
     },
-    placeholder: {
-      control: 'text',
-      description: 'Placeholder text for the input field',
-    },
     operator: {
       control: { type: 'select' },
       options: [Operator.ID, Operator.IDS],
       description:
-        'The operator for the condition (EQ for single ID, IDS for multiple IDs)',
+        'The operator for the condition (ID for single ID, IDS for multiple IDs)',
+    },
+    value: {
+      control: 'object',
+      description: 'The value configuration for the input',
     },
   },
 };
@@ -57,10 +59,53 @@ export const Default: Story = {
       label: 'ID',
       type: 'string',
     },
-    operator: Operator.ID,
-    placeholder: 'Enter ID',
+    label: {
+      name: 'id',
+    },
+    operator: {
+      defaultValue: Operator.ID,
+    },
+    value: {
+      placeholder: 'Enter ID',
+    },
   },
   render: args => {
-    return <IdConditionFilter {...args}  />;
+    return <IdConditionFilter {...args} />;
+  },
+};
+
+export const WithOnChange: Story = {
+  args: {
+    field: {
+      name: 'id',
+      label: 'ID',
+      type: 'string',
+    },
+    label: {
+      name: 'id',
+    },
+    operator: {
+      defaultValue: Operator.ID,
+    },
+    value: {
+      placeholder: 'Enter ID',
+    },
+  },
+  render: args => {
+    const [conditionValue, setConditionValue] = useState<
+      ConditionFilterValue | undefined
+    >();
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <IdConditionFilter {...args} onChange={setConditionValue} />
+        <Card title="Current Condition Value" size="small">
+          <Typography.Text code>
+            {conditionValue
+              ? JSON.stringify(conditionValue, null, 2)
+              : 'No value'}
+          </Typography.Text>
+        </Card>
+      </div>
+    );
   },
 };
