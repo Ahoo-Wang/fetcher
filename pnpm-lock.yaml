@@ -9,12 +9,21 @@ catalogs:
     '@eslint/js':
       specifier: ^9.37.0
       version: 9.37.0
+    '@testing-library/react':
+      specifier: ^16.0.0
+      version: 16.3.0
+    '@types/node':
+      specifier: ^24.5.2
+      version: 24.5.2
     '@types/react':
       specifier: ^18.3.26
       version: 18.3.26
     '@types/react-dom':
       specifier: ^18.3.7
       version: 18.3.7
+    '@vitejs/plugin-react':
+      specifier: ^5.0.4
+      version: 5.0.4
     '@vitest/coverage-v8':
       specifier: ^3.2.4
       version: 3.2.4
@@ -24,21 +33,51 @@ catalogs:
     antd:
       specifier: 5.27.4
       version: 5.27.4
+    babel-plugin-react-compiler:
+      specifier: 1.0.0
+      version: 1.0.0
+    commander:
+      specifier: ^14.0.0
+      version: 14.0.1
     eslint:
       specifier: ^9.37.0
       version: 9.37.0
+    eslint-plugin-react-hooks:
+      specifier: ^5.2.0
+      version: 5.2.0
     globals:
       specifier: ^16.4.0
       version: 16.4.0
+    jsdom:
+      specifier: ^27.0.0
+      version: 27.0.0
+    msw:
+      specifier: ^2.11.3
+      version: 2.11.3
+    nanoid:
+      specifier: ^5.1.6
+      version: 5.1.6
     prettier:
       specifier: ^3.6.2
       version: 3.6.2
     react:
       specifier: ^18.3.1
       version: 18.3.1
+    react-compiler-runtime:
+      specifier: 1.0.0
+      version: 1.0.0
     react-dom:
       specifier: ^18.3.1
       version: 18.3.1
+    react-use:
+      specifier: ^17.6.0
+      version: 17.6.0
+    reflect-metadata:
+      specifier: ^0.2.2
+      version: 0.2.2
+    ts-morph:
+      specifier: ^27.0.0
+      version: 27.0.0
     typescript:
       specifier: ^5.9.3
       version: 5.9.3
@@ -57,6 +96,9 @@ catalogs:
     vitest:
       specifier: ^3.2.4
       version: 3.2.4
+    yaml:
+      specifier: ^2.3.1
+      version: 2.8.1
 
 importers:
 
@@ -716,6 +758,9 @@ importers:
       '@vitest/ui':
         specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4)
+      babel-plugin-react-compiler:
+        specifier: 'catalog:'
+        version: 1.0.0
       eslint:
         specifier: 'catalog:'
         version: 9.37.0
@@ -731,6 +776,9 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      react-compiler-runtime:
+        specifier: 'catalog:'
+        version: 1.0.0(react@18.3.1)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1912,6 +1960,9 @@ packages:
     resolution: {integrity: sha512-ilYanEU8vxxBexpJd8cWM4ElSQq4QctCLKih0TSfjIfCQTeyH/6zVrmIJfLPrKTKJRbiG+cfnZbQIjAlJmF1jQ==}
     engines: {node: '>=4'}
 
+  babel-plugin-react-compiler@1.0.0:
+    resolution: {integrity: sha512-Ixm8tFfoKKIPYdCCKYTsqv+Fd4IJ0DQqMyEimo+pxUOMUR9cVPlwTrFt9Avu+3cb6Zp3mAzl+t1MrG2fxxKsxw==}
+
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
 
@@ -3016,6 +3067,11 @@ packages:
     peerDependencies:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
+
+  react-compiler-runtime@1.0.0:
+    resolution: {integrity: sha512-rRfjYv66HlG8896yPUDONgKzG5BxZD1nV9U6rkm+7VCuvQc903C4MjcoZR4zPw53IKSOX9wMQVpA1IAbRtzQ7w==}
+    peerDependencies:
+      react: ^17.0.0 || ^18.0.0 || ^19.0.0 || ^0.0.0-experimental
 
   react-docgen-typescript@2.4.0:
     resolution: {integrity: sha512-ZtAp5XTO5HRzQctjPU0ybY0RRCQO19X/8fxn3w7y2VVTUbGHDKULPTL4ky3vB05euSgG5NpALhEhDPvQ56wvXg==}
@@ -4879,6 +4935,10 @@ snapshots:
 
   axe-core@4.11.0: {}
 
+  babel-plugin-react-compiler@1.0.0:
+    dependencies:
+      '@babel/types': 7.28.4
+
   balanced-match@1.0.2: {}
 
   baseline-browser-mapping@2.8.15: {}
@@ -6068,6 +6128,10 @@ snapshots:
       rc-util: 5.44.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+
+  react-compiler-runtime@1.0.0(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   react-docgen-typescript@2.4.0(typescript@5.9.3):
     dependencies:

@@ -11,5 +11,4 @@
  * limitations under the License.
  */
 
-export * from './filter';
-export * from './components'
+export * from './TagInput'
