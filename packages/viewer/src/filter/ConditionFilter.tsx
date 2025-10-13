@@ -11,17 +11,24 @@
  * limitations under the License.
  */
 
+import React from 'react';
 import { ConditionFilterProps } from './types';
 import { conditionFilterRegistry } from './conditionFilterRegistry';
+import { FallbackConditionFilter } from './FallbackConditionFilter';
 
-export interface TypedConditionFilterProps extends ConditionFilterProps {
+export interface TypedConditionFilterProps
+  extends ConditionFilterProps {
   type: string;
 }
 
-export function ConditionFilter(props: TypedConditionFilterProps) {
-  const filter = conditionFilterRegistry.get(props.type);
-  if (!filter) {
-    throw new Error(`ConditionFilter type ${props.type} not found.`);
-  }
-  return filter(props);
-}
+export const ConditionFilter = React.memo(
+  (props: TypedConditionFilterProps) => {
+    const FilterComponent = conditionFilterRegistry.get(props.type);
+    if (!FilterComponent) {
+      return <FallbackConditionFilter type={props.type} />;
+    }
+    return <FilterComponent {...props} />;
+  },
+);
+
+ConditionFilter.displayName = 'ConditionFilter';
