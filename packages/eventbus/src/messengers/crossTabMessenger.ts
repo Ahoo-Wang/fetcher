@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-
 import { BroadcastChannelMessenger } from './broadcastChannelMessenger';
+import { StorageMessenger } from './storageMessenger';
 
 export type CrossTabMessageHandler = (message: any) => void;
 
@@ -43,7 +43,6 @@ export interface CrossTabMessenger {
   close(): void;
 }
 
-
 export function isBroadcastChannelSupported(): boolean {
   return (
     typeof BroadcastChannel !== 'undefined' &&
@@ -51,9 +50,26 @@ export function isBroadcastChannelSupported(): boolean {
   );
 }
 
-export function createCrossTabMessenger(channelName: string): CrossTabMessenger | undefined {
+export function isStorageEventSupported(): boolean {
+  return (
+    typeof StorageEvent !== 'undefined' &&
+    typeof window !== 'undefined' &&
+    typeof window.addEventListener === 'function' &&
+    (typeof localStorage !== 'undefined' ||
+      typeof sessionStorage !== 'undefined')
+  );
+}
+
+export function createCrossTabMessenger(
+  channelName: string,
+): CrossTabMessenger | undefined {
   if (isBroadcastChannelSupported()) {
     return new BroadcastChannelMessenger(channelName);
   }
+
+  if (isStorageEventSupported()) {
+    return new StorageMessenger({ channelName });
+  }
+
   return undefined;
 }

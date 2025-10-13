@@ -13,3 +13,4 @@
 
 export * from './crossTabMessenger';
 export * from './broadcastChannelMessenger';
+export * from './storageMessenger';
