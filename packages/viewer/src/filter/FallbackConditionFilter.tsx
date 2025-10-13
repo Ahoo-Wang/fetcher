@@ -21,3 +21,5 @@ export interface FallbackConditionFilterProps {
 export function FallbackConditionFilter(props: FallbackConditionFilterProps) {
   return <Alert message={`Unsupported filter type:[${props.type}]`} type="warning" showIcon />;
 }
+
+FallbackConditionFilter.displayName = 'FallbackConditionFilter';
