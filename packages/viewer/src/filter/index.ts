@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
-export * from './conditionFilter';
+export * from './ConditionFilter';
 export * from './conditionFilterRegistry';
+export * from './IdConditionFilter';
 export * from './types';
