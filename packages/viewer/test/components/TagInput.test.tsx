@@ -13,7 +13,7 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { TagInput } from '../../src/components/TagInput';
+import { TagInput } from '../../src';
 
 describe('TagInput', () => {
   it('renders without crashing', () => {
