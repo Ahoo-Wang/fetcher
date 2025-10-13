@@ -17,9 +17,7 @@ export interface StorageMessengerOptions {
   channelName: string;
   /** Storage instance to use. Defaults to localStorage */
   storage?: Storage;
-  /** Time to live in milliseconds for messages. Used for periodic cleanup of expired data */
   ttl?: number;
-  /** Interval in milliseconds for periodic cleanup. Defaults to 1000ms */
   cleanupInterval?: number;
 }
 
@@ -28,25 +26,9 @@ export interface StorageMessage {
   timestamp: number;
 }
 
-/**
- * Messenger implementation using StorageEvent API for cross-tab communication
- *
- * This messenger uses localStorage to send messages and listens to storage events
- * to receive messages from other tabs/windows. Messages are cleaned up immediately
- * after being processed to avoid storage pollution. Optional TTL support allows
- * periodic cleanup of expired messages.
- *
- * @example
- * ```typescript
- * const messenger = new StorageMessenger({
- *   channelName: 'my-channel',
- *   ttl: 5000, // 5 seconds TTL
- *   cleanupInterval: 1000 // Clean every 1 second
- * });
- * messenger.onmessage = (message) => console.log('Received:', message);
- * messenger.postMessage('Hello from another tab!');
- * ```
- */
+const DEFAULT_TTL = 1000;
+const DEFAULT_CLEANUP_INTERVAL = 60000;
+
 export class StorageMessenger implements CrossTabMessenger {
   private readonly channelName: string;
   private readonly storage: Storage;
@@ -76,8 +58,8 @@ export class StorageMessenger implements CrossTabMessenger {
     this.channelName = options.channelName;
     this.storage = options.storage ?? localStorage;
     this.messageKeyPrefix = `_storage_msg_${this.channelName}`;
-    this.ttl = options.ttl ?? 1000;
-    this.cleanupInterval = options.cleanupInterval ?? 60000;
+    this.ttl = options.ttl ?? DEFAULT_TTL;
+    this.cleanupInterval = options.cleanupInterval ?? DEFAULT_CLEANUP_INTERVAL;
     this.cleanupTimer = window.setInterval(
       () => this.cleanup(),
       this.cleanupInterval,
@@ -96,7 +78,7 @@ export class StorageMessenger implements CrossTabMessenger {
     };
     this.storage.setItem(key, JSON.stringify(storageMessage));
     // Delay removal to ensure all listeners have processed the event
-    setTimeout(() => this.storage.removeItem(key), this.cleanupInterval);
+    setTimeout(() => this.storage.removeItem(key), this.ttl);
   }
 
   /**
