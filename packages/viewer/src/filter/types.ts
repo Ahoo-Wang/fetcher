@@ -13,6 +13,7 @@
 
 import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
 import { Condition, Operator, OperatorLocale } from '@ahoo-wang/fetcher-wow';
+import { SelectProps } from 'antd/es/select';
 
 /**
  * @see {@link Schema}
@@ -27,11 +28,30 @@ export interface ConditionFilterCallbacks {
   getCondition(): Condition | undefined;
 }
 
+export interface LabelProps extends NamedCapable {
+
+}
+
+export interface OperatorProps extends SelectProps<Operator> {
+  locale?: OperatorLocale;
+}
+
+export interface ValueProps {
+  defaultValue?: any;
+  placeholder?: string;
+}
+
+export interface ConditionFilterValue {
+  condition: Condition;
+  friendly: string;
+}
+
 export interface ConditionFilterProps extends AttributesCapable {
   field: ConditionField;
-  locale?: OperatorLocale;
-  placeholder?: string;
-  operator: Operator;
+  label: LabelProps;
+  operator: OperatorProps;
+  value: ValueProps;
+  onChange?: (value?: ConditionFilterValue) => void;
 }
 
 export type ConditionFilterComponent = React.FC<ConditionFilterProps>;

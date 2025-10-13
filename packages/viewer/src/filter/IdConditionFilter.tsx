@@ -11,25 +11,65 @@
  * limitations under the License.
  */
 
-import { ConditionFilterProps } from './types';
+import { ConditionFilterProps, ConditionFilterValue } from './types';
 import { conditionFilterRegistry } from './conditionFilterRegistry';
 import { Button, Input, Select, Space } from 'antd';
-import { Operator } from '@ahoo-wang/fetcher-wow';
+import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
 import { useState } from 'react';
 import { TagInput } from '../components';
 import { OPERATOR_zh_CN } from './locale';
+import { friendlyCondition } from './friendlyCondition';
 
 export const ID_CONDITION_FILTER = 'id';
 
 export function IdConditionFilter(props: ConditionFilterProps) {
-  const [operator, setOperator] = useState(props.operator);
-  const valueInput = operator === Operator.ID ? <Input placeholder={props.placeholder} allowClear />
-    : <TagInput placeholder={props.placeholder} />;
-  const operatorLocale = props.locale ?? OPERATOR_zh_CN;
+  const defaultOperator = props.operator.defaultValue || Operator.ID;
+  const [operator, setOperator] = useState<Operator>(defaultOperator);
+  const [value, setValue] = useState(props.value.defaultValue);
+
+  const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
+
+  const buildConditionFilterValue = (): ConditionFilterValue | undefined => {
+    if (!operator || !value || (Array.isArray(value) && value.length === 0)) {
+      return undefined;
+    }
+    const condition: Condition = {
+      operator,
+      value,
+    };
+    const friendly = friendlyCondition(props.field.label, operatorLocale, condition);
+    return { condition, friendly };
+  };
+
+  const handleOperatorChange = (newOperator: Operator) => {
+    setOperator(newOperator);
+    props.onChange?.(buildConditionFilterValue());
+  };
+
+  const handleValueChange = (newValue: any) => {
+    setValue(newValue);
+    props.onChange?.(buildConditionFilterValue());
+  };
+  const valueInput =
+    operator === Operator.ID ? (
+      <Input
+        value={value}
+        onChange={e => handleValueChange(e.target.value)}
+        allowClear
+        {...props.value}
+      />
+    ) : (
+      <TagInput value={value} onChange={handleValueChange} {...props.value} />
+    );
   return (
     <Space.Compact>
-      <Button>{props.field.label}</Button>
-      <Select value={operator} onChange={setOperator}>
+      <Button {...props.label}>{props.field.label}</Button>
+      <Select
+        defaultValue={Operator.ID}
+        value={operator}
+        onChange={handleOperatorChange}
+        {...props.operator}
+      >
         <Select.Option value={Operator.ID}>
           {operatorLocale[Operator.ID]}
         </Select.Option>
