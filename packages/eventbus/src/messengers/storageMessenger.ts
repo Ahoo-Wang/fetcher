@@ -19,6 +19,11 @@ export interface StorageMessengerOptions {
   storage?: Storage;
 }
 
+export interface StorageMessage {
+  data: any;
+  timestamp: number;
+}
+
 /**
  * Messenger implementation using StorageEvent API for cross-tab communication
  *
@@ -37,19 +42,24 @@ export class StorageMessenger implements CrossTabMessenger {
   private readonly channelName: string;
   private readonly storage: Storage;
   private messageHandler?: CrossTabMessageHandler;
-  private readonly messageKey: string;
+  private readonly messageKeyPrefix: string;
+  private messageCounter = 0;
   private readonly storageEventHandler = (event: StorageEvent) => {
-    if (!event.key?.startsWith(this.messageKey) || !event.newValue) {
+    if (!event.key?.startsWith(this.messageKeyPrefix) || !event.newValue) {
       return;
     }
-    const storageMessage = JSON.parse(event.newValue);
-    this.messageHandler?.(storageMessage.data);
+    try {
+      const storageMessage = JSON.parse(event.newValue) as StorageMessage;
+      this.messageHandler?.(storageMessage.data);
+    } catch (error) {
+      console.warn('Failed to parse storage message:', error);
+    }
   };
 
   constructor(options: StorageMessengerOptions) {
     this.channelName = options.channelName;
     this.storage = options.storage ?? localStorage;
-    this.messageKey = `_storage_msg_${this.channelName}`;
+    this.messageKeyPrefix = `_storage_msg_${this.channelName}`;
     window.addEventListener('storage', this.storageEventHandler);
   }
 
@@ -57,11 +67,11 @@ export class StorageMessenger implements CrossTabMessenger {
    * Send a message to other tabs/windows via localStorage
    */
   postMessage(message: any): void {
-    try {
-      this.storage.setItem(this.messageKey, JSON.stringify(message));
-    } finally {
-      this.storage.removeItem(this.messageKey);
-    }
+    const key = `${this.messageKeyPrefix}_${this.messageCounter++}`;
+    const storageMessage: StorageMessage = { data: message, timestamp: Date.now() };
+    this.storage.setItem(key, JSON.stringify(storageMessage));
+    // Delay removal to ensure all listeners have processed the event
+    setTimeout(() => this.storage.removeItem(key), 100);
   }
 
   /**
@@ -77,5 +87,4 @@ export class StorageMessenger implements CrossTabMessenger {
   close(): void {
     window.removeEventListener('storage', this.storageEventHandler);
   }
-
 }
