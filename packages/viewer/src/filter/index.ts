@@ -16,3 +16,4 @@ export * from './conditionFilterRegistry';
 export * from './IdConditionFilter';
 export * from './types';
 export * from './FallbackConditionFilter';
+export * from './locale'
