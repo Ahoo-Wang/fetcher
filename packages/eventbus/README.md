@@ -15,12 +15,14 @@ execution, and cross-tab broadcasting.
 
 - **🔄 Serial Execution**: Execute event handlers in order with priority support
 - **⚡ Parallel Execution**: Run event handlers concurrently for better performance
-- **🌐 Cross-Tab Broadcasting**: Broadcast events across browser tabs using BroadcastChannel API
+- **🌐 Cross-Tab Broadcasting**: Broadcast events across browser tabs using BroadcastChannel API or localStorage fallback
+- **💾 Storage Messenger**: Direct cross-tab messaging with TTL and cleanup
 - **📦 Generic Event Bus**: Manage multiple event types with lazy loading
 - **🔧 Type-Safe**: Full TypeScript support with strict typing
 - **🧵 Async Support**: Handle both synchronous and asynchronous event handlers
 - **🔄 Once Handlers**: Support for one-time event handlers
 - **🛡️ Error Handling**: Robust error handling with logging
+- **🔌 Auto Fallback**: Automatically selects best available cross-tab communication method
 
 ## 🚀 Quick Start
 
@@ -92,7 +94,7 @@ import {
 } from '@ahoo-wang/fetcher-eventbus';
 
 const delegate = new SerialTypedEventBus<string>('shared-events');
-const bus = new BroadcastTypedEventBus(delegate);
+const bus = new BroadcastTypedEventBus({ delegate });
 
 bus.on({
   name: 'cross-tab-handler',
@@ -101,6 +103,29 @@ bus.on({
 });
 
 await bus.emit('broadcast-message'); // Emits locally and broadcasts to other tabs
+```
+
+**Note**: If BroadcastChannel API is not supported, the library automatically falls back to using localStorage for cross-tab communication.
+
+### Storage Messenger (Direct API)
+
+```typescript
+import { StorageMessenger } from '@ahoo-wang/fetcher-eventbus';
+
+const messenger = new StorageMessenger({
+  channelName: 'my-channel',
+  ttl: 5000, // 5 seconds TTL for messages
+  cleanupInterval: 1000, // Clean expired messages every 1 second
+});
+
+messenger.onmessage = message => {
+  console.log('Received:', message);
+};
+
+messenger.postMessage('Hello from another tab!');
+
+// Clean up when done
+messenger.close();
 ```
 
 ### Generic Event Bus
@@ -144,6 +169,22 @@ interface EventHandler<EVENT> {
 }
 ```
 
+### Cross-Tab Messengers
+
+- **BroadcastChannelMessenger**: Uses BroadcastChannel API for efficient cross-tab communication
+- **StorageMessenger**: Uses localStorage events as fallback when BroadcastChannel is unavailable
+- **createCrossTabMessenger**: Automatically selects the best available messenger
+
+```typescript
+import { createCrossTabMessenger } from '@ahoo-wang/fetcher-eventbus';
+
+const messenger = createCrossTabMessenger('my-channel');
+if (messenger) {
+  messenger.onmessage = msg => console.log(msg);
+  messenger.postMessage('Hello!');
+}
+```
+
 ### EventBus<Events>
 
 - `on<Key>(type: Key, handler: EventHandler<Events[Key]>): boolean`
@@ -168,8 +209,16 @@ the [contributing guide](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBU
 
 ## Browser Support
 
-- **BroadcastTypedEventBus** requires BroadcastChannel API support (modern browsers)
-- Other implementations work in all environments supporting ES2020+
+- **BroadcastTypedEventBus**: Requires BroadcastChannel API (Chrome 54+, Firefox 38+, Safari 15.4+)
+- **StorageMessenger**: Works in all browsers supporting localStorage and StorageEvent
+- **Other implementations**: Compatible with ES2020+ environments (Node.js, browsers)
+
+## Performance
+
+- **Serial Event Bus**: Minimal overhead, predictable execution order
+- **Parallel Event Bus**: Optimized for concurrent handler execution
+- **Broadcast Event Bus**: Efficient cross-tab communication with automatic fallback
+- **Memory Management**: Automatic cleanup of expired messages and event handlers
 
 ## 📄 License
 

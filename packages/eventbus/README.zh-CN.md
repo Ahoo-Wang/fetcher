@@ -14,12 +14,14 @@
 
 - **🔄 串行执行**：按优先级顺序执行事件处理器
 - **⚡ 并行执行**：并发运行事件处理器以提升性能
-- **🌐 跨标签页广播**：使用 BroadcastChannel API 在浏览器标签页间广播事件
+- **🌐 跨标签页广播**：使用 BroadcastChannel API 或 localStorage 回退在浏览器标签页间广播事件
+- **💾 存储消息器**：直接跨标签页消息传递，支持 TTL 和清理
 - **📦 通用事件总线**：使用懒加载管理多种事件类型
 - **🔧 类型安全**：完整的 TypeScript 支持和严格类型检查
 - **🧵 异步支持**：处理同步和异步事件处理器
 - **🔄 一次性处理器**：支持一次性事件处理器
 - **🛡️ 错误处理**：强大的错误处理和日志记录
+- **🔌 自动回退**：自动选择最佳可用的跨标签页通信方式
 
 ## 🚀 快速开始
 
@@ -91,7 +93,7 @@ import {
 } from '@ahoo-wang/fetcher-eventbus';
 
 const delegate = new SerialTypedEventBus<string>('shared-events');
-const bus = new BroadcastTypedEventBus(delegate);
+const bus = new BroadcastTypedEventBus({ delegate });
 
 bus.on({
   name: 'cross-tab-handler',
@@ -100,6 +102,29 @@ bus.on({
 });
 
 await bus.emit('broadcast-message'); // 本地执行并广播到其他标签页
+```
+
+**注意**：如果不支持 BroadcastChannel API，库会自动回退到使用 localStorage 进行跨标签页通信。
+
+### 存储消息器（直接 API）
+
+```typescript
+import { StorageMessenger } from '@ahoo-wang/fetcher-eventbus';
+
+const messenger = new StorageMessenger({
+  channelName: 'my-channel',
+  ttl: 5000, // 消息 TTL 5 秒
+  cleanupInterval: 1000, // 每 1 秒清理过期消息
+});
+
+messenger.onmessage = message => {
+  console.log('收到:', message);
+};
+
+messenger.postMessage('来自其他标签页的问候!');
+
+// 完成后清理
+messenger.close();
 ```
 
 ### 通用事件总线
@@ -156,6 +181,22 @@ interface EventHandler<EVENT> {
 }
 ```
 
+### 跨标签页消息器
+
+- **BroadcastChannelMessenger**：使用 BroadcastChannel API 进行高效跨标签页通信
+- **StorageMessenger**：当 BroadcastChannel 不可用时，使用 localStorage 事件作为回退
+- **createCrossTabMessenger**：自动选择最佳可用的消息器
+
+```typescript
+import { createCrossTabMessenger } from '@ahoo-wang/fetcher-eventbus';
+
+const messenger = createCrossTabMessenger('my-channel');
+if (messenger) {
+  messenger.onmessage = msg => console.log(msg);
+  messenger.postMessage('你好!');
+}
+```
+
 ### EventBus<Events>
 
 - `on<Key>(type: Key, handler: EventHandler<Events[Key]>): boolean`
@@ -180,8 +221,16 @@ pnpm test --coverage
 
 ## 🌐 浏览器支持
 
-- **BroadcastTypedEventBus** 需要 BroadcastChannel API 支持（现代浏览器）
-- 其他实现适用于支持 ES2020+ 的所有环境
+- **BroadcastTypedEventBus**：需要 BroadcastChannel API 支持（Chrome 54+、Firefox 38+、Safari 15.4+）
+- **StorageMessenger**：适用于支持 localStorage 和 StorageEvent 的所有浏览器
+- **其他实现**：兼容 ES2020+ 环境（Node.js、浏览器）
+
+## 性能
+
+- **串行事件总线**：最小开销，可预测执行顺序
+- **并行事件总线**：优化并发处理器执行
+- **广播事件总线**：高效跨标签页通信，自动回退
+- **内存管理**：自动清理过期消息和事件处理器
 
 ## 📄 许可证
 
