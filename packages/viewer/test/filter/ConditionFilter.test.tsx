@@ -13,8 +13,8 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { ConditionFilter } from '../../src/filter/ConditionFilter';
-import { conditionFilterRegistry } from '../../src/filter/conditionFilterRegistry';
+import { ConditionFilter } from '../../src';
+import { conditionFilterRegistry } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 describe('ConditionFilter', () => {
