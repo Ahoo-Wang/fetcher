@@ -11,15 +11,4 @@
  * limitations under the License.
  */
 
-import { Alert } from 'antd';
-import React from 'react';
-
-export interface FallbackConditionFilterProps {
-  type: string;
-}
-
-export function FallbackConditionFilter(props: FallbackConditionFilterProps) {
-  return <Alert message={`Unsupported filter type:[${props.type}]`} type="warning" showIcon />;
-}
-
-FallbackConditionFilter.displayName = 'FallbackConditionFilter';
+export * from './operator.zh_CN'

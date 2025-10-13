@@ -17,6 +17,7 @@ import { Button, Input, Select, Space } from 'antd';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { useState } from 'react';
 import { TagInput } from '../components';
+import { OPERATOR_zh_CN } from './locale';
 
 export const ID_CONDITION_FILTER = 'id';
 
@@ -24,20 +25,23 @@ export function IdConditionFilter(props: ConditionFilterProps) {
   const [operator, setOperator] = useState(props.operator);
   const valueInput = operator === Operator.ID ? <Input placeholder={props.placeholder} allowClear />
     : <TagInput placeholder={props.placeholder} />;
+  const operatorLocale = props.locale ?? OPERATOR_zh_CN;
   return (
     <Space.Compact>
       <Button>{props.field.label}</Button>
       <Select value={operator} onChange={setOperator}>
         <Select.Option value={Operator.ID}>
-          等于
+          {operatorLocale[Operator.ID]}
         </Select.Option>
         <Select.Option value={Operator.IDS}>
-          包含
+          {operatorLocale[Operator.IDS]}
         </Select.Option>
       </Select>
       {valueInput}
     </Space.Compact>
   );
 }
+
+IdConditionFilter.displayName = 'IdConditionFilter';
 
 conditionFilterRegistry.register(ID_CONDITION_FILTER, IdConditionFilter);
