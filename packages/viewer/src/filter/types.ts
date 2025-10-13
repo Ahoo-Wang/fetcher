@@ -32,7 +32,7 @@ export interface LabelProps extends NamedCapable {
 
 }
 
-export interface OperatorProps extends SelectProps<Operator>{
+export interface OperatorProps extends SelectProps<Operator> {
   locale?: OperatorLocale;
 }
 
@@ -41,11 +41,17 @@ export interface ValueProps {
   placeholder?: string;
 }
 
+export interface ConditionFilterValue {
+  condition: Condition;
+  friendly: string;
+}
+
 export interface ConditionFilterProps extends AttributesCapable {
   field: ConditionField;
   label: LabelProps;
   operator: OperatorProps;
   value: ValueProps;
+  onChange?: (value?: ConditionFilterValue) => void;
 }
 
 export type ConditionFilterComponent = React.FC<ConditionFilterProps>;
