@@ -28,9 +28,10 @@ export interface BroadcastTypedEventBusOptions<EVENT> {
   delegate: TypedEventBus<EVENT>;
 
   /**
-   * The messenger responsible for cross-tab/window communication.
-   * Must be a valid CrossTabMessenger implementation that handles message passing
-   * between different browser contexts (tabs, windows, etc.).
+   * Optional messenger for cross-tab/window communication.
+   * If not provided, a default BroadcastChannel-based messenger will be created
+   * using the pattern `_broadcast_:{type}`. Must be a valid CrossTabMessenger
+   * implementation when provided.
    */
   messenger?: CrossTabMessenger;
 }
@@ -47,22 +48,18 @@ export interface BroadcastTypedEventBusOptions<EVENT> {
  *
  * @template EVENT - The event type this bus handles (must be serializable for cross-context transport)
  *
- * @example Basic usage with BroadcastChannel messenger
+ * @example Basic usage with default messenger
  * ```typescript
  * import { SerialTypedEventBus } from './serialTypedEventBus';
- * import { createCrossTabMessenger } from './messengers';
  * import { BroadcastTypedEventBus } from './broadcastTypedEventBus';
  *
  * // Create local event bus
  * const delegate = new SerialTypedEventBus<string>('user-events');
  *
- * // Create cross-tab messenger
- * const messenger = createCrossTabMessenger('user-events-channel');
- *
- * // Create broadcast event bus
+ * // Create broadcast event bus with default messenger
  * const bus = new BroadcastTypedEventBus({
- *   delegate,
- *   messenger
+ *   delegate
+ *   // messenger will be auto-created as '_broadcast_:user-events'
  * });
  *
  * // Register event handler
@@ -74,6 +71,27 @@ export interface BroadcastTypedEventBusOptions<EVENT> {
  *
  * // Emit event (will be processed locally and broadcasted to other tabs)
  * await bus.emit('john-doe');
+ * ```
+ *
+ * @example Using custom messenger
+ * ```typescript
+ * import { SerialTypedEventBus } from './serialTypedEventBus';
+ * import { createCrossTabMessenger } from './messengers';
+ * import { BroadcastTypedEventBus } from './broadcastTypedEventBus';
+ *
+ * // Create local event bus
+ * const delegate = new SerialTypedEventBus<string>('user-events');
+ *
+ * // Create custom cross-tab messenger
+ * const messenger = createCrossTabMessenger('my-custom-channel');
+ *
+ * // Create broadcast event bus
+ * const bus = new BroadcastTypedEventBus({
+ *   delegate,
+ *   messenger
+ * });
+ *
+ * // Register event handler and emit events...
  * ```
  *
  * @example Using custom messenger implementation
@@ -97,13 +115,14 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   /**
    * Creates a new broadcast event bus with cross-context communication
    *
-   * @param options - Configuration object containing delegate bus and messenger
-   * @throws Will not throw but messenger setup may fail silently in some environments
+   * @param options - Configuration object containing delegate bus and optional messenger
+   * @throws {Error} If messenger creation fails when no messenger is provided
    */
   constructor(options: BroadcastTypedEventBusOptions<EVENT>) {
     this.delegate = options.delegate;
     this.type = this.delegate.type;
-    const messenger = options.messenger ?? createCrossTabMessenger(`_broadcast_:${this.type}`);
+    const messenger =
+      options.messenger ?? createCrossTabMessenger(`_broadcast_:${this.type}`);
     if (!messenger) {
       throw new Error('Messenger setup failed');
     }

@@ -14,9 +14,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BroadcastTypedEventBus } from '../src';
 import { SerialTypedEventBus } from '../src';
-import {
-  createCrossTabMessenger,
-} from '../src';
+import { createCrossTabMessenger } from '../src/messengers/crossTabMessenger';
 
 // Mock the createCrossTabMessenger function
 vi.mock('../src/messengers/crossTabMessenger', () => ({
@@ -174,6 +172,29 @@ describe('BroadcastTypedEventBus', () => {
 
       expect(createCrossTabMessengerMock).not.toHaveBeenCalled();
       expect(bus.type).toBe('test');
+    });
+
+    it('should create default messenger when none provided', () => {
+      createCrossTabMessengerMock.mockReturnValue(mockMessenger);
+
+      const bus = new BroadcastTypedEventBus({
+        delegate,
+      });
+
+      expect(createCrossTabMessengerMock).toHaveBeenCalledWith(
+        '_broadcast_:test',
+      );
+      expect(bus.type).toBe('test');
+    });
+
+    it('should throw error when messenger creation fails', () => {
+      createCrossTabMessengerMock.mockReturnValue(null);
+
+      expect(() => {
+        new BroadcastTypedEventBus({
+          delegate,
+        });
+      }).toThrow('Messenger setup failed');
     });
   });
 });
