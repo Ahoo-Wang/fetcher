@@ -14,7 +14,7 @@
 
 import { BroadcastChannelMessenger } from './broadcastChannelMessenger';
 
-export type MessageHandler = (message: any) => void;
+export type CrossTabMessageHandler = (message: any) => void;
 
 /**
  * Interface for cross-tab communication messengers
@@ -26,16 +26,16 @@ export interface CrossTabMessenger {
   /**
    * Send a message to other tabs/windows
    *
-   * @param data - The data to send
+   * @param message - The data to send
    */
-  postMessage(data: any): void;
+  postMessage(message: any): void;
 
   /**
    * Set the message handler for incoming messages
    *
    * @param handler - Function to handle incoming messages
    */
-  set onmessage(handler: MessageHandler);
+  set onmessage(handler: CrossTabMessageHandler);
 
   /**
    * Close the messenger and clean up resources

@@ -11,5 +11,5 @@
  * limitations under the License.
  */
 
-export { CrossTabMessenger } from './crossTabMessenger';
-export { BroadcastChannelMessenger } from './broadcastChannelMessenger';
+export * from './crossTabMessenger';
+export * from './broadcastChannelMessenger';

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { CrossTabMessenger, MessageHandler } from './crossTabMessenger';
+import { CrossTabMessenger, CrossTabMessageHandler } from './crossTabMessenger';
 
 export class BroadcastChannelMessenger implements CrossTabMessenger {
   private readonly broadcastChannel: BroadcastChannel;
@@ -20,8 +20,8 @@ export class BroadcastChannelMessenger implements CrossTabMessenger {
     this.broadcastChannel = new BroadcastChannel(channelName);
   }
 
-  postMessage(data: any): void {
-    this.broadcastChannel.postMessage(data);
+  postMessage(message: any): void {
+    this.broadcastChannel.postMessage(message);
   }
 
   /**
@@ -29,7 +29,7 @@ export class BroadcastChannelMessenger implements CrossTabMessenger {
    *
    * @param handler - Function to handle incoming messages, or undefined to remove handler
    */
-  set onmessage(handler: MessageHandler) {
+  set onmessage(handler: CrossTabMessageHandler) {
     this.broadcastChannel.onmessage = (event: MessageEvent) => {
       handler(event.data);
     };
