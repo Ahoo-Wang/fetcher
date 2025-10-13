@@ -29,12 +29,13 @@ export interface StorageMessage {
 const DEFAULT_TTL = 1000;
 const DEFAULT_CLEANUP_INTERVAL = 60000;
 
+let messageCounter = 0;
+
 export class StorageMessenger implements CrossTabMessenger {
   private readonly channelName: string;
   private readonly storage: Storage;
   private messageHandler?: CrossTabMessageHandler;
   private readonly messageKeyPrefix: string;
-  private messageCounter = 0;
   private readonly ttl: number;
   private readonly cleanupInterval: number;
   private cleanupTimer?: number;
@@ -71,7 +72,7 @@ export class StorageMessenger implements CrossTabMessenger {
    * Send a message to other tabs/windows via localStorage
    */
   postMessage(message: any): void {
-    const key = `${this.messageKeyPrefix}_${this.messageCounter++}`;
+    const key = `${this.messageKeyPrefix}_${messageCounter++}`;
     const storageMessage: StorageMessage = {
       data: message,
       timestamp: Date.now(),
