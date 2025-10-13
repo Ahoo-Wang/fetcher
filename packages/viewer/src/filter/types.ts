@@ -12,7 +12,7 @@
  */
 
 import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
-import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
+import { Condition, Operator, OperatorLocale } from '@ahoo-wang/fetcher-wow';
 
 /**
  * @see {@link Schema}
@@ -27,8 +27,24 @@ export interface ConditionFilterCallbacks {
   getCondition(): Condition | undefined;
 }
 
+export interface LabelProps extends NamedCapable {
+  label: string;
+}
+
+export interface OperatorProps {
+  operator: Operator;
+  locale?: OperatorLocale;
+}
+
+export interface ValueProps {
+  value?: any;
+  placeholder?: string;
+}
+
 export interface ConditionFilterProps extends AttributesCapable {
   field: ConditionField;
+  label: LabelProps;
+  locale?: OperatorLocale;
   placeholder?: string;
   operator: Operator;
 }
