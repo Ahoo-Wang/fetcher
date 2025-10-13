@@ -80,7 +80,7 @@ const EventBusDemo: React.FC = () => {
     const delegate = new SerialTypedEventBus<NotificationEvent>(
       'notifications',
     );
-    return new BroadcastTypedEventBus(delegate, 'demo-notifications');
+    return new BroadcastTypedEventBus({ delegate });
   });
 
   // Generic Event Bus

@@ -83,14 +83,10 @@ describe('TokenStorage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStorage.getItem.mockReturnValue(null);
-    mockStorage.setItem.mockImplementation(() => {
-    });
-    mockStorage.removeItem.mockImplementation(() => {
-    });
-    mockBroadcastChannel.postMessage.mockImplementation(() => {
-    });
-    mockBroadcastChannel.close.mockImplementation(() => {
-    });
+    mockStorage.setItem.mockImplementation(() => {});
+    mockStorage.removeItem.mockImplementation(() => {});
+    mockBroadcastChannel.postMessage.mockImplementation(() => {});
+    mockBroadcastChannel.close.mockImplementation(() => {});
 
     tokenStorage = new TokenStorage({
       key: DEFAULT_COSEC_TOKEN_KEY,
@@ -100,7 +96,17 @@ describe('TokenStorage', () => {
 
   describe('constructor', () => {
     it('should initialize with default options', () => {
-      const defaultStorage = new TokenStorage();
+      // Mock eventBus for test environment
+      const mockEventBus = {
+        emit: vi.fn(),
+        on: vi.fn(),
+        off: vi.fn(),
+        destroy: vi.fn(),
+      };
+      const defaultStorage = new TokenStorage({
+        key: 'test-token',
+        eventBus: mockEventBus as any,
+      });
       expect(defaultStorage).toBeDefined();
       expect(defaultStorage.earlyPeriod).toBe(0);
     });

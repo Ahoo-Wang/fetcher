@@ -19,6 +19,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       globals: true,
+      environment: 'jsdom',
       coverage: {
         exclude: [...configDefaults.exclude, '**/**.stories.tsx'],
       },

@@ -37,7 +37,7 @@ export class TokenStorage
   constructor(
     options: TokenStorageOptions = {
       key: DEFAULT_COSEC_TOKEN_KEY,
-      eventBus: new BroadcastTypedEventBus(new SerialTypedEventBus(DEFAULT_COSEC_TOKEN_KEY)),
+      eventBus: new BroadcastTypedEventBus({ delegate: new SerialTypedEventBus(DEFAULT_COSEC_TOKEN_KEY) }),
     },
   ) {
     super({

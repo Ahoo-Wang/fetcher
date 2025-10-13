@@ -118,7 +118,7 @@ export const Broadcast: Story = {
     keyStorage: new KeyStorage<string>({
       key: 'useKeyStorageBroadcastDemo',
       eventBus: new BroadcastTypedEventBus(
-        new SerialTypedEventBus('Broadcast'),
+        { delegate: new SerialTypedEventBus('Broadcast') },
       ),
     }),
   },

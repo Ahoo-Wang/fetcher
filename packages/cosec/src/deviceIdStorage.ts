@@ -29,7 +29,7 @@ export interface DeviceIdStorageOptions extends KeyStorageOptions<string> {
 export class DeviceIdStorage extends KeyStorage<string> {
   constructor(options: DeviceIdStorageOptions = {
     key: DEFAULT_COSEC_DEVICE_ID_KEY,
-    eventBus: new BroadcastTypedEventBus(new SerialTypedEventBus(DEFAULT_COSEC_DEVICE_ID_KEY)),
+    eventBus: new BroadcastTypedEventBus({ delegate: new SerialTypedEventBus(DEFAULT_COSEC_DEVICE_ID_KEY) }),
   }) {
     super(options);
   }
