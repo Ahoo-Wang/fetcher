@@ -13,7 +13,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
-import { ConditionFilter } from '../conditionFilter';
+import { ConditionFilter } from '../ConditionFilter';
 import { conditionFilterRegistry } from '../conditionFilterRegistry';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { Input } from 'antd';

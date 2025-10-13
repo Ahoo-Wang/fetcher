@@ -11,28 +11,17 @@
  * limitations under the License.
  */
 
-import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
-import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
-import { Ref } from 'react';
+import { ConditionFilterProps } from './types';
+import { conditionFilterRegistry } from './conditionFilterRegistry';
 
-/**
- * @see {@link Schema}
- */
-export interface ConditionField extends NamedCapable {
-  label: string;
+export interface TypedConditionFilterProps extends ConditionFilterProps {
   type: string;
-  format?: string;
 }
 
-export interface ConditionFilterCallbacks {
-  getCondition(): Condition | undefined;
+export function ConditionFilter(props: TypedConditionFilterProps) {
+  const filter = conditionFilterRegistry.get(props.type);
+  if (!filter) {
+    throw new Error(`ConditionFilter type ${props.type} not found.`);
+  }
+  return filter(props);
 }
-
-export interface ConditionFilterProps extends AttributesCapable {
-  field: ConditionField;
-  placeholder?: string;
-  operator: Operator;
-  ref: Ref<ConditionFilterCallbacks>;
-}
-
-export type ConditionFilterComponent = React.FC<ConditionFilterProps>;
