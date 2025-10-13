@@ -135,7 +135,7 @@ const EnhancedStorageDemo: React.FC = () => {
       new KeyStorage<string>({
         key: 'cross-tab-demo',
         eventBus: isBrowser()
-          ? new BroadcastTypedEventBus(new SerialTypedEventBus('CrossTabDemo'))
+          ? new BroadcastTypedEventBus({delegate:new SerialTypedEventBus('CrossTabDemo')})
           : undefined,
       }),
   );
