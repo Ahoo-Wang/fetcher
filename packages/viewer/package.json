@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-viewer",
-  "version": "2.9.1",
+  "version": "2.9.2",
   "description": "",
   "keywords": [
     "fetch",
@@ -71,7 +71,7 @@
     "globals": "catalog:",
     "jsdom": "catalog:",
     "prettier": "catalog:",
-    "react-compiler-runtime":"catalog:",
+    "react-compiler-runtime": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
     "unplugin-dts": "catalog:",

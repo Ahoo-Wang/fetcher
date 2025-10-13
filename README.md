@@ -1,4 +1,3 @@
-
 # 🚀 Fetcher
 
 [![npm version](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
@@ -10,8 +9,6 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
 **Ultra-lightweight • Modular • TypeScript-First • Interceptor-Powered • LLM Streaming API Support**
-
-
 
 ## 🌟 Why Fetcher?
 
@@ -54,12 +51,14 @@ execution, and cross-tab broadcasting.
 
 - **🔄 Serial Execution**: Execute event handlers in order of priority
 - **⚡ Parallel Execution**: Run event handlers concurrently for better performance
-- **🌐 Cross-Tab Broadcasting**: Broadcast events across browser tabs using BroadcastChannel API
+- **🌐 Cross-Tab Broadcasting**: Broadcast events across browser tabs using BroadcastChannel API or localStorage fallback
+- **💾 Storage Messenger**: Direct cross-tab messaging with TTL and cleanup
 - **📦 Generic Event Bus**: Manage multiple event types with lazy loading
 - **🔧 Type-Safe**: Full TypeScript support with strict typing
 - **🧵 Async Support**: Handle both synchronous and asynchronous event handlers
 - **🔄 Once Handlers**: Support for one-time event handlers
 - **🛡️ Error Handling**: Robust error handling with logging
+- **🔌 Auto Fallback**: Automatically selects best available cross-tab communication method
 
 ### 📡 [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) - Real-Time Streaming & LLM Support
 
@@ -159,11 +158,11 @@ First-class integration with the [Wow](https://github.com/Ahoo-Wang/Wow) CQRS/DD
 - **🔍 Powerful Query DSL**: Rich query condition builder with comprehensive operator support for complex querying
 - **🔍 Query Clients**: Specialized clients for querying snapshot and event stream data with comprehensive query
   operations:
-    - Counting resources
-    - Listing resources
-    - Streaming resources as Server-Sent Events
-    - Paging resources
-    - Retrieving single resources
+  - Counting resources
+  - Listing resources
+  - Streaming resources as Server-Sent Events
+  - Paging resources
+  - Retrieving single resources
 
 ### 🔐 [`@ahoo-wang/fetcher-cosec`](./packages/cosec) - Enterprise Security
 
@@ -178,7 +177,7 @@ Secure your applications with integrated authentication:
 ## 📦 Package Ecosystem
 
 | Package                                                    | Description                                                                                                              | Version                                                                                                                                 | Size                                                                                                                                                   |
-|------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | [`@ahoo-wang/fetcher`](./packages/fetcher)                 | **Core HTTP Client**<br/>Ultra-lightweight foundation with Axios-like API                                                | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
 | [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **Decorator Support**<br/>Declarative API service definitions                                                            | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
 | [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **Real-Time Streaming & LLM Support**<br/>Server-Sent Events (SSE) support with native LLM streaming API integration     | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
@@ -188,7 +187,6 @@ Secure your applications with integrated authentication:
 | [`@ahoo-wang/fetcher-react`](./packages/react)             | **React Integration**<br/>React hooks and components for seamless data fetching with automatic re-rendering              | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-react.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-react)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-react)](https://www.npmjs.com/package/@ahoo-wang/fetcher-react)             |
 | [`@ahoo-wang/fetcher-wow`](./packages/wow)                 | **CQRS/DDD Framework Support**<br/>First-class integration with the Wow CQRS/DDD framework                               | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-wow.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-wow)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 |
 | [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | **Enterprise Security**<br/>CoSec authentication integration                                                             | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             |
-
 
 ## 🚀 Getting Started
 

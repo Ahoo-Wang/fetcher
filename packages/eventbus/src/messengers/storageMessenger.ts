@@ -1,0 +1,129 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { CrossTabMessenger, CrossTabMessageHandler } from './crossTabMessenger';
+
+export interface StorageMessengerOptions {
+  channelName: string;
+  /** Storage instance to use. Defaults to localStorage */
+  storage?: Storage;
+  ttl?: number;
+  cleanupInterval?: number;
+}
+
+export interface StorageMessage {
+  data: any;
+  timestamp: number;
+}
+
+const DEFAULT_TTL = 1000;
+const DEFAULT_CLEANUP_INTERVAL = 60000;
+
+export class StorageMessenger implements CrossTabMessenger {
+  private readonly channelName: string;
+  private readonly storage: Storage;
+  private messageHandler?: CrossTabMessageHandler;
+  private readonly messageKeyPrefix: string;
+  private readonly ttl: number;
+  private readonly cleanupInterval: number;
+  private cleanupTimer?: number;
+  private readonly storageEventHandler = (event: StorageEvent) => {
+    if (
+      event.storageArea !== this.storage ||
+      !event.key?.startsWith(this.messageKeyPrefix) ||
+      !event.newValue
+    ) {
+      return;
+    }
+    try {
+      const storageMessage = JSON.parse(event.newValue) as StorageMessage;
+      this.messageHandler?.(storageMessage.data);
+    } catch (error) {
+      console.warn('Failed to parse storage message:', error);
+    }
+  };
+
+  constructor(options: StorageMessengerOptions) {
+    this.channelName = options.channelName;
+    this.storage = options.storage ?? localStorage;
+    this.messageKeyPrefix = `_storage_msg_${this.channelName}`;
+    this.ttl = options.ttl ?? DEFAULT_TTL;
+    this.cleanupInterval = options.cleanupInterval ?? DEFAULT_CLEANUP_INTERVAL;
+    this.cleanupTimer = window.setInterval(
+      () => this.cleanup(),
+      this.cleanupInterval,
+    );
+    window.addEventListener('storage', this.storageEventHandler);
+  }
+
+  private generateMessageKey(): string {
+    return `${this.messageKeyPrefix}_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  }
+
+  /**
+   * Send a message to other tabs/windows via localStorage
+   */
+  postMessage(message: any): void {
+    const key = this.generateMessageKey();
+    const storageMessage: StorageMessage = {
+      data: message,
+      timestamp: Date.now(),
+    };
+    this.storage.setItem(key, JSON.stringify(storageMessage));
+    // Delay removal to ensure all listeners have processed the event
+    setTimeout(() => this.storage.removeItem(key), this.ttl);
+  }
+
+  /**
+   * Set the message handler for incoming messages
+   */
+  set onmessage(handler: CrossTabMessageHandler) {
+    this.messageHandler = handler;
+  }
+
+  /**
+   * Clean up expired messages from storage
+   */
+  private cleanup(): void {
+    const now = Date.now();
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < this.storage.length; i++) {
+      const key = this.storage.key(i);
+      if (key?.startsWith(this.messageKeyPrefix)) {
+        try {
+          const value = this.storage.getItem(key);
+          if (value) {
+            const message: StorageMessage = JSON.parse(value);
+            if (now > message.timestamp + this.ttl) {
+              keysToRemove.push(key);
+            }
+          }
+        } catch {
+          // Invalid data, remove it
+          keysToRemove.push(key);
+        }
+      }
+    }
+    keysToRemove.forEach(key => this.storage.removeItem(key));
+  }
+
+  /**
+   * Close the messenger and clean up resources
+   */
+  close(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+    }
+    window.removeEventListener('storage', this.storageEventHandler);
+  }
+}
