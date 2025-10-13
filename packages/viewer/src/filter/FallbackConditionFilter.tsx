@@ -11,8 +11,13 @@
  * limitations under the License.
  */
 
-export * from './ConditionFilter';
-export * from './conditionFilterRegistry';
-export * from './IdConditionFilter';
-export * from './types';
-export * from './FallbackConditionFilter';
+import { Alert } from 'antd';
+import React from 'react';
+
+export interface FallbackConditionFilterProps {
+  type: string;
+}
+
+export function FallbackConditionFilter(props: FallbackConditionFilterProps) {
+  return <Alert message={`Unsupported filter type:[${props.type}]`} type="warning" showIcon />;
+}

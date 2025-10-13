@@ -13,7 +13,6 @@
 
 import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
 import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
-import { Ref } from 'react';
 
 /**
  * @see {@link Schema}
@@ -32,7 +31,6 @@ export interface ConditionFilterProps extends AttributesCapable {
   field: ConditionField;
   placeholder?: string;
   operator: Operator;
-  ref: Ref<ConditionFilterCallbacks>;
 }
 
 export type ConditionFilterComponent = React.FC<ConditionFilterProps>;

@@ -12,37 +12,25 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import React from 'react';
-import { IdConditionFilter } from '../IdConditionFilter';
-import { Operator } from '@ahoo-wang/fetcher-wow';
+import { FallbackConditionFilter } from '../FallbackConditionFilter';
 
-const meta: Meta<typeof IdConditionFilter> = {
-  title: 'Viewer/Filter/IdConditionFilter',
-  component: IdConditionFilter,
+const meta: Meta<typeof FallbackConditionFilter> = {
+  title: 'Viewer/Filter/FallbackConditionFilter',
+  component: FallbackConditionFilter,
   parameters: {
     layout: 'centered',
     docs: {
       description: {
         component:
-          'A specialized filter component for ID fields that provides ID and IDS operators for filtering by single ID or multiple IDs.',
+          'A fallback component that displays a warning when an unsupported filter type is encountered.',
       },
     },
   },
   tags: ['autodocs'],
   argTypes: {
-    field: {
-      control: 'object',
-      description: 'The field configuration for the filter',
-    },
-    placeholder: {
+    type: {
       control: 'text',
-      description: 'Placeholder text for the input field',
-    },
-    operator: {
-      control: { type: 'select' },
-      options: [Operator.ID, Operator.IDS],
-      description:
-        'The operator for the condition (EQ for single ID, IDS for multiple IDs)',
+      description: 'The unsupported filter type that triggered the fallback',
     },
   },
 };
@@ -52,15 +40,32 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    field: {
-      name: 'id',
-      label: 'ID',
-      type: 'string',
-    },
-    operator: Operator.ID,
-    placeholder: 'Enter ID',
+    type: 'unknown-filter-type',
   },
-  render: args => {
-    return <IdConditionFilter {...args}  />;
+};
+
+export const CustomType: Story = {
+  args: {
+    type: 'custom-data-type',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Shows the fallback for a custom data type.',
+      },
+    },
+  },
+};
+
+export const ComplexType: Story = {
+  args: {
+    type: 'array<string>',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Demonstrates the fallback for complex type names.',
+      },
+    },
   },
 };

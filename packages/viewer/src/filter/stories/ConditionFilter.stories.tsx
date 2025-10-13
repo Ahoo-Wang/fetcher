@@ -47,7 +47,7 @@ const meta: Meta<typeof ConditionFilter> = {
   argTypes: {
     type: {
       control: { type: 'select' },
-      options: ['string', 'number'],
+      options: ['string', 'number', 'unsupported'],
       description: 'The type of filter to render',
     },
     operator: {
@@ -58,6 +58,10 @@ const meta: Meta<typeof ConditionFilter> = {
     placeholder: {
       control: 'text',
       description: 'Placeholder text for the input',
+    },
+    field: {
+      control: 'object',
+      description: 'Field configuration object',
     },
   },
 };
@@ -76,10 +80,7 @@ export const StringFilter: Story = {
     operator: Operator.EQ,
     placeholder: 'Enter name',
   },
-  render: args => {
-    const ref = React.createRef<any>();
-    return <ConditionFilter {...args} ref={ref} />;
-  },
+  render: args => <ConditionFilter {...args} />,
 };
 
 export const NumberFilter: Story = {
@@ -93,10 +94,7 @@ export const NumberFilter: Story = {
     operator: Operator.GTE,
     placeholder: 'Enter minimum age',
   },
-  render: args => {
-    const ref = React.createRef<any>();
-    return <ConditionFilter {...args} ref={ref} />;
-  },
+  render: args => <ConditionFilter {...args} />,
 };
 
 export const WithDifferentOperators: Story = {
@@ -110,8 +108,27 @@ export const WithDifferentOperators: Story = {
     operator: Operator.CONTAINS,
     placeholder: 'Search status',
   },
-  render: args => {
-    const ref = React.createRef<any>();
-    return <ConditionFilter {...args} ref={ref} />;
+  render: args => <ConditionFilter {...args} />,
+};
+
+export const UnsupportedType: Story = {
+  args: {
+    type: 'unsupported',
+    field: {
+      name: 'unknown',
+      label: 'Unknown Field',
+      type: 'unsupported',
+    },
+    operator: Operator.EQ,
+    placeholder: 'This will show fallback',
+  },
+  render: args => <ConditionFilter {...args} />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Demonstrates the fallback behavior when an unsupported filter type is provided.',
+      },
+    },
   },
 };
