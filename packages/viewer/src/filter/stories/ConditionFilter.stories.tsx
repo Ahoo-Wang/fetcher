@@ -12,22 +12,35 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import React from 'react';
 import { ConditionFilter } from '../ConditionFilter';
+import '../IdConditionFilter';
 import { conditionFilterRegistry } from '../conditionFilterRegistry';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { Input } from 'antd';
 
-// Create a simple mock filter component for demonstration
+// Mock filter components for demonstration
 const MockStringFilter = ({ field, operator, placeholder }: any) => (
-  <Input placeholder={placeholder || `Enter ${field.label}`} />
+  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <span>{field.label}:</span>
+    <Input
+      placeholder={placeholder || `Enter ${field.label}`}
+      style={{ width: 200 }}
+    />
+  </div>
 );
 
 const MockNumberFilter = ({ field, operator, placeholder }: any) => (
-  <Input type="number" placeholder={placeholder || `Enter ${field.label}`} />
+  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <span>{field.label}:</span>
+    <Input
+      type="number"
+      placeholder={placeholder || `Enter ${field.label}`}
+      style={{ width: 200 }}
+    />
+  </div>
 );
 
-// Register mock filters for the story
+// Register mock filters for stories
 conditionFilterRegistry.register('string', MockStringFilter);
 conditionFilterRegistry.register('number', MockNumberFilter);
 
@@ -39,7 +52,7 @@ const meta: Meta<typeof ConditionFilter> = {
     docs: {
       description: {
         component:
-          'A dynamic filter component that renders different filter types based on the field type.',
+          'A dynamic filter component that renders different filter types based on the field type using a registry pattern.',
       },
     },
   },
@@ -47,7 +60,7 @@ const meta: Meta<typeof ConditionFilter> = {
   argTypes: {
     type: {
       control: { type: 'select' },
-      options: ['string', 'number', 'unsupported'],
+      options: ['string', 'number', 'id', 'unsupported'],
       description: 'The type of filter to render',
     },
     operator: {
@@ -80,7 +93,13 @@ export const StringFilter: Story = {
     operator: Operator.EQ,
     placeholder: 'Enter name',
   },
-  render: args => <ConditionFilter {...args} />,
+  parameters: {
+    docs: {
+      description: {
+        story: 'Renders a string filter component for text input.',
+      },
+    },
+  },
 };
 
 export const NumberFilter: Story = {
@@ -94,21 +113,34 @@ export const NumberFilter: Story = {
     operator: Operator.GTE,
     placeholder: 'Enter minimum age',
   },
-  render: args => <ConditionFilter {...args} />,
+  parameters: {
+    docs: {
+      description: {
+        story: 'Renders a number filter component for numeric input.',
+      },
+    },
+  },
 };
 
-export const WithDifferentOperators: Story = {
+export const IdFilter: Story = {
   args: {
-    type: 'string',
+    type: 'id',
     field: {
-      name: 'status',
-      label: 'Status',
+      name: 'userId',
+      label: 'User ID',
       type: 'string',
     },
-    operator: Operator.CONTAINS,
-    placeholder: 'Search status',
+    operator: Operator.ID,
+    placeholder: 'Enter user ID',
   },
-  render: args => <ConditionFilter {...args} />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Renders the specialized ID filter component with ID/IDS operators.',
+      },
+    },
+  },
 };
 
 export const UnsupportedType: Story = {
@@ -122,12 +154,32 @@ export const UnsupportedType: Story = {
     operator: Operator.EQ,
     placeholder: 'This will show fallback',
   },
-  render: args => <ConditionFilter {...args} />,
   parameters: {
     docs: {
       description: {
         story:
           'Demonstrates the fallback behavior when an unsupported filter type is provided.',
+      },
+    },
+  },
+};
+
+export const DynamicTypeSwitching: Story = {
+  args: {
+    type: 'string',
+    field: {
+      name: 'dynamic',
+      label: 'Dynamic Field',
+      type: 'string',
+    },
+    operator: Operator.EQ,
+    placeholder: 'Dynamic placeholder',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Shows how the component dynamically switches between different filter types.',
       },
     },
   },
