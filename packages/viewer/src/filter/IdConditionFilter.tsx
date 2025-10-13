@@ -22,14 +22,14 @@ import { OPERATOR_zh_CN } from './locale';
 export const ID_CONDITION_FILTER = 'id';
 
 export function IdConditionFilter(props: ConditionFilterProps) {
-  const [operator, setOperator] = useState(props.operator);
-  const valueInput = operator === Operator.ID ? <Input placeholder={props.placeholder} allowClear />
-    : <TagInput placeholder={props.placeholder} />;
-  const operatorLocale = props.locale ?? OPERATOR_zh_CN;
+  const [operator, setOperator] = useState(props.operator.defaultValue);
+  const valueInput = operator === Operator.ID ? <Input {...props.value} allowClear />
+    : <TagInput {...props.value} />;
+  const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
   return (
     <Space.Compact>
-      <Button>{props.field.label}</Button>
-      <Select value={operator} onChange={setOperator}>
+      <Button {...props.label}>{props.field.label}</Button>
+      <Select defaultValue={Operator.ID} value={operator} onChange={setOperator} {...props.operator}>
         <Select.Option value={Operator.ID}>
           {operatorLocale[Operator.ID]}
         </Select.Option>
