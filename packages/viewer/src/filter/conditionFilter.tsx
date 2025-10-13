@@ -30,3 +30,5 @@ export const ConditionFilter = React.memo(
     return <FilterComponent {...props} />;
   },
 );
+
+ConditionFilter.displayName = 'ConditionFilter';
