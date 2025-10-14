@@ -12,17 +12,10 @@
  */
 import { FunctionMetadata } from './functionMetadata';
 import { EndpointReturnType } from './endpointReturnTypeCapable';
+import { ExecuteLifeCycle } from './executeLifeCycle';
 
 export const DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__';
 export const DECORATOR_METADATA_ATTRIBUTE_KEY = '__decorator_metadata__';
-
-/**
- * Interface that defines a contract for objects that can hold request executors.
- * This allows objects to maintain a map of named request executors for reuse.
- */
-export interface RequestExecutorsCapable {
-  requestExecutors: Map<string, RequestExecutor>;
-}
 
 /**
  * Executor for HTTP requests based on decorated method metadata.
@@ -83,17 +76,30 @@ export class RequestExecutor {
   async execute(args: any[]): Promise<any> {
     const fetcher = this.metadata.fetcher;
     const exchangeInit = this.metadata.resolveExchangeInit(args);
-    exchangeInit.attributes?.set(DECORATOR_TARGET_ATTRIBUTE_KEY, this.target);
-    exchangeInit.attributes?.set(
+    exchangeInit.attributes.set(DECORATOR_TARGET_ATTRIBUTE_KEY, this.target);
+    exchangeInit.attributes.set(
       DECORATOR_METADATA_ATTRIBUTE_KEY,
       this.metadata,
     );
     const extractor = this.metadata.resolveResultExtractor();
     const endpointReturnType = this.metadata.resolveEndpointReturnType();
-    const exchange = await fetcher.exchange(exchangeInit.request, {
+
+    const exchange = fetcher.resolveExchange(exchangeInit.request, {
       resultExtractor: extractor,
       attributes: exchangeInit.attributes,
     });
+    const executeLifeCycle = this.target as ExecuteLifeCycle;
+    // Call lifecycle hook if target implements ExecuteLifeCycle
+    if (executeLifeCycle.beforeExecute) {
+      await executeLifeCycle.beforeExecute(exchange);
+    }
+    // Process through interceptor chain
+    await fetcher.interceptors.exchange(exchange);
+    // Call afterExecute lifecycle hook if target implements ExecuteLifeCycle
+    if (executeLifeCycle.afterExecute) {
+      await executeLifeCycle.afterExecute(exchange);
+    }
+
     if (endpointReturnType === EndpointReturnType.EXCHANGE) {
       return exchange;
     }
