@@ -77,8 +77,7 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  */
 export interface RequestOptions
   extends AttributesCapable,
-    ResultExtractorCapable {
-}
+    ResultExtractorCapable {}
 
 export const DEFAULT_REQUEST_OPTIONS: RequestOptions = {
   resultExtractor: ResultExtractors.Exchange,
@@ -107,7 +106,8 @@ export const DEFAULT_FETCH_OPTIONS: RequestOptions = {
  * ```
  */
 export class Fetcher
-  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable {
+  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable
+{
   readonly urlBuilder: UrlBuilder;
   readonly headers?: RequestHeaders = DEFAULT_HEADERS;
   readonly timeout?: number;
@@ -134,19 +134,26 @@ export class Fetcher
   }
 
   /**
-   * Processes an HTTP request through the Fetcher's internal workflow.
+   * Resolves a FetchRequest and RequestOptions into a FetchExchange object.
    *
-   * This method creates a FetchExchange object and passes it through the interceptor chain.
-   * It handles header merging, timeout resolution, and result extractor configuration.
+   * This internal method prepares a complete FetchExchange by merging headers,
+   * resolving timeout settings, and combining request options. It serves as the
+   * preparation step before passing the exchange through the interceptor chain.
    *
-   * @param request - The HTTP request configuration to process
+   * The resolution process includes:
+   * - Merging default headers with request-level headers (request headers take precedence)
+   * - Resolving timeout settings (request timeout takes precedence over fetcher timeout)
+   * - Merging request options with defaults
+   * - Creating the final FetchExchange object with all resolved configuration
+   *
+   * @param request - The HTTP request configuration to resolve
    * @param options - Optional request options including result extractor and attributes
-   * @returns Promise that resolves to the processed FetchExchange object
+   * @returns A new FetchExchange object with fully resolved configuration
+   *
+   * @internal This method is used internally by the exchange method and should not
+   *           be called directly by external consumers.
    */
-  async exchange(
-    request: FetchRequest,
-    options?: RequestOptions,
-  ): Promise<FetchExchange> {
+  resolveExchange(request: FetchRequest, options?: RequestOptions) {
     // Merge default headers and request-level headers. defensive copy
     const mergedHeaders = {
       ...this.headers,
@@ -162,12 +169,29 @@ export class Fetcher
       DEFAULT_REQUEST_OPTIONS,
       options,
     );
-    const exchange: FetchExchange = new FetchExchange({
+    return new FetchExchange({
       fetcher: this,
       request: fetchRequest,
       resultExtractor,
       attributes,
     });
+  }
+
+  /**
+   * Processes an HTTP request through the Fetcher's internal workflow.
+   *
+   * This method creates a FetchExchange object and passes it through the interceptor chain.
+   * It handles header merging, timeout resolution, and result extractor configuration.
+   *
+   * @param request - The HTTP request configuration to process
+   * @param options - Optional request options including result extractor and attributes
+   * @returns Promise that resolves to the processed FetchExchange object
+   */
+  async exchange(
+    request: FetchRequest,
+    options?: RequestOptions,
+  ): Promise<FetchExchange> {
+    const exchange = this.resolveExchange(request, options);
     return await this.interceptors.exchange(exchange);
   }
 
