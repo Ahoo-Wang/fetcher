@@ -556,10 +556,12 @@ describe('serverSentEventTransformStream.ts', () => {
       transformer.transform(chunk, controller);
 
       expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
-      // The error should be converted to an Error object
+      // The error should be converted to an Error object with enhanced message
       const errorCall = (controller.error as any).mock.calls[0][0];
       expect(errorCall).toBeInstanceOf(Error);
-      expect(errorCall.message).toBe('Test error string');
+      expect(errorCall.message).toBe(
+        'Failed to process chunk: "[object Object]". Test error string',
+      );
     });
 
     it('should handle undefined event in flush', async () => {
@@ -570,8 +572,8 @@ describe('serverSentEventTransformStream.ts', () => {
       } as any;
 
       // Set event to undefined
-      (transformer as any).currentEvent.event = undefined;
-      (transformer as any).currentEvent.data = ['test data'];
+      (transformer as any).currentEventState.event = undefined;
+      (transformer as any).currentEventState.data = ['test data'];
 
       // Flush should use 'message' as default event
       transformer.flush(controller);
@@ -603,10 +605,12 @@ describe('serverSentEventTransformStream.ts', () => {
       transformer.flush(controller);
 
       expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
-      // The error should be converted to an Error object
+      // The error should be converted to an Error object with enhanced message
       const errorCall = (controller.error as any).mock.calls[0][0];
       expect(errorCall).toBeInstanceOf(Error);
-      expect(errorCall.message).toBe('Test error string');
+      expect(errorCall.message).toBe(
+        'Failed to flush remaining data. Test error string',
+      );
     });
   });
 });
