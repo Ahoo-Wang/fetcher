@@ -17,13 +17,23 @@ import { FetchExchange } from '@ahoo-wang/fetcher';
  *
  * This interface allows users to hook into the request execution lifecycle
  * and modify the FetchExchange before and after it is processed by interceptors.
+ * It provides a way to customize the behavior of API calls at specific points
+ * in the execution flow.
  */
 export interface ExecuteLifeCycle {
+  /**
+   * Called before the FetchExchange is processed by interceptors.
+   * Users can inspect or modify the exchange before processing at this point,
+   * such as adding headers, modifying the request body, or setting up logging.
+   *
+   * @param exchange - The FetchExchange object representing the request and response
+   */
   beforeExecute?(exchange: FetchExchange): void | Promise<void>;
 
   /**
    * Called after the FetchExchange is processed by interceptors.
-   * Users can inspect or modify the exchange after processing at this point.
+   * Users can inspect or modify the exchange after processing at this point,
+   * such as handling response data, logging results, or performing cleanup.
    *
    * @param exchange - The FetchExchange object representing the request and response
    */
