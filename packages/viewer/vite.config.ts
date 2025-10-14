@@ -27,6 +27,8 @@ export default defineConfig({
       external: [
         'react',
         'react-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
         'react/compiler-runtime',
         'react-compiler-runtime',
         'antd',
@@ -41,6 +43,8 @@ export default defineConfig({
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
+          'react/jsx-runtime': 'ReactJSXRuntime',
+          'react/jsx-dev-runtime': 'ReactJSXDevRuntime',
           'react/compiler-runtime': 'ReactCompilerRuntime',
           'react-compiler-runtime': 'ReactCompilerRuntime',
           antd: 'Antd',
