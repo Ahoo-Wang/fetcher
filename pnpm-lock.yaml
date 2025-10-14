@@ -305,7 +305,7 @@ importers:
   packages/decorator:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^2.9.3
         version: link:../fetcher
       reflect-metadata:
         specifier: 'catalog:'
