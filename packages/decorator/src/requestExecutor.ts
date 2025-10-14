@@ -18,11 +18,45 @@ export const DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__';
 export const DECORATOR_METADATA_ATTRIBUTE_KEY = '__decorator_metadata__';
 
 /**
- * Executor for HTTP requests based on decorated method metadata.
+ * Executes the HTTP request based on the decorated method metadata.
  *
- * This class is responsible for executing HTTP requests based on the metadata
- * collected from decorators. It resolves the path, constructs the request,
- * and executes it using the appropriate fetcher.
+ * This method orchestrates the complete HTTP request lifecycle:
+ * 1. Resolves request configuration from metadata and runtime arguments
+ * 2. Sets up request attributes for interceptor access
+ * 3. Creates the FetchExchange object
+ * 4. Executes lifecycle hooks (beforeExecute)
+ * 5. Processes the request through the interceptor chain
+ * 6. Executes lifecycle hooks (afterExecute)
+ * 7. Extracts and returns the result based on endpoint return type
+ *
+ * @param args - The runtime arguments passed to the decorated method.
+ *               These are mapped to request components (path variables, query params, body, etc.)
+ *               based on parameter decorators applied to the method.
+ * @returns A Promise that resolves to the extracted result. The return type depends on:
+ *          - EndpointReturnType.EXCHANGE: Returns the FetchExchange object directly
+ *          - Otherwise: Returns the result of exchange.extractResult() (e.g., Response, parsed JSON)
+ * @throws Error if the request fails during execution or if lifecycle hooks/interceptors throw
+ *
+ * @example
+ * ```typescript
+ * // Given a decorated service method:
+ * class UserService {
+ *   @get('/users/{id}')
+ *   getUser(@path('id') id: number): Promise<User> {
+ *     // This method body is replaced by the executor at runtime
+ *   }
+ * }
+ *
+ * // When calling:
+ * const userService = new UserService();
+ * const user = await userService.getUser(123);
+ *
+ * // The execute method will:
+ * // 1. Resolve the path to '/users/123'
+ * // 2. Create a GET request
+ * // 3. Execute the request using the configured fetcher
+ * // 4. Extract and return the parsed User object
+ * ```
  */
 export class RequestExecutor {
   /**
@@ -34,43 +68,47 @@ export class RequestExecutor {
   constructor(
     private readonly target: any,
     private readonly metadata: FunctionMetadata,
-  ) {
-  }
+  ) {}
 
   /**
-   * Executes the HTTP request.
+   * Executes the HTTP request based on the decorated method metadata.
    *
-   * This method resolves the path and request configuration from the metadata
-   * and arguments, then executes the request using the configured fetcher.
-   * It handles the complete request lifecycle from parameter processing to
-   * response extraction.
+   * This method orchestrates the complete HTTP request lifecycle:
+   * 1. Resolves request configuration from metadata and runtime arguments
+   * 2. Sets up request attributes for interceptor access
+   * 3. Creates the FetchExchange object
+   * 4. Executes lifecycle hooks (beforeExecute)
+   * 5. Processes the request through the interceptor chain
+   * 6. Executes lifecycle hooks (afterExecute)
+   * 7. Extracts and returns the result based on endpoint return type
    *
-
    * @param args - The runtime arguments passed to the decorated method.
-   *               These are mapped to request components based on parameter decorators.
-   * @returns A Promise that resolves to the extracted result based on the configured result extractor.
-   *          By default, this is the Response object, but can be customized to return
-   *          parsed JSON, the raw exchange object, or any other transformed result.
+   *               These are mapped to request components (path variables, query params, body, etc.)
+   *               based on parameter decorators applied to the method.
+   * @returns A Promise that resolves to the extracted result. The return type depends on:
+   *          - EndpointReturnType.EXCHANGE: Returns the FetchExchange object directly
+   *          - Otherwise: Returns the result of exchange.extractResult() (e.g., Response, parsed JSON)
+   * @throws Error if the request fails during execution or if lifecycle hooks/interceptors throw
    *
    * @example
    * ```typescript
    * // Given a decorated service method:
    * class UserService {
    *   @get('/users/{id}')
-   *   getUser(@path('id') id: number): Promise<Response> {
+   *   getUser(@path('id') id: number): Promise<User> {
    *     // This method body is replaced by the executor at runtime
    *   }
    * }
    *
    * // When calling:
    * const userService = new UserService();
-   * const response = await userService.getUser(123);
+   * const user = await userService.getUser(123);
    *
    * // The execute method will:
    * // 1. Resolve the path to '/users/123'
-   * // 2. Create a request with method 'GET'
+   * // 2. Create a GET request
    * // 3. Execute the request using the configured fetcher
-   * // 4. Return the Response object
+   * // 4. Extract and return the parsed User object
    * ```
    */
   async execute(args: any[]): Promise<any> {
@@ -81,11 +119,11 @@ export class RequestExecutor {
       DECORATOR_METADATA_ATTRIBUTE_KEY,
       this.metadata,
     );
-    const extractor = this.metadata.resolveResultExtractor();
+    const resultExtractor = this.metadata.resolveResultExtractor();
     const endpointReturnType = this.metadata.resolveEndpointReturnType();
 
     const exchange = fetcher.resolveExchange(exchangeInit.request, {
-      resultExtractor: extractor,
+      resultExtractor: resultExtractor,
       attributes: exchangeInit.attributes,
     });
     const executeLifeCycle = this.target as ExecuteLifeCycle;
