@@ -81,11 +81,13 @@ const DEFAULT_EVENT_TYPE = 'message';
  * Transformer responsible for converting a string stream into a ServerSentEvent object stream.
  *
  * Implements the Transformer interface for processing data transformation in TransformStream.
+ * This transformer handles the parsing of Server-Sent Events (SSE) according to the W3C specification.
+ * It processes incoming text chunks and converts them into structured ServerSentEvent objects.
  */
 export class ServerSentEventTransformer
   implements Transformer<string, ServerSentEvent> {
-  // Initialize currentEvent with default values in a closure
-  private currentEvent: EventState = {
+  // Initialize currentEventState with default values in a closure
+  private currentEventState: EventState = {
     event: DEFAULT_EVENT_TYPE,
     id: undefined,
     retry: undefined,
@@ -93,7 +95,24 @@ export class ServerSentEventTransformer
   };
 
   /**
+   * Reset the current event state to default values.
+   * This method is called after processing each complete event or when an error occurs.
+   */
+  private resetEventState() {
+    this.currentEventState.event = DEFAULT_EVENT_TYPE;
+    this.currentEventState.id = undefined;
+    this.currentEventState.retry = undefined;
+    this.currentEventState.data = [];
+  }
+
+  /**
    * Transform input string chunk into ServerSentEvent object.
+   * This method processes individual chunks of text data, parsing them according to the SSE format.
+   * It handles:
+   * - Empty lines (used as event separators)
+   * - Comment lines (starting with ':')
+   * - Field lines (field: value format)
+   * - Event completion and emission
    *
    * @param chunk Input string chunk
    * @param controller Controller for controlling the transform stream
@@ -102,7 +121,7 @@ export class ServerSentEventTransformer
     chunk: string,
     controller: TransformStreamDefaultController<ServerSentEvent>,
   ) {
-    const currentEvent = this.currentEvent;
+    const currentEvent = this.currentEventState;
     try {
       // Skip empty lines (event separator)
       if (chunk.trim() === '') {
@@ -154,14 +173,10 @@ export class ServerSentEventTransformer
 
       processFieldInternal(field, value, currentEvent);
     } catch (error) {
-      controller.error(
-        error instanceof Error ? error : new Error(String(error)),
-      );
+      const enhancedError = new Error(`Failed to process chunk: "${chunk}". ${error instanceof Error ? error.message : String(error)}`);
+      controller.error(enhancedError);
       // Reset state
-      currentEvent.event = DEFAULT_EVENT_TYPE;
-      currentEvent.id = undefined;
-      currentEvent.retry = undefined;
-      currentEvent.data = [];
+      this.resetEventState();
     }
   }
 
@@ -171,7 +186,7 @@ export class ServerSentEventTransformer
    * @param controller Controller for controlling the transform stream
    */
   flush(controller: TransformStreamDefaultController<ServerSentEvent>) {
-    const currentEvent = this.currentEvent;
+    const currentEvent = this.currentEventState;
     try {
       // Send the last event (if any)
       if (currentEvent.data.length > 0) {
@@ -183,15 +198,11 @@ export class ServerSentEventTransformer
         } as ServerSentEvent);
       }
     } catch (error) {
-      controller.error(
-        error instanceof Error ? error : new Error(String(error)),
-      );
+      const enhancedError = new Error(`Failed to flush remaining data. ${error instanceof Error ? error.message : String(error)}`);
+      controller.error(enhancedError);
     } finally {
       // Reset state
-      currentEvent.event = DEFAULT_EVENT_TYPE;
-      currentEvent.id = undefined;
-      currentEvent.retry = undefined;
-      currentEvent.data = [];
+      this.resetEventState();
     }
   }
 }
