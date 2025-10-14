@@ -1,6 +1,6 @@
 {
   "name": "fetcher",
-  "version": "2.9.3",
+  "version": "2.9.5",
   "description": "A modern HTTP client library based on fetch API",
   "private": true,
   "type": "module",
@@ -35,7 +35,7 @@
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
   },
-  "packageManager": "pnpm@10.18.2",
+  "packageManager": "pnpm@10.18.3",
   "devDependencies": {
     "@chromatic-com/storybook": "^4.1.1",
     "@eslint/js": "catalog:",
