@@ -12,7 +12,6 @@ import {
   Alert,
   Tabs,
   Descriptions,
-  Divider,
 } from 'antd';
 import { OpenAI } from '../openai';
 
@@ -53,36 +52,6 @@ const OpenAIDemo: React.FC = () => {
       setClient(null);
     }
   };
-
-  const mockChatResponse = {
-    id: 'chatcmpl-123',
-    object: 'chat.completion',
-    created: Date.now(),
-    choices: [
-      {
-        index: 0,
-        message: {
-          role: 'assistant',
-          content: "Hello! I'm an AI assistant. How can I help you today?",
-        },
-        finish_reason: 'stop',
-      },
-    ],
-    usage: {
-      prompt_tokens: 13,
-      completion_tokens: 17,
-      total_tokens: 30,
-    },
-  };
-
-  const mockStreamingResponse = [
-    { choices: [{ delta: { content: 'Hello' } }] },
-    { choices: [{ delta: { content: '!' } }] },
-    { choices: [{ delta: { content: " I'm" } }] },
-    { choices: [{ delta: { content: ' an' } }] },
-    { choices: [{ delta: { content: ' AI' } }] },
-    { choices: [{ delta: { content: ' assistant.' } }] },
-  ];
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -183,19 +152,6 @@ const OpenAIDemo: React.FC = () => {
 
 console.log(response.choices[0].message.content);`}
                 </pre>
-                <Divider />
-                <Text strong>Mock Response:</Text>
-                <pre
-                  style={{
-                    background: '#f0f8ff',
-                    padding: '12px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    overflow: 'auto',
-                  }}
-                >
-                  {JSON.stringify(mockChatResponse, null, 2)}
-                </pre>
               </Space>
             </TabPane>
 
@@ -221,23 +177,6 @@ for await (const chunk of stream) {
   console.log(chunk.choices[0].delta?.content || '');
 }`}
                 </pre>
-                <Divider />
-                <Text strong>Mock Streaming Chunks:</Text>
-                {mockStreamingResponse.map((chunk, index) => (
-                  <pre
-                    key={index}
-                    style={{
-                      background: '#f0fff0',
-                      padding: '8px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      margin: '4px 0',
-                      overflow: 'auto',
-                    }}
-                  >
-                    {JSON.stringify(chunk, null, 2)}
-                  </pre>
-                ))}
               </Space>
             </TabPane>
 
@@ -264,7 +203,7 @@ for await (const chunk of stream) {
   stream: false,
 });`}
                 </pre>
-                <Divider />
+
                 <Descriptions title="Common Parameters" size="small" column={2}>
                   <Descriptions.Item label="model">
                     gpt-3.5-turbo, gpt-4, etc.
