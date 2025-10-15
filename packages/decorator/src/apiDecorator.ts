@@ -18,7 +18,7 @@ import {
   type RequestHeaders,
   type RequestHeadersCapable,
   type ResultExtractorCapable,
-  type TimeoutCapable,
+  type TimeoutCapable, UrlParamsCapable,
 } from '@ahoo-wang/fetcher';
 import { ENDPOINT_METADATA_KEY } from './endpointDecorator';
 import { RequestExecutor } from './requestExecutor';
@@ -40,7 +40,7 @@ export interface ApiMetadata
     ResultExtractorCapable,
     FetcherCapable,
     AttributesCapable,
-    EndpointReturnTypeCapable {
+    EndpointReturnTypeCapable, UrlParamsCapable {
   /**
    * Base path for all endpoints in the class.
    *
@@ -137,7 +137,7 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   // Create request executor
 
   // Replace method with actual implementation
-  constructor.prototype[functionName] = async function (...args: unknown[]) {
+  constructor.prototype[functionName] = async function(...args: unknown[]) {
     const requestExecutor: RequestExecutor = buildRequestExecutor(
       this,
       functionMetadata,
