@@ -13,7 +13,43 @@
 
 /**
  * A wrapper class that converts a ReadableStream into an AsyncIterable.
- * This allows consuming a ReadableStream using for-await...of loops.
+ *
+ * This class enables the use of ReadableStream objects with async iteration syntax
+ * (for-await...of loops), providing a more ergonomic way to consume streaming data.
+ * It implements the AsyncIterable interface and manages the underlying stream reader,
+ * handling proper resource cleanup and error propagation.
+ *
+ * The wrapper automatically handles stream locking, ensuring that only one consumer
+ * can read from the stream at a time, and provides safe cleanup when iteration ends
+ * or errors occur.
+ *
+ * @template T - The type of data yielded by the stream
+ *
+ * @example
+ * ```typescript
+ * // Direct usage
+ * const response = await fetch('/api/stream');
+ * const stream = response.body;
+ * const asyncIterable = new ReadableStreamAsyncIterable(stream);
+ *
+ * for await (const chunk of asyncIterable) {
+ *   console.log('Received:', chunk);
+ * }
+ * // Stream is automatically cleaned up after iteration
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // With early termination
+ * const asyncIterable = new ReadableStreamAsyncIterable(stream);
+ *
+ * for await (const chunk of asyncIterable) {
+ *   if (someCondition) {
+ *     asyncIterable.releaseLock(); // Manually release if needed
+ *     break;
+ *   }
+ * }
+ * ```
  */
 export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
   private readonly reader: ReadableStreamDefaultReader<T>;
