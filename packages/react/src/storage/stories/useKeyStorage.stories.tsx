@@ -13,7 +13,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { Button, Card, Typography, Space, Input, Alert } from 'antd';
+import { Button, Card, Typography, Space, Input, Alert, Divider } from 'antd';
 import { useKeyStorage } from '../useKeyStorage';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import {
@@ -21,19 +21,31 @@ import {
   SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 export interface StorageDemoProps {
   keyStorage: KeyStorage<string>;
+  defaultValue?: string;
+  showDefaultValueDemo?: boolean;
 }
 
 function StorageDemo({
-                       keyStorage = new KeyStorage<string>({
-                         key: 'useKeyStorageDemo',
-                       }),
-                     }: StorageDemoProps) {
+  keyStorage = new KeyStorage<string>({
+    key: 'useKeyStorageDemo',
+  }),
+  defaultValue,
+  showDefaultValueDemo = false,
+}: StorageDemoProps) {
+  // Demo without default value (can be null)
   const [storedValue, setStoredValue] = useKeyStorage(keyStorage);
   const [inputValue, setInputValue] = useState(storedValue ?? '');
+
+  // Demo with default value (never null)
+  const [defaultValueDemo, setDefaultValueDemo] = useKeyStorage(
+    new KeyStorage<string>({ key: 'defaultValueDemo' }),
+    defaultValue || 'Default Value',
+  );
+  const [defaultInputValue, setDefaultInputValue] = useState(defaultValueDemo);
 
   const handleSetValue = () => {
     setStoredValue(inputValue);
@@ -44,30 +56,81 @@ function StorageDemo({
     setInputValue('');
   };
 
+  const handleSetDefaultValue = () => {
+    setDefaultValueDemo(defaultInputValue);
+  };
+
+  const handleClearDefaultValue = () => {
+    setDefaultValueDemo(defaultValue || 'Default Value');
+    setDefaultInputValue(defaultValue || 'Default Value');
+  };
+
   return (
-    <Card title="useKeyStorage Demo" style={{ width: 500 }}>
+    <Card title="useKeyStorage Demo" style={{ width: 600 }}>
       <Space direction="vertical" style={{ width: '100%' }}>
+        {/* Basic Usage Demo */}
         <div>
-          <Text strong>Current Stored Value: </Text>
-          <Text code>{storedValue || 'null'}</Text>
+          <Title level={4}>Basic Usage (Nullable)</Title>
+          <div>
+            <Text strong>Current Stored Value: </Text>
+            <Text code>{storedValue || 'null'}</Text>
+          </div>
+
+          <Space style={{ marginTop: 8 }}>
+            <Input
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              placeholder="Enter value to store"
+              style={{ width: 200 }}
+            />
+            <Button onClick={handleSetValue} type="primary">
+              Set Value
+            </Button>
+            <Button onClick={handleClearValue}>Clear</Button>
+          </Space>
         </div>
 
-        <Space>
-          <Input
-            value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
-            placeholder="Enter value to store"
-            style={{ width: 200 }}
-          />
-          <Button onClick={handleSetValue} type="primary">
-            Set Value
-          </Button>
-          <Button onClick={handleClearValue}>Clear</Button>
-        </Space>
+        <Divider />
+
+        {/* Default Value Demo */}
+        {showDefaultValueDemo && (
+          <div>
+            <Title level={4}>With Default Value (Non-nullable)</Title>
+            <div>
+              <Text strong>Current Value (never null): </Text>
+              <Text code>{defaultValueDemo}</Text>
+            </div>
+
+            <Space style={{ marginTop: 8 }}>
+              <Input
+                value={defaultInputValue}
+                onChange={e => setDefaultInputValue(e.target.value)}
+                placeholder="Enter value to store"
+                style={{ width: 200 }}
+              />
+              <Button onClick={handleSetDefaultValue} type="primary">
+                Set Value
+              </Button>
+              <Button onClick={handleClearDefaultValue}>
+                Reset to Default
+              </Button>
+            </Space>
+
+            <Alert
+              message="Default Value Behavior"
+              description={`When storage is empty, this hook returns the default value "${defaultValue || 'Default Value'}". The value is never null.`}
+              type="success"
+              showIcon
+              style={{ marginTop: 8 }}
+            />
+          </div>
+        )}
+
+        <Divider />
 
         <Alert
           message="Storage State"
-          description={`The stored value is: ${storedValue || 'empty'}. Changes are reflected immediately across components.`}
+          description={`Basic demo value: ${storedValue || 'empty'}. ${showDefaultValueDemo ? `Default demo value: ${defaultValueDemo}. ` : ''}Changes are reflected immediately across components.`}
           type="info"
           showIcon
         />
@@ -89,7 +152,7 @@ const meta: Meta<typeof StorageDemo> = {
     docs: {
       description: {
         component:
-          'A React hook that provides state management for key-based storage, automatically synchronizing with storage changes across components and tabs.',
+          'A React hook that provides state management for key-based storage, automatically synchronizing with storage changes across components and tabs. Supports both nullable and non-nullable usage patterns with optional default values.',
       },
     },
   },
@@ -98,6 +161,15 @@ const meta: Meta<typeof StorageDemo> = {
     keyStorage: {
       description: 'The KeyStorage instance to manage',
       control: { type: 'object' },
+    },
+    defaultValue: {
+      description:
+        'Default value for the hook (makes the return value non-nullable)',
+      control: { type: 'text' },
+    },
+    showDefaultValueDemo: {
+      description: 'Whether to show the default value demo section',
+      control: { type: 'boolean' },
     },
   },
 };
@@ -110,6 +182,33 @@ export const Default: Story = {
     keyStorage: new KeyStorage<string>({
       key: 'useKeyStorageDemo',
     }),
+    showDefaultValueDemo: false,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Basic usage of useKeyStorage without a default value. The hook returns nullable state that directly reflects the storage state.',
+      },
+    },
+  },
+};
+
+export const WithDefaultValue: Story = {
+  args: {
+    keyStorage: new KeyStorage<string>({
+      key: 'useKeyStorageDefaultDemo',
+    }),
+    defaultValue: 'Hello World',
+    showDefaultValueDemo: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Demonstrates useKeyStorage with a default value. The hook guarantees non-nullable state, using the default value when storage is empty.',
+      },
+    },
   },
 };
 
@@ -117,16 +216,38 @@ export const Broadcast: Story = {
   args: {
     keyStorage: new KeyStorage<string>({
       key: 'useKeyStorageBroadcastDemo',
-      eventBus: new BroadcastTypedEventBus(
-        { delegate: new SerialTypedEventBus('Broadcast') },
-      ),
+      eventBus: new BroadcastTypedEventBus({
+        delegate: new SerialTypedEventBus('Broadcast'),
+      }),
     }),
+    showDefaultValueDemo: false,
   },
   parameters: {
     docs: {
       description: {
         story:
           'Demonstrates cross-tab synchronization using BroadcastTypedEventBus. Changes made in one tab will be reflected in other tabs automatically.',
+      },
+    },
+  },
+};
+
+export const BroadcastWithDefault: Story = {
+  args: {
+    keyStorage: new KeyStorage<string>({
+      key: 'useKeyStorageBroadcastDefaultDemo',
+      eventBus: new BroadcastTypedEventBus({
+        delegate: new SerialTypedEventBus('Broadcast'),
+      }),
+    }),
+    defaultValue: 'Cross-tab default',
+    showDefaultValueDemo: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Combines cross-tab synchronization with default values. Demonstrates how default values work seamlessly with broadcast event synchronization.',
       },
     },
   },
