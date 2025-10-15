@@ -284,33 +284,46 @@ const MyComponent = () => {
 
 ### useKeyStorage Hook
 
-The `useKeyStorage` hook provides state management for a KeyStorage instance. It subscribes to storage changes and
-returns the current value along with a setter function.
+The `useKeyStorage` hook provides reactive state management for a KeyStorage instance. It subscribes to storage changes and returns the current value along with a setter function. Optionally accepts a default value to use when the storage is empty.
 
 ```typescript jsx
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const keyStorage = new KeyStorage<string>({
-    key: 'my-key',
-  });
+  const keyStorage = new KeyStorage<string>({ key: 'my-key' });
 
+  // Without default value - can be null
   const [value, setValue] = useKeyStorage(keyStorage);
 
   return (
     <div>
-      <p>Current
-        value: {value}
-      </p>
-      <button
-        onClick={() => setValue('new value')}>
-        Update
-        Value
+      <p>Current value: {value || 'No value stored'}</p>
+      <button onClick={() => setValue('new value')}>
+        Update Value
       </button>
     </div>
-  )
-    ;
+  );
+};
+```
+
+#### With Default Value
+
+```typescript jsx
+const MyComponent = () => {
+  const keyStorage = new KeyStorage<string>({ key: 'theme' });
+
+  // With default value - guaranteed to be non-null
+  const [theme, setTheme] = useKeyStorage(keyStorage, 'light');
+
+  return (
+    <div className={theme}>
+      <p>Current theme: {theme}</p>
+      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+        Toggle Theme
+      </button>
+    </div>
+  );
 };
 ```
 
@@ -319,7 +332,7 @@ const MyComponent = () => {
 ```typescript jsx
 // Working with different value types
 const numberStorage = new KeyStorage<number>({ key: 'counter' });
-const [count, setCount] = useKeyStorage(numberStorage);
+const [count, setCount] = useKeyStorage(numberStorage, 0); // Default to 0
 
 // Working with objects
 interface User {
@@ -328,7 +341,21 @@ interface User {
 }
 
 const userStorage = new KeyStorage<User>({ key: 'current-user' });
-const [user, setUser] = useKeyStorage(userStorage);
+const [user, setUser] = useKeyStorage(userStorage, { id: '', name: 'Guest' });
+
+// Complex state management
+const settingsStorage = new KeyStorage<{ volume: number; muted: boolean }>({
+  key: 'audio-settings',
+});
+const [settings, setSettings] = useKeyStorage(settingsStorage, {
+  volume: 50,
+  muted: false,
+});
+
+// Update specific properties
+const updateVolume = (newVolume: number) => {
+  setSettings({ ...settings, volume: newVolume });
+};
 ```
 
 ## Wow Query Hooks
@@ -1344,21 +1371,46 @@ A ref object with a `current` property containing the latest value
 
 ### useKeyStorage
 
-```typescript jsx
+```typescript
+// Without default value - can return null
 function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
 ): [T | null, (value: T) => void];
+
+// With default value - guaranteed non-null
+function useKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+  defaultValue: T,
+): [T, (value: T) => void];
 ```
 
-A React hook that provides state management for a KeyStorage instance.
+A React hook that provides reactive state management for a KeyStorage instance. Subscribes to storage changes and returns the current value along with a setter function. Optionally accepts a default value to use when the storage is empty.
+
+**Type Parameters:**
+
+- `T`: The type of value stored in the key storage
 
 **Parameters:**
 
-- `keyStorage`: The KeyStorage instance to subscribe to and manage
+- `keyStorage`: The KeyStorage instance to subscribe to and manage. Should be a stable reference (useRef, memo, or module-level instance)
+- `defaultValue` _(optional)_: The default value to use when storage is empty. When provided, the hook guarantees the returned value will never be null
 
 **Returns:**
 
-- A tuple containing the current stored value and a function to update it
+- **Without default value**: `[T | null, (value: T) => void]` - A tuple where the first element can be null if storage is empty
+- **With default value**: `[T, (value: T) => void]` - A tuple where the first element is guaranteed to be non-null (either the stored value or the default value)
+
+**Examples:**
+
+```typescript
+// Without default value
+const [value, setValue] = useKeyStorage(keyStorage);
+// value: string | null
+
+// With default value
+const [theme, setTheme] = useKeyStorage(themeStorage, 'light');
+// theme: string (never null)
+```
 
 ### useListQuery
 

@@ -279,29 +279,77 @@ const MyComponent = () => {
 
 ### useKeyStorage Hook
 
-`useKeyStorage` hook 为 KeyStorage 实例提供状态管理。它订阅存储变化并返回当前值以及设置值的函数。
+`useKeyStorage` hook 为 KeyStorage 实例提供反应式状态管理。它订阅存储变化并返回当前值以及设置函数。可选接受默认值以在存储为空时使用。
 
 ```typescript jsx
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const keyStorage = new KeyStorage<string>({
-    key: 'my-key',
-  });
+  const keyStorage = new KeyStorage<string>({ key: 'my-key' });
 
+  // 不使用默认值 - 可能为 null
   const [value, setValue] = useKeyStorage(keyStorage);
 
   return (
     <div>
-      <p>当前值 :{value}
-      </p>
-      < button
-        onClick={() => setValue('new value')}>
+      <p>当前值: {value || '未存储值'}</p>
+      <button onClick={() => setValue('新值')}>
         更新值
-      < /button>
-    < /div>
+      </button>
+    </div>
   );
+};
+```
+
+#### 使用默认值
+
+```typescript jsx
+const MyComponent = () => {
+  const keyStorage = new KeyStorage<string>({ key: 'theme' });
+
+  // 使用默认值 - 保证不为 null
+  const [theme, setTheme] = useKeyStorage(keyStorage, 'light');
+
+  return (
+    <div className={theme}>
+      <p>当前主题: {theme}</p>
+      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+        切换主题
+      </button>
+    </div>
+  );
+};
+```
+
+### 更多示例
+
+```typescript jsx
+// 处理不同类型的值
+const numberStorage = new KeyStorage<number>({ key: 'counter' });
+const [count, setCount] = useKeyStorage(numberStorage, 0); // 默认为 0
+
+// 处理对象
+interface User {
+  id: string;
+  name: string;
+}
+
+const userStorage = new KeyStorage<User>({ key: 'current-user' });
+const [user, setUser] = useKeyStorage(userStorage, { id: '', name: '访客' });
+
+// 复杂状态管理
+const settingsStorage = new KeyStorage<{ volume: number; muted: boolean }>({
+  key: 'audio-settings',
+});
+const [settings, setSettings] = useKeyStorage(settingsStorage, {
+  volume: 50,
+  muted: false,
+});
+
+// 更新特定属性
+const updateVolume = (newVolume: number) => {
+  setSettings({ ...settings, volume: newVolume });
 };
 ```
 
