@@ -77,42 +77,15 @@ APIs:
 - **⚡ Performance Optimized**: Efficient parsing and streaming for high-performance applications
 - **🤖 LLM Streaming Ready**: Native support for streaming responses from popular LLM APIs like OpenAI GPT, Claude, etc.
 
-#### LLM Integration Example
+### 🤖 [`@ahoo-wang/fetcher-openai`](./packages/openai) - OpenAI API Client
 
-The [LlmClient](./integration-test/src/eventstream/llmClient.ts) demonstrates how to create a specialized client for LLM
-APIs with streaming support:
+Type-safe OpenAI API client with native streaming support for chat completions:
 
-```typescript
-import { createLlmFetcher, LlmClient } from './llmClient';
-
-// Initialize the LLM client with your API configuration
-const llmFetcher = createLlmFetcher({
-  baseURL: 'https://api.openai.com/v1',
-  apiKey: process.env.OPENAI_API_KEY || 'your-api-key',
-  model: 'gpt-3.5-turbo',
-});
-
-const llmClient = new LlmClient();
-
-// Stream chat completions token by token
-async function streamChatExample() {
-  const stream = await llmClient.streamChat({
-    messages: [
-      { role: 'system', content: 'You are a helpful assistant.' },
-      { role: 'user', content: 'Explain quantum computing in simple terms.' },
-    ],
-    stream: true,
-  });
-
-  for await (const event of stream) {
-    if (event.data) {
-      const chunk = event.data;
-      const content = chunk.choices[0]?.delta?.content || '';
-      process.stdout.write(content); // Real-time output
-    }
-  }
-}
-```
+- **🎯 Type-Safe OpenAI Integration**: Complete TypeScript support for OpenAI Chat Completions API
+- **📡 Native Streaming Support**: Built-in support for streaming chat completions with Server-Sent Events
+- **🔧 Declarative API**: Clean, decorator-based API for OpenAI interactions
+- **⚡ Fetcher Integration**: Seamlessly integrates with the Fetcher ecosystem
+- **🧪 MSW Test Support**: Includes Mock Service Worker setup for reliable testing
 
 ### 🔧 [`@ahoo-wang/fetcher-generator`](./packages/generator) - OpenAPI Code Generator
 
@@ -181,6 +154,7 @@ Secure your applications with integrated authentication:
 | [`@ahoo-wang/fetcher`](./packages/fetcher)                 | **Core HTTP Client**<br/>Ultra-lightweight foundation with Axios-like API                                                | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
 | [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **Decorator Support**<br/>Declarative API service definitions                                                            | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
 | [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **Real-Time Streaming & LLM Support**<br/>Server-Sent Events (SSE) support with native LLM streaming API integration     | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
+| [`@ahoo-wang/fetcher-openai`](./packages/openai)           | **OpenAI Client**<br/>Type-safe OpenAI API client with streaming support for chat completions                            | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-openai.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openai)           | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-openai)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openai)           |
 | [`@ahoo-wang/fetcher-generator`](./packages/generator)     | **OpenAPI Code Generator**<br/>TypeScript code generator from OpenAPI specs for WOW domain-driven design framework       | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-generator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-generator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     |
 | [`@ahoo-wang/fetcher-openapi`](./packages/openapi)         | **OpenAPI TypeScript Types**<br/>Complete TypeScript type definitions for OpenAPI 3.0+ specifications                    | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-openapi.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openapi)         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-openapi)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openapi)         |
 | [`@ahoo-wang/fetcher-storage`](./packages/storage)         | **Cross-Environment Storage**<br/>Lightweight storage library with key-based storage and automatic environment detection | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-storage.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-storage)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)         |
@@ -334,6 +308,39 @@ if (llmResponse.jsonEventStream) {
     const content = event.data.choices[0]?.delta?.content || '';
     process.stdout.write(content); // Real-time token output
   }
+}
+```
+
+#### OpenAI Chat Completions
+
+```typescript
+import { OpenAI } from '@ahoo-wang/fetcher-openai';
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  baseURL: 'https://api.openai.com/v1',
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+// Non-streaming chat completion
+const response = await openai.chat.completions({
+  model: 'gpt-3.5-turbo',
+  messages: [{ role: 'user', content: 'Hello, how are you?' }],
+  stream: false,
+});
+
+console.log(response.choices[0].message.content);
+
+// Streaming chat completion
+const stream = await openai.chat.completions({
+  model: 'gpt-3.5-turbo',
+  messages: [{ role: 'user', content: 'Tell me a story' }],
+  stream: true,
+});
+
+for await (const chunk of stream) {
+  const content = chunk.data.choices[0]?.delta?.content || '';
+  process.stdout.write(content); // Real-time output
 }
 ```
 
