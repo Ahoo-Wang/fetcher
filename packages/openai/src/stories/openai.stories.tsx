@@ -39,27 +39,33 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj;
 
-const baseUrlKeyStorage = new KeyStorage({
+const baseUrlKeyStorage = new KeyStorage<string>({
   key: 'fetcher_story_openai_baseUrl', eventBus: new BroadcastTypedEventBus(
     { delegate: new ParallelTypedEventBus('fetcher_story_openai_baseUrl') },
   ),
 });
 
-const apiKeyStorage = new KeyStorage({
+const apiKeyStorage = new KeyStorage<string>({
   key: 'fetcher_story_openai_apiKey', eventBus: new BroadcastTypedEventBus(
     { delegate: new SerialTypedEventBus('fetcher_story_openai_apiKey') },
   ),
 });
 
+const modelStorage = new KeyStorage<string>({
+  key: 'fetcher_story_openai_model', eventBus: new BroadcastTypedEventBus(
+    { delegate: new SerialTypedEventBus('fetcher_story_openai_model') },
+  ),
+});
+
 const OpenAIDemo: React.FC = () => {
-  const [baseURL, setBaseURL] = useKeyStorage(baseUrlKeyStorage);
-  const [apiKey, setApiKey] = useKeyStorage(apiKeyStorage);
+  const [baseURL, setBaseURL] = useKeyStorage(baseUrlKeyStorage, 'https://api.openai.com/v1');
+  const [apiKey, setApiKey] = useKeyStorage(apiKeyStorage, 'sk-your-api-key-here');
   const [client, setClient] = useState<OpenAI | null>(null);
   const [error, setError] = useState<string>('');
 
   // Chat interface state
   const [message, setMessage] = useState('Hello! Tell me a short joke.');
-  const [model, setModel] = useState('gpt-3.5-turbo');
+  const [model, setModel] = useKeyStorage(modelStorage, 'gpt-3.5-turbo');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<string>('');
