@@ -11,6 +11,55 @@
  * limitations under the License.
  */
 
+/**
+ * @packageDocumentation
+ * @module @ahoo-wang/fetcher-eventstream
+ *
+ * # EventStream Package
+ *
+ * A comprehensive TypeScript library for handling Server-Sent Events (SSE) and stream processing.
+ * This package provides utilities for converting, transforming, and consuming event streams with
+ * full TypeScript support and async iteration capabilities.
+ *
+ * ## Key Features
+ *
+ * - **Server-Sent Event Processing**: Parse and transform SSE streams into typed objects
+ * - **JSON Event Streams**: Convert raw SSE to typed JSON event streams with optional termination detection
+ * - **Stream Utilities**: Async iteration support for ReadableStreams
+ * - **HTTP Response Handling**: Specialized extractors for event stream responses
+ * - **Type Safety**: Full TypeScript support with generic types and strict typing
+ *
+ * ## Quick Start
+ *
+ * ```typescript
+ * import {
+ *   toJsonServerSentEventStream,
+ *   type TerminateDetector
+ * } from '@ahoo-wang/fetcher-eventstream';
+ *
+ * // Convert a Server-Sent Event stream to typed JSON events
+ * const terminateOnDone: TerminateDetector = (event) => event.data === '[DONE]';
+ * const jsonStream = toJsonServerSentEventStream<MyData>(sseStream, terminateOnDone);
+ *
+ * // Consume the stream
+ * for await (const event of jsonStream) {
+ *   console.log('Received:', event.data);
+ * }
+ * ```
+ *
+ * ## Main Components
+ *
+ * - `toJsonServerSentEventStream()` - Convert SSE streams to typed JSON streams
+ * - `JsonServerSentEventTransformStream` - Transform stream class with termination support
+ * - `ServerSentEventStream` - Raw server-sent event stream type
+ * - `ReadableStreamAsyncIterable` - Async iteration utilities for streams
+ * - `EventStreamResultExtractor` - HTTP response extractor for event streams
+ *
+ * @see {@link toJsonServerSentEventStream} for the main conversion function
+ * @see {@link JsonServerSentEventTransformStream} for stream transformation
+ * @see {@link TerminateDetector} for termination detection
+ */
+
 export * from './eventStreamConverter';
 export * from './jsonServerSentEventTransformStream';
 export * from './eventStreamResultExtractor';

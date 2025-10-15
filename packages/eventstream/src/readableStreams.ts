@@ -26,7 +26,27 @@ declare global {
   }
 }
 
-// Check if ReadableStream already has [Symbol.asyncIterator] implemented
+/**
+ * Checks if the current environment natively supports async iteration on ReadableStream.
+ *
+ * This constant determines whether the browser or runtime already provides
+ * built-in support for using ReadableStream with for-await...of loops.
+ * If not supported, this library will polyfill the functionality by adding
+ * the [Symbol.asyncIterator] method to ReadableStream.prototype.
+ *
+ * @returns true if native async iteration is supported, false if polyfill is needed
+ *
+ * @example
+ * ```typescript
+ * import { isReadableStreamAsyncIterableSupported } from '@ahoo-wang/fetcher-eventstream';
+ *
+ * if (isReadableStreamAsyncIterableSupported) {
+ *   console.log('Native support available');
+ * } else {
+ *   console.log('Using polyfill');
+ * }
+ * ```
+ */
 export const isReadableStreamAsyncIterableSupported =
   typeof ReadableStream.prototype[Symbol.asyncIterator] === 'function';
 

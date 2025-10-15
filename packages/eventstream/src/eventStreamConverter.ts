@@ -20,19 +20,45 @@ import { FetcherError } from '@ahoo-wang/fetcher';
 
 /**
  * A ReadableStream of ServerSentEvent objects.
+ *
+ * This type represents a stream that yields Server-Sent Event objects as they are parsed
+ * from a raw event stream. Each chunk in the stream contains a complete SSE event with
+ * its metadata (event type, ID, retry interval) and data.
+ *
+ * @see {@link ServerSentEvent} for the structure of individual events
+ * @see {@link toServerSentEventStream} for converting HTTP responses to this type
  */
 export type ServerSentEventStream = ReadableStream<ServerSentEvent>;
 
 /**
  * Custom error class for event stream conversion errors.
- * Thrown when there are issues converting a Response to a ServerSentEventStream.
+ *
+ * This error is thrown when there are issues converting an HTTP Response to a ServerSentEventStream.
+ * It extends FetcherError to provide additional context about the failed conversion, including
+ * the original Response object and any underlying cause.
+ *
+ * @extends {FetcherError}
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   const eventStream = toServerSentEventStream(response);
+ * } catch (error) {
+ *   if (error instanceof EventStreamConvertError) {
+ *     console.error('Failed to convert response to event stream:', error.message);
+ *     console.log('Response status:', error.response.status);
+ *   }
+ * }
+ * ```
  */
 export class EventStreamConvertError extends FetcherError {
   /**
    * Creates a new EventStreamConvertError instance.
-   * @param response - The Response object associated with the error
+   *
+   * @param response - The Response object associated with the error, providing context
+   *                   about the failed conversion (status, headers, etc.)
    * @param errorMsg - Optional error message describing what went wrong during conversion
-   * @param cause - Optional underlying error that caused this error
+   * @param cause - Optional underlying error that caused this conversion error
    */
   constructor(
     public readonly response: Response,
@@ -49,14 +75,54 @@ export class EventStreamConvertError extends FetcherError {
 /**
  * Converts a Response object to a ServerSentEventStream.
  *
- * Processes the response body through a series of transform streams:
- * 1. TextDecoderStream: Decode Uint8Array data to UTF-8 strings
- * 2. TextLineStream: Split text by lines
- * 3. ServerSentEventStream: Parse line data into server-sent events
+ * This function takes an HTTP Response object and converts its body into a stream of
+ * Server-Sent Event objects. The conversion process involves several transformation steps:
  *
- * @param response - The Response object to convert
- * @returns A ReadableStream of ServerSentEvent objects
- * @throws Error if the response body is null
+ * 1. **TextDecoderStream**: Decodes the raw Uint8Array response body to UTF-8 strings
+ * 2. **TextLineTransformStream**: Splits the text stream into individual lines
+ * 3. **ServerSentEventTransformStream**: Parses the line-based SSE format into structured events
+ *
+ * The resulting stream can be consumed using async iteration or other stream methods.
+ *
+ * @param response - The HTTP Response object to convert. Must have a readable body stream.
+ * @returns A ReadableStream that yields ServerSentEvent objects as they are parsed from the response
+ * @throws {EventStreamConvertError} If the response body is null or cannot be processed
+ *
+ * @example
+ * ```typescript
+ * // Convert an SSE response to an event stream
+ * const response = await fetch('/api/events');
+ * const eventStream = toServerSentEventStream(response);
+ *
+ * // Consume events asynchronously
+ * for await (const event of eventStream) {
+ *   console.log(`Event: ${event.event}, Data: ${event.data}`);
+ *
+ *   // Handle different event types
+ *   switch (event.event) {
+ *     case 'message':
+ *       handleMessage(event.data);
+ *       break;
+ *     case 'error':
+ *       handleError(event.data);
+ *       break;
+ *   }
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Handle conversion errors
+ * try {
+ *   const eventStream = toServerSentEventStream(response);
+ *   // Use the stream...
+ * } catch (error) {
+ *   if (error instanceof EventStreamConvertError) {
+ *     console.error('Event stream conversion failed:', error.message);
+ *     console.log('Response status:', error.response.status);
+ *   }
+ * }
+ * ```
  */
 export function toServerSentEventStream(
   response: Response,

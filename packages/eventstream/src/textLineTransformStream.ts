@@ -14,9 +14,29 @@
 /**
  * Transformer that splits text into lines.
  *
- * This transformer accumulates chunks of text and splits them by newline characters,
- * emitting each line as a separate chunk while preserving the remaining buffer
- * for the next chunk.
+ * This transformer accumulates chunks of text and splits them by newline characters ('\n'),
+ * emitting each complete line as a separate chunk. It handles partial lines that span multiple
+ * input chunks by maintaining an internal buffer. Lines are emitted without the newline character.
+ *
+ * The transformer handles various edge cases:
+ * - Lines that span multiple input chunks
+ * - Empty lines (emitted as empty strings)
+ * - Text without trailing newlines (buffered until stream ends)
+ * - Mixed line endings (only '\n' is recognized as line separator)
+ *
+ * @implements {Transformer<string, string>}
+ *
+ * @example
+ * ```typescript
+ * const transformer = new TextLineTransformer();
+ * // Input: "line1\nline2\npartial"
+ * // Output: ["line1", "line2"]
+ * // Buffer: "partial"
+ *
+ * // Later input: "line\n"
+ * // Output: ["partialline"]
+ * // Buffer: ""
+ * ```
  */
 export class TextLineTransformer implements Transformer<string, string> {
   private buffer = '';
@@ -63,8 +83,49 @@ export class TextLineTransformer implements Transformer<string, string> {
 
 /**
  * A TransformStream that splits text into lines.
+ *
+ * This class provides a convenient way to transform a stream of text chunks into a stream
+ * of individual lines. It wraps the TextLineTransformer in a TransformStream for easy
+ * integration with other stream processing pipelines.
+ *
+ * The stream processes text data and emits each line as a separate chunk, handling
+ * lines that may span multiple input chunks automatically.
+ *
+ * @example
+ * ```typescript
+ * // Create a line-splitting stream
+ * const lineStream = new TextLineTransformStream();
+ *
+ * // Pipe text through it
+ * const lines = textStream.pipeThrough(lineStream);
+ *
+ * // Process each line
+ * for await (const line of lines) {
+ *   console.log('Line:', line);
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Process SSE response line by line
+ * const response = await fetch('/api/stream');
+ * const lines = response.body!
+ *   .pipeThrough(new TextDecoderStream())
+ *   .pipeThrough(new TextLineTransformStream());
+ *
+ * for await (const line of lines) {
+ *   if (line.startsWith('data: ')) {
+ *     console.log('SSE data:', line.substring(6));
+ *   }
+ * }
+ * ```
  */
 export class TextLineTransformStream extends TransformStream<string, string> {
+  /**
+   * Creates a new TextLineTransformStream instance.
+   *
+   * Initializes the stream with a TextLineTransformer that handles the line splitting logic.
+   */
   constructor() {
     super(new TextLineTransformer());
   }
