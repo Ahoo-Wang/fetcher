@@ -57,8 +57,7 @@ export interface JsonServerSentEvent<DATA>
  * @template DATA - The expected type of the parsed JSON data in each event
  */
 export class JsonServerSentEventTransform<DATA>
-  implements Transformer<ServerSentEvent, JsonServerSentEvent<DATA>>
-{
+  implements Transformer<ServerSentEvent, JsonServerSentEvent<DATA>> {
   /**
    * Creates a new JsonServerSentEventTransform instance.
    *
@@ -66,7 +65,8 @@ export class JsonServerSentEventTransform<DATA>
    *                           If provided, this function is called for each event and can terminate
    *                           the stream by returning true.
    */
-  constructor(private readonly terminateDetector?: TerminateDetector) {}
+  constructor(private readonly terminateDetector?: TerminateDetector) {
+  }
 
   /**
    * Transforms a ServerSentEvent chunk into a JsonServerSentEvent.
@@ -99,19 +99,19 @@ export class JsonServerSentEventTransform<DATA>
         controller.terminate();
         return;
       }
+
+      const json = JSON.parse(chunk.data) as DATA;
+      controller.enqueue({
+        data: json,
+        event: chunk.event,
+        id: chunk.id,
+        retry: chunk.retry,
+      });
     } catch (error) {
       // If terminate detector throws, terminate the stream to prevent corrupted state
       controller.error(error);
       return;
     }
-
-    const json = JSON.parse(chunk.data) as DATA;
-    controller.enqueue({
-      data: json,
-      event: chunk.event,
-      id: chunk.id,
-      retry: chunk.retry,
-    });
   }
 }
 
