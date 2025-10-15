@@ -15,9 +15,7 @@
     "outDir": "./dist",
     "rootDir": "./packages/*/src",
     "composite": true,
-    "incremental": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "incremental": true
   },
   "include": [
     "packages/*/src",

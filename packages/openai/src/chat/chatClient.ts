@@ -40,8 +40,7 @@ export class ChatClient implements ApiMetadataCapable, ExecuteLifeCycle {
    *
    * @param apiMetadata - Optional API metadata configuration for customizing request behavior
    */
-  constructor(public readonly apiMetadata?: ApiMetadata) {
-  }
+  constructor(public readonly apiMetadata?: ApiMetadata) {}
 
   /**
    * Lifecycle hook executed before request processing
