@@ -11,5 +11,25 @@
  * limitations under the License.
  */
 
-export * from './chat';
-export * from './openai';
+import { ChatClient } from './chat';
+import { Fetcher } from '@ahoo-wang/fetcher';
+
+export interface OpenAIOptions {
+  baseURL: string;
+  apiKey: string;
+}
+
+export class OpenAI {
+  public readonly fetcher: Fetcher;
+  public readonly chat: ChatClient;
+
+  constructor(private options: OpenAIOptions) {
+    this.fetcher = new Fetcher({
+      baseURL: options.baseURL,
+      headers: {
+        Authorization: `Bearer ${options.apiKey}`,
+      },
+    });
+    this.chat = new ChatClient({ fetcher: this.fetcher });
+  }
+}
