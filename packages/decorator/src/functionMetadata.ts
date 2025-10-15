@@ -131,6 +131,14 @@ export class FunctionMetadata implements NamedCapable {
     return this.endpoint.timeout || this.api.timeout;
   }
 
+  /**
+   * Resolves the result extractor for the request.
+   *
+   * Returns the result extractor specified in the endpoint metadata, or the API metadata,
+   * or falls back to the default JsonResultExtractor if none is specified.
+   *
+   * @returns The result extractor function to use for processing responses
+   */
   resolveResultExtractor(): ResultExtractor<any> {
     return (
       this.endpoint.resultExtractor ||
@@ -139,11 +147,27 @@ export class FunctionMetadata implements NamedCapable {
     );
   }
 
+  /**
+   * Resolves the attributes for the request.
+   *
+   * Merges attributes from API-level and endpoint-level metadata into a single Map.
+   * API-level attributes are applied first, then endpoint-level attributes can override them.
+   *
+   * @returns A Map containing all resolved attributes for the request
+   */
   resolveAttributes(): Map<string, any> {
     const resolvedAttributes = mergeRecordToMap(this.api.attributes);
     return mergeRecordToMap(this.endpoint.attributes, resolvedAttributes);
   }
 
+  /**
+   * Resolves the endpoint return type for the request.
+   *
+   * Returns the return type specified in the endpoint metadata, or the API metadata,
+   * or falls back to EndpointReturnType.RESULT if none is specified.
+   *
+   * @returns The endpoint return type determining what the method should return
+   */
   resolveEndpointReturnType(): EndpointReturnType {
     return (
       this.endpoint.returnType ||
