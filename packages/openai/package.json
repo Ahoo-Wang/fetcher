@@ -60,6 +60,9 @@
     "@ahoo-wang/fetcher-decorator": "workspace:^2.9.6"
   },
   "devDependencies": {
+    "@ahoo-wang/fetcher-storage": "workspace:^",
+    "@ahoo-wang/fetcher-eventbus": "workspace:^",
+    "@ahoo-wang/fetcher-react": "workspace:^",
     "@eslint/js": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",

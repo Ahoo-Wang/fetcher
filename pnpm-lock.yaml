@@ -561,6 +561,15 @@ importers:
         specifier: workspace:^2.3.4
         version: link:../eventstream
     devDependencies:
+      '@ahoo-wang/fetcher-eventbus':
+        specifier: workspace:^
+        version: link:../eventbus
+      '@ahoo-wang/fetcher-react':
+        specifier: workspace:^
+        version: link:../react
+      '@ahoo-wang/fetcher-storage':
+        specifier: workspace:^
+        version: link:../storage
       '@eslint/js':
         specifier: 'catalog:'
         version: 9.37.0

@@ -17,6 +17,9 @@ import {
 } from 'antd';
 import { OpenAI } from '../openai';
 import type { ChatResponse } from '../chat';
+import { useKeyStorage } from '@ahoo-wang/fetcher-react';
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { BroadcastTypedEventBus, ParallelTypedEventBus, SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -36,9 +39,21 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj;
 
+const baseUrlKeyStorage = new KeyStorage({
+  key: 'fetcher_story_openai_baseUrl', eventBus: new BroadcastTypedEventBus(
+    { delegate: new ParallelTypedEventBus('fetcher_story_openai_baseUrl') },
+  ),
+});
+
+const apiKeyStorage = new KeyStorage({
+  key: 'fetcher_story_openai_apiKey', eventBus: new BroadcastTypedEventBus(
+    { delegate: new SerialTypedEventBus('fetcher_story_openai_apiKey') },
+  ),
+});
+
 const OpenAIDemo: React.FC = () => {
-  const [baseURL, setBaseURL] = useState('https://api.openai.com/v1');
-  const [apiKey, setApiKey] = useState('sk-your-api-key-here');
+  const [baseURL, setBaseURL] = useKeyStorage(baseUrlKeyStorage);
+  const [apiKey, setApiKey] = useKeyStorage(apiKeyStorage);
   const [client, setClient] = useState<OpenAI | null>(null);
   const [error, setError] = useState<string>('');
 
