@@ -74,41 +74,15 @@ Fetcher 不仅仅是一个 HTTP 客户端——它是一个为现代 Web 开发�
 - **⚡ 性能优化**：高效的解析和流处理，适用于高性能应用
 - **🤖 LLM 流准备就绪**: 原生支持来自流行 LLM API（如 OpenAI GPT、Claude 等）的流式响应
 
-#### LLM 集成示例
+### 🤖 [`@ahoo-wang/fetcher-openai`](./packages/openai) - OpenAI API 客户端
 
-[LlmClient](./integration-test/src/eventstream/llmClient.ts) 演示了如何创建具有流支持的 LLM API 专用客户端：
+类型安全的 OpenAI API 客户端，原生支持聊天补全流式传输：
 
-```typescript
-import { createLlmFetcher, LlmClient } from './llmClient';
-
-// 使用您的 API 配置初始化 LLM 客户端
-const llmFetcher = createLlmFetcher({
-  baseURL: 'https://api.openai.com/v1',
-  apiKey: process.env.OPENAI_API_KEY || 'your-api-key',
-  model: 'gpt-3.5-turbo',
-});
-
-const llmClient = new LlmClient();
-
-// 流式聊天完成，逐个令牌输出
-async function streamChatExample() {
-  const stream = await llmClient.streamChat({
-    messages: [
-      { role: 'system', content: 'You are a helpful assistant.' },
-      { role: 'user', content: 'Explain quantum computing in simple terms.' },
-    ],
-    stream: true,
-  });
-
-  for await (const event of stream) {
-    if (event.data) {
-      const chunk = event.data;
-      const content = chunk.choices[0]?.delta?.content || '';
-      process.stdout.write(content); // 实时输出
-    }
-  }
-}
-```
+- **🎯 类型安全的 OpenAI 集成**：完整的 OpenAI Chat Completions API TypeScript 支持
+- **📡 原生流式支持**：内置支持使用 Server-Sent Events 的流式聊天补全
+- **🔧 声明式 API**：用于 OpenAI 交互的清晰、装饰器式 API
+- **⚡ Fetcher 集成**：无缝集成到 Fetcher 生态系统
+- **🧪 MSW 测试支持**：包含 Mock Service Worker 设置，实现可靠测试
 
 ### 🔧 [`@ahoo-wang/fetcher-generator`](./packages/generator) - OpenAPI 代码生成器
 
@@ -174,6 +148,7 @@ async function streamChatExample() {
 | [`@ahoo-wang/fetcher`](./packages/fetcher)                 | **核心 HTTP 客户端**<br/>具有 Axios 类似 API 的超轻量级基础                                   | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         |
 | [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **装饰器支持**<br/>声明式 API 服务定义                                                        | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
 | [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **实时流和 LLM 支持**<br/>Server-Sent Events (SSE) 支持，原生 LLM 流式 API 集成               | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
+| [`@ahoo-wang/fetcher-openai`](./packages/openai)           | **OpenAI 客户端**<br/>类型安全的 OpenAI API 客户端，支持聊天补全流式传输                      | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-openai.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openai)           | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-openai)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openai)           |
 | [`@ahoo-wang/fetcher-generator`](./packages/generator)     | **OpenAPI 代码生成器**<br/>从 OpenAPI 规范生成 TypeScript 代码，专为 WOW 领域驱动设计框架打造 | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-generator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-generator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     |
 | [`@ahoo-wang/fetcher-openapi`](./packages/openapi)         | **OpenAPI TypeScript 类型**<br/>OpenAPI 3.0+ 规范的完整 TypeScript 类型定义                   | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-openapi.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openapi)         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-openapi)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openapi)         |
 | [`@ahoo-wang/fetcher-storage`](./packages/storage)         | **跨环境存储**<br/>轻量级存储库，具有基于键的存储和自动环境检测功能                           | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-storage.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-storage)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)         |
@@ -329,6 +304,39 @@ if (llmResponse.jsonEventStream) {
     const content = event.data.choices[0]?.delta?.content || '';
     process.stdout.write(content); // 实时令牌输出
   }
+}
+```
+
+#### OpenAI 聊天补全
+
+```typescript
+import { OpenAI } from '@ahoo-wang/fetcher-openai';
+
+// 初始化 OpenAI 客户端
+const openai = new OpenAI({
+  baseURL: 'https://api.openai.com/v1',
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+// 非流式聊天补全
+const response = await openai.chat.completions({
+  model: 'gpt-3.5-turbo',
+  messages: [{ role: 'user', content: '你好，你怎么样？' }],
+  stream: false,
+});
+
+console.log(response.choices[0].message.content);
+
+// 流式聊天补全
+const stream = await openai.chat.completions({
+  model: 'gpt-3.5-turbo',
+  messages: [{ role: 'user', content: '给我讲个故事' }],
+  stream: true,
+});
+
+for await (const chunk of stream) {
+  const content = chunk.data.choices[0]?.delta?.content || '';
+  process.stdout.write(content); // 实时输出
 }
 ```
 
