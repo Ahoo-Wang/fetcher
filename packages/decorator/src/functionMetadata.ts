@@ -225,8 +225,14 @@ export class FunctionMetadata implements NamedCapable {
   resolveExchangeInit(
     args: any[],
   ): Required<Pick<FetchExchangeInit, 'request' | 'attributes'>> {
-    const pathParams: Record<string, any> = {};
-    const queryParams: Record<string, any> = {};
+    const pathParams: Record<string, any> = {
+      ...this.api.urlParams?.path,
+      ...this.endpoint.urlParams?.path,
+    };
+    const queryParams: Record<string, any> = {
+      ...this.api.urlParams?.query,
+      ...this.endpoint.urlParams?.query,
+    };
     const headers: RequestHeaders = {
       ...this.api.headers,
       ...this.endpoint.headers,
