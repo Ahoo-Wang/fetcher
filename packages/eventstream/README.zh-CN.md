@@ -20,6 +20,7 @@
 - **🛡️ TypeScript 支持**：完整的 TypeScript 类型定义
 - **⚡ 性能优化**：高效的解析和流处理，适用于高性能应用
 - **🤖 LLM 流准备就绪**: 原生支持来自流行 LLM API（如 OpenAI GPT、Claude 等）的流式响应
+- **🔚 流终止检测**：自动流终止检测，实现干净的资源管理和完成处理
 
 ## 🚀 快速开始
 
@@ -216,6 +217,47 @@ for await (const event of response.requiredJsonEventStream<MyDataType>()) {
 }
 ```
 
+### 高级用法与终止检测
+
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+import {
+  toJsonServerSentEventStream,
+  type TerminateDetector,
+} from '@ahoo-wang/fetcher-eventstream';
+
+const fetcher = new Fetcher({
+  baseURL: 'https://api.openai.com/v1',
+});
+
+// 定义 OpenAI 风格完成的终止检测器
+const terminateOnDone: TerminateDetector = event => event.data === '[DONE]';
+
+// 获取原始事件流
+const response = await fetcher.post('/chat/completions', {
+  body: {
+    model: 'gpt-3.5-turbo',
+    messages: [{ role: 'user', content: '你好！' }],
+    stream: true,
+  },
+});
+
+// 转换为带自动终止的类型化 JSON 流
+const jsonStream = toJsonServerSentEventStream<ChatCompletionChunk>(
+  response.requiredEventStream(),
+  terminateOnDone,
+);
+
+// 处理带自动终止的流式响应
+for await (const event of jsonStream) {
+  const content = event.data.choices[0]?.delta?.content;
+  if (content) {
+    console.log('令牌:', content);
+    // 当收到 '[DONE]' 时流会自动终止
+  }
+}
+```
+
 ### 手动转换
 
 ```typescript
@@ -278,23 +320,48 @@ for await (const event of response.requiredEventStream()) {
 
 ### toJsonServerSentEventStream
 
-将 `ServerSentEventStream` 转换为 `JsonServerSentEventStream<DATA>`，用于处理带有 JSON 数据的服务器发送事件。
+将 `ServerSentEventStream` 转换为 `JsonServerSentEventStream<DATA>`，用于处理带有 JSON 数据的服务器发送事件。可选支持流终止检测以实现自动流关闭。
 
 #### 签名
 
 ```typescript
 function toJsonServerSentEventStream<DATA>(
   serverSentEventStream: ServerSentEventStream,
+  terminateDetector?: TerminateDetector,
 ): JsonServerSentEventStream<DATA>;
 ```
 
 #### 参数
 
 - `serverSentEventStream`：要转换的 ServerSentEventStream
+- `terminateDetector`：可选的函数，用于检测何时应该终止流。当提供时，当检测器对某个事件返回 `true` 时，流将自动关闭。
 
 #### 返回
 
 - `JsonServerSentEventStream<DATA>`：带有 JSON 数据的 ServerSentEvent 对象的可读流
+
+#### 示例
+
+```typescript
+// 基本用法，不使用终止检测
+const jsonStream = toJsonServerSentEventStream<MyData>(serverSentEventStream);
+
+// 使用终止检测处理 OpenAI 风格的完成
+const terminateOnDone: TerminateDetector = event => event.data === '[DONE]';
+const terminatingStream = toJsonServerSentEventStream<MyData>(
+  serverSentEventStream,
+  terminateOnDone,
+);
+
+// 自定义终止逻辑
+const terminateOnError: TerminateDetector = event => {
+  return event.event === 'error' || event.data.includes('ERROR');
+};
+const errorHandlingStream = toJsonServerSentEventStream<MyData>(
+  serverSentEventStream,
+  terminateOnError,
+);
+```
 
 ### JsonServerSentEvent
 
@@ -315,6 +382,57 @@ type JsonServerSentEventStream<DATA> = ReadableStream<
   JsonServerSentEvent<DATA>
 >;
 ```
+
+### TerminateDetector
+
+用于检测服务器发送事件流何时应该终止的函数类型。这通常用于 LLM API 发送特殊终止事件来表示响应流结束的情况。
+
+#### 签名
+
+```typescript
+type TerminateDetector = (event: ServerSentEvent) => boolean;
+```
+
+#### 参数
+
+- `event`：当前正在处理的 `ServerSentEvent`
+
+#### 返回
+
+- `boolean`：如果应该终止流则返回 `true`，否则返回 `false`
+
+#### 示例
+
+```typescript
+// OpenAI 风格的终止（常见模式）
+const terminateOnDone: TerminateDetector = event => event.data === '[DONE]';
+
+// 基于事件的终止
+const terminateOnComplete: TerminateDetector = event => event.event === 'done';
+
+// 具有多个条件的自定义终止
+const terminateOnFinish: TerminateDetector = event => {
+  return (
+    event.event === 'done' ||
+    event.event === 'error' ||
+    event.data === '[DONE]' ||
+    event.data.includes('TERMINATE')
+  );
+};
+
+// 与 toJsonServerSentEventStream 一起使用
+const stream = toJsonServerSentEventStream<MyData>(
+  serverSentEventStream,
+  terminateOnDone,
+);
+```
+
+#### 常见用例
+
+- **LLM 流式传输**：检测来自 OpenAI、Claude 或其他 LLM API 的完成标记，如 `[DONE]`
+- **错误处理**：在收到错误事件时终止流
+- **自定义协议**：实现应用程序特定的终止逻辑
+- **资源管理**：在满足特定条件时自动关闭流
 
 ### toServerSentEventStream
 
