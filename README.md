@@ -85,7 +85,6 @@ Type-safe OpenAI API client with native streaming support for chat completions:
 - **📡 Native Streaming Support**: Built-in support for streaming chat completions with Server-Sent Events
 - **🔧 Declarative API**: Clean, decorator-based API for OpenAI interactions
 - **⚡ Fetcher Integration**: Seamlessly integrates with the Fetcher ecosystem
-- **🧪 MSW Test Support**: Includes Mock Service Worker setup for reliable testing
 
 ### 🔧 [`@ahoo-wang/fetcher-generator`](./packages/generator) - OpenAPI Code Generator
 
