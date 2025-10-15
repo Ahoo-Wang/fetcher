@@ -12,6 +12,7 @@
  */
 
 import { FetchExchange, ResultExtractor } from '@ahoo-wang/fetcher';
+import '@ahoo-wang/fetcher-eventstream';
 import { JsonServerSentEventStream, ServerSentEvent, TerminateDetector } from '@ahoo-wang/fetcher-eventstream';
 import { ChatResponse } from './types';
 
@@ -22,6 +23,5 @@ export const DoneDetector: TerminateDetector = (event: ServerSentEvent) => {
 export const CompletionStreamResultExtractor: ResultExtractor<
   JsonServerSentEventStream<ChatResponse>
 > = (exchange: FetchExchange) => {
-  exchange.requiredResponse.requiredEventStream()
-  return exchange.requiredResponse.requiredJsonEventStream();
+  return exchange.requiredResponse.requiredJsonEventStream(DoneDetector);
 };

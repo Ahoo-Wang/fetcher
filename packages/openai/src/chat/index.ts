@@ -12,4 +12,5 @@
  */
 
 export * from './chatClient';
-export * from './types'
+export * from './completionStreamResultExtractor';
+export * from './types';
