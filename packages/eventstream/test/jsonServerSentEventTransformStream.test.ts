@@ -16,6 +16,7 @@ import {
   ServerSentEvent,
   JsonServerSentEventTransformStream,
   toJsonServerSentEventStream,
+  type TerminateDetector,
 } from '../src';
 
 describe('JsonServerSentEventTransformStream', () => {
@@ -126,6 +127,46 @@ describe('JsonServerSentEventTransformStream', () => {
     const finalResult = await reader.read();
     expect(finalResult.done).toBe(true);
   });
+
+  it('should accept terminate detector parameter', () => {
+    const terminateDetector: TerminateDetector = (event: ServerSentEvent) =>
+      event.event === 'terminate';
+
+    // Verify we can create a transform stream with terminate detector
+    const transformStream = new JsonServerSentEventTransformStream<any>(
+      terminateDetector,
+    );
+    expect(transformStream).toBeInstanceOf(JsonServerSentEventTransformStream);
+  });
+
+  it('should work without end detector', async () => {
+    const transformStream = new JsonServerSentEventTransformStream<any>();
+    const writable = transformStream.writable;
+    const readable = transformStream.readable;
+
+    const writer = writable.getWriter();
+    const reader = readable.getReader();
+
+    const inputEvent: ServerSentEvent = {
+      data: '{"test":true}',
+      event: 'message',
+    };
+
+    writer.write(inputEvent);
+    writer.close();
+
+    const result = await reader.read();
+    expect(result.done).toBe(false);
+    expect(result.value).toEqual({
+      data: { test: true },
+      event: 'message',
+      id: undefined,
+      retry: undefined,
+    });
+
+    const finalResult = await reader.read();
+    expect(finalResult.done).toBe(true);
+  });
 });
 
 describe('toJsonServerSentEventStream', () => {
@@ -161,5 +202,29 @@ describe('toJsonServerSentEventStream', () => {
 
     const finalResult = await reader.read();
     expect(finalResult.done).toBe(true);
+  });
+
+  it('should support terminate detector in toJsonServerSentEventStream', async () => {
+    // Create a mock ServerSentEventStream
+    const { readable } = new TransformStream<
+      ServerSentEvent,
+      ServerSentEvent
+    >();
+
+    let detectorCalled = false;
+    const terminateDetector: TerminateDetector = (event: ServerSentEvent) => {
+      detectorCalled = true;
+      return event.event === 'finish';
+    };
+
+    // Convert to JsonServerSentEventStream with terminate detector
+    const jsonStream = toJsonServerSentEventStream<any>(
+      readable as any,
+      terminateDetector,
+    );
+
+    // Verify the function accepts the terminate detector parameter
+    expect(typeof jsonStream).toBe('object');
+    expect(jsonStream).toHaveProperty('getReader');
   });
 });
