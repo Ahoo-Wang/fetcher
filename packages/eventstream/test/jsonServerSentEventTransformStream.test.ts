@@ -139,6 +139,73 @@ describe('JsonServerSentEventTransformStream', () => {
     expect(transformStream).toBeInstanceOf(JsonServerSentEventTransformStream);
   });
 
+  it('should call terminate detector during transformation', async () => {
+    let detectorCallCount = 0;
+    let lastEvent: ServerSentEvent | undefined;
+
+    const terminateDetector: TerminateDetector = (event: ServerSentEvent) => {
+      detectorCallCount++;
+      lastEvent = event;
+      return false; // Don't terminate, just track calls
+    };
+
+    const transformStream = new JsonServerSentEventTransformStream<any>(
+      terminateDetector,
+    );
+
+    const writable = transformStream.writable;
+    const readable = transformStream.readable;
+    const writer = writable.getWriter();
+    const reader = readable.getReader();
+
+    const testEvent: ServerSentEvent = {
+      data: '{"message": "test"}',
+      event: 'message',
+    };
+
+    // Write and immediately close to avoid hanging
+    writer.write(testEvent);
+    writer.close();
+
+    // Read result
+    const result = await reader.read();
+    expect(result.done).toBe(false);
+    expect(result.value?.data).toEqual({ message: 'test' });
+
+    // Verify detector was called
+    expect(detectorCallCount).toBe(1);
+    expect(lastEvent).toEqual(testEvent);
+  });
+
+  it('should handle terminate detector errors gracefully', async () => {
+    const errorMessage = 'Terminate detector error';
+    const terminateDetector: TerminateDetector = () => {
+      throw new Error(errorMessage);
+    };
+
+    const transformStream = new JsonServerSentEventTransformStream<any>(
+      terminateDetector,
+    );
+
+    const writable = transformStream.writable;
+    const readable = transformStream.readable;
+    const writer = writable.getWriter();
+    const reader = readable.getReader();
+
+    const testEvent: ServerSentEvent = {
+      data: '{"message": "test"}',
+      event: 'message',
+    };
+
+    // Write event that will trigger the error
+    writer.write(testEvent);
+
+    // The stream should error due to the terminate detector throwing
+    await expect(async () => {
+      await reader.read();
+    }).rejects.toThrow(errorMessage);
+  });
+
   it('should work without end detector', async () => {
     const transformStream = new JsonServerSentEventTransformStream<any>();
     const writable = transformStream.writable;

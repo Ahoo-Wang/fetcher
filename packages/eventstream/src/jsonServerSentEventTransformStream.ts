@@ -75,9 +75,13 @@ export class JsonServerSentEventTransform<DATA>
    * If termination is required, the controller is terminated. Otherwise, the event data is parsed
    * as JSON and enqueued as a JsonServerSentEvent.
    *
+   * If the terminateDetector throws an exception, the stream is terminated with an error to prevent
+   * corrupted state.
+   *
    * @param chunk - The ServerSentEvent to transform
    * @param controller - The TransformStream controller for managing the stream
    * @throws {SyntaxError} If the event data is not valid JSON
+   * @throws {Error} If the terminateDetector throws an exception
    *
    * @example
    * ```typescript
@@ -90,8 +94,14 @@ export class JsonServerSentEventTransform<DATA>
     controller: TransformStreamDefaultController<JsonServerSentEvent<DATA>>,
   ) {
     // Check if this is a terminate event
-    if (this.terminateDetector?.(chunk)) {
-      controller.terminate();
+    try {
+      if (this.terminateDetector?.(chunk)) {
+        controller.terminate();
+        return;
+      }
+    } catch (error) {
+      // If terminate detector throws, terminate the stream to prevent corrupted state
+      controller.error(error);
       return;
     }
 
