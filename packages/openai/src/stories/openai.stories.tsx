@@ -12,8 +12,11 @@ import {
   Alert,
   Tabs,
   Descriptions,
+  Switch,
+  Divider,
 } from 'antd';
 import { OpenAI } from '../openai';
+import type { ChatResponse } from '../chat';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -39,6 +42,14 @@ const OpenAIDemo: React.FC = () => {
   const [client, setClient] = useState<OpenAI | null>(null);
   const [error, setError] = useState<string>('');
 
+  // Chat interface state
+  const [message, setMessage] = useState('Hello! Tell me a short joke.');
+  const [model, setModel] = useState('gpt-3.5-turbo');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [response, setResponse] = useState<string>('');
+  const [chatError, setChatError] = useState<string>('');
+
   const handleCreateClient = () => {
     try {
       const openai = new OpenAI({
@@ -50,6 +61,42 @@ const OpenAIDemo: React.FC = () => {
     } catch (err) {
       setError((err as Error).message);
       setClient(null);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!client || !message.trim()) return;
+
+    setIsLoading(true);
+    setChatError('');
+    setResponse('');
+
+    try {
+      if (isStreaming) {
+        const stream = await client.chat.completions({
+          model,
+          messages: [{ role: 'user', content: message }],
+          stream: true,
+        });
+        let fullResponse = '';
+
+        for await (const chunk of stream) {
+          const content = chunk.data.choices[0]?.delta?.content || '';
+          fullResponse += content;
+          setResponse(fullResponse);
+        }
+      } else {
+        const result = (await client.chat.completions({
+          model,
+          messages: [{ role: 'user', content: message }],
+          stream: false,
+        })) as ChatResponse;
+        setResponse(result.choices[0]?.message?.content || 'No response');
+      }
+    } catch (err) {
+      setChatError((err as Error).message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -128,6 +175,96 @@ const OpenAIDemo: React.FC = () => {
           </Space>
         </Col>
       </Row>
+
+      <Card title="💬 Interactive Chat" size="small">
+        <Space direction="vertical" style={{ width: '100%' }}>
+          {!client && (
+            <Alert
+              message="Client Not Configured"
+              description="Please configure and create an OpenAI client above to enable chat functionality."
+              type="info"
+              showIcon
+            />
+          )}
+
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <div>
+                <Text strong>Model:</Text>
+                <Input
+                  value={model}
+                  onChange={e => setModel(e.target.value)}
+                  placeholder="gpt-3.5-turbo"
+                  style={{ marginTop: 4 }}
+                  disabled={!client}
+                />
+              </div>
+            </Col>
+            <Col xs={24} md={12}>
+              <div>
+                <Text strong>Streaming:</Text>
+                <div style={{ marginTop: 4 }}>
+                  <Switch
+                    checked={isStreaming}
+                    onChange={setIsStreaming}
+                    disabled={!client}
+                  />
+                  <Text style={{ marginLeft: 8 }}>
+                    {isStreaming ? 'Enabled' : 'Disabled'}
+                  </Text>
+                </div>
+              </div>
+            </Col>
+          </Row>
+
+          <div>
+            <Text strong>Message:</Text>
+            <Input.TextArea
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              placeholder="Enter your message here..."
+              rows={3}
+              style={{ marginTop: 4 }}
+              disabled={!client}
+            />
+          </div>
+
+          <Button
+            type="primary"
+            onClick={handleSendMessage}
+            loading={isLoading}
+            disabled={!client || !message.trim()}
+            block
+          >
+            {isLoading ? 'Sending...' : 'Send Message'}
+          </Button>
+
+          {chatError && (
+            <Alert
+              message="Chat Error"
+              description={chatError}
+              type="error"
+              showIcon
+            />
+          )}
+
+          {response && (
+            <div>
+              <Text strong>Response:</Text>
+              <Card
+                size="small"
+                style={{ marginTop: 8, backgroundColor: '#f9f9f9' }}
+              >
+                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                  {response}
+                </pre>
+              </Card>
+            </div>
+          )}
+        </Space>
+      </Card>
+
+      <Divider />
 
       {client && (
         <Card title="Usage Examples" size="small">
