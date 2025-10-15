@@ -13,7 +13,8 @@
 
 import { Serializer, typedIdentitySerializer } from './serializer';
 import {
-  EventHandler, nameGenerator,
+  EventHandler,
+  nameGenerator,
   SerialTypedEventBus,
   TypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
@@ -72,18 +73,20 @@ export interface KeyStorageOptions<Deserialized> {
  * @template Deserialized The type of the value being stored
  */
 export class KeyStorage<Deserialized>
-  implements StorageListenable<Deserialized> {
+  implements StorageListenable<Deserialized>
+{
   private readonly key: string;
   private readonly serializer: Serializer<string, Deserialized>;
   private readonly storage: Storage;
   private readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
   private cacheValue: Deserialized | null = null;
-  private readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> = {
-    name: nameGenerator.generate('KeyStorage'),
-    handle: (event: StorageEvent<Deserialized>) => {
-      this.cacheValue = event.newValue ?? null;
-    },
-  };
+  private readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> =
+    {
+      name: nameGenerator.generate('KeyStorage'),
+      handle: (event: StorageEvent<Deserialized>) => {
+        this.cacheValue = event.newValue ?? null;
+      },
+    };
 
   /**
    * Creates a new KeyStorage instance
@@ -101,6 +104,29 @@ export class KeyStorage<Deserialized>
     this.eventBus.on(this.keyStorageHandler);
   }
 
+  /**
+   * Adds a listener for storage changes.
+   *
+   * The listener will be called whenever the storage value changes,
+   * either locally or from other tabs/windows.
+   *
+   * @param listener - The event handler to be called when storage changes
+   * @returns A function that can be called to remove the listener
+   *
+   * @example
+   * ```typescript
+   * const storage = new KeyStorage<string>({ key: 'userName' });
+   * const removeListener = storage.addListener({
+   *   name: 'userNameChange',
+   *   handle: (event) => {
+   *     console.log('User name changed:', event.newValue);
+   *   }
+   * });
+   *
+   * // Later, to remove the listener
+   * removeListener();
+   * ```
+   */
   addListener(
     listener: EventHandler<StorageEvent<Deserialized>>,
   ): RemoveStorageListener {
@@ -108,6 +134,21 @@ export class KeyStorage<Deserialized>
     return () => this.eventBus.off(listener.name);
   }
 
+  /**
+   * Retrieves the current value from storage.
+   *
+   * Uses caching to avoid repeated deserialization. If the value is not in cache,
+   * it retrieves it from the underlying storage and deserializes it.
+   *
+   * @returns The deserialized value, or null if no value exists in storage
+   *
+   * @example
+   * ```typescript
+   * const storage = new KeyStorage<string>({ key: 'userName' });
+   * const userName = storage.get();
+   * console.log(userName); // 'John Doe' or null
+   * ```
+   */
   get(): Deserialized | null {
     if (this.cacheValue) {
       return this.cacheValue;
@@ -120,6 +161,20 @@ export class KeyStorage<Deserialized>
     return this.cacheValue;
   }
 
+  /**
+   * Stores a value in storage and notifies all listeners.
+   *
+   * Serializes the value, stores it in the underlying storage, updates the cache,
+   * and emits a change event to all registered listeners.
+   *
+   * @param value - The value to store (will be serialized before storage)
+   *
+   * @example
+   * ```typescript
+   * const storage = new KeyStorage<string>({ key: 'userName' });
+   * storage.set('John Doe');
+   * ```
+   */
   set(value: Deserialized): void {
     const oldValue = this.get();
     const serialized = this.serializer.serialize(value);
@@ -131,6 +186,18 @@ export class KeyStorage<Deserialized>
     });
   }
 
+  /**
+   * Removes the value from storage and notifies all listeners.
+   *
+   * Removes the item from the underlying storage, clears the cache,
+   * and emits a change event indicating the value was removed.
+   *
+   * @example
+   * ```typescript
+   * const storage = new KeyStorage<string>({ key: 'userName' });
+   * storage.remove(); // Removes the stored value
+   * ```
+   */
   remove(): void {
     const oldValue = this.get();
     this.storage.removeItem(this.key);
@@ -141,6 +208,20 @@ export class KeyStorage<Deserialized>
     });
   }
 
+  /**
+   * Cleans up resources used by the KeyStorage instance.
+   *
+   * Removes the internal event handler from the event bus.
+   * Should be called when the KeyStorage instance is no longer needed
+   * to prevent memory leaks.
+   *
+   * @example
+   * ```typescript
+   * const storage = new KeyStorage<string>({ key: 'userName' });
+   * // ... use storage ...
+   * storage.destroy(); // Clean up resources
+   * ```
+   */
   destroy() {
     this.eventBus.off(this.keyStorageHandler.name);
   }

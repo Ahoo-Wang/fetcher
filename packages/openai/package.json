@@ -1,7 +1,7 @@
 {
   "name": "@ahoo-wang/fetcher-openai",
   "version": "2.9.3",
-  "description": "",
+  "description": "A modern, type-safe OpenAI client library built on the Fetcher ecosystem. Provides declarative API integration with OpenAI's Chat Completions API, supporting both streaming and non-streaming responses.",
   "keywords": [
     "fetch",
     "http",
