@@ -14,17 +14,28 @@
 import { type ServerSentEvent } from './serverSentEventTransformStream';
 import { ServerSentEventStream } from './eventStreamConverter';
 
+export type TerminateDetector = (event: ServerSentEvent) => boolean;
+
 export interface JsonServerSentEvent<DATA>
   extends Omit<ServerSentEvent, 'data'> {
   data: DATA;
 }
 
 export class JsonServerSentEventTransform<DATA>
-  implements Transformer<ServerSentEvent, JsonServerSentEvent<DATA>> {
+  implements Transformer<ServerSentEvent, JsonServerSentEvent<DATA>>
+{
+  constructor(private readonly terminateDetector?: TerminateDetector) {}
+
   transform(
     chunk: ServerSentEvent,
     controller: TransformStreamDefaultController<JsonServerSentEvent<DATA>>,
   ) {
+    // Check if this is a terminate event
+    if (this.terminateDetector?.(chunk)) {
+      controller.terminate();
+      return;
+    }
+
     const json = JSON.parse(chunk.data) as DATA;
     controller.enqueue({
       data: json,
@@ -39,8 +50,8 @@ export class JsonServerSentEventTransformStream<DATA> extends TransformStream<
   ServerSentEvent,
   JsonServerSentEvent<DATA>
 > {
-  constructor() {
-    super(new JsonServerSentEventTransform());
+  constructor(terminateDetector?: TerminateDetector) {
+    super(new JsonServerSentEventTransform(terminateDetector));
   }
 }
 
@@ -50,8 +61,9 @@ export type JsonServerSentEventStream<DATA> = ReadableStream<
 
 export function toJsonServerSentEventStream<DATA>(
   serverSentEventStream: ServerSentEventStream,
+  terminateDetector?: TerminateDetector,
 ): JsonServerSentEventStream<DATA> {
   return serverSentEventStream.pipeThrough(
-    new JsonServerSentEventTransformStream<DATA>(),
+    new JsonServerSentEventTransformStream<DATA>(terminateDetector),
   );
 }
