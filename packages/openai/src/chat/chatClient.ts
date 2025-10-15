@@ -21,11 +21,11 @@ import {
   post,
 } from '@ahoo-wang/fetcher-decorator';
 import {
-  JsonEventStreamResultExtractor,
   JsonServerSentEventStream,
 } from '@ahoo-wang/fetcher-eventstream';
 import { FetchExchange } from '@ahoo-wang/fetcher';
 import { ChatRequest, ChatResponse } from './types';
+import { CompletionStreamResultExtractor } from './completionStreamResultExtractor';
 
 /**
  * OpenAI Chat API Client
@@ -46,7 +46,7 @@ export class ChatClient implements ApiMetadataCapable, ExecuteLifeCycle {
    * Lifecycle hook executed before request processing
    *
    * Automatically sets the appropriate result extractor based on the chat request's stream property:
-   * - If stream is true, uses JsonEventStreamResultExtractor to handle server-sent event streams
+   * - If stream is true, uses CompletionStreamResultExtractor to handle server-sent event streams
    * - If stream is false or undefined, uses the default JSON extractor
    *
    * @param exchange - FetchExchange object containing request and response information
@@ -54,7 +54,7 @@ export class ChatClient implements ApiMetadataCapable, ExecuteLifeCycle {
   beforeExecute(exchange: FetchExchange): void {
     const chatRequest = exchange.request.body as ChatRequest;
     if (chatRequest.stream) {
-      exchange.resultExtractor = JsonEventStreamResultExtractor;
+      exchange.resultExtractor = CompletionStreamResultExtractor;
     }
   }
 
