@@ -234,6 +234,53 @@ describe('JsonServerSentEventTransformStream', () => {
     const finalResult = await reader.read();
     expect(finalResult.done).toBe(true);
   });
+
+  it('should handle invalid JSON gracefully', async () => {
+    const transformStream = new JsonServerSentEventTransformStream<any>();
+    const writable = transformStream.writable;
+    const readable = transformStream.readable;
+
+    const writer = writable.getWriter();
+    const reader = readable.getReader();
+
+    const inputEvent: ServerSentEvent = {
+      data: '{"invalid": json}', // Invalid JSON - missing quote
+      event: 'message',
+    };
+
+    writer.write(inputEvent);
+
+    // The stream should error due to invalid JSON
+    await expect(async () => {
+      await reader.read();
+    }).rejects.toThrow();
+  });
+
+  it('should handle terminate detector that returns true', async () => {
+    const terminateDetector: TerminateDetector = (event: ServerSentEvent) =>
+      event.event === 'terminate';
+
+    const transformStream = new JsonServerSentEventTransformStream<any>(
+      terminateDetector,
+    );
+    const writable = transformStream.writable;
+    const readable = transformStream.readable;
+
+    const writer = writable.getWriter();
+    const reader = readable.getReader();
+
+    const terminateEvent: ServerSentEvent = {
+      data: '{"message": "terminate"}',
+      event: 'terminate',
+    };
+
+    // Write terminate event - this should terminate the stream
+    writer.write(terminateEvent);
+
+    // Should get no events since stream was terminated
+    const result = await reader.read();
+    expect(result.done).toBe(true);
+  });
 });
 
 describe('toJsonServerSentEventStream', () => {
