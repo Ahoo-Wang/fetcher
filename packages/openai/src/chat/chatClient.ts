@@ -20,9 +20,7 @@ import {
   ExecuteLifeCycle,
   post,
 } from '@ahoo-wang/fetcher-decorator';
-import {
-  JsonServerSentEventStream,
-} from '@ahoo-wang/fetcher-eventstream';
+import { JsonServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
 import { FetchExchange } from '@ahoo-wang/fetcher';
 import { ChatRequest, ChatResponse } from './types';
 import { CompletionStreamResultExtractor } from './completionStreamResultExtractor';
@@ -30,26 +28,118 @@ import { CompletionStreamResultExtractor } from './completionStreamResultExtract
 /**
  * OpenAI Chat API Client
  *
- * Provides integration with OpenAI Chat Completions API, supporting both streaming and non-streaming chat completions.
- * Uses decorator pattern for type-safe API calls and automatically handles streaming responses through lifecycle hooks.
+ * A comprehensive client for OpenAI's Chat Completions API that provides type-safe integration
+ * with both streaming and non-streaming chat completion endpoints. This client leverages the
+ * fetcher-decorator pattern to enable declarative API definitions and automatic request/response
+ * handling.
+ *
+ * Key Features:
+ * - Type-safe request/response handling with TypeScript generics
+ * - Automatic streaming response processing for server-sent events
+ * - Lifecycle hooks for request preprocessing and response transformation
+ * - Support for all OpenAI Chat Completion API parameters
+ * - Conditional return types based on streaming configuration
+ *
+ * @implements {ApiMetadataCapable} - Supports API metadata configuration
+ * @implements {ExecuteLifeCycle} - Provides lifecycle hooks for request processing
+ *
+ * @example
+ * ```typescript
+ * import { ChatClient } from '@ahoo-wang/fetcher-openai';
+ *
+ * const client = new ChatClient({
+ *   baseURL: 'https://api.openai.com/v1',
+ *   headers: {
+ *     'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+ *   }
+ * });
+ *
+ * // Non-streaming completion
+ * const response = await client.completions({
+ *   model: 'gpt-3.5-turbo',
+ *   messages: [{ role: 'user', content: 'Hello, world!' }]
+ * });
+ *
+ * // Streaming completion
+ * const stream = await client.completions({
+ *   model: 'gpt-3.5-turbo',
+ *   messages: [{ role: 'user', content: 'Tell me a story' }],
+ *   stream: true
+ * });
+ *
+ * for await (const chunk of stream) {
+ *   console.log(chunk.choices[0]?.delta?.content || '');
+ * }
+ * ```
  */
 @api('chat')
 export class ChatClient implements ApiMetadataCapable, ExecuteLifeCycle {
   /**
-   * Creates a ChatClient instance
+   * Creates a new ChatClient instance with optional API configuration.
    *
-   * @param apiMetadata - Optional API metadata configuration for customizing request behavior
+   * The API metadata allows customization of request behavior such as base URLs,
+   * default headers, timeout settings, and other fetcher configuration options.
+   * This enables flexible deployment scenarios (e.g., custom API endpoints, proxy configurations).
+   *
+   * @param apiMetadata - Optional configuration object for customizing API behavior.
+   *                       Includes baseURL, headers, timeout, and other fetcher options.
+   *                       If not provided, uses default fetcher configuration.
+   *
+   * @example
+   * ```typescript
+   * // Basic usage with default configuration
+   * const client = new ChatClient();
+   *
+   * // With custom API endpoint and authentication
+   * const client = new ChatClient({
+   *   baseURL: 'https://api.openai.com/v1',
+   *   headers: {
+   *     'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+   *     'Content-Type': 'application/json'
+   *   },
+   *   timeout: 30000
+   * });
+   *
+   * // With custom fetcher configuration
+   * const client = new ChatClient({
+   *   baseURL: 'https://custom-openai-proxy.com/api',
+   *   interceptors: [customAuthInterceptor]
+   * });
+   * ```
    */
   constructor(public readonly apiMetadata?: ApiMetadata) {}
 
   /**
-   * Lifecycle hook executed before request processing
+   * Lifecycle hook executed before request processing.
    *
-   * Automatically sets the appropriate result extractor based on the chat request's stream property:
-   * - If stream is true, uses CompletionStreamResultExtractor to handle server-sent event streams
-   * - If stream is false or undefined, uses the default JSON extractor
+   * This method implements the ExecuteLifeCycle interface and is automatically called by the
+   * fetcher-decorator framework before each API request. It inspects the chat request to determine
+   * whether streaming is requested and configures the appropriate result extractor accordingly.
    *
-   * @param exchange - FetchExchange object containing request and response information
+   * The method performs dynamic result extractor assignment:
+   * - For streaming requests (`stream: true`): Assigns `CompletionStreamResultExtractor` to handle
+   *   server-sent event streams with automatic termination detection
+   * - For non-streaming requests (`stream: false` or undefined): Uses the default JSON extractor
+   *   for standard JSON response parsing
+   *
+   * This approach enables type-safe conditional return types while maintaining clean API design.
+   *
+   * @param exchange - The fetch exchange object containing request details, response information,
+   *                   and configuration that can be modified before execution
+   *
+   * @example
+   * ```typescript
+   * // This method is called automatically by the framework
+   * // No manual invocation needed - shown for illustration:
+   *
+   * const exchange = {
+   *   request: { body: { stream: true, messages: [...] } },
+   *   resultExtractor: undefined // Will be set by beforeExecute
+   * };
+   *
+   * client.beforeExecute(exchange);
+   * // exchange.resultExtractor is now CompletionStreamResultExtractor
+   * ```
    */
   beforeExecute(exchange: FetchExchange): void {
     const chatRequest = exchange.request.body as ChatRequest;
@@ -59,32 +149,105 @@ export class ChatClient implements ApiMetadataCapable, ExecuteLifeCycle {
   }
 
   /**
-   * Creates a chat completion
+   * Creates a chat completion using OpenAI's Chat Completions API.
    *
-   * Returns different response types based on the stream parameter in the request:
-   * - Streaming request (stream: true): Returns JsonServerSentEventStream<ChatResponse>
-   * - Non-streaming request (stream: false/undefined): Returns ChatResponse
+   * This is the primary method for interacting with OpenAI's chat completion models.
+   * It supports both synchronous and streaming response modes, automatically handling
+   * the appropriate response processing based on the `stream` parameter.
    *
-   * @param chatRequest - Chat request parameters including messages, model configuration, etc.
-   * @returns Promise with response type inferred from the stream parameter
+   * The method uses advanced TypeScript conditional types to provide type-safe return values:
+   * - When `stream: true`, returns a `JsonServerSentEventStream<ChatResponse>` for real-time streaming
+   * - When `stream: false` or omitted, returns a standard `ChatResponse` object
+   *
+   * Streaming responses automatically terminate when the API sends a '[DONE]' signal,
+   * eliminating the need for manual stream management.
+   *
+   * @template T - The chat request type, constrained to ChatRequest for type safety
+   * @param chatRequest - Complete chat request configuration including:
+   *                      - `model`: The model to use (e.g., 'gpt-3.5-turbo', 'gpt-4')
+   *                      - `messages`: Array of chat messages with role/content pairs
+   *                      - `stream`: Optional boolean to enable streaming responses
+   *                      - `temperature`: Optional creativity control (0.0 to 2.0)
+   *                      - `max_tokens`: Optional maximum response length
+   *                      - `top_p`: Optional nucleus sampling parameter
+   *                      - `frequency_penalty`: Optional repetition control (-2.0 to 2.0)
+   *                      - `presence_penalty`: Optional topic diversity control (-2.0 to 2.0)
+   *                      - `stop`: Optional stop sequences (string or string array)
+   *                      - Additional OpenAI API parameters as needed
+   * @returns Promise resolving to:
+   *          - `JsonServerSentEventStream<ChatResponse>` when `T['stream'] extends true`
+   *          - `ChatResponse` when streaming is disabled or undefined
+   * @throws {Error} Network errors, authentication failures, or API errors
+   * @throws {EventStreamConvertError} When streaming response cannot be processed
    *
    * @example
    * ```typescript
-   * // Non-streaming request
+   * // Basic non-streaming completion
    * const response = await client.completions({
    *   model: 'gpt-3.5-turbo',
-   *   messages: [{ role: 'user', content: 'Hello!' }],
-   *   stream: false
+   *   messages: [
+   *     { role: 'system', content: 'You are a helpful assistant.' },
+   *     { role: 'user', content: 'What is TypeScript?' }
+   *   ],
+   *   temperature: 0.7,
+   *   max_tokens: 150
    * });
-   * // response: ChatResponse
    *
-   * // Streaming request
+   * console.log(response.choices[0].message.content);
+   * // Output: TypeScript is a programming language developed by Microsoft...
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Streaming completion with real-time output
    * const stream = await client.completions({
-   *   model: 'gpt-3.5-turbo',
-   *   messages: [{ role: 'user', content: 'Hello!' }],
-   *   stream: true
+   *   model: 'gpt-4',
+   *   messages: [{ role: 'user', content: 'Write a short story' }],
+   *   stream: true,
+   *   temperature: 0.8
    * });
-   * // stream: JsonServerSentEventStream<ChatResponse>
+   *
+   * for await (const chunk of stream) {
+   *   const content = chunk.choices[0]?.delta?.content;
+   *   if (content) {
+   *     process.stdout.write(content); // Real-time streaming output
+   *   }
+   * }
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Advanced configuration with multiple parameters
+   * const response = await client.completions({
+   *   model: 'gpt-3.5-turbo',
+   *   messages: [{ role: 'user', content: 'Explain quantum computing' }],
+   *   temperature: 0.3,        // Lower temperature for more focused responses
+   *   max_tokens: 500,         // Limit response length
+   *   top_p: 0.9,             // Nucleus sampling
+   *   frequency_penalty: 0.1,  // Reduce repetition
+   *   presence_penalty: 0.1,   // Encourage topic diversity
+   *   stop: ['###', 'END']     // Custom stop sequences
+   * });
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Error handling
+   * try {
+   *   const response = await client.completions({
+   *     model: 'gpt-3.5-turbo',
+   *     messages: [{ role: 'user', content: 'Hello!' }]
+   *   });
+   *   console.log('Success:', response);
+   * } catch (error) {
+   *   if (error.response?.status === 401) {
+   *     console.error('Authentication failed - check API key');
+   *   } else if (error.response?.status === 429) {
+   *     console.error('Rate limit exceeded - retry later');
+   *   } else {
+   *     console.error('API error:', error.message);
+   *   }
+   * }
    * ```
    */
   @post('/completions')
