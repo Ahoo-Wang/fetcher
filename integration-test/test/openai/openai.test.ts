@@ -12,9 +12,10 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { OpenAI } from '../src';
 
-describe('OpenAI Test', () => {
+import { OpenAI } from '@ahoo-wang/fetcher-openai';
+
+describe('OpenAI Integration Test', () => {
   let openAI: OpenAI | null = null;
   let model: string | undefined = undefined;
   beforeAll(() => {
