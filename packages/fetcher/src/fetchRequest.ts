@@ -45,6 +45,13 @@ export enum HttpMethod {
   TRACE = 'TRACE',
 }
 
+export interface UrlParamsCapable {
+  /**
+   * URL parameters
+   */
+  urlParams?: UrlParams;
+}
+
 export const CONTENT_TYPE_HEADER = 'Content-Type';
 
 export class ContentTypeValues {
@@ -105,8 +112,8 @@ export type RequestBodyType = BodyInit | Record<string, any> | string | null;
 export interface FetchRequestInit<BODY extends RequestBodyType = RequestBodyType>
   extends TimeoutCapable,
     RequestHeadersCapable,
+    UrlParamsCapable,
     Omit<RequestInit, 'body' | 'headers'> {
-  urlParams?: UrlParams;
 
   /**
    * Request body
