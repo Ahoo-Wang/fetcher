@@ -24,6 +24,7 @@ APIs.
 - **🛡️ TypeScript Support**: Complete TypeScript type definitions
 - **⚡ Performance Optimized**: Efficient parsing and streaming for high-performance applications
 - **🤖 LLM Streaming Ready**: Native support for streaming responses from popular LLM APIs like OpenAI GPT, Claude, etc.
+- **🔚 Stream Termination**: Automatic stream termination detection for clean resource management and completion handling
 
 ## 🚀 Quick Start
 
@@ -245,6 +246,47 @@ for await (const event of response.requiredJsonEventStream<MyDataType>()) {
 }
 ```
 
+### Advanced Usage with Termination Detection
+
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+import {
+  toJsonServerSentEventStream,
+  type TerminateDetector,
+} from '@ahoo-wang/fetcher-eventstream';
+
+const fetcher = new Fetcher({
+  baseURL: 'https://api.openai.com/v1',
+});
+
+// Define termination detector for OpenAI-style completion
+const terminateOnDone: TerminateDetector = event => event.data === '[DONE]';
+
+// Get raw event stream
+const response = await fetcher.post('/chat/completions', {
+  body: {
+    model: 'gpt-3.5-turbo',
+    messages: [{ role: 'user', content: 'Hello!' }],
+    stream: true,
+  },
+});
+
+// Convert to typed JSON stream with automatic termination
+const jsonStream = toJsonServerSentEventStream<ChatCompletionChunk>(
+  response.requiredEventStream(),
+  terminateOnDone,
+);
+
+// Process streaming response with automatic termination
+for await (const event of jsonStream) {
+  const content = event.data.choices[0]?.delta?.content;
+  if (content) {
+    console.log('Token:', content);
+    // Stream automatically terminates when '[DONE]' is received
+  }
+}
+```
+
 ### Manual Conversion
 
 ```typescript
@@ -310,23 +352,48 @@ for await (const event of response.requiredEventStream()) {
 ### toJsonServerSentEventStream
 
 Converts a `ServerSentEventStream` to a `JsonServerSentEventStream<DATA>` for handling Server-Sent Events with JSON
-data.
+data. Optionally supports stream termination detection for automatic stream closure.
 
 #### Signature
 
 ```typescript
 function toJsonServerSentEventStream<DATA>(
   serverSentEventStream: ServerSentEventStream,
+  terminateDetector?: TerminateDetector,
 ): JsonServerSentEventStream<DATA>;
 ```
 
 #### Parameters
 
 - `serverSentEventStream`: The `ServerSentEventStream` to convert
+- `terminateDetector`: Optional function to detect when the stream should be terminated. When provided, the stream will automatically close when the detector returns `true` for an event.
 
 #### Returns
 
 - `JsonServerSentEventStream<DATA>`: A readable stream of `JsonServerSentEvent<DATA>` objects
+
+#### Examples
+
+```typescript
+// Basic usage without termination detection
+const jsonStream = toJsonServerSentEventStream<MyData>(serverSentEventStream);
+
+// With termination detection for OpenAI-style completion
+const terminateOnDone: TerminateDetector = event => event.data === '[DONE]';
+const terminatingStream = toJsonServerSentEventStream<MyData>(
+  serverSentEventStream,
+  terminateOnDone,
+);
+
+// Custom termination logic
+const terminateOnError: TerminateDetector = event => {
+  return event.event === 'error' || event.data.includes('ERROR');
+};
+const errorHandlingStream = toJsonServerSentEventStream<MyData>(
+  serverSentEventStream,
+  terminateOnError,
+);
+```
 
 ### JsonServerSentEvent
 
@@ -347,6 +414,57 @@ type JsonServerSentEventStream<DATA> = ReadableStream<
   JsonServerSentEvent<DATA>
 >;
 ```
+
+### TerminateDetector
+
+A function type for detecting when a Server-Sent Event stream should be terminated. This is commonly used with LLM APIs that send a special termination event to signal the end of a response stream.
+
+#### Signature
+
+```typescript
+type TerminateDetector = (event: ServerSentEvent) => boolean;
+```
+
+#### Parameters
+
+- `event`: The current `ServerSentEvent` being processed
+
+#### Returns
+
+- `boolean`: `true` if the stream should be terminated, `false` otherwise
+
+#### Examples
+
+```typescript
+// OpenAI-style termination (common pattern)
+const terminateOnDone: TerminateDetector = event => event.data === '[DONE]';
+
+// Event-based termination
+const terminateOnComplete: TerminateDetector = event => event.event === 'done';
+
+// Custom termination with multiple conditions
+const terminateOnFinish: TerminateDetector = event => {
+  return (
+    event.event === 'done' ||
+    event.event === 'error' ||
+    event.data === '[DONE]' ||
+    event.data.includes('TERMINATE')
+  );
+};
+
+// Usage with toJsonServerSentEventStream
+const stream = toJsonServerSentEventStream<MyData>(
+  serverSentEventStream,
+  terminateOnDone,
+);
+```
+
+#### Common Use Cases
+
+- **LLM Streaming**: Detect completion markers like `[DONE]` from OpenAI, Claude, or other LLM APIs
+- **Error Handling**: Terminate streams when error events are received
+- **Custom Protocols**: Implement application-specific termination logic
+- **Resource Management**: Automatically close streams when certain conditions are met
 
 ### toServerSentEventStream
 

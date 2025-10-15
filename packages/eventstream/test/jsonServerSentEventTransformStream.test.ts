@@ -16,6 +16,7 @@ import {
   ServerSentEvent,
   JsonServerSentEventTransformStream,
   toJsonServerSentEventStream,
+  type TerminateDetector,
 } from '../src';
 
 describe('JsonServerSentEventTransformStream', () => {
@@ -126,6 +127,160 @@ describe('JsonServerSentEventTransformStream', () => {
     const finalResult = await reader.read();
     expect(finalResult.done).toBe(true);
   });
+
+  it('should accept terminate detector parameter', () => {
+    const terminateDetector: TerminateDetector = (event: ServerSentEvent) =>
+      event.event === 'terminate';
+
+    // Verify we can create a transform stream with terminate detector
+    const transformStream = new JsonServerSentEventTransformStream<any>(
+      terminateDetector,
+    );
+    expect(transformStream).toBeInstanceOf(JsonServerSentEventTransformStream);
+  });
+
+  it('should call terminate detector during transformation', async () => {
+    let detectorCallCount = 0;
+    let lastEvent: ServerSentEvent | undefined;
+
+    const terminateDetector: TerminateDetector = (event: ServerSentEvent) => {
+      detectorCallCount++;
+      lastEvent = event;
+      return false; // Don't terminate, just track calls
+    };
+
+    const transformStream = new JsonServerSentEventTransformStream<any>(
+      terminateDetector,
+    );
+
+    const writable = transformStream.writable;
+    const readable = transformStream.readable;
+    const writer = writable.getWriter();
+    const reader = readable.getReader();
+
+    const testEvent: ServerSentEvent = {
+      data: '{"message": "test"}',
+      event: 'message',
+    };
+
+    // Write and immediately close to avoid hanging
+    writer.write(testEvent);
+    writer.close();
+
+    // Read result
+    const result = await reader.read();
+    expect(result.done).toBe(false);
+    expect(result.value?.data).toEqual({ message: 'test' });
+
+    // Verify detector was called
+    expect(detectorCallCount).toBe(1);
+    expect(lastEvent).toEqual(testEvent);
+  });
+
+  it('should handle terminate detector errors gracefully', async () => {
+    const errorMessage = 'Terminate detector error';
+    const terminateDetector: TerminateDetector = () => {
+      throw new Error(errorMessage);
+    };
+
+    const transformStream = new JsonServerSentEventTransformStream<any>(
+      terminateDetector,
+    );
+
+    const writable = transformStream.writable;
+    const readable = transformStream.readable;
+    const writer = writable.getWriter();
+    const reader = readable.getReader();
+
+    const testEvent: ServerSentEvent = {
+      data: '{"message": "test"}',
+      event: 'message',
+    };
+
+    // Write event that will trigger the error
+    writer.write(testEvent);
+
+    // The stream should error due to the terminate detector throwing
+    await expect(async () => {
+      await reader.read();
+    }).rejects.toThrow(errorMessage);
+  });
+
+  it('should work without end detector', async () => {
+    const transformStream = new JsonServerSentEventTransformStream<any>();
+    const writable = transformStream.writable;
+    const readable = transformStream.readable;
+
+    const writer = writable.getWriter();
+    const reader = readable.getReader();
+
+    const inputEvent: ServerSentEvent = {
+      data: '{"test":true}',
+      event: 'message',
+    };
+
+    writer.write(inputEvent);
+    writer.close();
+
+    const result = await reader.read();
+    expect(result.done).toBe(false);
+    expect(result.value).toEqual({
+      data: { test: true },
+      event: 'message',
+      id: undefined,
+      retry: undefined,
+    });
+
+    const finalResult = await reader.read();
+    expect(finalResult.done).toBe(true);
+  });
+
+  it('should handle invalid JSON gracefully', async () => {
+    const transformStream = new JsonServerSentEventTransformStream<any>();
+    const writable = transformStream.writable;
+    const readable = transformStream.readable;
+
+    const writer = writable.getWriter();
+    const reader = readable.getReader();
+
+    const inputEvent: ServerSentEvent = {
+      data: '{"invalid": json}', // Invalid JSON - missing quote
+      event: 'message',
+    };
+
+    writer.write(inputEvent);
+
+    // The stream should error due to invalid JSON
+    await expect(async () => {
+      await reader.read();
+    }).rejects.toThrow();
+  });
+
+  it('should handle terminate detector that returns true', async () => {
+    const terminateDetector: TerminateDetector = (event: ServerSentEvent) =>
+      event.event === 'terminate';
+
+    const transformStream = new JsonServerSentEventTransformStream<any>(
+      terminateDetector,
+    );
+    const writable = transformStream.writable;
+    const readable = transformStream.readable;
+
+    const writer = writable.getWriter();
+    const reader = readable.getReader();
+
+    const terminateEvent: ServerSentEvent = {
+      data: '{"message": "terminate"}',
+      event: 'terminate',
+    };
+
+    // Write terminate event - this should terminate the stream
+    writer.write(terminateEvent);
+
+    // Should get no events since stream was terminated
+    const result = await reader.read();
+    expect(result.done).toBe(true);
+  });
 });
 
 describe('toJsonServerSentEventStream', () => {
@@ -161,5 +316,29 @@ describe('toJsonServerSentEventStream', () => {
 
     const finalResult = await reader.read();
     expect(finalResult.done).toBe(true);
+  });
+
+  it('should support terminate detector in toJsonServerSentEventStream', async () => {
+    // Create a mock ServerSentEventStream
+    const { readable } = new TransformStream<
+      ServerSentEvent,
+      ServerSentEvent
+    >();
+
+    let detectorCalled = false;
+    const terminateDetector: TerminateDetector = (event: ServerSentEvent) => {
+      detectorCalled = true;
+      return event.event === 'finish';
+    };
+
+    // Convert to JsonServerSentEventStream with terminate detector
+    const jsonStream = toJsonServerSentEventStream<any>(
+      readable as any,
+      terminateDetector,
+    );
+
+    // Verify the function accepts the terminate detector parameter
+    expect(typeof jsonStream).toBe('object');
+    expect(jsonStream).toHaveProperty('getReader');
   });
 });
