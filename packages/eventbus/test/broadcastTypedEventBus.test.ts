@@ -14,7 +14,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BroadcastTypedEventBus } from '../src';
 import { SerialTypedEventBus } from '../src';
-import { createCrossTabMessenger } from '../src/messengers/crossTabMessenger';
+import { createCrossTabMessenger } from '../src';
 
 // Mock the createCrossTabMessenger function
 vi.mock('../src/messengers/crossTabMessenger', () => ({

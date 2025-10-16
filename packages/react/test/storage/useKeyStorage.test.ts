@@ -17,11 +17,11 @@ import { useKeyStorage } from '../../src';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
 describe('useKeyStorage', () => {
-  let listenableStorage: Storage;
+  let storage: Storage;
   let keyStorage: KeyStorage<string>;
 
   beforeEach(() => {
-    listenableStorage = {
+    storage = {
       getItem: vi.fn(),
       setItem: vi.fn(),
       removeItem: vi.fn(),
@@ -31,7 +31,7 @@ describe('useKeyStorage', () => {
     };
     keyStorage = new KeyStorage<string>({
       key: 'test-key',
-      storage: listenableStorage,
+      storage: storage,
     });
   });
 
@@ -64,7 +64,7 @@ describe('useKeyStorage', () => {
   it('should work with different value types', async () => {
     const numberKeyStorage = new KeyStorage<number>({
       key: 'number-key',
-      storage: listenableStorage,
+      storage: storage,
     });
 
     const { result } = renderHook(() => useKeyStorage(numberKeyStorage));

@@ -18,9 +18,6 @@ import { renderHook, act } from '@testing-library/react';
 import { useFetcher } from '../../src';
 import { PromiseStatus } from '../../src';
 
-// Mock useMounted to always return true (component is mounted)
-vi.mock('../../src/core/useMounted', () => ({ useMounted: () => () => true }));
-
 // Mock fetcher
 vi.mock('@ahoo-wang/fetcher', async importOriginal => {
   const actual = await importOriginal<typeof import('@ahoo-wang/fetcher')>();

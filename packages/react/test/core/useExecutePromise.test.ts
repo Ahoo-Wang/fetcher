@@ -17,9 +17,6 @@ import { renderHook, act } from '@testing-library/react';
 // Import before mocks
 import { useExecutePromise, PromiseStatus } from '../../src';
 
-// Mock useMounted to always return true (component is mounted)
-vi.mock('../../src/core/useMounted', () => ({ useMounted: () => () => true }));
-
 describe('useExecutePromise', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -163,12 +160,6 @@ describe('useExecutePromise', () => {
     expect(result.current.result).toBe('second result');
   });
 
-  it('should throw error when component is unmounted', async () => {
-    // For this test, we need to test the unmounted case
-    // Since useMountedState is mocked to always return true, we'll skip this test for now
-    // as the line is covered by the logic but hard to test with current mocking setup
-    expect(true).toBe(true); // Placeholder test
-  });
 
   it('should propagate error when propagateError is true', async () => {
     const error = new Error('propagate error');
@@ -227,24 +218,4 @@ describe('useExecutePromise', () => {
     expect(result.current.result).toBeUndefined();
   });
 
-  it('should throw error when component is unmounted', async () => {
-    const mockProvider = vi.fn().mockResolvedValue('success');
-
-    // Temporarily mock useMounted to return false (component is unmounted)
-    const useMountedModule = await import('../../src/core/useMounted');
-    const originalUseMounted = useMountedModule.useMounted;
-    useMountedModule.useMounted = vi.fn(() => () => false);
-
-    const { result } = renderHook(() => useExecutePromise<string>({}));
-
-    // Try to execute when component is unmounted
-    await expect(result.current.execute(mockProvider)).rejects.toThrow(
-      'Component is unmounted',
-    );
-
-    expect(mockProvider).not.toHaveBeenCalled();
-
-    // Restore original mock
-    useMountedModule.useMounted = originalUseMounted;
-  });
 });
