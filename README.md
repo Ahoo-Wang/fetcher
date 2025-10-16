@@ -44,6 +44,22 @@ Transform your API interactions with clean, declarative service definitions:
 - **⚡ Automatic Implementation**: Methods automatically implemented with HTTP calls
 - **📦 Metadata System**: Rich metadata support for advanced customization
 
+### 🔧 [`@ahoo-wang/fetcher-generator`](./packages/generator) - OpenAPI Code Generator
+
+A powerful TypeScript code generation tool that automatically generates type-safe API client code based on OpenAPI specifications. It is designed for general use cases and is also deeply optimized for the [Wow](https://github.com/Ahoo-Wang/Wow) Domain-Driven Design framework, providing native support for the CQRS architectural pattern.
+
+- **🎯 OpenAPI 3.0+ Support**: Full support for OpenAPI 3.0+ specifications (JSON/YAML)
+- **📦 TypeScript Code Generation**: Generates type-safe TypeScript interfaces, enums, and classes
+- **🔧 CLI Tool**: Easy-to-use command-line interface for code generation
+- **🎨 Decorator-Based APIs**: Generates decorator-based client classes for clean API interactions
+- **📋 Comprehensive Models**: Handles complex schemas including unions, intersections, enums, and references
+- **🚀 Fetcher Integration**: Seamlessly integrates with the Fetcher ecosystem packages
+- **📊 Progress Logging**: Friendly logging with progress indicators during generation
+- **📁 Auto Index Generation**: Automatically generates index.ts files for clean module organization
+- **🌐 Remote Spec Support**: Load OpenAPI specs directly from HTTP/HTTPS URLs
+- **🎭 Event Streaming**: Generates both regular and event-stream command clients
+- **🏗️ Domain-Driven Design Support**: Specialized support for Wow framework with aggregates, commands, queries, and events (CQRS patterns)
+
 ### 🎯 [`@ahoo-wang/fetcher-eventbus`](./packages/eventbus) - Event Bus System
 
 A TypeScript event bus library providing multiple implementations for handling events: serial execution, parallel
@@ -85,22 +101,6 @@ Type-safe OpenAI API client with native streaming support for chat completions:
 - **📡 Native Streaming Support**: Built-in support for streaming chat completions with Server-Sent Events
 - **🔧 Declarative API**: Clean, decorator-based API for OpenAI interactions
 - **⚡ Fetcher Integration**: Seamlessly integrates with the Fetcher ecosystem
-
-### 🔧 [`@ahoo-wang/fetcher-generator`](./packages/generator) - OpenAPI Code Generator
-
-A powerful TypeScript code generator from OpenAPI specifications, designed to be general-purpose with specialized support for the Wow domain-driven design framework's CQRS patterns:
-
-- **🎯 OpenAPI 3.0+ Support**: Full support for OpenAPI 3.0+ specifications (JSON/YAML)
-- **📦 TypeScript Code Generation**: Generates type-safe TypeScript interfaces, enums, and classes
-- **🔧 CLI Tool**: Easy-to-use command-line interface for code generation
-- **🎨 Decorator-Based APIs**: Generates decorator-based client classes for clean API interactions
-- **📋 Comprehensive Models**: Handles complex schemas including unions, intersections, enums, and references
-- **🚀 Fetcher Integration**: Seamlessly integrates with the Fetcher ecosystem packages
-- **📊 Progress Logging**: Friendly logging with progress indicators during generation
-- **📁 Auto Index Generation**: Automatically generates index.ts files for clean module organization
-- **🌐 Remote Spec Support**: Load OpenAPI specs directly from HTTP/HTTPS URLs
-- **🎭 Event Streaming**: Generates both regular and event-stream command clients
-- **🏗️ Domain-Driven Design Support**: Specialized support for Wow framework with aggregates, commands, queries, and events (CQRS patterns)
 
 ### 💾 [`@ahoo-wang/fetcher-storage`](./packages/storage) - Cross-Environment Storage
 
@@ -247,6 +247,19 @@ class UserService {
 // Use the service
 const userService = new UserService();
 const users = await userService.getUsers(10);
+```
+
+#### OpenAPI Code Generator
+
+```shell
+# Global Installation Generator CLI
+npm install -g @ahoo-wang/fetcher-generator
+
+# Generate TypeScript code from OpenAPI specifications
+fetcher-generator generate -i ./openapi-spec.json -o ./src/generated
+
+# or generated from a remote URL
+fetcher-generator generate -i https://api.example.com/openapi.json -o ./src/generated
 ```
 
 #### Powerful Interceptors

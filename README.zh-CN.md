@@ -46,6 +46,22 @@ Fetcher 不仅仅是一个 HTTP 客户端——它是一个为现代 Web 开发�
 - **⚡ 自动实现**: 方法自动实现 HTTP 调用
 - **📦 元数据系统**: 丰富的元数据支持，用于高级自定义
 
+### 🔧 [`@ahoo-wang/fetcher-generator`](./packages/generator) - OpenAPI 代码生成器
+
+一个功能强大的 TypeScript 代码生成工具，能够基于 OpenAPI 规范自动生成类型安全的 API 客户端代码。不仅适用于通用场景，还专门为 Wow 领域驱动设计框架 深度优化，原生支持 CQRS 架构模式。
+
+- **🎯 OpenAPI 3.0+ 支持**：完整支持 OpenAPI 3.0+ 规范（JSON/YAML）
+- **📦 TypeScript 代码生成**：生成类型安全的 TypeScript 接口、枚举和类
+- **🔧 CLI 工具**：易用的命令行界面，用于代码生成
+- **🎨 装饰器式 API**：生成装饰器式的客户端类，实现清晰的 API 交互
+- **📋 全面的模型**：处理复杂的模式，包括联合、交集、枚举和引用
+- **🚀 Fetcher 生态集成**：无缝集成 Fetcher 生态系统包
+- **📊 进度日志**：生成过程中的友好日志记录和进度指示器
+- **📁 自动索引生成**：自动生成 index.ts 文件，实现清晰的模块组织
+- **🌐 远程规范支持**：直接从 HTTP/HTTPS URL 加载 OpenAPI 规范
+- **🎭 事件流**：生成常规和事件流命令客户端
+- **🏗️ 领域驱动设计支持**：为 Wow 框架提供专门支持，支持聚合、命令、查询和领域事件（CQRS 模式）
+
 ### 🎯 [`@ahoo-wang/fetcher-eventbus`](./packages/eventbus) - 事件总线系统
 
 一个 TypeScript 事件总线库，提供多种实现来处理事件：串行执行、并行执行和跨标签页广播。
@@ -82,23 +98,6 @@ Fetcher 不仅仅是一个 HTTP 客户端——它是一个为现代 Web 开发�
 - **📡 原生流式支持**：内置支持使用 Server-Sent Events 的流式聊天补全
 - **🔧 声明式 API**：用于 OpenAI 交互的清晰、装饰器式 API
 - **⚡ Fetcher 集成**：无缝集成到 Fetcher 生态系统
-
-### 🔧 [`@ahoo-wang/fetcher-generator`](./packages/generator) - OpenAPI 代码生成器
-
-一个强大的 TypeScript 代码生成器，从 OpenAPI 规范生成代码，设计为通用目的，同时为 Wow 领域驱动设计框架的 CQRS 模式提供专门支持：
-
-- **🎯 OpenAPI 3.0+ 支持**：完整支持 OpenAPI 3.0+ 规范（JSON/YAML）
-- **📦 TypeScript 代码生成**：生成类型安全的 TypeScript 接口、枚举和类
-
-- **🔧 CLI 工具**：易用的命令行界面，用于代码生成
-- **🎨 装饰器式 API**：生成装饰器式的客户端类，实现清晰的 API 交互
-- **📋 全面的模型**：处理复杂的模式，包括联合、交集、枚举和引用
-- **🚀 Fetcher 生态集成**：无缝集成 Fetcher 生态系统包
-- **📊 进度日志**：生成过程中的友好日志记录和进度指示器
-- **📁 自动索引生成**：自动生成 index.ts 文件，实现清晰的模块组织
-- **🌐 远程规范支持**：直接从 HTTP/HTTPS URL 加载 OpenAPI 规范
-- **🎭 事件流**：生成常规和事件流命令客户端
-- **🏗️ 领域驱动设计支持**：为 Wow 框架提供专门支持，支持聚合、命令、查询和领域事件（CQRS 模式）
 
 ### 💾 [`@ahoo-wang/fetcher-storage`](./packages/storage) - 跨环境存储
 
@@ -246,6 +245,19 @@ const userService = new UserService();
 const users = await userService.getUsers(10);
 ```
 
+#### OpenAPI 代码生成
+
+```shell
+# 全局安装生成器 CLI
+npm install -g @ahoo-wang/fetcher-generator
+
+# 从 OpenAPI 规范生成 TypeScript 代码
+fetcher-generator generate -i ./openapi-spec.json -o ./src/generated
+
+# 或者从远程 URL 生成
+fetcher-generator generate -i https://api.example.com/openapi.json -o ./src/generated
+```
+
 #### 强大的拦截器
 
 ```typescript
@@ -362,7 +374,6 @@ eventBus.on({
 });
 
 // 本地发射事件并广播到其他标签页
-await eventBus.emit('button-clicked');
 ```
 
 ## 🎯 集成测试示例
