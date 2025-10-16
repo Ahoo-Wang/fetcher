@@ -20,9 +20,25 @@ import { AggregateDefinition } from '../../src/aggregate';
 import { SilentLogger } from '../../src/utils/logger';
 
 // Mock the dependencies
-vi.mock('../../src/utils');
+vi.mock('../../src/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/utils')>();
+  return {
+    ...actual,
+    getOrCreateSourceFile: vi.fn(),
+    addImportRefModel: vi.fn(),
+    addImport: vi.fn(),
+    addJSDoc: vi.fn(),
+  };
+});
 vi.mock('../../src/model');
-vi.mock('../../src/client/utils');
+vi.mock('../../src/client/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/client/utils')>();
+  return {
+    ...actual,
+    createClientFilePath: vi.fn(),
+    getClientName: vi.fn(),
+  };
+});
 
 describe('QueryClientGenerator', () => {
   const mockOpenAPI = {

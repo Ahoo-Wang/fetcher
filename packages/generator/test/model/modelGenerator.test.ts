@@ -28,24 +28,16 @@ vi.mock('../../src/model/modelInfo', () => ({
   resolveReferenceModelInfo: vi.fn(),
 }));
 
-vi.mock('../../src/utils', () => ({
-  getModelFileName: vi.fn(),
-  getOrCreateSourceFile: vi.fn(),
-  addImportModelInfo: vi.fn(),
-  addJSDoc: vi.fn(),
-  addSchemaJSDoc: vi.fn(),
-  extractComponentKey: vi.fn(),
-  isEnum: vi.fn(),
-  isReference: vi.fn(),
-  isArray: vi.fn(),
-  isPrimitive: vi.fn(),
-  isComposition: vi.fn(),
-  isUnion: vi.fn(),
-  resolvePrimitiveType: vi.fn(),
-  toArrayType: vi.fn(),
-  pascalCase: vi.fn(),
-  upperSnakeCase: vi.fn(value => value.toUpperCase()),
-}));
+vi.mock('../../src/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/utils')>();
+  return {
+    ...actual,
+    getOrCreateSourceFile: vi.fn(),
+    addImportModelInfo: vi.fn(),
+    addJSDoc: vi.fn(),
+    addSchemaJSDoc: vi.fn(),
+  };
+});
 
 vi.mock('../../src/baseCodeGenerator', () => ({
   BaseCodeGenerator: vi.fn(),
@@ -162,22 +154,10 @@ describe('ModelGenerator', () => {
 
     mockResolveModelInfo = vi.mocked(resolveModelInfo);
     mockResolveReferenceModelInfo = vi.mocked(resolveReferenceModelInfo);
-    mockGetModelFileName = vi.mocked(getModelFileName);
     mockGetOrCreateSourceFile = vi.mocked(getOrCreateSourceFile);
     mockAddImportModelInfo = vi.mocked(addImportModelInfo);
     mockAddJSDoc = vi.mocked(addJSDoc);
     mockAddSchemaJSDoc = vi.mocked(addSchemaJSDoc);
-    mockExtractComponentKey = vi.mocked(extractComponentKey);
-    mockIsEnum = vi.mocked(isEnum);
-    mockIsReference = vi.mocked(isReference);
-    mockIsArray = vi.mocked(isArray);
-    mockIsPrimitive = vi.mocked(isPrimitive);
-    mockIsComposition = vi.mocked(isComposition);
-    mockIsUnion = vi.mocked(isUnion);
-    mockResolvePrimitiveType = vi.mocked(resolvePrimitiveType);
-    mockToArrayType = vi.mocked(toArrayType);
-    mockPascalCase = vi.mocked(pascalCase);
-    mockPascalCase.mockReturnValue('PascalCase');
 
     // Setup default mocks
     mockGetOrCreateSourceFile.mockReturnValue(mockSourceFile);
@@ -186,7 +166,6 @@ describe('ModelGenerator', () => {
       name: 'RefModel',
       path: 'models',
     });
-    mockGetModelFileName.mockReturnValue('models/types.ts');
   });
 
   describe('constructor', () => {
@@ -322,7 +301,6 @@ describe('ModelGenerator', () => {
 
       const mockEnum = { name: 'StatusEnum' };
       mockSourceFile.addEnum.mockReturnValue(mockEnum);
-      mockIsEnum.mockReturnValue(true);
 
       const schema: Schema = {
         type: 'string',
@@ -357,7 +335,6 @@ describe('ModelGenerator', () => {
         getProperty: vi.fn().mockReturnValue(null),
       };
       mockSourceFile.addInterface.mockReturnValue(mockInterface);
-      mockIsEnum.mockReturnValue(false);
 
       const mockProcessInterface = vi
         .spyOn(generator as any, 'processInterface')
@@ -400,8 +377,6 @@ describe('ModelGenerator', () => {
         addExtends: vi.fn(),
       };
       mockSourceFile.addInterface.mockReturnValue(mockInterface);
-      mockIsEnum.mockReturnValue(false);
-      mockIsComposition.mockReturnValue(true);
 
       const mockProcessInterface = vi
         .spyOn(generator as any, 'processInterface')
@@ -418,8 +393,6 @@ describe('ModelGenerator', () => {
         ],
       };
 
-      mockIsReference.mockReturnValueOnce(true).mockReturnValueOnce(false);
-      mockExtractComponentKey.mockReturnValue('BaseUser');
       mockResolveReferenceModelInfo.mockReturnValueOnce({
         name: 'BaseUser',
         path: 'models',
@@ -448,10 +421,6 @@ describe('ModelGenerator', () => {
 
       const mockTypeAlias = { name: 'Users' };
       mockSourceFile.addTypeAlias.mockReturnValue(mockTypeAlias);
-      mockIsEnum.mockReturnValue(false);
-      mockIsArray.mockReturnValue(true);
-      mockIsReference.mockReturnValueOnce(true);
-      mockToArrayType.mockReturnValue('RefModel[]');
 
       const schema: Schema = {
         type: 'array',
@@ -612,7 +581,6 @@ describe('ModelGenerator', () => {
       (generator as any).outputDir = context.outputDir;
 
       const propSchema = { $ref: '#/components/schemas/User' };
-      mockIsReference.mockReturnValue(true);
       mockResolveReferenceModelInfo.mockReturnValue({
         name: 'User',
         path: 'models',
@@ -640,7 +608,6 @@ describe('ModelGenerator', () => {
       const generator = new ModelGenerator(context);
 
       const propSchema = { const: 'active' };
-      mockIsReference.mockReturnValue(false);
 
       const result = (generator as any).resolvePropertyType(
         { name: 'Status', path: 'models' },
@@ -660,12 +627,6 @@ describe('ModelGenerator', () => {
         type: 'array',
         items: { type: 'string' },
       };
-      mockIsReference.mockReturnValue(false);
-      mockIsArray.mockReturnValueOnce(true).mockReturnValueOnce(false);
-      mockIsPrimitive.mockReturnValue(true);
-      mockIsComposition.mockReturnValue(false);
-      mockResolvePrimitiveType.mockReset().mockReturnValue('string');
-      mockToArrayType.mockReturnValue('string[]');
 
       const result = (generator as any).resolvePropertyType(
         { name: 'Tags', path: 'models' },
@@ -684,10 +645,6 @@ describe('ModelGenerator', () => {
       const generator = new ModelGenerator(context);
 
       const propSchema = { type: 'string' };
-      mockIsReference.mockReturnValue(false);
-      mockIsArray.mockReturnValue(false);
-      mockIsPrimitive.mockReturnValue(true);
-      mockResolvePrimitiveType.mockReturnValue('string');
 
       const result = (generator as any).resolvePropertyType(
         { name: 'User', path: 'models' },
@@ -708,7 +665,6 @@ describe('ModelGenerator', () => {
         anyOf: [{ type: 'string' }, { type: 'number' }],
       };
 
-      mockIsComposition.mockReturnValue(true);
 
       const mockResolveComposition = vi
         .spyOn(generator as any, 'resolvePropertyCompositionType')
@@ -740,11 +696,6 @@ describe('ModelGenerator', () => {
           city: { type: 'string' },
         },
       };
-      mockIsReference.mockReturnValue(false);
-      mockIsArray.mockReturnValue(false);
-      mockIsPrimitive.mockReturnValue(false);
-      mockIsComposition.mockReturnValue(false);
-      mockPascalCase.mockReturnValue('Address');
 
       const mockProcessObject = vi
         .spyOn(generator as any, 'processObject')
@@ -775,10 +726,6 @@ describe('ModelGenerator', () => {
       const generator = new ModelGenerator(context);
 
       const propSchema = { type: 'unknown' };
-      mockIsReference.mockReturnValue(false);
-      mockIsArray.mockReturnValue(false);
-      mockIsPrimitive.mockReturnValue(false);
-      mockIsComposition.mockReturnValue(false);
 
       const result = (generator as any).resolvePropertyType(
         { name: 'Unknown', path: 'models' },
@@ -800,14 +747,10 @@ describe('ModelGenerator', () => {
         anyOf: [{ $ref: '#/components/schemas/User' }, { type: 'string' }],
       } as any;
 
-      mockIsReference.mockReturnValueOnce(true).mockReturnValueOnce(false);
-      mockExtractComponentKey.mockReturnValue('User');
       mockResolveReferenceModelInfo.mockReturnValue({
         name: 'User',
         path: 'models',
       });
-      mockResolvePrimitiveType.mockReturnValue('string');
-      mockIsUnion.mockReturnValue(true);
 
       const result = (generator as any).resolvePropertyCompositionType(
         { name: 'Data', path: 'models' },
@@ -826,14 +769,10 @@ describe('ModelGenerator', () => {
         allOf: [{ $ref: '#/components/schemas/Base' }, { type: 'object' }],
       } as any;
 
-      mockIsReference.mockReturnValueOnce(true).mockReturnValueOnce(false);
-      mockExtractComponentKey.mockReturnValue('Base');
       mockResolveReferenceModelInfo.mockReturnValue({
         name: 'Base',
         path: 'models',
       });
-      mockResolvePrimitiveType.mockReturnValue('any');
-      mockIsUnion.mockReturnValue(false);
 
       const result = (generator as any).resolvePropertyCompositionType(
         { name: 'Extended', path: 'models' },

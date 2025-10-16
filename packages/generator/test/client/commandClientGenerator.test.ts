@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Project, SourceFile, VariableDeclarationKind } from 'ts-morph';
+import { Project } from 'ts-morph';
 import { CommandClientGenerator } from '../../src/client';
 import { AggregateDefinition } from '../../src/aggregate';
 import { SilentLogger } from '../../src/utils/logger';
@@ -20,9 +20,27 @@ import { GenerateContext } from '../../src/generateContext';
 import { GenerateContextInit } from '../../src/types';
 
 // Mock the dependencies
-vi.mock('../../src/utils');
+vi.mock('../../src/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/utils')>();
+  return {
+    ...actual,
+    getOrCreateSourceFile: vi.fn(),
+    addImportRefModel: vi.fn(),
+    addImport: vi.fn(),
+    addJSDoc: vi.fn(),
+  };
+});
+
 vi.mock('../../src/model');
-vi.mock('../../src/client/utils');
+
+vi.mock('../../src/client/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/client/utils')>();
+  return {
+    ...actual,
+    createClientFilePath: vi.fn(),
+    getClientName: vi.fn(),
+  };
+});
 
 describe('CommandClientGenerator', () => {
   const mockOpenAPI = {
@@ -240,7 +258,7 @@ describe('CommandClientGenerator', () => {
     const context = {
       ...createContext(mockLogger),
       contextAggregates: emptyContextAggregates,
-    };
+    } as GenerateContext;
     const generator = new CommandClientGenerator(context);
 
     generator.generate();
