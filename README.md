@@ -88,11 +88,10 @@ Type-safe OpenAI API client with native streaming support for chat completions:
 
 ### 🔧 [`@ahoo-wang/fetcher-generator`](./packages/generator) - OpenAPI Code Generator
 
-Generate type-safe TypeScript code from OpenAPI specifications for WOW domain-driven design framework:
+A powerful TypeScript code generator from OpenAPI specifications, designed to be general-purpose with specialized support for the Wow domain-driven design framework's CQRS patterns:
 
 - **🎯 OpenAPI 3.0+ Support**: Full support for OpenAPI 3.0+ specifications (JSON/YAML)
 - **📦 TypeScript Code Generation**: Generates type-safe TypeScript interfaces, enums, and classes
-- **🏗️ Domain-Driven Design**: Specialized for WOW framework with aggregates, commands, queries, and domain events
 - **🔧 CLI Tool**: Easy-to-use command-line interface for code generation
 - **🎨 Decorator-Based APIs**: Generates decorator-based client classes for clean API interactions
 - **📋 Comprehensive Models**: Handles complex schemas including unions, intersections, enums, and references
@@ -101,6 +100,7 @@ Generate type-safe TypeScript code from OpenAPI specifications for WOW domain-dr
 - **📁 Auto Index Generation**: Automatically generates index.ts files for clean module organization
 - **🌐 Remote Spec Support**: Load OpenAPI specs directly from HTTP/HTTPS URLs
 - **🎭 Event Streaming**: Generates both regular and event-stream command clients
+- **🏗️ Domain-Driven Design Support**: Specialized support for Wow framework with aggregates, commands, queries, and events (CQRS patterns)
 
 ### 💾 [`@ahoo-wang/fetcher-storage`](./packages/storage) - Cross-Environment Storage
 
@@ -154,7 +154,7 @@ Secure your applications with integrated authentication:
 | [`@ahoo-wang/fetcher-decorator`](./packages/decorator)     | **Decorator Support**<br/>Declarative API service definitions                                                            | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-decorator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-decorator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-decorator)     |
 | [`@ahoo-wang/fetcher-eventstream`](./packages/eventstream) | **Real-Time Streaming & LLM Support**<br/>Server-Sent Events (SSE) support with native LLM streaming API integration     | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-eventstream.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventstream)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventstream) |
 | [`@ahoo-wang/fetcher-openai`](./packages/openai)           | **OpenAI Client**<br/>Type-safe OpenAI API client with streaming support for chat completions                            | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-openai.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openai)           | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-openai)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openai)           |
-| [`@ahoo-wang/fetcher-generator`](./packages/generator)     | **OpenAPI Code Generator**<br/>TypeScript code generator from OpenAPI specs for WOW domain-driven design framework       | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-generator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-generator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     |
+| [`@ahoo-wang/fetcher-generator`](./packages/generator)     | **OpenAPI Code Generator**<br/>Powerful TypeScript code generator from OpenAPI specifications, designed to be general-purpose with specialized support for Wow domain-driven design framework's CQRS patterns       | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-generator.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-generator)](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)     |
 | [`@ahoo-wang/fetcher-openapi`](./packages/openapi)         | **OpenAPI TypeScript Types**<br/>Complete TypeScript type definitions for OpenAPI 3.0+ specifications                    | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-openapi.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openapi)         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-openapi)](https://www.npmjs.com/package/@ahoo-wang/fetcher-openapi)         |
 | [`@ahoo-wang/fetcher-storage`](./packages/storage)         | **Cross-Environment Storage**<br/>Lightweight storage library with key-based storage and automatic environment detection | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-storage.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-storage)](https://www.npmjs.com/package/@ahoo-wang/fetcher-storage)         |
 | [`@ahoo-wang/fetcher-react`](./packages/react)             | **React Integration**<br/>React hooks and components for seamless data fetching with automatic re-rendering              | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-react.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-react)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-react)](https://www.npmjs.com/package/@ahoo-wang/fetcher-react)             |
