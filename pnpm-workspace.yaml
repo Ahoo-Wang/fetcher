@@ -26,7 +26,7 @@ catalog:
   react-dom: ^18.3.1
   react-use: ^17.6.0
   reflect-metadata: ^0.2.2
-  ts-morph: ^27.0.0
+  ts-morph: ^27.0.2
   typescript: ^5.9.3
   typescript-eslint: ^8.46.1
   unplugin-dts: 1.0.0-beta.6
