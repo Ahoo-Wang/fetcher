@@ -49,12 +49,7 @@ const renderWithRef = (
   const ref = React.createRef<ConditionFilterRef>();
   const finalProps = createMockProps(props);
 
-  const result = render(
-    <IdConditionFilter
-      ref={ref}
-      {...finalProps}
-    />,
-  );
+  const result = render(<IdConditionFilter ref={ref} {...finalProps} />);
 
   return { ...result, ref };
 };
@@ -107,9 +102,9 @@ describe('IdConditionFilter', () => {
       });
       render(<IdConditionFilter {...props} />);
 
-      const select = screen.getByRole('combobox');
       // For Antd Select, check the selected option text instead of value attribute
-      const selectedOption = screen.getByText('ID');
+      // ID operator displays as '等于' (equal) in Chinese locale
+      const selectedOption = screen.getByText('等于');
       expect(selectedOption).toBeDefined();
     });
 

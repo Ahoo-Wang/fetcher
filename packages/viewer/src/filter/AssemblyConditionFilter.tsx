@@ -11,27 +11,47 @@
  * limitations under the License.
  */
 
-import { ConditionFilterProps, ValueProps } from './types';
+import { ConditionFilterProps } from './types';
 import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
 import { OPERATOR_zh_CN } from './locale';
-import { useConditionFilterState, UseConditionFilterStateReturn } from './useConditionFilterState';
+import {
+  useConditionFilterState,
+  UseConditionFilterStateReturn,
+} from './useConditionFilterState';
 import { Button, Select, Space } from 'antd';
 import { ReactNode } from 'react';
 
-export interface AssemblyConditionFilterProps<ValueType = any> extends ConditionFilterProps {
+export interface AssemblyConditionFilterProps<ValueType = any>
+  extends ConditionFilterProps {
   supportedOperators: Operator[];
   validate: (operator: Operator, value: ValueType | undefined) => boolean;
   friendly: (condition: Condition) => string;
-  valueInputSupplier: (filterState: UseConditionFilterStateReturn<ValueType>) => ReactNode;
+  valueInputSupplier: (
+    filterState: UseConditionFilterStateReturn<ValueType>,
+  ) => ReactNode;
 }
 
 export function AssemblyConditionFilter<ValueType = any>(
   props: AssemblyConditionFilterProps<ValueType>,
 ) {
+  // Validate that supportedOperators is not empty
+  if (!props.supportedOperators || props.supportedOperators.length === 0) {
+    throw new Error('supportedOperators must be a non-empty array');
+  }
+
   const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
+
+  // Determine the initial operator
+  let initialOperator = props.operator.value;
+
+  // If no operator is provided or it's not in supported operators, use the first supported operator
+  if (!initialOperator || !props.supportedOperators.includes(initialOperator)) {
+    initialOperator = props.supportedOperators[0];
+  }
+
   const filterState = useConditionFilterState({
     field: props.field.name,
-    operator: props.operator.value || props.supportedOperators[0],
+    operator: initialOperator,
     value: props.value.value,
     ref: props.ref,
     validate: props.validate,
@@ -39,12 +59,10 @@ export function AssemblyConditionFilter<ValueType = any>(
     onChange: props.onChange,
   });
   const valueInput = props.valueInputSupplier(filterState);
-  const options = props.supportedOperators.map((supportedOperator) => (
-    {
-      value: supportedOperator,
-      label: operatorLocale[supportedOperator],
-    }
-  ));
+  const options = props.supportedOperators.map(supportedOperator => ({
+    value: supportedOperator,
+    label: operatorLocale[supportedOperator],
+  }));
   return (
     <Space.Compact>
       <Button {...props.label}>{props.field.label}</Button>
@@ -53,8 +71,7 @@ export function AssemblyConditionFilter<ValueType = any>(
         onChange={filterState.setOperator}
         {...props.operator}
         options={options}
-      >
-      </Select>
+      ></Select>
       {valueInput}
     </Space.Compact>
   );

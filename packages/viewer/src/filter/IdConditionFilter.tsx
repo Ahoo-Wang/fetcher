@@ -12,14 +12,16 @@
  */
 
 import { ConditionFilterProps } from './types';
-import { conditionFilterRegistry } from './conditionFilterRegistry';
 import { Input } from 'antd';
 import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
 import { OPERATOR_zh_CN } from './locale';
 import { friendlyCondition } from './friendlyCondition';
 import { UseConditionFilterStateReturn } from './useConditionFilterState';
-import { AssemblyConditionFilter, AssemblyConditionFilterProps } from './AssemblyConditionFilter';
+import {
+  AssemblyConditionFilter,
+  AssemblyConditionFilterProps,
+} from './AssemblyConditionFilter';
 
 export const ID_CONDITION_FILTER = 'id';
 
@@ -27,7 +29,9 @@ export function IdConditionFilter(
   props: ConditionFilterProps<string | string[]>,
 ) {
   const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
-  const assemblyConditionFilterProps: AssemblyConditionFilterProps<string | string[]> = {
+  const assemblyConditionFilterProps: AssemblyConditionFilterProps<
+    string | string[]
+  > = {
     ...props,
     supportedOperators: [Operator.ID, Operator.IDS],
     validate: (operator: Operator, value: string | string[] | undefined) => {
@@ -39,7 +43,9 @@ export function IdConditionFilter(
     friendly: (condition: Condition) => {
       return friendlyCondition(props.field.label, operatorLocale, condition);
     },
-    valueInputSupplier: (filterState: UseConditionFilterStateReturn<string | string[]>) => {
+    valueInputSupplier: (
+      filterState: UseConditionFilterStateReturn<string | string[]>,
+    ) => {
       return filterState.operator === Operator.ID ? (
         <Input
           value={filterState.value}
@@ -56,7 +62,11 @@ export function IdConditionFilter(
       );
     },
   };
-  return <AssemblyConditionFilter<string | string[]> {...assemblyConditionFilterProps}></AssemblyConditionFilter>;
+  return (
+    <AssemblyConditionFilter<string | string[]>
+      {...assemblyConditionFilterProps}
+    ></AssemblyConditionFilter>
+  );
 }
 
 IdConditionFilter.displayName = 'IdConditionFilter';
