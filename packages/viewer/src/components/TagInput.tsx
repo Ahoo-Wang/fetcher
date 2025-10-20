@@ -18,7 +18,9 @@ import { Select, SelectProps } from 'antd';
  * Extends SelectProps from Antd, excluding 'mode', 'open', and 'suffixIcon' as they are fixed.
  */
 export interface TagInputProps
-  extends Omit<SelectProps, 'mode' | 'open' | 'suffixIcon'> {}
+  extends Omit<SelectProps, 'mode' | 'open' | 'suffixIcon'> {
+
+}
 
 /**
  * Default token separators for splitting input into tags.

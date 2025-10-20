@@ -11,38 +11,66 @@
  * limitations under the License.
  */
 
-import { Operator } from '@ahoo-wang/fetcher-wow';
+import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
 import { RefObject, useImperativeHandle, useState } from 'react';
 import { ConditionFilterRef, ConditionFilterValue } from './types';
 
-export interface useConditionFilterStateOptions<ValueType = any> {
+export interface UseConditionFilterStateOptions<ValueType = any> {
+  field?: string;
   operator: Operator;
-  value: ValueType;
+  value: ValueType | undefined;
   ref?: RefObject<ConditionFilterRef>;
-  buildConditionFilterValue: (operator: Operator, value: ValueType) => any;
+  validate: (operator: Operator, value: ValueType | undefined) => boolean;
+  friendly: (condition: Condition) => string;
+  onChange?: (condition: ConditionFilterValue | undefined) => void;
 }
 
-export interface useConditionFilterStateReturn<ValueType = any> {
+export interface UseConditionFilterStateReturn<ValueType = any> {
   operator: Operator;
-  value: ValueType;
+  value: ValueType | undefined;
   setOperator: (operator: Operator) => void;
-  setValue: (value: ValueType) => void;
+  setValue: (value: ValueType | undefined) => void;
 }
 
-function useConditionFilterState<ValueType = any>(options: useConditionFilterStateOptions<ValueType>): useConditionFilterStateReturn<ValueType> {
+export function useConditionFilterState<ValueType = any>(options: UseConditionFilterStateOptions<ValueType>): UseConditionFilterStateReturn<ValueType> {
   const [operator, setOperator] = useState<Operator>(options.operator);
   const [value, setValue] = useState(options.value);
 
+  const getCurrentConditionFilterValue = (currentOperator: Operator, currentValue: ValueType | undefined): ConditionFilterValue | undefined => {
+    if (!options.validate(currentOperator, currentValue)) {
+      return undefined;
+    }
+    const condition: Condition = {
+      field: options.field,
+      operator: currentOperator,
+      value: currentValue,
+    };
+    return {
+      condition,
+      friendly: options.friendly(condition),
+    };
+  };
+  const setOperatorFn = (newOperator: Operator) => {
+    setOperator(newOperator);
+    setValue(undefined);
+    const conditionFilterValue = getCurrentConditionFilterValue(newOperator, undefined);
+    options.onChange?.(conditionFilterValue);
+  };
+  const setValueFn = (newValue: ValueType | undefined) => {
+    setValue(newValue);
+    const conditionFilterValue = getCurrentConditionFilterValue(operator, newValue);
+    options.onChange?.(conditionFilterValue);
+  };
   useImperativeHandle(options.ref, () => ({
     getValue(): ConditionFilterValue | undefined {
-      return options.buildConditionFilterValue(operator, value);
+      return getCurrentConditionFilterValue(operator, value);
     },
   }));
 
   return {
     operator,
     value,
-    setOperator,
-    setValue,
+    setOperator: setOperatorFn,
+    setValue: setValueFn,
   };
 }

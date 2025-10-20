@@ -15,61 +15,46 @@ import { ConditionFilterProps, ConditionFilterValue } from './types';
 import { conditionFilterRegistry } from './conditionFilterRegistry';
 import { Button, Input, Select, Space } from 'antd';
 import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
-import { useImperativeHandle, useState } from 'react';
 import { TagInput } from '../components';
 import { OPERATOR_zh_CN } from './locale';
 import { friendlyCondition } from './friendlyCondition';
+import { useConditionFilterState } from './useConditionFilterState';
 
 export const ID_CONDITION_FILTER = 'id';
 
-function buildConditionFilterValue(props: ConditionFilterProps, operator: Operator, value: any): ConditionFilterValue | undefined {
-  if (!operator || !value || (Array.isArray(value) && value.length === 0)) {
-    return undefined;
-  }
-  const condition: Condition = {
-    operator,
-    value,
-  };
-  const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
-  const friendly = friendlyCondition(props.field.label, operatorLocale, condition);
-  return { condition, friendly };
-}
-
 export function IdConditionFilter(props: ConditionFilterProps<string | string[]>) {
-  const [operator, setOperator] = useState<Operator>(props.operator.value || Operator.ID);
-  const [value, setValue] = useState(props.value.value);
-
   const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
-  const onOperatorChange = (newOperator: Operator) => {
-    setOperator(newOperator);
-    props.onChange?.(buildConditionFilterValue(props, newOperator, value));
-  };
-  useImperativeHandle(props.ref, () => ({
-    getValue(): ConditionFilterValue | undefined {
-      return buildConditionFilterValue(props, operator, value);
+  const filterState = useConditionFilterState({
+    field: props.field.name,
+    operator: props.operator.value || Operator.ID,
+    value: props.value.value,
+    ref: props.ref,
+    validate: (operator: Operator, value: string | string[] | undefined) => {
+      return !(!operator || !value || (Array.isArray(value) && value.length === 0));
     },
-  }));
-  const onValueChange = (newValue: any) => {
-    setValue(newValue);
-    props.onChange?.(buildConditionFilterValue(props, operator, newValue));
-  };
+    friendly: (condition: Condition) => {
+      return friendlyCondition(props.field.label, operatorLocale, condition);
+    },
+    onChange: props.onChange,
+  });
+
   const valueInput =
-    operator === Operator.ID ? (
+    filterState.operator === Operator.ID ? (
       <Input
-        value={value}
-        onChange={e => onValueChange(e.target.value)}
+        value={filterState.value}
+        onChange={e => filterState.setValue(e.target.value)}
         allowClear
         {...props.value}
       />
     ) : (
-      <TagInput value={value} onChange={onValueChange} {...props.value} />
+      <TagInput value={filterState.value} onChange={filterState.setValue} {...props.value} />
     );
   return (
     <Space.Compact>
       <Button {...props.label}>{props.field.label}</Button>
       <Select
-        value={operator}
-        onChange={onOperatorChange}
+        value={filterState.operator}
+        onChange={filterState.setOperator}
         {...props.operator}
       >
         <Select.Option value={Operator.ID}>
