@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { ConditionFilterProps, ConditionFilterValue } from './types';
+import { ConditionFilterProps } from './types';
 import { conditionFilterRegistry } from './conditionFilterRegistry';
 import { Button, Input, Select, Space } from 'antd';
 import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
@@ -37,7 +37,6 @@ export function IdConditionFilter(props: ConditionFilterProps<string | string[]>
     },
     onChange: props.onChange,
   });
-
   const valueInput =
     filterState.operator === Operator.ID ? (
       <Input

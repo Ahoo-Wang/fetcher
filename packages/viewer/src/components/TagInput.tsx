@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { Select, SelectProps } from 'antd';
+import { RefSelectProps, Select, SelectProps } from 'antd';
+import { RefObject } from 'react';
 
 /**
  * Props for the TagInput component.
@@ -19,7 +20,7 @@ import { Select, SelectProps } from 'antd';
  */
 export interface TagInputProps
   extends Omit<SelectProps, 'mode' | 'open' | 'suffixIcon'> {
-
+  ref?: RefObject<RefSelectProps>;
 }
 
 /**
@@ -40,6 +41,7 @@ export function TagInput(props: TagInputProps) {
     allowClear = true,
     ...restProps
   } = props;
+
   return (
     <Select
       {...restProps}
