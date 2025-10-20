@@ -39,6 +39,12 @@ export function AssemblyConditionFilter<ValueType = any>(
     onChange: props.onChange,
   });
   const valueInput = props.valueInputSupplier(filterState);
+  const options = props.supportedOperators.map((supportedOperator) => (
+    {
+      value: supportedOperator,
+      label: operatorLocale[supportedOperator],
+    }
+  ));
   return (
     <Space.Compact>
       <Button {...props.label}>{props.field.label}</Button>
@@ -46,12 +52,8 @@ export function AssemblyConditionFilter<ValueType = any>(
         value={filterState.operator}
         onChange={filterState.setOperator}
         {...props.operator}
+        options={options}
       >
-        {props.supportedOperators.map((supportedOperator) => (
-          <Select.Option key={supportedOperator} value={supportedOperator}>
-            {operatorLocale[supportedOperator]}
-          </Select.Option>
-        ))}
       </Select>
       {valueInput}
     </Space.Compact>
