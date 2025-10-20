@@ -36,7 +36,7 @@ export function useConditionFilterState<ValueType = any>(options: UseConditionFi
   const [operator, setOperator] = useState<Operator>(options.operator);
   const [value, setValue] = useState(options.value);
 
-  const getCurrentConditionFilterValue = (currentOperator: Operator, currentValue: ValueType | undefined): ConditionFilterValue | undefined => {
+  const resolveConditionFilterValue = (currentOperator: Operator, currentValue: ValueType | undefined): ConditionFilterValue | undefined => {
     if (!options.validate(currentOperator, currentValue)) {
       return undefined;
     }
@@ -53,17 +53,17 @@ export function useConditionFilterState<ValueType = any>(options: UseConditionFi
   const setOperatorFn = (newOperator: Operator) => {
     setOperator(newOperator);
     setValue(undefined);
-    const conditionFilterValue = getCurrentConditionFilterValue(newOperator, undefined);
+    const conditionFilterValue = resolveConditionFilterValue(newOperator, undefined);
     options.onChange?.(conditionFilterValue);
   };
   const setValueFn = (newValue: ValueType | undefined) => {
     setValue(newValue);
-    const conditionFilterValue = getCurrentConditionFilterValue(operator, newValue);
+    const conditionFilterValue = resolveConditionFilterValue(operator, newValue);
     options.onChange?.(conditionFilterValue);
   };
   useImperativeHandle(options.ref, () => ({
     getValue(): ConditionFilterValue | undefined {
-      return getCurrentConditionFilterValue(operator, value);
+      return resolveConditionFilterValue(operator, value);
     },
   }));
 
