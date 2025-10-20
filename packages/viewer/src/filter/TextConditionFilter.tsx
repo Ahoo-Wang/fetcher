@@ -12,7 +12,6 @@
  */
 
 import { ConditionFilterProps } from './types';
-import { conditionFilterRegistry } from './conditionFilterRegistry';
 import { Input } from 'antd';
 import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
@@ -21,15 +20,15 @@ import { friendlyCondition } from './friendlyCondition';
 import { UseConditionFilterStateReturn } from './useConditionFilterState';
 import { AssemblyConditionFilter, AssemblyConditionFilterProps } from './AssemblyConditionFilter';
 
-export const ID_CONDITION_FILTER = 'id';
+export const TEXT_CONDITION_FILTER = 'text';
 
-export function IdConditionFilter(
+export function TextConditionFilter(
   props: ConditionFilterProps<string | string[]>,
 ) {
   const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
   const assemblyConditionFilterProps: AssemblyConditionFilterProps<string | string[]> = {
     ...props,
-    supportedOperators: [Operator.ID, Operator.IDS],
+    supportedOperators: [Operator.EQ, Operator.NE, Operator.CONTAINS, Operator.STARTS_WITH, Operator.ENDS_WITH],
     validate: (operator: Operator, value: string | string[] | undefined) => {
       // Valid if operator exists, value exists, and arrays are non-empty
       if (!operator) return false;
@@ -40,23 +39,27 @@ export function IdConditionFilter(
       return friendlyCondition(props.field.label, operatorLocale, condition);
     },
     valueInputSupplier: (filterState: UseConditionFilterStateReturn<string | string[]>) => {
-      return filterState.operator === Operator.ID ? (
-        <Input
-          value={filterState.value}
-          onChange={e => filterState.setValue(e.target.value)}
-          allowClear
-          {...props.value}
-        />
-      ) : (
-        <TagInput
-          value={filterState.value}
-          onChange={filterState.setValue}
-          {...props.value}
-        />
-      );
+      switch (filterState.operator) {
+        case Operator.IN:
+        case Operator.NOT_IN: {
+          return <TagInput
+            value={filterState.value}
+            onChange={filterState.setValue}
+            {...props.value}
+          />;
+        }
+        default: {
+          return <Input
+            value={filterState.value}
+            onChange={e => filterState.setValue(e.target.value)}
+            allowClear
+            {...props.value}
+          />;
+        }
+      }
     },
   };
   return <AssemblyConditionFilter<string | string[]> {...assemblyConditionFilterProps}></AssemblyConditionFilter>;
 }
 
-IdConditionFilter.displayName = 'IdConditionFilter';
+TextConditionFilter.displayName = 'TextConditionFilter';

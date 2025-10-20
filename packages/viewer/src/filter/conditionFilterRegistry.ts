@@ -12,6 +12,8 @@
  */
 
 import { ConditionFilterComponent } from './types';
+import { TEXT_CONDITION_FILTER, TextConditionFilter } from './TextConditionFilter';
+import { ID_CONDITION_FILTER, IdConditionFilter } from './IdConditionFilter';
 
 /**
  * Registry for managing condition filter components.
@@ -24,6 +26,11 @@ export class ConditionFilterRegistry {
     string,
     ConditionFilterComponent
   >();
+
+  constructor() {
+    this.register(ID_CONDITION_FILTER, IdConditionFilter);
+    this.register(TEXT_CONDITION_FILTER, TextConditionFilter);
+  }
 
   /**
    * Registers a condition filter component for a specific type.
