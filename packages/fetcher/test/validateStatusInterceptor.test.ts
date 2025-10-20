@@ -16,6 +16,7 @@ import {
   Fetcher,
   FetchExchange,
   HttpStatusValidationError,
+  IGNORE_VALIDATE_STATUS,
   VALIDATE_STATUS_INTERCEPTOR_NAME,
   VALIDATE_STATUS_INTERCEPTOR_ORDER,
   ValidateStatusInterceptor,
@@ -118,6 +119,55 @@ describe('ValidateStatusInterceptor', () => {
       // @ts-ignore
       expect(error.exchange).toBe(exchange);
     }
+  });
+
+  it('should skip validation when IGNORE_VALIDATE_STATUS is set to true', () => {
+    const interceptor = new ValidateStatusInterceptor();
+    const response = new Response('test', { status: 404 });
+    const request = { url: '/test' };
+    const attributes = new Map([[IGNORE_VALIDATE_STATUS, true]]);
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request,
+      response,
+      attributes,
+    });
+
+    expect(() => interceptor.intercept(exchange)).not.toThrow();
+  });
+
+  it('should still validate when IGNORE_VALIDATE_STATUS is set to false', () => {
+    const interceptor = new ValidateStatusInterceptor();
+    const response = new Response('test', { status: 404 });
+    const request = { url: '/test' };
+    const attributes = new Map([[IGNORE_VALIDATE_STATUS, false]]);
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request,
+      response,
+      attributes,
+    });
+
+    expect(() => interceptor.intercept(exchange)).toThrow(
+      HttpStatusValidationError,
+    );
+  });
+
+  it('should still validate when IGNORE_VALIDATE_STATUS is not set', () => {
+    const interceptor = new ValidateStatusInterceptor();
+    const response = new Response('test', { status: 404 });
+    const request = { url: '/test' };
+    const attributes = new Map();
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request,
+      response,
+      attributes,
+    });
+
+    expect(() => interceptor.intercept(exchange)).toThrow(
+      HttpStatusValidationError,
+    );
   });
 });
 
