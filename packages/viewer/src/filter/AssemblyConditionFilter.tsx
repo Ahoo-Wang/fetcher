@@ -67,9 +67,9 @@ export function AssemblyConditionFilter<ValueType = any>(
     <Space.Compact>
       <Button {...props.label}>{props.field.label}</Button>
       <Select
-        value={filterState.operator}
         onChange={filterState.setOperator}
         {...props.operator}
+        value={filterState.operator}
         options={options}
       ></Select>
       {valueInput}
