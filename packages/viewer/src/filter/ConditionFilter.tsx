@@ -22,10 +22,7 @@ export interface TypedConditionFilterProps
 }
 
 export function ConditionFilter(props: TypedConditionFilterProps) {
-  const FilterComponent = conditionFilterRegistry.get(props.type);
-  if (!FilterComponent) {
-    return <FallbackConditionFilter type={props.type} />;
-  }
+  const FilterComponent = conditionFilterRegistry.get(props.type) || FallbackConditionFilter;
   return <FilterComponent {...props} />;
 }
 

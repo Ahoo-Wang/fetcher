@@ -12,13 +12,16 @@
  */
 
 import { Alert } from 'antd';
-import React from 'react';
+import React, { useImperativeHandle } from 'react';
+import { TypedConditionFilterProps } from './ConditionFilter';
+import { ConditionFilterValue } from './types';
 
-export interface FallbackConditionFilterProps {
-  type: string;
-}
-
-export function FallbackConditionFilter(props: FallbackConditionFilterProps) {
+export function FallbackConditionFilter(props: TypedConditionFilterProps) {
+  useImperativeHandle(props.ref, () => ({
+    getValue(): ConditionFilterValue | undefined {
+      return undefined;
+    },
+  }));
   return <Alert message={`Unsupported filter type:[${props.type}]`} type="warning" showIcon />;
 }
 
