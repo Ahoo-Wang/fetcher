@@ -3,7 +3,7 @@ packages:
   - integration-test
 
 catalog:
-  '@eslint/js': ^9.37.0
+  '@eslint/js': ^9.38.0
   '@testing-library/react': ^16.0.0
   '@types/node': ^24.5.2
   '@types/react': ^18.3.26
@@ -14,7 +14,7 @@ catalog:
   antd: ^5.27.5
   babel-plugin-react-compiler: ^1.0.0
   commander: ^14.0.0
-  eslint: ^9.37.0
+  eslint: ^9.38.0
   eslint-plugin-react-hooks: ^5.2.0
   globals: ^16.4.0
   jsdom: ^27.0.0
