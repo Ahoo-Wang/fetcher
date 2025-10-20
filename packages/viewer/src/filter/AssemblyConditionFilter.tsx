@@ -47,12 +47,11 @@ export function AssemblyConditionFilter<ValueType = any>(
         onChange={filterState.setOperator}
         {...props.operator}
       >
-        <Select.Option value={Operator.ID}>
-          {operatorLocale[Operator.ID]}
-        </Select.Option>
-        <Select.Option value={Operator.IDS}>
-          {operatorLocale[Operator.IDS]}
-        </Select.Option>
+        {props.supportedOperators.map((supportedOperator) => (
+          <Select.Option key={supportedOperator} value={supportedOperator}>
+            {operatorLocale[supportedOperator]}
+          </Select.Option>
+        ))}
       </Select>
       {valueInput}
     </Space.Compact>

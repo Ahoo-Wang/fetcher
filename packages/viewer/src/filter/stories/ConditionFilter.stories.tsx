@@ -12,37 +12,12 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
+import React, { useState } from 'react';
 import { ConditionFilter } from '../ConditionFilter';
 import '../IdConditionFilter';
-import { conditionFilterRegistry } from '../conditionFilterRegistry';
+import { ConditionFilterValue } from '../types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
-import { Input } from 'antd';
-
-// Mock filter components for demonstration
-const MockStringFilter = ({ field, operator, placeholder }: any) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-    <span>{field.label}:</span>
-    <Input
-      placeholder={placeholder || `Enter ${field.label}`}
-      style={{ width: 200 }}
-    />
-  </div>
-);
-
-const MockNumberFilter = ({ field, operator, placeholder }: any) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-    <span>{field.label}:</span>
-    <Input
-      type="number"
-      placeholder={placeholder || `Enter ${field.label}`}
-      style={{ width: 200 }}
-    />
-  </div>
-);
-
-// Register mock filters for stories
-conditionFilterRegistry.register('string', MockStringFilter);
-conditionFilterRegistry.register('number', MockNumberFilter);
+import { Card, Typography, Space } from 'antd';
 
 const meta: Meta<typeof ConditionFilter> = {
   title: 'Viewer/Filter/ConditionFilter',
@@ -51,8 +26,15 @@ const meta: Meta<typeof ConditionFilter> = {
     layout: 'centered',
     docs: {
       description: {
-        component:
-          'A dynamic filter component that renders different filter types based on the field type using a registry pattern.',
+        component: `
+A dynamic filter component that automatically renders the appropriate filter UI based on the \`type\` prop using a registry pattern.
+
+## Key Features
+- **Dynamic Rendering**: Automatically selects filter component based on type
+- **Registry Pattern**: Extensible filter system
+- **Type Safety**: Full TypeScript support
+- **Fallback Handling**: Graceful degradation for unsupported types
+        `,
       },
     },
   },
@@ -60,21 +42,28 @@ const meta: Meta<typeof ConditionFilter> = {
   argTypes: {
     type: {
       control: { type: 'select' },
-      options: ['string', 'number', 'id', 'unsupported'],
-      description: 'The type of filter to render',
-    },
-    operator: {
-      control: { type: 'select' },
-      options: Object.values(Operator),
-      description: 'The operator for the condition',
-    },
-    placeholder: {
-      control: 'text',
-      description: 'Placeholder text for the input',
+      options: [ 'id', 'text','unsupported'],
+      description: 'Filter type that determines which component to render',
     },
     field: {
       control: 'object',
-      description: 'Field configuration object',
+      description: 'Field configuration with name, label, and type',
+    },
+    label: {
+      control: 'object',
+      description: 'Button styling configuration',
+    },
+    operator: {
+      control: 'object',
+      description: 'Operator selection configuration',
+    },
+    value: {
+      control: 'object',
+      description: 'Input value configuration',
+    },
+    onChange: {
+      action: 'changed',
+      description: 'Callback fired when filter value changes',
     },
   },
 };
@@ -82,105 +71,38 @@ const meta: Meta<typeof ConditionFilter> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const StringFilter: Story = {
+
+// 带交互的字符串过滤器
+export const Default: Story = {
   args: {
-    type: 'string',
+    type: 'text',
     field: {
-      name: 'name',
-      label: 'Name',
+      name: 'email',
+      label: 'Email',
       type: 'string',
     },
-    operator: Operator.EQ,
-    placeholder: 'Enter name',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: 'Renders a string filter component for text input.',
-      },
+    label: {},
+    operator: {
+      value: Operator.CONTAINS,
+    },
+    value: {
+      placeholder: 'Search emails...',
     },
   },
-};
+  render: (args: any) => {
+    const [filterValue, setFilterValue] = useState<ConditionFilterValue>();
 
-export const NumberFilter: Story = {
-  args: {
-    type: 'number',
-    field: {
-      name: 'age',
-      label: 'Age',
-      type: 'number',
-    },
-    operator: Operator.GTE,
-    placeholder: 'Enter minimum age',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: 'Renders a number filter component for numeric input.',
-      },
-    },
-  },
-};
-
-export const IdFilter: Story = {
-  args: {
-    type: 'id',
-    field: {
-      name: 'userId',
-      label: 'User ID',
-      type: 'string',
-    },
-    operator: Operator.ID,
-    placeholder: 'Enter user ID',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Renders the specialized ID filter component with ID/IDS operators.',
-      },
-    },
-  },
-};
-
-export const UnsupportedType: Story = {
-  args: {
-    type: 'unsupported',
-    field: {
-      name: 'unknown',
-      label: 'Unknown Field',
-      type: 'unsupported',
-    },
-    operator: Operator.EQ,
-    placeholder: 'This will show fallback',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Demonstrates the fallback behavior when an unsupported filter type is provided.',
-      },
-    },
-  },
-};
-
-export const DynamicTypeSwitching: Story = {
-  args: {
-    type: 'string',
-    field: {
-      name: 'dynamic',
-      label: 'Dynamic Field',
-      type: 'string',
-    },
-    operator: Operator.EQ,
-    placeholder: 'Dynamic placeholder',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Shows how the component dynamically switches between different filter types.',
-      },
-    },
+    return (
+      <Card title="Interactive Filter Demo" style={{ width: 400 }}>
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <ConditionFilter {...args} onChange={setFilterValue} />
+          {filterValue && (
+            <Typography.Text type="secondary">
+              Current filter: {filterValue.friendly}
+            </Typography.Text>
+          )}
+        </Space>
+      </Card>
+    );
   },
 };
