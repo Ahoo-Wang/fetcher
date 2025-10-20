@@ -13,12 +13,13 @@
 
 import { ConditionFilterProps } from './types';
 import { conditionFilterRegistry } from './conditionFilterRegistry';
-import { Button, Input, Select, Space } from 'antd';
+import { Input } from 'antd';
 import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
 import { OPERATOR_zh_CN } from './locale';
 import { friendlyCondition } from './friendlyCondition';
-import { useConditionFilterState } from './useConditionFilterState';
+import { UseConditionFilterStateReturn } from './useConditionFilterState';
+import { AssemblyConditionFilter, AssemblyConditionFilterProps } from './AssemblyConditionFilter';
 
 export const ID_CONDITION_FILTER = 'id';
 
@@ -26,56 +27,36 @@ export function IdConditionFilter(
   props: ConditionFilterProps<string | string[]>,
 ) {
   const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
-  const filterState = useConditionFilterState({
-    field: props.field.name,
-    operator: props.operator.value || Operator.ID,
-    value: props.value.value,
-    ref: props.ref,
+  const assemblyConditionFilterProps: AssemblyConditionFilterProps<string | string[]> = {
+    ...props,
+    supportedOperators: [Operator.ID, Operator.IDS],
     validate: (operator: Operator, value: string | string[] | undefined) => {
       // Valid if operator exists, value exists, and arrays are non-empty
       if (!operator) return false;
       if (!value) return false;
-      if (Array.isArray(value) && value.length === 0) return false;
-      return true;
+      return !(Array.isArray(value) && value.length === 0);
     },
     friendly: (condition: Condition) => {
       return friendlyCondition(props.field.label, operatorLocale, condition);
     },
-    onChange: props.onChange,
-  });
-  const valueInput =
-    filterState.operator === Operator.ID ? (
-      <Input
-        value={filterState.value}
-        onChange={e => filterState.setValue(e.target.value)}
-        allowClear
-        {...props.value}
-      />
-    ) : (
-      <TagInput
-        value={filterState.value}
-        onChange={filterState.setValue}
-        {...props.value}
-      />
-    );
-  return (
-    <Space.Compact>
-      <Button {...props.label}>{props.field.label}</Button>
-      <Select
-        value={filterState.operator}
-        onChange={filterState.setOperator}
-        {...props.operator}
-      >
-        <Select.Option value={Operator.ID}>
-          {operatorLocale[Operator.ID]}
-        </Select.Option>
-        <Select.Option value={Operator.IDS}>
-          {operatorLocale[Operator.IDS]}
-        </Select.Option>
-      </Select>
-      {valueInput}
-    </Space.Compact>
-  );
+    valueInputSupplier: (filterState: UseConditionFilterStateReturn<string | string[]>) => {
+      return filterState.operator === Operator.ID ? (
+        <Input
+          value={filterState.value}
+          onChange={e => filterState.setValue(e.target.value)}
+          allowClear
+          {...props.value}
+        />
+      ) : (
+        <TagInput
+          value={filterState.value}
+          onChange={filterState.setValue}
+          {...props.value}
+        />
+      );
+    },
+  };
+  return <AssemblyConditionFilter<string | string[]> {...assemblyConditionFilterProps}></AssemblyConditionFilter>;
 }
 
 IdConditionFilter.displayName = 'IdConditionFilter';
