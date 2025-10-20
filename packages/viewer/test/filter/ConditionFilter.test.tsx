@@ -25,8 +25,17 @@ describe('ConditionFilter', () => {
       label: 'Test Field',
       type: 'string',
     },
-    operator: Operator.EQ,
-    placeholder: 'Enter value',
+    label: {
+      children: 'Test Label',
+    },
+    operator: {
+      value: Operator.EQ,
+      options: [],
+    },
+    value: {
+      value: 'test',
+      placeholder: 'Enter value',
+    },
   };
 
   let mockFilter: any;
@@ -49,7 +58,7 @@ describe('ConditionFilter', () => {
     render(<ConditionFilter {...mockProps} />);
 
     expect(screen.getByTestId('mock-filter')).toBeTruthy();
-    expect(mockFilter).toHaveBeenCalledWith(mockProps, {});
+    expect(mockFilter).toHaveBeenCalledWith(mockProps, undefined);
   });
 
   it('passes through all props to registered component', () => {
@@ -62,7 +71,7 @@ describe('ConditionFilter', () => {
 
     render(<ConditionFilter {...propsWithAttributes} />);
 
-    expect(mockFilter).toHaveBeenCalledWith(propsWithAttributes, {});
+    expect(mockFilter).toHaveBeenCalledWith(propsWithAttributes, undefined);
   });
 
   it('renders FallbackConditionFilter for unregistered type', () => {

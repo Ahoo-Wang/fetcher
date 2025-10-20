@@ -22,7 +22,9 @@ import { useConditionFilterState } from './useConditionFilterState';
 
 export const ID_CONDITION_FILTER = 'id';
 
-export function IdConditionFilter(props: ConditionFilterProps<string | string[]>) {
+export function IdConditionFilter(
+  props: ConditionFilterProps<string | string[]>,
+) {
   const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
   const filterState = useConditionFilterState({
     field: props.field.name,
@@ -30,7 +32,11 @@ export function IdConditionFilter(props: ConditionFilterProps<string | string[]>
     value: props.value.value,
     ref: props.ref,
     validate: (operator: Operator, value: string | string[] | undefined) => {
-      return !(!operator || !value || (Array.isArray(value) && value.length === 0));
+      // Valid if operator exists, value exists, and arrays are non-empty
+      if (!operator) return false;
+      if (!value) return false;
+      if (Array.isArray(value) && value.length === 0) return false;
+      return true;
     },
     friendly: (condition: Condition) => {
       return friendlyCondition(props.field.label, operatorLocale, condition);
@@ -46,7 +52,11 @@ export function IdConditionFilter(props: ConditionFilterProps<string | string[]>
         {...props.value}
       />
     ) : (
-      <TagInput value={filterState.value} onChange={filterState.setValue} {...props.value} />
+      <TagInput
+        value={filterState.value}
+        onChange={filterState.setValue}
+        {...props.value}
+      />
     );
   return (
     <Space.Compact>

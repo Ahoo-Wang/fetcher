@@ -15,7 +15,7 @@ import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
 import { Condition, Operator, OperatorLocale } from '@ahoo-wang/fetcher-wow';
 import { SelectProps } from 'antd/es/select';
 import { ButtonProps } from 'antd';
-import { RefObject } from 'react';
+import { RefAttributes } from 'react';
 
 /**
  * @see {@link Schema}
@@ -48,13 +48,12 @@ export interface ConditionFilterValue {
   friendly: string;
 }
 
-export interface ConditionFilterProps<ValueType = any> extends AttributesCapable {
+export interface ConditionFilterProps<ValueType = any> extends AttributesCapable, RefAttributes<ConditionFilterRef> {
   field: ConditionField;
   label: LabelProps;
   operator: OperatorProps;
   value: ValueProps<ValueType>;
   onChange?: (value?: ConditionFilterValue) => void;
-  ref?: RefObject<ConditionFilterRef>;
 }
 
 export type ConditionFilterComponent = React.FC<ConditionFilterProps>;

@@ -5,6 +5,7 @@ packages:
 catalog:
   '@eslint/js': ^9.38.0
   '@testing-library/react': ^16.0.0
+  '@testing-library/jest-dom': ^6.9.1
   '@types/node': ^24.5.2
   '@types/react': '>=19.0.0'
   '@types/react-dom': '>=19.0.0'

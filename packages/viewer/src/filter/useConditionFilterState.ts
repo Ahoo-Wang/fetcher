@@ -12,14 +12,13 @@
  */
 
 import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
-import { RefObject, useImperativeHandle, useState } from 'react';
+import { RefAttributes, useImperativeHandle, useState } from 'react';
 import { ConditionFilterRef, ConditionFilterValue } from './types';
 
-export interface UseConditionFilterStateOptions<ValueType = any> {
+export interface UseConditionFilterStateOptions<ValueType = any> extends RefAttributes<ConditionFilterRef> {
   field?: string;
   operator: Operator;
   value: ValueType | undefined;
-  ref?: RefObject<ConditionFilterRef>;
   validate: (operator: Operator, value: ValueType | undefined) => boolean;
   friendly: (condition: Condition) => string;
   onChange?: (condition: ConditionFilterValue | undefined) => void;

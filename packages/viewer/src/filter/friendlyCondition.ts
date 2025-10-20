@@ -13,15 +13,30 @@
 
 import { Condition, OperatorLocale } from '@ahoo-wang/fetcher-wow';
 
-export function friendlyCondition(label: string, operatorLocale: OperatorLocale, condition: Condition) {
-  const friendlyParts = [];
+export function friendlyCondition(
+  label: string,
+  operatorLocale: OperatorLocale,
+  condition: Condition,
+) {
+  const friendlyParts: string[] = [];
   friendlyParts.push(label);
-  friendlyParts.push(operatorLocale[condition.operator!]);
-  const value = condition.value;
-  if (Array.isArray(condition.value)) {
-    friendlyParts.push(value.join(', '));
+
+  // Safely get operator label
+  const operatorLabel = condition.operator
+    ? operatorLocale[condition.operator]
+    : 'Unknown';
+  friendlyParts.push(operatorLabel);
+
+  // Handle value display
+  if (condition.value === null || condition.value === undefined) {
+    friendlyParts.push('Empty');
+  } else if (Array.isArray(condition.value)) {
+    friendlyParts.push(
+      condition.value.length > 0 ? condition.value.join(', ') : 'Empty',
+    );
   } else {
-    friendlyParts.push(value);
+    friendlyParts.push(String(condition.value));
   }
+
   return friendlyParts.join(' ');
 }

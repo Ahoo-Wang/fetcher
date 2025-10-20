@@ -21,9 +21,9 @@ export default mergeConfig(
       environment: 'jsdom',
       globals: true,
       coverage: {
-        exclude: [...configDefaults.exclude, '**/**.stories.tsx',
-          'src/filter/IdConditionFilter.tsx', //TODO
-          'src/filter/friendlyCondition.ts', //TODO
+        exclude: [
+          ...configDefaults.exclude,
+          '**/**.stories.tsx'
         ],
       },
     },
