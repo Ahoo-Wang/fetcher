@@ -74,6 +74,25 @@ export const VALIDATE_STATUS_INTERCEPTOR_NAME = 'ValidateStatusInterceptor';
 export const VALIDATE_STATUS_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
 
 /**
+ * Attribute key used to skip status validation for a specific request.
+ *
+ * When set to `true` in the exchange attributes, the ValidateStatusInterceptor
+ * will skip status validation and allow the response to pass through without
+ * throwing an HttpStatusValidationError, regardless of the response status code.
+ *
+ * @example
+ * ```typescript
+ * // Skip status validation for this request
+ * const exchange = new FetchExchange({
+ *   fetcher,
+ *   request,
+ *   attributes: new Map([[IGNORE_VALIDATE_STATUS, true]])
+ * });
+ * ```
+ */
+export const IGNORE_VALIDATE_STATUS = '__ignoreValidateStatus__';
+
+/**
  * Response interceptor that validates HTTP status codes.
  *
  * This interceptor implements behavior similar to axios's validateStatus option.
@@ -126,8 +145,7 @@ export class ValidateStatusInterceptor implements ResponseInterceptor {
    */
   constructor(
     private readonly validateStatus: ValidateStatus = DEFAULT_VALIDATE_STATUS,
-  ) {
-  }
+  ) {}
 
   /**
    * Validates the response status code.
@@ -141,8 +159,15 @@ export class ValidateStatusInterceptor implements ResponseInterceptor {
    * are caught and converted to HttpStatusValidationError early in the pipeline,
    * preventing other response handlers from attempting to process them. Valid responses
    * proceed through the rest of the response interceptor chain normally.
+   *
+   * If the exchange attributes contain IGNORE_VALIDATE_STATUS set to true, status
+   * validation is skipped entirely, allowing any response status to pass through.
    */
   intercept(exchange: FetchExchange) {
+    // Skip validation if IGNORE_VALIDATE_STATUS is set to true
+    if (exchange.attributes.get(IGNORE_VALIDATE_STATUS) === true) {
+      return;
+    }
     // Only validate if there's a response
     if (!exchange.response) {
       return;
