@@ -6,8 +6,8 @@ catalog:
   '@eslint/js': ^9.38.0
   '@testing-library/react': ^16.0.0
   '@types/node': ^24.5.2
-  '@types/react': ^18.3.26
-  '@types/react-dom': ^18.3.7
+  '@types/react': '>=19.0.0'
+  '@types/react-dom': '>=19.0.0'
   '@vitejs/plugin-react': ^5.0.4
   '@vitest/coverage-v8': ^3.2.4
   '@vitest/ui': ^3.2.4
@@ -21,9 +21,9 @@ catalog:
   msw: ^2.11.3
   nanoid: ^5.1.6
   prettier: ^3.6.2
-  react: ^18.3.1
+  react: '>=19.0.0'
   react-compiler-runtime: ^1.0.0
-  react-dom: ^18.3.1
+  react-dom: '>=19.0.0'
   react-use: ^17.6.0
   reflect-metadata: ^0.2.2
   ts-morph: ^27.0.2

@@ -54,8 +54,8 @@
     "@ahoo-wang/fetcher-storage": "workspace:^2.3.4",
     "@ahoo-wang/fetcher-wow": "workspace:^2.3.4",
     "antd": "catalog:",
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

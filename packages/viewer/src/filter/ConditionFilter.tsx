@@ -21,14 +21,12 @@ export interface TypedConditionFilterProps
   type: string;
 }
 
-export const ConditionFilter = React.memo(
-  (props: TypedConditionFilterProps) => {
-    const FilterComponent = conditionFilterRegistry.get(props.type);
-    if (!FilterComponent) {
-      return <FallbackConditionFilter type={props.type} />;
-    }
-    return <FilterComponent {...props} />;
-  },
-);
+export function ConditionFilter(props: TypedConditionFilterProps) {
+  const FilterComponent = conditionFilterRegistry.get(props.type);
+  if (!FilterComponent) {
+    return <FallbackConditionFilter type={props.type} />;
+  }
+  return <FilterComponent {...props} />;
+}
 
 ConditionFilter.displayName = 'ConditionFilter';
