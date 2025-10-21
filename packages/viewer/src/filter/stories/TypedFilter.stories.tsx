@@ -13,15 +13,15 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import React, { useState } from 'react';
-import { ConditionFilter } from '../ConditionFilter';
-import '../IdConditionFilter';
-import { ConditionFilterValue } from '../types';
+import { TypedFilter } from '../TypedFilter';
+import '../IdFilter';
+import { FilterValue } from '../types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { Card, Typography, Space } from 'antd';
 
-const meta: Meta<typeof ConditionFilter> = {
-  title: 'Viewer/Filter/ConditionFilter',
-  component: ConditionFilter,
+const meta: Meta<typeof TypedFilter> = {
+  title: 'Viewer/Filter/TypedFilter',
+  component: TypedFilter,
   parameters: {
     layout: 'centered',
     docs: {
@@ -83,19 +83,19 @@ export const Default: Story = {
     },
     label: {},
     operator: {
-      value: Operator.CONTAINS,
+      defaultValue: Operator.CONTAINS,
     },
     value: {
       placeholder: 'Search emails...',
     },
   },
   render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<ConditionFilterValue>();
+    const [filterValue, setFilterValue] = useState<FilterValue>();
 
     return (
       <Card title="Interactive Filter Demo" style={{ width: 400 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <ConditionFilter {...args} onChange={setFilterValue} />
+          <TypedFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
               Current filter: {filterValue.friendly}

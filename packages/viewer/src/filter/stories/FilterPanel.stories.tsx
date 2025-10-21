@@ -16,8 +16,8 @@ import { useState } from 'react';
 import { FilterPanel, FilterItem } from '../FilterPanel';
 import { Condition } from '@ahoo-wang/fetcher-wow';
 import { Card, Typography, Space } from 'antd';
-import '../IdConditionFilter';
-import '../TextConditionFilter';
+import '../IdFilter';
+import '../TextFilter';
 
 const meta: Meta<typeof FilterPanel> = {
   title: 'Viewer/Filter/FilterPanel',

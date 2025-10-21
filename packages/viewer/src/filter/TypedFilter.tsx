@@ -11,18 +11,19 @@
  * limitations under the License.
  */
 
-import { Alert } from 'antd';
-import React, { useImperativeHandle } from 'react';
-import { TypedConditionFilterProps } from './ConditionFilter';
-import { ConditionFilterValue } from './types';
+import React from 'react';
+import { FilterProps } from './types';
+import { filterRegistry } from './filterRegistry';
+import { FallbackFilter } from './FallbackFilter';
 
-export function FallbackConditionFilter(props: TypedConditionFilterProps) {
-  useImperativeHandle(props.ref, () => ({
-    getValue(): ConditionFilterValue | undefined {
-      return undefined;
-    },
-  }));
-  return <Alert message={`Unsupported filter type:[${props.type}]`} type="warning" showIcon />;
+export interface TypedFilterProps
+  extends FilterProps {
+  type: string;
 }
 
-FallbackConditionFilter.displayName = 'FallbackConditionFilter';
+export function TypedFilter(props: TypedFilterProps) {
+  const FilterComponent = filterRegistry.get(props.type) || FallbackFilter;
+  return <FilterComponent {...props} />;
+}
+
+TypedFilter.displayName = 'TypedFilter';

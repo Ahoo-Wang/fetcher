@@ -13,29 +13,29 @@
 
 import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
 import { RefAttributes, useImperativeHandle, useState } from 'react';
-import { ConditionFilterRef, ConditionFilterValue } from './types';
+import { FilterRef, FilterValue } from './types';
 
-export interface UseConditionFilterStateOptions<ValueType = any> extends RefAttributes<ConditionFilterRef> {
+export interface UseFilterStateOptions<ValueType = any> extends RefAttributes<FilterRef> {
   field?: string;
   operator: Operator;
   value: ValueType | undefined;
   validate: (operator: Operator, value: ValueType | undefined) => boolean;
   friendly: (condition: Condition) => string;
-  onChange?: (condition: ConditionFilterValue | undefined) => void;
+  onChange?: (condition: FilterValue | undefined) => void;
 }
 
-export interface UseConditionFilterStateReturn<ValueType = any> {
+export interface UseFilterStateReturn<ValueType = any> {
   operator: Operator;
   value: ValueType | undefined;
   setOperator: (operator: Operator) => void;
   setValue: (value: ValueType | undefined) => void;
 }
 
-export function useConditionFilterState<ValueType = any>(options: UseConditionFilterStateOptions<ValueType>): UseConditionFilterStateReturn<ValueType> {
+export function useFilterState<ValueType = any>(options: UseFilterStateOptions<ValueType>): UseFilterStateReturn<ValueType> {
   const [operator, setOperator] = useState<Operator>(options.operator);
   const [value, setValue] = useState(options.value);
 
-  const resolveConditionFilterValue = (currentOperator: Operator, currentValue: ValueType | undefined): ConditionFilterValue | undefined => {
+  const resolveFilterValue = (currentOperator: Operator, currentValue: ValueType | undefined): FilterValue | undefined => {
     if (!options.validate(currentOperator, currentValue)) {
       return undefined;
     }
@@ -52,17 +52,17 @@ export function useConditionFilterState<ValueType = any>(options: UseConditionFi
   const setOperatorFn = (newOperator: Operator) => {
     setOperator(newOperator);
     setValue(undefined);
-    const conditionFilterValue = resolveConditionFilterValue(newOperator, undefined);
+    const conditionFilterValue = resolveFilterValue(newOperator, undefined);
     options.onChange?.(conditionFilterValue);
   };
   const setValueFn = (newValue: ValueType | undefined) => {
     setValue(newValue);
-    const conditionFilterValue = resolveConditionFilterValue(operator, newValue);
+    const conditionFilterValue = resolveFilterValue(operator, newValue);
     options.onChange?.(conditionFilterValue);
   };
   useImperativeHandle(options.ref, () => ({
-    getValue(): ConditionFilterValue | undefined {
-      return resolveConditionFilterValue(operator, value);
+    getValue(): FilterValue | undefined {
+      return resolveFilterValue(operator, value);
     },
   }));
 

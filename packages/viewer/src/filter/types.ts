@@ -20,14 +20,14 @@ import React, { RefAttributes } from 'react';
 /**
  * @see {@link Schema}
  */
-export interface ConditionField extends NamedCapable {
+export interface FilterField extends NamedCapable {
   label: string;
   type: string;
   format?: string;
 }
 
-export interface ConditionFilterRef {
-  getValue(): ConditionFilterValue | undefined;
+export interface FilterRef {
+  getValue(): FilterValue | undefined;
 }
 
 export interface LabelProps extends ButtonProps {
@@ -43,17 +43,17 @@ export interface ValueProps<ValueType = any> {
   placeholder?: string;
 }
 
-export interface ConditionFilterValue {
+export interface FilterValue {
   condition: Condition;
   friendly: string;
 }
 
-export interface ConditionFilterProps<ValueType = any> extends AttributesCapable, RefAttributes<ConditionFilterRef> {
-  field: ConditionField;
+export interface FilterProps<ValueType = any> extends AttributesCapable, RefAttributes<FilterRef> {
+  field: FilterField;
   label: LabelProps;
   operator: OperatorProps;
   value: ValueProps<ValueType>;
-  onChange?: (value?: ConditionFilterValue) => void;
+  onChange?: (value?: FilterValue) => void;
 }
 
-export type ConditionFilterComponent = React.FC<ConditionFilterProps>;
+export type FilterComponent = React.FC<FilterProps>;

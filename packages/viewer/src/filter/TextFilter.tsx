@@ -11,22 +11,22 @@
  * limitations under the License.
  */
 
-import { ConditionFilterProps } from './types';
+import { FilterProps } from './types';
 import { Input } from 'antd';
 import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
 import { OPERATOR_zh_CN } from './locale';
 import { friendlyCondition } from './friendlyCondition';
-import { UseConditionFilterStateReturn } from './useConditionFilterState';
-import { AssemblyConditionFilter, AssemblyConditionFilterProps } from './AssemblyConditionFilter';
+import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
+import { UseFilterStateReturn } from './useFilterState';
 
-export const TEXT_CONDITION_FILTER = 'text';
+export const TEXT_FILTER = 'text';
 
-export function TextConditionFilter(
-  props: ConditionFilterProps<string | string[]>,
+export function TextFilter(
+  props: FilterProps<string | string[]>,
 ) {
   const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
-  const assemblyConditionFilterProps: AssemblyConditionFilterProps<string | string[]> = {
+  const assemblyConditionFilterProps: AssemblyFilterProps<string | string[]> = {
     ...props,
     supportedOperators: [Operator.EQ, Operator.NE, Operator.CONTAINS, Operator.STARTS_WITH, Operator.ENDS_WITH, Operator.IN, Operator.NOT_IN],
     validate: (operator: Operator, value: string | string[] | undefined) => {
@@ -38,7 +38,7 @@ export function TextConditionFilter(
     friendly: (condition: Condition) => {
       return friendlyCondition(props.field.label, operatorLocale, condition);
     },
-    valueInputSupplier: (filterState: UseConditionFilterStateReturn<string | string[]>) => {
+    valueInputSupplier: (filterState: UseFilterStateReturn<string | string[]>) => {
       switch (filterState.operator) {
         case Operator.IN:
         case Operator.NOT_IN: {
@@ -59,7 +59,7 @@ export function TextConditionFilter(
       }
     },
   };
-  return <AssemblyConditionFilter<string | string[]> {...assemblyConditionFilterProps}></AssemblyConditionFilter>;
+  return <AssemblyFilter<string | string[]> {...assemblyConditionFilterProps}></AssemblyFilter>;
 }
 
-TextConditionFilter.displayName = 'TextConditionFilter';
+TextFilter.displayName = 'TextFilter';

@@ -13,11 +13,11 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { ConditionFilter } from '../../src';
-import { conditionFilterRegistry } from '../../src';
+import { TypedFilter } from '../../src';
+import { filterRegistry } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
-describe('ConditionFilter', () => {
+describe('TypedFilter', () => {
   const mockProps = {
     type: 'test-type',
     field: {
@@ -46,36 +46,36 @@ describe('ConditionFilter', () => {
 
   afterEach(() => {
     // Clean up registry
-    conditionFilterRegistry.unregister('test-type');
-    conditionFilterRegistry.unregister('registered-type');
-    conditionFilterRegistry.unregister('type1');
-    conditionFilterRegistry.unregister('type2');
+    filterRegistry.unregister('test-type');
+    filterRegistry.unregister('registered-type');
+    filterRegistry.unregister('type1');
+    filterRegistry.unregister('type2');
   });
 
   it('renders registered filter component', () => {
-    conditionFilterRegistry.register('test-type', mockFilter);
+    filterRegistry.register('test-type', mockFilter);
 
-    render(<ConditionFilter {...mockProps} />);
+    render(<TypedFilter {...mockProps} />);
 
     expect(screen.getByTestId('mock-filter')).toBeTruthy();
     expect(mockFilter).toHaveBeenCalledWith(mockProps, undefined);
   });
 
   it('passes through all props to registered component', () => {
-    conditionFilterRegistry.register('test-type', mockFilter);
+    filterRegistry.register('test-type', mockFilter);
 
     const propsWithAttributes = {
       ...mockProps,
       attributes: { customProp: 'value' },
     };
 
-    render(<ConditionFilter {...propsWithAttributes} />);
+    render(<TypedFilter {...propsWithAttributes} />);
 
     expect(mockFilter).toHaveBeenCalledWith(propsWithAttributes, undefined);
   });
 
   it('renders FallbackConditionFilter for unregistered type', () => {
-    render(<ConditionFilter {...mockProps} type="unregistered-type" />);
+    render(<TypedFilter {...mockProps} type="unregistered-type" />);
 
     expect(
       screen.getByText('Unsupported filter type:[unregistered-type]'),
@@ -87,19 +87,19 @@ describe('ConditionFilter', () => {
       <div data-testid="mock-filter-2">Mock Filter 2</div>
     ));
 
-    conditionFilterRegistry.register('type1', mockFilter);
-    conditionFilterRegistry.register('type2', mockFilter2);
+    filterRegistry.register('type1', mockFilter);
+    filterRegistry.register('type2', mockFilter2);
 
     const { rerender } = render(
-      <ConditionFilter {...mockProps} type="type1" />,
+      <TypedFilter {...mockProps} type="type1" />,
     );
     expect(screen.getByTestId('mock-filter')).toBeTruthy();
 
-    rerender(<ConditionFilter {...mockProps} type="type2" />);
+    rerender(<TypedFilter {...mockProps} type="type2" />);
     expect(screen.getByTestId('mock-filter-2')).toBeTruthy();
   });
 
   it('maintains displayName for debugging', () => {
-    expect(ConditionFilter.displayName).toBe('ConditionFilter');
+    expect(TypedFilter.displayName).toBe('ConditionFilter');
   });
 });

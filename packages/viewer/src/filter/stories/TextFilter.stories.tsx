@@ -13,14 +13,14 @@
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React, { useState } from 'react';
-import { TextConditionFilter } from '../TextConditionFilter';
-import { ConditionFilterValue } from '../types';
+import { TextFilter } from '../TextFilter';
+import { FilterValue } from '../types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { Card, Typography, Space, Divider } from 'antd';
 
-const meta: Meta<typeof TextConditionFilter> = {
-  title: 'Viewer/Filter/TextConditionFilter',
-  component: TextConditionFilter,
+const meta: Meta<typeof TextFilter> = {
+  title: 'Viewer/Filter/TextFilter',
+  component: TextFilter,
   parameters: {
     layout: 'centered',
     docs: {
@@ -82,19 +82,19 @@ export const Default: Story = {
     },
     label: {},
     operator: {
-      value: Operator.CONTAINS,
+      defaultValue: Operator.CONTAINS,
     },
     value: {
       placeholder: 'Enter name to search...',
     },
   },
   render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<ConditionFilterValue>();
+    const [filterValue, setFilterValue] = useState<FilterValue>();
 
     return (
       <Card title="Text Filter - Contains" style={{ width: 400 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <TextConditionFilter {...args} onChange={setFilterValue} />
+          <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
               Filter: {filterValue.friendly}
@@ -116,19 +116,19 @@ export const ExactMatch: Story = {
     },
     label: {},
     operator: {
-      value: Operator.EQ,
+      defaultValue: Operator.EQ,
     },
     value: {
       placeholder: 'Enter exact username...',
     },
   },
   render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<ConditionFilterValue>();
+    const [filterValue, setFilterValue] = useState<FilterValue>();
 
     return (
       <Card title="Text Filter - Exact Match" style={{ width: 400 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <TextConditionFilter {...args} onChange={setFilterValue} />
+          <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
               Filter: {filterValue.friendly}
@@ -150,19 +150,19 @@ export const StartsWith: Story = {
     },
     label: {},
     operator: {
-      value: Operator.STARTS_WITH,
+      defaultValue: Operator.STARTS_WITH,
     },
     value: {
       placeholder: 'Enter title prefix...',
     },
   },
   render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<ConditionFilterValue>();
+    const [filterValue, setFilterValue] = useState<FilterValue>();
 
     return (
       <Card title="Text Filter - Starts With" style={{ width: 400 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <TextConditionFilter {...args} onChange={setFilterValue} />
+          <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
               Filter: {filterValue.friendly}
@@ -184,19 +184,19 @@ export const MultipleValues: Story = {
     },
     label: {},
     operator: {
-      value: Operator.IN,
+      defaultValue: Operator.IN,
     },
     value: {
       placeholder: 'Enter tags (press Enter to add)...',
     },
   },
   render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<ConditionFilterValue>();
+    const [filterValue, setFilterValue] = useState<FilterValue>();
 
     return (
       <Card title="Text Filter - Multiple Values (IN)" style={{ width: 400 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <TextConditionFilter {...args} onChange={setFilterValue} />
+          <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
               Filter: {filterValue.friendly}
@@ -218,14 +218,14 @@ export const ExcludeMultipleValues: Story = {
     },
     label: {},
     operator: {
-      value: Operator.NOT_IN,
+      defaultValue: Operator.NOT_IN,
     },
     value: {
       placeholder: 'Enter categories to exclude...',
     },
   },
   render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<ConditionFilterValue>();
+    const [filterValue, setFilterValue] = useState<FilterValue>();
 
     return (
       <Card
@@ -233,7 +233,7 @@ export const ExcludeMultipleValues: Story = {
         style={{ width: 400 }}
       >
         <Space direction="vertical" style={{ width: '100%' }}>
-          <TextConditionFilter {...args} onChange={setFilterValue} />
+          <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
               Filter: {filterValue.friendly}
@@ -255,14 +255,14 @@ export const DynamicOperatorSwitching: Story = {
     },
     label: {},
     operator: {
-      value: Operator.CONTAINS,
+      defaultValue: Operator.CONTAINS,
     },
     value: {
       placeholder: 'Enter search text...',
     },
   },
   render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<ConditionFilterValue>();
+    const [filterValue, setFilterValue] = useState<FilterValue>();
     const [currentOperator, setCurrentOperator] = useState(Operator.CONTAINS);
 
     const operators = [
@@ -302,7 +302,7 @@ export const DynamicOperatorSwitching: Story = {
 
           <Divider />
 
-          <TextConditionFilter
+          <TextFilter
             {...args}
             operator={{ ...args.operator, value: currentOperator }}
             onChange={setFilterValue}
@@ -334,20 +334,20 @@ export const WithPresetValue: Story = {
     },
     label: {},
     operator: {
-      value: Operator.CONTAINS,
+      defaultValue: Operator.CONTAINS,
     },
     value: {
-      value: 'sample text',
+      defaultValue: 'sample text',
       placeholder: 'Search in description...',
     },
   },
   render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<ConditionFilterValue>();
+    const [filterValue, setFilterValue] = useState<FilterValue>();
 
     return (
       <Card title="Text Filter - With Preset Value" style={{ width: 400 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <TextConditionFilter {...args} onChange={setFilterValue} />
+          <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
               Filter: {filterValue.friendly}

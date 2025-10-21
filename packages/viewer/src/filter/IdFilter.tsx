@@ -11,25 +11,25 @@
  * limitations under the License.
  */
 
-import { ConditionFilterProps } from './types';
+import { FilterProps } from './types';
 import { Input } from 'antd';
 import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
 import { OPERATOR_zh_CN } from './locale';
 import { friendlyCondition } from './friendlyCondition';
-import { UseConditionFilterStateReturn } from './useConditionFilterState';
+import { UseFilterStateReturn } from './useFilterState';
 import {
-  AssemblyConditionFilter,
-  AssemblyConditionFilterProps,
-} from './AssemblyConditionFilter';
+  AssemblyFilter,
+  AssemblyFilterProps,
+} from './AssemblyFilter';
 
-export const ID_CONDITION_FILTER = 'id';
+export const ID_FILTER = 'id';
 
-export function IdConditionFilter(
-  props: ConditionFilterProps<string | string[]>,
+export function IdFilter(
+  props: FilterProps<string | string[]>,
 ) {
   const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
-  const assemblyConditionFilterProps: AssemblyConditionFilterProps<
+  const assemblyConditionFilterProps: AssemblyFilterProps<
     string | string[]
   > = {
     ...props,
@@ -44,7 +44,7 @@ export function IdConditionFilter(
       return friendlyCondition(props.field.label, operatorLocale, condition);
     },
     valueInputSupplier: (
-      filterState: UseConditionFilterStateReturn<string | string[]>,
+      filterState: UseFilterStateReturn<string | string[]>,
     ) => {
       return filterState.operator === Operator.ID ? (
         <Input
@@ -63,10 +63,10 @@ export function IdConditionFilter(
     },
   };
   return (
-    <AssemblyConditionFilter<string | string[]>
+    <AssemblyFilter<string | string[]>
       {...assemblyConditionFilterProps}
-    ></AssemblyConditionFilter>
+    ></AssemblyFilter>
   );
 }
 
-IdConditionFilter.displayName = 'IdConditionFilter';
+IdFilter.displayName = 'IdConditionFilter';

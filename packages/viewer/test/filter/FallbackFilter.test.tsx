@@ -14,16 +14,16 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { FallbackConditionFilter } from '../../src';
+import { FallbackFilter } from '../../src';
 import {
-  ConditionFilterRef,
-  ConditionFilterValue,
+  FilterRef,
+  FilterValue,
 } from '../../src';
-import { TypedConditionFilterProps } from '../../src';
+import { TypedFilterProps } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 // 测试辅助函数
-const createMockProps = (type: string): TypedConditionFilterProps => ({
+const createMockProps = (type: string): TypedFilterProps => ({
   type,
   field: {
     name: 'testField',
@@ -46,13 +46,13 @@ describe('FallbackConditionFilter', () => {
   describe('Rendering', () => {
     it('renders without crashing', () => {
       const props = createMockProps('unknown');
-      const { container } = render(<FallbackConditionFilter {...props} />);
+      const { container } = render(<FallbackFilter {...props} />);
       expect(container.firstChild).toBeTruthy();
     });
 
     it('renders warning alert for unsupported filter type', () => {
       const props = createMockProps('unknown');
-      render(<FallbackConditionFilter {...props} />);
+      render(<FallbackFilter {...props} />);
 
       const alert = screen.getByRole('alert');
       expect(alert).toBeDefined();
@@ -61,7 +61,7 @@ describe('FallbackConditionFilter', () => {
 
     it('displays correct unsupported type message', () => {
       const props = createMockProps('custom-filter');
-      render(<FallbackConditionFilter {...props} />);
+      render(<FallbackFilter {...props} />);
 
       expect(
         screen.getByText('Unsupported filter type:[custom-filter]'),
@@ -70,7 +70,7 @@ describe('FallbackConditionFilter', () => {
 
     it('renders as an Alert component with correct structure', () => {
       const props = createMockProps('test');
-      const { container } = render(<FallbackConditionFilter {...props} />);
+      const { container } = render(<FallbackFilter {...props} />);
       const alert = container.querySelector('.ant-alert');
       expect(alert).toBeDefined();
       expect(alert?.classList.contains('ant-alert-warning')).toBe(true);
@@ -78,7 +78,7 @@ describe('FallbackConditionFilter', () => {
 
     it('displays warning icon for visual indication', () => {
       const props = createMockProps('test');
-      render(<FallbackConditionFilter {...props} />);
+      render(<FallbackFilter {...props} />);
 
       const icon = document.querySelector('.anticon-exclamation-circle');
       expect(icon).toBeDefined();
@@ -86,23 +86,23 @@ describe('FallbackConditionFilter', () => {
 
     it('handles different type values correctly', () => {
       const { rerender } = render(
-        <FallbackConditionFilter {...createMockProps('type1')} />,
+        <FallbackFilter {...createMockProps('type1')} />,
       );
       expect(screen.getByText('Unsupported filter type:[type1]')).toBeDefined();
 
-      rerender(<FallbackConditionFilter {...createMockProps('type2')} />);
+      rerender(<FallbackFilter {...createMockProps('type2')} />);
       expect(screen.getByText('Unsupported filter type:[type2]')).toBeDefined();
     });
   });
 
   describe('Functionality', () => {
     it('exposes getValue method via ref', () => {
-      const ref = React.createRef<ConditionFilterRef | null>();
+      const ref = React.createRef<FilterRef | null>();
       const props = createMockProps('test');
 
       render(
-        <FallbackConditionFilter
-          ref={ref as React.RefObject<ConditionFilterRef>}
+        <FallbackFilter
+          ref={ref as React.RefObject<FilterRef>}
           {...props}
         />,
       );
@@ -112,12 +112,12 @@ describe('FallbackConditionFilter', () => {
     });
 
     it('getValue method always returns undefined', () => {
-      const ref = React.createRef<ConditionFilterRef | null>();
+      const ref = React.createRef<FilterRef | null>();
       const props = createMockProps('any-type');
 
       render(
-        <FallbackConditionFilter
-          ref={ref as React.RefObject<ConditionFilterRef>}
+        <FallbackFilter
+          ref={ref as React.RefObject<FilterRef>}
           {...props}
         />,
       );
@@ -130,12 +130,12 @@ describe('FallbackConditionFilter', () => {
       const testCases = ['string', 'number', 'boolean', 'custom'];
 
       testCases.forEach(type => {
-        const ref = React.createRef<ConditionFilterRef | null>();
+        const ref = React.createRef<FilterRef | null>();
         const props = createMockProps(type);
 
         render(
-          <FallbackConditionFilter
-            ref={ref as React.RefObject<ConditionFilterRef>}
+          <FallbackFilter
+            ref={ref as React.RefObject<FilterRef>}
             {...props}
           />,
         );
@@ -144,10 +144,10 @@ describe('FallbackConditionFilter', () => {
     });
 
     it('maintains ref functionality across re-renders', () => {
-      const ref = React.createRef<ConditionFilterRef | null>();
+      const ref = React.createRef<FilterRef | null>();
       const { rerender } = render(
-        <FallbackConditionFilter
-          ref={ref as React.RefObject<ConditionFilterRef>}
+        <FallbackFilter
+          ref={ref as React.RefObject<FilterRef>}
           {...createMockProps('initial')}
         />,
       );
@@ -155,8 +155,8 @@ describe('FallbackConditionFilter', () => {
       expect(ref.current?.getValue()).toBeUndefined();
 
       rerender(
-        <FallbackConditionFilter
-          ref={ref as React.RefObject<ConditionFilterRef>}
+        <FallbackFilter
+          ref={ref as React.RefObject<FilterRef>}
           {...createMockProps('updated')}
         />,
       );
@@ -167,7 +167,7 @@ describe('FallbackConditionFilter', () => {
   describe('Accessibility', () => {
     it('has proper ARIA role', () => {
       const props = createMockProps('test');
-      render(<FallbackConditionFilter {...props} />);
+      render(<FallbackFilter {...props} />);
 
       const alert = screen.getByRole('alert');
       expect(alert).toBeDefined();
@@ -175,7 +175,7 @@ describe('FallbackConditionFilter', () => {
 
     it('is announced by screen readers', () => {
       const props = createMockProps('accessibility-test');
-      render(<FallbackConditionFilter {...props} />);
+      render(<FallbackFilter {...props} />);
 
       const alert = screen.getByRole('alert');
       expect(alert.textContent).toContain(
@@ -187,7 +187,7 @@ describe('FallbackConditionFilter', () => {
   describe('Error Handling', () => {
     it('handles undefined type gracefully', () => {
       const props = createMockProps('undefined' as any);
-      render(<FallbackConditionFilter {...props} />);
+      render(<FallbackFilter {...props} />);
 
       expect(
         screen.getByText('Unsupported filter type:[undefined]'),
@@ -196,14 +196,14 @@ describe('FallbackConditionFilter', () => {
 
     it('handles null type gracefully', () => {
       const props = createMockProps('null' as any);
-      render(<FallbackConditionFilter {...props} />);
+      render(<FallbackFilter {...props} />);
 
       expect(screen.getByText('Unsupported filter type:[null]')).toBeDefined();
     });
 
     it('handles empty string type', () => {
       const props = createMockProps('');
-      render(<FallbackConditionFilter {...props} />);
+      render(<FallbackFilter {...props} />);
 
       expect(screen.getByText('Unsupported filter type:[]')).toBeDefined();
     });
@@ -217,9 +217,9 @@ describe('FallbackConditionFilter', () => {
 
       specialTypes.forEach(type => {
         const { rerender } = render(
-          <FallbackConditionFilter {...createMockProps('placeholder')} />,
+          <FallbackFilter {...createMockProps('placeholder')} />,
         );
-        rerender(<FallbackConditionFilter {...createMockProps(type)} />);
+        rerender(<FallbackFilter {...createMockProps(type)} />);
 
         expect(
           screen.getByText(`Unsupported filter type:[${type}]`),
@@ -231,10 +231,10 @@ describe('FallbackConditionFilter', () => {
   describe('Performance', () => {
     it('does not re-render unnecessarily with same props', () => {
       const props = createMockProps('test');
-      const { rerender } = render(<FallbackConditionFilter {...props} />);
+      const { rerender } = render(<FallbackFilter {...props} />);
       const initialAlert = screen.getByRole('alert');
 
-      rerender(<FallbackConditionFilter {...props} />);
+      rerender(<FallbackFilter {...props} />);
       const secondAlert = screen.getByRole('alert');
 
       expect(initialAlert).toBe(secondAlert);
@@ -242,11 +242,11 @@ describe('FallbackConditionFilter', () => {
 
     it('handles rapid prop changes without issues', () => {
       const { rerender } = render(
-        <FallbackConditionFilter {...createMockProps('type1')} />,
+        <FallbackFilter {...createMockProps('type1')} />,
       );
 
-      rerender(<FallbackConditionFilter {...createMockProps('type2')} />);
-      rerender(<FallbackConditionFilter {...createMockProps('type3')} />);
+      rerender(<FallbackFilter {...createMockProps('type2')} />);
+      rerender(<FallbackFilter {...createMockProps('type3')} />);
 
       expect(screen.getByText('Unsupported filter type:[type3]')).toBeDefined();
     });
@@ -254,21 +254,21 @@ describe('FallbackConditionFilter', () => {
 
   describe('TypeScript Integration', () => {
     it('accepts correct TypeScript props', () => {
-      const props: TypedConditionFilterProps = createMockProps('string');
+      const props: TypedFilterProps = createMockProps('string');
 
       expect(() =>
-        render(<FallbackConditionFilter {...props} />),
+        render(<FallbackFilter {...props} />),
       ).not.toThrow();
     });
 
     it('works with ref typing', () => {
-      const ref = React.createRef<ConditionFilterRef | null>();
+      const ref = React.createRef<FilterRef | null>();
       const props = createMockProps('test');
 
       expect(() =>
         render(
-          <FallbackConditionFilter
-            ref={ref as React.RefObject<ConditionFilterRef>}
+          <FallbackFilter
+            ref={ref as React.RefObject<FilterRef>}
             {...props}
           />,
         ),
@@ -276,7 +276,7 @@ describe('FallbackConditionFilter', () => {
 
       // TypeScript should infer correct type
       if (ref.current) {
-        const result: ConditionFilterValue | undefined = ref.current.getValue();
+        const result: FilterValue | undefined = ref.current.getValue();
         expect(result).toBeUndefined();
       }
     });

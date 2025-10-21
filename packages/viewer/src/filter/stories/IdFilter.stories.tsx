@@ -13,14 +13,14 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import React, { useState } from 'react';
-import { IdConditionFilter } from '../IdConditionFilter';
+import { IdFilter } from '../IdFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
-import { ConditionFilterValue } from '../types';
+import { FilterValue } from '../types';
 import { Card, Typography } from 'antd';
 
-const meta: Meta<typeof IdConditionFilter> = {
+const meta: Meta<typeof IdFilter> = {
   title: 'Viewer/Filter/IdConditionFilter',
-  component: IdConditionFilter,
+  component: IdFilter,
   parameters: {
     layout: 'centered',
     docs: {
@@ -70,7 +70,7 @@ export const Default: Story = {
     },
   },
   render: args => {
-    return <IdConditionFilter {...args} />;
+    return <IdFilter {...args} />;
   },
 };
 
@@ -93,11 +93,11 @@ export const WithOnChange: Story = {
   },
   render: args => {
     const [conditionValue, setConditionValue] = useState<
-      ConditionFilterValue | undefined
+      FilterValue | undefined
     >();
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <IdConditionFilter {...args} onChange={setConditionValue} />
+        <IdFilter {...args} onChange={setConditionValue} />
         <Card title="Current Condition Value" size="small">
           <Typography.Text code>
             {conditionValue

@@ -12,11 +12,11 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { FallbackConditionFilter } from '../FallbackConditionFilter';
+import { FallbackFilter } from '../FallbackFilter';
 
-const meta: Meta<typeof FallbackConditionFilter> = {
-  title: 'Viewer/Filter/FallbackConditionFilter',
-  component: FallbackConditionFilter,
+const meta: Meta<typeof FallbackFilter> = {
+  title: 'Viewer/Filter/FallbackFilter',
+  component: FallbackFilter,
   parameters: {
     layout: 'centered',
     docs: {

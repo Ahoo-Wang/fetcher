@@ -11,28 +11,28 @@
  * limitations under the License.
  */
 
-import { ConditionFilterProps } from './types';
+import { FilterProps } from './types';
 import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
 import { OPERATOR_zh_CN } from './locale';
 import {
-  useConditionFilterState,
-  UseConditionFilterStateReturn,
-} from './useConditionFilterState';
+  useFilterState,
+  UseFilterStateReturn,
+} from './useFilterState';
 import { Button, Select, Space } from 'antd';
 import { ReactNode } from 'react';
 
-export interface AssemblyConditionFilterProps<ValueType = any>
-  extends ConditionFilterProps {
+export interface AssemblyFilterProps<ValueType = any>
+  extends FilterProps {
   supportedOperators: Operator[];
   validate: (operator: Operator, value: ValueType | undefined) => boolean;
   friendly: (condition: Condition) => string;
   valueInputSupplier: (
-    filterState: UseConditionFilterStateReturn<ValueType>,
+    filterState: UseFilterStateReturn<ValueType>,
   ) => ReactNode;
 }
 
-export function AssemblyConditionFilter<ValueType = any>(
-  props: AssemblyConditionFilterProps<ValueType>,
+export function AssemblyFilter<ValueType = any>(
+  props: AssemblyFilterProps<ValueType>,
 ) {
   // Validate that supportedOperators is not empty
   if (!props.supportedOperators || props.supportedOperators.length === 0) {
@@ -49,7 +49,7 @@ export function AssemblyConditionFilter<ValueType = any>(
     initialOperator = props.supportedOperators[0];
   }
 
-  const filterState = useConditionFilterState({
+  const filterState = useFilterState({
     field: props.field.name,
     operator: initialOperator,
     value: props.value.defaultValue,

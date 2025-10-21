@@ -15,18 +15,18 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
-  AssemblyConditionFilter,
-  AssemblyConditionFilterProps,
-} from '../../src/filter/AssemblyConditionFilter';
-import { ConditionFilterRef } from '../../src/filter/types';
+  AssemblyFilter,
+  AssemblyFilterProps,
+} from '../../src/filter/AssemblyFilter';
+import { FilterRef } from '../../src/filter/types';
 import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
 import { Input } from 'antd';
-import { UseConditionFilterStateReturn } from '../../src/filter/useConditionFilterState';
+import { UseFilterStateReturn } from '../../src/filter/useFilterState';
 
 // 测试辅助函数
 const createMockProps = (
-  overrides: Partial<AssemblyConditionFilterProps<string>> = {},
-): AssemblyConditionFilterProps<string> => {
+  overrides: Partial<AssemblyFilterProps<string>> = {},
+): AssemblyFilterProps<string> => {
   const validate = vi.fn((operator: Operator, value: string | undefined) => {
     return !!(operator && value);
   });
@@ -37,12 +37,12 @@ const createMockProps = (
 
   const valueInputSupplier = vi.fn(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    (_filterState: UseConditionFilterStateReturn<string>) => (
+    (_filterState: UseFilterStateReturn<string>) => (
       <Input value="test" onChange={() => {}} />
     ),
   );
 
-  const defaultProps: AssemblyConditionFilterProps<string> = {
+  const defaultProps: AssemblyFilterProps<string> = {
     field: {
       name: 'testField',
       label: 'Test Field',
@@ -68,12 +68,12 @@ const createMockProps = (
 };
 
 const renderWithRef = (
-  props: Partial<AssemblyConditionFilterProps<string>> = {},
+  props: Partial<AssemblyFilterProps<string>> = {},
 ) => {
-  const ref = React.createRef<ConditionFilterRef>();
+  const ref = React.createRef<FilterRef>();
   const finalProps = createMockProps(props);
 
-  const result = render(<AssemblyConditionFilter ref={ref} {...finalProps} />);
+  const result = render(<AssemblyFilter ref={ref} {...finalProps} />);
 
   return { ...result, ref };
 };
@@ -83,13 +83,13 @@ describe('AssemblyConditionFilter', () => {
     it('renders without crashing', () => {
       const props = createMockProps();
       expect(() =>
-        render(<AssemblyConditionFilter {...props} />),
+        render(<AssemblyFilter {...props} />),
       ).not.toThrow();
     });
 
     it('renders all required components', () => {
       const props = createMockProps();
-      render(<AssemblyConditionFilter {...props} />);
+      render(<AssemblyFilter {...props} />);
 
       // 检查标签按钮
       expect(screen.getByRole('button', { name: 'Test Field' })).toBeDefined();
@@ -105,7 +105,7 @@ describe('AssemblyConditionFilter', () => {
       const props = createMockProps({
         field: { name: 'customField', label: 'Custom Label', type: 'string' },
       });
-      render(<AssemblyConditionFilter {...props} />);
+      render(<AssemblyFilter {...props} />);
 
       expect(
         screen.getByRole('button', { name: 'Custom Label' }),
@@ -114,7 +114,7 @@ describe('AssemblyConditionFilter', () => {
 
     it('renders in Space.Compact layout', () => {
       const props = createMockProps();
-      const { container } = render(<AssemblyConditionFilter {...props} />);
+      const { container } = render(<AssemblyFilter {...props} />);
 
       const compactContainer = container.querySelector('.ant-space-compact');
       expect(compactContainer).toBeDefined();
@@ -127,7 +127,7 @@ describe('AssemblyConditionFilter', () => {
         operator: { value: Operator.EQ, options: [] },
         supportedOperators: [Operator.EQ, Operator.NE],
       });
-      render(<AssemblyConditionFilter {...props} />);
+      render(<AssemblyFilter {...props} />);
 
       // Verify the component renders without errors
       expect(screen.getByRole('combobox')).toBeDefined();
@@ -139,7 +139,7 @@ describe('AssemblyConditionFilter', () => {
         supportedOperators: [Operator.EQ, Operator.NE],
       });
       expect(() =>
-        render(<AssemblyConditionFilter {...props} />),
+        render(<AssemblyFilter {...props} />),
       ).not.toThrow();
     });
 
@@ -149,7 +149,7 @@ describe('AssemblyConditionFilter', () => {
         supportedOperators: [Operator.EQ, Operator.NE],
       });
       expect(() =>
-        render(<AssemblyConditionFilter {...props} />),
+        render(<AssemblyFilter {...props} />),
       ).not.toThrow();
     });
   });
@@ -159,7 +159,7 @@ describe('AssemblyConditionFilter', () => {
       const props = createMockProps({
         supportedOperators: [Operator.EQ, Operator.NE, Operator.CONTAINS],
       });
-      render(<AssemblyConditionFilter {...props} />);
+      render(<AssemblyFilter {...props} />);
 
       // The select should have options, but we can't easily test the dropdown content
       // with react-testing-library. We verify the component renders.
@@ -173,7 +173,7 @@ describe('AssemblyConditionFilter', () => {
         supportedOperators: [],
       });
 
-      expect(() => render(<AssemblyConditionFilter {...props} />)).toThrow(
+      expect(() => render(<AssemblyFilter {...props} />)).toThrow(
         'supportedOperators must be a non-empty array',
       );
     });
@@ -183,7 +183,7 @@ describe('AssemblyConditionFilter', () => {
         supportedOperators: undefined as any,
       });
 
-      expect(() => render(<AssemblyConditionFilter {...props} />)).toThrow(
+      expect(() => render(<AssemblyFilter {...props} />)).toThrow(
         'supportedOperators must be a non-empty array',
       );
     });
@@ -199,7 +199,7 @@ describe('AssemblyConditionFilter', () => {
         valueInputSupplier,
       });
 
-      render(<AssemblyConditionFilter {...props} />);
+      render(<AssemblyFilter {...props} />);
 
       expect(valueInputSupplier).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -264,7 +264,7 @@ describe('AssemblyConditionFilter', () => {
       });
 
       expect(() =>
-        render(<AssemblyConditionFilter {...props} />),
+        render(<AssemblyFilter {...props} />),
       ).not.toThrow();
     });
   });
@@ -278,7 +278,7 @@ describe('AssemblyConditionFilter', () => {
           placeholder: 'Select operator',
         },
       });
-      render(<AssemblyConditionFilter {...props} />);
+      render(<AssemblyFilter {...props} />);
 
       const select = screen.getByRole('combobox');
       expect(select).toBeDefined();
@@ -291,7 +291,7 @@ describe('AssemblyConditionFilter', () => {
           type: 'primary',
         },
       });
-      render(<AssemblyConditionFilter {...props} />);
+      render(<AssemblyFilter {...props} />);
 
       expect(
         screen.getByRole('button', { name: 'Custom Label' }),
@@ -305,7 +305,7 @@ describe('AssemblyConditionFilter', () => {
         value: { defaultValue: undefined },
       });
       expect(() =>
-        render(<AssemblyConditionFilter {...props} />),
+        render(<AssemblyFilter {...props} />),
       ).not.toThrow();
     });
 
@@ -314,7 +314,7 @@ describe('AssemblyConditionFilter', () => {
         value: { defaultValue: null as any },
       });
       expect(() =>
-        render(<AssemblyConditionFilter {...props} />),
+        render(<AssemblyFilter {...props} />),
       ).not.toThrow();
     });
   });

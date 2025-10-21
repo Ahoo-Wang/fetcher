@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { ConditionFilterComponent } from './types';
-import { TEXT_CONDITION_FILTER, TextConditionFilter } from './TextConditionFilter';
-import { ID_CONDITION_FILTER, IdConditionFilter } from './IdConditionFilter';
+import { FilterComponent } from './types';
+import { TEXT_FILTER, TextFilter } from './TextFilter';
+import { ID_FILTER, IdFilter } from './IdFilter';
 
 /**
  * Registry for managing condition filter components.
@@ -21,15 +21,15 @@ import { ID_CONDITION_FILTER, IdConditionFilter } from './IdConditionFilter';
  * Provides a centralized way to register, unregister, and retrieve
  * condition filter components by their type identifiers.
  */
-export class ConditionFilterRegistry {
-  private readonly filters: Map<string, ConditionFilterComponent> = new Map<
+export class FilterRegistry {
+  private readonly filters: Map<string, FilterComponent> = new Map<
     string,
-    ConditionFilterComponent
+    FilterComponent
   >();
 
   constructor() {
-    this.register(ID_CONDITION_FILTER, IdConditionFilter);
-    this.register(TEXT_CONDITION_FILTER, TextConditionFilter);
+    this.register(ID_FILTER, IdFilter);
+    this.register(TEXT_FILTER, TextFilter);
   }
 
   /**
@@ -44,7 +44,7 @@ export class ConditionFilterRegistry {
    * registry.register('text', TextConditionFilter);
    * ```
    */
-  register(type: string, filter: ConditionFilterComponent) {
+  register(type: string, filter: FilterComponent) {
     this.filters.set(type, filter);
   }
 
@@ -76,9 +76,9 @@ export class ConditionFilterRegistry {
    * const TextFilter = registry.get('text');
    * ```
    */
-  get(type: string): ConditionFilterComponent | undefined {
+  get(type: string): FilterComponent | undefined {
     return this.filters.get(type);
   }
 }
 
-export const conditionFilterRegistry = new ConditionFilterRegistry();
+export const filterRegistry = new FilterRegistry();

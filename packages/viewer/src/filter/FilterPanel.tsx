@@ -12,8 +12,8 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { ConditionFilter } from './ConditionFilter';
-import { ConditionFilterValue, ConditionField } from './types';
+import { TypedFilter } from './TypedFilter';
+import { FilterValue, FilterField } from './types';
 import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
 import { Card, Button, Space, Typography, Divider, Empty } from 'antd';
 
@@ -21,14 +21,14 @@ const { Title, Text } = Typography;
 
 export interface FilterItem {
   id: string;
-  field: ConditionField;
+  field: FilterField;
   type: string;
-  value?: ConditionFilterValue;
+  value?: FilterValue;
 }
 
 export interface FilterPanelProps {
   /** 可用的过滤字段配置 */
-  availableFields: ConditionField[];
+  availableFields: FilterField[];
   /** 当前激活的过滤器列表 */
   filters?: FilterItem[];
   /** 过滤器变化回调 */
@@ -102,7 +102,7 @@ export function FilterPanel({
 
   // 更新过滤器值
   const updateFilterValue = useCallback(
-    (filterId: string, value?: ConditionFilterValue) => {
+    (filterId: string, value?: FilterValue) => {
       const newFilters = filters.map(f =>
         f.id === filterId ? { ...f, value } : f,
       );
@@ -208,7 +208,7 @@ export function FilterPanel({
                   }}
                 >
                   <div style={{ flex: 1 }}>
-                    <ConditionFilter
+                    <TypedFilter
                       type={filter.type}
                       field={filter.field}
                       label={{ children: filter.field.label }}

@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-export * from './ConditionFilter';
-export * from './conditionFilterRegistry';
-export * from './IdConditionFilter';
+export * from './TypedFilter';
+export * from './filterRegistry';
+export * from './IdFilter';
 export * from './types';
-export * from './FallbackConditionFilter';
+export * from './FallbackFilter';
 export * from './locale'

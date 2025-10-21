@@ -14,15 +14,15 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { IdConditionFilter } from '../../src';
-import { ConditionFilterRef } from '../../src/filter/types';
+import { IdFilter } from '../../src';
+import { FilterRef } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 // 测试辅助函数
 const createMockProps = (
-  overrides: Partial<React.ComponentProps<typeof IdConditionFilter>> = {},
+  overrides: Partial<React.ComponentProps<typeof IdFilter>> = {},
 ) => {
-  const defaultProps: React.ComponentProps<typeof IdConditionFilter> = {
+  const defaultProps: React.ComponentProps<typeof IdFilter> = {
     field: {
       name: 'testId',
       label: 'Test ID',
@@ -44,12 +44,12 @@ const createMockProps = (
 };
 
 const renderWithRef = (
-  props: Partial<React.ComponentProps<typeof IdConditionFilter>> = {},
+  props: Partial<React.ComponentProps<typeof IdFilter>> = {},
 ) => {
-  const ref = React.createRef<ConditionFilterRef>();
+  const ref = React.createRef<FilterRef>();
   const finalProps = createMockProps(props);
 
-  const result = render(<IdConditionFilter ref={ref} {...finalProps} />);
+  const result = render(<IdFilter ref={ref} {...finalProps} />);
 
   return { ...result, ref };
 };
@@ -58,12 +58,12 @@ describe('IdConditionFilter', () => {
   describe('Rendering', () => {
     it('renders without crashing', () => {
       const props = createMockProps();
-      expect(() => render(<IdConditionFilter {...props} />)).not.toThrow();
+      expect(() => render(<IdFilter {...props} />)).not.toThrow();
     });
 
     it('renders all required components', () => {
       const props = createMockProps();
-      render(<IdConditionFilter {...props} />);
+      render(<IdFilter {...props} />);
 
       // 检查标签按钮
       expect(screen.getByRole('button', { name: 'Test ID' })).toBeDefined();
@@ -79,7 +79,7 @@ describe('IdConditionFilter', () => {
       const props = createMockProps({
         field: { name: 'customField', label: 'Custom Label', type: 'string' },
       });
-      render(<IdConditionFilter {...props} />);
+      render(<IdFilter {...props} />);
 
       expect(
         screen.getByRole('button', { name: 'Custom Label' }),
@@ -88,7 +88,7 @@ describe('IdConditionFilter', () => {
 
     it('renders in Space.Compact layout', () => {
       const props = createMockProps();
-      const { container } = render(<IdConditionFilter {...props} />);
+      const { container } = render(<IdFilter {...props} />);
 
       const compactContainer = container.querySelector('.ant-space-compact');
       expect(compactContainer).toBeDefined();
@@ -100,7 +100,7 @@ describe('IdConditionFilter', () => {
       const props = createMockProps({
         operator: { options: [] }, // No value provided
       });
-      render(<IdConditionFilter {...props} />);
+      render(<IdFilter {...props} />);
 
       // For Antd Select, check the selected option text instead of value attribute
       // ID operator displays as '等于' (equal) in Chinese locale
@@ -112,7 +112,7 @@ describe('IdConditionFilter', () => {
       const props = createMockProps({
         operator: { value: Operator.IDS, options: [] },
       });
-      expect(() => render(<IdConditionFilter {...props} />)).not.toThrow();
+      expect(() => render(<IdFilter {...props} />)).not.toThrow();
     });
   });
 
@@ -122,7 +122,7 @@ describe('IdConditionFilter', () => {
         operator: { value: Operator.ID, options: [] },
         value: { value: 'single-id' },
       });
-      render(<IdConditionFilter {...props} />);
+      render(<IdFilter {...props} />);
 
       const input = screen.getByRole('textbox');
       expect(input.tagName.toLowerCase()).toBe('input');
@@ -133,7 +133,7 @@ describe('IdConditionFilter', () => {
         operator: { value: Operator.IDS, options: [] },
         value: { value: ['id1', 'id2'] },
       });
-      expect(() => render(<IdConditionFilter {...props} />)).not.toThrow();
+      expect(() => render(<IdFilter {...props} />)).not.toThrow();
     });
   });
 
@@ -231,7 +231,7 @@ describe('IdConditionFilter', () => {
         value: { value: 'initial' },
         onChange,
       });
-      render(<IdConditionFilter {...props} />);
+      render(<IdFilter {...props} />);
 
       // Note: In a real scenario, this would trigger onChange
       // For now, we just verify the onChange prop is accepted
@@ -244,7 +244,7 @@ describe('IdConditionFilter', () => {
       const props = createMockProps({
         operator: { options: [] }, // No locale provided
       });
-      render(<IdConditionFilter {...props} />);
+      render(<IdFilter {...props} />);
 
       const select = screen.getByRole('combobox');
       // Verify component renders without locale errors
@@ -261,7 +261,7 @@ describe('IdConditionFilter', () => {
           placeholder: 'Select operator',
         },
       });
-      render(<IdConditionFilter {...props} />);
+      render(<IdFilter {...props} />);
 
       const select = screen.getByRole('combobox');
       expect(select).toBeDefined();
@@ -275,7 +275,7 @@ describe('IdConditionFilter', () => {
           placeholder: 'Enter ID',
         },
       });
-      render(<IdConditionFilter {...props} />);
+      render(<IdFilter {...props} />);
 
       const input = screen.getByRole('textbox');
       expect(input.getAttribute('placeholder')).toBe('Enter ID');
@@ -291,7 +291,7 @@ describe('IdConditionFilter', () => {
       const props = createMockProps({
         value: { value: undefined },
       });
-      expect(() => render(<IdConditionFilter {...props} />)).not.toThrow();
+      expect(() => render(<IdFilter {...props} />)).not.toThrow();
 
       const { ref } = renderWithRef({
         value: { value: undefined },
@@ -305,7 +305,7 @@ describe('IdConditionFilter', () => {
       const props = createMockProps({
         value: { value: null as any },
       });
-      expect(() => render(<IdConditionFilter {...props} />)).not.toThrow();
+      expect(() => render(<IdFilter {...props} />)).not.toThrow();
 
       const { ref } = renderWithRef({
         value: { value: null as any },
@@ -320,7 +320,7 @@ describe('IdConditionFilter', () => {
         operator: { value: Operator.IDS, options: [] },
         value: { value: [] },
       });
-      render(<IdConditionFilter {...props} />);
+      render(<IdFilter {...props} />);
 
       const { ref } = renderWithRef({
         operator: { value: Operator.IDS, options: [] },
