@@ -19,7 +19,7 @@ export interface UseFilterStateOptions<ValueType = any> extends RefAttributes<Fi
   field?: string;
   operator: Operator;
   value: ValueType | undefined;
-  validate: (operator: Operator, value: ValueType | undefined) => boolean;
+  validate?: (operator: Operator, value: ValueType | undefined) => boolean;
   onChange?: (condition: FilterValue | undefined) => void;
 }
 
@@ -29,13 +29,18 @@ export interface UseFilterStateReturn<ValueType = any> {
   setOperator: (operator: Operator) => void;
   setValue: (value: ValueType | undefined) => void;
 }
+const defaultValueValidate = (operator: Operator, value: any) => {
+  if (!operator) return false;
+  if (!value) return false;
+  return !(Array.isArray(value) && value.length === 0);
+};
 
 export function useFilterState<ValueType = any>(options: UseFilterStateOptions<ValueType>): UseFilterStateReturn<ValueType> {
   const [operator, setOperator] = useState<Operator>(options.operator);
   const [value, setValue] = useState(options.value);
-
+  const valueValidate = options.validate ?? defaultValueValidate;
   const resolveFilterValue = (currentOperator: Operator, currentValue: ValueType | undefined): FilterValue | undefined => {
-    if (!options.validate(currentOperator, currentValue)) {
+    if (!valueValidate(currentOperator, currentValue)) {
       return undefined;
     }
     const condition: Condition = {

@@ -14,6 +14,7 @@
 import { FilterComponent } from './types';
 import { TEXT_FILTER, TextFilter } from './TextFilter';
 import { ID_FILTER, IdFilter } from './IdFilter';
+import { NUMBER_FILTER, NumberFilter } from './NumberFilter';
 
 /**
  * Registry for managing filter components.
@@ -30,6 +31,7 @@ export class FilterRegistry {
   constructor() {
     this.register(ID_FILTER, IdFilter);
     this.register(TEXT_FILTER, TextFilter);
+    this.register(NUMBER_FILTER, NumberFilter);
   }
 
   /**

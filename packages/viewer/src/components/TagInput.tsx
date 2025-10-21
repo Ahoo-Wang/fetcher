@@ -21,6 +21,7 @@ import { RefObject } from 'react';
 export interface TagInputProps<ValueType = any>
   extends Omit<SelectProps<ValueType>, 'mode' | 'open' | 'suffixIcon'> {
   ref?: RefObject<RefSelectProps>;
+  valueParser?: (value: any) => ValueType;
 }
 
 /**
@@ -39,17 +40,23 @@ export function TagInput<ValueType = any>(props: TagInputProps<ValueType>) {
   const {
     tokenSeparators = DEFAULT_TOKEN_SEPARATORS,
     allowClear = true,
+    valueParser,
+    onChange,
     ...restProps
   } = props;
-
+  const onChangeHandler = (value: any) => {
+    const parsedValue = valueParser?.(value) || value as ValueType;
+    onChange?.(parsedValue);
+  };
   return (
-    <Select<ValueType>
+    <Select
       {...restProps}
       mode={'tags'}
       open={false}
       suffixIcon={null}
       allowClear={allowClear}
       tokenSeparators={tokenSeparators}
+      onChange={onChangeHandler}
     />
   );
 }

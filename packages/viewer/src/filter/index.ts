@@ -11,11 +11,12 @@
  * limitations under the License.
  */
 
-export * from './locale'
+export * from './locale';
 export * from './AssemblyFilter';
 export * from './FallbackFilter';
 export * from './filterRegistry';
 export * from './IdFilter';
+export * from './NumberFilter';
 export * from './TextFilter';
 export * from './TypedFilter';
 export * from './types';

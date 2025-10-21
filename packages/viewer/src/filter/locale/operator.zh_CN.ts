@@ -35,7 +35,7 @@ export const OPERATOR_zh_CN: OperatorLocale = {
   CONTAINS: '包含',
   IN: '包含任一',
   NOT_IN: '不包含任一',
-  BETWEEN: '在范围内',
+  BETWEEN: '介于',
   ALL_IN: '全部包含',
   STARTS_WITH: '以...开头',
   ENDS_WITH: '以...结尾',

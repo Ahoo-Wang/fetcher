@@ -26,12 +26,6 @@ export function TextFilter(
   const assemblyConditionFilterProps: AssemblyFilterProps<string | string[]> = {
     ...props,
     supportedOperators: [Operator.EQ, Operator.NE, Operator.CONTAINS, Operator.STARTS_WITH, Operator.ENDS_WITH, Operator.IN, Operator.NOT_IN],
-    validate: (operator: Operator, value: string | string[] | undefined) => {
-      // Valid if operator exists, value exists, and arrays are non-empty
-      if (!operator) return false;
-      if (!value) return false;
-      return !(Array.isArray(value) && value.length === 0);
-    },
     valueInputSupplier: (filterState: UseFilterStateReturn<string | string[]>) => {
       switch (filterState.operator) {
         case Operator.IN:

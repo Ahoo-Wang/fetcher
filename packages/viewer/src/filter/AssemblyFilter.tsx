@@ -24,7 +24,7 @@ import { ReactNode } from 'react';
 export interface AssemblyFilterProps<ValueType = any>
   extends FilterProps {
   supportedOperators: Operator[];
-  validate: (operator: Operator, value: ValueType | undefined) => boolean;
+  validate?: (operator: Operator, value: ValueType | undefined) => boolean;
   valueInputSupplier: (
     filterState: UseFilterStateReturn<ValueType>,
   ) => ReactNode;
