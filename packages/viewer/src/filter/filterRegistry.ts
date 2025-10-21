@@ -16,10 +16,10 @@ import { TEXT_FILTER, TextFilter } from './TextFilter';
 import { ID_FILTER, IdFilter } from './IdFilter';
 
 /**
- * Registry for managing condition filter components.
+ * Registry for managing filter components.
  *
  * Provides a centralized way to register, unregister, and retrieve
- * condition filter components by their type identifiers.
+ * filter components by their type identifiers.
  */
 export class FilterRegistry {
   private readonly filters: Map<string, FilterComponent> = new Map<
@@ -33,15 +33,14 @@ export class FilterRegistry {
   }
 
   /**
-   * Registers a condition filter component for a specific type.
+   * Registers a filter component for a specific type.
    *
    * @param type - The unique identifier for the filter type
-   * @param filter - The condition filter component to register
+   * @param filter - The filter component to register
    *
    * @example
    * ```typescript
-   * const registry = new ConditionFilterRegistry();
-   * registry.register('text', TextConditionFilter);
+   * filterRegistry.register('text', TextFilter);
    * ```
    */
   register(type: string, filter: FilterComponent) {
@@ -49,15 +48,14 @@ export class FilterRegistry {
   }
 
   /**
-   * Unregisters a condition filter component for a specific type.
+   * Unregisters a filter component for a specific type.
    *
    * @param type - The unique identifier for the filter type to remove
    * @returns true if the filter was successfully removed, false otherwise
    *
    * @example
    * ```typescript
-   * const registry = new ConditionFilterRegistry();
-   * const wasRemoved = registry.unregister('text');
+   * const wasRemoved = filterRegistry.unregister('text');
    * ```
    */
   unregister(type: string) {
@@ -65,15 +63,14 @@ export class FilterRegistry {
   }
 
   /**
-   * Retrieves a condition filter component for a specific type.
+   * Retrieves a filter component for a specific type.
    *
    * @param type - The unique identifier for the filter type
-   * @returns The condition filter component, or undefined if not found
+   * @returns The filter component, or undefined if not found
    *
    * @example
    * ```typescript
-   * const registry = new ConditionFilterRegistry();
-   * const TextFilter = registry.get('text');
+   * const TextFilter = filterRegistry.get('text');
    * ```
    */
   get(type: string): FilterComponent | undefined {
