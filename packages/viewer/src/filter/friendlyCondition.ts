@@ -31,9 +31,7 @@ export function friendlyCondition(
   if (condition.value === null || condition.value === undefined) {
     friendlyParts.push('Empty');
   } else if (Array.isArray(condition.value)) {
-    friendlyParts.push(
-      condition.value.length > 0 ? condition.value.join(', ') : 'Empty',
-    );
+    friendlyParts.push(JSON.stringify(condition.value));
   } else {
     friendlyParts.push(String(condition.value));
   }

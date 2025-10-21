@@ -15,7 +15,7 @@ import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
 import { Condition, Operator, OperatorLocale } from '@ahoo-wang/fetcher-wow';
 import { SelectProps } from 'antd/es/select';
 import { ButtonProps } from 'antd';
-import { RefAttributes } from 'react';
+import React, { RefAttributes } from 'react';
 
 /**
  * @see {@link Schema}
@@ -34,12 +34,12 @@ export interface LabelProps extends ButtonProps {
 
 }
 
-export interface OperatorProps extends SelectProps<Operator> {
+export interface OperatorProps extends Omit<SelectProps<Operator>, 'value'> {
   locale?: OperatorLocale;
 }
 
 export interface ValueProps<ValueType = any> {
-  value?: ValueType;
+  defaultValue?: ValueType;
   placeholder?: string;
 }
 

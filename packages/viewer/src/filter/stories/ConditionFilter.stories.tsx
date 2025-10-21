@@ -42,7 +42,7 @@ A dynamic filter component that automatically renders the appropriate filter UI 
   argTypes: {
     type: {
       control: { type: 'select' },
-      options: [ 'id', 'text','unsupported'],
+      options: ['id', 'text', 'unsupported'],
       description: 'Filter type that determines which component to render',
     },
     field: {

@@ -38,7 +38,7 @@ const createMockProps = (type: string): TypedConditionFilterProps => ({
     options: [],
   },
   value: {
-    value: 'test',
+    defaultValue: 'test',
   },
 });
 

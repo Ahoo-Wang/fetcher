@@ -24,7 +24,7 @@
     - extra
 
 
-## Filter
+## Filter Panel
 
 - allConditions
 - conditions
@@ -35,7 +35,7 @@
     - group: and , or , nor
     - friendly
 
-### ConditionFilter
+### Filter
 
 - type
 - filter friendly

@@ -42,7 +42,7 @@ export function AssemblyConditionFilter<ValueType = any>(
   const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
 
   // Determine the initial operator
-  let initialOperator = props.operator.value;
+  let initialOperator = props.operator.defaultValue;
 
   // If no operator is provided or it's not in supported operators, use the first supported operator
   if (!initialOperator || !props.supportedOperators.includes(initialOperator)) {
@@ -52,7 +52,7 @@ export function AssemblyConditionFilter<ValueType = any>(
   const filterState = useConditionFilterState({
     field: props.field.name,
     operator: initialOperator,
-    value: props.value.value,
+    value: props.value.defaultValue,
     ref: props.ref,
     validate: props.validate,
     friendly: props.friendly,
