@@ -13,10 +13,8 @@
 
 import { FilterProps } from './types';
 import { Input } from 'antd';
-import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
+import { Operator } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
-import { OPERATOR_zh_CN } from './locale';
-import { friendlyCondition } from './friendlyCondition';
 import { UseFilterStateReturn } from './useFilterState';
 import {
   AssemblyFilter,
@@ -28,7 +26,6 @@ export const ID_FILTER = 'id';
 export function IdFilter(
   props: FilterProps<string | string[]>,
 ) {
-  const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
   const assemblyConditionFilterProps: AssemblyFilterProps<
     string | string[]
   > = {
@@ -39,9 +36,6 @@ export function IdFilter(
       if (!operator) return false;
       if (!value) return false;
       return !(Array.isArray(value) && value.length === 0);
-    },
-    friendly: (condition: Condition) => {
-      return friendlyCondition(props.field.label, operatorLocale, condition);
     },
     valueInputSupplier: (
       filterState: UseFilterStateReturn<string | string[]>,

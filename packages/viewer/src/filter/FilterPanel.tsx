@@ -211,7 +211,6 @@ export function FilterPanel({
                     <TypedFilter
                       type={filter.type}
                       field={filter.field}
-                      label={{ children: filter.field.label }}
                       operator={{ defaultValue: Operator.EQ, options: [] }}
                       value={{
                         defaultValue: filter.value?.condition?.value,

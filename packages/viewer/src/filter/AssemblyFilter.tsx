@@ -25,7 +25,6 @@ export interface AssemblyFilterProps<ValueType = any>
   extends FilterProps {
   supportedOperators: Operator[];
   validate: (operator: Operator, value: ValueType | undefined) => boolean;
-  friendly: (condition: Condition) => string;
   valueInputSupplier: (
     filterState: UseFilterStateReturn<ValueType>,
   ) => ReactNode;
@@ -55,7 +54,6 @@ export function AssemblyFilter<ValueType = any>(
     value: props.value.defaultValue,
     ref: props.ref,
     validate: props.validate,
-    friendly: props.friendly,
     onChange: props.onChange,
   });
   const valueInput = props.valueInputSupplier(filterState);

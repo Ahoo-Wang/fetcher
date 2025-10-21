@@ -25,7 +25,6 @@ export const TEXT_FILTER = 'text';
 export function TextFilter(
   props: FilterProps<string | string[]>,
 ) {
-  const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
   const assemblyConditionFilterProps: AssemblyFilterProps<string | string[]> = {
     ...props,
     supportedOperators: [Operator.EQ, Operator.NE, Operator.CONTAINS, Operator.STARTS_WITH, Operator.ENDS_WITH, Operator.IN, Operator.NOT_IN],
@@ -34,9 +33,6 @@ export function TextFilter(
       if (!operator) return false;
       if (!value) return false;
       return !(Array.isArray(value) && value.length === 0);
-    },
-    friendly: (condition: Condition) => {
-      return friendlyCondition(props.field.label, operatorLocale, condition);
     },
     valueInputSupplier: (filterState: UseFilterStateReturn<string | string[]>) => {
       switch (filterState.operator) {

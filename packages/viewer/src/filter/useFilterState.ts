@@ -20,7 +20,6 @@ export interface UseFilterStateOptions<ValueType = any> extends RefAttributes<Fi
   operator: Operator;
   value: ValueType | undefined;
   validate: (operator: Operator, value: ValueType | undefined) => boolean;
-  friendly: (condition: Condition) => string;
   onChange?: (condition: FilterValue | undefined) => void;
 }
 
@@ -46,7 +45,6 @@ export function useFilterState<ValueType = any>(options: UseFilterStateOptions<V
     };
     return {
       condition,
-      friendly: options.friendly(condition),
     };
   };
   const setOperatorFn = (newOperator: Operator) => {

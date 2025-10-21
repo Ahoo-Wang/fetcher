@@ -14,8 +14,12 @@
 import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
 import { Condition, Operator, OperatorLocale } from '@ahoo-wang/fetcher-wow';
 import { SelectProps } from 'antd/es/select';
-import { ButtonProps } from 'antd';
 import React, { RefAttributes } from 'react';
+
+export interface StyleCapable {
+  style?: React.CSSProperties;
+  className?: string;
+}
 
 /**
  * @see {@link Schema}
@@ -30,27 +34,25 @@ export interface FilterRef {
   getValue(): FilterValue | undefined;
 }
 
-export interface LabelProps extends ButtonProps {
-
+export interface LabelProps extends StyleCapable {
 }
 
 export interface OperatorProps extends Omit<SelectProps<Operator>, 'value'> {
   locale?: OperatorLocale;
 }
 
-export interface ValueProps<ValueType = any> {
+export interface ValueProps<ValueType = any> extends StyleCapable {
   defaultValue?: ValueType;
   placeholder?: string;
 }
 
 export interface FilterValue {
   condition: Condition;
-  friendly: string;
 }
 
 export interface FilterProps<ValueType = any> extends AttributesCapable, RefAttributes<FilterRef> {
   field: FilterField;
-  label: LabelProps;
+  label?: LabelProps;
   operator: OperatorProps;
   value: ValueProps<ValueType>;
   onChange?: (value?: FilterValue) => void;
