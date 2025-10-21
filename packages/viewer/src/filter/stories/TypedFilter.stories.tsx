@@ -97,8 +97,8 @@ export const Default: Story = {
         <Space direction="vertical" style={{ width: '100%' }}>
           <TypedFilter {...args} onChange={setFilterValue} />
           {filterValue && (
-            <Typography.Text type="secondary">
-              Current filter: {filterValue.friendly}
+            <Typography.Text type="secondary" code copyable>
+              {JSON.stringify(filterValue.condition)}
             </Typography.Text>
           )}
         </Space>

@@ -18,8 +18,8 @@ import { RefObject } from 'react';
  * Props for the TagInput component.
  * Extends SelectProps from Antd, excluding 'mode', 'open', and 'suffixIcon' as they are fixed.
  */
-export interface TagInputProps
-  extends Omit<SelectProps, 'mode' | 'open' | 'suffixIcon'> {
+export interface TagInputProps<ValueType = any>
+  extends Omit<SelectProps<ValueType>, 'mode' | 'open' | 'suffixIcon'> {
   ref?: RefObject<RefSelectProps>;
 }
 
@@ -35,7 +35,7 @@ const DEFAULT_TOKEN_SEPARATORS = [',', '，', ';', '；', ' '];
  * @param props - The props for the TagInput component.
  * @returns The rendered TagInput component.
  */
-export function TagInput(props: TagInputProps) {
+export function TagInput<ValueType = any>(props: TagInputProps<ValueType>) {
   const {
     tokenSeparators = DEFAULT_TOKEN_SEPARATORS,
     allowClear = true,
@@ -43,7 +43,7 @@ export function TagInput(props: TagInputProps) {
   } = props;
 
   return (
-    <Select
+    <Select<ValueType>
       {...restProps}
       mode={'tags'}
       open={false}

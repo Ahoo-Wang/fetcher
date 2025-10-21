@@ -13,10 +13,8 @@
 
 import { FilterProps } from './types';
 import { Input } from 'antd';
-import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
+import { Operator } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
-import { OPERATOR_zh_CN } from './locale';
-import { friendlyCondition } from './friendlyCondition';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 import { UseFilterStateReturn } from './useFilterState';
 
