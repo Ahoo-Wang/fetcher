@@ -17,7 +17,7 @@ import {
 } from '../../src';
 import { FilterComponent } from '../../src';
 
-describe('ConditionFilterRegistry', () => {
+describe('FilterRegistry', () => {
   let registry: FilterRegistry;
   let mockFilter: FilterComponent;
 

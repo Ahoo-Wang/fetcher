@@ -49,10 +49,10 @@ const createMockProps = (
       type: 'string',
     },
     label: {
-      children: 'Test Label',
+
     },
     operator: {
-      value: Operator.EQ,
+      defaultValue: Operator.EQ,
       options: [],
     },
     value: {
@@ -60,7 +60,6 @@ const createMockProps = (
     },
     supportedOperators: [Operator.EQ, Operator.NE],
     validate,
-    friendly,
     valueInputSupplier,
   };
 
@@ -78,7 +77,7 @@ const renderWithRef = (
   return { ...result, ref };
 };
 
-describe('AssemblyConditionFilter', () => {
+describe('AssemblyFilter', () => {
   describe('Rendering', () => {
     it('renders without crashing', () => {
       const props = createMockProps();
@@ -124,7 +123,7 @@ describe('AssemblyConditionFilter', () => {
   describe('Operator Selection', () => {
     it('uses provided operator value when valid', () => {
       const props = createMockProps({
-        operator: { value: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ, options: [] },
         supportedOperators: [Operator.EQ, Operator.NE],
       });
       render(<AssemblyFilter {...props} />);
@@ -135,7 +134,7 @@ describe('AssemblyConditionFilter', () => {
 
     it('falls back to first supported operator when provided operator is invalid', () => {
       const props = createMockProps({
-        operator: { value: Operator.CONTAINS as any, options: [] }, // Invalid operator
+        operator: { defaultValue: Operator.CONTAINS as any, options: [] }, // Invalid operator
         supportedOperators: [Operator.EQ, Operator.NE],
       });
       expect(() =>
@@ -220,14 +219,12 @@ describe('AssemblyConditionFilter', () => {
       expect(typeof ref.current?.getValue).toBe('function');
     });
 
-    it('getValue returns ConditionFilterValue when validation passes', () => {
+    it('getValue returns FilterValue when validation passes', () => {
       const validate = vi.fn(() => true);
-      const friendly = vi.fn(() => 'Test friendly description');
 
       const { ref } = renderWithRef({
         validate,
-        friendly,
-        operator: { value: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ, options: [] },
         value: { defaultValue: 'test-value' },
       });
 
@@ -239,7 +236,6 @@ describe('AssemblyConditionFilter', () => {
         operator: Operator.EQ,
         value: 'test-value',
       });
-      expect(result?.friendly).toBe('Test friendly description');
     });
 
     it('getValue returns undefined when validation fails', () => {
@@ -247,7 +243,7 @@ describe('AssemblyConditionFilter', () => {
 
       const { ref } = renderWithRef({
         validate,
-        operator: { value: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ, options: [] },
         value: { defaultValue: 'invalid-value' },
       });
 
@@ -273,7 +269,7 @@ describe('AssemblyConditionFilter', () => {
     it('forwards operator props to Select component', () => {
       const props = createMockProps({
         operator: {
-          value: Operator.EQ,
+          defaultValue: Operator.EQ,
           options: [],
           placeholder: 'Select operator',
         },
@@ -288,7 +284,7 @@ describe('AssemblyConditionFilter', () => {
       const props = createMockProps({
         field: { name: 'customField', label: 'Custom Label', type: 'string' },
         label: {
-          type: 'primary',
+
         },
       });
       render(<AssemblyFilter {...props} />);

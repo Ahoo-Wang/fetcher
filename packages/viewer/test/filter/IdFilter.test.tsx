@@ -28,15 +28,13 @@ const createMockProps = (
       label: 'Test ID',
       type: 'string',
     },
-    label: {
-      children: 'Test Label',
-    },
+    label: {},
     operator: {
-      value: Operator.ID,
+      defaultValue: Operator.ID,
       options: [],
     },
     value: {
-      value: 'test-value',
+      defaultValue: 'test-value',
     },
   };
 
@@ -54,7 +52,7 @@ const renderWithRef = (
   return { ...result, ref };
 };
 
-describe('IdConditionFilter', () => {
+describe('IdFilter', () => {
   describe('Rendering', () => {
     it('renders without crashing', () => {
       const props = createMockProps();
@@ -110,7 +108,7 @@ describe('IdConditionFilter', () => {
 
     it('respects provided operator value', () => {
       const props = createMockProps({
-        operator: { value: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS, options: [] },
       });
       expect(() => render(<IdFilter {...props} />)).not.toThrow();
     });
@@ -119,8 +117,8 @@ describe('IdConditionFilter', () => {
   describe('Input Component Types', () => {
     it('renders Input component for ID operator', () => {
       const props = createMockProps({
-        operator: { value: Operator.ID, options: [] },
-        value: { value: 'single-id' },
+        operator: { defaultValue: Operator.ID, options: [] },
+        value: { defaultValue: 'single-id' },
       });
       render(<IdFilter {...props} />);
 
@@ -130,8 +128,8 @@ describe('IdConditionFilter', () => {
 
     it('renders TagInput component for IDS operator', () => {
       const props = createMockProps({
-        operator: { value: Operator.IDS, options: [] },
-        value: { value: ['id1', 'id2'] },
+        operator: { defaultValue: Operator.IDS, options: [] },
+        value: { defaultValue: ['id1', 'id2'] },
       });
       expect(() => render(<IdFilter {...props} />)).not.toThrow();
     });
@@ -140,8 +138,8 @@ describe('IdConditionFilter', () => {
   describe('Validation Logic', () => {
     it('validates correctly for ID operator with valid value', () => {
       const { ref } = renderWithRef({
-        operator: { value: Operator.ID, options: [] },
-        value: { value: 'valid-id' },
+        operator: { defaultValue: Operator.ID, options: [] },
+        value: { defaultValue: 'valid-id' },
       });
 
       const result = ref.current?.getValue();
@@ -152,8 +150,8 @@ describe('IdConditionFilter', () => {
 
     it('validates correctly for IDS operator with valid array', () => {
       const { ref } = renderWithRef({
-        operator: { value: Operator.IDS, options: [] },
-        value: { value: ['id1', 'id2'] },
+        operator: { defaultValue: Operator.IDS, options: [] },
+        value: { defaultValue: ['id1', 'id2'] },
       });
 
       const result = ref.current?.getValue();
@@ -164,8 +162,8 @@ describe('IdConditionFilter', () => {
 
     it('returns undefined for ID operator with empty value', () => {
       const { ref } = renderWithRef({
-        operator: { value: Operator.ID, options: [] },
-        value: { value: '' },
+        operator: { defaultValue: Operator.ID, options: [] },
+        value: { defaultValue: '' },
       });
 
       const result = ref.current?.getValue();
@@ -174,8 +172,8 @@ describe('IdConditionFilter', () => {
 
     it('returns undefined for IDS operator with empty array', () => {
       const { ref } = renderWithRef({
-        operator: { value: Operator.IDS, options: [] },
-        value: { value: [] },
+        operator: { defaultValue: Operator.IDS, options: [] },
+        value: { defaultValue: [] },
       });
 
       const result = ref.current?.getValue();
@@ -193,14 +191,13 @@ describe('IdConditionFilter', () => {
 
     it('getValue returns ConditionFilterValue object when valid', () => {
       const { ref } = renderWithRef({
-        operator: { value: Operator.ID, options: [] },
-        value: { value: 'test-id' },
+        operator: { defaultValue: Operator.ID, options: [] },
+        value: { defaultValue: 'test-id' },
       });
 
       const result = ref.current?.getValue();
 
       expect(result).toHaveProperty('condition');
-      expect(result).toHaveProperty('friendly');
       expect(result?.condition).toEqual({
         field: 'testId',
         operator: Operator.ID,
@@ -208,27 +205,14 @@ describe('IdConditionFilter', () => {
       });
     });
 
-    it('getValue includes friendly description', () => {
-      const { ref } = renderWithRef({
-        field: { name: 'userId', label: 'User ID', type: 'string' },
-        operator: { value: Operator.ID, options: [] },
-        value: { value: '123' },
-      });
-
-      const result = ref.current?.getValue();
-
-      expect(result?.friendly).toBeDefined();
-      expect(typeof result?.friendly).toBe('string');
-      expect(result?.friendly).toContain('User ID');
-    });
   });
 
   describe('onChange Callback', () => {
     it('calls onChange when value changes', () => {
       const onChange = vi.fn();
       const props = createMockProps({
-        operator: { value: Operator.ID, options: [] },
-        value: { value: 'initial' },
+        operator: { defaultValue: Operator.ID, options: [] },
+        value: { defaultValue: 'initial' },
         onChange,
       });
       render(<IdFilter {...props} />);
@@ -256,7 +240,7 @@ describe('IdConditionFilter', () => {
     it('forwards operator props to Select component', () => {
       const props = createMockProps({
         operator: {
-          value: Operator.ID,
+          defaultValue: Operator.ID,
           options: [],
           placeholder: 'Select operator',
         },
@@ -269,9 +253,9 @@ describe('IdConditionFilter', () => {
 
     it('forwards value props to input component', () => {
       const props = createMockProps({
-        operator: { value: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID, options: [] },
         value: {
-          value: 'test',
+          defaultValue: 'test',
           placeholder: 'Enter ID',
         },
       });
@@ -289,12 +273,12 @@ describe('IdConditionFilter', () => {
   describe('Edge Cases', () => {
     it('handles undefined value gracefully', () => {
       const props = createMockProps({
-        value: { value: undefined },
+        value: { defaultValue: undefined },
       });
       expect(() => render(<IdFilter {...props} />)).not.toThrow();
 
       const { ref } = renderWithRef({
-        value: { value: undefined },
+        value: { defaultValue: undefined },
       });
 
       const result = ref.current?.getValue();
@@ -303,12 +287,12 @@ describe('IdConditionFilter', () => {
 
     it('handles null value gracefully', () => {
       const props = createMockProps({
-        value: { value: null as any },
+        value: { defaultValue: null },
       });
       expect(() => render(<IdFilter {...props} />)).not.toThrow();
 
       const { ref } = renderWithRef({
-        value: { value: null as any },
+        value: { defaultValue: null },
       });
 
       const result = ref.current?.getValue();
@@ -317,22 +301,19 @@ describe('IdConditionFilter', () => {
 
     it('handles empty array for IDS operator', () => {
       const props = createMockProps({
-        operator: { value: Operator.IDS, options: [] },
-        value: { value: [] },
+        operator: { defaultValue: Operator.IDS, options: [] },
+        value: { defaultValue: [] },
       });
       render(<IdFilter {...props} />);
 
       const { ref } = renderWithRef({
-        operator: { value: Operator.IDS, options: [] },
-        value: { value: [] },
+        operator: { defaultValue: Operator.IDS, options: [] },
+        value: { defaultValue: [] },
       });
 
       const result = ref.current?.getValue();
       expect(result).toBeUndefined();
     });
 
-    it.skip('maintains stability across re-renders', () => {
-      // Skipped due to jsdom CSS issues with Antd components
-    });
   });
 });

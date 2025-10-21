@@ -31,10 +31,10 @@ const createMockProps = (type: string): TypedFilterProps => ({
     type: 'string',
   },
   label: {
-    children: 'Test Label',
+
   },
   operator: {
-    value: Operator.EQ,
+    defaultValue: Operator.EQ,
     options: [],
   },
   value: {
@@ -42,7 +42,7 @@ const createMockProps = (type: string): TypedFilterProps => ({
   },
 });
 
-describe('FallbackConditionFilter', () => {
+describe('FallbackFilter', () => {
   describe('Rendering', () => {
     it('renders without crashing', () => {
       const props = createMockProps('unknown');

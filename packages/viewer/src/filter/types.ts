@@ -42,7 +42,7 @@ export interface OperatorProps extends Omit<SelectProps<Operator>, 'value'> {
 }
 
 export interface ValueProps<ValueType = any> extends StyleCapable {
-  defaultValue?: ValueType;
+  defaultValue?: ValueType | null;
   placeholder?: string;
 }
 

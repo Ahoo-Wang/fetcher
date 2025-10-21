@@ -26,7 +26,7 @@ describe('TypedFilter', () => {
       type: 'string',
     },
     label: {
-      children: 'Test Label',
+
     },
     operator: {
       value: Operator.EQ,
@@ -100,6 +100,6 @@ describe('TypedFilter', () => {
   });
 
   it('maintains displayName for debugging', () => {
-    expect(TypedFilter.displayName).toBe('ConditionFilter');
+    expect(TypedFilter.displayName).toBe('TypedFilter');
   });
 });
