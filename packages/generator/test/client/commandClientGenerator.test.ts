@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Project, SourceFile, VariableDeclarationKind } from 'ts-morph';
+import { Project } from 'ts-morph';
 import { CommandClientGenerator } from '../../src/client';
 import { AggregateDefinition } from '../../src/aggregate';
 import { SilentLogger } from '../../src/utils/logger';
@@ -105,16 +105,13 @@ describe('CommandClientGenerator', () => {
 
     mockGetOrCreateSourceFile.mockReturnValue(mockSourceFile as any);
     mockCreateClientFilePath.mockReturnValue(mockSourceFile as any);
-    mockAddImportRefModel.mockImplementation(() => {
-    });
+    mockAddImportRefModel.mockImplementation(() => {});
     mockResolveModelInfo.mockReturnValue({
       name: 'CreateUserCommand',
       path: 'createUserCommand',
     });
-    mockAddImport.mockImplementation(() => {
-    });
-    mockAddJSDoc.mockImplementation(() => {
-    });
+    mockAddImport.mockImplementation(() => {});
+    mockAddJSDoc.mockImplementation(() => {});
     mockGetClientName.mockImplementation(
       (aggregate, suffix) => `User${suffix}`,
     );
@@ -194,11 +191,12 @@ describe('CommandClientGenerator', () => {
     };
     mockSourceFile.addClass.mockReturnValue(mockClass);
 
-    generator.processCommandClient(mockSourceFile, mockAggregate, false);
+    generator.processCommandClient(mockSourceFile, mockAggregate);
 
     expect(mockSourceFile.addClass).toHaveBeenCalledWith({
       name: 'UserCommandClient',
       isExported: true,
+      typeParameters: ['R = CommandResult'],
       decorators: [
         {
           name: 'api',
@@ -222,25 +220,23 @@ describe('CommandClientGenerator', () => {
     };
     mockSourceFile.addClass.mockReturnValue(mockClass);
 
-    generator.processCommandClient(mockSourceFile, mockAggregate, true);
+    generator.processStreamCommandClient(mockSourceFile, mockAggregate);
 
     expect(mockSourceFile.addClass).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: expect.stringContaining('CommandClient'),
+        name: expect.stringContaining('StreamCommandClient'),
         isExported: true,
         decorators: expect.any(Array),
       }),
     );
-    expect(mockClass.addImplements).toHaveBeenCalledWith('ApiMetadataCapable');
   });
-
 
   it('should handle empty context aggregates', () => {
     const emptyContextAggregates = new Map<string, Set<AggregateDefinition>>();
     const context = {
       ...createContext(mockLogger),
       contextAggregates: emptyContextAggregates,
-    };
+    } as GenerateContext;
     const generator = new CommandClientGenerator(context);
 
     generator.generate();

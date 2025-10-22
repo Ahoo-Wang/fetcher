@@ -13,7 +13,9 @@
 
 import { Tag } from '@ahoo-wang/fetcher-openapi';
 import {
-  ClassDeclaration, OptionalKind, ParameterDeclarationStructure,
+  ClassDeclaration,
+  OptionalKind,
+  ParameterDeclarationStructure,
   SourceFile,
   VariableDeclarationKind,
 } from 'ts-morph';
@@ -24,14 +26,22 @@ import {
   addImport,
   addImportRefModel,
   addJSDoc,
-  camelCase, isEmptyObject, resolvePathParameterType,
+  camelCase,
+  isEmptyObject,
+  resolvePathParameterType,
 } from '../utils';
 import {
   addApiMetadataCtor,
-  addImportDecorator, addImportEventStream, createDecoratorClass,
+  addImportDecorator,
+  addImportEventStream,
+  createDecoratorClass,
   STREAM_RESULT_EXTRACTOR_METADATA,
 } from './decorators';
-import { createClientFilePath, getClientName, methodToDecorator } from './utils';
+import {
+  createClientFilePath,
+  getClientName,
+  methodToDecorator,
+} from './utils';
 
 /**
  * Generates TypeScript command client classes for aggregates.
@@ -46,17 +56,15 @@ export class CommandClientGenerator implements Generator {
    * Creates a new CommandClientGenerator instance.
    * @param context - The generation context containing OpenAPI spec and project details
    */
-  constructor(public readonly context: GenerateContext) {
-  }
+  constructor(public readonly context: GenerateContext) {}
 
   /**
    * Generates command client classes for all aggregates.
    */
   generate(): void {
-    const totalAggregates = Array.from(this.context.contextAggregates.values()).reduce(
-      (sum, set) => sum + set.size,
-      0,
-    );
+    const totalAggregates = Array.from(
+      this.context.contextAggregates.values(),
+    ).reduce((sum, set) => sum + set.size, 0);
     this.context.logger.info('--- Generating Command Clients ---');
     this.context.logger.progress(
       `Generating command clients for ${totalAggregates} aggregates`,
@@ -147,7 +155,7 @@ export class CommandClientGenerator implements Generator {
     this.processCommandClient(commandClientFile, aggregate);
 
     this.context.logger.info(`Generating stream command client class`);
-    this.processCommandClient(commandClientFile, aggregate, true);
+    this.processStreamCommandClient(commandClientFile, aggregate);
 
     this.context.logger.success(
       `Command client generation completed for aggregate: ${aggregate.aggregate.aggregateName}`,
@@ -185,28 +193,58 @@ export class CommandClientGenerator implements Generator {
   processCommandClient(
     clientFile: SourceFile,
     aggregateDefinition: AggregateDefinition,
-    isStream: boolean = false,
   ) {
-    let suffix = 'CommandClient';
-    let apiDecoratorArgs: string[] = [];
-    let returnType = `Promise<CommandResult>`;
-    if (isStream) {
-      suffix = 'Stream' + suffix;
-      apiDecoratorArgs = [
-        `''`,
-        STREAM_RESULT_EXTRACTOR_METADATA,
-      ];
-      returnType = `Promise<CommandResultEventStream>`;
-    }
     const commandClientName = getClientName(
       aggregateDefinition.aggregate,
-      suffix,
+      'CommandClient',
     );
-    const commandClient = createDecoratorClass(commandClientName, clientFile, apiDecoratorArgs);
+    const commandClient = createDecoratorClass(
+      commandClientName,
+      clientFile,
+      [],
+      ['R = CommandResult'],
+    );
     addApiMetadataCtor(commandClient, this.defaultCommandClientOptionsName);
 
     aggregateDefinition.commands.forEach(command => {
-      this.processCommandMethod(aggregateDefinition, clientFile, commandClient, command, returnType);
+      this.processCommandMethod(
+        aggregateDefinition,
+        clientFile,
+        commandClient,
+        command,
+      );
+    });
+  }
+
+  processStreamCommandClient(
+    clientFile: SourceFile,
+    aggregateDefinition: AggregateDefinition,
+  ) {
+    const commandClientName = getClientName(
+      aggregateDefinition.aggregate,
+      'CommandClient',
+    );
+    const commandStreamClientName = getClientName(
+      aggregateDefinition.aggregate,
+      'StreamCommandClient',
+    );
+
+    const streamCommandClient = createDecoratorClass(
+      commandStreamClientName,
+      clientFile,
+      [`''`, STREAM_RESULT_EXTRACTOR_METADATA],
+      [],
+      `${commandClientName}<CommandResultEventStream>`,
+    );
+    streamCommandClient.addConstructor({
+      parameters: [
+        {
+          name: 'apiMetadata',
+          type: 'ApiMetadata',
+          initializer: this.defaultCommandClientOptionsName,
+        } as OptionalKind<ParameterDeclarationStructure>,
+      ],
+      statements: `super(apiMetadata);`,
     });
   }
 
@@ -220,28 +258,30 @@ export class CommandClientGenerator implements Generator {
       `Adding import for command model: ${commandModelInfo.name} from path: ${commandModelInfo.path}`,
     );
     addImportRefModel(sourceFile, this.context.outputDir, commandModelInfo);
-    const parameters = definition.pathParameters.filter(parameter => {
-      return !this.context.isIgnoreCommandClientPathParameters(
-        tag.name,
-        parameter.name,
-      );
-    }).map(parameter => {
-      const parameterType = resolvePathParameterType(parameter);
-      this.context.logger.info(
-        `Adding path parameter: ${parameter.name} (type: ${parameterType})`,
-      );
-      return {
-        name: parameter.name,
-        type: parameterType,
-        hasQuestionToken: false,
-        decorators: [
-          {
-            name: 'path',
-            arguments: [`'${parameter.name}'`],
-          },
-        ],
-      };
-    });
+    const parameters = definition.pathParameters
+      .filter(parameter => {
+        return !this.context.isIgnoreCommandClientPathParameters(
+          tag.name,
+          parameter.name,
+        );
+      })
+      .map(parameter => {
+        const parameterType = resolvePathParameterType(parameter);
+        this.context.logger.info(
+          `Adding path parameter: ${parameter.name} (type: ${parameterType})`,
+        );
+        return {
+          name: parameter.name,
+          type: parameterType,
+          hasQuestionToken: false,
+          decorators: [
+            {
+              name: 'path',
+              arguments: [`'${parameter.name}'`],
+            },
+          ],
+        };
+      });
 
     this.context.logger.info(
       `Adding command request parameter: commandRequest (type: CommandRequest<${commandModelInfo.name}>)`,
@@ -280,15 +320,18 @@ export class CommandClientGenerator implements Generator {
     sourceFile: SourceFile,
     client: ClassDeclaration,
     definition: CommandDefinition,
-    returnType: string,
   ) {
     this.context.logger.info(
       `Generating command method: ${camelCase(definition.name)} for command: ${definition.name}`,
     );
     this.context.logger.info(
-      `Command method details: HTTP ${definition.method}, path: ${definition.path}, return type: ${returnType}`,
+      `Command method details: HTTP ${definition.method}, path: ${definition.path}`,
     );
-    const parameters = this.resolveParameters(aggregate.aggregate.tag, sourceFile, definition);
+    const parameters = this.resolveParameters(
+      aggregate.aggregate.tag,
+      sourceFile,
+      definition,
+    );
     const methodDeclaration = client.addMethod({
       name: camelCase(definition.name),
       decorators: [
@@ -298,22 +341,19 @@ export class CommandClientGenerator implements Generator {
         },
       ],
       parameters: parameters,
-      returnType: returnType,
-      statements: [
-        `throw autoGeneratedError(${parameters.map(parameter => parameter.name).join(',')});`,
-      ],
+      returnType: 'Promise<R>',
+      statements: `throw autoGeneratedError(${parameters.map(parameter => parameter.name).join(',')});`,
     });
 
     this.context.logger.info(
       `Adding JSDoc documentation for method: ${camelCase(definition.name)}`,
     );
-    addJSDoc(methodDeclaration,
-      [
-        definition.summary,
-        definition.description,
-        `- operationId: \`${definition.operation.operationId}\``,
-        `- path: \`${definition.path}\``,
-      ]);
+    addJSDoc(methodDeclaration, [
+      definition.summary,
+      definition.description,
+      `- operationId: \`${definition.operation.operationId}\``,
+      `- path: \`${definition.path}\``,
+    ]);
 
     this.context.logger.success(
       `Command method generated: ${camelCase(definition.name)}`,
