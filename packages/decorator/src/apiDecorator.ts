@@ -245,19 +245,11 @@ function bindAllExecutors<T extends new (...args: any[]) => any>(
   constructor: T,
   apiMetadata: ApiMetadata,
 ) {
-  const allMethods = new Set<string>();
   let proto = constructor.prototype;
-
   while (proto && proto !== Object.prototype) {
-    Object.getOwnPropertyNames(proto).forEach(name => {
-      if (name !== 'constructor' && typeof proto[name] === 'function') {
-        allMethods.add(name);
-      }
+    Object.getOwnPropertyNames(proto).forEach(functionName => {
+      bindExecutor(constructor, functionName, apiMetadata);
     });
     proto = Object.getPrototypeOf(proto);
   }
-
-  allMethods.forEach(methodName => {
-    bindExecutor(constructor, methodName, apiMetadata);
-  });
 }
