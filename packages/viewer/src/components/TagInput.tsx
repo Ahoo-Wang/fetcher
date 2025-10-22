@@ -18,10 +18,11 @@ import { RefObject } from 'react';
  * Props for the TagInput component.
  * Extends SelectProps from Antd, excluding 'mode', 'open', and 'suffixIcon' as they are fixed.
  */
-export interface TagInputProps<ValueType = any>
-  extends Omit<SelectProps<ValueType>, 'mode' | 'open' | 'suffixIcon'> {
+export interface TagInputProps<ValueItemType = string>
+  extends Omit<SelectProps, 'mode' | 'open' | 'suffixIcon' | 'onChange'> {
   ref?: RefObject<RefSelectProps>;
-  valueParser?: (value: any) => ValueType;
+  valueItemParser?: (value: string) => ValueItemType;
+  onChange?: (value: ValueItemType[]) => void;
 }
 
 /**
@@ -36,17 +37,24 @@ const DEFAULT_TOKEN_SEPARATORS = [',', '，', ';', '；', ' '];
  * @param props - The props for the TagInput component.
  * @returns The rendered TagInput component.
  */
-export function TagInput<ValueType = any>(props: TagInputProps<ValueType>) {
+export function TagInput<ValueItemType = any>(props: TagInputProps<ValueItemType>) {
   const {
     tokenSeparators = DEFAULT_TOKEN_SEPARATORS,
     allowClear = true,
-    valueParser,
+    valueItemParser,
     onChange,
     ...restProps
   } = props;
-  const onChangeHandler = (value: any) => {
-    const parsedValue = valueParser?.(value) || value as ValueType;
-    onChange?.(parsedValue);
+  const onChangeHandler = (value: string[]) => {
+    if (!onChange) {
+      return;
+    }
+    if (!valueItemParser) {
+      onChange(value as ValueItemType[]);
+      return;
+    }
+    const parsedValue = value.map(valueItemParser);
+    onChange(parsedValue);
   };
   return (
     <Select
