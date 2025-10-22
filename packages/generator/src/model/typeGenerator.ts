@@ -15,21 +15,37 @@ import { ModelInfo, resolveReferenceModelInfo } from './modelInfo';
 import { InterfaceDeclaration, JSDocableNode, SourceFile } from 'ts-morph';
 import { Reference, Schema } from '@ahoo-wang/fetcher-openapi';
 import {
-  addImportModelInfo, addSchemaJSDoc, AllOfSchema, ArraySchema, CompositionSchema, EnumSchema,
+  addImportModelInfo,
+  addSchemaJSDoc,
+  AllOfSchema,
+  ArraySchema,
+  CompositionSchema,
+  EnumSchema,
   isAllOf,
   isArray,
   isComposition,
-  isEnum, isMap,
+  isEnum,
+  isMap,
   isObject,
-  isReference, KeySchema, MapSchema,
-  ObjectSchema, resolvePrimitiveType, toArrayType, upperSnakeCase,
+  isReference,
+  jsDoc,
+  KeySchema,
+  MapSchema,
+  ObjectSchema,
+  resolvePrimitiveType,
+  schemaJSDoc,
+  toArrayType,
+  upperSnakeCase,
 } from '../utils';
 import { Generator } from '../generateContext';
 
 export class TypeGenerator implements Generator {
-
-  constructor(private readonly modelInfo: ModelInfo, private readonly sourceFile: SourceFile, private readonly keySchema: KeySchema, private readonly outputDir: string) {
-
+  constructor(
+    private readonly modelInfo: ModelInfo,
+    private readonly sourceFile: SourceFile,
+    private readonly keySchema: KeySchema,
+    private readonly outputDir: string,
+  ) {
   }
 
   generate(): void {
@@ -56,9 +72,6 @@ export class TypeGenerator implements Generator {
     if (isComposition(schema)) {
       return this.processComposition(schema);
     }
-    if (isMap(schema)) {
-      return this.processMap(schema);
-    }
     return this.processTypeAlias(schema);
   }
 
@@ -74,7 +87,10 @@ export class TypeGenerator implements Generator {
   }
 
   private resolveAdditionalProperties(schema: Schema): string {
-    if (schema.additionalProperties === undefined || schema.additionalProperties === false) {
+    if (
+      schema.additionalProperties === undefined ||
+      schema.additionalProperties === false
+    ) {
       return '';
     }
 
@@ -82,26 +98,37 @@ export class TypeGenerator implements Generator {
       return '[key: string]: any';
     }
 
-    const valueType = this.resolveType(schema.additionalProperties);
+    const valueType = this.resolveType(
+      schema.additionalProperties,
+    );
     return `[key: string]: ${valueType}`;
   }
 
-  private resolvePropertyDefinitions(schema: ObjectSchema): string {
+  private resolvePropertyDefinitions(schema: ObjectSchema): string[] {
     const { properties } = schema;
-    const propStrings = Object.entries(properties).map(([propName, propSchema]) => {
+    return Object.entries(properties).map(([propName, propSchema]) => {
       const type = this.resolveType(propSchema);
+      if (!isReference(propSchema)) {
+        const jsDocDescriptions = schemaJSDoc(propSchema);
+        const doc = jsDoc(jsDocDescriptions, '\n * ');
+        if (doc) {
+          return `
+          /**
+           * ${doc}
+           */
+          ${propName}: ${type}
+          `;
+        }
+      }
       return `${propName}: ${type}`;
     });
-
-    return `{\n  ${propStrings.join(';\n  ')}\n}`;
   }
 
   private resolveObjectType(schema: Schema): string {
     const parts: string[] = [];
-
-    if (isObject(schema)) {
+    if (isObject(schema)){
       const propertyDefs = this.resolvePropertyDefinitions(schema);
-      parts.push(propertyDefs);
+      parts.push(...propertyDefs);
     }
 
     const additionalProps = this.resolveAdditionalProperties(schema);
@@ -113,12 +140,27 @@ export class TypeGenerator implements Generator {
       return 'Record<string, any>';
     }
 
-    return parts.length === 1 ? parts[0] : `{ ${parts.join('; ')} }`;
+    return `{\n  ${parts.join(';\n  ')}; \n}`;
+  }
+
+  private resolveMapValueType(schema: MapSchema): string {
+    if (
+      schema.additionalProperties === undefined ||
+      schema.additionalProperties === false ||
+      schema.additionalProperties === true
+    ) {
+      return 'any';
+    }
+    return this.resolveType(schema.additionalProperties);
   }
 
   resolveType(schema: Schema | Reference): string {
     if (isReference(schema)) {
       return this.resolveReference(schema).name;
+    }
+    if (isMap(schema)) {
+      const valueType = this.resolveMapValueType(schema);
+      return `Record<string,${valueType}>`;
     }
     if (schema.const) {
       return `'${schema.const}'`;
@@ -147,9 +189,7 @@ export class TypeGenerator implements Generator {
     return resolvePrimitiveType(schema.type);
   }
 
-  private processEnum(
-    schema: EnumSchema,
-  ): JSDocableNode | undefined {
+  private processEnum(schema: EnumSchema): JSDocableNode | undefined {
     return this.sourceFile.addEnum({
       name: this.modelInfo.name,
       isExported: true,
@@ -182,9 +222,7 @@ export class TypeGenerator implements Generator {
     }
   }
 
-  private processInterface(
-    schema: ObjectSchema,
-  ): JSDocableNode | undefined {
+  private processInterface(schema: ObjectSchema): JSDocableNode | undefined {
     const interfaceDeclaration = this.sourceFile.addInterface({
       name: this.modelInfo.name,
       isExported: true,
@@ -193,11 +231,7 @@ export class TypeGenerator implements Generator {
     const properties = schema.properties || {};
 
     Object.entries(properties).forEach(([propName, propSchema]) => {
-      this.addPropertyToInterface(
-        interfaceDeclaration,
-        propName,
-        propSchema,
-      );
+      this.addPropertyToInterface(interfaceDeclaration, propName, propSchema);
     });
 
     if (schema.additionalProperties) {
@@ -207,7 +241,7 @@ export class TypeGenerator implements Generator {
         returnType: this.resolveType(
           schema.additionalProperties === true
             ? {}
-            : schema.additionalProperties as Schema | Reference,
+            : (schema.additionalProperties as Schema | Reference),
         ),
       });
       indexSignature.addJsDoc('Additional properties');
@@ -215,9 +249,7 @@ export class TypeGenerator implements Generator {
     return interfaceDeclaration;
   }
 
-  private processArray(
-    schema: ArraySchema,
-  ): JSDocableNode | undefined {
+  private processArray(schema: ArraySchema): JSDocableNode | undefined {
     const itemType = this.resolveType(schema.items);
     return this.sourceFile.addTypeAlias({
       name: this.modelInfo.name,
@@ -248,45 +280,26 @@ export class TypeGenerator implements Generator {
         return;
       }
       if (isObject(allOfSchema)) {
-        Object.entries(allOfSchema.properties).forEach(([propName, propSchema]) => {
-          this.addPropertyToInterface(
-            interfaceDeclaration,
-            propName,
-            propSchema,
-          );
-        });
+        Object.entries(allOfSchema.properties).forEach(
+          ([propName, propSchema]) => {
+            this.addPropertyToInterface(
+              interfaceDeclaration,
+              propName,
+              propSchema,
+            );
+          },
+        );
       }
     });
 
     return interfaceDeclaration;
   }
 
-  private resolveMapValueType(schema: MapSchema): string {
-    if (schema.additionalProperties === undefined || schema.additionalProperties === false || schema.additionalProperties === true) {
-      return 'any';
-    }
-    return this.resolveType(schema.additionalProperties);
-  }
-
-  private processMap(
-    schema: MapSchema,
-  ): JSDocableNode | undefined {
-    const valueType = this.resolveMapValueType(schema);
-    return this.sourceFile.addTypeAlias({
-      name: this.modelInfo.name,
-      type: `Record<string,${valueType}>`,
-      isExported: true,
-    });
-  }
-
-  private processTypeAlias(
-    schema: Schema,
-  ): JSDocableNode | undefined {
+  private processTypeAlias(schema: Schema): JSDocableNode | undefined {
     return this.sourceFile.addTypeAlias({
       name: this.modelInfo.name,
       type: this.resolveType(schema),
       isExported: true,
     });
   }
-
 }
