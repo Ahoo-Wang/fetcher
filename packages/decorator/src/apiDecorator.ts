@@ -236,12 +236,28 @@ export function api(
 
     // Store metadata directly on the class constructor
     Reflect.defineMetadata(API_METADATA_KEY, apiMetadata, constructor);
-
-    // Override prototype methods to implement actual HTTP calls
-    Object.getOwnPropertyNames(constructor.prototype).forEach(functionName => {
-      bindExecutor(constructor, functionName, apiMetadata);
-    });
-
+    bindAllExecutors(constructor, apiMetadata)
     return constructor;
   };
+}
+
+function bindAllExecutors<T extends new (...args: any[]) => any>(
+  constructor: T,
+  apiMetadata: ApiMetadata,
+) {
+  const allMethods = new Set<string>();
+  let proto = constructor.prototype;
+
+  while (proto && proto !== Object.prototype) {
+    Object.getOwnPropertyNames(proto).forEach(name => {
+      if (name !== 'constructor' && typeof proto[name] === 'function') {
+        allMethods.add(name);
+      }
+    });
+    proto = Object.getPrototypeOf(proto);
+  }
+
+  allMethods.forEach(methodName => {
+    bindExecutor(constructor, methodName, apiMetadata);
+  });
 }
