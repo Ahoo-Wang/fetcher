@@ -236,7 +236,7 @@ export function api(
 
     // Store metadata directly on the class constructor
     Reflect.defineMetadata(API_METADATA_KEY, apiMetadata, constructor);
-    bindAllExecutors(constructor, apiMetadata)
+    bindAllExecutors(constructor, apiMetadata);
     return constructor;
   };
 }
@@ -245,8 +245,14 @@ function bindAllExecutors<T extends new (...args: any[]) => any>(
   constructor: T,
   apiMetadata: ApiMetadata,
 ) {
+  const boundProto = new Set();
   let proto = constructor.prototype;
   while (proto && proto !== Object.prototype) {
+    if (boundProto.has(proto)) {
+      proto = Object.getPrototypeOf(proto);
+      continue;
+    }
+    boundProto.add(proto);
     Object.getOwnPropertyNames(proto).forEach(functionName => {
       bindExecutor(constructor, functionName, apiMetadata);
     });
