@@ -11,17 +11,17 @@
  * limitations under the License.
  */
 
-import { Condition, Identifier } from '@ahoo-wang/fetcher-wow';
+import { and, Condition, Identifier } from '@ahoo-wang/fetcher-wow';
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, Modal, Checkbox } from 'antd';
-import { TypedFilter } from '../TypedFilter';
+import { Button, Col, Row, Space } from 'antd';
 import { FilterRef } from '../types';
 import { StyleCapable } from '../../types';
 import { FilterField } from '../types';
 import { FilterType } from '../TypedFilter';
-import { Flex } from 'antd';
 import { ActiveFilterGroup, AvailableFilter } from './AvailableFilterSelect';
 import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
+import { RemovableTypedFilter } from '../RemovableTypedFilter';
+import { SearchOutlined } from '@ant-design/icons';
 
 export interface ActiveFilter extends Identifier {
   type: FilterType;
@@ -31,7 +31,6 @@ export interface ActiveFilter extends Identifier {
 export interface FilterPanelProps extends StyleCapable {
   availableFilters: ActiveFilterGroup[];
   activeFilters: ActiveFilter[];
-  onFiltersChange?: (filters: ActiveFilter[]) => void;
   onSearch?: (condition: Condition) => void;
 }
 
@@ -39,11 +38,9 @@ export function FilterPanel(props: FilterPanelProps) {
   const {
     availableFilters,
     activeFilters,
-    onFiltersChange,
     onSearch,
-    ...styleProps
   } = props;
-
+  const [filters, setFilters] = useState(activeFilters);
   const [modalOpen, setModalOpen] = useState(false);
   const filterRefs = useRef<(FilterRef | null)[]>([]);
 
@@ -52,8 +49,6 @@ export function FilterPanel(props: FilterPanelProps) {
   }, [activeFilters.length]);
 
   const generateId = () => Date.now().toString();
-
-  const allAvailableFilters = availableFilters.flatMap(group => group.filters);
 
   const handleAddFilter = (selectedAvailableFilters: AvailableFilter[]) => {
     if (selectedAvailableFilters.length === 0) return;
@@ -65,59 +60,53 @@ export function FilterPanel(props: FilterPanelProps) {
           field: available.field,
         }) as ActiveFilter,
     );
-    onFiltersChange?.([...activeFilters, ...newFilters]);
+    setFilters([...filters, ...newFilters]);
     setModalOpen(false);
   };
 
   const removeFilter = (id: string) => {
     const newFilters = activeFilters.filter(f => f.id !== id);
-    onFiltersChange?.(newFilters);
-  };
-
-  const handleRemoveAll = () => {
-    onFiltersChange?.([]);
+    setFilters(newFilters);
   };
 
   const handleSearch = () => {
     const conditions = filterRefs.current
       .map(ref => ref?.getValue()?.condition)
       .filter(Boolean) as Condition[];
-    const condition: Condition = {
-      operator: 'AND' as any,
-      children: conditions,
-    };
-    onSearch?.(condition);
+    const finalCondition: Condition = and(...conditions);
+    onSearch?.(finalCondition);
   };
 
   return (
-    <div {...styleProps}>
-      <Flex gap="middle" vertical>
-        {activeFilters.map((filter, index) => (
-          <Flex key={filter.id} align="center" gap="small">
-            <TypedFilter
-              type={filter.type}
-              field={filter.field}
-              operator={{}}
-              value={{}}
-              ref={el => {
-                filterRefs.current[index] = el;
-              }}
-            />
-            <Button onClick={() => removeFilter(filter.id)}>Remove</Button>
-          </Flex>
+    <>
+      <Row gutter={[8, 8]} wrap>
+        {filters.map((filter, index) => (
+          <Col span={12}>
+            <RemovableTypedFilter key={filter.id}
+                                  type={filter.type}
+                                  field={filter.field}
+                                  operator={{}}
+                                  value={{}}
+                                  ref={el => {
+                                    filterRefs.current[index] = el;
+                                  }}
+                                  onRemove={() => removeFilter(filter.id)}
+            ></RemovableTypedFilter>
+          </Col>
         ))}
-        <Flex gap="small">
-          <Button onClick={handleSearch}>Search</Button>
-          <Button onClick={() => setModalOpen(true)}>Add Filter</Button>
-          <Button onClick={handleRemoveAll}>Remove All</Button>
-        </Flex>
-      </Flex>
+        <Col offset={12} span={12}>
+          <Space>
+            <Button onClick={() => setModalOpen(true)}>Add Filter</Button>
+            <Button type="primary"  icon={<SearchOutlined />}  onClick={handleSearch}>Search</Button>
+          </Space>
+        </Col>
+      </Row>
       <AvailableFilterSelectModal
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onSave={handleAddFilter}
         availableFilters={{ filters: availableFilters }}
       />
-    </div>
+    </>
   );
 }

@@ -54,6 +54,7 @@
     "@ahoo-wang/fetcher-storage": "workspace:^2.3.4",
     "@ahoo-wang/fetcher-wow": "workspace:^2.3.4",
     "antd": "catalog:",
+    "@ant-design/icons": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
