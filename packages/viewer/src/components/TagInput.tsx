@@ -13,6 +13,7 @@
 
 import { RefSelectProps, Select, SelectProps } from 'antd';
 import { RefObject } from 'react';
+import { Optional } from '../types';
 
 export interface TagValueItemSerializer<ValueItemType = string> {
   serialize(value: ValueItemType[]): string[];
@@ -47,7 +48,7 @@ export interface TagInputProps<ValueItemType = string>
   ref?: RefObject<RefSelectProps>;
   serializer?: TagValueItemSerializer<ValueItemType>;
   onChange?: (value: ValueItemType[]) => void;
-  value?: ValueItemType[];
+  value?: Optional<ValueItemType | ValueItemType[]>;
 }
 
 /**
@@ -78,7 +79,14 @@ export function TagInput<ValueItemType = string[]>(props: TagInputProps<ValueIte
     const parsedValue = serializer.deserialize(value);
     onChange(parsedValue);
   };
-  const serializedValue: string[] | null = value ? serializer.serialize(value) : null;
+  let serializedValue: string[] | null = null;
+  if (value) {
+    if (Array.isArray(value)) {
+      serializedValue = serializer.serialize(value);
+    } else {
+      serializedValue = serializer.serialize([value]);
+    }
+  }
   return (
     <Select
       {...restProps}

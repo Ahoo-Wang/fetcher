@@ -14,15 +14,14 @@
 import { FilterProps } from './types';
 import { Input, InputNumber } from 'antd';
 import { Operator } from '@ahoo-wang/fetcher-wow';
-import { TagInput } from '../components';
+import { NumberTagValueItemSerializer, TagInput } from '../components';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 import { UseFilterStateReturn } from './useFilterState';
 
 export const NUMBER_FILTER = 'number';
 
-
-export function NumberFilter(props: FilterProps<number | number[]>) {
-  const assemblyConditionFilterProps: AssemblyFilterProps<number | number[]> = {
+export function NumberFilter(props: FilterProps<number | (number | undefined)[]>) {
+  const assemblyConditionFilterProps: AssemblyFilterProps<number | (number | undefined)[]> = {
     ...props,
     supportedOperators: [
       Operator.EQ,
@@ -36,14 +35,14 @@ export function NumberFilter(props: FilterProps<number | number[]>) {
       Operator.NOT_IN,
     ],
     valueInputSupplier: (
-      filterState: UseFilterStateReturn<number | number[]>,
+      filterState: UseFilterStateReturn<number | (number | undefined)[]>,
     ) => {
       switch (filterState.operator) {
         case Operator.IN:
         case Operator.NOT_IN: {
-          return <TagInput<number | number[]>
+          return <TagInput
             value={filterState.value}
-            valueParser={(value) => value.map(Number)}
+            serializer={NumberTagValueItemSerializer}
             onChange={e => filterState.setValue(e)}
             {...props.value}
           />;
@@ -57,17 +56,18 @@ export function NumberFilter(props: FilterProps<number | number[]>) {
             <>
               <InputNumber
                 defaultValue={start}
-                onChange={e => filterState.setValue([e, end])}
+                onChange={e => filterState.setValue([e ?? undefined, end])}
               />
               <InputNumber
                 defaultValue={end}
-                onChange={e => filterState.setValue([start, e])}
+                onChange={e => filterState.setValue([start, e ?? undefined])}
               /></>
           );
         }
         default: {
+          const defaultValue: number | undefined = Array.isArray(filterState.value) ? filterState.value[0] : filterState.value ?? undefined;
           return (
-            <InputNumber defaultValue={filterState.value}
+            <InputNumber defaultValue={defaultValue}
                          onChange={filterState.setValue} {...props.value}></InputNumber>
           );
         }
@@ -75,7 +75,7 @@ export function NumberFilter(props: FilterProps<number | number[]>) {
     },
   };
   return (
-    <AssemblyFilter<number | number[]>
+    <AssemblyFilter<number | (number | undefined)[]>
       {...assemblyConditionFilterProps}
     ></AssemblyFilter>
   );

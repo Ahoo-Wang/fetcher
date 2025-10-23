@@ -14,21 +14,24 @@
 import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
 import { RefAttributes, useImperativeHandle, useState } from 'react';
 import { FilterRef, FilterValue } from './types';
+import { Optional } from '../types';
+
 
 export interface UseFilterStateOptions<ValueType = any> extends RefAttributes<FilterRef> {
   field?: string;
   operator: Operator;
-  value: ValueType | undefined;
-  validate?: (operator: Operator, value: ValueType | undefined) => boolean;
-  onChange?: (condition: FilterValue | undefined) => void;
+  value: Optional<ValueType>;
+  validate?: (operator: Operator, value: Optional<ValueType>) => boolean;
+  onChange?: (condition: Optional<FilterValue>) => void;
 }
 
 export interface UseFilterStateReturn<ValueType = any> {
   operator: Operator;
-  value: ValueType | undefined;
+  value: Optional<ValueType>;
   setOperator: (operator: Operator) => void;
-  setValue: (value: ValueType | undefined) => void;
+  setValue: (value: Optional<ValueType>) => void;
 }
+
 const defaultValueValidate = (operator: Operator, value: any) => {
   if (!operator) return false;
   if (!value) return false;
@@ -37,9 +40,9 @@ const defaultValueValidate = (operator: Operator, value: any) => {
 
 export function useFilterState<ValueType = any>(options: UseFilterStateOptions<ValueType>): UseFilterStateReturn<ValueType> {
   const [operator, setOperator] = useState<Operator>(options.operator);
-  const [value, setValue] = useState(options.value);
+  const [value, setValue] = useState<Optional<ValueType>>(options.value);
   const valueValidate = options.validate ?? defaultValueValidate;
-  const resolveFilterValue = (currentOperator: Operator, currentValue: ValueType | undefined): FilterValue | undefined => {
+  const resolveFilterValue = (currentOperator: Operator, currentValue: Optional<ValueType>): Optional<FilterValue> => {
     if (!valueValidate(currentOperator, currentValue)) {
       return undefined;
     }
@@ -58,7 +61,7 @@ export function useFilterState<ValueType = any>(options: UseFilterStateOptions<V
     const conditionFilterValue = resolveFilterValue(newOperator, undefined);
     options.onChange?.(conditionFilterValue);
   };
-  const setValueFn = (newValue: ValueType | undefined) => {
+  const setValueFn = (newValue: Optional<ValueType>) => {
     setValue(newValue);
     const conditionFilterValue = resolveFilterValue(operator, newValue);
     options.onChange?.(conditionFilterValue);
