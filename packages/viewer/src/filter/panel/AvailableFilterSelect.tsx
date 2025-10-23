@@ -13,7 +13,7 @@
 
 import { FilterField } from '../types';
 import { FilterType } from '../TypedFilter';
-import { Card, Checkbox, Flex, Typography } from 'antd';
+import { Checkbox, Flex, Typography } from 'antd';
 import { StyleCapable } from '../../types';
 import { RefAttributes, useImperativeHandle, useState } from 'react';
 
