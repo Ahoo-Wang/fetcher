@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { InputNumber } from 'antd';
+import { InputNumber, Space } from 'antd';
 import { useState } from 'react';
 
 type NumberRangeValue = (number | undefined)[];
@@ -46,7 +46,7 @@ export function NumberRange(props: NumberRangeProps) {
   };
 
   return (
-    <>
+    <Space.Compact>
       <InputNumber
         value={start}
         min={props.min}
@@ -63,6 +63,6 @@ export function NumberRange(props: NumberRangeProps) {
         placeholder={props.placeholder?.[1] || '最大值'}
         onChange={handleEndChange}
       />
-    </>
+    </Space.Compact>
   );
 }

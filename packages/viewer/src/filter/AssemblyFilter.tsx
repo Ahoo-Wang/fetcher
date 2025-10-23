@@ -20,11 +20,12 @@ import {
 } from './useFilterState';
 import { Button, Select, Space } from 'antd';
 import { ReactNode } from 'react';
+import { Optional } from '../types';
 
 export interface AssemblyFilterProps<ValueType = any>
   extends FilterProps {
   supportedOperators: Operator[];
-  validate?: (operator: Operator, value: ValueType | undefined) => boolean;
+  validate?: (operator: Operator, value: Optional<ValueType>) => boolean;
   valueInputSupplier: (
     filterState: UseFilterStateReturn<ValueType>,
   ) => ReactNode;

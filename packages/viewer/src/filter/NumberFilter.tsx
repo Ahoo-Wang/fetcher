@@ -17,6 +17,7 @@ import { Operator } from '@ahoo-wang/fetcher-wow';
 import { NumberTagValueItemSerializer, TagInput } from '../components';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 import { UseFilterStateReturn } from './useFilterState';
+import { NumberRange } from '../components/NumberRange';
 
 export const NUMBER_FILTER = 'number';
 
@@ -34,6 +35,15 @@ export function NumberFilter(props: FilterProps<number | (number | undefined)[]>
       Operator.IN,
       Operator.NOT_IN,
     ],
+    validate: (operator, value) => {
+      if (operator === Operator.BETWEEN) {
+        if (!Array.isArray(value)) {
+          return false;
+        }
+        return value[0] !== undefined && value[1] !== undefined;
+      }
+      return value != undefined;
+    },
     valueInputSupplier: (
       filterState: UseFilterStateReturn<number | (number | undefined)[]>,
     ) => {
@@ -48,27 +58,16 @@ export function NumberFilter(props: FilterProps<number | (number | undefined)[]>
           />;
         }
         case Operator.BETWEEN: {
-          let [start, end]: (number | undefined)[] = [undefined, undefined];
-          if (Array.isArray(filterState.value)) {
-            [start, end] = filterState.value;
-          }
           return (
-            <>
-              <InputNumber
-                defaultValue={start}
-                onChange={e => filterState.setValue([e ?? undefined, end])}
-              />
-              <InputNumber
-                defaultValue={end}
-                onChange={e => filterState.setValue([start, e ?? undefined])}
-              /></>
+            <NumberRange onChange={filterState.setValue}></NumberRange>
           );
         }
         default: {
-          const defaultValue: number | undefined = Array.isArray(filterState.value) ? filterState.value[0] : filterState.value ?? undefined;
           return (
-            <InputNumber defaultValue={defaultValue}
-                         onChange={filterState.setValue} {...props.value}></InputNumber>
+            <InputNumber<number>
+              onChange={v => {
+                filterState.setValue(v ?? undefined);
+              }} {...props.value}></InputNumber>
           );
         }
       }
