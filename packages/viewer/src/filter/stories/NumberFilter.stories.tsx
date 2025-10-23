@@ -13,8 +13,8 @@
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React, { useState } from 'react';
-import { NumberFilter } from '../../filter/NumberFilter';
-import { FilterValue } from '../../filter/types';
+import { NumberFilter } from '../index';
+import { FilterValue } from '../index';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { Card, Typography, Space, Divider } from 'antd';
 
