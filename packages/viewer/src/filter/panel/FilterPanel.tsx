@@ -14,27 +14,18 @@
 import { Condition, Identifier } from '@ahoo-wang/fetcher-wow';
 import React, { useState, useRef, useEffect } from 'react';
 import { Button, Modal, Checkbox } from 'antd';
-import { TypedFilter } from './TypedFilter';
-import { FilterRef } from './types';
-import { StyleCapable } from '../types';
-import { FilterField } from './types';
-import { FilterType } from './TypedFilter';
+import { TypedFilter } from '../TypedFilter';
+import { FilterRef } from '../types';
+import { StyleCapable } from '../../types';
+import { FilterField } from '../types';
+import { FilterType } from '../TypedFilter';
 import { Flex } from 'antd';
-
-export interface AvailableFilter {
-  field: FilterField;
-  component: FilterType;
-}
+import { ActiveFilterGroup, AvailableFilter } from './AvailableFilterSelect';
+import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
 
 export interface ActiveFilter extends Identifier {
   type: FilterType;
   field: FilterField;
-}
-
-export interface ActiveFilterGroup {
-  name: string;
-  label: string;
-  filters: AvailableFilter[];
 }
 
 export interface FilterPanelProps extends StyleCapable {
@@ -54,7 +45,6 @@ export function FilterPanel(props: FilterPanelProps) {
   } = props;
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const filterRefs = useRef<(FilterRef | null)[]>([]);
 
   useEffect(() => {
@@ -65,24 +55,18 @@ export function FilterPanel(props: FilterPanelProps) {
 
   const allAvailableFilters = availableFilters.flatMap(group => group.filters);
 
-  const handleAddFilter = () => {
-    if (selectedFilters.length === 0) return;
-    const newFilters = selectedFilters
-      .map(filterType => {
-        const available = allAvailableFilters.find(
-          f => f.component === filterType,
-        );
-        if (!available) return null;
-        return {
+  const handleAddFilter = (selectedAvailableFilters: AvailableFilter[]) => {
+    if (selectedAvailableFilters.length === 0) return;
+    const newFilters = selectedAvailableFilters.map(
+      available =>
+        ({
           id: generateId(),
-          type: filterType,
+          type: available.component,
           field: available.field,
-        } as ActiveFilter;
-      })
-      .filter(Boolean) as ActiveFilter[];
+        }) as ActiveFilter,
+    );
     onFiltersChange?.([...activeFilters, ...newFilters]);
     setModalOpen(false);
-    setSelectedFilters([]);
   };
 
   const removeFilter = (id: string) => {
@@ -128,54 +112,12 @@ export function FilterPanel(props: FilterPanelProps) {
           <Button onClick={handleRemoveAll}>Remove All</Button>
         </Flex>
       </Flex>
-      <Modal
+      <AvailableFilterSelectModal
         open={modalOpen}
-        onOk={handleAddFilter}
         onCancel={() => setModalOpen(false)}
-        title="Add Filter"
-      >
-        <div>
-          {availableFilters.map(group => (
-            <div key={group.name} style={{ marginBottom: 16 }}>
-              <div
-                style={{
-                  fontWeight: 'bold',
-                  marginBottom: 8,
-                  color: '#666',
-                }}
-              >
-                {group.label}
-              </div>
-              {group.filters.map(f => (
-                <div
-                  key={f.component}
-                  style={{ marginBottom: 8, marginLeft: 16 }}
-                >
-                  <Checkbox
-                    checked={selectedFilters.includes(f.component)}
-                    onChange={e => {
-                      if (e.target.checked) {
-                        setSelectedFilters([
-                          ...selectedFilters,
-                          f.component,
-                        ]);
-                      } else {
-                        setSelectedFilters(
-                          selectedFilters.filter(
-                            type => type !== f.component,
-                          ),
-                        );
-                      }
-                    }}
-                  >
-                    {f.field.label}
-                  </Checkbox>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </Modal>
+        onSave={handleAddFilter}
+        availableFilters={{ filters: availableFilters }}
+      />
     </div>
   );
 }

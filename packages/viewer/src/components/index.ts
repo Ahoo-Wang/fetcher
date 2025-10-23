@@ -13,4 +13,4 @@
 
 export * from './TagInput';
 export * from './NumberRange';
-export * from '../filter/FilterPanel';
+export * from '../filter/panel/FilterPanel';

@@ -96,8 +96,8 @@ export const Default: Story = {
         <Space direction="vertical" style={{ width: '100%' }}>
           <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
-            <Typography.Text type="secondary">
-              Filter: {filterValue.friendly}
+            <Typography.Text type="secondary" code>
+              Filter: {JSON.stringify(filterValue.condition)}
             </Typography.Text>
           )}
         </Space>
@@ -131,7 +131,7 @@ export const ExactMatch: Story = {
           <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
-              Filter: {filterValue.friendly}
+              Filter: {JSON.stringify(filterValue.condition)}
             </Typography.Text>
           )}
         </Space>
@@ -165,7 +165,7 @@ export const StartsWith: Story = {
           <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
-              Filter: {filterValue.friendly}
+              Filter: {JSON.stringify(filterValue.condition)}
             </Typography.Text>
           )}
         </Space>
@@ -199,7 +199,7 @@ export const MultipleValues: Story = {
           <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
-              Filter: {filterValue.friendly}
+              Filter: {JSON.stringify(filterValue.condition)}
             </Typography.Text>
           )}
         </Space>
@@ -236,7 +236,7 @@ export const ExcludeMultipleValues: Story = {
           <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
-              Filter: {filterValue.friendly}
+              Filter: {JSON.stringify(filterValue.condition)}
             </Typography.Text>
           )}
         </Space>
@@ -310,7 +310,7 @@ export const DynamicOperatorSwitching: Story = {
 
           {filterValue && (
             <Typography.Text type="secondary">
-              Current filter: {filterValue.friendly}
+              Current filter: {JSON.stringify(filterValue.condition)}
             </Typography.Text>
           )}
 
@@ -350,7 +350,7 @@ export const WithPresetValue: Story = {
           <TextFilter {...args} onChange={setFilterValue} />
           {filterValue && (
             <Typography.Text type="secondary">
-              Filter: {filterValue.friendly}
+              Filter: {JSON.stringify(filterValue.condition)}
             </Typography.Text>
           )}
         </Space>
