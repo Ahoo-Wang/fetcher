@@ -12,12 +12,12 @@
  */
 
 import { FilterProps } from './types';
-import { Input, InputNumber } from 'antd';
+import { InputNumber } from 'antd';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { NumberTagValueItemSerializer, TagInput } from '../components';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 import { UseFilterStateReturn } from './useFilterState';
-import { NumberRange } from '../components/NumberRange';
+import { NumberRange } from '../components';
 
 export const NUMBER_FILTER = 'number';
 
