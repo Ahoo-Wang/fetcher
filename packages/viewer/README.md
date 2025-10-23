@@ -38,9 +38,6 @@
 ### Filter
 
 - type
-- filter friendly
-- actions
-    - reset
 
 ## Table
 
