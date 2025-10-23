@@ -13,21 +13,17 @@
 
 import { HttpMethod } from '@ahoo-wang/fetcher';
 import {
-  all,
+  aggregateId,
   CommandHeaders,
   CommandStage,
+  DomainEventStream,
   ErrorCodes,
   ListQuery,
   PagedQuery,
-  DomainEventStream,
 } from '@ahoo-wang/fetcher-wow';
 import { describe, expect, it } from 'vitest';
-import {
-  AddCartItemCommand,
-  cartCommandClient,
-  CartCommandEndpoints,
-  cartEventStreamQueryClient,
-} from '../../../src/wow';
+import { AddCartItemCommand, cartCommandClient, CartCommandEndpoints, exampleFetcher, } from '../../../src/wow';
+import { cartQueryClientFactory } from '../../../src/generated';
 
 const command: AddCartItemCommand = {
   path: CartCommandEndpoints.addCartItem,
@@ -42,6 +38,12 @@ const command: AddCartItemCommand = {
 };
 const commandResult = await cartCommandClient.send(command);
 expect(commandResult.errorCode).toBe(ErrorCodes.SUCCEEDED);
+
+const cartEventStreamQueryClient =
+  cartQueryClientFactory.createEventStreamQueryClient({
+    contextAlias: '',
+    fetcher: exampleFetcher,
+  });
 
 function expectDomainEventStreamToBeDefined(
   domainEventStream: Partial<DomainEventStream>,
@@ -69,39 +71,44 @@ function expectDomainEventStreamToBeDefined(
 
 describe('cartEventStreamQueryClient Integration Test', () => {
   it('should count', async () => {
-    const count = await cartEventStreamQueryClient.count(all());
+    const count = await cartEventStreamQueryClient.count(
+      aggregateId(commandResult.aggregateId),
+    );
     expect(count).greaterThanOrEqual(1);
   });
 
   it('should list', async () => {
     const listQuery: ListQuery = {
-      condition: all(),
+      condition: aggregateId(commandResult.aggregateId),
     };
     const list = await cartEventStreamQueryClient.list(listQuery);
     for (const domainEventStream of list) {
+      expect(domainEventStream.aggregateId).toEqual(commandResult.aggregateId);
       expectDomainEventStreamToBeDefined(domainEventStream);
     }
   });
 
   it('should list stream', async () => {
     const listQuery: ListQuery = {
-      condition: all(),
+      condition: aggregateId(commandResult.aggregateId),
     };
     const listStream = await cartEventStreamQueryClient.listStream(listQuery);
     for await (const event of listStream) {
       const domainEventStream = event.data;
+      expect(domainEventStream.aggregateId).toEqual(commandResult.aggregateId);
       expectDomainEventStreamToBeDefined(domainEventStream);
     }
   });
 
   it('should paged', async () => {
     const pagedQuery: PagedQuery = {
-      condition: all(),
+      condition: aggregateId(commandResult.aggregateId),
     };
     const paged = await cartEventStreamQueryClient.paged(pagedQuery);
     expect(paged.total).greaterThanOrEqual(1);
     expect(paged.list.length).greaterThanOrEqual(1);
     for (const domainEventStream of paged.list) {
+      expect(domainEventStream.aggregateId).toEqual(commandResult.aggregateId);
       expectDomainEventStreamToBeDefined(domainEventStream);
     }
   });
