@@ -11,4 +11,6 @@
  * limitations under the License.
  */
 
-export * from './TagInput'
+export * from './TagInput';
+export * from './NumberRange';
+export * from './FilterPanel';

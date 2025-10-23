@@ -15,11 +15,8 @@ import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
 import { ConditionCapable, Operator, OperatorLocale } from '@ahoo-wang/fetcher-wow';
 import { SelectProps } from 'antd/es/select';
 import React, { RefAttributes } from 'react';
+import { StyleCapable } from '../types';
 
-export interface StyleCapable {
-  style?: React.CSSProperties;
-  className?: string;
-}
 
 /**
  * @see {@link Schema}

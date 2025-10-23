@@ -11,4 +11,11 @@
  * limitations under the License.
  */
 
+import React from 'react';
+
 export type Optional<T = any> = T | undefined;
+
+export interface StyleCapable {
+  style?: React.CSSProperties;
+  className?: string;
+}

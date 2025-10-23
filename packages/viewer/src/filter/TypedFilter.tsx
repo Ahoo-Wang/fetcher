@@ -16,9 +16,11 @@ import { FilterProps } from './types';
 import { filterRegistry } from './filterRegistry';
 import { FallbackFilter } from './FallbackFilter';
 
+export  type FilterType = string
+
 export interface TypedFilterProps
   extends FilterProps {
-  type: string;
+  type: FilterType;
 }
 
 export function TypedFilter(props: TypedFilterProps) {

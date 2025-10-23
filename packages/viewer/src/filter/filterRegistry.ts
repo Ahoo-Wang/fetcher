@@ -15,6 +15,7 @@ import { FilterComponent } from './types';
 import { TEXT_FILTER, TextFilter } from './TextFilter';
 import { ID_FILTER, IdFilter } from './IdFilter';
 import { NUMBER_FILTER, NumberFilter } from './NumberFilter';
+import { FilterType } from './TypedFilter';
 
 /**
  * Registry for managing filter components.
@@ -23,8 +24,8 @@ import { NUMBER_FILTER, NumberFilter } from './NumberFilter';
  * filter components by their type identifiers.
  */
 export class FilterRegistry {
-  private readonly filters: Map<string, FilterComponent> = new Map<
-    string,
+  private readonly filters: Map<FilterType, FilterComponent> = new Map<
+    FilterType,
     FilterComponent
   >();
 
@@ -45,7 +46,7 @@ export class FilterRegistry {
    * filterRegistry.register('text', TextFilter);
    * ```
    */
-  register(type: string, filter: FilterComponent) {
+  register(type: FilterType, filter: FilterComponent) {
     this.filters.set(type, filter);
   }
 
@@ -60,7 +61,7 @@ export class FilterRegistry {
    * const wasRemoved = filterRegistry.unregister('text');
    * ```
    */
-  unregister(type: string) {
+  unregister(type: FilterType) {
     return this.filters.delete(type);
   }
 
@@ -75,7 +76,7 @@ export class FilterRegistry {
    * const TextFilter = filterRegistry.get('text');
    * ```
    */
-  get(type: string): FilterComponent | undefined {
+  get(type: FilterType): FilterComponent | undefined {
     return this.filters.get(type);
   }
 }

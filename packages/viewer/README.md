@@ -26,14 +26,14 @@
 
 ## Filter Panel
 
-- allConditions
-- conditions
+- availableFilters
+- filters
 - actions
     - search
-    - addConditionFilter
-    - removeConditionFilter
+    - addFilter
+    - removeFilter
+    - addGroupFilter
     - group: and , or , nor
-    - friendly
 
 ### Filter
 
