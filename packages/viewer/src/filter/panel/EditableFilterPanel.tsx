@@ -62,6 +62,8 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
         onSearch={onSearch}
         actions={<Button onClick={() => setModalOpen(true)}>Add Filter</Button>}
         colSpan={colSpan}
+        style={props.style}
+        className={props.className}
       />
       <AvailableFilterSelectModal
         title={'Add Filter'}
