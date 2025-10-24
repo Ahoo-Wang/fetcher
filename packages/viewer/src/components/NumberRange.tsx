@@ -46,8 +46,9 @@ export function NumberRange(props: NumberRangeProps) {
   };
 
   return (
-    <Space.Compact>
+    <Space.Compact block>
       <InputNumber
+        style={{ width: '50%' }}
         value={start}
         min={props.min}
         max={startMax}
@@ -56,6 +57,7 @@ export function NumberRange(props: NumberRangeProps) {
         onChange={handleStartChange}
       />
       <InputNumber
+        style={{ width: '50%' }}
         value={end}
         min={endMin}
         max={props.max}
