@@ -15,6 +15,9 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { FilterPanel } from '../FilterPanel';
 import type { ActiveFilterGroup } from '../AvailableFilterSelect';
 import type { ActiveFilter } from '../FilterPanel';
+import React, { useState } from 'react';
+import { Card, Divider, Typography } from 'antd';
+import { all, Condition } from '@ahoo-wang/fetcher-wow';
 
 const meta: Meta<typeof FilterPanel> = {
   title: 'Viewer/Filters/Panel/FilterPanel',
@@ -60,7 +63,7 @@ const mockAvailableFilters: ActiveFilterGroup[] = [
 
 const mockActiveFilters: ActiveFilter[] = [
   {
-    id: '1',
+    key: '1',
     type: 'text',
     field: { name: 'name', label: '姓名', type: 'string' },
   },
@@ -70,7 +73,18 @@ export const Default: Story = {
   args: {
     availableFilters: mockAvailableFilters,
     activeFilters: mockActiveFilters,
-    onSearch: condition => console.log('搜索条件:', condition),
+  },
+  render: args => {
+    const [condition, setCondition] = useState<Condition>(all());
+    return (
+      <Card>
+        <FilterPanel {...args} onSearch={setCondition} />
+        <Divider>搜索条件</Divider>
+        <Typography.Text type="secondary" code>
+          {JSON.stringify(condition)}
+        </Typography.Text>
+      </Card>
+    );
   },
 };
 

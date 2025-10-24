@@ -18,7 +18,7 @@ import {
   AvailableFilterSelectRef,
   ActiveFilterGroup, AvailableFilter,
 } from '../AvailableFilterSelect';
-import { Card, Typography, Space, Button, App } from 'antd';
+import { Card, Typography, Space, Button, App, Divider } from 'antd';
 
 const meta: Meta<typeof AvailableFilterSelect> = {
   title: 'Viewer/Filters/Panel/AvailableFilterSelect',
@@ -105,9 +105,14 @@ export const Default: Story = {
             获取选中过滤器
           </Button>
           {
-            selected&& <Typography.Text type="secondary" code>
-              {JSON.stringify(selected)}
-            </Typography.Text>
+            selected && (
+              <>
+                <Divider></Divider>
+                <Typography.Text type="secondary" code>
+                  {JSON.stringify(selected)}
+                </Typography.Text>
+              </>
+            )
           }
         </Space>
       </Card>
