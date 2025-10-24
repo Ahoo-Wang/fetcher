@@ -12,6 +12,7 @@
  */
 
 export * from './locale';
+export * from './panel';
 export * from './AssemblyFilter';
 export * from './FallbackFilter';
 export * from './filterRegistry';
