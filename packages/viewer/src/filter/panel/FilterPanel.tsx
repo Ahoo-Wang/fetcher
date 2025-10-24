@@ -18,6 +18,7 @@ import { StyleCapable } from '../../types';
 import { and, Condition } from '@ahoo-wang/fetcher-wow';
 import { Button, Col, Row, Space } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useRefs } from '@ahoo-wang/fetcher-react';
 
 export interface ActiveFilter {
   key: Key;
@@ -36,7 +37,7 @@ export interface FilterPanelProps extends StyleCapable {
 
 export function FilterPanel(props: FilterPanelProps) {
   const { filters, onSearch, actions, component } = props;
-  const filterRefs = useRef<Map<Key, FilterRef | null>>(new Map());
+  const filterRefs = useRefs<FilterRef>();
   const handleSearch = () => {
     const conditions = Array.from(filterRefs.current.values())
       .map(ref => ref?.getValue()?.condition)
@@ -59,9 +60,7 @@ export function FilterPanel(props: FilterPanelProps) {
                 field={filter.field}
                 operator={filter.operator}
                 value={filter.value}
-                ref={el => {
-                  filterRefs.current.set(filter.key, el);
-                }}
+                ref={filterRefs.register(filter.key as number)}
               ></FilterComponent>
             </Col>
           );
