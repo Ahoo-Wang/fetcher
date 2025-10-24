@@ -17,11 +17,11 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   AssemblyFilter,
   AssemblyFilterProps,
-} from '../../src/filter/AssemblyFilter';
-import { FilterRef } from '../../src/filter/types';
-import { Operator, Condition } from '@ahoo-wang/fetcher-wow';
+} from '../../src';
+import { FilterRef } from '../../src';
+import { Operator } from '@ahoo-wang/fetcher-wow';
 import { Input } from 'antd';
-import { UseFilterStateReturn } from '../../src/filter/useFilterState';
+import { UseFilterStateReturn } from '../../src';
 
 // 测试辅助函数
 const createMockProps = (
@@ -29,10 +29,6 @@ const createMockProps = (
 ): AssemblyFilterProps<string> => {
   const validate = vi.fn((operator: Operator, value: string | undefined) => {
     return !!(operator && value);
-  });
-
-  const friendly = vi.fn((condition: Condition) => {
-    return `Test Field ${condition.operator} ${condition.value}`;
   });
 
   const valueInputSupplier = vi.fn(
