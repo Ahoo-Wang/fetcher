@@ -11,28 +11,23 @@
  * limitations under the License.
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-
-/**
- * The key type for refs, supporting string, number, or symbol.
- */
-export type RefKey = string | number | symbol;
+import { Key, useCallback, useEffect, useMemo, useRef } from 'react';
 
 /**
  * Return type of useRefs hook, providing Map-like interface for managing refs.
  * @template T - The type of the ref instances.
  */
-export interface UseRefsReturn<T> extends Iterable<[RefKey, T]> {
-  register: (key: RefKey) => (instance: T | null) => void;
-  get: (key: RefKey) => T | undefined;
-  set: (key: RefKey, value: T) => void;
-  delete: (key: RefKey) => boolean;
-  has: (key: RefKey) => boolean;
+export interface UseRefsReturn<T> extends Iterable<[Key, T]> {
+  register: (key: Key) => (instance: T | null) => void;
+  get: (key: Key) => T | undefined;
+  set: (key: Key, value: T) => void;
+  delete: (key: Key) => boolean;
+  has: (key: Key) => boolean;
   clear: () => void;
   readonly size: number;
-  keys: () => IterableIterator<RefKey>;
+  keys: () => IterableIterator<Key>;
   values: () => IterableIterator<T>;
-  entries: () => IterableIterator<[RefKey, T]>;
+  entries: () => IterableIterator<[Key, T]>;
 }
 
 /**
@@ -55,20 +50,20 @@ export interface UseRefsReturn<T> extends Iterable<[RefKey, T]> {
  * ```
  */
 export function useRefs<T>(): UseRefsReturn<T> {
-  const refs = useRef(new Map<RefKey, T>());
-  const get = useCallback((key: RefKey) => refs.current.get(key), []);
+  const refs = useRef(new Map<Key, T>());
+  const get = useCallback((key: Key) => refs.current.get(key), []);
   const set = useCallback(
-    (key: RefKey, value: T) => refs.current.set(key, value),
+    (key: Key, value: T) => refs.current.set(key, value),
     [],
   );
-  const has = useCallback((key: RefKey) => refs.current.has(key), []);
-  const deleteFn = useCallback((key: RefKey) => refs.current.delete(key), []);
+  const has = useCallback((key: Key) => refs.current.has(key), []);
+  const deleteFn = useCallback((key: Key) => refs.current.delete(key), []);
   const clear = useCallback(() => refs.current.clear(), []);
   const keys = useCallback(() => refs.current.keys(), []);
   const values = useCallback(() => refs.current.values(), []);
   const entries = useCallback(() => refs.current.entries(), []);
   const iterator = useCallback(() => refs.current[Symbol.iterator](), []);
-  const register = useCallback((key: RefKey) => {
+  const register = useCallback((key: Key) => {
     return (instance: T | null) => {
       if (instance) {
         refs.current.set(key, instance);
