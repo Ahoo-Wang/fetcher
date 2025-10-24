@@ -15,7 +15,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { FilterPanel, FilterPanelProps } from '../FilterPanel';
 import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
 import { useState } from 'react';
-import { Card, Divider, Typography } from 'antd';
+import { Button, Card, Divider, Typography } from 'antd';
 
 function FilterPanelDemo(props: FilterPanelProps) {
   const [condition, setCondition] = useState<Condition>();
@@ -105,7 +105,7 @@ export const WithActions: Story = {
         },
       },
     ],
-    actions: <button>Reset Filters</button>,
+    actions: <Button>Add Filter</Button>,
   },
 };
 

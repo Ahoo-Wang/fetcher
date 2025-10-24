@@ -11,31 +11,23 @@
  * limitations under the License.
  */
 
-import { and, Condition } from '@ahoo-wang/fetcher-wow';
-import React, { useState, useRef, Key } from 'react';
-import { Button, Col, Row, Space } from 'antd';
-import { FilterRef } from '../types';
+import React, { useState, Key } from 'react';
+import { Button } from 'antd';
 import { AvailableFilterGroup, AvailableFilter } from './AvailableFilterSelect';
 import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
-import { RemovableTypedFilter } from './RemovableTypedFilter';
-import { SearchOutlined } from '@ant-design/icons';
 import { useRequestId } from '@ahoo-wang/fetcher-react';
-import { ActiveFilter, FilterPanelProps } from './FilterPanel';
+import { ActiveFilter, FilterPanelProps, FilterPanel } from './FilterPanel';
 
-export interface EditableFilterPanelProps extends FilterPanelProps {
+export interface EditableFilterPanelProps extends Omit<FilterPanelProps, 'actions'> {
   availableFilters: AvailableFilterGroup[];
 }
 
 export function EditableFilterPanel(props: EditableFilterPanelProps) {
-  const {
-    availableFilters,
-    filters,
-    onSearch,
-  } = props;
+  const { availableFilters, filters, onSearch, colSpan } = props;
   const [activeFilters, setActiveFilters] = useState(filters);
   const [modalOpen, setModalOpen] = useState(false);
-  const filterRefs = useRef<(FilterRef | null)[]>([]);
   const generator = useRequestId();
+
   const handleAddFilter = (selectedAvailableFilters: AvailableFilter[]) => {
     if (selectedAvailableFilters.length === 0) return;
     const newFilters = selectedAvailableFilters.map(
@@ -55,43 +47,25 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
     setActiveFilters(newFilters);
   };
 
-  const handleSearch = () => {
-    const conditions = filterRefs.current
-      .map(ref => ref?.getValue()?.condition)
-      .filter(Boolean) as Condition[];
-    const finalCondition: Condition = and(...conditions);
-    onSearch?.(finalCondition);
-  };
+  const editableFilters = activeFilters.map(filter => ({
+    ...filter,
+    onRemove: () => removeFilter(filter.key),
+  }));
+
   return (
     <>
-      <Row gutter={[8, 8]} wrap>
-        {activeFilters.map((filter, index) => (
-          <Col span={12}>
-            <RemovableTypedFilter key={filter.key}
-                                  type={filter.type}
-                                  field={filter.field}
-                                  operator={{}}
-                                  value={{}}
-                                  ref={el => {
-                                    filterRefs.current[index] = el;
-                                  }}
-                                  onRemove={() => removeFilter(filter.key)}
-            ></RemovableTypedFilter>
-          </Col>
-        ))}
-        <Col span={12}>
-          <Space>
-            <Button onClick={() => setModalOpen(true)}>Add Filter</Button>
-            <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>Search</Button>
-          </Space>
-        </Col>
-      </Row>
+      <FilterPanel
+        filters={editableFilters}
+        onSearch={onSearch}
+        actions={<Button onClick={() => setModalOpen(true)}>Add Filter</Button>}
+        colSpan={colSpan}
+      />
       <AvailableFilterSelectModal
         title={'Add Filter'}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onSave={handleAddFilter}
-        availableFilters={{ filters: availableFilters }}
+        availableFilters={{ filters: availableFilters, activeFilters: activeFilters }}
       />
     </>
   );

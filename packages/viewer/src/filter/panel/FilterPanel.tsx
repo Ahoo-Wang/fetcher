@@ -12,20 +12,24 @@
  */
 
 import React, { Key } from 'react';
-import { TypedFilter, TypedFilterComponent, TypedFilterProps } from '../TypedFilter';
+import {
+  TypedFilterProps,
+} from '../TypedFilter';
 import { FilterRef } from '../types';
 import { StyleCapable } from '../../types';
 import { and, Condition } from '@ahoo-wang/fetcher-wow';
 import { Button, Col, Row, Space, ColProps } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { useRefs } from '@ahoo-wang/fetcher-react';
+import { RemovableTypedFilter } from './RemovableTypedFilter';
 
-export interface ActiveFilter extends Omit<TypedFilterProps, 'onChange' | 'ref'> {
+export interface ActiveFilter
+  extends Omit<TypedFilterProps, 'onChange' | 'ref'> {
   key: Key;
+  onRemove?: () => void;
 }
 
 export interface FilterPanelProps extends StyleCapable {
-  component?: TypedFilterComponent;
   filters: ActiveFilter[];
   actions?: React.ReactNode;
   onSearch?: (condition: Condition) => void;
@@ -33,7 +37,7 @@ export interface FilterPanelProps extends StyleCapable {
 }
 
 export function FilterPanel(props: FilterPanelProps) {
-  const { filters, onSearch, actions, component, colSpan = 12 } = props;
+  const { filters, onSearch, actions, colSpan = 12 } = props;
   const filterRefs = useRefs<FilterRef>();
   const handleSearch = () => {
     if (!onSearch) {
@@ -45,21 +49,21 @@ export function FilterPanel(props: FilterPanelProps) {
     const finalCondition: Condition = and(...conditions);
     onSearch(finalCondition);
   };
-  const FilterComponent = component || TypedFilter;
   return (
     <>
       <Row gutter={[8, 8]} wrap>
         {filters.map(filter => {
           return (
             <Col span={colSpan}>
-              <FilterComponent
+              <RemovableTypedFilter
                 key={filter.key}
                 type={filter.type}
                 field={filter.field}
                 operator={filter.operator}
                 value={filter.value}
+                onRemove={filter.onRemove}
                 ref={filterRefs.register(filter.key)}
-              ></FilterComponent>
+              ></RemovableTypedFilter>
             </Col>
           );
         })}

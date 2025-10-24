@@ -16,10 +16,9 @@ import { FilterProps } from './types';
 import { filterRegistry } from './filterRegistry';
 import { FallbackFilter } from './FallbackFilter';
 
-export  type FilterType = string
+export type FilterType = string;
 
-export interface TypedFilterProps
-  extends FilterProps {
+export interface TypedFilterProps extends FilterProps {
   type: FilterType;
 }
 
@@ -29,5 +28,3 @@ export function TypedFilter(props: TypedFilterProps) {
 }
 
 TypedFilter.displayName = 'TypedFilter';
-
-export type TypedFilterComponent = React.FC<TypedFilterProps>;

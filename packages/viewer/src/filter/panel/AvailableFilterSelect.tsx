@@ -16,6 +16,7 @@ import { FilterType } from '../TypedFilter';
 import { Checkbox, Flex, Typography } from 'antd';
 import { StyleCapable } from '../../types';
 import { RefAttributes, useImperativeHandle, useState } from 'react';
+import { ActiveFilter } from './FilterPanel';
 
 export interface AvailableFilter {
   field: FilterField;
@@ -33,9 +34,11 @@ export interface AvailableFilterSelectRef {
 
 export interface AvailableFilterSelectProps extends StyleCapable, RefAttributes<AvailableFilterSelectRef> {
   filters: AvailableFilterGroup[];
+  activeFilters?: ActiveFilter[];
 }
 
 export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
+  const { filters, activeFilters = [] } = props;
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   useImperativeHandle(props.ref, () => ({
     getValue(): AvailableFilter[] {
@@ -59,7 +62,7 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
   return (
     <>
       {
-        props.filters.map((group) => (
+        filters.map((group) => (
           <>
             <Typography.Title level={5}>{group.label}</Typography.Title>
             <Flex gap="middle" wrap>
@@ -70,6 +73,7 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
                             onChange={e => {
                               onCheckHandler(filter, e.target.checked);
                             }}
+                            disabled={activeFilters.some(activeFilter => activeFilter.field.name === filter.field.name)}
                   >
                     {filter.field.label}
                   </Checkbox>

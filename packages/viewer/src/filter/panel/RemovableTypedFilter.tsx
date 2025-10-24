@@ -21,14 +21,17 @@ export interface RemovableTypedFilterProps extends TypedFilterProps {
 }
 
 export function RemovableTypedFilter(props: RemovableTypedFilterProps) {
-  const [showRemove, setShowRemove] = useState(false);
   const { onRemove, ...rest } = props;
+  const [showRemove, setShowRemove] = useState(false);
+  if (!onRemove) {
+    return <TypedFilter {...rest} />;
+  }
   return (
-    <Space.Compact block onMouseOver={() => setShowRemove(true)} onMouseOut={() => setShowRemove(false)} >
+    <Space.Compact block onMouseOver={() => setShowRemove(true)} onMouseOut={() => setShowRemove(false)}>
       <TypedFilter {...rest} />
       {showRemove &&
         <Button type="dashed" shape="circle" onClick={onRemove} icon={<MinusOutlined />}>
-      </Button>}
+        </Button>}
     </Space.Compact>
   );
 }
