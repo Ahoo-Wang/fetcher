@@ -17,7 +17,7 @@ import type { ActiveFilterGroup } from '../AvailableFilterSelect';
 import type { ActiveFilter } from '../FilterPanel';
 
 const meta: Meta<typeof FilterPanel> = {
-  title: 'Viewer/FilterPanel',
+  title: 'Viewer/Filters/Panel/FilterPanel',
   component: FilterPanel,
   parameters: {
     layout: 'padded',

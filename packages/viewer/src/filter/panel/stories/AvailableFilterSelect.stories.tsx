@@ -21,7 +21,7 @@ import {
 import { Card, Typography, Space, Button, App } from 'antd';
 
 const meta: Meta<typeof AvailableFilterSelect> = {
-  title: 'Viewer/Filter/AvailableFilterSelect',
+  title: 'Viewer/Filters/Panel/AvailableFilterSelect',
   component: AvailableFilterSelect,
   parameters: {
     layout: 'centered',

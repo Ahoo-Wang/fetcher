@@ -16,7 +16,7 @@ import { AvailableFilterSelectModal } from '../AvailableFilterSelectModal';
 import type { ActiveFilterGroup } from '../AvailableFilterSelect';
 
 const meta: Meta<typeof AvailableFilterSelectModal> = {
-  title: 'Viewer/Filter/AvailableFilterSelectModal',
+  title: 'Viewer/Filters/Panel/AvailableFilterSelectModal',
   component: AvailableFilterSelectModal,
   parameters: {
     layout: 'centered',
