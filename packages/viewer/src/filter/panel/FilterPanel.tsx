@@ -17,12 +17,14 @@ import { FilterField, FilterRef } from '../types';
 import { StyleCapable } from '../../types';
 import { and, Condition } from '@ahoo-wang/fetcher-wow';
 import { Button, Col, Row, Space } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 
 export interface ActiveFilter {
   key: Key;
   type: FilterType;
   field: FilterField;
+  operator?: any;
+  value?: any;
 }
 
 export interface FilterPanelProps extends StyleCapable {
@@ -34,27 +36,32 @@ export interface FilterPanelProps extends StyleCapable {
 
 export function FilterPanel(props: FilterPanelProps) {
   const { filters, onSearch, actions, component } = props;
-  const filterRefs = useRef<(FilterRef | null)[]>([]);
+  const filterRefs = useRef<Map<Key, FilterRef | null>>(new Map());
   const handleSearch = () => {
-    const conditions = filterRefs.current
+    const conditions = Array.from(filterRefs.current.values())
       .map(ref => ref?.getValue()?.condition)
       .filter(Boolean) as Condition[];
-    const finalCondition: Condition = and(...conditions);
-    onSearch?.(finalCondition);
+    if (conditions.length > 0) {
+      const finalCondition: Condition = and(...conditions);
+      onSearch?.(finalCondition);
+    }
   };
   const FilterComponent = component || TypedFilter;
   return (
     <>
       <Row gutter={[8, 8]} wrap>
-        {filters.map((filter, index) => {
+        {filters.map(filter => {
           return (
             <Col span={12}>
-              <FilterComponent key={filter.key}
-                               type={filter.type}
-                               field={filter.field}
-                               ref={el => {
-                                 filterRefs.current[index] = el;
-                               }}
+              <FilterComponent
+                key={filter.key}
+                type={filter.type}
+                field={filter.field}
+                operator={filter.operator}
+                value={filter.value}
+                ref={el => {
+                  filterRefs.current.set(filter.key, el);
+                }}
               ></FilterComponent>
             </Col>
           );
@@ -62,7 +69,16 @@ export function FilterPanel(props: FilterPanelProps) {
         <Col span={12}>
           <Space>
             {actions}
-            <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>Search</Button>
+            <Button icon={<ReloadOutlined />} onClick={() => onSearch?.(and())}>
+              Reset
+            </Button>
+            <Button
+              type="primary"
+              icon={<SearchOutlined />}
+              onClick={handleSearch}
+            >
+              Search
+            </Button>
           </Space>
         </Col>
       </Row>
