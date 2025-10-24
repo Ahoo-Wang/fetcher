@@ -11,23 +11,8 @@
  * limitations under the License.
  */
 
-import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
-import viteConfig from './vite.config';
-
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
-    test: {
-      environment: 'jsdom',
-      globals: true,
-      coverage: {
-        exclude: [
-          ...configDefaults.exclude,
-          '**/**.stories.tsx',
-          //TODO exclude
-          'src/filter/panel/**',
-        ],
-      },
-    },
-  }),
-);
+export * from './AvailableFilterSelect'
+export * from './AvailableFilterSelectModal'
+export * from './EditableFilterPanel'
+export * from './FilterPanel'
+export * from './RemovableTypedFilter'
