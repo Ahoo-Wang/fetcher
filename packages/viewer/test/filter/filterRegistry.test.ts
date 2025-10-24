@@ -12,18 +12,18 @@
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
-  ConditionFilterRegistry,
-  conditionFilterRegistry,
+  FilterRegistry,
+  filterRegistry,
 } from '../../src';
-import { ConditionFilterComponent } from '../../src';
+import { FilterComponent } from '../../src';
 
-describe('ConditionFilterRegistry', () => {
-  let registry: ConditionFilterRegistry;
-  let mockFilter: ConditionFilterComponent;
+describe('FilterRegistry', () => {
+  let registry: FilterRegistry;
+  let mockFilter: FilterComponent;
 
   beforeEach(() => {
-    registry = new ConditionFilterRegistry();
-    mockFilter = vi.fn() as ConditionFilterComponent;
+    registry = new FilterRegistry();
+    mockFilter = vi.fn() as FilterComponent;
   });
 
   describe('register', () => {
@@ -35,7 +35,7 @@ describe('ConditionFilterRegistry', () => {
     });
 
     it('should allow registering multiple filters', () => {
-      const mockFilter2 = vi.fn() as ConditionFilterComponent;
+      const mockFilter2 = vi.fn() as FilterComponent;
 
       registry.register('type1', mockFilter);
       registry.register('type2', mockFilter2);
@@ -45,7 +45,7 @@ describe('ConditionFilterRegistry', () => {
     });
 
     it('should allow overwriting existing filter', () => {
-      const mockFilter2 = vi.fn() as ConditionFilterComponent;
+      const mockFilter2 = vi.fn() as FilterComponent;
 
       registry.register('test-type', mockFilter);
       registry.register('test-type', mockFilter2);
@@ -89,17 +89,17 @@ describe('ConditionFilterRegistry', () => {
 
   describe('global registry instance', () => {
     it('should be a singleton instance', () => {
-      expect(conditionFilterRegistry).toBeInstanceOf(ConditionFilterRegistry);
+      expect(filterRegistry).toBeInstanceOf(FilterRegistry);
     });
 
     it('should allow registering and retrieving filters', () => {
-      const testFilter = vi.fn() as ConditionFilterComponent;
+      const testFilter = vi.fn() as FilterComponent;
 
-      conditionFilterRegistry.register('global-test', testFilter);
-      expect(conditionFilterRegistry.get('global-test')).toBe(testFilter);
+      filterRegistry.register('global-test', testFilter);
+      expect(filterRegistry.get('global-test')).toBe(testFilter);
 
       // Clean up
-      conditionFilterRegistry.unregister('global-test');
+      filterRegistry.unregister('global-test');
     });
   });
 });

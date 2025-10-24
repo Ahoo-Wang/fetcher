@@ -12,23 +12,20 @@
  */
 
 import React from 'react';
-import { ConditionFilterProps } from './types';
-import { conditionFilterRegistry } from './conditionFilterRegistry';
-import { FallbackConditionFilter } from './FallbackConditionFilter';
+import { FilterProps } from './types';
+import { filterRegistry } from './filterRegistry';
+import { FallbackFilter } from './FallbackFilter';
 
-export interface TypedConditionFilterProps
-  extends ConditionFilterProps {
-  type: string;
+export  type FilterType = string
+
+export interface TypedFilterProps
+  extends FilterProps {
+  type: FilterType;
 }
 
-export const ConditionFilter = React.memo(
-  (props: TypedConditionFilterProps) => {
-    const FilterComponent = conditionFilterRegistry.get(props.type);
-    if (!FilterComponent) {
-      return <FallbackConditionFilter type={props.type} />;
-    }
-    return <FilterComponent {...props} />;
-  },
-);
+export function TypedFilter(props: TypedFilterProps) {
+  const FilterComponent = filterRegistry.get(props.type) || FallbackFilter;
+  return <FilterComponent {...props} />;
+}
 
-ConditionFilter.displayName = 'ConditionFilter';
+TypedFilter.displayName = 'TypedFilter';

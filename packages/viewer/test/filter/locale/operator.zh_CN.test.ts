@@ -46,9 +46,9 @@ describe('OPERATOR_zh_CN', () => {
 
   it('should have correct translations for containment operators', () => {
     expect(OPERATOR_zh_CN.CONTAINS).toBe('包含');
-    expect(OPERATOR_zh_CN.IN).toBe('包含');
-    expect(OPERATOR_zh_CN.NOT_IN).toBe('不包含');
-    expect(OPERATOR_zh_CN.BETWEEN).toBe('在范围内');
+    expect(OPERATOR_zh_CN.IN).toBe('包含任一');
+    expect(OPERATOR_zh_CN.NOT_IN).toBe('不包含任一');
+    expect(OPERATOR_zh_CN.BETWEEN).toBe('介于');
     expect(OPERATOR_zh_CN.ALL_IN).toBe('全部包含');
   });
 
@@ -86,9 +86,9 @@ describe('OPERATOR_zh_CN', () => {
 
   it('should have correct translations for ID-related operators', () => {
     expect(OPERATOR_zh_CN.ID).toBe('等于');
-    expect(OPERATOR_zh_CN.IDS).toBe('包含');
+    expect(OPERATOR_zh_CN.IDS).toBe('包含任一');
     expect(OPERATOR_zh_CN.AGGREGATE_ID).toBe('等于');
-    expect(OPERATOR_zh_CN.AGGREGATE_IDS).toBe('包含');
+    expect(OPERATOR_zh_CN.AGGREGATE_IDS).toBe('包含任一');
     expect(OPERATOR_zh_CN.TENANT_ID).toBe('等于');
     expect(OPERATOR_zh_CN.OWNER_ID).toBe('等于');
     expect(OPERATOR_zh_CN.DELETED).toBe('已删除');

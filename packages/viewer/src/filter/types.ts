@@ -12,46 +12,46 @@
  */
 
 import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
-import { Condition, Operator, OperatorLocale } from '@ahoo-wang/fetcher-wow';
+import { ConditionCapable, Operator, OperatorLocale } from '@ahoo-wang/fetcher-wow';
 import { SelectProps } from 'antd/es/select';
+import React, { RefAttributes } from 'react';
+import { StyleCapable } from '../types';
+
 
 /**
  * @see {@link Schema}
  */
-export interface ConditionField extends NamedCapable {
+export interface FilterField extends NamedCapable {
   label: string;
   type: string;
   format?: string;
 }
 
-export interface ConditionFilterCallbacks {
-  getCondition(): Condition | undefined;
+export interface FilterRef {
+  getValue(): FilterValue | undefined;
 }
 
-export interface LabelProps extends NamedCapable {
-
+export interface LabelProps extends StyleCapable {
 }
 
-export interface OperatorProps extends SelectProps<Operator> {
+export interface OperatorProps extends Omit<SelectProps<Operator>, 'value'> {
   locale?: OperatorLocale;
 }
 
-export interface ValueProps {
-  defaultValue?: any;
+export interface ValueProps<ValueType = any> extends StyleCapable {
+  defaultValue?: ValueType;
   placeholder?: string;
 }
 
-export interface ConditionFilterValue {
-  condition: Condition;
-  friendly: string;
+export interface FilterValue extends ConditionCapable {
 }
 
-export interface ConditionFilterProps extends AttributesCapable {
-  field: ConditionField;
-  label: LabelProps;
+export interface FilterProps<ValueType = any> extends AttributesCapable, RefAttributes<FilterRef> {
+  field: FilterField;
+  label?: LabelProps;
   operator: OperatorProps;
-  value: ValueProps;
-  onChange?: (value?: ConditionFilterValue) => void;
+  value: ValueProps<ValueType>;
+  onChange?: (value?: FilterValue) => void;
 }
 
-export type ConditionFilterComponent = React.FC<ConditionFilterProps>;
+export type FilterComponent = React.FC<FilterProps>;
