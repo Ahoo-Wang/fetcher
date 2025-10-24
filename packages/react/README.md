@@ -31,6 +31,7 @@ robust data fetching capabilities.
   - [usePromiseState Hook](#usepromisestate-hook)
   - [useRequestId Hook](#userequestid-hook)
   - [useLatest Hook](#uselatest-hook)
+  - [useRefs Hook](#userefs-hook)
   - [useKeyStorage Hook](#usekeystorage-hook)
   - [Wow Query Hooks](#wow-query-hooks)
     - [useListQuery Hook](#uselistquery-hook)
@@ -281,6 +282,39 @@ const MyComponent = () => {
   );
 };
 ```
+
+### useRefs Hook
+
+The `useRefs` hook provides a Map-like interface for managing multiple React refs dynamically. It allows registering, retrieving, and managing refs by key, with automatic cleanup on component unmount.
+
+```typescript jsx
+import { useRefs } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const refs = useRefs<HTMLDivElement>();
+
+  const handleFocus = (key: string) => {
+    const element = refs.get(key);
+    element?.focus();
+  };
+
+  return (
+    <div>
+      <div ref={refs.register('first')} tabIndex={0}>First Element</div>
+      <div ref={refs.register('second')} tabIndex={0}>Second Element</div>
+      <button onClick={() => handleFocus('first')}>Focus First</button>
+      <button onClick={() => handleFocus('second')}>Focus Second</button>
+    </div>
+  );
+};
+```
+
+Key features:
+
+- **Dynamic Registration**: Register refs with string, number, or symbol keys
+- **Map-like API**: Full Map interface with get, set, has, delete, etc.
+- **Automatic Cleanup**: Refs are cleared when component unmounts
+- **Type Safety**: Full TypeScript support for ref types
 
 ### useKeyStorage Hook
 
@@ -1368,6 +1402,39 @@ callbacks.
 **Returns:**
 
 A ref object with a `current` property containing the latest value
+
+### useRefs
+
+```typescript
+function useRefs<T>(): UseRefsReturn<T>;
+```
+
+A React hook for managing multiple refs with a Map-like interface, allowing dynamic registration and retrieval of refs by key.
+
+**Type Parameters:**
+
+- `T`: The type of the ref instances (e.g., HTMLElement)
+
+**Returns:**
+
+An object implementing `UseRefsReturn<T>` with:
+
+- `register(key: RefKey): (instance: T | null) => void` - Returns a callback to register/unregister a ref
+- `get(key: RefKey): T | undefined` - Get a ref by key
+- `set(key: RefKey, value: T): void` - Set a ref value
+- `has(key: RefKey): boolean` - Check if key exists
+- `delete(key: RefKey): boolean` - Delete a ref by key
+- `clear(): void` - Clear all refs
+- `size: number` - Number of refs
+- `keys(): IterableIterator<RefKey>` - Iterator over keys
+- `values(): IterableIterator<T>` - Iterator over values
+- `entries(): IterableIterator<[RefKey, T]>` - Iterator over entries
+- `Symbol.iterator`: Iterator for for...of loops
+
+**Related Types:**
+
+- `RefKey = string | number | symbol`
+- `UseRefsReturn<T> extends Iterable<[RefKey, T]>`
 
 ### useKeyStorage
 

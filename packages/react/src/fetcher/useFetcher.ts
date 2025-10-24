@@ -81,7 +81,7 @@ export function useFetcher<R, E = FetcherError>(
     undefined,
   );
   const isMounted = useMounted();
-  const abortControllerRef = useRef<AbortController | undefined>();
+  const abortControllerRef = useRef<AbortController | undefined>(undefined);
   const requestId = useRequestId();
   const latestOptions = useLatest(options);
   const currentFetcher = getFetcher(fetcher);

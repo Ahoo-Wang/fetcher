@@ -30,6 +30,7 @@
   - [usePromiseState Hook](#usepromisestate-hook)
   - [useRequestId Hook](#userequestid-hook)
   - [useLatest Hook](#uselatest-hook)
+  - [useRefs Hook](#userefs-hook)
   - [useKeyStorage Hook](#usekeystorage-hook)
   - [Wow 查询 Hooks](#wow-查询-hooks)
     - [useListQuery Hook](#uselistquery-hook)
@@ -276,6 +277,39 @@ const MyComponent = () => {
   );
 };
 ```
+
+### useRefs Hook
+
+`useRefs` hook 提供 Map-like 接口用于动态管理多个 React refs。它允许通过键注册、检索和管理 refs，并在组件卸载时自动清理。
+
+```typescript jsx
+import { useRefs } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const refs = useRefs<HTMLDivElement>();
+
+  const handleFocus = (key: string) => {
+    const element = refs.get(key);
+    element?.focus();
+  };
+
+  return (
+    <div>
+      <div ref={refs.register('first')} tabIndex={0}>第一个元素</div>
+      <div ref={refs.register('second')} tabIndex={0}>第二个元素</div>
+      <button onClick={() => handleFocus('first')}>聚焦第一个</button>
+      <button onClick={() => handleFocus('second')}>聚焦第二个</button>
+    </div>
+  );
+};
+```
+
+关键特性：
+
+- **动态注册**: 使用字符串、数字或符号键注册 refs
+- **Map-like API**: 完整的 Map 接口，包括 get、set、has、delete 等
+- **自动清理**: 组件卸载时自动清空 refs
+- **类型安全**: 完整的 TypeScript 支持
 
 ### useKeyStorage Hook
 
@@ -737,6 +771,39 @@ function useLatest<T>(value: T): { current: T };
 **返回值:**
 
 包含 `current` 属性（包含最新值）的 ref 对象
+
+### useRefs
+
+```typescript
+function useRefs<T>(): UseRefsReturn<T>;
+```
+
+React hook，用于使用 Map-like 接口管理多个 refs，允许通过键动态注册和检索 refs。
+
+**类型参数:**
+
+- `T`: ref 实例的类型（例如 HTMLElement）
+
+**返回值:**
+
+实现 `UseRefsReturn<T>` 的对象，具有：
+
+- `register(key: RefKey): (instance: T | null) => void` - 返回用于注册/注销 ref 的回调
+- `get(key: RefKey): T | undefined` - 通过键获取 ref
+- `set(key: RefKey, value: T): void` - 设置 ref 值
+- `has(key: RefKey): boolean` - 检查键是否存在
+- `delete(key: RefKey): boolean` - 通过键删除 ref
+- `clear(): void` - 清空所有 refs
+- `size: number` - refs 数量
+- `keys(): IterableIterator<RefKey>` - 键的迭代器
+- `values(): IterableIterator<T>` - 值的迭代器
+- `entries(): IterableIterator<[RefKey, T]>` - 条目的迭代器
+- `Symbol.iterator`: for...of 循环的迭代器
+
+**相关类型:**
+
+- `RefKey = string | number | symbol`
+- `UseRefsReturn<T> extends Iterable<[RefKey, T]>`
 
 ### useKeyStorage
 

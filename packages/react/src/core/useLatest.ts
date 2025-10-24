@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { MutableRefObject, useRef } from 'react';
+import { RefObject, useRef } from 'react';
 
 /**
  * A React hook that returns a ref containing the latest value, useful for accessing the current value in async callbacks.
@@ -43,7 +43,7 @@ import { MutableRefObject, useRef } from 'react';
  * };
  * ```
  */
-export function useLatest<T>(value: T): MutableRefObject<T> {
+export function useLatest<T>(value: T): RefObject<T> {
   const ref = useRef(value);
   ref.current = value;
   return ref;
