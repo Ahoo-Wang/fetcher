@@ -39,13 +39,14 @@ export function FilterPanel(props: FilterPanelProps) {
   const { filters, onSearch, actions, component } = props;
   const filterRefs = useRefs<FilterRef>();
   const handleSearch = () => {
-    const conditions = Array.from(filterRefs.current.values())
-      .map(ref => ref?.getValue()?.condition)
-      .filter(Boolean) as Condition[];
-    if (conditions.length > 0) {
-      const finalCondition: Condition = and(...conditions);
-      onSearch?.(finalCondition);
+    if (!onSearch) {
+      return;
     }
+    const conditions = Array.from(filterRefs.values())
+      .map(ref => ref?.getValue()?.condition)
+      .filter(Boolean);
+    const finalCondition: Condition = and(...conditions);
+    onSearch(finalCondition);
   };
   const FilterComponent = component || TypedFilter;
   return (
@@ -60,7 +61,7 @@ export function FilterPanel(props: FilterPanelProps) {
                 field={filter.field}
                 operator={filter.operator}
                 value={filter.value}
-                ref={filterRefs.register(filter.key as number)}
+                ref={filterRefs.register(filter.key)}
               ></FilterComponent>
             </Col>
           );
