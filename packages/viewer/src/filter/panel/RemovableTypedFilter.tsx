@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { TypedFilter, TypedFilterProps } from './TypedFilter';
-import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
+import { TypedFilter, TypedFilterProps } from '../TypedFilter';
+import { MinusOutlined } from '@ant-design/icons';
 import { Button, Space } from 'antd';
 import { useState } from 'react';
 
@@ -27,7 +27,7 @@ export function RemovableTypedFilter(props: RemovableTypedFilterProps) {
     <Space.Compact block onMouseOver={() => setShowRemove(true)} onMouseOut={() => setShowRemove(false)} >
       <TypedFilter {...rest} />
       {showRemove &&
-        <Button type="dashed" shape="circle" onClick={onRemove} icon={<CloseOutlined />}>
+        <Button type="dashed" shape="circle" onClick={onRemove} icon={<MinusOutlined />}>
       </Button>}
     </Space.Compact>
   );

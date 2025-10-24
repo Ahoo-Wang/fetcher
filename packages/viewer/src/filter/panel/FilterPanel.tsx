@@ -20,7 +20,7 @@ import { FilterField } from '../types';
 import { FilterType } from '../TypedFilter';
 import { ActiveFilterGroup, AvailableFilter } from './AvailableFilterSelect';
 import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
-import { RemovableTypedFilter } from '../RemovableTypedFilter';
+import { RemovableTypedFilter } from './RemovableTypedFilter';
 import { SearchOutlined } from '@ant-design/icons';
 
 export interface ActiveFilter extends Identifier {
