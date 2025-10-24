@@ -54,11 +54,13 @@
     "@ahoo-wang/fetcher-storage": "workspace:^2.3.4",
     "@ahoo-wang/fetcher-wow": "workspace:^2.3.4",
     "antd": "catalog:",
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+    "@ant-design/icons": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
