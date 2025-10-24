@@ -66,6 +66,7 @@ export function AssemblyFilter<ValueType = any>(
     <Space.Compact block style={props.style} className={props.className}>
       <Button {...props.label}>{props.field.label}</Button>
       <Select
+        style={{ minWidth: 120 }}
         onChange={filterState.setOperator}
         {...props.operator}
         value={filterState.operator}

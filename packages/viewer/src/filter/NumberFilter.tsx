@@ -67,7 +67,6 @@ export function NumberFilter(props: FilterProps<number | (number | undefined)[]>
           const defaultInputNumber = Array.isArray(defaultValue) ? defaultValue[0] : defaultValue;
           return (
             <InputNumber<number>
-              style={{ width: '100%' }}
               defaultValue={defaultInputNumber}
               onChange={v => {
                 filterState.setValue(v ?? undefined);
