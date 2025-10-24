@@ -13,3 +13,4 @@
 
 export * from './filter';
 export * from './components'
+export * from './types'

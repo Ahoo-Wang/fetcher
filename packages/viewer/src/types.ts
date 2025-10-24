@@ -11,17 +11,11 @@
  * limitations under the License.
  */
 
-import { Condition, OperatorLocale } from '@ahoo-wang/fetcher-wow';
+import React from 'react';
 
-export function friendlyCondition(label: string, operatorLocale: OperatorLocale, condition: Condition) {
-  const friendlyParts = [];
-  friendlyParts.push(label);
-  friendlyParts.push(operatorLocale[condition.operator!]);
-  const value = condition.value;
-  if (Array.isArray(condition.value)) {
-    friendlyParts.push(value.join(', '));
-  } else {
-    friendlyParts.push(value);
-  }
-  return friendlyParts.join(' ');
+export type Optional<T = any> = T | undefined;
+
+export interface StyleCapable {
+  style?: React.CSSProperties;
+  className?: string;
 }

@@ -11,14 +11,45 @@
  * limitations under the License.
  */
 
-import { Select, SelectProps } from 'antd';
+import { RefSelectProps, Select, SelectProps } from 'antd';
+import { RefObject } from 'react';
+import { Optional } from '../types';
+
+export interface TagValueItemSerializer<ValueItemType = string> {
+  serialize(value: ValueItemType[]): string[];
+
+  deserialize(value: string[]): ValueItemType[];
+}
+
+export const StringTagValueItemSerializer: TagValueItemSerializer = {
+  serialize(value: string[]): string[] {
+    return value;
+  },
+  deserialize(value: string[]): string[] {
+    return value;
+  },
+};
+
+export const NumberTagValueItemSerializer: TagValueItemSerializer<number> = {
+  serialize(value: number[]): string[] {
+    return value.map((item) => item.toString());
+  },
+  deserialize(value: string[]): number[] {
+    return value.map((item) => parseFloat(item));
+  },
+};
 
 /**
  * Props for the TagInput component.
  * Extends SelectProps from Antd, excluding 'mode', 'open', and 'suffixIcon' as they are fixed.
  */
-export interface TagInputProps
-  extends Omit<SelectProps, 'mode' | 'open' | 'suffixIcon'> {}
+export interface TagInputProps<ValueItemType = string>
+  extends Omit<SelectProps, 'mode' | 'open' | 'suffixIcon' | 'onChange' | 'value'> {
+  ref?: RefObject<RefSelectProps>;
+  serializer?: TagValueItemSerializer<ValueItemType>;
+  onChange?: (value: ValueItemType[]) => void;
+  value?: Optional<ValueItemType | ValueItemType[]>;
+}
 
 /**
  * Default token separators for splitting input into tags.
@@ -32,12 +63,30 @@ const DEFAULT_TOKEN_SEPARATORS = [',', '，', ';', '；', ' '];
  * @param props - The props for the TagInput component.
  * @returns The rendered TagInput component.
  */
-export function TagInput(props: TagInputProps) {
+export function TagInput<ValueItemType = string[]>(props: TagInputProps<ValueItemType>) {
   const {
     tokenSeparators = DEFAULT_TOKEN_SEPARATORS,
     allowClear = true,
+    serializer = StringTagValueItemSerializer as TagValueItemSerializer<ValueItemType>,
+    value,
+    onChange,
     ...restProps
   } = props;
+  const onChangeHandler = (value: string[]) => {
+    if (!onChange) {
+      return;
+    }
+    const parsedValue = serializer.deserialize(value);
+    onChange(parsedValue);
+  };
+  let serializedValue: string[] | null = null;
+  if (value) {
+    if (Array.isArray(value)) {
+      serializedValue = serializer.serialize(value);
+    } else {
+      serializedValue = serializer.serialize([value]);
+    }
+  }
   return (
     <Select
       {...restProps}
@@ -46,6 +95,8 @@ export function TagInput(props: TagInputProps) {
       suffixIcon={null}
       allowClear={allowClear}
       tokenSeparators={tokenSeparators}
+      value={serializedValue}
+      onChange={onChangeHandler}
     />
   );
 }

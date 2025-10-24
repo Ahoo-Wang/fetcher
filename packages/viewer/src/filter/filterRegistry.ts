@@ -11,67 +11,74 @@
  * limitations under the License.
  */
 
-import { ConditionFilterComponent } from './types';
+import { FilterComponent } from './types';
+import { TEXT_FILTER, TextFilter } from './TextFilter';
+import { ID_FILTER, IdFilter } from './IdFilter';
+import { NUMBER_FILTER, NumberFilter } from './NumberFilter';
+import { FilterType } from './TypedFilter';
 
 /**
- * Registry for managing condition filter components.
+ * Registry for managing filter components.
  *
  * Provides a centralized way to register, unregister, and retrieve
- * condition filter components by their type identifiers.
+ * filter components by their type identifiers.
  */
-export class ConditionFilterRegistry {
-  private readonly filters: Map<string, ConditionFilterComponent> = new Map<
-    string,
-    ConditionFilterComponent
+export class FilterRegistry {
+  private readonly filters: Map<FilterType, FilterComponent> = new Map<
+    FilterType,
+    FilterComponent
   >();
 
+  constructor() {
+    this.register(ID_FILTER, IdFilter);
+    this.register(TEXT_FILTER, TextFilter);
+    this.register(NUMBER_FILTER, NumberFilter);
+  }
+
   /**
-   * Registers a condition filter component for a specific type.
+   * Registers a filter component for a specific type.
    *
    * @param type - The unique identifier for the filter type
-   * @param filter - The condition filter component to register
+   * @param filter - The filter component to register
    *
    * @example
    * ```typescript
-   * const registry = new ConditionFilterRegistry();
-   * registry.register('text', TextConditionFilter);
+   * filterRegistry.register('text', TextFilter);
    * ```
    */
-  register(type: string, filter: ConditionFilterComponent) {
+  register(type: FilterType, filter: FilterComponent) {
     this.filters.set(type, filter);
   }
 
   /**
-   * Unregisters a condition filter component for a specific type.
+   * Unregisters a filter component for a specific type.
    *
    * @param type - The unique identifier for the filter type to remove
    * @returns true if the filter was successfully removed, false otherwise
    *
    * @example
    * ```typescript
-   * const registry = new ConditionFilterRegistry();
-   * const wasRemoved = registry.unregister('text');
+   * const wasRemoved = filterRegistry.unregister('text');
    * ```
    */
-  unregister(type: string) {
+  unregister(type: FilterType) {
     return this.filters.delete(type);
   }
 
   /**
-   * Retrieves a condition filter component for a specific type.
+   * Retrieves a filter component for a specific type.
    *
    * @param type - The unique identifier for the filter type
-   * @returns The condition filter component, or undefined if not found
+   * @returns The filter component, or undefined if not found
    *
    * @example
    * ```typescript
-   * const registry = new ConditionFilterRegistry();
-   * const TextFilter = registry.get('text');
+   * const TextFilter = filterRegistry.get('text');
    * ```
    */
-  get(type: string): ConditionFilterComponent | undefined {
+  get(type: FilterType): FilterComponent | undefined {
     return this.filters.get(type);
   }
 }
 
-export const conditionFilterRegistry = new ConditionFilterRegistry();
+export const filterRegistry = new FilterRegistry();
