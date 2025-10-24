@@ -51,6 +51,7 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "antd": "catalog:",
+    "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "eslint": "catalog:",
     "eslint-plugin-storybook": "^9.1.13",
     "globals": "catalog:",
