@@ -13,8 +13,15 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
+/**
+ * The key type for refs, supporting string, number, or symbol.
+ */
 export type RefKey = string | number | symbol;
 
+/**
+ * Return type of useRefs hook, providing Map-like interface for managing refs.
+ * @template T - The type of the ref instances.
+ */
 export interface UseRefsReturn<T> extends Iterable<[RefKey, T]> {
   register: (key: RefKey) => (instance: T | null) => void;
   get: (key: RefKey) => T | undefined;
@@ -28,10 +35,32 @@ export interface UseRefsReturn<T> extends Iterable<[RefKey, T]> {
   entries: () => IterableIterator<[RefKey, T]>;
 }
 
+/**
+ * A React hook for managing multiple refs with a Map-like interface.
+ * Allows dynamic registration and retrieval of refs by key, with automatic cleanup on unmount.
+ *
+ * @template T - The type of the ref instances (e.g., HTMLElement).
+ * @returns An object with Map methods and a register function for managing refs.
+ *
+ * @example
+ * ```tsx
+ * const refs = useRefs<HTMLDivElement>();
+ *
+ * // Register a ref
+ * const refCallback = refs.register('myDiv');
+ * <div ref={refCallback} />
+ *
+ * // Access the ref
+ * const element = refs.get('myDiv');
+ * ```
+ */
 export function useRefs<T>(): UseRefsReturn<T> {
   const refs = useRef(new Map<RefKey, T>());
   const get = useCallback((key: RefKey) => refs.current.get(key), []);
-  const set = useCallback((key: RefKey, value: T) => refs.current.set(key, value), []);
+  const set = useCallback(
+    (key: RefKey, value: T) => refs.current.set(key, value),
+    [],
+  );
   const has = useCallback((key: RefKey) => refs.current.has(key), []);
   const deleteFn = useCallback((key: RefKey) => refs.current.delete(key), []);
   const clear = useCallback(() => refs.current.clear(), []);
@@ -50,22 +79,26 @@ export function useRefs<T>(): UseRefsReturn<T> {
   }, []);
   useEffect(() => {
     return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       refs.current.clear();
     };
   }, []);
-  return useMemo(() => ({
-    register,
-    get,
-    set,
-    has,
-    delete: deleteFn,
-    clear,
-    keys,
-    values,
-    entries,
-    get size() {
-      return refs.current.size;
-    },
-    [Symbol.iterator]: iterator,
-  }), [register, get, set, has, deleteFn, clear, keys, values, entries, iterator]);
+  return useMemo(
+    () => ({
+      register,
+      get,
+      set,
+      has,
+      delete: deleteFn,
+      clear,
+      keys,
+      values,
+      entries,
+      get size() {
+        return refs.current.size;
+      },
+      [Symbol.iterator]: iterator,
+    }),
+    [register, get, set, has, deleteFn, clear, keys, values, entries, iterator],
+  );
 }
