@@ -15,7 +15,7 @@ import { FilterField } from '../types';
 import { FilterType } from '../TypedFilter';
 import { Checkbox, Flex, Typography } from 'antd';
 import { StyleCapable } from '../../types';
-import { RefAttributes, useImperativeHandle, useState } from 'react';
+import { RefAttributes, useEffect, useImperativeHandle, useState } from 'react';
 import { ActiveFilter } from './FilterPanel';
 
 export interface AvailableFilter {
@@ -59,6 +59,11 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
       );
     }
   };
+  useEffect(() => {
+    setSelectedFilters(
+      activeFilters.map(activeFilter => activeFilter.field.name),
+    );
+  }, [activeFilters]);
   return (
     <>
       {
