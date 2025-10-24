@@ -14,16 +14,12 @@
 import { FilterProps } from './types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { OPERATOR_zh_CN } from './locale';
-import {
-  useFilterState,
-  UseFilterStateReturn,
-} from './useFilterState';
+import { useFilterState, UseFilterStateReturn } from './useFilterState';
 import { Button, Select, Space } from 'antd';
 import { ReactNode } from 'react';
 import { Optional } from '../types';
 
-export interface AssemblyFilterProps<ValueType = any>
-  extends FilterProps {
+export interface AssemblyFilterProps<ValueType = any> extends FilterProps {
   supportedOperators: Operator[];
   validate?: (operator: Operator, value: Optional<ValueType>) => boolean;
   valueInputSupplier: (
@@ -63,7 +59,11 @@ export function AssemblyFilter<ValueType = any>(
     label: operatorLocale[supportedOperator],
   }));
   return (
-    <Space.Compact block style={props.style} className={props.className}>
+    <Space.Compact
+      block
+      style={{ ...props.style, display: 'flex' }}
+      className={props.className}
+    >
       <Button {...props.label}>{props.field.label}</Button>
       <Select
         style={{ minWidth: 120 }}
@@ -72,7 +72,7 @@ export function AssemblyFilter<ValueType = any>(
         value={filterState.operator}
         options={options}
       ></Select>
-      {valueInput}
+      <div style={{ flex: 1 }}>{valueInput}</div>
     </Space.Compact>
   );
 }

@@ -34,6 +34,7 @@ export function TextFilter(
             value={filterState.value}
             onChange={filterState.setValue}
             {...props.value}
+            style={{ width: '100%' }}
           />;
         }
         default: {
