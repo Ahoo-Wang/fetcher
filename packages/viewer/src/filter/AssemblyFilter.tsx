@@ -12,7 +12,7 @@
  */
 
 import { FilterProps } from './types';
-import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
+import { Operator } from '@ahoo-wang/fetcher-wow';
 import { OPERATOR_zh_CN } from './locale';
 import {
   useFilterState,

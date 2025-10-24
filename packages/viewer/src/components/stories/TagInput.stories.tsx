@@ -12,8 +12,8 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import React, { useState } from 'react';
-import { TagInput } from '../TagInput';
+import { useState } from 'react';
+import { TagInput, NumberTagValueItemSerializer } from '../TagInput';
 
 const meta: Meta<typeof TagInput> = {
   title: 'Viewer/Components/TagInput',
@@ -23,87 +23,92 @@ const meta: Meta<typeof TagInput> = {
     docs: {
       description: {
         component:
-          'A tag input component based on Ant Design Select with tags mode. Supports multiple token separators and automatic tag creation.',
+          "A tag input component based on Antd's Select in tags mode. Allows users to input multiple tags separated by specified token separators. Supports both string and number types with custom serializers.",
       },
     },
   },
   tags: ['autodocs'],
-  argTypes: {
-    placeholder: {
-      control: 'text',
-      description: 'Placeholder text when no tags are selected',
-    },
-    allowClear: {
-      control: 'boolean',
-      description: 'Whether to show clear button',
-    },
-    disabled: {
-      control: 'boolean',
-      description: 'Whether the input is disabled',
-    },
-    maxTagCount: {
-      control: 'number',
-      description: 'Maximum number of tags to display',
-    },
-    tokenSeparators: {
-      control: 'object',
-      description: 'Token separators for creating tags',
-    },
-    style: {
-      control: 'object',
-      description: 'Custom styles for the component',
-    },
-  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {
-    placeholder: 'Enter tags (comma, period, or space separated)',
-    style: { width: 300 },
-  },
-  render: args => {
+  render: () => {
     const [value, setValue] = useState<string[]>([]);
-    return <TagInput {...args} value={value} onChange={setValue} />;
+    return (
+      <TagInput
+        placeholder="Enter tags separated by comma"
+        value={value}
+        onChange={setValue}
+      />
+    );
   },
 };
 
-export const WithInitialValues: Story = {
-  args: {
-    placeholder: 'Add more tags...',
-    style: { width: 300 },
-  },
-  render: args => {
+export const WithDefaultValues: Story = {
+  render: () => {
     const [value, setValue] = useState<string[]>([
       'react',
       'typescript',
       'storybook',
     ]);
-    return <TagInput {...args} value={value} onChange={setValue} />;
+    return (
+      <TagInput
+        placeholder="Add more tags..."
+        value={value}
+        onChange={setValue}
+      />
+    );
+  },
+};
+
+export const NumberTags: Story = {
+  render: () => {
+    const [value, setValue] = useState<number[]>([]);
+    return (
+      <TagInput<number>
+        placeholder="Enter numbers separated by space"
+        tokenSeparators={[' ']}
+        value={value}
+        serializer={NumberTagValueItemSerializer}
+        onChange={setValue}
+      />
+    );
+  },
+};
+
+export const NumberTagsWithDefaults: Story = {
+  render: () => {
+    const [value, setValue] = useState<number[]>([1, 2, 3]);
+    return (
+      <TagInput<number>
+        placeholder="Add more numbers..."
+        tokenSeparators={[' ', ',']}
+        value={value}
+        serializer={NumberTagValueItemSerializer}
+        onChange={setValue}
+      />
+    );
   },
 };
 
 export const CustomSeparators: Story = {
-  args: {
-    placeholder: 'Use semicolon, pipe, or newline to separate tags',
-    tokenSeparators: [';', '|', '\n'],
-    style: { width: 300 },
-  },
-  render: args => {
+  render: () => {
     const [value, setValue] = useState<string[]>([]);
-    return <TagInput {...args} value={value} onChange={setValue} />;
+    return (
+      <TagInput
+        placeholder="Use | or ; to separate tags"
+        tokenSeparators={['|', ';']}
+        value={value}
+        onChange={setValue}
+      />
+    );
   },
 };
 
 export const MaxTagCount: Story = {
-  args: {
-    placeholder: 'Maximum 3 tags displayed',
-    maxTagCount: 3,
-    style: { width: 300 },
-  },
-  render: args => {
+  render: () => {
     const [value, setValue] = useState<string[]>([
       'tag1',
       'tag2',
@@ -111,46 +116,91 @@ export const MaxTagCount: Story = {
       'tag4',
       'tag5',
     ]);
-    return <TagInput {...args} value={value} onChange={setValue} />;
+    return (
+      <TagInput
+        placeholder="Maximum 3 tags"
+        maxTagCount={3}
+        value={value}
+        onChange={setValue}
+      />
+    );
   },
 };
 
 export const Disabled: Story = {
-  args: {
-    placeholder: 'This input is disabled',
-    disabled: true,
-    style: { width: 300 },
-  },
-  render: args => {
+  render: () => {
     const [value, setValue] = useState<string[]>(['disabled', 'tags']);
-    return <TagInput {...args} value={value} onChange={setValue} />;
+    return (
+      <TagInput
+        placeholder="This input is disabled"
+        disabled={true}
+        value={value}
+        onChange={setValue}
+      />
+    );
   },
 };
 
-export const NoClearButton: Story = {
-  args: {
-    placeholder: 'No clear button available',
-    allowClear: false,
-    style: { width: 300 },
-  },
-  render: args => {
+export const NoClear: Story = {
+  render: () => {
     const [value, setValue] = useState<string[]>(['persistent', 'tags']);
-    return <TagInput {...args} value={value} onChange={setValue} />;
+    return (
+      <TagInput
+        placeholder="No clear button"
+        allowClear={false}
+        value={value}
+        onChange={setValue}
+      />
+    );
   },
 };
 
-export const CustomStyling: Story = {
-  args: {
-    placeholder: 'Custom styled tag input',
-    style: {
-      width: 400,
-      border: '2px solid #1890ff',
-      borderRadius: '8px',
-      padding: '4px',
-    },
-  },
-  render: args => {
+export const WithChangeHandler: Story = {
+  render: () => {
     const [value, setValue] = useState<string[]>([]);
-    return <TagInput {...args} value={value} onChange={setValue} />;
+    return (
+      <div>
+        <TagInput
+          placeholder="Type and see changes below"
+          value={value}
+          onChange={setValue}
+        />
+        <p style={{ marginTop: 16, fontSize: '14px', color: '#666' }}>
+          Current tags: [{value.join(', ')}]
+        </p>
+        <p style={{ fontSize: '12px', color: '#999' }}>
+          Try typing: apple, banana; orange|grape
+        </p>
+      </div>
+    );
+  },
+};
+
+export const EmailTags: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <TagInput
+        placeholder="Enter email addresses"
+        tokenSeparators={[',', ';', ' ']}
+        style={{ minWidth: 300 }}
+        value={value}
+        onChange={setValue}
+      />
+    );
+  },
+};
+
+export const CompactLayout: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['small', 'compact', 'tags']);
+    return (
+      <TagInput
+        placeholder="Compact tags"
+        size="small"
+        value={value}
+        onChange={setValue}
+      />
+    );
   },
 };

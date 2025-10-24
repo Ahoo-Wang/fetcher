@@ -13,26 +13,21 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { FallbackFilter } from '../FallbackFilter';
+import { Operator } from '@ahoo-wang/fetcher-wow';
 
 const meta: Meta<typeof FallbackFilter> = {
-  title: 'Viewer/Filter/FallbackFilter',
+  title: 'Viewer/Filters/FallbackFilter',
   component: FallbackFilter,
   parameters: {
     layout: 'centered',
     docs: {
       description: {
         component:
-          'A fallback component that displays a warning when an unsupported filter type is encountered.',
+          'A fallback filter component that displays a warning when an unsupported filter type is requested. This component is used when the filter registry cannot find a matching filter for the specified type.',
       },
     },
   },
   tags: ['autodocs'],
-  argTypes: {
-    type: {
-      control: 'text',
-      description: 'The unsupported filter type that triggered the fallback',
-    },
-  },
 };
 
 export default meta;
@@ -40,32 +35,76 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    type: 'unknown-filter-type',
+    type: 'unsupported-filter-type',
+    field: {
+      name: 'unknownField',
+      label: 'Unknown Field',
+      type: 'unknown',
+    },
+    operator: {
+      defaultValue: Operator.EQ,
+      options: [],
+    },
+    value: {
+      defaultValue: '',
+    },
   },
+  render: args => <FallbackFilter {...args} />,
 };
 
 export const CustomType: Story = {
   args: {
-    type: 'custom-data-type',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: 'Shows the fallback for a custom data type.',
-      },
+    type: 'custom-filter',
+    field: {
+      name: 'customField',
+      label: 'Custom Field',
+      type: 'custom',
+    },
+    operator: {
+      defaultValue: Operator.EQ,
+      options: [],
+    },
+    value: {
+      defaultValue: 'some value',
     },
   },
+  render: args => <FallbackFilter {...args} />,
 };
 
-export const ComplexType: Story = {
+export const WithComplexType: Story = {
   args: {
-    type: 'array<string>',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: 'Demonstrates the fallback for complex type names.',
-      },
+    type: 'very-complex-filter-type',
+    field: {
+      name: 'complexField',
+      label: 'Complex Field',
+      type: 'complex',
+    },
+    operator: {
+      defaultValue: Operator.CONTAINS,
+      options: [],
+    },
+    value: {
+      defaultValue: ['value1', 'value2'],
     },
   },
+  render: args => <FallbackFilter {...args} />,
+};
+
+export const EmptyType: Story = {
+  args: {
+    type: '',
+    field: {
+      name: 'emptyField',
+      label: 'Empty Field',
+      type: 'empty',
+    },
+    operator: {
+      defaultValue: Operator.EQ,
+      options: [],
+    },
+    value: {
+      defaultValue: null,
+    },
+  },
+  render: args => <FallbackFilter {...args} />,
 };

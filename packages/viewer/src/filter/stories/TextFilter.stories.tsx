@@ -11,68 +11,29 @@
  * limitations under the License.
  */
 
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import React, { useState } from 'react';
+import type { Meta, StoryObj } from '@storybook/react';
+import { useState } from 'react';
 import { TextFilter } from '../TextFilter';
-import { FilterValue } from '../types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
-import { Card, Typography, Space, Divider } from 'antd';
 
 const meta: Meta<typeof TextFilter> = {
-  title: 'Viewer/Filter/TextFilter',
+  title: 'Viewer/Filters/TextFilter',
   component: TextFilter,
   parameters: {
     layout: 'centered',
     docs: {
       description: {
-        component: `
-A versatile text filter component that supports various string matching operations.
-
-## Supported Operators
-- **EQ**: Equal to (equals)
-- **NE**: Not equal to (not equals)
-- **CONTAINS**: Contains substring (contains)
-- **STARTS_WITH**: Starts with prefix (starts with)
-- **ENDS_WITH**: Ends with suffix (ends with)
-- **IN**: Value in array (contains - multiple values)
-- **NOT_IN**: Value not in array (not contains - multiple values)
-
-## Input Types
-- **Single Value**: Uses Input component for EQ, NE, CONTAINS, STARTS_WITH, ENDS_WITH
-- **Multiple Values**: Uses TagInput component for IN, NOT_IN operators
-        `,
+        component:
+          'A text filter component that supports various text matching operations including equals, contains, starts with, ends with, and in/not in operations.',
       },
     },
   },
   tags: ['autodocs'],
-  argTypes: {
-    field: {
-      control: 'object',
-      description: 'Field configuration with name, label, and type',
-    },
-    label: {
-      control: 'object',
-      description: 'Button styling configuration',
-    },
-    operator: {
-      control: 'object',
-      description: 'Operator selection configuration',
-    },
-    value: {
-      control: 'object',
-      description: 'Input value configuration',
-    },
-    onChange: {
-      action: 'changed',
-      description: 'Callback fired when filter value changes',
-    },
-  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// 基础文本过滤器 - 包含操作符
 export const Default: Story = {
   args: {
     field: {
@@ -80,67 +41,41 @@ export const Default: Story = {
       label: 'Name',
       type: 'string',
     },
-    label: {},
-    operator: {
-      defaultValue: Operator.CONTAINS,
-    },
-    value: {
-      placeholder: 'Enter name to search...',
-    },
-  },
-  render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<FilterValue>();
-
-    return (
-      <Card title="Text Filter - Contains" style={{ width: 400 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <TextFilter {...args} onChange={setFilterValue} />
-          {filterValue && (
-            <Typography.Text type="secondary" code>
-              Filter: {JSON.stringify(filterValue.condition)}
-            </Typography.Text>
-          )}
-        </Space>
-      </Card>
-    );
-  },
-};
-
-// 精确匹配
-export const ExactMatch: Story = {
-  args: {
-    field: {
-      name: 'username',
-      label: 'Username',
-      type: 'string',
-    },
-    label: {},
     operator: {
       defaultValue: Operator.EQ,
+      options: [],
     },
     value: {
-      placeholder: 'Enter exact username...',
+      defaultValue: '',
     },
   },
-  render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<FilterValue>();
-
-    return (
-      <Card title="Text Filter - Exact Match" style={{ width: 400 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <TextFilter {...args} onChange={setFilterValue} />
-          {filterValue && (
-            <Typography.Text type="secondary">
-              Filter: {JSON.stringify(filterValue.condition)}
-            </Typography.Text>
-          )}
-        </Space>
-      </Card>
-    );
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TextFilter {...args} onChange={setValue} />;
   },
 };
 
-// 前缀匹配
+export const Contains: Story = {
+  args: {
+    field: {
+      name: 'description',
+      label: 'Description',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.CONTAINS,
+      options: [],
+    },
+    value: {
+      defaultValue: 'search term',
+    },
+  },
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TextFilter {...args} onChange={setValue} />;
+  },
+};
+
 export const StartsWith: Story = {
   args: {
     field: {
@@ -148,213 +83,129 @@ export const StartsWith: Story = {
       label: 'Title',
       type: 'string',
     },
-    label: {},
     operator: {
       defaultValue: Operator.STARTS_WITH,
+      options: [],
     },
     value: {
-      placeholder: 'Enter title prefix...',
+      defaultValue: 'prefix',
     },
   },
-  render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<FilterValue>();
-
-    return (
-      <Card title="Text Filter - Starts With" style={{ width: 400 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <TextFilter {...args} onChange={setFilterValue} />
-          {filterValue && (
-            <Typography.Text type="secondary">
-              Filter: {JSON.stringify(filterValue.condition)}
-            </Typography.Text>
-          )}
-        </Space>
-      </Card>
-    );
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TextFilter {...args} onChange={setValue} />;
   },
 };
 
-// 多值包含过滤器
-export const MultipleValues: Story = {
+export const EndsWith: Story = {
+  args: {
+    field: {
+      name: 'filename',
+      label: 'Filename',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.ENDS_WITH,
+      options: [],
+    },
+    value: {
+      defaultValue: '.txt',
+    },
+  },
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TextFilter {...args} onChange={setValue} />;
+  },
+};
+
+export const InOperator: Story = {
   args: {
     field: {
       name: 'tags',
       label: 'Tags',
-      type: 'string[]',
+      type: 'string',
     },
-    label: {},
     operator: {
       defaultValue: Operator.IN,
+      options: [],
     },
     value: {
-      placeholder: 'Enter tags (press Enter to add)...',
+      defaultValue: ['react', 'typescript', 'storybook'],
     },
   },
-  render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<FilterValue>();
-
-    return (
-      <Card title="Text Filter - Multiple Values (IN)" style={{ width: 400 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <TextFilter {...args} onChange={setFilterValue} />
-          {filterValue && (
-            <Typography.Text type="secondary">
-              Filter: {JSON.stringify(filterValue.condition)}
-            </Typography.Text>
-          )}
-        </Space>
-      </Card>
-    );
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TextFilter {...args} onChange={setValue} />;
   },
 };
 
-// 多值排除过滤器
-export const ExcludeMultipleValues: Story = {
+export const NotInOperator: Story = {
   args: {
     field: {
       name: 'categories',
       label: 'Categories',
-      type: 'string[]',
+      type: 'string',
     },
-    label: {},
     operator: {
       defaultValue: Operator.NOT_IN,
+      options: [],
     },
     value: {
-      placeholder: 'Enter categories to exclude...',
+      defaultValue: ['deprecated', 'legacy'],
     },
   },
-  render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<FilterValue>();
-
-    return (
-      <Card
-        title="Text Filter - Exclude Multiple Values (NOT IN)"
-        style={{ width: 400 }}
-      >
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <TextFilter {...args} onChange={setFilterValue} />
-          {filterValue && (
-            <Typography.Text type="secondary">
-              Filter: {JSON.stringify(filterValue.condition)}
-            </Typography.Text>
-          )}
-        </Space>
-      </Card>
-    );
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TextFilter {...args} onChange={setValue} />;
   },
 };
 
-// 动态操作符切换演示
-export const DynamicOperatorSwitching: Story = {
+export const WithPlaceholder: Story = {
+  args: {
+    field: {
+      name: 'search',
+      label: 'Search',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.CONTAINS,
+      options: [],
+    },
+    value: {
+      defaultValue: '',
+      placeholder: 'Enter search term...',
+    },
+  },
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TextFilter {...args} onChange={setValue} />;
+  },
+};
+
+export const WithChangeHandler: Story = {
   args: {
     field: {
       name: 'content',
       label: 'Content',
       type: 'string',
     },
-    label: {},
     operator: {
-      defaultValue: Operator.CONTAINS,
+      defaultValue: Operator.EQ,
+      options: [],
     },
     value: {
-      placeholder: 'Enter search text...',
+      defaultValue: '',
     },
   },
-  render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<FilterValue>();
-    const [currentOperator, setCurrentOperator] = useState(Operator.CONTAINS);
-
-    const operators = [
-      { value: Operator.EQ, label: '等于' },
-      { value: Operator.NE, label: '不等于' },
-      { value: Operator.CONTAINS, label: '包含' },
-      { value: Operator.STARTS_WITH, label: '以...开头' },
-      { value: Operator.ENDS_WITH, label: '以...结尾' },
-      { value: Operator.IN, label: '包含(多值)' },
-      { value: Operator.NOT_IN, label: '不包含(多值)' },
-    ];
-
+  render: args => {
+    const [value, setValue] = useState<any>();
     return (
-      <Card
-        title="Text Filter - Dynamic Operator Switching"
-        style={{ width: 500 }}
-      >
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Typography.Text>
-            Try different operators to see input type changes:
-          </Typography.Text>
-
-          <Space wrap>
-            {operators.map(op => (
-              <Typography.Link
-                key={op.value}
-                onClick={() => setCurrentOperator(op.value)}
-                style={{
-                  fontWeight: currentOperator === op.value ? 'bold' : 'normal',
-                  color: currentOperator === op.value ? '#1890ff' : 'inherit',
-                }}
-              >
-                {op.label}
-              </Typography.Link>
-            ))}
-          </Space>
-
-          <Divider />
-
-          <TextFilter
-            {...args}
-            operator={{ ...args.operator, value: currentOperator }}
-            onChange={setFilterValue}
-          />
-
-          {filterValue && (
-            <Typography.Text type="secondary">
-              Current filter: {JSON.stringify(filterValue.condition)}
-            </Typography.Text>
-          )}
-
-          <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
-            Note: IN/NOT_IN operators use TagInput for multiple values, others
-            use regular Input.
-          </Typography.Text>
-        </Space>
-      </Card>
-    );
-  },
-};
-
-// 带预设值的过滤器
-export const WithPresetValue: Story = {
-  args: {
-    field: {
-      name: 'description',
-      label: 'Description',
-      type: 'string',
-    },
-    label: {},
-    operator: {
-      defaultValue: Operator.CONTAINS,
-    },
-    value: {
-      defaultValue: 'sample text',
-      placeholder: 'Search in description...',
-    },
-  },
-  render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<FilterValue>();
-
-    return (
-      <Card title="Text Filter - With Preset Value" style={{ width: 400 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <TextFilter {...args} onChange={setFilterValue} />
-          {filterValue && (
-            <Typography.Text type="secondary">
-              Filter: {JSON.stringify(filterValue.condition)}
-            </Typography.Text>
-          )}
-        </Space>
-      </Card>
+      <div>
+        <TextFilter {...args} onChange={setValue} />
+        <p style={{ marginTop: 16, fontSize: '14px', color: '#666' }}>
+          Current filter: {JSON.stringify(value, null, 2)}
+        </p>
+      </div>
     );
   },
 };

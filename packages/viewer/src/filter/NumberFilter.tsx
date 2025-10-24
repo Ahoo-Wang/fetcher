@@ -63,11 +63,14 @@ export function NumberFilter(props: FilterProps<number | (number | undefined)[]>
           );
         }
         default: {
+          const { defaultValue, ...restValue } = props.value;
+          const defaultInputNumber = Array.isArray(defaultValue) ? defaultValue[0] : defaultValue;
           return (
             <InputNumber<number>
+              defaultValue={defaultInputNumber}
               onChange={v => {
                 filterState.setValue(v ?? undefined);
-              }} {...props.value}></InputNumber>
+              }} {...restValue}></InputNumber>
           );
         }
       }

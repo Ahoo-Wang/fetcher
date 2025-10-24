@@ -12,97 +12,141 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { TypedFilter } from '../TypedFilter';
-import '../IdFilter';
-import { FilterValue } from '../types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
-import { Card, Typography, Space } from 'antd';
 
 const meta: Meta<typeof TypedFilter> = {
-  title: 'Viewer/Filter/TypedFilter',
+  title: 'Viewer/Filters/TypedFilter',
   component: TypedFilter,
   parameters: {
     layout: 'centered',
     docs: {
       description: {
-        component: `
-A dynamic filter component that automatically renders the appropriate filter UI based on the \`type\` prop using a registry pattern.
-
-## Key Features
-- **Dynamic Rendering**: Automatically selects filter component based on type
-- **Registry Pattern**: Extensible filter system
-- **Type Safety**: Full TypeScript support
-- **Fallback Handling**: Graceful degradation for unsupported types
-        `,
+        component:
+          'A dynamic filter component that selects the appropriate filter based on the type prop. It uses the filter registry to find the correct filter component for the specified type.',
       },
     },
   },
   tags: ['autodocs'],
-  argTypes: {
-    type: {
-      control: { type: 'select' },
-      options: ['id', 'text', 'unsupported'],
-      description: 'Filter type that determines which component to render',
-    },
-    field: {
-      control: 'object',
-      description: 'Field configuration with name, label, and type',
-    },
-    label: {
-      control: 'object',
-      description: 'Button styling configuration',
-    },
-    operator: {
-      control: 'object',
-      description: 'Operator selection configuration',
-    },
-    value: {
-      control: 'object',
-      description: 'Input value configuration',
-    },
-    onChange: {
-      action: 'changed',
-      description: 'Callback fired when filter value changes',
-    },
-  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-
-// 带交互的字符串过滤器
-export const Default: Story = {
+export const TextFilter: Story = {
   args: {
     type: 'text',
     field: {
-      name: 'email',
-      label: 'Email',
+      name: 'name',
+      label: 'Name',
       type: 'string',
     },
-    label: {},
     operator: {
-      defaultValue: Operator.CONTAINS,
+      defaultValue: Operator.EQ,
+      options: [],
     },
     value: {
-      placeholder: 'Search emails...',
+      defaultValue: '',
     },
   },
-  render: (args: any) => {
-    const [filterValue, setFilterValue] = useState<FilterValue>();
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TypedFilter {...args} onChange={setValue} />;
+  },
+};
 
+export const NumberFilter: Story = {
+  args: {
+    type: 'number',
+    field: {
+      name: 'age',
+      label: 'Age',
+      type: 'number',
+    },
+    operator: {
+      defaultValue: Operator.EQ,
+      options: [],
+    },
+    value: {
+      defaultValue: 25,
+    },
+  },
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TypedFilter {...args} onChange={setValue} />;
+  },
+};
+
+export const IdFilter: Story = {
+  args: {
+    type: 'id',
+    field: {
+      name: 'userId',
+      label: 'User ID',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.ID,
+      options: [],
+    },
+    value: {
+      defaultValue: '',
+    },
+  },
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TypedFilter {...args} onChange={setValue} />;
+  },
+};
+
+export const UnsupportedType: Story = {
+  args: {
+    type: 'unsupported',
+    field: {
+      name: 'unknown',
+      label: 'Unknown Field',
+      type: 'unknown',
+    },
+    operator: {
+      defaultValue: Operator.EQ,
+      options: [],
+    },
+    value: {
+      defaultValue: '',
+    },
+  },
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TypedFilter {...args} onChange={setValue} />;
+  },
+};
+
+export const WithChangeHandler: Story = {
+  args: {
+    type: 'text',
+    field: {
+      name: 'description',
+      label: 'Description',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.CONTAINS,
+      options: [],
+    },
+    value: {
+      defaultValue: '',
+    },
+  },
+  render: args => {
+    const [value, setValue] = useState<any>();
     return (
-      <Card title="Interactive Filter Demo" style={{ width: 400 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <TypedFilter {...args} onChange={setFilterValue} />
-          {filterValue && (
-            <Typography.Text type="secondary" code copyable>
-              {JSON.stringify(filterValue.condition)}
-            </Typography.Text>
-          )}
-        </Space>
-      </Card>
+      <div>
+        <TypedFilter {...args} onChange={setValue} />
+        <p style={{ marginTop: 16, fontSize: '14px', color: '#666' }}>
+          Current filter value: {JSON.stringify(value, null, 2)}
+        </p>
+      </div>
     );
   },
 };

@@ -14,7 +14,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { NumberRange } from '../../src/components/NumberRange';
+import { NumberRange } from '../../src';
 
 describe('NumberRange', () => {
   it('renders two InputNumber components', () => {

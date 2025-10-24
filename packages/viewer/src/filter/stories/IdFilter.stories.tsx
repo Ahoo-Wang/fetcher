@@ -12,99 +12,189 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { IdFilter } from '../IdFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
-import { FilterValue } from '../types';
-import { Card, Typography } from 'antd';
 
 const meta: Meta<typeof IdFilter> = {
-  title: 'Viewer/Filter/IdConditionFilter',
+  title: 'Viewer/Filters/IdFilter',
   component: IdFilter,
   parameters: {
     layout: 'centered',
     docs: {
       description: {
         component:
-          'A specialized filter component for ID fields that provides ID and IDS operators for filtering by single ID or multiple IDs.',
+          'An ID filter component that supports filtering by single ID or multiple IDs. Uses different input components based on the selected operator.',
       },
     },
   },
   tags: ['autodocs'],
-  argTypes: {
-    field: {
-      control: 'object',
-      description: 'The field configuration for the filter',
-    },
-    operator: {
-      control: { type: 'select' },
-      options: [Operator.ID, Operator.IDS],
-      description:
-        'The operator for the condition (ID for single ID, IDS for multiple IDs)',
-    },
-    value: {
-      control: 'object',
-      description: 'The value configuration for the input',
-    },
-  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
+export const SingleId: Story = {
   args: {
     field: {
-      name: 'id',
-      label: 'ID',
+      name: 'userId',
+      label: 'User ID',
       type: 'string',
-    },
-    label: {
-      name: 'id',
     },
     operator: {
       defaultValue: Operator.ID,
+      options: [],
     },
     value: {
-      placeholder: 'Enter ID',
+      defaultValue: 'user123',
     },
   },
   render: args => {
-    return <IdFilter {...args} />;
+    const [, setValue] = useState<any>();
+    return <IdFilter {...args} onChange={setValue} />;
   },
 };
 
-export const WithOnChange: Story = {
+export const MultipleIds: Story = {
   args: {
     field: {
-      name: 'id',
-      label: 'ID',
+      name: 'userIds',
+      label: 'User IDs',
       type: 'string',
     },
-    label: {
-      name: 'id',
-    },
     operator: {
-      defaultValue: Operator.ID,
+      defaultValue: Operator.IDS,
+      options: [],
     },
     value: {
-      placeholder: 'Enter ID',
+      defaultValue: ['user1', 'user2', 'user3'],
     },
   },
   render: args => {
-    const [conditionValue, setConditionValue] = useState<
-      FilterValue | undefined
-    >();
+    const [, setValue] = useState<any>();
+    return <IdFilter {...args} onChange={setValue} />;
+  },
+};
+
+export const SingleIdWithPlaceholder: Story = {
+  args: {
+    field: {
+      name: 'productId',
+      label: 'Product ID',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.ID,
+      options: [],
+    },
+    value: {
+      defaultValue: '',
+      placeholder: 'Enter product ID...',
+    },
+  },
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <IdFilter {...args} onChange={setValue} />;
+  },
+};
+
+export const MultipleIdsWithDefaults: Story = {
+  args: {
+    field: {
+      name: 'categoryIds',
+      label: 'Category IDs',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.IDS,
+      options: [],
+    },
+    value: {
+      defaultValue: ['cat1', 'cat2', 'cat3', 'cat4'],
+    },
+  },
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <IdFilter {...args} onChange={setValue} />;
+  },
+};
+
+export const EmptyMultipleIds: Story = {
+  args: {
+    field: {
+      name: 'selectedIds',
+      label: 'Selected IDs',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.IDS,
+      options: [],
+    },
+    value: {
+      defaultValue: [],
+      placeholder: 'Select multiple IDs...',
+    },
+  },
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <IdFilter {...args} onChange={setValue} />;
+  },
+};
+
+export const WithChangeHandler: Story = {
+  args: {
+    field: {
+      name: 'itemId',
+      label: 'Item ID',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.ID,
+      options: [],
+    },
+    value: {
+      defaultValue: '',
+    },
+  },
+  render: args => {
+    const [value, setValue] = useState<any>();
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <IdFilter {...args} onChange={setConditionValue} />
-        <Card title="Current Condition Value" size="small">
-          <Typography.Text code>
-            {conditionValue
-              ? JSON.stringify(conditionValue, null, 2)
-              : 'No value'}
-          </Typography.Text>
-        </Card>
+      <div>
+        <IdFilter {...args} onChange={setValue} />
+        <p style={{ marginTop: 16, fontSize: '14px', color: '#666' }}>
+          Current filter: {JSON.stringify(value, null, 2)}
+        </p>
+      </div>
+    );
+  },
+};
+
+export const MultipleWithChangeHandler: Story = {
+  args: {
+    field: {
+      name: 'groupIds',
+      label: 'Group IDs',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.IDS,
+      options: [],
+    },
+    value: {
+      defaultValue: [],
+    },
+  },
+  render: args => {
+    const [value, setValue] = useState<any>();
+    return (
+      <div>
+        <IdFilter {...args} onChange={setValue} />
+        <p style={{ marginTop: 16, fontSize: '14px', color: '#666' }}>
+          Selected IDs: {value ? JSON.stringify(value, null, 2) : 'None'}
+        </p>
+        <p style={{ fontSize: '12px', color: '#999' }}>
+          Try typing: group1, group2; group3
+        </p>
       </div>
     );
   },
