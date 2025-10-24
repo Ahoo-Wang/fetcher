@@ -19,21 +19,21 @@ import { and, Condition } from '@ahoo-wang/fetcher-wow';
 import { Button, Col, Row, Space } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 
-export interface FilterPanelItem {
+export interface ActiveFilter {
   key: Key;
   type: FilterType;
   field: FilterField;
-  component?: TypedFilterComponent;
 }
 
 export interface FilterPanelProps extends StyleCapable {
-  filters: FilterPanelItem[];
+  component?: TypedFilterComponent;
+  filters: ActiveFilter[];
   actions?: React.ReactNode;
   onSearch?: (condition: Condition) => void;
 }
 
 export function FilterPanel(props: FilterPanelProps) {
-  const { filters, onSearch, actions } = props;
+  const { filters, onSearch, actions, component } = props;
   const filterRefs = useRef<(FilterRef | null)[]>([]);
   const handleSearch = () => {
     const conditions = filterRefs.current
@@ -42,18 +42,16 @@ export function FilterPanel(props: FilterPanelProps) {
     const finalCondition: Condition = and(...conditions);
     onSearch?.(finalCondition);
   };
+  const FilterComponent = component || TypedFilter;
   return (
     <>
       <Row gutter={[8, 8]} wrap>
         {filters.map((filter, index) => {
-          const FilterComponent = filter.component ?? TypedFilter;
           return (
             <Col span={12}>
               <FilterComponent key={filter.key}
                                type={filter.type}
                                field={filter.field}
-                               operator={{}}
-                               value={{}}
                                ref={el => {
                                  filterRefs.current[index] = el;
                                }}

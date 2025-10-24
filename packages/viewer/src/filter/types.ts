@@ -49,8 +49,8 @@ export interface FilterValue extends ConditionCapable {
 export interface FilterProps<ValueType = any> extends AttributesCapable, RefAttributes<FilterRef> {
   field: FilterField;
   label?: LabelProps;
-  operator: OperatorProps;
-  value: ValueProps<ValueType>;
+  operator?: OperatorProps;
+  value?: ValueProps<ValueType>;
   onChange?: (value?: FilterValue) => void;
 }
 

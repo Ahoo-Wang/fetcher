@@ -15,34 +15,24 @@ import { and, Condition } from '@ahoo-wang/fetcher-wow';
 import React, { useState, useRef, Key } from 'react';
 import { Button, Col, Row, Space } from 'antd';
 import { FilterRef } from '../types';
-import { StyleCapable } from '../../types';
-import { FilterField } from '../types';
-import { FilterType } from '../TypedFilter';
 import { AvailableFilterGroup, AvailableFilter } from './AvailableFilterSelect';
 import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
 import { RemovableTypedFilter } from './RemovableTypedFilter';
 import { SearchOutlined } from '@ant-design/icons';
 import { useRequestId } from '@ahoo-wang/fetcher-react';
+import { ActiveFilter, FilterPanelProps } from './FilterPanel';
 
-export interface ActiveFilter {
-  key: Key;
-  type: FilterType;
-  field: FilterField;
-}
-
-export interface FilterPanelProps extends StyleCapable {
+export interface EditableFilterPanelProps extends FilterPanelProps {
   availableFilters: AvailableFilterGroup[];
-  activeFilters: ActiveFilter[];
-  onSearch?: (condition: Condition) => void;
 }
 
-export function EditableFilterPanel(props: FilterPanelProps) {
+export function EditableFilterPanel(props: EditableFilterPanelProps) {
   const {
     availableFilters,
-    activeFilters,
+    filters,
     onSearch,
   } = props;
-  const [filters, setFilters] = useState(activeFilters);
+  const [activeFilters, setActiveFilters] = useState(filters);
   const [modalOpen, setModalOpen] = useState(false);
   const filterRefs = useRef<(FilterRef | null)[]>([]);
   const generator = useRequestId();
@@ -56,13 +46,13 @@ export function EditableFilterPanel(props: FilterPanelProps) {
           field: available.field,
         }) as ActiveFilter,
     );
-    setFilters([...filters, ...newFilters]);
+    setActiveFilters([...activeFilters, ...newFilters]);
     setModalOpen(false);
   };
 
   const removeFilter = (key: Key) => {
-    const newFilters = filters.filter(f => f.key !== key);
-    setFilters(newFilters);
+    const newFilters = activeFilters.filter(f => f.key !== key);
+    setActiveFilters(newFilters);
   };
 
   const handleSearch = () => {
@@ -75,7 +65,7 @@ export function EditableFilterPanel(props: FilterPanelProps) {
   return (
     <>
       <Row gutter={[8, 8]} wrap>
-        {filters.map((filter, index) => (
+        {activeFilters.map((filter, index) => (
           <Col span={12}>
             <RemovableTypedFilter key={filter.key}
                                   type={filter.type}

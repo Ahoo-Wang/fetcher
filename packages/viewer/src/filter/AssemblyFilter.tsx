@@ -39,10 +39,10 @@ export function AssemblyFilter<ValueType = any>(
     throw new Error('supportedOperators must be a non-empty array');
   }
 
-  const operatorLocale = props.operator.locale ?? OPERATOR_zh_CN;
+  const operatorLocale = props.operator?.locale ?? OPERATOR_zh_CN;
 
   // Determine the initial operator
-  let initialOperator = props.operator.defaultValue;
+  let initialOperator = props.operator?.defaultValue;
 
   // If no operator is provided or it's not in supported operators, use the first supported operator
   if (!initialOperator || !props.supportedOperators.includes(initialOperator)) {
@@ -52,7 +52,7 @@ export function AssemblyFilter<ValueType = any>(
   const filterState = useFilterState({
     field: props.field.name,
     operator: initialOperator,
-    value: props.value.defaultValue,
+    value: props.value?.defaultValue,
     ref: props.ref,
     validate: props.validate,
     onChange: props.onChange,
