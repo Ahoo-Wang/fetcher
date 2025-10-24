@@ -17,13 +17,12 @@ import { SelectProps } from 'antd/es/select';
 import React, { RefAttributes } from 'react';
 import { StyleCapable } from '../types';
 
-
 /**
  * @see {@link Schema}
  */
 export interface FilterField extends NamedCapable {
   label: string;
-  type: string;
+  type?: string;
   format?: string;
 }
 
