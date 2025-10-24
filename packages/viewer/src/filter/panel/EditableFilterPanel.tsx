@@ -29,7 +29,10 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
   const generator = useRequestId();
 
   const handleAddFilter = (selectedAvailableFilters: AvailableFilter[]) => {
-    if (selectedAvailableFilters.length === 0) return;
+    if (selectedAvailableFilters.length === 0) {
+      setModalOpen(false);
+      return;
+    }
     const newFilters = selectedAvailableFilters.map(
       available =>
         ({

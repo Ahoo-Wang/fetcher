@@ -42,7 +42,7 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   useImperativeHandle(props.ref, () => ({
     getValue(): AvailableFilter[] {
-      return props.filters.flatMap(group => group.filters.filter(filter => selectedFilters.includes(filter.field.name)));
+      return props.filters.flatMap(group => group.filters.filter(filter => selectedFilters.includes(filter.field.name) && !activeFilters.some(activeFilter => activeFilter.field.name === filter.field.name)));
     },
   }));
   const onCheckHandler = (filter: AvailableFilter, checked: boolean) => {

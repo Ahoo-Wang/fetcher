@@ -21,13 +21,13 @@ export interface AvailableFiltersModalProps extends Omit<ModalProps, 'onOk'> {
 }
 
 export function AvailableFilterSelectModal(props: AvailableFiltersModalProps) {
-  const availableFiltersRef = useRef<AvailableFilterSelectRef>(null);
+  const availableFilterSelectRef = useRef<AvailableFilterSelectRef>(null);
   const onOkHandler = () => {
-    props?.onSave?.(availableFiltersRef.current?.getValue() ?? []);
+    props?.onSave?.(availableFilterSelectRef.current?.getValue() ?? []);
   };
   return (
     <Modal {...props} onOk={onOkHandler}>
-      <AvailableFilterSelect  {...props.availableFilters} ref={availableFiltersRef} />
+      <AvailableFilterSelect  {...props.availableFilters} ref={availableFilterSelectRef} />
     </Modal>
   );
 }
