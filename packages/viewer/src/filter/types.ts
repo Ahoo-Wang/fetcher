@@ -45,7 +45,7 @@ export interface ValueProps<ValueType = any> extends StyleCapable {
 export interface FilterValue extends ConditionCapable {
 }
 
-export interface FilterProps<ValueType = any> extends AttributesCapable, RefAttributes<FilterRef> {
+export interface FilterProps<ValueType = any> extends AttributesCapable, RefAttributes<FilterRef>, StyleCapable {
   field: FilterField;
   label?: LabelProps;
   operator?: OperatorProps;

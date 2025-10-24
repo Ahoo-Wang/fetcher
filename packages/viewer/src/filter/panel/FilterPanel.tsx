@@ -50,7 +50,7 @@ export function FilterPanel(props: FilterPanelProps) {
   };
   return (
     <>
-      <Row gutter={[8, 8]} wrap>
+      <Row gutter={[8, 8]} wrap style={props.style} className={props.className}>
         {filters.map(filter => {
           return (
             <Col span={colSpan}>

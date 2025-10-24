@@ -63,7 +63,7 @@ export function AssemblyFilter<ValueType = any>(
     label: operatorLocale[supportedOperator],
   }));
   return (
-    <Space.Compact>
+    <Space.Compact block style={props.style} className={props.className}>
       <Button {...props.label}>{props.field.label}</Button>
       <Select
         onChange={filterState.setOperator}
