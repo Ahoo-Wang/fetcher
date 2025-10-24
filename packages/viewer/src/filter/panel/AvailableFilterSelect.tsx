@@ -16,7 +16,6 @@ import { FilterType } from '../TypedFilter';
 import { Checkbox, Flex, Typography } from 'antd';
 import { StyleCapable } from '../../types';
 import { RefAttributes, useImperativeHandle, useState } from 'react';
-import { ActiveFilter } from './FilterPanel';
 
 export interface AvailableFilter {
   field: FilterField;
@@ -34,7 +33,7 @@ export interface AvailableFilterSelectRef {
 
 export interface AvailableFilterSelectProps extends StyleCapable, RefAttributes<AvailableFilterSelectRef> {
   filters: AvailableFilterGroup[];
-  activeFilters?: ActiveFilter[];
+  activeFilters?: AvailableFilter[];
 }
 
 export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
