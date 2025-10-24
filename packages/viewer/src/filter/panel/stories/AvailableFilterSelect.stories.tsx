@@ -16,7 +16,7 @@ import React, { useRef, useState } from 'react';
 import {
   AvailableFilterSelect,
   AvailableFilterSelectRef,
-  ActiveFilterGroup, AvailableFilter,
+  AvailableFilterGroup, AvailableFilter,
 } from '../AvailableFilterSelect';
 import { Card, Typography, Space, Button, App, Divider } from 'antd';
 
@@ -52,7 +52,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 // Mock data for demonstration
-const mockFilters: ActiveFilterGroup[] = [
+const mockFilters: AvailableFilterGroup[] = [
   {
     label: '用户信息',
     filters: [

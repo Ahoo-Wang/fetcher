@@ -13,7 +13,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { AvailableFilterSelectModal } from '../AvailableFilterSelectModal';
-import type { ActiveFilterGroup } from '../AvailableFilterSelect';
+import type { AvailableFilterGroup } from '../AvailableFilterSelect';
 
 const meta: Meta<typeof AvailableFilterSelectModal> = {
   title: 'Viewer/Filters/Panel/AvailableFilterSelectModal',
@@ -28,7 +28,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const mockFilters: ActiveFilterGroup[] = [
+const mockFilters: AvailableFilterGroup[] = [
   {
     label: '基本筛选',
     filters: [

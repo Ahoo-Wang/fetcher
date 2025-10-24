@@ -12,16 +12,16 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { FilterPanel } from '../FilterPanel';
-import type { ActiveFilterGroup } from '../AvailableFilterSelect';
-import type { ActiveFilter } from '../FilterPanel';
+import { EditableFilterPanel } from '../EditableFilterPanel';
+import type { AvailableFilterGroup } from '../AvailableFilterSelect';
+import type { ActiveFilter } from '../EditableFilterPanel';
 import React, { useState } from 'react';
 import { Card, Divider, Typography } from 'antd';
 import { all, Condition } from '@ahoo-wang/fetcher-wow';
 
-const meta: Meta<typeof FilterPanel> = {
+const meta: Meta<typeof EditableFilterPanel> = {
   title: 'Viewer/Filters/Panel/FilterPanel',
-  component: FilterPanel,
+  component: EditableFilterPanel,
   parameters: {
     layout: 'padded',
   },
@@ -32,7 +32,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const mockAvailableFilters: ActiveFilterGroup[] = [
+const mockAvailableFilters: AvailableFilterGroup[] = [
   {
     label: '基本筛选',
     filters: [
@@ -78,7 +78,7 @@ export const Default: Story = {
     const [condition, setCondition] = useState<Condition>(all());
     return (
       <Card>
-        <FilterPanel {...args} onSearch={setCondition} />
+        <EditableFilterPanel {...args} onSearch={setCondition} />
         <Divider>搜索条件</Divider>
         <Typography.Text type="secondary" code>
           {JSON.stringify(condition)}

@@ -22,7 +22,7 @@ export interface AvailableFilter {
   component: FilterType;
 }
 
-export interface ActiveFilterGroup {
+export interface AvailableFilterGroup {
   label: string;
   filters: AvailableFilter[];
 }
@@ -32,7 +32,7 @@ export interface AvailableFilterSelectRef {
 }
 
 export interface AvailableFilterSelectProps extends StyleCapable, RefAttributes<AvailableFilterSelectRef> {
-  filters: ActiveFilterGroup[];
+  filters: AvailableFilterGroup[];
 }
 
 export function AvailableFilterSelect(props: AvailableFilterSelectProps) {

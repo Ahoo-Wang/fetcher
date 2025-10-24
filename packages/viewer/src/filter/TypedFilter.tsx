@@ -29,3 +29,5 @@ export function TypedFilter(props: TypedFilterProps) {
 }
 
 TypedFilter.displayName = 'TypedFilter';
+
+export type TypedFilterComponent = React.FC<TypedFilterProps>;
