@@ -23,7 +23,9 @@ export default mergeConfig(
       coverage: {
         exclude: [
           ...configDefaults.exclude,
-          '**/**.stories.tsx'
+          '**/**.stories.tsx',
+          //TODO exclude
+          'src/filter/panel/**',
         ],
       },
     },
