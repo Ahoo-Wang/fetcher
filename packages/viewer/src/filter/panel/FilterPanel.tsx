@@ -12,9 +12,7 @@
  */
 
 import React, { Key } from 'react';
-import {
-  TypedFilterProps,
-} from '../TypedFilter';
+import { TypedFilterProps } from '../TypedFilter';
 import { FilterRef } from '../types';
 import { StyleCapable } from '../../types';
 import { and, Condition } from '@ahoo-wang/fetcher-wow';
@@ -34,10 +32,11 @@ export interface FilterPanelProps extends StyleCapable {
   actions?: React.ReactNode;
   onSearch?: (condition: Condition) => void;
   colSpan?: ColProps['span'];
+  loading?: boolean;
 }
 
 export function FilterPanel(props: FilterPanelProps) {
-  const { filters, onSearch, actions, colSpan = 12 } = props;
+  const { filters, onSearch, actions, colSpan = 12, loading = false } = props;
   const filterRefs = useRefs<FilterRef>();
   const handleSearch = () => {
     if (!onSearch) {
@@ -74,6 +73,7 @@ export function FilterPanel(props: FilterPanelProps) {
               type="primary"
               icon={<SearchOutlined />}
               onClick={handleSearch}
+              loading={loading}
             >
               Search
             </Button>
