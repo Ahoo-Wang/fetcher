@@ -11,21 +11,17 @@
  * limitations under the License.
  */
 
-import React, { Key, useRef } from 'react';
-import { FilterType, TypedFilter, TypedFilterComponent } from '../TypedFilter';
-import { FilterField, FilterRef } from '../types';
+import React, { Key } from 'react';
+import { TypedFilter, TypedFilterComponent, TypedFilterProps } from '../TypedFilter';
+import { FilterRef } from '../types';
 import { StyleCapable } from '../../types';
 import { and, Condition } from '@ahoo-wang/fetcher-wow';
-import { Button, Col, Row, Space } from 'antd';
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Button, Col, Row, Space, ColProps } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { useRefs } from '@ahoo-wang/fetcher-react';
 
-export interface ActiveFilter {
+export interface ActiveFilter extends Omit<TypedFilterProps, 'onChange' | 'ref'> {
   key: Key;
-  type: FilterType;
-  field: FilterField;
-  operator?: any;
-  value?: any;
 }
 
 export interface FilterPanelProps extends StyleCapable {
@@ -33,10 +29,11 @@ export interface FilterPanelProps extends StyleCapable {
   filters: ActiveFilter[];
   actions?: React.ReactNode;
   onSearch?: (condition: Condition) => void;
+  colSpan?: ColProps['span'];
 }
 
 export function FilterPanel(props: FilterPanelProps) {
-  const { filters, onSearch, actions, component } = props;
+  const { filters, onSearch, actions, component, colSpan = 12 } = props;
   const filterRefs = useRefs<FilterRef>();
   const handleSearch = () => {
     if (!onSearch) {
@@ -54,7 +51,7 @@ export function FilterPanel(props: FilterPanelProps) {
       <Row gutter={[8, 8]} wrap>
         {filters.map(filter => {
           return (
-            <Col span={12}>
+            <Col span={colSpan}>
               <FilterComponent
                 key={filter.key}
                 type={filter.type}
@@ -66,12 +63,9 @@ export function FilterPanel(props: FilterPanelProps) {
             </Col>
           );
         })}
-        <Col span={12}>
+        <Col span={colSpan}>
           <Space>
             {actions}
-            <Button icon={<ReloadOutlined />} onClick={() => onSearch?.(and())}>
-              Reset
-            </Button>
             <Button
               type="primary"
               icon={<SearchOutlined />}
