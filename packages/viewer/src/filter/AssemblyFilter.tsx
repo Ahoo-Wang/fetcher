@@ -30,8 +30,9 @@ export interface AssemblyFilterProps<ValueType = any> extends FilterProps {
 export function AssemblyFilter<ValueType = any>(
   props: AssemblyFilterProps<ValueType>,
 ) {
+  const { ref, supportedOperators } = props;
   // Validate that supportedOperators is not empty
-  if (!props.supportedOperators || props.supportedOperators.length === 0) {
+  if (!supportedOperators || supportedOperators.length === 0) {
     throw new Error('supportedOperators must be a non-empty array');
   }
 
@@ -41,20 +42,20 @@ export function AssemblyFilter<ValueType = any>(
   let initialOperator = props.operator?.defaultValue;
 
   // If no operator is provided or it's not in supported operators, use the first supported operator
-  if (!initialOperator || !props.supportedOperators.includes(initialOperator)) {
-    initialOperator = props.supportedOperators[0];
+  if (!initialOperator || !supportedOperators.includes(initialOperator)) {
+    initialOperator = supportedOperators[0];
   }
 
   const filterState = useFilterState({
     field: props.field.name,
     operator: initialOperator,
     value: props.value?.defaultValue,
-    ref: props.ref,
+    ref: ref,
     validate: props.validate,
     onChange: props.onChange,
   });
   const valueInput = props.valueInputSupplier(filterState);
-  const options = props.supportedOperators.map(supportedOperator => ({
+  const options = supportedOperators.map(supportedOperator => ({
     value: supportedOperator,
     label: operatorLocale[supportedOperator],
   }));

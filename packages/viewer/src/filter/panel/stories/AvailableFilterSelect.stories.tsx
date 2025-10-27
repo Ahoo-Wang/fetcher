@@ -16,13 +16,43 @@ import React, { useRef, useState } from 'react';
 import {
   AvailableFilterSelect,
   AvailableFilterSelectRef,
-  AvailableFilterGroup, AvailableFilter,
+  AvailableFilterGroup, AvailableFilter, AvailableFilterSelectProps,
 } from '../AvailableFilterSelect';
-import { Card, Typography, Space, Button, App, Divider } from 'antd';
+import { Card, Typography, Space, Button, Divider } from 'antd';
 
-const meta: Meta<typeof AvailableFilterSelect> = {
+function AvailableFilterSelectDemo(props: AvailableFilterSelectProps) {
+  const ref = useRef<AvailableFilterSelectRef>(null);
+  const [selected, setSelected] = useState<AvailableFilter[]>();
+
+  const handleGetValue = () => {
+    setSelected(ref.current?.getValue());
+  };
+
+  return (
+    <Card title="Available Filter Select Demo" style={{ width: 600 }}>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <AvailableFilterSelect {...props} ref={ref} />
+        <Button onClick={handleGetValue} type="primary">
+          获取选中过滤器
+        </Button>
+        {
+          selected && (
+            <>
+              <Divider></Divider>
+              <Typography.Text type="secondary" code>
+                {JSON.stringify(selected)}
+              </Typography.Text>
+            </>
+          )
+        }
+      </Space>
+    </Card>
+  );
+}
+
+const meta: Meta<typeof AvailableFilterSelectDemo> = {
   title: 'Viewer/Filters/Panel/AvailableFilterSelect',
-  component: AvailableFilterSelect,
+  component: AvailableFilterSelectDemo,
   parameters: {
     layout: 'centered',
     docs: {
@@ -88,34 +118,5 @@ const mockFilters: AvailableFilterGroup[] = [
 export const Default: Story = {
   args: {
     filters: mockFilters,
-  },
-  render: (args: any) => {
-    const ref = useRef<AvailableFilterSelectRef>(null);
-    const [selected, setSelected] = useState<AvailableFilter[]>();
-
-    const handleGetValue = () => {
-      setSelected(ref.current?.getValue());
-    };
-
-    return (
-      <Card title="Available Filter Select Demo" style={{ width: 600 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <AvailableFilterSelect {...args} ref={ref} />
-          <Button onClick={handleGetValue} type="primary">
-            获取选中过滤器
-          </Button>
-          {
-            selected && (
-              <>
-                <Divider></Divider>
-                <Typography.Text type="secondary" code>
-                  {JSON.stringify(selected)}
-                </Typography.Text>
-              </>
-            )
-          }
-        </Space>
-      </Card>
-    );
   },
 };

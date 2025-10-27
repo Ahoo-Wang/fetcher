@@ -45,6 +45,7 @@ import { RefObject, useRef } from 'react';
  */
 export function useLatest<T>(value: T): RefObject<T> {
   const ref = useRef(value);
+  /* eslint-disable react-hooks/refs */
   ref.current = value;
   return ref;
 }
