@@ -21,6 +21,7 @@ export interface UseFilterStateOptions<ValueType = any> extends RefAttributes<Fi
   field?: string;
   operator: Operator;
   value: Optional<ValueType>;
+  valueConverter?: (beforeOperator: Operator, afterOperator: Operator, value: Optional<ValueType>) => Optional<ValueType>;
   validate?: (operator: Operator, value: Optional<ValueType>) => boolean;
   onChange?: (condition: Optional<FilterValue>) => void;
 }
@@ -38,10 +39,15 @@ const defaultValueValidate = (operator: Operator, value: any) => {
   return !(Array.isArray(value) && value.length === 0);
 };
 
+const defaultValueConverter = (beforeOperator: Operator, afterOperator: Operator, value: any) => {
+  return value;
+};
+
 export function useFilterState<ValueType = any>(options: UseFilterStateOptions<ValueType>): UseFilterStateReturn<ValueType> {
   const [operator, setOperator] = useState<Operator>(options.operator);
   const [value, setValue] = useState<Optional<ValueType>>(options.value);
   const valueValidate = options.validate ?? defaultValueValidate;
+  const valueConverter = options.valueConverter ?? defaultValueConverter;
   const resolveFilterValue = (currentOperator: Operator, currentValue: Optional<ValueType>): Optional<FilterValue> => {
     if (!valueValidate(currentOperator, currentValue)) {
       return undefined;
@@ -56,9 +62,10 @@ export function useFilterState<ValueType = any>(options: UseFilterStateOptions<V
     };
   };
   const setOperatorFn = (newOperator: Operator) => {
+    const afterValue = valueConverter(operator, newOperator, value);
     setOperator(newOperator);
-    setValue(undefined);
-    const conditionFilterValue = resolveFilterValue(newOperator, undefined);
+    setValue(afterValue);
+    const conditionFilterValue = resolveFilterValue(newOperator, afterValue);
     options.onChange?.(conditionFilterValue);
   };
   const setValueFn = (newValue: Optional<ValueType>) => {

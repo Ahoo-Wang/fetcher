@@ -17,7 +17,7 @@ import { useState } from 'react';
 type NumberRangeValue = (number | undefined)[];
 
 export interface NumberRangeProps {
-  defaultValue?: NumberRangeValue;
+  defaultValue?: number | NumberRangeValue;
   min?: number;
   max?: number;
   precision?: number;
@@ -26,7 +26,8 @@ export interface NumberRangeProps {
 }
 
 export function NumberRange(props: NumberRangeProps) {
-  const [defaultStart, defaultEnd] = props.defaultValue || [];
+  const defaultValue = Array.isArray(props.defaultValue) ? props.defaultValue : [props.defaultValue, undefined];
+  const [defaultStart, defaultEnd] = defaultValue;
   const [start, setStart] = useState<number | undefined>(defaultStart);
   const [end, setEnd] = useState<number | undefined>(defaultEnd);
 

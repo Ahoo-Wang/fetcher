@@ -58,8 +58,9 @@ export function NumberFilter(props: FilterProps<number | (number | undefined)[]>
           />;
         }
         case Operator.BETWEEN: {
+          const { placeholder, ...restValue } = props.value ?? {};
           return (
-            <NumberRange onChange={filterState.setValue}></NumberRange>
+            <NumberRange onChange={filterState.setValue} {...restValue}></NumberRange>
           );
         }
         default: {
