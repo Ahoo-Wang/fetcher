@@ -31,6 +31,7 @@ export interface ActiveFilter
 export interface FilterPanelProps {
   rowProps?: RowProps;
   colProps?: ColProps;
+  actionColProps?: ColProps;
   filters: ActiveFilter[];
   actions?: React.ReactNode;
   onSearch?: (condition: Condition) => void;
@@ -40,7 +41,17 @@ export interface FilterPanelProps {
 export function FilterPanel(props: FilterPanelProps) {
   const {
     rowProps = { gutter: [8, 8], wrap: true },
-    colProps = { span: 12 },
+    colProps = {
+      xxl: 6,
+      xl: 8,
+      lg: 12,
+      md: 12,
+      sm: 24,
+      xs: 24,
+    },
+    actionColProps = {
+      span: 12,
+    },
     filters,
     onSearch,
     actions,
@@ -75,7 +86,7 @@ export function FilterPanel(props: FilterPanelProps) {
             </Col>
           );
         })}
-        <Col  {...colProps}>
+        <Col  {...actionColProps}>
           <Space>
             {actions}
             <Button

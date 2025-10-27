@@ -109,29 +109,6 @@ export const WithActions: Story = {
   },
 };
 
-export const CustomColSpan: Story = {
-  args: {
-    filters: [
-      {
-        key: 'email',
-        type: 'text',
-        field: {
-          name: 'email',
-          label: 'Email',
-          type: 'string',
-        },
-        operator: {
-          defaultValue: Operator.CONTAINS,
-        },
-        value: {
-          defaultValue: '@example.com',
-        },
-      },
-    ],
-    colSpan: 8,
-  },
-};
-
 export const MultipleFilters: Story = {
   args: {
     filters: [
