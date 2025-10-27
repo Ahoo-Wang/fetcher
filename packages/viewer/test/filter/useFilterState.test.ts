@@ -13,12 +13,12 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import React, { RefObject } from 'react';
+import React from 'react';
 import {
   useFilterState,
   UseFilterStateOptions,
-} from '../../src/filter/useFilterState';
-import { FilterRef } from '../../src/filter/types';
+} from '../../src';
+import { FilterRef } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 // 测试辅助函数
@@ -85,7 +85,7 @@ describe('useFilterState', () => {
       });
 
       expect(result.current.operator).toBe(Operator.CONTAINS);
-      expect(result.current.value).toBeUndefined();
+      expect(result.current.value).toBe(options.value);
     });
 
     it('calls onChange callback when operator changes', () => {
@@ -102,7 +102,13 @@ describe('useFilterState', () => {
         result.current.setOperator(Operator.CONTAINS);
       });
 
-      expect(onChange).toHaveBeenCalledWith(undefined);
+      expect(onChange).toHaveBeenCalledWith({
+        condition: {
+          'field': 'testField',
+          "operator": "CONTAINS",
+          "value": "test value",
+        },
+      });
     });
 
     it('calls onChange with valid condition when operator changes and validation passes', () => {
@@ -125,7 +131,7 @@ describe('useFilterState', () => {
         condition: {
           field: 'testField',
           operator: Operator.CONTAINS,
-          value: undefined,
+          value: options.value,
         },
       });
     });
