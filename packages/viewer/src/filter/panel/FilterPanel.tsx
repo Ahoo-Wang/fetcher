@@ -14,7 +14,6 @@
 import React, { Key } from 'react';
 import { TypedFilterProps } from '../TypedFilter';
 import { FilterRef } from '../types';
-import { StyleCapable } from '../../types';
 import { and, Condition } from '@ahoo-wang/fetcher-wow';
 import { Button, Col, Row, Space, ColProps } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
@@ -73,7 +72,7 @@ export function FilterPanel(props: FilterPanelProps) {
       <Row {...rowProps}>
         {filters.map(filter => {
           return (
-            <Col {...colProps}>
+            <Col {...colProps} key={filter.key}>
               <RemovableTypedFilter
                 key={filter.key}
                 type={filter.type}

@@ -29,10 +29,9 @@ export default tseslint.config(
       globals: globals.browser,
     },
     rules: {
+      ...reactHooks.configs["recommended-latest"].rules,
       '@typescript-eslint/no-empty-object-type':'off',
-      '@typescript-eslint/no-explicit-any': 'off',
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off'
     },
   },
 );
