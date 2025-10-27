@@ -20,6 +20,7 @@ import { Button, Col, Row, Space, ColProps } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { useRefs } from '@ahoo-wang/fetcher-react';
 import { RemovableTypedFilter } from './RemovableTypedFilter';
+import { RowProps } from 'antd/es/grid/row';
 
 export interface ActiveFilter
   extends Omit<TypedFilterProps, 'onChange' | 'ref'> {
@@ -27,16 +28,35 @@ export interface ActiveFilter
   onRemove?: () => void;
 }
 
-export interface FilterPanelProps extends StyleCapable {
+export interface FilterPanelProps {
+  rowProps?: RowProps;
+  colProps?: ColProps;
+  actionColProps?: ColProps;
   filters: ActiveFilter[];
   actions?: React.ReactNode;
   onSearch?: (condition: Condition) => void;
-  colSpan?: ColProps['span'];
   loading?: boolean;
 }
 
 export function FilterPanel(props: FilterPanelProps) {
-  const { filters, onSearch, actions, colSpan = 12, loading = false } = props;
+  const {
+    rowProps = { gutter: [8, 8], wrap: true },
+    colProps = {
+      xxl: 6,
+      xl: 8,
+      lg: 12,
+      md: 12,
+      sm: 24,
+      xs: 24,
+    },
+    actionColProps = {
+      span: 12,
+    },
+    filters,
+    onSearch,
+    actions,
+    loading = false,
+  } = props;
   const filterRefs = useRefs<FilterRef>();
   const handleSearch = () => {
     if (!onSearch) {
@@ -50,10 +70,10 @@ export function FilterPanel(props: FilterPanelProps) {
   };
   return (
     <>
-      <Row gutter={[8, 8]} wrap style={props.style} className={props.className}>
+      <Row {...rowProps}>
         {filters.map(filter => {
           return (
-            <Col span={colSpan}>
+            <Col {...colProps}>
               <RemovableTypedFilter
                 key={filter.key}
                 type={filter.type}
@@ -66,7 +86,7 @@ export function FilterPanel(props: FilterPanelProps) {
             </Col>
           );
         })}
-        <Col span={colSpan}>
+        <Col  {...actionColProps}>
           <Space>
             {actions}
             <Button

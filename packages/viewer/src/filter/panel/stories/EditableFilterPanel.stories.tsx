@@ -138,14 +138,6 @@ export const WithInitialFilters: Story = {
   },
 };
 
-export const CustomColSpan: Story = {
-  args: {
-    filters: [],
-    availableFilters: sampleAvailableFilters,
-    colSpan: 8,
-  },
-};
-
 export const MultipleGroups: Story = {
   args: {
     filters: [],

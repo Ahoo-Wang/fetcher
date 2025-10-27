@@ -23,7 +23,7 @@ export interface EditableFilterPanelProps extends Omit<FilterPanelProps, 'action
 }
 
 export function EditableFilterPanel(props: EditableFilterPanelProps) {
-  const { availableFilters, filters, onSearch, colSpan } = props;
+  const { rowProps, colProps, availableFilters, filters, onSearch } = props;
   const [activeFilters, setActiveFilters] = useState(filters);
   const [modalOpen, setModalOpen] = useState(false);
   const generator = useRequestId();
@@ -61,9 +61,8 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
         filters={editableFilters}
         onSearch={onSearch}
         actions={<Button onClick={() => setModalOpen(true)}>Add Filter</Button>}
-        colSpan={colSpan}
-        style={props.style}
-        className={props.className}
+        rowProps={rowProps}
+        colProps={colProps}
       />
       <AvailableFilterSelectModal
         title={'Add Filter'}

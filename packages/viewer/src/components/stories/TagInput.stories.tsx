@@ -19,7 +19,7 @@ const meta: Meta<typeof TagInput> = {
   title: 'Viewer/Components/TagInput',
   component: TagInput,
   parameters: {
-    layout: 'centered',
+    layout: 'padded',
     docs: {
       description: {
         component:
@@ -41,6 +41,7 @@ export const Default: Story = {
         placeholder="Enter tags separated by comma"
         value={value}
         onChange={setValue}
+        style={{ width: '100%' }}
       />
     );
   },
