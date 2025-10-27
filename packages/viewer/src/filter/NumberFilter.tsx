@@ -20,9 +20,10 @@ import { UseFilterStateReturn } from './useFilterState';
 import { NumberRange } from '../components';
 
 export const NUMBER_FILTER = 'number';
+export type NumberFilterValueType = number | (number | undefined)[];
 
-export function NumberFilter(props: FilterProps<number | (number | undefined)[]>) {
-  const assemblyConditionFilterProps: AssemblyFilterProps<number | (number | undefined)[]> = {
+export function NumberFilter(props: FilterProps<NumberFilterValueType>) {
+  const assemblyFilterProps: AssemblyFilterProps<NumberFilterValueType> = {
     ...props,
     supportedOperators: [
       Operator.EQ,
@@ -45,7 +46,7 @@ export function NumberFilter(props: FilterProps<number | (number | undefined)[]>
       return value != undefined;
     },
     valueInputSupplier: (
-      filterState: UseFilterStateReturn<number | (number | undefined)[]>,
+      filterState: UseFilterStateReturn<NumberFilterValueType>,
     ) => {
       switch (filterState.operator) {
         case Operator.IN:
@@ -79,8 +80,8 @@ export function NumberFilter(props: FilterProps<number | (number | undefined)[]>
     },
   };
   return (
-    <AssemblyFilter<number | (number | undefined)[]>
-      {...assemblyConditionFilterProps}
+    <AssemblyFilter<NumberFilterValueType>
+      {...assemblyFilterProps}
     ></AssemblyFilter>
   );
 }
