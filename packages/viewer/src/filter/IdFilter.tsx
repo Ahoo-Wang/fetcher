@@ -22,17 +22,16 @@ import {
 } from './AssemblyFilter';
 
 export const ID_FILTER = 'id';
+export type IdFilterValueType = string | string[];
 
 export function IdFilter(
-  props: FilterProps<string | string[]>,
+  props: FilterProps<IdFilterValueType>,
 ) {
-  const assemblyConditionFilterProps: AssemblyFilterProps<
-    string | string[]
-  > = {
+  const assemblyFilterProps: AssemblyFilterProps<IdFilterValueType> = {
     ...props,
     supportedOperators: [Operator.ID, Operator.IDS],
     valueInputSupplier: (
-      filterState: UseFilterStateReturn<string | string[]>,
+      filterState: UseFilterStateReturn<IdFilterValueType>,
     ) => {
       return filterState.operator === Operator.ID ? (
         <Input
@@ -51,8 +50,8 @@ export function IdFilter(
     },
   };
   return (
-    <AssemblyFilter<string | string[]>
-      {...assemblyConditionFilterProps}
+    <AssemblyFilter<IdFilterValueType>
+      {...assemblyFilterProps}
     ></AssemblyFilter>
   );
 }
