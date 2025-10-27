@@ -37,20 +37,29 @@ export interface FilterPanelProps {
   loading?: boolean;
 }
 
+const DEFAULT_ROW_PROPS: RowProps = {
+  gutter: [8, 8],
+  wrap: true,
+};
+
+const DEFAULT_COL_PROPS: ColProps = {
+  xxl: 6,
+  xl: 8,
+  lg: 12,
+  md: 12,
+  sm: 24,
+  xs: 24,
+};
+
+const DEFAULT_ACTION_COL_PROPS: ColProps = {
+  span: 12,
+};
+
 export function FilterPanel(props: FilterPanelProps) {
   const {
-    rowProps = { gutter: [8, 8], wrap: true },
-    colProps = {
-      xxl: 6,
-      xl: 8,
-      lg: 12,
-      md: 12,
-      sm: 24,
-      xs: 24,
-    },
-    actionColProps = {
-      span: 12,
-    },
+    rowProps = DEFAULT_ROW_PROPS,
+    colProps = DEFAULT_COL_PROPS,
+    actionColProps = DEFAULT_ACTION_COL_PROPS,
     filters,
     onSearch,
     actions,

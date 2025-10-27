@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FilterProps } from './types';
 import { filterRegistry } from './filterRegistry';
 import { FallbackFilter } from './FallbackFilter';
@@ -23,8 +23,11 @@ export interface TypedFilterProps extends FilterProps {
 }
 
 export function TypedFilter(props: TypedFilterProps) {
-  const FilterComponent = filterRegistry.get(props.type) || FallbackFilter;
-  return <FilterComponent {...props} />;
+  const FilterComponent = useMemo(() => {
+    return filterRegistry.get(props.type) || FallbackFilter;
+  }, [props.type]);
+
+  return React.createElement(FilterComponent, props);
 }
 
 TypedFilter.displayName = 'TypedFilter';

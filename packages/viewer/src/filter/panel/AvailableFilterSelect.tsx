@@ -40,12 +40,12 @@ export interface AvailableFilterSelectProps extends StyleCapable, RefAttributes<
 const EMPTY_ACTIVE_FILTERS: ActiveFilter[] = [];
 
 export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
-  const { filters, activeFilters = EMPTY_ACTIVE_FILTERS } = props;
+  const { filters, activeFilters = EMPTY_ACTIVE_FILTERS, ref } = props;
   const activeFilterFieldNames = useMemo(() => {
     return activeFilters?.map(activeFilter => activeFilter.field.name).sort();
   }, [activeFilters]);
   const [selectedFilters, setSelectedFilters] = useState<string[]>(activeFilterFieldNames);
-  useImperativeHandle(props.ref, () => ({
+  useImperativeHandle(ref, () => ({
     getValue(): AvailableFilter[] {
       return props.filters.flatMap(group => group.filters.filter(filter => selectedFilters.includes(filter.field.name) && !activeFilters.some(activeFilter => activeFilter.field.name === filter.field.name)));
     },
