@@ -27,11 +27,11 @@ export function RemovableTypedFilter(props: RemovableTypedFilterProps) {
     return <TypedFilter {...rest} />;
   }
   return (
-    <Space.Compact block onMouseOver={() => setShowRemove(true)} onMouseOut={() => setShowRemove(false)}>
+    <Space onMouseOver={() => setShowRemove(true)} onMouseOut={() => setShowRemove(false)}>
       <TypedFilter {...rest} />
       {showRemove &&
-        <Button type="dashed" shape="circle" onClick={onRemove} icon={<MinusOutlined />}>
+        <Button type="dashed" shape="circle"  size={'small'} onClick={onRemove} icon={<MinusOutlined />}>
         </Button>}
-    </Space.Compact>
+    </Space>
   );
 }

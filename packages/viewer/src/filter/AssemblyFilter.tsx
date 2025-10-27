@@ -61,7 +61,7 @@ export function AssemblyFilter<ValueType = any>(
   return (
     <Space.Compact
       block
-      style={{ ...props.style, display: 'flex' }}
+      style={{ ...props.style }}
       className={props.className}
     >
       <Button {...props.label}>{props.field.label}</Button>
@@ -72,7 +72,7 @@ export function AssemblyFilter<ValueType = any>(
         value={filterState.operator}
         options={options}
       ></Select>
-      <div style={{ flex: 1 }}>{valueInput}</div>
+      {valueInput}
     </Space.Compact>
   );
 }
