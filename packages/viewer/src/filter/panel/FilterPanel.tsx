@@ -28,9 +28,9 @@ export interface ActiveFilter
 }
 
 export interface FilterPanelProps {
-  rowProps?: RowProps;
-  colProps?: ColProps;
-  actionColProps?: ColProps;
+  row?: RowProps;
+  col?: ColProps;
+  actionCol?: ColProps;
   filters: ActiveFilter[];
   actions?: React.ReactNode;
   onSearch?: (condition: Condition) => void;
@@ -57,9 +57,9 @@ const DEFAULT_ACTION_COL_PROPS: ColProps = {
 
 export function FilterPanel(props: FilterPanelProps) {
   const {
-    rowProps = DEFAULT_ROW_PROPS,
-    colProps = DEFAULT_COL_PROPS,
-    actionColProps = DEFAULT_ACTION_COL_PROPS,
+    row = DEFAULT_ROW_PROPS,
+    col = DEFAULT_COL_PROPS,
+    actionCol = DEFAULT_ACTION_COL_PROPS,
     filters,
     onSearch,
     actions,
@@ -78,10 +78,10 @@ export function FilterPanel(props: FilterPanelProps) {
   };
   return (
     <>
-      <Row {...rowProps}>
+      <Row {...row}>
         {filters.map(filter => {
           return (
-            <Col {...colProps} key={filter.key}>
+            <Col {...col} key={filter.key}>
               <RemovableTypedFilter
                 key={filter.key}
                 type={filter.type}
@@ -94,7 +94,7 @@ export function FilterPanel(props: FilterPanelProps) {
             </Col>
           );
         })}
-        <Col  {...actionColProps}>
+        <Col  {...actionCol}>
           <Space>
             {actions}
             <Button
