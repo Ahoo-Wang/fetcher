@@ -13,8 +13,8 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { TextFilter } from '../../src/filter/TextFilter';
-import { FilterProps } from '../../src/filter/types';
+import { TextFilter } from '../../src';
+import { FilterProps } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 // 测试辅助函数
@@ -30,7 +30,6 @@ const createMockProps = (
     label: {},
     operator: {
       defaultValue: Operator.EQ,
-      options: [],
     },
     value: {
       defaultValue: 'test value',
@@ -87,7 +86,7 @@ describe('TextFilter', () => {
     operators.forEach(operator => {
       it(`renders correctly with ${operator} operator`, () => {
         const props = createMockProps({
-          operator: { defaultValue: operator, options: [] },
+          operator: { defaultValue: operator },
         });
         expect(() => render(<TextFilter {...props} />)).not.toThrow();
       });
@@ -97,7 +96,7 @@ describe('TextFilter', () => {
   describe('Value Input Supplier', () => {
     it('renders Input for default operators', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ },
       });
       render(<TextFilter {...props} />);
 
@@ -109,7 +108,7 @@ describe('TextFilter', () => {
 
     it('renders TagInput for IN operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.IN, options: [] },
+        operator: { defaultValue: Operator.IN },
         value: { defaultValue: ['value1', 'value2'] },
       });
       const { container } = render(<TextFilter {...props} />);
@@ -120,7 +119,7 @@ describe('TextFilter', () => {
 
     it('renders TagInput for NOT_IN operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.NOT_IN, options: [] },
+        operator: { defaultValue: Operator.NOT_IN },
         value: { defaultValue: ['value1', 'value2'] },
       });
       const { container } = render(<TextFilter {...props} />);
@@ -130,7 +129,7 @@ describe('TextFilter', () => {
 
     it('renders Input for CONTAINS operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.CONTAINS, options: [] },
+        operator: { defaultValue: Operator.CONTAINS },
       });
       render(<TextFilter {...props} />);
 
@@ -139,7 +138,7 @@ describe('TextFilter', () => {
 
     it('renders Input for STARTS_WITH operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.STARTS_WITH, options: [] },
+        operator: { defaultValue: Operator.STARTS_WITH },
       });
       render(<TextFilter {...props} />);
 
@@ -148,7 +147,7 @@ describe('TextFilter', () => {
 
     it('renders Input for ENDS_WITH operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.ENDS_WITH, options: [] },
+        operator: { defaultValue: Operator.ENDS_WITH },
       });
       render(<TextFilter {...props} />);
 
@@ -171,7 +170,7 @@ describe('TextFilter', () => {
 
     it('handles array defaultValue for TagInput', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.IN, options: [] },
+        operator: { defaultValue: Operator.IN },
         value: { defaultValue: ['item1', 'item2'] },
       });
       const { container } = render(<TextFilter {...props} />);
@@ -206,7 +205,7 @@ describe('TextFilter', () => {
 
     it('handles empty array for IN operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.IN, options: [] },
+        operator: { defaultValue: Operator.IN },
         value: { defaultValue: [] },
       });
       expect(() => render(<TextFilter {...props} />)).not.toThrow();

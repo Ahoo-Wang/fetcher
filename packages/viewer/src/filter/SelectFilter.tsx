@@ -11,37 +11,33 @@
  * limitations under the License.
  */
 
-import { FilterProps } from './types';
+import { FilterProps, FilterValueProps } from './types';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { UseFilterStateReturn } from './useFilterState';
-import { Select } from 'antd';
+import { Select, SelectProps } from 'antd';
 
 export const SELECT_FILTER = 'select';
-export type SelectFilterValueType = string | undefined | string[];
-export function SelectFilter(props: FilterProps<SelectFilterValueType>) {
+export type SelectFilterValueType = string[];
+
+export interface SelectFilterValueProps extends FilterValueProps<SelectFilterValueType>,
+  Omit<SelectProps<SelectFilterValueType>, 'defaultValue' | 'mode' | 'value' | 'allowClear' | 'onChange'| 'placeholder'> {
+}
+
+export function SelectFilter(props: FilterProps<SelectFilterValueType, SelectFilterValueProps>) {
   const assemblyFilterProps: AssemblyFilterProps<SelectFilterValueType> = {
     ...props,
-    supportedOperators: [Operator.EQ, Operator.NE, Operator.IN, Operator.NOT_IN],
+    supportedOperators: [Operator.IN, Operator.NOT_IN],
     valueInputSupplier: (filterState: UseFilterStateReturn<SelectFilterValueType>) => {
-      switch (filterState.operator) {
-        case Operator.IN:
-        case Operator.NOT_IN: {
-          return <Select
-            value={filterState.value}
-            onChange={filterState.setValue}
-            {...props.value}
-          />;
-        }
-        default: {
-          return <Select
-            value={filterState.value}
-            onChange={filterState.setValue}
-            allowClear
-            {...props.value}
-          />;
-        }
-      }
+      return (
+        <Select
+          mode={'multiple'}
+          value={filterState.value}
+          onChange={filterState.setValue}
+          allowClear
+          {...props.value}
+        />
+      );
     },
   };
   return <AssemblyFilter<SelectFilterValueType> {...assemblyFilterProps}></AssemblyFilter>;

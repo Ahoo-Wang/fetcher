@@ -49,7 +49,6 @@ const createMockProps = (
     },
     operator: {
       defaultValue: Operator.EQ,
-      options: [],
     },
     value: {
       defaultValue: 'test-value',
@@ -119,7 +118,7 @@ describe('AssemblyFilter', () => {
   describe('Operator Selection', () => {
     it('uses provided operator value when valid', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ },
         supportedOperators: [Operator.EQ, Operator.NE],
       });
       render(<AssemblyFilter {...props} />);
@@ -130,7 +129,7 @@ describe('AssemblyFilter', () => {
 
     it('falls back to first supported operator when provided operator is invalid', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.CONTAINS as any, options: [] }, // Invalid operator
+        operator: { defaultValue: Operator.CONTAINS as any }, // Invalid operator
         supportedOperators: [Operator.EQ, Operator.NE],
       });
       expect(() =>
@@ -140,7 +139,7 @@ describe('AssemblyFilter', () => {
 
     it('falls back to first supported operator when no operator provided', () => {
       const props = createMockProps({
-        operator: { options: [] }, // No value provided
+        operator: {  }, // No value provided
         supportedOperators: [Operator.EQ, Operator.NE],
       });
       expect(() =>
@@ -220,7 +219,7 @@ describe('AssemblyFilter', () => {
 
       const { ref } = renderWithRef({
         validate,
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ },
         value: { defaultValue: 'test-value' },
       });
 
@@ -239,7 +238,7 @@ describe('AssemblyFilter', () => {
 
       const { ref } = renderWithRef({
         validate,
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ },
         value: { defaultValue: 'invalid-value' },
       });
 
@@ -266,7 +265,6 @@ describe('AssemblyFilter', () => {
       const props = createMockProps({
         operator: {
           defaultValue: Operator.EQ,
-          options: [],
           placeholder: 'Select operator',
         },
       });

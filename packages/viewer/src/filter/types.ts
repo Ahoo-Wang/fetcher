@@ -30,26 +30,29 @@ export interface FilterRef {
   getValue(): FilterValue | undefined;
 }
 
-export interface LabelProps extends StyleCapable {
+export interface FilterLabelProps extends StyleCapable {
 }
 
-export interface OperatorProps extends Omit<SelectProps<Operator>, 'value'> {
+export interface FilterOperatorProps extends Omit<SelectProps<Operator>, 'value' | 'options' | 'mode'> {
   locale?: OperatorLocale;
+  supportedOperators?: Operator[];
 }
 
-export interface ValueProps<ValueType = any> extends StyleCapable {
+export interface FilterValueProps<ValueType = any> extends StyleCapable {
   defaultValue?: ValueType;
   placeholder?: string;
+
+  [key: string]: any;
 }
 
 export interface FilterValue extends ConditionCapable {
 }
 
-export interface FilterProps<ValueType = any> extends AttributesCapable, RefAttributes<FilterRef>, StyleCapable {
+export interface FilterProps<ValueType = any, ValuePropsType extends FilterValueProps = FilterValueProps<ValueType>> extends AttributesCapable, RefAttributes<FilterRef>, StyleCapable {
   field: FilterField;
-  label?: LabelProps;
-  operator?: OperatorProps;
-  value?: ValueProps<ValueType>;
+  label?: FilterLabelProps;
+  operator?: FilterOperatorProps;
+  value?: ValuePropsType;
   onChange?: (value?: FilterValue) => void;
 }
 

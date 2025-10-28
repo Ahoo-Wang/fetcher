@@ -23,20 +23,20 @@ const createMockProps = (
   overrides: Partial<React.ComponentProps<typeof IdFilter>> = {},
 ) => {
   const defaultProps: React.ComponentProps<typeof IdFilter> = {
-    field: {
-      name: 'testId',
-      label: 'Test ID',
-      type: 'string',
-    },
-    label: {},
-    operator: {
-      defaultValue: Operator.ID,
-      options: [],
+      field: {
+        name: 'testId',
+        label: 'Test ID',
+        type: 'string',
+      },
+      label: {},
+      operator: {
+        defaultValue: Operator.ID
+      ,
     },
     value: {
       defaultValue: 'test-value',
     },
-  };
+    };
 
   return { ...defaultProps, ...overrides };
 };
@@ -96,7 +96,7 @@ describe('IdFilter', () => {
   describe('Operator Selection', () => {
     it('defaults to ID operator when no value provided', () => {
       const props = createMockProps({
-        operator: { options: [] }, // No value provided
+        operator: {}, // No value provided
       });
       render(<IdFilter {...props} />);
 
@@ -108,7 +108,7 @@ describe('IdFilter', () => {
 
     it('respects provided operator value', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
       });
       expect(() => render(<IdFilter {...props} />)).not.toThrow();
     });
@@ -117,7 +117,7 @@ describe('IdFilter', () => {
   describe('Input Component Types', () => {
     it('renders Input component for ID operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: { defaultValue: 'single-id' },
       });
       render(<IdFilter {...props} />);
@@ -128,7 +128,7 @@ describe('IdFilter', () => {
 
     it('renders TagInput component for IDS operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
         value: { defaultValue: ['id1', 'id2'] },
       });
       expect(() => render(<IdFilter {...props} />)).not.toThrow();
@@ -138,7 +138,7 @@ describe('IdFilter', () => {
   describe('Validation Logic', () => {
     it('validates correctly for ID operator with valid value', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: { defaultValue: 'valid-id' },
       });
 
@@ -150,7 +150,7 @@ describe('IdFilter', () => {
 
     it('validates correctly for IDS operator with valid array', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
         value: { defaultValue: ['id1', 'id2'] },
       });
 
@@ -162,7 +162,7 @@ describe('IdFilter', () => {
 
     it('returns undefined for ID operator with empty value', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: { defaultValue: '' },
       });
 
@@ -172,7 +172,7 @@ describe('IdFilter', () => {
 
     it('returns undefined for IDS operator with empty array', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
         value: { defaultValue: [] },
       });
 
@@ -191,7 +191,7 @@ describe('IdFilter', () => {
 
     it('getValue returns ConditionFilterValue object when valid', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: { defaultValue: 'test-id' },
       });
 
@@ -211,7 +211,7 @@ describe('IdFilter', () => {
     it('calls onChange when value changes', () => {
       const onChange = vi.fn();
       const props = createMockProps({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: { defaultValue: 'initial' },
         onChange,
       });
@@ -226,7 +226,7 @@ describe('IdFilter', () => {
   describe('Internationalization', () => {
     it('uses default Chinese locale when no locale provided', () => {
       const props = createMockProps({
-        operator: { options: [] }, // No locale provided
+        operator: {}, // No locale provided
       });
       render(<IdFilter {...props} />);
 
@@ -240,11 +240,12 @@ describe('IdFilter', () => {
     it('forwards operator props to Select component', () => {
       const props = createMockProps({
         operator: {
-          defaultValue: Operator.ID,
-          options: [],
-          placeholder: 'Select operator',
-        },
-      });
+          defaultValue: Operator.ID
+        ,
+        placeholder: 'Select operator',
+      }
+    })
+      ;
       render(<IdFilter {...props} />);
 
       const select = screen.getByRole('combobox');
@@ -253,7 +254,7 @@ describe('IdFilter', () => {
 
     it('forwards value props to input component', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: {
           defaultValue: 'test',
           placeholder: 'Enter ID',
@@ -301,13 +302,13 @@ describe('IdFilter', () => {
 
     it('handles empty array for IDS operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
         value: { defaultValue: [] },
       });
       render(<IdFilter {...props} />);
 
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
         value: { defaultValue: [] },
       });
 

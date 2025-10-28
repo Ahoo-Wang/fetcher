@@ -35,7 +35,6 @@ const createMockProps = (type: string): TypedFilterProps => ({
   },
   operator: {
     defaultValue: Operator.EQ,
-    options: [],
   },
   value: {
     defaultValue: 'test',

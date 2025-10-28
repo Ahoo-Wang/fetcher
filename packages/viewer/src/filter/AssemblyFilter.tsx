@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { FilterProps } from './types';
+import { FilterProps, FilterValueProps } from './types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { OPERATOR_zh_CN } from './locale';
 import { useFilterState, UseFilterStateReturn } from './useFilterState';
@@ -19,7 +19,7 @@ import { Button, Select, Space } from 'antd';
 import { ReactNode } from 'react';
 import { Optional } from '../types';
 
-export interface AssemblyFilterProps<ValueType = any> extends FilterProps {
+export interface AssemblyFilterProps<ValueType = any, ValuePropsType extends FilterValueProps = FilterValueProps<ValueType>> extends FilterProps<ValueType, ValuePropsType> {
   supportedOperators: Operator[];
   validate?: (operator: Operator, value: Optional<ValueType>) => boolean;
   valueInputSupplier: (
@@ -28,9 +28,9 @@ export interface AssemblyFilterProps<ValueType = any> extends FilterProps {
 }
 
 export function AssemblyFilter<ValueType = any>(
-  props: AssemblyFilterProps<ValueType>,
+  { ref, ...props }: AssemblyFilterProps<ValueType>,
 ) {
-  const { ref, supportedOperators } = props;
+  const supportedOperators = props.operator?.supportedOperators ?? props.supportedOperators;
   // Validate that supportedOperators is not empty
   if (!supportedOperators || supportedOperators.length === 0) {
     throw new Error('supportedOperators must be a non-empty array');
@@ -45,7 +45,6 @@ export function AssemblyFilter<ValueType = any>(
   if (!initialOperator || !supportedOperators.includes(initialOperator)) {
     initialOperator = supportedOperators[0];
   }
-
   const filterState = useFilterState({
     field: props.field.name,
     operator: initialOperator,
