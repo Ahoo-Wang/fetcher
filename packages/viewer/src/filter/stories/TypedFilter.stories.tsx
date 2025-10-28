@@ -44,10 +44,33 @@ const meta: Meta<typeof TypedFilterStory> = {
     },
   },
   tags: ['autodocs'],
+  argTypes: {
+    type: {
+      options: ['id', 'text', 'number', 'select', 'unsupported'],
+      control: 'select',
+    },
+  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const IdFilter: Story = {
+  args: {
+    type: 'id',
+    field: {
+      name: 'userId',
+      label: 'User ID',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.ID,
+    },
+    value: {
+      defaultValue: '',
+    },
+  },
+};
 
 export const TextFilter: Story = {
   args: {
@@ -63,7 +86,7 @@ export const TextFilter: Story = {
     value: {
       defaultValue: '',
     },
-  }
+  },
 };
 
 export const NumberFilter: Story = {
@@ -80,25 +103,9 @@ export const NumberFilter: Story = {
     value: {
       defaultValue: 25,
     },
-  }
+  },
 };
 
-export const IdFilter: Story = {
-  args: {
-    type: 'id',
-    field: {
-      name: 'userId',
-      label: 'User ID',
-      type: 'string',
-    },
-    operator: {
-      defaultValue: Operator.ID,
-    },
-    value: {
-      defaultValue: '',
-    },
-  }
-};
 
 export const SelectFilter: Story = {
   args: {
@@ -119,10 +126,10 @@ export const SelectFilter: Story = {
         { label: 'Marketing', value: 'marketing' },
         { label: 'Sales', value: 'sales' },
         { label: 'HR', value: 'hr' },
-      ]
-    }
-  }
-}
+      ],
+    },
+  },
+};
 
 export const UnsupportedType: Story = {
   args: {
