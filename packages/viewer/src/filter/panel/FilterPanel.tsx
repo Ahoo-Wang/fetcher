@@ -15,8 +15,8 @@ import React, { Key } from 'react';
 import { TypedFilterProps } from '../TypedFilter';
 import { FilterRef } from '../types';
 import { and, Condition } from '@ahoo-wang/fetcher-wow';
-import { Button, Col, Row, Space, ColProps } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { Button, Col, Row, Space, ColProps, ButtonProps } from 'antd';
+import { ClearOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRefs } from '@ahoo-wang/fetcher-react';
 import { RemovableTypedFilter } from './RemovableTypedFilter';
 import { RowProps } from 'antd/es/grid/row';
@@ -30,11 +30,12 @@ export interface ActiveFilter
 export interface FilterPanelProps {
   row?: RowProps;
   col?: ColProps;
-  actionCol?: ColProps;
+  actionsCol?: ColProps;
   filters: ActiveFilter[];
   actions?: React.ReactNode;
   onSearch?: (condition: Condition) => void;
-  loading?: boolean;
+  resetButton?: boolean | Omit<ButtonProps, 'onClick'>;
+  searchButton?: Omit<ButtonProps, 'onClick'>;
 }
 
 const DEFAULT_ROW_PROPS: RowProps = {
@@ -51,7 +52,7 @@ const DEFAULT_COL_PROPS: ColProps = {
   xs: 24,
 };
 
-const DEFAULT_ACTION_COL_PROPS: ColProps = {
+const DEFAULT_ACTIONS_COL_PROPS: ColProps = {
   span: 12,
 };
 
@@ -59,14 +60,15 @@ export function FilterPanel(props: FilterPanelProps) {
   const {
     row = DEFAULT_ROW_PROPS,
     col = DEFAULT_COL_PROPS,
-    actionCol = DEFAULT_ACTION_COL_PROPS,
+    actionsCol = DEFAULT_ACTIONS_COL_PROPS,
     filters,
     onSearch,
     actions,
-    loading = false,
+    resetButton,
+    searchButton,
   } = props;
   const filterRefs = useRefs<FilterRef>();
-  const handleSearch = () => {
+  const onSearchHandler = () => {
     if (!onSearch) {
       return;
     }
@@ -76,6 +78,13 @@ export function FilterPanel(props: FilterPanelProps) {
     const finalCondition: Condition = and(...conditions);
     onSearch(finalCondition);
   };
+  const onResetHandler = () => {
+    for (let filterRef of filterRefs.values()) {
+      filterRef.reset();
+    }
+  };
+  const showResetButton = resetButton !== false;
+  const resetButtonProps = typeof resetButton === 'object' ? resetButton : {};
   return (
     <>
       <Row {...row}>
@@ -94,18 +103,27 @@ export function FilterPanel(props: FilterPanelProps) {
             </Col>
           );
         })}
-        <Col  {...actionCol}>
-          <Space>
+        <Col  {...actionsCol}>
+          <Space.Compact>
             {actions}
+            {showResetButton && (
+              <Button
+                icon={<ClearOutlined />}
+                onClick={onResetHandler}
+                {...resetButtonProps}
+              >
+                {resetButtonProps?.children || 'Reset'}
+              </Button>
+            )}
             <Button
               type="primary"
               icon={<SearchOutlined />}
-              onClick={handleSearch}
-              loading={loading}
+              onClick={onSearchHandler}
+              { ...searchButton }
             >
-              Search
+              {searchButton?.children || 'Search'}
             </Button>
-          </Space>
+          </Space.Compact>
         </Col>
       </Row>
     </>
