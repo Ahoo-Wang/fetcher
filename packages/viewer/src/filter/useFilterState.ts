@@ -16,14 +16,17 @@ import { RefAttributes, useImperativeHandle, useState } from 'react';
 import { FilterRef, FilterValue } from './types';
 import { Optional } from '../types';
 
+export type OnOperatorChangeValueConverter<ValueType = any> = (beforeOperator: Operator, afterOperator: Operator, value: Optional<ValueType>) => Optional<ValueType>
+export type ValidateValue<ValueType = any> = (operator: Operator, value: Optional<ValueType>) => boolean;
+export type OnChange = (condition: Optional<FilterValue>) => void;
 
 export interface UseFilterStateOptions<ValueType = any> extends RefAttributes<FilterRef> {
   field?: string;
   operator: Operator;
   value: Optional<ValueType>;
-  valueConverter?: (beforeOperator: Operator, afterOperator: Operator, value: Optional<ValueType>) => Optional<ValueType>;
-  validate?: (operator: Operator, value: Optional<ValueType>) => boolean;
-  onChange?: (condition: Optional<FilterValue>) => void;
+  valueConverter?: OnOperatorChangeValueConverter;
+  validate?: ValidateValue<ValueType>;
+  onChange?: OnChange;
 }
 
 export interface UseFilterStateReturn<ValueType = any> {
@@ -39,7 +42,7 @@ const defaultValueValidate = (operator: Operator, value: any) => {
   return !(Array.isArray(value) && value.length === 0);
 };
 
-const defaultValueConverter = (beforeOperator: Operator, afterOperator: Operator, value: any) => {
+const defaultValueConverter: OnOperatorChangeValueConverter = (beforeOperator: Operator, afterOperator: Operator, value: any) => {
   return value;
 };
 

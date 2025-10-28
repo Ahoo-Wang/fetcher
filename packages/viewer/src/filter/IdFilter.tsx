@@ -15,7 +15,7 @@ import { FilterProps } from './types';
 import { Input } from 'antd';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
-import { UseFilterStateReturn } from './useFilterState';
+import { OnOperatorChangeValueConverter, UseFilterStateReturn } from './useFilterState';
 import {
   AssemblyFilter,
   AssemblyFilterProps,
@@ -24,12 +24,23 @@ import {
 export const ID_FILTER = 'id';
 export type IdFilterValueType = string | string[];
 
+const IdOnOperatorChangeValueConverter: OnOperatorChangeValueConverter = (beforeOperator, afterOperator, value) => {
+  if (beforeOperator === Operator.ID && afterOperator === Operator.IDS) {
+    return [value];
+  }
+  if (beforeOperator === Operator.IDS && afterOperator === Operator.ID) {
+    return value[0];
+  }
+  return value;
+};
+
 export function IdFilter(
   props: FilterProps<IdFilterValueType>,
 ) {
   const assemblyFilterProps: AssemblyFilterProps<IdFilterValueType> = {
     ...props,
     supportedOperators: [Operator.ID, Operator.IDS],
+    valueConverter: IdOnOperatorChangeValueConverter,
     valueInputSupplier: (
       filterState: UseFilterStateReturn<IdFilterValueType>,
     ) => {

@@ -14,14 +14,14 @@
 import { FilterProps, FilterValueProps } from './types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { OPERATOR_zh_CN } from './locale';
-import { useFilterState, UseFilterStateReturn } from './useFilterState';
+import { OnOperatorChangeValueConverter, useFilterState, UseFilterStateReturn, ValidateValue } from './useFilterState';
 import { Button, Select, Space } from 'antd';
 import { ReactNode } from 'react';
-import { Optional } from '../types';
 
 export interface AssemblyFilterProps<ValueType = any, ValuePropsType extends FilterValueProps = FilterValueProps<ValueType>> extends FilterProps<ValueType, ValuePropsType> {
   supportedOperators: Operator[];
-  validate?: (operator: Operator, value: Optional<ValueType>) => boolean;
+  valueConverter?: OnOperatorChangeValueConverter;
+  validate?: ValidateValue<ValueType>;
   valueInputSupplier: (
     filterState: UseFilterStateReturn<ValueType>,
   ) => ReactNode;
@@ -50,6 +50,7 @@ export function AssemblyFilter<ValueType = any>(
     operator: initialOperator,
     value: props.value?.defaultValue,
     ref: ref,
+    valueConverter: props.valueConverter,
     validate: props.validate,
     onChange: props.onChange,
   });
@@ -61,7 +62,7 @@ export function AssemblyFilter<ValueType = any>(
   return (
     <Space.Compact
       block
-      style={{ ...props.style }}
+      style={props.style}
       className={props.className}
     >
       <Button {...props.label}>{props.field.label}</Button>
