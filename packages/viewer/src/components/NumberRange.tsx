@@ -26,12 +26,16 @@ export interface NumberRangeProps {
   onChange?: (value: NumberRangeValue) => void;
 }
 
-const convertToRangeValue = (value: number | NumberRangeValue | undefined): NumberRangeValue => {
+const convertToRangeValue = (
+  value: number | NumberRangeValue | undefined,
+): NumberRangeValue => {
   if (Array.isArray(value)) {
     return value;
   }
   return [value, undefined];
 };
+
+const DEFAULT_PLACEHOLDER = ['最小值', '最大值'];
 
 export function NumberRange(props: NumberRangeProps) {
   const isControlled = props.value !== undefined;
@@ -59,7 +63,12 @@ export function NumberRange(props: NumberRangeProps) {
 
   const startMax = end !== undefined ? end : props.max;
   const endMin = start !== undefined ? start : props.min;
-  const placeholder = props.placeholder || ['最小值', '最大值'];
+  const placeholder = props.placeholder
+    ? [
+      props.placeholder[0] || DEFAULT_PLACEHOLDER[0],
+      props.placeholder[1] || DEFAULT_PLACEHOLDER[1],
+    ]
+    : DEFAULT_PLACEHOLDER;
   return (
     <Space.Compact block>
       <InputNumber

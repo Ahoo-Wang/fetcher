@@ -19,122 +19,119 @@ const meta: Meta<typeof NumberRange> = {
   title: 'Viewer/Components/NumberRange',
   component: NumberRange,
   parameters: {
-    layout: 'centered',
+    layout: 'padded',
     docs: {
       description: {
         component:
-          'A number range input component with two connected InputNumber fields. The start value constrains the minimum of the end field, and the end value constrains the maximum of the start field.',
+          'A number range input component that allows users to input a minimum and maximum value. Supports precision, min/max constraints, and custom placeholders.',
       },
     },
   },
   tags: ['autodocs'],
-  argTypes: {
-    defaultValue: {
-      control: 'object',
-      description: 'Default values for start and end inputs',
-    },
-    min: {
-      control: 'number',
-      description: 'Minimum value for both inputs',
-    },
-    max: {
-      control: 'number',
-      description: 'Maximum value for both inputs',
-    },
-    precision: {
-      control: 'number',
-      description: 'Decimal precision for the inputs',
-    },
-    placeholder: {
-      control: 'object',
-      description: 'Placeholder text for start and end inputs',
-    },
-    onChange: {
-      action: 'changed',
-      description: 'Callback when values change',
-    },
-  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {},
-  render: args => {
-    const [, setValue] = useState<(number | undefined)[]>([]);
-    return <NumberRange {...args} onChange={setValue} />;
-  },
-};
-
-export const WithDefaultValues: Story = {
-  args: {
-    defaultValue: [10, 50],
-  },
-  render: args => {
-    const [, setValue] = useState<(number | undefined)[]>([]);
-    return <NumberRange {...args} onChange={setValue} />;
-  },
-};
-
-export const WithConstraints: Story = {
-  args: {
-    min: 0,
-    max: 100,
-    defaultValue: [25, 75],
-  },
-  render: args => {
-    const [, setValue] = useState<(number | undefined)[]>([]);
-    return <NumberRange {...args} onChange={setValue} />;
-  },
-};
-
-export const WithPrecision: Story = {
-  args: {
-    precision: 2,
-    defaultValue: [1.5, 9.99],
-  },
-  render: args => {
-    const [, setValue] = useState<(number | undefined)[]>([]);
-    return <NumberRange {...args} onChange={setValue} />;
-  },
-};
-
-export const CustomPlaceholders: Story = {
-  args: {
-    placeholder: ['开始值', '结束值'],
-  },
-  render: args => {
-    const [, setValue] = useState<(number | undefined)[]>([]);
-    return <NumberRange {...args} onChange={setValue} />;
-  },
-};
-
-export const WithChangeHandler: Story = {
-  args: {
-    defaultValue: [5, 15],
-  },
-  render: args => {
+  render: () => {
     const [value, setValue] = useState<(number | undefined)[]>([]);
     return (
-      <div>
-        <NumberRange {...args} onChange={setValue} />
-        <p style={{ marginTop: 16 }}>
-          Current value: [{value[0] ?? 'undefined'}, {value[1] ?? 'undefined'}]
-        </p>
-      </div>
+      <NumberRange
+        placeholder={['最小值', '最大值']}
+        value={value}
+        onChange={setValue}
+      />
     );
   },
 };
 
-export const LargeRange: Story = {
-  args: {
-    min: -1000,
-    max: 1000,
-    defaultValue: [-500, 500],
+export const WithDefaultValues: Story = {
+  render: () => {
+    const [value, setValue] = useState<(number | undefined)[]>([10, 100]);
+    return (
+      <NumberRange
+        placeholder={['起始值', '结束值']}
+        value={value}
+        onChange={setValue}
+      />
+    );
   },
-  render: args => {
-    const [, setValue] = useState<(number | undefined)[]>([]);
-    return <NumberRange {...args} onChange={setValue} />;
+};
+
+export const WithMinMaxConstraints: Story = {
+  render: () => {
+    const [value, setValue] = useState<(number | undefined)[]>([]);
+    return (
+      <NumberRange
+        min={0}
+        max={1000}
+        placeholder={['最小值 (0-1000)', '最大值 (0-1000)']}
+        value={value}
+        onChange={setValue}
+      />
+    );
+  },
+};
+
+export const WithPrecision: Story = {
+  render: () => {
+    const [value, setValue] = useState<(number | undefined)[]>([]);
+    return (
+      <NumberRange
+        precision={2}
+        placeholder={['最小值 (两位小数)', '最大值 (两位小数)']}
+        value={value}
+        onChange={setValue}
+      />
+    );
+  },
+};
+
+export const PriceRange: Story = {
+  render: () => {
+    const [value, setValue] = useState<(number | undefined)[]>([]);
+    return (
+      <NumberRange
+        min={0}
+        precision={2}
+        placeholder={['最低价格', '最高价格']}
+        value={value}
+        onChange={setValue}
+      />
+    );
+  },
+};
+
+export const AgeRange: Story = {
+  render: () => {
+    const [value, setValue] = useState<(number | undefined)[]>([]);
+    return (
+      <NumberRange
+        min={0}
+        max={120}
+        placeholder={['最小年龄', '最大年龄']}
+        value={value}
+        onChange={setValue}
+      />
+    );
+  },
+};
+
+export const WithChangeHandler: Story = {
+  render: () => {
+    const [value, setValue] = useState<(number | undefined)[]>([]);
+    return (
+      <div>
+        <NumberRange
+          placeholder={['输入最小值', '输入最大值']}
+          value={value}
+          onChange={setValue}
+        />
+        <p style={{ marginTop: 16, fontSize: '14px', color: '#666' }}>
+          当前范围: [{value[0] ?? '未设置'}, {value[1] ?? '未设置'}]
+        </p>
+      </div>
+    );
   },
 };
