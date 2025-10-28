@@ -74,8 +74,8 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  *     return response.text();
  *   };
  *
- *   const handleFetch = () => {
- *     execute(fetchData);
+ *   const handleFetch = async () => {
+ *     await execute(fetchData);
  *   };
  *
  *   const handleReset = () => {
@@ -95,12 +95,15 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  *
  * // Example with propagateError set to true
  * const { execute, error } = useExecutePromise<string>({ propagateError: true });
- * execute(fetchData);
- * // Check error state instead of catching
+ * try {
+ *   await execute(fetchData);
+ * } catch (err) {
+ *   console.error('Error occurred:', err);
+ * }
  *
  * // Example with debouncing
  * const { execute } = useExecutePromise<string>({ debounceDelay: 300 });
- * execute(fetchData); // Debounced execution
+ * await execute(fetchData); // Debounced execution
  * ```
  */
 export function useExecutePromise<R = unknown, E = FetcherError>(
