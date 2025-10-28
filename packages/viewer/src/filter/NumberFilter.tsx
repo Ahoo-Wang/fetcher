@@ -62,14 +62,16 @@ export function NumberFilter(props: FilterProps<NumberFilterValueType>) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { placeholder, ...restValue } = props.value ?? {};
           return (
-            <NumberRange onChange={filterState.setValue} {...restValue}></NumberRange>
+            <NumberRange value={filterState.value} onChange={filterState.setValue} {...restValue}></NumberRange>
           );
         }
         default: {
           const { defaultValue, ...restValue } = props.value ?? {};
           const defaultInputNumber = Array.isArray(defaultValue) ? defaultValue[0] : defaultValue;
+          const value = Array.isArray(filterState.value) ? filterState.value[0] : filterState.value;
           return (
             <InputNumber<number>
+              value={value}
               defaultValue={defaultInputNumber}
               onChange={v => {
                 filterState.setValue(v ?? undefined);
