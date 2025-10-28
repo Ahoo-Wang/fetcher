@@ -196,6 +196,46 @@ const MyComponent = () => {
 };
 ```
 
+#### 防抖示例
+
+```typescript jsx
+import { useExecutePromise } from '@ahoo-wang/fetcher-react';
+
+const SearchComponent = () => {
+  const { loading, result, error, execute } = useExecutePromise<string[]>({
+    debounceDelay: 300, // 搜索请求防抖 300ms
+  });
+
+  const handleSearch = (query: string) => {
+    if (!query.trim()) return;
+
+    execute(async () => {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      return response.json();
+    });
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="搜索..."
+      />
+      {loading && <p>搜索中...</p>}
+      {error && <p>错误: {error.message}</p>}
+      {result && (
+        <ul>
+          {result.map((item, index) => (
+            <li key={index}>{item.name}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+```
+
 ### usePromiseState Hook
 
 `usePromiseState` hook 提供 promise 操作的状态管理，无执行逻辑。支持静态选项和动态选项供应商。
@@ -723,6 +763,8 @@ function useExecutePromise<R = unknown, E = unknown>(
   - `initialStatus`: 初始状态，默认为 IDLE
   - `onSuccess`: 成功时调用的回调
   - `onError`: 错误时调用的回调
+  - `propagateError`: 是否抛出错误而不是将错误存储在状态中（默认: false）
+  - `debounceDelay`: execute 调用防抖的延迟毫秒数（默认: 0，无防抖）
 
 **返回值:**
 

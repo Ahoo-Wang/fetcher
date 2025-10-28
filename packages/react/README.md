@@ -165,7 +165,8 @@ const MyComponent = () => {
 ### useExecutePromise Hook
 
 The `useExecutePromise` hook manages asynchronous operations with automatic state handling, built-in race condition
-protection, and support for promise state options.
+protection, debouncing support, and flexible promise state options. The `execute` function returns a `Promise<void>`
+that resolves when the operation completes.
 
 ```typescript jsx
 import { useExecutePromise } from '@ahoo-wang/fetcher-react';
@@ -178,13 +179,13 @@ const MyComponent = () => {
     return response.text();
   };
 
-  const handleFetch = () => {
-    execute(fetchData); // Using a promise supplier
+  const handleFetch = async () => {
+    await execute(fetchData); // Using a promise supplier
   };
 
-  const handleDirectPromise = () => {
+  const handleDirectPromise = async () => {
     const promise = fetch('/api/data').then(res => res.text());
-    execute(promise); // Using a direct promise
+    await execute(promise); // Using a direct promise
   };
 
   if (loading) return <div>Loading...</div>;
@@ -195,6 +196,46 @@ const MyComponent = () => {
       <button onClick={handleDirectPromise}>Fetch with Promise</button>
       <button onClick={reset}>Reset</button>
       {result && <p>{result}</p>}
+    </div>
+  );
+};
+```
+
+#### Debouncing Example
+
+```typescript jsx
+import { useExecutePromise } from '@ahoo-wang/fetcher-react';
+
+const SearchComponent = () => {
+  const { loading, result, error, execute } = useExecutePromise<string[]>({
+    debounceDelay: 300, // Debounce search requests by 300ms
+  });
+
+  const handleSearch = (query: string) => {
+    if (!query.trim()) return;
+
+    execute(async () => {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      return response.json();
+    });
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="Search..."
+      />
+      {loading && <p>Searching...</p>}
+      {error && <p>Error: {error.message}</p>}
+      {result && (
+        <ul>
+          {result.map((item, index) => (
+            <li key={index}>{item.name}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
@@ -1339,8 +1380,7 @@ function useExecutePromise<R = unknown, E = FetcherError>(
 ): UseExecutePromiseReturn<R, E>;
 ```
 
-A React hook for managing asynchronous operations with proper state handling, race condition protection, and promise
-state options.
+A React hook for managing asynchronous operations with proper state handling, race condition protection, debouncing support, and flexible promise state options.
 
 **Type Parameters:**
 
@@ -1353,6 +1393,8 @@ state options.
   - `initialStatus`: Initial status, defaults to IDLE
   - `onSuccess`: Callback invoked on success
   - `onError`: Callback invoked on error
+  - `propagateError`: Whether to throw errors instead of storing them in state (default: false)
+  - `debounceDelay`: Delay in milliseconds for debouncing execute calls (default: 0, no debouncing)
 
 **Returns:**
 
@@ -1362,7 +1404,7 @@ An object containing:
 - `loading`: Indicates if currently loading
 - `result`: The result value
 - `error`: The error value
-- `execute`: Function to execute a promise supplier or promise
+- `execute`: Function to execute a promise supplier or promise, returns Promise<void>
 - `reset`: Function to reset the state to initial values
 
 ### usePromiseState
