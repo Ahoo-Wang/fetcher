@@ -83,6 +83,10 @@ export const Default: Story = {
         },
       },
     ],
+    searchButton: {
+      children: 'search',
+    },
+    resetButton: false,
   },
 };
 
