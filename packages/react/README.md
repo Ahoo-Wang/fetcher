@@ -26,6 +26,7 @@ robust data fetching capabilities.
 
 - [Installation](#installation)
 - [Usage](#usage)
+  - [useDebouncedCallback Hook](#usedebouncedcallback-hook)
   - [useFetcher Hook](#usefetcher-hook)
   - [useExecutePromise Hook](#useexecutepromise-hook)
   - [usePromiseState Hook](#usepromisestate-hook)
@@ -78,6 +79,42 @@ function App() {
 ```
 
 ## Usage
+
+### useDebouncedCallback Hook
+
+The `useDebouncedCallback` hook provides debouncing functionality for callback functions with support for leading and trailing edge execution.
+
+```typescript jsx
+import { useDebouncedCallback } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { run, cancel } = useDebouncedCallback(
+    (query: string) => {
+      console.log('Searching for:', query);
+      // Perform search
+    },
+    300
+  );
+
+  return (
+    <input
+      type="text"
+      onChange={(e) => run(e.target.value)}
+      placeholder="Search..."
+    />
+  );
+};
+```
+
+#### Advanced Options
+
+```typescript jsx
+const { run, cancel } = useDebouncedCallback(
+  () => console.log('Executed'),
+  500,
+  { leading: true, trailing: true },
+);
+```
 
 ### useFetcher Hook
 

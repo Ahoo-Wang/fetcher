@@ -25,6 +25,7 @@
 - [安装](#安装)
 - [快速开始](#快速开始)
 - [使用方法](#使用方法)
+  - [useDebouncedCallback Hook](#usedebouncedcallback-hook)
   - [useFetcher Hook](#usefetcher-hook)
   - [useExecutePromise Hook](#useexecutepromise-hook)
   - [usePromiseState Hook](#usepromisestate-hook)
@@ -77,6 +78,41 @@ function App() {
 ```
 
 ## 使用方法
+
+### useDebouncedCallback Hook
+
+`useDebouncedCallback` hook 为回调函数提供防抖功能，支持前缘和后缘执行。
+
+```typescript jsx
+import { useDebouncedCallback } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { run, cancel } = useDebouncedCallback(
+    (query: string) => {
+      console.log('搜索:', query);
+      // 执行搜索
+    },
+    300
+  );
+
+  return (
+    <input
+      type="text"
+      onChange={(e) => run(e.target.value)}
+      placeholder="搜索..."
+    />
+  );
+};
+```
+
+#### 高级选项
+
+```typescript jsx
+const { run, cancel } = useDebouncedCallback(() => console.log('已执行'), 500, {
+  leading: true,
+  trailing: true,
+});
+```
 
 ### useFetcher Hook
 
