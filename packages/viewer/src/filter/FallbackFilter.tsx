@@ -21,8 +21,17 @@ export function FallbackFilter({ type, ref }: TypedFilterProps) {
     getValue(): FilterValue | undefined {
       return undefined;
     },
+    reset(): void {
+      // No-op for fallback filter
+    },
   }));
-  return <Alert message={`Unsupported filter type:[${type}]`} type="warning" showIcon />;
+  return (
+    <Alert
+      message={`Unsupported filter type:[${type}]`}
+      type="warning"
+      showIcon
+    />
+  );
 }
 
 FallbackFilter.displayName = 'FallbackFilter';

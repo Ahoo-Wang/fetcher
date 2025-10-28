@@ -14,10 +14,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import {
-  useFilterState,
-  UseFilterStateOptions,
-} from '../../src';
+import { useFilterState, UseFilterStateOptions } from '../../src';
 import { FilterRef } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
@@ -104,9 +101,9 @@ describe('useFilterState', () => {
 
       expect(onChange).toHaveBeenCalledWith({
         condition: {
-          'field': 'testField',
-          "operator": "CONTAINS",
-          "value": "test value",
+          field: 'testField',
+          operator: 'CONTAINS',
+          value: 'test value',
         },
       });
     });
@@ -193,6 +190,98 @@ describe('useFilterState', () => {
       });
 
       expect(onChange).toHaveBeenCalledWith(undefined);
+    });
+  });
+
+  describe('reset', () => {
+    it('resets operator and value to initial values', () => {
+      const options = createMockOptions({
+        operator: Operator.EQ,
+        value: 'initial value',
+      });
+
+      const { result } = renderHook(() => useFilterState(options));
+
+      // Change state
+      act(() => {
+        result.current.setOperator(Operator.CONTAINS);
+        result.current.setValue('changed value');
+      });
+
+      expect(result.current.operator).toBe(Operator.CONTAINS);
+      expect(result.current.value).toBe('changed value');
+
+      // Reset
+      act(() => {
+        result.current.reset();
+      });
+
+      expect(result.current.operator).toBe(Operator.EQ);
+      expect(result.current.value).toBe('initial value');
+    });
+
+    it('calls onChange callback when reset', () => {
+      const onChange = vi.fn();
+      const options = createMockOptions({
+        operator: Operator.EQ,
+        value: 'initial value',
+        onChange,
+      });
+
+      const { result } = renderHook(() => useFilterState(options));
+
+      // Change state
+      act(() => {
+        result.current.setOperator(Operator.CONTAINS);
+        result.current.setValue('changed value');
+      });
+
+      // Reset
+      act(() => {
+        result.current.reset();
+      });
+
+      expect(onChange).toHaveBeenCalledWith({
+        condition: {
+          field: 'testField',
+          operator: Operator.EQ,
+          value: 'initial value',
+        },
+      });
+    });
+
+    it('calls onChange with undefined when reset validation fails', () => {
+      const onChange = vi.fn();
+      const validate = vi.fn(() => false);
+      const options = createMockOptions({
+        operator: Operator.EQ,
+        value: 'initial value',
+        onChange,
+        validate,
+      });
+
+      const { result } = renderHook(() => useFilterState(options));
+
+      // Reset
+      act(() => {
+        result.current.reset();
+      });
+
+      expect(onChange).toHaveBeenCalledWith(undefined);
+    });
+
+    it('exposes reset method via ref', () => {
+      const ref = React.createRef<FilterRef>();
+      const options = createMockOptions({
+        operator: Operator.EQ,
+        value: 'initial value',
+        ref,
+      });
+
+      renderHook(() => useFilterState(options));
+
+      expect(ref.current).toHaveProperty('reset');
+      expect(typeof ref.current?.reset).toBe('function');
     });
   });
 

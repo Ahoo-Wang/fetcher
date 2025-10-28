@@ -28,6 +28,8 @@ export interface FilterField extends NamedCapable {
 
 export interface FilterRef {
   getValue(): FilterValue | undefined;
+
+  reset(): void;
 }
 
 export interface FilterLabelProps extends StyleCapable {
