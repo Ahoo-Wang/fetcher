@@ -79,7 +79,7 @@ export function FilterPanel(props: FilterPanelProps) {
     onSearch(finalCondition);
   };
   const onResetHandler = () => {
-    for (let filterRef of filterRefs.values()) {
+    for (const filterRef of filterRefs.values()) {
       filterRef.reset();
     }
   };
