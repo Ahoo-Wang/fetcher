@@ -14,7 +14,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { IdFilter } from '../../src';
+import { IdFilter, IdOnOperatorChangeValueConverter } from '../../src';
 import { FilterRef } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
@@ -23,20 +23,19 @@ const createMockProps = (
   overrides: Partial<React.ComponentProps<typeof IdFilter>> = {},
 ) => {
   const defaultProps: React.ComponentProps<typeof IdFilter> = {
-      field: {
-        name: 'testId',
-        label: 'Test ID',
-        type: 'string',
-      },
-      label: {},
-      operator: {
-        defaultValue: Operator.ID
-      ,
+    field: {
+      name: 'testId',
+      label: 'Test ID',
+      type: 'string',
+    },
+    label: {},
+    operator: {
+      defaultValue: Operator.ID,
     },
     value: {
       defaultValue: 'test-value',
     },
-    };
+  };
 
   return { ...defaultProps, ...overrides };
 };
@@ -204,7 +203,6 @@ describe('IdFilter', () => {
         value: 'test-id',
       });
     });
-
   });
 
   describe('onChange Callback', () => {
@@ -240,12 +238,10 @@ describe('IdFilter', () => {
     it('forwards operator props to Select component', () => {
       const props = createMockProps({
         operator: {
-          defaultValue: Operator.ID
-        ,
-        placeholder: 'Select operator',
-      }
-    })
-      ;
+          defaultValue: Operator.ID,
+          placeholder: 'Select operator',
+        },
+      });
       render(<IdFilter {...props} />);
 
       const select = screen.getByRole('combobox');
@@ -271,6 +267,90 @@ describe('IdFilter', () => {
     });
   });
 
+  describe('Value Converter', () => {
+    it('converts array to single value when switching to ID operator', () => {
+      // Test the converter function directly
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.IDS,
+        Operator.ID,
+        ['id1', 'id2'],
+      );
+      expect(result).toBe('id1');
+    });
+
+    it('converts single value to array when switching to IDS operator', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        'single-id',
+      );
+      expect(result).toEqual(['single-id']);
+    });
+
+    it('converts empty string to empty array for IDS operator', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        '',
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('converts trimmed single value to array for IDS operator', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        '  trimmed-id  ',
+      );
+      expect(result).toEqual(['trimmed-id']);
+    });
+
+    it('returns original value when no conversion needed', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.ID,
+        'unchanged-value',
+      );
+      expect(result).toBe('unchanged-value');
+    });
+
+    it('handles undefined value', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        undefined,
+      );
+      expect(result).toBeUndefined();
+    });
+
+    it('handles null value', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        null as any,
+      );
+      expect(result).toBeNull();
+    });
+
+    it('converts whitespace-only string to empty array for IDS operator', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        '   ',
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('returns array unchanged when switching from IDS to IDS', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.IDS,
+        Operator.IDS,
+        ['id1', 'id2'],
+      );
+      expect(result).toEqual(['id1', 'id2']);
+    });
+  });
+
   describe('Edge Cases', () => {
     it('handles undefined value gracefully', () => {
       const props = createMockProps({
@@ -288,12 +368,12 @@ describe('IdFilter', () => {
 
     it('handles null value gracefully', () => {
       const props = createMockProps({
-        value: { defaultValue: null },
+        value: { defaultValue: null as any },
       });
       expect(() => render(<IdFilter {...props} />)).not.toThrow();
 
       const { ref } = renderWithRef({
-        value: { defaultValue: null },
+        value: { defaultValue: null as any },
       });
 
       const result = ref.current?.getValue();
@@ -315,6 +395,5 @@ describe('IdFilter', () => {
       const result = ref.current?.getValue();
       expect(result).toBeUndefined();
     });
-
   });
 });
