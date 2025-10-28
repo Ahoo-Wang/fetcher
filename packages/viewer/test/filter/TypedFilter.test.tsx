@@ -13,27 +13,24 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { TypedFilter } from '../../src';
+import { TypedFilter, TypedFilterProps } from '../../src';
 import { filterRegistry } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 describe('TypedFilter', () => {
-  const mockProps = {
+  const mockProps: TypedFilterProps = {
     type: 'test-type',
     field: {
       name: 'testField',
       label: 'Test Field',
       type: 'string',
     },
-    label: {
-
-    },
+    label: {},
     operator: {
-      value: Operator.EQ,
-      options: [],
+      defaultValue: Operator.EQ,
     },
     value: {
-      value: 'test',
+      defaultValue: 'test',
       placeholder: 'Enter value',
     },
   };

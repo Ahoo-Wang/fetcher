@@ -31,7 +31,6 @@ const createMockProps = (
     label: {},
     operator: {
       defaultValue: Operator.EQ,
-      options: [],
     },
     value: {
       defaultValue: 42,
@@ -101,7 +100,7 @@ describe('NumberFilter', () => {
     operators.forEach(operator => {
       it(`renders correctly with ${operator} operator`, () => {
         const props = createMockProps({
-          operator: { defaultValue: operator, options: [] },
+          operator: { defaultValue: operator,  },
         });
         expect(() => render(<NumberFilter {...props} />)).not.toThrow();
       });
@@ -111,7 +110,7 @@ describe('NumberFilter', () => {
   describe('Value Input Supplier', () => {
     it('renders InputNumber for default operators', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ,  },
       });
       render(<NumberFilter {...props} />);
 
@@ -120,7 +119,7 @@ describe('NumberFilter', () => {
 
     it('renders TagInput for IN operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.IN, options: [] },
+        operator: { defaultValue: Operator.IN,  },
         value: { defaultValue: [1, 2, 3] },
       });
       render(<NumberFilter {...props} />);
@@ -131,7 +130,7 @@ describe('NumberFilter', () => {
 
     it('renders TagInput for NOT_IN operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.NOT_IN, options: [] },
+        operator: { defaultValue: Operator.NOT_IN,  },
         value: { defaultValue: [1, 2, 3] },
       });
       render(<NumberFilter {...props} />);
@@ -141,7 +140,7 @@ describe('NumberFilter', () => {
 
     it('renders NumberRange for BETWEEN operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: [10, 20] },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -153,7 +152,7 @@ describe('NumberFilter', () => {
   describe('Validation', () => {
     it('validates BETWEEN operator correctly with valid array', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: [10, 20] },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -164,7 +163,7 @@ describe('NumberFilter', () => {
 
     it('validates BETWEEN operator correctly with invalid value', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: 42 }, // Not an array
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -175,7 +174,7 @@ describe('NumberFilter', () => {
 
     it('validates other operators correctly', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ,  },
         value: { defaultValue: undefined },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -185,7 +184,7 @@ describe('NumberFilter', () => {
 
     it('validate function handles BETWEEN with both values defined', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: [10, 20] },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -195,7 +194,7 @@ describe('NumberFilter', () => {
 
     it('validate function handles BETWEEN with first value undefined', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: [undefined, 20] },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -205,7 +204,7 @@ describe('NumberFilter', () => {
 
     it('validate function handles BETWEEN with second value undefined', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: [10, undefined] },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -215,7 +214,7 @@ describe('NumberFilter', () => {
 
     it('validate function handles BETWEEN with both values undefined', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: [undefined, undefined] },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -225,7 +224,7 @@ describe('NumberFilter', () => {
 
     it('validate function handles non-array value for BETWEEN', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: 'not an array' as any },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -235,7 +234,7 @@ describe('NumberFilter', () => {
 
     it('validate function handles number value for BETWEEN', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: 42 },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -245,7 +244,7 @@ describe('NumberFilter', () => {
 
     it('validate function handles boolean value for BETWEEN', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: true as any },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -255,7 +254,7 @@ describe('NumberFilter', () => {
 
     it('validate function is called when getValue is invoked with BETWEEN and non-array', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: 'not an array' as any },
       });
 
@@ -266,7 +265,7 @@ describe('NumberFilter', () => {
 
     it('validate function is called when getValue is invoked with BETWEEN and valid array', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: [10, 20] },
       });
 
@@ -277,7 +276,7 @@ describe('NumberFilter', () => {
 
     it('validate function handles defined value for non-BETWEEN operators', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ,  },
         value: { defaultValue: 42 },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -287,7 +286,7 @@ describe('NumberFilter', () => {
 
     it('validate function handles undefined value for non-BETWEEN operators', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ,  },
         value: { defaultValue: undefined },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -297,7 +296,7 @@ describe('NumberFilter', () => {
 
     it('validate function handles null value for non-BETWEEN operators', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ,  },
         value: { defaultValue: null as any },
       });
       const { container } = render(<NumberFilter {...props} />);
@@ -322,7 +321,7 @@ describe('NumberFilter', () => {
 
     it('handles array defaultValue for InputNumber', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ,  },
         value: { defaultValue: [50] },
       });
       render(<NumberFilter {...props} />);
@@ -334,7 +333,7 @@ describe('NumberFilter', () => {
   describe('onChange Callback', () => {
     it('calls setValue when InputNumber value changes', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ,  },
         value: { defaultValue: 42 },
       });
 
@@ -350,7 +349,7 @@ describe('NumberFilter', () => {
 
     it('handles null onChange value correctly', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ,  },
         value: { defaultValue: 42 },
       });
 
@@ -366,7 +365,7 @@ describe('NumberFilter', () => {
 
     it('InputNumber onChange handles undefined values', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ, options: [] },
+        operator: { defaultValue: Operator.EQ,  },
         value: { defaultValue: 42 },
       });
 
@@ -398,7 +397,7 @@ describe('NumberFilter', () => {
 
     it('handles empty array for BETWEEN', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: [] },
       });
       expect(() => render(<NumberFilter {...props} />)).not.toThrow();
@@ -406,7 +405,7 @@ describe('NumberFilter', () => {
 
     it('handles BETWEEN with partial undefined values', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: [10, undefined] },
       });
       expect(() => render(<NumberFilter {...props} />)).not.toThrow();
@@ -414,7 +413,7 @@ describe('NumberFilter', () => {
 
     it('handles BETWEEN with both undefined values', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.BETWEEN, options: [] },
+        operator: { defaultValue: Operator.BETWEEN,  },
         value: { defaultValue: [undefined, undefined] },
       });
       expect(() => render(<NumberFilter {...props} />)).not.toThrow();

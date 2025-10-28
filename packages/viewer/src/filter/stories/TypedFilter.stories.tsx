@@ -13,14 +13,29 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { TypedFilter } from '../TypedFilter';
+import { TypedFilter, TypedFilterProps } from '../TypedFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
+import { Card, Divider, Typography } from 'antd';
+import { FilterValue } from '../types';
 
-const meta: Meta<typeof TypedFilter> = {
+function TypedFilterStory(props: TypedFilterProps) {
+  const [filterValue, setFilterValue] = useState<FilterValue>();
+  return (
+    <Card>
+      <TypedFilter {...props} onChange={setFilterValue} />
+      <Divider>Condition</Divider>
+      {filterValue?.condition && <Typography.Text code copyable>
+        {JSON.stringify(filterValue.condition)}
+      </Typography.Text>}
+    </Card>
+  );
+}
+
+const meta: Meta<typeof TypedFilterStory> = {
   title: 'Viewer/Filters/TypedFilter',
-  component: TypedFilter,
+  component: TypedFilterStory,
   parameters: {
-    layout: 'centered',
+    layout: 'padded',
     docs: {
       description: {
         component:
@@ -29,10 +44,33 @@ const meta: Meta<typeof TypedFilter> = {
     },
   },
   tags: ['autodocs'],
+  argTypes: {
+    type: {
+      options: ['id', 'text', 'number', 'select', 'unsupported'],
+      control: 'select',
+    },
+  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const IdFilter: Story = {
+  args: {
+    type: 'id',
+    field: {
+      name: 'userId',
+      label: 'User ID',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.ID,
+    },
+    value: {
+      defaultValue: '',
+    },
+  },
+};
 
 export const TextFilter: Story = {
   args: {
@@ -44,15 +82,10 @@ export const TextFilter: Story = {
     },
     operator: {
       defaultValue: Operator.EQ,
-      options: [],
     },
     value: {
       defaultValue: '',
     },
-  },
-  render: args => {
-    const [, setValue] = useState<any>();
-    return <TypedFilter {...args} onChange={setValue} />;
   },
 };
 
@@ -66,37 +99,35 @@ export const NumberFilter: Story = {
     },
     operator: {
       defaultValue: Operator.EQ,
-      options: [],
     },
     value: {
       defaultValue: 25,
     },
   },
-  render: args => {
-    const [, setValue] = useState<any>();
-    return <TypedFilter {...args} onChange={setValue} />;
-  },
 };
 
-export const IdFilter: Story = {
+
+export const SelectFilter: Story = {
   args: {
-    type: 'id',
+    type: 'select',
     field: {
-      name: 'userId',
-      label: 'User ID',
+      name: 'status',
+      label: 'Status',
       type: 'string',
     },
     operator: {
-      defaultValue: Operator.ID,
-      options: [],
+      defaultValue: Operator.IN,
     },
     value: {
-      defaultValue: '',
+      defaultValue: ['active', 'pending'],
+      options: [
+        { label: 'Technology', value: 'tech' },
+        { label: 'Design', value: 'design' },
+        { label: 'Marketing', value: 'marketing' },
+        { label: 'Sales', value: 'sales' },
+        { label: 'HR', value: 'hr' },
+      ],
     },
-  },
-  render: args => {
-    const [, setValue] = useState<any>();
-    return <TypedFilter {...args} onChange={setValue} />;
   },
 };
 
@@ -110,7 +141,6 @@ export const UnsupportedType: Story = {
     },
     operator: {
       defaultValue: Operator.EQ,
-      options: [],
     },
     value: {
       defaultValue: '',
@@ -122,31 +152,3 @@ export const UnsupportedType: Story = {
   },
 };
 
-export const WithChangeHandler: Story = {
-  args: {
-    type: 'text',
-    field: {
-      name: 'description',
-      label: 'Description',
-      type: 'string',
-    },
-    operator: {
-      defaultValue: Operator.CONTAINS,
-      options: [],
-    },
-    value: {
-      defaultValue: '',
-    },
-  },
-  render: args => {
-    const [value, setValue] = useState<any>();
-    return (
-      <div>
-        <TypedFilter {...args} onChange={setValue} />
-        <p style={{ marginTop: 16, fontSize: '14px', color: '#666' }}>
-          Current filter value: {JSON.stringify(value, null, 2)}
-        </p>
-      </div>
-    );
-  },
-};
