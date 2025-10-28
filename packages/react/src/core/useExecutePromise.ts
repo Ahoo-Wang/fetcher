@@ -13,6 +13,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useMounted } from './useMounted';
+import { useDebouncedCallback } from './useDebouncedCallback';
 import {
   usePromiseState,
   PromiseState,
@@ -29,6 +30,8 @@ export interface UseExecutePromiseOptions<R, E = unknown>
    * If false (default), the execute function will return the error as the result instead of throwing.
    */
   propagateError?: boolean;
+  /** Debounce delay in milliseconds for execute calls */
+  debounceDelay?: number;
 }
 
 /**
@@ -45,9 +48,9 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
   extends PromiseState<R, E> {
   /**
    * Function to execute a promise supplier or promise.
-   * Returns a promise that resolves to the result on success, or the error if propagateError is false.
+   * Returns a promise that resolves when execution completes. May reject if propagateError is true.
    */
-  execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<R | E>;
+  execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<void>;
   /** Function to reset the state to initial values */
   reset: () => void;
 }
@@ -91,27 +94,34 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  * }
  *
  * // Example with propagateError set to true
- * const { execute } = useExecutePromise<string>({ propagateError: true });
- * try {
- *   await execute(fetchData);
- * } catch (err) {
- *   console.error('Error occurred:', err);
- * }
+ * const { execute, error } = useExecutePromise<string>({ propagateError: true });
+ * execute(fetchData);
+ * // Check error state instead of catching
+ *
+ * // Example with debouncing
+ * const { execute } = useExecutePromise<string>({ debounceDelay: 300 });
+ * execute(fetchData); // Debounced execution
  * ```
  */
 export function useExecutePromise<R = unknown, E = FetcherError>(
   options?: UseExecutePromiseOptions<R, E>,
 ): UseExecutePromiseReturn<R, E> {
-  const { loading, result, error, status, setLoading, setSuccess, setError, setIdle } = usePromiseState<R, E>(options);
+  const {
+    loading,
+    result,
+    error,
+    status,
+    setLoading,
+    setSuccess,
+    setError,
+    setIdle,
+  } = usePromiseState<R, E>(options);
   const isMounted = useMounted();
   const requestId = useRequestId();
   const propagateError = options?.propagateError;
-  /**
-   * Execute a promise supplier or promise and manage its state
-   * @param input - A function that returns a Promise or a Promise to be executed
-   * @returns A Promise that resolves with the result on success, or the error if propagateError is false
-   */
-  const execute = useCallback(
+  const debounceDelay = options?.debounceDelay ?? 0;
+
+  const performExecute = useCallback(
     async (input: PromiseSupplier<R> | Promise<R>): Promise<R | E> => {
       if (!isMounted()) {
         throw new Error('Component is unmounted');
@@ -137,6 +147,28 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
       }
     },
     [setLoading, setSuccess, setError, isMounted, requestId, propagateError],
+  );
+
+  const debouncedPerformExecute = useDebouncedCallback(
+    performExecute,
+    debounceDelay,
+    { trailing: true },
+  );
+
+  /**
+   * Execute a promise supplier or promise and manage its state
+   * @param input - A function that returns a Promise or a Promise to be executed
+   * @returns A promise that resolves when execution completes
+   */
+  const execute = useCallback(
+    async (input: PromiseSupplier<R> | Promise<R>): Promise<void> => {
+      if (debounceDelay > 0) {
+        debouncedPerformExecute.run(input);
+      } else {
+        await performExecute(input);
+      }
+    },
+    [debouncedPerformExecute, performExecute, debounceDelay],
   );
 
   /**
