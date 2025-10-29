@@ -25,6 +25,11 @@ export interface UseDebouncedCallbackOptions {
   trailing?: boolean;
 }
 
+export interface DebounceCapable {
+  /** Debounce options for execute calls */
+  debounce?: Partial<UseDebouncedCallbackOptions>;
+}
+
 /**
  * Return type of the useDebouncedCallback hook.
  * @template T - The type of the original callback function.
@@ -143,4 +148,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
     }),
     [run, cancel],
   );
+}
+
+export class UseDebouncæedCallbackOptions {
 }
