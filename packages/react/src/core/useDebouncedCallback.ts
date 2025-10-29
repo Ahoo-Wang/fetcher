@@ -110,7 +110,6 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
       clearTimeout(timeoutRef.current);
       timeoutRef.current = undefined;
     }
-    hasLeadingCalledRef.current = false;
   }, []);
 
   // Cleanup timeout on component unmount to prevent memory leaks
