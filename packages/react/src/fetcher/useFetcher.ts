@@ -17,9 +17,10 @@ import {
   FetchExchange,
   FetchRequest,
   getFetcher,
-  RequestOptions, FetcherError,
+  RequestOptions,
+  FetcherError,
 } from '@ahoo-wang/fetcher';
-import { useMounted } from '../core';
+import { DebounceCapable, useMounted, useDebouncedCallback } from '../core';
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import {
   PromiseState,
@@ -36,10 +37,12 @@ import {
 export interface UseFetcherOptions<R, E = FetcherError>
   extends RequestOptions,
     FetcherCapable,
-    UsePromiseStateOptions<R, E> {
+    UsePromiseStateOptions<R, E>,
+    DebounceCapable {
 }
 
-export interface UseFetcherReturn<R, E = FetcherError> extends PromiseState<R, E> {
+export interface UseFetcherReturn<R, E = FetcherError>
+  extends PromiseState<R, E> {
   /** The FetchExchange object representing the ongoing fetch operation */
   exchange?: FetchExchange;
   execute: (request: FetchRequest) => Promise<void>;
@@ -85,11 +88,16 @@ export function useFetcher<R, E = FetcherError>(
   const requestId = useRequestId();
   const latestOptions = useLatest(options);
   const currentFetcher = getFetcher(fetcher);
+  const {
+    delay: debounceDelay = 0,
+    leading = false,
+    trailing = true,
+  } = options?.debounce || {};
   /**
    * Execute the fetch operation.
    * Cancels any ongoing fetch before starting a new one.
    */
-  const execute = useCallback(
+  const performExecute = useCallback(
     async (request: FetchRequest) => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -128,6 +136,23 @@ export function useFetcher<R, E = FetcherError>(
       }
     },
     [currentFetcher, isMounted, latestOptions, state, requestId],
+  );
+
+  const debouncedPerformExecute = useDebouncedCallback(performExecute, {
+    delay: debounceDelay,
+    leading,
+    trailing,
+  });
+
+  const execute = useCallback(
+    async (request: FetchRequest) => {
+      if (debounceDelay > 0) {
+        debouncedPerformExecute.run(request);
+      } else {
+        await performExecute(request);
+      }
+    },
+    [debounceDelay, debouncedPerformExecute, performExecute],
   );
 
   useEffect(() => {
