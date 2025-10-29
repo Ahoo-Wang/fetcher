@@ -1,7 +1,7 @@
 {
   "name": "@ahoo-wang/fetcher-viewer",
   "version": "2.15.1",
-  "description": "",
+  "description": "A comprehensive React component library for data visualization and filtering, built on top of Ant Design and the Fetcher ecosystem. Provides reusable UI components for building rich data-driven applications with advanced filtering capabilities.",
   "keywords": [
     "fetch",
     "http",
@@ -43,9 +43,6 @@
     "lint": "eslint . --fix",
     "clean": "rm -rf dist",
     "analyze": "npx vite-bundle-analyzer -p auto"
-  },
-  "dependencies": {
-    "react-use": "catalog:"
   },
   "peerDependencies": {
     "@ahoo-wang/fetcher": "workspace:^2.3.4",
