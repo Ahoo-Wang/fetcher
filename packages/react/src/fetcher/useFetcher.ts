@@ -45,7 +45,17 @@ export interface UseFetcherReturn<R, E = FetcherError>
   extends PromiseState<R, E> {
   /** The FetchExchange object representing the ongoing fetch operation */
   exchange?: FetchExchange;
+  /**
+   * Function to execute a fetch request.
+   * @param request - The fetch request to execute
+   * @returns A promise that resolves when the fetch completes
+   */
   execute: (request: FetchRequest) => Promise<void>;
+  /**
+   * Function to reset the state to initial values.
+   * Cancels any pending debounced executions and ongoing fetch requests.
+   */
+  reset: () => void;
 }
 
 /**
@@ -58,10 +68,14 @@ export interface UseFetcherReturn<R, E = FetcherError>
  * import { useFetcher } from '@ahoo-wang/fetcher-react';
  *
  * function MyComponent() {
- *   const { loading, result, error, execute } = useFetcher<string>();
+ *   const { loading, result, error, execute, reset } = useFetcher<string>();
  *
  *   const handleFetch = () => {
  *     execute({ url: '/api/data', method: 'GET' });
+ *   };
+ *
+ *   const handleReset = () => {
+ *     reset();
  *   };
  *
  *   if (loading) return <div>Loading...</div>;
@@ -69,6 +83,7 @@ export interface UseFetcherReturn<R, E = FetcherError>
  *   return (
  *     <div>
  *       <button onClick={handleFetch}>Fetch Data</button>
+ *       <button onClick={handleReset}>Reset</button>
  *       {result && <p>{result}</p>}
  *     </div>
  *   );
@@ -79,7 +94,16 @@ export function useFetcher<R, E = FetcherError>(
   options?: UseFetcherOptions<R, E>,
 ): UseFetcherReturn<R, E> {
   const { fetcher = fetcherRegistrar.default } = options || {};
-  const state = usePromiseState<R, E>(options);
+  const {
+    loading,
+    result,
+    error,
+    status,
+    setLoading,
+    setSuccess,
+    setError,
+    setIdle,
+  } = usePromiseState<R, E>(options);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(
     undefined,
   );
@@ -106,7 +130,7 @@ export function useFetcher<R, E = FetcherError>(
         request.abortController ?? new AbortController();
       request.abortController = abortControllerRef.current;
       const currentRequestId = requestId.generate();
-      state.setLoading();
+      setLoading();
       try {
         const exchange = await currentFetcher.exchange(
           request,
@@ -117,17 +141,17 @@ export function useFetcher<R, E = FetcherError>(
         }
         const result = await exchange.extractResult<R>();
         if (isMounted() && requestId.isLatest(currentRequestId)) {
-          await state.setSuccess(result);
+          await setSuccess(result);
         }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
           if (isMounted()) {
-            state.setIdle();
+            setIdle();
           }
           return;
         }
         if (isMounted() && requestId.isLatest(currentRequestId)) {
-          await state.setError(error as E);
+          await setError(error as E);
         }
       } finally {
         if (abortControllerRef.current === request.abortController) {
@@ -135,7 +159,7 @@ export function useFetcher<R, E = FetcherError>(
         }
       }
     },
-    [currentFetcher, isMounted, latestOptions, state, requestId],
+    [currentFetcher, isMounted, latestOptions, setLoading, setSuccess, setError, setIdle, requestId],
   );
 
   const debouncedPerformExecute = useDebouncedCallback(performExecute, {
@@ -155,18 +179,33 @@ export function useFetcher<R, E = FetcherError>(
     [debounceDelay, debouncedPerformExecute, performExecute],
   );
 
+  const reset = useCallback(() => {
+    debouncedPerformExecute.cancel();
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = undefined;
+    }
+    if (isMounted()) {
+      setExchange(undefined);
+      setIdle();
+    }
+  }, [debouncedPerformExecute, isMounted, setIdle]);
+
   useEffect(() => {
     return () => {
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = undefined;
+      reset();
     };
-  }, []);
+  }, [reset]);
   return useMemo(
     () => ({
-      ...state,
+      loading: loading,
+      result: result,
+      error: error,
+      status: status,
       exchange,
       execute,
+      reset,
     }),
-    [state, exchange, execute],
+    [loading, result, status, error, exchange, execute, reset],
   );
 }
