@@ -208,7 +208,7 @@ import { useExecutePromise } from '@ahoo-wang/fetcher-react';
 
 const SearchComponent = () => {
   const { loading, result, error, execute } = useExecutePromise<string[]>({
-    debounceOptions: { delay: 300 }, // Debounce search requests by 300ms
+    debounce: { delay: 300 }, // Debounce search requests by 300ms
   });
 
   const handleSearch = (query: string) => {
@@ -1394,7 +1394,7 @@ A React hook for managing asynchronous operations with proper state handling, ra
   - `onSuccess`: Callback invoked on success
   - `onError`: Callback invoked on error
   - `propagateError`: Whether to throw errors instead of storing them in state (default: false)
-  - `debounceOptions`: Options for debouncing execute calls (default: no debouncing)
+  - `debounce`: Options for debouncing execute calls (default: no debouncing)
 
 **Returns:**
 
