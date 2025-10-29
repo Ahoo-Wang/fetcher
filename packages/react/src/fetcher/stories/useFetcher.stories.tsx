@@ -52,8 +52,8 @@ const ComprehensiveFetcherDemo: React.FC = () => {
   const [form] = Form.useForm();
 
   // Main fetcher instance
-  const { loading, result, error, execute, exchange, status } =
-    useFetcher<any>({
+  const { loading, result, error, execute, exchange, status } = useFetcher<any>(
+    {
       resultExtractor: ResultExtractors.Json,
       onSuccess: () => {
         const logEntry = {
@@ -78,7 +78,8 @@ const ComprehensiveFetcherDemo: React.FC = () => {
         setLogs(prev => [logEntry, ...prev.slice(0, 9)]);
         setRequestHistory(prev => [logEntry, ...prev.slice(0, 9)]);
       },
-    });
+    },
+  );
 
   const handleRequest = async (values: any) => {
     const url = values.url || MOCK_ENDPOINTS.users;
@@ -404,6 +405,236 @@ export const ComprehensiveDemo: Story = {
       description: {
         story:
           'Complete interactive demonstration showcasing all useFetcher capabilities including request building, error handling, and performance monitoring.',
+      },
+    },
+  },
+};
+
+// Debounced Search Demo Component
+const DebouncedSearchDemo: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [logs, setLogs] = useState<any[]>([]);
+
+  // Debounced fetcher for search
+  const { loading, result, error, execute, exchange, status, reset } =
+    useFetcher<any[]>({
+      debounce: { delay: 500 }, // 500ms debounce delay
+      resultExtractor: ResultExtractors.Json,
+      onSuccess: () => {
+        const logEntry = {
+          timestamp: new Date().toLocaleTimeString(),
+          type: 'success',
+          query: searchQuery,
+          status: '✅ Search completed',
+        };
+        setLogs(prev => [logEntry, ...prev.slice(0, 9)]);
+      },
+      onError: e => {
+        const logEntry = {
+          timestamp: new Date().toLocaleTimeString(),
+          type: 'error',
+          query: searchQuery,
+          status: '❌ Search failed',
+          error: e?.message || String(e),
+        };
+        setLogs(prev => [logEntry, ...prev.slice(0, 9)]);
+      },
+    });
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    if (value.trim()) {
+      execute({
+        url: `https://jsonplaceholder.typicode.com/posts?title_like=${encodeURIComponent(value)}&_limit=5`,
+        method: 'GET',
+      });
+    } else {
+      reset();
+    }
+  };
+
+  const clearLogs = () => {
+    setLogs([]);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'idle':
+        return 'default';
+      case 'loading':
+        return 'processing';
+      case 'success':
+        return 'success';
+      case 'error':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusIcon = (type: string) => {
+    switch (type) {
+      case 'success':
+        return '✅';
+      case 'error':
+        return '❌';
+      default:
+        return '🔄';
+    }
+  };
+
+  return (
+    <Space
+      direction="vertical"
+      size="large"
+      style={{ width: '100%', maxWidth: 1000 }}
+    >
+      <Card>
+        <Title level={2}>🔍 Debounced Search Demo</Title>
+        <Paragraph>
+          This demo showcases debounced API calls using the useFetcher hook.
+          Type in the search box - requests are automatically debounced by 500ms
+          to prevent excessive API calls during rapid typing.
+        </Paragraph>
+      </Card>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <Card title="Search Input" size="small">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <div>
+                <Text strong>Search Posts:</Text>
+                <Input
+                  placeholder="Type to search posts (debounced 500ms)"
+                  value={searchQuery}
+                  onChange={e => handleSearch(e.target.value)}
+                  style={{ marginTop: 8 }}
+                  allowClear
+                />
+              </div>
+
+              <div>
+                <Text strong>Status: </Text>
+                <Badge
+                  status={getStatusColor(status)}
+                  text={status.toUpperCase()}
+                />
+              </div>
+
+              <Space>
+                <Button onClick={reset}>Reset</Button>
+                <Button onClick={clearLogs} size="small">
+                  Clear Logs
+                </Button>
+              </Space>
+            </Space>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={12}>
+          <Card title="Search Results" size="small">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {loading && (
+                <Alert
+                  message="Searching..."
+                  description="Debounced request in progress"
+                  type="info"
+                  showIcon
+                />
+              )}
+
+              {result && !loading && (
+                <Alert
+                  message={`Found ${result.length} results`}
+                  description="Search completed successfully"
+                  type="success"
+                  showIcon
+                />
+              )}
+
+              {error && (
+                <Alert
+                  message="Search Error"
+                  description={error.message}
+                  type="error"
+                  showIcon
+                />
+              )}
+
+              {result && result.length > 0 && (
+                <List
+                  size="small"
+                  dataSource={result}
+                  renderItem={(item: any) => (
+                    <List.Item>
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        <Text strong>{item.title}</Text>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          Post ID: {item.id} | User ID: {item.userId}
+                        </Text>
+                      </Space>
+                    </List.Item>
+                  )}
+                  locale={{ emptyText: 'No results found' }}
+                  style={{ maxHeight: 300, overflow: 'auto' }}
+                />
+              )}
+            </Space>
+          </Card>
+        </Col>
+      </Row>
+
+      <Card title="Request History" size="small">
+        <List
+          size="small"
+          dataSource={logs}
+          renderItem={(item, index) => (
+            <List.Item key={index}>
+              <Space>
+                <Text>{getStatusIcon(item.type)}</Text>
+                <Text>{item.timestamp}</Text>
+                <Text strong>{item.query}</Text>
+                <Text>{item.status}</Text>
+                {item.error && (
+                  <Text type="danger" style={{ fontSize: '12px' }}>
+                    {item.error}
+                  </Text>
+                )}
+              </Space>
+            </List.Item>
+          )}
+          locale={{ emptyText: 'No search requests yet' }}
+          style={{ maxHeight: 200, overflow: 'auto' }}
+        />
+      </Card>
+
+      <Card size="small">
+        <Paragraph>
+          <Text strong>How it works:</Text>
+          <br />
+          1. Type in the search box to trigger debounced API calls
+          <br />
+          2. Each keystroke resets the 500ms timer
+          <br />
+          3. Only when you stop typing for 500ms does the actual request execute
+          <br />
+          4. This prevents excessive API calls during rapid typing
+          <br />
+          5. The request history shows when searches were triggered and
+          completed
+        </Paragraph>
+      </Card>
+    </Space>
+  );
+};
+
+export const DebouncedSearch: Story = {
+  render: () => <DebouncedSearchDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Demonstrates debounced API calls using useFetcher. Shows how rapid user input is throttled to prevent excessive requests, with visual feedback and request history.',
       },
     },
   },
