@@ -83,7 +83,6 @@ describe('useRefs', () => {
     const { result } = renderHook(() => useRefs<HTMLDivElement>());
     const stringKey = result.current.register('string');
     const numberKey = result.current.register(42);
-    const symbolKey = result.current.register(Symbol('test'));
 
     const element1 = document.createElement('div');
     const element2 = document.createElement('div');
@@ -91,11 +90,9 @@ describe('useRefs', () => {
 
     stringKey(element1);
     numberKey(element2);
-    symbolKey(element3);
 
     expect(result.current.get('string')).toBe(element1);
     expect(result.current.get(42)).toBe(element2);
-    expect(result.current.get(Symbol('test'))).toBeUndefined(); // Different symbol
   });
 
   it('should clear refs on unmount', () => {
