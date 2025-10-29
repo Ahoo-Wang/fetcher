@@ -25,8 +25,11 @@
 - [安装](#安装)
 - [快速开始](#快速开始)
 - [使用方法](#使用方法)
-  - [useDebouncedCallback Hook](#usedebouncedcallback-hook)
   - [useFetcher Hook](#usefetcher-hook)
+  - [防抖 Hooks](#防抖-hooks)
+    - [useDebouncedCallback](#usedebouncedcallback)
+    - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
+    - [useDebouncedFetcher](#usedebouncedfetcher)
   - [useExecutePromise Hook](#useexecutepromise-hook)
   - [usePromiseState Hook](#usepromisestate-hook)
   - [useRequestId Hook](#userequestid-hook)
@@ -79,42 +82,6 @@ function App() {
 
 ## 使用方法
 
-### useDebouncedCallback Hook
-
-`useDebouncedCallback` hook 为回调函数提供防抖功能，支持前缘和后缘执行。
-
-```typescript jsx
-import { useDebouncedCallback } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { run, cancel } = useDebouncedCallback(
-    (query: string) => {
-      console.log('搜索:', query);
-      // 执行搜索
-    },
-    { delay: 300 }
-  );
-
-  return (
-    <input
-      type="text"
-      onChange={(e) => run(e.target.value)}
-      placeholder="搜索..."
-    />
-  );
-};
-```
-
-#### 高级选项
-
-```typescript jsx
-const { run, cancel } = useDebouncedCallback(() => console.log('已执行'), {
-  delay: 500,
-  leading: true,
-  trailing: true,
-});
-```
-
 ### useFetcher Hook
 
 `useFetcher` hook 提供完整的数据获取功能，具有自动状态管理、竞态条件保护和灵活的配置选项。
@@ -160,6 +127,133 @@ const MyComponent = () => {
 };
 ```
 
+### 防抖 Hooks
+
+🚀 **高级 React 防抖库** - 强大的 hooks 将防抖与异步操作相结合，为 API 调用、用户交互和 Promise 执行提供无缝的速率限制。
+
+#### useDebouncedCallback
+
+一个 React hook，为任何回调函数提供防抖版本，支持前缘/后缘执行选项。
+
+```typescript jsx
+import { useDebouncedCallback } from '@ahoo-wang/fetcher-react';
+
+const SearchComponent = () => {
+  const { run: debouncedSearch, cancel, isPending } = useDebouncedCallback(
+    async (query: string) => {
+      const response = await fetch(`/api/search?q=${query}`);
+      const results = await response.json();
+      console.log('搜索结果:', results);
+    },
+    { delay: 300 }
+  );
+
+  const handleSearch = (query: string) => {
+    if (query.trim()) {
+      debouncedSearch(query);
+    } else {
+      cancel(); // 取消任何待处理的搜索
+    }
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        placeholder="搜索..."
+        onChange={(e) => handleSearch(e.target.value)}
+      />
+      {isPending() && <div>搜索中...</div>}
+    </div>
+  );
+};
+```
+
+**配置选项：**
+
+- `delay`: 执行前的延迟毫秒数（必需，正数）
+- `leading`: 第一次调用时立即执行（默认: false）
+- `trailing`: 最后一次调用后延迟执行（默认: true）
+
+#### useDebouncedExecutePromise
+
+将 Promise 执行与防抖功能相结合，非常适合 API 调用和异步操作。
+
+```typescript jsx
+import { useDebouncedExecutePromise } from '@ahoo-wang/fetcher-react';
+
+const DataFetcher = () => {
+  const { loading, result, error, run } = useDebouncedExecutePromise({
+    promise: async (userId: string) => {
+      const response = await fetch(`/api/users/${userId}`);
+      return response.json();
+    },
+    debounce: { delay: 300 },
+    onSuccess: (user) => console.log('用户加载:', user),
+    onError: (error) => console.error('加载用户失败:', error),
+  });
+
+  return (
+    <div>
+      <button onClick={() => run('user123')}>
+        加载用户
+      </button>
+      {loading && <div>加载中...</div>}
+      {error && <div>错误: {error.message}</div>}
+      {result && <div>用户: {result.name}</div>}
+    </div>
+  );
+};
+```
+
+#### useDebouncedFetcher
+
+专门的 hook，将 HTTP 获取与防抖相结合，建立在核心获取器库之上。
+
+```typescript jsx
+import { useDebouncedFetcher } from '@ahoo-wang/fetcher-react';
+
+const SearchInput = () => {
+  const [query, setQuery] = useState('');
+  const { loading, result, error, run } = useDebouncedFetcher({
+    debounce: { delay: 300 },
+    onSuccess: (data) => {
+      setSearchResults(data.results);
+    }
+  });
+
+  const handleChange = (value: string) => {
+    setQuery(value);
+    if (value.trim()) {
+      run({
+        url: '/api/search',
+        method: 'GET',
+        params: { q: value }
+      });
+    }
+  };
+
+  return (
+    <div>
+      <input
+        value={query}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder="搜索..."
+      />
+      {loading && <div>搜索中...</div>}
+      {error && <div>错误: {error.message}</div>}
+      {result && <SearchResults data={result} />}
+    </div>
+  );
+};
+```
+
+**防抖策略：**
+
+- **前缘执行**: 第一次调用时立即执行，然后对后续调用进行防抖
+- **后缘执行**: 最后一次调用后延迟执行（默认行为）
+- **前缘 + 后缘**: 立即执行，如果再次调用则在延迟后再次执行
+
 ### useExecutePromise Hook
 
 `useExecutePromise` hook 管理异步操作，具有自动状态处理、竞态条件保护和 promise 状态选项支持。
@@ -192,46 +286,6 @@ const MyComponent = () => {
       <button onClick={handleDirectPromise}>使用 Promise 获取</button>
       <button onClick={reset}>重置</button>
       {result && <p>{result}</p>}
-    </div>
-  );
-};
-```
-
-#### 防抖示例
-
-```typescript jsx
-import { useExecutePromise } from '@ahoo-wang/fetcher-react';
-
-const SearchComponent = () => {
-  const { loading, result, error, execute } = useExecutePromise<string[]>({
-    debounce: { delay: 300 }, // 搜索请求防抖 300ms
-  });
-
-  const handleSearch = (query: string) => {
-    if (!query.trim()) return;
-
-    execute(async () => {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-      return response.json();
-    });
-  };
-
-  return (
-    <div>
-      <input
-        type="text"
-        onChange={(e) => handleSearch(e.target.value)}
-        placeholder="搜索..."
-      />
-      {loading && <p>搜索中...</p>}
-      {error && <p>错误: {error.message}</p>}
-      {result && (
-        <ul>
-          {result.map((item, index) => (
-            <li key={index}>{item.name}</li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 };
@@ -709,6 +763,107 @@ const MyComponent = () => {
 
 ## API 参考
 
+### 防抖 Hooks
+
+#### useDebouncedCallback
+
+```typescript
+function useDebouncedCallback<T extends (...args: any[]) => any>(
+  callback: T,
+  options: UseDebouncedCallbackOptions,
+): UseDebouncedCallbackReturn<T>;
+```
+
+一个 React hook，为回调函数提供防抖版本，支持前缘/后缘执行选项。
+
+**类型参数:**
+
+- `T`: 回调函数的类型
+
+**参数:**
+
+- `callback`: 要防抖的函数
+- `options`: 配置对象
+  - `delay`: 执行前的延迟毫秒数（必需，正数）
+  - `leading?`: 第一次调用时立即执行（默认: false）
+  - `trailing?`: 最后一次调用后延迟执行（默认: true）
+
+**返回:**
+
+包含以下内容的对象：
+
+- `run`: 使用参数执行防抖回调的函数
+- `cancel`: 取消任何待处理防抖执行的函数
+- `isPending`: 返回布尔值表示防抖执行当前是否待处理的函数
+
+#### useDebouncedExecutePromise
+
+```typescript
+function useDebouncedExecutePromise<R = unknown, E = FetcherError>(
+  options: UseDebouncedExecutePromiseOptions<R, E>,
+): UseDebouncedExecutePromiseReturn<R, E>;
+```
+
+将 Promise 执行与防抖功能相结合。
+
+**类型参数:**
+
+- `R`: Promise 结果的类型（默认为 unknown）
+- `E`: 错误的类型（默认为 FetcherError）
+
+**参数:**
+
+- `options`: 包含 Promise 执行选项和防抖设置的配置对象
+  - `debounce`: 防抖配置（delay、leading、trailing）
+  - `UseExecutePromiseOptions` 的所有选项
+
+**返回:**
+
+包含以下内容的对象：
+
+- `loading`: 布尔值，表示 Promise 当前是否正在执行
+- `result`: Promise 的解析值
+- `error`: 执行期间发生的任何错误
+- `status`: 当前执行状态
+- `run`: 使用提供的参数执行防抖 Promise 的函数
+- `cancel`: 取消任何待处理防抖执行的函数
+- `isPending`: 布尔值，表示防抖调用是否待处理
+- `reset`: 将 hook 状态重置为初始值的函数
+
+#### useDebouncedFetcher
+
+```typescript
+function useDebouncedFetcher<R, E = FetcherError>(
+  options: UseDebouncedFetcherOptions<R, E>,
+): UseDebouncedFetcherReturn<R, E>;
+```
+
+专门的 hook，将 HTTP 获取与防抖相结合。
+
+**类型参数:**
+
+- `R`: 获取结果的类型
+- `E`: 错误的类型（默认为 FetcherError）
+
+**参数:**
+
+- `options`: 扩展 `UseFetcherOptions` 和 `DebounceCapable` 的配置对象
+  - HTTP 请求选项（method、headers、timeout 等）
+  - `debounce`: 防抖配置（delay、leading、trailing）
+
+**返回:**
+
+包含以下内容的对象：
+
+- `loading`: 布尔值，表示获取当前是否正在执行
+- `result`: 获取的解析值
+- `error`: 执行期间发生的任何错误
+- `status`: 当前执行状态
+- `exchange`: 表示正在进行的获取操作的 FetchExchange 对象
+- `run`: 使用请求参数执行防抖获取的函数
+- `cancel`: 取消任何待处理防抖执行的函数
+- `isPending`: 布尔值，表示防抖调用是否待处理
+
 ### useFetcher
 
 ```typescript
@@ -764,8 +919,6 @@ function useExecutePromise<R = unknown, E = unknown>(
   - `initialStatus`: 初始状态，默认为 IDLE
   - `onSuccess`: 成功时调用的回调
   - `onError`: 错误时调用的回调
-  - `propagateError`: 是否抛出错误而不是将错误存储在状态中（默认: false）
-  - `debounce`: execute 调用防抖选项（默认: 无防抖）
 
 **返回值:**
 

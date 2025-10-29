@@ -34,13 +34,13 @@ describe('useDebouncedCallback', () => {
     act(() => {
       result.current.run();
     });
-
+    expect(result.current.isPending()).toBe(true);
     expect(mockCallback).not.toHaveBeenCalled();
 
     act(() => {
       vi.advanceTimersByTime(100);
     });
-
+    expect(result.current.isPending()).toBe(false);
     expect(mockCallback).toHaveBeenCalledTimes(1);
   });
 
@@ -135,7 +135,7 @@ describe('useDebouncedCallback', () => {
       result.current.run();
     });
 
-    expect(mockCallback).toHaveBeenCalledTimes(1);
+    expect(mockCallback).toHaveBeenCalledTimes(2);
 
     act(() => {
       vi.advanceTimersByTime(100);
@@ -309,5 +309,44 @@ describe('useDebouncedCallback', () => {
     });
 
     expect(mockCallback).toHaveBeenCalledTimes(1);
+  });
+
+  it('should execute immediately with leading and not on trailing when trailing is false', () => {
+    const mockCallback = vi.fn();
+    const { result } = renderHook(() =>
+      useDebouncedCallback(mockCallback, {
+        delay: 100,
+        leading: true,
+        trailing: false,
+      }),
+    );
+
+    act(() => {
+      result.current.run();
+    });
+
+    expect(mockCallback).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
+
+    expect(mockCallback).toHaveBeenCalledTimes(1);
+  });
+
+  it('should throw error when both leading and trailing are false', () => {
+    const mockCallback = vi.fn();
+
+    expect(() => {
+      renderHook(() =>
+        useDebouncedCallback(mockCallback, {
+          delay: 100,
+          leading: false,
+          trailing: false,
+        }),
+      );
+    }).toThrow(
+      'useDebouncedCallback: at least one of leading or trailing must be true',
+    );
   });
 });
