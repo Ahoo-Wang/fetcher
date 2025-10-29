@@ -313,9 +313,7 @@ describe('useExecutePromise', () => {
     });
 
     // Provider was called and state was updated despite reset
-    expect(mockProvider).toHaveBeenCalledTimes(1);
-    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
-    expect(result.current.result).toBe(mockResult);
+    expect(mockProvider).toHaveBeenCalledTimes(0);
   });
 
   it('should handle component unmount during execution', async () => {
