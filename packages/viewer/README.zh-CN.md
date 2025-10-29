@@ -8,31 +8,31 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-viewer)](https://www.npmjs.com/package/@ahoo-wang/fetcher-viewer)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
 
-A comprehensive React component library for data visualization and filtering, built on top of Ant Design and the Fetcher ecosystem. Provides reusable UI components for building rich data-driven applications with advanced filtering capabilities.
+一个全面的 React 组件库，用于数据可视化和过滤，基于 Ant Design 和 Fetcher 生态系统。提供可重用的 UI 组件，用于构建具有高级过滤功能的数据驱动应用程序。
 
-## ✨ Features
+## ✨ 特性
 
-- **🔍 Advanced Filtering System**: Complete filter panel with dynamic filter types, operators, and state management
-- **📊 Data Components**: Remote search select, tag input, number range inputs
-- **🎨 Ant Design Integration**: Seamless integration with Ant Design components
-- **🔧 TypeScript First**: Full TypeScript support with comprehensive type definitions
-- **⚡ Performance Optimized**: Debounced search, efficient rendering, and optimized state management
-- **🧪 Well Tested**: Comprehensive test coverage with Vitest and React Testing Library
+- **🔍 高级过滤系统**: 完整的过滤面板，支持动态过滤器类型、操作符和状态管理
+- **📊 数据组件**: 远程搜索选择器、标签输入、数字范围输入
+- **🎨 Ant Design 集成**: 与 Ant Design 组件无缝集成
+- **🔧 TypeScript 优先**: 完整的 TypeScript 支持和全面的类型定义
+- **⚡ 性能优化**: 防抖搜索、高效渲染和优化的状态管理
+- **🧪 完善的测试**: 使用 Vitest 和 React Testing Library 的全面测试覆盖
 
-## 📦 Installation
+## 📦 安装
 
 ```bash
-# Using npm
+# 使用 npm
 npm install @ahoo-wang/fetcher-viewer
 
-# Using yarn
+# 使用 yarn
 yarn add @ahoo-wang/fetcher-viewer
 
-# Using pnpm
+# 使用 pnpm
 pnpm add @ahoo-wang/fetcher-viewer
 ```
 
-## 🚀 Quick Start
+## 🚀 快速开始
 
 ```tsx
 import {
@@ -43,28 +43,28 @@ import {
 } from '@ahoo-wang/fetcher-viewer';
 import { useFilterState } from '@ahoo-wang/fetcher-viewer';
 
-// Basic usage
+// 基本用法
 function App() {
   const { filters, addFilter, removeFilter, updateFilter } = useFilterState();
 
   return (
     <div>
-      {/* Remote search select */}
+      {/* 远程搜索选择器 */}
       <RemoteSelect
         search={async query => {
           const response = await fetch(`/api/search?q=${query}`);
           return response.json();
         }}
-        placeholder="Search for items..."
+        placeholder="搜索项目..."
       />
 
-      {/* Tag input */}
+      {/* 标签输入 */}
       <TagInput value={['tag1', 'tag2']} onChange={tags => console.log(tags)} />
 
-      {/* Number range */}
+      {/* 数字范围 */}
       <NumberRange value={[100, 500]} onChange={range => console.log(range)} />
 
-      {/* Advanced filter panel */}
+      {/* 高级过滤面板 */}
       <FilterPanel
         filters={filters}
         onAddFilter={addFilter}
@@ -76,51 +76,51 @@ function App() {
 }
 ```
 
-## 📚 API Reference
+## 📚 API 参考
 
-### Components
+### 组件
 
 #### RemoteSelect
 
-A debounced search select component that fetches options from a remote API.
+一个防抖搜索选择组件，从远程 API 获取选项。
 
 ```tsx
 import { RemoteSelect } from '@ahoo-wang/fetcher-viewer';
 
 <RemoteSelect
   search={async (query: string) => {
-    // Return array of options
+    // 返回选项数组
     return [
-      { label: 'Option 1', value: '1' },
-      { label: 'Option 2', value: '2' },
+      { label: '选项 1', value: '1' },
+      { label: '选项 2', value: '2' },
     ];
   }}
   debounce={{ delay: 300 }}
-  placeholder="Search..."
+  placeholder="搜索..."
   onChange={value => console.log(value)}
 />;
 ```
 
-**Props:**
+**属性：**
 
-- `search: (query: string) => Promise<RemoteSelectOption[]>` - Search function
-- `debounce?: UseDebouncedCallbackOptions` - Debounce configuration
-- `...SelectProps` - All Ant Design Select props
+- `search: (query: string) => Promise<RemoteSelectOption[]>` - 搜索函数
+- `debounce?: UseDebouncedCallbackOptions` - 防抖配置
+- `...SelectProps` - 所有 Ant Design Select 属性
 
 #### TagInput
 
-A tag input component with serialization support for different value types.
+支持不同值类型序列化的标签输入组件。
 
 ```tsx
 import { TagInput, StringTagValueItemSerializer, NumberTagValueItemSerializer } from '@ahoo-wang/fetcher-viewer';
 
-// String tags
+// 字符串标签
 <TagInput
   value={['tag1', 'tag2']}
   onChange={(tags) => console.log(tags)}
 />
 
-// Number tags
+// 数字标签
 <TagInput<number>
   value={[1, 2, 3]}
   serializer={NumberTagValueItemSerializer}
@@ -128,16 +128,16 @@ import { TagInput, StringTagValueItemSerializer, NumberTagValueItemSerializer } 
 />
 ```
 
-**Props:**
+**属性：**
 
-- `value?: ValueItemType[]` - Current tag values
-- `serializer?: TagValueItemSerializer` - Value serializer
-- `onChange?: (value: ValueItemType[]) => void` - Change handler
-- `...SelectProps` - Additional Ant Design Select props
+- `value?: ValueItemType[]` - 当前标签值
+- `serializer?: TagValueItemSerializer` - 值序列化器
+- `onChange?: (value: ValueItemType[]) => void` - 变更处理器
+- `...SelectProps` - 其他 Ant Design Select 属性
 
 #### NumberRange
 
-A number range input component with min/max validation.
+带有最小/最大值验证的数字范围输入组件。
 
 ```tsx
 import { NumberRange } from '@ahoo-wang/fetcher-viewer';
@@ -147,25 +147,25 @@ import { NumberRange } from '@ahoo-wang/fetcher-viewer';
   min={0}
   max={1000}
   precision={2}
-  placeholder={['Min', 'Max']}
+  placeholder={['最小值', '最大值']}
   onChange={range => console.log(range)}
 />;
 ```
 
-**Props:**
+**属性：**
 
-- `value?: number | NumberRangeValue` - Current range value
-- `min?: number` - Minimum allowed value
-- `max?: number` - Maximum allowed value
-- `precision?: number` - Decimal precision
-- `placeholder?: string[]` - Input placeholders
-- `onChange?: (value: NumberRangeValue) => void` - Change handler
+- `value?: number | NumberRangeValue` - 当前范围值
+- `min?: number` - 允许的最小值
+- `max?: number` - 允许的最大值
+- `precision?: number` - 小数精度
+- `placeholder?: string[]` - 输入占位符
+- `onChange?: (value: NumberRangeValue) => void` - 变更处理器
 
-### Filter System
+### 过滤系统
 
 #### FilterPanel
 
-A comprehensive filter panel with dynamic filter management.
+具有动态过滤器管理的综合过滤面板。
 
 ```tsx
 import { FilterPanel, useFilterState } from '@ahoo-wang/fetcher-viewer';
@@ -177,9 +177,9 @@ function MyFilterComponent() {
     <FilterPanel
       filters={filters}
       availableFilters={[
-        { name: 'name', label: 'Name', type: 'text' },
-        { name: 'age', label: 'Age', type: 'number' },
-        { name: 'status', label: 'Status', type: 'select' },
+        { name: 'name', label: '名称', type: 'text' },
+        { name: 'age', label: '年龄', type: 'number' },
+        { name: 'status', label: '状态', type: 'select' },
       ]}
       onAddFilter={addFilter}
       onRemoveFilter={removeFilter}
@@ -191,36 +191,36 @@ function MyFilterComponent() {
 
 #### useFilterState Hook
 
-State management hook for filter operations.
+过滤器操作的状态管理 hook。
 
 ```tsx
 import { useFilterState } from '@ahoo-wang/fetcher-viewer';
 
 const {
-  filters, // Current filters array
-  addFilter, // Add new filter
-  removeFilter, // Remove filter
-  updateFilter, // Update filter
-  clearFilters, // Clear all filters
-  getFilterValue, // Get filter value
-  setFilterValue, // Set filter value
-  resetFilters, // Reset to initial state
+  filters, // 当前过滤器数组
+  addFilter, // 添加新过滤器
+  removeFilter, // 移除过滤器
+  updateFilter, // 更新过滤器
+  clearFilters, // 清除所有过滤器
+  getFilterValue, // 获取过滤器值
+  setFilterValue, // 设置过滤器值
+  resetFilters, // 重置到初始状态
 } = useFilterState(initialFilters);
 ```
 
-#### Filter Types
+#### 过滤器类型
 
-The library provides several built-in filter types:
+库提供了几种内置过滤器类型：
 
-- **TextFilter**: Text input with various operators (=, !=, contains, etc.)
-- **NumberFilter**: Number input with comparison operators
-- **SelectFilter**: Dropdown selection filter
-- **IdFilter**: ID-based filter
-- **AssemblyFilter**: Composite filter combining multiple conditions
+- **TextFilter**: 文本输入，支持各种操作符（=、!=、包含等）
+- **NumberFilter**: 数字输入，支持比较操作符
+- **SelectFilter**: 下拉选择过滤器
+- **IdFilter**: 基于 ID 的过滤器
+- **AssemblyFilter**: 组合多个条件的复合过滤器
 
-#### Custom Filters
+#### 自定义过滤器
 
-Create custom filter components by implementing the `FilterProps` interface:
+通过实现 `FilterProps` 接口创建自定义过滤器组件：
 
 ```tsx
 import { FilterProps, FilterValue } from '@ahoo-wang/fetcher-viewer';
@@ -244,9 +244,9 @@ function CustomFilter({ field, onChange, value }: FilterProps) {
 }
 ```
 
-## 🎨 Theming & Styling
+## 🎨 主题和样式
 
-The components inherit Ant Design's theming system. You can customize the appearance using Ant Design's theme configuration:
+组件继承 Ant Design 的主题系统。您可以使用 Ant Design 的主题配置自定义外观：
 
 ```tsx
 import { ConfigProvider } from 'antd';
@@ -254,7 +254,7 @@ import { ConfigProvider } from 'antd';
 <ConfigProvider
   theme={
     {
-      /* your theme config */
+      /* 您的主题配置 */
     }
   }
 >
@@ -262,12 +262,12 @@ import { ConfigProvider } from 'antd';
 </ConfigProvider>;
 ```
 
-## 🌐 Internationalization
+## 🌐 国际化
 
-The filter system supports multiple languages. Currently supported locales:
+过滤系统支持多种语言。目前支持的语言环境：
 
-- **English** (default)
-- **Chinese** (`zh_CN`)
+- **英语**（默认）
+- **中文**（`zh_CN`）
 
 ```tsx
 import { FilterPanel } from '@ahoo-wang/fetcher-viewer';
@@ -275,28 +275,28 @@ import { zh_CN } from '@ahoo-wang/fetcher-viewer/locale';
 
 <FilterPanel
   locale={zh_CN}
-  // ... other props
+  // ... 其他属性
 />;
 ```
 
-## 🧪 Testing
+## 🧪 测试
 
-The library includes comprehensive tests. Run tests with:
+库包含全面的测试。使用以下命令运行测试：
 
 ```bash
-# Run all tests
+# 运行所有测试
 npm test
 
-# Run tests with coverage
+# 运行带覆盖率的测试
 npm run test:coverage
 
-# Run tests in UI mode
+# 在 UI 模式下运行测试
 npm run test:ui
 ```
 
-## 📖 Examples
+## 📖 示例
 
-### Basic Data Table with Filters
+### 带过滤器的基本数据表格
 
 ```tsx
 import React, { useState, useEffect } from 'react';
@@ -344,7 +344,7 @@ function DataTable() {
 }
 ```
 
-### Advanced Search Component
+### 高级搜索组件
 
 ```tsx
 import { RemoteSelect, TagInput } from '@ahoo-wang/fetcher-viewer';
@@ -364,13 +364,13 @@ function AdvancedSearch() {
           }));
         }}
         mode="multiple"
-        placeholder="Search items..."
+        placeholder="搜索项目..."
         value={selectedItems}
         onChange={setSelectedItems}
       />
 
       <TagInput
-        placeholder="Add tags..."
+        placeholder="添加标签..."
         value={selectedTags}
         onChange={setSelectedTags}
       />
@@ -379,35 +379,34 @@ function AdvancedSearch() {
 }
 ```
 
-## 🤝 Contributing
+## 🤝 贡献
 
-We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING.md) for details.
+我们欢迎贡献！请查看我们的[贡献指南](../../CONTRIBUTING.md)了解详情。
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Fork 此仓库
+2. 创建您的功能分支（`git checkout -b feature/amazing-feature`）
+3. 提交您的更改（`git commit -m 'Add some amazing feature'`）
+4. 推送到分支（`git push origin feature/amazing-feature`）
+5. 开启一个 Pull Request
 
-## 📄 License
+## 📄 许可证
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](../../LICENSE) file for details.
+本项目采用 Apache License 2.0 许可证 - 查看 [LICENSE](../../LICENSE) 文件了解详情。
 
-## 🙏 Acknowledgments
+## 🙏 致谢
 
-- [Ant Design](https://ant.design/) - UI component library
-- [Fetcher](https://github.com/Ahoo-Wang/fetcher) - HTTP client ecosystem
-- [React](https://reactjs.org/) - UI framework
-- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [Ant Design](https://ant.design/) - UI 组件库
+- [Fetcher](https://github.com/Ahoo-Wang/fetcher) - HTTP 客户端生态系统
+- [React](https://reactjs.org/) - UI 框架
+- [TypeScript](https://www.typescriptlang.org/) - 类型安全
 
-## 📞 Support
+## 📞 支持
 
-- 📖 [Documentation](https://github.com/Ahoo-Wang/fetcher/tree/master/packages/fetcher-viewer)
-- 🐛 [Issues](https://github.com/Ahoo-Wang/fetcher/issues)
-- 💬 [Discussions](https://github.com/Ahoo-Wang/fetcher/discussions)
+- 📖 [文档](https://github.com/Ahoo-Wang/fetcher/tree/master/packages/fetcher-viewer)
+- 🐛 [问题](https://github.com/Ahoo-Wang/fetcher/issues)
+- 💬 [讨论](https://github.com/Ahoo-Wang/fetcher/discussions)
 
 ---
 
-Made with ❤️ by the Fetcher team</content>
-</xai:function_call">Now I need to create the Chinese version of the README as well. Let me create README.zh-CN.md</content>
-</xai:function_call">Now I need to create the Chinese version of the README as well. Let me create README.zh-CN.md
+由 Fetcher 团队用 ❤️ 制作</content>
+</xai:function_call">Now let me run the tests to make sure everything is working correctly.
