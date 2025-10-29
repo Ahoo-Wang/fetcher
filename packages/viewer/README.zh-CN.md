@@ -402,11 +402,5 @@ function AdvancedSearch() {
 
 ## 📞 支持
 
-- 📖 [文档](https://github.com/Ahoo-Wang/fetcher/tree/master/packages/fetcher-viewer)
+- 📖 [文档](https://github.com/Ahoo-Wang/fetcher/tree/master/packages/viewer)
 - 🐛 [问题](https://github.com/Ahoo-Wang/fetcher/issues)
-- 💬 [讨论](https://github.com/Ahoo-Wang/fetcher/discussions)
-
----
-
-由 Fetcher 团队用 ❤️ 制作</content>
-</xai:function_call">Now let me run the tests to make sure everything is working correctly.

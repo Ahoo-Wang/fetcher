@@ -402,12 +402,5 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](../../
 
 ## 📞 Support
 
-- 📖 [Documentation](https://github.com/Ahoo-Wang/fetcher/tree/master/packages/fetcher-viewer)
+- 📖 [Documentation](https://github.com/Ahoo-Wang/fetcher/tree/master/packages/viewer)
 - 🐛 [Issues](https://github.com/Ahoo-Wang/fetcher/issues)
-- 💬 [Discussions](https://github.com/Ahoo-Wang/fetcher/discussions)
-
----
-
-Made with ❤️ by the Fetcher team</content>
-</xai:function_call">Now I need to create the Chinese version of the README as well. Let me create README.zh-CN.md</content>
-</xai:function_call">Now I need to create the Chinese version of the README as well. Let me create README.zh-CN.md
