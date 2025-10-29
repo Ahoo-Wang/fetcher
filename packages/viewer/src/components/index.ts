@@ -13,3 +13,4 @@
 
 export * from './TagInput';
 export * from './NumberRange';
+export * from './RemoteSelect';
