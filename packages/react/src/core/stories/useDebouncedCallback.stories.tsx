@@ -12,190 +12,292 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useDebouncedCallback } from '../useDebouncedCallback';
 import {
   Button,
   Card,
   Typography,
   Space,
-  Input,
   Alert,
-  Tag,
+  Input,
+  Slider,
+  Switch,
+  Statistic,
+  Row,
+  Col,
+  Badge,
+  List,
   Divider,
 } from 'antd';
 
-const { Text, Title } = Typography;
+const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
-// Component that demonstrates useDebouncedCallback
+// Interactive Demo Component for useDebouncedCallback
 interface DebouncedCallbackDemoProps {
   delay: number;
   leading: boolean;
   trailing: boolean;
-  showLogs: boolean;
 }
 
 function DebouncedCallbackDemo({
   delay,
   leading,
   trailing,
-  showLogs,
 }: DebouncedCallbackDemoProps) {
   const [callCount, setCallCount] = useState(0);
-  const [immediateCallCount, setImmediateCallCount] = useState(0);
   const [debouncedCallCount, setDebouncedCallCount] = useState(0);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [inputValue, setInputValue] = useState('');
 
-  const addLog = useCallback(
-    (message: string) => {
-      if (showLogs) {
-        setLogs(prev => [
-          ...prev.slice(-4),
-          `${new Date().toLocaleTimeString()}: ${message}`,
-        ]);
-      }
-    },
-    [showLogs],
-  );
-
-  const callback = useCallback(
+  const { run, cancel, isPending } = useDebouncedCallback(
     (value: string) => {
-      setCallCount(prev => prev + 1);
-      addLog(`Callback executed with: "${value}"`);
+      setDebouncedCallCount(prev => prev + 1);
+      const logEntry = {
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'debounced',
+        value,
+        message: `Debounced callback executed with: "${value}"`,
+      };
+      setLogs(prev => [logEntry, ...prev.slice(0, 9)]);
     },
-    [addLog],
+    { delay, leading, trailing },
   );
-
-  const { run, cancel } = useDebouncedCallback(callback, {
-    delay,
-    leading,
-    trailing,
-  });
 
   const handleInputChange = (value: string) => {
-    if (leading && !trailing) {
-      setImmediateCallCount(prev => prev + 1);
-      addLog(`Leading edge call with: "${value}"`);
-    } else if (trailing && !leading) {
-      setDebouncedCallCount(prev => prev + 1);
-      addLog(`Trailing edge scheduled for: "${value}"`);
-    } else if (leading && trailing) {
-      addLog(`Leading+Trailing call with: "${value}"`);
-    }
+    setCallCount(prev => prev + 1);
+    setInputValue(value);
+
+    const logEntry = {
+      timestamp: new Date().toLocaleTimeString(),
+      type: 'input',
+      value,
+      message: `Input changed to: "${value}"`,
+    };
+    setLogs(prev => [logEntry, ...prev.slice(0, 9)]);
+
     run(value);
   };
 
-  const handleCancel = () => {
-    cancel();
-    addLog('Debounced call cancelled');
+  const handleManualTrigger = () => {
+    const value = `Manual trigger ${Date.now()}`;
+    setCallCount(prev => prev + 1);
+    setInputValue(value);
+
+    const logEntry = {
+      timestamp: new Date().toLocaleTimeString(),
+      type: 'manual',
+      value,
+      message: `Manual trigger: "${value}"`,
+    };
+    setLogs(prev => [logEntry, ...prev.slice(0, 9)]);
+
+    run(value);
   };
 
-  const handleReset = () => {
-    setCallCount(0);
-    setImmediateCallCount(0);
-    setDebouncedCallCount(0);
+  const clearLogs = () => {
     setLogs([]);
+    setCallCount(0);
+    setDebouncedCallCount(0);
+  };
+
+  const getLogColor = (type: string) => {
+    switch (type) {
+      case 'input':
+        return 'blue';
+      case 'manual':
+        return 'orange';
+      case 'debounced':
+        return 'green';
+      default:
+        return 'default';
+    }
   };
 
   return (
-    <Card title="useDebouncedCallback Demo" style={{ width: 700 }}>
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <div>
-          <Title level={4}>Configuration</Title>
-          <Space>
-            <Tag color="blue">Delay: {delay}ms</Tag>
-            <Tag color={leading ? 'green' : 'default'}>
-              Leading: {leading ? 'Yes' : 'No'}
-            </Tag>
-            <Tag color={trailing ? 'green' : 'default'}>
-              Trailing: {trailing ? 'Yes' : 'No'}
-            </Tag>
-          </Space>
-        </div>
+    <Space
+      direction="vertical"
+      size="large"
+      style={{ width: '100%', maxWidth: 1200 }}
+    >
+      <Card>
+        <Title level={2}>🎯 useDebouncedCallback Interactive Demo</Title>
+        <Paragraph>
+          Experience debouncing in real-time. Type in the input field or click
+          the button to trigger callbacks. Watch how the debounced execution
+          responds to your configuration settings.
+        </Paragraph>
+      </Card>
 
-        <Divider />
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={8}>
+          <Card title="Configuration" size="small">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <div>
+                <Text strong>Delay: {delay}ms</Text>
+                <Slider
+                  min={100}
+                  max={2000}
+                  step={100}
+                  value={delay}
+                  disabled
+                  tooltip={{ open: false }}
+                />
+              </div>
 
-        <div>
-          <Title level={4}>Test Input</Title>
-          <TextArea
-            placeholder="Type here to trigger debounced callback..."
-            onChange={e => handleInputChange(e.target.value)}
-            rows={3}
-            style={{ marginBottom: 8 }}
-          />
-          <Space>
-            <Button onClick={handleCancel} danger>
-              Cancel Pending
-            </Button>
-            <Button onClick={handleReset}>Reset Counters</Button>
-          </Space>
-        </div>
+              <div>
+                <Text strong>Leading Edge: </Text>
+                <Switch checked={leading} disabled />
+              </div>
 
-        <Divider />
+              <div>
+                <Text strong>Trailing Edge: </Text>
+                <Switch checked={trailing} disabled />
+              </div>
 
-        <div>
-          <Title level={4}>Statistics</Title>
-          <Space direction="vertical">
-            <Text>
-              <strong>Total Callback Executions:</strong> {callCount}
-            </Text>
-            {leading && (
-              <Text>
-                <strong>Leading Edge Calls:</strong> {immediateCallCount}
-              </Text>
-            )}
-            {trailing && (
-              <Text>
-                <strong>Trailing Edge Scheduled:</strong> {debouncedCallCount}
-              </Text>
-            )}
-          </Space>
-        </div>
+              <Divider />
 
-        {showLogs && logs.length > 0 && (
-          <>
-            <Divider />
-            <div>
-              <Title level={4}>Execution Logs</Title>
               <Space direction="vertical" style={{ width: '100%' }}>
-                {logs.map((log, index) => (
-                  <Alert
-                    key={index}
-                    message={log}
-                    type="info"
-                    showIcon
-                    style={{ padding: '4px 8px' }}
-                  />
-                ))}
+                <Button
+                  type="primary"
+                  onClick={handleManualTrigger}
+                  disabled={isPending()}
+                  block
+                >
+                  {isPending() ? 'Pending...' : 'Trigger Manual Call'}
+                </Button>
+
+                <Button onClick={cancel} disabled={!isPending()} block>
+                  Cancel Pending
+                </Button>
+
+                <Button onClick={clearLogs} danger block>
+                  Clear Logs
+                </Button>
               </Space>
+            </Space>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={8}>
+          <Card title="Live Statistics" size="small">
+            <Row gutter={[16, 8]}>
+              <Col span={12}>
+                <Statistic
+                  title="Total Calls"
+                  value={callCount}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Col>
+              <Col span={12}>
+                <Statistic
+                  title="Debounced Calls"
+                  value={debouncedCallCount}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Col>
+              <Col span={12}>
+                <Statistic
+                  title="Pending"
+                  value={isPending() ? 'Yes' : 'No'}
+                  valueStyle={{ color: isPending() ? '#faad14' : '#d9d9d9' }}
+                />
+              </Col>
+              <Col span={12}>
+                <Statistic
+                  title="Efficiency"
+                  value={
+                    callCount > 0
+                      ? Math.round((debouncedCallCount / callCount) * 100)
+                      : 0
+                  }
+                  suffix="%"
+                  valueStyle={{ color: '#722ed1' }}
+                />
+              </Col>
+            </Row>
+          </Card>
+
+          <Card title="Input Field" size="small" style={{ marginTop: 16 }}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <TextArea
+                placeholder="Type here to trigger debounced callbacks..."
+                value={inputValue}
+                onChange={e => handleInputChange(e.target.value)}
+                rows={3}
+              />
+              <Text type="secondary">
+                Each keystroke triggers a call, but only debounced executions
+                count.
+              </Text>
+            </Space>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={8}>
+          <Card title="Activity Log" size="small">
+            <List
+              size="small"
+              dataSource={logs}
+              renderItem={(item, index) => (
+                <List.Item key={index}>
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    <Space>
+                      <Badge color={getLogColor(item.type)} />
+                      <Text strong style={{ fontSize: '12px' }}>
+                        {item.timestamp}
+                      </Text>
+                      <Text
+                        type={
+                          item.type === 'debounced' ? 'success' : 'secondary'
+                        }
+                        style={{ fontSize: '12px' }}
+                      >
+                        {item.type.toUpperCase()}
+                      </Text>
+                    </Space>
+                    <Text ellipsis style={{ maxWidth: 250, fontSize: '12px' }}>
+                      {item.message}
+                    </Text>
+                  </Space>
+                </List.Item>
+              )}
+              locale={{ emptyText: 'No activity yet' }}
+              style={{ maxHeight: 300, overflow: 'auto' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Card>
+        <Alert
+          message="Debouncing Behavior"
+          description={
+            <div>
+              <p>
+                <strong>Leading Edge ({leading ? 'ON' : 'OFF'}):</strong>{' '}
+                {leading
+                  ? 'Executes immediately on first call'
+                  : 'No immediate execution'}
+              </p>
+              <p>
+                <strong>Trailing Edge ({trailing ? 'ON' : 'OFF'}):</strong>{' '}
+                {trailing
+                  ? `Executes after ${delay}ms delay`
+                  : 'No delayed execution'}
+              </p>
+              <p>
+                <strong>Current Status:</strong>{' '}
+                {isPending() ? `Waiting ${delay}ms...` : 'Ready'}
+              </p>
             </div>
-          </>
-        )}
-
-        <Divider />
-
-        <div>
-          <Title level={4}>How it works</Title>
-          <Space direction="vertical">
-            <Text>
-              <strong>Leading Edge:</strong> Executes immediately on first call,
-              then waits for delay.
-            </Text>
-            <Text>
-              <strong>Trailing Edge:</strong> Executes after delay on last call.
-            </Text>
-            <Text>
-              <strong>Both:</strong> Executes immediately, then again after
-              delay if called again.
-            </Text>
-            <Text type="secondary">
-              Try typing in the input above to see the debouncing in action!
-            </Text>
-          </Space>
-        </div>
-      </Space>
-    </Card>
+          }
+          type="info"
+          showIcon
+        />
+      </Card>
+    </Space>
   );
 }
 
@@ -203,33 +305,27 @@ const meta: Meta<typeof DebouncedCallbackDemo> = {
   title: 'React/Hooks/useDebouncedCallback',
   component: DebouncedCallbackDemo,
   parameters: {
-    layout: 'centered',
+    layout: 'fullscreen',
     docs: {
       description: {
         component:
-          'A React hook that provides a debounced version of a callback function with configurable leading and trailing edge execution.',
+          'A powerful React hook that provides debounced callback execution with configurable leading and trailing edge behavior. Perfect for optimizing performance in user interaction scenarios like search inputs, form validation, and window resizing.',
       },
     },
   },
   tags: ['autodocs'],
   argTypes: {
     delay: {
-      control: { type: 'number', min: 100, max: 2000, step: 100 },
-      description: 'Delay in milliseconds before the callback is invoked',
+      control: { type: 'range', min: 100, max: 2000, step: 100 },
+      description: 'Delay in milliseconds before the callback executes',
     },
     leading: {
       control: 'boolean',
-      description:
-        'Whether to invoke the callback immediately on the leading edge',
+      description: 'Execute callback immediately on first call',
     },
     trailing: {
       control: 'boolean',
-      description:
-        'Whether to invoke the callback on the trailing edge after delay',
-    },
-    showLogs: {
-      control: 'boolean',
-      description: 'Whether to show execution logs',
+      description: 'Execute callback after delay on last call',
     },
   },
 };
@@ -242,51 +338,77 @@ export const Default: Story = {
     delay: 500,
     leading: false,
     trailing: true,
-    showLogs: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Default configuration with 500ms delay and trailing edge execution only.',
+      },
+    },
   },
 };
 
 export const LeadingEdge: Story = {
   args: {
-    delay: 1000,
+    delay: 300,
     leading: true,
     trailing: false,
-    showLogs: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Leading edge execution - callback fires immediately, then debounces subsequent calls.',
+      },
+    },
   },
 };
 
-export const TrailingEdge: Story = {
-  args: {
-    delay: 300,
-    leading: false,
-    trailing: true,
-    showLogs: true,
-  },
-};
-
-export const LeadingAndTrailing: Story = {
+export const BothEdges: Story = {
   args: {
     delay: 800,
     leading: true,
     trailing: true,
-    showLogs: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Both leading and trailing edge execution - immediate execution followed by delayed execution if called again.',
+      },
+    },
   },
 };
 
 export const FastDebounce: Story = {
   args: {
-    delay: 200,
+    delay: 150,
     leading: false,
     trailing: true,
-    showLogs: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Fast 150ms debounce for responsive interactions like search suggestions.',
+      },
+    },
   },
 };
 
 export const SlowDebounce: Story = {
   args: {
-    delay: 1500,
+    delay: 1000,
     leading: false,
     trailing: true,
-    showLogs: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Slow 1000ms debounce for expensive operations like API calls or form submissions.',
+      },
+    },
   },
 };

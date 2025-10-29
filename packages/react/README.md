@@ -26,8 +26,11 @@ robust data fetching capabilities.
 
 - [Installation](#installation)
 - [Usage](#usage)
-  - [useDebouncedCallback Hook](#usedebouncedcallback-hook)
   - [useFetcher Hook](#usefetcher-hook)
+  - [Debounced Hooks](#debounced-hooks)
+    - [useDebouncedCallback](#usedebouncedcallback)
+    - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
+    - [useDebouncedFetcher](#usedebouncedfetcher)
   - [useExecutePromise Hook](#useexecutepromise-hook)
   - [usePromiseState Hook](#usepromisestate-hook)
   - [useRequestId Hook](#userequestid-hook)
@@ -80,42 +83,6 @@ function App() {
 
 ## Usage
 
-### useDebouncedCallback Hook
-
-The `useDebouncedCallback` hook provides debouncing functionality for callback functions with support for leading and trailing edge execution.
-
-```typescript jsx
-import { useDebouncedCallback } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { run, cancel } = useDebouncedCallback(
-    (query: string) => {
-      console.log('Searching for:', query);
-      // Perform search
-    },
-    { delay: 300 }
-  );
-
-  return (
-    <input
-      type="text"
-      onChange={(e) => run(e.target.value)}
-      placeholder="Search..."
-    />
-  );
-};
-```
-
-#### Advanced Options
-
-```typescript jsx
-const { run, cancel } = useDebouncedCallback(() => console.log('Executed'), {
-  delay: 500,
-  leading: true,
-  trailing: true,
-});
-```
-
 ### useFetcher Hook
 
 The `useFetcher` hook provides complete data fetching capabilities with automatic state management, race condition
@@ -162,11 +129,137 @@ const MyComponent = () => {
 };
 ```
 
+### Debounced Hooks
+
+🚀 **Advanced Debouncing for React Applications** - Powerful hooks that combine debouncing with async operations, providing seamless rate limiting for API calls, user interactions, and promise execution.
+
+#### useDebouncedCallback
+
+A React hook that provides a debounced version of any callback function with leading/trailing edge execution options.
+
+```typescript jsx
+import { useDebouncedCallback } from '@ahoo-wang/fetcher-react';
+
+const SearchComponent = () => {
+  const { run: debouncedSearch, cancel, isPending } = useDebouncedCallback(
+    async (query: string) => {
+      const response = await fetch(`/api/search?q=${query}`);
+      const results = await response.json();
+      console.log('Search results:', results);
+    },
+    { delay: 300 }
+  );
+
+  const handleSearch = (query: string) => {
+    if (query.trim()) {
+      debouncedSearch(query);
+    } else {
+      cancel(); // Cancel any pending search
+    }
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        placeholder="Search..."
+        onChange={(e) => handleSearch(e.target.value)}
+      />
+      {isPending() && <div>Searching...</div>}
+    </div>
+  );
+};
+```
+
+**Configuration Options:**
+
+- `delay`: Delay in milliseconds before execution (required, positive number)
+- `leading`: Execute immediately on first call (default: false)
+- `trailing`: Execute after delay on last call (default: true)
+
+#### useDebouncedExecutePromise
+
+Combines promise execution with debouncing functionality, perfect for API calls and async operations.
+
+```typescript jsx
+import { useDebouncedExecutePromise } from '@ahoo-wang/fetcher-react';
+
+const DataFetcher = () => {
+  const { loading, result, error, run } = useDebouncedExecutePromise({
+    promise: async (userId: string) => {
+      const response = await fetch(`/api/users/${userId}`);
+      return response.json();
+    },
+    debounce: { delay: 300 },
+    onSuccess: (user) => console.log('User loaded:', user),
+    onError: (error) => console.error('Failed to load user:', error),
+  });
+
+  return (
+    <div>
+      <button onClick={() => run('user123')}>
+        Load User
+      </button>
+      {loading && <div>Loading...</div>}
+      {error && <div>Error: {error.message}</div>}
+      {result && <div>User: {result.name}</div>}
+    </div>
+  );
+};
+```
+
+#### useDebouncedFetcher
+
+Specialized hook combining HTTP fetching with debouncing, built on top of the core fetcher library.
+
+```typescript jsx
+import { useDebouncedFetcher } from '@ahoo-wang/fetcher-react';
+
+const SearchInput = () => {
+  const [query, setQuery] = useState('');
+  const { loading, result, error, run } = useDebouncedFetcher({
+    debounce: { delay: 300 },
+    onSuccess: (data) => {
+      setSearchResults(data.results);
+    }
+  });
+
+  const handleChange = (value: string) => {
+    setQuery(value);
+    if (value.trim()) {
+      run({
+        url: '/api/search',
+        method: 'GET',
+        params: { q: value }
+      });
+    }
+  };
+
+  return (
+    <div>
+      <input
+        value={query}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder="Search..."
+      />
+      {loading && <div>Searching...</div>}
+      {error && <div>Error: {error.message}</div>}
+      {result && <SearchResults data={result} />}
+    </div>
+  );
+};
+```
+
+**Debouncing Strategies:**
+
+- **Leading Edge**: Execute immediately on first call, then debounce subsequent calls
+- **Trailing Edge**: Execute after delay on last call (default behavior)
+- **Leading + Trailing**: Execute immediately, then again after delay if called again
+
 ### useExecutePromise Hook
 
 The `useExecutePromise` hook manages asynchronous operations with automatic state handling, built-in race condition
-protection, debouncing support, and flexible promise state options. The `execute` function returns a `Promise<void>`
-that resolves when the operation completes.
+protection, and support for promise state options.
 
 ```typescript jsx
 import { useExecutePromise } from '@ahoo-wang/fetcher-react';
@@ -179,13 +272,13 @@ const MyComponent = () => {
     return response.text();
   };
 
-  const handleFetch = async () => {
-    await execute(fetchData); // Using a promise supplier
+  const handleFetch = () => {
+    execute(fetchData); // Using a promise supplier
   };
 
-  const handleDirectPromise = async () => {
+  const handleDirectPromise = () => {
     const promise = fetch('/api/data').then(res => res.text());
-    await execute(promise); // Using a direct promise
+    execute(promise); // Using a direct promise
   };
 
   if (loading) return <div>Loading...</div>;
@@ -196,46 +289,6 @@ const MyComponent = () => {
       <button onClick={handleDirectPromise}>Fetch with Promise</button>
       <button onClick={reset}>Reset</button>
       {result && <p>{result}</p>}
-    </div>
-  );
-};
-```
-
-#### Debouncing Example
-
-```typescript jsx
-import { useExecutePromise } from '@ahoo-wang/fetcher-react';
-
-const SearchComponent = () => {
-  const { loading, result, error, execute } = useExecutePromise<string[]>({
-    debounce: { delay: 300 }, // Debounce search requests by 300ms
-  });
-
-  const handleSearch = (query: string) => {
-    if (!query.trim()) return;
-
-    execute(async () => {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-      return response.json();
-    });
-  };
-
-  return (
-    <div>
-      <input
-        type="text"
-        onChange={(e) => handleSearch(e.target.value)}
-        placeholder="Search..."
-      />
-      {loading && <p>Searching...</p>}
-      {error && <p>Error: {error.message}</p>}
-      {result && (
-        <ul>
-          {result.map((item, index) => (
-            <li key={index}>{item.name}</li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 };
@@ -1337,6 +1390,107 @@ describe('useListQuery', () => {
 
 ## API Reference
 
+### Debounced Hooks
+
+#### useDebouncedCallback
+
+```typescript
+function useDebouncedCallback<T extends (...args: any[]) => any>(
+  callback: T,
+  options: UseDebouncedCallbackOptions,
+): UseDebouncedCallbackReturn<T>;
+```
+
+A React hook that provides a debounced version of a callback function with leading/trailing edge execution options.
+
+**Type Parameters:**
+
+- `T`: The type of the callback function
+
+**Parameters:**
+
+- `callback`: The function to debounce
+- `options`: Configuration object
+  - `delay`: Delay in milliseconds before execution (required, positive number)
+  - `leading?`: Execute immediately on first call (default: false)
+  - `trailing?`: Execute after delay on last call (default: true)
+
+**Returns:**
+
+An object containing:
+
+- `run`: Function to execute the debounced callback with arguments
+- `cancel`: Function to cancel any pending debounced execution
+- `isPending`: Function that returns true if a debounced execution is currently pending
+
+#### useDebouncedExecutePromise
+
+```typescript
+function useDebouncedExecutePromise<R = unknown, E = FetcherError>(
+  options: UseDebouncedExecutePromiseOptions<R, E>,
+): UseDebouncedExecutePromiseReturn<R, E>;
+```
+
+Combines promise execution with debouncing functionality.
+
+**Type Parameters:**
+
+- `R`: The type of the promise result (defaults to unknown)
+- `E`: The type of the error (defaults to FetcherError)
+
+**Parameters:**
+
+- `options`: Configuration object containing promise execution options and debounce settings
+  - `debounce`: Debounce configuration (delay, leading, trailing)
+  - All options from `UseExecutePromiseOptions`
+
+**Returns:**
+
+An object containing:
+
+- `loading`: Boolean indicating if the promise is currently executing
+- `result`: The resolved value of the promise
+- `error`: Any error that occurred during execution
+- `status`: Current execution status
+- `run`: Debounced function to execute the promise with provided arguments
+- `cancel`: Function to cancel any pending debounced execution
+- `isPending`: Boolean indicating if a debounced call is pending
+- `reset`: Function to reset the hook state to initial values
+
+#### useDebouncedFetcher
+
+```typescript
+function useDebouncedFetcher<R, E = FetcherError>(
+  options: UseDebouncedFetcherOptions<R, E>,
+): UseDebouncedFetcherReturn<R, E>;
+```
+
+Specialized hook combining HTTP fetching with debouncing.
+
+**Type Parameters:**
+
+- `R`: The type of the fetch result
+- `E`: The type of the error (defaults to FetcherError)
+
+**Parameters:**
+
+- `options`: Configuration object extending `UseFetcherOptions` and `DebounceCapable`
+  - HTTP request options (method, headers, timeout, etc.)
+  - `debounce`: Debounce configuration (delay, leading, trailing)
+
+**Returns:**
+
+An object containing:
+
+- `loading`: Boolean indicating if the fetch is currently executing
+- `result`: The resolved value of the fetch
+- `error`: Any error that occurred during execution
+- `status`: Current execution status
+- `exchange`: The FetchExchange object representing the ongoing fetch operation
+- `run`: Function to execute the debounced fetch with request parameters
+- `cancel`: Function to cancel any pending debounced execution
+- `isPending`: Boolean indicating if a debounced call is pending
+
 ### useFetcher
 
 ```typescript
@@ -1380,7 +1534,8 @@ function useExecutePromise<R = unknown, E = FetcherError>(
 ): UseExecutePromiseReturn<R, E>;
 ```
 
-A React hook for managing asynchronous operations with proper state handling, race condition protection, debouncing support, and flexible promise state options.
+A React hook for managing asynchronous operations with proper state handling, race condition protection, and promise
+state options.
 
 **Type Parameters:**
 
@@ -1393,8 +1548,6 @@ A React hook for managing asynchronous operations with proper state handling, ra
   - `initialStatus`: Initial status, defaults to IDLE
   - `onSuccess`: Callback invoked on success
   - `onError`: Callback invoked on error
-  - `propagateError`: Whether to throw errors instead of storing them in state (default: false)
-  - `debounce`: Options for debouncing execute calls (default: no debouncing)
 
 **Returns:**
 
@@ -1404,7 +1557,7 @@ An object containing:
 - `loading`: Indicates if currently loading
 - `result`: The result value
 - `error`: The error value
-- `execute`: Function to execute a promise supplier or promise, returns Promise<void>
+- `execute`: Function to execute a promise supplier or promise
 - `reset`: Function to reset the state to initial values
 
 ### usePromiseState

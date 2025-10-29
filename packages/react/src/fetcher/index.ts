@@ -12,3 +12,4 @@
  */
 
 export * from './useFetcher';
+export * from './useDebouncedFetcher';

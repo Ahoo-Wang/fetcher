@@ -25,11 +25,6 @@ export interface UseDebouncedCallbackOptions {
   trailing?: boolean;
 }
 
-export interface DebounceCapable {
-  /** Debounce options for execute calls */
-  debounce?: Partial<UseDebouncedCallbackOptions>;
-}
-
 /**
  * Return type of the useDebouncedCallback hook.
  * @template T - The type of the original callback function.
@@ -39,6 +34,8 @@ export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
   readonly run: (...args: Parameters<T>) => void;
   /** Function to cancel any pending debounced execution. */
   readonly cancel: () => void;
+  /** Function to check if a debounced execution is currently pending. */
+  readonly isPending: () => boolean;
 }
 
 /**
@@ -55,6 +52,7 @@ export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
  * @returns An object containing:
  *   - `run`: Function to execute the debounced callback with arguments.
  *   - `cancel`: Function to cancel any pending debounced execution.
+ *   - `isPending`: Function that returns true if a debounced execution is currently pending.
  *
  * @example
  * ```typescript
@@ -83,16 +81,28 @@ export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
  * run(); // Logs immediately, then again after 500ms if called again
  * ```
  *
- * @throws Will not throw any exceptions directly, but the callback function may throw exceptions that should be handled by the caller.
+ * @throws {Error} Throws an error if both `leading` and `trailing` options are set to false, as at least one must be true for the debounce to function.
+ * @throws Exceptions from the callback function itself should be handled by the caller.
  */
 export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
   options: UseDebouncedCallbackOptions,
 ): UseDebouncedCallbackReturn<T> {
-  const timeoutRef = useRef<number>(undefined);
+  if (options.leading === false && options.trailing === false) {
+    throw new Error(
+      'useDebouncedCallback: at least one of leading or trailing must be true',
+    );
+  }
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const hasLeadingCalledRef = useRef(false);
   const latestCallback = useLatest(callback);
   const latestOptions = useLatest(options);
+
+  const isPending = useCallback(() => {
+    return timeoutRef.current !== undefined;
+  }, []);
 
   // Function to cancel any pending debounced execution
   const cancel = useCallback(() => {
@@ -100,6 +110,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
       clearTimeout(timeoutRef.current);
       timeoutRef.current = undefined;
     }
+    hasLeadingCalledRef.current = false;
   }, []);
 
   // Cleanup timeout on component unmount to prevent memory leaks
@@ -113,7 +124,6 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   const run = useCallback(
     (...args: Parameters<T>) => {
       const { leading = false, trailing = true, delay } = latestOptions.current;
-
       // Cancel any existing timeout to reset the debounce timer
       cancel();
 
@@ -129,7 +139,8 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
       if (trailing) {
         timeoutRef.current = setTimeout(() => {
           // Only call on trailing edge if not already called on leading edge
-          if (!shouldCallLeading) {
+          // Use ref value instead of closure value to avoid stale closures
+          if (!hasLeadingCalledRef.current) {
             latestCallback.current(...args);
           }
           // Reset leading flag and timeout reference after execution
@@ -145,7 +156,8 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
     () => ({
       run,
       cancel,
+      isPending,
     }),
-    [run, cancel],
+    [run, cancel, isPending],
   );
 }

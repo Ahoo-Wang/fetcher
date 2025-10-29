@@ -61,7 +61,8 @@ describe('useExecutePromise', () => {
     const { result } = renderHook(() => useExecutePromise<string>());
 
     await act(async () => {
-      await result.current.execute(mockProvider);
+      const resolvedValue = await result.current.execute(mockProvider);
+      expect(resolvedValue).toBe(error);
     });
 
     expect(mockProvider).toHaveBeenCalled();
@@ -145,8 +146,8 @@ describe('useExecutePromise', () => {
     const secondPromise = Promise.resolve('second result');
 
     // Execute first (slow)
-    await act(async () => {
-      await result.current.execute(firstPromise);
+    act(() => {
+      result.current.execute(firstPromise);
     });
 
     // Execute second (fast), should override
@@ -158,6 +159,7 @@ describe('useExecutePromise', () => {
     expect(result.current.status).toBe(PromiseStatus.SUCCESS);
     expect(result.current.result).toBe('second result');
   });
+
 
   it('should propagate error when propagateError is true', async () => {
     const error = new Error('propagate error');
@@ -187,7 +189,8 @@ describe('useExecutePromise', () => {
     );
 
     await act(async () => {
-      await result.current.execute(mockProvider);
+      const resolvedValue = await result.current.execute(mockProvider);
+      expect(resolvedValue).toBe(error);
     });
 
     expect(mockProvider).toHaveBeenCalled();
@@ -204,7 +207,8 @@ describe('useExecutePromise', () => {
     const { result } = renderHook(() => useExecutePromise<string>({}));
 
     await act(async () => {
-      await result.current.execute(mockProvider);
+      const resolvedValue = await result.current.execute(mockProvider);
+      expect(resolvedValue).toBe(error);
     });
 
     expect(mockProvider).toHaveBeenCalled();
@@ -214,212 +218,4 @@ describe('useExecutePromise', () => {
     expect(result.current.result).toBeUndefined();
   });
 
-  it('should throw error when component is unmounted before execution', async () => {
-    const mockProvider = vi.fn().mockResolvedValue('test');
-
-    const { result, unmount } = renderHook(() => useExecutePromise<string>());
-
-    // Unmount the component
-    unmount();
-
-    // Attempt to execute after unmount should throw
-    await expect(
-      act(async () => {
-        await result.current.execute(mockProvider);
-      }),
-    ).rejects.toThrow('Component is unmounted');
-
-    // Provider should not be called
-    expect(mockProvider).not.toHaveBeenCalled();
-  });
-
-  it('should execute immediately when debounce delay is 0', async () => {
-    const mockResult = 'immediate result';
-    const mockProvider = vi.fn().mockResolvedValue(mockResult);
-
-    const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounce: { delay: 0 } }),
-    );
-
-    await act(async () => {
-      await result.current.execute(mockProvider);
-    });
-
-    expect(mockProvider).toHaveBeenCalledTimes(1);
-    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
-    expect(result.current.result).toBe(mockResult);
-  });
-
-  it('should debounce execution when debounceDelay is set', async () => {
-    const mockResult = 'debounced result';
-    const mockProvider = vi.fn().mockResolvedValue(mockResult);
-
-    const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounce: { delay: 100 } }),
-    );
-
-    // Call execute multiple times quickly
-    act(() => {
-      result.current.execute(mockProvider);
-    });
-
-    act(() => {
-      result.current.execute(mockProvider);
-    });
-
-    act(() => {
-      result.current.execute(mockProvider);
-    });
-
-    // Should not have executed yet due to debouncing
-    expect(mockProvider).not.toHaveBeenCalled();
-
-    // Wait for debounce delay
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 150));
-    });
-
-    // Should have executed only once
-    expect(mockProvider).toHaveBeenCalledTimes(1);
-    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
-    expect(result.current.result).toBe(mockResult);
-  });
-
-  it('should reset state during debounced execution', async () => {
-    const mockResult = 'debounced result';
-    const mockProvider = vi.fn().mockResolvedValue(mockResult);
-
-    const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounce: { delay: 100 } }),
-    );
-
-    // Start debounced execution
-    act(() => {
-      result.current.execute(mockProvider);
-    });
-
-    // Reset immediately
-    act(() => {
-      result.current.reset();
-    });
-
-    // State should be reset
-    expect(result.current.status).toBe(PromiseStatus.IDLE);
-    expect(result.current.loading).toBe(false);
-
-    // Wait for debounce delay - execution will still happen
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 150));
-    });
-
-    // Provider was called and state was updated despite reset
-    expect(mockProvider).toHaveBeenCalledTimes(0);
-  });
-
-  it('should handle component unmount during execution', async () => {
-    const mockProvider = vi.fn().mockImplementation(() => {
-      return new Promise(() => {
-        // Never resolves to simulate hanging promise
-      });
-    });
-
-    const { result, unmount } = renderHook(() => useExecutePromise<string>());
-
-    // Start execution
-    act(() => {
-      result.current.execute(mockProvider);
-    });
-
-    // Unmount component
-    unmount();
-
-    // Should not throw or cause issues
-    expect(mockProvider).toHaveBeenCalled();
-  });
-
-  it('should handle multiple rapid executions with debouncing', async () => {
-    const mockResult1 = 'result 1';
-    const mockResult2 = 'result 2';
-    const mockProvider1 = vi.fn().mockResolvedValue(mockResult1);
-    const mockProvider2 = vi.fn().mockResolvedValue(mockResult2);
-
-    const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounce: { delay: 50 } }),
-    );
-
-    // Execute first promise
-    act(() => {
-      result.current.execute(mockProvider1);
-    });
-
-    // Quickly execute second promise (should cancel first)
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 25));
-      result.current.execute(mockProvider2);
-    });
-
-    // Wait for debounce
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 75));
-    });
-
-    // Only second promise should have executed
-    expect(mockProvider1).not.toHaveBeenCalled();
-    expect(mockProvider2).toHaveBeenCalledTimes(1);
-    expect(result.current.result).toBe(mockResult2);
-  });
-
-  it('should work with zero debounce delay', async () => {
-    const mockResult = 'immediate result';
-    const mockProvider = vi.fn().mockResolvedValue(mockResult);
-
-    const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounce: { delay: 0 } }),
-    );
-
-    await act(async () => {
-      await result.current.execute(mockProvider);
-    });
-
-    expect(mockProvider).toHaveBeenCalledTimes(1);
-    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
-    expect(result.current.result).toBe(mockResult);
-  });
-
-  it('should handle promise supplier function calls', async () => {
-    const mockResult = 'supplier result';
-    const mockSupplier = vi.fn().mockResolvedValue(mockResult);
-
-    const { result } = renderHook(() => useExecutePromise<string>());
-
-    await act(async () => {
-      await result.current.execute(mockSupplier);
-    });
-
-    expect(mockSupplier).toHaveBeenCalledTimes(1);
-    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
-    expect(result.current.result).toBe(mockResult);
-  });
-
-  it('should handle debounced promise supplier function calls', async () => {
-    const mockResult = 'debounced supplier result';
-    const mockSupplier = vi.fn().mockResolvedValue(mockResult);
-
-    const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounce: { delay: 50 } }),
-    );
-
-    act(() => {
-      result.current.execute(mockSupplier);
-    });
-
-    // Wait for debounce
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 75));
-    });
-
-    expect(mockSupplier).toHaveBeenCalledTimes(1);
-    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
-    expect(result.current.result).toBe(mockResult);
-  });
 });
