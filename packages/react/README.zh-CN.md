@@ -204,7 +204,7 @@ import { useExecutePromise } from '@ahoo-wang/fetcher-react';
 
 const SearchComponent = () => {
   const { loading, result, error, execute } = useExecutePromise<string[]>({
-    debounceOptions: { delay: 300 }, // 搜索请求防抖 300ms
+    debounce: { delay: 300 }, // 搜索请求防抖 300ms
   });
 
   const handleSearch = (query: string) => {
@@ -765,7 +765,7 @@ function useExecutePromise<R = unknown, E = unknown>(
   - `onSuccess`: 成功时调用的回调
   - `onError`: 错误时调用的回调
   - `propagateError`: 是否抛出错误而不是将错误存储在状态中（默认: false）
-  - `debounceOptions`: execute 调用防抖选项（默认: 无防抖）
+  - `debounce`: execute 调用防抖选项（默认: 无防抖）
 
 **返回值:**
 

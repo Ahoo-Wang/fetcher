@@ -34,7 +34,7 @@ export interface UseExecutePromiseOptions<R, E = unknown>
    */
   propagateError?: boolean;
   /** Debounce options for execute calls */
-  debounceOptions?: Partial<UseDebouncedCallbackOptions>;
+  debounce?: Partial<UseDebouncedCallbackOptions>;
 }
 
 /**
@@ -105,7 +105,7 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  * }
  *
  * // Example with debouncing
- * const { execute } = useExecutePromise<string>({ debounceOptions: { delay: 300 } });
+ * const { execute } = useExecutePromise<string>({ debounce: { delay: 300 } });
  * await execute(fetchData); // Debounced execution
  * ```
  */
@@ -129,7 +129,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
     delay: debounceDelay = 0,
     leading = false,
     trailing = true,
-  } = options?.debounceOptions || {};
+  } = options?.debounce || {};
 
   const performExecute = useCallback(
     async (input: PromiseSupplier<R> | Promise<R>): Promise<R | E> => {
