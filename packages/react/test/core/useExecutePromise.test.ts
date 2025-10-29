@@ -214,12 +214,48 @@ describe('useExecutePromise', () => {
     expect(result.current.result).toBeUndefined();
   });
 
+  it('should throw error when component is unmounted before execution', async () => {
+    const mockProvider = vi.fn().mockResolvedValue('test');
+
+    const { result, unmount } = renderHook(() => useExecutePromise<string>());
+
+    // Unmount the component
+    unmount();
+
+    // Attempt to execute after unmount should throw
+    await expect(
+      act(async () => {
+        await result.current.execute(mockProvider);
+      }),
+    ).rejects.toThrow('Component is unmounted');
+
+    // Provider should not be called
+    expect(mockProvider).not.toHaveBeenCalled();
+  });
+
+  it('should execute immediately when debounce delay is 0', async () => {
+    const mockResult = 'immediate result';
+    const mockProvider = vi.fn().mockResolvedValue(mockResult);
+
+    const { result } = renderHook(() =>
+      useExecutePromise<string>({ debounceOptions: { delay: 0 } }),
+    );
+
+    await act(async () => {
+      await result.current.execute(mockProvider);
+    });
+
+    expect(mockProvider).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
+    expect(result.current.result).toBe(mockResult);
+  });
+
   it('should debounce execution when debounceDelay is set', async () => {
     const mockResult = 'debounced result';
     const mockProvider = vi.fn().mockResolvedValue(mockResult);
 
     const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounceDelay: 100 }),
+      useExecutePromise<string>({ debounceOptions: { delay: 100 } }),
     );
 
     // Call execute multiple times quickly
@@ -254,7 +290,7 @@ describe('useExecutePromise', () => {
     const mockProvider = vi.fn().mockResolvedValue(mockResult);
 
     const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounceDelay: 100 }),
+      useExecutePromise<string>({ debounceOptions: { delay: 100 } }),
     );
 
     // Start debounced execution
@@ -310,7 +346,7 @@ describe('useExecutePromise', () => {
     const mockProvider2 = vi.fn().mockResolvedValue(mockResult2);
 
     const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounceDelay: 50 }),
+      useExecutePromise<string>({ debounceOptions: { delay: 50 } }),
     );
 
     // Execute first promise
@@ -340,7 +376,7 @@ describe('useExecutePromise', () => {
     const mockProvider = vi.fn().mockResolvedValue(mockResult);
 
     const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounceDelay: 0 }),
+      useExecutePromise<string>({ debounceOptions: { delay: 0 } }),
     );
 
     await act(async () => {
@@ -372,7 +408,7 @@ describe('useExecutePromise', () => {
     const mockSupplier = vi.fn().mockResolvedValue(mockResult);
 
     const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounceDelay: 50 }),
+      useExecutePromise<string>({ debounceOptions: { delay: 50 } }),
     );
 
     act(() => {
@@ -394,7 +430,7 @@ describe('useExecutePromise', () => {
     const mockProvider = vi.fn().mockResolvedValue(mockResult);
 
     const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounceDelay: 100 }),
+      useExecutePromise<string>({ debounceOptions: { delay: 100 } }),
     );
 
     // Call execute multiple times quickly
@@ -429,7 +465,7 @@ describe('useExecutePromise', () => {
     const mockProvider = vi.fn().mockResolvedValue(mockResult);
 
     const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounceDelay: 100 }),
+      useExecutePromise<string>({ debounceOptions: { delay: 100 } }),
     );
 
     // Start debounced execution
@@ -485,7 +521,7 @@ describe('useExecutePromise', () => {
     const mockProvider2 = vi.fn().mockResolvedValue(mockResult2);
 
     const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounceDelay: 50 }),
+      useExecutePromise<string>({ debounceOptions: { delay: 50 } }),
     );
 
     // Execute first promise
@@ -515,7 +551,7 @@ describe('useExecutePromise', () => {
     const mockProvider = vi.fn().mockResolvedValue(mockResult);
 
     const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounceDelay: 0 }),
+      useExecutePromise<string>({ debounceOptions: { delay: 0 } }),
     );
 
     await act(async () => {
@@ -547,7 +583,7 @@ describe('useExecutePromise', () => {
     const mockSupplier = vi.fn().mockResolvedValue(mockResult);
 
     const { result } = renderHook(() =>
-      useExecutePromise<string>({ debounceDelay: 50 }),
+      useExecutePromise<string>({ debounceOptions: { delay: 50 } }),
     );
 
     act(() => {

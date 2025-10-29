@@ -13,7 +13,10 @@
 
 import { useCallback, useMemo } from 'react';
 import { useMounted } from './useMounted';
-import { useDebouncedCallback } from './useDebouncedCallback';
+import {
+  useDebouncedCallback,
+  UseDebouncedCallbackOptions,
+} from './useDebouncedCallback';
 import {
   usePromiseState,
   PromiseState,
@@ -30,8 +33,8 @@ export interface UseExecutePromiseOptions<R, E = unknown>
    * If false (default), the execute function will return the error as the result instead of throwing.
    */
   propagateError?: boolean;
-  /** Debounce delay in milliseconds for execute calls */
-  debounceDelay?: number;
+  /** Debounce options for execute calls */
+  debounceOptions?: Partial<UseDebouncedCallbackOptions>;
 }
 
 /**
@@ -102,7 +105,7 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  * }
  *
  * // Example with debouncing
- * const { execute } = useExecutePromise<string>({ debounceDelay: 300 });
+ * const { execute } = useExecutePromise<string>({ debounceOptions: { delay: 300 } });
  * await execute(fetchData); // Debounced execution
  * ```
  */
@@ -122,7 +125,11 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
   const isMounted = useMounted();
   const requestId = useRequestId();
   const propagateError = options?.propagateError;
-  const debounceDelay = options?.debounceDelay ?? 0;
+  const {
+    delay: debounceDelay = 0,
+    leading = false,
+    trailing = true,
+  } = options?.debounceOptions || {};
 
   const performExecute = useCallback(
     async (input: PromiseSupplier<R> | Promise<R>): Promise<R | E> => {
@@ -152,11 +159,11 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
     [setLoading, setSuccess, setError, isMounted, requestId, propagateError],
   );
 
-  const debouncedPerformExecute = useDebouncedCallback(
-    performExecute,
-    debounceDelay,
-    { trailing: true },
-  );
+  const debouncedPerformExecute = useDebouncedCallback(performExecute, {
+    delay: debounceDelay,
+    leading,
+    trailing,
+  });
 
   /**
    * Execute a promise supplier or promise and manage its state

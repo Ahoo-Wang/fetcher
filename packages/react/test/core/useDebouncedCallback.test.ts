@@ -28,7 +28,7 @@ describe('useDebouncedCallback', () => {
   it('should debounce the callback with default trailing behavior', () => {
     const mockCallback = vi.fn();
     const { result } = renderHook(() =>
-      useDebouncedCallback(mockCallback, 100),
+      useDebouncedCallback(mockCallback, { delay: 100 }),
     );
 
     act(() => {
@@ -47,7 +47,7 @@ describe('useDebouncedCallback', () => {
   it('should pass arguments to the callback', () => {
     const mockCallback = vi.fn();
     const { result } = renderHook(() =>
-      useDebouncedCallback(mockCallback, 100),
+      useDebouncedCallback(mockCallback, { delay: 100 }),
     );
 
     act(() => {
@@ -64,7 +64,7 @@ describe('useDebouncedCallback', () => {
   it('should reset the timer on subsequent calls', () => {
     const mockCallback = vi.fn();
     const { result } = renderHook(() =>
-      useDebouncedCallback(mockCallback, 100),
+      useDebouncedCallback(mockCallback, { delay: 100 }),
     );
 
     act(() => {
@@ -95,7 +95,7 @@ describe('useDebouncedCallback', () => {
   it('should execute immediately with leading option', () => {
     const mockCallback = vi.fn();
     const { result } = renderHook(() =>
-      useDebouncedCallback(mockCallback, 100, { leading: true }),
+      useDebouncedCallback(mockCallback, { delay: 100, leading: true }),
     );
 
     act(() => {
@@ -114,7 +114,8 @@ describe('useDebouncedCallback', () => {
   it('should execute on trailing edge when leading is true and called again', () => {
     const mockCallback = vi.fn();
     const { result } = renderHook(() =>
-      useDebouncedCallback(mockCallback, 100, {
+      useDebouncedCallback(mockCallback, {
+        delay: 100,
         leading: true,
         trailing: true,
       }),
@@ -146,7 +147,7 @@ describe('useDebouncedCallback', () => {
   it('should not execute on trailing edge when trailing is false', () => {
     const mockCallback = vi.fn();
     const { result } = renderHook(() =>
-      useDebouncedCallback(mockCallback, 100, { trailing: false }),
+      useDebouncedCallback(mockCallback, { delay: 100, trailing: false }),
     );
 
     act(() => {
@@ -163,7 +164,7 @@ describe('useDebouncedCallback', () => {
   it('should cancel pending execution', () => {
     const mockCallback = vi.fn();
     const { result } = renderHook(() =>
-      useDebouncedCallback(mockCallback, 100),
+      useDebouncedCallback(mockCallback, { delay: 100 }),
     );
 
     act(() => {
@@ -190,7 +191,7 @@ describe('useDebouncedCallback', () => {
     const mockCallback2 = vi.fn();
 
     const { result, rerender } = renderHook(
-      ({ callback }) => useDebouncedCallback(callback, 100),
+      ({ callback }) => useDebouncedCallback(callback, { delay: 100 }),
       { initialProps: { callback: mockCallback1 } },
     );
 
@@ -212,7 +213,7 @@ describe('useDebouncedCallback', () => {
     const mockCallback = vi.fn();
 
     const { result, rerender } = renderHook(
-      ({ delay }) => useDebouncedCallback(mockCallback, delay),
+      ({ delay }) => useDebouncedCallback(mockCallback, { delay }),
       { initialProps: { delay: 200 } },
     );
 
@@ -237,7 +238,8 @@ describe('useDebouncedCallback', () => {
     const mockCallback = vi.fn();
 
     const { result, rerender } = renderHook(
-      ({ options }) => useDebouncedCallback(mockCallback, 100, options),
+      ({ options }) =>
+        useDebouncedCallback(mockCallback, { delay: 100, ...options }),
       { initialProps: { options: { leading: false } } },
     );
 
@@ -257,7 +259,7 @@ describe('useDebouncedCallback', () => {
   it('should clean up timeout on unmount', () => {
     const mockCallback = vi.fn();
     const { result, unmount } = renderHook(() =>
-      useDebouncedCallback(mockCallback, 100),
+      useDebouncedCallback(mockCallback, { delay: 100 }),
     );
 
     act(() => {
@@ -276,7 +278,7 @@ describe('useDebouncedCallback', () => {
   it('should handle multiple rapid calls correctly', () => {
     const mockCallback = vi.fn();
     const { result } = renderHook(() =>
-      useDebouncedCallback(mockCallback, 100),
+      useDebouncedCallback(mockCallback, { delay: 100 }),
     );
 
     act(() => {
@@ -294,7 +296,9 @@ describe('useDebouncedCallback', () => {
 
   it('should work with zero delay', () => {
     const mockCallback = vi.fn();
-    const { result } = renderHook(() => useDebouncedCallback(mockCallback, 0));
+    const { result } = renderHook(() =>
+      useDebouncedCallback(mockCallback, { delay: 0 }),
+    );
 
     act(() => {
       result.current.run();
