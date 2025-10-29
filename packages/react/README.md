@@ -186,18 +186,19 @@ import { useDebouncedExecutePromise } from '@ahoo-wang/fetcher-react';
 
 const DataFetcher = () => {
   const { loading, result, error, run } = useDebouncedExecutePromise({
-    promise: async (userId: string) => {
+    debounce: { delay: 300 },
+  });
+
+  const handleLoadUser = (userId: string) => {
+    run(async () => {
       const response = await fetch(`/api/users/${userId}`);
       return response.json();
-    },
-    debounce: { delay: 300 },
-    onSuccess: (user) => console.log('User loaded:', user),
-    onError: (error) => console.error('Failed to load user:', error),
-  });
+    });
+  };
 
   return (
     <div>
-      <button onClick={() => run('user123')}>
+      <button onClick={() => handleLoadUser('user123')}>
         Load User
       </button>
       {loading && <div>Loading...</div>}

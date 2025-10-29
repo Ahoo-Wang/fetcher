@@ -48,8 +48,7 @@ export interface DebounceCapable {
  */
 export interface UseDebouncedExecutePromiseOptions<R, E = unknown>
   extends UseExecutePromiseOptions<R, E>,
-    DebounceCapable {
-}
+    DebounceCapable {}
 
 /**
  * Return type for the useDebouncedExecutePromise hook.
@@ -61,8 +60,7 @@ export interface UseDebouncedExecutePromiseOptions<R, E = unknown>
  */
 export interface UseDebouncedExecutePromiseReturn<R, E = unknown>
   extends Omit<UseExecutePromiseReturn<R, E>, 'execute'>,
-    UseDebouncedCallbackReturn<UseExecutePromiseReturn<R, E>['execute']> {
-}
+    UseDebouncedCallbackReturn<UseExecutePromiseReturn<R, E>['execute']> {}
 
 /**
  * A React hook that combines promise execution with debouncing functionality.
@@ -93,19 +91,18 @@ export interface UseDebouncedExecutePromiseReturn<R, E = unknown>
  *
  * @example
  * ```tsx
- * import { useDebouncedExecutePromise } from '@ahoo-wang/react';
+ * import { useDebouncedExecutePromise } from '@ahoo-wang/fetcher-react';
  *
  * function SearchComponent() {
  *   const { loading, result, error, run } = useDebouncedExecutePromise({
- *     promise: async (query: string) => {
- *       const response = await fetch(`/api/search?q=${query}`);
- *       return response.json();
- *     },
  *     debounce: { delay: 300 },
  *   });
  *
  *   const handleSearch = (query: string) => {
- *     run(query);
+ *     run(async () => {
+ *       const response = await fetch(`/api/search?q=${query}`);
+ *       return response.json();
+ *     });
  *   };
  *
  *   return (
