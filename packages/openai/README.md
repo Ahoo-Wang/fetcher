@@ -9,6 +9,7 @@
 [![Node Version](https://img.shields.io/node/v/@ahoo-wang/fetcher-openai.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
+[![Storybook](https://img.shields.io/badge/Storybook-Interactive%20Docs-FF4785)](https://fetcher.ahoo.me/?path=/docs/openai-introduction--docs)
 
 > 🚀 **Modern • Type-Safe • Streaming-Ready** - A comprehensive OpenAI client built on the Fetcher ecosystem
 

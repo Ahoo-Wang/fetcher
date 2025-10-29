@@ -9,6 +9,7 @@
 [![Node Version](https://img.shields.io/node/v/@ahoo-wang/fetcher-openai.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
+[![Storybook](https://img.shields.io/badge/Storybook-Interactive%20Docs-FF4785)](https://fetcher.ahoo.me/?path=/docs/openai-introduction--docs)
 
 > 🚀 **现代化 • 类型安全 • 流式就绪** - 基于 Fetcher 生态构建的完整 OpenAI 客户端
 
