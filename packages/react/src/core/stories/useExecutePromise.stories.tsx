@@ -14,7 +14,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
 import { useExecutePromise } from '../useExecutePromise';
-import { Button, Card, Typography, Space, Alert } from 'antd';
+import { Button, Card, Typography, Space, Alert, Input } from 'antd';
 
 const { Text } = Typography;
 
@@ -24,8 +24,8 @@ interface ExecutePromiseDemoProps {
 }
 
 function ExecutePromiseDemo({
-                              propagateError = false,
-                            }: ExecutePromiseDemoProps) {
+  propagateError = false,
+}: ExecutePromiseDemoProps) {
   const { loading, result, error, execute, reset, status } =
     useExecutePromise<string>({
       propagateError,
@@ -146,4 +146,118 @@ export const PropagateError: Story = {
   args: {
     propagateError: true,
   },
+};
+
+// Component that demonstrates debounced execution
+function DebouncedExecutionDemo() {
+  const { loading, result, error, execute, reset, status } = useExecutePromise<
+    string[]
+  >({
+    debounce: { delay: 500 }, // 500ms debounce delay
+  });
+
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    if (value.trim()) {
+      execute(async () => {
+        // Simulate API call with delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Mock search results
+        return [
+          `Result 1 for "${value}"`,
+          `Result 2 for "${value}"`,
+          `Result 3 for "${value}"`,
+        ];
+      });
+    } else {
+      reset();
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'idle':
+        return 'default';
+      case 'loading':
+        return 'processing';
+      case 'success':
+        return 'success';
+      case 'error':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  return (
+    <Card title="Debounced Execution Demo" style={{ width: 600 }}>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <div>
+          <Text strong>Current Status: </Text>
+          <span style={{ color: getStatusColor(status) }}>
+            {status.toUpperCase()}
+          </span>
+        </div>
+
+        <div>
+          <Text strong>Search Query:</Text>
+          <Input
+            placeholder="Type to search (debounced 500ms)"
+            value={searchQuery}
+            onChange={e => handleSearch(e.target.value)}
+            style={{ marginTop: 8 }}
+          />
+        </div>
+
+        <Space>
+          <Button onClick={reset}>Reset</Button>
+        </Space>
+
+        {loading && (
+          <Alert
+            message="Searching..."
+            description="Debounced execution in progress"
+            type="info"
+            showIcon
+          />
+        )}
+
+        {result && !loading && (
+          <Alert
+            message="Search Results"
+            description={
+              <ul>
+                {result.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            }
+            type="success"
+            showIcon
+          />
+        )}
+
+        {error && (
+          <Alert
+            message="Search Error"
+            description={error.message}
+            type="error"
+            showIcon
+          />
+        )}
+
+        <Text type="secondary">
+          This demonstrates debounced execution. Type in the input field - the
+          search will be debounced by 500ms. Rapid typing will cancel previous
+          requests and only execute the latest one after the delay.
+        </Text>
+      </Space>
+    </Card>
+  );
+}
+
+export const DebouncedExecution: Story = {
+  render: () => <DebouncedExecutionDemo />,
 };
