@@ -171,4 +171,87 @@ describe('useFetcher', () => {
 
     expect(mockAbort).toHaveBeenCalled();
   });
+
+  it('should reset state correctly when component is mounted', async () => {
+    const mockResult = 'success data';
+    mockExchange.extractResult.mockResolvedValue(mockResult);
+
+    const { result } = renderHook(() => useFetcher<string>());
+
+    const request = { url: '/test' };
+
+    // Execute a successful request
+    await act(async () => {
+      await result.current.execute(request);
+    });
+
+    // Verify state after successful request
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
+    expect(result.current.result).toBe(mockResult);
+    expect(result.current.exchange).toBe(mockExchange);
+
+    // Reset the state
+    act(() => {
+      result.current.reset();
+    });
+
+    // Verify state after reset
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.result).toBeUndefined();
+    expect(result.current.exchange).toBeUndefined();
+  });
+
+  it('should handle debounced execution', async () => {
+    const mockResult = 'debounced result';
+    mockExchange.extractResult.mockResolvedValue(mockResult);
+
+    const { result } = renderHook(() =>
+      useFetcher<string>({ debounce: { delay: 100 } }),
+    );
+
+    const request = { url: '/test' };
+
+    // Execute with debouncing - should not be loading immediately
+    act(() => {
+      result.current.execute(request);
+    });
+
+    // Should not be loading immediately due to debounce
+    expect(result.current.loading).toBe(false);
+
+    // Wait for debounce and execution
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 150));
+    });
+
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
+    expect(result.current.result).toBe(mockResult);
+  });
+
+  it('should cancel debounced execution on reset', async () => {
+    const { result } = renderHook(() =>
+      useFetcher<string>({ debounce: { delay: 100 } }),
+    );
+
+    const request = { url: '/test' };
+
+    // Execute with debouncing
+    act(() => {
+      result.current.execute(request);
+    });
+
+    // Should not be loading immediately
+    expect(result.current.loading).toBe(false);
+
+    // Reset before debounce completes
+    act(() => {
+      result.current.reset();
+    });
+
+    // Should still be idle after reset
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
+    expect(result.current.loading).toBe(false);
+  });
 });
