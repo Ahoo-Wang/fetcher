@@ -14,8 +14,8 @@
 import { useCallback, useMemo } from 'react';
 import { useMounted } from './useMounted';
 import {
+  DebounceCapable,
   useDebouncedCallback,
-  UseDebouncedCallbackOptions,
 } from './useDebouncedCallback';
 import {
   usePromiseState,
@@ -26,15 +26,13 @@ import { useRequestId } from './useRequestId';
 import { FetcherError } from '@ahoo-wang/fetcher';
 
 export interface UseExecutePromiseOptions<R, E = unknown>
-  extends UsePromiseStateOptions<R, E> {
+  extends UsePromiseStateOptions<R, E>, DebounceCapable {
   /**
    * Whether to propagate errors thrown by the promise.
    * If true, the execute function will throw errors.
    * If false (default), the execute function will return the error as the result instead of throwing.
    */
   propagateError?: boolean;
-  /** Debounce options for execute calls */
-  debounce?: Partial<UseDebouncedCallbackOptions>;
 }
 
 /**
