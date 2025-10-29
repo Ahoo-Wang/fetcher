@@ -24,57 +24,95 @@ import { FetcherError } from '@ahoo-wang/fetcher';
 
 /**
  * Configuration options for the useExecutePromise hook.
- * Extends UsePromiseStateOptions for state management and DebounceCapable for debouncing functionality.
+ * This interface extends UsePromiseStateOptions for comprehensive state management
+ * and DebounceCapable for debouncing functionality, providing fine-grained control
+ * over promise execution behavior.
+ *
  * @template R - The type of the result value
- * @template E - The type of the error value
+ * @template E - The type of the error value (defaults to unknown)
  */
 export interface UseExecutePromiseOptions<R, E = unknown>
   extends UsePromiseStateOptions<R, E>,
     DebounceCapable {
   /**
-   * Whether to propagate errors thrown by the promise.
-   * If true, the execute function will throw errors.
-   * If false (default), the execute function will return the error as the result instead of throwing.
+   * Controls error propagation behavior.
+   * When true, errors thrown by the executed promise will be re-thrown by the execute function,
+   * allowing for traditional try/catch error handling.
+   * When false (default), errors are captured in the hook's error state instead of being thrown,
+   * enabling declarative error handling through the returned error property.
+   *
+   * @default false
    */
   propagateError?: boolean;
 }
 
 /**
- * Type definition for a function that returns a Promise
+ * Type definition for a function that supplies a Promise.
+ * This allows for lazy evaluation of promises, enabling features like
+ * debouncing and request deduplication by delaying promise creation until execution.
+ *
  * @template R - The type of value the promise will resolve to
+ * @example
+ * ```typescript
+ * const fetchUser: PromiseSupplier<User> = () => fetch('/api/user').then(r => r.json());
+ * ```
  */
 export type PromiseSupplier<R> = () => Promise<R>;
 
 /**
- * Return type of the useExecutePromise hook, containing state and control functions.
- * Extends PromiseState for loading, result, error, and status properties.
+ * Return type of the useExecutePromise hook, providing access to execution state
+ * and control functions for managing asynchronous operations.
+ * Extends PromiseState to include loading, result, error, and status properties.
+ *
  * @template R - The type of the result value
- * @template E - The type of the error value, defaults to FetcherError
+ * @template E - The type of the error value (defaults to FetcherError)
  */
 export interface UseExecutePromiseReturn<R, E = FetcherError>
   extends PromiseState<R, E> {
   /**
-   * Function to execute a promise supplier or promise.
-   * @param input - A function that returns a Promise or a Promise to be executed
-   * @returns A promise that resolves when execution completes
-   * @throws {E} If propagateError is true and the promise rejects
+   * Function to execute a promise supplier function or a direct promise.
+   * Supports both lazy evaluation (via PromiseSupplier) and direct promise execution.
+   * Automatically handles debouncing if configured, state management, and request deduplication.
+   *
+   * @param input - Either a function that returns a Promise (for lazy evaluation)
+   *                or a Promise directly (for immediate execution)
+   * @returns A promise that resolves when the execution completes (success or failure)
+   * @throws {E} If propagateError option is true and the input promise rejects
+   * @example
+   * ```typescript
+   * // Using a promise supplier (recommended for debouncing)
+   * await execute(() => fetch('/api/data').then(r => r.json()));
+   *
+   * // Using a direct promise
+   * await execute(fetch('/api/data').then(r => r.json()));
+   * ```
    */
   execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<void>;
   /**
-   * Function to reset the state to initial values.
-   * Clears loading, result, error, and sets status to idle.
+   * Function to reset the hook state to initial values.
+   * Cancels any pending debounced executions, clears the result and error states,
+   * stops loading, and sets status to 'idle'. Safe to call multiple times.
    */
   reset: () => void;
 }
 
 /**
- * A React hook for managing asynchronous operations with proper state handling
- * @template R - The type of the result value
- * @template E - The type of the error value
- * @param options - Optional configuration options including error propagation, debouncing, and state management settings
- * @returns An object containing the current state and control functions
+ * A React hook for managing asynchronous operations with proper state handling,
+ * debouncing support, automatic cancellation, and configurable error propagation.
  *
- * @example
+ * This hook provides a declarative way to execute promises in React components,
+ * managing loading states, results, errors, and request lifecycle. It supports debouncing
+ * to prevent excessive executions, automatic request deduplication, and flexible error
+ * handling through the propagateError option.
+ *
+ * @template R - The type of the result value (defaults to unknown)
+ * @template E - The type of the error value (defaults to FetcherError)
+ * @param options - Optional configuration object for customizing promise execution behavior,
+ *                  including error propagation, debouncing settings, and state management options
+ * @returns An object containing the current execution state (loading, result, error, status)
+ *          and control functions (execute, reset)
+ *
+ * @example Basic promise execution
  * ```typescript
  * import { useExecutePromise } from '@ahoo-wang/fetcher-react';
  *
@@ -94,28 +132,74 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  *     reset();
  *   };
  *
- *   if (loading) return <div>Loading...</div>;
- *   if (error) return <div>Error: {error.message}</div>;
- *   return (
- *     <div>
- *       <button onClick={handleFetch}>Fetch Data</button>
- *       <button onClick={handleReset}>Reset</button>
- *       {result && <p>{result}</p>}
- *     </div>
- *   );
+ *   if (loading) return 'Loading...';
+ *   if (error) return `Error: ${error.message}`;
+ *   return `Data: ${result}`;
  * }
+ * ```
  *
- * // Example with propagateError set to true
- * const { execute, error } = useExecutePromise<string>({ propagateError: true });
- * try {
- *   await execute(fetchData);
- * } catch (err) {
- *   console.error('Error occurred:', err);
+ * @example Error propagation
+ * ```typescript
+ * import { useExecutePromise } from '@ahoo-wang/fetcher-react';
+ *
+ * function ErrorHandlingComponent() {
+ *   const { execute } = useExecutePromise<string>({ propagateError: true });
+ *
+ *   const riskyOperation = async () => {
+ *     // Some operation that might throw
+ *     throw new Error('Something went wrong');
+ *   };
+ *
+ *   const handleExecute = async () => {
+ *     try {
+ *       await execute(riskyOperation);
+ *       console.log('Success!');
+ *     } catch (err) {
+ *       console.error('Caught error:', err);
+ *     }
+ *   };
+ *
+ *   return 'Ready to execute';
  * }
+ * ```
  *
- * // Example with debouncing
- * const { execute } = useExecutePromise<string>({ debounce: { delay: 300 } });
- * await execute(fetchData); // Debounced execution
+ * @example Debounced execution
+ * ```typescript
+ * import { useExecutePromise } from '@ahoo-wang/fetcher-react';
+ *
+ * function SearchComponent() {
+ *   const { loading, execute } = useExecutePromise<string[]>({
+ *     debounce: { delay: 300 } // Debounce executions by 300ms
+ *   });
+ *
+ *   const searchAPI = async (query: string) => {
+ *     const response = await fetch(`/api/search?q=${query}`);
+ *     return response.json();
+ *   };
+ *
+ *   const handleSearch = (query: string) => {
+ *     execute(() => searchAPI(query));
+ *   };
+ *
+ *   // Rapid calls to handleSearch will be debounced
+ *   return loading ? 'Searching...' : 'Search ready';
+ * }
+ * ```
+ *
+ * @example Direct promise execution
+ * ```typescript
+ * import { useExecutePromise } from '@ahoo-wang/fetcher-react';
+ *
+ * function DirectPromiseComponent() {
+ *   const { execute, result } = useExecutePromise<number>();
+ *
+ *   const handleExecute = async () => {
+ *     const promise = Promise.resolve(42);
+ *     await execute(promise);
+ *   };
+ *
+ *   return `Result: ${result}`;
+ * }
  * ```
  */
 export function useExecutePromise<R = unknown, E = FetcherError>(
