@@ -60,7 +60,7 @@ function DebouncedExecutePromiseDemo({
   const createPromise = (value: string) => {
     return async () => {
       const startTime = Date.now();
-
+      setExecutionCount(prev => prev + 1);
       switch (scenario) {
         case 'success':
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -160,7 +160,6 @@ function DebouncedExecutePromiseDemo({
     setLogs(prev => [logEntry, ...prev.slice(0, 9)]);
 
     run(createPromise(value));
-    setExecutionCount(prev => prev + 1);
   };
 
   const clearLogs = () => {
