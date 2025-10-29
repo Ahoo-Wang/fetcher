@@ -149,6 +149,3 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
     [run, cancel],
   );
 }
-
-export class UseDebouncæedCallbackOptions {
-}
