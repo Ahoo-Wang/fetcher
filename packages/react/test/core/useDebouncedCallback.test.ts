@@ -128,20 +128,23 @@ describe('useDebouncedCallback', () => {
     expect(mockCallback).toHaveBeenCalledTimes(1);
 
     act(() => {
-      vi.advanceTimersByTime(50);
+      vi.advanceTimersByTime(100);
     });
 
+    expect(result.current.isPending()).toBe(false);
     act(() => {
       result.current.run();
     });
 
-    expect(mockCallback).toHaveBeenCalledTimes(1);
+    expect(mockCallback).toHaveBeenCalledTimes(2);
 
     act(() => {
-      vi.advanceTimersByTime(10);
+      vi.advanceTimersByTime(50);
     });
-
-    expect(mockCallback).toHaveBeenCalledTimes(1);
+    act(() => {
+      result.current.run();
+    });
+    expect(mockCallback).toHaveBeenCalledTimes(2);
   });
 
   it('should not execute on trailing edge when trailing is false', () => {
