@@ -17,6 +17,8 @@ import { useLatest } from './useLatest';
  * Options for configuring the debounced callback behavior.
  */
 export interface UseDebouncedCallbackOptions {
+  /** The delay in milliseconds before the callback is invoked. Must be a positive number. */
+  delay: number;
   /** Whether to invoke the callback immediately on the leading edge of the timeout. Defaults to false. */
   leading?: boolean;
   /** Whether to invoke the callback on the trailing edge of the timeout. Defaults to true. */
@@ -41,8 +43,8 @@ export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
  *
  * @template T - The type of the callback function.
  * @param callback - The function to debounce. It can accept any number of arguments.
- * @param delay - The delay in milliseconds before the callback is invoked. Must be a positive number.
- * @param options - Optional configuration object for debouncing behavior.
+ * @param options - Configuration object for debouncing behavior.
+ * @param options.delay - The delay in milliseconds before the callback is invoked. Must be a positive number.
  * @param options.leading - If true, the callback is invoked immediately on the first call, then debounced. Defaults to false.
  * @param options.trailing - If true, the callback is invoked after the delay on the last call. Defaults to true.
  * @returns An object containing:
@@ -56,7 +58,7 @@ export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
  *     console.log('Searching for:', query);
  *     // Perform search API call
  *   },
- *   300
+ *   { delay: 300 }
  * );
  *
  * // Call the debounced function
@@ -70,8 +72,7 @@ export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
  * ```typescript
  * const { run } = useDebouncedCallback(
  *   () => console.log('Immediate and debounced'),
- *   500,
- *   { leading: true, trailing: true }
+ *   { delay: 500, leading: true, trailing: true }
  * );
  *
  * run(); // Logs immediately, then again after 500ms if called again
@@ -81,13 +82,11 @@ export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
  */
 export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
-  delay: number,
-  options?: UseDebouncedCallbackOptions,
+  options: UseDebouncedCallbackOptions,
 ): UseDebouncedCallbackReturn<T> {
   const timeoutRef = useRef<number>(undefined);
   const hasLeadingCalledRef = useRef(false);
   const latestCallback = useLatest(callback);
-  const latestDelay = useLatest(delay);
   const latestOptions = useLatest(options);
 
   // Function to cancel any pending debounced execution
@@ -108,7 +107,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   // The debounced function that can be called
   const run = useCallback(
     (...args: Parameters<T>) => {
-      const { leading = false, trailing = true } = latestOptions.current || {};
+      const { leading = false, trailing = true, delay } = latestOptions.current;
 
       // Cancel any existing timeout to reset the debounce timer
       cancel();
@@ -131,10 +130,10 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
           // Reset leading flag and timeout reference after execution
           hasLeadingCalledRef.current = false;
           timeoutRef.current = undefined;
-        }, latestDelay.current);
+        }, delay);
       }
     },
-    [latestCallback, latestDelay, latestOptions, cancel],
+    [latestCallback, latestOptions, cancel],
   );
 
   return useMemo(

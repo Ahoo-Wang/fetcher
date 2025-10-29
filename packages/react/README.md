@@ -93,7 +93,7 @@ const MyComponent = () => {
       console.log('Searching for:', query);
       // Perform search
     },
-    300
+    { delay: 300 }
   );
 
   return (
@@ -109,11 +109,11 @@ const MyComponent = () => {
 #### Advanced Options
 
 ```typescript jsx
-const { run, cancel } = useDebouncedCallback(
-  () => console.log('Executed'),
-  500,
-  { leading: true, trailing: true },
-);
+const { run, cancel } = useDebouncedCallback(() => console.log('Executed'), {
+  delay: 500,
+  leading: true,
+  trailing: true,
+});
 ```
 
 ### useFetcher Hook
@@ -208,7 +208,7 @@ import { useExecutePromise } from '@ahoo-wang/fetcher-react';
 
 const SearchComponent = () => {
   const { loading, result, error, execute } = useExecutePromise<string[]>({
-    debounceDelay: 300, // Debounce search requests by 300ms
+    debounceOptions: { delay: 300 }, // Debounce search requests by 300ms
   });
 
   const handleSearch = (query: string) => {
@@ -1394,7 +1394,7 @@ A React hook for managing asynchronous operations with proper state handling, ra
   - `onSuccess`: Callback invoked on success
   - `onError`: Callback invoked on error
   - `propagateError`: Whether to throw errors instead of storing them in state (default: false)
-  - `debounceDelay`: Delay in milliseconds for debouncing execute calls (default: 0, no debouncing)
+  - `debounceOptions`: Options for debouncing execute calls (default: no debouncing)
 
 **Returns:**
 

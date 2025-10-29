@@ -92,7 +92,7 @@ const MyComponent = () => {
       console.log('搜索:', query);
       // 执行搜索
     },
-    300
+    { delay: 300 }
   );
 
   return (
@@ -108,7 +108,8 @@ const MyComponent = () => {
 #### 高级选项
 
 ```typescript jsx
-const { run, cancel } = useDebouncedCallback(() => console.log('已执行'), 500, {
+const { run, cancel } = useDebouncedCallback(() => console.log('已执行'), {
+  delay: 500,
   leading: true,
   trailing: true,
 });
@@ -203,7 +204,7 @@ import { useExecutePromise } from '@ahoo-wang/fetcher-react';
 
 const SearchComponent = () => {
   const { loading, result, error, execute } = useExecutePromise<string[]>({
-    debounceDelay: 300, // 搜索请求防抖 300ms
+    debounceOptions: { delay: 300 }, // 搜索请求防抖 300ms
   });
 
   const handleSearch = (query: string) => {
@@ -764,7 +765,7 @@ function useExecutePromise<R = unknown, E = unknown>(
   - `onSuccess`: 成功时调用的回调
   - `onError`: 错误时调用的回调
   - `propagateError`: 是否抛出错误而不是将错误存储在状态中（默认: false）
-  - `debounceDelay`: execute 调用防抖的延迟毫秒数（默认: 0，无防抖）
+  - `debounceOptions`: execute 调用防抖选项（默认: 无防抖）
 
 **返回值:**
 
