@@ -12,25 +12,30 @@
  */
 
 import { Select, SelectProps } from 'antd';
-import { UseDebouncedCallbackOptions, useDebouncedExecutePromise } from '@ahoo-wang/fetcher-react';
+import {
+  UseDebouncedCallbackOptions,
+  useDebouncedExecutePromise,
+} from '@ahoo-wang/fetcher-react';
 import { StyleCapable } from '../types';
 
-export interface RemoteSelectOption {
+export type DefaultRemoteSelectValueType = string | number;
+
+export interface RemoteSelectOption<ValueType = DefaultRemoteSelectValueType> {
   label: string;
-  value: string | number;
+  value: ValueType;
   disabled?: boolean;
 }
 
-export interface RemoteSelectProps<ValueType = any>
-  extends Omit<SelectProps<ValueType>, 'options' | 'loading' | 'onSearch'>,
+export interface RemoteSelectProps<ValueType = DefaultRemoteSelectValueType>
+  extends Omit<SelectProps<ValueType, RemoteSelectOption<ValueType>>, 'options' | 'loading' | 'onSearch'>,
     StyleCapable {
   debounce?: UseDebouncedCallbackOptions;
-  fetch: (search: string) => Promise<RemoteSelectOption[]>;
+  search: (search: string) => Promise<RemoteSelectOption<ValueType>[]>;
 }
 
 const DEFAULT_DEBOUNCE = {
   delay: 300,
-  leading: true,
+  leading: false,
   trailing: true,
 };
 
@@ -38,28 +43,26 @@ const DEFAULT_DEBOUNCE = {
  * A Select component that loads options from a remote API.
  * Supports automatic fetching, loading states, and error handling.
  */
-export function RemoteSelect<ValueType = any>(
+export function RemoteSelect<ValueType = DefaultRemoteSelectValueType>(
   props: RemoteSelectProps<ValueType>,
 ) {
-  const debounce = props.debounce || DEFAULT_DEBOUNCE;
-  const {
-    loading,
-    result,
-    error,
-    status,
-    run,
-  } = useDebouncedExecutePromise<RemoteSelectOption[]>({ debounce: debounce });
+  const { debounce = DEFAULT_DEBOUNCE, search, ...selectProps } = props;
+  const { loading, result, run } = useDebouncedExecutePromise<RemoteSelectOption<ValueType>[]>({ debounce: debounce });
   const onSearchHandler = (value: string) => {
+    if (value.trim() === '' && result) {
+      return;
+    }
     run(() => {
-      return props.fetch(value);
+      return search(value);
     });
   };
   return (
-    <Select<ValueType>
+    <Select<ValueType, RemoteSelectOption<ValueType>>
+      showSearch={true}
       loading={loading}
       onSearch={onSearchHandler}
       options={result}
-      {...props}
+      {...selectProps}
     />
   );
 }
