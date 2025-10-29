@@ -13,10 +13,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useMounted } from './useMounted';
-import {
-  DebounceCapable,
-  useDebouncedCallback,
-} from './useDebouncedCallback';
+import { DebounceCapable, useDebouncedCallback } from './useDebouncedCallback';
 import {
   usePromiseState,
   PromiseState,
@@ -25,8 +22,15 @@ import {
 import { useRequestId } from './useRequestId';
 import { FetcherError } from '@ahoo-wang/fetcher';
 
+/**
+ * Configuration options for the useExecutePromise hook.
+ * Extends UsePromiseStateOptions for state management and DebounceCapable for debouncing functionality.
+ * @template R - The type of the result value
+ * @template E - The type of the error value
+ */
 export interface UseExecutePromiseOptions<R, E = unknown>
-  extends UsePromiseStateOptions<R, E>, DebounceCapable {
+  extends UsePromiseStateOptions<R, E>,
+    DebounceCapable {
   /**
    * Whether to propagate errors thrown by the promise.
    * If true, the execute function will throw errors.
@@ -42,17 +46,24 @@ export interface UseExecutePromiseOptions<R, E = unknown>
 export type PromiseSupplier<R> = () => Promise<R>;
 
 /**
- * Interface defining the return type of useExecutePromise hook
+ * Return type of the useExecutePromise hook, containing state and control functions.
+ * Extends PromiseState for loading, result, error, and status properties.
  * @template R - The type of the result value
+ * @template E - The type of the error value, defaults to FetcherError
  */
 export interface UseExecutePromiseReturn<R, E = FetcherError>
   extends PromiseState<R, E> {
   /**
    * Function to execute a promise supplier or promise.
-   * Returns a promise that resolves when execution completes. May reject if propagateError is true.
+   * @param input - A function that returns a Promise or a Promise to be executed
+   * @returns A promise that resolves when execution completes
+   * @throws {E} If propagateError is true and the promise rejects
    */
   execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<void>;
-  /** Function to reset the state to initial values */
+  /**
+   * Function to reset the state to initial values.
+   * Clears loading, result, error, and sets status to idle.
+   */
   reset: () => void;
 }
 
@@ -60,7 +71,7 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  * A React hook for managing asynchronous operations with proper state handling
  * @template R - The type of the result value
  * @template E - The type of the error value
- * @param options - Configuration options for the hook
+ * @param options - Optional configuration options including error propagation, debouncing, and state management settings
  * @returns An object containing the current state and control functions
  *
  * @example
@@ -129,6 +140,14 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
     trailing = true,
   } = options?.debounce || {};
 
+  /**
+   * Internal function to perform the promise execution with state management.
+   * Handles loading states, success/error setting, and request deduplication.
+   * @param input - A function that returns a Promise or a Promise to be executed
+   * @returns The resolved value or error based on propagateError setting
+   * @throws {Error} If the component is unmounted
+   * @throws {E} If propagateError is true and the promise rejects
+   */
   const performExecute = useCallback(
     async (input: PromiseSupplier<R> | Promise<R>): Promise<R | E> => {
       if (!isMounted()) {
@@ -164,9 +183,11 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
   });
 
   /**
-   * Execute a promise supplier or promise and manage its state
+   * Execute a promise supplier or promise and manage its state.
+   * Handles debouncing if configured, otherwise executes immediately.
    * @param input - A function that returns a Promise or a Promise to be executed
    * @returns A promise that resolves when execution completes
+   * @throws {E} If propagateError is true and the promise rejects
    */
   const execute = useCallback(
     async (input: PromiseSupplier<R> | Promise<R>): Promise<void> => {
@@ -180,13 +201,15 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
   );
 
   /**
-   * Reset the state to initial values
+   * Reset the state to initial values.
+   * Cancels any pending debounced executions and resets state if component is mounted.
    */
   const reset = useCallback(() => {
+    debouncedPerformExecute.cancel();
     if (isMounted()) {
       setIdle();
     }
-  }, [setIdle, isMounted]);
+  }, [debouncedPerformExecute, setIdle, isMounted]);
 
   return useMemo(
     () => ({
