@@ -99,7 +99,7 @@ export function FilterPanel(props: FilterPanelProps) {
   useImperativeHandle<FilterPanelRef, FilterPanelRef>(ref, () => ({
     search: handleSearch,
     reset: handleReset,
-  }), [handleSearch, handleReset]);
+  }));
   const showResetButton = resetButton !== false;
   const resetButtonProps = typeof resetButton === 'object' ? resetButton : {};
   return (
