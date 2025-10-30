@@ -43,47 +43,6 @@ describe('ForbiddenErrorInterceptor', () => {
       expect(interceptor.name).toBe(FORBIDDEN_ERROR_INTERCEPTOR_NAME);
       expect(interceptor.order).toBe(FORBIDDEN_ERROR_INTERCEPTOR_ORDER);
     });
-
-    it('should store options correctly', () => {
-      const interceptor = new ForbiddenErrorInterceptor({
-        onForbidden: onForbiddenMock,
-      });
-
-      // Access private options via intercept call
-      const exchange = new FetchExchange({
-        fetcher: mockFetcher,
-        request: mockRequest,
-        response: new Response('Forbidden', { status: 403 }),
-      });
-
-      interceptor.intercept(exchange);
-      expect(onForbiddenMock).toHaveBeenCalledWith(exchange);
-    });
-
-    it('should throw error when options are not provided', () => {
-      expect(() => {
-        // @ts-expect-error Testing invalid input
-        new ForbiddenErrorInterceptor();
-      }).toThrow();
-    });
-
-    it('should throw error when onForbidden callback is not provided', () => {
-      expect(() => {
-        // @ts-expect-error Testing invalid input
-        new ForbiddenErrorInterceptor({});
-      }).toThrow(
-        'ForbiddenErrorInterceptor requires onForbidden callback function',
-      );
-    });
-
-    it('should throw error when onForbidden is not a function', () => {
-      expect(() => {
-        // @ts-expect-error Testing invalid input
-        new ForbiddenErrorInterceptor({ onForbidden: 'not-a-function' });
-      }).toThrow(
-        'ForbiddenErrorInterceptor requires onForbidden callback function',
-      );
-    });
   });
 
   describe('intercept method - core functionality', () => {

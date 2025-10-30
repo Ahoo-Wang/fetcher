@@ -142,12 +142,6 @@ export class ForbiddenErrorInterceptor implements ErrorInterceptor {
    * ```
    */
   constructor(private options: ForbiddenErrorInterceptorOptions) {
-    // Validate options
-    if (!options || typeof options.onForbidden !== 'function') {
-      throw new Error(
-        'ForbiddenErrorInterceptor requires onForbidden callback function',
-      );
-    }
   }
 
   /**
@@ -199,8 +193,5 @@ export class ForbiddenErrorInterceptor implements ErrorInterceptor {
         // Allow other interceptors in the chain to continue processing
       }
     }
-
-    // For non-403 responses, do nothing and let other interceptors handle them
-    // This interceptor is focused solely on 403 Forbidden responses
   }
 }
