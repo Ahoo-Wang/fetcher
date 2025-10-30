@@ -39,7 +39,7 @@ export interface UnauthorizedErrorInterceptorOptions {
    * @param exchange - The fetch exchange containing the request and response details
    *                   that resulted in the unauthorized error
    */
-  onUnauthorized: (exchange: FetchExchange) => void;
+  onUnauthorized: (exchange: FetchExchange) => Promise<void> | void;
 }
 
 /**
@@ -112,13 +112,13 @@ export class UnauthorizedErrorInterceptor implements ErrorInterceptor {
    * });
    * ```
    */
-  intercept(exchange: FetchExchange): void {
+  async intercept(exchange: FetchExchange): Promise<void> {
     const { response } = exchange;
     if (
       response?.status === ResponseCodes.UNAUTHORIZED ||
       exchange.error instanceof RefreshTokenError
     ) {
-      this.options.onUnauthorized(exchange);
+      await this.options.onUnauthorized(exchange);
     }
   }
 }
