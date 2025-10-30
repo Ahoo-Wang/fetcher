@@ -7,7 +7,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher-eventbus.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventbus)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-eventbus)](https://www.npmjs.com/package/@ahoo-wang/fetcher-eventbus)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
-[![Storybook](https://img.shields.io/badge/Storybook-Interactive%20Docs-FF4785)](https://fetcher.ahoo.me/?path=/docs/eventbus-introduction--docs)
+[![Storybook](https://img.shields.io/badge/Storybook-交互式文档-FF4785)](https://fetcher.ahoo.me/?path=/docs/eventbus-introduction--docs)
 
 一个 TypeScript 事件总线库，提供多种实现来处理事件：串行执行、并行执行和跨标签页广播。
 
