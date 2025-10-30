@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { JwtTokenManager } from '../src';
+import { JwtTokenManager, RefreshTokenError } from '../src';
 import { TokenStorage } from '../src';
 import { TokenRefresher, CompositeToken } from '../src';
 import { JwtCompositeToken } from '../src';
@@ -132,7 +132,9 @@ describe('JwtTokenManager', () => {
     vi.mocked(tokenRefresher.refresh).mockRejectedValueOnce(error);
 
     // Act & Assert
-    await expect(jwtTokenManager.refresh()).rejects.toThrow('Refresh failed');
+    await expect(jwtTokenManager.refresh()).rejects.toThrow(
+      'Refresh token failed.',
+    );
 
     expect(tokenStorage.get()).toBeNull();
   });
@@ -169,9 +171,7 @@ describe('JwtTokenManager', () => {
     vi.mocked(tokenRefresher.refresh).mockRejectedValueOnce(error);
 
     // Act & Assert
-    await expect(jwtTokenManager.refresh(compositeToken)).rejects.toThrow(
-      'Refresh failed',
-    );
+    await expect(jwtTokenManager.refresh(compositeToken)).rejects.toThrow(RefreshTokenError);
 
     expect((jwtTokenManager as any).refreshInProgress).toBeUndefined();
   });
