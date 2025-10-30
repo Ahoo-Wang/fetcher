@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import React, { Key } from 'react';
+import React, { Key, RefAttributes, useImperativeHandle } from 'react';
 import { TypedFilterProps } from '../TypedFilter';
 import { FilterRef } from '../types';
 import { and, Condition } from '@ahoo-wang/fetcher-wow';
@@ -27,7 +27,11 @@ export interface ActiveFilter
   onRemove?: () => void;
 }
 
-export interface FilterPanelProps {
+export interface FilterPanelRef {
+  reset(): void;
+}
+
+export interface FilterPanelProps extends RefAttributes<FilterPanelRef> {
   row?: RowProps;
   col?: ColProps;
   actionsCol?: ColProps;
@@ -58,6 +62,7 @@ const DEFAULT_ACTIONS_COL_PROPS: ColProps = {
 
 export function FilterPanel(props: FilterPanelProps) {
   const {
+    ref,
     row = DEFAULT_ROW_PROPS,
     col = DEFAULT_COL_PROPS,
     actionsCol = DEFAULT_ACTIONS_COL_PROPS,
@@ -68,7 +73,7 @@ export function FilterPanel(props: FilterPanelProps) {
     searchButton,
   } = props;
   const filterRefs = useRefs<FilterRef>();
-  const onSearchHandler = () => {
+  const handleSearch = () => {
     if (!onSearch) {
       return;
     }
@@ -78,11 +83,14 @@ export function FilterPanel(props: FilterPanelProps) {
     const finalCondition: Condition = and(...conditions);
     onSearch(finalCondition);
   };
-  const onResetHandler = () => {
+  const handleReset = () => {
     for (const filterRef of filterRefs.values()) {
       filterRef.reset();
     }
   };
+  useImperativeHandle<FilterPanelRef, FilterPanelRef>(ref, () => ({
+    reset: handleReset,
+  }));
   const showResetButton = resetButton !== false;
   const resetButtonProps = typeof resetButton === 'object' ? resetButton : {};
   return (
@@ -109,7 +117,7 @@ export function FilterPanel(props: FilterPanelProps) {
             {showResetButton && (
               <Button
                 icon={<ClearOutlined />}
-                onClick={onResetHandler}
+                onClick={handleReset}
                 {...resetButtonProps}
               >
                 {resetButtonProps?.children || 'Reset'}
@@ -118,8 +126,8 @@ export function FilterPanel(props: FilterPanelProps) {
             <Button
               type="primary"
               icon={<SearchOutlined />}
-              onClick={onSearchHandler}
-              { ...searchButton }
+              onClick={handleSearch}
+              {...searchButton}
             >
               {searchButton?.children || 'Search'}
             </Button>
