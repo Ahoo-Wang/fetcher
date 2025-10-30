@@ -26,6 +26,7 @@ export class CoSecHeaders {
 
 export class ResponseCodes {
   static readonly UNAUTHORIZED = 401;
+  static readonly FORBIDDEN = 403;
 }
 
 export interface AppIdCapable {

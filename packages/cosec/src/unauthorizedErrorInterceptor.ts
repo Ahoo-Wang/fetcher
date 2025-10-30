@@ -113,9 +113,8 @@ export class UnauthorizedErrorInterceptor implements ErrorInterceptor {
    * ```
    */
   async intercept(exchange: FetchExchange): Promise<void> {
-    const { response } = exchange;
     if (
-      response?.status === ResponseCodes.UNAUTHORIZED ||
+      exchange.response?.status === ResponseCodes.UNAUTHORIZED ||
       exchange.error instanceof RefreshTokenError
     ) {
       await this.options.onUnauthorized(exchange);
