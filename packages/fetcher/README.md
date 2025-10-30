@@ -190,6 +190,7 @@ Fetcher comes with several built-in interceptors that are automatically register
 3. **FetchInterceptor**: Executes the actual HTTP request (order: Number.MAX_SAFE_INTEGER - 1000)
 4. **ValidateStatusInterceptor**: Validates HTTP status codes and throws errors for invalid statuses (response
    interceptor, order: Number.MAX_SAFE_INTEGER - 1000)
+5. **UnauthorizedErrorInterceptor**: Interceptor for handling unauthorized errors (401 status code)
 
 ### Using Interceptors
 

@@ -179,6 +179,7 @@ Fetcher 自带几个内置拦截器，它们会自动注册：
 3. **FetchInterceptor**：执行实际的 HTTP 请求（顺序：Number.MAX_SAFE_INTEGER - 1000）
 4. **ValidateStatusInterceptor**：验证 HTTP 状态码并在状态码无效时抛出错误（响应拦截器，顺序：Number.MAX_SAFE_INTEGER -
    1000）
+5. **UnauthorizedErrorInterceptor**：处理未授权错误（401状态码）的拦截器
 
 ### 使用拦截器
 
