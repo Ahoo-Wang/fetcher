@@ -58,9 +58,7 @@ const DEFAULT_COL_PROPS: ColProps = {
   xs: 24,
 };
 
-const DEFAULT_ACTIONS_COL_PROPS: ColProps = {
-  span: 12,
-};
+const DEFAULT_ACTIONS_COL_PROPS: ColProps = DEFAULT_COL_PROPS;
 
 export function FilterPanel(props: FilterPanelProps) {
   const {
