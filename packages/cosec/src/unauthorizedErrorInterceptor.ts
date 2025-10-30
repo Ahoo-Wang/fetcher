@@ -91,15 +91,17 @@ export class UnauthorizedErrorInterceptor implements ErrorInterceptor {
   }
 
   /**
-   * Intercepts fetch exchanges to detect and handle unauthorized (401) responses.
+   * Intercepts fetch exchanges to detect and handle unauthorized (401) responses
+   * and RefreshTokenError exceptions.
    *
-   * This method checks if the response status is 401 (Unauthorized). If so, it invokes
+   * This method checks if the response status is 401 (Unauthorized) or if the exchange
+   * contains an error of type `RefreshTokenError`. If either condition is met, it invokes
    * the configured `onUnauthorized` callback with the exchange details. The method
    * does not return a value or throw exceptions - all error handling is delegated
    * to the callback function.
    *
-   * @param exchange - The fetch exchange containing request and response information
-   *                   to be inspected for unauthorized status codes
+   * @param exchange - The fetch exchange containing request, response, and error information
+   *                   to be inspected for unauthorized status codes or refresh token errors
    * @returns {void} This method does not return a value
    *
    * @example
