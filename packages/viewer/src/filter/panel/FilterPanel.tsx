@@ -28,6 +28,8 @@ export interface ActiveFilter
 }
 
 export interface FilterPanelRef {
+  search(): void;
+
   reset(): void;
 }
 
@@ -89,6 +91,7 @@ export function FilterPanel(props: FilterPanelProps) {
     }
   };
   useImperativeHandle<FilterPanelRef, FilterPanelRef>(ref, () => ({
+    search: handleSearch,
     reset: handleReset,
   }));
   const showResetButton = resetButton !== false;
