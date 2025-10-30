@@ -28,8 +28,16 @@ export interface ActiveFilter
 }
 
 export interface FilterPanelRef {
+  /**
+   * Triggers the search action using the current filter values.
+   * Typically calls the `onSearch` callback with the composed filter condition.
+   */
   search(): void;
 
+  /**
+   * Resets all filter values to their initial state.
+   * Typically clears the filters and triggers any associated reset logic.
+   */
   reset(): void;
 }
 
