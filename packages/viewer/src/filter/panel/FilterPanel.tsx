@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import React, { Key, RefAttributes, useImperativeHandle } from 'react';
+import React, { Key, RefAttributes, useImperativeHandle, useCallback } from 'react';
 import { TypedFilterProps } from '../TypedFilter';
 import { FilterRef } from '../types';
 import { and, Condition } from '@ahoo-wang/fetcher-wow';
@@ -81,7 +81,7 @@ export function FilterPanel(props: FilterPanelProps) {
     searchButton,
   } = props;
   const filterRefs = useRefs<FilterRef>();
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (!onSearch) {
       return;
     }
@@ -90,16 +90,16 @@ export function FilterPanel(props: FilterPanelProps) {
       .filter(Boolean);
     const finalCondition: Condition = and(...conditions);
     onSearch(finalCondition);
-  };
-  const handleReset = () => {
+  }, [onSearch, filterRefs]);
+  const handleReset = useCallback(() => {
     for (const filterRef of filterRefs.values()) {
       filterRef.reset();
     }
-  };
+  }, [filterRefs]);
   useImperativeHandle<FilterPanelRef, FilterPanelRef>(ref, () => ({
     search: handleSearch,
     reset: handleReset,
-  }));
+  }), [handleSearch, handleReset]);
   const showResetButton = resetButton !== false;
   const resetButtonProps = typeof resetButton === 'object' ? resetButton : {};
   return (
