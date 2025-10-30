@@ -183,15 +183,9 @@ export class ForbiddenErrorInterceptor implements ErrorInterceptor {
   async intercept(exchange: FetchExchange): Promise<void> {
     // Check if the response status indicates forbidden access (403)
     if (exchange.response?.status === ResponseCodes.FORBIDDEN) {
-      try {
-        // Invoke the custom forbidden error handler
-        // Allow the callback to perform async operations
-        await this.options.onForbidden(exchange);
-      } catch (error) {
-        // Log the error but don't re-throw - interceptor should handle callback errors gracefully
-        console.warn('ForbiddenErrorInterceptor callback error:', error);
-        // Allow other interceptors in the chain to continue processing
-      }
+      // Invoke the custom forbidden error handler
+      // Allow the callback to perform async operations
+      await this.options.onForbidden(exchange);
     }
   }
 }
