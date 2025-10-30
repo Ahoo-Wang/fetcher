@@ -476,6 +476,28 @@ const interceptor = new UnauthorizedErrorInterceptor({
 });
 ```
 
+#### ForbiddenErrorInterceptor
+
+**Purpose**: Provides centralized handling of authorization failures (403 Forbidden) with custom callback logic.
+
+**Functionality**:
+
+- Detects 403 Forbidden responses
+- Invokes custom callback for permission error handling
+- Allows applications to implement access request flows, permission displays, etc.
+
+**Use Case**: Custom authorization error handling, permission management, and user guidance.
+
+```typescript
+const interceptor = new ForbiddenErrorInterceptor({
+  onForbidden: async exchange => {
+    console.log('Access forbidden for:', exchange.request.url);
+    // Show permission error or redirect to access request page
+    showPermissionError('You do not have permission to access this resource');
+  },
+});
+```
+
 ### Interceptor Order & Execution
 
 Interceptors execute in the following default order:
@@ -489,7 +511,8 @@ Interceptors execute in the following default order:
    - `AuthorizationResponseInterceptor` (handles token refresh)
 
 3. **Error Phase**:
-   - `UnauthorizedErrorInterceptor` (handles auth errors)
+   - `UnauthorizedErrorInterceptor` (handles 401 auth errors)
+   - `ForbiddenErrorInterceptor` (handles 403 permission errors)
 
 **Note**: Interceptor execution order can be customized using the `order` property. Higher order values execute later in the chain.
 

@@ -476,6 +476,28 @@ const interceptor = new UnauthorizedErrorInterceptor({
 });
 ```
 
+#### ForbiddenErrorInterceptor
+
+**用途**：通过自定义回调逻辑提供授权失败（403 禁止访问）的集中处理。
+
+**功能**：
+
+- 检测 403 禁止访问响应
+- 调用自定义回调进行权限错误处理
+- 允许应用实现访问请求流程、权限显示等
+
+**使用场景**：自定义授权错误处理、权限管理和用户指导。
+
+```typescript
+const interceptor = new ForbiddenErrorInterceptor({
+  onForbidden: async exchange => {
+    console.log('访问被禁止于:', exchange.request.url);
+    // 显示权限错误或重定向到访问请求页面
+    showPermissionError('您没有权限访问此资源');
+  },
+});
+```
+
 ### 拦截器顺序与执行
 
 拦截器按以下默认顺序执行：
@@ -489,7 +511,8 @@ const interceptor = new UnauthorizedErrorInterceptor({
    - `AuthorizationResponseInterceptor`（处理令牌刷新）
 
 3. **错误阶段**：
-   - `UnauthorizedErrorInterceptor`（处理认证错误）
+   - `UnauthorizedErrorInterceptor`（处理 401 认证错误）
+   - `ForbiddenErrorInterceptor`（处理 403 权限错误）
 
 **注意**：可以使用 `order` 属性自定义拦截器执行顺序。order 值越高，在链中执行越晚。
 
