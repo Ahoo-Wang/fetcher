@@ -53,8 +53,7 @@ export class CodeGenerator {
   constructor(private readonly options: GeneratorOptions) {
     this.project = new Project(options);
     this.options.logger.info(
-      'Project instance created with tsConfigFilePath: ',
-      this.options.tsConfigFilePath,
+      `Project instance created with tsConfigFilePath: ${this.options.tsConfigFilePath}`,
     );
   }
 
@@ -97,10 +96,10 @@ export class CodeGenerator {
     const configPath = this.options.configPath ?? DEFAULT_CONFIG_PATH;
     let config: GeneratorConfiguration = {};
     try {
-      this.options.logger.info('Parsing configuration file:', configPath);
+      this.options.logger.info(`Parsing configuration file: ${configPath}`);
       config = await parseConfiguration(configPath);
     } catch (e) {
-      this.options.logger.info('Configuration file parsing failed ', e);
+      this.options.logger.info(`Configuration file parsing failed: ${e}`);
     }
 
     const context: GenerateContext = new GenerateContext({
@@ -194,7 +193,6 @@ export class CodeGenerator {
           file.getBaseName() !== 'index.ts',
       );
 
-    // Get subdirectories using fs
     const subDirs: Directory[] = dir.getDirectories();
 
     this.options.logger.info(
@@ -205,22 +203,18 @@ export class CodeGenerator {
       this.options.logger.info(
         `No files or subdirectories to export in ${dirPath}, skipping index generation`,
       );
-      return; // No files or subdirs to export
+      return;
     }
 
     const indexFilePath = `${dirPath}/index.ts`;
-    this.options.logger.info(`Creating/updating index file: ${indexFilePath}`);
     const indexFile =
       this.project.getSourceFile(indexFilePath) ||
       this.project.createSourceFile(indexFilePath, '', { overwrite: true });
 
-    // Clear existing content
     indexFile.removeText();
 
-    // Add export statements for .ts files
     for (const tsFile of tsFiles) {
       const relativePath = `./${tsFile.getBaseNameWithoutExtension()}`;
-      this.options.logger.info(`Adding export for file: ${relativePath}`);
       indexFile.addExportDeclaration({
         moduleSpecifier: relativePath,
         isTypeOnly: false,
@@ -228,12 +222,8 @@ export class CodeGenerator {
       });
     }
 
-    // Add export statements for subdirectories
     for (const subDir of subDirs) {
       const relativePath = `./${subDir.getBaseName()}`;
-      this.options.logger.info(
-        `Adding export for subdirectory: ${relativePath}`,
-      );
       indexFile.addExportDeclaration({
         moduleSpecifier: relativePath,
         isTypeOnly: false,
@@ -255,7 +245,7 @@ export class CodeGenerator {
   optimizeSourceFiles(outputDir: Directory) {
     const sourceFiles = outputDir.getDescendantSourceFiles();
     this.options.logger.info(
-      `Optimizing [${outputDir.getPath()}] ${sourceFiles.length} source files`,
+      `Optimizing ${sourceFiles.length} source files in ${outputDir.getPath()}`,
     );
     sourceFiles.forEach((sourceFile, index) => {
       this.options.logger.info(
