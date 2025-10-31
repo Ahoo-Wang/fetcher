@@ -17,6 +17,8 @@ import { AggregateNameCapable, AliasBoundedContext } from '../types';
 import { ResourceAttributionPathSpec } from '../types';
 import { SnapshotQueryClient } from './snapshot';
 import { EventStreamQueryClient } from './event';
+import { LoadStateAggregateClient } from './state';
+import { LoadOwnerStateAggregateClient } from './state';
 
 /**
  * Configuration options for query clients.
@@ -105,6 +107,26 @@ export class QueryClientFactory<
       ...options,
     });
     return new SnapshotQueryClient(apiMetadata);
+  }
+
+  createLoadStateAggregateClient(
+    options: QueryClientOptions,
+  ): LoadStateAggregateClient<S> {
+    const apiMetadata = createQueryApiMetadata({
+      ...this.defaultOptions,
+      ...options,
+    });
+    return new LoadStateAggregateClient(apiMetadata);
+  }
+
+  createOwnerLoadStateAggregateClient(
+    options: QueryClientOptions,
+  ): LoadOwnerStateAggregateClient<S> {
+    const apiMetadata = createQueryApiMetadata({
+      ...this.defaultOptions,
+      ...options,
+    });
+    return new LoadOwnerStateAggregateClient(apiMetadata);
   }
 
   /**
