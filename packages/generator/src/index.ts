@@ -36,7 +36,7 @@ export const DEFAULT_CONFIG_PATH = './fetcher-generator.config.json';
  *   inputPath: './openapi.yaml',
  *   outputDir: './generated',
  *   tsConfigFilePath: './tsconfig.json',
- *   logger: console,
+ *   logger: new ConsoleLogger(),
  * });
  * await generator.generate();
  * ```
