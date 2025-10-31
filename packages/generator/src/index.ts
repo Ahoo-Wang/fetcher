@@ -86,13 +86,19 @@ export class CodeGenerator {
     const clientGenerator = new ClientGenerator(context);
     clientGenerator.generate();
     this.options.logger.info('Clients generated successfully');
-
+    const outputDir = this.project.getDirectory(this.options.outputDir);
+    if (!outputDir) {
+      this.options.logger.info(
+        'Output directory not found.',
+      );
+      return;
+    }
     this.options.logger.info('Generating index files');
-    this.generateIndex();
+    this.generateIndex(outputDir);
     this.options.logger.info('Index files generated successfully');
 
     this.options.logger.info('Optimizing source files');
-    this.optimizeSourceFiles();
+    this.optimizeSourceFiles(outputDir);
     this.options.logger.info('Source files optimized successfully');
 
     this.options.logger.info('Saving project to disk');
@@ -105,17 +111,10 @@ export class CodeGenerator {
    * Scans all directories, gets all .ts files in each directory,
    * and creates index.ts files with export * from './xxx' statements.
    */
-  generateIndex() {
+  generateIndex(outputDir: Directory) {
     this.options.logger.info(
       `Generating index files for output directory: ${this.options.outputDir}`,
     );
-    const outputDir = this.project.getDirectory(this.options.outputDir);
-    if (!outputDir) {
-      this.options.logger.info(
-        'Output directory not found, skipping index generation',
-      );
-      return;
-    }
     this.processDirectory(outputDir);
     this.generateIndexForDirectory(outputDir);
     this.options.logger.info('Index file generation completed');
@@ -199,12 +198,12 @@ export class CodeGenerator {
     );
   }
 
-  optimizeSourceFiles() {
-    const sourceFiles = this.project.getSourceFiles();
-    this.options.logger.info(`Optimizing ${sourceFiles.length} source files`);
+  optimizeSourceFiles(outputDir: Directory) {
+    const sourceFiles = outputDir.getDescendantSourceFiles();
+    this.options.logger.info(`Optimizing [${outputDir.getPath()}] ${sourceFiles.length} source files`);
     sourceFiles.forEach((sourceFile, index) => {
       this.options.logger.info(
-        `Optimizing file ${index + 1}/${sourceFiles.length}`,
+        `Optimizing file [${sourceFile.getFilePath()}] - ${index + 1}/${sourceFiles.length}`,
       );
       sourceFile.formatText();
       sourceFile.organizeImports();
