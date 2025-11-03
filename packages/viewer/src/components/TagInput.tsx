@@ -72,7 +72,7 @@ export function TagInput<ValueItemType = string[]>(props: TagInputProps<ValueIte
     onChange,
     ...restProps
   } = props;
-  const onChangeHandler = (value: string[]) => {
+  const handleChange = (value: string[]) => {
     if (!onChange) {
       return;
     }
@@ -96,7 +96,7 @@ export function TagInput<ValueItemType = string[]>(props: TagInputProps<ValueIte
       allowClear={allowClear}
       tokenSeparators={tokenSeparators}
       value={serializedValue}
-      onChange={onChangeHandler}
+      onChange={handleChange}
     />
   );
 }

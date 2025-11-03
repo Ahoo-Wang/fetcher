@@ -11,26 +11,21 @@
  * limitations under the License.
  */
 
-import { Select, SelectProps } from 'antd';
+import { Select, SelectProps, RefSelectProps } from 'antd';
 import {
   UseDebouncedCallbackOptions,
   useDebouncedExecutePromise,
 } from '@ahoo-wang/fetcher-react';
 import { StyleCapable } from '../types';
+import { RefAttributes } from 'react';
+import { DefaultOptionType } from 'antd/lib/select';
 
-export type DefaultRemoteSelectValueType = string | number;
-
-export interface RemoteSelectOption<ValueType = DefaultRemoteSelectValueType> {
-  label: string;
-  value: ValueType;
-  disabled?: boolean;
-}
-
-export interface RemoteSelectProps<ValueType = DefaultRemoteSelectValueType>
-  extends Omit<SelectProps<ValueType, RemoteSelectOption<ValueType>>, 'options' | 'loading' | 'onSearch'>,
+export interface RemoteSelectProps
+  extends Omit<SelectProps, 'loading' | 'onSearch'>,
+    RefAttributes<RefSelectProps>,
     StyleCapable {
   debounce?: UseDebouncedCallbackOptions;
-  search: (search: string) => Promise<RemoteSelectOption<ValueType>[]>;
+  search: (search: string) => Promise<DefaultOptionType[]>;
 }
 
 const DEFAULT_DEBOUNCE = {
@@ -43,12 +38,12 @@ const DEFAULT_DEBOUNCE = {
  * A Select component that loads options from a remote API.
  * Supports automatic fetching, loading states, and error handling.
  */
-export function RemoteSelect<ValueType = DefaultRemoteSelectValueType>(
-  props: RemoteSelectProps<ValueType>,
+export function RemoteSelect(
+  props: RemoteSelectProps,
 ) {
-  const { debounce = DEFAULT_DEBOUNCE, search, ...selectProps } = props;
-  const { loading, result, run } = useDebouncedExecutePromise<RemoteSelectOption<ValueType>[]>({ debounce: debounce });
-  const onSearchHandler = (value: string) => {
+  const { debounce = DEFAULT_DEBOUNCE, search, options, ...selectProps } = props;
+  const { loading, result, run } = useDebouncedExecutePromise<DefaultOptionType[]>({ debounce: debounce });
+  const handleSearch = (value: string) => {
     if (value.trim() === '' && result) {
       return;
     }
@@ -57,11 +52,12 @@ export function RemoteSelect<ValueType = DefaultRemoteSelectValueType>(
     });
   };
   return (
-    <Select<ValueType, RemoteSelectOption<ValueType>>
+    <Select
+      filterOption={false}
       showSearch={true}
       loading={loading}
-      onSearch={onSearchHandler}
-      options={result}
+      onSearch={handleSearch}
+      options={result ?? options}
       {...selectProps}
     />
   );

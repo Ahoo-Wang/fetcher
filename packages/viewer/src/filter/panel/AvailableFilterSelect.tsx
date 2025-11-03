@@ -50,7 +50,7 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
       return props.filters.flatMap(group => group.filters.filter(filter => selectedFilters.includes(filter.field.name) && !activeFilters.some(activeFilter => activeFilter.field.name === filter.field.name)));
     },
   }));
-  const onCheckHandler = (filter: AvailableFilter, checked: boolean) => {
+  const handleCheck = (filter: AvailableFilter, checked: boolean) => {
     if (checked) {
       setSelectedFilters([
         ...selectedFilters,
@@ -82,7 +82,7 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
                   <Checkbox key={filter.field.name}
                             checked={selectedFilters.includes(filter.field.name)}
                             onChange={e => {
-                              onCheckHandler(filter, e.target.checked);
+                              handleCheck(filter, e.target.checked);
                             }}
                             disabled={activeFilters.some(activeFilter => activeFilter.field.name === filter.field.name)}
                   >
