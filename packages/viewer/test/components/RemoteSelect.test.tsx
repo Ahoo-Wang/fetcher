@@ -13,8 +13,8 @@
 
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { RemoteSelect, RemoteSelectOption } from '../../src';
-
+import { RemoteSelect } from '../../src';
+import { DefaultOptionType } from 'antd/lib/select';
 // Mock the hook since it's from an external package
 vi.mock('@ahoo-wang/fetcher-react', async importOriginal => {
   const actual: any = await importOriginal();
@@ -32,7 +32,7 @@ import {
 const mockUseDebouncedExecutePromise = vi.mocked(useDebouncedExecutePromise);
 
 describe('RemoteSelect', () => {
-  const mockOptions: RemoteSelectOption[] = [
+  const mockOptions: DefaultOptionType[] = [
     { label: 'Option 1', value: '1' },
     { label: 'Option 2', value: '2' },
   ];

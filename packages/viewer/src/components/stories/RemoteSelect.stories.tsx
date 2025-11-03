@@ -13,14 +13,15 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { DefaultRemoteSelectValueType, RemoteSelect, RemoteSelectOption } from '../RemoteSelect';
+import { RemoteSelect } from '../RemoteSelect';
 import { fetcher } from '@ahoo-wang/fetcher';
 import { Card, Divider, Typography } from 'antd';
+import { DefaultOptionType } from 'antd/lib/select';
 
 // Real API functions using JSONPlaceholder
 const fetchPosts = async (
   searchQuery: string,
-): Promise<RemoteSelectOption[]> => {
+): Promise<DefaultOptionType[]> => {
   const response = await fetcher.get('https://jsonplaceholder.typicode.com/posts', {
     urlParams: {
       query: { userId: searchQuery },
@@ -31,13 +32,8 @@ const fetchPosts = async (
     throw new Error('Failed to fetch posts');
   }
 
-  const posts = await response.json();
+  return await response.json();
 
-  // Transform posts to RemoteSelectOption format
-  return posts.map((post: any) => ({
-    label: post.title,
-    value: post.id,
-  }));
 };
 
 const meta: Meta<typeof RemoteSelect> = {
@@ -74,18 +70,30 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => {
-    const [value, setValue] = useState<DefaultRemoteSelectValueType>();
+    const [value, setValue] = useState<any>();
+    const [option, setOption] = useState<DefaultOptionType>();
     return (
       <Card>
         <RemoteSelect
           placeholder="Search for posts..."
-          value={value}
           search={fetchPosts}
-          onChange={setValue}
+          onChange={(value, option) => {
+            setValue(value);
+            setOption(option);
+          }}
+          fieldNames={{ label: 'title', value: 'id' }}
+          defaultValue={['defaultValue']}
+          options={[{ title: 'defaultLabel', id: 'defaultValue' }]}
+          style={{ width: '100%' }}
+          mode={'multiple'}
         />
-        <Divider></Divider>
+        <Divider>Value</Divider>
         {value && <Typography.Text code copyable>
-          {value}
+          {JSON.stringify(value)}
+        </Typography.Text>}
+        <Divider>Option</Divider>
+        {option && <Typography.Text code copyable>
+          {JSON.stringify(option)}
         </Typography.Text>}
       </Card>
 
