@@ -14,6 +14,17 @@
 import { TokenStorage } from './tokenStorage';
 import { CompositeToken, TokenRefresher } from './tokenRefresher';
 import { JwtCompositeToken, RefreshTokenStatusCapable } from './jwtToken';
+import { FetcherError } from '@ahoo-wang/fetcher';
+
+export class RefreshTokenError extends FetcherError {
+  constructor(cause?: Error | any) {
+    super(
+      `Refresh token failed.`, cause,
+    );
+    this.name = 'RefreshTokenError';
+    Object.setPrototypeOf(this, RefreshTokenError.prototype);
+  }
+}
 
 /**
  * Manages JWT token refreshing operations and provides status information
@@ -65,7 +76,7 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
       })
       .catch(error => {
         this.tokenStorage.remove();
-        throw error;
+        throw new RefreshTokenError(error);
       })
       .finally(() => {
         this.refreshInProgress = undefined;

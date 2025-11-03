@@ -14,7 +14,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { IdFilter } from '../../src';
+import { IdFilter, IdOnOperatorChangeValueConverter } from '../../src';
 import { FilterRef } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
@@ -31,7 +31,6 @@ const createMockProps = (
     label: {},
     operator: {
       defaultValue: Operator.ID,
-      options: [],
     },
     value: {
       defaultValue: 'test-value',
@@ -96,7 +95,7 @@ describe('IdFilter', () => {
   describe('Operator Selection', () => {
     it('defaults to ID operator when no value provided', () => {
       const props = createMockProps({
-        operator: { options: [] }, // No value provided
+        operator: {}, // No value provided
       });
       render(<IdFilter {...props} />);
 
@@ -108,7 +107,7 @@ describe('IdFilter', () => {
 
     it('respects provided operator value', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
       });
       expect(() => render(<IdFilter {...props} />)).not.toThrow();
     });
@@ -117,7 +116,7 @@ describe('IdFilter', () => {
   describe('Input Component Types', () => {
     it('renders Input component for ID operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: { defaultValue: 'single-id' },
       });
       render(<IdFilter {...props} />);
@@ -128,7 +127,7 @@ describe('IdFilter', () => {
 
     it('renders TagInput component for IDS operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
         value: { defaultValue: ['id1', 'id2'] },
       });
       expect(() => render(<IdFilter {...props} />)).not.toThrow();
@@ -138,7 +137,7 @@ describe('IdFilter', () => {
   describe('Validation Logic', () => {
     it('validates correctly for ID operator with valid value', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: { defaultValue: 'valid-id' },
       });
 
@@ -150,7 +149,7 @@ describe('IdFilter', () => {
 
     it('validates correctly for IDS operator with valid array', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
         value: { defaultValue: ['id1', 'id2'] },
       });
 
@@ -162,7 +161,7 @@ describe('IdFilter', () => {
 
     it('returns undefined for ID operator with empty value', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: { defaultValue: '' },
       });
 
@@ -172,7 +171,7 @@ describe('IdFilter', () => {
 
     it('returns undefined for IDS operator with empty array', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
         value: { defaultValue: [] },
       });
 
@@ -191,7 +190,7 @@ describe('IdFilter', () => {
 
     it('getValue returns ConditionFilterValue object when valid', () => {
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: { defaultValue: 'test-id' },
       });
 
@@ -204,14 +203,13 @@ describe('IdFilter', () => {
         value: 'test-id',
       });
     });
-
   });
 
   describe('onChange Callback', () => {
     it('calls onChange when value changes', () => {
       const onChange = vi.fn();
       const props = createMockProps({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: { defaultValue: 'initial' },
         onChange,
       });
@@ -226,7 +224,7 @@ describe('IdFilter', () => {
   describe('Internationalization', () => {
     it('uses default Chinese locale when no locale provided', () => {
       const props = createMockProps({
-        operator: { options: [] }, // No locale provided
+        operator: {}, // No locale provided
       });
       render(<IdFilter {...props} />);
 
@@ -241,7 +239,6 @@ describe('IdFilter', () => {
       const props = createMockProps({
         operator: {
           defaultValue: Operator.ID,
-          options: [],
           placeholder: 'Select operator',
         },
       });
@@ -253,7 +250,7 @@ describe('IdFilter', () => {
 
     it('forwards value props to input component', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.ID, options: [] },
+        operator: { defaultValue: Operator.ID },
         value: {
           defaultValue: 'test',
           placeholder: 'Enter ID',
@@ -267,6 +264,90 @@ describe('IdFilter', () => {
 
     it.skip('forwards label props to Button component', () => {
       // Skipped due to jsdom CSS issues with Antd Button
+    });
+  });
+
+  describe('Value Converter', () => {
+    it('converts array to single value when switching to ID operator', () => {
+      // Test the converter function directly
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.IDS,
+        Operator.ID,
+        ['id1', 'id2'],
+      );
+      expect(result).toBe('id1');
+    });
+
+    it('converts single value to array when switching to IDS operator', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        'single-id',
+      );
+      expect(result).toEqual(['single-id']);
+    });
+
+    it('converts empty string to empty array for IDS operator', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        '',
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('converts trimmed single value to array for IDS operator', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        '  trimmed-id  ',
+      );
+      expect(result).toEqual(['trimmed-id']);
+    });
+
+    it('returns original value when no conversion needed', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.ID,
+        'unchanged-value',
+      );
+      expect(result).toBe('unchanged-value');
+    });
+
+    it('handles undefined value', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        undefined,
+      );
+      expect(result).toBeUndefined();
+    });
+
+    it('handles null value', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        null as any,
+      );
+      expect(result).toBeNull();
+    });
+
+    it('converts whitespace-only string to empty array for IDS operator', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.ID,
+        Operator.IDS,
+        '   ',
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('returns array unchanged when switching from IDS to IDS', () => {
+      const result = IdOnOperatorChangeValueConverter(
+        Operator.IDS,
+        Operator.IDS,
+        ['id1', 'id2'],
+      );
+      expect(result).toEqual(['id1', 'id2']);
     });
   });
 
@@ -287,12 +368,12 @@ describe('IdFilter', () => {
 
     it('handles null value gracefully', () => {
       const props = createMockProps({
-        value: { defaultValue: null },
+        value: { defaultValue: null as any },
       });
       expect(() => render(<IdFilter {...props} />)).not.toThrow();
 
       const { ref } = renderWithRef({
-        value: { defaultValue: null },
+        value: { defaultValue: null as any },
       });
 
       const result = ref.current?.getValue();
@@ -301,19 +382,18 @@ describe('IdFilter', () => {
 
     it('handles empty array for IDS operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
         value: { defaultValue: [] },
       });
       render(<IdFilter {...props} />);
 
       const { ref } = renderWithRef({
-        operator: { defaultValue: Operator.IDS, options: [] },
+        operator: { defaultValue: Operator.IDS },
         value: { defaultValue: [] },
       });
 
       const result = ref.current?.getValue();
       expect(result).toBeUndefined();
     });
-
   });
 });

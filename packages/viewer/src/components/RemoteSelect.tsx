@@ -1,0 +1,66 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { Select, SelectProps, RefSelectProps } from 'antd';
+import {
+  UseDebouncedCallbackOptions,
+  useDebouncedExecutePromise,
+} from '@ahoo-wang/fetcher-react';
+import { StyleCapable } from '../types';
+import { RefAttributes } from 'react';
+import { DefaultOptionType } from 'antd/lib/select';
+
+export interface RemoteSelectProps
+  extends Omit<SelectProps, 'loading' | 'onSearch'>,
+    RefAttributes<RefSelectProps>,
+    StyleCapable {
+  debounce?: UseDebouncedCallbackOptions;
+  search: (search: string) => Promise<DefaultOptionType[]>;
+}
+
+const DEFAULT_DEBOUNCE = {
+  delay: 300,
+  leading: false,
+  trailing: true,
+};
+
+/**
+ * A Select component that loads options from a remote API.
+ * Supports automatic fetching, loading states, and error handling.
+ */
+export function RemoteSelect(
+  props: RemoteSelectProps,
+) {
+  const { debounce = DEFAULT_DEBOUNCE, search, options, ...selectProps } = props;
+  const { loading, result, run } = useDebouncedExecutePromise<DefaultOptionType[]>({ debounce: debounce });
+  const handleSearch = (value: string) => {
+    if (value.trim() === '' && result) {
+      return;
+    }
+    run(() => {
+      return search(value);
+    });
+  };
+  return (
+    <Select
+      filterOption={false}
+      showSearch={true}
+      loading={loading}
+      onSearch={handleSearch}
+      options={result ?? options}
+      {...selectProps}
+    />
+  );
+}
+
+RemoteSelect.displayName = 'RemoteSelect';

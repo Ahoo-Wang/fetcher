@@ -23,3 +23,5 @@ export * from './resourceAttributionRequestInterceptor';
 export * from './tokenRefresher';
 export * from './tokenStorage';
 export * from './types';
+export * from './unauthorizedErrorInterceptor';
+export * from './forbiddenErrorInterceptor';

@@ -18,6 +18,7 @@ export * from './FallbackFilter';
 export * from './filterRegistry';
 export * from './IdFilter';
 export * from './NumberFilter';
+export * from './SelectFilter';
 export * from './TextFilter';
 export * from './TypedFilter';
 export * from './types';

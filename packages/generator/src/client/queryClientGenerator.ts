@@ -16,13 +16,15 @@ import { AggregateDefinition, TagAliasAggregate } from '../aggregate';
 import { GenerateContext, Generator } from '../generateContext';
 import { IMPORT_WOW_PATH, ModelInfo, resolveModelInfo } from '../model';
 import { addImportRefModel, camelCase } from '../utils';
-import { createClientFilePath, inferPathSpecType } from './utils';
+import { createClientFilePath, inferPathSpecType, resolveClassName } from './utils';
 
 /**
  * Generates TypeScript query client classes for aggregates.
  * Creates query clients that can perform state queries and event streaming.
  */
 export class QueryClientGenerator implements Generator {
+  private readonly domainEventTypeSuffix = 'DomainEventType';
+  private readonly domainEventTypeMapTitleSuffix = 'DomainEventTypeMapTitle';
   /**
    * Creates a new QueryClientGenerator instance.
    * @param context - The generation context containing OpenAPI spec and project details
@@ -119,29 +121,8 @@ export class QueryClientGenerator implements Generator {
       ],
       isExported: false,
     });
-
-    const eventModelInfos: ModelInfo[] = [];
-    this.context.logger.info(
-      `Processing ${aggregate.events.size} domain events for aggregate: ${aggregate.aggregate.aggregateName}`,
-    );
-    for (const event of aggregate.events.values()) {
-      const eventModelInfo = resolveModelInfo(event.schema.key);
-      this.context.logger.info(
-        `Adding import for event model: ${eventModelInfo.name} from path: ${eventModelInfo.path}`,
-      );
-      addImportRefModel(queryClientFile, this.context.outputDir, eventModelInfo);
-      eventModelInfos.push(eventModelInfo);
-    }
-
-    const domainEventTypesName = 'DOMAIN_EVENT_TYPES';
-    const eventTypeUnion = eventModelInfos.map(it => it.name).join(' | ');
-    this.context.logger.info(
-      `Creating domain event types union: ${domainEventTypesName} = ${eventTypeUnion}`,
-    );
-    queryClientFile.addTypeAlias({
-      name: domainEventTypesName,
-      type: eventTypeUnion,
-    });
+    this.processAggregateDomainEventTypes(aggregate, queryClientFile);
+    const aggregateDomainEventType = this.processAggregateDomainEventType(aggregate, queryClientFile);
 
     const clientFactoryName = `${camelCase(aggregate.aggregate.aggregateName)}QueryClientFactory`;
     const stateModelInfo = resolveModelInfo(aggregate.state.key);
@@ -162,7 +143,7 @@ export class QueryClientGenerator implements Generator {
       declarations: [
         {
           name: clientFactoryName,
-          initializer: `new QueryClientFactory<${stateModelInfo.name}, ${fieldsModelInfo.name} | string, ${domainEventTypesName}>(${defaultClientOptionsName})`,
+          initializer: `new QueryClientFactory<${stateModelInfo.name}, ${fieldsModelInfo.name} | string, ${aggregateDomainEventType}>(${defaultClientOptionsName})`,
         },
       ],
       isExported: true,
@@ -171,5 +152,46 @@ export class QueryClientGenerator implements Generator {
     this.context.logger.success(
       `Query client generation completed for aggregate: ${aggregate.aggregate.aggregateName}`,
     );
+  }
+
+  private processAggregateDomainEventType(aggregate: AggregateDefinition, queryClientFile: SourceFile) {
+    const eventModelInfos: ModelInfo[] = [];
+    this.context.logger.info(
+      `Processing ${aggregate.events.size} domain events for aggregate: ${aggregate.aggregate.aggregateName}`,
+    );
+    for (const event of aggregate.events.values()) {
+      const eventModelInfo = resolveModelInfo(event.schema.key);
+      this.context.logger.info(
+        `Adding import for event model: ${eventModelInfo.name} from path: ${eventModelInfo.path}`,
+      );
+      addImportRefModel(queryClientFile, this.context.outputDir, eventModelInfo);
+      eventModelInfos.push(eventModelInfo);
+    }
+    const aggregateDomainEventType = resolveClassName(aggregate.aggregate, this.domainEventTypeSuffix);
+    const eventTypeUnion = eventModelInfos.map(it => it.name).join(' | ');
+    this.context.logger.info(
+      `Creating domain event types union: ${aggregateDomainEventType} = ${eventTypeUnion}`,
+    );
+    queryClientFile.addTypeAlias({
+      isExported: true,
+      name: aggregateDomainEventType,
+      type: eventTypeUnion,
+    });
+    return aggregateDomainEventType;
+  }
+
+  private processAggregateDomainEventTypes(aggregate: AggregateDefinition, queryClientFile: SourceFile) {
+    const aggregateDomainEventTypes = resolveClassName(aggregate.aggregate, this.domainEventTypeMapTitleSuffix);
+    const enumDeclaration = queryClientFile.addEnum({
+      name: aggregateDomainEventTypes,
+      isExported: true,
+    });
+    for (const event of aggregate.events.values()) {
+
+      enumDeclaration.addMember({
+        name: event.name,
+        initializer: `'${event.title}'`,
+      });
+    }
   }
 }

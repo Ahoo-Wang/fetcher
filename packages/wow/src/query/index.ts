@@ -21,5 +21,6 @@ export * from './queryApi';
 export * from './sort';
 export * from './event';
 export * from './snapshot';
+export * from './state';
 export * from './cursorQuery';
 export * from './queryClients';

@@ -48,6 +48,6 @@ export class TokenStorage
   }
 
   setCompositeToken(compositeToken: CompositeToken) {
-    this.set(new JwtCompositeToken(compositeToken));
+    this.set(new JwtCompositeToken(compositeToken, this.earlyPeriod));
   }
 }

@@ -16,13 +16,22 @@ import React, { useImperativeHandle } from 'react';
 import { TypedFilterProps } from './TypedFilter';
 import { FilterValue } from './types';
 
-export function FallbackFilter(props: TypedFilterProps) {
-  useImperativeHandle(props.ref, () => ({
+export function FallbackFilter({ type, ref }: TypedFilterProps) {
+  useImperativeHandle(ref, () => ({
     getValue(): FilterValue | undefined {
       return undefined;
     },
+    reset(): void {
+      // No-op for fallback filter
+    },
   }));
-  return <Alert message={`Unsupported filter type:[${props.type}]`} type="warning" showIcon />;
+  return (
+    <Alert
+      message={`Unsupported filter type:[${type}]`}
+      type="warning"
+      showIcon
+    />
+  );
 }
 
 FallbackFilter.displayName = 'FallbackFilter';

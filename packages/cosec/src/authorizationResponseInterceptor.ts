@@ -41,14 +41,12 @@ export const AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER =
 export class AuthorizationResponseInterceptor implements ResponseInterceptor {
   readonly name = AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME;
   readonly order = AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER;
-  private options: AuthorizationInterceptorOptions;
 
   /**
    * Creates a new AuthorizationResponseInterceptor instance.
    * @param options - The CoSec configuration options including token storage and refresher
    */
-  constructor(options: AuthorizationInterceptorOptions) {
-    this.options = options;
+  constructor(private options: AuthorizationInterceptorOptions) {
   }
 
   /**

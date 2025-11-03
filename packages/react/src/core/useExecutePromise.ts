@@ -21,45 +21,68 @@ import {
 import { useRequestId } from './useRequestId';
 import { FetcherError } from '@ahoo-wang/fetcher';
 
+/**
+ * Configuration options for the useExecutePromise hook.
+ * @template R - The type of the resolved value from the promise.
+ * @template E - The type of the error value, defaults to unknown.
+ */
 export interface UseExecutePromiseOptions<R, E = unknown>
   extends UsePromiseStateOptions<R, E> {
   /**
    * Whether to propagate errors thrown by the promise.
    * If true, the execute function will throw errors.
    * If false (default), the execute function will return the error as the result instead of throwing.
+   * @default false
    */
   propagateError?: boolean;
 }
 
 /**
- * Type definition for a function that returns a Promise
- * @template R - The type of value the promise will resolve to
+ * Type definition for a function that returns a Promise.
+ * This is used as input to the execute function, allowing lazy evaluation of promises.
+ * @template R - The type of value the promise will resolve to.
  */
 export type PromiseSupplier<R> = () => Promise<R>;
 
 /**
- * Interface defining the return type of useExecutePromise hook
- * @template R - The type of the result value
+ * Interface defining the return type of the useExecutePromise hook.
+ * Provides state management and control functions for asynchronous operations.
+ * @template R - The type of the result value.
+ * @template E - The type of the error value, defaults to FetcherError.
  */
 export interface UseExecutePromiseReturn<R, E = FetcherError>
   extends PromiseState<R, E> {
   /**
    * Function to execute a promise supplier or promise.
-   * Returns a promise that resolves to the result on success, or the error if propagateError is false.
+   * Manages the loading state, handles errors, and updates the result state.
+   * @param input - A function that returns a Promise or a Promise directly.
+   * @returns A Promise that resolves to the result on success, or the error if propagateError is false.
+   * @throws {Error} If the component is unmounted when execute is called.
+   * @throws {E} If propagateError is true and the promise rejects.
    */
   execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<R | E>;
-  /** Function to reset the state to initial values */
+  /**
+   * Function to reset the state to initial values.
+   * Clears loading, result, error, and sets status to idle.
+   */
   reset: () => void;
 }
 
 /**
- * A React hook for managing asynchronous operations with proper state handling
- * @template R - The type of the result value
- * @template E - The type of the error value
- * @param options - Configuration options for the hook
- * @returns An object containing the current state and control functions
+ * A React hook for managing asynchronous operations with proper state handling.
+ * Provides a way to execute promises while automatically managing loading states,
+ * handling errors, and preventing state updates on unmounted components or stale requests.
+ *
+ * @template R - The type of the result value, defaults to unknown.
+ * @template E - The type of the error value, defaults to FetcherError.
+ * @param options - Optional configuration options for the hook behavior.
+ * @returns An object containing the current promise state and control functions.
+ *
+ * @throws {Error} When execute is called on an unmounted component.
+ * @throws {E} When propagateError is true and the executed promise rejects.
  *
  * @example
+ * Basic usage with state management:
  * ```typescript
  * import { useExecutePromise } from '@ahoo-wang/fetcher-react';
  *
@@ -89,27 +112,54 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  *     </div>
  *   );
  * }
+ * ```
  *
- * // Example with propagateError set to true
+ * @example
+ * Using propagateError for try/catch error handling:
+ * ```typescript
  * const { execute } = useExecutePromise<string>({ propagateError: true });
- * try {
- *   await execute(fetchData);
- * } catch (err) {
- *   console.error('Error occurred:', err);
- * }
+ *
+ * const handleSubmit = async () => {
+ *   try {
+ *     const data = await execute(fetchUserData);
+ *     console.log('Success:', data);
+ *   } catch (err) {
+ *     console.error('Error occurred:', err);
+ *   }
+ * };
+ * ```
+ *
+ * @example
+ * Executing a promise directly instead of a supplier function:
+ * ```typescript
+ * const { execute } = useExecutePromise<number>();
+ * const promise = fetch('/api/count').then(r => r.json());
+ * const result = await execute(promise);
  * ```
  */
 export function useExecutePromise<R = unknown, E = FetcherError>(
   options?: UseExecutePromiseOptions<R, E>,
 ): UseExecutePromiseReturn<R, E> {
-  const { loading, result, error, status, setLoading, setSuccess, setError, setIdle } = usePromiseState<R, E>(options);
+  const {
+    loading,
+    result,
+    error,
+    status,
+    setLoading,
+    setSuccess,
+    setError,
+    setIdle,
+  } = usePromiseState<R, E>(options);
   const isMounted = useMounted();
   const requestId = useRequestId();
   const propagateError = options?.propagateError;
   /**
-   * Execute a promise supplier or promise and manage its state
-   * @param input - A function that returns a Promise or a Promise to be executed
-   * @returns A Promise that resolves with the result on success, or the error if propagateError is false
+   * Execute a promise supplier or promise and manage its state.
+   * Handles loading states, error propagation, and prevents updates on unmounted components.
+   * @param input - A function that returns a Promise or a Promise to be executed.
+   * @returns A Promise that resolves with the result on success, or the error if propagateError is false.
+   * @throws {Error} If the component is unmounted when execute is called.
+   * @throws {E} If propagateError is true and the promise rejects.
    */
   const execute = useCallback(
     async (input: PromiseSupplier<R> | Promise<R>): Promise<R | E> => {
@@ -140,7 +190,9 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
   );
 
   /**
-   * Reset the state to initial values
+   * Reset the state to initial values.
+   * Clears loading, result, error, and sets status to idle.
+   * Only works if the component is still mounted.
    */
   const reset = useCallback(() => {
     if (isMounted()) {
@@ -150,13 +202,13 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
 
   return useMemo(
     () => ({
-      loading: loading,
-      result: result,
-      error: error,
+      loading,
+      result,
+      error,
+      status,
       execute,
       reset,
-      status: status,
     }),
-    [loading, result, error, execute, reset, status],
+    [loading, result, error, status, execute, reset],
   );
 }

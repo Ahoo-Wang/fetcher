@@ -11,27 +11,28 @@
  * limitations under the License.
  */
 
-import { FilterProps } from './types';
+import { FilterProps, FilterValueProps } from './types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { OPERATOR_zh_CN } from './locale';
-import { useFilterState, UseFilterStateReturn } from './useFilterState';
+import { OnOperatorChangeValueConverter, useFilterState, UseFilterStateReturn, ValidateValue } from './useFilterState';
 import { Button, Select, Space } from 'antd';
 import { ReactNode } from 'react';
-import { Optional } from '../types';
 
-export interface AssemblyFilterProps<ValueType = any> extends FilterProps {
+export interface AssemblyFilterProps<ValueType = any, ValuePropsType extends FilterValueProps = FilterValueProps<ValueType>> extends FilterProps<ValueType, ValuePropsType> {
   supportedOperators: Operator[];
-  validate?: (operator: Operator, value: Optional<ValueType>) => boolean;
+  valueConverter?: OnOperatorChangeValueConverter;
+  validate?: ValidateValue<ValueType>;
   valueInputSupplier: (
     filterState: UseFilterStateReturn<ValueType>,
   ) => ReactNode;
 }
 
 export function AssemblyFilter<ValueType = any>(
-  props: AssemblyFilterProps<ValueType>,
+  { ref, ...props }: AssemblyFilterProps<ValueType>,
 ) {
+  const supportedOperators = props.operator?.supportedOperators ?? props.supportedOperators;
   // Validate that supportedOperators is not empty
-  if (!props.supportedOperators || props.supportedOperators.length === 0) {
+  if (!supportedOperators || supportedOperators.length === 0) {
     throw new Error('supportedOperators must be a non-empty array');
   }
 
@@ -41,27 +42,27 @@ export function AssemblyFilter<ValueType = any>(
   let initialOperator = props.operator?.defaultValue;
 
   // If no operator is provided or it's not in supported operators, use the first supported operator
-  if (!initialOperator || !props.supportedOperators.includes(initialOperator)) {
-    initialOperator = props.supportedOperators[0];
+  if (!initialOperator || !supportedOperators.includes(initialOperator)) {
+    initialOperator = supportedOperators[0];
   }
-
   const filterState = useFilterState({
     field: props.field.name,
     operator: initialOperator,
     value: props.value?.defaultValue,
-    ref: props.ref,
+    ref: ref,
+    valueConverter: props.valueConverter,
     validate: props.validate,
     onChange: props.onChange,
   });
   const valueInput = props.valueInputSupplier(filterState);
-  const options = props.supportedOperators.map(supportedOperator => ({
+  const options = supportedOperators.map(supportedOperator => ({
     value: supportedOperator,
     label: operatorLocale[supportedOperator],
   }));
   return (
     <Space.Compact
       block
-      style={{ ...props.style }}
+      style={props.style}
       className={props.className}
     >
       <Button {...props.label}>{props.field.label}</Button>

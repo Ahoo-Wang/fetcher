@@ -15,7 +15,7 @@ import { FilterField } from '../types';
 import { FilterType } from '../TypedFilter';
 import { Checkbox, Flex, Typography } from 'antd';
 import { StyleCapable } from '../../types';
-import { RefAttributes, useEffect, useImperativeHandle, useState } from 'react';
+import { RefAttributes, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { ActiveFilter } from './FilterPanel';
 
 export interface AvailableFilter {
@@ -37,15 +37,20 @@ export interface AvailableFilterSelectProps extends StyleCapable, RefAttributes<
   activeFilters?: ActiveFilter[];
 }
 
+const EMPTY_ACTIVE_FILTERS: ActiveFilter[] = [];
+
 export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
-  const { filters, activeFilters = [] } = props;
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
-  useImperativeHandle(props.ref, () => ({
+  const { filters, activeFilters = EMPTY_ACTIVE_FILTERS, ref } = props;
+  const activeFilterFieldNames = useMemo(() => {
+    return activeFilters?.map(activeFilter => activeFilter.field.name).sort();
+  }, [activeFilters]);
+  const [selectedFilters, setSelectedFilters] = useState<string[]>(activeFilterFieldNames);
+  useImperativeHandle(ref, () => ({
     getValue(): AvailableFilter[] {
       return props.filters.flatMap(group => group.filters.filter(filter => selectedFilters.includes(filter.field.name) && !activeFilters.some(activeFilter => activeFilter.field.name === filter.field.name)));
     },
   }));
-  const onCheckHandler = (filter: AvailableFilter, checked: boolean) => {
+  const handleCheck = (filter: AvailableFilter, checked: boolean) => {
     if (checked) {
       setSelectedFilters([
         ...selectedFilters,
@@ -59,16 +64,17 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
       );
     }
   };
+
   useEffect(() => {
     setSelectedFilters(
-      activeFilters.map(activeFilter => activeFilter.field.name),
+      activeFilterFieldNames,
     );
-  }, [activeFilters]);
+  }, [activeFilterFieldNames]);
   return (
     <>
       {
         filters.map((group) => (
-          <>
+          <div key={group.label}>
             <Typography.Title level={5}>{group.label}</Typography.Title>
             <Flex gap="middle" wrap>
               {
@@ -76,7 +82,7 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
                   <Checkbox key={filter.field.name}
                             checked={selectedFilters.includes(filter.field.name)}
                             onChange={e => {
-                              onCheckHandler(filter, e.target.checked);
+                              handleCheck(filter, e.target.checked);
                             }}
                             disabled={activeFilters.some(activeFilter => activeFilter.field.name === filter.field.name)}
                   >
@@ -85,7 +91,7 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
                 ))
               }
             </Flex>
-          </>
+          </div>
         ))
       }
     </>

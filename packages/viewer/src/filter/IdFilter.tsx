@@ -15,24 +15,44 @@ import { FilterProps } from './types';
 import { Input } from 'antd';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
-import { UseFilterStateReturn } from './useFilterState';
 import {
-  AssemblyFilter,
-  AssemblyFilterProps,
-} from './AssemblyFilter';
+  OnOperatorChangeValueConverter,
+  UseFilterStateReturn,
+} from './useFilterState';
+import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 
 export const ID_FILTER = 'id';
+export type IdFilterValueType = string | string[];
 
-export function IdFilter(
-  props: FilterProps<string | string[]>,
-) {
-  const assemblyConditionFilterProps: AssemblyFilterProps<
-    string | string[]
-  > = {
+export const IdOnOperatorChangeValueConverter: OnOperatorChangeValueConverter<
+  IdFilterValueType
+> = (beforeOperator, afterOperator, value) => {
+  if (value === undefined || value === null) {
+    return value;
+  }
+  if (afterOperator === Operator.ID) {
+    if (Array.isArray(value)) {
+      return value[0];
+    }
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value;
+  }
+  const trimmedValue = value.trim();
+  if (!trimmedValue) {
+    return [];
+  }
+  return [trimmedValue];
+};
+
+export function IdFilter(props: FilterProps<IdFilterValueType>) {
+  const assemblyFilterProps: AssemblyFilterProps<IdFilterValueType> = {
     ...props,
     supportedOperators: [Operator.ID, Operator.IDS],
+    valueConverter: IdOnOperatorChangeValueConverter,
     valueInputSupplier: (
-      filterState: UseFilterStateReturn<string | string[]>,
+      filterState: UseFilterStateReturn<IdFilterValueType>,
     ) => {
       return filterState.operator === Operator.ID ? (
         <Input
@@ -51,8 +71,8 @@ export function IdFilter(
     },
   };
   return (
-    <AssemblyFilter<string | string[]>
-      {...assemblyConditionFilterProps}
+    <AssemblyFilter<IdFilterValueType>
+      {...assemblyFilterProps}
     ></AssemblyFilter>
   );
 }

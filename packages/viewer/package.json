@@ -1,15 +1,18 @@
 {
   "name": "@ahoo-wang/fetcher-viewer",
-  "version": "2.13.8",
-  "description": "",
+  "version": "3.0.0",
+  "description": "A comprehensive React component library for API documentation viewing and data filtering, built on top of Ant Design and the Fetcher ecosystem. Provides reusable UI components for building rich data-driven applications with advanced filtering capabilities and remote data selection.",
   "keywords": [
-    "fetch",
-    "http",
-    "client",
     "react",
-    "hooks",
+    "components",
+    "api-viewer",
+    "data-filtering",
+    "remote-select",
+    "antd",
     "typescript",
-    "data-fetching"
+    "ui-components",
+    "filter-panel",
+    "data-visualization"
   ],
   "author": "Ahoo-Wang",
   "license": "Apache-2.0",
@@ -43,9 +46,6 @@
     "lint": "eslint . --fix",
     "clean": "rm -rf dist",
     "analyze": "npx vite-bundle-analyzer -p auto"
-  },
-  "dependencies": {
-    "react-use": "catalog:"
   },
   "peerDependencies": {
     "@ahoo-wang/fetcher": "workspace:^2.3.4",

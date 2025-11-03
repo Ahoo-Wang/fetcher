@@ -17,6 +17,7 @@ import { useState } from 'react';
 type NumberRangeValue = (number | undefined)[];
 
 export interface NumberRangeProps {
+  value?: number | NumberRangeValue;
   defaultValue?: number | NumberRangeValue;
   min?: number;
   max?: number;
@@ -25,27 +26,49 @@ export interface NumberRangeProps {
   onChange?: (value: NumberRangeValue) => void;
 }
 
+const convertToRangeValue = (
+  value: number | NumberRangeValue | undefined,
+): NumberRangeValue => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  return [value, undefined];
+};
+
+const DEFAULT_PLACEHOLDER = ['最小值', '最大值'];
+
 export function NumberRange(props: NumberRangeProps) {
-  const defaultValue = Array.isArray(props.defaultValue) ? props.defaultValue : [props.defaultValue, undefined];
-  const [defaultStart, defaultEnd] = defaultValue;
-  const [start, setStart] = useState<number | undefined>(defaultStart);
-  const [end, setEnd] = useState<number | undefined>(defaultEnd);
-
-  const startMax: number | undefined = end !== undefined ? end : props.max;
-  const endMin: number | undefined = start !== undefined ? start : props.min;
-
-  const handleStartChange = (value: number | null) => {
-    const newStart = value ?? undefined;
-    setStart(newStart);
-    props.onChange?.([newStart, end]);
+  const isControlled = props.value !== undefined;
+  const [internalValue, setInternalValue] = useState<NumberRangeValue>(
+    convertToRangeValue(props.defaultValue),
+  );
+  const value = isControlled ? convertToRangeValue(props.value) : internalValue;
+  const [start, end] = value;
+  const handleValueChange = (newValue: NumberRangeValue) => {
+    if (!isControlled) {
+      setInternalValue(newValue);
+    }
+    props.onChange?.(newValue);
   };
 
-  const handleEndChange = (value: number | null) => {
-    const newEnd = value ?? undefined;
-    setEnd(newEnd);
-    props.onChange?.([start, newEnd]);
+  const handleStartChange = (newStart: number | null) => {
+    const startVal = newStart ?? undefined;
+    handleValueChange([startVal, end]);
   };
 
+  const handleEndChange = (newEnd: number | null) => {
+    const endVal = newEnd ?? undefined;
+    handleValueChange([start, endVal]);
+  };
+
+  const startMax = end !== undefined ? end : props.max;
+  const endMin = start !== undefined ? start : props.min;
+  const placeholder = props.placeholder
+    ? [
+      props.placeholder[0] || DEFAULT_PLACEHOLDER[0],
+      props.placeholder[1] || DEFAULT_PLACEHOLDER[1],
+    ]
+    : DEFAULT_PLACEHOLDER;
   return (
     <Space.Compact block>
       <InputNumber
@@ -53,7 +76,7 @@ export function NumberRange(props: NumberRangeProps) {
         min={props.min}
         max={startMax}
         precision={props.precision}
-        placeholder={props.placeholder?.[0] || '最小值'}
+        placeholder={placeholder[0]}
         onChange={handleStartChange}
       />
       <Input
@@ -71,7 +94,7 @@ export function NumberRange(props: NumberRangeProps) {
         min={endMin}
         max={props.max}
         precision={props.precision}
-        placeholder={props.placeholder?.[1] || '最大值'}
+        placeholder={placeholder[1]}
         onChange={handleEndChange}
       />
     </Space.Compact>

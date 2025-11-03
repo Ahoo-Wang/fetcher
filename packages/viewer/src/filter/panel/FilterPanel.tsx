@@ -11,13 +11,12 @@
  * limitations under the License.
  */
 
-import React, { Key } from 'react';
+import React, { Key, RefAttributes, useImperativeHandle } from 'react';
 import { TypedFilterProps } from '../TypedFilter';
 import { FilterRef } from '../types';
-import { StyleCapable } from '../../types';
 import { and, Condition } from '@ahoo-wang/fetcher-wow';
-import { Button, Col, Row, Space, ColProps } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { Button, Col, Row, Space, ColProps, ButtonProps } from 'antd';
+import { ClearOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRefs } from '@ahoo-wang/fetcher-react';
 import { RemovableTypedFilter } from './RemovableTypedFilter';
 import { RowProps } from 'antd/es/grid/row';
@@ -28,34 +27,58 @@ export interface ActiveFilter
   onRemove?: () => void;
 }
 
-export interface FilterPanelProps {
-  rowProps?: RowProps;
-  colProps?: ColProps;
-  actionColProps?: ColProps;
+export interface FilterPanelRef {
+  /**
+   * Triggers the search action using the current filter values.
+   * Typically calls the `onSearch` callback with the composed filter condition.
+   */
+  search(): void;
+
+  /**
+   * Resets all filter values to their initial state.
+   * Typically clears the filters and triggers any associated reset logic.
+   */
+  reset(): void;
+}
+
+export interface FilterPanelProps extends RefAttributes<FilterPanelRef> {
+  row?: RowProps;
+  col?: ColProps;
+  actionsCol?: ColProps;
   filters: ActiveFilter[];
   actions?: React.ReactNode;
   onSearch?: (condition: Condition) => void;
-  loading?: boolean;
+  resetButton?: boolean | Omit<ButtonProps, 'onClick'>;
+  searchButton?: Omit<ButtonProps, 'onClick'>;
 }
+
+const DEFAULT_ROW_PROPS: RowProps = {
+  gutter: [8, 8],
+  wrap: true,
+};
+
+const DEFAULT_COL_PROPS: ColProps = {
+  xxl: 6,
+  xl: 8,
+  lg: 12,
+  md: 12,
+  sm: 24,
+  xs: 24,
+};
+
+const DEFAULT_ACTIONS_COL_PROPS: ColProps = DEFAULT_COL_PROPS;
 
 export function FilterPanel(props: FilterPanelProps) {
   const {
-    rowProps = { gutter: [8, 8], wrap: true },
-    colProps = {
-      xxl: 6,
-      xl: 8,
-      lg: 12,
-      md: 12,
-      sm: 24,
-      xs: 24,
-    },
-    actionColProps = {
-      span: 12,
-    },
+    ref,
+    row = DEFAULT_ROW_PROPS,
+    col = DEFAULT_COL_PROPS,
+    actionsCol = DEFAULT_ACTIONS_COL_PROPS,
     filters,
     onSearch,
     actions,
-    loading = false,
+    resetButton,
+    searchButton,
   } = props;
   const filterRefs = useRefs<FilterRef>();
   const handleSearch = () => {
@@ -68,12 +91,23 @@ export function FilterPanel(props: FilterPanelProps) {
     const finalCondition: Condition = and(...conditions);
     onSearch(finalCondition);
   };
+  const handleReset = () => {
+    for (const filterRef of filterRefs.values()) {
+      filterRef.reset();
+    }
+  };
+  useImperativeHandle<FilterPanelRef, FilterPanelRef>(ref, () => ({
+    search: handleSearch,
+    reset: handleReset,
+  }));
+  const showResetButton = resetButton !== false;
+  const resetButtonProps = typeof resetButton === 'object' ? resetButton : {};
   return (
     <>
-      <Row {...rowProps}>
+      <Row {...row}>
         {filters.map(filter => {
           return (
-            <Col {...colProps}>
+            <Col {...col} key={filter.key}>
               <RemovableTypedFilter
                 key={filter.key}
                 type={filter.type}
@@ -86,18 +120,27 @@ export function FilterPanel(props: FilterPanelProps) {
             </Col>
           );
         })}
-        <Col  {...actionColProps}>
-          <Space>
+        <Col  {...actionsCol}>
+          <Space.Compact>
             {actions}
+            {showResetButton && (
+              <Button
+                icon={<ClearOutlined />}
+                onClick={handleReset}
+                {...resetButtonProps}
+              >
+                {resetButtonProps?.children || 'Reset'}
+              </Button>
+            )}
             <Button
               type="primary"
               icon={<SearchOutlined />}
               onClick={handleSearch}
-              loading={loading}
+              {...searchButton}
             >
-              Search
+              {searchButton?.children || 'Search'}
             </Button>
-          </Space>
+          </Space.Compact>
         </Col>
       </Row>
     </>

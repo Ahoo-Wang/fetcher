@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   AuthorizationResponseInterceptor,
   AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME,
-  AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER,
+  AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER, RefreshTokenError,
 } from '../src';
 import { ResponseCodes, type CoSecOptions } from '../src';
 import { FetchExchange, type Fetcher } from '@ahoo-wang/fetcher';
@@ -151,7 +151,7 @@ describe('AuthorizationResponseInterceptor', () => {
     mockTokenRefresher.refresh = vi.fn().mockRejectedValue(refreshError);
 
     await expect(interceptor.intercept(exchange)).rejects.toThrow(
-      'Refresh failed',
+      RefreshTokenError
     );
 
     expect(mockTokenStorage.get).toHaveBeenCalled();

@@ -1,5 +1,3 @@
-<div align="center">
-
 # 🚀 Fetcher
 
 [![npm version](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
@@ -9,10 +7,9 @@
 [![npm downloads](https://img.shields.io/npm/dm/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ahoo-Wang/fetcher)
+[![Storybook](https://img.shields.io/badge/Storybook-交互式文档-FF4785)](https://fetcher.ahoo.me/)
 
 **超轻量级 • 模块化 • TypeScript 优先 • 拦截器驱动 • LLM 流式 API 支持**
-
-</div>
 
 ## 🌟 为什么选择 Fetcher?
 
@@ -140,8 +137,6 @@ Fetcher 不仅仅是一个 HTTP 客户端——它是一个为现代 Web 开发�
 
 ## 📦 包生态系统
 
-<div align="center">
-
 | 包                                                         | 描述                                                                                          | 版本                                                                                                                                    | 大小                                                                                                                                                  |
 | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`@ahoo-wang/fetcher`](./packages/fetcher)                 | **核心 HTTP 客户端**<br/>具有 Axios 类似 API 的超轻量级基础                                   | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                         | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher)](https://www.npmjs.com/package/@ahoo-wang/fetcher)                        |
@@ -155,7 +150,6 @@ Fetcher 不仅仅是一个 HTTP 客户端——它是一个为现代 Web 开发�
 | [`@ahoo-wang/fetcher-wow`](./packages/wow)                 | **CQRS/DDD 框架支持**<br/>与 Wow CQRS/DDD 框架的一流集成                                      | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-wow.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                 | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-wow)](https://www.npmjs.com/package/@ahoo-wang/fetcher-wow)                |
 | [`@ahoo-wang/fetcher-cosec`](./packages/cosec)             | **企业安全**<br/>CoSec 认证集成                                                               | [![npm](https://img.shields.io/npm/v/@ahoo-wang/fetcher-cosec.svg)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)             | [![size](https://img.shields.io/bundlephobia/minzip/%40ahoo-wang%2Ffetcher-cosec)](https://www.npmjs.com/package/@ahoo-wang/fetcher-cosec)            |
 
-</div>
 
 ## 🚀 快速开始
 

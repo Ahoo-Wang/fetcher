@@ -16,14 +16,17 @@ import { RefAttributes, useImperativeHandle, useState } from 'react';
 import { FilterRef, FilterValue } from './types';
 import { Optional } from '../types';
 
+export type OnOperatorChangeValueConverter<ValueType = any> = (beforeOperator: Operator, afterOperator: Operator, value: Optional<ValueType>) => Optional<ValueType>
+export type ValidateValue<ValueType = any> = (operator: Operator, value: Optional<ValueType>) => boolean;
+export type OnChange = (condition: Optional<FilterValue>) => void;
 
 export interface UseFilterStateOptions<ValueType = any> extends RefAttributes<FilterRef> {
   field?: string;
   operator: Operator;
   value: Optional<ValueType>;
-  valueConverter?: (beforeOperator: Operator, afterOperator: Operator, value: Optional<ValueType>) => Optional<ValueType>;
-  validate?: (operator: Operator, value: Optional<ValueType>) => boolean;
-  onChange?: (condition: Optional<FilterValue>) => void;
+  valueConverter?: OnOperatorChangeValueConverter;
+  validate?: ValidateValue<ValueType>;
+  onChange?: OnChange;
 }
 
 export interface UseFilterStateReturn<ValueType = any> {
@@ -31,6 +34,7 @@ export interface UseFilterStateReturn<ValueType = any> {
   value: Optional<ValueType>;
   setOperator: (operator: Operator) => void;
   setValue: (value: Optional<ValueType>) => void;
+  reset: () => void;
 }
 
 const defaultValueValidate = (operator: Operator, value: any) => {
@@ -39,7 +43,7 @@ const defaultValueValidate = (operator: Operator, value: any) => {
   return !(Array.isArray(value) && value.length === 0);
 };
 
-const defaultValueConverter = (beforeOperator: Operator, afterOperator: Operator, value: any) => {
+const defaultValueConverter: OnOperatorChangeValueConverter = (beforeOperator: Operator, afterOperator: Operator, value: any) => {
   return value;
 };
 
@@ -65,18 +69,25 @@ export function useFilterState<ValueType = any>(options: UseFilterStateOptions<V
     const afterValue = valueConverter(operator, newOperator, value);
     setOperator(newOperator);
     setValue(afterValue);
-    const conditionFilterValue = resolveFilterValue(newOperator, afterValue);
-    options.onChange?.(conditionFilterValue);
+    const filterValue = resolveFilterValue(newOperator, afterValue);
+    options.onChange?.(filterValue);
   };
   const setValueFn = (newValue: Optional<ValueType>) => {
     setValue(newValue);
-    const conditionFilterValue = resolveFilterValue(operator, newValue);
-    options.onChange?.(conditionFilterValue);
+    const filterValue = resolveFilterValue(operator, newValue);
+    options.onChange?.(filterValue);
   };
-  useImperativeHandle(options.ref, () => ({
+  const resetFn = () => {
+    setOperator(options.operator);
+    setValue(options.value);
+    const filterValue = resolveFilterValue(options.operator, options.value);
+    options.onChange?.(filterValue);
+  };
+  useImperativeHandle<FilterRef, FilterRef>(options.ref, () => ({
     getValue(): FilterValue | undefined {
       return resolveFilterValue(operator, value);
     },
+    reset: resetFn,
   }));
 
   return {
@@ -84,5 +95,6 @@ export function useFilterState<ValueType = any>(options: UseFilterStateOptions<V
     value,
     setOperator: setOperatorFn,
     setValue: setValueFn,
+    reset: resetFn,
   };
 }

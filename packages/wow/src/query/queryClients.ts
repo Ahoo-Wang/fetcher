@@ -17,6 +17,8 @@ import { AggregateNameCapable, AliasBoundedContext } from '../types';
 import { ResourceAttributionPathSpec } from '../types';
 import { SnapshotQueryClient } from './snapshot';
 import { EventStreamQueryClient } from './event';
+import { LoadStateAggregateClient } from './state';
+import { LoadOwnerStateAggregateClient } from './state';
 
 /**
  * Configuration options for query clients.
@@ -98,13 +100,87 @@ export class QueryClientFactory<
    * ```
    */
   createSnapshotQueryClient(
-    options: QueryClientOptions,
+    options?: QueryClientOptions,
   ): SnapshotQueryClient<S, FIELDS> {
     const apiMetadata = createQueryApiMetadata({
       ...this.defaultOptions,
       ...options,
     });
     return new SnapshotQueryClient(apiMetadata);
+  }
+
+  /**
+   * Creates a client for loading aggregate state by ID.
+   *
+   * This method merges the provided options with the factory's default options,
+   * then creates API metadata and instantiates a LoadStateAggregateClient.
+   * The client supports loading current state, versioned state, and time-based state.
+   *
+   * @param options - The query client options used to configure the state aggregate client
+   * @returns A new instance of LoadStateAggregateClient
+   *
+   * @example
+   * ```typescript
+   * const stateClient = factory.createLoadStateAggregateClient({
+   *   aggregateName: 'cart',
+   * });
+   *
+   * // Load current state
+   * const currentState = await stateClient.load('cart-123');
+   *
+   * // Load specific version
+   * const versionedState = await stateClient.loadVersioned('cart-123', 5);
+   *
+   * // Load state at specific time
+   * const timeBasedState = await stateClient.loadTimeBased('cart-123', Date.now());
+   * ```
+   */
+  createLoadStateAggregateClient(
+    options?: QueryClientOptions,
+  ): LoadStateAggregateClient<S> {
+    const apiMetadata = createQueryApiMetadata({
+      ...this.defaultOptions,
+      ...options,
+    });
+    return new LoadStateAggregateClient(apiMetadata);
+  }
+
+  /**
+   * Creates a client for loading owner-specific aggregate state.
+   *
+   * This method merges the provided options with the factory's default options,
+   * then creates API metadata and instantiates a LoadOwnerStateAggregateClient.
+   * Unlike the standard state client, this client loads state for the current owner
+   * without requiring an explicit ID parameter.
+   *
+   * @param options - The query client options used to configure the owner state aggregate client
+   * @returns A new instance of LoadOwnerStateAggregateClient
+   *
+   * @example
+   * ```typescript
+   * const ownerStateClient = factory.createOwnerLoadStateAggregateClient({
+   *   aggregateName: 'cart',
+   *   resourceAttribution: ResourceAttributionPathSpec.OWNER,
+   * });
+   *
+   * // Load current owner's state
+   * const currentState = await ownerStateClient.load();
+   *
+   * // Load specific version of owner's state
+   * const versionedState = await ownerStateClient.loadVersioned(5);
+   *
+   * // Load owner's state at specific time
+   * const timeBasedState = await ownerStateClient.loadTimeBased(Date.now());
+   * ```
+   */
+  createOwnerLoadStateAggregateClient(
+    options?: QueryClientOptions,
+  ): LoadOwnerStateAggregateClient<S> {
+    const apiMetadata = createQueryApiMetadata({
+      ...this.defaultOptions,
+      ...options,
+    });
+    return new LoadOwnerStateAggregateClient(apiMetadata);
   }
 
   /**
@@ -126,7 +202,7 @@ export class QueryClientFactory<
    * ```
    */
   createEventStreamQueryClient<FIELDS extends string = string>(
-    options: QueryClientOptions,
+    options?: QueryClientOptions,
   ): EventStreamQueryClient<DomainEventBody, FIELDS> {
     const apiMetadata = createQueryApiMetadata({
       ...this.defaultOptions,
