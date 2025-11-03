@@ -13,12 +13,12 @@ catalog:
   '@vitest/coverage-v8': ^3.2.4
   '@vitest/ui': ^3.2.4
   '@ant-design/icons': ^5.6.1
-  antd: ^5.27.6
+  antd: ^5.28.0
   babel-plugin-react-compiler: ^1.0.0
   commander: ^14.0.2
   eslint: ^9.38.0
   eslint-plugin-react-hooks: ^7.0.1
-  globals: ^16.4.0
+  globals: ^16.5.0
   jsdom: ^27.1.0
   msw: ^2.11.6
   nanoid: ^5.1.6

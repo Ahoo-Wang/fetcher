@@ -37,8 +37,8 @@ catalogs:
       specifier: ^3.2.4
       version: 3.2.4
     antd:
-      specifier: ^5.27.6
-      version: 5.27.6
+      specifier: ^5.28.0
+      version: 5.28.0
     babel-plugin-react-compiler:
       specifier: ^1.0.0
       version: 1.0.0
@@ -52,8 +52,8 @@ catalogs:
       specifier: ^7.0.1
       version: 7.0.1
     globals:
-      specifier: ^16.4.0
-      version: 16.4.0
+      specifier: ^16.5.0
+      version: 16.5.0
     jsdom:
       specifier: ^27.1.0
       version: 27.1.0
@@ -109,7 +109,7 @@ importers:
     devDependencies:
       '@ant-design/v5-patch-for-react-19':
         specifier: ^1.0.3
-        version: 1.0.3(antd@5.27.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 1.0.3(antd@5.28.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@chromatic-com/storybook':
         specifier: ^4.1.1
         version: 4.1.1(storybook@9.1.16(@testing-library/dom@10.4.1)(msw@2.11.6(@types/node@24.5.2)(typescript@5.9.3))(prettier@3.6.2)(vite@7.1.12(@types/node@24.5.2)(yaml@2.8.1)))
@@ -151,7 +151,7 @@ importers:
         version: 3.2.4(vitest@3.2.4)
       antd:
         specifier: 'catalog:'
-        version: 5.27.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 5.28.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       eslint:
         specifier: 'catalog:'
         version: 9.38.0
@@ -160,7 +160,7 @@ importers:
         version: 9.1.16(eslint@9.38.0)(storybook@9.1.16(@testing-library/dom@10.4.1)(msw@2.11.6(@types/node@24.5.2)(typescript@5.9.3))(prettier@3.6.2)(vite@7.1.12(@types/node@24.5.2)(yaml@2.8.1)))(typescript@5.9.3)
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       playwright:
         specifier: ^1.56.1
         version: 1.56.1
@@ -236,7 +236,7 @@ importers:
         version: 9.37.0
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
@@ -288,7 +288,7 @@ importers:
         version: 9.37.0
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
@@ -334,7 +334,7 @@ importers:
         version: 9.37.0
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       msw:
         specifier: 'catalog:'
         version: 2.11.6(@types/node@24.5.2)(typescript@5.9.3)
@@ -380,7 +380,7 @@ importers:
         version: 9.37.0
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
@@ -423,7 +423,7 @@ importers:
         version: 9.37.0
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
@@ -462,7 +462,7 @@ importers:
         version: 9.37.0
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       msw:
         specifier: 'catalog:'
         version: 2.11.6(@types/node@24.5.2)(typescript@5.9.3)
@@ -532,7 +532,7 @@ importers:
         version: 9.37.0
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
@@ -590,7 +590,7 @@ importers:
         version: 9.37.0
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       msw:
         specifier: 'catalog:'
         version: 2.11.6(@types/node@24.5.2)(typescript@5.9.3)
@@ -632,7 +632,7 @@ importers:
         version: 9.37.0
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
@@ -708,7 +708,7 @@ importers:
         version: 7.0.1(eslint@9.37.0)
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       jsdom:
         specifier: 'catalog:'
         version: 27.1.0(postcss@8.5.6)
@@ -754,7 +754,7 @@ importers:
         version: 9.37.0
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
@@ -799,7 +799,7 @@ importers:
         version: 5.6.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       antd:
         specifier: 'catalog:'
-        version: 5.27.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 5.28.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -842,7 +842,7 @@ importers:
         version: 7.0.1(eslint@9.37.0)
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       jsdom:
         specifier: 'catalog:'
         version: 27.1.0(postcss@8.5.6)
@@ -897,7 +897,7 @@ importers:
         version: 9.37.0
       globals:
         specifier: 'catalog:'
-        version: 16.4.0
+        version: 16.5.0
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
@@ -1510,8 +1510,8 @@ packages:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
 
-  '@rc-component/qrcode@1.0.1':
-    resolution: {integrity: sha512-g8eeeaMyFXVlq8cZUeaxCDhfIYjpao0l9cvm5gFwKXy/Vm1yDWV7h2sjH5jHYzdFedlVKBpATFB1VKMrHzwaWQ==}
+  '@rc-component/qrcode@1.1.0':
+    resolution: {integrity: sha512-ABA80Yer0c6I2+moqNY0kF3Y1NxIT6wDP/EINIqbiRbfZKP1HtHpKMh8WuTXLgVGYsoWG2g9/n0PgM8KdnJb4Q==}
     engines: {node: '>=8.x'}
     peerDependencies:
       react: '>=16.9.0'
@@ -2073,14 +2073,8 @@ packages:
     resolution: {integrity: sha512-4Dj6M28JB+oAH8kFkTLUo+a2jwOFkuqb3yucU0CANcRRUbxS0cP0nZYCGjcc3BNXwRIsUVmDGgzawme7zvJHvg==}
     engines: {node: '>=12'}
 
-  antd@5.27.4:
-    resolution: {integrity: sha512-rhArohoAUCxhkPjGI/BXthOrrjaElL4Fb7d4vEHnIR3DpxFXfegd4rN21IgGdiF+Iz4EFuUZu8MdS8NuJHLSVQ==}
-    peerDependencies:
-      react: '>=16.9.0'
-      react-dom: '>=16.9.0'
-
-  antd@5.27.6:
-    resolution: {integrity: sha512-70HrjVbzDXvtiUQ5MP1XdNudr/wGAk9Ivaemk6f36yrAeJurJSmZ8KngOIilolLRHdGuNc6/Vk+4T1OZpSjpag==}
+  antd@5.28.0:
+    resolution: {integrity: sha512-AmCvyhWGHzlDQ6sfnGBBrFm/8sLPbBI8d/NDBsecliKqrTZUMr07TAQldo43iowwKzvgKxxuRoUHaBaYcBMdQA==}
     peerDependencies:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
@@ -2516,8 +2510,8 @@ packages:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
     engines: {node: '>=18'}
 
-  globals@16.4.0:
-    resolution: {integrity: sha512-ob/2LcVVaVGCYN+r14cnwnoDPUufjiYgSqRhiFD0Q1iI4Odora5RE8Iv1D24hAz5oMophRGkGz+yuvQmmUMnMw==}
+  globals@16.5.0:
+    resolution: {integrity: sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ==}
     engines: {node: '>=18'}
 
   graceful-fs@4.2.11:
@@ -3011,8 +3005,8 @@ packages:
       react: '>=16.11.0'
       react-dom: '>=16.11.0'
 
-  rc-field-form@2.7.0:
-    resolution: {integrity: sha512-hgKsCay2taxzVnBPZl+1n4ZondsV78G++XVsMIJCAoioMjlMQR9YwAp7JZDIECzIu2Z66R+f4SFIRrO2DjDNAA==}
+  rc-field-form@2.7.1:
+    resolution: {integrity: sha512-vKeSifSJ6HoLaAB+B8aq/Qgm8a3dyxROzCtKNCsBQgiverpc4kWDQihoUwzUj+zNWJOykwSY4dNX3QrGwtVb9A==}
     engines: {node: '>=8.x'}
     peerDependencies:
       react: '>=16.9.0'
@@ -3145,13 +3139,6 @@ packages:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
 
-  rc-table@7.53.1:
-    resolution: {integrity: sha512-firAd7Z+liqIDS5TubJ1qqcoBd6YcANLKWQDZhFf3rfoOTt/UNPj4n3O+2vhl+z4QMqwPEUVAil661WHA8H8Aw==}
-    engines: {node: '>=8.x'}
-    peerDependencies:
-      react: '>=16.9.0'
-      react-dom: '>=16.9.0'
-
   rc-table@7.54.0:
     resolution: {integrity: sha512-/wDTkki6wBTjwylwAGjpLKYklKo9YgjZwAU77+7ME5mBoS32Q4nAwoqhA2lSge6fobLW3Tap6uc5xfwaL2p0Sw==}
     engines: {node: '>=8.x'}
@@ -3191,8 +3178,8 @@ packages:
       react: '*'
       react-dom: '*'
 
-  rc-upload@4.9.2:
-    resolution: {integrity: sha512-nHx+9rbd1FKMiMRYsqQ3NkXUv7COHPBo3X1Obwq9SWS6/diF/A0aJ5OHubvwUAIDs+4RMleljV0pcrNUc823GQ==}
+  rc-upload@4.11.0:
+    resolution: {integrity: sha512-ZUyT//2JAehfHzjWowqROcwYJKnZkIUGWaTE/VogVrepSl7AFNbQf4+zGfX4zl9Vrj/Jm8scLO0R6UlPDKK4wA==}
     peerDependencies:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
@@ -3889,9 +3876,9 @@ snapshots:
       resize-observer-polyfill: 1.5.1
       throttle-debounce: 5.0.2
 
-  '@ant-design/v5-patch-for-react-19@1.0.3(antd@5.27.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@ant-design/v5-patch-for-react-19@1.0.3(antd@5.28.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
-      antd: 5.27.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      antd: 5.28.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
@@ -4420,7 +4407,7 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  '@rc-component/qrcode@1.0.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@rc-component/qrcode@1.1.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@babel/runtime': 7.28.4
       classnames: 2.5.1
@@ -5095,7 +5082,7 @@ snapshots:
 
   ansi-styles@6.2.3: {}
 
-  antd@5.27.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+  antd@5.28.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
       '@ant-design/colors': 7.2.1
       '@ant-design/cssinjs': 1.24.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -5106,7 +5093,7 @@ snapshots:
       '@babel/runtime': 7.28.4
       '@rc-component/color-picker': 2.0.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@rc-component/mutate-observer': 1.1.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@rc-component/qrcode': 1.0.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@rc-component/qrcode': 1.1.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@rc-component/tour': 1.15.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@rc-component/trigger': 2.3.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       classnames: 2.5.1
@@ -5118,65 +5105,7 @@ snapshots:
       rc-dialog: 9.6.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       rc-drawer: 7.3.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       rc-dropdown: 4.2.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-field-form: 2.7.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-image: 7.12.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-input: 1.8.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-input-number: 9.5.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-mentions: 2.20.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-menu: 9.16.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-motion: 2.9.5(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-notification: 5.6.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-pagination: 5.1.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-picker: 4.11.3(dayjs@1.11.18)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-progress: 4.0.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-rate: 2.13.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-resize-observer: 1.4.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-segmented: 2.7.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-select: 14.16.8(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-slider: 11.1.9(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-steps: 6.0.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-switch: 4.1.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-table: 7.53.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-tabs: 15.7.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-textarea: 1.10.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-tooltip: 6.4.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-tree: 5.13.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-tree-select: 5.27.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-upload: 4.9.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-util: 5.44.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      react: 19.2.0
-      react-dom: 19.2.0(react@19.2.0)
-      scroll-into-view-if-needed: 3.1.0
-      throttle-debounce: 5.0.2
-    transitivePeerDependencies:
-      - date-fns
-      - luxon
-      - moment
-
-  antd@5.27.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
-    dependencies:
-      '@ant-design/colors': 7.2.1
-      '@ant-design/cssinjs': 1.24.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@ant-design/cssinjs-utils': 1.1.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@ant-design/fast-color': 2.0.6
-      '@ant-design/icons': 5.6.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@ant-design/react-slick': 1.1.2(react@19.2.0)
-      '@babel/runtime': 7.28.4
-      '@rc-component/color-picker': 2.0.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@rc-component/mutate-observer': 1.1.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@rc-component/qrcode': 1.0.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@rc-component/tour': 1.15.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@rc-component/trigger': 2.3.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      classnames: 2.5.1
-      copy-to-clipboard: 3.3.3
-      dayjs: 1.11.18
-      rc-cascader: 3.34.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-checkbox: 3.5.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-collapse: 3.9.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-dialog: 9.6.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-drawer: 7.3.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-dropdown: 4.2.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-field-form: 2.7.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      rc-field-form: 2.7.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       rc-image: 7.12.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       rc-input: 1.8.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       rc-input-number: 9.5.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -5200,7 +5129,7 @@ snapshots:
       rc-tooltip: 6.4.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       rc-tree: 5.13.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       rc-tree-select: 5.27.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-upload: 4.9.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      rc-upload: 4.11.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       rc-util: 5.44.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
@@ -5676,7 +5605,7 @@ snapshots:
 
   globals@14.0.0: {}
 
-  globals@16.4.0: {}
+  globals@16.5.0: {}
 
   graceful-fs@4.2.11:
     optional: true
@@ -6180,7 +6109,7 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  rc-field-form@2.7.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+  rc-field-form@2.7.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
       '@babel/runtime': 7.28.4
       '@rc-component/async-validator': 5.0.4
@@ -6357,17 +6286,6 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  rc-table@7.53.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
-    dependencies:
-      '@babel/runtime': 7.28.4
-      '@rc-component/context': 1.4.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      classnames: 2.5.1
-      rc-resize-observer: 1.4.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-util: 5.44.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      rc-virtual-list: 3.19.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      react: 19.2.0
-      react-dom: 19.2.0(react@19.2.0)
-
   rc-table@7.54.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
       '@babel/runtime': 7.28.4
@@ -6430,7 +6348,7 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  rc-upload@4.9.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+  rc-upload@4.11.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
       '@babel/runtime': 7.28.4
       classnames: 2.5.1
