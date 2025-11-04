@@ -21,6 +21,10 @@ export type OnOperatorChangeValueConverter<ValueType = any> = (beforeOperator: S
 export type ValidateValue<ValueType = any> = (operator: Operator, value: Optional<ValueType>) => boolean;
 export type OnChange = (condition: Optional<FilterValue>) => void;
 
+export const TrueValidateValue: ValidateValue = (): boolean => {
+  return true;
+};
+
 export interface UseFilterStateOptions<ValueType = any> extends RefAttributes<FilterRef> {
   field?: string;
   operator: SelectOperator;
