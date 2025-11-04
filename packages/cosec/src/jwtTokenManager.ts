@@ -12,15 +12,16 @@
  */
 
 import { TokenStorage } from './tokenStorage';
-import { CompositeToken, TokenRefresher } from './tokenRefresher';
+import { TokenRefresher } from './tokenRefresher';
 import { JwtCompositeToken, RefreshTokenStatusCapable } from './jwtToken';
 import { FetcherError } from '@ahoo-wang/fetcher';
 
 export class RefreshTokenError extends FetcherError {
-  constructor(public readonly token: JwtCompositeToken | null, cause?: Error | any) {
-    super(
-      `Refresh token failed.`, cause,
-    );
+  constructor(
+    public readonly token: JwtCompositeToken,
+    cause?: Error | any,
+  ) {
+    super(`Refresh token failed.`, cause);
     this.name = 'RefreshTokenError';
     Object.setPrototypeOf(this, RefreshTokenError.prototype);
   }
