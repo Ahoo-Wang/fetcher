@@ -46,7 +46,7 @@ const meta: Meta<typeof TypedFilterStory> = {
   tags: ['autodocs'],
   argTypes: {
     type: {
-      options: ['id', 'text', 'number', 'select', 'unsupported'],
+      options: ['id', 'text', 'number', 'bool', 'select', 'unsupported'],
       control: 'select',
     },
   },
