@@ -3,7 +3,7 @@ packages:
   - integration-test
 
 catalog:
-  '@eslint/js': ^9.39.0
+  '@eslint/js': ^9.39.1
   '@testing-library/react': ^16.0.0
   '@testing-library/jest-dom': ^6.9.1
   '@types/node': ^24.5.2
@@ -16,7 +16,7 @@ catalog:
   antd: ^5.28.0
   babel-plugin-react-compiler: ^1.0.0
   commander: ^14.0.2
-  eslint: ^9.39.0
+  eslint: ^9.39.1
   eslint-plugin-react-hooks: ^7.0.1
   globals: ^16.5.0
   jsdom: ^27.1.0
@@ -30,7 +30,7 @@ catalog:
   reflect-metadata: ^0.2.2
   ts-morph: ^27.0.2
   typescript: ^5.9.3
-  typescript-eslint: ^8.46.2
+  typescript-eslint: ^8.46.3
   unplugin-dts: 1.0.0-beta.6
   vite: ^7.1.12
   vite-bundle-analyzer: ^1.2.3
