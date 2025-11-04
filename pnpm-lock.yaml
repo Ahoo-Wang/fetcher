@@ -262,13 +262,13 @@ importers:
   packages/cosec:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../fetcher
       '@ahoo-wang/fetcher-eventbus':
-        specifier: workspace:^2.8.5
+        specifier: workspace:^3.0.0
         version: link:../eventbus
       '@ahoo-wang/fetcher-storage':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../storage
       nanoid:
         specifier: 'catalog:'
@@ -314,7 +314,7 @@ importers:
   packages/decorator:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^2.9.3
+        specifier: workspace:^3.0.0
         version: link:../fetcher
       reflect-metadata:
         specifier: 'catalog:'
@@ -363,7 +363,7 @@ importers:
   packages/eventbus:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../fetcher
     devDependencies:
       '@eslint/js':
@@ -406,7 +406,7 @@ importers:
   packages/eventstream:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../fetcher
     devDependencies:
       '@eslint/js':
@@ -491,19 +491,19 @@ importers:
   packages/generator:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../fetcher
       '@ahoo-wang/fetcher-decorator':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../decorator
       '@ahoo-wang/fetcher-eventstream':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../eventstream
       '@ahoo-wang/fetcher-openapi':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../openapi
       '@ahoo-wang/fetcher-wow':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../wow
       commander:
         specifier: 'catalog:'
@@ -558,13 +558,13 @@ importers:
   packages/openai:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^2.9.3
+        specifier: workspace:^3.0.0
         version: link:../fetcher
       '@ahoo-wang/fetcher-decorator':
-        specifier: workspace:^2.9.6
+        specifier: workspace:^3.0.0
         version: link:../decorator
       '@ahoo-wang/fetcher-eventstream':
-        specifier: workspace:^2.9.8
+        specifier: workspace:^3.0.0
         version: link:../eventstream
     devDependencies:
       '@ahoo-wang/fetcher-eventbus':
@@ -658,19 +658,19 @@ importers:
   packages/react:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../fetcher
       '@ahoo-wang/fetcher-eventbus':
-        specifier: workspace:^2.8.8
+        specifier: workspace:^3.0.0
         version: link:../eventbus
       '@ahoo-wang/fetcher-eventstream':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../eventstream
       '@ahoo-wang/fetcher-storage':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../storage
       '@ahoo-wang/fetcher-wow':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../wow
       react:
         specifier: '>=18.0.0'
@@ -737,7 +737,7 @@ importers:
   packages/storage:
     dependencies:
       '@ahoo-wang/fetcher-eventbus':
-        specifier: workspace:^2.8.5
+        specifier: workspace:^3.0.0
         version: link:../eventbus
     devDependencies:
       '@eslint/js':
@@ -780,19 +780,19 @@ importers:
   packages/viewer:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../fetcher
       '@ahoo-wang/fetcher-openapi':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../openapi
       '@ahoo-wang/fetcher-react':
-        specifier: workspace:^2.8.0
+        specifier: workspace:^3.0.0
         version: link:../react
       '@ahoo-wang/fetcher-storage':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../storage
       '@ahoo-wang/fetcher-wow':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../wow
       '@ant-design/icons':
         specifier: 'catalog:'
@@ -874,13 +874,13 @@ importers:
   packages/wow:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../fetcher
       '@ahoo-wang/fetcher-decorator':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../decorator
       '@ahoo-wang/fetcher-eventstream':
-        specifier: workspace:^2.3.4
+        specifier: workspace:^3.0.0
         version: link:../eventstream
     devDependencies:
       '@eslint/js':
