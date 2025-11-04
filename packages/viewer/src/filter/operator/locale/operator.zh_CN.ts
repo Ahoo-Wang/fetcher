@@ -42,8 +42,8 @@ export const OPERATOR_zh_CN: SelectOperatorLocale = {
   ELEM_MATCH: '元素匹配',
   NULL: '为空',
   NOT_NULL: '不为空',
-  TRUE: '为真',
-  FALSE: '为假',
+  TRUE: '是',
+  FALSE: '否',
   EXISTS: '存在',
   TODAY: '今天',
   BEFORE_TODAY: '今天之前',
@@ -56,5 +56,5 @@ export const OPERATOR_zh_CN: SelectOperatorLocale = {
   RECENT_DAYS: '最近几天',
   EARLIER_DAYS: '几天前',
   RAW: '原始查询',
-  UNDEFINED: '请选择',
+  UNDEFINED: '未设置',
 };

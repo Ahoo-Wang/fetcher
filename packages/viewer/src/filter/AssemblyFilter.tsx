@@ -26,7 +26,7 @@ export interface AssemblyFilterProps<ValueType = any, ValuePropsType extends Fil
   supportedOperators: SelectOperator[];
   valueConverter?: OnOperatorChangeValueConverter;
   validate?: ValidateValue<ValueType>;
-  valueInputRender: ValueInputRender<ValueType>;
+  valueInputRender?: ValueInputRender<ValueType>;
 }
 
 export function AssemblyFilter<ValueType = any>(
@@ -56,7 +56,7 @@ export function AssemblyFilter<ValueType = any>(
     validate: props.validate,
     onChange: props.onChange,
   });
-  const valueInput = props.valueInputRender(filterState);
+  const valueInput = props.valueInputRender?.(filterState);
   const options = supportedOperators.map(supportedOperator => ({
     value: supportedOperator,
     label: operatorLocale[supportedOperator],
