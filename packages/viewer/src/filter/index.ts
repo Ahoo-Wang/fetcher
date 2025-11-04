@@ -14,6 +14,7 @@
 export * from './locale';
 export * from './panel';
 export * from './AssemblyFilter';
+export * from './BoolFilter';
 export * from './FallbackFilter';
 export * from './filterRegistry';
 export * from './IdFilter';
