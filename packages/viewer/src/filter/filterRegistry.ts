@@ -16,6 +16,8 @@ import { TEXT_FILTER, TextFilter } from './TextFilter';
 import { ID_FILTER, IdFilter } from './IdFilter';
 import { NUMBER_FILTER, NumberFilter } from './NumberFilter';
 import { FilterType } from './TypedFilter';
+import { SELECT_FILTER, SelectFilter } from './SelectFilter';
+import { BOOL_FILTER, BoolFilter } from './BoolFilter';
 import { DATE_TIME_FILTER_NAME, DateTimeFilter } from './DateTimeFilter';
 
 /**
@@ -34,6 +36,8 @@ export class FilterRegistry {
     this.register(ID_FILTER, IdFilter);
     this.register(TEXT_FILTER, TextFilter);
     this.register(NUMBER_FILTER, NumberFilter);
+    this.register(SELECT_FILTER, SelectFilter);
+    this.register(BOOL_FILTER, BoolFilter);
     this.register(DATE_TIME_FILTER_NAME, DateTimeFilter);
   }
 

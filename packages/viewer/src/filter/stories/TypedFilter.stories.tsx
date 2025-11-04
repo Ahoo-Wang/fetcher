@@ -17,15 +17,13 @@ import { TypedFilter, TypedFilterProps } from '../TypedFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { Card, Divider, Typography } from 'antd';
 import { FilterValue } from '../types';
+import { DATE_TIME_FILTER_NAME } from '../DateTimeFilter';
 
-function TypedFilterDemo(props: TypedFilterProps) {
-  const [filterValue, setFilterValue] = useState<FilterValue | undefined>();
+function TypedFilterStory(props: TypedFilterProps) {
+  const [filterValue, setFilterValue] = useState<FilterValue>();
   return (
     <Card>
-      <TypedFilter
-        {...props}
-        onChange={setFilterValue}
-      />
+      <TypedFilter {...props} onChange={setFilterValue} />
       <Divider>Condition</Divider>
       {filterValue?.condition && <Typography.Text code copyable>
         {JSON.stringify(filterValue.condition)}
@@ -34,11 +32,11 @@ function TypedFilterDemo(props: TypedFilterProps) {
   );
 }
 
-const meta: Meta<typeof TypedFilterDemo> = {
+const meta: Meta<typeof TypedFilterStory> = {
   title: 'Viewer/Filters/TypedFilter',
-  component: TypedFilterDemo,
+  component: TypedFilterStory,
   parameters: {
-    layout: 'centered',
+    layout: 'padded',
     docs: {
       description: {
         component:
@@ -47,10 +45,33 @@ const meta: Meta<typeof TypedFilterDemo> = {
     },
   },
   tags: ['autodocs'],
+  argTypes: {
+    type: {
+      options: ['id', 'text', 'number', 'bool', 'select', 'unsupported'],
+      control: 'select',
+    },
+  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const IdFilter: Story = {
+  args: {
+    type: 'id',
+    field: {
+      name: 'userId',
+      label: 'User ID',
+      type: 'string',
+    },
+    operator: {
+      defaultValue: Operator.ID,
+    },
+    value: {
+      defaultValue: '',
+    },
+  },
+};
 
 export const TextFilter: Story = {
   args: {
@@ -62,12 +83,11 @@ export const TextFilter: Story = {
     },
     operator: {
       defaultValue: Operator.EQ,
-      options: [],
     },
     value: {
       defaultValue: '',
     },
-  }
+  },
 };
 
 export const NumberFilter: Story = {
@@ -80,30 +100,58 @@ export const NumberFilter: Story = {
     },
     operator: {
       defaultValue: Operator.EQ,
-      options: [],
     },
     value: {
       defaultValue: 25,
     },
-  }
+  },
 };
 
-export const IdFilter: Story = {
+
+export const SelectFilter: Story = {
   args: {
-    type: 'id',
+    type: 'select',
     field: {
-      name: 'userId',
-      label: 'User ID',
+      name: 'status',
+      label: 'Status',
       type: 'string',
     },
     operator: {
-      defaultValue: Operator.ID,
-      options: [],
+      defaultValue: Operator.IN,
     },
     value: {
-      defaultValue: '',
+      defaultValue: ['active', 'pending'],
+      options: [
+        { label: 'Technology', value: 'tech' },
+        { label: 'Design', value: 'design' },
+        { label: 'Marketing', value: 'marketing' },
+        { label: 'Sales', value: 'sales' },
+        { label: 'HR', value: 'hr' },
+      ],
     },
-  }
+  },
+};
+
+export const BoolFilter: Story = {
+  args: {
+    type: 'bool',
+    field: {
+      name: 'status',
+      label: 'Status',
+      type: 'string',
+    },
+  },
+};
+
+export const DateTimeFilter: Story = {
+  args: {
+    type: DATE_TIME_FILTER_NAME,
+    field: {
+      name: 'createTime',
+      label: 'Create Time',
+      type: 'string',
+    },
+  },
 };
 
 export const UnsupportedType: Story = {
@@ -116,10 +164,14 @@ export const UnsupportedType: Story = {
     },
     operator: {
       defaultValue: Operator.EQ,
-      options: [],
     },
     value: {
       defaultValue: '',
     },
-  }
+  },
+  render: args => {
+    const [, setValue] = useState<any>();
+    return <TypedFilter {...args} onChange={setValue} />;
+  },
 };
+

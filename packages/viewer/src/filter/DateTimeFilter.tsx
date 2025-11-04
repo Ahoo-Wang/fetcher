@@ -44,7 +44,7 @@ export function DateTimeFilter(
       Operator.RECENT_DAYS,
       Operator.EARLIER_DAYS,
     ],
-    valueInputSupplier: (
+    valueInputRender: (
       filterState: UseFilterStateReturn<DateTimeValueType>,
     ) => {
       switch (filterState.operator) {
