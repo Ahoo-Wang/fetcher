@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { NamedCapable } from '../src';
+import { NamedCapable, RemoveReadonlyFields } from '../src';
 
 describe('types.ts', () => {
   it('should define NamedCapable interface', () => {
@@ -31,5 +31,21 @@ describe('types.ts', () => {
     // This test verifies that the global declaration is properly recognized
     const result = await mockResponse.json<{ test: string }>();
     expect(result.test).toBe('value');
+  });
+
+  it('should remove readonly fields from type', () => {
+    interface TestType {
+      readonly id: number;
+      name: string;
+      readonly createdAt: Date;
+      email: string;
+    }
+
+    type MutableType = RemoveReadonlyFields<TestType>;
+
+    const mutable: MutableType = { name: 'test', email: 'test@example.com' };
+    expect(mutable.name).toBe('test');
+    expect(mutable.email).toBe('test@example.com');
+    expect(Object.keys(mutable)).toEqual(['name', 'email']);
   });
 });
