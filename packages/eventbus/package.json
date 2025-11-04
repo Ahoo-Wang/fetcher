@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-eventbus",
-  "version": "3.0.0",
+  "version": "3.0.5",
   "description": "A TypeScript event bus library with serial, parallel, and broadcast implementations",
   "keywords": [
     "eventbus",
@@ -45,7 +45,7 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "workspace:^2.3.4"
+    "@ahoo-wang/fetcher": "workspace:^3.0.0"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

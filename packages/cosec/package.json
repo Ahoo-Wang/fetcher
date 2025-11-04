@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-cosec",
-  "version": "3.0.0",
+  "version": "3.0.5",
   "description": "Enterprise-grade CoSec authentication integration for the Fetcher HTTP client with comprehensive security features including automatic token management, device tracking, and request attribution.",
   "keywords": [
     "fetch",
@@ -47,9 +47,9 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "workspace:^2.3.4",
-    "@ahoo-wang/fetcher-eventbus": "workspace:^2.8.5",
-    "@ahoo-wang/fetcher-storage": "workspace:^2.3.4"
+    "@ahoo-wang/fetcher": "workspace:^3.0.0",
+    "@ahoo-wang/fetcher-eventbus": "workspace:^3.0.0",
+    "@ahoo-wang/fetcher-storage": "workspace:^3.0.0"
   },
   "dependencies": {
     "nanoid": "catalog:"

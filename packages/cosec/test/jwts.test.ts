@@ -11,11 +11,14 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseJwtPayload, CoSecJwtPayload } from '../src';
 import { isTokenExpired } from '../src';
 
 describe('jwts', () => {
+  const consoleErrorSpy = vi
+    .spyOn(console, 'error')
+    .mockImplementation(() => {});
   describe('parseJwtPayload', () => {
     it('should parse a valid JWT token and return its payload', () => {
       // A JWT token with payload: {"sub": "1234567890", "name": "John Doe", "iat": 1516239022}

@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-eventstream",
-  "version": "3.0.0",
+  "version": "3.0.5",
   "description": "Server-Sent Events (SSE) support for Fetcher HTTP client with native LLM streaming API support. Enables real-time data streaming and token-by-token LLM response handling.",
   "keywords": [
     "fetch",
@@ -47,7 +47,7 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "workspace:^2.3.4"
+    "@ahoo-wang/fetcher": "workspace:^3.0.0"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

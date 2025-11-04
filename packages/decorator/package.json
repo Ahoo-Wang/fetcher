@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-decorator",
-  "version": "3.0.0",
+  "version": "3.0.5",
   "description": "TypeScript decorators for clean, declarative API service definitions with Fetcher HTTP client. Enables automatic parameter binding, method mapping, and type-safe API interactions.",
   "keywords": [
     "fetch",
@@ -47,7 +47,7 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "workspace:^2.9.3"
+    "@ahoo-wang/fetcher": "workspace:^3.0.0"
   },
   "dependencies": {
     "reflect-metadata": "catalog:"
