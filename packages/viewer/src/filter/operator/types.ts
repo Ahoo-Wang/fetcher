@@ -14,7 +14,7 @@
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 export enum ExtendedOperator {
-  UNDEFINED = '_undefined_',
+  UNDEFINED = 'UNDEFINED',
 }
 
 export type SelectOperator = ExtendedOperator | Operator;
