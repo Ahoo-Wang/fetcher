@@ -12,21 +12,21 @@
  */
 
 import { FilterProps, FilterValueProps } from './types';
-import { Operator } from '@ahoo-wang/fetcher-wow';
-import { OPERATOR_zh_CN } from './locale';
+import { OPERATOR_zh_CN } from './operator';
 import { OnOperatorChangeValueConverter, useFilterState, UseFilterStateReturn, ValidateValue } from './useFilterState';
 import { Button, Select, Space } from 'antd';
 import { ReactNode } from 'react';
+import { SelectOperator } from './operator';
 
 export type ValueInputRender<ValueType = any> = (
   filterState: UseFilterStateReturn<ValueType>,
 ) => ReactNode | null;
 
 export interface AssemblyFilterProps<ValueType = any, ValuePropsType extends FilterValueProps = FilterValueProps<ValueType>> extends FilterProps<ValueType, ValuePropsType> {
-  supportedOperators: Operator[];
+  supportedOperators: SelectOperator[];
   valueConverter?: OnOperatorChangeValueConverter;
   validate?: ValidateValue<ValueType>;
-  valueInputRender: ValueInputRender<ValueType>;
+  valueInputRender?: ValueInputRender<ValueType>;
 }
 
 export function AssemblyFilter<ValueType = any>(
@@ -56,7 +56,7 @@ export function AssemblyFilter<ValueType = any>(
     validate: props.validate,
     onChange: props.onChange,
   });
-  const valueInput = props.valueInputRender(filterState);
+  const valueInput = props.valueInputRender?.(filterState);
   const options = supportedOperators.map(supportedOperator => ({
     value: supportedOperator,
     label: operatorLocale[supportedOperator],

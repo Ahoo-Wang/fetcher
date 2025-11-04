@@ -15,14 +15,19 @@ import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
 import { RefAttributes, useImperativeHandle, useState } from 'react';
 import { FilterRef, FilterValue } from './types';
 import { Optional } from '../types';
+import { ExtendedOperator, SelectOperator } from './operator';
 
-export type OnOperatorChangeValueConverter<ValueType = any> = (beforeOperator: Operator, afterOperator: Operator, value: Optional<ValueType>) => Optional<ValueType>
+export type OnOperatorChangeValueConverter<ValueType = any> = (beforeOperator: SelectOperator, afterOperator: SelectOperator, value: Optional<ValueType>) => Optional<ValueType>
 export type ValidateValue<ValueType = any> = (operator: Operator, value: Optional<ValueType>) => boolean;
 export type OnChange = (condition: Optional<FilterValue>) => void;
 
+export const TrueValidateValue: ValidateValue = (): boolean => {
+  return true;
+};
+
 export interface UseFilterStateOptions<ValueType = any> extends RefAttributes<FilterRef> {
   field?: string;
-  operator: Operator;
+  operator: SelectOperator;
   value: Optional<ValueType>;
   valueConverter?: OnOperatorChangeValueConverter;
   validate?: ValidateValue<ValueType>;
@@ -30,29 +35,32 @@ export interface UseFilterStateOptions<ValueType = any> extends RefAttributes<Fi
 }
 
 export interface UseFilterStateReturn<ValueType = any> {
-  operator: Operator;
+  operator: SelectOperator;
   value: Optional<ValueType>;
-  setOperator: (operator: Operator) => void;
+  setOperator: (operator: SelectOperator) => void;
   setValue: (value: Optional<ValueType>) => void;
   reset: () => void;
 }
 
-const defaultValueValidate = (operator: Operator, value: any) => {
+const defaultValueValidate: ValidateValue = (operator: Operator, value: any): operator is Operator => {
   if (!operator) return false;
   if (!value) return false;
   return !(Array.isArray(value) && value.length === 0);
 };
 
-const defaultValueConverter: OnOperatorChangeValueConverter = (beforeOperator: Operator, afterOperator: Operator, value: any) => {
+const defaultValueConverter: OnOperatorChangeValueConverter = (beforeOperator: SelectOperator, afterOperator: SelectOperator, value: any) => {
   return value;
 };
 
 export function useFilterState<ValueType = any>(options: UseFilterStateOptions<ValueType>): UseFilterStateReturn<ValueType> {
-  const [operator, setOperator] = useState<Operator>(options.operator);
+  const [operator, setOperator] = useState<SelectOperator>(options.operator);
   const [value, setValue] = useState<Optional<ValueType>>(options.value);
   const valueValidate = options.validate ?? defaultValueValidate;
   const valueConverter = options.valueConverter ?? defaultValueConverter;
-  const resolveFilterValue = (currentOperator: Operator, currentValue: Optional<ValueType>): Optional<FilterValue> => {
+  const resolveFilterValue = (currentOperator: SelectOperator, currentValue: Optional<ValueType>): Optional<FilterValue> => {
+    if (currentOperator === ExtendedOperator.UNDEFINED) {
+      return undefined;
+    }
     if (!valueValidate(currentOperator, currentValue)) {
       return undefined;
     }
@@ -65,7 +73,7 @@ export function useFilterState<ValueType = any>(options: UseFilterStateOptions<V
       condition,
     };
   };
-  const setOperatorFn = (newOperator: Operator) => {
+  const setOperatorFn = (newOperator: SelectOperator) => {
     const afterValue = valueConverter(operator, newOperator, value);
     setOperator(newOperator);
     setValue(afterValue);

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 import { describe, expect, it } from 'vitest';
-import { OPERATOR_zh_CN } from '../../../src';
+import { OPERATOR_zh_CN } from '../../../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 describe('OPERATOR_zh_CN', () => {
@@ -60,8 +60,8 @@ describe('OPERATOR_zh_CN', () => {
   it('should have correct translations for null and boolean operators', () => {
     expect(OPERATOR_zh_CN.NULL).toBe('为空');
     expect(OPERATOR_zh_CN.NOT_NULL).toBe('不为空');
-    expect(OPERATOR_zh_CN.TRUE).toBe('为真');
-    expect(OPERATOR_zh_CN.FALSE).toBe('为假');
+    expect(OPERATOR_zh_CN.TRUE).toBe('是');
+    expect(OPERATOR_zh_CN.FALSE).toBe('否');
     expect(OPERATOR_zh_CN.EXISTS).toBe('存在');
   });
 

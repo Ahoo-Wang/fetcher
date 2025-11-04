@@ -12,9 +12,9 @@
  */
 
 
-import { OperatorLocale } from '@ahoo-wang/fetcher-wow';
+import { SelectOperatorLocale } from '../types';
 
-export const OPERATOR_zh_CN: OperatorLocale = {
+export const OPERATOR_zh_CN: SelectOperatorLocale = {
   AND: '与',
   OR: '或',
   NOR: '非或',
@@ -42,8 +42,8 @@ export const OPERATOR_zh_CN: OperatorLocale = {
   ELEM_MATCH: '元素匹配',
   NULL: '为空',
   NOT_NULL: '不为空',
-  TRUE: '为真',
-  FALSE: '为假',
+  TRUE: '是',
+  FALSE: '否',
   EXISTS: '存在',
   TODAY: '今天',
   BEFORE_TODAY: '今天之前',
@@ -56,4 +56,5 @@ export const OPERATOR_zh_CN: OperatorLocale = {
   RECENT_DAYS: '最近几天',
   EARLIER_DAYS: '几天前',
   RAW: '原始查询',
+  UNDEFINED: '未设置',
 };

@@ -11,14 +11,28 @@
  * limitations under the License.
  */
 
+import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { BoolFilter } from '../../src';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { BoolFilter, BOOL_FILTER } from '../../src/filter/BoolFilter';
+import { FilterProps, FilterRef } from '../../src/filter/types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
+import { ExtendedOperator } from '../../src/filter/operator';
+
+// Mock AssemblyFilter to test props passing
+vi.mock('../../src/filter/AssemblyFilter', () => ({
+  AssemblyFilter: vi.fn(props => {
+    // Store the props for testing
+    (global as any).mockAssemblyFilterProps = props;
+    return <div data-testid="assembly-filter" />;
+  }),
+}));
 
 // 测试辅助函数
-const createMockProps = (overrides: any = {}): any => {
-  const defaultProps = {
+const createMockProps = (
+  overrides: Partial<FilterProps<undefined>> = {},
+): FilterProps<undefined> => {
+  const defaultProps: FilterProps<undefined> = {
     field: {
       name: 'testField',
       label: 'Test Field',
@@ -26,115 +40,139 @@ const createMockProps = (overrides: any = {}): any => {
     },
     label: {},
     operator: {
-      defaultValue: Operator.EQ,
+      defaultValue: Operator.TRUE,
     },
     value: {
-      defaultValue: true,
+      defaultValue: undefined,
     },
   };
 
   return { ...defaultProps, ...overrides };
 };
 
+const renderWithRef = (props: Partial<FilterProps<undefined>> = {}) => {
+  const ref = React.createRef<FilterRef>();
+  const finalProps = createMockProps(props);
+
+  const result = render(<BoolFilter ref={ref} {...finalProps} />);
+
+  return { ...result, ref };
+};
+
 describe('BoolFilter', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete (global as any).mockAssemblyFilterProps;
+  });
+
   describe('Rendering', () => {
     it('renders without crashing', () => {
       const props = createMockProps();
       expect(() => render(<BoolFilter {...props} />)).not.toThrow();
     });
 
-    it('renders all required components', () => {
+    it('renders AssemblyFilter component', () => {
       const props = createMockProps();
-      const { container } = render(<BoolFilter {...props} />);
+      render(<BoolFilter {...props} />);
 
-      // 检查组件是否渲染到 DOM 中
-      expect(container.firstChild).toBeDefined();
+      expect(screen.getByTestId('assembly-filter')).toBeDefined();
     });
 
     it('displays field label correctly', () => {
       const props = createMockProps({
         field: { name: 'customField', label: 'Custom Label', type: 'boolean' },
       });
-      const { container } = render(<BoolFilter {...props} />);
+      render(<BoolFilter {...props} />);
 
-      expect(container.firstChild).toBeDefined();
+      expect(screen.getByTestId('assembly-filter')).toBeDefined();
+    });
+  });
+
+  describe('Props Forwarding', () => {
+    it('passes all props to AssemblyFilter except supportedOperators and validate', () => {
+      const props = createMockProps({
+        field: { name: 'testField', label: 'Test Field', type: 'boolean' },
+        label: { style: { color: 'red' } },
+        operator: { defaultValue: Operator.TRUE },
+        value: { defaultValue: undefined },
+      });
+      render(<BoolFilter {...props} />);
+
+      const mockProps = (global as any).mockAssemblyFilterProps;
+      expect(mockProps).toBeDefined();
+      expect(mockProps.field).toEqual(props.field);
+      expect(mockProps.label).toEqual(props.label);
+      expect(mockProps.operator).toEqual(props.operator);
+      expect(mockProps.value).toEqual(props.value);
+    });
+
+    it('sets correct supportedOperators', () => {
+      const props = createMockProps();
+      render(<BoolFilter {...props} />);
+
+      const mockProps = (global as any).mockAssemblyFilterProps;
+      expect(mockProps.supportedOperators).toEqual([
+        ExtendedOperator.UNDEFINED,
+        Operator.TRUE,
+        Operator.FALSE,
+      ]);
+    });
+
+    it('uses TrueValidateValue for validation', () => {
+      const props = createMockProps();
+      render(<BoolFilter {...props} />);
+
+      const mockProps = (global as any).mockAssemblyFilterProps;
+      // TrueValidateValue always returns true
+      expect(typeof mockProps.validate).toBe('function');
+      expect(mockProps.validate(Operator.TRUE, undefined)).toBe(true);
+      expect(mockProps.validate(Operator.FALSE, undefined)).toBe(true);
+      expect(mockProps.validate(ExtendedOperator.UNDEFINED, undefined)).toBe(
+        true,
+      );
     });
   });
 
   describe('Supported Operators', () => {
-    it('supports EQ operator', () => {
+    it('supports UNDEFINED operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ },
+        operator: { defaultValue: ExtendedOperator.UNDEFINED },
       });
-      render(<BoolFilter {...props} />);
-
-      // 组件应该渲染成功，操作符选择器应该存在
-      expect(screen.getAllByRole('combobox')).toHaveLength(2);
+      expect(() => render(<BoolFilter {...props} />)).not.toThrow();
     });
 
-    it('renders correctly with EQ operator', () => {
+    it('supports TRUE operator', () => {
       const props = createMockProps({
-        operator: { defaultValue: Operator.EQ },
+        operator: { defaultValue: Operator.TRUE },
+      });
+      expect(() => render(<BoolFilter {...props} />)).not.toThrow();
+    });
+
+    it('supports FALSE operator', () => {
+      const props = createMockProps({
+        operator: { defaultValue: Operator.FALSE },
       });
       expect(() => render(<BoolFilter {...props} />)).not.toThrow();
     });
   });
 
-  describe('Value Input Supplier', () => {
-    it('renders Select component for EQ operator', () => {
-      const props = createMockProps({
-        operator: { defaultValue: Operator.EQ },
-        value: { defaultValue: true },
-      });
-      render(<BoolFilter {...props} />);
+  describe('Ref Functionality', () => {
+    it('forwards ref to AssemblyFilter', () => {
+      const { ref } = renderWithRef();
 
-      const selects = screen.getAllByRole('combobox');
-      expect(selects).toHaveLength(2);
-    });
-
-    it('renders boolean options correctly', () => {
-      const props = createMockProps({
-        operator: { defaultValue: Operator.EQ },
-        value: { defaultValue: true },
-      });
-      render(<BoolFilter {...props} />);
-
-      const selects = screen.getAllByRole('combobox');
-      expect(selects).toHaveLength(2);
+      expect(ref.current).toBeDefined();
     });
   });
 
-  describe('Props Forwarding', () => {
-    it('forwards value props to Select', () => {
-      const props = createMockProps({
-        value: {
-          defaultValue: false,
-          placeholder: 'Select boolean value',
-        },
-      });
-      const { container } = render(<BoolFilter {...props} />);
-
-      expect(container.firstChild).toBeDefined();
+  describe('Constants', () => {
+    it('exports BOOL_FILTER constant', () => {
+      expect(BOOL_FILTER).toBe('bool');
     });
+  });
 
-    it('handles true defaultValue', () => {
-      const props = createMockProps({
-        operator: { defaultValue: Operator.EQ },
-        value: { defaultValue: true },
-      });
-      const { container } = render(<BoolFilter {...props} />);
-
-      expect(container.firstChild).toBeDefined();
-    });
-
-    it('handles false defaultValue', () => {
-      const props = createMockProps({
-        operator: { defaultValue: Operator.EQ },
-        value: { defaultValue: false },
-      });
-      const { container } = render(<BoolFilter {...props} />);
-
-      expect(container.firstChild).toBeDefined();
+  describe('Component Properties', () => {
+    it('has correct displayName', () => {
+      expect(BoolFilter.displayName).toBe('BoolFilter');
     });
   });
 
@@ -146,11 +184,14 @@ describe('BoolFilter', () => {
       expect(() => render(<BoolFilter {...props} />)).not.toThrow();
     });
 
-    it('handles null value gracefully', () => {
-      const props = createMockProps({
-        value: { defaultValue: null as any },
-      });
-      expect(() => render(<BoolFilter {...props} />)).not.toThrow();
+    it('handles minimal props', () => {
+      const minimalProps: FilterProps<undefined> = {
+        field: {
+          name: 'test',
+          label: 'Test',
+        },
+      };
+      expect(() => render(<BoolFilter {...minimalProps} />)).not.toThrow();
     });
   });
 });

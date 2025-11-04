@@ -11,16 +11,16 @@
  * limitations under the License.
  */
 
-export * from './operator';
-export * from './panel';
-export * from './AssemblyFilter';
-export * from './BoolFilter';
-export * from './FallbackFilter';
-export * from './filterRegistry';
-export * from './IdFilter';
-export * from './NumberFilter';
-export * from './SelectFilter';
-export * from './TextFilter';
-export * from './TypedFilter';
-export * from './types';
-export * from './useFilterState';
+import { Operator } from '@ahoo-wang/fetcher-wow';
+
+export enum ExtendedOperator {
+  UNDEFINED = 'UNDEFINED',
+}
+
+export type SelectOperator = ExtendedOperator | Operator;
+
+export type SelectOperatorLocale = {
+  [K in Operator]: string;
+} & {
+  [K in ExtendedOperator]: string;
+};
