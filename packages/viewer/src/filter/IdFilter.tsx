@@ -51,7 +51,7 @@ export function IdFilter(props: FilterProps<IdFilterValueType>) {
     ...props,
     supportedOperators: [Operator.ID, Operator.IDS],
     valueConverter: IdOnOperatorChangeValueConverter,
-    valueInputSupplier: (
+    valueInputRender: (
       filterState: UseFilterStateReturn<IdFilterValueType>,
     ) => {
       return filterState.operator === Operator.ID ? (

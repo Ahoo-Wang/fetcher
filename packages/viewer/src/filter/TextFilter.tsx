@@ -28,7 +28,7 @@ export function TextFilter(
   const assemblyFilterProps: AssemblyFilterProps<TextFilterValueType> = {
     ...props,
     supportedOperators: [Operator.EQ, Operator.NE, Operator.CONTAINS, Operator.STARTS_WITH, Operator.ENDS_WITH, Operator.IN, Operator.NOT_IN],
-    valueInputSupplier: (filterState: UseFilterStateReturn<TextFilterValueType>) => {
+    valueInputRender: (filterState: UseFilterStateReturn<TextFilterValueType>) => {
       switch (filterState.operator) {
         case Operator.IN:
         case Operator.NOT_IN: {

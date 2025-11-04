@@ -55,7 +55,7 @@ const createMockProps = (
     },
     supportedOperators: [Operator.EQ, Operator.NE],
     validate,
-    valueInputSupplier,
+    valueInputRender: valueInputSupplier,
   };
 
   return { ...defaultProps, ...overrides };
@@ -190,7 +190,7 @@ describe('AssemblyFilter', () => {
       ));
 
       const props = createMockProps({
-        valueInputSupplier,
+        valueInputRender: valueInputSupplier,
       });
 
       render(<AssemblyFilter {...props} />);
