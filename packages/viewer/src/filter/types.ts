@@ -12,10 +12,11 @@
  */
 
 import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
-import { ConditionCapable, Operator, OperatorLocale } from '@ahoo-wang/fetcher-wow';
+import { ConditionCapable } from '@ahoo-wang/fetcher-wow';
 import { SelectProps } from 'antd/es/select';
 import React, { RefAttributes } from 'react';
 import { StyleCapable } from '../types';
+import { SelectOperator, SelectOperatorLocale } from './operator';
 
 /**
  * @see {@link Schema}
@@ -35,9 +36,9 @@ export interface FilterRef {
 export interface FilterLabelProps extends StyleCapable {
 }
 
-export interface FilterOperatorProps extends Omit<SelectProps<Operator>, 'value' | 'options' | 'mode'> {
-  locale?: OperatorLocale;
-  supportedOperators?: Operator[];
+export interface FilterOperatorProps extends Omit<SelectProps<SelectOperator>, 'value' | 'options' | 'mode'> {
+  locale?: SelectOperatorLocale;
+  supportedOperators?: SelectOperator[];
 }
 
 export interface FilterValueProps<ValueType = any> extends StyleCapable {
