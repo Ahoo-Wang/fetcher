@@ -20,7 +20,7 @@ export enum ExtendedOperator {
 export type SelectOperator = ExtendedOperator | Operator;
 
 export type SelectOperatorLocale = {
-  [K in keyof typeof ExtendedOperator]: string;
-} & {
   [K in Operator]: string;
+} & {
+  [K in ExtendedOperator]: string;
 };
