@@ -17,6 +17,7 @@ import { ID_FILTER, IdFilter } from './IdFilter';
 import { NUMBER_FILTER, NumberFilter } from './NumberFilter';
 import { FilterType } from './TypedFilter';
 import { SELECT_FILTER, SelectFilter } from './SelectFilter';
+import { BOOL_FILTER, BoolFilter } from './BoolFilter';
 
 /**
  * Registry for managing filter components.
@@ -35,6 +36,7 @@ export class FilterRegistry {
     this.register(TEXT_FILTER, TextFilter);
     this.register(NUMBER_FILTER, NumberFilter);
     this.register(SELECT_FILTER, SelectFilter);
+    this.register(BOOL_FILTER, BoolFilter);
   }
 
   /**

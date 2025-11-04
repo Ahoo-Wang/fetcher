@@ -131,6 +131,17 @@ export const SelectFilter: Story = {
   },
 };
 
+export const BoolFilter: Story = {
+  args: {
+    type: 'bool',
+    field: {
+      name: 'status',
+      label: 'Status',
+      type: 'string',
+    },
+  },
+};
+
 export const UnsupportedType: Story = {
   args: {
     type: 'unsupported',

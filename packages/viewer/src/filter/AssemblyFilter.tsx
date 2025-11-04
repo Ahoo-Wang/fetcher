@@ -18,13 +18,15 @@ import { OnOperatorChangeValueConverter, useFilterState, UseFilterStateReturn, V
 import { Button, Select, Space } from 'antd';
 import { ReactNode } from 'react';
 
+export type ValueInputRender<ValueType = any> = (
+  filterState: UseFilterStateReturn<ValueType>,
+) => ReactNode | null;
+
 export interface AssemblyFilterProps<ValueType = any, ValuePropsType extends FilterValueProps = FilterValueProps<ValueType>> extends FilterProps<ValueType, ValuePropsType> {
   supportedOperators: Operator[];
   valueConverter?: OnOperatorChangeValueConverter;
   validate?: ValidateValue<ValueType>;
-  valueInputSupplier: (
-    filterState: UseFilterStateReturn<ValueType>,
-  ) => ReactNode;
+  valueInputRender: ValueInputRender<ValueType>;
 }
 
 export function AssemblyFilter<ValueType = any>(
@@ -54,7 +56,7 @@ export function AssemblyFilter<ValueType = any>(
     validate: props.validate,
     onChange: props.onChange,
   });
-  const valueInput = props.valueInputSupplier(filterState);
+  const valueInput = props.valueInputRender(filterState);
   const options = supportedOperators.map(supportedOperator => ({
     value: supportedOperator,
     label: operatorLocale[supportedOperator],

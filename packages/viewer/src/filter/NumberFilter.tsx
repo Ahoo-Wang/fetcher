@@ -45,7 +45,7 @@ export function NumberFilter(props: FilterProps<NumberFilterValueType>) {
       }
       return value != undefined;
     },
-    valueInputSupplier: (
+    valueInputRender: (
       filterState: UseFilterStateReturn<NumberFilterValueType>,
     ) => {
       switch (filterState.operator) {

@@ -28,7 +28,7 @@ export function SelectFilter(props: FilterProps<SelectFilterValueType, SelectFil
   const assemblyFilterProps: AssemblyFilterProps<SelectFilterValueType> = {
     ...props,
     supportedOperators: [Operator.IN, Operator.NOT_IN],
-    valueInputSupplier: (filterState: UseFilterStateReturn<SelectFilterValueType>) => {
+    valueInputRender: (filterState: UseFilterStateReturn<SelectFilterValueType>) => {
       return (
         <Select
           mode={'multiple'}
