@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-export * from './operator/locale';
+export * from './operator';
 export * from './panel';
 export * from './AssemblyFilter';
 export * from './BoolFilter';

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 import { describe, expect, it } from 'vitest';
-import { OPERATOR_zh_CN } from '../../../src';
+import { OPERATOR_zh_CN } from '../../../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 describe('OPERATOR_zh_CN', () => {
