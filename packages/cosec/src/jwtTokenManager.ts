@@ -12,15 +12,16 @@
  */
 
 import { TokenStorage } from './tokenStorage';
-import { CompositeToken, TokenRefresher } from './tokenRefresher';
+import { TokenRefresher } from './tokenRefresher';
 import { JwtCompositeToken, RefreshTokenStatusCapable } from './jwtToken';
 import { FetcherError } from '@ahoo-wang/fetcher';
 
 export class RefreshTokenError extends FetcherError {
-  constructor(cause?: Error | any) {
-    super(
-      `Refresh token failed.`, cause,
-    );
+  constructor(
+    public readonly token: JwtCompositeToken,
+    cause?: Error | any,
+  ) {
+    super(`Refresh token failed.`, cause);
     this.name = 'RefreshTokenError';
     Object.setPrototypeOf(this, RefreshTokenError.prototype);
   }
@@ -53,30 +54,26 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
 
   /**
    * Refreshes the JWT token
-   * @param currentToken Optional current token to refresh. If not provided, uses the stored token.
    * @returns Promise that resolves when refresh is complete
    * @throws Error if no token is found or refresh fails
    */
-  async refresh(currentToken?: CompositeToken): Promise<void> {
-    if (!currentToken) {
-      const jwtToken = this.currentToken;
-      if (!jwtToken) {
-        throw new Error('No token found');
-      }
-      currentToken = jwtToken.token;
+  async refresh(): Promise<void> {
+    const jwtToken = this.currentToken;
+    if (!jwtToken) {
+      throw new Error('No token found');
     }
     if (this.refreshInProgress) {
       return this.refreshInProgress;
     }
 
     this.refreshInProgress = this.tokenRefresher
-      .refresh(currentToken)
+      .refresh(jwtToken.token)
       .then(newToken => {
         this.tokenStorage.setCompositeToken(newToken);
       })
       .catch(error => {
         this.tokenStorage.remove();
-        throw new RefreshTokenError(error);
+        throw new RefreshTokenError(jwtToken, error);
       })
       .finally(() => {
         this.refreshInProgress = undefined;

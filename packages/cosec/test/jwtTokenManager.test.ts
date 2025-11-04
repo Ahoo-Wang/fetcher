@@ -45,10 +45,11 @@ describe('JwtTokenManager', () => {
       refreshToken: 'new-refresh-token',
     };
 
+    tokenStorage.setCompositeToken(compositeToken);
     vi.mocked(tokenRefresher.refresh).mockResolvedValueOnce(newCompositeToken);
 
     // Act
-    await jwtTokenManager.refresh(compositeToken);
+    await jwtTokenManager.refresh();
 
     // Assert
     expect(tokenRefresher.refresh).toHaveBeenCalledWith(compositeToken);
@@ -71,8 +72,9 @@ describe('JwtTokenManager', () => {
       refreshToken: 'new-refresh-token',
     };
 
-    let resolvePromise: (value: CompositeToken) => void = () => {
-    };
+    tokenStorage.setCompositeToken(compositeToken);
+
+    let resolvePromise: (value: CompositeToken) => void = () => {};
     const refreshPromise = new Promise<CompositeToken>(resolve => {
       resolvePromise = resolve;
     });
@@ -82,8 +84,8 @@ describe('JwtTokenManager', () => {
     );
 
     // Act
-    const firstRefreshPromise = jwtTokenManager.refresh(compositeToken);
-    const secondRefreshPromise = jwtTokenManager.refresh(compositeToken);
+    const firstRefreshPromise = jwtTokenManager.refresh();
+    const secondRefreshPromise = jwtTokenManager.refresh();
 
     resolvePromise(newCompositeToken);
 
@@ -151,10 +153,11 @@ describe('JwtTokenManager', () => {
       refreshToken: 'new-refresh-token',
     };
 
+    tokenStorage.setCompositeToken(compositeToken);
     vi.mocked(tokenRefresher.refresh).mockResolvedValueOnce(newCompositeToken);
 
     // Act
-    await jwtTokenManager.refresh(compositeToken);
+    await jwtTokenManager.refresh();
 
     // After await, refreshInProgress should be undefined
     expect((jwtTokenManager as any).refreshInProgress).toBeUndefined();
@@ -168,10 +171,11 @@ describe('JwtTokenManager', () => {
     };
 
     const error = new Error('Refresh failed');
+    tokenStorage.setCompositeToken(compositeToken);
     vi.mocked(tokenRefresher.refresh).mockRejectedValueOnce(error);
 
     // Act & Assert
-    await expect(jwtTokenManager.refresh(compositeToken)).rejects.toThrow(RefreshTokenError);
+    await expect(jwtTokenManager.refresh()).rejects.toThrow(RefreshTokenError);
 
     expect((jwtTokenManager as any).refreshInProgress).toBeUndefined();
   });
