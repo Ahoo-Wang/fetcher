@@ -38,26 +38,26 @@ vi.stubGlobal(
 );
 vi.stubGlobal('window', { localStorage: mockStorage });
 
-// Mock JwtCompositeToken
-vi.mock('../src/jwtToken', () => ({
-  JwtCompositeToken: vi.fn().mockImplementation(token => ({
-    token,
-    isRefreshNeeded: vi.fn(() => false),
-    isRefreshable: vi.fn(() => true),
+// Mock BroadcastTypedEventBus and SerialTypedEventBus
+vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
+  BroadcastTypedEventBus: vi.fn().mockImplementation(() => ({
+    emit: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+    destroy: vi.fn(),
   })),
-  JwtCompositeTokenSerializer: vi.fn().mockImplementation(() => ({
-    serialize: vi.fn(value => JSON.stringify(value.token)),
-    deserialize: vi.fn(value => {
-      const token = JSON.parse(value);
-      return {
-        token,
-        isRefreshNeeded: vi.fn(() => false),
-        isRefreshable: vi.fn(() => true),
-      };
-    }),
+  SerialTypedEventBus: vi.fn().mockImplementation(() => ({
+    emit: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+    destroy: vi.fn(),
   })),
+  nameGenerator: {
+    generate: vi.fn((prefix: string) => `${prefix}_1`),
+  },
 }));
 
+// Mock JwtCompositeToken
 vi.mock('../src/jwtToken', () => ({
   JwtCompositeToken: vi.fn().mockImplementation(token => ({
     token,

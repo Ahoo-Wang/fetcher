@@ -131,8 +131,8 @@ const configurer = new CoSecConfigurer({
   appId: 'your-app-id',
 
   // 可选：自定义存储实现
-  tokenStorage: new TokenStorage('my-app-tokens'),
-  deviceIdStorage: new DeviceIdStorage('my-app-devices'),
+  tokenStorage: new TokenStorage(),
+  deviceIdStorage: new DeviceIdStorage(),
 
   // 可选：令牌刷新器（启用认证拦截器）
   tokenRefresher: {
