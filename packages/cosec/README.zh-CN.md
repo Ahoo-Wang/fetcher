@@ -126,9 +126,15 @@ const fetcher = new Fetcher({
   baseURL: 'https://api.example.com',
 });
 
-// 使用最少的必需配置创建 CoSec 配置器
+// 使用灵活的配置创建 CoSec 配置器
 const configurer = new CoSecConfigurer({
   appId: 'your-app-id',
+
+  // 可选：自定义存储实现
+  tokenStorage: new TokenStorage('my-app-tokens'),
+  deviceIdStorage: new DeviceIdStorage('my-app-devices'),
+
+  // 可选：令牌刷新器（启用认证拦截器）
   tokenRefresher: {
     refresh: async token => {
       // 实现您的令牌刷新逻辑
@@ -149,6 +155,7 @@ const configurer = new CoSecConfigurer({
       };
     },
   },
+
   // 可选：自定义错误处理器（仅在提供时才添加拦截器）
   onUnauthorized: exchange => {
     console.error('未授权访问:', exchange.request.url);
@@ -159,7 +166,7 @@ const configurer = new CoSecConfigurer({
     console.error('禁止访问:', exchange.request.url);
     // 显示权限错误
     alert('您没有权限访问此资源');
-  }
+  },
 });
 
 // 使用一次调用应用所有 CoSec 拦截器
@@ -171,9 +178,10 @@ const response = await fetcher.get('/protected-endpoint');
 
 ### CoSecConfigurer 的优势
 
-- ✅ **一行设置**：`configurer.applyTo(fetcher)` 配置一切
-- ✅ **最小配置**：仅需要 `appId` 和 `tokenRefresher`
-- ✅ **合理的默认值**：自动错误处理和参数名称
+- ✅ **灵活配置**：支持完整认证设置或仅最小的 CoSec 头部
+- ✅ **自定义存储**：可选的自定义 TokenStorage 和 DeviceIdStorage 实现
+- ✅ **条件拦截器**：仅在提供 tokenRefresher 时才添加认证拦截器
+- ✅ **错误处理器控制**：根据需要选择添加哪些错误拦截器
 - ✅ **类型安全**：完整的 TypeScript 支持和智能默认值
 - ✅ **向后兼容**：原始手动设置仍然有效
 
@@ -235,6 +243,12 @@ interface JwtTokenManagerCapable {
 ```typescript
 const configurer = new CoSecConfigurer({
   appId: 'your-app-id',
+
+  // 可选：自定义存储实现
+  tokenStorage: new TokenStorage('custom-prefix'),
+  deviceIdStorage: new DeviceIdStorage('custom-prefix'),
+
+  // 可选：令牌刷新器（启用认证拦截器）
   tokenRefresher: {
     refresh: async token => {
       // 您的令牌刷新实现
@@ -244,6 +258,7 @@ const configurer = new CoSecConfigurer({
       };
     },
   },
+
   // 可选错误处理器（仅在提供时才添加拦截器）
   onUnauthorized: exchange => {
     /* 处理 401 */
@@ -251,21 +266,27 @@ const configurer = new CoSecConfigurer({
   onForbidden: async exchange => {
     /* 处理 403 */
   },
-  tenantId: 'tenantId', // 默认: 'tenantId'
-  ownerId: 'ownerId', // 默认: 'ownerId'
 });
 
 configurer.applyTo(fetcher);
 ```
 
-**自动配置的拦截器：**
+**条件配置的拦截器：**
 
-- `CoSecRequestInterceptor` - 添加 CoSec 头部
-- `AuthorizationRequestInterceptor` - 添加 Bearer 令牌
-- `ResourceAttributionRequestInterceptor` - 添加租户/所有者参数
-- `AuthorizationResponseInterceptor` - 处理令牌刷新
-- `UnauthorizedErrorInterceptor` - 处理 401 错误
-- `ForbiddenErrorInterceptor` - 处理 403 错误
+始终添加：
+
+- `CoSecRequestInterceptor` - 添加 CoSec 头部（appId、deviceId、requestId）
+- `ResourceAttributionRequestInterceptor` - 添加租户/所有者路径参数
+
+仅在提供 `tokenRefresher` 时添加：
+
+- `AuthorizationRequestInterceptor` - 添加 Bearer 令牌认证
+- `AuthorizationResponseInterceptor` - 处理 401 响应时的令牌刷新
+
+仅在提供相应处理器时添加：
+
+- `UnauthorizedErrorInterceptor` - 处理 401 未授权错误
+- `ForbiddenErrorInterceptor` - 处理 403 禁止错误
 
 #### AuthorizationRequestInterceptor
 

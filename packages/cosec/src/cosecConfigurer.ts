@@ -25,7 +25,7 @@ import { UnauthorizedErrorInterceptor } from './unauthorizedErrorInterceptor';
 
 /**
  * Simplified configuration interface for CoSec setup.
- * Only requires the essential configuration, with sensible defaults for everything else.
+ * Provides flexible configuration with sensible defaults for optional components.
  */
 export interface CoSecConfig {
   /**
@@ -34,16 +34,30 @@ export interface CoSecConfig {
    */
   appId: string;
 
+  /**
+   * Custom token storage implementation.
+   * If not provided, a default TokenStorage instance will be created.
+   * Useful for custom storage backends or testing scenarios.
+   */
   tokenStorage?: TokenStorage;
+
+  /**
+   * Custom device ID storage implementation.
+   * If not provided, a default DeviceIdStorage instance will be created.
+   * Useful for custom device identification strategies or testing scenarios.
+   */
   deviceIdStorage?: DeviceIdStorage;
+
   /**
    * Token refresher implementation for handling expired tokens.
-   * This is required to enable automatic token refresh functionality.
+   * If not provided, authentication interceptors will not be added.
+   * This enables CoSec configuration without full JWT authentication.
    */
   tokenRefresher?: TokenRefresher;
+
   /**
    * Callback function invoked when an unauthorized (401) response is detected.
-   * If not provided, defaults to throwing an error.
+   * If not provided, 401 errors will not be intercepted.
    */
   onUnauthorized?: (exchange: FetchExchange) => Promise<void> | void;
 
@@ -55,19 +69,24 @@ export interface CoSecConfig {
 }
 
 /**
- * CoSecConfigurer provides a simplified way to configure all CoSec interceptors
+ * CoSecConfigurer provides a flexible way to configure CoSec interceptors
  * and dependencies with a single configuration object.
  *
- * This class automatically creates all necessary dependencies (TokenStorage, DeviceIdStorage,
- * JwtTokenManager) and configures all CoSec interceptors with sensible defaults.
+ * This class implements FetcherConfigurer and supports both full authentication
+ * setups and minimal CoSec header injection. It conditionally creates dependencies
+ * based on the provided configuration, allowing for different levels of integration.
+ *
+ * @implements {FetcherConfigurer}
  *
  * @example
+ * Full authentication setup with custom storage:
  * ```typescript
  * const configurer = new CoSecConfigurer({
  *   appId: 'my-app-001',
+ *   tokenStorage: new CustomTokenStorage(),
+ *   deviceIdStorage: new CustomDeviceStorage(),
  *   tokenRefresher: {
  *     refresh: async (token: CompositeToken) => {
- *       // Your token refresh logic here
  *       const response = await fetch('/api/auth/refresh', {
  *         method: 'POST',
  *         body: JSON.stringify({ refreshToken: token.refreshToken }),
@@ -79,28 +98,73 @@ export interface CoSecConfig {
  *       };
  *     },
  *   },
+ *   onUnauthorized: (exchange) => redirectToLogin(),
+ *   onForbidden: (exchange) => showPermissionError(),
+ * });
+ *
+ * configurer.applyTo(fetcher);
+ * ```
+ *
+ * @example
+ * Minimal setup with only CoSec headers (no authentication):
+ * ```typescript
+ * const configurer = new CoSecConfigurer({
+ *   appId: 'my-app-001',
+ *   // No tokenRefresher provided - authentication interceptors won't be added
  * });
  *
  * configurer.applyTo(fetcher);
  * ```
  */
 export class CoSecConfigurer implements FetcherConfigurer {
+  /**
+   * Token storage instance, either provided in config or auto-created.
+   */
   readonly tokenStorage: TokenStorage;
+
+  /**
+   * Device ID storage instance, either provided in config or auto-created.
+   */
   readonly deviceIdStorage: DeviceIdStorage;
+
+  /**
+   * JWT token manager instance, only created if tokenRefresher is provided.
+   * When undefined, authentication interceptors will not be added.
+   */
   readonly tokenManager?: JwtTokenManager;
 
   /**
    * Creates a new CoSecConfigurer instance with the provided configuration.
    *
-   * @param config - Simplified CoSec configuration
+   * This constructor conditionally creates dependencies based on the configuration:
+   * - TokenStorage and DeviceIdStorage are always created (using defaults if not provided)
+   * - JwtTokenManager is only created if tokenRefresher is provided
+   *
+   * @param config - CoSec configuration object
+   *
+   * @example
+   * ```typescript
+   * // Full setup with all dependencies
+   * const configurer = new CoSecConfigurer({
+   *   appId: 'my-app',
+   *   tokenRefresher: myTokenRefresher,
+   * });
+   *
+   * // Minimal setup with custom storage
+   * const configurer = new CoSecConfigurer({
+   *   appId: 'my-app',
+   *   tokenStorage: customStorage,
+   *   deviceIdStorage: customDeviceStorage,
+   * });
+   * ```
    */
   constructor(public readonly config: CoSecConfig) {
-    // Create storage instances
+    // Create storage instances with fallbacks to defaults
     this.tokenStorage = config.tokenStorage ?? new TokenStorage();
     this.deviceIdStorage = config.deviceIdStorage ?? new DeviceIdStorage();
 
-    // Create token manager
-    if (config.tokenRefresher){
+    // Create token manager only if token refresher is provided
+    if (config.tokenRefresher) {
       this.tokenManager = new JwtTokenManager(
         this.tokenStorage,
         config.tokenRefresher,
@@ -109,17 +173,37 @@ export class CoSecConfigurer implements FetcherConfigurer {
   }
 
   /**
-   * Applies all CoSec interceptors to the provided Fetcher instance.
+   * Applies CoSec interceptors to the provided Fetcher instance.
    *
-   * This method configures the following interceptors in the correct order:
+   * This method conditionally configures interceptors based on the provided configuration:
+   *
+   * Always added:
    * 1. CoSecRequestInterceptor - Adds CoSec headers (appId, deviceId, requestId)
-   * 2. AuthorizationRequestInterceptor - Adds Authorization header with Bearer token
-   * 3. ResourceAttributionRequestInterceptor - Adds tenant/owner path parameters
-   * 4. AuthorizationResponseInterceptor - Handles 401 responses with token refresh
-   * 5. UnauthorizedErrorInterceptor - Handles unauthorized errors
-   * 6. ForbiddenErrorInterceptor - Handles forbidden errors
+   * 2. ResourceAttributionRequestInterceptor - Adds tenant/owner path parameters
+   *
+   * Only when `tokenRefresher` is provided:
+   * 3. AuthorizationRequestInterceptor - Adds Bearer token authentication
+   * 4. AuthorizationResponseInterceptor - Handles token refresh on 401 responses
+   *
+   * Only when corresponding handlers are provided:
+   * 5. UnauthorizedErrorInterceptor - Handles 401 unauthorized errors
+   * 6. ForbiddenErrorInterceptor - Handles 403 forbidden errors
    *
    * @param fetcher - The Fetcher instance to configure
+   *
+   * @example
+   * ```typescript
+   * const fetcher = new Fetcher({ baseURL: '/api' });
+   * const configurer = new CoSecConfigurer({
+   *   appId: 'my-app',
+   *   tokenRefresher: myTokenRefresher,
+   *   onUnauthorized: handle401,
+   *   onForbidden: handle403,
+   * });
+   *
+   * configurer.applyTo(fetcher);
+   * // Now fetcher has all CoSec interceptors configured
+   * ```
    */
   applyTo(fetcher: Fetcher): void {
     fetcher.interceptors.request.use(
@@ -134,7 +218,7 @@ export class CoSecConfigurer implements FetcherConfigurer {
         tokenStorage: this.tokenStorage,
       }),
     );
-    if (this.tokenManager){
+    if (this.tokenManager) {
       fetcher.interceptors.request.use(
         new AuthorizationRequestInterceptor({
           tokenManager: this.tokenManager,
