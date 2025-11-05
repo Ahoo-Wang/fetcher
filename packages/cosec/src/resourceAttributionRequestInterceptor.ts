@@ -14,6 +14,9 @@
 import { FetchExchange, RequestInterceptor } from '@ahoo-wang/fetcher';
 import { TokenStorage } from './tokenStorage';
 
+const TENANT_ID_PATH_KEY = 'tenantId';
+const OWNER_ID_PATH_KEY = 'ownerId';
+
 /**
  * Configuration options for resource attribution
  */
@@ -61,8 +64,8 @@ export class ResourceAttributionRequestInterceptor
    * @param options - Configuration options for resource attribution including tenantId, ownerId and tokenStorage
    */
   constructor({
-                tenantId = 'tenantId',
-                ownerId = 'ownerId',
+                tenantId = TENANT_ID_PATH_KEY,
+                ownerId = OWNER_ID_PATH_KEY,
                 tokenStorage,
               }: ResourceAttributionOptions) {
     this.tenantIdPathKey = tenantId;

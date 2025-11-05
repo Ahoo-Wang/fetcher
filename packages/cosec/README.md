@@ -26,6 +26,7 @@ This package provides seamless integration between the Fetcher HTTP client and t
 - **⚡ Performance Optimized**: Minimal overhead with connection pooling and caching
 - **🛠️ TypeScript First**: Complete type definitions with strict type safety
 - **🔌 Pluggable Architecture**: Modular design for easy integration and customization
+- **⚙️ Simplified Configuration**: One-line setup with `CoSecConfigurer` for minimal configuration overhead
 
 ## 🚀 Quick Start
 
@@ -112,6 +113,73 @@ fetcher.interceptors.response.use(
 );
 ```
 
+## 🚀 Simplified Setup (Recommended)
+
+For a much simpler setup experience, use the `CoSecConfigurer` class which automatically handles all the complex dependency creation and interceptor configuration:
+
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+import { CoSecConfigurer } from '@ahoo-wang/fetcher-cosec';
+
+// Create a Fetcher instance
+const fetcher = new Fetcher({
+  baseURL: 'https://api.example.com',
+});
+
+// Create CoSec configurer with minimal required configuration
+const configurer = new CoSecConfigurer({
+  appId: 'your-app-id',
+  tokenRefresher: {
+    refresh: async token => {
+      // Implement your token refresh logic
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: token.refreshToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Token refresh failed');
+      }
+
+      const tokens = await response.json();
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      };
+    },
+  },
+  // Optional: Custom error handlers (only add interceptors if provided)
+  onUnauthorized: exchange => {
+    console.error('Unauthorized access:', exchange.request.url);
+    // Redirect to login or handle as needed
+    window.location.href = '/login';
+  },
+  onForbidden: async exchange => {
+    console.error('Forbidden access:', exchange.request.url);
+    // Show permission error
+    alert('You do not have permission to access this resource');
+  },
+  // Optional: Custom tenant/owner ID parameter names
+  tenantId: 'tenantId', // default: 'tenantId'
+  ownerId: 'ownerId', // default: 'ownerId'
+});
+
+// Apply all CoSec interceptors with one call
+configurer.applyTo(fetcher);
+
+// Now you can use the fetcher with full CoSec authentication
+const response = await fetcher.get('/protected-endpoint');
+```
+
+### Benefits of CoSecConfigurer
+
+- ✅ **One-line setup**: `configurer.applyTo(fetcher)` configures everything
+- ✅ **Minimal configuration**: Only `appId` and `tokenRefresher` are required
+- ✅ **Sensible defaults**: Automatic error handling and parameter names
+- ✅ **Type-safe**: Full TypeScript support with intelligent defaults
+- ✅ **Backward compatible**: Original manual setup still works
+
 ## 🔧 Configuration
 
 ### CoSecOptions Interface
@@ -162,6 +230,45 @@ The interceptor automatically adds the following headers to requests:
 ## 📚 API Reference
 
 ### Core Classes
+
+#### CoSecConfigurer
+
+The recommended way to configure CoSec authentication. Provides a simplified API that automatically creates and configures all necessary interceptors and dependencies.
+
+```typescript
+const configurer = new CoSecConfigurer({
+  appId: 'your-app-id',
+  tokenRefresher: {
+    refresh: async token => {
+      // Your token refresh implementation
+      return {
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+      };
+    },
+  },
+  // Optional error handlers (interceptors only added if provided)
+  onUnauthorized: exchange => {
+    /* handle 401 */
+  },
+  onForbidden: async exchange => {
+    /* handle 403 */
+  },
+  tenantId: 'tenantId', // default: 'tenantId'
+  ownerId: 'ownerId', // default: 'ownerId'
+});
+
+configurer.applyTo(fetcher);
+```
+
+**Automatically Configured Interceptors:**
+
+- `CoSecRequestInterceptor` - Adds CoSec headers
+- `AuthorizationRequestInterceptor` - Adds Bearer token
+- `ResourceAttributionRequestInterceptor` - Adds tenant/owner parameters
+- `AuthorizationResponseInterceptor` - Handles token refresh
+- `UnauthorizedErrorInterceptor` - Handles 401 errors
+- `ForbiddenErrorInterceptor` - Handles 403 errors
 
 #### AuthorizationRequestInterceptor
 
