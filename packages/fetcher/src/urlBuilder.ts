@@ -75,8 +75,8 @@ export class UrlBuilder implements BaseURLCapable {
    *
    * This is typically the root of your API endpoint (e.g., 'https://api.example.com').
    */
-  readonly baseURL: string;
-  readonly urlTemplateResolver: UrlTemplateResolver;
+  baseURL: string;
+  urlTemplateResolver: UrlTemplateResolver;
 
   /**
    * Initializes a new UrlBuilder instance.
