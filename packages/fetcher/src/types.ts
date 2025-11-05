@@ -247,7 +247,7 @@ declare global {
  */
 export interface FetcherConfigurer {
   /**
-   * Configures the provided Fetcher instance.
+   * Applies configuration to the provided Fetcher instance.
    *
    * This method should apply all necessary configuration to the Fetcher instance,
    * such as adding interceptors, setting default headers, or configuring other

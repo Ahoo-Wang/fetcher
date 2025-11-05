@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { CoSecConfigurer, TokenRefresher } from '../src';
@@ -26,18 +25,47 @@ describe('CoSecConfigurer', () => {
   describe('constructor', () => {
     it('should create instance with required config', () => {
       expect(configurer).toBeDefined();
+      expect(configurer.config.appId).toBe('test-app-001');
       expect(configurer.tokenStorage).toBeDefined();
       expect(configurer.deviceIdStorage).toBeDefined();
       expect(configurer.tokenManager).toBeDefined();
     });
 
-    it('should use default values for optional config', () => {
-      const configurerWithDefaults = new CoSecConfigurer({
+    it('should create instance without tokenRefresher', () => {
+      const configurerWithoutAuth = new CoSecConfigurer({
         appId: 'test-app',
+      });
+
+      expect(configurerWithoutAuth).toBeDefined();
+      expect(configurerWithoutAuth.tokenStorage).toBeDefined();
+      expect(configurerWithoutAuth.deviceIdStorage).toBeDefined();
+      expect(configurerWithoutAuth.tokenManager).toBeUndefined();
+    });
+
+    it('should use custom storage implementations', () => {
+      const customTokenStorage = {
+        get: vi.fn(),
+        set: vi.fn(),
+        remove: vi.fn(),
+        exists: vi.fn(),
+      };
+      const customDeviceStorage = {
+        get: vi.fn(),
+        set: vi.fn(),
+        getOrCreate: vi.fn(),
+        clear: vi.fn(),
+        generateDeviceId: vi.fn(),
+      };
+
+      const configurerWithCustom = new CoSecConfigurer({
+        appId: 'test-app',
+        tokenStorage: customTokenStorage as any,
+        deviceIdStorage: customDeviceStorage as any,
         tokenRefresher,
       });
 
-      expect(configurerWithDefaults).toBeDefined();
+      expect(configurerWithCustom.tokenStorage).toBe(customTokenStorage);
+      expect(configurerWithCustom.deviceIdStorage).toBe(customDeviceStorage);
     });
   });
 
@@ -51,10 +79,10 @@ describe('CoSecConfigurer', () => {
       configurer.applyTo(fetcher);
 
       expect(fetcher.interceptors.request.interceptors.length).toBe(
-        initialRequestCount + 3,
+        initialRequestCount + 3, // CoSecRequest + ResourceAttribution + Authorization
       );
       expect(fetcher.interceptors.response.interceptors.length).toBe(
-        initialResponseCount + 1,
+        initialResponseCount + 1, // AuthorizationResponse
       );
     });
 
@@ -72,6 +100,34 @@ describe('CoSecConfigurer', () => {
       expect(requestNames).toContain('ResourceAttributionRequestInterceptor');
 
       expect(responseNames).toContain('AuthorizationResponseInterceptor');
+    });
+
+    it('should add only basic interceptors without tokenRefresher', () => {
+      const configurerBasic = new CoSecConfigurer({
+        appId: 'test-app',
+      });
+
+      const basicFetcher = new Fetcher();
+      const initialRequestCount =
+        basicFetcher.interceptors.request.interceptors.length;
+      const initialResponseCount =
+        basicFetcher.interceptors.response.interceptors.length;
+
+      configurerBasic.applyTo(basicFetcher);
+
+      expect(basicFetcher.interceptors.request.interceptors.length).toBe(
+        initialRequestCount + 2, // CoSecRequest + ResourceAttribution (no Authorization)
+      );
+      expect(basicFetcher.interceptors.response.interceptors.length).toBe(
+        initialResponseCount, // No AuthorizationResponse
+      );
+
+      const requestNames = basicFetcher.interceptors.request.interceptors.map(
+        i => i.name,
+      );
+      expect(requestNames).toContain('CoSecRequestInterceptor');
+      expect(requestNames).toContain('ResourceAttributionRequestInterceptor');
+      expect(requestNames).not.toContain('AuthorizationRequestInterceptor');
     });
 
     it('should conditionally add error interceptors', () => {
@@ -141,23 +197,31 @@ describe('CoSecConfigurer', () => {
     });
   });
 
-  describe('getters', () => {
-    it('should return token storage instance', () => {
+  describe('properties', () => {
+    it('should expose token storage instance', () => {
       const storage = configurer.tokenStorage;
       expect(storage).toBeDefined();
       expect(typeof storage.get).toBe('function');
     });
 
-    it('should return device ID storage instance', () => {
+    it('should expose device ID storage instance', () => {
       const storage = configurer.deviceIdStorage;
       expect(storage).toBeDefined();
       expect(typeof storage.getOrCreate).toBe('function');
     });
 
-    it('should return token manager instance', () => {
+    it('should expose token manager instance', () => {
       const manager = configurer.tokenManager;
       expect(manager).toBeDefined();
-      expect(manager.currentToken).toBeNull();
+      expect(manager!.currentToken).toBeNull();
+    });
+
+    it('should have undefined tokenManager when no tokenRefresher provided', () => {
+      const configurerBasic = new CoSecConfigurer({
+        appId: 'test-app',
+      });
+
+      expect(configurerBasic.tokenManager).toBeUndefined();
     });
   });
 });

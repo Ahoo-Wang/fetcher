@@ -126,9 +126,15 @@ const fetcher = new Fetcher({
   baseURL: 'https://api.example.com',
 });
 
-// Create CoSec configurer with minimal required configuration
+// Create CoSec configurer with flexible configuration
 const configurer = new CoSecConfigurer({
   appId: 'your-app-id',
+
+  // Optional: Custom storage implementations
+  tokenStorage: new TokenStorage('my-app-tokens'),
+  deviceIdStorage: new DeviceIdStorage('my-app-devices'),
+
+  // Optional: Token refresher (enables authentication interceptors)
   tokenRefresher: {
     refresh: async token => {
       // Implement your token refresh logic
@@ -149,6 +155,7 @@ const configurer = new CoSecConfigurer({
       };
     },
   },
+
   // Optional: Custom error handlers (only add interceptors if provided)
   onUnauthorized: exchange => {
     console.error('Unauthorized access:', exchange.request.url);
@@ -159,7 +166,7 @@ const configurer = new CoSecConfigurer({
     console.error('Forbidden access:', exchange.request.url);
     // Show permission error
     alert('You do not have permission to access this resource');
-  }
+  },
 });
 
 // Apply all CoSec interceptors with one call
@@ -171,9 +178,10 @@ const response = await fetcher.get('/protected-endpoint');
 
 ### Benefits of CoSecConfigurer
 
-- ✅ **One-line setup**: `configurer.applyTo(fetcher)` configures everything
-- ✅ **Minimal configuration**: Only `appId` and `tokenRefresher` are required
-- ✅ **Sensible defaults**: Automatic error handling and parameter names
+- ✅ **Flexible configuration**: Support for full auth setup or minimal CoSec headers only
+- ✅ **Custom storage**: Optional custom TokenStorage and DeviceIdStorage implementations
+- ✅ **Conditional interceptors**: Authentication interceptors only added when tokenRefresher is provided
+- ✅ **Error handler control**: Choose which error interceptors to add based on your needs
 - ✅ **Type-safe**: Full TypeScript support with intelligent defaults
 - ✅ **Backward compatible**: Original manual setup still works
 
@@ -235,6 +243,12 @@ The recommended way to configure CoSec authentication. Provides a simplified API
 ```typescript
 const configurer = new CoSecConfigurer({
   appId: 'your-app-id',
+
+  // Optional: Custom storage implementations
+  tokenStorage: new TokenStorage('custom-prefix'),
+  deviceIdStorage: new DeviceIdStorage('custom-prefix'),
+
+  // Optional: Token refresher (enables auth interceptors)
   tokenRefresher: {
     refresh: async token => {
       // Your token refresh implementation
@@ -244,6 +258,7 @@ const configurer = new CoSecConfigurer({
       };
     },
   },
+
   // Optional error handlers (interceptors only added if provided)
   onUnauthorized: exchange => {
     /* handle 401 */
@@ -251,21 +266,27 @@ const configurer = new CoSecConfigurer({
   onForbidden: async exchange => {
     /* handle 403 */
   },
-  tenantId: 'tenantId', // default: 'tenantId'
-  ownerId: 'ownerId', // default: 'ownerId'
 });
 
 configurer.applyTo(fetcher);
 ```
 
-**Automatically Configured Interceptors:**
+**Conditionally Configured Interceptors:**
 
-- `CoSecRequestInterceptor` - Adds CoSec headers
-- `AuthorizationRequestInterceptor` - Adds Bearer token
-- `ResourceAttributionRequestInterceptor` - Adds tenant/owner parameters
-- `AuthorizationResponseInterceptor` - Handles token refresh
-- `UnauthorizedErrorInterceptor` - Handles 401 errors
-- `ForbiddenErrorInterceptor` - Handles 403 errors
+Always added:
+
+- `CoSecRequestInterceptor` - Adds CoSec headers (appId, deviceId, requestId)
+- `ResourceAttributionRequestInterceptor` - Adds tenant/owner path parameters
+
+Only when `tokenRefresher` is provided:
+
+- `AuthorizationRequestInterceptor` - Adds Bearer token authentication
+- `AuthorizationResponseInterceptor` - Handles token refresh on 401 responses
+
+Only when corresponding handlers are provided:
+
+- `UnauthorizedErrorInterceptor` - Handles 401 unauthorized errors
+- `ForbiddenErrorInterceptor` - Handles 403 forbidden errors
 
 #### AuthorizationRequestInterceptor
 
