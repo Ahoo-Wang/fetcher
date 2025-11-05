@@ -131,8 +131,8 @@ const configurer = new CoSecConfigurer({
   appId: 'your-app-id',
 
   // Optional: Custom storage implementations
-  tokenStorage: new TokenStorage('my-app-tokens'),
-  deviceIdStorage: new DeviceIdStorage('my-app-devices'),
+  tokenStorage: new TokenStorage(),
+  deviceIdStorage: new DeviceIdStorage(),
 
   // Optional: Token refresher (enables authentication interceptors)
   tokenRefresher: {
