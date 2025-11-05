@@ -23,11 +23,12 @@ type DateTimeValueType = number | string | (number | string)[]
 export function DateTimeFilter(
   props: FilterProps<DateTimeValueType>,
 ) {
+  const handleChange = (value: DateTimeValueType) => {
+    props.onChange?.(value);
+  };
   const assemblyConditionFilterProps: AssemblyFilterProps<DateTimeValueType> = {
     ...props,
     supportedOperators: [
-      Operator.EQ,
-      Operator.NE,
       Operator.GT,
       Operator.LT,
       Operator.GTE,
