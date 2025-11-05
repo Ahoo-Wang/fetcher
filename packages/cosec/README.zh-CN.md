@@ -26,6 +26,7 @@
 - **⚡ 性能优化**：最小开销，支持连接池和缓存
 - **🛠️ TypeScript 优先**：完整类型定义，严格类型安全
 - **🔌 可插拔架构**：模块化设计，易于集成和定制
+- **⚙️ 简化配置**：使用 `CoSecConfigurer` 的一行设置，最小化配置开销
 
 ## 🚀 快速开始
 
@@ -112,6 +113,70 @@ fetcher.interceptors.response.use(
 );
 ```
 
+## 🚀 简化设置（推荐）
+
+为了获得更简单的设置体验，请使用 `CoSecConfigurer` 类，它会自动处理所有复杂的依赖创建和拦截器配置：
+
+```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
+import { CoSecConfigurer } from '@ahoo-wang/fetcher-cosec';
+
+// 创建 Fetcher 实例
+const fetcher = new Fetcher({
+  baseURL: 'https://api.example.com',
+});
+
+// 使用最少的必需配置创建 CoSec 配置器
+const configurer = new CoSecConfigurer({
+  appId: 'your-app-id',
+  tokenRefresher: {
+    refresh: async token => {
+      // 实现您的令牌刷新逻辑
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: token.refreshToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Token refresh failed');
+      }
+
+      const tokens = await response.json();
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      };
+    },
+  },
+  // 可选：自定义错误处理器（仅在提供时才添加拦截器）
+  onUnauthorized: exchange => {
+    console.error('未授权访问:', exchange.request.url);
+    // 重定向到登录或根据需要处理
+    window.location.href = '/login';
+  },
+  onForbidden: async exchange => {
+    console.error('禁止访问:', exchange.request.url);
+    // 显示权限错误
+    alert('您没有权限访问此资源');
+  }
+});
+
+// 使用一次调用应用所有 CoSec 拦截器
+configurer.applyTo(fetcher);
+
+// 现在您可以使用具有完整 CoSec 认证的 fetcher
+const response = await fetcher.get('/protected-endpoint');
+```
+
+### CoSecConfigurer 的优势
+
+- ✅ **一行设置**：`configurer.applyTo(fetcher)` 配置一切
+- ✅ **最小配置**：仅需要 `appId` 和 `tokenRefresher`
+- ✅ **合理的默认值**：自动错误处理和参数名称
+- ✅ **类型安全**：完整的 TypeScript 支持和智能默认值
+- ✅ **向后兼容**：原始手动设置仍然有效
+
 ## 🔧 配置
 
 ### CoSecOptions 接口
@@ -162,6 +227,45 @@ interface JwtTokenManagerCapable {
 ## 📚 API 参考
 
 ### 核心类
+
+#### CoSecConfigurer
+
+配置 CoSec 认证的推荐方式。提供简化的 API，自动创建和配置所有必要的拦截器和依赖项。
+
+```typescript
+const configurer = new CoSecConfigurer({
+  appId: 'your-app-id',
+  tokenRefresher: {
+    refresh: async token => {
+      // 您的令牌刷新实现
+      return {
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+      };
+    },
+  },
+  // 可选错误处理器（仅在提供时才添加拦截器）
+  onUnauthorized: exchange => {
+    /* 处理 401 */
+  },
+  onForbidden: async exchange => {
+    /* 处理 403 */
+  },
+  tenantId: 'tenantId', // 默认: 'tenantId'
+  ownerId: 'ownerId', // 默认: 'ownerId'
+});
+
+configurer.applyTo(fetcher);
+```
+
+**自动配置的拦截器：**
+
+- `CoSecRequestInterceptor` - 添加 CoSec 头部
+- `AuthorizationRequestInterceptor` - 添加 Bearer 令牌
+- `ResourceAttributionRequestInterceptor` - 添加租户/所有者参数
+- `AuthorizationResponseInterceptor` - 处理令牌刷新
+- `UnauthorizedErrorInterceptor` - 处理 401 错误
+- `ForbiddenErrorInterceptor` - 处理 403 错误
 
 #### AuthorizationRequestInterceptor
 

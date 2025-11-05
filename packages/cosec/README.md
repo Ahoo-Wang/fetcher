@@ -159,10 +159,7 @@ const configurer = new CoSecConfigurer({
     console.error('Forbidden access:', exchange.request.url);
     // Show permission error
     alert('You do not have permission to access this resource');
-  },
-  // Optional: Custom tenant/owner ID parameter names
-  tenantId: 'tenantId', // default: 'tenantId'
-  ownerId: 'ownerId', // default: 'ownerId'
+  }
 });
 
 // Apply all CoSec interceptors with one call
