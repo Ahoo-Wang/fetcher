@@ -34,12 +34,13 @@ export interface CoSecConfig {
    */
   appId: string;
 
+  tokenStorage?: TokenStorage;
+  deviceIdStorage?: DeviceIdStorage;
   /**
    * Token refresher implementation for handling expired tokens.
    * This is required to enable automatic token refresh functionality.
    */
-  tokenRefresher: TokenRefresher;
-
+  tokenRefresher?: TokenRefresher;
   /**
    * Callback function invoked when an unauthorized (401) response is detected.
    * If not provided, defaults to throwing an error.
@@ -86,7 +87,7 @@ export interface CoSecConfig {
 export class CoSecConfigurer implements FetcherConfigurer {
   readonly tokenStorage: TokenStorage;
   readonly deviceIdStorage: DeviceIdStorage;
-  readonly tokenManager: JwtTokenManager;
+  readonly tokenManager?: JwtTokenManager;
 
   /**
    * Creates a new CoSecConfigurer instance with the provided configuration.
@@ -95,14 +96,16 @@ export class CoSecConfigurer implements FetcherConfigurer {
    */
   constructor(public readonly config: CoSecConfig) {
     // Create storage instances
-    this.tokenStorage = new TokenStorage();
-    this.deviceIdStorage = new DeviceIdStorage();
+    this.tokenStorage = config.tokenStorage ?? new TokenStorage();
+    this.deviceIdStorage = config.deviceIdStorage ?? new DeviceIdStorage();
 
     // Create token manager
-    this.tokenManager = new JwtTokenManager(
-      this.tokenStorage,
-      this.config.tokenRefresher,
-    );
+    if (config.tokenRefresher){
+      this.tokenManager = new JwtTokenManager(
+        this.tokenStorage,
+        config.tokenRefresher,
+      );
+    }
   }
 
   /**
@@ -127,23 +130,23 @@ export class CoSecConfigurer implements FetcherConfigurer {
     );
 
     fetcher.interceptors.request.use(
-      new AuthorizationRequestInterceptor({
-        tokenManager: this.tokenManager,
-      }),
-    );
-
-    fetcher.interceptors.request.use(
       new ResourceAttributionRequestInterceptor({
         tokenStorage: this.tokenStorage,
       }),
     );
+    if (this.tokenManager){
+      fetcher.interceptors.request.use(
+        new AuthorizationRequestInterceptor({
+          tokenManager: this.tokenManager,
+        }),
+      );
 
-    fetcher.interceptors.response.use(
-      new AuthorizationResponseInterceptor({
-        tokenManager: this.tokenManager,
-      }),
-    );
-
+      fetcher.interceptors.response.use(
+        new AuthorizationResponseInterceptor({
+          tokenManager: this.tokenManager,
+        }),
+      );
+    }
     if (this.config.onUnauthorized) {
       fetcher.interceptors.error.use(
         new UnauthorizedErrorInterceptor({
