@@ -37,6 +37,25 @@ vi.stubGlobal(
 );
 vi.stubGlobal('window', { localStorage: mockStorage });
 
+// Mock BroadcastTypedEventBus and SerialTypedEventBus
+vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
+  BroadcastTypedEventBus: vi.fn().mockImplementation(() => ({
+    emit: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+    destroy: vi.fn(),
+  })),
+  SerialTypedEventBus: vi.fn().mockImplementation(() => ({
+    emit: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+    destroy: vi.fn(),
+  })),
+  nameGenerator: {
+    generate: vi.fn((prefix: string) => `${prefix}_1`),
+  },
+}));
+
 // Mock idGenerator
 vi.mock('../src/idGenerator', () => ({
   idGenerator: {
@@ -62,27 +81,48 @@ describe('DeviceIdStorage', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize with default options', () => {
-      // Mock eventBus for test environment
+    it('should initialize with all default values when no options provided', () => {
+      // Test the default constructor: new DeviceIdStorage()
+      const defaultStorage = new DeviceIdStorage();
+      expect(defaultStorage).toBeDefined();
+      // The constructor should create default key and eventBus internally
+    });
+
+    it('should initialize with custom key only', () => {
+      // Test partial customization: new DeviceIdStorage({ key: 'custom' })
+      const storage = new DeviceIdStorage({ key: 'custom-key' });
+      expect(storage).toBeDefined();
+      // Should use custom key but default eventBus
+    });
+
+    it('should initialize with custom eventBus only', () => {
+      // Test partial customization: new DeviceIdStorage({ eventBus: custom })
       const mockEventBus = {
         emit: vi.fn(),
         on: vi.fn(),
         off: vi.fn(),
         destroy: vi.fn(),
       };
-      const defaultStorage = new DeviceIdStorage({
-        key: 'test-device-id',
-        eventBus: mockEventBus as any,
-      });
-      expect(defaultStorage).toBeDefined();
+      const storage = new DeviceIdStorage({ eventBus: mockEventBus as any });
+      expect(storage).toBeDefined();
+      // Should use custom eventBus but default key
     });
 
-    it('should initialize with custom options', () => {
+    it('should initialize with all custom options', () => {
+      // Test full customization
+      const mockEventBus = {
+        emit: vi.fn(),
+        on: vi.fn(),
+        off: vi.fn(),
+        destroy: vi.fn(),
+      };
       const customStorage = new DeviceIdStorage({
         key: 'custom-key',
+        eventBus: mockEventBus as any,
         storage: mockStorage as any,
       });
       expect(customStorage).toBeDefined();
+      // Should use all custom options
     });
   });
 
