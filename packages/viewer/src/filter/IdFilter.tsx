@@ -50,7 +50,7 @@ export function IdFilter(props: FilterProps<IdFilterValueType>) {
   const assemblyFilterProps: AssemblyFilterProps<IdFilterValueType> = {
     ...props,
     supportedOperators: [Operator.ID, Operator.IDS],
-    valueConverter: IdOnOperatorChangeValueConverter,
+    onOperatorChangeValueConverter: IdOnOperatorChangeValueConverter,
     valueInputRender: (
       filterState: UseFilterStateReturn<IdFilterValueType>,
     ) => {
