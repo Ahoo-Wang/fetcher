@@ -29,7 +29,7 @@ describe('FilterRegistry', () => {
   describe('register', () => {
     it('should register a filter successfully', () => {
       registry.register('test-type', mockFilter);
-
+      expect(registry.types.has('test-type')).toBe(true);
       const retrieved = registry.get('test-type');
       expect(retrieved).toBe(mockFilter);
     });

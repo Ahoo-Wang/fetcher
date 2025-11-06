@@ -41,6 +41,10 @@ export class FilterRegistry {
     this.register(DATE_TIME_FILTER_NAME, DateTimeFilter);
   }
 
+  get types(): Set<FilterType> {
+    return new Set(this.filters.keys());
+  }
+
   /**
    * Registers a filter component for a specific type.
    *
