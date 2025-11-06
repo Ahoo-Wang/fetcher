@@ -20,15 +20,13 @@ import { UseFilterStateReturn } from './useFilterState';
 
 export const TEXT_FILTER = 'text';
 
-export type TextFilterValueType = string | string[];
-
 export function TextFilter(
-  props: FilterProps<TextFilterValueType>,
+  props: FilterProps,
 ) {
-  const assemblyFilterProps: AssemblyFilterProps<TextFilterValueType> = {
+  const assemblyFilterProps: AssemblyFilterProps = {
     ...props,
     supportedOperators: [Operator.EQ, Operator.NE, Operator.CONTAINS, Operator.STARTS_WITH, Operator.ENDS_WITH, Operator.IN, Operator.NOT_IN],
-    valueInputRender: (filterState: UseFilterStateReturn<TextFilterValueType>) => {
+    valueInputRender: (filterState: UseFilterStateReturn) => {
       switch (filterState.operator) {
         case Operator.IN:
         case Operator.NOT_IN: {
@@ -49,7 +47,7 @@ export function TextFilter(
       }
     },
   };
-  return <AssemblyFilter<TextFilterValueType> {...assemblyFilterProps}></AssemblyFilter>;
+  return <AssemblyFilter {...assemblyFilterProps}></AssemblyFilter>;
 }
 
 TextFilter.displayName = 'TextFilter';

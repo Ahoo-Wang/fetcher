@@ -22,11 +22,8 @@ import {
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 
 export const ID_FILTER = 'id';
-export type IdFilterValueType = string | string[];
 
-export const IdOnOperatorChangeValueConverter: OnOperatorChangeValueConverter<
-  IdFilterValueType
-> = (beforeOperator, afterOperator, value) => {
+export const IdOnOperatorChangeValueConverter: OnOperatorChangeValueConverter = (beforeOperator, afterOperator, value) => {
   if (value === undefined || value === null) {
     return value;
   }
@@ -46,13 +43,13 @@ export const IdOnOperatorChangeValueConverter: OnOperatorChangeValueConverter<
   return [trimmedValue];
 };
 
-export function IdFilter(props: FilterProps<IdFilterValueType>) {
-  const assemblyFilterProps: AssemblyFilterProps<IdFilterValueType> = {
+export function IdFilter(props: FilterProps) {
+  const assemblyFilterProps: AssemblyFilterProps = {
     ...props,
     supportedOperators: [Operator.ID, Operator.IDS],
     onOperatorChangeValueConverter: IdOnOperatorChangeValueConverter,
     valueInputRender: (
-      filterState: UseFilterStateReturn<IdFilterValueType>,
+      filterState: UseFilterStateReturn,
     ) => {
       return filterState.operator === Operator.ID ? (
         <Input
@@ -71,7 +68,7 @@ export function IdFilter(props: FilterProps<IdFilterValueType>) {
     },
   };
   return (
-    <AssemblyFilter<IdFilterValueType>
+    <AssemblyFilter
       {...assemblyFilterProps}
     ></AssemblyFilter>
   );

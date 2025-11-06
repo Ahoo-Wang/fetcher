@@ -24,20 +24,20 @@ import { Button, Select, Space } from 'antd';
 import { ReactNode } from 'react';
 import { SelectOperator } from './operator';
 
-export type ValueInputRender<ValueType = any> = (
-  filterState: UseFilterStateReturn<ValueType>,
+export type ValueInputRender = (
+  filterState: UseFilterStateReturn,
 ) => ReactNode | null;
 
-export interface AssemblyFilterProps<ValueType = any, ConditionValueType = ValueType, ValuePropsType extends FilterValueProps = FilterValueProps<ValueType>> extends FilterProps<ValueType, ValuePropsType> {
+export interface AssemblyFilterProps<ValuePropsType extends FilterValueProps = FilterValueProps> extends FilterProps<ValuePropsType> {
   supportedOperators: SelectOperator[];
-  onOperatorChangeValueConverter?: OnOperatorChangeValueConverter<ValueType>;
-  validate?: ValidateValue<ValueType>;
-  valueParser?: ConditionValueParser<ValueType, ConditionValueType>;
-  valueInputRender?: ValueInputRender<ValueType>;
+  onOperatorChangeValueConverter?: OnOperatorChangeValueConverter;
+  validate?: ValidateValue;
+  valueParser?: ConditionValueParser;
+  valueInputRender?: ValueInputRender;
 }
 
-export function AssemblyFilter<ValueType = any>(
-  { ref, ...props }: AssemblyFilterProps<ValueType>,
+export function AssemblyFilter(
+  { ref, ...props }: AssemblyFilterProps,
 ) {
   const supportedOperators = props.operator?.supportedOperators ?? props.supportedOperators;
   // Validate that supportedOperators is not empty
