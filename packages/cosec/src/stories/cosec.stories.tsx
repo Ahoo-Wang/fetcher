@@ -21,6 +21,7 @@ import {
 } from 'antd';
 import { AuthorizationRequestInterceptor } from '../authorizationRequestInterceptor';
 import { AuthorizationResponseInterceptor } from '../authorizationResponseInterceptor';
+import { CoSecConfigurer } from '../cosecConfigurer';
 import { TokenStorage } from '../tokenStorage';
 import { DeviceIdStorage } from '../deviceIdStorage';
 import { JwtTokenManager } from '../jwtTokenManager';
@@ -178,7 +179,6 @@ const ComprehensiveCoSecDemo: React.FC = () => {
     const startTime = performance.now();
     const tokenStorage = new TokenStorage();
     const tokenRefresher: TokenRefresher = {
-       
       refresh: async (_: CompositeToken) => {
         addLog('Token refresh initiated...', 'info');
         // Simulate API call delay
@@ -225,7 +225,6 @@ const ComprehensiveCoSecDemo: React.FC = () => {
 
       const tokenStorage = new TokenStorage();
       const tokenRefresher: TokenRefresher = {
-         
         refresh: async (_: CompositeToken) => {
           addLog('🔄 Automatic token refresh triggered by interceptor', 'info');
           await new Promise(resolve => setTimeout(resolve, 300));
@@ -367,6 +366,113 @@ const ComprehensiveCoSecDemo: React.FC = () => {
     };
     setTenants(prev => [...prev, newTenant]);
     addLog(`➕ New tenant added: ${newTenant.id}`, 'success');
+  };
+
+  // CoSecConfigurer Demo Handler
+  const handleSimulateApiCallWithConfigurer = async () => {
+    setIsIntercepting(true);
+    const startTime = performance.now();
+
+    try {
+      // Create a real Fetcher instance
+      const fetcher = new Fetcher({
+        baseURL: 'https://jsonplaceholder.typicode.com',
+      });
+
+      // Use CoSecConfigurer for simplified setup
+      const configurer = new CoSecConfigurer({
+        appId: appId,
+        tokenRefresher: {
+          refresh: async (_: CompositeToken) => {
+            addLog(
+              '🔄 CoSecConfigurer: Automatic token refresh triggered',
+              'info',
+            );
+            await new Promise(resolve => setTimeout(resolve, 300));
+            return {
+              accessToken: createMockJwt(),
+              refreshToken: createMockJwt(86400),
+            };
+          },
+        },
+        onUnauthorized: exchange => {
+          addLog(
+            '🚫 CoSecConfigurer: Custom unauthorized handler called',
+            'warning',
+          );
+        },
+        onForbidden: async exchange => {
+          addLog(
+            '🚫 CoSecConfigurer: Custom forbidden handler called',
+            'error',
+          );
+        },
+      });
+
+      addLog('⚙️ CoSecConfigurer: Applying configuration...', 'info');
+      configurer.applyTo(fetcher);
+      addLog(
+        '✅ CoSecConfigurer: All interceptors configured automatically',
+        'success',
+      );
+
+      addLog('🚀 CoSecConfigurer: Making API call...', 'info');
+
+      // Make a real API call to JSONPlaceholder (public API)
+      const exchange = await fetcher.get('/posts/1');
+
+      addLog(
+        `📨 CoSecConfigurer: Request sent to: https://jsonplaceholder.typicode.com/posts/1`,
+        'info',
+      );
+      addLog(
+        `📨 CoSecConfigurer: Headers automatically added by interceptors`,
+        'success',
+      );
+
+      // Parse response JSON
+      const responseData = await exchange.json();
+      addLog(
+        `✅ CoSecConfigurer: API call completed successfully - Status: ${exchange.status}`,
+        'success',
+      );
+      addLog(
+        `📄 CoSecConfigurer: Response: Post title "${responseData?.title?.substring(0, 50)}..."`,
+        'info',
+      );
+
+      setMockApiCalls(prev => [
+        {
+          id: Date.now(),
+          request: {
+            url: 'https://jsonplaceholder.typicode.com/posts/1',
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'CoSec-Device-Id': deviceId || 'demo-device-123',
+              'CoSec-App-Id': appId,
+              'CoSec-Request-Id': `req-${Date.now()}`,
+            },
+          },
+          response: {
+            status: exchange.status,
+            data: responseData,
+          },
+          timestamp: new Date(),
+        },
+        ...prev.slice(0, 9),
+      ]);
+    } catch (error) {
+      addLog(`❌ CoSecConfigurer: API call failed: ${error}`, 'error');
+    } finally {
+      setIsIntercepting(false);
+      const endTime = performance.now();
+      setPerformanceMetrics(prev => ({
+        ...prev,
+        interceptorOverhead: endTime - startTime,
+        totalRequests: prev.totalRequests + 1,
+      }));
+    }
   };
 
   return (
@@ -583,6 +689,144 @@ const ComprehensiveCoSecDemo: React.FC = () => {
               readOnly
               placeholder="Interceptor activity will appear here..."
             />
+          </Card>
+        </TabPane>
+
+        <TabPane
+          tab="⚙️ Simplified Setup (CoSecConfigurer)"
+          key="simplified-setup"
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <Card title="CoSecConfigurer Demo" size="small">
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Alert
+                    message="Simplified Configuration"
+                    description="CoSecConfigurer provides a much simpler way to set up all CoSec interceptors with minimal configuration."
+                    type="info"
+                    showIcon
+                  />
+                  <Button
+                    onClick={handleSimulateApiCallWithConfigurer}
+                    type="primary"
+                    loading={isIntercepting}
+                    block
+                  >
+                    {isIntercepting
+                      ? 'Processing Request...'
+                      : 'Test with CoSecConfigurer'}
+                  </Button>
+                  <Text type="secondary">
+                    This demonstrates the simplified setup using
+                    CoSecConfigurer, which automatically handles all interceptor
+                    configuration.
+                  </Text>
+                </Space>
+              </Card>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Card title="Configuration Comparison" size="small">
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <div>
+                    <Text strong>❌ Manual Setup (Complex):</Text>
+                    <pre
+                      style={{
+                        fontSize: '12px',
+                        backgroundColor: '#f5f5f5',
+                        padding: '8px',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      {`// 8+ instances to create manually
+const deviceIdStorage = new DeviceIdStorage();
+const tokenStorage = new TokenStorage();
+const tokenRefresher = { refresh: async (token) => {...} };
+const tokenManager = new JwtTokenManager(tokenStorage, tokenRefresher);
+const cosecOptions = { appId: 'app-001', tokenManager, deviceIdStorage };
+
+fetcher.interceptors.request.use(new AuthorizationRequestInterceptor(cosecOptions));
+// ... more interceptors to add`}
+                    </pre>
+                  </div>
+                  <Divider />
+                  <div>
+                    <Text strong>✅ CoSecConfigurer (Simple):</Text>
+                    <pre
+                      style={{
+                        fontSize: '12px',
+                        backgroundColor: '#f0f9ff',
+                        padding: '8px',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      {`const configurer = new CoSecConfigurer({
+  appId: 'app-001',
+  tokenRefresher: { refresh: async (token) => {...} },
+});
+
+configurer.applyTo(fetcher); // Done!`}
+                    </pre>
+                  </div>
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+
+          <Card title="CoSecConfigurer Benefits" size="small">
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={6}>
+                <Space direction="vertical">
+                  <div>
+                    <Tag color="green">🚀 One-Line Setup</Tag>
+                    <Text>Single method call configures everything</Text>
+                  </div>
+                  <div>
+                    <Tag color="blue">📦 Minimal Config</Tag>
+                    <Text>Only appId and tokenRefresher required</Text>
+                  </div>
+                </Space>
+              </Col>
+
+              <Col xs={24} md={6}>
+                <Space direction="vertical">
+                  <div>
+                    <Tag color="orange">🔧 Sensible Defaults</Tag>
+                    <Text>Automatic error handling and parameters</Text>
+                  </div>
+                  <div>
+                    <Tag color="purple">🔄 Backward Compatible</Tag>
+                    <Text>Original manual setup still works</Text>
+                  </div>
+                </Space>
+              </Col>
+
+              <Col xs={24} md={6}>
+                <Space direction="vertical">
+                  <div>
+                    <Tag color="cyan">🛡️ Type Safe</Tag>
+                    <Text>Full TypeScript support</Text>
+                  </div>
+                  <div>
+                    <Tag color="magenta">⚡ Zero Breaking Changes</Tag>
+                    <Text>Existing code continues to work</Text>
+                  </div>
+                </Space>
+              </Col>
+
+              <Col xs={24} md={6}>
+                <Space direction="vertical">
+                  <div>
+                    <Tag color="geekblue">🎯 Production Ready</Tag>
+                    <Text>Tested and optimized for production use</Text>
+                  </div>
+                  <div>
+                    <Tag color="gold">📚 Well Documented</Tag>
+                    <Text>Complete API documentation and examples</Text>
+                  </div>
+                </Space>
+              </Col>
+            </Row>
           </Card>
         </TabPane>
 

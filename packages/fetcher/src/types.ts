@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { Fetcher } from './fetcher';
+
 /**
  * Creates a new type by making specified properties of an existing type optional.
  *
@@ -202,4 +204,84 @@ declare global {
      */
     json<T = any>(): Promise<T>;
   }
+}
+
+/**
+ * Interface for configuring Fetcher instances.
+ *
+ * This interface defines a contract for objects that can configure a Fetcher instance
+ * with specific interceptors, middleware, or other customizations. Implementations of
+ * this interface provide a standardized way to apply configuration to Fetcher objects,
+ * enabling modular and reusable configuration patterns.
+ *
+ * @interface FetcherConfigurer
+ *
+ * @example
+ * ```typescript
+ * class AuthConfigurer implements FetcherConfigurer {
+ *   configure(fetcher: Fetcher): void {
+ *     // Add authentication interceptors
+ *     fetcher.interceptors.request.use(new AuthRequestInterceptor());
+ *     fetcher.interceptors.response.use(new AuthResponseInterceptor());
+ *   }
+ * }
+ *
+ * // Usage
+ * const fetcher = new Fetcher({ baseURL: '/api' });
+ * const configurer = new AuthConfigurer();
+ * configurer.configure(fetcher);
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Multiple configurers can be applied
+ * const configurers: FetcherConfigurer[] = [
+ *   new AuthConfigurer(),
+ *   new LoggingConfigurer(),
+ *   new RetryConfigurer()
+ * ];
+ *
+ * const fetcher = new Fetcher({ baseURL: '/api' });
+ * configurers.forEach(configurer => configurer.configure(fetcher));
+ * ```
+ */
+export interface FetcherConfigurer {
+  /**
+   * Applies configuration to the provided Fetcher instance.
+   *
+   * This method should apply all necessary configuration to the Fetcher instance,
+   * such as adding interceptors, setting default headers, or configuring other
+   * behavior. The method should be idempotent - calling it multiple times on
+   * the same Fetcher instance should not cause issues.
+   *
+   * @param fetcher - The Fetcher instance to configure
+   *
+   * @example
+   * ```typescript
+   * applyTo(fetcher: Fetcher): void {
+   *   // Add request interceptor for authentication
+   *   fetcher.interceptors.request.use({
+   *     onFulfilled: config => {
+   *       config.headers = {
+   *         ...config.headers,
+   *         'Authorization': `Bearer ${getToken()}`
+   *       };
+   *       return config;
+   *     }
+   *   });
+   *
+   *   // Add response interceptor for error handling
+   *   fetcher.interceptors.response.use({
+   *     onRejected: error => {
+   *       if (error.response?.status === 401) {
+   *         // Handle unauthorized
+   *         redirectToLogin();
+   *       }
+   *       return Promise.reject(error);
+   *     }
+   *   });
+   * }
+   * ```
+   */
+  applyTo(fetcher: Fetcher): void;
 }

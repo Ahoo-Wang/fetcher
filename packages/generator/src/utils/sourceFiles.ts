@@ -191,8 +191,22 @@ export function schemaJSDoc(schema: Schema, key?: string) {
  * @param schema - The schema containing title and description
  * @param key - The key associated with the schema
  */
-export function addSchemaJSDoc(node: JSDocableNode, schema: Schema | Reference, key?: string) {
+export function addSchemaJSDoc(
+  node: JSDocableNode,
+  schema: Schema | Reference,
+  key?: string,
+) {
   const descriptions = schemaJSDoc(schema as Schema, key);
+  addJSDoc(node, descriptions);
+}
+
+export function addMainSchemaJSDoc(
+  node: JSDocableNode,
+  schema: Schema | Reference,
+  key?: string,
+) {
+  const descriptions = schemaJSDoc(schema as Schema, key);
+  jsonJsDoc(descriptions, 'schema', schema);
   addJSDoc(node, descriptions);
 }
 
@@ -209,9 +223,17 @@ function addJsonJsDoc(
     descriptions.push(`- ${propertyName}: \`${json}\``);
     return;
   }
-  descriptions.push(`- ${propertyName}: `);
+  jsonJsDoc(descriptions, propertyName, json);
+}
+
+function jsonJsDoc(
+  descriptions: (string | undefined)[],
+  name: string,
+  json: any,
+) {
+  descriptions.push(`- ${name}: `);
   descriptions.push('```json');
-  descriptions.push(JSON.stringify(json));
+  descriptions.push(JSON.stringify(json, null, 2));
   descriptions.push('```');
 }
 
