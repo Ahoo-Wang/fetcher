@@ -18,17 +18,16 @@ import { UseFilterStateReturn } from './useFilterState';
 import { Select, SelectProps } from 'antd';
 
 export const SELECT_FILTER = 'select';
-export type SelectFilterValueType = string[];
 
-export interface SelectFilterValueProps extends FilterValueProps<SelectFilterValueType>,
-  Omit<SelectProps<SelectFilterValueType>, 'defaultValue' | 'mode' | 'value' | 'allowClear' | 'onChange'| 'placeholder'> {
+export interface SelectFilterValueProps extends FilterValueProps,
+  Omit<SelectProps, 'defaultValue' | 'mode' | 'value' | 'allowClear' | 'onChange' | 'placeholder'> {
 }
 
-export function SelectFilter(props: FilterProps<SelectFilterValueType, SelectFilterValueProps>) {
-  const assemblyFilterProps: AssemblyFilterProps<SelectFilterValueType> = {
+export function SelectFilter(props: FilterProps<SelectFilterValueProps>) {
+  const assemblyFilterProps: AssemblyFilterProps = {
     ...props,
     supportedOperators: [Operator.IN, Operator.NOT_IN],
-    valueInputRender: (filterState: UseFilterStateReturn<SelectFilterValueType>) => {
+    valueInputRender: (filterState: UseFilterStateReturn) => {
       return (
         <Select
           mode={'multiple'}
@@ -40,7 +39,7 @@ export function SelectFilter(props: FilterProps<SelectFilterValueType, SelectFil
       );
     },
   };
-  return <AssemblyFilter<SelectFilterValueType> {...assemblyFilterProps}></AssemblyFilter>;
+  return <AssemblyFilter {...assemblyFilterProps}></AssemblyFilter>;
 }
 
 SelectFilter.displayName = 'SelectFilter';

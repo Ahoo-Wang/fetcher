@@ -19,13 +19,13 @@ import { TrueValidateValue } from './useFilterState';
 
 export const BOOL_FILTER = 'bool';
 
-export function BoolFilter(props: FilterProps<undefined>) {
-  const assemblyFilterProps: AssemblyFilterProps<undefined> = {
+export function BoolFilter(props: FilterProps) {
+  const assemblyFilterProps: AssemblyFilterProps = {
     ...props,
     supportedOperators: [ExtendedOperator.UNDEFINED, Operator.TRUE, Operator.FALSE],
     validate: TrueValidateValue,
   };
-  return <AssemblyFilter<undefined> {...assemblyFilterProps}></AssemblyFilter>;
+  return <AssemblyFilter {...assemblyFilterProps}></AssemblyFilter>;
 }
 
 BoolFilter.displayName = 'BoolFilter';
