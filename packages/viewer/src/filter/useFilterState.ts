@@ -36,7 +36,7 @@ export interface UseFilterStateOptions extends RefAttributes<FilterRef> {
   onChange?: OnChange;
 }
 
-export interface UseFilterStateReturn<ValueType = any> {
+export interface UseFilterStateReturn {
   operator: SelectOperator;
   value: Optional;
   setOperator: (operator: SelectOperator) => void;
