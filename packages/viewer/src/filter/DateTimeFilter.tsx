@@ -38,7 +38,7 @@ const DateTimeDayjsValueOperators = new Set(
   ],
 );
 
-const DateTimeOnOperatorChangeValueConverter: OnOperatorChangeValueConverter = (
+export const DateTimeOnOperatorChangeValueConverter: OnOperatorChangeValueConverter = (
   beforeOperator: SelectOperator,
   afterOperator: SelectOperator,
   value: Optional<number | Dayjs | Dayjs[]>,
@@ -59,7 +59,7 @@ const DateTimeOnOperatorChangeValueConverter: OnOperatorChangeValueConverter = (
   }
   return undefined;
 };
-const TimestampConditionValueParser: ConditionValueParser = (operator: Operator, value: Optional<number | Dayjs | Dayjs[]>) => {
+export const TimestampConditionValueParser: ConditionValueParser = (operator: Operator, value: Optional<number | Dayjs | Dayjs[]>) => {
   if (!value) {
     return undefined;
   }
@@ -73,10 +73,16 @@ const TimestampConditionValueParser: ConditionValueParser = (operator: Operator,
   if (DateTimeNumberValueOperators.has(operator)) {
     return value;
   }
-  if (operator === Operator.BEFORE_TODAY && isDayjs(value)) {
-    return value.format(TIME_FORMAT);
+  if (operator === Operator.BEFORE_TODAY) {
+    if (isDayjs(value)) {
+      return value.format(TIME_FORMAT);
+    }
+    return undefined;
   }
-  return value.valueOf();
+  if (isDayjs(value)) {
+    return value.valueOf();
+  }
+  return undefined;
 };
 
 export function DateTimeFilter(
