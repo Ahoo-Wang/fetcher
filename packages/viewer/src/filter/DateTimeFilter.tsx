@@ -22,17 +22,21 @@ import { ExtendedOperator, SelectOperator } from './operator';
 
 export const DATE_TIME_FILTER_NAME = 'datetime';
 const TIME_FORMAT = 'HH:mm:ss';
-const DateTimeNumberValueOperators = [
-  Operator.RECENT_DAYS,
-  Operator.EARLIER_DAYS,
-];
+const DateTimeNumberValueOperators = new Set(
+  [
+    Operator.RECENT_DAYS,
+    Operator.EARLIER_DAYS,
+  ],
+);
 
-const DateTimeDayjsValueOperators = [
-  Operator.GT,
-  Operator.LT,
-  Operator.GTE,
-  Operator.LTE,
-];
+const DateTimeDayjsValueOperators = new Set(
+  [
+    Operator.GT,
+    Operator.LT,
+    Operator.GTE,
+    Operator.LTE,
+  ],
+);
 
 const DateTimeOnOperatorChangeValueConverter: OnOperatorChangeValueConverter = (
   beforeOperator: SelectOperator,
@@ -42,11 +46,11 @@ const DateTimeOnOperatorChangeValueConverter: OnOperatorChangeValueConverter = (
   if (beforeOperator === ExtendedOperator.UNDEFINED || afterOperator === ExtendedOperator.UNDEFINED) {
     return value;
   }
-  if (DateTimeNumberValueOperators.includes(beforeOperator) && DateTimeNumberValueOperators.includes(afterOperator)) {
+  if (DateTimeNumberValueOperators.has(beforeOperator) && DateTimeNumberValueOperators.has(afterOperator)) {
     return value;
   }
-  if (DateTimeDayjsValueOperators.includes(beforeOperator)) {
-    if (DateTimeDayjsValueOperators.includes(afterOperator)) {
+  if (DateTimeDayjsValueOperators.has(beforeOperator)) {
+    if (DateTimeDayjsValueOperators.has(afterOperator)) {
       return value;
     }
     if (afterOperator === Operator.BETWEEN) {
