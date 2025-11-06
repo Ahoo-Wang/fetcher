@@ -18,6 +18,7 @@ import { Operator } from '@ahoo-wang/fetcher-wow';
 import { Card, Divider, Typography } from 'antd';
 import { FilterValue } from '../types';
 import { DATE_TIME_FILTER_NAME } from '../DateTimeFilter';
+import { filterRegistry } from '../filterRegistry';
 
 function TypedFilterStory(props: TypedFilterProps) {
   const [filterValue, setFilterValue] = useState<FilterValue>();
@@ -47,7 +48,7 @@ const meta: Meta<typeof TypedFilterStory> = {
   tags: ['autodocs'],
   argTypes: {
     type: {
-      options: ['id', 'text', 'number', 'bool', 'select', 'unsupported'],
+      options: [...Array.from(filterRegistry.types), 'unsupported'],
       control: 'select',
     },
   },
