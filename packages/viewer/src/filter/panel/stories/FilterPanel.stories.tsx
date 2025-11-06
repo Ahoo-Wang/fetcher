@@ -17,6 +17,112 @@ import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
 import { useState } from 'react';
 import { Button, Card, Divider, Typography } from 'antd';
 
+const defaultFilterPanelProps: FilterPanelProps = {
+  filters: [
+    {
+      key: 'id',
+      type: 'id',
+      field: {
+        name: 'id',
+        label: 'Id',
+        type: 'string',
+      },
+      operator: {
+        defaultValue: Operator.ID,
+      },
+      value: {
+        defaultValue: 'id',
+      },
+    },
+    {
+      key: 'name',
+      type: 'text',
+      field: {
+        name: 'name',
+        label: 'Name',
+        type: 'string',
+      },
+      operator: {
+        defaultValue: Operator.EQ,
+      },
+      value: {
+        defaultValue: 'test',
+      },
+    },
+    {
+      key: 'age',
+      type: 'number',
+      field: {
+        name: 'age',
+        label: 'Age',
+        type: 'number',
+      },
+      operator: {
+        defaultValue: Operator.GT,
+      },
+      value: {
+        style: {
+          width: '100%',
+        },
+        defaultValue: 18,
+      },
+    },
+    {
+      key: 'isActive',
+      type: 'bool',
+      field: {
+        name: 'isActive',
+        label: 'Is Active',
+        type: 'bool',
+      },
+      operator:{
+        style: {
+          width: '100%',
+        },
+      }
+    },
+    {
+      key: 'status',
+      type: 'select',
+      field: {
+        name: 'status',
+        label: 'Status',
+        type: 'string',
+      },
+      value: {
+        style: {
+          width: '100%',
+        },
+        options: [
+          {
+            label: 'Active',
+            value: 'active',
+          },
+          {
+            label: 'Inactive',
+            value: 'inactive',
+          },
+        ],
+      },
+    },
+    {
+      key: 'createdAt',
+      type: 'datetime',
+      field: {
+        name: 'createdAt',
+        label: 'Created At',
+        type: 'datetime',
+      },
+      operator: {
+        defaultValue: Operator.TODAY,
+      },
+    },
+  ],
+  actions: <Button>Add Filter</Button>,
+  searchButton: { children: 'Search' },
+  resetButton: { children: 'Reset' },
+};
+
 function FilterPanelDemo(props: FilterPanelProps) {
   const [condition, setCondition] = useState<Condition>();
   return (
@@ -51,116 +157,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    filters: [
-      {
-        key: 'name',
-        type: 'text',
-        field: {
-          name: 'name',
-          label: 'Name',
-          type: 'string',
-        },
-        operator: {
-          defaultValue: Operator.EQ,
-        },
-        value: {
-          defaultValue: 'test',
-        },
-      },
-      {
-        key: 'age',
-        type: 'number',
-        field: {
-          name: 'age',
-          label: 'Age',
-          type: 'number',
-        },
-        operator: {
-          defaultValue: Operator.GT,
-        },
-        value: {
-          defaultValue: 18,
-        },
-      },
-    ],
-    searchButton: {
-      children: 'search',
-    },
-    resetButton: false,
+    ...defaultFilterPanelProps,
   },
 };
 
 export const WithActions: Story = {
   args: {
-    filters: [
-      {
-        key: 'status',
-        type: 'text',
-        field: {
-          name: 'status',
-          label: 'Status',
-          type: 'string',
-        },
-        operator: {
-          defaultValue: Operator.IN,
-        },
-        value: {
-          defaultValue: ['active', 'inactive'],
-        },
-      },
-    ],
+    ...defaultFilterPanelProps,
     actions: <Button>Add Filter</Button>,
-  },
-};
-
-export const MultipleFilters: Story = {
-  args: {
-    filters: [
-      {
-        key: 'firstName',
-        type: 'text',
-        field: {
-          name: 'firstName',
-          label: 'First Name',
-          type: 'string',
-        },
-        operator: {
-          defaultValue: Operator.STARTS_WITH,
-        },
-        value: {
-          defaultValue: 'John',
-        },
-      },
-      {
-        key: 'lastName',
-        type: 'text',
-        field: {
-          name: 'lastName',
-          label: 'Last Name',
-          type: 'string',
-        },
-        operator: {
-          defaultValue: Operator.ENDS_WITH,
-        },
-        value: {
-          defaultValue: 'Doe',
-        },
-      },
-      {
-        key: 'department',
-        type: 'text',
-        field: {
-          name: 'department',
-          label: 'Department',
-          type: 'string',
-        },
-        operator: {
-          defaultValue: Operator.EQ,
-        },
-        value: {
-          defaultValue: 'Engineering',
-        },
-      },
-    ],
   },
 };
