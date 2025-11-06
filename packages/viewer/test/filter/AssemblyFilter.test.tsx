@@ -32,7 +32,7 @@ const createMockProps = (
   });
 
   const valueInputSupplier = vi.fn(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     (_filterState: UseFilterStateReturn<string>) => (
       <Input value="test" onChange={() => {}} />
     ),
