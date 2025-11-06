@@ -14,7 +14,7 @@
 import { FilterProps, FilterValueProps } from './types';
 import { OPERATOR_zh_CN } from './operator';
 import {
-  ConditionValueParser,
+  ConditionValueParser, FilterValueConverter,
   OnOperatorChangeValueConverter,
   useFilterState,
   UseFilterStateReturn,
@@ -32,7 +32,8 @@ export interface AssemblyFilterProps<ValuePropsType extends FilterValueProps = F
   supportedOperators: SelectOperator[];
   onOperatorChangeValueConverter?: OnOperatorChangeValueConverter;
   validate?: ValidateValue;
-  valueParser?: ConditionValueParser;
+  conditionValueParser?: ConditionValueParser;
+  filterValueConverter?: FilterValueConverter;
   valueInputRender?: ValueInputRender;
 }
 
@@ -61,7 +62,8 @@ export function AssemblyFilter(
     ref: ref,
     onOperatorChangeValueConverter: props.onOperatorChangeValueConverter,
     validate: props.validate,
-    valueParser: props.valueParser,
+    conditionValueParser: props.conditionValueParser,
+    filterValueConverter: props.filterValueConverter,
     onChange: props.onChange,
   });
   const valueInput = props.valueInputRender?.(filterState);
