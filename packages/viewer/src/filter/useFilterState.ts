@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
+import { Condition, ConditionOptions, Operator } from '@ahoo-wang/fetcher-wow';
 import { RefAttributes, useImperativeHandle, useState } from 'react';
 import { FilterRef, FilterValue } from './types';
 import { Optional } from '../types';
@@ -31,6 +31,7 @@ export interface UseFilterStateOptions extends RefAttributes<FilterRef> {
   field?: string;
   operator: SelectOperator;
   value: Optional;
+  conditionOptions?: ConditionOptions;
   onOperatorChangeValueConverter?: OnOperatorChangeValueConverter;
   validate?: ValidateValue;
   conditionValueParser?: ConditionValueParser;
@@ -89,6 +90,7 @@ export function useFilterState(options: UseFilterStateOptions): UseFilterStateRe
       field: options.field,
       operator: currentOperator,
       value: conditionValue,
+      options: options.conditionOptions,
     };
     const filterValue: FilterValue = {
       condition,
