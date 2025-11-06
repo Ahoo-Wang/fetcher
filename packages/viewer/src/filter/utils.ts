@@ -24,3 +24,7 @@ export function isValidBetweenValue(value: any): boolean {
 export function isValidValue(value: any): boolean {
   return value !== null && value !== undefined;
 }
+
+export function currentTimeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}

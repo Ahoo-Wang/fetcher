@@ -70,7 +70,7 @@ const TimestampConditionValueParser: ConditionValueParser = (operator: Operator,
     }
     return [value[0]?.valueOf(), value[1]?.valueOf()];
   }
-  if (operator === Operator.RECENT_DAYS || operator === Operator.EARLIER_DAYS) {
+  if (DateTimeNumberValueOperators.has(operator)) {
     return value;
   }
   if (operator === Operator.BEFORE_TODAY && isDayjs(value)) {
@@ -82,7 +82,6 @@ const TimestampConditionValueParser: ConditionValueParser = (operator: Operator,
 export function DateTimeFilter(
   props: FilterProps,
 ) {
-
   const assemblyConditionFilterProps: AssemblyFilterProps = {
     ...props,
     supportedOperators: [
