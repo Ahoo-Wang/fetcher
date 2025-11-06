@@ -58,7 +58,6 @@ export function NumberFilter(props: FilterProps) {
           />;
         }
         case Operator.BETWEEN: {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { placeholder, ...restValue } = props.value ?? {};
           return (
             <NumberRange value={filterState.value} onChange={filterState.setValue} {...restValue}></NumberRange>
