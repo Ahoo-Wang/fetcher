@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { isValidBetweenValue, isValidValue } from '../../src';
+import { isValidBetweenValue, isValidValue, currentTimeZone } from '../../src';
 
 describe('isValidValue', () => {
   it('should return false for null', () => {
@@ -235,5 +235,23 @@ describe('isValidBetweenValue', () => {
 
   it('should return true for array with two RegExp', () => {
     expect(isValidBetweenValue([/a/, /b/])).toBe(true);
+  });
+});
+
+describe('currentTimeZone', () => {
+  it('should return a string', () => {
+    const result = currentTimeZone();
+    expect(typeof result).toBe('string');
+  });
+
+  it('should return a non-empty string', () => {
+    const result = currentTimeZone();
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('should return the same value as Intl.DateTimeFormat().resolvedOptions().timeZone', () => {
+    const expected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const result = currentTimeZone();
+    expect(result).toBe(expected);
   });
 });

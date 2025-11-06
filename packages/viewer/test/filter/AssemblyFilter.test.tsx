@@ -25,20 +25,20 @@ import { UseFilterStateReturn } from '../../src';
 
 // 测试辅助函数
 const createMockProps = (
-  overrides: Partial<AssemblyFilterProps<string>> = {},
-): AssemblyFilterProps<string> => {
+  overrides: Partial<AssemblyFilterProps> = {},
+): AssemblyFilterProps => {
   const validate = vi.fn((operator: Operator, value: string | undefined) => {
     return !!(operator && value);
   });
 
   const valueInputSupplier = vi.fn(
      
-    (_filterState: UseFilterStateReturn<string>) => (
+    (_filterState: UseFilterStateReturn) => (
       <Input value="test" onChange={() => {}} />
     ),
   );
 
-  const defaultProps: AssemblyFilterProps<string> = {
+  const defaultProps: AssemblyFilterProps = {
     field: {
       name: 'testField',
       label: 'Test Field',
@@ -62,7 +62,7 @@ const createMockProps = (
 };
 
 const renderWithRef = (
-  props: Partial<AssemblyFilterProps<string>> = {},
+  props: Partial<AssemblyFilterProps> = {},
 ) => {
   const ref = React.createRef<FilterRef>();
   const finalProps = createMockProps(props);

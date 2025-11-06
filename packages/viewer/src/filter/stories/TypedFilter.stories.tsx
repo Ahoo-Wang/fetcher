@@ -17,6 +17,7 @@ import { TypedFilter, TypedFilterProps } from '../TypedFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { Card, Divider, Typography } from 'antd';
 import { FilterValue } from '../types';
+import { DATE_TIME_FILTER_NAME } from '../DateTimeFilter';
 
 function TypedFilterStory(props: TypedFilterProps) {
   const [filterValue, setFilterValue] = useState<FilterValue>();
@@ -137,6 +138,17 @@ export const BoolFilter: Story = {
     field: {
       name: 'status',
       label: 'Status',
+      type: 'string',
+    },
+  },
+};
+
+export const DateTimeFilter: Story = {
+  args: {
+    type: DATE_TIME_FILTER_NAME,
+    field: {
+      name: 'createTime',
+      label: 'Create Time',
       type: 'string',
     },
   },

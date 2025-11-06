@@ -18,6 +18,7 @@ import { NUMBER_FILTER, NumberFilter } from './NumberFilter';
 import { FilterType } from './TypedFilter';
 import { SELECT_FILTER, SelectFilter } from './SelectFilter';
 import { BOOL_FILTER, BoolFilter } from './BoolFilter';
+import { DATE_TIME_FILTER_NAME, DateTimeFilter } from './DateTimeFilter';
 
 /**
  * Registry for managing filter components.
@@ -37,6 +38,7 @@ export class FilterRegistry {
     this.register(NUMBER_FILTER, NumberFilter);
     this.register(SELECT_FILTER, SelectFilter);
     this.register(BOOL_FILTER, BoolFilter);
+    this.register(DATE_TIME_FILTER_NAME, DateTimeFilter);
   }
 
   /**
