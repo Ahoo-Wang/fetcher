@@ -32,7 +32,7 @@ export interface UseFilterStateOptions extends RefAttributes<FilterRef> {
   value: Optional;
   onOperatorChangeValueConverter?: OnOperatorChangeValueConverter;
   validate?: ValidateValue;
-  valueParser?: ConditionValueParser;
+  conditionValueParser?: ConditionValueParser;
   onChange?: OnChange;
 }
 
@@ -44,7 +44,7 @@ export interface UseFilterStateReturn {
   reset: () => void;
 }
 
-const defaultValueValidate: ValidateValue = (operator: Operator, value: any): boolean => {
+const defaultValidateValue: ValidateValue = (operator: Operator, value: any): boolean => {
   if (!operator) return false;
   if (value === undefined || value === null || value === '') return false;
   if (Array.isArray(value) && value.length === 0) {
@@ -67,8 +67,8 @@ const defaultValueConverter: OnOperatorChangeValueConverter = (beforeOperator: S
 export function useFilterState(options: UseFilterStateOptions): UseFilterStateReturn {
   const [operator, setOperator] = useState<SelectOperator>(options.operator);
   const [value, setValue] = useState<Optional>(options.value);
-  const validate = options.validate ?? defaultValueValidate;
-  const valueParser = options.valueParser ?? defaultConditionValueParser;
+  const validate = options.validate ?? defaultValidateValue;
+  const valueParser = options.conditionValueParser ?? defaultConditionValueParser;
   const valueConverter = options.onOperatorChangeValueConverter ?? defaultValueConverter;
   const resolveFilterValue = (currentOperator: SelectOperator, currentValue: Optional): Optional<FilterValue> => {
     if (currentOperator === ExtendedOperator.UNDEFINED) {

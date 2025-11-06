@@ -32,7 +32,7 @@ export interface AssemblyFilterProps<ValuePropsType extends FilterValueProps = F
   supportedOperators: SelectOperator[];
   onOperatorChangeValueConverter?: OnOperatorChangeValueConverter;
   validate?: ValidateValue;
-  valueParser?: ConditionValueParser;
+  conditionValueParser?: ConditionValueParser;
   valueInputRender?: ValueInputRender;
 }
 
@@ -61,7 +61,7 @@ export function AssemblyFilter(
     ref: ref,
     onOperatorChangeValueConverter: props.onOperatorChangeValueConverter,
     validate: props.validate,
-    valueParser: props.valueParser,
+    conditionValueParser: props.conditionValueParser,
     onChange: props.onChange,
   });
   const valueInput = props.valueInputRender?.(filterState);
