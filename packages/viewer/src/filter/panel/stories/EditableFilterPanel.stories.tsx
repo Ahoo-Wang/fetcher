@@ -61,6 +61,14 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
     filters: [
       {
         field: {
+          name: 'id',
+          label: 'ID',
+          type: 'string',
+        },
+        component: 'id',
+      },
+      {
+        field: {
           name: 'name',
           label: 'Name',
           type: 'string',
@@ -83,6 +91,14 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
         },
         component: 'text',
       },
+      {
+        field: {
+          name: 'isActive',
+          label: 'Is Active',
+          type: 'bool',
+        },
+        component: 'bool',
+      },
     ],
   },
   {
@@ -94,7 +110,7 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
           label: 'Status',
           type: 'string',
         },
-        component: 'text',
+        component: 'select',
       },
       {
         field: {
@@ -103,6 +119,14 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
           type: 'string',
         },
         component: 'text',
+      },
+      {
+        field: {
+          name: 'createdAt',
+          label: 'Created At',
+          type: 'datetime',
+        },
+        component: 'datetime',
       },
     ],
   },
@@ -165,5 +189,227 @@ export const MultipleGroups: Story = {
         ],
       },
     ],
+  },
+};
+
+export const WithBoolFilter: Story = {
+  args: {
+    filters: [
+      {
+        key: 'isActive',
+        type: 'bool',
+        field: {
+          name: 'isActive',
+          label: 'Is Active',
+          type: 'bool',
+        },
+        operator: {
+          style: {
+            width: '100%',
+          },
+        },
+      },
+    ],
+    availableFilters: [
+      {
+        label: 'Boolean Filters',
+        filters: [
+          {
+            field: {
+              name: 'isActive',
+              label: 'Is Active',
+              type: 'bool',
+            },
+            component: 'bool',
+          },
+        ],
+      },
+    ],
+  },
+};
+
+export const WithSelectFilter: Story = {
+  args: {
+    filters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: {
+          name: 'status',
+          label: 'Status',
+          type: 'string',
+        },
+        value: {
+          style: {
+            width: '100%',
+          },
+          options: [
+            {
+              label: 'Active',
+              value: 'active',
+            },
+            {
+              label: 'Inactive',
+              value: 'inactive',
+            },
+          ],
+        },
+      },
+    ],
+    availableFilters: [
+      {
+        label: 'Select Filters',
+        filters: [
+          {
+            field: {
+              name: 'status',
+              label: 'Status',
+              type: 'string',
+            },
+            component: 'select',
+          },
+        ],
+      },
+    ],
+  },
+};
+
+export const WithDateTimeFilter: Story = {
+  args: {
+    filters: [
+      {
+        key: 'createdAt',
+        type: 'datetime',
+        field: {
+          name: 'createdAt',
+          label: 'Created At',
+          type: 'datetime',
+        },
+        operator: {
+          defaultValue: Operator.TODAY,
+        },
+      },
+    ],
+    availableFilters: [
+      {
+        label: 'DateTime Filters',
+        filters: [
+          {
+            field: {
+              name: 'createdAt',
+              label: 'Created At',
+              type: 'datetime',
+            },
+            component: 'datetime',
+          },
+        ],
+      },
+    ],
+  },
+};
+
+export const Comprehensive: Story = {
+  args: {
+    filters: [
+      {
+        key: 'id',
+        type: 'id',
+        field: {
+          name: 'id',
+          label: 'Id',
+          type: 'string',
+        },
+        operator: {
+          defaultValue: Operator.ID,
+        },
+        value: {
+          defaultValue: 'id',
+        },
+      },
+      {
+        key: 'name',
+        type: 'text',
+        field: {
+          name: 'name',
+          label: 'Name',
+          type: 'string',
+        },
+        operator: {
+          defaultValue: Operator.EQ,
+        },
+        value: {
+          defaultValue: 'test',
+        },
+      },
+      {
+        key: 'age',
+        type: 'number',
+        field: {
+          name: 'age',
+          label: 'Age',
+          type: 'number',
+        },
+        operator: {
+          defaultValue: Operator.GT,
+        },
+        value: {
+          style: {
+            width: '100%',
+          },
+          defaultValue: 18,
+        },
+      },
+      {
+        key: 'isActive',
+        type: 'bool',
+        field: {
+          name: 'isActive',
+          label: 'Is Active',
+          type: 'bool',
+        },
+        operator: {
+          style: {
+            width: '100%',
+          },
+        },
+      },
+      {
+        key: 'status',
+        type: 'select',
+        field: {
+          name: 'status',
+          label: 'Status',
+          type: 'string',
+        },
+        value: {
+          style: {
+            width: '100%',
+          },
+          options: [
+            {
+              label: 'Active',
+              value: 'active',
+            },
+            {
+              label: 'Inactive',
+              value: 'inactive',
+            },
+          ],
+        },
+      },
+      {
+        key: 'createdAt',
+        type: 'datetime',
+        field: {
+          name: 'createdAt',
+          label: 'Created At',
+          type: 'datetime',
+        },
+        operator: {
+          defaultValue: Operator.TODAY,
+        },
+      },
+    ],
+    availableFilters: sampleAvailableFilters,
   },
 };
