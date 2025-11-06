@@ -12,7 +12,7 @@
  */
 
 import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
-import { ConditionCapable } from '@ahoo-wang/fetcher-wow';
+import { ConditionCapable, ConditionOptions } from '@ahoo-wang/fetcher-wow';
 import { SelectProps } from 'antd/es/select';
 import React, { RefAttributes } from 'react';
 import { StyleCapable } from '../types';
@@ -57,6 +57,7 @@ export interface FilterProps<ValuePropsType extends FilterValueProps = FilterVal
   operator?: FilterOperatorProps;
   value?: ValuePropsType;
   onChange?: (value?: FilterValue) => void;
+  conditionOptions?: ConditionOptions;
 }
 
 export type FilterComponent = React.FC<FilterProps>;
