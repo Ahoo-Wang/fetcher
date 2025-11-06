@@ -11,17 +11,16 @@
  * limitations under the License.
  */
 
-export * from './operator';
-export * from './panel';
-export * from './AssemblyFilter';
-export * from './BoolFilter';
-export * from './FallbackFilter';
-export * from './filterRegistry';
-export * from './IdFilter';
-export * from './NumberFilter';
-export * from './SelectFilter';
-export * from './TextFilter';
-export * from './TypedFilter';
-export * from './types';
-export * from './useFilterState';
-export * from './utils';
+export function isValidBetweenValue(value: any): boolean {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+  if (value.length !== 2) {
+    return false;
+  }
+  return isValidValue(value[0]) && isValidValue(value[1]);
+}
+
+export function isValidValue(value: any): boolean {
+  return value !== null && value !== undefined;
+}
