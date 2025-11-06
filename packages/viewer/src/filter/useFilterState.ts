@@ -22,6 +22,7 @@ export type OnOperatorChangeValueConverter = (beforeOperator: SelectOperator, af
 export type OnChange = (condition: Optional<FilterValue>) => void;
 export type ValidateValue = (operator: Operator, value: Optional) => boolean;
 export type ConditionValueParser = (operator: Operator, value: Optional) => Optional;
+export type FilterValueConverter = (filterValue: FilterValue) => Optional<FilterValue>;
 export const TrueValidateValue: ValidateValue = (): boolean => {
   return true;
 };
@@ -33,6 +34,7 @@ export interface UseFilterStateOptions extends RefAttributes<FilterRef> {
   onOperatorChangeValueConverter?: OnOperatorChangeValueConverter;
   validate?: ValidateValue;
   conditionValueParser?: ConditionValueParser;
+  filterValueConverter?: FilterValueConverter;
   onChange?: OnChange;
 }
 
@@ -64,12 +66,17 @@ const defaultValueConverter: OnOperatorChangeValueConverter = (beforeOperator: S
   return value;
 };
 
+const defaultFilterValueConverter: FilterValueConverter = (filterValue: FilterValue): Optional<FilterValue> => {
+  return filterValue;
+};
+
 export function useFilterState(options: UseFilterStateOptions): UseFilterStateReturn {
   const [operator, setOperator] = useState<SelectOperator>(options.operator);
   const [value, setValue] = useState<Optional>(options.value);
   const validate = options.validate ?? defaultValidateValue;
   const valueParser = options.conditionValueParser ?? defaultConditionValueParser;
   const valueConverter = options.onOperatorChangeValueConverter ?? defaultValueConverter;
+  const filterValueConverter = options.filterValueConverter ?? defaultFilterValueConverter;
   const resolveFilterValue = (currentOperator: SelectOperator, currentValue: Optional): Optional<FilterValue> => {
     if (currentOperator === ExtendedOperator.UNDEFINED) {
       return undefined;
@@ -83,9 +90,10 @@ export function useFilterState(options: UseFilterStateOptions): UseFilterStateRe
       operator: currentOperator,
       value: conditionValue,
     };
-    return {
+    const filterValue: FilterValue = {
       condition,
     };
+    return filterValueConverter(filterValue);
   };
   const setOperatorFn = (newOperator: SelectOperator) => {
     const afterValue = valueConverter(operator, newOperator, value);
