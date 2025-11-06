@@ -160,10 +160,3 @@ export const Default: Story = {
     ...defaultFilterPanelProps,
   },
 };
-
-export const WithActions: Story = {
-  args: {
-    ...defaultFilterPanelProps,
-    actions: <Button>Add Filter</Button>,
-  },
-};
