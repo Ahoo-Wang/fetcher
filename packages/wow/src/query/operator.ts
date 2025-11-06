@@ -238,3 +238,12 @@ export enum Operator {
    */
   RAW = 'RAW',
 }
+
+const EMPTY_VALUE_OPERATORS = new Set([Operator.EXISTS,
+  Operator.TODAY,
+  Operator.TOMORROW,
+  Operator.THIS_WEEK,
+  Operator.NEXT_WEEK,
+  Operator.LAST_WEEK,
+  Operator.THIS_MONTH,
+  Operator.LAST_MONTH]);

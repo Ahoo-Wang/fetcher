@@ -55,7 +55,7 @@ const DateTimeOnOperatorChangeValueConverter: OnOperatorChangeValueConverter = (
   }
   return undefined;
 };
-const TimestampValueParser: ConditionValueParser = (operator: Operator, value: Optional<number | Dayjs | Dayjs[]>) => {
+const TimestampConditionValueParser: ConditionValueParser = (operator: Operator, value: Optional<number | Dayjs | Dayjs[]>) => {
   if (!value) {
     return undefined;
   }
@@ -99,7 +99,7 @@ export function DateTimeFilter(
       Operator.EARLIER_DAYS,
     ],
     onOperatorChangeValueConverter: DateTimeOnOperatorChangeValueConverter,
-    valueParser: TimestampValueParser,
+    conditionValueParser: TimestampConditionValueParser,
     valueInputRender: (
       filterState: UseFilterStateReturn,
     ) => {
