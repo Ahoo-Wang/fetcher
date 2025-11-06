@@ -15,7 +15,7 @@ import { FilterProps } from './types';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { UseFilterStateReturn } from './useFilterState';
-import { DatePicker, InputNumber } from 'antd';
+import { DatePicker, InputNumber, TimePicker } from 'antd';
 
 export const DATE_TIME_FILTER_NAME = 'datetime';
 type DateTimeValueType = number | string | (number | string)[]
@@ -23,9 +23,6 @@ type DateTimeValueType = number | string | (number | string)[]
 export function DateTimeFilter(
   props: FilterProps<DateTimeValueType>,
 ) {
-  const handleChange = (value: DateTimeValueType) => {
-    props.onChange?.(value);
-  };
   const assemblyConditionFilterProps: AssemblyFilterProps<DateTimeValueType> = {
     ...props,
     supportedOperators: [
@@ -51,7 +48,6 @@ export function DateTimeFilter(
       switch (filterState.operator) {
         case Operator.BETWEEN: {
           return (<DatePicker.RangePicker
-            showTime
             onChange={filterState.setValue}
             {...props.value}
           />);
@@ -70,15 +66,15 @@ export function DateTimeFilter(
           return (<InputNumber min={1} onChange={filterState.setValue} {...props.value} />);
         }
         case Operator.BEFORE_TODAY: {
-          return (<DatePicker
-            picker="time"
-            onChange={filterState.setValue}
+          return (<TimePicker
+            onChange={(date, dateString) => {
+              filterState.setValue(dateString);
+            }}
             {...props.value}
           />);
         }
         default: {
           return (<DatePicker
-            showTime
             onChange={filterState.setValue}
             {...props.value}
           />);

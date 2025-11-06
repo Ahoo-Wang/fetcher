@@ -56,7 +56,8 @@
     "antd": "catalog:",
     "@ant-design/icons": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "dayjs": "catalog:"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
