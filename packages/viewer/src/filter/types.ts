@@ -41,8 +41,8 @@ export interface FilterOperatorProps extends Omit<SelectProps<SelectOperator>, '
   supportedOperators?: SelectOperator[];
 }
 
-export interface FilterValueProps<ValueType = any> extends StyleCapable {
-  defaultValue?: ValueType;
+export interface FilterValueProps extends StyleCapable {
+  defaultValue?: any;
   placeholder?: string;
 
   [key: string]: any;
@@ -51,7 +51,7 @@ export interface FilterValueProps<ValueType = any> extends StyleCapable {
 export interface FilterValue extends ConditionCapable {
 }
 
-export interface FilterProps<ValueType = any, ValuePropsType extends FilterValueProps = FilterValueProps<ValueType>> extends AttributesCapable, RefAttributes<FilterRef>, StyleCapable {
+export interface FilterProps<ValuePropsType extends FilterValueProps = FilterValueProps> extends AttributesCapable, RefAttributes<FilterRef>, StyleCapable {
   field: FilterField;
   label?: FilterLabelProps;
   operator?: FilterOperatorProps;
