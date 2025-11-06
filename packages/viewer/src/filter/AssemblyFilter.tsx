@@ -13,7 +13,13 @@
 
 import { FilterProps, FilterValueProps } from './types';
 import { OPERATOR_zh_CN } from './operator';
-import { OnOperatorChangeValueConverter, useFilterState, UseFilterStateReturn, ValidateValue } from './useFilterState';
+import {
+  ConditionValueParser,
+  OnOperatorChangeValueConverter,
+  useFilterState,
+  UseFilterStateReturn,
+  ValidateValue,
+} from './useFilterState';
 import { Button, Select, Space } from 'antd';
 import { ReactNode } from 'react';
 import { SelectOperator } from './operator';
@@ -22,10 +28,11 @@ export type ValueInputRender<ValueType = any> = (
   filterState: UseFilterStateReturn<ValueType>,
 ) => ReactNode | null;
 
-export interface AssemblyFilterProps<ValueType = any, ValuePropsType extends FilterValueProps = FilterValueProps<ValueType>> extends FilterProps<ValueType, ValuePropsType> {
+export interface AssemblyFilterProps<ValueType = any, ConditionValueType = ValueType, ValuePropsType extends FilterValueProps = FilterValueProps<ValueType>> extends FilterProps<ValueType, ValuePropsType> {
   supportedOperators: SelectOperator[];
-  valueConverter?: OnOperatorChangeValueConverter;
+  onOperatorChangeValueConverter?: OnOperatorChangeValueConverter<ValueType>;
   validate?: ValidateValue<ValueType>;
+  valueParser?: ConditionValueParser<ValueType, ConditionValueType>;
   valueInputRender?: ValueInputRender<ValueType>;
 }
 
@@ -52,8 +59,9 @@ export function AssemblyFilter<ValueType = any>(
     operator: initialOperator,
     value: props.value?.defaultValue,
     ref: ref,
-    valueConverter: props.valueConverter,
+    onOperatorChangeValueConverter: props.onOperatorChangeValueConverter,
     validate: props.validate,
+    valueParser: props.valueParser,
     onChange: props.onChange,
   });
   const valueInput = props.valueInputRender?.(filterState);
