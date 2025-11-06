@@ -239,7 +239,7 @@ export enum Operator {
   RAW = 'RAW',
 }
 
-const EMPTY_VALUE_OPERATORS = new Set([Operator.EXISTS,
+export const EMPTY_VALUE_OPERATORS = new Set([Operator.EXISTS,
   Operator.TODAY,
   Operator.TOMORROW,
   Operator.THIS_WEEK,
