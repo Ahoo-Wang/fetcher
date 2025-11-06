@@ -16,6 +16,7 @@ import { RefAttributes, useImperativeHandle, useState } from 'react';
 import { FilterRef, FilterValue } from './types';
 import { Optional } from '../types';
 import { ExtendedOperator, SelectOperator } from './operator';
+import { isValidBetweenValue } from './utils';
 
 export type OnOperatorChangeValueConverter = (beforeOperator: SelectOperator, afterOperator: SelectOperator, value: Optional) => Optional
 export type OnChange = (condition: Optional<FilterValue>) => void;
@@ -46,7 +47,13 @@ export interface UseFilterStateReturn<ValueType = any> {
 const defaultValueValidate: ValidateValue = (operator: Operator, value: any): boolean => {
   if (!operator) return false;
   if (value === undefined || value === null || value === '') return false;
-  return !(Array.isArray(value) && value.length === 0);
+  if (Array.isArray(value) && value.length === 0) {
+    return false;
+  }
+  if (operator === Operator.BETWEEN) {
+    return isValidBetweenValue(value);
+  }
+  return true;
 };
 
 const defaultConditionValueParser: ConditionValueParser = (operator: Operator, value: any): any => {
