@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Condition, ConditionOptions, Operator } from '@ahoo-wang/fetcher-wow';
+import { Condition, ConditionOptions, EMPTY_VALUE_OPERATORS, Operator } from '@ahoo-wang/fetcher-wow';
 import { RefAttributes, useImperativeHandle, useState } from 'react';
 import { FilterRef, FilterValue } from './types';
 import { Optional } from '../types';
@@ -49,6 +49,9 @@ export interface UseFilterStateReturn {
 
 const defaultValidateValue: ValidateValue = (operator: Operator, value: any): boolean => {
   if (!operator) return false;
+  if (EMPTY_VALUE_OPERATORS.has(operator)) {
+    return true;
+  }
   if (value === undefined || value === null || value === '') return false;
   if (Array.isArray(value) && value.length === 0) {
     return false;
