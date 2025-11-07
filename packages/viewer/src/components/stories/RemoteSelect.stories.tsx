@@ -21,7 +21,7 @@ import { DefaultOptionType } from 'antd/lib/select';
 // Real API functions using JSONPlaceholder
 const fetchPosts = async (
   searchQuery: string,
-): Promise<DefaultOptionType[]> => {
+): Promise<any[]> => {
   const response = await fetcher.get('https://jsonplaceholder.typicode.com/posts', {
     urlParams: {
       query: { userId: searchQuery },
@@ -71,7 +71,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => {
     const [value, setValue] = useState<any>();
-    const [option, setOption] = useState<DefaultOptionType>();
+    const [option, setOption] = useState<any>();
     return (
       <Card>
         <RemoteSelect
