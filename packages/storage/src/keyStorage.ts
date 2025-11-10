@@ -73,12 +73,11 @@ export interface KeyStorageOptions<Deserialized> {
  * @template Deserialized The type of the value being stored
  */
 export class KeyStorage<Deserialized>
-  implements StorageListenable<Deserialized>
-{
+  implements StorageListenable<Deserialized> {
   private readonly key: string;
   private readonly serializer: Serializer<string, Deserialized>;
   private readonly storage: Storage;
-  private readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
+  public readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
   private cacheValue: Deserialized | null = null;
   private readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> =
     {
