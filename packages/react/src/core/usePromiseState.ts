@@ -119,13 +119,13 @@ export function usePromiseState<R = unknown, E = FetcherError>(
     options?.initialStatus ?? PromiseStatus.IDLE,
   );
   const [result, setResult] = useState<R | undefined>(undefined);
-  const [error, setErrorState] = useState<E | undefined>(undefined);
+  const [error, setError] = useState<E | undefined>(undefined);
   const isMounted = useMounted();
   const latestOptions = useLatest(options);
   const setLoadingFn = useCallback(() => {
     if (isMounted()) {
       setStatus(PromiseStatus.LOADING);
-      setErrorState(undefined);
+      setError(undefined);
     }
   }, [isMounted]);
 
@@ -134,7 +134,7 @@ export function usePromiseState<R = unknown, E = FetcherError>(
       if (isMounted()) {
         setResult(result);
         setStatus(PromiseStatus.SUCCESS);
-        setErrorState(undefined);
+        setError(undefined);
         try {
           await latestOptions.current?.onSuccess?.(result);
         } catch (callbackError) {
@@ -149,7 +149,7 @@ export function usePromiseState<R = unknown, E = FetcherError>(
   const setErrorFn = useCallback(
     async (error: E) => {
       if (isMounted()) {
-        setErrorState(error);
+        setError(error);
         setStatus(PromiseStatus.ERROR);
         setResult(undefined);
         try {
@@ -166,7 +166,7 @@ export function usePromiseState<R = unknown, E = FetcherError>(
   const setIdleFn = useCallback(() => {
     if (isMounted()) {
       setStatus(PromiseStatus.IDLE);
-      setErrorState(undefined);
+      setError(undefined);
       setResult(undefined);
     }
   }, [isMounted]);
