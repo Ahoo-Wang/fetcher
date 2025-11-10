@@ -19,3 +19,4 @@ export * from './useMounted';
 export * from './useRefs';
 export * from './useDebouncedCallback';
 export * from './useDebouncedExecutePromise';
+export * from './useForceUpdate';
