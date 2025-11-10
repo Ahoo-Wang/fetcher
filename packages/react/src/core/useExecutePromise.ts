@@ -55,11 +55,11 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
   /**
    * Function to execute a promise supplier or promise.
    * Manages the loading state, handles errors, and updates the result state.
-   * @param input - A function that returns a Promise or a Promise directly.
+   * @param input - A function that returns a Promise.
    * @throws {Error} If the component is unmounted when execute is called.
    * @throws {E} If propagateError is true and the promise rejects.
    */
-  execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<void>;
+  execute: (input: PromiseSupplier<R>) => Promise<void>;
   /**
    * Function to reset the state to initial values.
    * Clears loading, result, error, and sets status to idle.
@@ -128,13 +128,6 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  * };
  * ```
  *
- * @example
- * Executing a promise directly instead of a supplier function:
- * ```typescript
- * const { execute } = useExecutePromise<number>();
- * const promise = fetch('/api/count').then(r => r.json());
- * const result = await execute(promise);
- * ```
  */
 export function useExecutePromise<R = unknown, E = FetcherError>(
   options?: UseExecutePromiseOptions<R, E>,
@@ -161,15 +154,14 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
    * @throws {E} If propagateError is true and the promise rejects.
    */
   const execute = useCallback(
-    async (input: PromiseSupplier<R> | Promise<R>): Promise<void> => {
+    async (input: PromiseSupplier<R>): Promise<void> => {
       if (!isMounted()) {
         throw new Error('Component is unmounted');
       }
       const currentRequestId = requestId.generate();
       setLoading();
       try {
-        const promise = typeof input === 'function' ? input() : input;
-        const data = await promise;
+        const data = await input();
 
         if (isMounted() && requestId.isLatest(currentRequestId)) {
           await setSuccess(data);
