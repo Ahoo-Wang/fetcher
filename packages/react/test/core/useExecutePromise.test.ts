@@ -61,8 +61,7 @@ describe('useExecutePromise', () => {
     const { result } = renderHook(() => useExecutePromise<string>());
 
     await act(async () => {
-      const resolvedValue = await result.current.execute(mockProvider);
-      expect(resolvedValue).toBe(error);
+      await result.current.execute(mockProvider);
     });
 
     expect(mockProvider).toHaveBeenCalled();
@@ -189,8 +188,7 @@ describe('useExecutePromise', () => {
     );
 
     await act(async () => {
-      const resolvedValue = await result.current.execute(mockProvider);
-      expect(resolvedValue).toBe(error);
+      await result.current.execute(mockProvider);
     });
 
     expect(mockProvider).toHaveBeenCalled();
@@ -207,8 +205,7 @@ describe('useExecutePromise', () => {
     const { result } = renderHook(() => useExecutePromise<string>({}));
 
     await act(async () => {
-      const resolvedValue = await result.current.execute(mockProvider);
-      expect(resolvedValue).toBe(error);
+      await result.current.execute(mockProvider);
     });
 
     expect(mockProvider).toHaveBeenCalled();

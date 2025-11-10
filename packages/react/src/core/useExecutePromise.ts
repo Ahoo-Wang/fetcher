@@ -56,11 +56,10 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
    * Function to execute a promise supplier or promise.
    * Manages the loading state, handles errors, and updates the result state.
    * @param input - A function that returns a Promise or a Promise directly.
-   * @returns A Promise that resolves to the result on success, or the error if propagateError is false.
    * @throws {Error} If the component is unmounted when execute is called.
    * @throws {E} If propagateError is true and the promise rejects.
    */
-  execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<R | E>;
+  execute: (input: PromiseSupplier<R> | Promise<R>) => Promise<void>;
   /**
    * Function to reset the state to initial values.
    * Clears loading, result, error, and sets status to idle.
@@ -162,7 +161,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
    * @throws {E} If propagateError is true and the promise rejects.
    */
   const execute = useCallback(
-    async (input: PromiseSupplier<R> | Promise<R>): Promise<R | E> => {
+    async (input: PromiseSupplier<R> | Promise<R>): Promise<void> => {
       if (!isMounted()) {
         throw new Error('Component is unmounted');
       }
@@ -175,7 +174,6 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
         if (isMounted() && requestId.isLatest(currentRequestId)) {
           await setSuccess(data);
         }
-        return data;
       } catch (err) {
         if (isMounted() && requestId.isLatest(currentRequestId)) {
           await setError(err as E);
@@ -183,7 +181,6 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
         if (propagateError) {
           throw err;
         }
-        return err as E;
       }
     },
     [setLoading, setSuccess, setError, isMounted, requestId, propagateError],
