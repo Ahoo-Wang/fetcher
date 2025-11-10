@@ -44,11 +44,6 @@ import { useMounted } from './useMounted';
  * ```
  */
 export function useForceUpdate(): () => void {
-  const isMounted = useMounted();
   const [, forceUpdate] = useReducer(x => x + 1, 0);
-  return useCallback(() => {
-    if (isMounted()) {
-      forceUpdate();
-    }
-  }, [isMounted, forceUpdate]);
+  return forceUpdate;
 }
