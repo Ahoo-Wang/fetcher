@@ -11,8 +11,7 @@
  * limitations under the License.
  */
 
-import { useCallback, useReducer } from 'react';
-import { useMounted } from './useMounted';
+import { useReducer } from 'react';
 
 /**
  * A React hook that returns a function to force a component to re-render.
