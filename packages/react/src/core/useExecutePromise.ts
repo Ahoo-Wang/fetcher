@@ -38,11 +38,14 @@ export interface UseExecutePromiseOptions<R, E = unknown>
 }
 
 /**
- * Type definition for a function that returns a Promise.
+ * Type definition for a function that returns a Promise with optional abort controller support.
  * This is used as input to the execute function, allowing lazy evaluation of promises.
+ * The abort controller can be used to cancel the promise if needed.
  * @template R - The type of value the promise will resolve to.
  */
-export type PromiseSupplier<R> = (abortController?: AbortController) => Promise<R>;
+export type PromiseSupplier<R> = (
+  abortController: AbortController,
+) => Promise<R>;
 
 /**
  * Interface defining the return type of the useExecutePromise hook.
@@ -53,9 +56,10 @@ export type PromiseSupplier<R> = (abortController?: AbortController) => Promise<
 export interface UseExecutePromiseReturn<R, E = FetcherError>
   extends PromiseState<R, E> {
   /**
-   * Function to execute a promise supplier or promise.
+   * Function to execute a promise supplier with automatic abort support.
+   * Automatically cancels any previous ongoing request before starting a new one.
    * Manages the loading state, handles errors, and updates the result state.
-   * @param input - A function that returns a Promise.
+   * @param input - A function that returns a Promise, optionally receiving an AbortController.
    * @throws {Error} If the component is unmounted when execute is called.
    * @throws {E} If propagateError is true and the promise rejects.
    */
@@ -68,9 +72,17 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
 }
 
 /**
- * A React hook for managing asynchronous operations with proper state handling.
+ * A React hook for managing asynchronous operations with proper state handling and abort support.
  * Provides a way to execute promises while automatically managing loading states,
- * handling errors, and preventing state updates on unmounted components or stale requests.
+ * handling errors, preventing state updates on unmounted components or stale requests,
+ * and supporting request cancellation through AbortController.
+ *
+ * Key features:
+ * - Automatic request cancellation when new requests are initiated
+ * - AbortController integration for manual cancellation
+ * - Race condition protection using request IDs
+ * - Comprehensive state management (idle, loading, success, error)
+ * - Memory leak prevention with automatic cleanup on unmount
  *
  * @template R - The type of the result value, defaults to unknown.
  * @template E - The type of the error value, defaults to FetcherError.
@@ -81,20 +93,22 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  * @throws {E} When propagateError is true and the executed promise rejects.
  *
  * @example
- * Basic usage with state management:
+ * Basic usage with automatic abort support:
  * ```typescript
  * import { useExecutePromise } from '@ahoo-wang/fetcher-react';
  *
  * function MyComponent() {
  *   const { loading, result, error, execute, reset } = useExecutePromise<string>();
  *
- *   const fetchData = async () => {
- *     const response = await fetch('/api/data');
+ *   const fetchData = async (abortController: AbortController) => {
+ *     const response = await fetch('/api/data', {
+ *       signal: abortController?.signal, // Optional: use abort signal
+ *     });
  *     return response.text();
  *   };
  *
  *   const handleFetch = () => {
- *     execute(fetchData);
+ *     execute(fetchData); // Automatically cancels previous request
  *   };
  *
  *   const handleReset = () => {
@@ -147,10 +161,10 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
   const abortControllerRef = useRef<AbortController | undefined>(undefined);
   const propagateError = options?.propagateError;
   /**
-   * Execute a promise supplier or promise and manage its state.
+   * Execute a promise supplier with automatic abort support.
+   * Automatically cancels any previous ongoing request before starting a new one.
    * Handles loading states, error propagation, and prevents updates on unmounted components.
-   * @param input - A function that returns a Promise or a Promise to be executed.
-   * @returns A Promise that resolves with the result on success, or the error if propagateError is false.
+   * @param input - A function that returns a Promise, optionally receiving an AbortController for cancellation.
    * @throws {Error} If the component is unmounted when execute is called.
    * @throws {E} If propagateError is true and the promise rejects.
    */
@@ -188,19 +202,16 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
         }
       }
     },
-    [setLoading, setSuccess, setError, setIdle, isMounted, requestId, propagateError],
+    [
+      setLoading,
+      setSuccess,
+      setError,
+      setIdle,
+      isMounted,
+      requestId,
+      propagateError,
+    ],
   );
-
-  /**
-   * Reset the state to initial values.
-   * Clears loading, result, error, and sets status to idle.
-   * Only works if the component is still mounted.
-   */
-  const reset = useCallback(() => {
-    if (isMounted()) {
-      setIdle();
-    }
-  }, [setIdle, isMounted]);
 
   useEffect(() => {
     return () => {
@@ -216,8 +227,8 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
       error,
       status,
       execute,
-      reset,
+      reset: setIdle,
     }),
-    [loading, result, error, status, execute, reset],
+    [loading, result, error, status, execute, setIdle],
   );
 }
