@@ -22,7 +22,8 @@ const { Text } = Typography;
  * @template RecordType - The type of the record containing the cell data.
  */
 export interface TextCellProps<RecordType = any>
-  extends CellProps<string, RecordType, TextProps> {}
+  extends CellProps<string, RecordType, TextProps> {
+}
 
 /**
  * Constant representing the type identifier for text cells.
@@ -34,12 +35,7 @@ export const TEXT_CELL_TYPE = 'text';
  * @template RecordType - The type of the record containing the cell data.
  * @param props - The props for the text cell, including value, record, index, and attributes.
  * @returns A React element representing the text cell.
- * @example
- * ```tsx
- * <TextCell value="Hello World" record={{ id: 1 }} index={0} attributes={{ ellipsis: true }} />
- * ```
  */
 export function TextCell<RecordType = any>(props: TextCellProps<RecordType>) {
-  'use no memo';
   return <Text {...props.attributes}>{props.data.value}</Text>;
 }
