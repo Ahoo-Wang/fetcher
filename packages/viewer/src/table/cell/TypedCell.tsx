@@ -14,14 +14,21 @@
 import { cellRegistry } from './cellRegistry';
 import type * as React from 'react';
 
-export type CellType = string
+/**
+ * Represents the type identifier for different cell components.
+ */
+export type CellType = string;
 
+export type TypedCellRenderer<RecordType = any> = (
+  value: any,
+  record: RecordType,
+  index: number,
+) => React.ReactNode | Promise<React.ReactNode>;
 
-export type TypedCellRenderer<RecordType = any> = (value: any,
-                                                   record: RecordType,
-                                                   index: number) => React.ReactNode | Promise<React.ReactNode>;
-
-export function typedCellRender<RecordType = any, Attributes = any>(type: CellType, attributes?: Attributes): TypedCellRenderer<RecordType> | undefined {
+export function typedCellRender<RecordType = any, Attributes = any>(
+  type: CellType,
+  attributes?: Attributes,
+): TypedCellRenderer<RecordType> | undefined {
   const CellComponent = cellRegistry.get(type);
   if (!CellComponent) {
     return undefined;
