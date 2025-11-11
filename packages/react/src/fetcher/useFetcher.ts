@@ -26,9 +26,7 @@ import {
   UseExecutePromiseReturn,
 } from '../core';
 import { useCallback, useState, useMemo } from 'react';
-import {
-  useLatest,
-} from '../core';
+import { useLatest } from '../core';
 
 /**
  * Configuration options for the useFetcher hook.
@@ -41,7 +39,6 @@ export interface UseFetcherOptions<R, E = FetcherError>
   extends RequestOptions,
     FetcherCapable,
     UseExecutePromiseOptions<R, E> {
-
 }
 
 /**
@@ -61,8 +58,9 @@ export interface UseFetcherReturn<R, E = FetcherError>
   exchange?: FetchExchange;
 
   /**
-   * Function to execute a fetch request.
-   * Automatically cancels any ongoing request before starting a new one.
+   * Function to execute a fetch request with automatic abort support.
+   * Automatically cancels any ongoing request before starting a new one using AbortController.
+   * The abort controller is automatically passed to the underlying fetch operation.
    *
    * @param request - The fetch request configuration including URL, method, headers, etc.
    * @returns Promise that resolves when the fetch operation completes (success or failure)
@@ -72,15 +70,16 @@ export interface UseFetcherReturn<R, E = FetcherError>
 
 /**
  * A React hook for managing asynchronous HTTP fetch operations with comprehensive state handling,
- * race condition protection, and automatic cleanup. Provides a clean interface for making API calls
- * with loading states, error handling, and request cancellation.
+ * race condition protection, automatic cleanup, and built-in abort support. Provides a clean interface
+ * for making API calls with loading states, error handling, and request cancellation.
  *
  * Key features:
- * - Automatic request cancellation on component unmount or new requests
+ * - Automatic request cancellation on component unmount or new requests via AbortController
  * - Race condition protection using request IDs
  * - Comprehensive state management (idle, loading, success, error)
  * - Type-safe result and error handling
  * - Integration with fetcher ecosystem for advanced features
+ * - Memory leak prevention with automatic abort controller cleanup
  *
  * @template R - The type of the expected result from the fetch operation
  * @template E - The type of error that may be thrown (defaults to FetcherError)
@@ -93,7 +92,7 @@ export interface UseFetcherReturn<R, E = FetcherError>
  *                        HTTP errors, or result extraction problems
  * @throws {Error} When invalid options are provided or fetcher configuration is incorrect
  *
- * @example Basic GET request
+ * @example Basic GET request with automatic abort
  * ```typescript
  * import { useFetcher } from '@ahoo-wang/fetcher-react';
  * import { ResultExtractors } from '@ahoo-wang/fetcher';
@@ -110,6 +109,7 @@ export interface UseFetcherReturn<R, E = FetcherError>
  *     });
  *   };
  *
+ *   // Multiple calls to fetchUser() will automatically cancel previous requests
  *   // Handle loading, error, and success states in your component
  * }
  * ```
@@ -180,27 +180,34 @@ export function useFetcher<R, E = FetcherError>(
   const latestOptions = useLatest(options);
   const currentFetcher = getFetcher(fetcher);
   /**
-   * Execute the fetch operation.
-   * Cancels any ongoing fetch before starting a new one.
+   * Execute the fetch operation with automatic abort support.
+   * Cancels any ongoing fetch before starting a new one using AbortController.
+   * The abort controller is automatically attached to the request for cancellation support.
    */
   const execute = useCallback(
     async (request: FetchRequest) => {
-      await executePromise(async abortController => {
-        request.abortController = abortController;
-        const exchange = await currentFetcher.exchange(
-          request,
-          latestOptions.current,
-        );
-        setExchange(exchange);
-        return await exchange.extractResult<R>();
-      });
+      try {
+        await executePromise(async abortController => {
+          request.abortController = abortController;
+          const exchange = await currentFetcher.exchange(
+            request,
+            latestOptions.current,
+          );
+          setExchange(exchange);
+          return await exchange.extractResult<R>();
+        });
+      } catch (error) {
+        setExchange(undefined);
+        throw error;
+      }
     },
-    [
-      executePromise,
-      currentFetcher,
-      latestOptions,
-    ],
+    [executePromise, currentFetcher, latestOptions],
   );
+
+  const resetFn = useCallback(() => {
+    reset();
+    setExchange(undefined);
+  }, [reset]);
 
   return useMemo(
     () => ({
@@ -210,8 +217,8 @@ export function useFetcher<R, E = FetcherError>(
       status,
       exchange,
       execute,
-      reset,
+      reset: resetFn,
     }),
-    [loading, result, error, status, exchange, execute, reset],
+    [loading, result, error, status, exchange, execute, resetFn],
   );
 }

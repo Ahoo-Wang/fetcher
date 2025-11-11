@@ -56,6 +56,7 @@ describe('useFetcher', () => {
     expect(result.current.result).toBeUndefined();
     expect(result.current.exchange).toBeUndefined();
     expect(typeof result.current.execute).toBe('function');
+    expect(typeof result.current.reset).toBe('function');
   });
 
   it('should execute fetch successfully', async () => {
@@ -170,5 +171,152 @@ describe('useFetcher', () => {
     unmount();
 
     expect(mockAbort).toHaveBeenCalled();
+  });
+
+  it('should pass abortController to the request', async () => {
+    const mockResult = 'success data';
+    mockExchange.extractResult.mockResolvedValue(mockResult);
+
+    const { result } = renderHook(() => useFetcher<string>());
+
+    const request = { url: '/test' };
+
+    await act(async () => {
+      await result.current.execute(request);
+    });
+
+    // Verify that the request object received an abortController
+    const callArgs = mockFetcher.exchange.mock.calls[0][0];
+    expect(callArgs.abortController).toBeDefined();
+    expect(typeof callArgs.abortController.abort).toBe('function');
+  });
+
+  it('should pass options to underlying fetcher', async () => {
+    const mockResult = 'success data';
+    mockExchange.extractResult.mockResolvedValue(mockResult);
+
+    const options = {
+      resultExtractor: vi.fn(),
+      onSuccess: vi.fn(),
+    };
+
+    const { result } = renderHook(() => useFetcher<string>(options));
+
+    const request = { url: '/test' };
+
+    await act(async () => {
+      await result.current.execute(request);
+    });
+
+    expect(mockFetcher.exchange).toHaveBeenCalledWith(request, options);
+  });
+
+  it('should handle race conditions with multiple rapid requests', async () => {
+    const mockResult1 = 'result1';
+    const mockResult2 = 'result2';
+    const mockResult3 = 'result3';
+
+    const mockExchange1 = {
+      extractResult: vi.fn().mockResolvedValue(mockResult1),
+    };
+    const mockExchange2 = {
+      extractResult: vi.fn().mockResolvedValue(mockResult2),
+    };
+    const mockExchange3 = {
+      extractResult: vi.fn().mockResolvedValue(mockResult3),
+    };
+
+    mockFetcher.exchange
+      .mockResolvedValueOnce(mockExchange1)
+      .mockResolvedValueOnce(mockExchange2)
+      .mockResolvedValueOnce(mockExchange3);
+
+    const { result } = renderHook(() => useFetcher<string>());
+
+    // Start multiple requests rapidly
+    await act(async () => {
+      result.current.execute({ url: '/test1' });
+      result.current.execute({ url: '/test2' });
+      await result.current.execute({ url: '/test3' });
+    });
+
+    // Should only have the result from the last request
+    expect(result.current.result).toBe(mockResult3);
+    expect(result.current.exchange).toBe(mockExchange3);
+  });
+
+  it('should maintain correct state during loading', async () => {
+    const mockResult = 'success data';
+    mockExchange.extractResult.mockResolvedValue(mockResult);
+
+    const { result } = renderHook(() => useFetcher<string>());
+
+    const request = { url: '/test' };
+
+    // Start request
+    act(() => {
+      result.current.execute(request);
+    });
+
+    // Should be loading immediately
+    expect(result.current.loading).toBe(true);
+    expect(result.current.status).toBe(PromiseStatus.LOADING);
+
+    // Wait for completion
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
+    expect(result.current.result).toBe(mockResult);
+  });
+
+  it('should handle error with propagateError option', async () => {
+    const error = new Error('fetch failed');
+    mockExchange.extractResult.mockRejectedValue(error);
+
+    const { result } = renderHook(() =>
+      useFetcher<string>({ propagateError: true }),
+    );
+
+    const request = { url: '/test' };
+
+    // When propagateError is true, the error should be thrown and state should remain idle
+    await expect(
+      act(async () => {
+        await result.current.execute(request);
+      }),
+    ).rejects.toThrow('fetch failed');
+
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
+    expect(result.current.error).toBeUndefined();
+  });
+
+  it('should reset state and exchange correctly', async () => {
+    const mockResult = 'success data';
+    mockExchange.extractResult.mockResolvedValue(mockResult);
+
+    const { result } = renderHook(() => useFetcher<string>());
+
+    // First execute a successful request
+    const request = { url: '/test' };
+    await act(async () => {
+      await result.current.execute(request);
+    });
+
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
+    expect(result.current.result).toBe(mockResult);
+    expect(result.current.exchange).toBe(mockExchange);
+
+    // Now reset
+    act(() => {
+      result.current.reset();
+    });
+
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
+    expect(result.current.result).toBeUndefined();
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.exchange).toBeUndefined();
   });
 });
