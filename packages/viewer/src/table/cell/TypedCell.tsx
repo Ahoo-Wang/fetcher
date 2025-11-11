@@ -64,7 +64,7 @@ export type CellRenderer<RecordType = any> = (
   value: any,
   record: RecordType,
   index: number,
-) => React.ReactNode | Promise<React.ReactNode>;
+) => React.ReactNode;
 
 /**
  * Creates a typed cell renderer function for a given cell type.
@@ -134,6 +134,6 @@ export function typedCellRender<RecordType = any, Attributes = any>(
     return CellComponent({
       attributes,
       data,
-    });
+    }) as React.ReactNode;
   };
 }
