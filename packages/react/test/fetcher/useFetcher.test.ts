@@ -319,4 +319,121 @@ describe('useFetcher', () => {
     expect(result.current.error).toBeUndefined();
     expect(result.current.exchange).toBeUndefined();
   });
+
+  it('should abort ongoing request manually', async () => {
+    const onAbortMock = vi.fn();
+    const mockResult = 'success data';
+    // Make the mock take longer so we can abort it
+    mockExchange.extractResult.mockImplementation(
+      () => new Promise(resolve => setTimeout(() => resolve(mockResult), 100)),
+    );
+
+    const { result } = renderHook(() =>
+      useFetcher<string>({ onAbort: onAbortMock }),
+    );
+
+    const request = { url: '/test' };
+
+    // Start request
+    act(() => {
+      result.current.execute(request);
+    });
+
+    expect(result.current.loading).toBe(true);
+    expect(result.current.status).toBe(PromiseStatus.LOADING);
+
+    // Abort the request
+    await act(async () => {
+      await result.current.abort();
+    });
+
+    expect(onAbortMock).toHaveBeenCalledTimes(1);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.result).toBeUndefined();
+  });
+
+  it('should handle abort when no request is ongoing', async () => {
+    const { result } = renderHook(() => useFetcher<string>());
+
+    // Try to abort when no request is running
+    await act(async () => {
+      await result.current.abort();
+    });
+
+    // Should not change state
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.result).toBeUndefined();
+  });
+
+  it('should call onAbort callback when request is aborted manually', async () => {
+    const onAbortMock = vi.fn();
+    const mockResult = 'success data';
+    mockExchange.extractResult.mockImplementation(
+      () => new Promise(resolve => setTimeout(() => resolve(mockResult), 100)),
+    );
+
+    const { result } = renderHook(() =>
+      useFetcher<string>({ onAbort: onAbortMock }),
+    );
+
+    const request = { url: '/test' };
+
+    // Start request
+    act(() => {
+      result.current.execute(request);
+    });
+
+    // Abort the request
+    await act(async () => {
+      await result.current.abort();
+    });
+
+    expect(onAbortMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('should abort previous request when starting new one', async () => {
+    const onAbortMock = vi.fn();
+    const mockResult1 = 'result1';
+    const mockResult2 = 'result2';
+
+    const mockExchange1 = {
+      extractResult: vi
+        .fn()
+        .mockImplementation(
+          () =>
+            new Promise(resolve => setTimeout(() => resolve(mockResult1), 200)),
+        ),
+    };
+    const mockExchange2 = {
+      extractResult: vi.fn().mockResolvedValue(mockResult2),
+    };
+
+    mockFetcher.exchange
+      .mockResolvedValueOnce(mockExchange1)
+      .mockResolvedValueOnce(mockExchange2);
+
+    const { result } = renderHook(() =>
+      useFetcher<string>({ onAbort: onAbortMock }),
+    );
+
+    // Start first request
+    act(() => {
+      result.current.execute({ url: '/test1' });
+    });
+
+    expect(result.current.loading).toBe(true);
+
+    // Start second request (should abort first)
+    await act(async () => {
+      await result.current.execute({ url: '/test2' });
+    });
+
+    expect(onAbortMock).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
+    expect(result.current.result).toBe(mockResult2);
+  });
 });

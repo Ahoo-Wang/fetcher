@@ -177,7 +177,6 @@ export function useFetcher<R, E = FetcherError>(
   const [exchange, setExchange] = useState<FetchExchange | undefined>(
     undefined,
   );
-
   const latestOptions = useLatest(options);
   const currentFetcher = getFetcher(fetcher);
   /**
