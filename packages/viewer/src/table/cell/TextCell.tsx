@@ -11,15 +11,21 @@
  * limitations under the License.
  */
 
-import React from 'react';
+import { CellProps } from './types';
+import { Typography } from 'antd';
+import { TextProps } from 'antd/es/typography/Text';
 
-export type Optional<T = any> = T | undefined;
+const { Text } = Typography;
 
-export interface StyleCapable {
-  style?: React.CSSProperties;
-  className?: string;
+export interface TextCellProps<RecordType = any> extends CellProps<string, RecordType, TextProps> {
 }
 
-export interface AttributesCapable<Attributes = any> {
-  attributes?: Attributes;
+export const TEXT_CELL_TYPE = 'text';
+
+export function TextCell<RecordType = any>(props: TextCellProps<RecordType>) {
+  return (<Text {...props.attributes}>
+    {props.value}
+  </Text>);
 }
+
+TextCell.displayName = 'TextCell';

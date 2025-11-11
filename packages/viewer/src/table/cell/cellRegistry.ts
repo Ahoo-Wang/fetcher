@@ -11,15 +11,11 @@
  * limitations under the License.
  */
 
-import React from 'react';
+import { TypedComponentRegistry } from '../../registry';
+import { CellType } from './TypedCell';
+import { CellProps } from './types';
+import { TEXT_CELL_TYPE, TextCell } from './TextCell';
 
-export type Optional<T = any> = T | undefined;
-
-export interface StyleCapable {
-  style?: React.CSSProperties;
-  className?: string;
-}
-
-export interface AttributesCapable<Attributes = any> {
-  attributes?: Attributes;
-}
+export const cellRegistry = TypedComponentRegistry.create<CellType, CellProps>([
+  [TEXT_CELL_TYPE, TextCell],
+]);

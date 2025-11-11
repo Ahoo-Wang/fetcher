@@ -60,4 +60,4 @@ export interface FilterProps<ValuePropsType extends FilterValueProps = FilterVal
   conditionOptions?: ConditionOptions;
 }
 
-export type FilterComponent = React.FC<FilterProps>;
+export type FilterComponent = React.FunctionComponent<FilterProps>;
