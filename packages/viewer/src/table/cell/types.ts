@@ -14,6 +14,15 @@
 import React from 'react';
 import { AttributesCapable } from '../../types';
 
+export interface CellData<ValueType = any, RecordType = any> {
+  /** The value to display in the cell. */
+  value: ValueType;
+  /** The full record object for context. */
+  record: RecordType;
+  /** The index of the row in the table. */
+  index: number;
+}
+
 /**
  * Props for rendering a table cell component.
  * @template ValueType - The type of the cell value.
@@ -22,12 +31,7 @@ import { AttributesCapable } from '../../types';
  */
 export interface CellProps<ValueType = any, RecordType = any, Attributes = any>
   extends AttributesCapable<Attributes> {
-  /** The value to display in the cell. */
-  value: ValueType;
-  /** The full record object for context. */
-  record: RecordType;
-  /** The index of the row in the table. */
-  index: number;
+  data: CellData<ValueType, RecordType>;
 }
 
 /** A React component for rendering table cells. */
