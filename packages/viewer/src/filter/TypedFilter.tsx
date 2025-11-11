@@ -15,11 +15,11 @@ import React, { useMemo } from 'react';
 import { FilterProps } from './types';
 import { filterRegistry } from './filterRegistry';
 import { FallbackFilter } from './FallbackFilter';
+import { TypeCapable } from '../registry';
 
 export type FilterType = string;
 
-export interface TypedFilterProps extends FilterProps {
-  type: FilterType;
+export interface TypedFilterProps extends FilterProps, TypeCapable<FilterType> {
 }
 
 export function TypedFilter(props: TypedFilterProps) {

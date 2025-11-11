@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { FilterComponent } from './types';
+import { FilterProps } from './types';
 import { TEXT_FILTER, TextFilter } from './TextFilter';
 import { ID_FILTER, IdFilter } from './IdFilter';
 import { NUMBER_FILTER, NumberFilter } from './NumberFilter';
@@ -19,76 +19,65 @@ import { FilterType } from './TypedFilter';
 import { SELECT_FILTER, SelectFilter } from './SelectFilter';
 import { BOOL_FILTER, BoolFilter } from './BoolFilter';
 import { DATE_TIME_FILTER_NAME, DateTimeFilter } from './DateTimeFilter';
+import { TypedComponentRegistry } from '../registry';
 
 /**
- * Registry for managing filter components.
+ * A centralized registry containing all available filter components for the viewer package.
  *
- * Provides a centralized way to register, unregister, and retrieve
- * filter components by their type identifiers.
+ * This registry provides a mapping from filter type identifiers to their corresponding React components,
+ * enabling dynamic filter component resolution based on filter types. It includes all standard filter
+ * types supported by the viewer: ID, text, number, select, boolean, and date-time filters.
+ *
+ * The registry is pre-populated with all built-in filter components and can be used to retrieve
+ * filter components by their type names for rendering in filter interfaces.
+ *
+ * @example
+ * ```typescript
+ * import { filterRegistry } from './filterRegistry';
+ *
+ * // Get a text filter component
+ * const TextFilterComponent = filterRegistry.get('text');
+ *
+ * // Check if a filter type is available
+ * if (filterRegistry.has('number')) {
+ *   const NumberFilterComponent = filterRegistry.get('number');
+ *   // Render the component
+ * }
+ *
+ * // Get all available filter types
+ * const availableTypes = filterRegistry.types; // ['id', 'text', 'number', 'select', 'bool', 'dateTime']
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Using in a React component
+ * import React from 'react';
+ * import { filterRegistry } from './filterRegistry';
+ *
+ * interface FilterRendererProps {
+ *   filterType: string;
+ *   filterProps: FilterProps;
+ * }
+ *
+ * const FilterRenderer: React.FC<FilterRendererProps> = ({ filterType, filterProps }) => {
+ *   const FilterComponent = filterRegistry.get(filterType);
+ *
+ *   if (!FilterComponent) {
+ *     return <div>Unknown filter type: {filterType}</div>;
+ *   }
+ *
+ *   return <FilterComponent {...filterProps} />;
+ * };
+ * ```
  */
-export class FilterRegistry {
-  private readonly filters: Map<FilterType, FilterComponent> = new Map<
-    FilterType,
-    FilterComponent
-  >();
-
-  constructor() {
-    this.register(ID_FILTER, IdFilter);
-    this.register(TEXT_FILTER, TextFilter);
-    this.register(NUMBER_FILTER, NumberFilter);
-    this.register(SELECT_FILTER, SelectFilter);
-    this.register(BOOL_FILTER, BoolFilter);
-    this.register(DATE_TIME_FILTER_NAME, DateTimeFilter);
-  }
-
-  get types(): Set<FilterType> {
-    return new Set(this.filters.keys());
-  }
-
-  /**
-   * Registers a filter component for a specific type.
-   *
-   * @param type - The unique identifier for the filter type
-   * @param filter - The filter component to register
-   *
-   * @example
-   * ```typescript
-   * filterRegistry.register('text', TextFilter);
-   * ```
-   */
-  register(type: FilterType, filter: FilterComponent) {
-    this.filters.set(type, filter);
-  }
-
-  /**
-   * Unregisters a filter component for a specific type.
-   *
-   * @param type - The unique identifier for the filter type to remove
-   * @returns true if the filter was successfully removed, false otherwise
-   *
-   * @example
-   * ```typescript
-   * const wasRemoved = filterRegistry.unregister('text');
-   * ```
-   */
-  unregister(type: FilterType) {
-    return this.filters.delete(type);
-  }
-
-  /**
-   * Retrieves a filter component for a specific type.
-   *
-   * @param type - The unique identifier for the filter type
-   * @returns The filter component, or undefined if not found
-   *
-   * @example
-   * ```typescript
-   * const TextFilter = filterRegistry.get('text');
-   * ```
-   */
-  get(type: FilterType): FilterComponent | undefined {
-    return this.filters.get(type);
-  }
-}
-
-export const filterRegistry = new FilterRegistry();
+export const filterRegistry = TypedComponentRegistry.create<
+  FilterType,
+  FilterProps
+>([
+  [ID_FILTER, IdFilter],
+  [TEXT_FILTER, TextFilter],
+  [NUMBER_FILTER, NumberFilter],
+  [SELECT_FILTER, SelectFilter],
+  [BOOL_FILTER, BoolFilter],
+  [DATE_TIME_FILTER_NAME, DateTimeFilter],
+]);

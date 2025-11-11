@@ -11,7 +11,4 @@
  * limitations under the License.
  */
 
-export * from './filter';
-export * from './registry';
-export * from './components';
-export * from './types';
+export * from './componentRegistry';
