@@ -18,8 +18,10 @@ import { AttributesCapable } from '../../types';
  * Props for rendering a table cell component.
  * @template ValueType - The type of the cell value.
  * @template RecordType - The type of the record containing the cell data.
+ * @template Attributes - The type of additional attributes passed to the cell.
  */
-export interface CellProps<ValueType = any, RecordType = any, Attributes = any> extends AttributesCapable<Attributes> {
+export interface CellProps<ValueType = any, RecordType = any, Attributes = any>
+  extends AttributesCapable<Attributes> {
   /** The value to display in the cell. */
   value: ValueType;
   /** The full record object for context. */
@@ -29,5 +31,8 @@ export interface CellProps<ValueType = any, RecordType = any, Attributes = any> 
 }
 
 /** A React component for rendering table cells. */
-export type CellComponent<ValueType = any, RecordType = any, Attributes = any> =
-  React.FC<CellProps<ValueType, RecordType, Attributes>>;
+export type CellComponent<
+  ValueType = any,
+  RecordType = any,
+  Attributes = any,
+> = React.FC<CellProps<ValueType, RecordType, Attributes>>;

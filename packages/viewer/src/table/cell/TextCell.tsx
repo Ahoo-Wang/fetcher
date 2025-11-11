@@ -17,15 +17,30 @@ import { TextProps } from 'antd/es/typography/Text';
 
 const { Text } = Typography;
 
-export interface TextCellProps<RecordType = any> extends CellProps<string, RecordType, TextProps> {
-}
+/**
+ * Props for the TextCell component, extending CellProps with string value type and TextProps attributes.
+ * @template RecordType - The type of the record containing the cell data.
+ */
+export interface TextCellProps<RecordType = any>
+  extends CellProps<string, RecordType, TextProps> {}
 
+/**
+ * Constant representing the type identifier for text cells.
+ */
 export const TEXT_CELL_TYPE = 'text';
 
+/**
+ * Renders a text cell using Ant Design's Typography.Text component.
+ * @template RecordType - The type of the record containing the cell data.
+ * @param props - The props for the text cell, including value, record, index, and attributes.
+ * @returns A React element representing the text cell.
+ * @example
+ * ```tsx
+ * <TextCell value="Hello World" record={{ id: 1 }} index={0} attributes={{ ellipsis: true }} />
+ * ```
+ */
 export function TextCell<RecordType = any>(props: TextCellProps<RecordType>) {
-  return (<Text {...props.attributes}>
-    {props.value}
-  </Text>);
+  return <Text {...props.attributes}>{props.value}</Text>;
 }
 
 TextCell.displayName = 'TextCell';

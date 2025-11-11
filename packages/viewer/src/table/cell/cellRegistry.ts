@@ -16,6 +16,10 @@ import { CellType } from './TypedCell';
 import { CellProps } from './types';
 import { TEXT_CELL_TYPE, TextCell } from './TextCell';
 
+/**
+ * Registry for cell components, mapping cell types to their corresponding components.
+ * Initialized with the text cell type and component.
+ */
 export const cellRegistry = TypedComponentRegistry.create<CellType, CellProps>([
   [TEXT_CELL_TYPE, TextCell],
 ]);
