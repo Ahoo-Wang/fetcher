@@ -22,8 +22,7 @@ const { Text } = Typography;
  * @template RecordType - The type of the record containing the cell data.
  */
 export interface TextCellProps<RecordType = any>
-  extends CellProps<string, RecordType, TextProps> {
-}
+  extends CellProps<string, RecordType, TextProps> {}
 
 /**
  * Constant representing the type identifier for text cells.
@@ -41,7 +40,6 @@ export const TEXT_CELL_TYPE = 'text';
  * ```
  */
 export function TextCell<RecordType = any>(props: TextCellProps<RecordType>) {
+  'use no memo';
   return <Text {...props.attributes}>{props.data.value}</Text>;
 }
-
-TextCell.displayName = 'TextCell';
