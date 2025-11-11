@@ -16,13 +16,13 @@
  *
  * This module provides the core cell rendering system for tables, including:
  * - Cell component types and interfaces
- * - Text cell implementation
+ * - Text, tag and tags cell implementations
  * - Typed cell rendering utilities
  * - Cell registry for component management
  *
  * @example
  * ```tsx
- * import { TextCell, typedCellRender, TEXT_CELL_TYPE } from '@ahoo-wang/fetcher-viewer/table/cell';
+ * import { TextCell, TagCell, TagsCell, typedCellRender, TEXT_CELL_TYPE, TAG_CELL_TYPE, TAGS_CELL_TYPE } from '@ahoo-wang/fetcher-viewer/table/cell';
  *
  * // Direct component usage
  * <TextCell
@@ -30,13 +30,28 @@
  *   attributes={{ ellipsis: true }}
  * />
  *
+ * <TagCell
+ *   data={{ value: "urgent", record: { id: 1 }, index: 0 }}
+ *   attributes={{ color: 'red' }}
+ * />
+ *
+ * <TagsCell
+ *   data={{ value: ["urgent", "high"], record: { id: 1 }, index: 0 }}
+ *   attributes={{ color: 'blue' }}
+ * />
+ *
  * // Using typed renderer
- * const renderer = typedCellRender(TEXT_CELL_TYPE, { ellipsis: true });
- * const cell = renderer('Hello', { id: 1 }, 0);
+ * const textRenderer = typedCellRender(TEXT_CELL_TYPE, { ellipsis: true });
+ * const tagRenderer = typedCellRender(TAG_CELL_TYPE, { color: 'red' });
+ * const tagsRenderer = typedCellRender(TAGS_CELL_TYPE, { color: 'blue' });
+ * const textCell = textRenderer('Hello', { id: 1 }, 0);
+ * const tagCell = tagRenderer('urgent', { id: 1 }, 0);
+ * const tagsCell = tagsRenderer(['urgent', 'high'], { id: 1 }, 0);
  * ```
  */
 
 export * from './cellRegistry';
+export * from './TagCell';
 export * from './TextCell';
 export * from './TypedCell';
 export * from './types';
