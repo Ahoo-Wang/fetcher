@@ -19,26 +19,52 @@ import type * as React from 'react';
  */
 export type CellType = string;
 
+/**
+ * A function type for rendering typed cells, supporting both synchronous and asynchronous rendering.
+ * @template RecordType - The type of the record containing the cell data.
+ * @param value - The value to render in the cell.
+ * @param record - The full record object for context.
+ * @param index - The index of the row in the table.
+ * @returns A React node or a promise resolving to a React node.
+ */
 export type TypedCellRenderer<RecordType = any> = (
-  value: any,
+  value: unknown,
   record: RecordType,
   index: number,
 ) => React.ReactNode | Promise<React.ReactNode>;
 
+/**
+ * Creates a typed cell renderer function for a given cell type.
+ * @template RecordType - The type of the record containing the cell data.
+ * @template Attributes - The type of additional attributes for the cell.
+ * @param type - The cell type identifier to look up in the registry.
+ * @param attributes - Optional attributes to pass to the cell component.
+ * @returns A renderer function for the specified cell type.
+ * @throws Error if the cell type is not registered in the registry.
+ * @example
+ * ```tsx
+ * const renderer = typedCellRender('text', { ellipsis: true });
+ * const cell = renderer('Hello', { id: 1 }, 0);
+ * ```
+ */
 export function typedCellRender<RecordType = any, Attributes = any>(
   type: CellType,
   attributes?: Attributes,
-): TypedCellRenderer<RecordType> | undefined {
+): TypedCellRenderer<RecordType> {
   const CellComponent = cellRegistry.get(type);
   if (!CellComponent) {
-    return undefined;
+    throw new Error(
+      `Cell type '${type}' is not registered in the cell registry.`,
+    );
   }
-  return (value: any, record: RecordType, index: number) => {
+  return (value: unknown, record: RecordType, index: number) => {
     return CellComponent({
       attributes,
-      value,
-      record,
-      index,
+      data: {
+        value,
+        record,
+        index,
+      },
     });
   };
 }
