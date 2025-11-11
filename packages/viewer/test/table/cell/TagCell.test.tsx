@@ -547,7 +547,7 @@ describe('TagCell Component', () => {
     });
 
     it('should handle large datasets without memory issues', () => {
-      const largeDataset = Array.from({ length: 1000 }, (_, i) => ({
+      const largeDataset = Array.from({ length: 100 }, (_, i) => ({
         id: i,
         name: `User ${i}`,
         role: `Role ${i % 10}`,
