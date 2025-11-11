@@ -13,6 +13,7 @@
 
 import { cellRegistry } from './cellRegistry';
 import type * as React from 'react';
+import { CellData } from './types';
 
 /**
  * Represents the type identifier for different cell components.
@@ -58,13 +59,14 @@ export function typedCellRender<RecordType = any, Attributes = any>(
     );
   }
   return (value: unknown, record: RecordType, index: number) => {
+    const data: CellData = {
+      value,
+      record,
+      index,
+    };
     return CellComponent({
       attributes,
-      data: {
-        value,
-        record,
-        index,
-      },
+      data,
     });
   };
 }
