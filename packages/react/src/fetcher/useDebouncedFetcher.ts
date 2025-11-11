@@ -30,7 +30,8 @@ import { useMemo } from 'react';
  */
 export interface UseDebouncedFetcherOptions<R, E = FetcherError>
   extends UseFetcherOptions<R, E>,
-    DebounceCapable {}
+    DebounceCapable {
+}
 
 /**
  * Return type of the useDebouncedFetcher hook.
@@ -42,7 +43,8 @@ export interface UseDebouncedFetcherOptions<R, E = FetcherError>
  */
 export interface UseDebouncedFetcherReturn<R, E = FetcherError>
   extends Omit<UseFetcherReturn<R, E>, 'execute'>,
-    UseDebouncedCallbackReturn<UseFetcherReturn<R, E>['execute']> {}
+    UseDebouncedCallbackReturn<UseFetcherReturn<R, E>['execute']> {
+}
 
 /**
  * A React hook that provides a debounced version of the useFetcher hook.
@@ -114,7 +116,7 @@ export interface UseDebouncedFetcherReturn<R, E = FetcherError>
 export function useDebouncedFetcher<R, E = FetcherError>(
   options: UseDebouncedFetcherOptions<R, E>,
 ): UseDebouncedFetcherReturn<R, E> {
-  const { loading, result, error, status, exchange, execute } = useFetcher<
+  const { loading, result, error, status, exchange, execute, reset } = useFetcher<
     R,
     E
   >(options);
@@ -129,10 +131,11 @@ export function useDebouncedFetcher<R, E = FetcherError>(
       error,
       status,
       exchange,
+      reset,
       run,
       cancel,
       isPending,
     }),
-    [loading, result, error, status, exchange, run, cancel, isPending],
+    [loading, result, error, status, exchange, reset, run, cancel, isPending],
   );
 }

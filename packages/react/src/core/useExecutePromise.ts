@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMounted } from './useMounted';
 import {
   usePromiseState,
@@ -42,7 +42,7 @@ export interface UseExecutePromiseOptions<R, E = unknown>
  * This is used as input to the execute function, allowing lazy evaluation of promises.
  * @template R - The type of value the promise will resolve to.
  */
-export type PromiseSupplier<R> = () => Promise<R>;
+export type PromiseSupplier<R> = (abortController?: AbortController) => Promise<R>;
 
 /**
  * Interface defining the return type of the useExecutePromise hook.
@@ -144,6 +144,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
   } = usePromiseState<R, E>(options);
   const isMounted = useMounted();
   const requestId = useRequestId();
+  const abortControllerRef = useRef<AbortController | undefined>(undefined);
   const propagateError = options?.propagateError;
   /**
    * Execute a promise supplier or promise and manage its state.
@@ -155,27 +156,39 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
    */
   const execute = useCallback(
     async (input: PromiseSupplier<R>): Promise<void> => {
-      if (!isMounted()) {
-        throw new Error('Component is unmounted');
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
       const currentRequestId = requestId.generate();
       setLoading();
       try {
-        const data = await input();
+        const data = await input(abortController);
 
         if (isMounted() && requestId.isLatest(currentRequestId)) {
           await setSuccess(data);
         }
       } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          if (isMounted()) {
+            setIdle();
+          }
+          return;
+        }
         if (isMounted() && requestId.isLatest(currentRequestId)) {
           await setError(err as E);
         }
         if (propagateError) {
           throw err;
         }
+      } finally {
+        if (abortControllerRef.current === abortController) {
+          abortControllerRef.current = undefined;
+        }
       }
     },
-    [setLoading, setSuccess, setError, isMounted, requestId, propagateError],
+    [setLoading, setSuccess, setError, setIdle, isMounted, requestId, propagateError],
   );
 
   /**
@@ -188,6 +201,13 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
       setIdle();
     }
   }, [setIdle, isMounted]);
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = undefined;
+    };
+  }, []);
 
   return useMemo(
     () => ({
