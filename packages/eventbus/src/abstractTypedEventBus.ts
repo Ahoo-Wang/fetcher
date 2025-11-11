@@ -14,7 +14,9 @@
 import { TypedEventBus } from './typedEventBus';
 import { EventHandler, EventType } from './types';
 
-export abstract class AbstractTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
+export abstract class AbstractTypedEventBus<EVENT>
+  implements TypedEventBus<EVENT>
+{
   protected eventHandlers: EventHandler<EVENT>[] = [];
   abstract type: EventType;
 
@@ -29,7 +31,10 @@ export abstract class AbstractTypedEventBus<EVENT> implements TypedEventBus<EVEN
     this.eventHandlers = [];
   }
 
-  protected async handleEvent(handler: EventHandler<EVENT>, event: EVENT): Promise<void> {
+  protected async handleEvent(
+    handler: EventHandler<EVENT>,
+    event: EVENT,
+  ): Promise<void> {
     try {
       handler.handle(event);
     } catch (e) {

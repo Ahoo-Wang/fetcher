@@ -22,7 +22,11 @@ export const BOOL_FILTER = 'bool';
 export function BoolFilter(props: FilterProps) {
   const assemblyFilterProps: AssemblyFilterProps = {
     ...props,
-    supportedOperators: [ExtendedOperator.UNDEFINED, Operator.TRUE, Operator.FALSE],
+    supportedOperators: [
+      ExtendedOperator.UNDEFINED,
+      Operator.TRUE,
+      Operator.FALSE,
+    ],
     validate: TrueValidateValue,
   };
   return <AssemblyFilter {...assemblyFilterProps}></AssemblyFilter>;

@@ -82,8 +82,7 @@ describe('SerialTypedEventBus', () => {
 
   it('should log errors but continue', async () => {
     const bus = new SerialTypedEventBus<string>('test');
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {
-    });
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const h1 = {
       name: 'h1',
       order: 1,

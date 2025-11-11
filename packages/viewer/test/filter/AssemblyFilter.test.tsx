@@ -14,10 +14,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  AssemblyFilter,
-  AssemblyFilterProps,
-} from '../../src';
+import { AssemblyFilter, AssemblyFilterProps } from '../../src';
 import { FilterRef } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { Input } from 'antd';
@@ -31,12 +28,9 @@ const createMockProps = (
     return !!(operator && value);
   });
 
-  const valueInputSupplier = vi.fn(
-     
-    (_filterState: UseFilterStateReturn) => (
-      <Input value="test" onChange={() => {}} />
-    ),
-  );
+  const valueInputSupplier = vi.fn((_filterState: UseFilterStateReturn) => (
+    <Input value="test" onChange={() => {}} />
+  ));
 
   const defaultProps: AssemblyFilterProps = {
     field: {
@@ -44,9 +38,7 @@ const createMockProps = (
       label: 'Test Field',
       type: 'string',
     },
-    label: {
-
-    },
+    label: {},
     operator: {
       defaultValue: Operator.EQ,
     },
@@ -61,9 +53,7 @@ const createMockProps = (
   return { ...defaultProps, ...overrides };
 };
 
-const renderWithRef = (
-  props: Partial<AssemblyFilterProps> = {},
-) => {
+const renderWithRef = (props: Partial<AssemblyFilterProps> = {}) => {
   const ref = React.createRef<FilterRef>();
   const finalProps = createMockProps(props);
 
@@ -76,9 +66,7 @@ describe('AssemblyFilter', () => {
   describe('Rendering', () => {
     it('renders without crashing', () => {
       const props = createMockProps();
-      expect(() =>
-        render(<AssemblyFilter {...props} />),
-      ).not.toThrow();
+      expect(() => render(<AssemblyFilter {...props} />)).not.toThrow();
     });
 
     it('renders all required components', () => {
@@ -132,19 +120,15 @@ describe('AssemblyFilter', () => {
         operator: { defaultValue: Operator.CONTAINS as any }, // Invalid operator
         supportedOperators: [Operator.EQ, Operator.NE],
       });
-      expect(() =>
-        render(<AssemblyFilter {...props} />),
-      ).not.toThrow();
+      expect(() => render(<AssemblyFilter {...props} />)).not.toThrow();
     });
 
     it('falls back to first supported operator when no operator provided', () => {
       const props = createMockProps({
-        operator: {  }, // No value provided
+        operator: {}, // No value provided
         supportedOperators: [Operator.EQ, Operator.NE],
       });
-      expect(() =>
-        render(<AssemblyFilter {...props} />),
-      ).not.toThrow();
+      expect(() => render(<AssemblyFilter {...props} />)).not.toThrow();
     });
   });
 
@@ -254,9 +238,7 @@ describe('AssemblyFilter', () => {
         onChange,
       });
 
-      expect(() =>
-        render(<AssemblyFilter {...props} />),
-      ).not.toThrow();
+      expect(() => render(<AssemblyFilter {...props} />)).not.toThrow();
     });
   });
 
@@ -277,9 +259,7 @@ describe('AssemblyFilter', () => {
     it('forwards label props to Button component', () => {
       const props = createMockProps({
         field: { name: 'customField', label: 'Custom Label', type: 'string' },
-        label: {
-
-        },
+        label: {},
       });
       render(<AssemblyFilter {...props} />);
 
@@ -294,18 +274,14 @@ describe('AssemblyFilter', () => {
       const props = createMockProps({
         value: { defaultValue: undefined },
       });
-      expect(() =>
-        render(<AssemblyFilter {...props} />),
-      ).not.toThrow();
+      expect(() => render(<AssemblyFilter {...props} />)).not.toThrow();
     });
 
     it('handles null value gracefully', () => {
       const props = createMockProps({
         value: { defaultValue: null as any },
       });
-      expect(() =>
-        render(<AssemblyFilter {...props} />),
-      ).not.toThrow();
+      expect(() => render(<AssemblyFilter {...props} />)).not.toThrow();
     });
   });
 });

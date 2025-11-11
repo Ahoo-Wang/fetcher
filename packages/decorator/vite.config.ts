@@ -10,10 +10,7 @@ export default defineConfig({
       fileName: format => `index.${format}.js`,
     },
     rollupOptions: {
-      external: [
-        '@ahoo-wang/fetcher',
-        'reflect-metadata',
-      ],
+      external: ['@ahoo-wang/fetcher', 'reflect-metadata'],
       output: {
         globals: {
           '@ahoo-wang/fetcher': 'Fetcher',

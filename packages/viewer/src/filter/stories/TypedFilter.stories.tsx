@@ -26,9 +26,11 @@ function TypedFilterStory(props: TypedFilterProps) {
     <Card>
       <TypedFilter {...props} onChange={setFilterValue} />
       <Divider>Condition</Divider>
-      {filterValue?.condition && <Typography.Text code copyable>
-        {JSON.stringify(filterValue.condition)}
-      </Typography.Text>}
+      {filterValue?.condition && (
+        <Typography.Text code copyable>
+          {JSON.stringify(filterValue.condition)}
+        </Typography.Text>
+      )}
     </Card>
   );
 }
@@ -108,7 +110,6 @@ export const NumberFilter: Story = {
   },
 };
 
-
 export const SelectFilter: Story = {
   args: {
     type: 'select',
@@ -175,4 +176,3 @@ export const UnsupportedType: Story = {
     return <TypedFilter {...args} onChange={setValue} />;
   },
 };
-

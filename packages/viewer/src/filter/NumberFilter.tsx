@@ -44,46 +44,52 @@ export function NumberFilter(props: FilterProps) {
       }
       return value != undefined;
     },
-    valueInputRender: (
-      filterState: UseFilterStateReturn,
-    ) => {
+    valueInputRender: (filterState: UseFilterStateReturn) => {
       switch (filterState.operator) {
         case Operator.IN:
         case Operator.NOT_IN: {
-          return <TagInput
-            value={filterState.value}
-            serializer={NumberTagValueItemSerializer}
-            onChange={e => filterState.setValue(e)}
-            {...props.value}
-          />;
+          return (
+            <TagInput
+              value={filterState.value}
+              serializer={NumberTagValueItemSerializer}
+              onChange={e => filterState.setValue(e)}
+              {...props.value}
+            />
+          );
         }
         case Operator.BETWEEN: {
           const { placeholder, ...restValue } = props.value ?? {};
           return (
-            <NumberRange value={filterState.value} onChange={filterState.setValue} {...restValue}></NumberRange>
+            <NumberRange
+              value={filterState.value}
+              onChange={filterState.setValue}
+              {...restValue}
+            ></NumberRange>
           );
         }
         default: {
           const { defaultValue, ...restValue } = props.value ?? {};
-          const defaultInputNumber = Array.isArray(defaultValue) ? defaultValue[0] : defaultValue;
-          const value = Array.isArray(filterState.value) ? filterState.value[0] : filterState.value;
+          const defaultInputNumber = Array.isArray(defaultValue)
+            ? defaultValue[0]
+            : defaultValue;
+          const value = Array.isArray(filterState.value)
+            ? filterState.value[0]
+            : filterState.value;
           return (
             <InputNumber<number>
               value={value}
               defaultValue={defaultInputNumber}
               onChange={v => {
                 filterState.setValue(v ?? undefined);
-              }} {...restValue}></InputNumber>
+              }}
+              {...restValue}
+            ></InputNumber>
           );
         }
       }
     },
   };
-  return (
-    <AssemblyFilter
-      {...assemblyFilterProps}
-    ></AssemblyFilter>
-  );
+  return <AssemblyFilter {...assemblyFilterProps}></AssemblyFilter>;
 }
 
 NumberFilter.displayName = 'NumberFilter';

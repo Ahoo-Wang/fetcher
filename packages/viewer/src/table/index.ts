@@ -11,4 +11,4 @@
  * limitations under the License.
  */
 
-export * from './cell'
+export * from './cell';

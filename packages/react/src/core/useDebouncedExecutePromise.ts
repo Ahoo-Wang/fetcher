@@ -48,8 +48,7 @@ export interface DebounceCapable {
  */
 export interface UseDebouncedExecutePromiseOptions<R, E = unknown>
   extends UseExecutePromiseOptions<R, E>,
-    DebounceCapable {
-}
+    DebounceCapable {}
 
 /**
  * Return type for the useDebouncedExecutePromise hook.
@@ -61,8 +60,7 @@ export interface UseDebouncedExecutePromiseOptions<R, E = unknown>
  */
 export interface UseDebouncedExecutePromiseReturn<R, E = unknown>
   extends Omit<UseExecutePromiseReturn<R, E>, 'execute'>,
-    UseDebouncedCallbackReturn<UseExecutePromiseReturn<R, E>['execute']> {
-}
+    UseDebouncedCallbackReturn<UseExecutePromiseReturn<R, E>['execute']> {}
 
 /**
  * A React hook that combines promise execution with debouncing functionality.

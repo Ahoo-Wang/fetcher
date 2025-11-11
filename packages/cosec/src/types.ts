@@ -50,8 +50,7 @@ export interface JwtTokenManagerCapable {
 export interface CoSecOptions
   extends AppIdCapable,
     DeviceIdStorageCapable,
-    JwtTokenManagerCapable {
-}
+    JwtTokenManagerCapable {}
 
 /**
  * Authorization result interface.

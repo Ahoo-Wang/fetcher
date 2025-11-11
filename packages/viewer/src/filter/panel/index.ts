@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-export * from './AvailableFilterSelect'
-export * from './AvailableFilterSelectModal'
-export * from './EditableFilterPanel'
-export * from './FilterPanel'
-export * from './RemovableTypedFilter'
+export * from './AvailableFilterSelect';
+export * from './AvailableFilterSelectModal';
+export * from './EditableFilterPanel';
+export * from './FilterPanel';
+export * from './RemovableTypedFilter';

@@ -20,7 +20,11 @@ export default mergeConfig(
     test: {
       globals: true,
       coverage: {
-        exclude: [...configDefaults.exclude, '**/**.stories.tsx', 'src/chat/chatClient.ts'],
+        exclude: [
+          ...configDefaults.exclude,
+          '**/**.stories.tsx',
+          'src/chat/chatClient.ts',
+        ],
       },
     },
   }),

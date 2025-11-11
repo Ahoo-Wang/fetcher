@@ -74,7 +74,6 @@ const sampleProducts: Product[] = [
 
 export const BasicTextCells: Story = {
   render: () => {
-
     return (
       <Table
         dataSource={sampleProducts}

@@ -31,7 +31,6 @@ import { AbstractTypedEventBus } from './abstractTypedEventBus';
  * ```
  */
 export class ParallelTypedEventBus<EVENT> extends AbstractTypedEventBus<EVENT> {
-
   /**
    * Creates a parallel typed event bus
    *

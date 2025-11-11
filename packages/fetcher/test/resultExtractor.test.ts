@@ -103,9 +103,7 @@ describe('ResultExtractors', () => {
 
   it('Blob extractor should return a promise that resolves to response blob', async () => {
     const blob = new Blob(['test'], { type: 'text/plain' });
-    const blobSpy = vi
-      .spyOn(mockResponse, 'blob')
-      .mockResolvedValue(blob);
+    const blobSpy = vi.spyOn(mockResponse, 'blob').mockResolvedValue(blob);
     const resultPromise = ResultExtractors.Blob(exchange);
     expect(resultPromise).toBeInstanceOf(Promise);
 
@@ -129,9 +127,7 @@ describe('ResultExtractors', () => {
 
   it('Bytes extractor should return a promise that resolves to response bytes', async () => {
     const bytes = new Uint8Array([1, 2, 3, 4]);
-    const bytesSpy = vi
-      .spyOn(mockResponse, 'bytes')
-      .mockResolvedValue(bytes);
+    const bytesSpy = vi.spyOn(mockResponse, 'bytes').mockResolvedValue(bytes);
     const resultPromise = ResultExtractors.Bytes(exchange);
     expect(resultPromise).toBeInstanceOf(Promise);
 

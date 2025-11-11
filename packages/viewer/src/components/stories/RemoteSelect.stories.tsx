@@ -19,21 +19,21 @@ import { Card, Divider, Typography } from 'antd';
 import { DefaultOptionType } from 'antd/lib/select';
 
 // Real API functions using JSONPlaceholder
-const fetchPosts = async (
-  searchQuery: string,
-): Promise<any[]> => {
-  const response = await fetcher.get('https://jsonplaceholder.typicode.com/posts', {
-    urlParams: {
-      query: { userId: searchQuery },
+const fetchPosts = async (searchQuery: string): Promise<any[]> => {
+  const response = await fetcher.get(
+    'https://jsonplaceholder.typicode.com/posts',
+    {
+      urlParams: {
+        query: { userId: searchQuery },
+      },
     },
-  });
+  );
 
   if (!response.ok) {
     throw new Error('Failed to fetch posts');
   }
 
   return await response.json();
-
 };
 
 const meta: Meta<typeof RemoteSelect> = {
@@ -88,15 +88,18 @@ export const Default: Story = {
           mode={'multiple'}
         />
         <Divider>Value</Divider>
-        {value && <Typography.Text code copyable>
-          {JSON.stringify(value)}
-        </Typography.Text>}
+        {value && (
+          <Typography.Text code copyable>
+            {JSON.stringify(value)}
+          </Typography.Text>
+        )}
         <Divider>Option</Divider>
-        {option && <Typography.Text code copyable>
-          {JSON.stringify(option)}
-        </Typography.Text>}
+        {option && (
+          <Typography.Text code copyable>
+            {JSON.stringify(option)}
+          </Typography.Text>
+        )}
       </Card>
-
     );
   },
 };

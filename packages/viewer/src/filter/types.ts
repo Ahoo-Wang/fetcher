@@ -33,10 +33,10 @@ export interface FilterRef {
   reset(): void;
 }
 
-export interface FilterLabelProps extends StyleCapable {
-}
+export interface FilterLabelProps extends StyleCapable {}
 
-export interface FilterOperatorProps extends Omit<SelectProps<SelectOperator>, 'value' | 'options' | 'mode'> {
+export interface FilterOperatorProps
+  extends Omit<SelectProps<SelectOperator>, 'value' | 'options' | 'mode'> {
   locale?: SelectOperatorLocale;
   supportedOperators?: SelectOperator[];
 }
@@ -48,10 +48,13 @@ export interface FilterValueProps extends StyleCapable {
   [key: string]: any;
 }
 
-export interface FilterValue extends ConditionCapable {
-}
+export interface FilterValue extends ConditionCapable {}
 
-export interface FilterProps<ValuePropsType extends FilterValueProps = FilterValueProps> extends AttributesCapable, RefAttributes<FilterRef>, StyleCapable {
+export interface FilterProps<
+  ValuePropsType extends FilterValueProps = FilterValueProps,
+> extends AttributesCapable,
+    RefAttributes<FilterRef>,
+    StyleCapable {
   field: FilterField;
   label?: FilterLabelProps;
   operator?: FilterOperatorProps;

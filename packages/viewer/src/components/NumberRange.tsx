@@ -65,9 +65,9 @@ export function NumberRange(props: NumberRangeProps) {
   const endMin = start !== undefined ? start : props.min;
   const placeholder = props.placeholder
     ? [
-      props.placeholder[0] || DEFAULT_PLACEHOLDER[0],
-      props.placeholder[1] || DEFAULT_PLACEHOLDER[1],
-    ]
+        props.placeholder[0] || DEFAULT_PLACEHOLDER[0],
+        props.placeholder[1] || DEFAULT_PLACEHOLDER[1],
+      ]
     : DEFAULT_PLACEHOLDER;
   return (
     <Space.Compact block>

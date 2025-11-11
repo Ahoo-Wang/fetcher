@@ -18,9 +18,11 @@ import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config({
+export default tseslint.config(
+  {
     ignores: ['**/dist/**', '**/**.test.ts', '**/node_modules/**'],
-  }, {
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
@@ -35,7 +37,9 @@ export default tseslint.config({
     files: ['integration-test/**/*.{ts,tsx}', '**/*.stories.tsx'],
     rules: {
       // 可以为集成测试设置特定规则
-      '@typescript-eslint/no-empty-object-type':'off',
+      '@typescript-eslint/no-empty-object-type': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
     },
-  }, storybook.configs['flat/recommended']);
+  },
+  storybook.configs['flat/recommended'],
+);

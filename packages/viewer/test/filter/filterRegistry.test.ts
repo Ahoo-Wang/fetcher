@@ -30,5 +30,4 @@ describe('filterRegistry', () => {
   it('should return undefined for unknown filter type', () => {
     expect(filterRegistry.get('unknown')).toBeUndefined();
   });
-
 });

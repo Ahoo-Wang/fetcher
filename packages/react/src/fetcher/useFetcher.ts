@@ -38,8 +38,7 @@ import { useLatest } from '../core';
 export interface UseFetcherOptions<R, E = FetcherError>
   extends RequestOptions,
     FetcherCapable,
-    UseExecutePromiseOptions<R, E> {
-}
+    UseExecutePromiseOptions<R, E> {}
 
 /**
  * Return type of the useFetcher hook.

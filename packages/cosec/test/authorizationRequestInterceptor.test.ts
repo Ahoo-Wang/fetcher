@@ -26,8 +26,7 @@ class MockToken {
     public access: { token: string },
     public isRefreshNeeded: boolean = false,
     public isRefreshable: boolean = true,
-  ) {
-  }
+  ) {}
 }
 
 // Mock token manager

@@ -19,9 +19,17 @@ import { Select, SelectProps } from 'antd';
 
 export const SELECT_FILTER = 'select';
 
-export interface SelectFilterValueProps extends FilterValueProps,
-  Omit<SelectProps, 'defaultValue' | 'mode' | 'value' | 'allowClear' | 'onChange' | 'placeholder'> {
-}
+export interface SelectFilterValueProps
+  extends FilterValueProps,
+    Omit<
+      SelectProps,
+      | 'defaultValue'
+      | 'mode'
+      | 'value'
+      | 'allowClear'
+      | 'onChange'
+      | 'placeholder'
+    > {}
 
 export function SelectFilter(props: FilterProps<SelectFilterValueProps>) {
   const assemblyFilterProps: AssemblyFilterProps = {

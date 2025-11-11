@@ -18,7 +18,8 @@ import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
 import { useRequestId } from '@ahoo-wang/fetcher-react';
 import { ActiveFilter, FilterPanelProps, FilterPanel } from './FilterPanel';
 
-export interface EditableFilterPanelProps extends Omit<FilterPanelProps, 'actions'> {
+export interface EditableFilterPanelProps
+  extends Omit<FilterPanelProps, 'actions'> {
   availableFilters: AvailableFilterGroup[];
 }
 
@@ -69,7 +70,10 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onSave={handleAddFilter}
-        availableFilters={{ filters: availableFilters, activeFilters: activeFilters }}
+        availableFilters={{
+          filters: availableFilters,
+          activeFilters: activeFilters,
+        }}
       />
     </>
   );

@@ -14,7 +14,11 @@
 import { FilterProps } from './types';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
-import { ConditionValueParser, OnOperatorChangeValueConverter, UseFilterStateReturn } from './useFilterState';
+import {
+  ConditionValueParser,
+  OnOperatorChangeValueConverter,
+  UseFilterStateReturn,
+} from './useFilterState';
 import { DatePicker, InputNumber } from 'antd';
 import { Optional } from '../types';
 import { Dayjs, isDayjs } from 'dayjs';
@@ -22,44 +26,50 @@ import { ExtendedOperator, SelectOperator } from './operator';
 
 export const DATE_TIME_FILTER_NAME = 'datetime';
 const TIME_FORMAT = 'HH:mm:ss';
-const DateTimeNumberValueOperators = new Set(
-  [
-    Operator.RECENT_DAYS,
-    Operator.EARLIER_DAYS,
-  ],
-);
+const DateTimeNumberValueOperators = new Set([
+  Operator.RECENT_DAYS,
+  Operator.EARLIER_DAYS,
+]);
 
-const DateTimeDayjsValueOperators = new Set(
-  [
-    Operator.GT,
-    Operator.LT,
-    Operator.GTE,
-    Operator.LTE,
-  ],
-);
+const DateTimeDayjsValueOperators = new Set([
+  Operator.GT,
+  Operator.LT,
+  Operator.GTE,
+  Operator.LTE,
+]);
 
-export const DateTimeOnOperatorChangeValueConverter: OnOperatorChangeValueConverter = (
-  beforeOperator: SelectOperator,
-  afterOperator: SelectOperator,
-  value: Optional<number | Dayjs | Dayjs[]>,
-) => {
-  if (beforeOperator === ExtendedOperator.UNDEFINED || afterOperator === ExtendedOperator.UNDEFINED) {
-    return value;
-  }
-  if (DateTimeNumberValueOperators.has(beforeOperator) && DateTimeNumberValueOperators.has(afterOperator)) {
-    return value;
-  }
-  if (DateTimeDayjsValueOperators.has(beforeOperator)) {
-    if (DateTimeDayjsValueOperators.has(afterOperator)) {
+export const DateTimeOnOperatorChangeValueConverter: OnOperatorChangeValueConverter =
+  (
+    beforeOperator: SelectOperator,
+    afterOperator: SelectOperator,
+    value: Optional<number | Dayjs | Dayjs[]>,
+  ) => {
+    if (
+      beforeOperator === ExtendedOperator.UNDEFINED ||
+      afterOperator === ExtendedOperator.UNDEFINED
+    ) {
       return value;
     }
-    if (afterOperator === Operator.BETWEEN) {
-      return [value, undefined];
+    if (
+      DateTimeNumberValueOperators.has(beforeOperator) &&
+      DateTimeNumberValueOperators.has(afterOperator)
+    ) {
+      return value;
     }
-  }
-  return undefined;
-};
-export const TimestampConditionValueParser: ConditionValueParser = (operator: Operator, value: Optional<number | Dayjs | Dayjs[]>) => {
+    if (DateTimeDayjsValueOperators.has(beforeOperator)) {
+      if (DateTimeDayjsValueOperators.has(afterOperator)) {
+        return value;
+      }
+      if (afterOperator === Operator.BETWEEN) {
+        return [value, undefined];
+      }
+    }
+    return undefined;
+  };
+export const TimestampConditionValueParser: ConditionValueParser = (
+  operator: Operator,
+  value: Optional<number | Dayjs | Dayjs[]>,
+) => {
   if (!value) {
     return undefined;
   }
@@ -85,9 +95,7 @@ export const TimestampConditionValueParser: ConditionValueParser = (operator: Op
   return undefined;
 };
 
-export function DateTimeFilter(
-  props: FilterProps,
-) {
+export function DateTimeFilter(props: FilterProps) {
   const assemblyConditionFilterProps: AssemblyFilterProps = {
     ...props,
     supportedOperators: [
@@ -109,17 +117,17 @@ export function DateTimeFilter(
     ],
     onOperatorChangeValueConverter: DateTimeOnOperatorChangeValueConverter,
     conditionValueParser: TimestampConditionValueParser,
-    valueInputRender: (
-      filterState: UseFilterStateReturn,
-    ) => {
+    valueInputRender: (filterState: UseFilterStateReturn) => {
       switch (filterState.operator) {
         case Operator.BETWEEN: {
           const { placeholder, ...rangResetProps } = props.value || {};
-          return (<DatePicker.RangePicker
-            value={filterState.value}
-            onChange={filterState.setValue}
-            {...rangResetProps}
-          />);
+          return (
+            <DatePicker.RangePicker
+              value={filterState.value}
+              onChange={filterState.setValue}
+              {...rangResetProps}
+            />
+          );
         }
         case Operator.TODAY:
         case Operator.TOMORROW:
@@ -132,33 +140,40 @@ export function DateTimeFilter(
         }
         case Operator.RECENT_DAYS:
         case Operator.EARLIER_DAYS: {
-          return (<InputNumber value={filterState.value} min={1} onChange={filterState.setValue} {...props.value} />);
+          return (
+            <InputNumber
+              value={filterState.value}
+              min={1}
+              onChange={filterState.setValue}
+              {...props.value}
+            />
+          );
         }
         case Operator.BEFORE_TODAY: {
-          return (<DatePicker
-            picker={'time'}
-            value={filterState.value}
-            onChange={filterState.setValue}
-            {...props.value}
-          />);
+          return (
+            <DatePicker
+              picker={'time'}
+              value={filterState.value}
+              onChange={filterState.setValue}
+              {...props.value}
+            />
+          );
         }
         default: {
-          return (<DatePicker
-            value={filterState.value}
-            picker={'date'}
-            showNow={false}
-            onChange={filterState.setValue}
-            {...props.value}
-          />);
+          return (
+            <DatePicker
+              value={filterState.value}
+              picker={'date'}
+              showNow={false}
+              onChange={filterState.setValue}
+              {...props.value}
+            />
+          );
         }
       }
     },
   };
-  return (
-    <AssemblyFilter
-      {...assemblyConditionFilterProps}
-    ></AssemblyFilter>
-  );
+  return <AssemblyFilter {...assemblyConditionFilterProps}></AssemblyFilter>;
 }
 
 DateTimeFilter.displayName = 'DateTimeFilter';

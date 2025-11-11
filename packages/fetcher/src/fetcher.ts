@@ -77,8 +77,7 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  */
 export interface RequestOptions
   extends AttributesCapable,
-    ResultExtractorCapable {
-}
+    ResultExtractorCapable {}
 
 export const DEFAULT_REQUEST_OPTIONS: RequestOptions = {
   resultExtractor: ResultExtractors.Exchange,
@@ -107,7 +106,8 @@ export const DEFAULT_FETCH_OPTIONS: RequestOptions = {
  * ```
  */
 export class Fetcher
-  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable {
+  implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable
+{
   urlBuilder: UrlBuilder;
   headers?: RequestHeaders = DEFAULT_HEADERS;
   timeout?: number;

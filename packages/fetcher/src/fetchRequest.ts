@@ -109,12 +109,12 @@ export type RequestBodyType = BodyInit | Record<string, any> | string | null;
  * const response = await fetcher.fetch('/users/{id}', request);
  * ```
  */
-export interface FetchRequestInit<BODY extends RequestBodyType = RequestBodyType>
-  extends TimeoutCapable,
+export interface FetchRequestInit<
+  BODY extends RequestBodyType = RequestBodyType,
+> extends TimeoutCapable,
     RequestHeadersCapable,
     UrlParamsCapable,
     Omit<RequestInit, 'body' | 'headers'> {
-
   /**
    * Request body
    *
@@ -171,7 +171,8 @@ export interface FetchRequestInit<BODY extends RequestBodyType = RequestBodyType
  * Extends FetchRequestInit with a required URL property.
  * Represents a complete request configuration ready to be executed.
  */
-export interface FetchRequest<BODY extends RequestBodyType = RequestBodyType> extends FetchRequestInit<BODY> {
+export interface FetchRequest<BODY extends RequestBodyType = RequestBodyType>
+  extends FetchRequestInit<BODY> {
   /**
    * The URL for this request
    */

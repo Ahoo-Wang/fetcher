@@ -136,8 +136,7 @@ describe('reflection', () => {
 
     it('should return empty array when function parsing fails', () => {
       // Create a function that throws an exception when toString is called
-      const weirdFunc = () => {
-      };
+      const weirdFunc = () => {};
       weirdFunc.toString = () => {
         throw new Error('Parsing error');
       };
@@ -236,8 +235,7 @@ describe('reflection', () => {
         method: any;
 
         constructor() {
-          this.method = () => {
-          };
+          this.method = () => {};
           this.method.toString = () => {
             throw new Error('Parsing error');
           };
@@ -252,7 +250,7 @@ describe('reflection', () => {
     it('should handle parameter with colon', () => {
       // Create a mock function that simulates having type annotations
       const mockObj: any = {
-        testFunc: function(userId: string, options: object) {
+        testFunc: function (userId: string, options: object) {
           return { userId, options };
         },
       };

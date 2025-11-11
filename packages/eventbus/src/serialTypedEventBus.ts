@@ -32,7 +32,6 @@ import { AbstractTypedEventBus } from './abstractTypedEventBus';
  * ```
  */
 export class SerialTypedEventBus<EVENT> extends AbstractTypedEventBus<EVENT> {
-
   /**
    * Creates an in-memory typed event bus
    *

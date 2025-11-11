@@ -75,7 +75,7 @@ describe('readableStreams', () => {
     // 创建一个自定义的 [Symbol.asyncIterator] 实现
     const customSymbol = Symbol('customAsyncIterator');
     // @ts-expect-error - TypeScript complains about deleting non-optional properties
-    ReadableStream.prototype[Symbol.asyncIterator] = function() {
+    ReadableStream.prototype[Symbol.asyncIterator] = function () {
       return {
         [customSymbol]: true,
         next: () => Promise.resolve({ done: true, value: undefined }),

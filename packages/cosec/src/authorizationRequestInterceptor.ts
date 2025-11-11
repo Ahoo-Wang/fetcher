@@ -20,8 +20,7 @@ import { CoSecHeaders, JwtTokenManagerCapable } from './types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AuthorizationInterceptorOptions
-  extends JwtTokenManagerCapable {
-}
+  extends JwtTokenManagerCapable {}
 
 export const AUTHORIZATION_REQUEST_INTERCEPTOR_NAME =
   'AuthorizationRequestInterceptor';
@@ -47,8 +46,7 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
    *
    * @param options - Configuration options containing the token manager
    */
-  constructor(private readonly options: AuthorizationInterceptorOptions) {
-  }
+  constructor(private readonly options: AuthorizationInterceptorOptions) {}
 
   /**
    * Intercepts the request exchange to add authorization headers.

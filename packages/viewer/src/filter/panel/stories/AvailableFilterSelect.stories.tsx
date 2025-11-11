@@ -16,7 +16,9 @@ import React, { useRef, useState } from 'react';
 import {
   AvailableFilterSelect,
   AvailableFilterSelectRef,
-  AvailableFilterGroup, AvailableFilter, AvailableFilterSelectProps,
+  AvailableFilterGroup,
+  AvailableFilter,
+  AvailableFilterSelectProps,
 } from '../AvailableFilterSelect';
 import { Card, Typography, Space, Button, Divider } from 'antd';
 
@@ -35,16 +37,14 @@ function AvailableFilterSelectDemo(props: AvailableFilterSelectProps) {
         <Button onClick={handleGetValue} type="primary">
           获取选中过滤器
         </Button>
-        {
-          selected && (
-            <>
-              <Divider></Divider>
-              <Typography.Text type="secondary" code>
-                {JSON.stringify(selected)}
-              </Typography.Text>
-            </>
-          )
-        }
+        {selected && (
+          <>
+            <Divider></Divider>
+            <Typography.Text type="secondary" code>
+              {JSON.stringify(selected)}
+            </Typography.Text>
+          </>
+        )}
       </Space>
     </Card>
   );

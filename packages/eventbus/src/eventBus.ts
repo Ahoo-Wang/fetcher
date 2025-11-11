@@ -40,8 +40,7 @@ export class EventBus<Events extends Record<EventType, unknown>> {
    *
    * @param typeEventBusSupplier - Function to create TypedEventBus for specific event types
    */
-  constructor(private readonly typeEventBusSupplier: TypeEventBusSupplier) {
-  }
+  constructor(private readonly typeEventBusSupplier: TypeEventBusSupplier) {}
 
   /**
    * Adds an event handler for a specific event type
@@ -71,10 +70,7 @@ export class EventBus<Events extends Record<EventType, unknown>> {
    * @param name - The name of the event handler to remove
    * @returns true if a handler was removed, false otherwise
    */
-  off<Key extends EventType>(
-    type: Key,
-    name: string,
-  ): boolean {
+  off<Key extends EventType>(type: Key, name: string): boolean {
     return this.buses.get(type)?.off(name) ?? false;
   }
 

@@ -1,22 +1,11 @@
-import {
-  describe,
-  it,
-  expect,
-  vi,
-  beforeAll,
-  afterAll,
-} from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import {
   HttpMethod,
   JsonResultExtractor,
   ExchangeResultExtractor,
   NamedFetcher,
 } from '@ahoo-wang/fetcher';
-import {
-  RequestExecutor,
-  EndpointReturnType,
-
-} from '../src';
+import { RequestExecutor, EndpointReturnType } from '../src';
 import { FunctionMetadata } from '../src';
 import { ParameterType, type ParameterMetadata } from '../src';
 

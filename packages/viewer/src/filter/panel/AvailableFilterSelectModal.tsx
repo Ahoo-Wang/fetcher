@@ -12,7 +12,12 @@
  */
 
 import { Modal, ModalProps } from 'antd';
-import { AvailableFilter, AvailableFilterSelect, AvailableFilterSelectProps, AvailableFilterSelectRef } from './AvailableFilterSelect';
+import {
+  AvailableFilter,
+  AvailableFilterSelect,
+  AvailableFilterSelectProps,
+  AvailableFilterSelectRef,
+} from './AvailableFilterSelect';
 import React, { useRef } from 'react';
 
 export interface AvailableFiltersModalProps extends Omit<ModalProps, 'onOk'> {
@@ -27,7 +32,10 @@ export function AvailableFilterSelectModal(props: AvailableFiltersModalProps) {
   };
   return (
     <Modal {...props} onOk={handleOk}>
-      <AvailableFilterSelect  {...props.availableFilters} ref={availableFilterSelectRef} />
+      <AvailableFilterSelect
+        {...props.availableFilters}
+        ref={availableFilterSelectRef}
+      />
     </Modal>
   );
 }

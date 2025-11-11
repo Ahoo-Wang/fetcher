@@ -41,8 +41,7 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
   constructor(
     public readonly tokenStorage: TokenStorage,
     public readonly tokenRefresher: TokenRefresher,
-  ) {
-  }
+  ) {}
 
   /**
    * Gets the current JWT composite token from storage

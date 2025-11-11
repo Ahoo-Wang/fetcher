@@ -14,7 +14,8 @@
 import { FilterProps, FilterValueProps } from './types';
 import { OPERATOR_zh_CN } from './operator';
 import {
-  ConditionValueParser, FilterValueConverter,
+  ConditionValueParser,
+  FilterValueConverter,
   OnOperatorChangeValueConverter,
   useFilterState,
   UseFilterStateReturn,
@@ -28,7 +29,9 @@ export type ValueInputRender = (
   filterState: UseFilterStateReturn,
 ) => ReactNode | null;
 
-export interface AssemblyFilterProps<ValuePropsType extends FilterValueProps = FilterValueProps> extends FilterProps<ValuePropsType> {
+export interface AssemblyFilterProps<
+  ValuePropsType extends FilterValueProps = FilterValueProps,
+> extends FilterProps<ValuePropsType> {
   supportedOperators: SelectOperator[];
   onOperatorChangeValueConverter?: OnOperatorChangeValueConverter;
   validate?: ValidateValue;
@@ -37,10 +40,9 @@ export interface AssemblyFilterProps<ValuePropsType extends FilterValueProps = F
   valueInputRender?: ValueInputRender;
 }
 
-export function AssemblyFilter(
-  { ref, ...props }: AssemblyFilterProps,
-) {
-  const supportedOperators = props.operator?.supportedOperators ?? props.supportedOperators;
+export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
+  const supportedOperators =
+    props.operator?.supportedOperators ?? props.supportedOperators;
   // Validate that supportedOperators is not empty
   if (!supportedOperators || supportedOperators.length === 0) {
     throw new Error('supportedOperators must be a non-empty array');
@@ -72,11 +74,7 @@ export function AssemblyFilter(
     label: operatorLocale[supportedOperator],
   }));
   return (
-    <Space.Compact
-      block
-      style={props.style}
-      className={props.className}
-    >
+    <Space.Compact block style={props.style} className={props.className}>
       <Button {...props.label}>{props.field.label}</Button>
       <Select
         style={{ minWidth: 120 }}

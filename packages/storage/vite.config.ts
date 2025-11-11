@@ -23,9 +23,7 @@ export default defineConfig({
       fileName: format => `index.${format}.js`,
     },
     rollupOptions: {
-      external: [
-        '@ahoo-wang/fetcher-eventbus',
-      ],
+      external: ['@ahoo-wang/fetcher-eventbus'],
       output: {
         globals: {
           '@ahoo-wang/fetcher-eventbus': 'FetcherEventBus',

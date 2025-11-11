@@ -20,29 +20,39 @@ import { UseFilterStateReturn } from './useFilterState';
 
 export const TEXT_FILTER = 'text';
 
-export function TextFilter(
-  props: FilterProps,
-) {
+export function TextFilter(props: FilterProps) {
   const assemblyFilterProps: AssemblyFilterProps = {
     ...props,
-    supportedOperators: [Operator.EQ, Operator.NE, Operator.CONTAINS, Operator.STARTS_WITH, Operator.ENDS_WITH, Operator.IN, Operator.NOT_IN],
+    supportedOperators: [
+      Operator.EQ,
+      Operator.NE,
+      Operator.CONTAINS,
+      Operator.STARTS_WITH,
+      Operator.ENDS_WITH,
+      Operator.IN,
+      Operator.NOT_IN,
+    ],
     valueInputRender: (filterState: UseFilterStateReturn) => {
       switch (filterState.operator) {
         case Operator.IN:
         case Operator.NOT_IN: {
-          return <TagInput
-            value={filterState.value}
-            onChange={filterState.setValue}
-            {...props.value}
-          />;
+          return (
+            <TagInput
+              value={filterState.value}
+              onChange={filterState.setValue}
+              {...props.value}
+            />
+          );
         }
         default: {
-          return <Input
-            value={filterState.value}
-            onChange={e => filterState.setValue(e.target.value)}
-            allowClear
-            {...props.value}
-          />;
+          return (
+            <Input
+              value={filterState.value}
+              onChange={e => filterState.setValue(e.target.value)}
+              allowClear
+              {...props.value}
+            />
+          );
         }
       }
     },

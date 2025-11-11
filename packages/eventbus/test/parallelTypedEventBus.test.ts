@@ -83,8 +83,7 @@ describe('ParallelTypedEventBus', () => {
 
   it('should log errors but continue', async () => {
     const bus = new ParallelTypedEventBus<string>('test');
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {
-    });
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const h1 = {
       name: 'h1',
       order: 1,

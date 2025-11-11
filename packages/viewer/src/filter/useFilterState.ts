@@ -11,18 +11,32 @@
  * limitations under the License.
  */
 
-import { Condition, ConditionOptions, EMPTY_VALUE_OPERATORS, Operator } from '@ahoo-wang/fetcher-wow';
+import {
+  Condition,
+  ConditionOptions,
+  EMPTY_VALUE_OPERATORS,
+  Operator,
+} from '@ahoo-wang/fetcher-wow';
 import { RefAttributes, useImperativeHandle, useState } from 'react';
 import { FilterRef, FilterValue } from './types';
 import { Optional } from '../types';
 import { ExtendedOperator, SelectOperator } from './operator';
 import { isValidBetweenValue } from './utils';
 
-export type OnOperatorChangeValueConverter = (beforeOperator: SelectOperator, afterOperator: SelectOperator, value: Optional) => Optional
+export type OnOperatorChangeValueConverter = (
+  beforeOperator: SelectOperator,
+  afterOperator: SelectOperator,
+  value: Optional,
+) => Optional;
 export type OnChange = (condition: Optional<FilterValue>) => void;
 export type ValidateValue = (operator: Operator, value: Optional) => boolean;
-export type ConditionValueParser = (operator: Operator, value: Optional) => Optional;
-export type FilterValueConverter = (filterValue: FilterValue) => Optional<FilterValue>;
+export type ConditionValueParser = (
+  operator: Operator,
+  value: Optional,
+) => Optional;
+export type FilterValueConverter = (
+  filterValue: FilterValue,
+) => Optional<FilterValue>;
 export const TrueValidateValue: ValidateValue = (): boolean => {
   return true;
 };
@@ -47,7 +61,10 @@ export interface UseFilterStateReturn {
   reset: () => void;
 }
 
-const defaultValidateValue: ValidateValue = (operator: Operator, value: any): boolean => {
+const defaultValidateValue: ValidateValue = (
+  operator: Operator,
+  value: any,
+): boolean => {
   if (!operator) return false;
   if (EMPTY_VALUE_OPERATORS.has(operator)) {
     return true;
@@ -62,26 +79,43 @@ const defaultValidateValue: ValidateValue = (operator: Operator, value: any): bo
   return true;
 };
 
-const defaultConditionValueParser: ConditionValueParser = (operator: Operator, value: any): any => {
+const defaultConditionValueParser: ConditionValueParser = (
+  operator: Operator,
+  value: any,
+): any => {
   return value;
 };
 
-const defaultValueConverter: OnOperatorChangeValueConverter = (beforeOperator: SelectOperator, afterOperator: SelectOperator, value: any) => {
+const defaultValueConverter: OnOperatorChangeValueConverter = (
+  beforeOperator: SelectOperator,
+  afterOperator: SelectOperator,
+  value: any,
+) => {
   return value;
 };
 
-const defaultFilterValueConverter: FilterValueConverter = (filterValue: FilterValue): Optional<FilterValue> => {
+const defaultFilterValueConverter: FilterValueConverter = (
+  filterValue: FilterValue,
+): Optional<FilterValue> => {
   return filterValue;
 };
 
-export function useFilterState(options: UseFilterStateOptions): UseFilterStateReturn {
+export function useFilterState(
+  options: UseFilterStateOptions,
+): UseFilterStateReturn {
   const [operator, setOperator] = useState<SelectOperator>(options.operator);
   const [value, setValue] = useState<Optional>(options.value);
   const validate = options.validate ?? defaultValidateValue;
-  const valueParser = options.conditionValueParser ?? defaultConditionValueParser;
-  const valueConverter = options.onOperatorChangeValueConverter ?? defaultValueConverter;
-  const filterValueConverter = options.filterValueConverter ?? defaultFilterValueConverter;
-  const resolveFilterValue = (currentOperator: SelectOperator, currentValue: Optional): Optional<FilterValue> => {
+  const valueParser =
+    options.conditionValueParser ?? defaultConditionValueParser;
+  const valueConverter =
+    options.onOperatorChangeValueConverter ?? defaultValueConverter;
+  const filterValueConverter =
+    options.filterValueConverter ?? defaultFilterValueConverter;
+  const resolveFilterValue = (
+    currentOperator: SelectOperator,
+    currentValue: Optional,
+  ): Optional<FilterValue> => {
     if (currentOperator === ExtendedOperator.UNDEFINED) {
       return undefined;
     }

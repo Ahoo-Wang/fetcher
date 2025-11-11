@@ -92,5 +92,4 @@ describe('BroadcastChannelMessenger', () => {
     expect(handler1).not.toHaveBeenCalled();
     expect(handler2).toHaveBeenCalledWith('test');
   });
-
 });

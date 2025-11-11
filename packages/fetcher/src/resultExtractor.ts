@@ -103,9 +103,9 @@ export const BlobResultExtractor: ResultExtractor<Promise<Blob>> = (
  * @param exchange - The FetchExchange containing the response with ArrayBuffer data
  * @returns A Promise that resolves to the response body as an ArrayBuffer
  */
-export const ArrayBufferResultExtractor: ResultExtractor<Promise<ArrayBuffer>> = (
-  exchange: FetchExchange,
-) => {
+export const ArrayBufferResultExtractor: ResultExtractor<
+  Promise<ArrayBuffer>
+> = (exchange: FetchExchange) => {
   return exchange.requiredResponse.arrayBuffer();
 };
 
@@ -117,9 +117,9 @@ export const ArrayBufferResultExtractor: ResultExtractor<Promise<ArrayBuffer>> =
  * @param exchange - The FetchExchange containing the response with byte data
  * @returns A Promise that resolves to the response body as a Uint8Array
  */
-export const BytesResultExtractor: ResultExtractor<Promise<Uint8Array<ArrayBuffer>>> = (
-  exchange: FetchExchange,
-) => {
+export const BytesResultExtractor: ResultExtractor<
+  Promise<Uint8Array<ArrayBuffer>>
+> = (exchange: FetchExchange) => {
   return exchange.requiredResponse.bytes();
 };
 

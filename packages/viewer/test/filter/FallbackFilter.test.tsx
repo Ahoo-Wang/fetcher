@@ -15,10 +15,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FallbackFilter } from '../../src';
-import {
-  FilterRef,
-  FilterValue,
-} from '../../src';
+import { FilterRef, FilterValue } from '../../src';
 import { TypedFilterProps } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
@@ -30,9 +27,7 @@ const createMockProps = (type: string): TypedFilterProps => ({
     label: 'Test Field',
     type: 'string',
   },
-  label: {
-
-  },
+  label: {},
   operator: {
     defaultValue: Operator.EQ,
   },
@@ -100,10 +95,7 @@ describe('FallbackFilter', () => {
       const props = createMockProps('test');
 
       render(
-        <FallbackFilter
-          ref={ref as React.RefObject<FilterRef>}
-          {...props}
-        />,
+        <FallbackFilter ref={ref as React.RefObject<FilterRef>} {...props} />,
       );
 
       expect(ref.current).toHaveProperty('getValue');
@@ -115,10 +107,7 @@ describe('FallbackFilter', () => {
       const props = createMockProps('any-type');
 
       render(
-        <FallbackFilter
-          ref={ref as React.RefObject<FilterRef>}
-          {...props}
-        />,
+        <FallbackFilter ref={ref as React.RefObject<FilterRef>} {...props} />,
       );
 
       const result = ref.current?.getValue();
@@ -133,10 +122,7 @@ describe('FallbackFilter', () => {
         const props = createMockProps(type);
 
         render(
-          <FallbackFilter
-            ref={ref as React.RefObject<FilterRef>}
-            {...props}
-          />,
+          <FallbackFilter ref={ref as React.RefObject<FilterRef>} {...props} />,
         );
         expect(ref.current?.getValue()).toBeUndefined();
       });
@@ -255,9 +241,7 @@ describe('FallbackFilter', () => {
     it('accepts correct TypeScript props', () => {
       const props: TypedFilterProps = createMockProps('string');
 
-      expect(() =>
-        render(<FallbackFilter {...props} />),
-      ).not.toThrow();
+      expect(() => render(<FallbackFilter {...props} />)).not.toThrow();
     });
 
     it('works with ref typing', () => {
@@ -266,10 +250,7 @@ describe('FallbackFilter', () => {
 
       expect(() =>
         render(
-          <FallbackFilter
-            ref={ref as React.RefObject<FilterRef>}
-            {...props}
-          />,
+          <FallbackFilter ref={ref as React.RefObject<FilterRef>} {...props} />,
         ),
       ).not.toThrow();
 

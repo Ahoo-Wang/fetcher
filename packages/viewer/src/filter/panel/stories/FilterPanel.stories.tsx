@@ -75,11 +75,11 @@ const defaultFilterPanelProps: FilterPanelProps = {
         label: 'Is Active',
         type: 'bool',
       },
-      operator:{
+      operator: {
         style: {
           width: '100%',
         },
-      }
+      },
     },
     {
       key: 'status',
@@ -129,9 +129,11 @@ function FilterPanelDemo(props: FilterPanelProps) {
     <Card>
       <FilterPanel {...props} onSearch={setCondition} />
       <Divider></Divider>
-      {condition && <Typography.Text code copyable>
-        {JSON.stringify(condition)}
-      </Typography.Text>}
+      {condition && (
+        <Typography.Text code copyable>
+          {JSON.stringify(condition)}
+        </Typography.Text>
+      )}
     </Card>
   );
 }

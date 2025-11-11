@@ -92,8 +92,7 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
  * };
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface RequestInterceptor extends Interceptor {
-}
+export interface RequestInterceptor extends Interceptor {}
 
 /**
  * Interface for response interceptors.
@@ -117,8 +116,7 @@ export interface RequestInterceptor extends Interceptor {
  * };
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ResponseInterceptor extends Interceptor {
-}
+export interface ResponseInterceptor extends Interceptor {}
 
 /**
  * Interface for error interceptors.
@@ -147,8 +145,7 @@ export interface ResponseInterceptor extends Interceptor {
  * };
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ErrorInterceptor extends Interceptor {
-}
+export interface ErrorInterceptor extends Interceptor {}
 
 /**
  * Registry for a collection of interceptors of the same type.

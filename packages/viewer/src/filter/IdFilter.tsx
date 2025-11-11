@@ -23,34 +23,33 @@ import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 
 export const ID_FILTER = 'id';
 
-export const IdOnOperatorChangeValueConverter: OnOperatorChangeValueConverter = (beforeOperator, afterOperator, value) => {
-  if (value === undefined || value === null) {
-    return value;
-  }
-  if (afterOperator === Operator.ID) {
-    if (Array.isArray(value)) {
-      return value[0];
+export const IdOnOperatorChangeValueConverter: OnOperatorChangeValueConverter =
+  (beforeOperator, afterOperator, value) => {
+    if (value === undefined || value === null) {
+      return value;
     }
-    return value;
-  }
-  if (Array.isArray(value)) {
-    return value;
-  }
-  const trimmedValue = value.trim();
-  if (!trimmedValue) {
-    return [];
-  }
-  return [trimmedValue];
-};
+    if (afterOperator === Operator.ID) {
+      if (Array.isArray(value)) {
+        return value[0];
+      }
+      return value;
+    }
+    if (Array.isArray(value)) {
+      return value;
+    }
+    const trimmedValue = value.trim();
+    if (!trimmedValue) {
+      return [];
+    }
+    return [trimmedValue];
+  };
 
 export function IdFilter(props: FilterProps) {
   const assemblyFilterProps: AssemblyFilterProps = {
     ...props,
     supportedOperators: [Operator.ID, Operator.IDS],
     onOperatorChangeValueConverter: IdOnOperatorChangeValueConverter,
-    valueInputRender: (
-      filterState: UseFilterStateReturn,
-    ) => {
+    valueInputRender: (filterState: UseFilterStateReturn) => {
       return filterState.operator === Operator.ID ? (
         <Input
           value={filterState.value}
@@ -67,11 +66,7 @@ export function IdFilter(props: FilterProps) {
       );
     },
   };
-  return (
-    <AssemblyFilter
-      {...assemblyFilterProps}
-    ></AssemblyFilter>
-  );
+  return <AssemblyFilter {...assemblyFilterProps}></AssemblyFilter>;
 }
 
 IdFilter.displayName = 'IdConditionFilter';

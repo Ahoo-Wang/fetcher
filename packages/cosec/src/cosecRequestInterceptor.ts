@@ -21,8 +21,7 @@ import { idGenerator } from './idGenerator';
 
 export interface CoSecRequestOptions
   extends AppIdCapable,
-    DeviceIdStorageCapable {
-}
+    DeviceIdStorageCapable {}
 
 /**
  * The name of the CoSecRequestInterceptor.

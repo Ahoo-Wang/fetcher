@@ -196,7 +196,7 @@ export const PARAMETER_METADATA_KEY = Symbol('parameter:metadata');
  * ```
  */
 export function parameter(type: ParameterType, name: string = '') {
-  return function(
+  return function (
     target: object,
     propertyKey: string | symbol,
     parameterIndex: number,
@@ -348,8 +348,10 @@ export function body() {
  * the @request() decorator. This allows full customization of
  * the HTTP request including method, headers, body, and URL parameters.
  */
-export interface ParameterRequest<BODY extends RequestBodyType = RequestBodyType> extends FetchRequestInit<BODY>, PathCapable {
-}
+export interface ParameterRequest<
+  BODY extends RequestBodyType = RequestBodyType,
+> extends FetchRequestInit<BODY>,
+    PathCapable {}
 
 /**
  * Request parameter decorator.

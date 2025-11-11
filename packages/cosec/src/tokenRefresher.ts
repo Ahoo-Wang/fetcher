@@ -33,8 +33,7 @@ export interface RefreshToken {
  *
  * accessToken and refreshToken always appear in pairs, no need to split them.
  */
-export interface CompositeToken extends AccessToken, RefreshToken {
-}
+export interface CompositeToken extends AccessToken, RefreshToken {}
 
 /**
  * Interface for token refreshers.
@@ -66,8 +65,7 @@ export class CoSecTokenRefresher implements TokenRefresher {
    *
    * @param options The configuration options for the token refresher including fetcher and endpoint
    */
-  constructor(public readonly options: CoSecTokenRefresherOptions) {
-  }
+  constructor(public readonly options: CoSecTokenRefresherOptions) {}
 
   /**
    * Refresh the given token and return a new CompositeToken.

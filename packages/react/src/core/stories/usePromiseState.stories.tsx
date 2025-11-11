@@ -25,9 +25,9 @@ interface PromiseStateDemoProps {
 }
 
 function PromiseStateDemo({
-                            initialStatus = PromiseStatus.IDLE,
-                            showCallbacks = false,
-                          }: PromiseStateDemoProps) {
+  initialStatus = PromiseStatus.IDLE,
+  showCallbacks = false,
+}: PromiseStateDemoProps) {
   const {
     status,
     loading,

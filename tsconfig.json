@@ -17,12 +17,6 @@
     "composite": true,
     "incremental": true
   },
-  "include": [
-    "packages/*/src",
-    ".storybook"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["packages/*/src", ".storybook"],
+  "exclude": ["node_modules", "dist"]
 }

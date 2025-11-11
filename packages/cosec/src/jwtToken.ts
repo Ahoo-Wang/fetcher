@@ -38,7 +38,8 @@ export interface IJwtToken<Payload extends JwtPayload>
  * @template Payload The type of the JWT payload
  */
 export class JwtToken<Payload extends JwtPayload>
-  implements IJwtToken<Payload> {
+  implements IJwtToken<Payload>
+{
   public readonly payload: Payload | null;
 
   /**
@@ -80,7 +81,8 @@ export interface RefreshTokenStatusCapable {
  * Class representing a composite token containing both access and refresh tokens
  */
 export class JwtCompositeToken
-  implements EarlyPeriodCapable, RefreshTokenStatusCapable {
+  implements EarlyPeriodCapable, RefreshTokenStatusCapable
+{
   public readonly access: JwtToken<CoSecJwtPayload>;
   public readonly refresh: JwtToken<JwtPayload>;
 
@@ -116,9 +118,9 @@ export class JwtCompositeToken
  * Serializer for JwtCompositeToken that handles conversion to and from JSON strings
  */
 export class JwtCompositeTokenSerializer
-  implements Serializer<string, JwtCompositeToken>, EarlyPeriodCapable {
-  constructor(public readonly earlyPeriod: number = 0) {
-  }
+  implements Serializer<string, JwtCompositeToken>, EarlyPeriodCapable
+{
+  constructor(public readonly earlyPeriod: number = 0) {}
 
   /**
    * Deserializes a JSON string to a JwtCompositeToken

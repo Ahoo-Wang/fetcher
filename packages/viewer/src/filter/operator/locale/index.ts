@@ -11,4 +11,4 @@
  * limitations under the License.
  */
 
-export * from './operator.zh_CN'
+export * from './operator.zh_CN';

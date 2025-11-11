@@ -19,7 +19,11 @@ import { OpenAI } from '../openai';
 import type { ChatResponse } from '../chat';
 import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
-import { BroadcastTypedEventBus, ParallelTypedEventBus, SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
+import {
+  BroadcastTypedEventBus,
+  ParallelTypedEventBus,
+  SerialTypedEventBus,
+} from '@ahoo-wang/fetcher-eventbus';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -40,26 +44,35 @@ export default meta;
 type Story = StoryObj;
 
 const baseUrlKeyStorage = new KeyStorage<string>({
-  key: 'fetcher_story_openai_baseUrl', eventBus: new BroadcastTypedEventBus(
-    { delegate: new ParallelTypedEventBus('fetcher_story_openai_baseUrl') },
-  ),
+  key: 'fetcher_story_openai_baseUrl',
+  eventBus: new BroadcastTypedEventBus({
+    delegate: new ParallelTypedEventBus('fetcher_story_openai_baseUrl'),
+  }),
 });
 
 const apiKeyStorage = new KeyStorage<string>({
-  key: 'fetcher_story_openai_apiKey', eventBus: new BroadcastTypedEventBus(
-    { delegate: new SerialTypedEventBus('fetcher_story_openai_apiKey') },
-  ),
+  key: 'fetcher_story_openai_apiKey',
+  eventBus: new BroadcastTypedEventBus({
+    delegate: new SerialTypedEventBus('fetcher_story_openai_apiKey'),
+  }),
 });
 
 const modelStorage = new KeyStorage<string>({
-  key: 'fetcher_story_openai_model', eventBus: new BroadcastTypedEventBus(
-    { delegate: new SerialTypedEventBus('fetcher_story_openai_model') },
-  ),
+  key: 'fetcher_story_openai_model',
+  eventBus: new BroadcastTypedEventBus({
+    delegate: new SerialTypedEventBus('fetcher_story_openai_model'),
+  }),
 });
 
 const OpenAIDemo: React.FC = () => {
-  const [baseURL, setBaseURL] = useKeyStorage(baseUrlKeyStorage, 'https://api.openai.com/v1');
-  const [apiKey, setApiKey] = useKeyStorage(apiKeyStorage, 'sk-your-api-key-here');
+  const [baseURL, setBaseURL] = useKeyStorage(
+    baseUrlKeyStorage,
+    'https://api.openai.com/v1',
+  );
+  const [apiKey, setApiKey] = useKeyStorage(
+    apiKeyStorage,
+    'sk-your-api-key-here',
+  );
   const [client, setClient] = useState<OpenAI | null>(null);
   const [error, setError] = useState<string>('');
 

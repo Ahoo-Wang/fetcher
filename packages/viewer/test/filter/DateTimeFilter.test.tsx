@@ -14,7 +14,12 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { DateTimeFilter, DATE_TIME_FILTER_NAME, DateTimeOnOperatorChangeValueConverter, TimestampConditionValueParser } from '../../src/filter/DateTimeFilter';
+import {
+  DateTimeFilter,
+  DATE_TIME_FILTER_NAME,
+  DateTimeOnOperatorChangeValueConverter,
+  TimestampConditionValueParser,
+} from '../../src/filter/DateTimeFilter';
 import { FilterRef, FilterValueProps } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { ExtendedOperator } from '../../src';
@@ -23,13 +28,15 @@ import dayjs from 'dayjs';
 // Use real dayjs instances for testing
 
 // Helper to create mock props
-const createMockProps = (overrides: Partial<{
-  field: any;
-  label: any;
-  operator: any;
-  value: FilterValueProps;
-  onChange: any;
-}> = {}) => {
+const createMockProps = (
+  overrides: Partial<{
+    field: any;
+    label: any;
+    operator: any;
+    value: FilterValueProps;
+    onChange: any;
+  }> = {},
+) => {
   const defaultProps = {
     field: {
       name: 'testDateTimeField',
@@ -67,11 +74,17 @@ describe('DateTimeFilter', () => {
 
     it('renders field label correctly', () => {
       const props = createMockProps({
-        field: { name: 'customField', label: 'Custom DateTime Label', type: 'datetime' },
+        field: {
+          name: 'customField',
+          label: 'Custom DateTime Label',
+          type: 'datetime',
+        },
       });
       render(<DateTimeFilter {...props} />);
 
-      expect(screen.getByRole('button', { name: 'Custom DateTime Label' })).toBeDefined();
+      expect(
+        screen.getByRole('button', { name: 'Custom DateTime Label' }),
+      ).toBeDefined();
     });
 
     it('renders operator selector', () => {
@@ -116,7 +129,7 @@ describe('DateTimeFilter', () => {
         Operator.LAST_MONTH,
       ];
 
-      operatorsWithoutInput.forEach((operator) => {
+      operatorsWithoutInput.forEach(operator => {
         const props = createMockProps({
           operator: { defaultValue: operator },
         });
@@ -130,7 +143,7 @@ describe('DateTimeFilter', () => {
     });
 
     it('renders InputNumber for RECENT_DAYS and EARLIER_DAYS operators', () => {
-      [Operator.RECENT_DAYS, Operator.EARLIER_DAYS].forEach((operator) => {
+      [Operator.RECENT_DAYS, Operator.EARLIER_DAYS].forEach(operator => {
         const props = createMockProps({
           operator: { defaultValue: operator },
           value: { defaultValue: 5 },
@@ -154,16 +167,20 @@ describe('DateTimeFilter', () => {
     });
 
     it('renders DatePicker with date picker for comparison operators (GT, LT, GTE, LTE)', () => {
-      [Operator.GT, Operator.LT, Operator.GTE, Operator.LTE].forEach((operator) => {
-        const props = createMockProps({
-          operator: { defaultValue: operator },
-          value: { defaultValue: dayjs() },
-        });
-        const { container } = render(<DateTimeFilter {...props} />);
+      [Operator.GT, Operator.LT, Operator.GTE, Operator.LTE].forEach(
+        operator => {
+          const props = createMockProps({
+            operator: { defaultValue: operator },
+            value: { defaultValue: dayjs() },
+          });
+          const { container } = render(<DateTimeFilter {...props} />);
 
-        const datePicker = container.querySelector('.ant-picker:not(.ant-picker-time)');
-        expect(datePicker).toBeDefined();
-      });
+          const datePicker = container.querySelector(
+            '.ant-picker:not(.ant-picker-time)',
+          );
+          expect(datePicker).toBeDefined();
+        },
+      );
     });
   });
 
@@ -171,7 +188,10 @@ describe('DateTimeFilter', () => {
     it('parses BETWEEN operator correctly with valid array', () => {
       const start = dayjs();
       const end = dayjs().add(1, 'day');
-      const result = TimestampConditionValueParser(Operator.BETWEEN, [start, end]);
+      const result = TimestampConditionValueParser(Operator.BETWEEN, [
+        start,
+        end,
+      ]);
       expect(result).toEqual([start.valueOf(), end.valueOf()]);
     });
 
@@ -183,14 +203,14 @@ describe('DateTimeFilter', () => {
         [],
       ];
 
-      invalidValues.forEach((value) => {
+      invalidValues.forEach(value => {
         const result = TimestampConditionValueParser(Operator.BETWEEN, value);
         expect(result).toBeUndefined();
       });
     });
 
     it('parses number operators (RECENT_DAYS, EARLIER_DAYS) correctly', () => {
-      [Operator.RECENT_DAYS, Operator.EARLIER_DAYS].forEach((operator) => {
+      [Operator.RECENT_DAYS, Operator.EARLIER_DAYS].forEach(operator => {
         const value = 7;
         const result = TimestampConditionValueParser(operator, value);
         expect(result).toBe(value);
@@ -199,29 +219,37 @@ describe('DateTimeFilter', () => {
 
     it('parses BEFORE_TODAY with dayjs value correctly', () => {
       const value = dayjs();
-      const result = TimestampConditionValueParser(Operator.BEFORE_TODAY, value);
+      const result = TimestampConditionValueParser(
+        Operator.BEFORE_TODAY,
+        value,
+      );
       expect(result).toBe(value.format('HH:mm:ss'));
     });
 
     it('parses comparison operators (GT, LT, GTE, LTE) to timestamp', () => {
-      [Operator.GT, Operator.LT, Operator.GTE, Operator.LTE].forEach((operator) => {
-        const value = dayjs();
-        const result = TimestampConditionValueParser(operator, value);
-        expect(result).toBe(value.valueOf());
-      });
+      [Operator.GT, Operator.LT, Operator.GTE, Operator.LTE].forEach(
+        operator => {
+          const value = dayjs();
+          const result = TimestampConditionValueParser(operator, value);
+          expect(result).toBe(value.valueOf());
+        },
+      );
     });
 
     it('returns undefined for falsy values', () => {
       const falsyValues = [undefined, null, ''];
 
-      falsyValues.forEach((value) => {
+      falsyValues.forEach(value => {
         const result = TimestampConditionValueParser(Operator.GT, value);
         expect(result).toBeUndefined();
       });
     });
 
     it('returns undefined for BEFORE_TODAY with non-dayjs value', () => {
-      const result = TimestampConditionValueParser(Operator.BEFORE_TODAY, 'not dayjs');
+      const result = TimestampConditionValueParser(
+        Operator.BEFORE_TODAY,
+        'not dayjs',
+      );
       expect(result).toBeUndefined();
     });
 
@@ -244,7 +272,7 @@ describe('DateTimeFilter', () => {
     });
 
     it('parses number operators (RECENT_DAYS, EARLIER_DAYS) correctly (integration)', () => {
-      [Operator.RECENT_DAYS, Operator.EARLIER_DAYS].forEach((operator) => {
+      [Operator.RECENT_DAYS, Operator.EARLIER_DAYS].forEach(operator => {
         const { ref } = renderWithRef({
           operator: { defaultValue: operator },
           value: { defaultValue: 7 },
@@ -267,53 +295,79 @@ describe('DateTimeFilter', () => {
     });
 
     it('parses comparison operators (GT, LT, GTE, LTE) to timestamp (integration)', () => {
-      [Operator.GT, Operator.LT, Operator.GTE, Operator.LTE].forEach((operator) => {
-        const dateValue = dayjs();
-        const { ref } = renderWithRef({
-          operator: { defaultValue: operator },
-          value: { defaultValue: dateValue },
-        });
+      [Operator.GT, Operator.LT, Operator.GTE, Operator.LTE].forEach(
+        operator => {
+          const dateValue = dayjs();
+          const { ref } = renderWithRef({
+            operator: { defaultValue: operator },
+            value: { defaultValue: dateValue },
+          });
 
-        const result = ref.current?.getValue();
-        expect(result?.condition.value).toBe(dateValue.valueOf());
-      });
+          const result = ref.current?.getValue();
+          expect(result?.condition.value).toBe(dateValue.valueOf());
+        },
+      );
     });
   });
 
   describe('Operator Change Value Converter', () => {
     it('returns value unchanged for UNDEFINED operators', () => {
       const value = dayjs();
-      const result = DateTimeOnOperatorChangeValueConverter(ExtendedOperator.UNDEFINED, ExtendedOperator.UNDEFINED, value);
+      const result = DateTimeOnOperatorChangeValueConverter(
+        ExtendedOperator.UNDEFINED,
+        ExtendedOperator.UNDEFINED,
+        value,
+      );
       expect(result).toBe(value);
     });
 
     it('returns value for same number value operators', () => {
       const value = 5;
-      const result = DateTimeOnOperatorChangeValueConverter(Operator.RECENT_DAYS, Operator.EARLIER_DAYS, value);
+      const result = DateTimeOnOperatorChangeValueConverter(
+        Operator.RECENT_DAYS,
+        Operator.EARLIER_DAYS,
+        value,
+      );
       expect(result).toBe(value);
     });
 
     it('returns value for same dayjs value operators', () => {
       const value = dayjs();
-      const result = DateTimeOnOperatorChangeValueConverter(Operator.GT, Operator.LT, value);
+      const result = DateTimeOnOperatorChangeValueConverter(
+        Operator.GT,
+        Operator.LT,
+        value,
+      );
       expect(result).toBe(value);
     });
 
     it('converts to array when switching from dayjs operator to BETWEEN', () => {
       const value = dayjs();
-      const result = DateTimeOnOperatorChangeValueConverter(Operator.GT, Operator.BETWEEN, value);
+      const result = DateTimeOnOperatorChangeValueConverter(
+        Operator.GT,
+        Operator.BETWEEN,
+        value,
+      );
       expect(result).toEqual([value, undefined]);
     });
 
     it('returns undefined for incompatible conversions', () => {
       const value = dayjs();
-      const result = DateTimeOnOperatorChangeValueConverter(Operator.RECENT_DAYS, Operator.GT, value);
+      const result = DateTimeOnOperatorChangeValueConverter(
+        Operator.RECENT_DAYS,
+        Operator.GT,
+        value,
+      );
       expect(result).toBeUndefined();
     });
 
     it('returns undefined when switching from dayjs to number operator', () => {
       const value = dayjs();
-      const result = DateTimeOnOperatorChangeValueConverter(Operator.GT, Operator.RECENT_DAYS, value);
+      const result = DateTimeOnOperatorChangeValueConverter(
+        Operator.GT,
+        Operator.RECENT_DAYS,
+        value,
+      );
       expect(result).toBeUndefined();
     });
 
@@ -325,7 +379,9 @@ describe('DateTimeFilter', () => {
       });
 
       // Initially should have the dayjs value
-      expect(ref.current?.getValue()?.condition.value).toBe(dateValue.valueOf());
+      expect(ref.current?.getValue()?.condition.value).toBe(
+        dateValue.valueOf(),
+      );
     });
 
     it('maintains value for compatible operators', () => {
@@ -354,7 +410,9 @@ describe('DateTimeFilter', () => {
       });
       render(<DateTimeFilter {...props} />);
 
-      const input = document.querySelector('.ant-input-number-input') as HTMLInputElement;
+      const input = document.querySelector(
+        '.ant-input-number-input',
+      ) as HTMLInputElement;
       expect(input).toBeDefined();
 
       fireEvent.change(input, { target: { value: '10' } });
@@ -434,8 +492,6 @@ describe('DateTimeFilter', () => {
       });
       expect(() => render(<DateTimeFilter {...props} />)).not.toThrow();
     });
-
-
   });
 
   describe('Display Name', () => {

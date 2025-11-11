@@ -46,8 +46,7 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
    * Creates a new AuthorizationResponseInterceptor instance.
    * @param options - The CoSec configuration options including token storage and refresher
    */
-  constructor(private options: AuthorizationInterceptorOptions) {
-  }
+  constructor(private options: AuthorizationInterceptorOptions) {}
 
   /**
    * Intercepts the response and handles unauthorized responses by refreshing tokens.

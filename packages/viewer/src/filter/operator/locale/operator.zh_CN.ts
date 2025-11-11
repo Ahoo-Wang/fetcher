@@ -11,7 +11,6 @@
  * limitations under the License.
  */
 
-
 import { SelectOperatorLocale } from '../types';
 
 export const OPERATOR_zh_CN: SelectOperatorLocale = {

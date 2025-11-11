@@ -152,8 +152,7 @@ describe('usePromiseState', () => {
     // Spy on console.warn to verify it's called
     const consoleWarnSpy = vi
       .spyOn(console, 'warn')
-      .mockImplementation(() => {
-      });
+      .mockImplementation(() => {});
 
     const { result } = renderHook(() =>
       usePromiseState<string>({
@@ -184,8 +183,7 @@ describe('usePromiseState', () => {
     // Spy on console.warn to verify it's called
     const consoleWarnSpy = vi
       .spyOn(console, 'warn')
-      .mockImplementation(() => {
-      });
+      .mockImplementation(() => {});
 
     const { result } = renderHook(() =>
       usePromiseState<string>({

@@ -102,7 +102,8 @@ export interface FetchExchangeInit extends AttributesCapable {
  * ```
  */
 export class FetchExchange
-  implements RequiredBy<FetchExchangeInit, 'attributes'> {
+  implements RequiredBy<FetchExchangeInit, 'attributes'>
+{
   /**
    * The Fetcher instance that initiated this exchange.
    */

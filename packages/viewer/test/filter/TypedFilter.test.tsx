@@ -87,9 +87,7 @@ describe('TypedFilter', () => {
     filterRegistry.register('type1', mockFilter);
     filterRegistry.register('type2', mockFilter2);
 
-    const { rerender } = render(
-      <TypedFilter {...mockProps} type="type1" />,
-    );
+    const { rerender } = render(<TypedFilter {...mockProps} type="type1" />);
     expect(screen.getByTestId('mock-filter')).toBeTruthy();
 
     rerender(<TypedFilter {...mockProps} type="type2" />);

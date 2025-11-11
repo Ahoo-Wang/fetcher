@@ -86,8 +86,7 @@ export class UnauthorizedErrorInterceptor implements ErrorInterceptor {
    *
    * @param options - Configuration options containing the callback to handle unauthorized responses
    */
-  constructor(private options: UnauthorizedErrorInterceptorOptions) {
-  }
+  constructor(private options: UnauthorizedErrorInterceptorOptions) {}
 
   /**
    * Intercepts fetch exchanges to detect and handle unauthorized (401) responses

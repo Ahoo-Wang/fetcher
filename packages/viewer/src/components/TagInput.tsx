@@ -32,10 +32,10 @@ export const StringTagValueItemSerializer: TagValueItemSerializer = {
 
 export const NumberTagValueItemSerializer: TagValueItemSerializer<number> = {
   serialize(value: number[]): string[] {
-    return value.map((item) => item.toString());
+    return value.map(item => item.toString());
   },
   deserialize(value: string[]): number[] {
-    return value.map((item) => parseFloat(item));
+    return value.map(item => parseFloat(item));
   },
 };
 
@@ -44,7 +44,10 @@ export const NumberTagValueItemSerializer: TagValueItemSerializer<number> = {
  * Extends SelectProps from Antd, excluding 'mode', 'open', and 'suffixIcon' as they are fixed.
  */
 export interface TagInputProps<ValueItemType = string>
-  extends Omit<SelectProps, 'mode' | 'open' | 'suffixIcon' | 'onChange' | 'value'> {
+  extends Omit<
+    SelectProps,
+    'mode' | 'open' | 'suffixIcon' | 'onChange' | 'value'
+  > {
   ref?: RefObject<RefSelectProps>;
   serializer?: TagValueItemSerializer<ValueItemType>;
   onChange?: (value: ValueItemType[]) => void;
@@ -63,7 +66,9 @@ const DEFAULT_TOKEN_SEPARATORS = [',', '，', ';', '；', ' '];
  * @param props - The props for the TagInput component.
  * @returns The rendered TagInput component.
  */
-export function TagInput<ValueItemType = string[]>(props: TagInputProps<ValueItemType>) {
+export function TagInput<ValueItemType = string[]>(
+  props: TagInputProps<ValueItemType>,
+) {
   const {
     tokenSeparators = DEFAULT_TOKEN_SEPARATORS,
     allowClear = true,

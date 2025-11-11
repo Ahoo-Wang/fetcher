@@ -6,7 +6,6 @@ import { ExchangeError } from './fetcherError';
 import { InterceptorRegistry } from './interceptor';
 import { ValidateStatusInterceptor } from './validateStatusInterceptor';
 
-
 /**
  * Collection of interceptor managers for the Fetcher client.
  *

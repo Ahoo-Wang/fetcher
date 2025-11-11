@@ -20,8 +20,10 @@ import { StyleCapable } from '../types';
 import { RefAttributes } from 'react';
 import { BaseOptionType, DefaultOptionType } from 'antd/lib/select';
 
-export interface RemoteSelectProps<ValueType = any, OptionType extends BaseOptionType | DefaultOptionType = DefaultOptionType>
-  extends Omit<SelectProps<ValueType, OptionType>, 'loading' | 'onSearch'>,
+export interface RemoteSelectProps<
+  ValueType = any,
+  OptionType extends BaseOptionType | DefaultOptionType = DefaultOptionType,
+> extends Omit<SelectProps<ValueType, OptionType>, 'loading' | 'onSearch'>,
     RefAttributes<RefSelectProps>,
     StyleCapable {
   debounce?: UseDebouncedCallbackOptions;
@@ -38,11 +40,19 @@ const DEFAULT_DEBOUNCE = {
  * A Select component that loads options from a remote API.
  * Supports automatic fetching, loading states, and error handling.
  */
-export function RemoteSelect<ValueType = any, OptionType extends BaseOptionType | DefaultOptionType = DefaultOptionType>(
-  props: RemoteSelectProps<ValueType, OptionType>,
-) {
-  const { debounce = DEFAULT_DEBOUNCE, search, options, ...selectProps } = props;
-  const { loading, result, run } = useDebouncedExecutePromise<OptionType[]>({ debounce: debounce });
+export function RemoteSelect<
+  ValueType = any,
+  OptionType extends BaseOptionType | DefaultOptionType = DefaultOptionType,
+>(props: RemoteSelectProps<ValueType, OptionType>) {
+  const {
+    debounce = DEFAULT_DEBOUNCE,
+    search,
+    options,
+    ...selectProps
+  } = props;
+  const { loading, result, run } = useDebouncedExecutePromise<OptionType[]>({
+    debounce: debounce,
+  });
   const handleSearch = (value: string) => {
     if (value.trim() === '' && result) {
       return;

@@ -19,8 +19,9 @@ import { TypeCapable } from '../registry';
 
 export type FilterType = string;
 
-export interface TypedFilterProps extends FilterProps, TypeCapable<FilterType> {
-}
+export interface TypedFilterProps
+  extends FilterProps,
+    TypeCapable<FilterType> {}
 
 export function TypedFilter(props: TypedFilterProps) {
   const FilterComponent = useMemo(() => {

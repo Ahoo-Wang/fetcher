@@ -14,35 +14,38 @@
 import { JwtCompositeToken, JwtCompositeTokenSerializer } from './jwtToken';
 import { CompositeToken } from './tokenRefresher';
 import { EarlyPeriodCapable } from './jwts';
+import { KeyStorage, KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
 import {
-  KeyStorage, KeyStorageOptions,
-} from '@ahoo-wang/fetcher-storage';
-import { BroadcastTypedEventBus, SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
+  BroadcastTypedEventBus,
+  SerialTypedEventBus,
+} from '@ahoo-wang/fetcher-eventbus';
 
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 
-export interface TokenStorageOptions extends Partial<Omit<KeyStorageOptions<JwtCompositeToken>, 'serializer'>>, Partial<EarlyPeriodCapable> {
-
-}
+export interface TokenStorageOptions
+  extends Partial<Omit<KeyStorageOptions<JwtCompositeToken>, 'serializer'>>,
+    Partial<EarlyPeriodCapable> {}
 
 /**
  * Storage class for managing access and refresh tokens.
  */
 export class TokenStorage
   extends KeyStorage<JwtCompositeToken>
-  implements EarlyPeriodCapable {
+  implements EarlyPeriodCapable
+{
   public readonly earlyPeriod: number;
 
-  constructor(
-    {
-      key = DEFAULT_COSEC_TOKEN_KEY,
-      eventBus = new BroadcastTypedEventBus({ delegate: new SerialTypedEventBus(DEFAULT_COSEC_TOKEN_KEY) }),
-      earlyPeriod = 0,
-      ...reset
-    }: TokenStorageOptions = {},
-  ) {
+  constructor({
+    key = DEFAULT_COSEC_TOKEN_KEY,
+    eventBus = new BroadcastTypedEventBus({
+      delegate: new SerialTypedEventBus(DEFAULT_COSEC_TOKEN_KEY),
+    }),
+    earlyPeriod = 0,
+    ...reset
+  }: TokenStorageOptions = {}) {
     super({
-      key, eventBus,
+      key,
+      eventBus,
       ...reset,
       serializer: new JwtCompositeTokenSerializer(earlyPeriod),
     });

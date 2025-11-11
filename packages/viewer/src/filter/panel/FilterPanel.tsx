@@ -120,7 +120,7 @@ export function FilterPanel(props: FilterPanelProps) {
             </Col>
           );
         })}
-        <Col  {...actionsCol}>
+        <Col {...actionsCol}>
           <Space.Compact>
             {actions}
             {showResetButton && (

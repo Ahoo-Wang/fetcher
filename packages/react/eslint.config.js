@@ -18,7 +18,12 @@ import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/**.test.ts', '**/**.stories.tsx', '**/node_modules/**'],
+    ignores: [
+      '**/dist/**',
+      '**/**.test.ts',
+      '**/**.stories.tsx',
+      '**/node_modules/**',
+    ],
   },
   {
     files: ['**/*.{ts,tsx}'],
@@ -29,9 +34,9 @@ export default tseslint.config(
       globals: globals.browser,
     },
     rules: {
-      ...reactHooks.configs["recommended-latest"].rules,
+      ...reactHooks.configs['recommended-latest'].rules,
       '@typescript-eslint/no-empty-object-type': 'off',
-      '@typescript-eslint/no-explicit-any': 'off'
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 );

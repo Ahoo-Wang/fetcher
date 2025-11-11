@@ -28,7 +28,9 @@ import { AppIdCapable, DeviceIdStorageCapable } from './types';
  * Simplified configuration interface for CoSec setup.
  * Provides flexible configuration with sensible defaults for optional components.
  */
-export interface CoSecConfig extends AppIdCapable, Partial<DeviceIdStorageCapable> {
+export interface CoSecConfig
+  extends AppIdCapable,
+    Partial<DeviceIdStorageCapable> {
   /**
    * Application ID to be sent in the CoSec-App-Id header.
    * This is required for identifying your application in the CoSec system.

@@ -56,7 +56,7 @@ export const compensationOpenAPI: OpenAPI = {
     '/actuator/health/{path}': {
       get: {
         tags: ['Actuator'],
-        summary: 'Actuator web endpoint \'health-path\'',
+        summary: "Actuator web endpoint 'health-path'",
         operationId: 'health',
         parameters: [
           {
@@ -101,7 +101,7 @@ export const compensationOpenAPI: OpenAPI = {
     '/actuator/health': {
       get: {
         tags: ['Actuator'],
-        summary: 'Actuator web endpoint \'health\'',
+        summary: "Actuator web endpoint 'health'",
         operationId: 'health_1',
         responses: {
           '200': {
@@ -130,7 +130,7 @@ export const compensationOpenAPI: OpenAPI = {
     '/actuator/cosidStringGenerator/{name}': {
       get: {
         tags: ['Actuator'],
-        summary: 'Actuator web endpoint \'cosidStringGenerator-name\'',
+        summary: "Actuator web endpoint 'cosidStringGenerator-name'",
         operationId: 'generateAsString',
         parameters: [
           {
@@ -172,7 +172,7 @@ export const compensationOpenAPI: OpenAPI = {
     '/actuator/cosidStringGenerator': {
       get: {
         tags: ['Actuator'],
-        summary: 'Actuator web endpoint \'cosidStringGenerator\'',
+        summary: "Actuator web endpoint 'cosidStringGenerator'",
         operationId: 'shareGenerateAsString',
         responses: {
           '200': {
@@ -201,7 +201,7 @@ export const compensationOpenAPI: OpenAPI = {
     '/actuator/cosidGenerator/{name}': {
       get: {
         tags: ['Actuator'],
-        summary: 'Actuator web endpoint \'cosidGenerator-name\'',
+        summary: "Actuator web endpoint 'cosidGenerator-name'",
         operationId: 'generate',
         parameters: [
           {
@@ -243,7 +243,7 @@ export const compensationOpenAPI: OpenAPI = {
     '/actuator/cosidGenerator': {
       get: {
         tags: ['Actuator'],
-        summary: 'Actuator web endpoint \'cosidGenerator\'',
+        summary: "Actuator web endpoint 'cosidGenerator'",
         operationId: 'shareGenerate',
         responses: {
           '200': {
@@ -272,7 +272,7 @@ export const compensationOpenAPI: OpenAPI = {
     '/actuator/cosid/{name}': {
       get: {
         tags: ['Actuator'],
-        summary: 'Actuator web endpoint \'cosid-name\'',
+        summary: "Actuator web endpoint 'cosid-name'",
         operationId: 'getStat',
         parameters: [
           {
@@ -312,7 +312,7 @@ export const compensationOpenAPI: OpenAPI = {
       },
       delete: {
         tags: ['Actuator'],
-        summary: 'Actuator web endpoint \'cosid-name\'',
+        summary: "Actuator web endpoint 'cosid-name'",
         operationId: 'remove',
         parameters: [
           {
@@ -337,7 +337,7 @@ export const compensationOpenAPI: OpenAPI = {
     '/actuator/cosid': {
       get: {
         tags: ['Actuator'],
-        summary: 'Actuator web endpoint \'cosid\'',
+        summary: "Actuator web endpoint 'cosid'",
         operationId: 'stat',
         responses: {
           '200': {
