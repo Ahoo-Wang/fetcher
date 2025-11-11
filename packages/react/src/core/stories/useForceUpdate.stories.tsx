@@ -12,7 +12,7 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { useForceUpdate } from '../useForceUpdate';
 import { Button, Card, Typography, Space, Alert, Statistic } from 'antd';
 
@@ -20,20 +20,16 @@ const { Text } = Typography;
 
 // Component that demonstrates useForceUpdate
 function ForceUpdateDemo() {
+  const renderCountRef = React.useRef(0);
+  renderCountRef.current += 1;
   const forceUpdate = useForceUpdate();
-  const [renderCount, setRenderCount] = React.useState(0);
-
-  // Increment render count on each render
-  React.useEffect(() => {
-    setRenderCount(prev => prev + 1);
-  }, []);
 
   const handleForceUpdate = () => {
     forceUpdate();
   };
 
   const handleReset = () => {
-    setRenderCount(0);
+    renderCountRef.current = 0;
     forceUpdate();
   };
 
@@ -42,7 +38,7 @@ function ForceUpdateDemo() {
       <Space direction="vertical" style={{ width: '100%' }}>
         <Statistic
           title="Component Render Count"
-          value={renderCount}
+          value={renderCountRef.current}
           valueStyle={{ color: '#3f8600' }}
         />
 
@@ -55,8 +51,8 @@ function ForceUpdateDemo() {
 
         <Alert
           message="How it works"
-          description="Click 'Force Update' to trigger a re-render without changing any state. The render count will increase, demonstrating that the component re-renders."
-          type="info"
+          description="Click 'Force Update' to trigger a re-render without changing any state. The render count will increase, demonstrating that the component re-renders. Note: useForceUpdate is not recommended for regular use - prefer state updates instead."
+          type="warning"
           showIcon
         />
 
