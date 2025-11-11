@@ -15,6 +15,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Table } from 'antd';
 import { typedCellRender } from '../TypedCell';
 import { TEXT_CELL_TYPE } from '../TextCell';
+import { TAG_CELL_TYPE } from '../TagCell';
 
 interface Product {
   id: number;
@@ -22,6 +23,8 @@ interface Product {
   price: number;
   category: string;
   description: string;
+  tags: string[];
+  priority: string;
 }
 
 const meta: Meta = {
@@ -48,6 +51,8 @@ const sampleProducts: Product[] = [
     price: 999.99,
     category: 'Electronics',
     description: 'High-performance laptop',
+    tags: ['electronics', 'laptop', 'high-performance'],
+    priority: 'high',
   },
   {
     id: 2,
@@ -55,6 +60,8 @@ const sampleProducts: Product[] = [
     price: 19.99,
     category: 'Education',
     description: 'Programming guide',
+    tags: ['education', 'programming', 'book'],
+    priority: 'medium',
   },
   {
     id: 3,
@@ -62,6 +69,8 @@ const sampleProducts: Product[] = [
     price: 12.5,
     category: 'Kitchen',
     description: 'Ceramic coffee mug',
+    tags: ['kitchen', 'coffee', 'ceramic'],
+    priority: 'low',
   },
   {
     id: 4,
@@ -69,6 +78,8 @@ const sampleProducts: Product[] = [
     price: 149.99,
     category: 'Electronics',
     description: 'Wireless noise-cancelling headphones',
+    tags: ['electronics', 'audio', 'wireless'],
+    priority: 'high',
   },
 ];
 
@@ -264,6 +275,32 @@ export const DifferentValueTypes: Story = {
                 return textRenderer!('[Error rendering value]', record, index);
               }
             },
+          },
+        ]}
+        rowKey="id"
+        pagination={false}
+      />
+    );
+  },
+};
+
+export const BasicTagCell: Story = {
+  render: () => {
+    return (
+      <Table
+        dataSource={sampleProducts}
+        columns={[
+          {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+            render: typedCellRender(TEXT_CELL_TYPE),
+          },
+          {
+            title: 'Priority',
+            dataIndex: 'priority',
+            key: 'priority',
+            render: typedCellRender(TAG_CELL_TYPE),
           },
         ]}
         rowKey="id"
