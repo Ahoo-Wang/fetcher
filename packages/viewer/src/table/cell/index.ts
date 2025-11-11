@@ -11,7 +11,32 @@
  * limitations under the License.
  */
 
-export * from './cellRegistry'
-export * from './TextCell'
-export * from './TypedCell'
-export * from './types'
+/**
+ * @module table/cell
+ *
+ * This module provides the core cell rendering system for tables, including:
+ * - Cell component types and interfaces
+ * - Text cell implementation
+ * - Typed cell rendering utilities
+ * - Cell registry for component management
+ *
+ * @example
+ * ```tsx
+ * import { TextCell, typedCellRender, TEXT_CELL_TYPE } from '@ahoo-wang/fetcher-viewer/table/cell';
+ *
+ * // Direct component usage
+ * <TextCell
+ *   data={{ value: 'Hello', record: { id: 1 }, index: 0 }}
+ *   attributes={{ ellipsis: true }}
+ * />
+ *
+ * // Using typed renderer
+ * const renderer = typedCellRender(TEXT_CELL_TYPE, { ellipsis: true });
+ * const cell = renderer('Hello', { id: 1 }, 0);
+ * ```
+ */
+
+export * from './cellRegistry';
+export * from './TextCell';
+export * from './TypedCell';
+export * from './types';

@@ -18,7 +18,39 @@ import { TEXT_CELL_TYPE, TextCell } from './TextCell';
 
 /**
  * Registry for cell components, mapping cell types to their corresponding components.
- * Initialized with the text cell type and component.
+ *
+ * This registry instance manages the available cell component types for table rendering.
+ * It is pre-initialized with the text cell component and can be extended with additional
+ * cell types as needed. The registry provides type-safe component resolution for
+ * dynamic cell rendering based on data types.
+ *
+ * @constant
+ * @type {TypedComponentRegistry<CellType, CellProps>}
+ *
+ * @example
+ * ```tsx
+ * // Get a registered component
+ * const TextCellComponent = cellRegistry.get('text');
+ *
+ * // Check if a type is registered
+ * if (cellRegistry.has('number')) {
+ *   // Use number cell
+ * }
+ *
+ * // Register a custom cell type
+ * cellRegistry.register('custom', CustomCellComponent);
+ * ```
+ *
+ * @example
+ * ```tsx
+ * // Using with typedCellRender
+ * import { typedCellRender } from './TypedCell';
+ *
+ * const renderer = typedCellRender('text', { ellipsis: true });
+ * if (renderer) {
+ *   const cell = renderer('Hello', { id: 1 }, 0);
+ * }
+ * ```
  */
 export const cellRegistry = TypedComponentRegistry.create<CellType, CellProps>([
   [TEXT_CELL_TYPE, TextCell],
