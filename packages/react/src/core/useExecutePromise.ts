@@ -35,6 +35,11 @@ export interface UseExecutePromiseOptions<R, E = unknown>
    * @default false
    */
   propagateError?: boolean;
+  /**
+   * Callback function called when the current operation is aborted.
+   * This includes both automatic cancellation (when a new operation starts) and manual abortion.
+   */
+  onAbort?: () => void | Promise<void>;
 }
 
 /**
@@ -69,6 +74,12 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
    * Clears loading, result, error, and sets status to idle.
    */
   reset: () => void;
+  /**
+   * Function to manually abort the current ongoing operation.
+   * This will cancel the current promise execution and set the state to idle.
+   * Safe to call even when no operation is currently running.
+   */
+  abort: () => void;
 }
 
 /**
@@ -79,7 +90,8 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  *
  * Key features:
  * - Automatic request cancellation when new requests are initiated
- * - AbortController integration for manual cancellation
+ * - Manual abort control with dedicated abort() method
+ * - AbortController integration for promise-level cancellation
  * - Race condition protection using request IDs
  * - Comprehensive state management (idle, loading, success, error)
  * - Memory leak prevention with automatic cleanup on unmount
@@ -93,22 +105,31 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  * @throws {E} When propagateError is true and the executed promise rejects.
  *
  * @example
- * Basic usage with automatic abort support:
+ * Basic usage with automatic abort support and onAbort callback:
  * ```typescript
  * import { useExecutePromise } from '@ahoo-wang/fetcher-react';
  *
  * function MyComponent() {
- *   const { loading, result, error, execute, reset } = useExecutePromise<string>();
+ *   const { loading, result, error, execute, reset, abort } = useExecutePromise<string>({
+ *     onAbort: () => {
+ *       console.log('Request was cancelled');
+ *       // Handle abort (e.g., update UI, cleanup resources)
+ *     }
+ *   });
  *
- *   const fetchData = async (abortController: AbortController) => {
+ *   const fetchData = async (abortController?: AbortController) => {
  *     const response = await fetch('/api/data', {
- *       signal: abortController?.signal, // Optional: use abort signal
+ *       signal: abortController?.signal,
  *     });
  *     return response.text();
  *   };
  *
  *   const handleFetch = () => {
- *     execute(fetchData); // Automatically cancels previous request
+ *     execute(fetchData); // Automatically cancels previous request and calls onAbort
+ *   };
+ *
+ *   const handleCancel = () => {
+ *     abort(); // Manually cancel current request and calls onAbort
  *   };
  *
  *   const handleReset = () => {
@@ -120,6 +141,47 @@ export interface UseExecutePromiseReturn<R, E = FetcherError>
  *   return (
  *     <div>
  *       <button onClick={handleFetch}>Fetch Data</button>
+ *       <button onClick={handleCancel} disabled={!loading}>Cancel</button>
+ *       <button onClick={handleReset}>Reset</button>
+ *       {result && <p>{result}</p>}
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @example
+ * Basic usage with automatic abort support:
+ * ```typescript
+ * import { useExecutePromise } from '@ahoo-wang/fetcher-react';
+ *
+ * function MyComponent() {
+ *   const { loading, result, error, execute, reset, abort } = useExecutePromise<string>();
+ *
+ *   const fetchData = async (abortController?: AbortController) => {
+ *     const response = await fetch('/api/data', {
+ *       signal: abortController?.signal, // Optional: use abort signal
+ *     });
+ *     return response.text();
+ *   };
+ *
+ *   const handleFetch = () => {
+ *     execute(fetchData); // Automatically cancels previous request
+ *   };
+ *
+ *   const handleCancel = () => {
+ *     abort(); // Manually cancel current request
+ *   };
+ *
+ *   const handleReset = () => {
+ *     reset();
+ *   };
+ *
+ *   if (loading) return <div>Loading...</div>;
+ *   if (error) return <div>Error: {error.message}</div>;
+ *   return (
+ *     <div>
+ *       <button onClick={handleFetch}>Fetch Data</button>
+ *       <button onClick={handleCancel} disabled={!loading}>Cancel</button>
  *       <button onClick={handleReset}>Reset</button>
  *       {result && <p>{result}</p>}
  *     </div>
@@ -160,6 +222,21 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
   const requestId = useRequestId();
   const abortControllerRef = useRef<AbortController | undefined>(undefined);
   const propagateError = options?.propagateError;
+  const onAbort = options?.onAbort;
+  const handleAbort = useCallback(
+    async () => {
+      // Call onAbort callback when automatically cancelling previous request
+      try {
+        await onAbort?.();
+      } catch (callbackError) {
+        console.warn(
+          'useExecutePromise onAbort callback error:',
+          callbackError,
+        );
+      }
+    },
+    [onAbort],
+  );
   /**
    * Execute a promise supplier with automatic abort support.
    * Automatically cancels any previous ongoing request before starting a new one.
@@ -172,6 +249,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
     async (input: PromiseSupplier<R>): Promise<void> => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
+        await handleAbort();
       }
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
@@ -210,8 +288,35 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
       isMounted,
       requestId,
       propagateError,
+      handleAbort,
     ],
   );
+
+  /**
+   * Reset the state to initial values.
+   * Clears loading, result, error, and sets status to idle.
+   * Only works if the component is still mounted.
+   */
+  const reset = useCallback(() => {
+    if (isMounted()) {
+      setIdle();
+    }
+  }, [setIdle, isMounted]);
+
+  /**
+   * Manually abort the current ongoing operation.
+   * This will cancel the current promise execution and set the state to idle.
+   * Safe to call even when no operation is currently running.
+   */
+  const abort = useCallback(async () => {
+    if (!abortControllerRef.current) {
+      return;
+    }
+    abortControllerRef.current.abort();
+    abortControllerRef.current = undefined;
+    reset();
+    await handleAbort();
+  }, [reset, handleAbort]);
 
   useEffect(() => {
     return () => {
@@ -219,7 +324,6 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
       abortControllerRef.current = undefined;
     };
   }, []);
-
   return useMemo(
     () => ({
       loading,
@@ -227,8 +331,9 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
       error,
       status,
       execute,
-      reset: setIdle,
+      reset,
+      abort,
     }),
-    [loading, result, error, status, execute, setIdle],
+    [loading, result, error, status, execute, reset, abort],
   );
 }

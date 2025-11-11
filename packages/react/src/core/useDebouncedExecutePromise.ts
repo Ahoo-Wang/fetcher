@@ -48,7 +48,8 @@ export interface DebounceCapable {
  */
 export interface UseDebouncedExecutePromiseOptions<R, E = unknown>
   extends UseExecutePromiseOptions<R, E>,
-    DebounceCapable {}
+    DebounceCapable {
+}
 
 /**
  * Return type for the useDebouncedExecutePromise hook.
@@ -60,7 +61,8 @@ export interface UseDebouncedExecutePromiseOptions<R, E = unknown>
  */
 export interface UseDebouncedExecutePromiseReturn<R, E = unknown>
   extends Omit<UseExecutePromiseReturn<R, E>, 'execute'>,
-    UseDebouncedCallbackReturn<UseExecutePromiseReturn<R, E>['execute']> {}
+    UseDebouncedCallbackReturn<UseExecutePromiseReturn<R, E>['execute']> {
+}
 
 /**
  * A React hook that combines promise execution with debouncing functionality.
@@ -119,7 +121,7 @@ export interface UseDebouncedExecutePromiseReturn<R, E = unknown>
 export function useDebouncedExecutePromise<R = unknown, E = FetcherError>(
   options: UseDebouncedExecutePromiseOptions<R, E>,
 ): UseDebouncedExecutePromiseReturn<R, E> {
-  const { loading, result, error, execute, reset, status } =
+  const { loading, result, error, execute, reset, abort, status } =
     useExecutePromise(options);
   const { run, cancel, isPending } = useDebouncedCallback(
     execute,
@@ -132,11 +134,12 @@ export function useDebouncedExecutePromise<R = unknown, E = FetcherError>(
       result,
       error,
       status,
+      reset,
+      abort,
       run,
       cancel,
       isPending,
-      reset,
     }),
-    [loading, result, error, status, run, cancel, isPending, reset],
+    [loading, result, error, status, reset, abort, run, cancel, isPending],
   );
 }

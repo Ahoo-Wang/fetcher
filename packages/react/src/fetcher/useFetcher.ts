@@ -172,6 +172,7 @@ export function useFetcher<R, E = FetcherError>(
     status,
     execute: executePromise,
     reset,
+    abort,
   } = useExecutePromise<R, E>(options);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(
     undefined,
@@ -208,7 +209,10 @@ export function useFetcher<R, E = FetcherError>(
     reset();
     setExchange(undefined);
   }, [reset]);
-
+  const abortFn = useCallback(() => {
+    abort();
+    setExchange(undefined);
+  }, [abort]);
   return useMemo(
     () => ({
       loading,
@@ -218,7 +222,8 @@ export function useFetcher<R, E = FetcherError>(
       exchange,
       execute,
       reset: resetFn,
+      abort: abortFn,
     }),
-    [loading, result, error, status, exchange, execute, resetFn],
+    [loading, result, error, status, exchange, execute, resetFn, abortFn],
   );
 }

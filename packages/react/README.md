@@ -87,17 +87,25 @@ function App() {
 ### useFetcher Hook
 
 The `useFetcher` hook provides complete data fetching capabilities with automatic state management, race condition
-protection, and flexible configuration options.
+protection, and flexible configuration options. It includes built-in AbortController support inherited from `useExecutePromise`.
 
 ```typescript jsx
 import { useFetcher } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const { loading, error, result, execute } = useFetcher<string>();
+  const { loading, error, result, execute, abort } = useFetcher<string>({
+    onAbort: () => {
+      console.log('Fetch operation was aborted');
+    }
+  });
 
   const handleFetch = () => {
     execute({ url: '/api/users', method: 'GET' });
-};
+  };
+
+  const handleAbort = () => {
+    abort(); // Cancel the current fetch operation
+  };
 ```
 
 #### Auto Execute Example
@@ -261,13 +269,17 @@ const SearchInput = () => {
 ### useExecutePromise Hook
 
 The `useExecutePromise` hook manages asynchronous operations with automatic state handling, built-in race condition
-protection, and support for promise state options.
+protection, and support for promise state options. It includes automatic AbortController support for canceling operations.
 
 ```typescript jsx
 import { useExecutePromise } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const { loading, result, error, execute, reset } = useExecutePromise<string>();
+  const { loading, result, error, execute, reset, abort } = useExecutePromise<string>({
+    onAbort: () => {
+      console.log('Operation was aborted');
+    }
+  });
 
   const fetchData = async () => {
     const response = await fetch('/api/data');
@@ -283,18 +295,32 @@ const MyComponent = () => {
     execute(promise); // Using a direct promise
   };
 
+  const handleAbort = () => {
+    abort(); // Manually abort the current operation
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
   return (
     <div>
       <button onClick={handleFetch}>Fetch with Supplier</button>
       <button onClick={handleDirectPromise}>Fetch with Promise</button>
+      <button onClick={handleAbort} disabled={!loading}>Abort</button>
       <button onClick={reset}>Reset</button>
       {result && <p>{result}</p>}
     </div>
   );
 };
 ```
+
+#### Abort Controller Support
+
+The hook automatically creates an AbortController for each operation and provides methods to manage cancellation:
+
+- **Automatic Cleanup**: Operations are automatically aborted when the component unmounts
+- **Manual Abort**: Use the `abort()` method to cancel ongoing operations
+- **onAbort Callback**: Configure a callback that fires when an operation is aborted (manually or automatically)
+- **AbortController Access**: The AbortController is passed to promise suppliers for advanced cancellation handling
 
 ### usePromiseState Hook
 
@@ -1527,6 +1553,8 @@ An object containing:
 - `error`: The error value
 - `exchange`: The FetchExchange object representing the ongoing fetch operation
 - `execute`: Function to execute a fetch request
+- `abort`: Function to manually abort the current fetch operation
+- `onAbort`: Callback function invoked when fetch operation is aborted (configured via options)
 
 ### useExecutePromise
 
@@ -1561,6 +1589,8 @@ An object containing:
 - `error`: The error value
 - `execute`: Function to execute a promise supplier or promise
 - `reset`: Function to reset the state to initial values
+- `abort`: Function to manually abort the current operation
+- `onAbort`: Callback function invoked when operation is aborted (configured via options)
 
 ### usePromiseState
 
