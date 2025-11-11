@@ -20,14 +20,14 @@ import {
   RequestOptions,
   FetcherError,
 } from '@ahoo-wang/fetcher';
-import { useMounted } from '../core';
-import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import {
-  PromiseState,
+  useExecutePromise,
+  UseExecutePromiseOptions,
+  UseExecutePromiseReturn,
+} from '../core';
+import { useCallback, useState, useMemo } from 'react';
+import {
   useLatest,
-  usePromiseState,
-  UsePromiseStateOptions,
-  useRequestId,
 } from '../core';
 
 /**
@@ -40,7 +40,7 @@ import {
 export interface UseFetcherOptions<R, E = FetcherError>
   extends RequestOptions,
     FetcherCapable,
-    UsePromiseStateOptions<R, E> {
+    UseExecutePromiseOptions<R, E> {
 
 }
 
@@ -52,7 +52,7 @@ export interface UseFetcherOptions<R, E = FetcherError>
  * @template E - The type of error that may be thrown (defaults to FetcherError)
  */
 export interface UseFetcherReturn<R, E = FetcherError>
-  extends PromiseState<R, E> {
+  extends Omit<UseExecutePromiseReturn<R, E>, 'execute'> {
   /**
    * The FetchExchange object representing the current or most recent fetch operation.
    * Contains request/response details, timing information, and extracted data.
@@ -170,17 +170,13 @@ export function useFetcher<R, E = FetcherError>(
     result,
     error,
     status,
-    setLoading,
-    setSuccess,
-    setError,
-    setIdle,
-  } = usePromiseState<R, E>(options);
+    execute: executePromise,
+    reset,
+  } = useExecutePromise<R, E>(options);
   const [exchange, setExchange] = useState<FetchExchange | undefined>(
     undefined,
   );
-  const isMounted = useMounted();
-  const abortControllerRef = useRef<AbortController | undefined>(undefined);
-  const requestId = useRequestId();
+
   const latestOptions = useLatest(options);
   const currentFetcher = getFetcher(fetcher);
   /**
@@ -189,60 +185,23 @@ export function useFetcher<R, E = FetcherError>(
    */
   const execute = useCallback(
     async (request: FetchRequest) => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      abortControllerRef.current =
-        request.abortController ?? new AbortController();
-      request.abortController = abortControllerRef.current;
-      const currentRequestId = requestId.generate();
-      setLoading();
-      try {
+      await executePromise(async abortController => {
+        request.abortController = abortController;
         const exchange = await currentFetcher.exchange(
           request,
           latestOptions.current,
         );
-        if (isMounted() && requestId.isLatest(currentRequestId)) {
-          setExchange(exchange);
-        }
-        const result = await exchange.extractResult<R>();
-        if (isMounted() && requestId.isLatest(currentRequestId)) {
-          await setSuccess(result);
-        }
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          if (isMounted()) {
-            setIdle();
-          }
-          return;
-        }
-        if (isMounted() && requestId.isLatest(currentRequestId)) {
-          await setError(error as E);
-        }
-      } finally {
-        if (abortControllerRef.current === request.abortController) {
-          abortControllerRef.current = undefined;
-        }
-      }
+        setExchange(exchange);
+        return await exchange.extractResult<R>();
+      });
     },
     [
+      executePromise,
       currentFetcher,
-      isMounted,
       latestOptions,
-      setLoading,
-      setSuccess,
-      setIdle,
-      setError,
-      requestId,
     ],
   );
 
-  useEffect(() => {
-    return () => {
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = undefined;
-    };
-  }, []);
   return useMemo(
     () => ({
       loading,
@@ -251,7 +210,8 @@ export function useFetcher<R, E = FetcherError>(
       status,
       exchange,
       execute,
+      reset,
     }),
-    [loading, result, error, status, exchange, execute],
+    [loading, result, error, status, exchange, execute, reset],
   );
 }
