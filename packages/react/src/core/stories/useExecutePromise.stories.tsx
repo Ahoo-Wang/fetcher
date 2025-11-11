@@ -24,25 +24,32 @@ interface ExecutePromiseDemoProps {
 }
 
 function ExecutePromiseDemo({
-                              propagateError = false,
-                            }: ExecutePromiseDemoProps) {
-  const { loading, result, error, execute, reset, status } =
+  propagateError = false,
+}: ExecutePromiseDemoProps) {
+  const { loading, result, error, execute, reset, abort, status } =
     useExecutePromise<string>({
       propagateError,
+      onAbort: () => {
+        console.log('Operation was aborted');
+      },
     });
 
   const handleSuccess = () => {
     execute(async () => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       return 'Operation completed successfully!';
     });
   };
 
   const handleError = () => {
     execute(async () => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       throw new Error('Something went wrong!');
     });
+  };
+
+  const handleAbort = () => {
+    abort();
   };
 
   const handleReset = () => {
@@ -81,6 +88,9 @@ function ExecutePromiseDemo({
           <Button onClick={handleError} danger loading={loading}>
             Execute Error
           </Button>
+          <Button onClick={handleAbort} disabled={!loading}>
+            Abort Operation
+          </Button>
           <Button onClick={handleReset}>Reset</Button>
         </Space>
 
@@ -104,7 +114,8 @@ function ExecutePromiseDemo({
 
         <Text type="secondary">
           This demonstrates the useExecutePromise hook for managing asynchronous
-          operations.
+          operations with abort controller support. Operations can be manually
+          aborted or are automatically cancelled on component unmount.
           {propagateError && ' Errors are propagated (check console).'}
         </Text>
       </Space>

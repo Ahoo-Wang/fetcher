@@ -52,7 +52,7 @@ const ComprehensiveFetcherDemo: React.FC = () => {
   const [form] = Form.useForm();
 
   // Main fetcher instance
-  const { loading, result, error, execute, exchange, status } =
+  const { loading, result, error, execute, abort, exchange, status } =
     useFetcher<any>({
       resultExtractor: ResultExtractors.Json,
       onSuccess: () => {
@@ -74,6 +74,17 @@ const ComprehensiveFetcherDemo: React.FC = () => {
           url: exchange?.request.url,
           status: '❌ Failed',
           error: e?.message || String(e),
+        };
+        setLogs(prev => [logEntry, ...prev.slice(0, 9)]);
+        setRequestHistory(prev => [logEntry, ...prev.slice(0, 9)]);
+      },
+      onAbort: () => {
+        const logEntry = {
+          timestamp: new Date().toLocaleTimeString(),
+          type: 'abort',
+          method: exchange?.request.method,
+          url: exchange?.request.url,
+          status: '⏹️ Aborted',
         };
         setLogs(prev => [logEntry, ...prev.slice(0, 9)]);
         setRequestHistory(prev => [logEntry, ...prev.slice(0, 9)]);
@@ -139,6 +150,8 @@ const ComprehensiveFetcherDemo: React.FC = () => {
         return '✅';
       case 'error':
         return '❌';
+      case 'abort':
+        return '⏹️';
       default:
         return '🔄';
     }
@@ -216,14 +229,21 @@ const ComprehensiveFetcherDemo: React.FC = () => {
                       />
                     </Form.Item>
 
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      loading={loading}
-                      block
-                    >
-                      {loading ? 'Sending Request...' : 'Send Request'}
-                    </Button>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Button
+                        type="primary"
+                        htmlType="submit"
+                        loading={loading}
+                        block
+                      >
+                        {loading ? 'Sending Request...' : 'Send Request'}
+                      </Button>
+                      {loading && (
+                        <Button danger onClick={abort} block>
+                          Abort Request
+                        </Button>
+                      )}
+                    </Space>
                   </Space>
                 </Form>
               </Card>

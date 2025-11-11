@@ -116,7 +116,7 @@ export interface UseDebouncedFetcherReturn<R, E = FetcherError>
 export function useDebouncedFetcher<R, E = FetcherError>(
   options: UseDebouncedFetcherOptions<R, E>,
 ): UseDebouncedFetcherReturn<R, E> {
-  const { loading, result, error, status, exchange, execute, reset } = useFetcher<
+  const { loading, result, error, status, exchange, execute, reset, abort } = useFetcher<
     R,
     E
   >(options);
@@ -132,10 +132,11 @@ export function useDebouncedFetcher<R, E = FetcherError>(
       status,
       exchange,
       reset,
+      abort,
       run,
       cancel,
       isPending,
     }),
-    [loading, result, error, status, exchange, reset, run, cancel, isPending],
+    [loading, result, error, status, exchange, reset, abort, run, cancel, isPending],
   );
 }
