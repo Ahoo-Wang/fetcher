@@ -28,8 +28,8 @@ export type CellType = string;
  * @param index - The index of the row in the table.
  * @returns A React node or a promise resolving to a React node.
  */
-export type TypedCellRenderer<RecordType = any> = (
-  value: unknown,
+export type CellRenderer<RecordType = any> = (
+  value: any,
   record: RecordType,
   index: number,
 ) => React.ReactNode | Promise<React.ReactNode>;
@@ -51,14 +51,12 @@ export type TypedCellRenderer<RecordType = any> = (
 export function typedCellRender<RecordType = any, Attributes = any>(
   type: CellType,
   attributes?: Attributes,
-): TypedCellRenderer<RecordType> {
+): CellRenderer<RecordType> | undefined {
   const CellComponent = cellRegistry.get(type);
   if (!CellComponent) {
-    throw new Error(
-      `Cell type '${type}' is not registered in the cell registry.`,
-    );
+    return undefined;
   }
-  return (value: unknown, record: RecordType, index: number) => {
+  return (value: any, record: RecordType, index: number) => {
     const data: CellData = {
       value,
       record,
