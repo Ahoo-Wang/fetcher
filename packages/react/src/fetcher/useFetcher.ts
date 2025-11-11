@@ -170,7 +170,7 @@ export function useFetcher<R, E = FetcherError>(
     result,
     error,
     status,
-    execute: executePromise,
+    execute: promiseExecutor,
     reset,
     abort,
   } = useExecutePromise<R, E>(options);
@@ -187,7 +187,7 @@ export function useFetcher<R, E = FetcherError>(
   const execute = useCallback(
     async (request: FetchRequest) => {
       try {
-        await executePromise(async abortController => {
+        await promiseExecutor(async abortController => {
           request.abortController = abortController;
           const exchange = await currentFetcher.exchange(
             request,
@@ -201,7 +201,7 @@ export function useFetcher<R, E = FetcherError>(
         throw error;
       }
     },
-    [executePromise, currentFetcher, latestOptions],
+    [promiseExecutor, currentFetcher, latestOptions],
   );
 
   const resetFn = useCallback(() => {
