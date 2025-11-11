@@ -14,4 +14,5 @@
 export * from './filter';
 export * from './registry';
 export * from './components';
+export * from './table';
 export * from './types';
