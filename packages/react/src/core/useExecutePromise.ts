@@ -223,20 +223,14 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
   const abortControllerRef = useRef<AbortController | undefined>(undefined);
   const propagateError = options?.propagateError;
   const onAbort = options?.onAbort;
-  const handleAbort = useCallback(
-    async () => {
-      // Call onAbort callback when automatically cancelling previous request
-      try {
-        await onAbort?.();
-      } catch (callbackError) {
-        console.warn(
-          'useExecutePromise onAbort callback error:',
-          callbackError,
-        );
-      }
-    },
-    [onAbort],
-  );
+  const handleOnAbort = useCallback(async () => {
+    // Call onAbort callback when automatically cancelling previous request
+    try {
+      await onAbort?.();
+    } catch (callbackError) {
+      console.warn('useExecutePromise onAbort callback error:', callbackError);
+    }
+  }, [onAbort]);
   /**
    * Execute a promise supplier with automatic abort support.
    * Automatically cancels any previous ongoing request before starting a new one.
@@ -249,7 +243,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
     async (input: PromiseSupplier<R>): Promise<void> => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
-        await handleAbort();
+        await handleOnAbort();
       }
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
@@ -288,7 +282,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
       isMounted,
       requestId,
       propagateError,
-      handleAbort,
+      handleOnAbort,
     ],
   );
 
@@ -309,21 +303,20 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
    * Safe to call even when no operation is currently running.
    */
   const abort = useCallback(async () => {
+    reset();
     if (!abortControllerRef.current) {
       return;
     }
     abortControllerRef.current.abort();
     abortControllerRef.current = undefined;
-    reset();
-    await handleAbort();
-  }, [reset, handleAbort]);
+    await handleOnAbort();
+  }, [reset, handleOnAbort]);
 
   useEffect(() => {
     return () => {
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = undefined;
+      abort();
     };
-  }, []);
+  }, [abort]);
   return useMemo(
     () => ({
       loading,

@@ -172,4 +172,167 @@ describe('useExecutePromise', () => {
     expect(result.current.result).toBeUndefined();
   });
 
+  it('should abort ongoing operation', async () => {
+    const mockProvider = vi
+      .fn()
+      .mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve('success'), 100)),
+      );
+
+    const { result } = renderHook(() => useExecutePromise<string>());
+
+    // Start an operation
+    act(() => {
+      result.current.execute(mockProvider);
+    });
+
+    expect(result.current.loading).toBe(true);
+    expect(result.current.status).toBe(PromiseStatus.LOADING);
+
+    // Abort the operation
+    await act(async () => {
+      await result.current.abort();
+    });
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.result).toBeUndefined();
+  });
+
+  it('should handle abort when no operation is ongoing', async () => {
+    const { result } = renderHook(() => useExecutePromise<string>());
+
+    // Try to abort when no operation is running
+    await act(async () => {
+      await result.current.abort();
+    });
+
+    // Should not change state
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.result).toBeUndefined();
+  });
+
+  it('should call onAbort callback when operation is aborted manually', async () => {
+    const onAbortMock = vi.fn();
+    const mockProvider = vi
+      .fn()
+      .mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve('success'), 100)),
+      );
+
+    const { result } = renderHook(() =>
+      useExecutePromise<string>({ onAbort: onAbortMock }),
+    );
+
+    // Start an operation
+    act(() => {
+      result.current.execute(mockProvider);
+    });
+
+    // Abort the operation
+    await act(async () => {
+      await result.current.abort();
+    });
+
+    expect(onAbortMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('should call onAbort callback when operation is aborted automatically on unmount', async () => {
+    const onAbortMock = vi.fn();
+    const mockProvider = vi
+      .fn()
+      .mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve('success'), 100)),
+      );
+
+    const { result, unmount } = renderHook(() =>
+      useExecutePromise<string>({ onAbort: onAbortMock }),
+    );
+
+    // Start an operation
+    act(() => {
+      result.current.execute(mockProvider);
+    });
+
+    expect(result.current.loading).toBe(true);
+
+    // Unmount the component (should trigger cleanup)
+    unmount();
+
+    // onAbort should be called during cleanup
+    expect(onAbortMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('should abort previous operation when starting new one', async () => {
+    const onAbortMock = vi.fn();
+    const firstProvider = vi
+      .fn()
+      .mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve('first'), 200)),
+      );
+    const secondProvider = vi.fn().mockResolvedValue('second');
+
+    const { result } = renderHook(() =>
+      useExecutePromise<string>({ onAbort: onAbortMock }),
+    );
+
+    // Start first operation
+    act(() => {
+      result.current.execute(firstProvider);
+    });
+
+    expect(result.current.loading).toBe(true);
+
+    // Start second operation (should abort first)
+    await act(async () => {
+      await result.current.execute(secondProvider);
+    });
+
+    expect(onAbortMock).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe(PromiseStatus.SUCCESS);
+    expect(result.current.result).toBe('second');
+  });
+
+  it('should handle onAbort callback errors gracefully', async () => {
+    const onAbortMock = vi.fn().mockRejectedValue(new Error('onAbort error'));
+    const mockProvider = vi
+      .fn()
+      .mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve('success'), 100)),
+      );
+
+    // Mock console.warn to capture the warning
+    const consoleWarnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => {});
+
+    const { result } = renderHook(() =>
+      useExecutePromise<string>({ onAbort: onAbortMock }),
+    );
+
+    // Start an operation
+    act(() => {
+      result.current.execute(mockProvider);
+    });
+
+    // Abort the operation (should trigger onAbort callback error)
+    await act(async () => {
+      await result.current.abort();
+    });
+
+    // Should have logged the error
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      'useExecutePromise onAbort callback error:',
+      expect.any(Error),
+    );
+
+    // State should still be reset correctly
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
+    expect(result.current.loading).toBe(false);
+
+    consoleWarnSpy.mockRestore();
+  });
 });
