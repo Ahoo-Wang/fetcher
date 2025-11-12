@@ -53,6 +53,7 @@
 export * from './CalendarTime';
 export * from './cellRegistry';
 export * from './DateTimeCell';
+export * from './ImageCell';
 export * from './TagCell';
 export * from './TagsCell';
 export * from './TextCell';
