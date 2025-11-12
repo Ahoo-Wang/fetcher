@@ -46,9 +46,9 @@ const sampleProduct = {
   id: 1,
   name: 'MacBook Pro',
   images: [
-    'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
-    'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
-    'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+    'https://picsum.photos/200/200?random=1',
+    'https://picsum.photos/200/200?random=2',
+    'https://picsum.photos/200/200?random=3',
   ],
 };
 
@@ -56,8 +56,9 @@ const sampleGallery = {
   id: 2,
   name: 'Travel Photos',
   photos: [
-    'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
-    'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+    'https://picsum.photos/200/200?random=1',
+    'https://picsum.photos/200/200?random=2',
+    'https://picsum.photos/200/200?random=3',
   ],
 };
 

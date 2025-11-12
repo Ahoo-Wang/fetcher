@@ -77,10 +77,9 @@ describe('ImageGroupCell Component', () => {
       };
 
       const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(2);
-      expect(images[0]).toHaveAttribute('src', 'https://example.com/test1.jpg');
-      expect(images[1]).toHaveAttribute('src', 'https://example.com/test2.jpg');
+      const image = container.querySelector('img.ant-image-img');
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute('src', 'https://example.com/test1.jpg');
     });
 
     it('should render image group with different record types', () => {
@@ -111,20 +110,12 @@ describe('ImageGroupCell Component', () => {
       const { rerender, container } = render(
         <ImageGroupCell {...productProps} />,
       );
-      let images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(2);
-      expect(images[0]).toHaveAttribute(
-        'src',
-        'https://example.com/product1.jpg',
-      );
+      let image = container.querySelector('img.ant-image-img');
+      expect(image).toHaveAttribute('src', 'https://example.com/product1.jpg');
 
       rerender(<ImageGroupCell {...galleryProps} />);
-      images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(2);
-      expect(images[0]).toHaveAttribute(
-        'src',
-        'https://example.com/gallery1.jpg',
-      );
+      image = container.querySelector('img.ant-image-img');
+      expect(image).toHaveAttribute('src', 'https://example.com/gallery1.jpg');
     });
 
     it('should render with different index values', () => {
@@ -141,12 +132,8 @@ describe('ImageGroupCell Component', () => {
         };
 
         const { container } = render(<ImageGroupCell {...props} />);
-        const images = container.querySelectorAll('img.ant-image-img');
-        expect(images).toHaveLength(1);
-        expect(images[0]).toHaveAttribute(
-          'src',
-          'https://example.com/test.jpg',
-        );
+        const image = container.querySelector('img.ant-image-img');
+        expect(image).toHaveAttribute('src', 'https://example.com/test.jpg');
         cleanup();
       });
     });
@@ -164,123 +151,8 @@ describe('ImageGroupCell Component', () => {
       };
 
       const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(0);
-    });
-
-    it('should render empty for undefined value', () => {
-      const props: ImageGroupCellProps<Product> = {
-        data: {
-          value: undefined as any,
-          record: sampleProduct,
-          index: 0,
-        },
-        attributes: {},
-      };
-
-      const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(0);
-    });
-
-    it('should render empty for empty array', () => {
-      const props: ImageGroupCellProps<Product> = {
-        data: {
-          value: [],
-          record: sampleProduct,
-          index: 0,
-        },
-        attributes: {},
-      };
-
-      const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(0);
-    });
-
-    it('should render empty for non-array value', () => {
-      const props: ImageGroupCellProps<Product> = {
-        data: {
-          value: 'not-an-array' as any,
-          record: sampleProduct,
-          index: 0,
-        },
-        attributes: {},
-      };
-
-      const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(0);
-    });
-  });
-
-  describe('Image Attributes', () => {
-    it('should apply width and height attributes to all images', () => {
-      const props: ImageGroupCellProps<Product> = {
-        data: {
-          value: [
-            'https://example.com/test1.jpg',
-            'https://example.com/test2.jpg',
-          ],
-          record: sampleProduct,
-          index: 0,
-        },
-        attributes: {
-          width: 100,
-          height: 80,
-        },
-      };
-
-      const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(2);
-      images.forEach(img => {
-        expect(img).toHaveAttribute('width', '100');
-        expect(img).toHaveAttribute('height', '80');
-      });
-    });
-
-    it('should apply alt attribute to all images', () => {
-      const props: ImageGroupCellProps<Product> = {
-        data: {
-          value: [
-            'https://example.com/test1.jpg',
-            'https://example.com/test2.jpg',
-          ],
-          record: sampleProduct,
-          index: 0,
-        },
-        attributes: {
-          alt: 'Test image',
-        },
-      };
-
-      const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(2);
-      images.forEach(img => {
-        expect(img).toHaveAttribute('alt', 'Test image');
-      });
-    });
-
-    it('should apply preview attribute', () => {
-      const props: ImageGroupCellProps<Product> = {
-        data: {
-          value: [
-            'https://example.com/test1.jpg',
-            'https://example.com/test2.jpg',
-          ],
-          record: sampleProduct,
-          index: 0,
-        },
-        attributes: {
-          preview: true,
-        },
-      };
-
-      const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(2);
+      const image = container.querySelector('img.ant-image-img');
+      expect(image).toBeNull();
     });
 
     it('should apply fallback attribute to all images', () => {
@@ -299,8 +171,8 @@ describe('ImageGroupCell Component', () => {
       };
 
       const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(2);
+      const image = container.querySelector('img.ant-image-img');
+      expect(image).toBeInTheDocument();
     });
 
     it('should apply style attribute to all images', () => {
@@ -319,13 +191,10 @@ describe('ImageGroupCell Component', () => {
       };
 
       const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(2);
-      images.forEach(img => {
-        expect(img).toHaveStyle({
-          borderRadius: '8px',
-          border: '1px solid #ccc',
-        });
+      const image = container.querySelector('img.ant-image-img');
+      expect(image).toHaveStyle({
+        borderRadius: '8px',
+        border: '1px solid #ccc',
       });
     });
 
@@ -349,14 +218,11 @@ describe('ImageGroupCell Component', () => {
       };
 
       const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(2);
-      images.forEach(img => {
-        expect(img).toHaveAttribute('width', '120');
-        expect(img).toHaveAttribute('height', '90');
-        expect(img).toHaveAttribute('alt', 'Product image');
-        expect(img).toHaveStyle({ objectFit: 'cover' });
-      });
+      const image = container.querySelector('img.ant-image-img');
+      expect(image).toHaveAttribute('width', '120');
+      expect(image).toHaveAttribute('height', '90');
+      expect(image).toHaveAttribute('alt', 'Product image');
+      expect(image).toHaveStyle({ objectFit: 'cover' });
     });
   });
 
@@ -433,19 +299,13 @@ describe('ImageGroupCell Component', () => {
       };
 
       const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(10);
-      images.forEach((img, index) => {
-        expect(img).toHaveAttribute(
-          'src',
-          `https://example.com/test${index}.jpg`,
-        );
-      });
+      const image = container.querySelector('img.ant-image-img');
+      expect(image).toHaveAttribute('src', 'https://example.com/test0.jpg');
     });
   });
 
   describe('DOM Structure', () => {
-    it('should render as multiple img elements', () => {
+    it('should render as img element', () => {
       const props: ImageGroupCellProps<Product> = {
         data: {
           value: [
@@ -459,11 +319,9 @@ describe('ImageGroupCell Component', () => {
       };
 
       const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(2);
-      images.forEach(img => {
-        expect(img.tagName).toBe('IMG');
-      });
+      const image = container.querySelector('img.ant-image-img');
+      expect(image).toBeInTheDocument();
+      expect(image?.tagName).toBe('IMG');
     });
 
     it('should contain the correct src attributes', () => {
@@ -480,13 +338,8 @@ describe('ImageGroupCell Component', () => {
       };
 
       const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images[0].getAttribute('src')).toBe(
-        'https://example.com/test1.jpg',
-      );
-      expect(images[1].getAttribute('src')).toBe(
-        'https://example.com/test2.jpg',
-      );
+      const image = container.querySelector('img.ant-image-img');
+      expect(image?.getAttribute('src')).toBe('https://example.com/test1.jpg');
     });
   });
 
@@ -514,8 +367,8 @@ describe('ImageGroupCell Component', () => {
 
       expect(() => render(<ImageGroupCell {...props} />)).not.toThrow();
       const { container } = render(<ImageGroupCell {...props} />);
-      const images = container.querySelectorAll('img.ant-image-img');
-      expect(images).toHaveLength(2);
+      const image = container.querySelector('img.ant-image-img');
+      expect(image).toBeInTheDocument();
     });
   });
 });

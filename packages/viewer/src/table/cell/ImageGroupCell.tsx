@@ -156,6 +156,7 @@ export function ImageGroupCell<RecordType = any>(
     <Image.PreviewGroup
       items={data.value}
       preview={attributes.preview}
+      fallback={attributes.fallback}
     >
       <Image src={firstImage} {...attributes} />
     </Image.PreviewGroup>
