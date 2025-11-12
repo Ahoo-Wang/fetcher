@@ -20,6 +20,7 @@ import { TAGS_CELL_TYPE, TagsCell } from './TagsCell';
 import { DATETIME_CELL_TYPE, DateTimeCell } from './DateTimeCell';
 import { CALENDAR_CELL_TYPE, CalendarTimeCell } from './CalendarTime';
 import { IMAGE_CELL_TYPE, ImageCell } from './ImageCell';
+import { IMAGE_GROUP_CELL_TYPE, ImageGroupCell } from './ImageGroupCell';
 
 /**
  * Registry for cell components, mapping cell types to their corresponding components.
@@ -64,4 +65,5 @@ export const cellRegistry = TypedComponentRegistry.create<CellType, CellProps>([
   [DATETIME_CELL_TYPE, DateTimeCell],
   [CALENDAR_CELL_TYPE, CalendarTimeCell],
   [IMAGE_CELL_TYPE, ImageCell],
+  [IMAGE_GROUP_CELL_TYPE, ImageGroupCell],
 ]);

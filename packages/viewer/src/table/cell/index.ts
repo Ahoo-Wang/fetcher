@@ -54,6 +54,7 @@ export * from './CalendarTime';
 export * from './cellRegistry';
 export * from './DateTimeCell';
 export * from './ImageCell';
+export * from './ImageGroupCell';
 export * from './TagCell';
 export * from './TagsCell';
 export * from './TextCell';
