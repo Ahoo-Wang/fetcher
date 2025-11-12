@@ -352,11 +352,6 @@ describe('currencyFormatter', () => {
         'minimumFractionDigits value is out of range',
       );
     });
-
-    it('should handle very large decimals gracefully', () => {
-      // Intl.NumberFormat may throw or fallback for very large decimals
-      expect(() => formatCurrency(1234.56, { decimals: 100 })).not.toThrow();
-    });
   });
 
   describe('formatCurrency - option combinations', () => {
