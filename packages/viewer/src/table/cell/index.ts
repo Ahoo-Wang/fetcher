@@ -51,6 +51,7 @@
  */
 
 export * from './cellRegistry';
+export * from './DateTimeCell';
 export * from './TagCell';
 export * from './TagsCell';
 export * from './TextCell';
