@@ -14,6 +14,27 @@
 import { Tag, TagProps } from 'antd';
 import { CellProps } from './types';
 
+
+/**
+ * Constant representing the type identifier for tag cells.
+ *
+ * This constant is used to register and identify tag cell components
+ * in the cell registry system. It should be used when creating typed
+ * cell renderers for tag-based table cells.
+ *
+ * @constant
+ * @type {string}
+ * @default 'tag'
+ *
+ * @example
+ * ```tsx
+ * import { typedCellRender, TAG_CELL_TYPE } from './table/cell';
+ *
+ * const tagRenderer = typedCellRender(TAG_CELL_TYPE, { color: 'blue' });
+ * ```
+ */
+export const TAG_CELL_TYPE = 'tag';
+
 /**
  * Props for the TagCell component, extending CellProps with string value type and TagProps attributes.
  *
@@ -40,27 +61,8 @@ import { CellProps } from './types';
  * ```
  */
 export interface TagCellProps<RecordType = any>
-  extends CellProps<string, RecordType, TagProps> {}
-
-/**
- * Constant representing the type identifier for tag cells.
- *
- * This constant is used to register and identify tag cell components
- * in the cell registry system. It should be used when creating typed
- * cell renderers for tag-based table cells.
- *
- * @constant
- * @type {string}
- * @default 'tag'
- *
- * @example
- * ```tsx
- * import { typedCellRender, TAG_CELL_TYPE } from './table/cell';
- *
- * const tagRenderer = typedCellRender(TAG_CELL_TYPE, { color: 'blue' });
- * ```
- */
-export const TAG_CELL_TYPE = 'tag';
+  extends CellProps<string, RecordType, TagProps> {
+}
 
 /**
  * Renders a tag cell using Ant Design's Tag component.
@@ -120,5 +122,5 @@ export function TagCell<RecordType = any>(props: TagCellProps<RecordType>) {
     return null;
   }
 
-  return <Tag {...attributes}>{data.value}</Tag>;
+  return <Tag {...attributes}>{attributes?.children ?? data.value}</Tag>;
 }
