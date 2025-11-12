@@ -18,6 +18,26 @@ import { TextProps } from 'antd/es/typography/Text';
 const { Text } = Typography;
 
 /**
+ * Constant representing the type identifier for text cells.
+ *
+ * This constant is used to register and identify text cell components
+ * in the cell registry system. It should be used when creating typed
+ * cell renderers for text-based table cells.
+ *
+ * @constant
+ * @type {string}
+ * @default 'text'
+ *
+ * @example
+ * ```tsx
+ * import { typedCellRender, TEXT_CELL_TYPE } from './table/cell';
+ *
+ * const textRenderer = typedCellRender(TEXT_CELL_TYPE, { ellipsis: true });
+ * ```
+ */
+export const TEXT_CELL_TYPE = 'text';
+
+/**
  * Props for the TextCell component, extending CellProps with string value type and TextProps attributes.
  *
  * @template RecordType - The type of the record containing the cell data.
@@ -42,27 +62,8 @@ const { Text } = Typography;
  * ```
  */
 export interface TextCellProps<RecordType = any>
-  extends CellProps<string, RecordType, TextProps> {}
-
-/**
- * Constant representing the type identifier for text cells.
- *
- * This constant is used to register and identify text cell components
- * in the cell registry system. It should be used when creating typed
- * cell renderers for text-based table cells.
- *
- * @constant
- * @type {string}
- * @default 'text'
- *
- * @example
- * ```tsx
- * import { typedCellRender, TEXT_CELL_TYPE } from './table/cell';
- *
- * const textRenderer = typedCellRender(TEXT_CELL_TYPE, { ellipsis: true });
- * ```
- */
-export const TEXT_CELL_TYPE = 'text';
+  extends CellProps<string, RecordType, TextProps> {
+}
 
 /**
  * Renders a text cell using Ant Design's Typography.Text component.
@@ -117,5 +118,5 @@ export const TEXT_CELL_TYPE = 'text';
  * ```
  */
 export function TextCell<RecordType = any>(props: TextCellProps<RecordType>) {
-  return <Text {...props.attributes}>{props.data.value}</Text>;
+  return <Text {...props.attributes}>{props.attributes?.children ?? props.data.value}</Text>;
 }
