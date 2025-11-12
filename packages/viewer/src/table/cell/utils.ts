@@ -20,3 +20,7 @@ export function parseDayjs(value: string | number | Date | Dayjs): Dayjs {
   }
   return dayjs(value);
 }
+
+export function isNullOrUndefined(value: any): value is null | undefined {
+  return value === null || value === undefined;
+}
