@@ -15,6 +15,7 @@ import { CellProps } from './types';
 import { Typography } from 'antd';
 import { TextProps } from 'antd/es/typography/Text';
 import dayjs, { Dayjs } from 'dayjs';
+import { parseDayjs } from './utils';
 
 const { Text } = Typography;
 
@@ -157,11 +158,4 @@ export function DateTimeCell<RecordType = any>(
     return <Text {...textProps}>-</Text>;
   }
   return <Text {...textProps}>{date.format(format)}</Text>;
-}
-
-export function parseDayjs(value: string | number | Date | Dayjs): Dayjs {
-  if (dayjs.isDayjs(value)) {
-    return value;
-  }
-  return dayjs(value);
 }

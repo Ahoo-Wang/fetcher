@@ -57,3 +57,4 @@ export * from './TagsCell';
 export * from './TextCell';
 export * from './TypedCell';
 export * from './types';
+export * from './utils';
