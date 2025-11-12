@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { isNullOrUndefined } from './utils';
+
 /**
  * Configuration options for currency formatting.
  *
@@ -149,7 +151,7 @@ const NUMBER_FORMATE_STYLE = 'currency';
  * ```typescript
  * // Basic usage with defaults (CNY, zh-CN locale)
  * formatCurrency(1234.56); // "¥1,234.56"
- * formatCurrency(0); // "-"
+ * formatCurrency(0); // "¥0.00"
  * formatCurrency(null); // "-"
  *
  * // Using USD with US locale
@@ -196,7 +198,7 @@ const NUMBER_FORMATE_STYLE = 'currency';
  * ```
  */
 export function formatCurrency(
-  amount: number | string,
+  amount: number | string | null,
   options: CurrencyFormatOptions = DEFAULT_CURRENCY_FORMAT_OPTIONS,
 ): string {
   const {
@@ -208,12 +210,7 @@ export function formatCurrency(
     fallback = DEFAULT_CURRENCY_FORMAT_OPTIONS.fallback,
   } = options;
   const numericAmount: number = parseAmount(amount);
-  if (
-    isNaN(numericAmount) ||
-    !isFinite(numericAmount) ||
-    numericAmount === null ||
-    numericAmount === undefined
-  ) {
+  if (isNaN(numericAmount) || !isFinite(numericAmount)) {
     return fallback!;
   }
 
@@ -249,11 +246,12 @@ export function formatCurrency(
  * parseAmount('not-a-number'); // NaN
  * ```
  */
-function parseAmount(amount: number | string): number {
+function parseAmount(amount: number | string | null | undefined): number {
   if (typeof amount === 'number') {
     return amount;
   }
-  if (amount == null) {
+
+  if (isNullOrUndefined(amount)) {
     return NaN;
   }
   const cleanedAmount = amount.replace(/[^\d.-]/g, '');
