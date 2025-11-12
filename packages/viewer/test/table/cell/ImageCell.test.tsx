@@ -129,7 +129,7 @@ describe('ImageCell Component', () => {
       };
 
       render(<ImageCell {...props} />);
-      expect(screen.getByText('-')).toBeInTheDocument();
+      expect(screen.getByText('No data')).toBeInTheDocument();
     });
 
     it('should render dash for undefined value', () => {
@@ -143,7 +143,7 @@ describe('ImageCell Component', () => {
       };
 
       render(<ImageCell {...props} />);
-      expect(screen.getByText('-')).toBeInTheDocument();
+      expect(screen.getByText('No data')).toBeInTheDocument();
     });
 
     it('should render dash for empty string', () => {
@@ -157,7 +157,7 @@ describe('ImageCell Component', () => {
       };
 
       render(<ImageCell {...props} />);
-      expect(screen.getByText('-')).toBeInTheDocument();
+      expect(screen.getByText('No data')).toBeInTheDocument();
     });
   });
 

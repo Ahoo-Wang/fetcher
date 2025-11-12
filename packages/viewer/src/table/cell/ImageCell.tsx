@@ -12,10 +12,8 @@
  */
 
 import { CellProps } from './types';
-import { Image, Typography } from 'antd';
+import { Empty, Image } from 'antd';
 import { ImageProps } from 'antd/es/image';
-
-const { Text } = Typography;
 
 /**
  * Constant representing the type identifier for image cells.
@@ -149,7 +147,7 @@ export function ImageCell<RecordType = any>(props: ImageCellProps<RecordType>) {
   const { data, attributes = {} } = props;
 
   if (!data.value) {
-    return <Text>-</Text>;
+    return <Empty description={null} />;
   }
 
   return <Image src={data.value} {...attributes} />;
