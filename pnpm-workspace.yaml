@@ -19,7 +19,7 @@ catalog:
   eslint: ^9.39.1
   eslint-plugin-react-hooks: ^7.0.1
   globals: ^16.5.0
-  jsdom: ^27.1.0
+  jsdom: ^27.2.0
   msw: ^2.12.1
   nanoid: ^5.1.6
   prettier: ^3.6.2
