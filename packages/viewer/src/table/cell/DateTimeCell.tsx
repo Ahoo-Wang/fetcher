@@ -73,11 +73,11 @@ export interface DateTimeCellProps<RecordType = any>
   extends CellProps<
     string | number | Date | Dayjs,
     RecordType,
-    TextProps & { format?: string }
+    TextProps & { format?: string | ((dayjs: Dayjs) => string) }
   > {
 }
 
-const DEFAULT_DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+export const DEFAULT_DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
 /**
  * Renders a datetime cell using Ant Design's Typography.Text component with dayjs formatting.
@@ -156,6 +156,9 @@ export function DateTimeCell<RecordType = any>(
   const date = parseDayjs(data.value);
   if (!date.isValid()) {
     return <Text {...textProps}>-</Text>;
+  }
+  if (typeof format === 'function') {
+    return <Text {...textProps}>{format(date)}</Text>;
   }
   return <Text {...textProps}>{date.format(format)}</Text>;
 }

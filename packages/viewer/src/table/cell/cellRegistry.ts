@@ -18,6 +18,7 @@ import { TEXT_CELL_TYPE, TextCell } from './TextCell';
 import { TAG_CELL_TYPE, TagCell } from './TagCell';
 import { TAGS_CELL_TYPE, TagsCell } from './TagsCell';
 import { DATETIME_CELL_TYPE, DateTimeCell } from './DateTimeCell';
+import { CALENDAR_CELL_TYPE, CalendarTimeCell } from './CalendarTime';
 
 /**
  * Registry for cell components, mapping cell types to their corresponding components.
@@ -60,4 +61,5 @@ export const cellRegistry = TypedComponentRegistry.create<CellType, CellProps>([
   [TAG_CELL_TYPE, TagCell],
   [TAGS_CELL_TYPE, TagsCell],
   [DATETIME_CELL_TYPE, DateTimeCell],
+  [CALENDAR_CELL_TYPE, CalendarTimeCell],
 ]);
