@@ -186,15 +186,15 @@ describe('ImageGroupCell Component', () => {
           index: 0,
         },
         attributes: {
-          style: { borderRadius: '8px', border: '1px solid #ccc' },
+          style: { opacity: '0.8', transform: 'scale(0.9)' },
         },
       };
 
       const { container } = render(<ImageGroupCell {...props} />);
       const image = container.querySelector('img.ant-image-img');
       expect(image).toHaveStyle({
-        borderRadius: '8px',
-        border: '1px solid #ccc',
+        opacity: '0.8',
+        transform: 'scale(0.9)',
       });
     });
 
