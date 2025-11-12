@@ -11,24 +11,17 @@
  * limitations under the License.
  */
 
-import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
-import viteConfig from './vite.config';
-
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
-    test: {
-      environment: 'jsdom',
-      globals: true,
-      setupFiles: ['./test/setup.ts'],
-      coverage: {
-        exclude: [
-          ...configDefaults.exclude,
-          '**/**.stories.tsx',
-          //TODO exclude
-          'src/filter/panel/**',
-        ],
-      },
-    },
+// Mock window.matchMedia for Antd components
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => {},
   }),
-);
+});
