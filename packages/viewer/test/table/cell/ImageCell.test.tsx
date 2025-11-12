@@ -241,15 +241,15 @@ describe('ImageCell Component', () => {
           index: 0,
         },
         attributes: {
-          style: { borderRadius: '8px', border: '1px solid #ccc' },
+          style: { opacity: '0.8', transform: 'scale(0.9)' },
         },
       };
 
       const { container } = render(<ImageCell {...props} />);
       const image = container.querySelector('img');
       expect(image).toHaveStyle({
-        borderRadius: '8px',
-        border: '1px solid #ccc',
+        opacity: '0.8',
+        transform: 'scale(0.9)',
       });
     });
 
