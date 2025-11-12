@@ -14,12 +14,8 @@
 import calendar from 'dayjs/plugin/calendar';
 import dayjs, { Dayjs } from 'dayjs';
 import { CellProps } from './types';
-import { Typography } from 'antd';
 import { TextProps } from 'antd/es/typography/Text';
-import { parseDayjs } from './utils';
 import { DateTimeCell, DEFAULT_DATE_TIME_FORMAT } from './DateTimeCell';
-
-const { Text } = Typography;
 
 dayjs.extend(calendar);
 
