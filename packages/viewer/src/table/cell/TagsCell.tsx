@@ -14,6 +14,7 @@
 import { CellProps } from './types';
 import { Space, TagProps } from 'antd';
 import { TagCell } from './TagCell';
+import { SpaceProps } from 'antd/es/space';
 
 /**
  * Constant representing the type identifier for tags cells.
@@ -68,7 +69,9 @@ export const TAGS_CELL_TYPE = 'tags';
  * ```
  */
 export interface TagsCellProps<RecordType = any>
-  extends CellProps<string[], RecordType, Record<string, TagProps>> {}
+  extends CellProps<string[], RecordType, Record<string, TagProps>> {
+  space?: SpaceProps;
+}
 
 /**
  * Renders a tags cell using Ant Design's Space and Tag components.
@@ -140,12 +143,12 @@ export interface TagsCellProps<RecordType = any>
  * ```
  */
 export function TagsCell<RecordType = any>(props: TagsCellProps<RecordType>) {
-  const { data, attributes = {} } = props;
-  if (data.value.length === 0) {
+  const { space, data, attributes = {} } = props;
+  if (!data.value?.length) {
     return null;
   }
   return (
-    <Space>
+    <Space {...space}>
       {data.value.map((tag, index) => {
         const tagAttributes = attributes[tag];
         return (
