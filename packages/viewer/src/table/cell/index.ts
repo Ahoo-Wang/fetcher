@@ -50,6 +50,7 @@
  * ```
  */
 
+export * from './CalendarTime';
 export * from './cellRegistry';
 export * from './DateTimeCell';
 export * from './TagCell';
