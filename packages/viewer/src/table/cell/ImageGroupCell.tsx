@@ -151,14 +151,14 @@ export function ImageGroupCell<RecordType = any>(
   if (!data.value || !Array.isArray(data.value) || data.value.length === 0) {
     return <Empty description={null} />;
   }
-  const firstImage = data.value[0];
+  const mainImage = data.value[0];
   return (
     <Image.PreviewGroup
       items={data.value}
       preview={attributes.preview}
       fallback={attributes.fallback}
     >
-      <Image src={firstImage} {...attributes} />
+      <Image src={mainImage} {...attributes} />
     </Image.PreviewGroup>
   );
 }
