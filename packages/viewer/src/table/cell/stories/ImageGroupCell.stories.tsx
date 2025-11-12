@@ -15,7 +15,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { ImageGroupCell } from '../ImageGroupCell';
 
 const meta: Meta<typeof ImageGroupCell> = {
-  title: 'Table/Cell/ImageGroupCell',
+  title: 'Viewer/Table/Cell/ImageGroupCell',
   component: ImageGroupCell,
   parameters: {
     layout: 'centered',
