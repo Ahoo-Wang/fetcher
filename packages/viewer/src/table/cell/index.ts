@@ -50,6 +50,7 @@
  * ```
  */
 
+export * from './AvatarCell';
 export * from './CalendarTime';
 export * from './cellRegistry';
 export * from './currencyFormatter';

@@ -23,6 +23,7 @@ import { IMAGE_CELL_TYPE, ImageCell } from './ImageCell';
 import { IMAGE_GROUP_CELL_TYPE, ImageGroupCell } from './ImageGroupCell';
 import { LINK_CELL_TYPE, LinkCell } from './LinkCell';
 import { CURRENCY_CELL_TYPE, CurrencyCell } from './CurrencyCell';
+import { AVATAR_CELL_TYPE, AvatarCell } from './AvatarCell';
 
 /**
  * Registry for cell components, mapping cell types to their corresponding components.
@@ -70,4 +71,5 @@ export const cellRegistry = TypedComponentRegistry.create<CellType, CellProps>([
   [IMAGE_GROUP_CELL_TYPE, ImageGroupCell],
   [LINK_CELL_TYPE, LinkCell],
   [CURRENCY_CELL_TYPE, CurrencyCell],
+  [AVATAR_CELL_TYPE, AvatarCell],
 ]);
