@@ -22,7 +22,7 @@ const meta: Meta<typeof ImageGroupCell> = {
     docs: {
       description: {
         component:
-          'ImageGroupCell 使用 Ant Design 的 Image.PreviewGroup 组件显示图片组，支持预览和导航。',
+          'ImageGroupCell 使用 Ant Design 的 Image.PreviewGroup 组件显示图片组，支持预览和导航。当有多张图片时，会在主图片上显示数字指示器。',
       },
     },
   },
@@ -138,6 +138,36 @@ export const EmptyArray: Story = {
     attributes: {
       width: 80,
       height: 80,
+    },
+  },
+};
+
+export const SingleImage: Story = {
+  args: {
+    data: {
+      value: [sampleProduct.images[0]],
+      record: sampleProduct,
+      index: 0,
+    },
+    attributes: {
+      width: 80,
+      height: 80,
+      preview: true,
+    },
+  },
+};
+
+export const MultipleImagesWithCount: Story = {
+  args: {
+    data: {
+      value: sampleProduct.images,
+      record: sampleProduct,
+      index: 0,
+    },
+    attributes: {
+      width: 80,
+      height: 80,
+      preview: true,
     },
   },
 };

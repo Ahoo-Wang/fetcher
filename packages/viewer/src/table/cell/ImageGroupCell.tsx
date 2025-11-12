@@ -12,7 +12,7 @@
  */
 
 import { CellProps } from './types';
-import { Empty, Image } from 'antd';
+import { Empty, Image, Badge } from 'antd';
 import { ImageProps } from 'antd/es/image';
 
 /**
@@ -68,8 +68,7 @@ export const IMAGE_GROUP_CELL_TYPE = 'image-group';
  * ```
  */
 export interface ImageGroupCellProps<RecordType = any>
-  extends CellProps<string[], RecordType, ImageProps> {
-}
+  extends CellProps<string[], RecordType, ImageProps> {}
 
 /**
  * Renders an image group cell using Ant Design's Image.PreviewGroup component.
@@ -151,14 +150,20 @@ export function ImageGroupCell<RecordType = any>(
   if (!data.value || !Array.isArray(data.value) || data.value.length === 0) {
     return <Empty description={null} />;
   }
-  const mainImage = data.value[0];
+  const hasMultipleImages = data.value.length > 1;
+  const mainImageElement = <Image src={data.value[0]} {...attributes} />;
+
   return (
     <Image.PreviewGroup
       items={data.value}
       preview={attributes.preview}
       fallback={attributes.fallback}
     >
-      <Image src={mainImage} {...attributes} />
+      {hasMultipleImages ? (
+        <Badge count={data.value.length}>{mainImageElement}</Badge>
+      ) : (
+        mainImageElement
+      )}
     </Image.PreviewGroup>
   );
 }

@@ -343,6 +343,64 @@ describe('ImageGroupCell Component', () => {
     });
   });
 
+  describe('Icon Overlay for Multiple Images', () => {
+    it('should not show badge icon for single image', () => {
+      const props: ImageGroupCellProps<Product> = {
+        data: {
+          value: ['https://example.com/single.jpg'],
+          record: sampleProduct,
+          index: 0,
+        },
+        attributes: {},
+      };
+
+      const { container } = render(<ImageGroupCell {...props} />);
+      const badge = container.querySelector('.ant-badge');
+      expect(badge).toBeNull();
+    });
+
+    it('should show badge with count for multiple images', () => {
+      const props: ImageGroupCellProps<Product> = {
+        data: {
+          value: [
+            'https://example.com/test1.jpg',
+            'https://example.com/test2.jpg',
+          ],
+          record: sampleProduct,
+          index: 0,
+        },
+        attributes: {},
+      };
+
+      const { container } = render(<ImageGroupCell {...props} />);
+      const badge = container.querySelector('.ant-badge');
+      expect(badge).toBeInTheDocument();
+
+      const count = container.querySelector('.ant-badge-count');
+      expect(count).toBeInTheDocument();
+      expect(count).toHaveTextContent('2');
+    });
+
+    it('should show badge with correct count for three or more images', () => {
+      const props: ImageGroupCellProps<Gallery> = {
+        data: {
+          value: sampleGallery.photos,
+          record: sampleGallery,
+          index: 0,
+        },
+        attributes: {},
+      };
+
+      const { container } = render(<ImageGroupCell {...props} />);
+      const badge = container.querySelector('.ant-badge');
+      expect(badge).toBeInTheDocument();
+
+      const count = container.querySelector('.ant-badge-count');
+      expect(count).toBeInTheDocument();
+      expect(count).toHaveTextContent('3');
+    });
+  });
+
   describe('Error Boundaries and Resilience', () => {
     it('should handle extreme attribute values', () => {
       const props: ImageGroupCellProps<Product> = {
