@@ -117,8 +117,7 @@ export interface TagCellProps<RecordType = any>
  */
 export function TagCell<RecordType = any>(props: TagCellProps<RecordType>) {
   const { data, attributes } = props;
-
-  if (!data.value.trim()) {
+  if (!data.value?.trim()) {
     return null;
   }
 
