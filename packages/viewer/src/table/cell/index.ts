@@ -52,6 +52,7 @@
 
 export * from './CalendarTime';
 export * from './cellRegistry';
+export * from './currencyFormatter';
 export * from './DateTimeCell';
 export * from './ImageCell';
 export * from './ImageGroupCell';
