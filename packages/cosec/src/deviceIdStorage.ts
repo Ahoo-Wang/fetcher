@@ -12,7 +12,7 @@
  */
 
 import { idGenerator } from './idGenerator';
-import { KeyStorage, KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
+import { KeyStorage, KeyStorageOptions, typedIdentitySerializer } from '@ahoo-wang/fetcher-storage';
 import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,
@@ -22,20 +22,21 @@ export const DEFAULT_COSEC_DEVICE_ID_KEY = 'cosec-device-id';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface DeviceIdStorageOptions
-  extends Partial<KeyStorageOptions<string>> {}
+  extends Partial<KeyStorageOptions<string>> {
+}
 
 /**
  * Storage class for managing device identifiers.
  */
 export class DeviceIdStorage extends KeyStorage<string> {
   constructor({
-    key = DEFAULT_COSEC_DEVICE_ID_KEY,
-    eventBus = new BroadcastTypedEventBus({
-      delegate: new SerialTypedEventBus(DEFAULT_COSEC_DEVICE_ID_KEY),
-    }),
-    ...reset
-  }: DeviceIdStorageOptions = {}) {
-    super({ key, eventBus, ...reset });
+                key = DEFAULT_COSEC_DEVICE_ID_KEY,
+                eventBus = new BroadcastTypedEventBus({
+                  delegate: new SerialTypedEventBus(DEFAULT_COSEC_DEVICE_ID_KEY),
+                }),
+                ...reset
+              }: DeviceIdStorageOptions = {}) {
+    super({ key, eventBus, ...reset, serializer: typedIdentitySerializer() });
   }
 
   /**

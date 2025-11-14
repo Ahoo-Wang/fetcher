@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { jsonSerializer, Serializer, typedIdentitySerializer } from './serializer';
+import { jsonSerializer, Serializer } from './serializer';
 import {
   EventHandler,
   nameGenerator,
@@ -149,11 +149,11 @@ export class KeyStorage<Deserialized>
    * ```
    */
   get(): Deserialized | null {
-    if (this.cacheValue !== null) {
+    if (this.cacheValue !== null && this.cacheValue !== undefined) {
       return this.cacheValue;
     }
     const value = this.storage.getItem(this.key);
-    if (value === null) {
+    if (value === null || value === undefined) {
       return null;
     }
     this.cacheValue = this.serializer.deserialize(value);
