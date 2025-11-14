@@ -37,3 +37,4 @@ catalog:
   vitest: ^3.2.4
   yaml: ^2.3.1
   dayjs: ^1.11.19
+  immer: ^10.2.0
