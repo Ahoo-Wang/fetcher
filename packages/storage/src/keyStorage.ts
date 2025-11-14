@@ -65,6 +65,11 @@ export interface KeyStorageOptions<Deserialized> {
    * Optional event bus for cross-tab communication. Defaults to SerialTypedEventBus
    */
   eventBus?: TypedEventBus<StorageEvent<Deserialized>>;
+
+  /**
+   * Optional default value to return when no value exists in storage
+   */
+  defaultValue?: Deserialized;
 }
 
 /**
@@ -78,6 +83,7 @@ export class KeyStorage<Deserialized>
   private readonly serializer: Serializer<string, Deserialized>;
   private readonly storage: Storage;
   public readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
+  private readonly defaultValue: Deserialized | null = null;
   private cacheValue: Deserialized | null = null;
   private readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> =
     {
@@ -100,6 +106,7 @@ export class KeyStorage<Deserialized>
       new SerialTypedEventBus<StorageEvent<Deserialized>>(
         `KeyStorage:${this.key}`,
       );
+    this.defaultValue = options.defaultValue ?? null;
     this.eventBus.on(this.keyStorageHandler);
   }
 
@@ -154,7 +161,7 @@ export class KeyStorage<Deserialized>
     }
     const value = this.storage.getItem(this.key);
     if (value === null || value === undefined) {
-      return null;
+      return this.defaultValue;
     }
     this.cacheValue = this.serializer.deserialize(value);
     return this.cacheValue;
