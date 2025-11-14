@@ -101,14 +101,36 @@ const MyComponent = () => {
 
 ### useImmerKeyStorage Hook
 
-`useImmerKeyStorage` hook 通过集成 Immer 的 `produce` 函数扩展了 `useKeyStorage`，允许开发者以不可变的方式对存储值进行"可变"更新。它为复杂对象更新提供了直观的 API，同时保持自动存储同步。
+🚀 **Immer 驱动的不可变状态管理** - `useImmerKeyStorage` hook 通过集成 Immer 的 `produce` 函数扩展了 `useKeyStorage`，允许开发者以直观的"可变"方式更新存储值，同时在底层保持不可变性。非常适合复杂对象的操作，具有自动存储同步功能。
+
+#### 主要优势
+
+- **直观的变更语法**: 编写看起来可变的代码，但产生不可变更新
+- **深度对象支持**: 轻松处理嵌套对象和数组
+- **类型安全**: 完整的 TypeScript 支持和编译时错误检查
+- **性能优化**: 利用 Immer 的结构共享和最小化重渲染
+- **自动同步**: 变更自动持久化到存储并跨组件同步
+
+#### 使用场景
+
+在需要以下情况时选择 `useImmerKeyStorage` 而不是 `useKeyStorage`：
+
+- 更新嵌套对象属性
+- 执行复杂的数组操作（push、splice 等）
+- 原子性地进行多个相关变更
+- 处理深度嵌套的数据结构
 
 ```typescript jsx
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { useImmerKeyStorage } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const prefsStorage = new KeyStorage<{ theme: string; volume: number; notifications: boolean }>({
+  const prefsStorage = new KeyStorage<{
+    theme: string;
+    volume: number;
+    notifications: boolean;
+    shortcuts: { [key: string]: string };
+  }>({
     key: 'user-prefs'
   });
 
@@ -135,7 +157,7 @@ const MyComponent = () => {
 #### 使用默认值
 
 ```typescript jsx
-const MyComponent = () => {
+const AudioControls = () => {
   const settingsStorage = new KeyStorage<{ volume: number; muted: boolean }>({
     key: 'audio-settings'
   });
@@ -148,7 +170,7 @@ const MyComponent = () => {
 
   return (
     <div>
-      <p>音量: {settings.volume}</p>
+      <p>音量: {settings.volume}%</p>
       <button onClick={() => updateSettings(draft => {
         draft.volume = Math.min(100, draft.volume + 10);
         draft.muted = false;
@@ -166,35 +188,173 @@ const MyComponent = () => {
 };
 ```
 
-#### 高级用法
+#### 高级用法模式
+
+##### 批量更新
 
 ```typescript jsx
-// 批量更新
-const updateMultipleSettings = () => {
-  updateSettings(draft => {
+const updateUserProfile = () => {
+  updatePrefs(draft => {
+    draft.theme = 'dark';
+    draft.notifications = true;
     draft.volume = 75;
-    draft.muted = false;
-    // 根据需要添加更多属性
+  });
+};
+```
+
+##### 数组操作
+
+```typescript jsx
+const todoStorage = new KeyStorage<{
+  todos: Array<{ id: number; text: string; done: boolean }>;
+}>({
+  key: 'todos',
+});
+
+const [state, updateState] = useImmerKeyStorage(todoStorage, { todos: [] });
+
+// 添加新待办事项
+const addTodo = (text: string) => {
+  updateState(draft => {
+    draft.todos.push({
+      id: Date.now(),
+      text,
+      done: false,
+    });
   });
 };
 
-// 条件更新
-const toggleFeature = (feature: string) => {
-  updatePrefs(draft => {
-    if (draft) {
-      if (feature === 'notifications') {
-        draft.notifications = !draft.notifications;
-      } else if (feature === 'theme') {
-        draft.theme = draft.theme === 'light' ? 'dark' : 'light';
-      }
+// 切换待办事项状态
+const toggleTodo = (id: number) => {
+  updateState(draft => {
+    const todo = draft.todos.find(t => t.id === id);
+    if (todo) {
+      todo.done = !todo.done;
     }
   });
 };
 
-// 返回新值而不是修改 draft
-const resetToSpecificValues = () => {
-  updateSettings(() => ({ volume: 30, muted: true }));
+// 清除已完成的待办事项
+const clearCompleted = () => {
+  updateState(draft => {
+    draft.todos = draft.todos.filter(todo => !todo.done);
+  });
 };
+```
+
+##### 嵌套对象更新
+
+```typescript jsx
+const configStorage = new KeyStorage<{
+  ui: { theme: string; language: string };
+  features: { [key: string]: boolean };
+}>({
+  key: 'app-config',
+});
+
+const [config, updateConfig] = useImmerKeyStorage(configStorage, {
+  ui: { theme: 'light', language: 'zh' },
+  features: {},
+});
+
+// 更新嵌套属性
+const updateTheme = (theme: string) => {
+  updateConfig(draft => {
+    draft.ui.theme = theme;
+  });
+};
+
+const toggleFeature = (feature: string) => {
+  updateConfig(draft => {
+    draft.features[feature] = !draft.features[feature];
+  });
+};
+```
+
+##### 带验证的条件更新
+
+```typescript jsx
+const updateVolume = (newVolume: number) => {
+  updateSettings(draft => {
+    if (newVolume >= 0 && newVolume <= 100) {
+      draft.volume = newVolume;
+      draft.muted = false; // 音量改变时取消静音
+    }
+  });
+};
+```
+
+##### 返回新值
+
+```typescript jsx
+// 替换整个状态
+const resetToFactorySettings = () => {
+  updateSettings(() => ({ volume: 50, muted: false }));
+};
+
+// 计算更新
+const setMaxVolume = () => {
+  updateSettings(draft => ({ ...draft, volume: 100, muted: false }));
+};
+```
+
+##### 错误处理
+
+```typescript jsx
+const safeUpdate = (updater: (draft: any) => void) => {
+  try {
+    updatePrefs(updater);
+  } catch (error) {
+    console.error('更新偏好设置失败:', error);
+    // 适当处理错误
+  }
+};
+```
+
+#### 最佳实践
+
+##### ✅ 推荐做法
+
+- 用于复杂对象更新和数组操作
+- 利用 Immer 的 draft 变更编写可读代码
+- 在单个更新调用中组合多个相关变更
+- 对保证非空状态使用默认值
+- 在更新函数中适当处理错误
+
+##### ❌ 避免做法
+
+- 不要直接用赋值修改 draft 参数（`draft = newValue`）
+- 不要在更新函数中执行副作用
+- 不要依赖对象比较的引用相等性
+- 不要用于简单的原始值更新（应使用 `useKeyStorage`）
+
+##### 性能提示
+
+- 将相关更新批量处理以最小化存储操作
+- 当新状态依赖于之前状态时使用函数式更新
+- 如果更新函数经常重新创建，考虑使用 `useCallback`
+- 如果处理非常大的对象，请分析更新性能
+
+##### TypeScript 集成
+
+```typescript jsx
+// 为更好的安全性定义严格类型
+type UserPreferences = {
+  theme: 'light' | 'dark' | 'auto';
+  volume: number; // 0-100
+  notifications: boolean;
+  shortcuts: Record<string, string>;
+};
+
+const prefsStorage = new KeyStorage<UserPreferences>({
+  key: 'user-prefs',
+});
+
+// TypeScript 将捕获无效更新
+const [prefs, updatePrefs] = useImmerKeyStorage(prefsStorage);
+
+// 这将导致 TypeScript 错误：
+// updatePrefs(draft => { draft.theme = 'invalid'; });
 ```
 
 ## Wow 查询 Hooks
@@ -716,6 +876,73 @@ function useKeyStorage<T>(
 **返回值:**
 
 - 包含当前存储值和更新函数的元组
+
+### useImmerKeyStorage
+
+```typescript
+// 不使用默认值 - 可能返回 null
+function useImmerKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+): [
+  T | null,
+  (updater: (draft: T | null) => T | null | void) => void,
+  () => void,
+];
+
+// 使用默认值 - 保证非空
+function useImmerKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+  defaultValue: T,
+): [T, (updater: (draft: T) => T | null | void) => void, () => void];
+```
+
+为 KeyStorage 实例提供 Immer 驱动的不可变状态管理的 React hook。通过集成 Immer 的 `produce` 函数扩展 `useKeyStorage`，允许直观的"可变"更新存储值，同时保持不可变性。
+
+**类型参数:**
+
+- `T`: 存储值的数据类型
+
+**参数:**
+
+- `keyStorage`: 要订阅和管理的 KeyStorage 实例。应该是稳定的引用（useRef、memo 或模块级实例）
+- `defaultValue` _(可选)_: 当存储为空时使用的默认值。提供时，hook 保证返回的值永远不会为 null
+
+**返回值:**
+
+包含以下元素的元组：
+
+- **当前值**: `T | null`（无默认值时）或 `T`（有默认值时）
+- **更新函数**: `(updater: (draft: T | null) => T | null | void) => void` - Immer 驱动的更新函数
+- **清除函数**: `() => void` - 删除存储值的函数
+
+**更新函数:**
+
+更新函数接收一个可以直接变更的 `draft` 参数。Immer 将从这些变更中产生不可变更新。更新函数也可以直接返回新值或 `null` 来清除存储。
+
+**示例:**
+
+```typescript
+// 基本对象更新
+const [user, updateUser] = useImmerKeyStorage(userStorage);
+updateUser(draft => {
+  if (draft) {
+    draft.name = 'John';
+    draft.age = 30;
+  }
+});
+
+// 数组操作
+const [todos, updateTodos] = useImmerKeyStorage(todosStorage, []);
+updateTodos(draft => {
+  draft.push({ id: 1, text: '新待办事项', done: false });
+});
+
+// 返回新值
+updateTodos(() => [{ id: 1, text: '重置待办事项', done: false }]);
+
+// 清除存储
+updateTodos(() => null);
+```
 
 ### useListQuery
 

@@ -554,14 +554,36 @@ const updateVolume = (newVolume: number) => {
 
 ### useImmerKeyStorage Hook
 
-The `useImmerKeyStorage` hook extends `useKeyStorage` by integrating Immer's `produce` function, allowing developers to perform "mutable" updates on stored values in an immutable way. It provides an intuitive API for complex object updates while maintaining automatic storage synchronization.
+🚀 **Immer-Powered Immutable State Management** - The `useImmerKeyStorage` hook extends `useKeyStorage` by integrating Immer's `produce` function, enabling intuitive "mutable" updates on stored values while maintaining immutability under the hood. Perfect for complex object manipulations with automatic storage synchronization.
+
+#### Key Benefits
+
+- **Intuitive Mutations**: Write code that looks mutable but produces immutable updates
+- **Deep Object Support**: Effortlessly handle nested objects and arrays
+- **Type Safety**: Full TypeScript support with compile-time error checking
+- **Performance**: Optimized with Immer's structural sharing and minimal re-renders
+- **Automatic Sync**: Changes automatically persist to storage and sync across components
+
+#### When to Use
+
+Choose `useImmerKeyStorage` over `useKeyStorage` when you need to:
+
+- Update nested object properties
+- Perform complex array operations (push, splice, etc.)
+- Make multiple related changes atomically
+- Work with deeply nested data structures
 
 ```typescript jsx
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { useImmerKeyStorage } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const prefsStorage = new KeyStorage<{ theme: string; volume: number; notifications: boolean }>({
+  const prefsStorage = new KeyStorage<{
+    theme: string;
+    volume: number;
+    notifications: boolean;
+    shortcuts: { [key: string]: string };
+  }>({
     key: 'user-prefs'
   });
 
@@ -588,7 +610,7 @@ const MyComponent = () => {
 #### With Default Value
 
 ```typescript jsx
-const MyComponent = () => {
+const AudioControls = () => {
   const settingsStorage = new KeyStorage<{ volume: number; muted: boolean }>({
     key: 'audio-settings'
   });
@@ -601,7 +623,7 @@ const MyComponent = () => {
 
   return (
     <div>
-      <p>Volume: {settings.volume}</p>
+      <p>Volume: {settings.volume}%</p>
       <button onClick={() => updateSettings(draft => {
         draft.volume = Math.min(100, draft.volume + 10);
         draft.muted = false;
@@ -619,35 +641,173 @@ const MyComponent = () => {
 };
 ```
 
-#### Advanced Usage
+#### Advanced Usage Patterns
+
+##### Batch Updates
 
 ```typescript jsx
-// Batch updates
-const updateMultipleSettings = () => {
-  updateSettings(draft => {
+const updateUserProfile = () => {
+  updatePrefs(draft => {
+    draft.theme = 'dark';
+    draft.notifications = true;
     draft.volume = 75;
-    draft.muted = false;
-    // Add more properties as needed
+  });
+};
+```
+
+##### Array Operations
+
+```typescript jsx
+const todoStorage = new KeyStorage<{
+  todos: Array<{ id: number; text: string; done: boolean }>;
+}>({
+  key: 'todos',
+});
+
+const [state, updateState] = useImmerKeyStorage(todoStorage, { todos: [] });
+
+// Add new todo
+const addTodo = (text: string) => {
+  updateState(draft => {
+    draft.todos.push({
+      id: Date.now(),
+      text,
+      done: false,
+    });
   });
 };
 
-// Conditional updates
-const toggleFeature = (feature: string) => {
-  updatePrefs(draft => {
-    if (draft) {
-      if (feature === 'notifications') {
-        draft.notifications = !draft.notifications;
-      } else if (feature === 'theme') {
-        draft.theme = draft.theme === 'light' ? 'dark' : 'light';
-      }
+// Toggle todo status
+const toggleTodo = (id: number) => {
+  updateState(draft => {
+    const todo = draft.todos.find(t => t.id === id);
+    if (todo) {
+      todo.done = !todo.done;
     }
   });
 };
 
-// Returning new values instead of modifying draft
-const resetToSpecificValues = () => {
-  updateSettings(() => ({ volume: 30, muted: true }));
+// Remove completed todos
+const clearCompleted = () => {
+  updateState(draft => {
+    draft.todos = draft.todos.filter(todo => !todo.done);
+  });
 };
+```
+
+##### Nested Object Updates
+
+```typescript jsx
+const configStorage = new KeyStorage<{
+  ui: { theme: string; language: string };
+  features: { [key: string]: boolean };
+}>({
+  key: 'app-config',
+});
+
+const [config, updateConfig] = useImmerKeyStorage(configStorage, {
+  ui: { theme: 'light', language: 'en' },
+  features: {},
+});
+
+// Update nested properties
+const updateTheme = (theme: string) => {
+  updateConfig(draft => {
+    draft.ui.theme = theme;
+  });
+};
+
+const toggleFeature = (feature: string) => {
+  updateConfig(draft => {
+    draft.features[feature] = !draft.features[feature];
+  });
+};
+```
+
+##### Conditional Updates with Validation
+
+```typescript jsx
+const updateVolume = (newVolume: number) => {
+  updateSettings(draft => {
+    if (newVolume >= 0 && newVolume <= 100) {
+      draft.volume = newVolume;
+      draft.muted = false; // Unmute when volume changes
+    }
+  });
+};
+```
+
+##### Returning New Values
+
+```typescript jsx
+// Replace entire state
+const resetToFactorySettings = () => {
+  updateSettings(() => ({ volume: 50, muted: false }));
+};
+
+// Computed updates
+const setMaxVolume = () => {
+  updateSettings(draft => ({ ...draft, volume: 100, muted: false }));
+};
+```
+
+##### Error Handling
+
+```typescript jsx
+const safeUpdate = (updater: (draft: any) => void) => {
+  try {
+    updatePrefs(updater);
+  } catch (error) {
+    console.error('Failed to update preferences:', error);
+    // Handle error appropriately
+  }
+};
+```
+
+#### Best Practices
+
+##### ✅ Do's
+
+- Use for complex object updates and array manipulations
+- Leverage Immer's draft mutations for readable code
+- Combine multiple related changes in a single update call
+- Use default values for guaranteed non-null state
+- Handle errors appropriately in update functions
+
+##### ❌ Don'ts
+
+- Don't modify the draft parameter directly with assignment (`draft = newValue`)
+- Don't perform side effects inside updater functions
+- Don't rely on reference equality for object comparisons
+- Don't use for simple primitive value updates (use `useKeyStorage` instead)
+
+##### Performance Tips
+
+- Batch related updates together to minimize storage operations
+- Use functional updates when the new state depends on the previous state
+- Consider using `useCallback` for updater functions if they're recreated frequently
+- Profile your updates if working with very large objects
+
+##### TypeScript Integration
+
+```typescript jsx
+// Define strict types for better safety
+type UserPreferences = {
+  theme: 'light' | 'dark' | 'auto';
+  volume: number; // 0-100
+  notifications: boolean;
+  shortcuts: Record<string, string>;
+};
+
+const prefsStorage = new KeyStorage<UserPreferences>({
+  key: 'user-prefs',
+});
+
+// TypeScript will catch invalid updates
+const [prefs, updatePrefs] = useImmerKeyStorage(prefsStorage);
+
+// This will cause a TypeScript error:
+// updatePrefs(draft => { draft.theme = 'invalid'; });
 ```
 
 ## Wow Query Hooks
@@ -1840,6 +2000,73 @@ const [value, setValue] = useKeyStorage(keyStorage);
 // With default value
 const [theme, setTheme] = useKeyStorage(themeStorage, 'light');
 // theme: string (never null)
+```
+
+### useImmerKeyStorage
+
+```typescript
+// Without default value - can return null
+function useImmerKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+): [
+  T | null,
+  (updater: (draft: T | null) => T | null | void) => void,
+  () => void,
+];
+
+// With default value - guaranteed non-null
+function useImmerKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+  defaultValue: T,
+): [T, (updater: (draft: T) => T | null | void) => void, () => void];
+```
+
+A React hook that provides Immer-powered immutable state management for a KeyStorage instance. Extends `useKeyStorage` by integrating Immer's `produce` function, allowing intuitive "mutable" updates on stored values while maintaining immutability.
+
+**Type Parameters:**
+
+- `T`: The type of value stored in the key storage
+
+**Parameters:**
+
+- `keyStorage`: The KeyStorage instance to subscribe to and manage. Should be a stable reference (useRef, memo, or module-level instance)
+- `defaultValue` _(optional)_: The default value to use when storage is empty. When provided, the hook guarantees the returned value will never be null
+
+**Returns:**
+
+A tuple containing:
+
+- **Current value**: `T | null` (without default) or `T` (with default)
+- **Update function**: `(updater: (draft: T | null) => T | null | void) => void` - Immer-powered updater function
+- **Clear function**: `() => void` - Function to remove the stored value
+
+**Updater Function:**
+
+The updater function receives a `draft` parameter that can be mutated directly. Immer will produce an immutable update from these mutations. The updater can also return a new value directly or `null` to clear the storage.
+
+**Examples:**
+
+```typescript
+// Basic object updates
+const [user, updateUser] = useImmerKeyStorage(userStorage);
+updateUser(draft => {
+  if (draft) {
+    draft.name = 'John';
+    draft.age = 30;
+  }
+});
+
+// Array operations
+const [todos, updateTodos] = useImmerKeyStorage(todosStorage, []);
+updateTodos(draft => {
+  draft.push({ id: 1, text: 'New todo', done: false });
+});
+
+// Returning new values
+updateTodos(() => [{ id: 1, text: 'Reset todos', done: false }]);
+
+// Clearing storage
+updateTodos(() => null);
 ```
 
 ### useListQuery
