@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Serializer, typedIdentitySerializer } from './serializer';
+import { jsonSerializer, Serializer, typedIdentitySerializer } from './serializer';
 import {
   EventHandler,
   nameGenerator,
@@ -93,7 +93,7 @@ export class KeyStorage<Deserialized>
    */
   constructor(options: KeyStorageOptions<Deserialized>) {
     this.key = options.key;
-    this.serializer = options.serializer ?? typedIdentitySerializer();
+    this.serializer = options.serializer ?? jsonSerializer;
     this.storage = options.storage ?? getStorage();
     this.eventBus =
       options.eventBus ??
