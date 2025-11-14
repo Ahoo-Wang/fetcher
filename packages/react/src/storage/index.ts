@@ -12,3 +12,4 @@
  */
 
 export * from './useKeyStorage';
+export * from './useImmerKeyStorage';
