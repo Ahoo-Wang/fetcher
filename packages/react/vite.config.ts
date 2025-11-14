@@ -27,6 +27,7 @@ export default defineConfig({
       external: [
         'react',
         'react-dom',
+        'immer',
         '@ahoo-wang/fetcher',
         '@ahoo-wang/fetcher-eventstream',
         '@ahoo-wang/fetcher-eventbus',
@@ -37,6 +38,7 @@ export default defineConfig({
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
+          immer: 'Immer',
           '@ahoo-wang/fetcher': 'Fetcher',
           '@ahoo-wang/fetcher-eventstream': 'FetcherEventStream',
           '@ahoo-wang/fetcher-eventbus': 'FetcherEventBus',

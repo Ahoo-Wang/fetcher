@@ -46,7 +46,9 @@
     "clean": "rm -rf dist",
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
-  "dependencies": {},
+  "dependencies": {
+    "immer": "catalog:"
+  },
   "peerDependencies": {
     "@ahoo-wang/fetcher": "workspace:^3.0.0",
     "@ahoo-wang/fetcher-eventstream": "workspace:^3.0.0",
