@@ -83,6 +83,18 @@ describe('KeyStorage', () => {
       expect(mockStorage.getItem).toHaveBeenCalledWith('testKey');
     });
 
+    it('should return defaultValue when no value in storage and defaultValue is provided', () => {
+      const ks = new KeyStorage({
+        key: 'testKey',
+        defaultValue: 'default',
+        storage: mockStorage,
+      });
+      mockStorage.getItem.mockReturnValue(null);
+      const result = ks.get();
+      expect(result).toBe('default');
+      expect(mockStorage.getItem).toHaveBeenCalledWith('testKey');
+    });
+
     it('should deserialize and return value from storage', () => {
       const storedValue = JSON.stringify('test value');
       mockStorage.getItem.mockReturnValue(storedValue);
