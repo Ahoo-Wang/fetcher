@@ -15,41 +15,15 @@ import { useCallback, useSyncExternalStore } from 'react';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { nameGenerator } from '@ahoo-wang/fetcher-eventbus';
 
-/**
- * useKeyStorage hook overload for cases without a default value.
- *
- * When no default value is provided, the hook returns nullable state that directly
- * reflects the storage state. This is useful when you want to distinguish between
- * "no value stored" and "default value applied".
- *
- * @template T - The type of value stored in the key storage
- * @param keyStorage - The KeyStorage instance to subscribe to and manage
- * @returns A tuple where the first element can be null if storage is empty,
- *          and the second element is a setter function to update the storage
- */
 export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
-): [T | null, (value: T) => void];
+  defaultValue?: T,
+): [T | null, (value: T) => void, () => void];
 
-/**
- * useKeyStorage hook overload for cases with a default value.
- *
- * When a default value is provided, the hook guarantees that the returned state
- * will never be null. The default value is used when the storage is empty,
- * providing a seamless experience for required state.
- *
- * @template T - The type of value stored in the key storage
- * @param keyStorage - The KeyStorage instance to subscribe to and manage
- * @param defaultValue - The default value to use when storage is empty.
- *                      This value will be returned until the storage is explicitly set.
- * @returns A tuple where the first element is guaranteed to be non-null (either
- *          the stored value or the default value), and the second element is a
- *          setter function to update the storage
- */
 export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
   defaultValue: T,
-): [T, (value: T) => void];
+): [T, (value: T) => void, () => void];
 
 /**
  * A React hook that provides reactive state management for a KeyStorage instance.
@@ -65,8 +39,13 @@ export function useKeyStorage<T>(
  * @template T - The type of value stored in the key storage
  * @param keyStorage - The KeyStorage instance to subscribe to and manage. This should be a
  *                     stable reference (useRef, memo, or module-level instance)
- * @returns A tuple containing the current stored value and a function to update it.
+ * @param defaultValue - Optional default value to use when storage is empty.
+ *                      When provided, the returned value is guaranteed to be non-null.
+ * @returns A tuple containing the current stored value (or default/null), a function to update it,
+ *          and a function to remove the stored value.
  *          The value will be null if no default is provided and storage is empty.
+ * @throws {Error} Propagates errors from KeyStorage operations, such as serialization failures
+ *                 or storage access errors that may occur during get, set, or remove operations.
  *
  * @example
  * ```typescript
@@ -78,13 +57,16 @@ export function useKeyStorage<T>(
  *
  * function UserProfile() {
  *   // Without default value - can be null
- *   const [userName, setUserName] = useKeyStorage(userStorage);
+ *   const [userName, setUserName, removeUserName] = useKeyStorage(userStorage);
  *
  *   return (
  *     <div>
  *       <p>Current user: {userName || 'Not logged in'}</p>
  *       <button onClick={() => setUserName('John Doe')}>
  *         Set User
+ *       </button>
+ *       <button onClick={removeUserName}>
+ *         Logout
  *       </button>
  *     </div>
  *   );
@@ -94,12 +76,15 @@ export function useKeyStorage<T>(
  * @example
  * ```typescript
  * // With default value - guaranteed to be non-null
- * const [theme, setTheme] = useKeyStorage(themeStorage, 'light');
+ * const [theme, setTheme, resetTheme] = useKeyStorage(themeStorage, 'light');
  *
  * return (
  *   <div className={theme}>
  *     <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
  *       Toggle Theme
+ *     </button>
+ *     <button onClick={resetTheme}>
+ *       Reset to Default
  *     </button>
  *   </div>
  * );
@@ -108,7 +93,7 @@ export function useKeyStorage<T>(
  * @example
  * ```typescript
  * // Using with complex objects
- * const [userPrefs, setUserPrefs] = useKeyStorage(preferencesStorage, {
+ * const [userPrefs, setUserPrefs, clearPrefs] = useKeyStorage(preferencesStorage, {
  *   theme: 'light',
  *   language: 'en',
  *   notifications: true
@@ -118,31 +103,15 @@ export function useKeyStorage<T>(
  * const updateTheme = (newTheme: string) => {
  *   setUserPrefs({ ...userPrefs, theme: newTheme });
  * };
+ *
+ * // Clear all preferences
+ * const resetPrefs = () => clearPrefs();
  * ```
- */
-/**
- * Implementation of the useKeyStorage hook.
- *
- * This function implements the core logic for both overloads. It uses React's
- * useSyncExternalStore hook to create a reactive connection to the KeyStorage,
- * ensuring proper subscription management and SSR compatibility.
- *
- * Key implementation details:
- * - Uses useSyncExternalStore for external store subscription
- * - Automatically unsubscribes when component unmounts
- * - Handles default value logic in the snapshot function
- * - Provides stable setter function reference via useCallback
- *
- * @param keyStorage - The KeyStorage instance to connect to
- * @param defaultValue - Optional default value for the overload implementation
- * @returns Tuple of [currentValue, setterFunction]
- * @throws {Error} If keyStorage is null or undefined
- * @throws {Error} If keyStorage subscription fails (rare, depends on implementation)
  */
 export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
   defaultValue?: T,
-): [T | null, (value: T) => void] {
+): [T | null, (value: T) => void, () => void] {
   // Create subscription function for useSyncExternalStore
   // This function returns an unsubscribe function that will be called on cleanup
   const subscribe = useCallback(
@@ -174,6 +143,13 @@ export function useKeyStorage<T>(
     [keyStorage], // Recreate setter only if keyStorage changes
   );
 
-  // Return tuple of current value and setter function
-  return [value, setValue];
+  // Create stable remover function reference
+  // This function removes the stored value and triggers re-renders
+  const remove = useCallback(
+    () => keyStorage.remove(),
+    [keyStorage], // Recreate remover only if keyStorage changes
+  );
+
+  // Return tuple of current value, setter function, and remover function
+  return [value, setValue, remove];
 }

@@ -73,8 +73,7 @@ export interface KeyStorageOptions<Deserialized> {
  * @template Deserialized The type of the value being stored
  */
 export class KeyStorage<Deserialized>
-  implements StorageListenable<Deserialized>
-{
+  implements StorageListenable<Deserialized> {
   private readonly key: string;
   private readonly serializer: Serializer<string, Deserialized>;
   private readonly storage: Storage;
@@ -150,7 +149,7 @@ export class KeyStorage<Deserialized>
    * ```
    */
   get(): Deserialized | null {
-    if (this.cacheValue) {
+    if (this.cacheValue !== null) {
       return this.cacheValue;
     }
     const value = this.storage.getItem(this.key);
