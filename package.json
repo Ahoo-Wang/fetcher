@@ -47,7 +47,7 @@
     "@storybook/react-vite": "^9.1.16",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitest/browser": "3.2.4",
+    "@vitest/browser": "4.0.9",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "antd": "catalog:",
