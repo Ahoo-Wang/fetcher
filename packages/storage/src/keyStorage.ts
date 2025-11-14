@@ -153,7 +153,7 @@ export class KeyStorage<Deserialized>
       return this.cacheValue;
     }
     const value = this.storage.getItem(this.key);
-    if (!value) {
+    if (value === null) {
       return null;
     }
     this.cacheValue = this.serializer.deserialize(value);
