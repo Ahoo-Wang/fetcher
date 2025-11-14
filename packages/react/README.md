@@ -38,12 +38,13 @@ robust data fetching capabilities.
   - [useLatest Hook](#uselatest-hook)
   - [useRefs Hook](#userefs-hook)
   - [useKeyStorage Hook](#usekeystorage-hook)
+  - [useImmerKeyStorage Hook](#useimmerkeystorage-hook)
   - [Wow Query Hooks](#wow-query-hooks)
-    - [useListQuery Hook](#uselistquery-hook)
-    - [usePagedQuery Hook](#usepagedquery-hook)
-    - [useSingleQuery Hook](#usesinglequery-hook)
-    - [useCountQuery Hook](#usecountquery-hook)
-    - [useListStreamQuery Hook](#useliststreamquery-hook)
+  - [useListQuery Hook](#uselistquery-hook)
+  - [usePagedQuery Hook](#usepagedquery-hook)
+  - [useSingleQuery Hook](#usesinglequery-hook)
+  - [useCountQuery Hook](#usecountquery-hook)
+  - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [Best Practices](#best-practices)
 - [API Reference](#api-reference)
 - [License](#license)
@@ -548,6 +549,104 @@ const [settings, setSettings] = useKeyStorage(settingsStorage, {
 // Update specific properties
 const updateVolume = (newVolume: number) => {
   setSettings({ ...settings, volume: newVolume });
+};
+```
+
+### useImmerKeyStorage Hook
+
+The `useImmerKeyStorage` hook extends `useKeyStorage` by integrating Immer's `produce` function, allowing developers to perform "mutable" updates on stored values in an immutable way. It provides an intuitive API for complex object updates while maintaining automatic storage synchronization.
+
+```typescript jsx
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { useImmerKeyStorage } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const prefsStorage = new KeyStorage<{ theme: string; volume: number; notifications: boolean }>({
+    key: 'user-prefs'
+  });
+
+  // Without default value - can be null
+  const [prefs, updatePrefs, clearPrefs] = useImmerKeyStorage(prefsStorage);
+
+  return (
+    <div>
+      <p>Theme: {prefs?.theme || 'default'}</p>
+      <button onClick={() => updatePrefs(draft => { draft.theme = 'dark'; })}>
+        Switch to Dark Theme
+      </button>
+      <button onClick={() => updatePrefs(draft => { draft.volume += 10; })}>
+        Increase Volume
+      </button>
+      <button onClick={clearPrefs}>
+        Clear Preferences
+      </button>
+    </div>
+  );
+};
+```
+
+#### With Default Value
+
+```typescript jsx
+const MyComponent = () => {
+  const settingsStorage = new KeyStorage<{ volume: number; muted: boolean }>({
+    key: 'audio-settings'
+  });
+
+  // With default value - guaranteed to be non-null
+  const [settings, updateSettings, resetSettings] = useImmerKeyStorage(
+    settingsStorage,
+    { volume: 50, muted: false }
+  );
+
+  return (
+    <div>
+      <p>Volume: {settings.volume}</p>
+      <button onClick={() => updateSettings(draft => {
+        draft.volume = Math.min(100, draft.volume + 10);
+        draft.muted = false;
+      })}>
+        Increase Volume
+      </button>
+      <button onClick={() => updateSettings(draft => { draft.muted = !draft.muted; })}>
+        Toggle Mute
+      </button>
+      <button onClick={resetSettings}>
+        Reset to Default
+      </button>
+    </div>
+  );
+};
+```
+
+#### Advanced Usage
+
+```typescript jsx
+// Batch updates
+const updateMultipleSettings = () => {
+  updateSettings(draft => {
+    draft.volume = 75;
+    draft.muted = false;
+    // Add more properties as needed
+  });
+};
+
+// Conditional updates
+const toggleFeature = (feature: string) => {
+  updatePrefs(draft => {
+    if (draft) {
+      if (feature === 'notifications') {
+        draft.notifications = !draft.notifications;
+      } else if (feature === 'theme') {
+        draft.theme = draft.theme === 'light' ? 'dark' : 'light';
+      }
+    }
+  });
+};
+
+// Returning new values instead of modifying draft
+const resetToSpecificValues = () => {
+  updateSettings(() => ({ volume: 30, muted: true }));
 };
 ```
 

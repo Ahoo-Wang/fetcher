@@ -17,7 +17,6 @@ import { nameGenerator } from '@ahoo-wang/fetcher-eventbus';
 
 export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
-  defaultValue?: T,
 ): [T | null, (value: T) => void, () => void];
 
 export function useKeyStorage<T>(

@@ -37,12 +37,13 @@
   - [useLatest Hook](#uselatest-hook)
   - [useRefs Hook](#userefs-hook)
   - [useKeyStorage Hook](#usekeystorage-hook)
+  - [useImmerKeyStorage Hook](#useimmerkeystorage-hook)
   - [Wow 查询 Hooks](#wow-查询-hooks)
-    - [useListQuery Hook](#uselistquery-hook)
-    - [usePagedQuery Hook](#usepagedquery-hook)
-    - [useSingleQuery Hook](#usesinglequery-hook)
-    - [useCountQuery Hook](#usecountquery-hook)
-    - [useListStreamQuery Hook](#useliststreamquery-hook)
+  - [useListQuery Hook](#uselistquery-hook)
+  - [usePagedQuery Hook](#usepagedquery-hook)
+  - [useSingleQuery Hook](#usesinglequery-hook)
+  - [useCountQuery Hook](#usecountquery-hook)
+  - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [最佳实践](#最佳实践)
 - [API 参考](#api-参考)
 - [许可证](#许可证)
@@ -98,371 +99,33 @@ const MyComponent = () => {
 };
 ```
 
-#### 自动执行示例
+### useImmerKeyStorage Hook
 
-```typescript jsx
-import { useListQuery } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { result, loading, error, execute, setCondition } = useListQuery({
-    initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
-    execute: async (listQuery) => fetchListData(listQuery),
-    autoExecute: true, // 在组件挂载时自动执行
-  });
-
-  // 查询将在组件挂载时自动执行
-  // 您仍然可以通过 execute() 手动触发或更新条件
-
-  if (loading) return <div>加载中...</div>;
-  if (error) return <div>错误: {error.message}</div>;
-
-  return (
-    <div>
-      <ul>
-        {result?.map((item, index) => (
-          <li key={index}>{item.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-};
-```
-
-### 防抖 Hooks
-
-🚀 **高级 React 防抖库** - 强大的 hooks 将防抖与异步操作相结合，为 API 调用、用户交互和 Promise 执行提供无缝的速率限制。
-
-#### useDebouncedCallback
-
-一个 React hook，为任何回调函数提供防抖版本，支持前缘/后缘执行选项。
-
-```typescript jsx
-import { useDebouncedCallback } from '@ahoo-wang/fetcher-react';
-
-const SearchComponent = () => {
-  const { run: debouncedSearch, cancel, isPending } = useDebouncedCallback(
-    async (query: string) => {
-      const response = await fetch(`/api/search?q=${query}`);
-      const results = await response.json();
-      console.log('搜索结果:', results);
-    },
-    { delay: 300 }
-  );
-
-  const handleSearch = (query: string) => {
-    if (query.trim()) {
-      debouncedSearch(query);
-    } else {
-      cancel(); // 取消任何待处理的搜索
-    }
-  };
-
-  return (
-    <div>
-      <input
-        type="text"
-        placeholder="搜索..."
-        onChange={(e) => handleSearch(e.target.value)}
-      />
-      {isPending() && <div>搜索中...</div>}
-    </div>
-  );
-};
-```
-
-**配置选项：**
-
-- `delay`: 执行前的延迟毫秒数（必需，正数）
-- `leading`: 第一次调用时立即执行（默认: false）
-- `trailing`: 最后一次调用后延迟执行（默认: true）
-
-#### useDebouncedExecutePromise
-
-将 Promise 执行与防抖功能相结合，非常适合 API 调用和异步操作。
-
-```typescript jsx
-import { useDebouncedExecutePromise } from '@ahoo-wang/fetcher-react';
-
-const DataFetcher = () => {
-  const { loading, result, error, run } = useDebouncedExecutePromise({
-    debounce: { delay: 300 },
-  });
-
-  const handleLoadUser = (userId: string) => {
-    run(async () => {
-      const response = await fetch(`/api/users/${userId}`);
-      return response.json();
-    });
-  };
-
-  return (
-    <div>
-      <button onClick={() => handleLoadUser('user123')}>
-        加载用户
-      </button>
-      {loading && <div>加载中...</div>}
-      {error && <div>错误: {error.message}</div>}
-      {result && <div>用户: {result.name}</div>}
-    </div>
-  );
-};
-```
-
-#### useDebouncedFetcher
-
-专门的 hook，将 HTTP 获取与防抖相结合，建立在核心获取器库之上。
-
-```typescript jsx
-import { useDebouncedFetcher } from '@ahoo-wang/fetcher-react';
-
-const SearchInput = () => {
-  const [query, setQuery] = useState('');
-  const { loading, result, error, run } = useDebouncedFetcher({
-    debounce: { delay: 300 },
-    onSuccess: (data) => {
-      setSearchResults(data.results);
-    }
-  });
-
-  const handleChange = (value: string) => {
-    setQuery(value);
-    if (value.trim()) {
-      run({
-        url: '/api/search',
-        method: 'GET',
-        params: { q: value }
-      });
-    }
-  };
-
-  return (
-    <div>
-      <input
-        value={query}
-        onChange={(e) => handleChange(e.target.value)}
-        placeholder="搜索..."
-      />
-      {loading && <div>搜索中...</div>}
-      {error && <div>错误: {error.message}</div>}
-      {result && <SearchResults data={result} />}
-    </div>
-  );
-};
-```
-
-**防抖策略：**
-
-- **前缘执行**: 第一次调用时立即执行，然后对后续调用进行防抖
-- **后缘执行**: 最后一次调用后延迟执行（默认行为）
-- **前缘 + 后缘**: 立即执行，如果再次调用则在延迟后再次执行
-
-### useExecutePromise Hook
-
-`useExecutePromise` hook 管理异步操作，具有自动状态处理、竞态条件保护和 promise 状态选项支持。
-
-```typescript jsx
-import { useExecutePromise } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { loading, result, error, execute, reset } = useExecutePromise<string>();
-
-  const fetchData = async () => {
-    const response = await fetch('/api/data');
-    return response.text();
-  };
-
-  const handleFetch = () => {
-    execute(fetchData); // 使用 promise supplier
-  };
-
-  const handleDirectPromise = () => {
-    const promise = fetch('/api/data').then(res => res.text());
-    execute(promise); // 使用直接 promise
-  };
-
-  if (loading) return <div>加载中...</div>;
-  if (error) return <div>错误: {error.message}</div>;
-  return (
-    <div>
-      <button onClick={handleFetch}>使用 Supplier 获取</button>
-      <button onClick={handleDirectPromise}>使用 Promise 获取</button>
-      <button onClick={reset}>重置</button>
-      {result && <p>{result}</p>}
-    </div>
-  );
-};
-```
-
-### usePromiseState Hook
-
-`usePromiseState` hook 提供 promise 操作的状态管理，无执行逻辑。支持静态选项和动态选项供应商。
-
-```typescript jsx
-import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { status, loading, result, error, setSuccess, setError, setIdle } = usePromiseState<string>();
-
-  const handleSuccess = () => setSuccess('数据加载成功');
-  const handleError = () => setError(new Error('加载失败'));
-
-  return (
-    <div>
-      <button onClick={handleSuccess}>设置成功</button>
-      <button onClick={handleError}>设置错误</button>
-      <button onClick={setIdle}>重置</button>
-      <p>状态: {status}</p>
-      {loading && <p>加载中...</p>}
-      {result && <p>结果: {result}</p>}
-      {error && <p>错误: {error.message}</p>}
-    </div>
-  );
-};
-```
-
-#### usePromiseState with Options Supplier
-
-```typescript jsx
-import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  // 使用选项供应商进行动态配置
-  const optionsSupplier = () => ({
-    initialStatus: PromiseStatus.IDLE,
-    onSuccess: async (result: string) => {
-      await saveToAnalytics(result);
-      console.log('成功:', result);
-    },
-    onError: async (error) => {
-      await logErrorToServer(error);
-      console.error('错误:', error);
-    },
-  });
-
-  const { setSuccess, setError } = usePromiseState<string>(optionsSupplier);
-
-  return (
-    <div>
-      <button onClick={() => setSuccess('动态成功!')}>设置成功</button>
-      <button onClick={() => setError(new Error('动态错误!'))}>设置错误</button>
-    </div>
-  );
-};
-```
-
-### useRequestId Hook
-
-`useRequestId` hook 提供请求ID管理，用于防止异步操作中的竞态条件。
-
-```typescript jsx
-import { useRequestId } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { generate, isLatest, invalidate } = useRequestId();
-
-  const handleFetch = async () => {
-    const requestId = generate();
-
-    try {
-      const result = await fetchData();
-
-      if (isLatest(requestId)) {
-        setData(result);
-      }
-    } catch (error) {
-      if (isLatest(requestId)) {
-        setError(error);
-      }
-    }
-  };
-
-  return (
-    <div>
-      <button onClick={handleFetch}>获取数据</button>
-      <button onClick={invalidate}>取消进行中</button>
-    </div>
-  );
-};
-```
-
-### useLatest Hook
-
-`useLatest` hook 返回包含最新值的 ref 对象，用于在异步回调中访问当前值。
-
-```typescript jsx
-import { useLatest } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const [count, setCount] = useState(0);
-  const latestCount = useLatest(count);
-
-  const handleAsync = async () => {
-    await someAsyncOperation();
-    console.log('最新计数:', latestCount.current); // 始终是最新值
-  };
-
-  return (
-    <div>
-      <p>计数: {count}</p>
-      <button onClick={() => setCount(c => c + 1)}>递增</button>
-      <button onClick={handleAsync}>异步记录</button>
-    </div>
-  );
-};
-```
-
-### useRefs Hook
-
-`useRefs` hook 提供 Map-like 接口用于动态管理多个 React refs。它允许通过键注册、检索和管理 refs，并在组件卸载时自动清理。
-
-```typescript jsx
-import { useRefs } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const refs = useRefs<HTMLDivElement>();
-
-  const handleFocus = (key: string) => {
-    const element = refs.get(key);
-    element?.focus();
-  };
-
-  return (
-    <div>
-      <div ref={refs.register('first')} tabIndex={0}>第一个元素</div>
-      <div ref={refs.register('second')} tabIndex={0}>第二个元素</div>
-      <button onClick={() => handleFocus('first')}>聚焦第一个</button>
-      <button onClick={() => handleFocus('second')}>聚焦第二个</button>
-    </div>
-  );
-};
-```
-
-关键特性：
-
-- **动态注册**: 使用字符串、数字或符号键注册 refs
-- **Map-like API**: 完整的 Map 接口，包括 get、set、has、delete 等
-- **自动清理**: 组件卸载时自动清空 refs
-- **类型安全**: 完整的 TypeScript 支持
-
-### useKeyStorage Hook
-
-`useKeyStorage` hook 为 KeyStorage 实例提供反应式状态管理。它订阅存储变化并返回当前值以及设置函数。可选接受默认值以在存储为空时使用。
+`useImmerKeyStorage` hook 通过集成 Immer 的 `produce` 函数扩展了 `useKeyStorage`，允许开发者以不可变的方式对存储值进行"可变"更新。它为复杂对象更新提供了直观的 API，同时保持自动存储同步。
 
 ```typescript jsx
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
-import { useKeyStorage } from '@ahoo-wang/fetcher-react';
+import { useImmerKeyStorage } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const keyStorage = new KeyStorage<string>({ key: 'my-key' });
+  const prefsStorage = new KeyStorage<{ theme: string; volume: number; notifications: boolean }>({
+    key: 'user-prefs'
+  });
 
   // 不使用默认值 - 可能为 null
-  const [value, setValue] = useKeyStorage(keyStorage);
+  const [prefs, updatePrefs, clearPrefs] = useImmerKeyStorage(prefsStorage);
 
   return (
     <div>
-      <p>当前值: {value || '未存储值'}</p>
-      <button onClick={() => setValue('新值')}>
-        更新值
+      <p>主题: {prefs?.theme || '默认'}</p>
+      <button onClick={() => updatePrefs(draft => { draft.theme = 'dark'; })}>
+        切换到深色主题
+      </button>
+      <button onClick={() => updatePrefs(draft => { draft.volume += 10; })}>
+        增加音量
+      </button>
+      <button onClick={clearPrefs}>
+        清除偏好设置
       </button>
     </div>
   );
@@ -473,68 +136,65 @@ const MyComponent = () => {
 
 ```typescript jsx
 const MyComponent = () => {
-  const keyStorage = new KeyStorage<string>({ key: 'theme' });
+  const settingsStorage = new KeyStorage<{ volume: number; muted: boolean }>({
+    key: 'audio-settings'
+  });
 
   // 使用默认值 - 保证不为 null
-  const [theme, setTheme] = useKeyStorage(keyStorage, 'light');
+  const [settings, updateSettings, resetSettings] = useImmerKeyStorage(
+    settingsStorage,
+    { volume: 50, muted: false }
+  );
 
   return (
-    <div className={theme}>
-      <p>当前主题: {theme}</p>
-      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-        切换主题
+    <div>
+      <p>音量: {settings.volume}</p>
+      <button onClick={() => updateSettings(draft => {
+        draft.volume = Math.min(100, draft.volume + 10);
+        draft.muted = false;
+      })}>
+        增加音量
+      </button>
+      <button onClick={() => updateSettings(draft => { draft.muted = !draft.muted; })}>
+        切换静音
+      </button>
+      <button onClick={resetSettings}>
+        重置为默认值
       </button>
     </div>
   );
 };
 ```
 
-### 更多示例
+#### 高级用法
 
 ```typescript jsx
-// 处理不同类型的值
-const numberStorage = new KeyStorage<number>({ key: 'counter' });
-const [count, setCount] = useKeyStorage(numberStorage, 0); // 默认为 0
-
-// 处理对象
-interface User {
-  id: string;
-  name: string;
-}
-
-const userStorage = new KeyStorage<User>({ key: 'current-user' });
-const [user, setUser] = useKeyStorage(userStorage, { id: '', name: '访客' });
-
-// 复杂状态管理
-const settingsStorage = new KeyStorage<{ volume: number; muted: boolean }>({
-  key: 'audio-settings',
-});
-const [settings, setSettings] = useKeyStorage(settingsStorage, {
-  volume: 50,
-  muted: false,
-});
-
-// 更新特定属性
-const updateVolume = (newVolume: number) => {
-  setSettings({ ...settings, volume: newVolume });
+// 批量更新
+const updateMultipleSettings = () => {
+  updateSettings(draft => {
+    draft.volume = 75;
+    draft.muted = false;
+    // 根据需要添加更多属性
+  });
 };
-```
 
-### 更多示例
+// 条件更新
+const toggleFeature = (feature: string) => {
+  updatePrefs(draft => {
+    if (draft) {
+      if (feature === 'notifications') {
+        draft.notifications = !draft.notifications;
+      } else if (feature === 'theme') {
+        draft.theme = draft.theme === 'light' ? 'dark' : 'light';
+      }
+    }
+  });
+};
 
-```typescript jsx
-// 处理不同类型的值
-const numberStorage = new KeyStorage<number>({ key: 'counter' });
-const [count, setCount] = useKeyStorage(numberStorage);
-
-// 处理对象
-interface User {
-  id: string;
-  name: string;
-}
-
-const userStorage = new KeyStorage<User>({ key: 'current-user' });
-const [user, setUser] = useKeyStorage(userStorage);
+// 返回新值而不是修改 draft
+const resetToSpecificValues = () => {
+  updateSettings(() => ({ volume: 30, muted: true }));
+};
 ```
 
 ## Wow 查询 Hooks
