@@ -125,3 +125,7 @@ public/
 
 *storybook.log
 storybook-static
+
+# Test output directories
+test-output/
+**/test-output/
