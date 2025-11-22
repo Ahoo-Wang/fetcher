@@ -66,7 +66,7 @@ export interface LinkCellProps<RecordType = any>
   extends CellProps<string, RecordType, LinkProps> {
 }
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const EMAIL_PREFIX = 'mailto:';
 
 /**
@@ -124,13 +124,16 @@ const EMAIL_PREFIX = 'mailto:';
  * ```
  */
 export function LinkCell<RecordType = any>(props: LinkCellProps<RecordType>) {
-  const isEmail = EMAIL_REGEX.test(props.data.value);
+  const isEmail = props.data.value && EMAIL_REGEX.test(props.data.value);
   const href =
     props.attributes?.href ??
     (isEmail ? `${EMAIL_PREFIX}${props.data.value}` : props.data.value);
   const linkProps = isEmail
     ? props.attributes
-    : { target: '_blank', ...props.attributes };
+    : {
+      ...props.attributes,
+      ...(props.attributes?.target === undefined ? { target: '_blank' } : {}),
+    };
   return (
     <Link href={href} {...linkProps}>
       {props.attributes?.children ?? props.data.value}
