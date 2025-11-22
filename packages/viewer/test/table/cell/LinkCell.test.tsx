@@ -287,4 +287,179 @@ describe('LinkCell', () => {
     const linkElement = container.querySelector('a');
     expect(linkElement).toHaveClass('ant-typography-disabled');
   });
+
+  it('should automatically add mailto prefix for email values', () => {
+    const props = {
+      data: {
+        value: 'user@example.com',
+        record: { id: 1 },
+        index: 0,
+      },
+      attributes: {},
+    };
+
+    const { container } = render(<LinkCell {...props} />);
+    const linkElement = container.querySelector('a');
+    expect(linkElement).toHaveAttribute('href', 'mailto:user@example.com');
+    expect(linkElement).not.toHaveAttribute('target');
+  });
+
+  it('should not add target for email links', () => {
+    const props = {
+      data: {
+        value: 'test@domain.org',
+        record: { id: 1 },
+        index: 0,
+      },
+      attributes: {},
+    };
+
+    const { container } = render(<LinkCell {...props} />);
+    const linkElement = container.querySelector('a');
+    expect(linkElement).toHaveAttribute('href', 'mailto:test@domain.org');
+    expect(linkElement).not.toHaveAttribute('target');
+  });
+
+  it('should use attributes.href over automatic email prefix', () => {
+    const props = {
+      data: {
+        value: 'email@test.com',
+        record: { id: 1 },
+        index: 0,
+      },
+      attributes: { href: 'https://custom-link.com' },
+    };
+
+    const { container } = render(<LinkCell {...props} />);
+    const linkElement = container.querySelector('a');
+    expect(linkElement).toHaveAttribute('href', 'https://custom-link.com');
+  });
+
+  it('should add target _blank for non-email values', () => {
+    const props = {
+      data: {
+        value: 'https://example.com',
+        record: { id: 1 },
+        index: 0,
+      },
+      attributes: {},
+    };
+
+    const { container } = render(<LinkCell {...props} />);
+    const linkElement = container.querySelector('a');
+    expect(linkElement).toHaveAttribute('href', 'https://example.com');
+    expect(linkElement).toHaveAttribute('target', '_blank');
+  });
+
+  it('should not treat invalid email as email', () => {
+    const props = {
+      data: {
+        value: 'invalid-email',
+        record: { id: 1 },
+        index: 0,
+      },
+      attributes: {},
+    };
+
+    const { container } = render(<LinkCell {...props} />);
+    const linkElement = container.querySelector('a');
+    expect(linkElement).toHaveAttribute('href', 'invalid-email');
+    expect(linkElement).toHaveAttribute('target', '_blank');
+  });
+
+  it('should handle email with subdomains', () => {
+    const props = {
+      data: {
+        value: 'user@sub.example.co.uk',
+        record: { id: 1 },
+        index: 0,
+      },
+      attributes: {},
+    };
+
+    const { container } = render(<LinkCell {...props} />);
+    const linkElement = container.querySelector('a');
+    expect(linkElement).toHaveAttribute(
+      'href',
+      'mailto:user@sub.example.co.uk',
+    );
+    expect(linkElement).not.toHaveAttribute('target');
+  });
+
+  it('should render custom children when provided', () => {
+    const props = {
+      data: {
+        value: 'user@example.com',
+        record: { id: 1 },
+        index: 0,
+      },
+      attributes: { children: 'Contact Us' },
+    };
+
+    render(<LinkCell {...props} />);
+    expect(screen.getByText('Contact Us')).toBeInTheDocument();
+  });
+
+  it('should use value as text when no children provided', () => {
+    const props = {
+      data: {
+        value: 'test@example.com',
+        record: { id: 1 },
+        index: 0,
+      },
+      attributes: {},
+    };
+
+    render(<LinkCell {...props} />);
+    expect(screen.getByText('test@example.com')).toBeInTheDocument();
+  });
+
+  it('should handle email with plus sign', () => {
+    const props = {
+      data: {
+        value: 'user+tag@example.com',
+        record: { id: 1 },
+        index: 0,
+      },
+      attributes: {},
+    };
+
+    const { container } = render(<LinkCell {...props} />);
+    const linkElement = container.querySelector('a');
+    expect(linkElement).toHaveAttribute('href', 'mailto:user+tag@example.com');
+  });
+
+  it('should handle complex email patterns', () => {
+    const props = {
+      data: {
+        value: 'test.email+123@sub-domain.co.uk',
+        record: { id: 1 },
+        index: 0,
+      },
+      attributes: {},
+    };
+
+    const { container } = render(<LinkCell {...props} />);
+    const linkElement = container.querySelector('a');
+    expect(linkElement).toHaveAttribute(
+      'href',
+      'mailto:test.email+123@sub-domain.co.uk',
+    );
+  });
+
+  it('should apply custom target for email links when specified in attributes', () => {
+    const props = {
+      data: {
+        value: 'user@example.com',
+        record: { id: 1 },
+        index: 0,
+      },
+      attributes: { target: '_self' },
+    };
+
+    const { container } = render(<LinkCell {...props} />);
+    const linkElement = container.querySelector('a');
+    expect(linkElement).toHaveAttribute('href', 'mailto:user@example.com');
+    expect(linkElement).toHaveAttribute('target', '_self');
+  });
 });
