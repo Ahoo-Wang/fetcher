@@ -66,6 +66,9 @@ export interface LinkCellProps<RecordType = any>
   extends CellProps<string, RecordType, LinkProps> {
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PREFIX = 'mailto:';
+
 /**
  * Renders a link cell using Ant Design's Typography.Link component.
  *
@@ -121,8 +124,15 @@ export interface LinkCellProps<RecordType = any>
  * ```
  */
 export function LinkCell<RecordType = any>(props: LinkCellProps<RecordType>) {
+  const isEmail = EMAIL_REGEX.test(props.data.value);
+  const href =
+    props.attributes?.href ??
+    (isEmail ? `${EMAIL_PREFIX}${props.data.value}` : props.data.value);
+  const linkProps = isEmail
+    ? props.attributes
+    : { target: '_blank', ...props.attributes };
   return (
-    <Link href={props.data.value} target={'_blank'} {...props.attributes}>
+    <Link href={href} {...linkProps}>
       {props.attributes?.children ?? props.data.value}
     </Link>
   );
