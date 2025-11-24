@@ -25,3 +25,14 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: () => {},
   }),
 });
+
+// Mock ResizeObserver for jsdom environment
+(globalThis as any).ResizeObserver = class ResizeObserver {
+  constructor(cb: ResizeObserverCallback) {
+    this.cb = cb;
+  }
+  cb: ResizeObserverCallback;
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};

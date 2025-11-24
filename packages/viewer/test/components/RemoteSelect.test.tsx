@@ -48,6 +48,7 @@ describe('RemoteSelect', () => {
       status: PromiseStatus.IDLE,
       run: vi.fn(),
       cancel: vi.fn(),
+      abort: vi.fn(),
       isPending: vi.fn().mockReturnValue(false),
       reset: vi.fn(),
     });
@@ -66,6 +67,7 @@ describe('RemoteSelect', () => {
       status: PromiseStatus.LOADING,
       run: vi.fn(),
       cancel: vi.fn(),
+      abort: vi.fn(),
       isPending: vi.fn().mockReturnValue(false),
       reset: vi.fn(),
     });
@@ -83,6 +85,7 @@ describe('RemoteSelect', () => {
       status: PromiseStatus.SUCCESS,
       run: vi.fn(),
       cancel: vi.fn(),
+      abort: vi.fn(),
       isPending: vi.fn().mockReturnValue(false),
       reset: vi.fn(),
     });
@@ -101,14 +104,15 @@ describe('RemoteSelect', () => {
       status: PromiseStatus.IDLE,
       run: mockRun,
       cancel: vi.fn(),
+      abort: vi.fn(),
       isPending: vi.fn().mockReturnValue(false),
       reset: vi.fn(),
     });
 
     render(<RemoteSelect search={mockSearch} />);
-    fireEvent.change(screen.getByRole('combobox'), {
-      target: { value: 'test' },
-    });
+    // Trigger onSearch by simulating typing
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'test' } });
 
     expect(mockRun).toHaveBeenCalled();
   });
@@ -122,6 +126,7 @@ describe('RemoteSelect', () => {
       status: PromiseStatus.IDLE,
       run: mockRun,
       cancel: vi.fn(),
+      abort: vi.fn(),
       isPending: vi.fn().mockReturnValue(false),
       reset: vi.fn(),
     });
@@ -154,6 +159,7 @@ describe('RemoteSelect', () => {
       status: PromiseStatus.LOADING,
       run: vi.fn(),
       cancel: vi.fn(),
+      abort: vi.fn(),
       isPending: vi.fn().mockReturnValue(false),
       reset: vi.fn(),
     });
