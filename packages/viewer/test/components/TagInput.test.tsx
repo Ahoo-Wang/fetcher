@@ -41,7 +41,7 @@ describe('TagInput', () => {
   });
 
   it('allows clear by default', () => {
-    const { container } = render(<TagInput />);
+    const { container } = render(<TagInput value={['test']} />);
     const select = container.querySelector('.ant-select');
     expect(select?.classList.contains('ant-select-allow-clear')).toBe(true);
   });
@@ -187,7 +187,7 @@ describe('TagInput', () => {
     });
 
     it('allows clear by default', () => {
-      const { container } = render(<TagInput />);
+      const { container } = render(<TagInput value={['test']} />);
       const select = container.querySelector('.ant-select');
       expect(select?.classList.contains('ant-select-allow-clear')).toBe(true);
     });
