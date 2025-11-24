@@ -3,7 +3,7 @@ packages:
   - integration-test
 
 catalog:
-  '@ant-design/icons': ^5.6.1
+  '@ant-design/icons': ^6.0.0
   '@eslint/js': ^9.39.1
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/react': ^16.0.0
