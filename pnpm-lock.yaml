@@ -6,9 +6,6 @@ settings:
 
 catalogs:
   default:
-    '@ant-design/icons':
-      specifier: ^6.0.0
-      version: 6.1.0
     '@eslint/js':
       specifier: ^9.39.1
       version: 9.39.1
@@ -45,9 +42,6 @@ catalogs:
     commander:
       specifier: ^14.0.2
       version: 14.0.2
-    dayjs:
-      specifier: ^1.11.19
-      version: 1.11.19
     eslint:
       specifier: ^9.39.1
       version: 9.39.1
@@ -57,9 +51,6 @@ catalogs:
     globals:
       specifier: ^16.5.0
       version: 16.5.0
-    immer:
-      specifier: ^11.0.0
-      version: 11.0.0
     jsdom:
       specifier: ^27.2.0
       version: 27.2.0
@@ -677,7 +668,7 @@ importers:
         version: link:../wow
       immer:
         specifier: 'catalog:'
-        version: 11.0.0
+        version: 11.0.1
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -2962,8 +2953,8 @@ packages:
     resolution: {integrity: sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==}
     engines: {node: '>= 4'}
 
-  immer@11.0.0:
-    resolution: {integrity: sha512-XtRG4SINt4dpqlnJvs70O2j6hH7H0X8fUzFsjMn1rwnETaxwp83HLNimXBjZ78MrKl3/d3/pkzDH0o0Lkxm37Q==}
+  immer@11.0.1:
+    resolution: {integrity: sha512-naDCyggtcBWANtIrjQEajhhBEuL9b0Zg4zmlWK2CzS6xCWSE39/vvf4LqnMjUAWHBhot4m9MHCM/Z+mfWhUkiA==}
 
   import-fresh@3.3.1:
     resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
@@ -6085,7 +6076,7 @@ snapshots:
 
   ignore@7.0.5: {}
 
-  immer@11.0.0: {}
+  immer@11.0.1: {}
 
   import-fresh@3.3.1:
     dependencies:
