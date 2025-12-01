@@ -55,7 +55,16 @@ describe('TypedFilter', () => {
     render(<TypedFilter {...mockProps} />);
 
     expect(screen.getByTestId('mock-filter')).toBeTruthy();
-    expect(mockFilter).toHaveBeenCalledWith(mockProps, undefined);
+    expect(mockFilter).toHaveBeenCalledWith(
+      {
+        ...mockProps,
+        value: {
+          ...mockProps.value,
+          style: { flex: 'auto' },
+        },
+      },
+      undefined,
+    );
   });
 
   it('passes through all props to registered component', () => {
@@ -68,7 +77,16 @@ describe('TypedFilter', () => {
 
     render(<TypedFilter {...propsWithAttributes} />);
 
-    expect(mockFilter).toHaveBeenCalledWith(propsWithAttributes, undefined);
+    expect(mockFilter).toHaveBeenCalledWith(
+      {
+        ...propsWithAttributes,
+        value: {
+          ...propsWithAttributes.value,
+          style: { flex: 'auto' },
+        },
+      },
+      undefined,
+    );
   });
 
   it('renders FallbackConditionFilter for unregistered type', () => {
