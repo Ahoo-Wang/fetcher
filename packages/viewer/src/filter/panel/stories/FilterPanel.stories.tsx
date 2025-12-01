@@ -61,9 +61,6 @@ const defaultFilterPanelProps: FilterPanelProps = {
         defaultValue: Operator.GT,
       },
       value: {
-        style: {
-          width: '100%',
-        },
         defaultValue: 18,
       },
     },
@@ -90,9 +87,6 @@ const defaultFilterPanelProps: FilterPanelProps = {
         type: 'string',
       },
       value: {
-        style: {
-          width: '100%',
-        },
         options: [
           {
             label: 'Active',
