@@ -59,6 +59,10 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Ls bin
+        working-directory: ./integration-test
+        run: ls node_modules/.bin
+
       - name: Generate Code
         working-directory: ./integration-test
         run: pnpm generate
