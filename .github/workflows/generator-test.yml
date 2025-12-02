@@ -1,0 +1,62 @@
+name: Generator Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  generator-test:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:8.2.2
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: root
+          MONGO_INITDB_DATABASE: wow_example_db
+        options: >-
+          --health-cmd="mongosh -u root -p root --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      wow:
+        image: ghcr.io/ahoo-wang/wow-example-server:6.6.9
+        ports:
+          - 8080:8080
+        env:
+          SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration,org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration,org.springframework.boot.autoconfigure.elasticsearch.ReactiveElasticsearchClientAutoConfiguration
+          SPRING_DATA_MONGODB_URI: mongodb://root:root@mongo:27017/wow_example_db?authSource=admin&maxIdleTimeMS=60000
+          WOW_EVENTSOURCING_STORE_STORAGE: mongo
+          WOW_EVENTSOURCING_SNAPSHOT_STORAGE: mongo
+        options: --health-cmd "curl -f http://localhost:8080/actuator/health"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.24.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install fetcher-generator
+        run: pnpm add -g @ahoo-wang/fetcher-generator
+
+      - name: Generate URL
+        run: fetcher-generator generate -i http://localhost:8080/v3/api-docs
+
+      - name: Generate Local File
+        run: fetcher-generator generate -i ./packages/generator/test/demo.spec.json
+
