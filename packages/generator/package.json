@@ -31,7 +31,7 @@
   "module": "./dist/index.es.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "fetcher-generator": "./dist/cli.js"
+    "fetcher-generator": "./dist/cli.cjs"
   },
   "exports": {
     ".": {
