@@ -38,6 +38,9 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -51,6 +54,9 @@ jobs:
       - name: Install fetcher-generator
         run: pnpm add -g @ahoo-wang/fetcher-generator
 
-      - name: Generate Code
+      - name: Generate URL
         run: fetcher-generator generate -i http://localhost:8080/v3/api-docs
+
+      - name: Generate Local File
+        run: fetcher-generator generate -i ./packages/generator/test/demo.spec.json
 
