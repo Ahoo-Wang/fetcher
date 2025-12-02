@@ -66,6 +66,9 @@ jobs:
         working-directory: ./integration-test
         run: ls node_modules/.bin
 
+      - name: Install dependencies
+        run: pnpm install
+
       - name: Generate Code
         working-directory: ./integration-test
         run: pnpm generate
