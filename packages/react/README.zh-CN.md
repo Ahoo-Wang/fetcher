@@ -35,8 +35,9 @@
   - [usePromiseState Hook](#usepromisestate-hook)
   - [useRequestId Hook](#userequestid-hook)
   - [useLatest Hook](#uselatest-hook)
-  - [useRefs Hook](#userefs-hook)
-  - [useKeyStorage Hook](#usekeystorage-hook)
+- [useRefs Hook](#userefs-hook)
+- [useEventSubscription Hook](#useeventsubscription-hook)
+- [useKeyStorage Hook](#usekeystorage-hook)
   - [useImmerKeyStorage Hook](#useimmerkeystorage-hook)
   - [Wow 查询 Hooks](#wow-查询-hooks)
   - [useListQuery Hook](#uselistquery-hook)
@@ -858,6 +859,47 @@ React hook，用于使用 Map-like 接口管理多个 refs，允许通过键动�
 
 - `RefKey = string | number | symbol`
 - `UseRefsReturn<T> extends Iterable<[RefKey, T]>`
+
+### useEventSubscription Hook
+
+`useEventSubscription` hook 为类型化事件总线提供了 React 接口。它自动管理订阅生命周期，同时提供手动控制功能以增加灵活性。
+
+```typescript jsx
+import { useEventSubscription } from '@ahoo-wang/fetcher-react';
+import { eventBus } from './eventBus';
+
+function MyComponent() {
+  const { subscribe, unsubscribe } = useEventSubscription({
+    bus: eventBus,
+    handler: {
+      name: 'myEvent',
+      handle: (event) => {
+        console.log('收到事件:', event);
+      }
+    }
+  });
+
+  // hook 在组件挂载时自动订阅，在卸载时自动取消订阅
+  // 如需要，您也可以手动控制订阅
+  const handleToggleSubscription = () => {
+    if (someCondition) {
+      subscribe();
+    } else {
+      unsubscribe();
+    }
+  };
+
+  return <div>我的组件</div>;
+}
+```
+
+关键特性:
+
+- **自动生命周期管理**: 在组件挂载时自动订阅，在卸载时自动取消订阅
+- **手动控制**: 提供 `subscribe` 和 `unsubscribe` 函数以进行额外控制
+- **类型安全**: 完全支持 TypeScript，具有泛型事件类型
+- **错误处理**: 对失败的订阅尝试记录警告
+- **事件总线集成**: 与 `@ahoo-wang/fetcher-eventbus` TypedEventBus 实例无缝配合
 
 ### useKeyStorage
 

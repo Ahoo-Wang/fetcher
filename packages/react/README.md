@@ -36,8 +36,9 @@ robust data fetching capabilities.
   - [usePromiseState Hook](#usepromisestate-hook)
   - [useRequestId Hook](#userequestid-hook)
   - [useLatest Hook](#uselatest-hook)
-  - [useRefs Hook](#userefs-hook)
-  - [useKeyStorage Hook](#usekeystorage-hook)
+- [useRefs Hook](#userefs-hook)
+- [useEventSubscription Hook](#useeventsubscription-hook)
+- [useKeyStorage Hook](#usekeystorage-hook)
   - [useImmerKeyStorage Hook](#useimmerkeystorage-hook)
   - [Wow Query Hooks](#wow-query-hooks)
   - [useListQuery Hook](#uselistquery-hook)
@@ -475,6 +476,47 @@ Key features:
 - **Map-like API**: Full Map interface with get, set, has, delete, etc.
 - **Automatic Cleanup**: Refs are cleared when component unmounts
 - **Type Safety**: Full TypeScript support for ref types
+
+### useEventSubscription Hook
+
+The `useEventSubscription` hook provides a React interface for subscribing to typed event buses. It automatically manages subscription lifecycle while offering manual control functions for additional flexibility.
+
+```typescript jsx
+import { useEventSubscription } from '@ahoo-wang/fetcher-react';
+import { eventBus } from './eventBus';
+
+function MyComponent() {
+  const { subscribe, unsubscribe } = useEventSubscription({
+    bus: eventBus,
+    handler: {
+      name: 'myEvent',
+      handle: (event) => {
+        console.log('Received event:', event);
+      }
+    }
+  });
+
+  // The hook automatically subscribes on mount and unsubscribes on unmount
+  // You can also manually control subscription if needed
+  const handleToggleSubscription = () => {
+    if (someCondition) {
+      subscribe();
+    } else {
+      unsubscribe();
+    }
+  };
+
+  return <div>My Component</div>;
+}
+```
+
+Key features:
+
+- **Automatic Lifecycle Management**: Automatically subscribes on component mount and unsubscribes on unmount
+- **Manual Control**: Provides `subscribe` and `unsubscribe` functions for additional control
+- **Type Safety**: Full TypeScript support with generic event types
+- **Error Handling**: Logs warnings for failed subscription attempts
+- **Event Bus Integration**: Works seamlessly with `@ahoo-wang/fetcher-eventbus` TypedEventBus instances
 
 ### useKeyStorage Hook
 
@@ -1958,6 +2000,38 @@ An object implementing `UseRefsReturn<T>` with:
 
 - `RefKey = string | number | symbol`
 - `UseRefsReturn<T> extends Iterable<[RefKey, T]>`
+
+### useEventSubscription
+
+```typescript
+function useEventSubscription<EVENT = unknown>(
+  options: UseEventSubscriptionOptions<EVENT>,
+): UseEventSubscriptionReturn;
+```
+
+A React hook for subscribing to events from a typed event bus. Automatically manages subscription lifecycle while providing manual control functions.
+
+**Type Parameters:**
+
+- `EVENT`: The type of events handled by the event bus (defaults to unknown)
+
+**Parameters:**
+
+- `options`: Configuration options for the subscription
+  - `bus`: The TypedEventBus instance to subscribe to
+  - `handler`: The event handler function with name and handle method
+
+**Returns:**
+
+An object containing:
+
+- `subscribe`: Function to manually subscribe to the event bus (returns boolean success status)
+- `unsubscribe`: Function to manually unsubscribe from the event bus (returns boolean success status)
+
+**Related Types:**
+
+- `UseEventSubscriptionOptions<EVENT>`: Configuration interface with bus and handler properties
+- `UseEventSubscriptionReturn`: Return interface with subscribe and unsubscribe methods
 
 ### useKeyStorage
 
