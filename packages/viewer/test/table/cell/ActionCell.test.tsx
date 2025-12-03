@@ -12,8 +12,8 @@
  */
 
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-import { ActionCell, ActionCellProps } from '../../src/table/cell/ActionCell';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { ActionCell, ActionCellProps } from '../../../src';
 
 describe('ActionCell', () => {
   const mockClickHandler = vi.fn();

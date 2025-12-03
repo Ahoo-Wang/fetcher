@@ -10,25 +10,17 @@ import { Button, ButtonProps } from 'antd';
 export const ACTION_CELL_TYPE = 'action';
 
 /**
- * Data structure for action cell values.
- *
- * This interface defines the shape of data that action cells expect to receive.
- * Each action is represented by a title (display text) and a key (unique identifier).
+ * Data structure for individual action values.
  *
  * @interface ActionData
  * @property {string} title - The display text for the action button.
- * @property {string} key - The unique identifier for the action, used in click handlers.
+ * @property {string} key - The unique identifier for the action.
  *
  * @example
  * ```tsx
  * const editAction: ActionData = {
  *   title: "Edit",
  *   key: "edit"
- * };
- *
- * const deleteAction: ActionData = {
- *   title: "Delete",
- *   key: "delete"
  * };
  * ```
  */
@@ -65,14 +57,13 @@ export interface ActionData {
  * };
  * ```
  */
-export interface ActionCellProps<RecordType = any>
-  extends CellProps<
-    ActionData,
-    RecordType,
-    Omit<ButtonProps, 'onClick'> & {
-      onClick: (actionKey: string, value: RecordType) => void;
-    }
-  > {}
+export interface ActionCellProps<RecordType = any> extends CellProps<
+  string,
+  RecordType,
+  Omit<ButtonProps, 'onClick'> & {
+    onClick?: (value: RecordType) => void;
+  }
+> {}
 
 /**
  * Renders an action cell using Ant Design's Button component.
@@ -101,7 +92,7 @@ export interface ActionCellProps<RecordType = any>
  *     index: 0
  *   }}
  *   attributes={{
- *     onClick: (actionKey, user) => console.log('Edit user:', user),
+ *     onClick: (actionKey, user) => console.log('Action:', actionKey, 'User:', user),
  *   }}
  * />
  * ```
@@ -164,23 +155,19 @@ export function ActionCell<RecordType = any>(
   const { data, attributes } = props;
 
   // Early return if no value is provided - prevents rendering empty or meaningless buttons
-  // This check uses optional chaining to handle both null/undefined and empty strings
-  if (!data.value || !data.value.title?.trim()) {
+  if (!data.value) {
     return null;
   }
-
-  // Extract our custom onClick handler and spread the rest as Button props
-  // const onClick = attributes?.onClick;
-  // const buttonProps = Omit<typeof attributes, 'onClick'>;
 
   // Render the action button with link styling for a clean, unobtrusive appearance
   return (
     <Button
       type="link" // Ant Design link button provides subtle styling without heavy borders
       {...attributes} // Spread additional button props (e.g., disabled, loading, size)
-      onClick={() => attributes?.onClick?.(data.value.key, data.record)} // Invoke handler with full record context
+      onClick={() => attributes?.onClick?.(data.record)} // Invoke handler with action key and full record context
+      style={{ padding: 0 }}
     >
-      {data.value.title}
+      {data.value}
     </Button>
   );
 }

@@ -1,8 +1,8 @@
-import { CellData, CellProps } from './types';
-import type { ButtonProps, MenuProps } from 'antd';
-import { Button, Dropdown, Space } from 'antd';
+import { CellProps } from './types';
+import { Button, DropdownProps, MenuProps } from 'antd';
+import { Dropdown, Space } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
-import { ActionCell, ActionData } from './ActionCell';
+import { ActionCell, ActionCellProps } from './ActionCell';
 
 /**
  * Constant representing the type identifier for actions cells.
@@ -24,7 +24,7 @@ import { ActionCell, ActionData } from './ActionCell';
  * });
  * ```
  */
-export const ACTIONS_CELL_TYPE = 'actions';
+export const ACTIONS_CELL_TYPE: string = 'actions';
 
 /**
  * Data structure for actions cell values.
@@ -34,8 +34,8 @@ export const ACTIONS_CELL_TYPE = 'actions';
  * of secondary actions (displayed in a dropdown menu).
  *
  * @interface ActionsData
- * @property {ActionData} primaryAction - The main action displayed as a primary button.
- * @property {ActionData[]} secondaryActions - Array of secondary actions shown in dropdown menu.
+ * @property {ActionCellProps} primaryAction - The main action displayed as a primary button.
+ * @property {ActionCellProps[]} secondaryActions - Array of secondary actions shown in dropdown menu.
  *
  * @example
  * ```tsx
@@ -48,18 +48,18 @@ export const ACTIONS_CELL_TYPE = 'actions';
  * };
  * ```
  */
-export interface ActionsData {
-  primaryAction: ActionData;
+export interface ActionsData<RecordType = any> {
+  primaryAction: ActionCellProps<RecordType>;
   moreActionTitle?: string;
-  secondaryActions: ActionData[];
+  secondaryActions: ActionCellProps<RecordType>[];
 }
 
 /**
- * Props for the ActionsCell component, extending CellProps with ActionsData value type and custom ButtonProps attributes.
+ * Props for the ActionsCell component, extending CellProps with ActionsData value type and custom attributes.
  *
  * @template RecordType - The type of the record containing the cell data.
  * @interface ActionsCellProps
- * @extends CellProps<ActionsData, RecordType, Omit<ButtonProps, 'onClick'> & { onClick: (actionKey: string, value: RecordType) => void }>
+ * @extends CellProps<ActionsData, RecordType, { onClick: (actionKey: string, value: RecordType) => void }>
  *
  * @example
  * ```tsx
@@ -87,88 +87,43 @@ export interface ActionsData {
  * };
  * ```
  */
-export interface ActionsCellProps<RecordType = any>
-  extends CellProps<
-    ActionsData,
-    RecordType,
-    Omit<ButtonProps, 'onClick'> & {
-      onClick: (actionKey: string, value: RecordType) => void;
-    }
-  > {}
+export interface ActionsCellProps<RecordType = any> extends CellProps<
+  ActionsData,
+  RecordType,
+  { onClick: (actionKey: string, value: RecordType) => void }
+> {}
 
 function actionRender(props: ActionsCellProps) {
   const { data, attributes } = props;
-
-  // Early return if no attributes are provided
-  if (!attributes) {
-    return null;
-  }
-
-  // Early return if primary action has no title
-  if (!data.value.primaryAction.title?.trim()) {
-    return null;
-  }
-
-  if (props.data.value.secondaryActions && props.data.value.secondaryActions.length > 0) {
-    const secondaryButtons: MenuProps['items'] = data.value.secondaryActions.map(
-      action => {
+  console.log('actionRender', data);
+  if (data.value.secondaryActions && data.value.secondaryActions.length > 0) {
+    const secondaryButtons: MenuProps['items'] =
+      data.value.secondaryActions.map(actionProps => {
         return {
-          key: action.key,
-          label: (
-            <ActionCell
-              data={{
-                value: action,
-                record: data.record,
-                index: data.index,
-              }}
-              attributes={{
-                ...attributes,
-              }}
-            />
-          ),
+          key: actionProps.data.index,
+          label: <ActionCell {...actionProps} />,
         };
-      },
-    );
+      });
 
     return (
       <Space>
-        {/* Primary action button */}
-        <ActionCell
-          data={{
-            value: data.value.primaryAction,
-            record: data.record,
-            index: data.index,
-          }}
-          attributes={{
-            ...attributes,
-          }}
-        />
-
+        {data.value.primaryAction && (
+          <ActionCell {...data.value.primaryAction} />
+        )}
 
         <Dropdown menu={{ items: secondaryButtons }}>
-          <a onClick={e => e.preventDefault()}>
+          <Button type="link" style={{ padding: 0 }}>
             <Space>
               {data.value.moreActionTitle || 'More'}
               <DownOutlined />
             </Space>
-          </a>
+          </Button>
         </Dropdown>
       </Space>
-    )
+    );
   }
 
-  return (
-    <ActionCell
-      data={{
-        value: data.value.primaryAction,
-        record: data.record,
-        index: data.index,
-      }}
-      attributes={{
-        ...attributes,
-      }}
-    />
-  )
+  return <ActionCell {...data.value.primaryAction} />;
 }
 
 /**
