@@ -70,6 +70,7 @@
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
+    "eslint-plugin-react-compiler": "catalog:",
     "unplugin-dts": "catalog:",
     "vite": "catalog:",
     "vite-bundle-analyzer": "catalog:",
