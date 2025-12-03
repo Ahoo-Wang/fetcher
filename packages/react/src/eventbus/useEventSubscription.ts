@@ -14,17 +14,81 @@
 import { useEffect, useCallback } from 'react';
 import { EventHandler, TypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
+/**
+ * Options for the useEventSubscription hook.
+ * @template EVENT - The type of events handled by the event bus.
+ */
 export interface UseEventSubscriptionOptions<EVENT> {
+  /**
+   * The typed event bus instance to subscribe to.
+   */
   bus: TypedEventBus<EVENT>;
+  /**
+   * The event handler function that will be called when events are published.
+   */
   handler: EventHandler<EVENT>;
 }
 
-
+/**
+ * Return type for the useEventSubscription hook.
+ */
 export interface UseEventSubscriptionReturn {
+  /**
+   * Function to manually subscribe to the event bus.
+   * @returns true if subscription was successful, false otherwise.
+   */
   subscribe: () => boolean;
+  /**
+   * Function to manually unsubscribe from the event bus.
+   * @returns true if unsubscription was successful, false otherwise.
+   */
   unsubscribe: () => boolean;
 }
 
+/**
+ * A React hook for subscribing to events from a typed event bus.
+ *
+ * This hook automatically subscribes to the event bus when the component mounts
+ * and unsubscribes when the component unmounts. It also provides manual subscribe
+ * and unsubscribe functions for additional control.
+ *
+ * @template EVENT - The type of events handled by the event bus. Defaults to unknown.
+ * @param options - Configuration options for the subscription.
+ * @param options.bus - The typed event bus instance to subscribe to.
+ * @param options.handler - The event handler function that will be called when events are published.
+ * @returns An object containing subscribe and unsubscribe functions.
+ * @throws Will throw an error if the event bus or handler is invalid.
+ *
+ * @example
+ * ```typescript
+ * import { useEventSubscription } from '@ahoo-wang/fetcher-react';
+ * import { eventBus } from './eventBus';
+ *
+ * function MyComponent() {
+ *   const { subscribe, unsubscribe } = useEventSubscription({
+ *     bus: eventBus,
+ *     handler: {
+ *       name: 'myEvent',
+ *       handle: (event) => {
+ *         console.log('Received event:', event);
+ *       }
+ *     }
+ *   });
+ *
+ *   // The hook automatically subscribes on mount and unsubscribes on unmount
+ *   // You can also manually control subscription if needed
+ *   const handleToggleSubscription = () => {
+ *     if (someCondition) {
+ *       subscribe();
+ *     } else {
+ *       unsubscribe();
+ *     }
+ *   };
+ *
+ *   return <div>My Component</div>;
+ * }
+ * ```
+ */
 export function useEventSubscription<EVENT = unknown>(
   options: UseEventSubscriptionOptions<EVENT>,
 ): UseEventSubscriptionReturn {
@@ -38,11 +102,16 @@ export function useEventSubscription<EVENT = unknown>(
   }, [bus, handler]);
 
   useEffect(() => {
-    subscribe();
+    const success = bus.on(handler);
+    if (!success) {
+      console.warn(
+        `Failed to subscribe to event bus with handler: ${handler.name}`,
+      );
+    }
     return () => {
-      unsubscribe();
+      bus.off(handler.name);
     };
-  }, [subscribe, unsubscribe]);
+  }, [bus, handler]);
 
   return {
     subscribe,
