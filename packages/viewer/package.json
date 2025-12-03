@@ -69,6 +69,7 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
+    "eslint-plugin-react-compiler": "catalog:",
     "react-compiler-runtime": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
