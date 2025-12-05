@@ -1,5 +1,4 @@
-# Integration Test Workflow
-name: Integration Test
+name: Generator Test
 
 on:
   push:
@@ -9,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  integration-test:
+  generator-test:
     runs-on: ubuntu-latest
     services:
       mongo:
@@ -51,24 +50,13 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install
+      - name: Install fetcher-generator
+        run: pnpm add -g @ahoo-wang/fetcher-generator
 
-      - name: Build
-        run: pnpm build
+      - name: Generate URL
+        run: fetcher-generator generate -i http://localhost:8080/v3/api-docs
 
-      - name: Install dependencies
-        run: pnpm install
+      - name: Generate Local File
+        run: fetcher-generator generate -i ./packages/generator/test/demo.spec.json
 
-      - name: Generate Code
-        working-directory: ./integration-test
-        run: pnpm generate
-
-      - name: Test
-        run: pnpm test:it
-        env:
-          FETCHER_LLM_BASE_URL: ${{ secrets.FETCHER_LLM_BASE_URL }}
-          FETCHER_LLM_API_KEY: ${{ secrets.FETCHER_LLM_API_KEY }}
-          FETCHER_LLM_MODEL: ${{ secrets.FETCHER_LLM_MODEL }}

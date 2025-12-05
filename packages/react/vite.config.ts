@@ -27,6 +27,10 @@ export default defineConfig({
       external: [
         'react',
         'react-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        'react/compiler-runtime',
+        'react-compiler-runtime',
         'immer',
         '@ahoo-wang/fetcher',
         '@ahoo-wang/fetcher-eventstream',
@@ -38,6 +42,10 @@ export default defineConfig({
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
+          'react/jsx-runtime': 'ReactJSXRuntime',
+          'react/jsx-dev-runtime': 'ReactJSXDevRuntime',
+          'react/compiler-runtime': 'ReactCompilerRuntime',
+          'react-compiler-runtime': 'ReactCompilerRuntime',
           immer: 'Immer',
           '@ahoo-wang/fetcher': 'Fetcher',
           '@ahoo-wang/fetcher-eventstream': 'FetcherEventStream',
@@ -56,6 +64,10 @@ export default defineConfig({
       outDirs: 'dist',
       tsconfigPath: './tsconfig.json',
     }),
-    react(),
+    react({
+      babel: {
+        plugins: [['babel-plugin-react-compiler']],
+      },
+    }),
   ],
 });

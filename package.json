@@ -1,6 +1,6 @@
 {
   "name": "fetcher",
-  "version": "3.2.8",
+  "version": "3.3.8",
   "description": "A modern HTTP client library based on fetch API",
   "private": true,
   "type": "module",
@@ -54,7 +54,7 @@
     "eslint": "catalog:",
     "eslint-plugin-storybook": "^9.1.16",
     "globals": "catalog:",
-    "playwright": "^1.56.1",
+    "playwright": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

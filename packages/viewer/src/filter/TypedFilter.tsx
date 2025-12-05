@@ -21,14 +21,26 @@ export type FilterType = string;
 
 export interface TypedFilterProps
   extends FilterProps,
-    TypeCapable<FilterType> {}
+    TypeCapable<FilterType> {
+}
+
+const DEFAULT_VALUE_STYLE: React.CSSProperties = {
+  flex: 'auto',
+};
 
 export function TypedFilter(props: TypedFilterProps) {
   const FilterComponent = useMemo(() => {
     return filterRegistry.get(props.type) || FallbackFilter;
   }, [props.type]);
-
-  return React.createElement(FilterComponent, props);
+  const valueProps = {
+    style: DEFAULT_VALUE_STYLE,
+    ...props.value,
+  };
+  const filterProps = {
+    ...props,
+    value: valueProps,
+  };
+  return React.createElement(FilterComponent, filterProps);
 }
 
 TypedFilter.displayName = 'TypedFilter';
