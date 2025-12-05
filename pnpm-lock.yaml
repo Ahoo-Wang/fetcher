@@ -6,9 +6,6 @@ settings:
 
 catalogs:
   default:
-    '@ant-design/icons':
-      specifier: ^6.0.0
-      version: 6.1.0
     '@eslint/js':
       specifier: ^9.39.1
       version: 9.39.1
@@ -45,9 +42,6 @@ catalogs:
     commander:
       specifier: ^14.0.2
       version: 14.0.2
-    dayjs:
-      specifier: ^1.11.19
-      version: 1.11.19
     eslint:
       specifier: ^9.39.1
       version: 9.39.1
@@ -105,9 +99,6 @@ catalogs:
     vite:
       specifier: ^7.2.6
       version: 7.2.6
-    vite-bundle-analyzer:
-      specifier: ^1.2.3
-      version: 1.2.3
     vitest:
       specifier: ^3.2.4
       version: 3.2.4
@@ -199,7 +190,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -263,7 +254,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -315,7 +306,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -364,7 +355,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -407,7 +398,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -450,7 +441,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -492,7 +483,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -559,7 +550,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -620,7 +611,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -659,7 +650,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -750,7 +741,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -793,7 +784,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -893,7 +884,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -942,7 +933,7 @@ importers:
         version: 7.2.6(@types/node@24.10.1)(yaml@2.8.2)
       vite-bundle-analyzer:
         specifier: 'catalog:'
-        version: 1.2.3
+        version: 1.2.4
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.1)(@vitest/browser@3.2.4)(@vitest/ui@3.2.4)(jsdom@27.2.0(postcss@8.5.6))(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(yaml@2.8.2)
@@ -3589,8 +3580,8 @@ packages:
     resolution: {integrity: sha512-4yoz1kEWqUjzi5zsPbAS/903QXSYp0UOtHsPpp7p9rHAw/W+dkInskAE386Fat3oKRROwO98d9ZB0G4cObgUyw==}
     engines: {node: '>= 0.10'}
 
-  vite-bundle-analyzer@1.2.3:
-    resolution: {integrity: sha512-8nhwDGHWMKKgg6oegAOpDgTT7/yzTVzeYzLF4y8WBJoYu9gO7h29UpHiQnXD2rAvfQzDy5Wqe/Za5cgqhnxi5g==}
+  vite-bundle-analyzer@1.2.4:
+    resolution: {integrity: sha512-bpWLEBlYxmajiCmjPrQQi1Kfh9NadyFKPSgz24RHnYf3sgaSxrIau5wYMPsmSC/JTfoMhfoTIV+/mH//alUxOA==}
     hasBin: true
 
   vite-node@3.2.4:
@@ -6651,7 +6642,7 @@ snapshots:
   validator@13.15.23:
     optional: true
 
-  vite-bundle-analyzer@1.2.3: {}
+  vite-bundle-analyzer@1.2.4: {}
 
   vite-node@3.2.4(@types/node@24.10.1)(yaml@2.8.2):
     dependencies:
