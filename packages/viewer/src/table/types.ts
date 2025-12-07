@@ -1,5 +1,4 @@
 import { AttributesCapable } from '../types';
-import { Attributes } from 'react';
 import { ActionsData } from './cell';
 
 export interface ColumnsCell {
@@ -7,27 +6,34 @@ export interface ColumnsCell {
   attributes?: any;
 }
 
-export interface ViewTableColumn<
-  RecordType = any,
-  Attributes = any,
-> extends AttributesCapable<Attributes> {
+export interface ViewColumnDefinition {
   title: string;
   dataIndex: string;
   cell: ColumnsCell;
+  primaryKey: boolean;
 }
 
 export interface ViewTableActionColumn<
   RecordType = any,
   Attributes = any,
-> extends ViewTableColumn<RecordType, Attributes> {
+> extends ViewColumnDefinition {
   actions: (record: RecordType) => ActionsData;
 }
+
+export interface ViewColumnProps
+  extends AttributesCapable<any>, ViewColumnDefinition {}
 
 export interface ViewTableProps<
   RecordType = any,
   Attributes = any,
 > extends AttributesCapable<Attributes> {
-  columns: ViewTableColumn<RecordType>[];
+  columns: ViewColumnProps[];
   dataSource: RecordType[];
   actionColumn?: ViewTableActionColumn<RecordType, any>;
+}
+
+export interface ViewColumn {
+  columnDefinition: ViewColumnDefinition;
+  fixed: boolean;
+  visible: boolean;
 }

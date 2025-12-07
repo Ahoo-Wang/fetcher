@@ -27,7 +27,7 @@ export function FallbackFilter({ type, ref }: TypedFilterProps) {
   }));
   return (
     <Alert
-      message={`Unsupported filter type:[${type}]`}
+      title={`Unsupported filter type:[${type}]`}
       type="warning"
       showIcon
     />

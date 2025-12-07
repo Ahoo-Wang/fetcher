@@ -58,10 +58,10 @@ export interface ActionData {
  * ```
  */
 export interface ActionCellProps<RecordType = any> extends CellProps<
-  string,
+  ActionData,
   RecordType,
   Omit<ButtonProps, 'onClick'> & {
-    onClick?: (value: RecordType) => void;
+    onClick?: (actionKey: string, record: RecordType) => void;
   }
 > {}
 
@@ -164,10 +164,10 @@ export function ActionCell<RecordType = any>(
     <Button
       type="link" // Ant Design link button provides subtle styling without heavy borders
       {...attributes} // Spread additional button props (e.g., disabled, loading, size)
-      onClick={() => attributes?.onClick?.(data.record)} // Invoke handler with action key and full record context
+      onClick={() => attributes?.onClick?.(data.value.key, data.record)} // Invoke handler with action key and full record context
       style={{ padding: 0 }}
     >
-      {data.value}
+      {data.value.title}
     </Button>
   );
 }

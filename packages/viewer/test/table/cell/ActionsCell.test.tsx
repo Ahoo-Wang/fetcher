@@ -21,10 +21,37 @@ describe('ActionsCell', () => {
   const testRecord = { id: 1, name: 'Test Item' };
 
   const defaultActionsData: ActionsData = {
-    primaryAction: { title: 'Edit', key: 'edit' },
+    primaryAction: {
+      data: {
+        value: { title: 'Edit', key: 'edit' },
+        record: testRecord,
+        index: 0,
+      },
+      attributes: {
+        onClick: mockClickHandler,
+      },
+    },
     secondaryActions: [
-      { title: 'Delete', key: 'delete' },
-      { title: 'Duplicate', key: 'duplicate' },
+      {
+        data: {
+          value: { title: 'Delete', key: 'delete' },
+          record: testRecord,
+          index: 0,
+        },
+        attributes: {
+          onClick: mockClickHandler,
+        },
+      },
+      {
+        data: {
+          value: { title: 'Duplicate', key: 'duplicate' },
+          record: testRecord,
+          index: 0,
+        },
+        attributes: {
+          onClick: mockClickHandler,
+        },
+      },
     ],
   };
 
@@ -112,8 +139,28 @@ describe('ActionsCell', () => {
       data: {
         ...defaultProps.data,
         value: {
-          primaryAction: { title: 'Edit', key: 'edit' },
-          secondaryActions: [{ title: 'Delete', key: 'delete' }],
+          primaryAction: {
+            data: {
+              value: { title: 'Edit', key: 'edit' },
+              record: testRecord,
+              index: 0,
+            },
+            attributes: {
+              onClick: mockClickHandler,
+            },
+          },
+          secondaryActions: [
+            {
+              data: {
+                value: { title: 'Delete', key: 'delete' },
+                record: testRecord,
+                index: 0,
+              },
+              attributes: {
+                onClick: mockClickHandler,
+              },
+            },
+          ],
         },
       },
     };
@@ -133,7 +180,16 @@ describe('ActionsCell', () => {
     const propsWithComplexRecord: ActionsCellProps<typeof complexRecord> = {
       data: {
         value: {
-          primaryAction: { title: 'View', key: 'view' },
+          primaryAction: {
+            data: {
+              value: { title: 'View', key: 'view' },
+              record: complexRecord,
+              index: 5,
+            },
+            attributes: {
+              onClick: mockClickHandler,
+            },
+          },
           secondaryActions: [],
         },
         record: complexRecord,
@@ -158,7 +214,16 @@ describe('ActionsCell', () => {
       data: {
         ...defaultProps.data,
         value: {
-          primaryAction: { title: 'Edit', key: 'edit' },
+          primaryAction: {
+            data: {
+              value: { title: 'Edit', key: 'edit' },
+              record: testRecord,
+              index: 0,
+            },
+            attributes: {
+              onClick: mockClickHandler,
+            },
+          },
           secondaryActions: [],
         },
       },
