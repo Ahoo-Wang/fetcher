@@ -18,24 +18,25 @@ catalog:
   commander: ^14.0.2
   dayjs: ^1.11.19
   eslint: ^9.39.1
+  eslint-plugin-react-compiler: ^19.1.0-rc.2
   eslint-plugin-react-hooks: ^7.0.1
   globals: ^16.5.0
   immer: ^11.0.1
   jsdom: ^27.2.0
-  msw: ^2.12.3
+  msw: ^2.12.4
   nanoid: ^5.1.6
+  playwright: ^1.57.0
   prettier: ^3.7.4
-  react: ">=19.0.0"
+  react: ^19.2.1
   react-compiler-runtime: ^1.0.0
-  react-dom: ">=19.0.0"
+  react-dom: ^19.2.1
   react-use: ^17.6.0
   reflect-metadata: ^0.2.2
   ts-morph: ^27.0.2
   typescript: ^5.9.3
   typescript-eslint: ^8.48.1
   unplugin-dts: 1.0.0-beta.6
-  vite: ^7.2.6
-  vite-bundle-analyzer: ^1.2.3
+  vite: ^7.2.7
+  vite-bundle-analyzer: ^1.3.0
   vitest: ^3.2.4
   yaml: ^2.8.2
-  playwright: ^1.57.0
