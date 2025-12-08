@@ -23,7 +23,7 @@ catalog:
   globals: ^16.5.0
   immer: ^11.0.1
   jsdom: ^27.2.0
-  msw: ^2.12.3
+  msw: ^2.12.4
   nanoid: ^5.1.6
   playwright: ^1.57.0
   prettier: ^3.7.4
