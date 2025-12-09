@@ -17,7 +17,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 
 export interface FullscreenProps extends Omit<ButtonProps, 'icon' | 'onClick' | 'onChange' | 'target'> {
   /**
-   * Target element to make fullscreen. If not provided, uses the document body.
+   * Target element to make fullscreen. If not provided, uses the document root element.
    */
   target?: HTMLElement | null;
   /**
