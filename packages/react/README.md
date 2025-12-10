@@ -46,6 +46,7 @@ robust data fetching capabilities.
   - [useSingleQuery Hook](#usesinglequery-hook)
   - [useCountQuery Hook](#usecountquery-hook)
   - [useFetcherCountQuery Hook](#usefetchercountquery-hook)
+  - [useFetcherPagedQuery Hook](#usefetcherpagedquery-hook)
   - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [Best Practices](#best-practices)
 - [API Reference](#api-reference)
@@ -1129,8 +1130,11 @@ const MyComponent = () => {
   );
 };
 ```
+
 ### useFetcherCountQuery Hook
+
 The `useFetcherCountQuery` hook is a specialized React hook for performing count queries using the Fetcher library. It is designed for scenarios where you need to retrieve the count of records that match a specific condition, returning a number representing the count.
+
 ```typescript jsx
 import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
 import { all } from '@ahoo-wang/fetcher-wow';
@@ -1150,7 +1154,9 @@ function UserCountComponent() {
   );
 }
 ```
+
 #### Auto Execute Example
+
 ```typescript jsx
 import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
 const MyComponent = () => {
@@ -1165,6 +1171,111 @@ const MyComponent = () => {
   return (
     <div>
       <p>Total active users: {count}</p>
+    </div>
+  );
+};
+```
+
+### useFetcherPagedQuery Hook
+
+The `useFetcherPagedQuery` hook is a specialized React hook for performing paged queries using the Fetcher library. It is designed for scenarios where you need to retrieve paginated data that matches a query condition, returning a PagedList containing the items for the current page along with pagination metadata.
+
+```typescript jsx
+import { useFetcherPagedQuery } from '@ahoo-wang/fetcher-react';
+import { pagedQuery, contains, pagination, desc } from '@ahoo-wang/fetcher-wow';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+function UserListComponent() {
+  const {
+    data: pagedList,
+    loading,
+    error,
+    execute,
+    setQuery,
+    getQuery
+  } = useFetcherPagedQuery<User, keyof User>({
+    url: '/api/users/paged',
+    initialQuery: pagedQuery({
+      condition: contains('name', 'John'),
+      sort: [desc('createdAt')],
+      pagination: pagination({ index: 1, size: 10 })
+    }),
+    autoExecute: true,
+  });
+
+  const goToPage = (page: number) => {
+    const currentQuery = getQuery();
+    setQuery({
+      ...currentQuery,
+      pagination: { ...currentQuery.pagination, index: page }
+    });
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>Users</h2>
+      <ul>
+        {pagedList.list.map(user => (
+          <li key={user.id}>{user.name} - {user.email}</li>
+        ))}
+      </ul>
+      <div>
+        <span>Total: {pagedList.total} users</span>
+        <button onClick={() => goToPage(1)} disabled={pagedList.pagination.index === 1}>
+          First
+        </button>
+        <button onClick={() => goToPage(pagedList.pagination.index - 1)} disabled={pagedList.pagination.index === 1}>
+          Previous
+        </button>
+        <span>Page {pagedList.pagination.index}</span>
+        <button onClick={() => goToPage(pagedList.pagination.index + 1)}>
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useFetcherPagedQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { data: pagedList, loading, error, execute } = useFetcherPagedQuery({
+    url: '/api/products/paged',
+    initialQuery: {
+      condition: { category: 'electronics' },
+      pagination: { index: 1, size: 20 },
+      projection: {},
+      sort: []
+    },
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>Products</h2>
+      <div>Total: {pagedList.total}</div>
+      <ul>
+        {pagedList.list.map(product => (
+          <li key={product.id}>{product.name}</li>
+        ))}
+      </ul>
     </div>
   );
 };
@@ -2282,6 +2393,63 @@ A React hook for managing count queries with state management for conditions.
 **Returns:**
 
 An object containing promise state, execute function, and setter for condition.
+
+### useFetcherCountQuery
+
+```typescript
+function useFetcherCountQuery<FIELDS extends string = string, E = FetcherError>(
+  options: UseFetcherCountQueryOptions<FIELDS, E>,
+): UseFetcherCountQueryReturn<FIELDS, E>;
+```
+
+A React hook for performing count queries using the Fetcher library. It wraps the useFetcherQuery hook and specializes it for count operations, returning a number representing the count.
+
+**Type Parameters:**
+
+- `FIELDS`: A string union type representing the fields that can be used in the condition
+- `E`: The type of error that may be thrown (defaults to `FetcherError`)
+
+**Parameters:**
+
+- `options`: Configuration options for the count query, including the condition, fetcher instance, and other query settings
+  - `url`: The URL to fetch the count from
+  - `initialQuery`: The initial condition for the count query
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+
+**Returns:**
+
+An object containing the query result (count as a number), loading state, error state, and utility functions.
+
+### useFetcherPagedQuery
+
+```typescript
+function useFetcherPagedQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherPagedQueryOptions<R, FIELDS, E>,
+): UseFetcherPagedQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for performing paged queries using the Fetcher library. It wraps the useFetcherQuery hook and specializes it for paged operations, returning a PagedList containing items and pagination metadata.
+
+**Type Parameters:**
+
+- `R`: The type of the resource or entity contained in each item of the paged list
+- `FIELDS`: A string union type representing the fields that can be used in the paged query
+- `E`: The type of error that may be thrown (defaults to `FetcherError`)
+
+**Parameters:**
+
+- `options`: Configuration options for the paged query, including the paged query parameters, fetcher instance, and other query settings
+  - `url`: The URL to fetch the paged data from
+  - `initialQuery`: The initial paged query configuration
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+
+**Returns:**
+
+An object containing the query result (PagedList with items and pagination info), loading state, error state, and utility functions.
 
 ### useListStreamQuery
 

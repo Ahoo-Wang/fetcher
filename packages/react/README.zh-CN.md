@@ -45,6 +45,7 @@
   - [useSingleQuery Hook](#usesinglequery-hook)
   - [useCountQuery Hook](#usecountquery-hook)
   - [useFetcherCountQuery Hook](#usefetchercountquery-hook)
+  - [useFetcherPagedQuery Hook](#usefetcherpagedquery-hook)
   - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [最佳实践](#最佳实践)
 - [API 参考](#api-参考)
@@ -560,6 +561,111 @@ const MyComponent = () => {
   return (
     <div>
       <p>活跃用户总数: {count}</p>
+    </div>
+  );
+};
+```
+
+### useFetcherPagedQuery Hook
+
+`useFetcherPagedQuery` hook 是使用 Fetcher 库执行分页查询的专用 React hook。它专为需要检索匹配查询条件的分页数据的场景而设计，返回包含当前页面项目以及分页元数据的 PagedList。
+
+```typescript jsx
+import { useFetcherPagedQuery } from '@ahoo-wang/fetcher-react';
+import { pagedQuery, contains, pagination, desc } from '@ahoo-wang/fetcher-wow';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+function UserListComponent() {
+  const {
+    data: pagedList,
+    loading,
+    error,
+    execute,
+    setQuery,
+    getQuery
+  } = useFetcherPagedQuery<User, keyof User>({
+    url: '/api/users/paged',
+    initialQuery: pagedQuery({
+      condition: contains('name', 'John'),
+      sort: [desc('createdAt')],
+      pagination: pagination({ index: 1, size: 10 })
+    }),
+    autoExecute: true,
+  });
+
+  const goToPage = (page: number) => {
+    const currentQuery = getQuery();
+    setQuery({
+      ...currentQuery,
+      pagination: { ...currentQuery.pagination, index: page }
+    });
+  };
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>用户</h2>
+      <ul>
+        {pagedList.list.map(user => (
+          <li key={user.id}>{user.name} - {user.email}</li>
+        ))}
+      </ul>
+      <div>
+        <span>总数: {pagedList.total} 用户</span>
+        <button onClick={() => goToPage(1)} disabled={pagedList.pagination.index === 1}>
+          第一页
+        </button>
+        <button onClick={() => goToPage(pagedList.pagination.index - 1)} disabled={pagedList.pagination.index === 1}>
+          上一页
+        </button>
+        <span>第 {pagedList.pagination.index} 页</span>
+        <button onClick={() => goToPage(pagedList.pagination.index + 1)}>
+          下一页
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+#### 自动执行示例
+
+```typescript jsx
+import { useFetcherPagedQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { data: pagedList, loading, error, execute } = useFetcherPagedQuery({
+    url: '/api/products/paged',
+    initialQuery: {
+      condition: { category: 'electronics' },
+      pagination: { index: 1, size: 20 },
+      projection: {},
+      sort: []
+    },
+    autoExecute: true, // 组件挂载时自动执行
+  });
+
+  // 查询将在组件挂载时自动执行
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>产品</h2>
+      <div>总数: {pagedList.total}</div>
+      <ul>
+        {pagedList.list.map(product => (
+          <li key={product.id}>{product.name}</li>
+        ))}
+      </ul>
     </div>
   );
 };
@@ -1163,6 +1269,37 @@ function useFetcherCountQuery<FIELDS extends string = string, E = FetcherError>(
 **返回值:**
 
 包含查询结果（作为数字的计数）、加载状态、错误状态和实用函数的对象。
+
+### useFetcherPagedQuery
+
+```typescript
+function useFetcherPagedQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherPagedQueryOptions<R, FIELDS, E>,
+): UseFetcherPagedQueryReturn<R, FIELDS, E>;
+```
+
+使用 Fetcher 库执行分页查询的 React hook。它包装了 useFetcherQuery hook 并专门用于分页操作，返回包含项目和分页元数据的 PagedList。
+
+**类型参数:**
+
+- `R`: 分页列表中每个项目包含的资源或实体的类型
+- `FIELDS`: 可在分页查询中使用的字段的字符串联合类型
+- `E`: 可能抛出的错误类型（默认为 `FetcherError`）
+
+**参数:**
+
+- `options`: 分页查询的配置选项，包括分页查询参数、fetcher 实例和其他查询设置
+  - `url`: 从中获取分页数据的 URL
+  - `initialQuery`: 初始分页查询配置
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+
+**返回值:**
+
+包含查询结果（包含项目和分页信息的 PagedList）、加载状态、错误状态和实用函数的对象。
 
 ### useListStreamQuery
 
