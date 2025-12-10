@@ -25,7 +25,7 @@ import {
 const { Title, Paragraph } = Typography;
 
 const meta: Meta<typeof Fullscreen> = {
-  title: 'Viewer/Components/FullScreen',
+  title: 'Viewer/Components/Fullscreen',
   component: Fullscreen,
   parameters: {
     layout: 'padded',
