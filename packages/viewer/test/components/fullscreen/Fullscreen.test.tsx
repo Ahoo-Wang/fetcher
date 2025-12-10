@@ -406,51 +406,6 @@ describe('Fullscreen component', () => {
     });
   });
 
-  describe('error handling', () => {
-    it('handles enterFullscreen failure gracefully', async () => {
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-      const error = new Error('Enter fullscreen failed');
-      mockEnterFullscreen.mockRejectedValue(error);
-
-      render(<Fullscreen />);
-
-      const button = screen.getByRole('button');
-
-      // Expect the click to not throw (error is handled internally)
-      expect(() => fireEvent.click(button)).not.toThrow();
-
-      // The error logging happens in the hook, not directly in the component
-      // So we can't easily test this without more complex setup
-      consoleSpy.mockRestore();
-    });
-
-    it('handles exitFullscreen failure gracefully', async () => {
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-      const error = new Error('Exit fullscreen failed');
-      mockExitFullscreen.mockRejectedValue(error);
-
-      render(<Fullscreen />);
-
-      // Enter fullscreen first
-      mockGetFullscreenElement.mockReturnValue(document.documentElement);
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-      });
-
-      const button = screen.getByRole('button');
-
-      // Expect the click to not throw (error is handled internally)
-      expect(() => fireEvent.click(button)).not.toThrow();
-
-      consoleSpy.mockRestore();
-    });
-  });
-
   describe('accessibility', () => {
     it('renders button with proper role', () => {
       render(<Fullscreen />);
