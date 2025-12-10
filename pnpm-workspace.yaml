@@ -10,7 +10,7 @@ catalog:
   '@types/node': ^24.10.1
   '@types/react': ^19.2.7
   '@types/react-dom': ^19.2.3
-  '@vitejs/plugin-react': ^5.1.1
+  '@vitejs/plugin-react': ^5.1.2
   '@vitest/coverage-v8': ^3.2.4
   '@vitest/ui': ^3.2.4
   antd: ^6.1.0
@@ -22,7 +22,7 @@ catalog:
   eslint-plugin-react-hooks: ^7.0.1
   globals: ^16.5.0
   immer: ^11.0.1
-  jsdom: ^27.2.0
+  jsdom: ^27.3.0
   msw: ^2.12.4
   nanoid: ^5.1.6
   playwright: ^1.57.0
