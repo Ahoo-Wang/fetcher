@@ -13,3 +13,4 @@
 
 export * from './Fullscreen';
 export * from './useFullscreen';
+export * from './utils';
