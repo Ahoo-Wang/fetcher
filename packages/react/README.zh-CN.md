@@ -44,6 +44,7 @@
   - [usePagedQuery Hook](#usepagedquery-hook)
   - [useSingleQuery Hook](#usesinglequery-hook)
   - [useCountQuery Hook](#usecountquery-hook)
+  - [useFetcherCountQuery Hook](#usefetchercountquery-hook)
   - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [最佳实践](#最佳实践)
 - [API 参考](#api-参考)
@@ -507,6 +508,58 @@ const MyComponent = () => {
     <div>
       <button onClick={handleCountActive}>计数活跃项目</button>
       <p>总数: {result}</p>
+    </div>
+  );
+};
+```
+
+### useFetcherCountQuery Hook
+
+`useFetcherCountQuery` hook 是使用 Fetcher 库执行计数查询的专用 React hook。它专为需要检索匹配特定条件的记录数量的场景而设计，返回表示计数的数字。
+
+```typescript jsx
+import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
+import { all } from '@ahoo-wang/fetcher-wow';
+
+function UserCountComponent() {
+  const { data: count, loading, error, execute } = useFetcherCountQuery({
+    url: '/api/users/count',
+    initialQuery: all(),
+    autoExecute: true,
+  });
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <div>活跃用户总数: {count}</div>
+      <button onClick={execute}>刷新计数</button>
+    </div>
+  );
+}
+```
+
+#### 自动执行示例
+
+```typescript jsx
+import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { data: count, loading, error, execute } = useFetcherCountQuery({
+    url: '/api/users/count',
+    initialQuery: { status: 'active' },
+    autoExecute: true, // 组件挂载时自动执行
+  });
+
+  // 查询将在组件挂载时自动执行
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <p>活跃用户总数: {count}</p>
     </div>
   );
 };
@@ -1084,6 +1137,32 @@ function useCountQuery<FIELDS extends string = string, E = FetcherError>(
 **返回值:**
 
 包含 promise 状态、execute 函数以及条件设置器的对象。
+
+### useFetcherCountQuery
+
+```typescript
+function useFetcherCountQuery<FIELDS extends string = string, E = FetcherError>(
+  options: UseFetcherCountQueryOptions<FIELDS, E>,
+): UseFetcherCountQueryReturn<FIELDS, E>;
+```
+
+使用 Fetcher 库执行计数查询的 React hook。它包装了 useFetcherQuery hook 并专门用于计数操作，返回表示计数的数字。
+
+**类型参数:**
+
+- `FIELDS`: 可在条件中使用的字段的字符串联合类型
+- `E`: 可能抛出的错误类型（默认为 `FetcherError`）
+
+**参数:**
+
+- `options`: 计数查询的配置选项，包括条件、fetcher 实例和其他查询设置
+  - `url`: 从中获取计数的 URL
+  - `initialQuery`: 计数查询的初始条件
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+
+**返回值:**
+
+包含查询结果（作为数字的计数）、加载状态、错误状态和实用函数的对象。
 
 ### useListStreamQuery
 

@@ -45,6 +45,7 @@ robust data fetching capabilities.
   - [usePagedQuery Hook](#usepagedquery-hook)
   - [useSingleQuery Hook](#usesinglequery-hook)
   - [useCountQuery Hook](#usecountquery-hook)
+  - [useFetcherCountQuery Hook](#usefetchercountquery-hook)
   - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [Best Practices](#best-practices)
 - [API Reference](#api-reference)
@@ -1124,6 +1125,46 @@ const MyComponent = () => {
   return (
     <div>
       <p>Total: {result}</p>
+    </div>
+  );
+};
+```
+### useFetcherCountQuery Hook
+The `useFetcherCountQuery` hook is a specialized React hook for performing count queries using the Fetcher library. It is designed for scenarios where you need to retrieve the count of records that match a specific condition, returning a number representing the count.
+```typescript jsx
+import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
+import { all } from '@ahoo-wang/fetcher-wow';
+function UserCountComponent() {
+  const { data: count, loading, error, execute } = useFetcherCountQuery({
+    url: '/api/users/count',
+    initialQuery: all(),
+    autoExecute: true,
+  });
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  return (
+    <div>
+      <div>Total active users: {count}</div>
+      <button onClick={execute}>Refresh Count</button>
+    </div>
+  );
+}
+```
+#### Auto Execute Example
+```typescript jsx
+import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
+const MyComponent = () => {
+  const { data: count, loading, error, execute } = useFetcherCountQuery({
+    url: '/api/users/count',
+    initialQuery: { status: 'active' },
+    autoExecute: true, // Automatically execute on component mount
+  });
+  // The query will execute automatically when the component mounts
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  return (
+    <div>
+      <p>Total active users: {count}</p>
     </div>
   );
 };
