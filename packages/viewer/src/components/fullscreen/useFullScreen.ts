@@ -14,8 +14,8 @@
 import { useState, useCallback, useEffect, RefObject } from 'react';
 import {
   getFullscreenElement,
-  enterFullscreen as enterFullscreenUtil,
-  exitFullscreen as exitFullscreenUtil,
+  enterFullscreen,
+  exitFullscreen,
   addFullscreenChangeListener,
   removeFullscreenChangeListener,
 } from './utils';
@@ -61,44 +61,43 @@ export function useFullscreen(
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const handleFullscreenChange = useCallback(() => {
+    const fullscreenElement = getFullscreenElement();
+    const newIsFullscreen =
+      fullscreenElement === (target?.current || document.documentElement);
+    setIsFullscreen(newIsFullscreen);
+    onChange?.(newIsFullscreen);
+  }, [target, setIsFullscreen, onChange]);
+
   // Listen for fullscreen changes
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      const fullscreenElement = getFullscreenElement();
-      const newIsFullscreen =
-        fullscreenElement === (target?.current || document.documentElement);
-      setIsFullscreen(newIsFullscreen);
-      onChange?.(newIsFullscreen);
-    };
-
     addFullscreenChangeListener(handleFullscreenChange);
-
     return () => {
       removeFullscreenChangeListener(handleFullscreenChange);
     };
-  }, [onChange, target]);
+  }, [handleFullscreenChange]);
 
-  const enterFullscreen = useCallback(async () => {
+  const enterFullscreenFn = useCallback(async () => {
     const element = target?.current || document.documentElement;
-    await enterFullscreenUtil(element);
+    await enterFullscreen(element);
   }, [target]);
 
-  const exitFullscreen = useCallback(async () => {
-    await exitFullscreenUtil();
+  const exitFullscreenFn = useCallback(async () => {
+    await exitFullscreen();
   }, []);
 
-  const toggleFullscreen = useCallback(async () => {
+  const toggleFullscreenFn = useCallback(async () => {
     if (isFullscreen) {
-      await exitFullscreen();
+      await exitFullscreenFn();
     } else {
-      await enterFullscreen();
+      await enterFullscreenFn();
     }
-  }, [isFullscreen, enterFullscreen, exitFullscreen]);
+  }, [isFullscreen, enterFullscreenFn, exitFullscreenFn]);
 
   return {
     isFullscreen: isFullscreen,
-    toggle: toggleFullscreen,
-    enter: enterFullscreen,
-    exit: exitFullscreen,
+    toggle: toggleFullscreenFn,
+    enter: enterFullscreenFn,
+    exit: exitFullscreenFn,
   };
 }
