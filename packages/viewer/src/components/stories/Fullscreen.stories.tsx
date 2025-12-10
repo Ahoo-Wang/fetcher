@@ -12,7 +12,7 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Fullscreen } from '../fullscreen';
 import { Space, Card, Typography } from 'antd';
 import {
@@ -183,6 +183,7 @@ export const WithTargetElement: Story = {
   render: () => {
     const WithTargetElementComponent = () => {
       const cardRef = useRef<HTMLDivElement>(null);
+
       return (
         <Card
           ref={cardRef}

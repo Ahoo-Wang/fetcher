@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useState, useCallback, useEffect, Ref } from 'react';
+import { useState, useCallback, useEffect, RefObject } from 'react';
 import {
   getFullscreenElement,
   enterFullscreen as enterFullscreenUtil,
@@ -24,7 +24,7 @@ export interface UseFullscreenOptions {
   /**
    * Target element to make fullscreen. If not provided, uses the document root element.
    */
-  target?: Ref<HTMLElement>;
+  target?: RefObject<HTMLElement | null>;
   /**
    * Callback when fullscreen state changes
    */

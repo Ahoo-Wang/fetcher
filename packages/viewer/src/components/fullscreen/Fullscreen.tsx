@@ -14,7 +14,7 @@
 import { Button, ButtonProps } from 'antd';
 import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
 import { useFullscreen } from './useFullscreen';
-import { Ref } from 'react';
+import { RefObject, ReactNode } from 'react';
 
 export interface FullScreenProps extends Omit<
   ButtonProps,
@@ -23,7 +23,7 @@ export interface FullScreenProps extends Omit<
   /**
    * Target element to make fullscreen. If not provided, uses the document root element.
    */
-  target?: Ref<HTMLElement>;
+  target?: RefObject<HTMLElement | null>;
   /**
    * Callback when fullscreen state changes
    */
@@ -31,11 +31,11 @@ export interface FullScreenProps extends Omit<
   /**
    * Custom icon for entering fullscreen
    */
-  enterIcon?: React.ReactNode;
+  enterIcon?: ReactNode;
   /**
    * Custom icon for exiting fullscreen
    */
-  exitIcon?: React.ReactNode;
+  exitIcon?: ReactNode;
 }
 
 /**
