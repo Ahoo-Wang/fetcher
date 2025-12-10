@@ -47,6 +47,7 @@ robust data fetching capabilities.
   - [useCountQuery Hook](#usecountquery-hook)
   - [useFetcherCountQuery Hook](#usefetchercountquery-hook)
   - [useFetcherPagedQuery Hook](#usefetcherpagedquery-hook)
+  - [useFetcherListQuery Hook](#usefetcherlistquery-hook)
   - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [Best Practices](#best-practices)
 - [API Reference](#api-reference)
@@ -1281,6 +1282,102 @@ const MyComponent = () => {
 };
 ```
 
+### useFetcherListQuery Hook
+
+The `useFetcherListQuery` hook is a specialized React hook for performing list queries using the Fetcher library. It is designed for fetching lists of items with support for filtering, sorting, and pagination through the ListQuery type, returning an array of results.
+
+```typescript jsx
+import { useFetcherListQuery } from '@ahoo-wang/fetcher-react';
+import { listQuery, contains, desc } from '@ahoo-wang/fetcher-wow';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+function UserListComponent() {
+  const {
+    loading,
+    result: users,
+    error,
+    execute,
+    setQuery,
+    getQuery,
+  } = useFetcherListQuery<User, keyof User>({
+    url: '/api/users/list',
+    initialQuery: listQuery({
+      condition: contains('name', 'John'),
+      sort: [desc('createdAt')],
+      limit: 10,
+    }),
+    autoExecute: true,
+  });
+
+  const loadMore = () => {
+    const currentQuery = getQuery();
+    setQuery({
+      ...currentQuery,
+      limit: (currentQuery.limit || 10) + 10,
+    });
+  };
+
+  if (loading) return <div>Loading users...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>Users ({users?.length || 0})</h2>
+      <ul>
+        {users?.map(user => (
+          <li key={user.id}>
+            {user.name} - {user.email}
+          </li>
+        ))}
+      </ul>
+      <button onClick={loadMore}>Load More</button>
+      <button onClick={execute}>Refresh list</button>
+    </div>
+  );
+}
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useFetcherListQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result: products, loading, error, execute } = useFetcherListQuery({
+    url: '/api/products/list',
+    initialQuery: {
+      condition: { category: 'electronics' },
+      projection: {},
+      sort: [],
+      limit: 20
+    },
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>Products</h2>
+      <ul>
+        {products?.map(product => (
+          <li key={product.id}>{product.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
 ### useListStreamQuery Hook
 
 The `useListStreamQuery` hook manages list stream queries that return a readable stream of server-sent events.
@@ -2450,6 +2547,37 @@ A React hook for performing paged queries using the Fetcher library. It wraps th
 **Returns:**
 
 An object containing the query result (PagedList with items and pagination info), loading state, error state, and utility functions.
+
+### useFetcherListQuery
+
+```typescript
+function useFetcherListQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherListQueryOptions<R, FIELDS, E>,
+): UseFetcherListQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for executing list queries using the fetcher library within the wow framework. It wraps the useFetcherQuery hook and specializes it for list operations, returning an array of results with support for filtering, sorting, and pagination.
+
+**Type Parameters:**
+
+- `R`: The type of individual items in the result array (e.g., User, Product)
+- `FIELDS`: The fields available for filtering, sorting, and pagination in the list query
+- `E`: The type of error that may be thrown (defaults to `FetcherError`)
+
+**Parameters:**
+
+- `options`: Configuration options for the list query, including the list query parameters, fetcher instance, and other query settings
+  - `url`: The URL to fetch the list data from
+  - `initialQuery`: The initial list query configuration
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+
+**Returns:**
+
+An object containing the query result (array of items), loading state, error state, and utility functions.
 
 ### useListStreamQuery
 

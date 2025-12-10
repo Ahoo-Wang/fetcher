@@ -46,6 +46,7 @@
   - [useCountQuery Hook](#usecountquery-hook)
   - [useFetcherCountQuery Hook](#usefetchercountquery-hook)
   - [useFetcherPagedQuery Hook](#usefetcherpagedquery-hook)
+  - [useFetcherListQuery Hook](#usefetcherlistquery-hook)
   - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [最佳实践](#最佳实践)
 - [API 参考](#api-参考)
@@ -663,6 +664,102 @@ const MyComponent = () => {
       <div>总数: {pagedList.total}</div>
       <ul>
         {pagedList.list.map(product => (
+          <li key={product.id}>{product.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
+### useFetcherListQuery Hook
+
+`useFetcherListQuery` hook 是使用 Fetcher 库执行列表查询的专用 React hook。它专为获取项目列表而设计，支持通过 ListQuery 类型进行过滤、排序和分页，返回结果数组。
+
+```typescript jsx
+import { useFetcherListQuery } from '@ahoo-wang/fetcher-react';
+import { listQuery, contains, desc } from '@ahoo-wang/fetcher-wow';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+function UserListComponent() {
+  const {
+    loading,
+    result: users,
+    error,
+    execute,
+    setQuery,
+    getQuery,
+  } = useFetcherListQuery<User, keyof User>({
+    url: '/api/users/list',
+    initialQuery: listQuery({
+      condition: contains('name', 'John'),
+      sort: [desc('createdAt')],
+      limit: 10,
+    }),
+    autoExecute: true,
+  });
+
+  const loadMore = () => {
+    const currentQuery = getQuery();
+    setQuery({
+      ...currentQuery,
+      limit: (currentQuery.limit || 10) + 10,
+    });
+  };
+
+  if (loading) return <div>正在加载用户...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>用户 ({users?.length || 0})</h2>
+      <ul>
+        {users?.map(user => (
+          <li key={user.id}>
+            {user.name} - {user.email}
+          </li>
+        ))}
+      </ul>
+      <button onClick={loadMore}>加载更多</button>
+      <button onClick={execute}>刷新列表</button>
+    </div>
+  );
+}
+```
+
+#### 自动执行示例
+
+```typescript jsx
+import { useFetcherListQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result: products, loading, error, execute } = useFetcherListQuery({
+    url: '/api/products/list',
+    initialQuery: {
+      condition: { category: 'electronics' },
+      projection: {},
+      sort: [],
+      limit: 20
+    },
+    autoExecute: true, // 组件挂载时自动执行
+  });
+
+  // 查询将在组件挂载时自动执行
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>产品</h2>
+      <ul>
+        {products?.map(product => (
           <li key={product.id}>{product.name}</li>
         ))}
       </ul>
@@ -1300,6 +1397,37 @@ function useFetcherPagedQuery<
 **返回值:**
 
 包含查询结果（包含项目和分页信息的 PagedList）、加载状态、错误状态和实用函数的对象。
+
+### useFetcherListQuery
+
+```typescript
+function useFetcherListQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherListQueryOptions<R, FIELDS, E>,
+): UseFetcherListQueryReturn<R, FIELDS, E>;
+```
+
+使用 fetcher 库在 wow 框架中执行列表查询的 React hook。它包装了 useFetcherQuery hook 并专门用于列表操作，返回结果数组，支持过滤、排序和分页。
+
+**类型参数:**
+
+- `R`: 结果数组中单个项目的类型（例如，User、Product）
+- `FIELDS`: 列表查询中可用于过滤、排序和分页的字段
+- `E`: 可能抛出的错误类型（默认为 `FetcherError`）
+
+**参数:**
+
+- `options`: 列表查询的配置选项，包括列表查询参数、fetcher 实例和其他查询设置
+  - `url`: 从中获取列表数据的 URL
+  - `initialQuery`: 初始列表查询配置
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+
+**返回值:**
+
+包含查询结果（项目数组）、加载状态、错误状态和实用函数的对象。
 
 ### useListStreamQuery
 
