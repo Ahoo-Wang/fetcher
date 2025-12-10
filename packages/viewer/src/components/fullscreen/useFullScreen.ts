@@ -11,8 +11,7 @@
  * limitations under the License.
  */
 
-import { useState, useCallback, useEffect } from 'react';
-import { useLatest } from '@ahoo-wang/fetcher-react';
+import { useState, useCallback, useEffect, Ref } from 'react';
 import {
   getFullscreenElement,
   enterFullscreen as enterFullscreenUtil,
@@ -25,7 +24,7 @@ export interface UseFullscreenOptions {
   /**
    * Target element to make fullscreen. If not provided, uses the document root element.
    */
-  target?: HTMLElement | null;
+  target?: Ref<HTMLElement>;
   /**
    * Callback when fullscreen state changes
    */
@@ -61,14 +60,13 @@ export function useFullscreen(
   const { target, onChange } = options;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const targetRef = useLatest(target);
 
   // Listen for fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
       const fullscreenElement = getFullscreenElement();
       const newIsFullscreen =
-        fullscreenElement === (targetRef.current || document.documentElement);
+        fullscreenElement === (target?.current || document.documentElement);
       setIsFullscreen(newIsFullscreen);
       onChange?.(newIsFullscreen);
     };
@@ -78,12 +76,12 @@ export function useFullscreen(
     return () => {
       removeFullscreenChangeListener(handleFullscreenChange);
     };
-  }, [onChange, targetRef]);
+  }, [onChange, target]);
 
   const enterFullscreen = useCallback(async () => {
-    const element = targetRef.current || document.documentElement;
+    const element = target?.current || document.documentElement;
     await enterFullscreenUtil(element);
-  }, [targetRef]);
+  }, [target]);
 
   const exitFullscreen = useCallback(async () => {
     await exitFullscreenUtil();

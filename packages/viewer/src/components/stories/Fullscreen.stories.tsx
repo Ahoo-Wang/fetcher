@@ -13,7 +13,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState, useRef, useEffect } from 'react';
-import { Fullscreen } from '../fullscreen/Fullscreen';
+import { Fullscreen } from '../fullscreen';
 import { Space, Card, Typography } from 'antd';
 import {
   ExpandOutlined,
@@ -183,17 +183,11 @@ export const WithTargetElement: Story = {
   render: () => {
     const WithTargetElementComponent = () => {
       const cardRef = useRef<HTMLDivElement>(null);
-      const [target, setTarget] = useState<HTMLDivElement | null>(null);
-
-      useEffect(() => {
-        setTarget(cardRef.current);
-      }, []);
-
       return (
         <Card
           ref={cardRef}
           title="Target Element Card"
-          extra={<Fullscreen target={target} />}
+          extra={<Fullscreen target={cardRef} />}
           style={{ width: 400 }}
         >
           <Paragraph>
