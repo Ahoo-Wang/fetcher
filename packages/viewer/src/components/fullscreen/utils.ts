@@ -39,6 +39,8 @@ export async function enterFullscreen(element: HTMLElement): Promise<void> {
       await (element as any).mozRequestFullScreen();
     } else if ((element as any).msRequestFullscreen) {
       await (element as any).msRequestFullscreen();
+    } else {
+      throw new Error('Fullscreen API not supported');
     }
   } catch (error) {
     console.error('Failed to enter fullscreen:', error);
@@ -60,6 +62,8 @@ export async function exitFullscreen(): Promise<void> {
       await (document as any).mozCancelFullScreen();
     } else if ((document as any).msExitFullscreen) {
       await (document as any).msExitFullscreen();
+    } else {
+      throw new Error('Fullscreen API not supported');
     }
   } catch (error) {
     console.error('Failed to exit fullscreen:', error);
