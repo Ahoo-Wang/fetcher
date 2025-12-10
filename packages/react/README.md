@@ -48,6 +48,8 @@ robust data fetching capabilities.
   - [useFetcherCountQuery Hook](#usefetchercountquery-hook)
   - [useFetcherPagedQuery Hook](#usefetcherpagedquery-hook)
   - [useFetcherListQuery Hook](#usefetcherlistquery-hook)
+  - [useFetcherListStreamQuery Hook](#usefetcherliststreamquery-hook)
+  - [useFetcherSingleQuery Hook](#usefetchersinglequery-hook)
   - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [Best Practices](#best-practices)
 - [API Reference](#api-reference)
@@ -1378,6 +1380,125 @@ const MyComponent = () => {
 };
 ```
 
+### useFetcherListStreamQuery Hook
+
+The `useFetcherListStreamQuery` hook is a specialized React hook for performing list stream queries using the Fetcher library with server-sent events. It is designed for scenarios where you need to retrieve a stream of data that matches a list query condition, returning a ReadableStream of JSON server-sent events for real-time data streaming.
+
+```typescript jsx
+import { useFetcherListStreamQuery } from '@ahoo-wang/fetcher-react';
+import { listQuery, contains } from '@ahoo-wang/fetcher-wow';
+import { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
+import { useEffect, useRef } from 'react';
+
+interface User {
+  id: number;
+  name: string;
+}
+
+function UserStreamComponent() {
+  const { data: stream, loading, error, execute } = useFetcherListStreamQuery<User, 'id' | 'name'>({
+    url: '/api/users/stream',
+    initialQuery: listQuery({
+      condition: contains('name', 'John'),
+      limit: 10,
+    }),
+    autoExecute: true,
+  });
+
+  const messagesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (stream) {
+      const reader = stream.getReader();
+      const readStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            // Process the JsonServerSentEvent<User>
+            const newUser = value.data;
+            if (messagesRef.current) {
+              const div = document.createElement('div');
+              div.textContent = `New user: ${newUser.name}`;
+              messagesRef.current.appendChild(div);
+            }
+          }
+        } catch (err) {
+          console.error('Stream error:', err);
+        }
+      };
+      readStream();
+    }
+  }, [stream]);
+
+  if (loading) return <div>Loading stream...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <div ref={messagesRef}></div>
+      <button onClick={execute}>Restart Stream</button>
+    </div>
+  );
+}
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useFetcherListStreamQuery } from '@ahoo-wang/fetcher-react';
+import { useEffect, useRef } from 'react';
+
+const MyComponent = () => {
+  const { data: stream, loading, error, execute } = useFetcherListStreamQuery({
+    url: '/api/notifications/stream',
+    initialQuery: {
+      condition: { type: 'important' },
+      limit: 50
+    },
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  const notificationsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (stream) {
+      const reader = stream.getReader();
+      const processStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const notification = value.data;
+            if (notificationsRef.current) {
+              const notificationDiv = document.createElement('div');
+              notificationDiv.textContent = `Notification: ${notification.message}`;
+              notificationsRef.current.appendChild(notificationDiv);
+            }
+          }
+        } catch (err) {
+          console.error('Stream processing error:', err);
+        }
+      };
+      processStream();
+    }
+  }, [stream]);
+
+  // The stream will start automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>Live Notifications</h2>
+      <div ref={notificationsRef}></div>
+    </div>
+  );
+};
+```
+
 ### useListStreamQuery Hook
 
 The `useListStreamQuery` hook manages list stream queries that return a readable stream of server-sent events.
@@ -2578,6 +2699,37 @@ A React hook for executing list queries using the fetcher library within the wow
 **Returns:**
 
 An object containing the query result (array of items), loading state, error state, and utility functions.
+
+### useFetcherListStreamQuery
+
+```typescript
+function useFetcherListStreamQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherListStreamQueryOptions<R, FIELDS, E>,
+): UseFetcherListStreamQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for performing list stream queries using the Fetcher library with server-sent events. It wraps the useFetcherQuery hook and specializes it for streaming operations, returning a ReadableStream of JSON server-sent events for real-time data streaming.
+
+**Type Parameters:**
+
+- `R`: The type of the resource or entity contained in each event in the stream
+- `FIELDS`: The fields available for filtering, sorting, and pagination in the list query
+- `E`: The type of error that may be thrown (defaults to `FetcherError`)
+
+**Parameters:**
+
+- `options`: Configuration options for the list stream query, including the list query parameters, fetcher instance, and other query settings
+  - `url`: The URL to fetch the stream data from
+  - `initialQuery`: The initial list query configuration
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+
+**Returns:**
+
+An object containing the query result (ReadableStream of JSON server-sent events), loading state, error state, and utility functions.
 
 ### useListStreamQuery
 

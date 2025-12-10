@@ -47,6 +47,7 @@
   - [useFetcherCountQuery Hook](#usefetchercountquery-hook)
   - [useFetcherPagedQuery Hook](#usefetcherpagedquery-hook)
   - [useFetcherListQuery Hook](#usefetcherlistquery-hook)
+  - [useFetcherListStreamQuery Hook](#usefetcherliststreamquery-hook)
   - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [最佳实践](#最佳实践)
 - [API 参考](#api-参考)
@@ -768,6 +769,125 @@ const MyComponent = () => {
 };
 ```
 
+### useFetcherListStreamQuery Hook
+
+`useFetcherListStreamQuery` hook 是使用 Fetcher 库通过服务器发送事件执行列表流查询的专用 React hook。它专为需要检索匹配列表查询条件的数据流场景而设计，返回 JSON 服务器发送事件的 ReadableStream，用于实时数据流式传输。
+
+```typescript jsx
+import { useFetcherListStreamQuery } from '@ahoo-wang/fetcher-react';
+import { listQuery, contains } from '@ahoo-wang/fetcher-wow';
+import { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
+import { useEffect, useRef } from 'react';
+
+interface User {
+  id: number;
+  name: string;
+}
+
+function UserStreamComponent() {
+  const { data: stream, loading, error, execute } = useFetcherListStreamQuery<User, 'id' | 'name'>({
+    url: '/api/users/stream',
+    initialQuery: listQuery({
+      condition: contains('name', 'John'),
+      limit: 10,
+    }),
+    autoExecute: true,
+  });
+
+  const messagesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (stream) {
+      const reader = stream.getReader();
+      const readStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            // 处理 JsonServerSentEvent<User>
+            const newUser = value.data;
+            if (messagesRef.current) {
+              const div = document.createElement('div');
+              div.textContent = `新用户: ${newUser.name}`;
+              messagesRef.current.appendChild(div);
+            }
+          }
+        } catch (err) {
+          console.error('流错误:', err);
+        }
+      };
+      readStream();
+    }
+  }, [stream]);
+
+  if (loading) return <div>正在加载流...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <div ref={messagesRef}></div>
+      <button onClick={execute}>重新启动流</button>
+    </div>
+  );
+}
+```
+
+#### 自动执行示例
+
+```typescript jsx
+import { useFetcherListStreamQuery } from '@ahoo-wang/fetcher-react';
+import { useEffect, useRef } from 'react';
+
+const MyComponent = () => {
+  const { data: stream, loading, error, execute } = useFetcherListStreamQuery({
+    url: '/api/notifications/stream',
+    initialQuery: {
+      condition: { type: 'important' },
+      limit: 50
+    },
+    autoExecute: true, // 组件挂载时自动执行
+  });
+
+  const notificationsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (stream) {
+      const reader = stream.getReader();
+      const processStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const notification = value.data;
+            if (notificationsRef.current) {
+              const notificationDiv = document.createElement('div');
+              notificationDiv.textContent = `通知: ${notification.message}`;
+              notificationsRef.current.appendChild(notificationDiv);
+            }
+          }
+        } catch (err) {
+          console.error('流处理错误:', err);
+        }
+      };
+      processStream();
+    }
+  }, [stream]);
+
+  // 流将在组件挂载时自动启动
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>实时通知</h2>
+      <div ref={notificationsRef}></div>
+    </div>
+  );
+};
+```
+
 ### useListStreamQuery Hook
 
 `useListStreamQuery` hook 管理列表流查询，返回服务器发送事件的 readable stream。
@@ -1428,6 +1548,37 @@ function useFetcherListQuery<
 **返回值:**
 
 包含查询结果（项目数组）、加载状态、错误状态和实用函数的对象。
+
+### useFetcherListStreamQuery
+
+```typescript
+function useFetcherListStreamQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherListStreamQueryOptions<R, FIELDS, E>,
+): UseFetcherListStreamQueryReturn<R, FIELDS, E>;
+```
+
+使用 Fetcher 库通过服务器发送事件执行列表流查询的 React hook。它包装了 useFetcherQuery hook 并专门用于流式操作，返回 JSON 服务器发送事件的 ReadableStream，用于实时数据流式传输。
+
+**类型参数:**
+
+- `R`: 流中每个事件包含的资源或实体的类型
+- `FIELDS`: 列表查询中可用于过滤、排序和分页的字段
+- `E`: 可能抛出的错误类型（默认为 `FetcherError`）
+
+**参数:**
+
+- `options`: 列表流查询的配置选项，包括列表查询参数、fetcher 实例和其他查询设置
+  - `url`: 从中获取流数据的 URL
+  - `initialQuery`: 初始列表查询配置
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+
+**返回值:**
+
+包含查询结果（JSON 服务器发送事件的 ReadableStream）、加载状态、错误状态和实用函数的对象。
 
 ### useListStreamQuery
 
