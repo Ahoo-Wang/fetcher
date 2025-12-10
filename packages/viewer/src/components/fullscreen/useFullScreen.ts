@@ -12,6 +12,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useLatest } from '@ahoo-wang/fetcher-react';
 
 export interface UseFullScreenOptions {
   /**
@@ -21,26 +22,26 @@ export interface UseFullScreenOptions {
   /**
    * Callback when fullscreen state changes
    */
-  onChange?: (isFullscreen: boolean) => void;
+  onChange?: (isFullScreen: boolean) => void;
 }
 
-export interface UseFullScreenResult {
+export interface UseFullScreenReturn {
   /**
    * Whether the target element is currently in fullscreen mode
    */
-  isFullscreen: boolean;
+  isFullScreen: boolean;
   /**
    * Toggle fullscreen mode on/off
    */
-  toggleFullscreen: () => Promise<void>;
+  toggle: () => Promise<void>;
   /**
    * Enter fullscreen mode
    */
-  enterFullscreen: () => Promise<void>;
+  enter: () => Promise<void>;
   /**
    * Exit fullscreen mode
    */
-  exitFullscreen: () => Promise<void>;
+  exit: () => Promise<void>;
 }
 
 /**
@@ -49,16 +50,11 @@ export interface UseFullScreenResult {
  */
 export function useFullScreen(
   options: UseFullScreenOptions = {},
-): UseFullScreenResult {
+): UseFullScreenReturn {
   const { target, onChange } = options;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const targetRef = useRef<HTMLElement | null>(target || null);
-
-  // Update target ref when prop changes
-  useEffect(() => {
-    targetRef.current = target || null;
-  }, [target]);
+  const targetRef =useLatest(target)
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -138,9 +134,9 @@ export function useFullScreen(
   }, [isFullscreen, enterFullscreen, exitFullscreen]);
 
   return {
-    isFullscreen,
-    toggleFullscreen,
-    enterFullscreen,
-    exitFullscreen,
+    isFullScreen: isFullscreen,
+    toggle: toggleFullscreen,
+    enter: enterFullscreen,
+    exit: exitFullscreen,
   };
 }

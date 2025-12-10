@@ -47,7 +47,7 @@ export function FullScreen(props: FullScreenProps) {
     ...buttonProps
   } = props;
 
-  const { isFullscreen, toggleFullscreen } = useFullScreen({
+  const { isFullScreen, toggle } = useFullScreen({
     target,
     onChange,
   });
@@ -55,8 +55,8 @@ export function FullScreen(props: FullScreenProps) {
   return (
     <Button
       {...buttonProps}
-      icon={isFullscreen ? exitIcon : enterIcon}
-      onClick={toggleFullscreen}
+      icon={isFullScreen ? exitIcon : enterIcon}
+      onClick={toggle}
     />
   );
 }
