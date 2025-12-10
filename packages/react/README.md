@@ -40,7 +40,7 @@ robust data fetching capabilities.
 - [useEventSubscription Hook](#useeventsubscription-hook)
 - [useKeyStorage Hook](#usekeystorage-hook)
   - [useImmerKeyStorage Hook](#useimmerkeystorage-hook)
-  - [Wow Query Hooks](#wow-query-hooks)
+- [Wow Query Hooks](#wow-query-hooks)
   - [useListQuery Hook](#uselistquery-hook)
   - [usePagedQuery Hook](#usepagedquery-hook)
   - [useSingleQuery Hook](#usesinglequery-hook)
