@@ -48,6 +48,7 @@
   - [useFetcherPagedQuery Hook](#usefetcherpagedquery-hook)
   - [useFetcherListQuery Hook](#usefetcherlistquery-hook)
   - [useFetcherListStreamQuery Hook](#usefetcherliststreamquery-hook)
+  - [useFetcherSingleQuery Hook](#usefetchersinglequery-hook)
   - [useListStreamQuery Hook](#useliststreamquery-hook)
 - [最佳实践](#最佳实践)
 - [API 参考](#api-参考)
@@ -888,6 +889,82 @@ const MyComponent = () => {
 };
 ```
 
+### useFetcherSingleQuery Hook
+
+`useFetcherSingleQuery` hook 是使用 Fetcher 库执行单个项目查询的专用 React hook。它专为获取单个项目而设计，支持通过 SingleQuery 类型进行过滤和排序，返回单个结果项目。
+
+```typescript jsx
+import { useFetcherSingleQuery } from '@ahoo-wang/fetcher-react';
+import { singleQuery, eq } from '@ahoo-wang/fetcher-wow';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+function UserProfileComponent({ userId }: { userId: string }) {
+  const {
+    loading,
+    result: user,
+    error,
+    execute,
+  } = useFetcherSingleQuery<User, keyof User>({
+    url: `/api/users/${userId}`,
+    initialQuery: singleQuery({
+      condition: eq('id', userId),
+    }),
+    autoExecute: true,
+  });
+
+  if (loading) return <div>正在加载用户...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+  if (!user) return <div>未找到用户</div>;
+
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <p>邮箱: {user.email}</p>
+      <p>创建时间: {user.createdAt}</p>
+      <button onClick={execute}>刷新</button>
+    </div>
+  );
+}
+```
+
+#### 自动执行示例
+
+```typescript jsx
+import { useFetcherSingleQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result: product, loading, error, execute } = useFetcherSingleQuery({
+    url: '/api/products/featured',
+    initialQuery: {
+      condition: { featured: true },
+      projection: {},
+      sort: []
+    },
+    autoExecute: true, // 组件挂载时自动执行
+  });
+
+  // 查询将在组件挂载时自动执行
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+  if (!product) return <div>未找到产品</div>;
+
+  return (
+    <div>
+      <h2>特色产品</h2>
+      <div>{product.name}</div>
+      <div>{product.description}</div>
+    </div>
+  );
+};
+```
+
 ### useListStreamQuery Hook
 
 `useListStreamQuery` hook 管理列表流查询，返回服务器发送事件的 readable stream。
@@ -1579,6 +1656,37 @@ function useFetcherListStreamQuery<
 **返回值:**
 
 包含查询结果（JSON 服务器发送事件的 ReadableStream）、加载状态、错误状态和实用函数的对象。
+
+### useFetcherSingleQuery
+
+```typescript
+function useFetcherSingleQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherSingleQueryOptions<R, FIELDS, E>,
+): UseFetcherSingleQueryReturn<R, FIELDS, E>;
+```
+
+使用 fetcher 库在 wow 框架中执行单个项目查询的 React hook。它包装了 useFetcherQuery hook 并专门用于单个项目操作，返回单个结果项目，支持过滤和排序。
+
+**类型参数:**
+
+- `R`: 结果项目的类型（例如，User、Product）
+- `FIELDS`: 单个查询中可用于过滤和排序的字段
+- `E`: 可能抛出的错误类型（默认为 `FetcherError`）
+
+**参数:**
+
+- `options`: 单个查询的配置选项，包括单个查询参数、fetcher 实例和其他查询设置
+  - `url`: 从中获取单个项目的 URL
+  - `initialQuery`: 初始单个查询配置
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+
+**返回值:**
+
+包含查询结果（单个项目）、加载状态、错误状态和实用函数的对象。
 
 ### useListStreamQuery
 

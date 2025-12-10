@@ -1499,6 +1499,82 @@ const MyComponent = () => {
 };
 ```
 
+### useFetcherSingleQuery Hook
+
+The `useFetcherSingleQuery` hook is a specialized React hook for performing single item queries using the Fetcher library. It is designed for fetching a single item with support for filtering and sorting through the SingleQuery type, returning a single result item.
+
+```typescript jsx
+import { useFetcherSingleQuery } from '@ahoo-wang/fetcher-react';
+import { singleQuery, eq } from '@ahoo-wang/fetcher-wow';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+function UserProfileComponent({ userId }: { userId: string }) {
+  const {
+    loading,
+    result: user,
+    error,
+    execute,
+  } = useFetcherSingleQuery<User, keyof User>({
+    url: `/api/users/${userId}`,
+    initialQuery: singleQuery({
+      condition: eq('id', userId),
+    }),
+    autoExecute: true,
+  });
+
+  if (loading) return <div>Loading user...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!user) return <div>User not found</div>;
+
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <p>Email: {user.email}</p>
+      <p>Created: {user.createdAt}</p>
+      <button onClick={execute}>Refresh</button>
+    </div>
+  );
+}
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useFetcherSingleQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result: product, loading, error, execute } = useFetcherSingleQuery({
+    url: '/api/products/featured',
+    initialQuery: {
+      condition: { featured: true },
+      projection: {},
+      sort: []
+    },
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!product) return <div>Product not found</div>;
+
+  return (
+    <div>
+      <h2>Featured Product</h2>
+      <div>{product.name}</div>
+      <div>{product.description}</div>
+    </div>
+  );
+};
+```
+
 ### useListStreamQuery Hook
 
 The `useListStreamQuery` hook manages list stream queries that return a readable stream of server-sent events.
@@ -2730,6 +2806,37 @@ A React hook for performing list stream queries using the Fetcher library with s
 **Returns:**
 
 An object containing the query result (ReadableStream of JSON server-sent events), loading state, error state, and utility functions.
+
+### useFetcherSingleQuery
+
+```typescript
+function useFetcherSingleQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherSingleQueryOptions<R, FIELDS, E>,
+): UseFetcherSingleQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for executing single item queries using the fetcher library within the wow framework. It wraps the useFetcherQuery hook and specializes it for single item operations, returning a single result item with support for filtering and sorting.
+
+**Type Parameters:**
+
+- `R`: The type of the result item (e.g., User, Product)
+- `FIELDS`: The fields available for filtering and sorting in the single query
+- `E`: The type of error that may be thrown (defaults to `FetcherError`)
+
+**Parameters:**
+
+- `options`: Configuration options for the single query, including the single query parameters, fetcher instance, and other query settings
+  - `url`: The URL to fetch the single item from
+  - `initialQuery`: The initial single query configuration
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+
+**Returns:**
+
+An object containing the query result (single item), loading state, error state, and utility functions.
 
 ### useListStreamQuery
 
