@@ -13,17 +13,17 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { Fullscreen } from '../../src';
+import { FullScreen } from '../../src';
 
-describe('Fullscreen', () => {
-  let mockRequestFullscreen: any;
-  let mockExitFullscreen: any;
+describe('FullScreen', () => {
+  let mockRequestFullScreen: any;
+  let mockExitFullScreen: any;
   let fullscreenElement: any;
 
   beforeEach(() => {
     // Mock fullscreen API
-    mockRequestFullscreen = vi.fn().mockResolvedValue(undefined);
-    mockExitFullscreen = vi.fn().mockResolvedValue(undefined);
+    mockRequestFullScreen = vi.fn().mockResolvedValue(undefined);
+    mockExitFullScreen = vi.fn().mockResolvedValue(undefined);
     fullscreenElement = null;
 
     Object.defineProperty(document, 'fullscreenElement', {
@@ -33,12 +33,12 @@ describe('Fullscreen', () => {
 
     Object.defineProperty(document.documentElement, 'requestFullscreen', {
       configurable: true,
-      value: mockRequestFullscreen,
+      value: mockRequestFullScreen,
     });
 
     Object.defineProperty(document, 'exitFullscreen', {
       configurable: true,
-      value: mockExitFullscreen,
+      value: mockExitFullScreen,
     });
   });
 
@@ -47,41 +47,41 @@ describe('Fullscreen', () => {
   });
 
   it('renders without crashing', () => {
-    const { container } = render(<Fullscreen />);
+    const { container } = render(<FullScreen />);
     expect(container.firstChild).toBeTruthy();
   });
 
   it('renders as a button', () => {
-    render(<Fullscreen />);
+    render(<FullScreen />);
     const button = screen.getByRole('button');
     expect(button).toBeTruthy();
   });
 
   it('displays enter fullscreen icon by default', () => {
-    const { container } = render(<Fullscreen />);
+    const { container } = render(<FullScreen />);
     const icon = container.querySelector('.anticon-fullscreen');
     expect(icon).toBeTruthy();
   });
 
   it('calls requestFullscreen when clicked', async () => {
-    render(<Fullscreen />);
+    render(<FullScreen />);
     const button = screen.getByRole('button');
 
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(mockRequestFullscreen).toHaveBeenCalledTimes(1);
+      expect(mockRequestFullScreen).toHaveBeenCalledTimes(1);
     });
   });
 
   it('calls exitFullscreen when in fullscreen mode', async () => {
-    const { container } = render(<Fullscreen />);
+    const { container } = render(<FullScreen />);
     const button = screen.getByRole('button');
 
     // Enter fullscreen
     fireEvent.click(button);
     await waitFor(() => {
-      expect(mockRequestFullscreen).toHaveBeenCalled();
+      expect(mockRequestFullScreen).toHaveBeenCalled();
     });
 
     // Simulate fullscreen change
@@ -96,13 +96,13 @@ describe('Fullscreen', () => {
     // Exit fullscreen
     fireEvent.click(button);
     await waitFor(() => {
-      expect(mockExitFullscreen).toHaveBeenCalledTimes(1);
+      expect(mockExitFullScreen).toHaveBeenCalledTimes(1);
     });
   });
 
   it('calls onChange callback when fullscreen state changes', async () => {
     const onChange = vi.fn();
-    render(<Fullscreen onChange={onChange} />);
+    render(<FullScreen onChange={onChange} />);
 
     // Simulate entering fullscreen
     fullscreenElement = document.documentElement;
@@ -123,59 +123,59 @@ describe('Fullscreen', () => {
 
   it('accepts custom enter icon', () => {
     const customIcon = <span data-testid="custom-enter-icon">Enter</span>;
-    render(<Fullscreen enterIcon={customIcon} />);
+    render(<FullScreen enterIcon={customIcon} />);
     expect(screen.getByTestId('custom-enter-icon')).toBeTruthy();
   });
 
   it('accepts custom exit icon', async () => {
     const customExitIcon = <span data-testid="custom-exit-icon">Exit</span>;
-    const { rerender } = render(<Fullscreen exitIcon={customExitIcon} />);
+    const { rerender } = render(<FullScreen exitIcon={customExitIcon} />);
 
     // Simulate entering fullscreen
     fullscreenElement = document.documentElement;
     fireEvent(document, new Event('fullscreenchange'));
 
     await waitFor(() => {
-      rerender(<Fullscreen exitIcon={customExitIcon} />);
+      rerender(<FullScreen exitIcon={customExitIcon} />);
       expect(screen.getByTestId('custom-exit-icon')).toBeTruthy();
     });
   });
 
   it('passes through button props', () => {
-    render(<Fullscreen type="primary" size="large" disabled={false} />);
+    render(<FullScreen type="primary" size="large" disabled={false} />);
     const button = screen.getByRole('button');
     expect(button.classList.contains('ant-btn-primary')).toBe(true);
     expect(button.classList.contains('ant-btn-lg')).toBe(true);
   });
 
   it('can be disabled', () => {
-    render(<Fullscreen disabled />);
+    render(<FullScreen disabled />);
     const button = screen.getByRole('button');
     expect(button.hasAttribute('disabled')).toBe(true);
   });
 
   it('uses target element when provided', async () => {
     const targetElement = document.createElement('div');
-    const targetRequestFullscreen = vi
+    const targetRequestFullScreen = vi
       .fn()
       .mockResolvedValue(undefined);
-    (targetElement as any).requestFullscreen = targetRequestFullscreen;
+    (targetElement as any).requestFullscreen = targetRequestFullScreen;
 
-    render(<Fullscreen target={targetElement} />);
+    render(<FullScreen target={targetElement} />);
     const button = screen.getByRole('button');
 
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(targetRequestFullscreen).toHaveBeenCalledTimes(1);
+      expect(targetRequestFullScreen).toHaveBeenCalledTimes(1);
     });
   });
 
   it('handles requestFullscreen errors gracefully', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockRequestFullscreen.mockRejectedValue(new Error('Fullscreen not allowed'));
+    mockRequestFullScreen.mockRejectedValue(new Error('FullScreen not allowed'));
 
-    render(<Fullscreen />);
+    render(<FullScreen />);
     const button = screen.getByRole('button');
 
     fireEvent.click(button);
@@ -189,9 +189,9 @@ describe('Fullscreen', () => {
 
   it('handles exitFullscreen errors gracefully', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockExitFullscreen.mockRejectedValue(new Error('Exit not allowed'));
+    mockExitFullScreen.mockRejectedValue(new Error('Exit not allowed'));
 
-    const { container } = render(<Fullscreen />);
+    const { container } = render(<FullScreen />);
 
     // Simulate being in fullscreen
     fullscreenElement = document.documentElement;
@@ -219,7 +219,7 @@ describe('Fullscreen', () => {
       (document.documentElement as any).webkitRequestFullscreen =
         webkitRequestFullscreen;
 
-      render(<Fullscreen />);
+      render(<FullScreen />);
       const button = screen.getByRole('button');
 
       fireEvent.click(button);
@@ -231,7 +231,7 @@ describe('Fullscreen', () => {
 
     it('listens to webkitfullscreenchange event', async () => {
       const onChange = vi.fn();
-      render(<Fullscreen onChange={onChange} />);
+      render(<FullScreen onChange={onChange} />);
 
       fullscreenElement = document.documentElement;
       fireEvent(document, new Event('webkitfullscreenchange'));
@@ -243,7 +243,7 @@ describe('Fullscreen', () => {
 
     it('listens to mozfullscreenchange event', async () => {
       const onChange = vi.fn();
-      render(<Fullscreen onChange={onChange} />);
+      render(<FullScreen onChange={onChange} />);
 
       fullscreenElement = document.documentElement;
       fireEvent(document, new Event('mozfullscreenchange'));
@@ -256,7 +256,7 @@ describe('Fullscreen', () => {
 
   describe('Component lifecycle', () => {
     it('cleans up event listeners on unmount', () => {
-      const { unmount } = render(<Fullscreen />);
+      const { unmount } = render(<FullScreen />);
       const removeEventListenerSpy = vi.spyOn(document, 'removeEventListener');
 
       unmount();
@@ -284,23 +284,23 @@ describe('Fullscreen', () => {
     it('updates target when prop changes', async () => {
       const firstTarget = document.createElement('div');
       const secondTarget = document.createElement('div');
-      const firstRequestFullscreen = vi.fn().mockResolvedValue(undefined);
-      const secondRequestFullscreen = vi.fn().mockResolvedValue(undefined);
-      (firstTarget as any).requestFullscreen = firstRequestFullscreen;
-      (secondTarget as any).requestFullscreen = secondRequestFullscreen;
+      const firstRequestFullScreen = vi.fn().mockResolvedValue(undefined);
+      const secondRequestFullScreen = vi.fn().mockResolvedValue(undefined);
+      (firstTarget as any).requestFullscreen = firstRequestFullScreen;
+      (secondTarget as any).requestFullscreen = secondRequestFullScreen;
 
-      const { rerender } = render(<Fullscreen target={firstTarget} />);
+      const { rerender } = render(<FullScreen target={firstTarget} />);
       const button = screen.getByRole('button');
 
       fireEvent.click(button);
       await waitFor(() => {
-        expect(firstRequestFullscreen).toHaveBeenCalledTimes(1);
+        expect(firstRequestFullScreen).toHaveBeenCalledTimes(1);
       });
 
-      rerender(<Fullscreen target={secondTarget} />);
+      rerender(<FullScreen target={secondTarget} />);
       fireEvent.click(button);
       await waitFor(() => {
-        expect(secondRequestFullscreen).toHaveBeenCalledTimes(1);
+        expect(secondRequestFullScreen).toHaveBeenCalledTimes(1);
       });
     });
   });

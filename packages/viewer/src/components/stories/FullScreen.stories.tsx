@@ -13,7 +13,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState, useRef } from 'react';
-import { Fullscreen } from '../fullscreen/Fullscreen';
+import { FullScreen } from '../fullscreen/FullScreen';
 import { Space, Card, Typography } from 'antd';
 import {
   ExpandOutlined,
@@ -24,9 +24,9 @@ import {
 
 const { Title, Paragraph } = Typography;
 
-const meta: Meta<typeof Fullscreen> = {
-  title: 'Viewer/Components/Fullscreen',
-  component: Fullscreen,
+const meta: Meta<typeof FullScreen> = {
+  title: 'Viewer/Components/FullScreen',
+  component: FullScreen,
   parameters: {
     layout: 'padded',
     docs: {
@@ -46,7 +46,7 @@ export const Default: Story = {
   render: () => {
     return (
       <Space>
-        <Fullscreen />
+        <FullScreen />
         <span>Click to toggle fullscreen mode</span>
       </Space>
     );
@@ -58,10 +58,10 @@ export const WithChangeCallback: Story = {
     const [message, setMessage] = useState('Not in fullscreen');
     return (
       <Space direction="vertical">
-        <Fullscreen
-          onChange={(isFullscreen) => {
+        <FullScreen
+          onChange={(isFullScreen) => {
             setMessage(
-              isFullscreen ? 'Entered fullscreen mode' : 'Exited fullscreen mode',
+              isFullScreen ? 'Entered fullscreen mode' : 'Exited fullscreen mode',
             );
           }}
         />
@@ -75,7 +75,7 @@ export const PrimaryButton: Story = {
   render: () => {
     return (
       <Space>
-        <Fullscreen type="primary" />
+        <FullScreen type="primary" />
         <span>Primary button style</span>
       </Space>
     );
@@ -86,7 +86,7 @@ export const DefaultButton: Story = {
   render: () => {
     return (
       <Space>
-        <Fullscreen type="default" />
+        <FullScreen type="default" />
         <span>Default button style</span>
       </Space>
     );
@@ -97,7 +97,7 @@ export const DashedButton: Story = {
   render: () => {
     return (
       <Space>
-        <Fullscreen type="dashed" />
+        <FullScreen type="dashed" />
         <span>Dashed button style</span>
       </Space>
     );
@@ -108,7 +108,7 @@ export const TextButton: Story = {
   render: () => {
     return (
       <Space>
-        <Fullscreen type="text" />
+        <FullScreen type="text" />
         <span>Text button style</span>
       </Space>
     );
@@ -119,7 +119,7 @@ export const LinkButton: Story = {
   render: () => {
     return (
       <Space>
-        <Fullscreen type="link" />
+        <FullScreen type="link" />
         <span>Link button style</span>
       </Space>
     );
@@ -130,7 +130,7 @@ export const CustomIcons: Story = {
   render: () => {
     return (
       <Space>
-        <Fullscreen
+        <FullScreen
           enterIcon={<ExpandOutlined />}
           exitIcon={<CompressOutlined />}
         />
@@ -144,7 +144,7 @@ export const ZoomIcons: Story = {
   render: () => {
     return (
       <Space>
-        <Fullscreen
+        <FullScreen
           enterIcon={<ZoomInOutlined />}
           exitIcon={<ZoomOutOutlined />}
         />
@@ -158,9 +158,9 @@ export const DifferentSizes: Story = {
   render: () => {
     return (
       <Space>
-        <Fullscreen size="small" />
-        <Fullscreen size="middle" />
-        <Fullscreen size="large" />
+        <FullScreen size="small" />
+        <FullScreen size="middle" />
+        <FullScreen size="large" />
       </Space>
     );
   },
@@ -170,7 +170,7 @@ export const Disabled: Story = {
   render: () => {
     return (
       <Space>
-        <Fullscreen disabled />
+        <FullScreen disabled />
         <span>Disabled button</span>
       </Space>
     );
@@ -184,7 +184,7 @@ export const WithTargetElement: Story = {
       <Card
         ref={cardRef}
         title="Target Element Card"
-        extra={<Fullscreen target={cardRef.current} />}
+        extra={<FullScreen target={cardRef.current} />}
         style={{ width: 400 }}
       >
         <Paragraph>
@@ -207,7 +207,7 @@ export const InToolbar: Story = {
         title="Document Viewer"
         extra={
           <Space>
-            <Fullscreen type="text" size="small" />
+            <FullScreen type="text" size="small" />
           </Space>
         }
       >
@@ -235,10 +235,10 @@ export const MultipleButtons: Story = {
         <Card
           title="Section 1"
           extra={
-            <Fullscreen
+            <FullScreen
               type="text"
-              onChange={(isFullscreen) =>
-                setStatus1(isFullscreen ? 'Fullscreen' : 'Normal')
+              onChange={(isFullScreen) =>
+                setStatus1(isFullScreen ? 'FullScreen' : 'Normal')
               }
             />
           }
@@ -252,10 +252,10 @@ export const MultipleButtons: Story = {
         <Card
           title="Section 2"
           extra={
-            <Fullscreen
+            <FullScreen
               type="text"
-              onChange={(isFullscreen) =>
-                setStatus2(isFullscreen ? 'Fullscreen' : 'Normal')
+              onChange={(isFullScreen) =>
+                setStatus2(isFullScreen ? 'FullScreen' : 'Normal')
               }
             />
           }
@@ -274,17 +274,17 @@ export const WithCustomStyling: Story = {
   render: () => {
     return (
       <Space>
-        <Fullscreen
+        <FullScreen
           type="primary"
           shape="circle"
           style={{ backgroundColor: '#1890ff' }}
         />
-        <Fullscreen
+        <FullScreen
           type="primary"
           shape="round"
           style={{ backgroundColor: '#52c41a' }}
         />
-        <Fullscreen
+        <FullScreen
           type="dashed"
           danger
           style={{ borderColor: '#ff4d4f', color: '#ff4d4f' }}

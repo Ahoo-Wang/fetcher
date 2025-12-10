@@ -11,11 +11,9 @@
  * limitations under the License.
  */
 
-import { Button, ButtonProps } from 'antd';
-import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-export interface FullscreenProps extends Omit<ButtonProps, 'icon' | 'onClick' | 'onChange' | 'target'> {
+export interface UseFullScreenOptions {
   /**
    * Target element to make fullscreen. If not provided, uses the document root element.
    */
@@ -24,28 +22,35 @@ export interface FullscreenProps extends Omit<ButtonProps, 'icon' | 'onClick' | 
    * Callback when fullscreen state changes
    */
   onChange?: (isFullscreen: boolean) => void;
+}
+
+export interface UseFullScreenResult {
   /**
-   * Custom icon for entering fullscreen
+   * Whether the target element is currently in fullscreen mode
    */
-  enterIcon?: React.ReactNode;
+  isFullscreen: boolean;
   /**
-   * Custom icon for exiting fullscreen
+   * Toggle fullscreen mode on/off
    */
-  exitIcon?: React.ReactNode;
+  toggleFullscreen: () => Promise<void>;
+  /**
+   * Enter fullscreen mode
+   */
+  enterFullscreen: () => Promise<void>;
+  /**
+   * Exit fullscreen mode
+   */
+  exitFullscreen: () => Promise<void>;
 }
 
 /**
- * A button component that toggles fullscreen mode.
- * Follows the existing component patterns in the viewer package.
+ * React hook for managing fullscreen state and actions.
+ * Provides cross-browser fullscreen API support with automatic state tracking.
  */
-export function Fullscreen(props: FullscreenProps) {
-  const {
-    target,
-    onChange,
-    enterIcon = <FullscreenOutlined />,
-    exitIcon = <FullscreenExitOutlined />,
-    ...buttonProps
-  } = props;
+export function useFullScreen(
+  options: UseFullScreenOptions = {},
+): UseFullScreenResult {
+  const { target, onChange } = options;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const targetRef = useRef<HTMLElement | null>(target || null);
@@ -91,44 +96,51 @@ export function Fullscreen(props: FullscreenProps) {
     };
   }, [onChange]);
 
-  const toggleFullscreen = useCallback(async () => {
+  const enterFullscreen = useCallback(async () => {
     try {
-      if (!isFullscreen) {
-        // Enter fullscreen
-        const element = targetRef.current || document.documentElement;
-        if (element.requestFullscreen) {
-          await element.requestFullscreen();
-        } else if ((element as any).webkitRequestFullscreen) {
-          await (element as any).webkitRequestFullscreen();
-        } else if ((element as any).mozRequestFullScreen) {
-          await (element as any).mozRequestFullScreen();
-        } else if ((element as any).msRequestFullscreen) {
-          await (element as any).msRequestFullscreen();
-        }
-      } else {
-        // Exit fullscreen
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if ((document as any).webkitExitFullscreen) {
-          await (document as any).webkitExitFullscreen();
-        } else if ((document as any).mozCancelFullScreen) {
-          await (document as any).mozCancelFullScreen();
-        } else if ((document as any).msExitFullscreen) {
-          await (document as any).msExitFullscreen();
-        }
+      const element = targetRef.current || document.documentElement;
+      if (element.requestFullscreen) {
+        await element.requestFullscreen();
+      } else if ((element as any).webkitRequestFullscreen) {
+        await (element as any).webkitRequestFullscreen();
+      } else if ((element as any).mozRequestFullScreen) {
+        await (element as any).mozRequestFullScreen();
+      } else if ((element as any).msRequestFullscreen) {
+        await (element as any).msRequestFullscreen();
       }
     } catch (error) {
-      console.error('Failed to toggle fullscreen:', error);
+      console.error('Failed to enter fullscreen:', error);
     }
-  }, [isFullscreen]);
+  }, []);
 
-  return (
-    <Button
-      {...buttonProps}
-      icon={isFullscreen ? exitIcon : enterIcon}
-      onClick={toggleFullscreen}
-    />
-  );
+  const exitFullscreen = useCallback(async () => {
+    try {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        await (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        await (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        await (document as any).msExitFullscreen();
+      }
+    } catch (error) {
+      console.error('Failed to exit fullscreen:', error);
+    }
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    if (isFullscreen) {
+      await exitFullscreen();
+    } else {
+      await enterFullscreen();
+    }
+  }, [isFullscreen, enterFullscreen, exitFullscreen]);
+
+  return {
+    isFullscreen,
+    toggleFullscreen,
+    enterFullscreen,
+    exitFullscreen,
+  };
 }
-
-Fullscreen.displayName = 'Fullscreen';
