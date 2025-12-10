@@ -13,9 +13,12 @@
 
 import { Button, ButtonProps } from 'antd';
 import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
-import { useFullScreen } from './useFullScreen';
+import { useFullscreen } from './useFullscreen';
 
-export interface FullScreenProps extends Omit<ButtonProps, 'icon' | 'onClick' | 'onChange' | 'target'> {
+export interface FullScreenProps extends Omit<
+  ButtonProps,
+  'icon' | 'onClick' | 'onChange' | 'target'
+> {
   /**
    * Target element to make fullscreen. If not provided, uses the document root element.
    */
@@ -38,7 +41,7 @@ export interface FullScreenProps extends Omit<ButtonProps, 'icon' | 'onClick' | 
  * A button component that toggles fullscreen mode.
  * Follows the existing component patterns in the viewer package.
  */
-export function FullScreen(props: FullScreenProps) {
+export function Fullscreen(props: FullScreenProps) {
   const {
     target,
     onChange,
@@ -47,7 +50,7 @@ export function FullScreen(props: FullScreenProps) {
     ...buttonProps
   } = props;
 
-  const { isFullScreen, toggle } = useFullScreen({
+  const { isFullscreen, toggle } = useFullscreen({
     target,
     onChange,
   });
@@ -55,10 +58,10 @@ export function FullScreen(props: FullScreenProps) {
   return (
     <Button
       {...buttonProps}
-      icon={isFullScreen ? exitIcon : enterIcon}
+      icon={isFullscreen ? exitIcon : enterIcon}
       onClick={toggle}
     />
   );
 }
 
-FullScreen.displayName = 'FullScreen';
+Fullscreen.displayName = 'FullScreen';

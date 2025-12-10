@@ -12,8 +12,8 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState, useRef } from 'react';
-import { FullScreen } from '../fullscreen/FullScreen';
+import { useState, useRef, useEffect } from 'react';
+import { Fullscreen } from '../fullscreen/Fullscreen';
 import { Space, Card, Typography } from 'antd';
 import {
   ExpandOutlined,
@@ -24,9 +24,9 @@ import {
 
 const { Title, Paragraph } = Typography;
 
-const meta: Meta<typeof FullScreen> = {
+const meta: Meta<typeof Fullscreen> = {
   title: 'Viewer/Components/FullScreen',
-  component: FullScreen,
+  component: Fullscreen,
   parameters: {
     layout: 'padded',
     docs: {
@@ -46,7 +46,7 @@ export const Default: Story = {
   render: () => {
     return (
       <Space>
-        <FullScreen />
+        <Fullscreen />
         <span>Click to toggle fullscreen mode</span>
       </Space>
     );
@@ -58,10 +58,12 @@ export const WithChangeCallback: Story = {
     const [message, setMessage] = useState('Not in fullscreen');
     return (
       <Space direction="vertical">
-        <FullScreen
-          onChange={(isFullScreen) => {
+        <Fullscreen
+          onChange={isFullScreen => {
             setMessage(
-              isFullScreen ? 'Entered fullscreen mode' : 'Exited fullscreen mode',
+              isFullScreen
+                ? 'Entered fullscreen mode'
+                : 'Exited fullscreen mode',
             );
           }}
         />
@@ -75,7 +77,7 @@ export const PrimaryButton: Story = {
   render: () => {
     return (
       <Space>
-        <FullScreen type="primary" />
+        <Fullscreen type="primary" />
         <span>Primary button style</span>
       </Space>
     );
@@ -86,7 +88,7 @@ export const DefaultButton: Story = {
   render: () => {
     return (
       <Space>
-        <FullScreen type="default" />
+        <Fullscreen type="default" />
         <span>Default button style</span>
       </Space>
     );
@@ -97,7 +99,7 @@ export const DashedButton: Story = {
   render: () => {
     return (
       <Space>
-        <FullScreen type="dashed" />
+        <Fullscreen type="dashed" />
         <span>Dashed button style</span>
       </Space>
     );
@@ -108,7 +110,7 @@ export const TextButton: Story = {
   render: () => {
     return (
       <Space>
-        <FullScreen type="text" />
+        <Fullscreen type="text" />
         <span>Text button style</span>
       </Space>
     );
@@ -119,7 +121,7 @@ export const LinkButton: Story = {
   render: () => {
     return (
       <Space>
-        <FullScreen type="link" />
+        <Fullscreen type="link" />
         <span>Link button style</span>
       </Space>
     );
@@ -130,7 +132,7 @@ export const CustomIcons: Story = {
   render: () => {
     return (
       <Space>
-        <FullScreen
+        <Fullscreen
           enterIcon={<ExpandOutlined />}
           exitIcon={<CompressOutlined />}
         />
@@ -144,7 +146,7 @@ export const ZoomIcons: Story = {
   render: () => {
     return (
       <Space>
-        <FullScreen
+        <Fullscreen
           enterIcon={<ZoomInOutlined />}
           exitIcon={<ZoomOutOutlined />}
         />
@@ -158,9 +160,9 @@ export const DifferentSizes: Story = {
   render: () => {
     return (
       <Space>
-        <FullScreen size="small" />
-        <FullScreen size="middle" />
-        <FullScreen size="large" />
+        <Fullscreen size="small" />
+        <Fullscreen size="middle" />
+        <Fullscreen size="large" />
       </Space>
     );
   },
@@ -170,7 +172,7 @@ export const Disabled: Story = {
   render: () => {
     return (
       <Space>
-        <FullScreen disabled />
+        <Fullscreen disabled />
         <span>Disabled button</span>
       </Space>
     );
@@ -179,24 +181,34 @@ export const Disabled: Story = {
 
 export const WithTargetElement: Story = {
   render: () => {
-    const cardRef = useRef<HTMLDivElement>(null);
-    return (
-      <Card
-        ref={cardRef}
-        title="Target Element Card"
-        extra={<FullScreen target={cardRef.current} />}
-        style={{ width: 400 }}
-      >
-        <Paragraph>
-          This card can be made fullscreen by clicking the button in the top
-          right corner.
-        </Paragraph>
-        <Paragraph>
-          When in fullscreen mode, only this card will be displayed, not the
-          entire page.
-        </Paragraph>
-      </Card>
-    );
+    const WithTargetElementComponent = () => {
+      const cardRef = useRef<HTMLDivElement>(null);
+      const [target, setTarget] = useState<HTMLDivElement | null>(null);
+
+      useEffect(() => {
+        setTarget(cardRef.current);
+      }, []);
+
+      return (
+        <Card
+          ref={cardRef}
+          title="Target Element Card"
+          extra={<Fullscreen target={target} />}
+          style={{ width: 400 }}
+        >
+          <Paragraph>
+            This card can be made fullscreen by clicking the button in the top
+            right corner.
+          </Paragraph>
+          <Paragraph>
+            When in fullscreen mode, only this card will be displayed, not the
+            entire page.
+          </Paragraph>
+        </Card>
+      );
+    };
+
+    return <WithTargetElementComponent />;
   },
 };
 
@@ -207,7 +219,7 @@ export const InToolbar: Story = {
         title="Document Viewer"
         extra={
           <Space>
-            <FullScreen type="text" size="small" />
+            <Fullscreen type="text" size="small" />
           </Space>
         }
       >
@@ -235,9 +247,9 @@ export const MultipleButtons: Story = {
         <Card
           title="Section 1"
           extra={
-            <FullScreen
+            <Fullscreen
               type="text"
-              onChange={(isFullScreen) =>
+              onChange={isFullScreen =>
                 setStatus1(isFullScreen ? 'FullScreen' : 'Normal')
               }
             />
@@ -252,9 +264,9 @@ export const MultipleButtons: Story = {
         <Card
           title="Section 2"
           extra={
-            <FullScreen
+            <Fullscreen
               type="text"
-              onChange={(isFullScreen) =>
+              onChange={isFullScreen =>
                 setStatus2(isFullScreen ? 'FullScreen' : 'Normal')
               }
             />
@@ -274,17 +286,17 @@ export const WithCustomStyling: Story = {
   render: () => {
     return (
       <Space>
-        <FullScreen
+        <Fullscreen
           type="primary"
           shape="circle"
           style={{ backgroundColor: '#1890ff' }}
         />
-        <FullScreen
+        <Fullscreen
           type="primary"
           shape="round"
           style={{ backgroundColor: '#52c41a' }}
         />
-        <FullScreen
+        <Fullscreen
           type="dashed"
           danger
           style={{ borderColor: '#ff4d4f', color: '#ff4d4f' }}
