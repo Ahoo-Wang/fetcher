@@ -57,17 +57,17 @@ export interface UseFullscreenReturn {
 export function useFullscreen(
   options: UseFullscreenOptions = {},
 ): UseFullscreenReturn {
-  const { target, onChange } = options;
+  const { target : targetRef, onChange } = options;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const handleFullscreenChange = useCallback(() => {
     const fullscreenElement = getFullscreenElement();
     const newIsFullscreen =
-      fullscreenElement === (target?.current || document.documentElement);
+      fullscreenElement === (targetRef?.current || document.documentElement);
     setIsFullscreen(newIsFullscreen);
     onChange?.(newIsFullscreen);
-  }, [target, setIsFullscreen, onChange]);
+  }, [targetRef, onChange]);
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -78,9 +78,9 @@ export function useFullscreen(
   }, [handleFullscreenChange]);
 
   const enterFullscreenFn = useCallback(async () => {
-    const element = target?.current || document.documentElement;
+    const element = targetRef?.current || document.documentElement;
     await enterFullscreen(element);
-  }, [target]);
+  }, [targetRef]);
 
   const exitFullscreenFn = useCallback(async () => {
     await exitFullscreen();
