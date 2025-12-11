@@ -32,6 +32,7 @@
   - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
   - [useDebouncedFetcher](#usedebouncedfetcher)
   - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
+  - [useDebouncedQuery](#usedebouncedquery)
   - [useExecutePromise Hook](#useexecutepromise-hook)
   - [usePromiseState Hook](#usepromisestate-hook)
   - [useRequestId Hook](#userequestid-hook)
@@ -1257,6 +1258,127 @@ const SearchComponent = () => {
 - `getQuery`: 获取当前查询参数的函数
 - `setQuery`: 更新查询参数的函数
 - `run`: 使用当前查询执行防抖获取的函数
+- `cancel`: 取消任何待处理防抖执行的函数
+- `isPending`: 返回布尔值表示防抖执行当前是否待处理的函数
+
+#### useDebouncedQuery
+
+将通用查询执行与防抖相结合，非常适合自定义查询操作，您希望根据查询参数防抖执行。
+
+```typescript jsx
+import { useDebouncedQuery } from '@ahoo-wang/fetcher-react';
+
+interface SearchQuery {
+  keyword: string;
+  limit: number;
+  filters?: { category?: string };
+}
+
+interface SearchResult {
+  items: Array<{ id: string; title: string }>;
+  total: number;
+}
+
+const SearchComponent = () => {
+  const {
+    loading,
+    result,
+    error,
+    run,
+    cancel,
+    isPending,
+    setQuery,
+    getQuery,
+  } = useDebouncedQuery<SearchQuery, SearchResult>({
+    initialQuery: { keyword: '', limit: 10 },
+    execute: async (query) => {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        body: JSON.stringify(query),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return response.json();
+    },
+    debounce: { delay: 300 }, // 防抖 300ms
+    autoExecute: false, // 挂载时不执行
+  });
+
+  const handleSearch = (keyword: string) => {
+    setQuery({ keyword, limit: 10 }); // 如果 autoExecute 为 true，这将触发防抖执行
+  };
+
+  const handleManualSearch = () => {
+    run(); // 使用当前查询手动防抖执行
+  };
+
+  const handleCancel = () => {
+    cancel(); // 取消任何待处理的防抖执行
+  };
+
+  if (loading) return <div>搜索中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="搜索..."
+      />
+      <button onClick={handleManualSearch} disabled={isPending()}>
+        {isPending() ? '搜索中...' : '搜索'}
+      </button>
+      <button onClick={handleCancel}>取消</button>
+      {result && (
+        <div>
+          找到 {result.total} 项:
+          {result.items.map(item => (
+            <div key={item.id}>{item.title}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+**主要特性:**
+
+- **查询状态管理**: 使用 `setQuery` 和 `getQuery` 自动查询参数处理
+- **防抖执行**: 在快速查询更改期间防止过多操作
+- **自动执行**: 可选的在查询参数更改时自动执行
+- **手动控制**: `run()` 用于手动执行，`cancel()` 用于取消
+- **待处理状态**: `isPending()` 检查防抖调用是否排队
+- **自定义执行**: 灵活的 execute 函数用于任何查询操作
+
+**类型参数:**
+
+- `Q`: 查询参数的类型
+- `R`: 结果的类型
+- `E`: 错误的类型（默认为 FetcherError）
+
+**参数:**
+
+- `options`: 扩展 `UseQueryOptions` 和 `DebounceCapable` 的配置对象
+  - `initialQuery`: 初始查询参数（必需）
+  - `execute`: 使用参数执行查询的函数
+  - `autoExecute?`: 挂载时或查询参数更改时是否自动执行
+  - `debounce`: 防抖配置（delay、leading、trailing）
+  - 所有来自 `UseExecutePromiseOptions` 的选项
+
+**返回:**
+
+包含以下内容的对象：
+
+- `loading`: 布尔值，表示查询当前是否正在执行
+- `result`: 查询的解析值
+- `error`: 执行期间发生的任何错误
+- `status`: 当前执行状态
+- `reset`: 重置查询状态的函数
+- `abort`: 中止当前操作的函数
+- `getQuery`: 获取当前查询参数的函数
+- `setQuery`: 更新查询参数的函数
+- `run`: 使用当前参数执行防抖查询的函数
 - `cancel`: 取消任何待处理防抖执行的函数
 - `isPending`: 返回布尔值表示防抖执行当前是否待处理的函数
 

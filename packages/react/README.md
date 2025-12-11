@@ -33,6 +33,7 @@ robust data fetching capabilities.
   - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
   - [useDebouncedFetcher](#usedebouncedfetcher)
   - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
+  - [useDebouncedQuery](#usedebouncedquery)
   - [useExecutePromise Hook](#useexecutepromise-hook)
   - [usePromiseState Hook](#usepromisestate-hook)
   - [useRequestId Hook](#userequestid-hook)
@@ -355,6 +356,96 @@ const SearchComponent = () => {
 - **Auto-Execution**: Optional automatic execution when query parameters change
 - **Manual Control**: `run()` for manual execution, `cancel()` for cancellation
 - **Pending State**: `isPending()` to check if a debounced call is queued
+
+#### useDebouncedQuery
+
+Combines general query execution with debouncing, perfect for custom query operations where you want to debounce execution based on query parameters.
+
+```typescript jsx
+import { useDebouncedQuery } from '@ahoo-wang/fetcher-react';
+
+interface SearchQuery {
+  keyword: string;
+  limit: number;
+  filters?: { category?: string };
+}
+
+interface SearchResult {
+  items: Array<{ id: string; title: string }>;
+  total: number;
+}
+
+const SearchComponent = () => {
+  const {
+    loading,
+    result,
+    error,
+    run,
+    cancel,
+    isPending,
+    setQuery,
+    getQuery,
+  } = useDebouncedQuery<SearchQuery, SearchResult>({
+    initialQuery: { keyword: '', limit: 10 },
+    execute: async (query) => {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        body: JSON.stringify(query),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return response.json();
+    },
+    debounce: { delay: 300 }, // Debounce for 300ms
+    autoExecute: false, // Don't execute on mount
+  });
+
+  const handleSearch = (keyword: string) => {
+    setQuery({ keyword, limit: 10 }); // This will trigger debounced execution if autoExecute was true
+  };
+
+  const handleManualSearch = () => {
+    run(); // Manual debounced execution with current query
+  };
+
+  const handleCancel = () => {
+    cancel(); // Cancel any pending debounced execution
+  };
+
+  if (loading) return <div>Searching...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="Search..."
+      />
+      <button onClick={handleManualSearch} disabled={isPending()}>
+        {isPending() ? 'Searching...' : 'Search'}
+      </button>
+      <button onClick={handleCancel}>Cancel</button>
+      {result && (
+        <div>
+          Found {result.total} items:
+          {result.items.map(item => (
+            <div key={item.id}>{item.title}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+**Key Features:**
+
+- **Query State Management**: Automatic query parameter handling with `setQuery` and `getQuery`
+- **Debounced Execution**: Prevents excessive operations during rapid query changes
+- **Auto-Execution**: Optional automatic execution when query parameters change
+- **Manual Control**: `run()` for manual execution, `cancel()` for cancellation
+- **Pending State**: `isPending()` to check if a debounced call is queued
+- **Custom Execution**: Flexible execute function for any query operation
 
 ### useExecutePromise Hook
 
@@ -2387,6 +2478,47 @@ An object containing:
 - `getQuery`: Function to get the current query parameters
 - `setQuery`: Function to update query parameters
 - `run`: Function to execute the debounced fetch with current query
+- `cancel`: Function to cancel any pending debounced execution
+- `isPending`: Function that returns true if a debounced execution is currently pending
+
+#### useDebouncedQuery
+
+```typescript
+function useDebouncedQuery<Q, R, E = FetcherError>(
+  options: UseDebouncedQueryOptions<Q, R, E>,
+): UseDebouncedQueryReturn<Q, R, E>;
+```
+
+Combines general query execution with debouncing, perfect for custom query operations.
+
+**Type Parameters:**
+
+- `Q`: The type of the query parameters
+- `R`: The type of the result
+- `E`: The type of the error (defaults to FetcherError)
+
+**Parameters:**
+
+- `options`: Configuration object extending `UseQueryOptions` and `DebounceCapable`
+  - `initialQuery`: Initial query parameters (required)
+  - `execute`: Function to execute the query with parameters
+  - `autoExecute?`: Whether to execute automatically on mount or query changes
+  - `debounce`: Debounce configuration (delay, leading, trailing)
+  - All options from `UseExecutePromiseOptions`
+
+**Returns:**
+
+An object containing:
+
+- `loading`: Boolean indicating if the query is currently executing
+- `result`: The resolved value of the query
+- `error`: Any error that occurred during execution
+- `status`: Current execution status
+- `reset`: Function to reset the query state
+- `abort`: Function to abort the current operation
+- `getQuery`: Function to get the current query parameters
+- `setQuery`: Function to update query parameters
+- `run`: Function to execute the debounced query with current parameters
 - `cancel`: Function to cancel any pending debounced execution
 - `isPending`: Function that returns true if a debounced execution is currently pending
 
