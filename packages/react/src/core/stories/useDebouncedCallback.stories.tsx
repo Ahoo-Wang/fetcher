@@ -162,7 +162,7 @@ function DebouncedCallbackDemo({
                 <Button
                   type="primary"
                   onClick={handleManualTrigger}
-                  disabled={isPending()}
+                  // disabled={isPending()}
                   block
                 >
                   {isPending() ? 'Pending...' : 'Trigger Manual Call'}
