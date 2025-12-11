@@ -20,6 +20,7 @@ import {
 } from './usePromiseState';
 import { useRequestId } from './useRequestId';
 import { FetcherError } from '@ahoo-wang/fetcher';
+import { useLatest } from './useLatest';
 
 /**
  * Configuration options for the useExecutePromise hook.
@@ -222,15 +223,15 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
   const requestId = useRequestId();
   const abortControllerRef = useRef<AbortController | undefined>(undefined);
   const propagateError = options?.propagateError;
-  const onAbort = options?.onAbort;
+  const onAbortRef = useLatest(options?.onAbort);
   const handleOnAbort = useCallback(async () => {
     // Call onAbort callback when automatically cancelling previous request
     try {
-      await onAbort?.();
+      await onAbortRef.current?.();
     } catch (callbackError) {
       console.warn('useExecutePromise onAbort callback error:', callbackError);
     }
-  }, [onAbort]);
+  }, [onAbortRef]);
   /**
    * Execute a promise supplier with automatic abort support.
    * Automatically cancels any previous ongoing request before starting a new one.
