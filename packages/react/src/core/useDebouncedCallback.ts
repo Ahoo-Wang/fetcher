@@ -93,63 +93,78 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
       'useDebouncedCallback: at least one of leading or trailing must be true',
     );
   }
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
-  const hasLeadingCalledRef = useRef(false);
+
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lastArgsRef = useRef<Parameters<T> | null>(null);
+  const lastInvokeTimeRef = useRef<number | null>(null);
+
   const latestCallback = useLatest(callback);
   const latestOptions = useLatest(options);
 
-  const isPending = useCallback(() => {
-    return timeoutRef.current !== undefined;
-  }, []);
-
-  // Function to cancel any pending debounced execution
-  const cancel = useCallback(() => {
+  const cleanTimeout = useCallback(() => {
     if (timeoutRef.current !== undefined) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = undefined;
     }
   }, []);
 
-  // Cleanup timeout on component unmount to prevent memory leaks
+  const shouldInvoke = useCallback((time: number) => {
+    if (!lastInvokeTimeRef.current) {
+      return true;
+    }
+    const timeSinceLastInvoke = time - lastInvokeTimeRef.current;
+    return timeSinceLastInvoke >= latestOptions.current.delay;
+  }, [latestOptions]);
+
+  const invokeCallback = useCallback((time: number, args: Parameters<T>) => {
+    lastInvokeTimeRef.current = time;
+    latestCallback.current(...args);
+  }, [latestCallback]);
+
+  const scheduleTrailing = useCallback(() => {
+    timeoutRef.current = setTimeout(() => {
+      if (lastArgsRef.current) {
+        const trailingTime = Date.now();
+        invokeCallback(trailingTime, lastArgsRef.current);
+      }
+      timeoutRef.current = undefined;
+    }, latestOptions.current.delay);
+  }, [latestOptions, invokeCallback]);
+
+  const run = useCallback(
+    (...args: Parameters<T>) => {
+      cleanTimeout();
+      const { leading = false, trailing = true } = latestOptions.current;
+      lastArgsRef.current = args;
+      if (trailing && !leading) {
+        scheduleTrailing();
+        return;
+      }
+
+      const currentTime = Date.now();
+      const shouldCallLeading = leading && shouldInvoke(currentTime);
+      if (shouldCallLeading) {
+        invokeCallback(currentTime, args);
+        return;
+      }
+      if (trailing) {
+        scheduleTrailing();
+      }
+    },
+    [latestOptions, cleanTimeout, shouldInvoke, invokeCallback, scheduleTrailing],
+  );
+  const cancel = useCallback(() => {
+    cleanTimeout();
+    lastArgsRef.current = null;
+  }, [cleanTimeout]);
+  const isPending = useCallback(() => {
+    return timeoutRef.current !== undefined;
+  }, []);
   useEffect(() => {
     return () => {
       cancel();
     };
   }, [cancel]);
-
-  // The debounced function that can be called
-  const run = useCallback(
-    (...args: Parameters<T>) => {
-      const { leading = false, trailing = true, delay } = latestOptions.current;
-      // Cancel any existing timeout to reset the debounce timer
-      cancel();
-
-      // Determine if we should call the function immediately (leading edge)
-      const shouldCallLeading = leading && !hasLeadingCalledRef.current;
-
-      if (shouldCallLeading) {
-        latestCallback.current(...args);
-        hasLeadingCalledRef.current = true;
-      }
-
-      // Schedule the trailing edge execution if enabled
-      if (trailing) {
-        timeoutRef.current = setTimeout(() => {
-          // Only call on trailing edge if not already called on leading edge
-          // Use ref value instead of closure value to avoid stale closures
-          if (!hasLeadingCalledRef.current) {
-            latestCallback.current(...args);
-          }
-          // Reset leading flag and timeout reference after execution
-          hasLeadingCalledRef.current = false;
-          timeoutRef.current = undefined;
-        }, delay);
-      }
-    },
-    [latestCallback, latestOptions, cancel],
-  );
 
   return useMemo(
     () => ({
