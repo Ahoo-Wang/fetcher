@@ -26,33 +26,41 @@ robust data fetching capabilities.
 ## Table of Contents
 
 - [Installation](#installation)
+- [Quick Start](#quick-start)
 - [Usage](#usage)
-  - [useFetcher Hook](#usefetcher-hook)
+  - [Core Hooks](#core-hooks)
+    - [useFetcher](#usefetcher-hook)
+    - [useExecutePromise](#useexecutepromise-hook)
+    - [usePromiseState](#usepromisestate-hook)
   - [Debounced Hooks](#debounced-hooks)
-  - [useDebouncedCallback](#usedebouncedcallback)
-  - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
-  - [useDebouncedFetcher](#usedebouncedfetcher)
-  - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
-  - [useDebouncedQuery](#usedebouncedquery)
-  - [useExecutePromise Hook](#useexecutepromise-hook)
-  - [usePromiseState Hook](#usepromisestate-hook)
-  - [useRequestId Hook](#userequestid-hook)
-  - [useLatest Hook](#uselatest-hook)
-- [useRefs Hook](#userefs-hook)
-- [useEventSubscription Hook](#useeventsubscription-hook)
-- [useKeyStorage Hook](#usekeystorage-hook)
-  - [useImmerKeyStorage Hook](#useimmerkeystorage-hook)
-- [Wow Query Hooks](#wow-query-hooks)
-  - [useListQuery Hook](#uselistquery-hook)
-  - [usePagedQuery Hook](#usepagedquery-hook)
-  - [useSingleQuery Hook](#usesinglequery-hook)
-  - [useCountQuery Hook](#usecountquery-hook)
-  - [useFetcherCountQuery Hook](#usefetchercountquery-hook)
-  - [useFetcherPagedQuery Hook](#usefetcherpagedquery-hook)
-  - [useFetcherListQuery Hook](#usefetcherlistquery-hook)
-  - [useFetcherListStreamQuery Hook](#usefetcherliststreamquery-hook)
-  - [useFetcherSingleQuery Hook](#usefetchersinglequery-hook)
-  - [useListStreamQuery Hook](#useliststreamquery-hook)
+    - [useDebouncedCallback](#usedebouncedcallback)
+    - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
+    - [useDebouncedFetcher](#usedebouncedfetcher)
+    - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
+    - [useDebouncedQuery](#usedebouncedquery)
+  - [Utility Hooks](#utility-hooks)
+    - [useRequestId](#userequestid-hook)
+    - [useLatest](#uselatest-hook)
+    - [useRefs](#userefs-hook)
+  - [Storage Hooks](#storage-hooks)
+    - [useKeyStorage](#usekeystorage-hook)
+    - [useImmerKeyStorage](#useimmerkeystorage-hook)
+  - [Event Hooks](#event-hooks)
+    - [useEventSubscription](#useeventsubscription-hook)
+  - [Wow Query Hooks](#wow-query-hooks)
+    - [Basic Query Hooks](#basic-query-hooks)
+      - [useListQuery](#uselistquery-hook)
+      - [usePagedQuery](#usepagedquery-hook)
+      - [useSingleQuery](#usesinglequery-hook)
+      - [useCountQuery](#usecountquery-hook)
+    - [Fetcher Query Hooks](#fetcher-query-hooks)
+      - [useFetcherListQuery](#usefetcherlistquery-hook)
+      - [useFetcherPagedQuery](#usefetcherpagedquery-hook)
+      - [useFetcherSingleQuery](#usefetchersinglequery-hook)
+      - [useFetcherCountQuery](#usefetchercountquery-hook)
+    - [Stream Query Hooks](#stream-query-hooks)
+      - [useListStreamQuery](#useliststreamquery-hook)
+      - [useFetcherListStreamQuery](#usefetcherliststreamquery-hook)
 - [Best Practices](#best-practices)
 - [API Reference](#api-reference)
 - [License](#license)
@@ -93,7 +101,9 @@ function App() {
 
 ## Usage
 
-### useFetcher Hook
+### Core Hooks
+
+#### useFetcher Hook
 
 The `useFetcher` hook provides complete data fetching capabilities with automatic state management, race condition
 protection, and flexible configuration options. It includes built-in AbortController support inherited from `useExecutePromise`.
@@ -561,7 +571,9 @@ const MyComponent = () => {
 };
 ```
 
-### useRequestId Hook
+### Utility Hooks
+
+#### useRequestId Hook
 
 The `useRequestId` hook provides request ID management for preventing race conditions in async operations.
 
@@ -656,7 +668,9 @@ Key features:
 - **Automatic Cleanup**: Refs are cleared when component unmounts
 - **Type Safety**: Full TypeScript support for ref types
 
-### useEventSubscription Hook
+### Event Hooks
+
+#### useEventSubscription Hook
 
 The `useEventSubscription` hook provides a React interface for subscribing to typed event buses. It automatically manages subscription lifecycle while offering manual control functions for additional flexibility.
 
@@ -697,7 +711,9 @@ Key features:
 - **Error Handling**: Logs warnings for failed subscription attempts
 - **Event Bus Integration**: Works seamlessly with `@ahoo-wang/fetcher-eventbus` TypedEventBus instances
 
-### useKeyStorage Hook
+### Storage Hooks
+
+#### useKeyStorage Hook
 
 The `useKeyStorage` hook provides reactive state management for a KeyStorage instance. It subscribes to storage changes and returns the current value along with a setter function. Optionally accepts a default value to use when the storage is empty.
 
@@ -1037,7 +1053,9 @@ The Wow Query Hooks provide advanced data querying capabilities with built-in st
 projections, sorting, pagination, and limits. These hooks are designed to work with the `@ahoo-wang/fetcher-wow` package
 for complex query operations.
 
-### useListQuery Hook
+### Basic Query Hooks
+
+#### useListQuery Hook
 
 The `useListQuery` hook manages list queries with state management for conditions, projections, sorting, and limits.
 
@@ -1308,7 +1326,9 @@ const MyComponent = () => {
 };
 ```
 
-### useFetcherCountQuery Hook
+### Fetcher Query Hooks
+
+#### useFetcherCountQuery Hook
 
 The `useFetcherCountQuery` hook is a specialized React hook for performing count queries using the Fetcher library. It is designed for scenarios where you need to retrieve the count of records that match a specific condition, returning a number representing the count.
 
@@ -1749,7 +1769,9 @@ const MyComponent = () => {
 };
 ```
 
-### useListStreamQuery Hook
+### Stream Query Hooks
+
+#### useListStreamQuery Hook
 
 The `useListStreamQuery` hook manages list stream queries that return a readable stream of server-sent events.
 
