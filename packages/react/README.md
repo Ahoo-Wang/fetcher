@@ -29,9 +29,10 @@ robust data fetching capabilities.
 - [Usage](#usage)
   - [useFetcher Hook](#usefetcher-hook)
   - [Debounced Hooks](#debounced-hooks)
-    - [useDebouncedCallback](#usedebouncedcallback)
-    - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
-    - [useDebouncedFetcher](#usedebouncedfetcher)
+  - [useDebouncedCallback](#usedebouncedcallback)
+  - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
+  - [useDebouncedFetcher](#usedebouncedfetcher)
+  - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
   - [useExecutePromise Hook](#useexecutepromise-hook)
   - [usePromiseState Hook](#usepromisestate-hook)
   - [useRequestId Hook](#userequestid-hook)
@@ -272,6 +273,88 @@ const SearchInput = () => {
 - **Leading Edge**: Execute immediately on first call, then debounce subsequent calls
 - **Trailing Edge**: Execute after delay on last call (default behavior)
 - **Leading + Trailing**: Execute immediately, then again after delay if called again
+
+#### useDebouncedFetcherQuery
+
+Combines query-based HTTP fetching with debouncing, perfect for search inputs and dynamic query scenarios where you want to debounce API calls based on query parameters.
+
+```typescript jsx
+import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
+
+interface SearchQuery {
+  keyword: string;
+  limit: number;
+  filters?: { category?: string };
+}
+
+interface SearchResult {
+  items: Array<{ id: string; title: string }>;
+  total: number;
+}
+
+const SearchComponent = () => {
+  const {
+    loading,
+    result,
+    error,
+    run,
+    cancel,
+    isPending,
+    setQuery,
+    getQuery,
+  } = useDebouncedFetcherQuery<SearchQuery, SearchResult>({
+    url: '/api/search',
+    initialQuery: { keyword: '', limit: 10 },
+    debounce: { delay: 300 }, // Debounce for 300ms
+    autoExecute: false, // Don't execute on mount
+  });
+
+  const handleSearch = (keyword: string) => {
+    setQuery({ keyword, limit: 10 }); // This will trigger debounced execution if autoExecute was true
+  };
+
+  const handleManualSearch = () => {
+    run(); // Manual debounced execution with current query
+  };
+
+  const handleCancel = () => {
+    cancel(); // Cancel any pending debounced execution
+  };
+
+  if (loading) return <div>Searching...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="Search..."
+      />
+      <button onClick={handleManualSearch} disabled={isPending()}>
+        {isPending() ? 'Searching...' : 'Search'}
+      </button>
+      <button onClick={handleCancel}>Cancel</button>
+      {result && (
+        <div>
+          Found {result.total} items:
+          {result.items.map(item => (
+            <div key={item.id}>{item.title}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+**Key Features:**
+
+- **Query State Management**: Automatic query parameter handling with `setQuery` and `getQuery`
+- **Debounced Execution**: Prevents excessive API calls during rapid user input
+- **Auto-Execution**: Optional automatic execution when query parameters change
+- **Manual Control**: `run()` for manual execution, `cancel()` for cancellation
+- **Pending State**: `isPending()` to check if a debounced call is queued
 
 ### useExecutePromise Hook
 
@@ -2265,6 +2348,47 @@ An object containing:
 - `run`: Function to execute the debounced fetch with request parameters
 - `cancel`: Function to cancel any pending debounced execution
 - `isPending`: Boolean indicating if a debounced call is pending
+
+#### useDebouncedFetcherQuery
+
+```typescript
+function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
+  options: UseDebouncedFetcherQueryOptions<Q, R, E>,
+): UseDebouncedFetcherQueryReturn<Q, R, E>;
+```
+
+Combines query-based HTTP fetching with debouncing, perfect for search inputs and dynamic query scenarios.
+
+**Type Parameters:**
+
+- `Q`: The type of the query parameters
+- `R`: The type of the fetch result
+- `E`: The type of the error (defaults to FetcherError)
+
+**Parameters:**
+
+- `options`: Configuration object extending `UseFetcherQueryOptions` and `DebounceCapable`
+  - `url`: The API endpoint URL (required)
+  - `initialQuery`: Initial query parameters (required)
+  - `autoExecute?`: Whether to execute automatically on mount or query changes
+  - `debounce`: Debounce configuration (delay, leading, trailing)
+  - HTTP request options (method, headers, timeout, etc.)
+
+**Returns:**
+
+An object containing:
+
+- `loading`: Boolean indicating if the fetch is currently executing
+- `result`: The resolved value of the fetch
+- `error`: Any error that occurred during execution
+- `status`: Current execution status
+- `reset`: Function to reset the fetcher state
+- `abort`: Function to abort the current operation
+- `getQuery`: Function to get the current query parameters
+- `setQuery`: Function to update query parameters
+- `run`: Function to execute the debounced fetch with current query
+- `cancel`: Function to cancel any pending debounced execution
+- `isPending`: Function that returns true if a debounced execution is currently pending
 
 ### useFetcher
 
