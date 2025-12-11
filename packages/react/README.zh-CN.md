@@ -63,7 +63,7 @@ npm install @ahoo-wang/fetcher-react
 
 ### 要求
 
-- React 16.8+ (hooks 支持)
+- React 19.0+ (hooks 支持)
 - TypeScript 4.0+ (完整类型安全)
 
 ## 快速开始

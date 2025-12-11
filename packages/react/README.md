@@ -64,7 +64,7 @@ npm install @ahoo-wang/fetcher-react
 
 ### Requirements
 
-- React 16.8+ (hooks support)
+- React 19.0+ (hooks support)
 - TypeScript 4.0+ (for full type safety)
 
 ## Quick Start
