@@ -14,3 +14,4 @@
 export * from './TagInput';
 export * from './NumberRange';
 export * from './RemoteSelect';
+export * from './fullscreen';

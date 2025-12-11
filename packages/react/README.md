@@ -26,26 +26,41 @@ robust data fetching capabilities.
 ## Table of Contents
 
 - [Installation](#installation)
+- [Quick Start](#quick-start)
 - [Usage](#usage)
-  - [useFetcher Hook](#usefetcher-hook)
+  - [Core Hooks](#core-hooks)
+    - [useFetcher](#usefetcher-hook)
+    - [useExecutePromise](#useexecutepromise-hook)
+    - [usePromiseState](#usepromisestate-hook)
   - [Debounced Hooks](#debounced-hooks)
     - [useDebouncedCallback](#usedebouncedcallback)
     - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
     - [useDebouncedFetcher](#usedebouncedfetcher)
-  - [useExecutePromise Hook](#useexecutepromise-hook)
-  - [usePromiseState Hook](#usepromisestate-hook)
-  - [useRequestId Hook](#userequestid-hook)
-  - [useLatest Hook](#uselatest-hook)
-- [useRefs Hook](#userefs-hook)
-- [useEventSubscription Hook](#useeventsubscription-hook)
-- [useKeyStorage Hook](#usekeystorage-hook)
-  - [useImmerKeyStorage Hook](#useimmerkeystorage-hook)
+    - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
+    - [useDebouncedQuery](#usedebouncedquery)
+  - [Utility Hooks](#utility-hooks)
+    - [useRequestId](#userequestid-hook)
+    - [useLatest](#uselatest-hook)
+    - [useRefs](#userefs-hook)
+  - [Storage Hooks](#storage-hooks)
+    - [useKeyStorage](#usekeystorage-hook)
+    - [useImmerKeyStorage](#useimmerkeystorage-hook)
+  - [Event Hooks](#event-hooks)
+    - [useEventSubscription](#useeventsubscription-hook)
   - [Wow Query Hooks](#wow-query-hooks)
-  - [useListQuery Hook](#uselistquery-hook)
-  - [usePagedQuery Hook](#usepagedquery-hook)
-  - [useSingleQuery Hook](#usesinglequery-hook)
-  - [useCountQuery Hook](#usecountquery-hook)
-  - [useListStreamQuery Hook](#useliststreamquery-hook)
+    - [Basic Query Hooks](#basic-query-hooks)
+      - [useListQuery](#uselistquery-hook)
+      - [usePagedQuery](#usepagedquery-hook)
+      - [useSingleQuery](#usesinglequery-hook)
+      - [useCountQuery](#usecountquery-hook)
+    - [Fetcher Query Hooks](#fetcher-query-hooks)
+      - [useFetcherListQuery](#usefetcherlistquery-hook)
+      - [useFetcherPagedQuery](#usefetcherpagedquery-hook)
+      - [useFetcherSingleQuery](#usefetchersinglequery-hook)
+      - [useFetcherCountQuery](#usefetchercountquery-hook)
+    - [Stream Query Hooks](#stream-query-hooks)
+      - [useListStreamQuery](#useliststreamquery-hook)
+      - [useFetcherListStreamQuery](#usefetcherliststreamquery-hook)
 - [Best Practices](#best-practices)
 - [API Reference](#api-reference)
 - [License](#license)
@@ -58,7 +73,7 @@ npm install @ahoo-wang/fetcher-react
 
 ### Requirements
 
-- React 16.8+ (hooks support)
+- React 19.0+ (hooks support)
 - TypeScript 4.0+ (for full type safety)
 
 ## Quick Start
@@ -86,7 +101,9 @@ function App() {
 
 ## Usage
 
-### useFetcher Hook
+### Core Hooks
+
+#### useFetcher Hook
 
 The `useFetcher` hook provides complete data fetching capabilities with automatic state management, race condition
 protection, and flexible configuration options. It includes built-in AbortController support inherited from `useExecutePromise`.
@@ -268,6 +285,178 @@ const SearchInput = () => {
 - **Trailing Edge**: Execute after delay on last call (default behavior)
 - **Leading + Trailing**: Execute immediately, then again after delay if called again
 
+#### useDebouncedFetcherQuery
+
+Combines query-based HTTP fetching with debouncing, perfect for search inputs and dynamic query scenarios where you want to debounce API calls based on query parameters.
+
+```typescript jsx
+import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
+
+interface SearchQuery {
+  keyword: string;
+  limit: number;
+  filters?: { category?: string };
+}
+
+interface SearchResult {
+  items: Array<{ id: string; title: string }>;
+  total: number;
+}
+
+const SearchComponent = () => {
+  const {
+    loading,
+    result,
+    error,
+    run,
+    cancel,
+    isPending,
+    setQuery,
+    getQuery,
+  } = useDebouncedFetcherQuery<SearchQuery, SearchResult>({
+    url: '/api/search',
+    initialQuery: { keyword: '', limit: 10 },
+    debounce: { delay: 300 }, // Debounce for 300ms
+    autoExecute: false, // Don't execute on mount
+  });
+
+  const handleSearch = (keyword: string) => {
+    setQuery({ keyword, limit: 10 }); // This will trigger debounced execution if autoExecute was true
+  };
+
+  const handleManualSearch = () => {
+    run(); // Manual debounced execution with current query
+  };
+
+  const handleCancel = () => {
+    cancel(); // Cancel any pending debounced execution
+  };
+
+  if (loading) return <div>Searching...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="Search..."
+      />
+      <button onClick={handleManualSearch} disabled={isPending()}>
+        {isPending() ? 'Searching...' : 'Search'}
+      </button>
+      <button onClick={handleCancel}>Cancel</button>
+      {result && (
+        <div>
+          Found {result.total} items:
+          {result.items.map(item => (
+            <div key={item.id}>{item.title}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+**Key Features:**
+
+- **Query State Management**: Automatic query parameter handling with `setQuery` and `getQuery`
+- **Debounced Execution**: Prevents excessive API calls during rapid user input
+- **Auto-Execution**: Optional automatic execution when query parameters change
+- **Manual Control**: `run()` for manual execution, `cancel()` for cancellation
+- **Pending State**: `isPending()` to check if a debounced call is queued
+
+#### useDebouncedQuery
+
+Combines general query execution with debouncing, perfect for custom query operations where you want to debounce execution based on query parameters.
+
+```typescript jsx
+import { useDebouncedQuery } from '@ahoo-wang/fetcher-react';
+
+interface SearchQuery {
+  keyword: string;
+  limit: number;
+  filters?: { category?: string };
+}
+
+interface SearchResult {
+  items: Array<{ id: string; title: string }>;
+  total: number;
+}
+
+const SearchComponent = () => {
+  const {
+    loading,
+    result,
+    error,
+    run,
+    cancel,
+    isPending,
+    setQuery,
+    getQuery,
+  } = useDebouncedQuery<SearchQuery, SearchResult>({
+    initialQuery: { keyword: '', limit: 10 },
+    execute: async (query) => {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        body: JSON.stringify(query),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return response.json();
+    },
+    debounce: { delay: 300 }, // Debounce for 300ms
+    autoExecute: false, // Don't execute on mount
+  });
+
+  const handleSearch = (keyword: string) => {
+    setQuery({ keyword, limit: 10 }); // This will trigger debounced execution if autoExecute was true
+  };
+
+  const handleManualSearch = () => {
+    run(); // Manual debounced execution with current query
+  };
+
+  const handleCancel = () => {
+    cancel(); // Cancel any pending debounced execution
+  };
+
+  if (loading) return <div>Searching...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="Search..."
+      />
+      <button onClick={handleManualSearch} disabled={isPending()}>
+        {isPending() ? 'Searching...' : 'Search'}
+      </button>
+      <button onClick={handleCancel}>Cancel</button>
+      {result && (
+        <div>
+          Found {result.total} items:
+          {result.items.map(item => (
+            <div key={item.id}>{item.title}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+**Key Features:**
+
+- **Query State Management**: Automatic query parameter handling with `setQuery` and `getQuery`
+- **Debounced Execution**: Prevents excessive operations during rapid query changes
+- **Auto-Execution**: Optional automatic execution when query parameters change
+- **Manual Control**: `run()` for manual execution, `cancel()` for cancellation
+- **Pending State**: `isPending()` to check if a debounced call is queued
+- **Custom Execution**: Flexible execute function for any query operation
+
 ### useExecutePromise Hook
 
 The `useExecutePromise` hook manages asynchronous operations with automatic state handling, built-in race condition
@@ -382,7 +571,9 @@ const MyComponent = () => {
 };
 ```
 
-### useRequestId Hook
+### Utility Hooks
+
+#### useRequestId Hook
 
 The `useRequestId` hook provides request ID management for preventing race conditions in async operations.
 
@@ -477,7 +668,9 @@ Key features:
 - **Automatic Cleanup**: Refs are cleared when component unmounts
 - **Type Safety**: Full TypeScript support for ref types
 
-### useEventSubscription Hook
+### Event Hooks
+
+#### useEventSubscription Hook
 
 The `useEventSubscription` hook provides a React interface for subscribing to typed event buses. It automatically manages subscription lifecycle while offering manual control functions for additional flexibility.
 
@@ -518,7 +711,9 @@ Key features:
 - **Error Handling**: Logs warnings for failed subscription attempts
 - **Event Bus Integration**: Works seamlessly with `@ahoo-wang/fetcher-eventbus` TypedEventBus instances
 
-### useKeyStorage Hook
+### Storage Hooks
+
+#### useKeyStorage Hook
 
 The `useKeyStorage` hook provides reactive state management for a KeyStorage instance. It subscribes to storage changes and returns the current value along with a setter function. Optionally accepts a default value to use when the storage is empty.
 
@@ -858,7 +1053,9 @@ The Wow Query Hooks provide advanced data querying capabilities with built-in st
 projections, sorting, pagination, and limits. These hooks are designed to work with the `@ahoo-wang/fetcher-wow` package
 for complex query operations.
 
-### useListQuery Hook
+### Basic Query Hooks
+
+#### useListQuery Hook
 
 The `useListQuery` hook manages list queries with state management for conditions, projections, sorting, and limits.
 
@@ -1129,7 +1326,452 @@ const MyComponent = () => {
 };
 ```
 
-### useListStreamQuery Hook
+### Fetcher Query Hooks
+
+#### useFetcherCountQuery Hook
+
+The `useFetcherCountQuery` hook is a specialized React hook for performing count queries using the Fetcher library. It is designed for scenarios where you need to retrieve the count of records that match a specific condition, returning a number representing the count.
+
+```typescript jsx
+import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
+import { all } from '@ahoo-wang/fetcher-wow';
+function UserCountComponent() {
+  const { data: count, loading, error, execute } = useFetcherCountQuery({
+    url: '/api/users/count',
+    initialQuery: all(),
+    autoExecute: true,
+  });
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  return (
+    <div>
+      <div>Total active users: {count}</div>
+      <button onClick={execute}>Refresh Count</button>
+    </div>
+  );
+}
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
+const MyComponent = () => {
+  const { data: count, loading, error, execute } = useFetcherCountQuery({
+    url: '/api/users/count',
+    initialQuery: { status: 'active' },
+    autoExecute: true, // Automatically execute on component mount
+  });
+  // The query will execute automatically when the component mounts
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  return (
+    <div>
+      <p>Total active users: {count}</p>
+    </div>
+  );
+};
+```
+
+### useFetcherPagedQuery Hook
+
+The `useFetcherPagedQuery` hook is a specialized React hook for performing paged queries using the Fetcher library. It is designed for scenarios where you need to retrieve paginated data that matches a query condition, returning a PagedList containing the items for the current page along with pagination metadata.
+
+```typescript jsx
+import { useFetcherPagedQuery } from '@ahoo-wang/fetcher-react';
+import { pagedQuery, contains, pagination, desc } from '@ahoo-wang/fetcher-wow';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+function UserListComponent() {
+  const {
+    data: pagedList,
+    loading,
+    error,
+    execute,
+    setQuery,
+    getQuery
+  } = useFetcherPagedQuery<User, keyof User>({
+    url: '/api/users/paged',
+    initialQuery: pagedQuery({
+      condition: contains('name', 'John'),
+      sort: [desc('createdAt')],
+      pagination: pagination({ index: 1, size: 10 })
+    }),
+    autoExecute: true,
+  });
+
+  const goToPage = (page: number) => {
+    const currentQuery = getQuery();
+    setQuery({
+      ...currentQuery,
+      pagination: { ...currentQuery.pagination, index: page }
+    });
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>Users</h2>
+      <ul>
+        {pagedList.list.map(user => (
+          <li key={user.id}>{user.name} - {user.email}</li>
+        ))}
+      </ul>
+      <div>
+        <span>Total: {pagedList.total} users</span>
+        <button onClick={() => goToPage(1)} disabled={pagedList.pagination.index === 1}>
+          First
+        </button>
+        <button onClick={() => goToPage(pagedList.pagination.index - 1)} disabled={pagedList.pagination.index === 1}>
+          Previous
+        </button>
+        <span>Page {pagedList.pagination.index}</span>
+        <button onClick={() => goToPage(pagedList.pagination.index + 1)}>
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useFetcherPagedQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { data: pagedList, loading, error, execute } = useFetcherPagedQuery({
+    url: '/api/products/paged',
+    initialQuery: {
+      condition: { category: 'electronics' },
+      pagination: { index: 1, size: 20 },
+      projection: {},
+      sort: []
+    },
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>Products</h2>
+      <div>Total: {pagedList.total}</div>
+      <ul>
+        {pagedList.list.map(product => (
+          <li key={product.id}>{product.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
+### useFetcherListQuery Hook
+
+The `useFetcherListQuery` hook is a specialized React hook for performing list queries using the Fetcher library. It is designed for fetching lists of items with support for filtering, sorting, and pagination through the ListQuery type, returning an array of results.
+
+```typescript jsx
+import { useFetcherListQuery } from '@ahoo-wang/fetcher-react';
+import { listQuery, contains, desc } from '@ahoo-wang/fetcher-wow';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+function UserListComponent() {
+  const {
+    loading,
+    result: users,
+    error,
+    execute,
+    setQuery,
+    getQuery,
+  } = useFetcherListQuery<User, keyof User>({
+    url: '/api/users/list',
+    initialQuery: listQuery({
+      condition: contains('name', 'John'),
+      sort: [desc('createdAt')],
+      limit: 10,
+    }),
+    autoExecute: true,
+  });
+
+  const loadMore = () => {
+    const currentQuery = getQuery();
+    setQuery({
+      ...currentQuery,
+      limit: (currentQuery.limit || 10) + 10,
+    });
+  };
+
+  if (loading) return <div>Loading users...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>Users ({users?.length || 0})</h2>
+      <ul>
+        {users?.map(user => (
+          <li key={user.id}>
+            {user.name} - {user.email}
+          </li>
+        ))}
+      </ul>
+      <button onClick={loadMore}>Load More</button>
+      <button onClick={execute}>Refresh list</button>
+    </div>
+  );
+}
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useFetcherListQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result: products, loading, error, execute } = useFetcherListQuery({
+    url: '/api/products/list',
+    initialQuery: {
+      condition: { category: 'electronics' },
+      projection: {},
+      sort: [],
+      limit: 20
+    },
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>Products</h2>
+      <ul>
+        {products?.map(product => (
+          <li key={product.id}>{product.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
+### useFetcherListStreamQuery Hook
+
+The `useFetcherListStreamQuery` hook is a specialized React hook for performing list stream queries using the Fetcher library with server-sent events. It is designed for scenarios where you need to retrieve a stream of data that matches a list query condition, returning a ReadableStream of JSON server-sent events for real-time data streaming.
+
+```typescript jsx
+import { useFetcherListStreamQuery } from '@ahoo-wang/fetcher-react';
+import { listQuery, contains } from '@ahoo-wang/fetcher-wow';
+import { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
+import { useEffect, useRef } from 'react';
+
+interface User {
+  id: number;
+  name: string;
+}
+
+function UserStreamComponent() {
+  const { data: stream, loading, error, execute } = useFetcherListStreamQuery<User, 'id' | 'name'>({
+    url: '/api/users/stream',
+    initialQuery: listQuery({
+      condition: contains('name', 'John'),
+      limit: 10,
+    }),
+    autoExecute: true,
+  });
+
+  const messagesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (stream) {
+      const reader = stream.getReader();
+      const readStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            // Process the JsonServerSentEvent<User>
+            const newUser = value.data;
+            if (messagesRef.current) {
+              const div = document.createElement('div');
+              div.textContent = `New user: ${newUser.name}`;
+              messagesRef.current.appendChild(div);
+            }
+          }
+        } catch (err) {
+          console.error('Stream error:', err);
+        }
+      };
+      readStream();
+    }
+  }, [stream]);
+
+  if (loading) return <div>Loading stream...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <div ref={messagesRef}></div>
+      <button onClick={execute}>Restart Stream</button>
+    </div>
+  );
+}
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useFetcherListStreamQuery } from '@ahoo-wang/fetcher-react';
+import { useEffect, useRef } from 'react';
+
+const MyComponent = () => {
+  const { data: stream, loading, error, execute } = useFetcherListStreamQuery({
+    url: '/api/notifications/stream',
+    initialQuery: {
+      condition: { type: 'important' },
+      limit: 50
+    },
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  const notificationsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (stream) {
+      const reader = stream.getReader();
+      const processStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const notification = value.data;
+            if (notificationsRef.current) {
+              const notificationDiv = document.createElement('div');
+              notificationDiv.textContent = `Notification: ${notification.message}`;
+              notificationsRef.current.appendChild(notificationDiv);
+            }
+          }
+        } catch (err) {
+          console.error('Stream processing error:', err);
+        }
+      };
+      processStream();
+    }
+  }, [stream]);
+
+  // The stream will start automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>Live Notifications</h2>
+      <div ref={notificationsRef}></div>
+    </div>
+  );
+};
+```
+
+### useFetcherSingleQuery Hook
+
+The `useFetcherSingleQuery` hook is a specialized React hook for performing single item queries using the Fetcher library. It is designed for fetching a single item with support for filtering and sorting through the SingleQuery type, returning a single result item.
+
+```typescript jsx
+import { useFetcherSingleQuery } from '@ahoo-wang/fetcher-react';
+import { singleQuery, eq } from '@ahoo-wang/fetcher-wow';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+function UserProfileComponent({ userId }: { userId: string }) {
+  const {
+    loading,
+    result: user,
+    error,
+    execute,
+  } = useFetcherSingleQuery<User, keyof User>({
+    url: `/api/users/${userId}`,
+    initialQuery: singleQuery({
+      condition: eq('id', userId),
+    }),
+    autoExecute: true,
+  });
+
+  if (loading) return <div>Loading user...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!user) return <div>User not found</div>;
+
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <p>Email: {user.email}</p>
+      <p>Created: {user.createdAt}</p>
+      <button onClick={execute}>Refresh</button>
+    </div>
+  );
+}
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useFetcherSingleQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result: product, loading, error, execute } = useFetcherSingleQuery({
+    url: '/api/products/featured',
+    initialQuery: {
+      condition: { featured: true },
+      projection: {},
+      sort: []
+    },
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!product) return <div>Product not found</div>;
+
+  return (
+    <div>
+      <h2>Featured Product</h2>
+      <div>{product.name}</div>
+      <div>{product.description}</div>
+    </div>
+  );
+};
+```
+
+### Stream Query Hooks
+
+#### useListStreamQuery Hook
 
 The `useListStreamQuery` hook manages list stream queries that return a readable stream of server-sent events.
 
@@ -1820,6 +2462,88 @@ An object containing:
 - `cancel`: Function to cancel any pending debounced execution
 - `isPending`: Boolean indicating if a debounced call is pending
 
+#### useDebouncedFetcherQuery
+
+```typescript
+function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
+  options: UseDebouncedFetcherQueryOptions<Q, R, E>,
+): UseDebouncedFetcherQueryReturn<Q, R, E>;
+```
+
+Combines query-based HTTP fetching with debouncing, perfect for search inputs and dynamic query scenarios.
+
+**Type Parameters:**
+
+- `Q`: The type of the query parameters
+- `R`: The type of the fetch result
+- `E`: The type of the error (defaults to FetcherError)
+
+**Parameters:**
+
+- `options`: Configuration object extending `UseFetcherQueryOptions` and `DebounceCapable`
+  - `url`: The API endpoint URL (required)
+  - `initialQuery`: Initial query parameters (required)
+  - `autoExecute?`: Whether to execute automatically on mount or query changes
+  - `debounce`: Debounce configuration (delay, leading, trailing)
+  - HTTP request options (method, headers, timeout, etc.)
+
+**Returns:**
+
+An object containing:
+
+- `loading`: Boolean indicating if the fetch is currently executing
+- `result`: The resolved value of the fetch
+- `error`: Any error that occurred during execution
+- `status`: Current execution status
+- `reset`: Function to reset the fetcher state
+- `abort`: Function to abort the current operation
+- `getQuery`: Function to get the current query parameters
+- `setQuery`: Function to update query parameters
+- `run`: Function to execute the debounced fetch with current query
+- `cancel`: Function to cancel any pending debounced execution
+- `isPending`: Function that returns true if a debounced execution is currently pending
+
+#### useDebouncedQuery
+
+```typescript
+function useDebouncedQuery<Q, R, E = FetcherError>(
+  options: UseDebouncedQueryOptions<Q, R, E>,
+): UseDebouncedQueryReturn<Q, R, E>;
+```
+
+Combines general query execution with debouncing, perfect for custom query operations.
+
+**Type Parameters:**
+
+- `Q`: The type of the query parameters
+- `R`: The type of the result
+- `E`: The type of the error (defaults to FetcherError)
+
+**Parameters:**
+
+- `options`: Configuration object extending `UseQueryOptions` and `DebounceCapable`
+  - `initialQuery`: Initial query parameters (required)
+  - `execute`: Function to execute the query with parameters
+  - `autoExecute?`: Whether to execute automatically on mount or query changes
+  - `debounce`: Debounce configuration (delay, leading, trailing)
+  - All options from `UseExecutePromiseOptions`
+
+**Returns:**
+
+An object containing:
+
+- `loading`: Boolean indicating if the query is currently executing
+- `result`: The resolved value of the query
+- `error`: Any error that occurred during execution
+- `status`: Current execution status
+- `reset`: Function to reset the query state
+- `abort`: Function to abort the current operation
+- `getQuery`: Function to get the current query parameters
+- `setQuery`: Function to update query parameters
+- `run`: Function to execute the debounced query with current parameters
+- `cancel`: Function to cancel any pending debounced execution
+- `isPending`: Function that returns true if a debounced execution is currently pending
+
 ### useFetcher
 
 ```typescript
@@ -2241,6 +2965,156 @@ A React hook for managing count queries with state management for conditions.
 **Returns:**
 
 An object containing promise state, execute function, and setter for condition.
+
+### useFetcherCountQuery
+
+```typescript
+function useFetcherCountQuery<FIELDS extends string = string, E = FetcherError>(
+  options: UseFetcherCountQueryOptions<FIELDS, E>,
+): UseFetcherCountQueryReturn<FIELDS, E>;
+```
+
+A React hook for performing count queries using the Fetcher library. It wraps the useFetcherQuery hook and specializes it for count operations, returning a number representing the count.
+
+**Type Parameters:**
+
+- `FIELDS`: A string union type representing the fields that can be used in the condition
+- `E`: The type of error that may be thrown (defaults to `FetcherError`)
+
+**Parameters:**
+
+- `options`: Configuration options for the count query, including the condition, fetcher instance, and other query settings
+  - `url`: The URL to fetch the count from
+  - `initialQuery`: The initial condition for the count query
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+
+**Returns:**
+
+An object containing the query result (count as a number), loading state, error state, and utility functions.
+
+### useFetcherPagedQuery
+
+```typescript
+function useFetcherPagedQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherPagedQueryOptions<R, FIELDS, E>,
+): UseFetcherPagedQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for performing paged queries using the Fetcher library. It wraps the useFetcherQuery hook and specializes it for paged operations, returning a PagedList containing items and pagination metadata.
+
+**Type Parameters:**
+
+- `R`: The type of the resource or entity contained in each item of the paged list
+- `FIELDS`: A string union type representing the fields that can be used in the paged query
+- `E`: The type of error that may be thrown (defaults to `FetcherError`)
+
+**Parameters:**
+
+- `options`: Configuration options for the paged query, including the paged query parameters, fetcher instance, and other query settings
+  - `url`: The URL to fetch the paged data from
+  - `initialQuery`: The initial paged query configuration
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+
+**Returns:**
+
+An object containing the query result (PagedList with items and pagination info), loading state, error state, and utility functions.
+
+### useFetcherListQuery
+
+```typescript
+function useFetcherListQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherListQueryOptions<R, FIELDS, E>,
+): UseFetcherListQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for executing list queries using the fetcher library within the wow framework. It wraps the useFetcherQuery hook and specializes it for list operations, returning an array of results with support for filtering, sorting, and pagination.
+
+**Type Parameters:**
+
+- `R`: The type of individual items in the result array (e.g., User, Product)
+- `FIELDS`: The fields available for filtering, sorting, and pagination in the list query
+- `E`: The type of error that may be thrown (defaults to `FetcherError`)
+
+**Parameters:**
+
+- `options`: Configuration options for the list query, including the list query parameters, fetcher instance, and other query settings
+  - `url`: The URL to fetch the list data from
+  - `initialQuery`: The initial list query configuration
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+
+**Returns:**
+
+An object containing the query result (array of items), loading state, error state, and utility functions.
+
+### useFetcherListStreamQuery
+
+```typescript
+function useFetcherListStreamQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherListStreamQueryOptions<R, FIELDS, E>,
+): UseFetcherListStreamQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for performing list stream queries using the Fetcher library with server-sent events. It wraps the useFetcherQuery hook and specializes it for streaming operations, returning a ReadableStream of JSON server-sent events for real-time data streaming.
+
+**Type Parameters:**
+
+- `R`: The type of the resource or entity contained in each event in the stream
+- `FIELDS`: The fields available for filtering, sorting, and pagination in the list query
+- `E`: The type of error that may be thrown (defaults to `FetcherError`)
+
+**Parameters:**
+
+- `options`: Configuration options for the list stream query, including the list query parameters, fetcher instance, and other query settings
+  - `url`: The URL to fetch the stream data from
+  - `initialQuery`: The initial list query configuration
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+
+**Returns:**
+
+An object containing the query result (ReadableStream of JSON server-sent events), loading state, error state, and utility functions.
+
+### useFetcherSingleQuery
+
+```typescript
+function useFetcherSingleQuery<
+  R,
+  FIELDS extends string = string,
+  E = FetcherError,
+>(
+  options: UseFetcherSingleQueryOptions<R, FIELDS, E>,
+): UseFetcherSingleQueryReturn<R, FIELDS, E>;
+```
+
+A React hook for executing single item queries using the fetcher library within the wow framework. It wraps the useFetcherQuery hook and specializes it for single item operations, returning a single result item with support for filtering and sorting.
+
+**Type Parameters:**
+
+- `R`: The type of the result item (e.g., User, Product)
+- `FIELDS`: The fields available for filtering and sorting in the single query
+- `E`: The type of error that may be thrown (defaults to `FetcherError`)
+
+**Parameters:**
+
+- `options`: Configuration options for the single query, including the single query parameters, fetcher instance, and other query settings
+  - `url`: The URL to fetch the single item from
+  - `initialQuery`: The initial single query configuration
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+
+**Returns:**
+
+An object containing the query result (single item), loading state, error state, and utility functions.
 
 ### useListStreamQuery
 
