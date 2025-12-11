@@ -26,32 +26,39 @@
 - [安装](#安装)
 - [快速开始](#快速开始)
 - [使用方法](#使用方法)
-  - [useFetcher Hook](#usefetcher-hook)
+  - [核心 Hooks](#核心-hooks)
+    - [useFetcher](#usefetcher-hook)
+    - [useExecutePromise](#useexecutepromise)
+    - [usePromiseState](#usepromisestate)
   - [防抖 Hooks](#防抖-hooks)
-  - [useDebouncedCallback](#usedebouncedcallback)
-  - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
-  - [useDebouncedFetcher](#usedebouncedfetcher)
-  - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
-  - [useDebouncedQuery](#usedebouncedquery)
-  - [useExecutePromise Hook](#useexecutepromise-hook)
-  - [usePromiseState Hook](#usepromisestate-hook)
-  - [useRequestId Hook](#userequestid-hook)
-  - [useLatest Hook](#uselatest-hook)
-- [useRefs Hook](#userefs-hook)
-- [useEventSubscription Hook](#useeventsubscription-hook)
-- [useKeyStorage Hook](#usekeystorage-hook)
-  - [useImmerKeyStorage Hook](#useimmerkeystorage-hook)
-- [Wow 查询 Hooks](#wow-查询-hooks)
-  - [useListQuery Hook](#uselistquery-hook)
-  - [usePagedQuery Hook](#usepagedquery-hook)
-  - [useSingleQuery Hook](#usesinglequery-hook)
-  - [useCountQuery Hook](#usecountquery-hook)
-  - [useFetcherCountQuery Hook](#usefetchercountquery-hook)
-  - [useFetcherPagedQuery Hook](#usefetcherpagedquery-hook)
-  - [useFetcherListQuery Hook](#usefetcherlistquery-hook)
-  - [useFetcherListStreamQuery Hook](#usefetcherliststreamquery-hook)
-  - [useFetcherSingleQuery Hook](#usefetchersinglequery-hook)
-  - [useListStreamQuery Hook](#useliststreamquery-hook)
+    - [useDebouncedCallback](#usedebouncedcallback)
+    - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
+    - [useDebouncedFetcher](#usedebouncedfetcher)
+    - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
+    - [useDebouncedQuery](#usedebouncedquery)
+  - [工具 Hooks](#工具-hooks)
+    - [useRequestId](#userequestid)
+    - [useLatest](#uselatest)
+    - [useRefs](#userefs)
+  - [存储 Hooks](#存储-hooks)
+    - [useKeyStorage](#usekeystorage)
+    - [useImmerKeyStorage](#useimmerkeystorage-hook)
+  - [事件 Hooks](#事件-hooks)
+    - [useEventSubscription](#useeventsubscription-hook)
+  - [Wow 查询 Hooks](#wow-查询-hooks)
+    - [基础查询 Hooks](#基础查询-hooks)
+      - [useListQuery](#uselistquery-hook)
+      - [usePagedQuery](#usepagedquery-hook)
+      - [useSingleQuery](#usesinglequery-hook)
+      - [useCountQuery](#usecountquery-hook)
+    - [获取查询 Hooks](#获取查询-hooks)
+      - [useFetcherListQuery](#usefetcherlistquery-hook)
+      - [useFetcherPagedQuery](#usefetcherpagedquery-hook)
+      - [useFetcherSingleQuery](#usefetchersinglequery-hook)
+      - [useFetcherCountQuery](#usefetchercountquery-hook)
+    - [流查询 Hooks](#流查询-hooks)
+      - [useListStreamQuery](#useliststreamquery-hook)
+      - [useFetcherListStreamQuery](#usefetcherliststreamquery-hook)
 - [最佳实践](#最佳实践)
 - [API 参考](#api-参考)
 - [许可证](#许可证)
@@ -92,7 +99,9 @@ function App() {
 
 ## 使用方法
 
-### useFetcher Hook
+### 核心 Hooks
+
+#### useFetcher Hook
 
 `useFetcher` hook 提供完整的数据获取功能，具有自动状态管理、竞态条件保护和灵活的配置选项。
 
@@ -369,7 +378,9 @@ const [prefs, updatePrefs] = useImmerKeyStorage(prefsStorage);
 
 Wow 查询 Hooks 提供高级数据查询功能，具有内置的状态管理，用于条件、投影、排序、分页和限制。这些 hooks 专为与 `@ahoo-wang/fetcher-wow` 包配合使用而设计，用于复杂的查询操作。
 
-### useListQuery Hook
+### 基础查询 Hooks
+
+#### useListQuery Hook
 
 `useListQuery` hook 管理列表查询，具有条件、投影、排序和限制的状态管理。
 
@@ -519,7 +530,9 @@ const MyComponent = () => {
 };
 ```
 
-### useFetcherCountQuery Hook
+### 获取查询 Hooks
+
+#### useFetcherCountQuery Hook
 
 `useFetcherCountQuery` hook 是使用 Fetcher 库执行计数查询的专用 React hook。它专为需要检索匹配特定条件的记录数量的场景而设计，返回表示计数的数字。
 
@@ -967,7 +980,9 @@ const MyComponent = () => {
 };
 ```
 
-### useListStreamQuery Hook
+### 流查询 Hooks
+
+#### useListStreamQuery Hook
 
 `useListStreamQuery` hook 管理列表流查询，返回服务器发送事件的 readable stream。
 
@@ -1484,7 +1499,9 @@ function usePromiseState<R = unknown, E = unknown>(
 - `setError`: 设置状态为 ERROR 并提供错误
 - `setIdle`: 设置状态为 IDLE
 
-### useRequestId
+### 工具 Hooks
+
+#### useRequestId
 
 ```typescript
 function useRequestId(): UseRequestIdReturn;
@@ -1555,7 +1572,9 @@ React hook，用于使用 Map-like 接口管理多个 refs，允许通过键动�
 - `RefKey = string | number | symbol`
 - `UseRefsReturn<T> extends Iterable<[RefKey, T]>`
 
-### useEventSubscription Hook
+### 事件 Hooks
+
+#### useEventSubscription Hook
 
 `useEventSubscription` hook 为类型化事件总线提供了 React 接口。它自动管理订阅生命周期，同时提供手动控制功能以增加灵活性。
 
@@ -1596,7 +1615,9 @@ function MyComponent() {
 - **错误处理**: 对失败的订阅尝试记录警告
 - **事件总线集成**: 与 `@ahoo-wang/fetcher-eventbus` TypedEventBus 实例无缝配合
 
-### useKeyStorage
+### 存储 Hooks
+
+#### useKeyStorage
 
 ```typescript jsx
 function useKeyStorage<T>(
