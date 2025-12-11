@@ -13,6 +13,7 @@
 
 import { Checkbox } from 'antd';
 import { DragOutlined } from '@ant-design/icons';
+import { ViewColumnDefinition } from '../../viewer';
 
 /**
  * Table Field Item Component
@@ -45,16 +46,7 @@ import { DragOutlined } from '@ant-design/icons';
  */
 export interface TableFieldItemProps {
   /** The column definition including title and primary key flag */
-  columnDefinition: {
-    /** The display title of the column */
-    title: string;
-    /** The data index for the column */
-    dataIndex: string;
-    /** The cell configuration for the column */
-    cell: any;
-    /** Whether this column is a primary key */
-    primaryKey: boolean;
-  };
+  columnDefinition: ViewColumnDefinition;
   /** Whether the column is fixed and cannot be hidden */
   fixed: boolean;
   /** Whether the column is currently visible */

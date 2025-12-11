@@ -23,7 +23,7 @@ describe('ActionsCell', () => {
   const defaultActionsData: ActionsData = {
     primaryAction: {
       data: {
-        value: { title: 'Edit', key: 'edit' },
+        value: 'Edit',
         record: testRecord,
         index: 0,
       },
@@ -34,7 +34,7 @@ describe('ActionsCell', () => {
     secondaryActions: [
       {
         data: {
-          value: { title: 'Delete', key: 'delete' },
+          value: 'Delete',
           record: testRecord,
           index: 0,
         },
@@ -44,7 +44,7 @@ describe('ActionsCell', () => {
       },
       {
         data: {
-          value: { title: 'Duplicate', key: 'duplicate' },
+          value: 'Duplicate',
           record: testRecord,
           index: 0,
         },
@@ -141,7 +141,7 @@ describe('ActionsCell', () => {
         value: {
           primaryAction: {
             data: {
-              value: { title: 'Edit', key: 'edit' },
+              value: 'Edit',
               record: testRecord,
               index: 0,
             },
@@ -152,7 +152,7 @@ describe('ActionsCell', () => {
           secondaryActions: [
             {
               data: {
-                value: { title: 'Delete', key: 'delete' },
+                value: 'Delete',
                 record: testRecord,
                 index: 0,
               },
@@ -182,7 +182,7 @@ describe('ActionsCell', () => {
         value: {
           primaryAction: {
             data: {
-              value: { title: 'View', key: 'view' },
+              value: 'View',
               record: complexRecord,
               index: 5,
             },
@@ -216,7 +216,7 @@ describe('ActionsCell', () => {
         value: {
           primaryAction: {
             data: {
-              value: { title: 'Edit', key: 'edit' },
+              value: 'Edit',
               record: testRecord,
               index: 0,
             },

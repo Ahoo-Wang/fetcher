@@ -1,12 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { ViewColumn } from '../types';
 import { TableFieldItem } from './TableFieldItem';
 import styles from './TableSettingPanel.module.css';
 import { Space } from 'antd';
+import { ViewColumn, ViewDefinition } from '../../viewer';
+import { useViewerSharedValue } from '../../viewer/ViewerSharedValueContext';
 
 export interface TableSettingPanelProps {
-  columns: (ViewColumn & { index: number })[];
-  onColumnsChange: (columns: ViewColumn[]) => void;
+  viewDefinition: ViewDefinition;
   className?: string;
 }
 
@@ -16,8 +16,17 @@ interface DragState {
 }
 
 export function TableSettingPanel(props: TableSettingPanelProps) {
-  const { columns, onColumnsChange, className } = props;
+  const { viewDefinition, className } = props;
   const [dragState, setDragState] = useState<DragState | null>(null);
+
+  const { viewColumns, setViewColumns } = useViewerSharedValue();
+
+  const columns = viewColumns.map((col, index) => {
+    return {
+      ...col,
+      index,
+    };
+  });
 
   console.log('TableSettingPanel function');
   const fixedColumns = columns.filter(col => col.fixed);
@@ -28,7 +37,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     const newColumns = columns.map((col, i) =>
       i === index ? { ...col, visible } : col,
     );
-    onColumnsChange(newColumns);
+    setViewColumns(newColumns);
   };
 
   const handleDragStart = useCallback(
@@ -40,7 +49,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
       console.log('handleDragStart', e, index, group);
 
       // 拖拽样式
-      console.log('e.currentTarget',e.currentTarget.clientWidth);
+      console.log('e.currentTarget', e.currentTarget.clientWidth);
       // Create custom drag image with desired styling
       const dragElement = e.currentTarget.cloneNode(true) as HTMLElement;
       dragElement.style.backgroundColor = '#F5F5F5';
@@ -54,12 +63,14 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
       dragElement.style.height = `${e.currentTarget.clientHeight}px`;
 
       document.body.appendChild(dragElement);
-      e.dataTransfer.setDragImage(dragElement, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+      e.dataTransfer.setDragImage(
+        dragElement,
+        e.nativeEvent.offsetX,
+        e.nativeEvent.offsetY,
+      );
 
       // Remove the temporary element after drag starts
       setTimeout(() => document.body.removeChild(dragElement), 0);
-
-
 
       e.dataTransfer.effectAllowed = 'move';
       setDragState({ index, group });
@@ -77,78 +88,92 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     setDragState(null);
   }, [setDragState]);
 
-  const handleDrop = useCallback(
-    (
-      e: React.DragEvent<HTMLDivElement>,
-      group: 'fixed' | 'visible',
-      dragIndex: number,
-    ) => {
-      console.log('handleDrop', e.dataTransfer, group, dragIndex);
-      if (!dragState) {
-        return;
-      }
-      if (dragState.index === dragIndex) {
-        return;
-      }
-      if (group === 'fixed' && fixedColumns.length >= 3) {
-        return;
-      }
+  const handleDrop = (
+    e: React.DragEvent<HTMLDivElement>,
+    group: 'fixed' | 'visible',
+    dragIndex: number,
+  ) => {
+    console.log('handleDrop', e.dataTransfer, group, dragIndex);
+    if (!dragState) {
+      return;
+    }
+    if (dragState.index === dragIndex) {
+      return;
+    }
+    if (group === 'fixed' && fixedColumns.length >= 3) {
+      return;
+    }
 
-      // const [draggedItem] = newColumns.splice(draggedIndex, 1);
-      // newColumns.splice(dropIndex, 0, draggedItem);
+    // const [draggedItem] = newColumns.splice(draggedIndex, 1);
+    // newColumns.splice(dropIndex, 0, draggedItem);
 
-      const targetIndex = group === 'fixed' ? dragIndex + 1 : dragIndex;
-      const newColumns = [...columns];
-      console.log('origin columns', newColumns);
-      const [originItem] = newColumns.splice(dragState.index, 1);
-      console.log('origin item', originItem, newColumns);
-      originItem.fixed = group === 'fixed';
-      newColumns.splice(targetIndex, 0, originItem);
-      console.log('final columns', newColumns);
-      newColumns.forEach((col, i) => (col.index = i));
-      console.log('re index columns', newColumns);
-      onColumnsChange(newColumns);
-    },
-    [columns, dragState, fixedColumns, onColumnsChange],
-  );
+    const targetIndex = group === 'fixed' ? dragIndex + 1 : dragIndex;
+    const newColumns = [...columns];
+    console.log('origin columns', newColumns);
+    const [originItem] = newColumns.splice(dragState.index, 1);
+    console.log('origin item', originItem, newColumns);
+    originItem.fixed = group === 'fixed';
+    newColumns.splice(targetIndex, 0, originItem);
+    console.log('final columns', newColumns);
+    newColumns.forEach((col, i) => (col.index = i));
+    console.log('re index columns', newColumns);
+    setViewColumns(newColumns);
+  };
 
   const renderDraggableItem = (
     column: ViewColumn & { index: number },
     group: 'fixed' | 'visible',
-  ) => (
+  ) => {
+    const columnDefinition = viewDefinition.columns.find(
+      col => col.dataIndex === column.dataIndex,
+    );
+    if (!columnDefinition) {
+      return <></>;
+    }
 
-    <div
-      className={`${styles.item} ${dragState?.index === column.index ? styles.dragging : ''}`}
-      key={column.columnDefinition.dataIndex}
-      draggable={!column.columnDefinition.primaryKey}
-      onDragStart={e => handleDragStart(e, group, column.index)}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-      onDrop={e => handleDrop(e, group, column.index)}
-    >
-      <TableFieldItem
-        columnDefinition={column.columnDefinition}
-        fixed={column.fixed || false}
-        visible={column.visible}
-        onVisibleChange={visible =>
-          handleVisibilityChange(column.index, visible)
-        }
-      />
-    </div>
-  );
+    return (
+      <div
+        className={`${styles.item} ${dragState?.index === column.index ? styles.dragging : ''}`}
+        key={columnDefinition.dataIndex}
+        draggable={!columnDefinition.primaryKey}
+        onDragStart={e => handleDragStart(e, group, column.index)}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        onDrop={e => handleDrop(e, group, column.index)}
+      >
+        <TableFieldItem
+          columnDefinition={columnDefinition}
+          fixed={column.fixed || false}
+          visible={column.visible}
+          onVisibleChange={visible =>
+            handleVisibilityChange(column.index, visible)
+          }
+        />
+      </div>
+    );
+  };
 
-  const renderStaticItem = (column: ViewColumn & { index: number }) => (
-    <div className={styles.item} key={column.columnDefinition.dataIndex}>
-      <TableFieldItem
-        columnDefinition={column.columnDefinition}
-        fixed={column.fixed || false}
-        visible={column.visible}
-        onVisibleChange={visible =>
-          handleVisibilityChange(column.index, visible)
-        }
-      />
-    </div>
-  );
+  const renderStaticItem = (column: ViewColumn & { index: number }) => {
+    const columnDefinition = viewDefinition.columns.find(
+      col => col.dataIndex === column.dataIndex,
+    );
+    if (!columnDefinition) {
+      return <></>;
+    }
+
+    return (
+      <div className={styles.item} key={columnDefinition.dataIndex}>
+        <TableFieldItem
+          columnDefinition={columnDefinition}
+          fixed={column.fixed || false}
+          visible={column.visible}
+          onVisibleChange={visible =>
+            handleVisibilityChange(column.index, visible)
+          }
+        />
+      </div>
+    );
+  };
 
   return (
     <Space size={0} orientation="vertical" style={{ display: 'flex' }}>

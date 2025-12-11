@@ -20,7 +20,7 @@ describe('ActionCell', () => {
 
   const defaultProps: ActionCellProps = {
     data: {
-      value: { title: 'Edit', key: 'edit' },
+      value: 'Edit',
       record: { id: 1, name: 'Test Item' },
       index: 0,
     },
@@ -85,7 +85,7 @@ describe('ActionCell', () => {
       ...defaultProps,
       data: {
         ...defaultProps.data,
-        value: { title: 'Delete', key: 'delete' },
+        value: 'Delete',
       },
     };
 
@@ -109,7 +109,7 @@ describe('ActionCell', () => {
 
     const propsWithComplexRecord: ActionCellProps<typeof complexRecord> = {
       data: {
-        value: { title: 'View', key: 'view' },
+        value: 'View',
         record: complexRecord,
         index: 5,
       },

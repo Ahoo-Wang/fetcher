@@ -1,0 +1,32 @@
+
+
+.personalViews {
+    background-color: white;
+    width: 220px;
+    padding: 16px;
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.container {
+    background-color: white;
+    padding: 16px;
+}
+
+.titleBar {
+    background-color: white;
+    height: 32px;
+}
+
+.pagination {
+    background-color: white;
+    height: 40px;
+    padding: 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filterPanel {
+    background-color: #F4F6FA;
+    padding: 16px;
+}
