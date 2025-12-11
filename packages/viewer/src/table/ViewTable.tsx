@@ -4,7 +4,7 @@ import { ViewTableProps } from './types';
 import { SettingOutlined } from '@ant-design/icons';
 import styles from './ViewTable.module.css';
 import { TableSettingPanel } from './setting';
-import { useViewerSharedValue } from '../viewer/ViewerSharedValueContext';
+import { useViewerSharedValue } from '../viewer';
 
 import type { TableColumnsType } from 'antd';
 
@@ -97,24 +97,24 @@ export function ViewTable<RecordType = any>(props: ViewTableProps<RecordType>) {
   const { viewDefinition, dataSource, actionColumn, attributes } = props;
 
   const columns = useViewerSharedValue().viewColumns;
-  console.log('ViewTable-columns', columns);
   const tableColumns: TableColumnsType<RecordType> = columns
     .filter(it => it.visible)
     .map(it => {
       const columnDefinition = viewDefinition.columns.find(
         col => col.dataIndex === it.dataIndex,
       );
+
       return columnDefinition
         ? {
             title: columnDefinition.title,
-            dataIndex: it.dataIndex,
-            key: it.dataIndex,
+            dataIndex: it.dataIndex.split('.'),
             fixed: columnDefinition.primaryKey
               ? 'start'
               : it.fixed
                 ? 'start'
                 : '',
             render: (value, record, index) => {
+              // console.log('column render => ', value, record, index);
               const cellRender = typedCellRender(
                 columnDefinition.type,
                 columnDefinition.attributes || {},
@@ -133,7 +133,6 @@ export function ViewTable<RecordType = any>(props: ViewTableProps<RecordType>) {
         : {
             title: '未知',
             dataIndex: it.dataIndex,
-            key: it.dataIndex,
             render: (value, record, index) => {
               return (
                 <TextCell
@@ -176,9 +175,8 @@ export function ViewTable<RecordType = any>(props: ViewTableProps<RecordType>) {
       key: 'action',
       fixed: 'end',
       width: '200px',
-      render: (_, record, index) => {
+      render: (_, record) => {
         const actionsData = props.actionColumn!.actions(record);
-        console.log('actionsData from function =>', actionsData);
         const data = {
           value: actionsData,
           record: record,

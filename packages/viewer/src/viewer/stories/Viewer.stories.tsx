@@ -3,18 +3,59 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Viewer } from '../Viewer';
 import { ViewColumn, ViewDefinition } from '../types';
 import { ViewTableActionColumn } from '../../table';
-import { Operator } from '@ahoo-wang/fetcher-wow';
 
-export interface Product {
+export interface BusinessPartnerId {
+  bizId: string;
   id: string;
   name: string;
-  price: number;
-  productModel: string;
-  orderNo: string;
+}
+
+export interface IntRange {
+  start: number;
+  end: number;
+}
+
+export enum DeliveryTimeType {
+  NONE = `NONE`,
+  SPOT = `SPOT`,
+  PROXY_SPOT = `PROXY_SPOT`,
+  FORWARD = `FORWARD`,
+}
+
+export interface DeliveryTime {
+  deliveryCycle: IntRange;
+  type: DeliveryTimeType;
+}
+
+export interface CostPrice {
+  costPrice: number;
+  costSource: string;
+  deliveryTime: DeliveryTime;
+  expiryDate: number;
+  modifiedTime: number;
+  moq: number;
+  remark: string;
+}
+
+export interface SkuId {
+  bizId: string;
+  brandId: string;
   brandName: string;
-  category: string;
-  level: string;
-  createdAt: number;
+  code: string;
+  id: string;
+  isComposite: boolean;
+  orderNo: string;
+}
+
+export interface SkuCostState {
+  readonly businessPartnerId: BusinessPartnerId;
+  costPrices: CostPrice[];
+  readonly skuId: SkuId;
+  readonly costCount: number;
+  readonly hasCost: boolean;
+  readonly id: string;
+  readonly isComposite: boolean;
+  readonly latestCostPrice: CostPrice;
 }
 
 const meta: Meta = {
@@ -23,91 +64,71 @@ const meta: Meta = {
   tags: ['autodocs'],
 };
 const viewDefinition: ViewDefinition = {
-  name: '',
+  name: 'SKU成本',
   columns: [
     {
-      title: 'ID',
-      dataIndex: 'id',
+      title: '成本编号',
+      dataIndex: 'state.id',
       primaryKey: true,
       type: 'id',
       attributes: {},
-      sortable: false,
+      sorter: false,
     },
     {
-      title: '名称',
-      dataIndex: 'name',
+      title: '供应商编号',
+      dataIndex: 'state.businessPartnerId.id',
       primaryKey: false,
       type: 'text',
       attributes: {},
-      sortable: false,
+      sorter: false,
     },
     {
-      title: '价格',
-      dataIndex: 'price',
+      title: '供应商名称',
+      dataIndex: 'state.businessPartnerId.name',
       primaryKey: false,
       type: 'text',
       attributes: {},
-      sortable: false,
+      sorter: false,
     },
     {
-      title: '型号',
-      dataIndex: 'productModel',
+      title: '供应商业务编号',
+      dataIndex: 'state.businessPartnerId.bizId',
       primaryKey: false,
       type: 'text',
       attributes: {},
-      sortable: false,
+      sorter: false,
     },
     {
-      title: '订货号',
-      dataIndex: 'orderNo',
+      title: 'SKU No.',
+      dataIndex: 'state.skuId.code',
       primaryKey: false,
       type: 'text',
       attributes: {},
-      sortable: false,
+      sorter: false,
     },
     {
       title: '品牌名称',
-      dataIndex: 'brandName',
+      dataIndex: 'state.skuId.brandName',
       primaryKey: false,
       type: 'text',
       attributes: {},
-      sortable: false,
+      sorter: false,
     },
     {
-      title: '分类',
-      dataIndex: 'category',
+      title: 'SKU订货号',
+      dataIndex: 'state.skuId.orderNo',
       primaryKey: false,
       type: 'text',
       attributes: {},
-      sortable: false,
+      sorter: false,
     },
     {
-      title: '级别',
-      dataIndex: 'level',
+      title: '成本数',
+      dataIndex: 'state.costCount',
       primaryKey: false,
       type: 'text',
       attributes: {},
-      sortable: false,
-    },
-    {
-      title: '创建日期',
-      dataIndex: 'createdAt',
-      primaryKey: false,
-      type: 'datetime',
-      attributes: {
-        format: 'YYYY-MM-DD',
-      },
-      sortable: false,
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      primaryKey: false,
-      type: 'status',
-      attributes: {
-        statusEnum: {},
-      },
-      sortable: false,
+      sorter: false,
     },
   ],
   availableFilters: [
@@ -116,136 +137,106 @@ const viewDefinition: ViewDefinition = {
       filters: [
         {
           field: {
-            name: 'id',
-            label: 'ID',
-            type: 'string',
+            name: 'state.id',
+            label: '成本编号',
           },
           component: 'id',
         },
         {
           field: {
-            name: 'name',
-            label: 'Name',
-            type: 'string',
+            name: 'state.businessPartnerId.name',
+            label: '供应商名称',
           },
           component: 'text',
         },
         {
           field: {
-            name: 'age',
-            label: 'Age',
-            type: 'number',
+            name: 'state.skuId.code',
+            label: 'SKU No.',
+          },
+          component: 'text',
+        },
+        {
+          field: {
+            name: 'state.skuId.orderNo',
+            label: 'SKU订货号',
+          },
+          component: 'text',
+        },
+        {
+          field: {
+            name: 'state.skuId.brandName',
+            label: '品牌名称',
+          },
+          component: 'text',
+        },
+        {
+          field: {
+            name: 'state.costCount',
+            label: '成本数',
           },
           component: 'number',
         },
-        {
-          field: {
-            name: 'email',
-            label: 'Email',
-            type: 'string',
-          },
-          component: 'text',
-        },
-        {
-          field: {
-            name: 'isActive',
-            label: 'Is Active',
-            type: 'bool',
-          },
-          component: 'bool',
-        },
       ],
-    },
-    {
-      label: 'Advanced Filters',
-      filters: [
-        {
-          field: {
-            name: 'status',
-            label: 'Status',
-            type: 'string',
-          },
-          component: 'select',
-        },
-        {
-          field: {
-            name: 'department',
-            label: 'Department',
-            type: 'string',
-          },
-          component: 'text',
-        },
-        {
-          field: {
-            name: 'createdAt',
-            label: 'Created At',
-            type: 'datetime',
-          },
-          component: 'datetime',
-        },
-      ],
-    },
+    }
   ],
+  dataSourceUrl:
+    'http://localhost:8080/tenant/mydao/sku_cost/snapshot/paged',
+  defaultPageSize: 20
 };
 
 const columns: ViewColumn[] = [
   {
-    dataIndex: 'id',
+    dataIndex: 'state.id',
     fixed: true,
     visible: true,
     width: '300px',
   },
   {
-    dataIndex: 'name',
+    dataIndex: 'state.businessPartnerId.id',
     fixed: false,
     visible: true,
     width: '500px',
   },
   {
-    dataIndex: 'price',
+    dataIndex: 'state.businessPartnerId.name',
     fixed: false,
     visible: true,
     width: '300px',
   },
   {
-    dataIndex: 'productModel',
+    dataIndex: 'state.businessPartnerId.bizId',
     fixed: false,
     visible: true,
-    width: '500px',
+    width: '200px',
   },
   {
-    dataIndex: 'orderNo',
-    fixed: false,
-    visible: true,
-    width: '300px',
-  },
-  {
-    dataIndex: 'brandName',
+    dataIndex: 'state.skuId.code',
     fixed: false,
     visible: true,
     width: '300px',
   },
   {
-    dataIndex: 'category',
+    dataIndex: 'state.skuId.brandName',
     fixed: false,
     visible: true,
     width: '300px',
   },
   {
-    dataIndex: 'level',
+    dataIndex: 'state.skuId.orderNo',
     fixed: false,
     visible: true,
     width: '300px',
   },
   {
-    dataIndex: 'createdAt',
+    dataIndex: 'state.costCount',
     fixed: false,
     visible: true,
     width: '300px',
   },
 ];
 
-const actionColumn: ViewTableActionColumn<Product> = {
+const actionColumn: ViewTableActionColumn<SkuCostState> = {
   title: 'More',
   dataIndex: 'id',
   configurable: true,
@@ -281,30 +272,6 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const dataSource: Product[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    price: 100,
-    productModel: 'MODEL_A',
-    orderNo: '0001',
-    brandName: 'Sick 西克',
-    category: '电感式接近开关',
-    level: 'A',
-    createdAt: 1764518400000,
-  },
-  {
-    id: '2',
-    name: 'John Doe',
-    price: 100,
-    productModel: 'MODEL_B',
-    orderNo: '0002',
-    brandName: 'Sick 西克',
-    category: '电感式接近开关',
-    level: 'A',
-    createdAt: 1764864000000,
-  },
-];
 
 export const Default: Story = {
   args: {
@@ -313,27 +280,18 @@ export const Default: Story = {
       id: 'a1',
       name: 'my product',
       columns: columns,
-      filters:  [
+      filters: [
         {
           key: 'name',
-          type: 'text',
+          type: 'id',
           field: {
-            name: 'name',
-            label: 'Name',
-            type: 'string',
-          },
-          operator: {
-            defaultValue: Operator.EQ,
-          },
-          value: {
-            defaultValue: 'test',
-          },
+            name: 'state.id',
+            label: '成本编号',
+          }
         },
       ],
     },
     definition: viewDefinition,
-    list: dataSource,
-    total: 10,
     actionColumn: actionColumn,
   },
 };

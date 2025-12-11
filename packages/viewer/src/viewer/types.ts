@@ -1,20 +1,22 @@
 import { ActiveFilter, AvailableFilter, AvailableFilterGroup } from '../filter';
 import { TypeCapable } from '../registry';
 import { AttributesCapable } from '../types';
-import { FetchRequest } from '@ahoo-wang/fetcher';
+import { Operator } from '@ahoo-wang/fetcher-wow';
+import { SortOrder } from 'antd/es/table/interface';
 
 export interface ViewDefinition {
   name: string;
   columns: ViewColumnDefinition[];
   availableFilters: AvailableFilterGroup[];
-  fetchRequest: Omit<FetchRequest, 'body'>;
+  dataSourceUrl: string;
+  defaultPageSize: number;
 }
 
 export interface ViewColumnDefinition extends TypeCapable, AttributesCapable {
   title: string;
   dataIndex: string;
   primaryKey: boolean;
-  sortable: boolean;
+  sorter: boolean | { multiple: number};
 }
 
 export interface View {
@@ -24,9 +26,38 @@ export interface View {
   columns: ViewColumn[];
 }
 
+const availableFilter: AvailableFilter = {
+  field: {
+    name: '',
+    label: '',
+    type: '',
+    format: '',
+  },
+  component: 'text',
+};
+
+const a: ActiveFilter = {
+  key: 'name',
+  type: 'text',
+  field: {
+    name: '',
+    label: '',
+    type: '',
+    format: '',
+  },
+  value: {
+    defaultValue: '',
+    placeholder: '',
+  },
+  operator: {
+    defaultValue: Operator.EQ
+  }
+};
+
 export interface ViewColumn {
   dataIndex: string;
   fixed: boolean;
   visible: boolean;
   width?: string;
+  sortOrder?: SortOrder
 }

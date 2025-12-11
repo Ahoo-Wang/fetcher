@@ -1,17 +1,18 @@
 import { ViewTable, ViewTableActionColumn } from '../table';
 import { Layout, Pagination, PaginationProps, Space } from 'antd';
 import {
-  ActiveFilter,
   EditableFilterPanel,
   EditableFilterPanelProps,
+  FilterPanelRef,
 } from '../filter';
-import { View, ViewColumn, ViewDefinition } from './types';
+import { View, ViewColumn, ViewDefinition } from './';
 import styles from './Viewer.module.css';
-import { DataSourceCapable, StyleCapable } from '../types';
+import { StyleCapable } from '../types';
 import ViewerSharedValueContext from './ViewerSharedValueContext';
-import { useEffect, useState } from 'react';
-import { all, Operator, PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
-import { useFetcher } from '@ahoo-wang/fetcher-react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { all, Condition, PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
+import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
+import { FetcherError } from '@ahoo-wang/fetcher';
 
 const { Header, Footer, Sider, Content } = Layout;
 
@@ -27,26 +28,32 @@ export interface ViewerProps<RecordType> extends StyleCapable {
 export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
   const { name, view, definition, actionColumn, paginationProps } = props;
 
-  const { execute, result } = useFetcher<PagedList<RecordType>>();
+  const { loading, result, getQuery, setQuery, run } = useDebouncedFetcherQuery<
+    PagedQuery,
+    PagedList<RecordType>
+  >({
+    url: definition.dataSourceUrl,
+    initialQuery: {
+      condition: all(),
+    },
+    debounce: {
+      delay: 300,
+      leading: true,
+    },
+    autoExecute: false,
+    onError: (error: FetcherError) => {
+      console.log(error);
+    },
+  });
+
+  const filterPanelRef = useRef<FilterPanelRef>(null);
+  useEffect(() => {
+    filterPanelRef?.current?.search();
+  }, []);
 
   const [viewColumns, setViewColumns] = useState<ViewColumn[]>(view.columns);
   const updateViewColumns = (newColumns: ViewColumn[]) => {
     setViewColumns(newColumns);
-  };
-
-  const filter: ActiveFilter = {
-    type: 'text',
-    key: 'filter',
-    field: {
-      name: 'aa',
-      label: 'bb',
-    },
-    value: {
-      defaultValue: 'abc',
-    },
-    operator: {
-      defaultValue: Operator.EQ,
-    },
   };
 
   const editableFilterPanelProps: EditableFilterPanelProps = {
@@ -54,9 +61,28 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     availableFilters: definition.availableFilters,
   };
 
-  const handleFetch = async () => {
-    await execute({ ...definition.fetchRequest, body: {} });
-  };
+  const onSearch = useCallback(
+    (condition: Condition) => {
+      setQuery({
+        ...getQuery(),
+        condition: condition,
+        pagination: { index: 1, size: definition.defaultPageSize },
+      });
+      run();
+    },
+    [getQuery, setQuery, run, definition],
+  );
+
+  const onPaginationChange = useCallback(
+    (page: number, pageSize: number) => {
+      setQuery({
+        ...getQuery(),
+        pagination: { index: page, size: pageSize },
+      });
+      run();
+    },
+    [getQuery, setQuery, run],
+  );
 
   return (
     <ViewerSharedValueContext.Provider
@@ -77,7 +103,11 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                 {name} * {view.name}
               </Header>
               <div className={styles.filterPanel}>
-                <EditableFilterPanel {...editableFilterPanelProps} />
+                <EditableFilterPanel
+                  ref={filterPanelRef}
+                  {...editableFilterPanelProps}
+                  onSearch={onSearch}
+                />
               </div>
               <ViewTable
                 dataSource={result?.list || []}
@@ -90,9 +120,10 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                 <Pagination
                   total={result?.total || 0}
                   showTotal={total => `total ${total} items`}
-                  defaultPageSize={20}
+                  defaultPageSize={definition.defaultPageSize}
                   defaultCurrent={1}
                   pageSizeOptions={['20', '50', '100', '200']}
+                  onChange={onPaginationChange}
                   {...paginationProps}
                 />
               </Footer>

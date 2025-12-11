@@ -171,18 +171,6 @@ export interface ActionsCellProps<RecordType = any> extends CellProps<
  */
 function actionRender(props: ActionsCellProps) {
   const { data } = props;
-  console.log('actionRender', data);
-
-  let primaryButton: React.ReactNode = null;
-
-  if (isActionCellProps(data.value.primaryAction)) {
-    primaryButton = <ActionCell {...data.value.primaryAction} />;
-    console.log('use ActionCell', primaryButton);
-  } else if (typeof data.value.primaryAction === 'function') {
-    primaryButton = <>{data.value.primaryAction(data.record)}</>;
-  } else {
-    primaryButton = <span>-</span>;
-  }
 
   let secondaryButtons: MenuProps['items'] = [];
   if (
