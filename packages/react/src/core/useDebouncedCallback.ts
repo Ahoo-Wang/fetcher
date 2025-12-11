@@ -101,25 +101,12 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   const latestCallback = useLatest(callback);
   const latestOptions = useLatest(options);
 
-  const isPending = useCallback(() => {
-    return timeoutRef.current !== undefined;
-  }, []);
   const cleanTimeout = useCallback(() => {
     if (timeoutRef.current !== undefined) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = undefined;
     }
   }, []);
-  const cancel = useCallback(() => {
-    cleanTimeout();
-    lastArgsRef.current = null;
-  }, [cleanTimeout]);
-
-  useEffect(() => {
-    return () => {
-      cancel();
-    };
-  }, [cancel]);
 
   const shouldInvoke = useCallback((time: number) => {
     if (!lastInvokeTimeRef.current) {
@@ -166,6 +153,18 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
     },
     [latestOptions, cleanTimeout, shouldInvoke, invokeCallback, scheduleTrailing],
   );
+  const cancel = useCallback(() => {
+    cleanTimeout();
+    lastArgsRef.current = null;
+  }, [cleanTimeout]);
+  const isPending = useCallback(() => {
+    return timeoutRef.current !== undefined;
+  }, []);
+  useEffect(() => {
+    return () => {
+      cancel();
+    };
+  }, [cancel]);
 
   return useMemo(
     () => ({
