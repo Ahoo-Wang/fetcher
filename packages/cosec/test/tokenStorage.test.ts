@@ -13,7 +13,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TokenStorage, DEFAULT_COSEC_TOKEN_KEY } from '../src';
-import { JwtCompositeToken } from '../src';
+import { JwtCompositeToken, JwtCompositeTokenSerializer } from '../src';
 
 // Mock Storage
 const mockStorage = {
@@ -59,17 +59,21 @@ vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
 
 // Mock JwtCompositeToken
 vi.mock('../src/jwtToken', () => ({
-  JwtCompositeToken: vi.fn().mockImplementation(token => ({
+  JwtCompositeToken: vi.fn().mockImplementation((token, earlyPeriod) => ({
     token,
+    authenticated: true,
+    access: { payload: { userId: 'default', username: 'default' } },
     isRefreshNeeded: vi.fn(() => false),
     isRefreshable: vi.fn(() => true),
   })),
-  JwtCompositeTokenSerializer: vi.fn().mockImplementation(() => ({
+  JwtCompositeTokenSerializer: vi.fn().mockImplementation(earlyPeriod => ({
     serialize: vi.fn(value => JSON.stringify(value.token)),
     deserialize: vi.fn(value => {
       const token = JSON.parse(value);
       return {
         token,
+        authenticated: true,
+        access: { payload: { userId: '123', username: 'testuser' } },
         isRefreshNeeded: vi.fn(() => false),
         isRefreshable: vi.fn(() => true),
       };
@@ -133,6 +137,98 @@ describe('TokenStorage', () => {
         DEFAULT_COSEC_TOKEN_KEY,
         JSON.stringify(compositeToken),
       );
+    });
+  });
+
+  describe('signIn', () => {
+    it('should sign in with composite token', () => {
+      const compositeToken = {
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      };
+      tokenStorage.signIn(compositeToken);
+      expect(mockStorage.setItem).toHaveBeenCalledWith(
+        DEFAULT_COSEC_TOKEN_KEY,
+        JSON.stringify(compositeToken),
+      );
+    });
+  });
+
+  describe('signOut', () => {
+    it('should sign out by removing token', () => {
+      tokenStorage.signOut();
+      expect(mockStorage.removeItem).toHaveBeenCalledWith(
+        DEFAULT_COSEC_TOKEN_KEY,
+      );
+    });
+  });
+
+  describe('authenticated', () => {
+    it('should return true when authenticated', () => {
+      const storedToken = {
+        accessToken: 'stored-access',
+        refreshToken: 'stored-refresh',
+      };
+      mockStorage.getItem.mockReturnValue(JSON.stringify(storedToken));
+      // Mock the JwtCompositeToken to have authenticated = true
+      const mockJwtToken = {
+        token: storedToken,
+        authenticated: true,
+        isRefreshNeeded: vi.fn(() => false),
+        isRefreshable: vi.fn(() => true),
+      };
+      // Override the mock to return our custom object
+      vi.mocked(JwtCompositeToken).mockReturnValue(mockJwtToken as any);
+      expect(tokenStorage.authenticated).toBe(true);
+    });
+
+    it('should return false when not authenticated', () => {
+      mockStorage.getItem.mockReturnValue(null);
+      expect(tokenStorage.authenticated).toBe(false);
+    });
+
+    it('should return false when token exists but not authenticated', () => {
+      const mockJwtToken = {
+        token: { accessToken: 'stored-access', refreshToken: 'stored-refresh' },
+        authenticated: false,
+        access: { payload: null },
+        isRefreshNeeded: vi.fn(() => false),
+        isRefreshable: vi.fn(() => true),
+      };
+      vi.spyOn(tokenStorage, 'get').mockReturnValue(mockJwtToken as any);
+      expect(tokenStorage.authenticated).toBe(false);
+    });
+  });
+
+  describe('currentUser', () => {
+    it('should return user payload when authenticated', () => {
+      const mockPayload = { userId: '123', username: 'testuser' };
+      const mockJwtToken = {
+        token: { accessToken: 'stored-access', refreshToken: 'stored-refresh' },
+        authenticated: true,
+        access: { payload: mockPayload },
+        isRefreshNeeded: vi.fn(() => false),
+        isRefreshable: vi.fn(() => true),
+      };
+      vi.spyOn(tokenStorage, 'get').mockReturnValue(mockJwtToken as any);
+      expect(tokenStorage.currentUser).toEqual(mockPayload);
+    });
+
+    it('should return null when not authenticated', () => {
+      mockStorage.getItem.mockReturnValue(null);
+      expect(tokenStorage.currentUser).toBe(null);
+    });
+
+    it('should return null when authenticated but no access payload', () => {
+      const mockJwtToken = {
+        token: { accessToken: 'stored-access', refreshToken: 'stored-refresh' },
+        authenticated: true,
+        access: { payload: null },
+        isRefreshNeeded: vi.fn(() => false),
+        isRefreshable: vi.fn(() => true),
+      };
+      vi.spyOn(tokenStorage, 'get').mockReturnValue(mockJwtToken as any);
+      expect(tokenStorage.currentUser).toBe(null);
     });
   });
 
