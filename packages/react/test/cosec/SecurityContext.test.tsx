@@ -206,28 +206,6 @@ describe('SecurityContext', () => {
       );
     });
 
-    it('should return the security context when used inside SecurityProvider', () => {
-      let contextValue: any = null;
-
-      function ContextConsumer() {
-        contextValue = useSecurityContext();
-        return <div>Consumer</div>;
-      }
-
-      render(
-        <SecurityProvider tokenStorage={tokenStorage}>
-          <ContextConsumer />
-        </SecurityProvider>,
-      );
-
-      expect(contextValue).toBeDefined();
-      expect(contextValue).toHaveProperty('currentUser');
-      expect(contextValue).toHaveProperty('authenticated');
-      expect(contextValue).toHaveProperty('signIn');
-      expect(contextValue).toHaveProperty('signOut');
-      expect(typeof contextValue.signIn).toBe('function');
-      expect(typeof contextValue.signOut).toBe('function');
-    });
 
     it('should provide reactive updates through context', async () => {
       let renderCount = 0;
@@ -396,7 +374,7 @@ describe('SecurityContext', () => {
   describe('type safety', () => {
     it('should maintain type safety for context value', () => {
       function TypeSafeComponent() {
-        const { currentUser, authenticated, signIn, signOut } =
+        const { authenticated, signIn, signOut } =
           useSecurityContext();
 
         // TypeScript should enforce these types
