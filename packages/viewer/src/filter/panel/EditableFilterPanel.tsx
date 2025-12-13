@@ -11,20 +11,27 @@
  * limitations under the License.
  */
 
-import React, { useState, Key } from 'react';
+import React, { useState, Key, useRef } from 'react';
 import { Button } from 'antd';
 import { AvailableFilterGroup, AvailableFilter } from './AvailableFilterSelect';
 import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
 import { useRequestId } from '@ahoo-wang/fetcher-react';
-import { ActiveFilter, FilterPanelProps, FilterPanel } from './FilterPanel';
+import {
+  ActiveFilter,
+  FilterPanelProps,
+  FilterPanel,
+  FilterPanelRef,
+} from './FilterPanel';
 
-export interface EditableFilterPanelProps
-  extends Omit<FilterPanelProps, 'actions'> {
+export interface EditableFilterPanelProps extends Omit<
+  FilterPanelProps,
+  'actions'
+> {
   availableFilters: AvailableFilterGroup[];
 }
 
 export function EditableFilterPanel(props: EditableFilterPanelProps) {
-  const { row, col, availableFilters, filters, onSearch } = props;
+  const { ref, row, col, availableFilters, filters, onSearch } = props;
   const [activeFilters, setActiveFilters] = useState(filters);
   const [modalOpen, setModalOpen] = useState(false);
   const generator = useRequestId();
@@ -40,6 +47,8 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
           key: generator.generate(),
           type: available.component,
           field: available.field,
+          value: available.value,
+          operator: available.operator,
         }) as ActiveFilter,
     );
     setActiveFilters([...activeFilters, ...newFilters]);
@@ -59,6 +68,7 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
   return (
     <>
       <FilterPanel
+        ref={ref}
         filters={editableFilters}
         onSearch={onSearch}
         actions={<Button onClick={() => setModalOpen(true)}>Add Filter</Button>}

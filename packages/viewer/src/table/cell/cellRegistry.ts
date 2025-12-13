@@ -14,6 +14,8 @@
 import { TypedComponentRegistry } from '../../registry';
 import { CellType } from './TypedCell';
 import { CellProps } from './types';
+import { ACTION_CELL_TYPE, ActionCell } from './ActionCell';
+import { ACTIONS_CELL_TYPE, ActionsCell } from './ActionsCell';
 import { TEXT_CELL_TYPE, TextCell } from './TextCell';
 import { TAG_CELL_TYPE, TagCell } from './TagCell';
 import { TAGS_CELL_TYPE, TagsCell } from './TagsCell';
@@ -61,15 +63,18 @@ import { AVATAR_CELL_TYPE, AvatarCell } from './AvatarCell';
  * }
  * ```
  */
-export const cellRegistry = TypedComponentRegistry.create<CellType, CellProps>([
-  [TEXT_CELL_TYPE, TextCell],
-  [TAG_CELL_TYPE, TagCell],
-  [TAGS_CELL_TYPE, TagsCell],
-  [DATETIME_CELL_TYPE, DateTimeCell],
-  [CALENDAR_CELL_TYPE, CalendarTimeCell],
-  [IMAGE_CELL_TYPE, ImageCell],
-  [IMAGE_GROUP_CELL_TYPE, ImageGroupCell],
-  [LINK_CELL_TYPE, LinkCell],
-  [CURRENCY_CELL_TYPE, CurrencyCell],
-  [AVATAR_CELL_TYPE, AvatarCell],
-]);
+export const cellRegistry: TypedComponentRegistry<CellType, CellProps> =
+  TypedComponentRegistry.create<CellType, CellProps>([
+    [ACTION_CELL_TYPE, ActionCell],
+    [ACTIONS_CELL_TYPE, ActionsCell],
+    [TEXT_CELL_TYPE, TextCell],
+    [TAG_CELL_TYPE, TagCell],
+    [TAGS_CELL_TYPE, TagsCell],
+    [DATETIME_CELL_TYPE, DateTimeCell],
+    [CALENDAR_CELL_TYPE, CalendarTimeCell],
+    [IMAGE_CELL_TYPE, ImageCell],
+    [IMAGE_GROUP_CELL_TYPE, ImageGroupCell],
+    [LINK_CELL_TYPE, LinkCell],
+    [CURRENCY_CELL_TYPE, CurrencyCell],
+    [AVATAR_CELL_TYPE, AvatarCell],
+  ]);

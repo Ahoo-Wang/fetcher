@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { FilterField } from '../types';
+import { FilterField, FilterOperatorProps, FilterValueProps } from '../types';
 import { FilterType } from '../TypedFilter';
 import { Checkbox, Flex, Typography } from 'antd';
 import { StyleCapable } from '../../types';
@@ -27,6 +27,8 @@ import { ActiveFilter } from './FilterPanel';
 export interface AvailableFilter {
   field: FilterField;
   component: FilterType;
+  value?: FilterValueProps;
+  operator?: FilterOperatorProps;
 }
 
 export interface AvailableFilterGroup {
