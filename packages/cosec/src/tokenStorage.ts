@@ -69,6 +69,9 @@ export class TokenStorage
   }
 
   get currentUser(): CoSecJwtPayload | null {
-    return this.get()?.currentUser ?? null;
+    if (!this.authenticated) {
+      return null;
+    }
+    return this.get()?.access.payload ?? null;
   }
 }
