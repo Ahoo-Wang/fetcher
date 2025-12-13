@@ -87,7 +87,7 @@ export interface UseSecurityReturn {
  */
 export function useSecurity(tokenStorage: TokenStorage): UseSecurityReturn {
   // Use useKeyStorage to get reactive updates when token changes
-  const [token, _, remove] = useKeyStorage(tokenStorage);
+  const [token, , remove] = useKeyStorage(tokenStorage);
   const signIn = useCallback(
     (compositeToken: CompositeToken) => {
       tokenStorage.signIn(compositeToken);
@@ -95,7 +95,7 @@ export function useSecurity(tokenStorage: TokenStorage): UseSecurityReturn {
     [tokenStorage],
   );
   return {
-    currentUser: token?.access ?? null,
+    currentUser: token?.access?.payload ?? null,
     authenticated: token?.authenticated ?? false,
     signIn,
     signOut: remove,
