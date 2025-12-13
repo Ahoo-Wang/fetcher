@@ -12,6 +12,7 @@
  */
 
 export * from './core';
+export * from './cosec';
 export * from './storage';
 export * from './fetcher';
 export * from './wow';

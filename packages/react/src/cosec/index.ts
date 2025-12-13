@@ -11,4 +11,5 @@
  * limitations under the License.
  */
 
+export * from './SecurityContext';
 export * from './useSecurity';
