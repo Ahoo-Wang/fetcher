@@ -13,7 +13,7 @@
 
 import { JwtCompositeToken, JwtCompositeTokenSerializer } from './jwtToken';
 import { CompositeToken } from './tokenRefresher';
-import { EarlyPeriodCapable } from './jwts';
+import { CoSecJwtPayload, EarlyPeriodCapable } from './jwts';
 import { KeyStorage, KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
 import {
   BroadcastTypedEventBus,
@@ -24,25 +24,25 @@ export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 
 export interface TokenStorageOptions
   extends Partial<Omit<KeyStorageOptions<JwtCompositeToken>, 'serializer'>>,
-    Partial<EarlyPeriodCapable> {}
+    Partial<EarlyPeriodCapable> {
+}
 
 /**
  * Storage class for managing access and refresh tokens.
  */
 export class TokenStorage
   extends KeyStorage<JwtCompositeToken>
-  implements EarlyPeriodCapable
-{
+  implements EarlyPeriodCapable {
   public readonly earlyPeriod: number;
 
   constructor({
-    key = DEFAULT_COSEC_TOKEN_KEY,
-    eventBus = new BroadcastTypedEventBus({
-      delegate: new SerialTypedEventBus(DEFAULT_COSEC_TOKEN_KEY),
-    }),
-    earlyPeriod = 0,
-    ...reset
-  }: TokenStorageOptions = {}) {
+                key = DEFAULT_COSEC_TOKEN_KEY,
+                eventBus = new BroadcastTypedEventBus({
+                  delegate: new SerialTypedEventBus(DEFAULT_COSEC_TOKEN_KEY),
+                }),
+                earlyPeriod = 0,
+                ...reset
+              }: TokenStorageOptions = {}) {
     super({
       key,
       eventBus,
@@ -54,5 +54,21 @@ export class TokenStorage
 
   setCompositeToken(compositeToken: CompositeToken) {
     this.set(new JwtCompositeToken(compositeToken, this.earlyPeriod));
+  }
+
+  signIn(compositeToken: CompositeToken): void {
+    this.setCompositeToken(compositeToken);
+  }
+
+  signOut(): void {
+    this.remove();
+  }
+
+  get authenticated(): boolean {
+    return this.get()?.authenticated === true;
+  }
+
+  get currentUser(): CoSecJwtPayload | null {
+    return this.get()?.currentUser ?? null;
   }
 }
