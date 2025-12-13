@@ -74,6 +74,7 @@ describe('jwtToken', () => {
 
       expect(compositeToken.access.token).toBe(VALID_JWT);
       expect(compositeToken.refresh.token).toBe(REFRESH_JWT);
+      expect(compositeToken.authenticated).toBe(true)
     });
 
     it('should correctly identify when refresh is needed', () => {
