@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { ANONYMOUS_USER, useSecurity } from '../../src/cosec/useSecurity';
+import { useSecurity } from '../../src/cosec/useSecurity';
 import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
 import { InMemoryStorage } from '@ahoo-wang/fetcher-storage';
 
@@ -65,7 +65,7 @@ describe('useSecurity', () => {
     it('should return null currentUser and false authenticated when no token is stored', () => {
       const { result } = renderHook(() => useSecurity(tokenStorage));
 
-      expect(result.current.currentUser).toBe(ANONYMOUS_USER);
+      expect(result.current.currentUser).toBe(null);
       expect(result.current.authenticated).toBe(false);
     });
 
@@ -107,9 +107,86 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(ANONYMOUS_USER);
+        expect(result.current.currentUser).toBe(null);
         expect(result.current.authenticated).toBe(false);
       });
+    });
+
+    it('should support signIn with async function returning composite token', async () => {
+      const { result } = renderHook(() => useSecurity(tokenStorage));
+
+      const asyncTokenFn = vi.fn().mockResolvedValue(validCompositeToken);
+
+      await act(async () => {
+        await result.current.signIn(asyncTokenFn);
+      });
+
+      expect(asyncTokenFn).toHaveBeenCalledTimes(1);
+      expect(result.current.currentUser).toEqual({
+        sub: 'user123',
+        exp: 2000000000,
+      });
+      expect(result.current.authenticated).toBe(true);
+    });
+
+    it('should handle signIn with async function that throws', async () => {
+      const { result } = renderHook(() => useSecurity(tokenStorage));
+
+      const errorFn = vi.fn().mockRejectedValue(new Error('Auth failed'));
+
+      await expect(
+        act(async () => {
+          await result.current.signIn(errorFn);
+        }),
+      ).rejects.toThrow('Auth failed');
+
+      expect(result.current.currentUser).toBe(null);
+      expect(result.current.authenticated).toBe(false);
+    });
+
+    it('should call onSignIn callback when signIn succeeds', async () => {
+      const onSignIn = vi.fn();
+      const { result } = renderHook(() =>
+        useSecurity(tokenStorage, { onSignIn }),
+      );
+
+      await act(async () => {
+        await result.current.signIn(validCompositeToken);
+      });
+
+      expect(onSignIn).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onSignOut callback when signOut is called', () => {
+      const onSignOut = vi.fn();
+      tokenStorage.signIn(validCompositeToken);
+
+      const { result } = renderHook(() =>
+        useSecurity(tokenStorage, { onSignOut }),
+      );
+
+      act(() => {
+        result.current.signOut();
+      });
+
+      expect(onSignOut).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not call onSignIn callback when signIn fails', async () => {
+      const onSignIn = vi.fn();
+      const { result } = renderHook(() =>
+        useSecurity(tokenStorage, { onSignIn }),
+      );
+
+      const errorFn = vi.fn().mockRejectedValue(new Error('Auth failed'));
+
+      await expect(
+        act(async () => {
+          await result.current.signIn(errorFn);
+        }),
+      ).rejects.toThrow('Auth failed');
+
+      expect(onSignIn).not.toHaveBeenCalled();
     });
 
     it('should update state reactively when token is signed in externally', async () => {
@@ -136,7 +213,7 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(ANONYMOUS_USER);
+        expect(result.current.currentUser).toBe(null);
         expect(result.current.authenticated).toBe(false);
       });
     });
@@ -148,7 +225,7 @@ describe('useSecurity', () => {
         result.current.signOut();
       });
 
-      expect(result.current.currentUser).toBe(ANONYMOUS_USER);
+      expect(result.current.currentUser).toBe(null);
       expect(result.current.authenticated).toBe(false);
     });
 
@@ -161,7 +238,7 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(ANONYMOUS_USER);
+        expect(result.current.currentUser).toBe(null);
         expect(result.current.authenticated).toBe(false);
       });
     });
@@ -190,8 +267,8 @@ describe('useSecurity', () => {
       await waitFor(() => {
         expect(result1.current.authenticated).toBe(false);
         expect(result2.current.authenticated).toBe(false);
-        expect(result1.current.currentUser).toBe(ANONYMOUS_USER);
-        expect(result2.current.currentUser).toBe(ANONYMOUS_USER);
+        expect(result1.current.currentUser).toBe(null);
+        expect(result2.current.currentUser).toBe(null);
       });
     });
 
@@ -268,7 +345,7 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(ANONYMOUS_USER);
+        expect(result.current.currentUser).toBe(null);
         expect(result.current.authenticated).toBe(false);
       });
     });
@@ -296,7 +373,7 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(ANONYMOUS_USER);
+        expect(result.current.currentUser).toBe(null);
         expect(result.current.authenticated).toBe(false);
       });
     });
@@ -313,7 +390,7 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(ANONYMOUS_USER);
+        expect(result.current.currentUser).toBe(null);
         expect(result.current.authenticated).toBe(false);
       });
     });
@@ -376,11 +453,11 @@ describe('useSecurity', () => {
 
       const { result } = renderHook(() => useSecurity(errorTokenStorage));
 
-      expect(() => {
-        act(() => {
-          result.current.signIn(validCompositeToken);
-        });
-      }).toThrow('Storage write error');
+      await expect(
+        act(async () => {
+          await result.current.signIn(validCompositeToken);
+        }),
+      ).rejects.toThrow('Storage write error');
 
       errorTokenStorage.destroy();
     });
