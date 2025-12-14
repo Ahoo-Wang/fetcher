@@ -33,7 +33,7 @@ vi.mock('../../src/fetcher', () => ({
     abort: mockAbort,
   })),
 }));
-vi.mock('../../src/core', () => ({
+vi.mock('../../src/core/useLatest', () => ({
   useLatest: vi.fn(value => ({ current: value })),
 }));
 

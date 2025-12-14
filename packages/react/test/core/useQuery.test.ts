@@ -16,12 +16,21 @@ import { renderHook, act } from '@testing-library/react';
 import { useQuery } from '../../src';
 
 // Mock the core hooks
-vi.mock('../../src/core', () => ({
+vi.mock('../../src/core/useExecutePromise', () => ({
   useExecutePromise: vi.fn(),
+}));
+
+vi.mock('../../src/core/useLatest', () => ({
   useLatest: vi.fn(),
 }));
 
-import { useExecutePromise, useLatest } from '../../src';
+vi.mock('../../src/core/useQueryState', () => ({
+  useQueryState: vi.fn(),
+}));
+
+import { useExecutePromise } from '../../src/core/useExecutePromise';
+import { useLatest } from '../../src/core/useLatest';
+import { useQueryState } from '../../src/core/useQueryState';
 
 describe('useQuery', () => {
   const mockResult = { id: 1, name: 'Test Item' };
@@ -44,15 +53,38 @@ describe('useQuery', () => {
     reset: mockReset,
   };
 
+  let currentQuery = initialQuery;
+  const mockQueryState = {
+    getQuery: vi.fn().mockImplementation(() => currentQuery),
+    setQuery: vi.fn().mockImplementation((newQuery: any) => {
+      currentQuery = newQuery;
+    }),
+  };
+
   let mockLatestOptions: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    currentQuery = initialQuery;
     mockLatestOptions = { current: {} };
     (useExecutePromise as any).mockReturnValue(mockPromiseState);
     (useLatest as any).mockImplementation((options: any) => {
       mockLatestOptions.current = options;
       return mockLatestOptions;
+    });
+    (useQueryState as any).mockImplementation((options: any) => {
+      if (options.autoExecute) {
+        options.execute(options.initialQuery);
+      }
+      // For setQuery auto execute
+      const originalSetQuery = mockQueryState.setQuery;
+      mockQueryState.setQuery = vi.fn().mockImplementation((newQuery: any) => {
+        originalSetQuery(newQuery);
+        if (options.autoExecute) {
+          options.execute(newQuery);
+        }
+      });
+      return mockQueryState;
     });
   });
 
