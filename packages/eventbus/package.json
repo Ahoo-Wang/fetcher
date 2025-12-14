@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-eventbus",
-  "version": "3.5.5",
+  "version": "3.5.6",
   "description": "A TypeScript event bus library with serial, parallel, and broadcast implementations",
   "keywords": [
     "eventbus",
