@@ -290,15 +290,22 @@ describe('useFetcherQuery', () => {
       expect(mockExecute).not.toHaveBeenCalled();
     });
 
-    it('should not execute on mount when autoExecute is undefined', () => {
+    it('should execute on mount by default when autoExecute is undefined', async () => {
+      const initialQuery = { id: 'test' };
       const options = {
         url: '/api/test',
-        initialQuery: { id: 'test' },
+        initialQuery,
       };
 
       renderHook(() => useFetcherQuery(options));
 
-      expect(mockExecute).not.toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(mockExecute).toHaveBeenCalledWith({
+          url: '/api/test',
+          method: 'POST',
+          body: initialQuery,
+        });
+      });
     });
 
     it('should execute on setQuery when autoExecute is true', async () => {

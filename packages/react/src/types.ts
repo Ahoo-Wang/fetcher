@@ -19,7 +19,7 @@ export interface DepsCapable {
 
 export interface AutoExecuteCapable {
   /**
-   * Whether to automatically execute the query on component mount. Defaults to false.
+   * Whether to automatically execute the query on component mount. Defaults to true.
    */
   autoExecute?: boolean;
 }
