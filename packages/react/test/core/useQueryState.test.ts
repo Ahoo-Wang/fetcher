@@ -25,6 +25,7 @@ describe('useQueryState', () => {
         useQueryState({
           initialQuery,
           execute,
+          autoExecute: false, // Explicitly disable auto execute
         }),
       );
 
@@ -41,6 +42,7 @@ describe('useQueryState', () => {
         useQueryState({
           initialQuery,
           execute,
+          autoExecute: false, // Explicitly disable auto execute
         }),
       );
 
@@ -148,7 +150,7 @@ describe('useQueryState', () => {
       expect(execute).not.toHaveBeenCalled();
     });
 
-    it('should not execute on mount when autoExecute is undefined', () => {
+    it('should execute on mount by default when autoExecute is undefined', () => {
       const initialQuery = { id: 'test' };
       const execute = vi.fn().mockResolvedValue(undefined);
 
@@ -159,7 +161,7 @@ describe('useQueryState', () => {
         }),
       );
 
-      expect(execute).not.toHaveBeenCalled();
+      expect(execute).toHaveBeenCalledTimes(1);
     });
 
     it('should execute on setQuery when autoExecute is true', async () => {
@@ -498,6 +500,7 @@ describe('useQueryState', () => {
         useQueryState({
           initialQuery: largeQuery,
           execute,
+          autoExecute: false, // Explicitly disable auto execute
         }),
       );
 

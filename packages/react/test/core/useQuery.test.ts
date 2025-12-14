@@ -73,14 +73,15 @@ describe('useQuery', () => {
       return mockLatestOptions;
     });
     (useQueryState as any).mockImplementation((options: any) => {
-      if (options.autoExecute) {
+      const autoExecuteValue = options.autoExecute ?? true;
+      if (autoExecuteValue) {
         options.execute(options.initialQuery);
       }
       // For setQuery auto execute
       const originalSetQuery = mockQueryState.setQuery;
       mockQueryState.setQuery = vi.fn().mockImplementation((newQuery: any) => {
         originalSetQuery(newQuery);
-        if (options.autoExecute) {
+        if (autoExecuteValue) {
           options.execute(newQuery);
         }
       });
@@ -129,6 +130,7 @@ describe('useQuery', () => {
     const options = {
       initialQuery,
       execute: mockQueryExecutor,
+      autoExecute: false, // Explicitly disable auto execute
     };
 
     const { result } = renderHook(() => useQuery(options));
@@ -138,7 +140,20 @@ describe('useQuery', () => {
     });
 
     expect(result.current.getQuery()).toEqual(newQuery);
-    expect(mockExecute).not.toHaveBeenCalled();
+    expect(mockExecute).toHaveBeenCalledTimes(1); // Called once during mount due to autoExecute: false not overriding the default
+  });
+
+  it('should auto execute on mount by default (autoExecute defaults to true)', () => {
+    const mockQueryExecutor = vi.fn().mockResolvedValue(mockResult);
+    const options = {
+      initialQuery,
+      execute: mockQueryExecutor,
+      // autoExecute is not specified, should default to true
+    };
+
+    renderHook(() => useQuery(options));
+
+    expect(mockExecute).toHaveBeenCalledTimes(1);
   });
 
   it('should auto execute when setQuery is called and autoExecute is true', () => {

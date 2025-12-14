@@ -89,7 +89,7 @@ export function useQueryState<Q>(
   options: UseQueryStateOptions<Q>,
 ): UseQueryStateReturn<Q> {
   const { initialQuery, autoExecute, execute } = options;
-  const autoExecuteValue = autoExecute ?? false;
+  const autoExecuteValue = autoExecute ?? true;
   const queryRef = useRef(initialQuery);
 
   const getQuery = useCallback(() => {
