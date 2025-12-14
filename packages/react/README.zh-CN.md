@@ -1666,7 +1666,7 @@ function App() {
 
   return (
     <div>
-      <p>欢迎, {currentUser?.sub}!</p>
+      <p>欢迎, {currentUser.sub}!</p>
       <button onClick={signOut}>登出</button>
     </div>
   );
@@ -1728,7 +1728,7 @@ function UserProfile() {
 
   return (
     <div>
-      <p>欢迎, {currentUser?.sub}!</p>
+      <p>欢迎, {currentUser.sub}!</p>
       <button onClick={signOut}>登出</button>
     </div>
   );

@@ -762,7 +762,7 @@ function App() {
 
   return (
     <div>
-      <p>Welcome, {currentUser?.sub}!</p>
+      <p>Welcome, {currentUser.sub}!</p>
       <button onClick={signOut}>Sign Out</button>
     </div>
   );
@@ -824,7 +824,7 @@ function UserProfile() {
 
   return (
     <div>
-      <p>Welcome, {currentUser?.sub}!</p>
+      <p>Welcome, {currentUser.sub}!</p>
       <button onClick={signOut}>Sign Out</button>
     </div>
   );
