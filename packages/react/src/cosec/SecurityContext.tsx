@@ -57,7 +57,7 @@ export interface SecurityContextOptions {
  * @throws {Error} May throw errors if tokenStorage operations fail during initialization.
  * @example
  * ```tsx
- * import { SecurityProvider } from '@ahoo-wang/fetcher-react/cosec';
+ * import { SecurityProvider } from '@ahoo-wang/fetcher-react';
  * import { tokenStorage } from './tokenStorage';
  *
  * function App() {
@@ -89,7 +89,7 @@ export function SecurityProvider({
  * @throws {Error} Throws an error if used outside of a SecurityProvider component.
  * @example
  * ```tsx
- * import { useSecurityContext } from '@ahoo-wang/fetcher-react/cosec';
+ * import { useSecurityContext } from '@ahoo-wang/fetcher-react';
  *
  * function UserProfile() {
  *   const { currentUser, authenticated, signOut } = useSecurityContext();
