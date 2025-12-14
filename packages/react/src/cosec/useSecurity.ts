@@ -55,7 +55,7 @@ export interface UseSecurityOptions {
  */
 export interface UseSecurityReturn {
   /**
-   * The current authenticated user's JWT payload, or null if not authenticated.
+   * The current authenticated user's JWT payload, or ANONYMOUS_USER if not authenticated.
    * Contains user information extracted from the access token.
    */
   currentUser: CoSecJwtPayload;
