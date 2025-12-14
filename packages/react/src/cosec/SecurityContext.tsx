@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useSecurity, UseSecurityReturn } from './useSecurity';
+import { useSecurity, UseSecurityOptions, UseSecurityReturn } from './useSecurity';
 import { createContext, ReactNode, useContext } from 'react';
 import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
 
@@ -33,7 +33,7 @@ export const SecurityContext = createContext<SecurityContext | undefined>(
 /**
  * Props for the SecurityProvider component.
  */
-export interface SecurityContextOptions {
+export interface SecurityContextOptions extends UseSecurityOptions {
   /**
    * The token storage instance used to manage authentication tokens.
    * This should be a valid TokenStorage implementation that handles token persistence and retrieval.
@@ -70,10 +70,11 @@ export interface SecurityContextOptions {
  * ```
  */
 export function SecurityProvider({
-  tokenStorage,
-  children,
-}: SecurityContextOptions) {
-  const value = useSecurity(tokenStorage);
+                                   tokenStorage,
+                                   children,
+                                   ...useSecurityOptions
+                                 }: SecurityContextOptions) {
+  const value = useSecurity(tokenStorage, useSecurityOptions);
   return (
     <SecurityContext.Provider value={value}>
       {children}
