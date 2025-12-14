@@ -102,7 +102,7 @@ export interface UseSecurityReturn {
  *                 or storage access issues (implementation dependent).
  * @example
  * ```typescript
- * import { useSecurity } from '@ahoo-wang/fetcher-react/cosec';
+ * import { useSecurity } from '@ahoo-wang/fetcher-react';
  * import { tokenStorage } from './tokenStorage';
  * import { useNavigate } from 'react-router-dom';
  *

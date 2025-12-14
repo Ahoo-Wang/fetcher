@@ -724,7 +724,7 @@ Key features:
 The `useSecurity` hook provides reactive access to authentication state and operations using CoSec tokens. It integrates with TokenStorage to persist tokens and updates state reactively when tokens change.
 
 ```typescript jsx
-import { useSecurity } from '@ahoo-wang/fetcher-react/cosec';
+import { useSecurity } from '@ahoo-wang/fetcher-react';
 import { tokenStorage } from './tokenStorage';
 import { useNavigate } from 'react-router-dom';
 

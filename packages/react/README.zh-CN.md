@@ -1628,7 +1628,7 @@ function MyComponent() {
 `useSecurity` hook 使用 CoSec 令牌提供对认证状态和操作的响应式访问。它与 TokenStorage 集成以持久化令牌，并在令牌更改时响应式更新状态。
 
 ```typescript jsx
-import { useSecurity } from '@ahoo-wang/fetcher-react/cosec';
+import { useSecurity } from '@ahoo-wang/fetcher-react';
 import { tokenStorage } from './tokenStorage';
 import { useNavigate } from 'react-router-dom';
 
