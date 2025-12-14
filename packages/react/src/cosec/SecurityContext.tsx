@@ -11,37 +11,55 @@
  * limitations under the License.
  */
 
-import { useSecurity, UseSecurityOptions, UseSecurityReturn } from './useSecurity';
+import {
+  useSecurity,
+  UseSecurityOptions,
+  UseSecurityReturn,
+} from './useSecurity';
 import { createContext, ReactNode, useContext } from 'react';
 import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
 
 /**
- * Type alias for the security context value, which is the same as the return type of useSecurity hook.
- * Provides access to current user information, authentication status, and authentication methods.
+ * Type alias for the security context value, representing the authentication state and methods.
+ * This is equivalent to the return type of the useSecurity hook, providing reactive access to:
+ * - Current authenticated user information (JWT payload)
+ * - Authentication status (boolean flag)
+ * - Sign-in method for authenticating users
+ * - Sign-out method for clearing authentication
+ *
+ * Used internally by the SecurityContext to type the context value.
  */
 export type SecurityContext = UseSecurityReturn;
 
 /**
  * React context for managing authentication state across the component tree.
- * This context provides a way to share authentication state and methods between components
- * without prop drilling. It should be used with SecurityProvider to wrap the application.
+ * This context enables sharing of authentication state and methods between components
+ * without prop drilling. Components can access authentication data and methods through
+ * the useSecurityContext hook when wrapped by the SecurityProvider.
+ *
+ * The context value is undefined by default, requiring components to be wrapped by
+ * SecurityProvider to access authentication functionality.
  */
 export const SecurityContext = createContext<SecurityContext | undefined>(
   undefined,
 );
 
 /**
- * Props for the SecurityProvider component.
+ * Configuration options for the SecurityProvider component.
+ * Extends UseSecurityOptions to include provider-specific settings like token storage and children.
  */
 export interface SecurityContextOptions extends UseSecurityOptions {
   /**
    * The token storage instance used to manage authentication tokens.
-   * This should be a valid TokenStorage implementation that handles token persistence and retrieval.
+   * This should be a valid TokenStorage implementation that handles token persistence,
+   * retrieval, and lifecycle management across different storage backends (localStorage,
+   * sessionStorage, memory, etc.).
    */
   tokenStorage: TokenStorage;
 
   /**
    * The child components that will have access to the security context.
+   * These components can use the useSecurityContext hook to access authentication state and methods.
    */
   children: ReactNode;
 }
@@ -49,20 +67,39 @@ export interface SecurityContextOptions extends UseSecurityOptions {
 /**
  * Provider component that supplies authentication state and methods to its child components.
  * This component wraps the application or a portion of it to provide access to authentication
- * functionality through the useSecurityContext hook.
+ * functionality through the useSecurityContext hook. It internally uses the useSecurity hook
+ * to manage authentication state and makes it available via React context.
  *
  * @param tokenStorage - The token storage instance for managing authentication tokens.
+ *                      This should be a valid TokenStorage implementation that handles
+ *                      token persistence, retrieval, and lifecycle management across different
+ *                      storage backends (localStorage, sessionStorage, memory, etc.).
  * @param children - The child components that will have access to the security context.
+ *                  These components can use the useSecurityContext hook to access authentication
+ *                  state and methods without prop drilling.
+ * @param useSecurityOptions - Optional configuration object containing lifecycle callbacks
+ *                            for sign-in and sign-out events. Extends UseSecurityOptions interface.
+ * @param useSecurityOptions.onSignIn - Callback function invoked when sign in is successful.
+ * @param useSecurityOptions.onSignOut - Callback function invoked when sign out occurs.
  * @returns A React element that provides the security context to its children.
- * @throws {Error} May throw errors if tokenStorage operations fail during initialization.
+ *          The context value includes currentUser, authenticated status, signIn, and signOut methods.
+ * @throws {Error} May throw errors if tokenStorage operations fail during initialization,
+ *                 such as invalid tokens or storage access issues (implementation dependent).
  * @example
  * ```tsx
  * import { SecurityProvider } from '@ahoo-wang/fetcher-react';
  * import { tokenStorage } from './tokenStorage';
+ * import { useNavigate } from 'react-router-dom';
  *
  * function App() {
+ *   const navigate = useNavigate();
+ *
  *   return (
- *     <SecurityProvider tokenStorage={tokenStorage}>
+ *     <SecurityProvider
+ *       tokenStorage={tokenStorage}
+ *       onSignIn={() => navigate('/dashboard')}
+ *       onSignOut={() => navigate('/login')}
+ *     >
  *       <MyApp />
  *     </SecurityProvider>
  *   );
@@ -70,10 +107,10 @@ export interface SecurityContextOptions extends UseSecurityOptions {
  * ```
  */
 export function SecurityProvider({
-                                   tokenStorage,
-                                   children,
-                                   ...useSecurityOptions
-                                 }: SecurityContextOptions) {
+  tokenStorage,
+  children,
+  ...useSecurityOptions
+}: SecurityContextOptions) {
   const value = useSecurity(tokenStorage, useSecurityOptions);
   return (
     <SecurityContext.Provider value={value}>
