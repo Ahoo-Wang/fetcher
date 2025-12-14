@@ -58,7 +58,7 @@ export interface UseSecurityReturn {
    * The current authenticated user's JWT payload, or null if not authenticated.
    * Contains user information extracted from the access token.
    */
-  currentUser: CoSecJwtPayload | null;
+  currentUser: CoSecJwtPayload;
 
   /**
    * Boolean indicating whether the user is currently authenticated.
@@ -68,11 +68,11 @@ export interface UseSecurityReturn {
 
   /**
    * Function to sign in with a composite token or a function that returns a promise of composite token.
-   * @param tokenOrFn - Either a composite token containing access and refresh tokens,
-   *                   or a function that returns a promise resolving to a composite token.
+   * @param compositeTokenProvider - Either a composite token containing access and refresh tokens,
+   *                                or a function that returns a promise resolving to a composite token.
    * @returns A promise that resolves when the sign-in operation is complete.
    */
-  signIn: (tokenOrFn: CompositeTokenProvider) => Promise<void>;
+  signIn: (compositeTokenProvider: CompositeTokenProvider) => Promise<void>;
 
   /**
    * Function to sign out the current user.
@@ -155,9 +155,11 @@ export function useSecurity(
   const [token, , remove] = useKeyStorage(tokenStorage);
   const optionsRef = useLatest(options);
   const signIn = useCallback(
-    async (tokenOrFn: CompositeTokenProvider) => {
+    async (compositeTokenProvider: CompositeTokenProvider) => {
       const compositeToken =
-        typeof tokenOrFn === 'function' ? await tokenOrFn() : tokenOrFn;
+        typeof compositeTokenProvider === 'function'
+          ? await compositeTokenProvider()
+          : compositeTokenProvider;
       tokenStorage.signIn(compositeToken);
       optionsRef.current.onSignIn?.();
     },
