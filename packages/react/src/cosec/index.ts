@@ -13,3 +13,4 @@
 
 export * from './SecurityContext';
 export * from './useSecurity';
+export * from './RouteGuard';
