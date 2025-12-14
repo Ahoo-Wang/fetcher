@@ -19,6 +19,10 @@ import {
   CoSecJwtPayload,
 } from '@ahoo-wang/fetcher-cosec';
 
+export const ANONYMOUS_USER: CoSecJwtPayload = {
+  sub: 'anonymous',
+};
+
 /**
  * Return type for the useSecurity hook.
  */
@@ -27,7 +31,7 @@ export interface UseSecurityReturn {
    * The current authenticated user's JWT payload, or null if not authenticated.
    * Contains user information extracted from the access token.
    */
-  currentUser: CoSecJwtPayload | null;
+  currentUser: CoSecJwtPayload;
 
   /**
    * Boolean indicating whether the user is currently authenticated.
@@ -95,7 +99,7 @@ export function useSecurity(tokenStorage: TokenStorage): UseSecurityReturn {
     [tokenStorage],
   );
   return {
-    currentUser: token?.access?.payload ?? null,
+    currentUser: token?.access?.payload ?? ANONYMOUS_USER,
     authenticated: token?.authenticated ?? false,
     signIn,
     signOut: remove,
