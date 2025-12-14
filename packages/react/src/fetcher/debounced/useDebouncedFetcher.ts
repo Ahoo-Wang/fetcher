@@ -11,13 +11,13 @@
  * limitations under the License.
  */
 
-import { useFetcher, UseFetcherOptions, UseFetcherReturn } from './useFetcher';
+import { useFetcher, UseFetcherOptions, UseFetcherReturn } from '../useFetcher';
 import { FetcherError } from '@ahoo-wang/fetcher';
 import {
   DebounceCapable,
   useDebouncedCallback,
   UseDebouncedCallbackReturn,
-} from '../core';
+} from '../../core';
 import { useMemo } from 'react';
 
 /**

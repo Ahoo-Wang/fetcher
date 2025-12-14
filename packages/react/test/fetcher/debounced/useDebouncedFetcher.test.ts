@@ -15,8 +15,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // Import before mocks
-import { useDebouncedFetcher } from '../../src';
-import { PromiseStatus } from '../../src';
+import { useDebouncedFetcher } from '../../../src';
+import { PromiseStatus } from '../../../src';
 
 // Mock fetcher
 vi.mock('@ahoo-wang/fetcher', async importOriginal => {

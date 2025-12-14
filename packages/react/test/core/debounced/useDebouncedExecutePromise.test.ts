@@ -13,8 +13,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useDebouncedExecutePromise } from '../../src';
-import { PromiseStatus } from '../../src';
+import { useDebouncedExecutePromise } from '../../../src';
+import { PromiseStatus } from '../../../src';
 
 describe('useDebouncedExecutePromise', () => {
   beforeEach(() => {
