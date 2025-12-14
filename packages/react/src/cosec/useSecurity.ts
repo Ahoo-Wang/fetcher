@@ -165,7 +165,7 @@ export function useSecurity(
   }, [remove]);
 
   return {
-    currentUser: token?.access?.payload ?? null,
+    currentUser: token?.access?.payload ?? ANONYMOUS_USER,
     authenticated: token?.authenticated ?? false,
     signIn,
     signOut,
