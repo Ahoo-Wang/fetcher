@@ -47,20 +47,24 @@ robust data fetching capabilities.
     - [useImmerKeyStorage](#useimmerkeystorage-hook)
   - [Event Hooks](#event-hooks)
     - [useEventSubscription](#useeventsubscription-hook)
+  - [CoSec Security Hooks](#cosec-security-hooks)
+    - [useSecurity](#usesecurity-hook)
+    - [SecurityProvider](#securityprovider)
+    - [useSecurityContext](#usesecuritycontext-hook)
   - [Wow Query Hooks](#wow-query-hooks)
-    - [Basic Query Hooks](#basic-query-hooks)
-      - [useListQuery](#uselistquery-hook)
-      - [usePagedQuery](#usepagedquery-hook)
-      - [useSingleQuery](#usesinglequery-hook)
-      - [useCountQuery](#usecountquery-hook)
-    - [Fetcher Query Hooks](#fetcher-query-hooks)
-      - [useFetcherListQuery](#usefetcherlistquery-hook)
-      - [useFetcherPagedQuery](#usefetcherpagedquery-hook)
-      - [useFetcherSingleQuery](#usefetchersinglequery-hook)
-      - [useFetcherCountQuery](#usefetchercountquery-hook)
-    - [Stream Query Hooks](#stream-query-hooks)
-      - [useListStreamQuery](#useliststreamquery-hook)
-      - [useFetcherListStreamQuery](#usefetcherliststreamquery-hook)
+  - [Basic Query Hooks](#basic-query-hooks)
+    - [useListQuery](#uselistquery-hook)
+    - [usePagedQuery](#usepagedquery-hook)
+    - [useSingleQuery](#usesinglequery-hook)
+    - [useCountQuery](#usecountquery-hook)
+  - [Fetcher Query Hooks](#fetcher-query-hooks)
+    - [useFetcherListQuery](#usefetcherlistquery-hook)
+    - [useFetcherPagedQuery](#usefetcherpagedquery-hook)
+    - [useFetcherSingleQuery](#usefetchersinglequery-hook)
+    - [useFetcherCountQuery](#usefetchercountquery-hook)
+  - [Stream Query Hooks](#stream-query-hooks)
+    - [useListStreamQuery](#useliststreamquery-hook)
+    - [useFetcherListStreamQuery](#usefetcherliststreamquery-hook)
 - [Best Practices](#best-practices)
 - [API Reference](#api-reference)
 - [License](#license)
@@ -710,6 +714,129 @@ Key features:
 - **Type Safety**: Full TypeScript support with generic event types
 - **Error Handling**: Logs warnings for failed subscription attempts
 - **Event Bus Integration**: Works seamlessly with `@ahoo-wang/fetcher-eventbus` TypedEventBus instances
+
+### CoSec Security Hooks
+
+🛡️ **Enterprise Security Integration** - Powerful React hooks for managing authentication state with CoSec tokens, providing seamless integration with enterprise security systems and automatic token lifecycle management.
+
+#### useSecurity Hook
+
+The `useSecurity` hook provides reactive access to authentication state and operations using CoSec tokens. It integrates with TokenStorage to persist tokens and updates state reactively when tokens change.
+
+```typescript jsx
+import { useSecurity } from '@ahoo-wang/fetcher-react/cosec';
+import { tokenStorage } from './tokenStorage';
+import { useNavigate } from 'react-router-dom';
+
+function App() {
+  const navigate = useNavigate();
+
+  const { currentUser, authenticated, signIn, signOut } = useSecurity(tokenStorage, {
+    onSignIn: () => {
+      // Redirect to dashboard after successful login
+      navigate('/dashboard');
+    },
+    onSignOut: () => {
+      // Redirect to login page after logout
+      navigate('/login');
+    }
+  });
+
+  const handleSignIn = async () => {
+    // Direct token
+    await signIn(compositeToken);
+
+    // Or async function
+    await signIn(async () => {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password })
+      });
+      return response.json();
+    });
+  };
+
+  if (!authenticated) {
+    return <button onClick={handleSignIn}>Sign In</button>;
+  }
+
+  return (
+    <div>
+      <p>Welcome, {currentUser?.sub}!</p>
+      <button onClick={signOut}>Sign Out</button>
+    </div>
+  );
+}
+```
+
+**Key Features:**
+
+- **Reactive Authentication State**: Automatically updates when tokens change
+- **Flexible Sign-in Methods**: Supports both direct tokens and async token providers
+- **Lifecycle Callbacks**: Configurable callbacks for sign-in and sign-out events
+- **Type Safety**: Full TypeScript support with CoSec JWT payload types
+- **Token Persistence**: Integrates with TokenStorage for cross-session persistence
+
+#### SecurityProvider
+
+The `SecurityProvider` component wraps your application to provide authentication context through React context. It internally uses the `useSecurity` hook and makes authentication state available to all child components via the `useSecurityContext` hook.
+
+```tsx
+import { SecurityProvider } from '@ahoo-wang/fetcher-react';
+import { tokenStorage } from './tokenStorage';
+import { useNavigate } from 'react-router-dom';
+
+function App() {
+  const navigate = useNavigate();
+
+  return (
+    <SecurityProvider
+      tokenStorage={tokenStorage}
+      onSignIn={() => navigate('/dashboard')}
+      onSignOut={() => navigate('/login')}
+    >
+      <MyApp />
+    </SecurityProvider>
+  );
+}
+```
+
+**Configuration Options:**
+
+- `tokenStorage`: TokenStorage instance for managing authentication tokens
+- `onSignIn`: Callback function invoked when sign in is successful
+- `onSignOut`: Callback function invoked when sign out occurs
+- `children`: Child components that will have access to security context
+
+#### useSecurityContext Hook
+
+The `useSecurityContext` hook provides access to authentication state and methods within components wrapped by `SecurityProvider`. It offers the same interface as `useSecurity` but through React context.
+
+```tsx
+import { useSecurityContext } from '@ahoo-wang/fetcher-react';
+
+function UserProfile() {
+  const { currentUser, authenticated, signOut } = useSecurityContext();
+
+  if (!authenticated) {
+    return <div>Please sign in</div>;
+  }
+
+  return (
+    <div>
+      <p>Welcome, {currentUser?.sub}!</p>
+      <button onClick={signOut}>Sign Out</button>
+    </div>
+  );
+}
+```
+
+**Context Benefits:**
+
+- **Prop Drilling Elimination**: Access authentication state without passing props
+- **Component Isolation**: Components can access auth state regardless of component tree depth
+- **Centralized State**: Single source of truth for authentication across the application
+- **Automatic Re-rendering**: Components automatically re-render when authentication state changes
 
 ### Storage Hooks
 
