@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { AutoExecuteCapable } from './types';
+import { AutoExecuteCapable } from '../types';
 
 /**
  * Configuration options for the useQueryState hook

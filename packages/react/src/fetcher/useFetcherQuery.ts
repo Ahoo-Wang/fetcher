@@ -11,12 +11,11 @@
  * limitations under the License.
  */
 
-import { useFetcher, UseFetcherOptions, UseFetcherReturn } from '../fetcher';
+import { useFetcher, UseFetcherOptions, UseFetcherReturn } from './index';
 import { FetcherError, FetchRequest, JsonResultExtractor } from '@ahoo-wang/fetcher';
-import { useLatest } from '../core';
+import { useLatest, useQueryState, UseQueryStateReturn } from '../core';
 import { useCallback, useMemo } from 'react';
-import { AutoExecuteCapable } from './types';
-import { useQueryState, UseQueryStateReturn } from './useQueryState';
+import { AutoExecuteCapable } from '../types';
 
 /**
  * Configuration options for the useFetcherQuery hook

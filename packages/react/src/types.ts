@@ -16,3 +16,10 @@ import { DependencyList } from 'react';
 export interface DepsCapable {
   deps?: DependencyList;
 }
+
+export interface AutoExecuteCapable {
+  /**
+   * Whether to automatically execute the query on component mount. Defaults to false.
+   */
+  autoExecute?: boolean;
+}

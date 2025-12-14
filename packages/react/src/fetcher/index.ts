@@ -13,3 +13,4 @@
 
 export * from './useFetcher';
 export * from './useDebouncedFetcher';
+export * from './useFetcherQuery';
