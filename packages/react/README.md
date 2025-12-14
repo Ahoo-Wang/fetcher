@@ -29,11 +29,8 @@ robust data fetching capabilities.
 - [Quick Start](#quick-start)
 - [Usage](#usage)
   - [Core Hooks](#core-hooks)
-    - [useFetcher](#usefetcher-hook)
     - [useExecutePromise](#useexecutepromise-hook)
     - [usePromiseState](#usepromisestate-hook)
-    - [useDebouncedCallback](#usedebouncedcallback)
-    - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
     - [useRequestId](#userequestid-hook)
     - [useLatest](#uselatest-hook)
     - [useRefs](#userefs-hook)
@@ -41,10 +38,16 @@ robust data fetching capabilities.
     - [useQueryState](#usequerystate-hook)
     - [useMounted](#usemounted-hook)
     - [useForceUpdate](#useforceupdate-hook)
+    - [Debounced Hooks](#debounced-hooks)
+      - [useDebouncedCallback](#usedebouncedcallback)
+      - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
+      - [useDebouncedQuery](#usedebouncedquery)
   - [Fetcher Hooks](#fetcher-hooks)
-    - [useDebouncedFetcher](#usedebouncedfetcher)
     - [useFetcher](#usefetcher-hook)
     - [useFetcherQuery](#usefetcherquery-hook)
+    - [Debounced Fetcher Hooks](#debounced-fetcher-hooks)
+      - [useDebouncedFetcher](#usedebouncedfetcher)
+      - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
   - [Storage Hooks](#storage-hooks)
     - [useKeyStorage](#usekeystorage-hook)
     - [useImmerKeyStorage](#useimmerkeystorage-hook)
@@ -56,22 +59,18 @@ robust data fetching capabilities.
     - [useSecurityContext](#usesecuritycontext-hook)
     - [RouteGuard](#routeguard)
   - [Wow Query Hooks](#wow-query-hooks)
-    - [Debounced Query Hooks](#debounced-query-hooks)
-      - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
-      - [useDebouncedQuery](#usedebouncedquery)
     - [Basic Query Hooks](#basic-query-hooks)
       - [useListQuery](#uselistquery-hook)
       - [usePagedQuery](#usepagedquery-hook)
       - [useSingleQuery](#usesinglequery-hook)
       - [useCountQuery](#usecountquery-hook)
+      - [useListStreamQuery](#useliststreamquery-hook)
     - [Fetcher Query Hooks](#fetcher-query-hooks)
       - [useFetcherListQuery](#usefetcherlistquery-hook)
       - [useFetcherPagedQuery](#usefetcherpagedquery-hook)
       - [useFetcherSingleQuery](#usefetchersinglequery-hook)
       - [useFetcherCountQuery](#usefetchercountquery-hook)
       - [useFetcherListStreamQuery](#usefetcherliststreamquery-hook)
-    - [Stream Query Hooks](#stream-query-hooks)
-      - [useListStreamQuery](#useliststreamquery-hook)
 - [Best Practices](#best-practices)
 - [API Reference](#api-reference)
 - [License](#license)
@@ -114,55 +113,344 @@ function App() {
 
 ### Core Hooks
 
-#### useFetcher Hook
+#### useExecutePromise Hook
 
-The `useFetcher` hook provides complete data fetching capabilities with automatic state management, race condition
-protection, and flexible configuration options. It includes built-in AbortController support inherited from `useExecutePromise`.
+The `useExecutePromise` hook manages asynchronous operations with automatic state handling, built-in race condition
+protection, and support for promise state options. It includes automatic AbortController support for canceling operations.
 
 ```typescript jsx
-import { useFetcher } from '@ahoo-wang/fetcher-react';
+import { useExecutePromise } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const { loading, error, result, execute, abort } = useFetcher<string>({
+  const { loading, result, error, execute, reset, abort } = useExecutePromise<string>({
     onAbort: () => {
-      console.log('Fetch operation was aborted');
+      console.log('Operation was aborted');
     }
   });
 
+  const fetchData = async () => {
+    const response = await fetch('/api/data');
+    return response.text();
+  };
+
   const handleFetch = () => {
-    execute({ url: '/api/users', method: 'GET' });
+    execute(fetchData); // Using a promise supplier
+  };
+
+  const handleDirectPromise = () => {
+    const promise = fetch('/api/data').then(res => res.text());
+    execute(promise); // Using a direct promise
   };
 
   const handleAbort = () => {
-    abort(); // Cancel the current fetch operation
+    abort(); // Manually abort the current operation
   };
-```
-
-#### Auto Execute Example
-
-```typescript jsx
-import { useListQuery } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { result, loading, error, execute, setCondition } = useListQuery({
-    initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
-    list: async (listQuery) => fetchListData(listQuery),
-    autoExecute: true, // Automatically execute on component mount
-  });
-
-  // The query will execute automatically when the component mounts
-  // You can still manually trigger it with execute() or update conditions
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
+  return (
+    <div>
+      <button onClick={handleFetch}>Fetch with Supplier</button>
+      <button onClick={handleDirectPromise}>Fetch with Promise</button>
+      <button onClick={handleAbort} disabled={!loading}>Abort</button>
+      <button onClick={reset}>Reset</button>
+      {result && <p>{result}</p>}
+    </div>
+  );
+};
+```
+
+##### Abort Controller Support
+
+The hook automatically creates an AbortController for each operation and provides methods to manage cancellation:
+
+- **Automatic Cleanup**: Operations are automatically aborted when the component unmounts
+- **Manual Abort**: Use the `abort()` method to cancel ongoing operations
+- **onAbort Callback**: Configure a callback that fires when an operation is aborted (manually or automatically)
+- **AbortController Access**: The AbortController is passed to promise suppliers for advanced cancellation handling
+
+#### usePromiseState Hook
+
+The `usePromiseState` hook provides state management for promise operations without execution logic. Supports both
+static options and dynamic option suppliers.
+
+```typescript jsx
+import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { status, loading, result, error, setSuccess, setError, setIdle } = usePromiseState<string>();
+
+  const handleSuccess = () => setSuccess('Data loaded');
+  const handleError = () => setError(new Error('Failed to load'));
 
   return (
     <div>
-      <ul>
-        {result?.map((item, index) => (
-          <li key={index}>{item.name}</li>
-        ))}
-      </ul>
+      <button onClick={handleSuccess}>Set Success</button>
+      <button onClick={handleError}>Set Error</button>
+      <button onClick={setIdle}>Reset</button>
+      <p>Status: {status}</p>
+      {loading && <p>Loading...</p>}
+      {result && <p>Result: {result}</p>}
+      {error && <p>Error: {error.message}</p>}
+    </div>
+  );
+};
+```
+
+##### usePromiseState with Options Supplier
+
+```typescript jsx
+import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  // Using options supplier for dynamic configuration
+  const optionsSupplier = () => ({
+    initialStatus: PromiseStatus.IDLE,
+    onSuccess: async (result: string) => {
+      await saveToAnalytics(result);
+      console.log('Success:', result);
+    },
+    onError: async (error) => {
+      await logErrorToServer(error);
+      console.error('Error:', error);
+    },
+  });
+
+  const { setSuccess, setError } = usePromiseState<string>(optionsSupplier);
+
+  return (
+    <div>
+      <button onClick={() => setSuccess('Dynamic success!')}>Set Success</button>
+      <button onClick={() => setError(new Error('Dynamic error!'))}>Set Error</button>
+    </div>
+  );
+};
+```
+
+#### useRequestId Hook
+
+The `useRequestId` hook provides request ID management for preventing race conditions in async operations.
+
+```typescript jsx
+import { useRequestId } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { generate, isLatest, invalidate } = useRequestId();
+
+  const handleFetch = async () => {
+    const requestId = generate();
+
+    try {
+      const result = await fetchData();
+
+      if (isLatest(requestId)) {
+        setData(result);
+      }
+    } catch (error) {
+      if (isLatest(requestId)) {
+        setError(error);
+      }
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleFetch}>Fetch Data</button>
+      <button onClick={invalidate}>Cancel Ongoing</button>
+    </div>
+  );
+};
+```
+
+#### useLatest Hook
+
+The `useLatest` hook returns a ref containing the latest value, useful for accessing the current value in async
+callbacks.
+
+```typescript jsx
+import { useLatest } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const [count, setCount] = useState(0);
+  const latestCount = useLatest(count);
+
+  const handleAsync = async () => {
+    await someAsyncOperation();
+    console.log('Latest count:', latestCount.current); // Always the latest
+  };
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(c => c + 1)}>Increment</button>
+      <button onClick={handleAsync}>Async Log</button>
+    </div>
+  );
+};
+```
+
+#### useRefs Hook
+
+The `useRefs` hook provides a Map-like interface for managing multiple React refs dynamically. It allows registering, retrieving, and managing refs by key, with automatic cleanup on component unmount.
+
+```typescript jsx
+import { useRefs } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const refs = useRefs<HTMLDivElement>();
+
+  const handleFocus = (key: string) => {
+    const element = refs.get(key);
+    element?.focus();
+  };
+
+  return (
+    <div>
+      <div ref={refs.register('first')} tabIndex={0}>First Element</div>
+      <div ref={refs.register('second')} tabIndex={0}>Second Element</div>
+      <button onClick={() => handleFocus('first')}>Focus First</button>
+      <button onClick={() => handleFocus('second')}>Focus Second</button>
+    </div>
+  );
+};
+```
+
+Key features:
+
+- **Dynamic Registration**: Register refs with string, number, or symbol keys
+- **Map-like API**: Full Map interface with get, set, has, delete, etc.
+- **Automatic Cleanup**: Refs are cleared when component unmounts
+- **Type Safety**: Full TypeScript support for ref types
+
+#### useQuery Hook
+
+The `useQuery` hook provides a complete solution for managing query-based asynchronous operations with automatic state management and execution control.
+
+```typescript jsx
+import { useQuery } from '@ahoo-wang/fetcher-react';
+
+interface UserQuery {
+  id: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+}
+
+function UserComponent() {
+  const { loading, result, error, execute, setQuery } = useQuery<UserQuery, User>({
+    initialQuery: { id: '1' },
+    execute: async (query) => {
+      const response = await fetch(`/api/users/${query.id}`);
+      return response.json();
+    },
+    autoExecute: true,
+  });
+
+  const handleUserChange = (userId: string) => {
+    setQuery({ id: userId }); // Automatically executes if autoExecute is true
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  return (
+    <div>
+      <button onClick={() => handleUserChange('2')}>Load User 2</button>
+      {result && <p>User: {result.name}</p>}
+    </div>
+  );
+}
+```
+
+#### useQueryState Hook
+
+The `useQueryState` hook provides state management for query parameters with automatic execution capabilities.
+
+```typescript jsx
+import { useQueryState } from '@ahoo-wang/fetcher-react';
+
+interface UserQuery {
+  id: string;
+  name?: string;
+}
+
+function UserComponent() {
+  const executeQuery = async (query: UserQuery) => {
+    // Perform query execution logic here
+    console.log('Executing query:', query);
+  };
+
+  const { getQuery, setQuery } = useQueryState<UserQuery>({
+    initialQuery: { id: '1' },
+    autoExecute: true,
+    execute: executeQuery,
+  });
+
+  const handleQueryChange = (newQuery: UserQuery) => {
+    setQuery(newQuery); // Will automatically execute if autoExecute is true
+  };
+
+  const currentQuery = getQuery(); // Get current query parameters
+
+  return (
+    <div>
+      <button onClick={() => handleQueryChange({ id: '2', name: 'John' })}>
+        Update Query
+      </button>
+    </div>
+  );
+}
+```
+
+#### useMounted Hook
+
+The `useMounted` hook provides a way to check if a component is still mounted, useful for avoiding state updates on unmounted components.
+
+```typescript jsx
+import { useMounted } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const isMounted = useMounted();
+
+  const handleAsyncOperation = async () => {
+    const result = await someAsyncOperation();
+
+    // Check if component is still mounted before updating state
+    if (isMounted()) {
+      setData(result);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleAsyncOperation}>Perform Async Operation</button>
+    </div>
+  );
+};
+```
+
+#### useForceUpdate Hook
+
+The `useForceUpdate` hook provides a way to force a component to re-render, useful when you need to trigger a render based on external changes.
+
+```typescript jsx
+import { useForceUpdate } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const forceUpdate = useForceUpdate();
+
+  const handleExternalChange = () => {
+    // Perform some external operation that doesn't trigger a re-render
+    updateExternalState();
+
+    // Force the component to re-render to reflect the changes
+    forceUpdate();
+  };
+
+  return (
+    <div>
+      <button onClick={handleExternalChange}>Force Update</button>
     </div>
   );
 };
@@ -247,6 +535,183 @@ const DataFetcher = () => {
   );
 };
 ```
+
+#### useDebouncedQuery
+
+Combines general query execution with debouncing, perfect for custom query operations where you want to debounce execution based on query parameters.
+
+```typescript jsx
+import { useDebouncedQuery } from '@ahoo-wang/fetcher-react';
+
+interface SearchQuery {
+  keyword: string;
+  limit: number;
+  filters?: { category?: string };
+}
+
+interface SearchResult {
+  items: Array<{ id: string; title: string }>;
+  total: number;
+}
+
+const SearchComponent = () => {
+  const {
+    loading,
+    result,
+    error,
+    run,
+    cancel,
+    isPending,
+    setQuery,
+    getQuery,
+  } = useDebouncedQuery<SearchQuery, SearchResult>({
+    initialQuery: { keyword: '', limit: 10 },
+    execute: async (query) => {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        body: JSON.stringify(query),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return response.json();
+    },
+    debounce: { delay: 300 }, // Debounce for 300ms
+    autoExecute: false, // Don't execute on mount
+  });
+
+  const handleSearch = (keyword: string) => {
+    setQuery({ keyword, limit: 10 }); // This will trigger debounced execution if autoExecute was true
+  };
+
+  const handleManualSearch = () => {
+    run(); // Manual debounced execution with current query
+  };
+
+  const handleCancel = () => {
+    cancel(); // Cancel any pending debounced execution
+  };
+
+  if (loading) return <div>Searching...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="Search..."
+      />
+      <button onClick={handleManualSearch} disabled={isPending()}>
+        {isPending() ? 'Searching...' : 'Search'}
+      </button>
+      <button onClick={handleCancel}>Cancel</button>
+      {result && (
+        <div>
+          Found {result.total} items:
+          {result.items.map(item => (
+            <div key={item.id}>{item.title}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+**Key Features:**
+
+- **Query State Management**: Automatic query parameter handling with `setQuery` and `getQuery`
+- **Debounced Execution**: Prevents excessive operations during rapid query changes
+- **Auto-Execution**: Optional automatic execution when query parameters change
+- **Manual Control**: `run()` for manual execution, `cancel()` for cancellation
+- **Pending State**: `isPending()` to check if a debounced call is queued
+- **Custom Execution**: Flexible execute function for any query operation
+
+### Fetcher Hooks
+
+#### useFetcher Hook
+
+The `useFetcher` hook provides complete data fetching capabilities with automatic state management, race condition
+protection, and flexible configuration options. It includes built-in AbortController support inherited from `useExecutePromise`.
+
+```typescript jsx
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { loading, error, result, execute, abort } = useFetcher<string>({
+    onAbort: () => {
+      console.log('Fetch operation was aborted');
+    }
+  });
+
+  const handleFetch = () => {
+    execute({ url: '/api/users', method: 'GET' });
+  };
+
+  const handleAbort = () => {
+    abort(); // Cancel the current fetch operation
+  };
+```
+
+#### Auto Execute Example
+
+```typescript jsx
+import { useListQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+    list: async (listQuery) => fetchListData(listQuery),
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  // The query will execute automatically when the component mounts
+  // You can still manually trigger it with execute() or update conditions
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <ul>
+        {result?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
+#### useFetcherQuery Hook
+
+The `useFetcherQuery` hook provides a foundation for building specialized query hooks that integrate with the Fetcher library.
+
+```typescript jsx
+import { useFetcherQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { data, loading, error, execute } = useFetcherQuery({
+    url: '/api/data',
+    initialQuery: { /* query parameters */ },
+    execute: async (query) => {
+      // Custom execution logic
+      return fetchData(query);
+    },
+    autoExecute: true,
+  });
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  );
+};
+```
+
+### Debounced Fetcher Hooks
 
 #### useDebouncedFetcher
 
@@ -377,473 +842,6 @@ const SearchComponent = () => {
 - **Auto-Execution**: Optional automatic execution when query parameters change
 - **Manual Control**: `run()` for manual execution, `cancel()` for cancellation
 - **Pending State**: `isPending()` to check if a debounced call is queued
-
-#### useDebouncedQuery
-
-Combines general query execution with debouncing, perfect for custom query operations where you want to debounce execution based on query parameters.
-
-```typescript jsx
-import { useDebouncedQuery } from '@ahoo-wang/fetcher-react';
-
-interface SearchQuery {
-  keyword: string;
-  limit: number;
-  filters?: { category?: string };
-}
-
-interface SearchResult {
-  items: Array<{ id: string; title: string }>;
-  total: number;
-}
-
-const SearchComponent = () => {
-  const {
-    loading,
-    result,
-    error,
-    run,
-    cancel,
-    isPending,
-    setQuery,
-    getQuery,
-  } = useDebouncedQuery<SearchQuery, SearchResult>({
-    initialQuery: { keyword: '', limit: 10 },
-    execute: async (query) => {
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        body: JSON.stringify(query),
-        headers: { 'Content-Type': 'application/json' },
-      });
-      return response.json();
-    },
-    debounce: { delay: 300 }, // Debounce for 300ms
-    autoExecute: false, // Don't execute on mount
-  });
-
-  const handleSearch = (keyword: string) => {
-    setQuery({ keyword, limit: 10 }); // This will trigger debounced execution if autoExecute was true
-  };
-
-  const handleManualSearch = () => {
-    run(); // Manual debounced execution with current query
-  };
-
-  const handleCancel = () => {
-    cancel(); // Cancel any pending debounced execution
-  };
-
-  if (loading) return <div>Searching...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-
-  return (
-    <div>
-      <input
-        type="text"
-        onChange={(e) => handleSearch(e.target.value)}
-        placeholder="Search..."
-      />
-      <button onClick={handleManualSearch} disabled={isPending()}>
-        {isPending() ? 'Searching...' : 'Search'}
-      </button>
-      <button onClick={handleCancel}>Cancel</button>
-      {result && (
-        <div>
-          Found {result.total} items:
-          {result.items.map(item => (
-            <div key={item.id}>{item.title}</div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-```
-
-**Key Features:**
-
-- **Query State Management**: Automatic query parameter handling with `setQuery` and `getQuery`
-- **Debounced Execution**: Prevents excessive operations during rapid query changes
-- **Auto-Execution**: Optional automatic execution when query parameters change
-- **Manual Control**: `run()` for manual execution, `cancel()` for cancellation
-- **Pending State**: `isPending()` to check if a debounced call is queued
-- **Custom Execution**: Flexible execute function for any query operation
-
-### useExecutePromise Hook
-
-The `useExecutePromise` hook manages asynchronous operations with automatic state handling, built-in race condition
-protection, and support for promise state options. It includes automatic AbortController support for canceling operations.
-
-```typescript jsx
-import { useExecutePromise } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { loading, result, error, execute, reset, abort } = useExecutePromise<string>({
-    onAbort: () => {
-      console.log('Operation was aborted');
-    }
-  });
-
-  const fetchData = async () => {
-    const response = await fetch('/api/data');
-    return response.text();
-  };
-
-  const handleFetch = () => {
-    execute(fetchData); // Using a promise supplier
-  };
-
-  const handleDirectPromise = () => {
-    const promise = fetch('/api/data').then(res => res.text());
-    execute(promise); // Using a direct promise
-  };
-
-  const handleAbort = () => {
-    abort(); // Manually abort the current operation
-  };
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-  return (
-    <div>
-      <button onClick={handleFetch}>Fetch with Supplier</button>
-      <button onClick={handleDirectPromise}>Fetch with Promise</button>
-      <button onClick={handleAbort} disabled={!loading}>Abort</button>
-      <button onClick={reset}>Reset</button>
-      {result && <p>{result}</p>}
-    </div>
-  );
-};
-```
-
-#### Abort Controller Support
-
-The hook automatically creates an AbortController for each operation and provides methods to manage cancellation:
-
-- **Automatic Cleanup**: Operations are automatically aborted when the component unmounts
-- **Manual Abort**: Use the `abort()` method to cancel ongoing operations
-- **onAbort Callback**: Configure a callback that fires when an operation is aborted (manually or automatically)
-- **AbortController Access**: The AbortController is passed to promise suppliers for advanced cancellation handling
-
-### usePromiseState Hook
-
-The `usePromiseState` hook provides state management for promise operations without execution logic. Supports both
-static options and dynamic option suppliers.
-
-```typescript jsx
-import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { status, loading, result, error, setSuccess, setError, setIdle } = usePromiseState<string>();
-
-  const handleSuccess = () => setSuccess('Data loaded');
-  const handleError = () => setError(new Error('Failed to load'));
-
-  return (
-    <div>
-      <button onClick={handleSuccess}>Set Success</button>
-      <button onClick={handleError}>Set Error</button>
-      <button onClick={setIdle}>Reset</button>
-      <p>Status: {status}</p>
-      {loading && <p>Loading...</p>}
-      {result && <p>Result: {result}</p>}
-      {error && <p>Error: {error.message}</p>}
-    </div>
-  );
-};
-```
-
-#### usePromiseState with Options Supplier
-
-```typescript jsx
-import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  // Using options supplier for dynamic configuration
-  const optionsSupplier = () => ({
-    initialStatus: PromiseStatus.IDLE,
-    onSuccess: async (result: string) => {
-      await saveToAnalytics(result);
-      console.log('Success:', result);
-    },
-    onError: async (error) => {
-      await logErrorToServer(error);
-      console.error('Error:', error);
-    },
-  });
-
-  const { setSuccess, setError } = usePromiseState<string>(optionsSupplier);
-
-  return (
-    <div>
-      <button onClick={() => setSuccess('Dynamic success!')}>Set Success</button>
-      <button onClick={() => setError(new Error('Dynamic error!'))}>Set Error</button>
-    </div>
-  );
-};
-```
-
-### Utility Hooks
-
-#### useRequestId Hook
-
-The `useRequestId` hook provides request ID management for preventing race conditions in async operations.
-
-```typescript jsx
-import { useRequestId } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { generate, isLatest, invalidate } = useRequestId();
-
-  const handleFetch = async () => {
-    const requestId = generate();
-
-    try {
-      const result = await fetchData();
-
-      if (isLatest(requestId)) {
-        setData(result);
-      }
-    } catch (error) {
-      if (isLatest(requestId)) {
-        setError(error);
-      }
-    }
-  };
-
-  return (
-    <div>
-      <button onClick={handleFetch}>Fetch Data</button>
-      <button onClick={invalidate}>Cancel Ongoing</button>
-    </div>
-  );
-};
-```
-
-### useLatest Hook
-
-The `useLatest` hook returns a ref containing the latest value, useful for accessing the current value in async
-callbacks.
-
-```typescript jsx
-import { useLatest } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const [count, setCount] = useState(0);
-  const latestCount = useLatest(count);
-
-  const handleAsync = async () => {
-    await someAsyncOperation();
-    console.log('Latest count:', latestCount.current); // Always the latest
-  };
-
-  return (
-    <div>
-      <p>Count: {count}</p>
-      <button onClick={() => setCount(c => c + 1)}>Increment</button>
-      <button onClick={handleAsync}>Async Log</button>
-    </div>
-  );
-};
-```
-
-### useRefs Hook
-
-The `useRefs` hook provides a Map-like interface for managing multiple React refs dynamically. It allows registering, retrieving, and managing refs by key, with automatic cleanup on component unmount.
-
-```typescript jsx
-import { useRefs } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const refs = useRefs<HTMLDivElement>();
-
-  const handleFocus = (key: string) => {
-    const element = refs.get(key);
-    element?.focus();
-  };
-
-  return (
-    <div>
-      <div ref={refs.register('first')} tabIndex={0}>First Element</div>
-      <div ref={refs.register('second')} tabIndex={0}>Second Element</div>
-      <button onClick={() => handleFocus('first')}>Focus First</button>
-      <button onClick={() => handleFocus('second')}>Focus Second</button>
-    </div>
-  );
-};
-```
-
-Key features:
-
-- **Dynamic Registration**: Register refs with string, number, or symbol keys
-- **Map-like API**: Full Map interface with get, set, has, delete, etc.
-- **Automatic Cleanup**: Refs are cleared when component unmounts
-- **Type Safety**: Full TypeScript support for ref types
-
-### Event Hooks
-
-#### useEventSubscription Hook
-
-The `useEventSubscription` hook provides a React interface for subscribing to typed event buses. It automatically manages subscription lifecycle while offering manual control functions for additional flexibility.
-
-```typescript jsx
-import { useEventSubscription } from '@ahoo-wang/fetcher-react';
-import { eventBus } from './eventBus';
-
-function MyComponent() {
-  const { subscribe, unsubscribe } = useEventSubscription({
-    bus: eventBus,
-    handler: {
-      name: 'myEvent',
-      handle: (event) => {
-        console.log('Received event:', event);
-      }
-    }
-  });
-
-  // The hook automatically subscribes on mount and unsubscribes on unmount
-  // You can also manually control subscription if needed
-  const handleToggleSubscription = () => {
-    if (someCondition) {
-      subscribe();
-    } else {
-      unsubscribe();
-    }
-  };
-
-  return <div>My Component</div>;
-}
-```
-
-Key features:
-
-- **Automatic Lifecycle Management**: Automatically subscribes on component mount and unsubscribes on unmount
-- **Manual Control**: Provides `subscribe` and `unsubscribe` functions for additional control
-- **Type Safety**: Full TypeScript support with generic event types
-- **Error Handling**: Logs warnings for failed subscription attempts
-- **Event Bus Integration**: Works seamlessly with `@ahoo-wang/fetcher-eventbus` TypedEventBus instances
-
-### CoSec Security Hooks
-
-🛡️ **Enterprise Security Integration** - Powerful React hooks for managing authentication state with CoSec tokens, providing seamless integration with enterprise security systems and automatic token lifecycle management.
-
-#### useSecurity Hook
-
-The `useSecurity` hook provides reactive access to authentication state and operations using CoSec tokens. It integrates with TokenStorage to persist tokens and updates state reactively when tokens change.
-
-```typescript jsx
-import { useSecurity } from '@ahoo-wang/fetcher-react';
-import { tokenStorage } from './tokenStorage';
-import { useNavigate } from 'react-router-dom';
-
-function App() {
-  const navigate = useNavigate();
-
-  const { currentUser, authenticated, signIn, signOut } = useSecurity(tokenStorage, {
-    onSignIn: () => {
-      // Redirect to dashboard after successful login
-      navigate('/dashboard');
-    },
-    onSignOut: () => {
-      // Redirect to login page after logout
-      navigate('/login');
-    }
-  });
-
-  const handleSignIn = async () => {
-    // Direct token
-    await signIn(compositeToken);
-
-    // Or async function
-    await signIn(async () => {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ username, password })
-      });
-      return response.json();
-    });
-  };
-
-  if (!authenticated) {
-    return <button onClick={handleSignIn}>Sign In</button>;
-  }
-
-  return (
-    <div>
-      <p>Welcome, {currentUser.sub}!</p>
-      <button onClick={signOut}>Sign Out</button>
-    </div>
-  );
-}
-```
-
-**Key Features:**
-
-- **Reactive Authentication State**: Automatically updates when tokens change
-- **Flexible Sign-in Methods**: Supports both direct tokens and async token providers
-- **Lifecycle Callbacks**: Configurable callbacks for sign-in and sign-out events
-- **Type Safety**: Full TypeScript support with CoSec JWT payload types
-- **Token Persistence**: Integrates with TokenStorage for cross-session persistence
-
-#### SecurityProvider
-
-The `SecurityProvider` component wraps your application to provide authentication context through React context. It internally uses the `useSecurity` hook and makes authentication state available to all child components via the `useSecurityContext` hook.
-
-```tsx
-import { SecurityProvider } from '@ahoo-wang/fetcher-react';
-import { tokenStorage } from './tokenStorage';
-import { useNavigate } from 'react-router-dom';
-
-function App() {
-  const navigate = useNavigate();
-
-  return (
-    <SecurityProvider
-      tokenStorage={tokenStorage}
-      onSignIn={() => navigate('/dashboard')}
-      onSignOut={() => navigate('/login')}
-    >
-      <MyApp />
-    </SecurityProvider>
-  );
-}
-```
-
-**Configuration Options:**
-
-- `tokenStorage`: TokenStorage instance for managing authentication tokens
-- `onSignIn`: Callback function invoked when sign in is successful
-- `onSignOut`: Callback function invoked when sign out occurs
-- `children`: Child components that will have access to security context
-
-#### useSecurityContext Hook
-
-The `useSecurityContext` hook provides access to authentication state and methods within components wrapped by `SecurityProvider`. It offers the same interface as `useSecurity` but through React context.
-
-```tsx
-import { useSecurityContext } from '@ahoo-wang/fetcher-react';
-
-function UserProfile() {
-  const { currentUser, authenticated, signOut } = useSecurityContext();
-
-  if (!authenticated) {
-    return <div>Please sign in</div>;
-  }
-
-  return (
-    <div>
-      <p>Welcome, {currentUser.sub}!</p>
-      <button onClick={signOut}>Sign Out</button>
-    </div>
-  );
-}
-```
-
-**Context Benefits:**
-
-- **Prop Drilling Elimination**: Access authentication state without passing props
-- **Component Isolation**: Components can access auth state regardless of component tree depth
-- **Centralized State**: Single source of truth for authentication across the application
-- **Automatic Re-rendering**: Components automatically re-render when authentication state changes
 
 ### Storage Hooks
 
@@ -1181,15 +1179,181 @@ const [prefs, updatePrefs] = useImmerKeyStorage(prefsStorage);
 // updatePrefs(draft => { draft.theme = 'invalid'; });
 ```
 
-## Wow Query Hooks
+### Event Hooks
+
+#### useEventSubscription Hook
+
+The `useEventSubscription` hook provides a React interface for subscribing to typed event buses. It automatically manages subscription lifecycle while offering manual control functions for additional flexibility.
+
+```typescript jsx
+import { useEventSubscription } from '@ahoo-wang/fetcher-react';
+import { eventBus } from './eventBus';
+
+function MyComponent() {
+  const { subscribe, unsubscribe } = useEventSubscription({
+    bus: eventBus,
+    handler: {
+      name: 'myEvent',
+      handle: (event) => {
+        console.log('Received event:', event);
+      }
+    }
+  });
+
+  // The hook automatically subscribes on mount and unsubscribes on unmount
+  // You can also manually control subscription if needed
+  const handleToggleSubscription = () => {
+    if (someCondition) {
+      subscribe();
+    } else {
+      unsubscribe();
+    }
+  };
+
+  return <div>My Component</div>;
+}
+```
+
+Key features:
+
+- **Automatic Lifecycle Management**: Automatically subscribes on component mount and unsubscribes on unmount
+- **Manual Control**: Provides `subscribe` and `unsubscribe` functions for additional control
+- **Type Safety**: Full TypeScript support with generic event types
+- **Error Handling**: Logs warnings for failed subscription attempts
+- **Event Bus Integration**: Works seamlessly with `@ahoo-wang/fetcher-eventbus` TypedEventBus instances
+
+### CoSec Security Hooks
+
+🛡️ **Enterprise Security Integration** - Powerful React hooks for managing authentication state with CoSec tokens, providing seamless integration with enterprise security systems and automatic token lifecycle management.
+
+#### useSecurity Hook
+
+The `useSecurity` hook provides reactive access to authentication state and operations using CoSec tokens. It integrates with TokenStorage to persist tokens and updates state reactively when tokens change.
+
+```typescript jsx
+import { useSecurity } from '@ahoo-wang/fetcher-react';
+import { tokenStorage } from './tokenStorage';
+import { useNavigate } from 'react-router-dom';
+
+function App() {
+  const navigate = useNavigate();
+
+  const { currentUser, authenticated, signIn, signOut } = useSecurity(tokenStorage, {
+    onSignIn: () => {
+      // Redirect to dashboard after successful login
+      navigate('/dashboard');
+    },
+    onSignOut: () => {
+      // Redirect to login page after logout
+      navigate('/login');
+    }
+  });
+
+  const handleSignIn = async () => {
+    // Direct token
+    await signIn(compositeToken);
+
+    // Or async function
+    await signIn(async () => {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password })
+      });
+      return response.json();
+    });
+  };
+
+  if (!authenticated) {
+    return <button onClick={handleSignIn}>Sign In</button>;
+  }
+
+  return (
+    <div>
+      <p>Welcome, {currentUser.sub}!</p>
+      <button onClick={signOut}>Sign Out</button>
+    </div>
+  );
+}
+```
+
+**Key Features:**
+
+- **Reactive Authentication State**: Automatically updates when tokens change
+- **Flexible Sign-in Methods**: Supports both direct tokens and async token providers
+- **Lifecycle Callbacks**: Configurable callbacks for sign-in and sign-out events
+- **Type Safety**: Full TypeScript support with CoSec JWT payload types
+- **Token Persistence**: Integrates with TokenStorage for cross-session persistence
+
+#### SecurityProvider
+
+The `SecurityProvider` component wraps your application to provide authentication context through React context. It internally uses the `useSecurity` hook and makes authentication state available to all child components via the `useSecurityContext` hook.
+
+```tsx
+import { SecurityProvider } from '@ahoo-wang/fetcher-react';
+import { tokenStorage } from './tokenStorage';
+import { useNavigate } from 'react-router-dom';
+
+function App() {
+  const navigate = useNavigate();
+
+  return (
+    <SecurityProvider
+      tokenStorage={tokenStorage}
+      onSignIn={() => navigate('/dashboard')}
+      onSignOut={() => navigate('/login')}
+    >
+      <MyApp />
+    </SecurityProvider>
+  );
+}
+```
+
+**Configuration Options:**
+
+- `tokenStorage`: TokenStorage instance for managing authentication tokens
+- `onSignIn`: Callback function invoked when sign in is successful
+- `onSignOut`: Callback function invoked when sign out occurs
+- `children`: Child components that will have access to security context
+
+#### useSecurityContext Hook
+
+The `useSecurityContext` hook provides access to authentication state and methods within components wrapped by `SecurityProvider`. It offers the same interface as `useSecurity` but through React context.
+
+```tsx
+import { useSecurityContext } from '@ahoo-wang/fetcher-react';
+
+function UserProfile() {
+  const { currentUser, authenticated, signOut } = useSecurityContext();
+
+  if (!authenticated) {
+    return <div>Please sign in</div>;
+  }
+
+  return (
+    <div>
+      <p>Welcome, {currentUser.sub}!</p>
+      <button onClick={signOut}>Sign Out</button>
+    </div>
+  );
+}
+```
+
+**Context Benefits:**
+
+- **Prop Drilling Elimination**: Access authentication state without passing props
+- **Component Isolation**: Components can access auth state regardless of component tree depth
+- **Centralized State**: Single source of truth for authentication across the application
+- **Automatic Re-rendering**: Components automatically re-render when authentication state changes
+
+### Wow Query Hooks
 
 The Wow Query Hooks provide advanced data querying capabilities with built-in state management for conditions,
 projections, sorting, pagination, and limits. These hooks are designed to work with the `@ahoo-wang/fetcher-wow` package
 for complex query operations.
 
-### Basic Query Hooks
+#### Basic Query Hooks
 
-#### useListQuery Hook
+##### useListQuery Hook
 
 The `useListQuery` hook manages list queries with state management for conditions, projections, sorting, and limits.
 
@@ -1226,7 +1390,7 @@ const MyComponent = () => {
 };
 ```
 
-#### Auto Execute Example
+##### Auto Execute Example
 
 ```typescript jsx
 import { useListQuery } from '@ahoo-wang/fetcher-react';
@@ -1256,7 +1420,7 @@ const MyComponent = () => {
 };
 ```
 
-### usePagedQuery Hook
+##### usePagedQuery Hook
 
 The `usePagedQuery` hook manages paged queries with state management for conditions, projections, pagination, and
 sorting.
@@ -1304,7 +1468,7 @@ const MyComponent = () => {
 };
 ```
 
-#### Auto Execute Example
+###### Auto Execute Example
 
 ```typescript jsx
 import { usePagedQuery } from '@ahoo-wang/fetcher-react';
@@ -1344,7 +1508,7 @@ const MyComponent = () => {
 };
 ```
 
-### useSingleQuery Hook
+##### useSingleQuery Hook
 
 The `useSingleQuery` hook manages single item queries with state management for conditions, projections, and sorting.
 
@@ -1377,7 +1541,7 @@ const MyComponent = () => {
 };
 ```
 
-#### Auto Execute Example
+###### Auto Execute Example
 
 ```typescript jsx
 import { useSingleQuery } from '@ahoo-wang/fetcher-react';
@@ -1402,7 +1566,7 @@ const MyComponent = () => {
 };
 ```
 
-### useCountQuery Hook
+##### useCountQuery Hook
 
 The `useCountQuery` hook manages count queries with state management for conditions.
 
@@ -1435,7 +1599,7 @@ const MyComponent = () => {
 };
 ```
 
-#### Auto Execute Example
+###### Auto Execute Example
 
 ```typescript jsx
 import { useCountQuery } from '@ahoo-wang/fetcher-react';
@@ -1460,9 +1624,99 @@ const MyComponent = () => {
 };
 ```
 
-### Fetcher Query Hooks
+##### useListStreamQuery Hook
 
-#### useFetcherCountQuery Hook
+The `useListStreamQuery` hook manages list stream queries that return a readable stream of server-sent events.
+
+```typescript jsx
+import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListStreamQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
+    execute: async (listQuery) => {
+      // Your stream fetching logic here
+      return fetchListStream(listQuery);
+    },
+  });
+
+  useEffect(() => {
+    if (result) {
+      const reader = result.getReader();
+      const readStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            console.log('Received:', value);
+            // Process the stream event
+          }
+        } catch (error) {
+          console.error('Stream error:', error);
+        }
+      };
+      readStream();
+    }
+  }, [result]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <button onClick={execute}>Start Stream</button>
+    </div>
+  );
+};
+```
+
+###### Auto Execute Example
+
+```typescript jsx
+import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListStreamQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
+    execute: async (listQuery) => fetchListStream(listQuery),
+    autoExecute: true, // Automatically execute on component mount
+  });
+
+  useEffect(() => {
+    if (result) {
+      const reader = result.getReader();
+      const readStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            console.log('Received:', value);
+            // Process the stream event
+          }
+        } catch (error) {
+          console.error('Stream error:', error);
+        }
+      };
+      readStream();
+    }
+  }, [result]);
+
+  // The query will execute automatically when the component mounts
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      {/* Stream is already started automatically */}
+    </div>
+  );
+};
+```
+
+#### Fetcher Query Hooks
+
+##### useFetcherCountQuery Hook
 
 The `useFetcherCountQuery` hook is a specialized React hook for performing count queries using the Fetcher library. It is designed for scenarios where you need to retrieve the count of records that match a specific condition, returning a number representing the count.
 
@@ -1486,7 +1740,7 @@ function UserCountComponent() {
 }
 ```
 
-#### Auto Execute Example
+###### Auto Execute Example
 
 ```typescript jsx
 import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
@@ -1507,7 +1761,7 @@ const MyComponent = () => {
 };
 ```
 
-### useFetcherPagedQuery Hook
+##### useFetcherPagedQuery Hook
 
 The `useFetcherPagedQuery` hook is a specialized React hook for performing paged queries using the Fetcher library. It is designed for scenarios where you need to retrieve paginated data that matches a query condition, returning a PagedList containing the items for the current page along with pagination metadata.
 
@@ -1576,7 +1830,7 @@ function UserListComponent() {
 }
 ```
 
-#### Auto Execute Example
+###### Auto Execute Example
 
 ```typescript jsx
 import { useFetcherPagedQuery } from '@ahoo-wang/fetcher-react';
@@ -1612,7 +1866,7 @@ const MyComponent = () => {
 };
 ```
 
-### useFetcherListQuery Hook
+##### useFetcherListQuery Hook
 
 The `useFetcherListQuery` hook is a specialized React hook for performing list queries using the Fetcher library. It is designed for fetching lists of items with support for filtering, sorting, and pagination through the ListQuery type, returning an array of results.
 
@@ -1673,7 +1927,7 @@ function UserListComponent() {
 }
 ```
 
-#### Auto Execute Example
+###### Auto Execute Example
 
 ```typescript jsx
 import { useFetcherListQuery } from '@ahoo-wang/fetcher-react';
@@ -1708,7 +1962,7 @@ const MyComponent = () => {
 };
 ```
 
-### useFetcherListStreamQuery Hook
+##### useFetcherListStreamQuery Hook
 
 The `useFetcherListStreamQuery` hook is a specialized React hook for performing list stream queries using the Fetcher library with server-sent events. It is designed for scenarios where you need to retrieve a stream of data that matches a list query condition, returning a ReadableStream of JSON server-sent events for real-time data streaming.
 
@@ -1771,7 +2025,7 @@ function UserStreamComponent() {
 }
 ```
 
-#### Auto Execute Example
+###### Auto Execute Example
 
 ```typescript jsx
 import { useFetcherListStreamQuery } from '@ahoo-wang/fetcher-react';
@@ -1827,7 +2081,7 @@ const MyComponent = () => {
 };
 ```
 
-### useFetcherSingleQuery Hook
+##### useFetcherSingleQuery Hook
 
 The `useFetcherSingleQuery` hook is a specialized React hook for performing single item queries using the Fetcher library. It is designed for fetching a single item with support for filtering and sorting through the SingleQuery type, returning a single result item.
 
@@ -1871,7 +2125,7 @@ function UserProfileComponent({ userId }: { userId: string }) {
 }
 ```
 
-#### Auto Execute Example
+###### Auto Execute Example
 
 ```typescript jsx
 import { useFetcherSingleQuery } from '@ahoo-wang/fetcher-react';
@@ -1898,98 +2152,6 @@ const MyComponent = () => {
       <h2>Featured Product</h2>
       <div>{product.name}</div>
       <div>{product.description}</div>
-    </div>
-  );
-};
-```
-
-### Stream Query Hooks
-
-#### useListStreamQuery Hook
-
-The `useListStreamQuery` hook manages list stream queries that return a readable stream of server-sent events.
-
-```typescript jsx
-import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { result, loading, error, execute, setCondition } = useListStreamQuery({
-    initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
-    execute: async (listQuery) => {
-      // Your stream fetching logic here
-      return fetchListStream(listQuery);
-    },
-  });
-
-  useEffect(() => {
-    if (result) {
-      const reader = result.getReader();
-      const readStream = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            console.log('Received:', value);
-            // Process the stream event
-          }
-        } catch (error) {
-          console.error('Stream error:', error);
-        }
-      };
-      readStream();
-    }
-  }, [result]);
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-
-  return (
-    <div>
-      <button onClick={execute}>Start Stream</button>
-    </div>
-  );
-};
-```
-
-#### Auto Execute Example
-
-```typescript jsx
-import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { result, loading, error, execute, setCondition } = useListStreamQuery({
-    initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
-    execute: async (listQuery) => fetchListStream(listQuery),
-    autoExecute: true, // Automatically execute on component mount
-  });
-
-  useEffect(() => {
-    if (result) {
-      const reader = result.getReader();
-      const readStream = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            console.log('Received:', value);
-            // Process the stream event
-          }
-        } catch (error) {
-          console.error('Stream error:', error);
-        }
-      };
-      readStream();
-    }
-  }, [result]);
-
-  // The query will execute automatically when the component mounts
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-
-  return (
-    <div>
-      {/* Stream is already started automatically */}
     </div>
   );
 };
@@ -2077,7 +2239,7 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 class FetchErrorBoundary extends Component<
   { children: ReactNode; fallback?: ReactNode },
   { hasError: boolean; error?: Error }
-> {
+  > {
   constructor(props: { children: ReactNode; fallback?: ReactNode }) {
     super(props);
     this.state = { hasError: false };
@@ -2858,6 +3020,96 @@ An object implementing `UseRefsReturn<T>` with:
 
 - `RefKey = string | number | symbol`
 - `UseRefsReturn<T> extends Iterable<[RefKey, T]>`
+
+### useQuery
+
+```typescript
+function useQuery<Q, R, E = FetcherError>(
+  options: UseQueryOptions<Q, R, E>,
+): UseQueryReturn<Q, R, E>;
+```
+
+A React hook for managing query-based asynchronous operations with automatic state management and execution control.
+
+**Type Parameters:**
+
+- `Q`: The type of the query parameters
+- `R`: The type of the result value
+- `E`: The type of the error value (defaults to FetcherError)
+
+**Parameters:**
+
+- `options`: Configuration options for the query
+  - `initialQuery`: The initial query parameters
+  - `execute`: Function to execute the query with given parameters and optional attributes
+  - `autoExecute?`: Whether to automatically execute the query on mount and when query changes
+  - All options from `UseExecutePromiseOptions`
+
+**Returns:**
+
+An object containing the query state and control functions:
+
+- `loading`: Boolean indicating if the query is currently executing
+- `result`: The resolved value of the query
+- `error`: Any error that occurred during execution
+- `status`: Current execution status
+- `execute`: Function to execute the query with current parameters
+- `reset`: Function to reset the promise state
+- `abort`: Function to abort the current operation
+- `getQuery`: Function to retrieve the current query parameters
+- `setQuery`: Function to update the query parameters
+
+### useQueryState
+
+```typescript
+function useQueryState<Q>(
+  options: UseQueryStateOptions<Q>,
+): UseQueryStateReturn<Q>;
+```
+
+A React hook for managing query state with automatic execution capabilities.
+
+**Type Parameters:**
+
+- `Q`: The type of the query parameters
+
+**Parameters:**
+
+- `options`: Configuration options for the hook
+  - `initialQuery`: The initial query parameters to be stored and managed
+  - `autoExecute?`: Whether to automatically execute when the query changes or on component mount
+  - `execute`: Function to execute with the current query parameters
+
+**Returns:**
+
+An object containing:
+
+- `getQuery`: Function to retrieve the current query parameters
+- `setQuery`: Function to update the query parameters. Triggers execution if autoExecute is true
+
+### useMounted
+
+```typescript
+function useMounted(): () => boolean;
+```
+
+A React hook that returns a function to check if the component is still mounted.
+
+**Returns:**
+
+A function that returns `true` if the component is still mounted, `false` otherwise.
+
+### useForceUpdate
+
+```typescript
+function useForceUpdate(): () => void;
+```
+
+A React hook that returns a function to force a component to re-render.
+
+**Returns:**
+
+A function that forces the component to re-render when called.
 
 ### useEventSubscription
 
