@@ -18,11 +18,11 @@ export interface JwtPayload {
   /**
    * JWT ID - provides a unique identifier for the JWT.
    */
-  jti?: string;
+  jti: string;
   /**
    * Subject - identifies the principal that is the subject of the JWT.
    */
-  sub?: string;
+  sub: string;
   /**
    * Issuer - identifies the principal that issued the JWT.
    */
@@ -36,7 +36,7 @@ export interface JwtPayload {
    * Expiration Time - identifies the expiration time on or after which the JWT MUST NOT be accepted for processing.
    * Represented as NumericDate (seconds since Unix epoch).
    */
-  exp?: number;
+  exp: number;
   /**
    * Not Before - identifies the time before which the JWT MUST NOT be accepted for processing.
    * Represented as NumericDate (seconds since Unix epoch).
@@ -46,7 +46,7 @@ export interface JwtPayload {
    * Issued At - identifies the time at which the JWT was issued.
    * Represented as NumericDate (seconds since Unix epoch).
    */
-  iat?: number;
+  iat: number;
 
   /**
    * Allows additional custom properties to be included in the payload.

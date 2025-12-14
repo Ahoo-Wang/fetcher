@@ -20,7 +20,10 @@ import {
 } from '@ahoo-wang/fetcher-cosec';
 
 export const ANONYMOUS_USER: CoSecJwtPayload = {
+  jti: '',
   sub: 'anonymous',
+  iat: 0,
+  exp: 0,
 };
 
 /**
