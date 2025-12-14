@@ -45,20 +45,24 @@
     - [useImmerKeyStorage](#useimmerkeystorage-hook)
   - [事件 Hooks](#事件-hooks)
     - [useEventSubscription](#useeventsubscription-hook)
+  - [CoSec 安全 Hooks](#cosec-安全-hooks)
+    - [useSecurity](#usesecurity-hook)
+    - [SecurityProvider](#securityprovider)
+    - [useSecurityContext](#usesecuritycontext-hook)
   - [Wow 查询 Hooks](#wow-查询-hooks)
-    - [基础查询 Hooks](#基础查询-hooks)
-      - [useListQuery](#uselistquery-hook)
-      - [usePagedQuery](#usepagedquery-hook)
-      - [useSingleQuery](#usesinglequery-hook)
-      - [useCountQuery](#usecountquery-hook)
-    - [获取查询 Hooks](#获取查询-hooks)
-      - [useFetcherListQuery](#usefetcherlistquery-hook)
-      - [useFetcherPagedQuery](#usefetcherpagedquery-hook)
-      - [useFetcherSingleQuery](#usefetchersinglequery-hook)
-      - [useFetcherCountQuery](#usefetchercountquery-hook)
-    - [流查询 Hooks](#流查询-hooks)
-      - [useListStreamQuery](#useliststreamquery-hook)
-      - [useFetcherListStreamQuery](#usefetcherliststreamquery-hook)
+  - [基础查询 Hooks](#基础查询-hooks)
+    - [useListQuery](#uselistquery-hook)
+    - [usePagedQuery](#usepagedquery-hook)
+    - [useSingleQuery](#usesinglequery-hook)
+    - [useCountQuery](#usecountquery-hook)
+  - [获取查询 Hooks](#获取查询-hooks)
+    - [useFetcherListQuery](#usefetcherlistquery-hook)
+    - [useFetcherPagedQuery](#usefetcherpagedquery-hook)
+    - [useFetcherSingleQuery](#usefetchersinglequery-hook)
+    - [useFetcherCountQuery](#usefetchercountquery-hook)
+  - [流查询 Hooks](#流查询-hooks)
+    - [useListStreamQuery](#useliststreamquery-hook)
+    - [useFetcherListStreamQuery](#usefetcherliststreamquery-hook)
 - [最佳实践](#最佳实践)
 - [API 参考](#api-参考)
 - [许可证](#许可证)
@@ -1614,6 +1618,129 @@ function MyComponent() {
 - **类型安全**: 完全支持 TypeScript，具有泛型事件类型
 - **错误处理**: 对失败的订阅尝试记录警告
 - **事件总线集成**: 与 `@ahoo-wang/fetcher-eventbus` TypedEventBus 实例无缝配合
+
+### CoSec 安全 Hooks
+
+🛡️ **企业安全集成** - 强大的 React hooks，用于使用 CoSec 令牌管理认证状态，提供与企业安全系统的无缝集成和自动令牌生命周期管理。
+
+#### useSecurity Hook
+
+`useSecurity` hook 使用 CoSec 令牌提供对认证状态和操作的响应式访问。它与 TokenStorage 集成以持久化令牌，并在令牌更改时响应式更新状态。
+
+```typescript jsx
+import { useSecurity } from '@ahoo-wang/fetcher-react/cosec';
+import { tokenStorage } from './tokenStorage';
+import { useNavigate } from 'react-router-dom';
+
+function App() {
+  const navigate = useNavigate();
+
+  const { currentUser, authenticated, signIn, signOut } = useSecurity(tokenStorage, {
+    onSignIn: () => {
+      // 登录成功后重定向到仪表板
+      navigate('/dashboard');
+    },
+    onSignOut: () => {
+      // 登出后重定向到登录页面
+      navigate('/login');
+    }
+  });
+
+  const handleSignIn = async () => {
+    // 直接令牌
+    await signIn(compositeToken);
+
+    // 或异步函数
+    await signIn(async () => {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password })
+      });
+      return response.json();
+    });
+  };
+
+  if (!authenticated) {
+    return <button onClick={handleSignIn}>登录</button>;
+  }
+
+  return (
+    <div>
+      <p>欢迎, {currentUser?.sub}!</p>
+      <button onClick={signOut}>登出</button>
+    </div>
+  );
+}
+```
+
+**关键特性:**
+
+- **响应式认证状态**: 当令牌更改时自动更新
+- **灵活的登录方法**: 支持直接令牌和异步令牌提供者
+- **生命周期回调**: 可配置的登录和登出事件回调
+- **类型安全**: 完全支持 TypeScript，具有 CoSec JWT 负载类型
+- **令牌持久化**: 与 TokenStorage 集成以实现跨会话持久化
+
+#### SecurityProvider
+
+`SecurityProvider` 组件包装您的应用程序以通过 React 上下文提供认证上下文。它在内部使用 `useSecurity` hook，并通过 `useSecurityContext` hook 使认证状态可用于所有子组件。
+
+```tsx
+import { SecurityProvider } from '@ahoo-wang/fetcher-react';
+import { tokenStorage } from './tokenStorage';
+import { useNavigate } from 'react-router-dom';
+
+function App() {
+  const navigate = useNavigate();
+
+  return (
+    <SecurityProvider
+      tokenStorage={tokenStorage}
+      onSignIn={() => navigate('/dashboard')}
+      onSignOut={() => navigate('/login')}
+    >
+      <MyApp />
+    </SecurityProvider>
+  );
+}
+```
+
+**配置选项:**
+
+- `tokenStorage`: 用于管理认证令牌的 TokenStorage 实例
+- `onSignIn`: 登录成功时调用的回调函数
+- `onSignOut`: 登出时调用的回调函数
+- `children`: 将有权访问安全上下文的子组件
+
+#### useSecurityContext Hook
+
+`useSecurityContext` hook 在被 `SecurityProvider` 包装的组件中提供对认证状态和方法的访问。它通过 React 上下文提供与 `useSecurity` 相同的接口。
+
+```tsx
+import { useSecurityContext } from '@ahoo-wang/fetcher-react';
+
+function UserProfile() {
+  const { currentUser, authenticated, signOut } = useSecurityContext();
+
+  if (!authenticated) {
+    return <div>请登录</div>;
+  }
+
+  return (
+    <div>
+      <p>欢迎, {currentUser?.sub}!</p>
+      <button onClick={signOut}>登出</button>
+    </div>
+  );
+}
+```
+
+**上下文优势:**
+
+- **消除属性钻取**: 无需传递属性即可访问认证状态
+- **组件隔离**: 无论组件树深度如何，组件都可以访问认证状态
+- **集中式状态**: 应用程序中认证的单一真实来源
+- **自动重新渲染**: 当认证状态更改时，组件自动重新渲染
 
 ### 存储 Hooks
 
