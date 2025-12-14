@@ -11,6 +11,6 @@
  * limitations under the License.
  */
 
-export * from './debounced';
-export * from './useFetcher';
-export * from './useFetcherQuery';
+export * from './useDebouncedCallback';
+export * from './useDebouncedExecutePromise';
+export * from './useDebouncedQuery';

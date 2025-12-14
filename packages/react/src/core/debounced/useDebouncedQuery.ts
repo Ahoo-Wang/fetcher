@@ -12,69 +12,54 @@
  */
 
 import { FetcherError } from '@ahoo-wang/fetcher';
+import { useQuery, UseQueryOptions, UseQueryReturn } from '../index';
 import {
   DebounceCapable,
   useDebouncedCallback,
   UseDebouncedCallbackReturn,
-} from '../../core';
+} from '../index';
 import { useCallback, useEffect, useMemo } from 'react';
-import {
-  useFetcherQuery,
-  UseFetcherQueryOptions,
-  UseFetcherQueryReturn,
-} from '../../fetcher';
 
 /**
- * Configuration options for the useDebouncedFetcherQuery hook.
- *
- * Extends UseFetcherQueryOptions with DebounceCapable to provide debouncing functionality.
- * The hook will automatically debounce fetcher query executions to prevent excessive API calls.
- * Note that autoExecute is overridden internally to false to ensure proper debouncing behavior.
- *
+ * Configuration options for the useDebouncedQuery hook
  * @template Q - The type of the query parameters
  * @template R - The type of the result value
  * @template E - The type of the error value (defaults to FetcherError)
  */
-export interface UseDebouncedFetcherQueryOptions<Q, R, E = FetcherError>
-  extends UseFetcherQueryOptions<Q, R, E>, DebounceCapable {}
+export interface UseDebouncedQueryOptions<Q, R, E = FetcherError>
+  extends UseQueryOptions<Q, R, E>, DebounceCapable {
+}
 
 /**
- * Return type of the useDebouncedFetcherQuery hook.
- *
- * Omits the original 'execute' method from UseFetcherQueryReturn and replaces it with
- * debounced execution methods from UseDebouncedCallbackReturn. Uses a custom setQuery function
- * that respects the original autoExecute setting.
- *
+ * Return type of the useDebouncedQuery hook
  * @template Q - The type of the query parameters
  * @template R - The type of the result value
  * @template E - The type of the error value (defaults to FetcherError)
  */
-export interface UseDebouncedFetcherQueryReturn<Q, R, E = FetcherError>
-  extends
-    Omit<UseFetcherQueryReturn<Q, R, E>, 'execute'>,
-    UseDebouncedCallbackReturn<UseFetcherQueryReturn<Q, R, E>['execute']> {}
+export interface UseDebouncedQueryReturn<Q, R, E = FetcherError>
+  extends Omit<UseQueryReturn<Q, R, E>, 'execute'>,
+    UseDebouncedCallbackReturn<UseQueryReturn<Q, R, E>['execute']> {
+}
 
 /**
- * A React hook for managing debounced query-based HTTP requests with automatic execution.
+ * A React hook for managing debounced query execution with automatic state management
  *
- * This hook combines fetcher query functionality with debouncing to provide a convenient way to
- * make POST requests where query parameters are sent as the request body, while preventing
- * excessive API calls during rapid user interactions.
+ * This hook combines the query functionality with debouncing to provide
+ * a convenient way to execute queries with built-in debouncing to prevent excessive
+ * operations during rapid query changes, such as in search inputs or dynamic filtering.
  *
- * The hook supports automatic execution on mount and when query parameters change, but wraps
- * the execution in a debounced callback to optimize performance. Internally, it overrides
- * autoExecute to false and implements custom logic to respect the original autoExecute setting.
- * When autoExecute is enabled, queries triggered by setQuery will also be debounced.
+ * The hook supports automatic execution on mount and when query parameters change,
+ * but wraps the execution in a debounced callback to optimize performance.
  *
  * @template Q - The type of the query parameters
  * @template R - The type of the result value
  * @template E - The type of the error value (defaults to FetcherError)
- * @param options - Configuration options for the hook, including url, initialQuery, and debounce settings
- * @returns An object containing fetcher state, query management functions, and debounced execution controls
+ * @param options - Configuration options for the hook
+ * @returns An object containing query state, query management functions, and debounced execution controls
  *
  * @example
  * ```typescript
- * import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
+ * import { useDebouncedQuery } from '@ahoo-wang/fetcher-react';
  *
  * interface SearchQuery {
  *   keyword: string;
@@ -97,11 +82,18 @@ export interface UseDebouncedFetcherQueryReturn<Q, R, E = FetcherError>
  *     isPending,
  *     setQuery,
  *     getQuery,
- *   } = useDebouncedFetcherQuery<SearchQuery, SearchResult>({
- *     url: '/api/search',
+ *   } = useDebouncedQuery<SearchQuery, SearchResult>({
  *     initialQuery: { keyword: '', limit: 10 },
+ *     execute: async (query) => {
+ *       const response = await fetch('/api/search', {
+ *         method: 'POST',
+ *         body: JSON.stringify(query),
+ *         headers: { 'Content-Type': 'application/json' },
+ *       });
+ *       return response.json();
+ *     },
  *     debounce: { delay: 300 }, // Debounce for 300ms
- *     autoExecute: false, // Don't execute on mount
+ *     autoExecute: false,
  *   });
  *
  *   const handleSearch = (keyword: string) => {
@@ -143,13 +135,13 @@ export interface UseDebouncedFetcherQueryReturn<Q, R, E = FetcherError>
  * }
  * ```
  *
- * @throws This hook may throw exceptions related to network requests, which should be
- * handled by the caller. The underlying fetcher may throw FetcherError or other network-related errors.
- * Invalid URL or malformed request options may also cause exceptions.
+ * @throws This hook may throw exceptions related to query execution, which should be
+ * handled by the caller. The execute function may throw FetcherError or other errors.
+ * Invalid query parameters or execution function errors may also cause exceptions.
  */
-export function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
-  options: UseDebouncedFetcherQueryOptions<Q, R, E>,
-): UseDebouncedFetcherQueryReturn<Q, R, E> {
+export function useDebouncedQuery<Q, R, E = FetcherError>(
+  options: UseDebouncedQueryOptions<Q, R, E>,
+): UseDebouncedQueryReturn<Q, R, E> {
   const originalAutoExecute = options.autoExecute;
   const debouncedExecuteOptions = {
     ...options,
@@ -165,20 +157,17 @@ export function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
     abort,
     getQuery,
     setQuery,
-  } = useFetcherQuery(debouncedExecuteOptions);
+  } = useQuery(debouncedExecuteOptions);
   const { run, cancel, isPending } = useDebouncedCallback(
     execute,
     options.debounce,
   );
-  const setQueryFn = useCallback(
-    (query: Q) => {
-      setQuery(query);
-      if (originalAutoExecute) {
-        run();
-      }
-    },
-    [setQuery, run, originalAutoExecute],
-  );
+  const setQueryFn = useCallback((query: Q) => {
+    setQuery(query);
+    if (originalAutoExecute) {
+      run();
+    }
+  }, [setQuery, run, originalAutoExecute]);
   useEffect(() => {
     if (originalAutoExecute) {
       run();

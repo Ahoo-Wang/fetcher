@@ -11,14 +11,13 @@
  * limitations under the License.
  */
 
+export * from './debounced';
 export * from './useExecutePromise';
 export * from './usePromiseState';
 export * from './useRequestId';
 export * from './useLatest';
 export * from './useMounted';
 export * from './useRefs';
-export * from './useDebouncedCallback';
-export * from './useDebouncedExecutePromise';
 export * from './useForceUpdate';
 export * from './useQuery';
 export * from './useQueryState';
