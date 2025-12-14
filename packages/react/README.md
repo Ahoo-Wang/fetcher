@@ -1999,7 +1999,7 @@ const MyComponent = () => {
 
 ### Performance Optimization
 
-- Use `autoExecute: true` sparingly to avoid unnecessary requests on mount
+- Use `autoExecute: false` when you need to control when queries execute
 - Leverage `setQuery` for query updates when `autoExecute` is enabled to trigger automatic re-execution
 - Memoize expensive computations in your `execute` functions
 
@@ -3020,7 +3020,7 @@ A React hook for managing list queries with state management for conditions, pro
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and list function
-  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to true)
 
 **Returns:**
 
@@ -3045,7 +3045,7 @@ A React hook for managing paged queries with state management for conditions, pr
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and query function
-  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to true)
 
 **Returns:**
 
@@ -3070,7 +3070,7 @@ A React hook for managing single queries with state management for conditions, p
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and query function
-  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to true)
 
 **Returns:**
 
@@ -3094,7 +3094,7 @@ A React hook for managing count queries with state management for conditions.
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and execute function
-  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to true)
 
 **Returns:**
 
@@ -3120,7 +3120,7 @@ A React hook for performing count queries using the Fetcher library. It wraps th
 - `options`: Configuration options for the count query, including the condition, fetcher instance, and other query settings
   - `url`: The URL to fetch the count from
   - `initialQuery`: The initial condition for the count query
-  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to true)
 
 **Returns:**
 
@@ -3151,7 +3151,7 @@ A React hook for performing paged queries using the Fetcher library. It wraps th
 - `options`: Configuration options for the paged query, including the paged query parameters, fetcher instance, and other query settings
   - `url`: The URL to fetch the paged data from
   - `initialQuery`: The initial paged query configuration
-  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to true)
 
 **Returns:**
 
@@ -3182,7 +3182,7 @@ A React hook for executing list queries using the fetcher library within the wow
 - `options`: Configuration options for the list query, including the list query parameters, fetcher instance, and other query settings
   - `url`: The URL to fetch the list data from
   - `initialQuery`: The initial list query configuration
-  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to true)
 
 **Returns:**
 
@@ -3213,7 +3213,7 @@ A React hook for performing list stream queries using the Fetcher library with s
 - `options`: Configuration options for the list stream query, including the list query parameters, fetcher instance, and other query settings
   - `url`: The URL to fetch the stream data from
   - `initialQuery`: The initial list query configuration
-  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to true)
 
 **Returns:**
 
@@ -3244,7 +3244,7 @@ A React hook for executing single item queries using the fetcher library within 
 - `options`: Configuration options for the single query, including the single query parameters, fetcher instance, and other query settings
   - `url`: The URL to fetch the single item from
   - `initialQuery`: The initial single query configuration
-  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to true)
 
 **Returns:**
 
@@ -3274,7 +3274,7 @@ Returns a readable stream of JSON server-sent events.
 **Parameters:**
 
 - `options`: Configuration options including initialQuery and listStream function
-  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to false)
+  - `autoExecute`: Whether to automatically execute the query on component mount (defaults to true)
 
 **Returns:**
 
