@@ -24,13 +24,8 @@ vi.mock('../../src/core/useLatest', () => ({
   useLatest: vi.fn(),
 }));
 
-vi.mock('../../src/core/useQueryState', () => ({
-  useQueryState: vi.fn(),
-}));
-
 import { useExecutePromise } from '../../src/core/useExecutePromise';
 import { useLatest } from '../../src/core/useLatest';
-import { useQueryState } from '../../src/core/useQueryState';
 
 describe('useQuery', () => {
   const mockResult = { id: 1, name: 'Test Item' };
@@ -71,21 +66,6 @@ describe('useQuery', () => {
     (useLatest as any).mockImplementation((options: any) => {
       mockLatestOptions.current = options;
       return mockLatestOptions;
-    });
-    (useQueryState as any).mockImplementation((options: any) => {
-      const autoExecuteValue = options.autoExecute ?? true;
-      if (autoExecuteValue) {
-        options.execute(options.initialQuery);
-      }
-      // For setQuery auto execute
-      const originalSetQuery = mockQueryState.setQuery;
-      mockQueryState.setQuery = vi.fn().mockImplementation((newQuery: any) => {
-        originalSetQuery(newQuery);
-        if (autoExecuteValue) {
-          options.execute(newQuery);
-        }
-      });
-      return mockQueryState;
     });
   });
 
@@ -140,7 +120,12 @@ describe('useQuery', () => {
     });
 
     expect(result.current.getQuery()).toEqual(newQuery);
-    expect(mockExecute).toHaveBeenCalledTimes(1); // Called once during mount due to autoExecute: false not overriding the default
+    expect(mockExecute).toHaveBeenCalledTimes(0);
+
+    act(()=>{
+      result.current.execute();
+    })
+    expect(mockExecute).toHaveBeenCalledTimes(1);
   });
 
   it('should auto execute on mount by default (autoExecute defaults to true)', () => {
