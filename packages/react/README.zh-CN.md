@@ -1043,7 +1043,7 @@ const MyComponent = () => {
 
 ### 性能优化
 
-- 谨慎使用 `autoExecute: true`，避免在挂载时进行不必要的请求
+- 使用 `autoExecute: false` 来控制查询的执行时机
 - 当启用 `autoExecute` 时，使用 `setQuery` 更新查询以触发自动重新执行
 - 在 `execute` 函数中记忆化昂贵的计算
 
@@ -1855,7 +1855,7 @@ function useListQuery<R, FIELDS extends string = string, E = FetcherError>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 list 函数的配置选项
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1880,7 +1880,7 @@ function usePagedQuery<R, FIELDS extends string = string, E = unknown>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 query 函数的配置选项
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1905,7 +1905,7 @@ function useSingleQuery<R, FIELDS extends string = string, E = unknown>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 query 函数的配置选项
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1929,7 +1929,7 @@ function useCountQuery<FIELDS extends string = string, E = FetcherError>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 execute 函数的配置选项
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1955,7 +1955,7 @@ function useFetcherCountQuery<FIELDS extends string = string, E = FetcherError>(
 - `options`: 计数查询的配置选项，包括条件、fetcher 实例和其他查询设置
   - `url`: 从中获取计数的 URL
   - `initialQuery`: 计数查询的初始条件
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1986,7 +1986,7 @@ function useFetcherPagedQuery<
 - `options`: 分页查询的配置选项，包括分页查询参数、fetcher 实例和其他查询设置
   - `url`: 从中获取分页数据的 URL
   - `initialQuery`: 初始分页查询配置
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -2017,7 +2017,7 @@ function useFetcherListQuery<
 - `options`: 列表查询的配置选项，包括列表查询参数、fetcher 实例和其他查询设置
   - `url`: 从中获取列表数据的 URL
   - `initialQuery`: 初始列表查询配置
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -2048,7 +2048,7 @@ function useFetcherListStreamQuery<
 - `options`: 列表流查询的配置选项，包括列表查询参数、fetcher 实例和其他查询设置
   - `url`: 从中获取流数据的 URL
   - `initialQuery`: 初始列表查询配置
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -2079,7 +2079,7 @@ function useFetcherSingleQuery<
 - `options`: 单个查询的配置选项，包括单个查询参数、fetcher 实例和其他查询设置
   - `url`: 从中获取单个项目的 URL
   - `initialQuery`: 初始单个查询配置
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -2108,7 +2108,7 @@ function useListStreamQuery<
 **参数:**
 
 - `options`: 包含 initialQuery 和 listStream 函数的配置选项
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
