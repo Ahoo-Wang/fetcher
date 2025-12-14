@@ -20,12 +20,12 @@ vi.mock('../../../src/core/useQuery', () => ({
   useQuery: vi.fn(),
 }));
 
-vi.mock('../../../src/core/useDebouncedCallback', () => ({
+vi.mock('../../../src/core/debounced/useDebouncedCallback', () => ({
   useDebouncedCallback: vi.fn(),
 }));
 
-import { useQuery } from '../../../src';
-import { useDebouncedCallback } from '../../../src';
+import { useQuery } from '../../../src/core/useQuery';
+import { useDebouncedCallback } from '../../../src/core/debounced/useDebouncedCallback';
 
 describe('useDebouncedQuery', () => {
   const mockResult = { id: 1, name: 'Test Item' };
