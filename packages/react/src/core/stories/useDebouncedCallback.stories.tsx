@@ -13,7 +13,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { useDebouncedCallback } from '../useDebouncedCallback';
+import { useDebouncedCallback } from '../debounced/useDebouncedCallback';
 import {
   Button,
   Card,

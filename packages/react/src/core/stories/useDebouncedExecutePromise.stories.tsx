@@ -13,7 +13,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { useDebouncedExecutePromise } from '../useDebouncedExecutePromise';
+import { useDebouncedExecutePromise } from '../debounced/useDebouncedExecutePromise';
 import {
   Button,
   Card,

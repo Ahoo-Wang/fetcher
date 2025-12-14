@@ -15,7 +15,7 @@ import {
   useExecutePromise,
   UseExecutePromiseOptions,
   UseExecutePromiseReturn,
-} from './useExecutePromise';
+} from '../useExecutePromise';
 import {
   useDebouncedCallback,
   UseDebouncedCallbackOptions,

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 import { useCallback, useRef, useEffect, useMemo } from 'react';
-import { useLatest } from './useLatest';
+import { useLatest } from '../useLatest';
 
 /**
  * Options for configuring the debounced callback behavior.
