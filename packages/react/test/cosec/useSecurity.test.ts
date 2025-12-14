@@ -13,7 +13,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useSecurity } from '../../src/cosec/useSecurity';
+import { useSecurity, ANONYMOUS_USER } from '../../src/cosec/useSecurity';
 import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
 import { InMemoryStorage } from '@ahoo-wang/fetcher-storage';
 
@@ -62,10 +62,10 @@ describe('useSecurity', () => {
   });
 
   describe('initial state', () => {
-    it('should return null currentUser and false authenticated when no token is stored', () => {
+    it('should return ANONYMOUS_USER currentUser and false authenticated when no token is stored', () => {
       const { result } = renderHook(() => useSecurity(tokenStorage));
 
-      expect(result.current.currentUser).toBe(null);
+      expect(result.current.currentUser).toEqual(ANONYMOUS_USER);
       expect(result.current.authenticated).toBe(false);
     });
 
@@ -107,7 +107,7 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(null);
+        expect(result.current.currentUser).toEqual(ANONYMOUS_USER);
         expect(result.current.authenticated).toBe(false);
       });
     });
@@ -140,7 +140,7 @@ describe('useSecurity', () => {
         }),
       ).rejects.toThrow('Auth failed');
 
-      expect(result.current.currentUser).toBe(null);
+      expect(result.current.currentUser).toEqual(ANONYMOUS_USER);
       expect(result.current.authenticated).toBe(false);
     });
 
@@ -213,7 +213,7 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(null);
+        expect(result.current.currentUser).toBe(ANONYMOUS_USER);
         expect(result.current.authenticated).toBe(false);
       });
     });
@@ -225,7 +225,7 @@ describe('useSecurity', () => {
         result.current.signOut();
       });
 
-      expect(result.current.currentUser).toBe(null);
+      expect(result.current.currentUser).toEqual(ANONYMOUS_USER);
       expect(result.current.authenticated).toBe(false);
     });
 
@@ -238,7 +238,7 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(null);
+        expect(result.current.currentUser).toBe(ANONYMOUS_USER);
         expect(result.current.authenticated).toBe(false);
       });
     });
@@ -267,8 +267,8 @@ describe('useSecurity', () => {
       await waitFor(() => {
         expect(result1.current.authenticated).toBe(false);
         expect(result2.current.authenticated).toBe(false);
-        expect(result1.current.currentUser).toBe(null);
-        expect(result2.current.currentUser).toBe(null);
+        expect(result1.current.currentUser).toEqual(ANONYMOUS_USER);
+        expect(result2.current.currentUser).toEqual(ANONYMOUS_USER);
       });
     });
 
@@ -345,7 +345,7 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(null);
+        expect(result.current.currentUser).toBe(ANONYMOUS_USER);
         expect(result.current.authenticated).toBe(false);
       });
     });
@@ -373,7 +373,7 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(null);
+        expect(result.current.currentUser).toBe(ANONYMOUS_USER);
         expect(result.current.authenticated).toBe(false);
       });
     });
@@ -390,7 +390,7 @@ describe('useSecurity', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.currentUser).toBe(null);
+        expect(result.current.currentUser).toBe(ANONYMOUS_USER);
         expect(result.current.authenticated).toBe(false);
       });
     });
