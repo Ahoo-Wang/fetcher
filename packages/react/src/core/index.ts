@@ -20,3 +20,5 @@ export * from './useRefs';
 export * from './useDebouncedCallback';
 export * from './useDebouncedExecutePromise';
 export * from './useForceUpdate';
+export * from './useQuery';
+export * from './useQueryState';

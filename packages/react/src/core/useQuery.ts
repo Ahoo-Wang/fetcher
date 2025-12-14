@@ -17,11 +17,11 @@ import {
   UseExecutePromiseReturn,
   UseExecutePromiseOptions,
   PromiseSupplier,
-} from '../core';
+} from './index';
 import { useCallback, useMemo } from 'react';
 import { AttributesCapable, FetcherError } from '@ahoo-wang/fetcher';
-import { AutoExecuteCapable } from './types';
 import { useQueryState, UseQueryStateReturn } from './useQueryState';
+import { AutoExecuteCapable } from '../types';
 
 /**
  * Configuration options for the useQuery hook
