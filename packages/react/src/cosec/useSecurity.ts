@@ -20,6 +20,12 @@ import {
 } from '@ahoo-wang/fetcher-cosec';
 import { useLatest } from '../core';
 
+/**
+ * Type representing a composite token provider.
+ * Can be either a direct composite token or a function that returns a promise of a composite token.
+ */
+type CompositeTokenProvider = CompositeToken | (() => Promise<CompositeToken>);
+
 export const ANONYMOUS_USER: CoSecJwtPayload = {
   jti: '',
   sub: 'anonymous',
@@ -66,9 +72,7 @@ export interface UseSecurityReturn {
    *                   or a function that returns a promise resolving to a composite token.
    * @returns A promise that resolves when the sign-in operation is complete.
    */
-  signIn: (
-    tokenOrFn: CompositeToken | (() => Promise<CompositeToken>),
-  ) => Promise<void>;
+  signIn: (tokenOrFn: CompositeTokenProvider) => Promise<void>;
 
   /**
    * Function to sign out the current user.
@@ -151,18 +155,18 @@ export function useSecurity(
   const [token, , remove] = useKeyStorage(tokenStorage);
   const optionsRef = useLatest(options);
   const signIn = useCallback(
-    async (tokenOrFn: CompositeToken | (() => Promise<CompositeToken>)) => {
+    async (tokenOrFn: CompositeTokenProvider) => {
       const compositeToken =
         typeof tokenOrFn === 'function' ? await tokenOrFn() : tokenOrFn;
       tokenStorage.signIn(compositeToken);
       optionsRef.current.onSignIn?.();
     },
-    [tokenStorage],
+    [tokenStorage, optionsRef],
   );
   const signOut = useCallback(() => {
     remove();
     optionsRef.current.onSignOut?.();
-  }, [remove]);
+  }, [remove, optionsRef]);
 
   return {
     currentUser: token?.access?.payload ?? ANONYMOUS_USER,
