@@ -20,6 +20,7 @@ import {
 } from '../../src/cosec/SecurityContext';
 import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
 import { InMemoryStorage } from '@ahoo-wang/fetcher-storage';
+import { ANONYMOUS_USER } from '../../src';
 
 // Valid JWT tokens for testing
 const validAccessToken =
@@ -96,7 +97,7 @@ describe('SecurityContext', () => {
       );
 
       expect(getByTestId('authenticated').textContent).toBe('false');
-      expect(getByTestId('currentUser').textContent).toBe('null');
+      expect(getByTestId('currentUser').textContent).toBe(ANONYMOUS_USER.sub);
     });
 
     it('should update context when token is signed in', async () => {
@@ -134,7 +135,7 @@ describe('SecurityContext', () => {
 
       await waitFor(() => {
         expect(getByTestId('authenticated').textContent).toBe('false');
-        expect(getByTestId('currentUser').textContent).toBe('null');
+        expect(getByTestId('currentUser').textContent).toBe(ANONYMOUS_USER.sub);
       });
     });
 
