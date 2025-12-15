@@ -12,9 +12,10 @@
     padding: 16px;
 }
 
-.titleBar {
+.topBar {
     background-color: white;
     height: 32px;
+    padding: 0;
 }
 
 .pagination {

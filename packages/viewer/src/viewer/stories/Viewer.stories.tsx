@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Viewer } from '../Viewer';
 import { ViewColumn, ViewDefinition } from '../types';
 import { ViewTableActionColumn } from '../../table';
+import { Button, Popover } from 'antd';
 
 export interface BusinessPartnerId {
   bizId: string;
@@ -182,7 +183,7 @@ const viewDefinition: ViewDefinition = {
   ],
   dataSourceUrl:
     'http://localhost:8080/tenant/mydao/sku_cost/snapshot/paged',
-  defaultPageSize: 20
+  defaultPageSize: 10
 };
 
 const columns: ViewColumn[] = [
@@ -241,7 +242,7 @@ const actionColumn: ViewTableActionColumn<SkuCostState> = {
   dataIndex: 'id',
   configurable: true,
   actions: record => {
-    if (record.id === '1') {
+    if (record.id === '3S98-SK-190TH') {
       return {
         primaryAction: {
           data: { value: 'Edit', record, index: 0 },

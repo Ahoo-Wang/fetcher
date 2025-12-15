@@ -96,8 +96,8 @@ import type { TableColumnsType } from 'antd';
 export function ViewTable<RecordType = any>(props: ViewTableProps<RecordType>) {
   const { viewDefinition, dataSource, actionColumn, attributes } = props;
 
-  const columns = useViewerSharedValue().viewColumns;
-  const tableColumns: TableColumnsType<RecordType> = columns
+  const { viewColumns, tableSize } = useViewerSharedValue();
+  const tableColumns: TableColumnsType<RecordType> = viewColumns
     .filter(it => it.visible)
     .map(it => {
       const columnDefinition = viewDefinition.columns.find(
@@ -180,7 +180,7 @@ export function ViewTable<RecordType = any>(props: ViewTableProps<RecordType>) {
         const data = {
           value: actionsData,
           record: record,
-          index: columns.length + 1,
+          index: viewColumns.length + 1,
         };
         return <ActionsCell data={data} />;
       },
@@ -193,6 +193,7 @@ export function ViewTable<RecordType = any>(props: ViewTableProps<RecordType>) {
       columns={tableColumns}
       {...attributes}
       scroll={{ x: 'max-content' }}
+      size={tableSize}
     />
   );
 }

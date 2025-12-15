@@ -1,0 +1,51 @@
+import { TopBarItemProps } from './types';
+import { RefAttributes } from 'react';
+import { BarItem, BarItemRef } from './BarItem';
+import { Dropdown, MenuProps } from 'antd';
+import { ColumnHeightOutlined } from '@ant-design/icons';
+import { useViewerSharedValue } from '../viewer';
+import { SizeType } from 'antd/es/config-provider/SizeContext';
+
+export const COLUMN_HEIGHT_BAR_ITEM_TYPE: string = 'column-height';
+
+export interface ColumnHeightBarItemProps
+  extends TopBarItemProps, RefAttributes<BarItemRef> {}
+
+export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
+  const { className } = props;
+
+  const { tableSize, setTableSize } = useViewerSharedValue();
+
+  const items: MenuProps['items'] = [
+    {
+      key: 'middle',
+      label: '标准',
+    },
+    {
+      key: 'small',
+      label: '紧凑',
+    },
+  ];
+
+  const handleSelect = ({ key }: { key: string }) => {
+    setTableSize(key as SizeType);
+    console.log('handleSelect', key);
+  };
+
+  return (
+    <Dropdown
+      className={className}
+      menu={{
+        items,
+        selectable: true,
+        defaultSelectedKeys: [tableSize || 'middle'],
+        onSelect: handleSelect,
+      }}
+      trigger={['click']}
+    >
+      <div onClick={e => e.preventDefault()}>
+        <BarItem icon={<ColumnHeightOutlined />} active={false} />
+      </div>
+    </Dropdown>
+  );
+}

@@ -9,10 +9,24 @@ import { View, ViewColumn, ViewDefinition } from './';
 import styles from './Viewer.module.css';
 import { StyleCapable } from '../types';
 import ViewerSharedValueContext from './ViewerSharedValueContext';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { all, Condition, PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
 import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
 import { FetcherError } from '@ahoo-wang/fetcher';
+import {
+  COLUMN_HEIGHT_BAR_ITEM_TYPE,
+  COLUMN_HEIGHT_TYPE,
+  TopBar,
+} from '../topbar';
+import { FILTER_BAR_ITEM_TYPE } from '../topbar/FilterBarItem';
+import { REFRESH_DATA_BAR_ITEM_TYPE } from '../topbar/RefreshDataBarItem';
+import { SizeType } from 'antd/es/config-provider/SizeContext';
 
 const { Header, Footer, Sider, Content } = Layout;
 
@@ -56,6 +70,18 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     setViewColumns(newColumns);
   };
 
+  const [showFilterPanel, setShowFilterPanel] = useState(true);
+  const updateShowFilterPanel = (newShowFilterPanel: boolean) => {
+    setShowFilterPanel(newShowFilterPanel);
+  };
+
+  const [viewTableSize, setViewTableSize] = useState<SizeType>(
+    view.tableSize || 'middle',
+  );
+  const updateTableSize = (newTableSize: SizeType) => {
+    setViewTableSize(newTableSize);
+  };
+
   const editableFilterPanelProps: EditableFilterPanelProps = {
     filters: view.filters,
     availableFilters: definition.availableFilters,
@@ -84,9 +110,23 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     [getQuery, setQuery, run],
   );
 
+  const refreshData = useCallback(() => {
+    run();
+  }, [run]);
+
   return (
     <ViewerSharedValueContext.Provider
-      value={{ viewColumns: viewColumns, setViewColumns: updateViewColumns }}
+      value={{
+        aggregateName: definition.name,
+        viewName: view.name,
+        viewColumns: viewColumns,
+        setViewColumns: updateViewColumns,
+        showFilterPanel: showFilterPanel,
+        setShowFilterPanel: updateShowFilterPanel,
+        refreshData: refreshData,
+        tableSize: viewTableSize,
+        setTableSize: updateTableSize,
+      }}
     >
       <Layout className={props.className} style={props.style}>
         <Sider className={styles.personalViews}>
@@ -99,16 +139,24 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
               style={{ display: 'flex' }}
               size="small"
             >
-              <Header className={styles.titleBar}>
-                {name} * {view.name}
-              </Header>
-              <div className={styles.filterPanel}>
-                <EditableFilterPanel
-                  ref={filterPanelRef}
-                  {...editableFilterPanelProps}
-                  onSearch={onSearch}
+              <Header className={styles.topBar}>
+                <TopBar
+                  barItems={[
+                    FILTER_BAR_ITEM_TYPE,
+                    REFRESH_DATA_BAR_ITEM_TYPE,
+                    COLUMN_HEIGHT_BAR_ITEM_TYPE,
+                  ]}
                 />
-              </div>
+              </Header>
+              {showFilterPanel && (
+                <div className={styles.filterPanel}>
+                  <EditableFilterPanel
+                    ref={filterPanelRef}
+                    {...editableFilterPanelProps}
+                    onSearch={onSearch}
+                  />
+                </div>
+              )}
               <ViewTable
                 dataSource={result?.list || []}
                 viewDefinition={definition}
@@ -122,7 +170,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                   showTotal={total => `total ${total} items`}
                   defaultPageSize={definition.defaultPageSize}
                   defaultCurrent={1}
-                  pageSizeOptions={['20', '50', '100', '200']}
+                  pageSizeOptions={['10', '20', '50', '100', '200']}
                   onChange={onPaginationChange}
                   {...paginationProps}
                 />
