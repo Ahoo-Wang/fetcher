@@ -20,7 +20,8 @@ import { AutoExecuteCapable } from '../types';
  */
 export interface UseQueryStateOptions<Q> extends AutoExecuteCapable {
   /** The initial query parameters to be stored and managed */
-  initialQuery: Q;
+  initialQuery?: Q;
+  query?: Q;
   /** Function to execute with the current query parameters. Called when autoExecute is true */
   execute: (query: Q) => Promise<void>;
 }
@@ -88,8 +89,12 @@ export interface UseQueryStateReturn<Q> {
 export function useQueryState<Q>(
   options: UseQueryStateOptions<Q>,
 ): UseQueryStateReturn<Q> {
-  const { initialQuery, autoExecute = true, execute } = options;
-  const queryRef = useRef(initialQuery);
+  const { initialQuery, query, autoExecute = true, execute } = options;
+  const queryOptions = query ?? initialQuery;
+  if (queryOptions === undefined) {
+    throw new Error('Either initialQuery or query must be provided.');
+  }
+  const queryRef = useRef<Q>(queryOptions);
 
   const getQuery = useCallback(() => {
     return queryRef.current;
@@ -109,8 +114,11 @@ export function useQueryState<Q>(
   );
 
   useEffect(() => {
+    if (query) {
+      queryRef.current = query;
+    }
     executeWrapper();
-  }, [executeWrapper]);
+  }, [executeWrapper, query]);
 
   return { getQuery, setQuery };
 }
