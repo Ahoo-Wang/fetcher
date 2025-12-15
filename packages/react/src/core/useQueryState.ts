@@ -11,9 +11,8 @@
  * limitations under the License.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { AutoExecuteCapable } from '../types';
-import { useLatest } from './useLatest';
 
 /**
  * Configuration options for the useQueryState hook
@@ -31,7 +30,6 @@ export interface UseQueryStateOptions<Q> extends AutoExecuteCapable {
  * @template Q - The type of the query parameters
  */
 export interface UseQueryStateReturn<Q> {
-  query: Q;
   /** Function to retrieve the current query parameters */
   getQuery: () => Q;
   /** Function to update the query parameters. Triggers execution if autoExecute is true */
@@ -90,20 +88,29 @@ export interface UseQueryStateReturn<Q> {
 export function useQueryState<Q>(
   options: UseQueryStateOptions<Q>,
 ): UseQueryStateReturn<Q> {
-  const { initialQuery, autoExecute = true, execute } = options;
-  const [query, setQuery] = useState<Q>(initialQuery);
+  const { initialQuery, autoExecute, execute } = options;
+  const autoExecuteValue = autoExecute ?? true;
+  const queryRef = useRef(initialQuery);
+
+  const getQuery = useCallback(() => {
+    return queryRef.current;
+  }, []);
+
+  const setQuery = useCallback(
+    (query: Q) => {
+      queryRef.current = query;
+      if (autoExecuteValue) {
+        execute(query);
+      }
+    },
+    [autoExecuteValue, execute],
+  );
 
   useEffect(() => {
-    setQuery(initialQuery);
-  }, [initialQuery]);
-
-  useEffect(() => {
-    if (autoExecute) {
-      execute(query);
+    if (autoExecuteValue) {
+      execute(queryRef.current);
     }
-  }, [execute, query, autoExecute]);
+  }, [autoExecuteValue, execute]);
 
-  const getQuery = useCallback(() => query, [query]);
-
-  return { query, getQuery, setQuery };
+  return { getQuery, setQuery };
 }
