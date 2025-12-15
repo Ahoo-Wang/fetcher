@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AutoExecuteCapable } from '../types';
+import { useLatest } from './useLatest';
 
 /**
  * Configuration options for the useQueryState hook
@@ -94,16 +95,16 @@ export function useQueryState<Q>(
 ): UseQueryStateReturn<Q> {
   const { initialQuery, autoExecute = true, execute } = options;
   const [query, setQuery] = useState<Q>(initialQuery);
-
+  const executeRef = useLatest(execute);
   useEffect(() => {
     setQuery(initialQuery);
   }, [initialQuery]);
 
   useEffect(() => {
     if (autoExecute) {
-      execute(query);
+      executeRef.current(query);
     }
-  }, [execute, query, autoExecute]);
+  }, [executeRef, query, autoExecute]);
 
   const getQuery = useCallback(() => query, [query]);
 
