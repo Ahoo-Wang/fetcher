@@ -37,7 +37,7 @@ export interface UseQueryStateOptions<Q>
  */
 export interface UseQueryStateReturn<Q> {
   /** Function to retrieve the current query parameters */
-  getQuery: () => Q;
+  getQuery: () => Q | undefined;
   /** Function to update the query parameters. Triggers execution if autoExecute is true */
   setQuery: (query: Q) => void;
 }
@@ -114,9 +114,6 @@ export function useQueryState<Q>(
 ): UseQueryStateReturn<Q> {
   const { initialQuery, query, autoExecute = true, execute } = options;
   const queryOptions = query ?? initialQuery;
-  if (queryOptions === undefined) {
-    throw new Error('Either initialQuery or query must be provided.');
-  }
   const queryRef = useRef<Q>(queryOptions);
 
   const getQuery = useCallback(() => {
@@ -124,8 +121,9 @@ export function useQueryState<Q>(
   }, []);
 
   const executeWrapper = useCallback(() => {
-    if (autoExecute) {
-      execute(getQuery());
+    const query = getQuery();
+    if (autoExecute && query) {
+      execute(query);
     }
   }, [autoExecute, execute, getQuery]);
   const setQuery = useCallback(
