@@ -20,7 +20,12 @@ vi.mock('../../src/core/useExecutePromise', () => ({
   useExecutePromise: vi.fn(),
 }));
 
+vi.mock('../../src/core/useLatest', () => ({
+  useLatest: vi.fn(),
+}));
+
 import { useExecutePromise } from '../../src/core/useExecutePromise';
+import { useLatest } from '../../src/core/useLatest';
 
 describe('useQuery', () => {
   const mockResult = { id: 1, name: 'Test Item' };
@@ -43,9 +48,25 @@ describe('useQuery', () => {
     reset: mockReset,
   };
 
+  let currentQuery = initialQuery;
+  const mockQueryState = {
+    getQuery: vi.fn().mockImplementation(() => currentQuery),
+    setQuery: vi.fn().mockImplementation((newQuery: any) => {
+      currentQuery = newQuery;
+    }),
+  };
+
+  let mockLatestOptions: any;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    currentQuery = initialQuery;
+    mockLatestOptions = { current: {} };
     (useExecutePromise as any).mockReturnValue(mockPromiseState);
+    (useLatest as any).mockImplementation((options: any) => {
+      mockLatestOptions.current = options;
+      return mockLatestOptions;
+    });
   });
 
   it('should initialize with initial query and return correct interface', () => {
