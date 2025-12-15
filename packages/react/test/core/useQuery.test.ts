@@ -20,6 +20,7 @@ vi.mock('../../src/core/useExecutePromise', () => ({
   useExecutePromise: vi.fn(),
 }));
 
+
 import { useExecutePromise } from '../../src/core/useExecutePromise';
 
 describe('useQuery', () => {

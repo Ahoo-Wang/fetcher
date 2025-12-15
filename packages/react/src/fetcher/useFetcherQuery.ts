@@ -13,7 +13,7 @@
 
 import { useFetcher, UseFetcherOptions, UseFetcherReturn } from './index';
 import { FetcherError, FetchRequest, JsonResultExtractor } from '@ahoo-wang/fetcher';
-import { useLatest, useQueryState, UseQueryStateReturn } from '../core';
+import { QueryOptions, useLatest, useQueryState, UseQueryStateReturn } from '../core';
 import { useCallback, useMemo } from 'react';
 import { AutoExecuteCapable } from '../types';
 
@@ -24,11 +24,9 @@ import { AutoExecuteCapable } from '../types';
  * @template E - The type of the error value
  */
 export interface UseFetcherQueryOptions<Q, R, E = FetcherError>
-  extends UseFetcherOptions<R, E>, AutoExecuteCapable {
+  extends UseFetcherOptions<R, E>, QueryOptions<Q>, AutoExecuteCapable {
   /** The URL endpoint to send the POST request to */
   url: string;
-  /** The initial query parameters to be sent as the request body */
-  initialQuery: Q;
 }
 
 /**
@@ -150,15 +148,16 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
     [fetcherExecute, latestOptionsRef],
   );
 
-  const { query,getQuery, setQuery } = useQueryState({
+  const { getQuery, setQuery } = useQueryState({
     initialQuery: useFetcherQueryOptions.initialQuery,
+    query: useFetcherQueryOptions.query,
     autoExecute: useFetcherQueryOptions.autoExecute,
     execute,
   });
 
   const executeWrapper = useCallback(() => {
-    return execute(query);
-  }, [execute, query]);
+    return execute(getQuery());
+  }, [execute, getQuery]);
 
   return useMemo(
     () => ({
@@ -169,7 +168,6 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
       execute: executeWrapper,
       reset,
       abort,
-      query,
       getQuery,
       setQuery,
     }),
@@ -181,7 +179,6 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
       executeWrapper,
       reset,
       abort,
-      query,
       getQuery,
       setQuery,
     ],

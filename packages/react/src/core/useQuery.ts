@@ -16,7 +16,7 @@ import {
   useLatest,
   UseExecutePromiseReturn,
   UseExecutePromiseOptions,
-  PromiseSupplier,
+  PromiseSupplier, QueryOptions,
 } from './index';
 import { useCallback, useMemo } from 'react';
 import { AttributesCapable, FetcherError } from '@ahoo-wang/fetcher';
@@ -31,10 +31,9 @@ import { AutoExecuteCapable } from '../types';
  */
 export interface UseQueryOptions<Q, R, E = FetcherError>
   extends UseExecutePromiseOptions<R, E>,
+    QueryOptions<Q>,
     AttributesCapable,
     AutoExecuteCapable {
-  /** The initial query parameters */
-  initialQuery: Q;
 
   /** Function to execute the query with given parameters and optional attributes */
   execute: (
@@ -59,7 +58,7 @@ export interface UseQueryReturn<
   execute: () => Promise<void>;
 }
 
-/* eslint-disable react-hooks/preserve-manual-memoization */
+
 /**
  * A React hook for managing query-based asynchronous operations
  * @template Q - The type of the query parameters
@@ -109,7 +108,7 @@ export interface UseQueryReturn<
 export function useQuery<Q, R, E = FetcherError>(
   options: UseQueryOptions<Q, R, E>,
 ): UseQueryReturn<Q, R, E> {
-  const latestOptions = useLatest(options);
+  const latestOptionsRef = useLatest(options);
   const {
     loading,
     result,
@@ -118,33 +117,34 @@ export function useQuery<Q, R, E = FetcherError>(
     execute: promiseExecutor,
     reset,
     abort,
-  } = useExecutePromise<R, E>(latestOptions.current);
+  } = useExecutePromise<R, E>(options);
 
   const execute = useCallback(
     (query: Q) => {
       const queryExecutor: PromiseSupplier<R> = async (
         abortController: AbortController,
       ): Promise<R> => {
-        return latestOptions.current.execute(
+        return latestOptionsRef.current.execute(
           query,
-          latestOptions.current.attributes,
+          latestOptionsRef.current.attributes,
           abortController,
         );
       };
       return promiseExecutor(queryExecutor);
     },
-    [promiseExecutor, latestOptions],
+    [promiseExecutor, latestOptionsRef],
   );
 
-  const { query, getQuery, setQuery } = useQueryState({
+  const { getQuery, setQuery } = useQueryState({
     initialQuery: options.initialQuery,
-    autoExecute: latestOptions.current.autoExecute,
+    query: options.query,
+    autoExecute: options.autoExecute,
     execute,
   });
 
   const executeWrapper = useCallback(() => {
-    return execute(query);
-  }, [execute, query]);
+    return execute(getQuery());
+  }, [execute, getQuery]);
 
   return useMemo(
     () => ({
@@ -155,7 +155,6 @@ export function useQuery<Q, R, E = FetcherError>(
       execute: executeWrapper,
       reset,
       abort,
-      query,
       getQuery,
       setQuery,
     }),
@@ -167,7 +166,6 @@ export function useQuery<Q, R, E = FetcherError>(
       executeWrapper,
       reset,
       abort,
-      query,
       getQuery,
       setQuery,
     ],

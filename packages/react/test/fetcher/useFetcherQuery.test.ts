@@ -33,16 +33,11 @@ vi.mock('../../src/fetcher', () => ({
     abort: mockAbort,
   })),
 }));
-vi.mock('../../src/core/useLatest', () => ({
-  useLatest: vi.fn(value => ({ current: value })),
-}));
 
 // Import after mocking
 import { useFetcher } from '../../src/fetcher';
-import { useLatest } from '../../src/core';
 
 const mockUseFetcher = vi.mocked(useFetcher);
-const mockUseLatest = vi.mocked(useLatest);
 
 describe('useFetcherQuery', () => {
   beforeEach(() => {
@@ -50,7 +45,6 @@ describe('useFetcherQuery', () => {
     mockReset.mockReset();
     mockAbort.mockReset();
     mockUseFetcher.mockClear();
-    mockUseLatest.mockClear();
   });
 
   afterEach(() => {

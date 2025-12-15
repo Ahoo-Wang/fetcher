@@ -28,6 +28,34 @@ export interface View {
   columns: ViewColumn[];
 }
 
+const availableFilter: AvailableFilter = {
+  field: {
+    name: '',
+    label: '',
+    type: '',
+    format: '',
+  },
+  component: 'text',
+};
+
+const a: ActiveFilter = {
+  key: 'name',
+  type: 'text',
+  field: {
+    name: '',
+    label: '',
+    type: '',
+    format: '',
+  },
+  value: {
+    defaultValue: '',
+    placeholder: '',
+  },
+  operator: {
+    defaultValue: Operator.EQ
+  }
+};
+
 export interface ViewColumn {
   dataIndex: string;
   fixed: boolean;
