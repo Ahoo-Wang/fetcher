@@ -9,23 +9,16 @@ import { View, ViewColumn, ViewDefinition } from './';
 import styles from './Viewer.module.css';
 import { StyleCapable } from '../types';
 import ViewerSharedValueContext from './ViewerSharedValueContext';
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { all, Condition, PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
 import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
 import { FetcherError } from '@ahoo-wang/fetcher';
 import {
-  COLUMN_HEIGHT_BAR_ITEM_TYPE,
-  COLUMN_HEIGHT_TYPE,
   TopBar,
+  COLUMN_HEIGHT_BAR_ITEM_TYPE,
+  FILTER_BAR_ITEM_TYPE,
+  REFRESH_DATA_BAR_ITEM_TYPE,
 } from '../topbar';
-import { FILTER_BAR_ITEM_TYPE } from '../topbar/FilterBarItem';
-import { REFRESH_DATA_BAR_ITEM_TYPE } from '../topbar/RefreshDataBarItem';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 
 const { Header, Footer, Sider, Content } = Layout;
@@ -47,14 +40,10 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     PagedList<RecordType>
   >({
     url: definition.dataSourceUrl,
-    initialQuery: {
-      condition: all(),
-    },
     debounce: {
       delay: 300,
       leading: true,
     },
-    autoExecute: false,
     onError: (error: FetcherError) => {
       console.log(error);
     },

@@ -4,6 +4,7 @@ import { Viewer } from '../Viewer';
 import { ViewColumn, ViewDefinition } from '../types';
 import { ViewTableActionColumn } from '../../table';
 import { Button, Popover } from 'antd';
+import type { MaterializedSnapshot } from '@ahoo-wang/fetcher-wow';
 
 export interface BusinessPartnerId {
   bizId: string;
@@ -141,7 +142,7 @@ const viewDefinition: ViewDefinition = {
             name: 'state.id',
             label: '成本编号',
           },
-          component: 'id',
+          component: 'id'
         },
         {
           field: {
@@ -179,11 +180,10 @@ const viewDefinition: ViewDefinition = {
           component: 'number',
         },
       ],
-    }
+    },
   ],
-  dataSourceUrl:
-    'http://localhost:8080/tenant/mydao/sku_cost/snapshot/paged',
-  defaultPageSize: 10
+  dataSourceUrl: 'http://localhost:8080/tenant/mydao/sku_cost/snapshot/paged',
+  defaultPageSize: 10,
 };
 
 const columns: ViewColumn[] = [
@@ -237,18 +237,19 @@ const columns: ViewColumn[] = [
   },
 ];
 
-const actionColumn: ViewTableActionColumn<SkuCostState> = {
+const actionColumn: ViewTableActionColumn<MaterializedSnapshot<SkuCostState>> = {
   title: 'More',
   dataIndex: 'id',
   configurable: true,
   actions: record => {
-    if (record.id === '3S98-SK-190TH') {
+    if (record.state.id === '3S98-SK-190TH') {
       return {
-        primaryAction: {
-          data: { value: 'Edit', record, index: 0 },
-          attributes: { onClick: () => console.log('Edit', record) },
-        },
-        moreActionTitle: 'Options',
+        primaryAction: record => (
+          <Button type="link" onClick={() => console.log('View', record)}>
+            Custom Action
+          </Button>
+        ),
+        moreActionTitle: 'More',
         secondaryActions: [],
       };
     } else {
@@ -273,7 +274,6 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-
 export const Default: Story = {
   args: {
     name: 'users',
@@ -288,7 +288,7 @@ export const Default: Story = {
           field: {
             name: 'state.id',
             label: '成本编号',
-          }
+          },
         },
       ],
     },
