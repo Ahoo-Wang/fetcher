@@ -21,7 +21,7 @@ import {
 import { useCallback, useMemo } from 'react';
 import { AttributesCapable, FetcherError } from '@ahoo-wang/fetcher';
 import { useQueryState, UseQueryStateReturn } from './useQueryState';
-import { AutoExecuteCapable, DepsCapable } from '../types';
+import { AutoExecuteCapable } from '../types';
 
 /**
  * Configuration options for the useQuery hook
@@ -32,7 +32,7 @@ import { AutoExecuteCapable, DepsCapable } from '../types';
 export interface UseQueryOptions<Q, R, E = FetcherError>
   extends UseExecutePromiseOptions<R, E>,
     AttributesCapable,
-    AutoExecuteCapable, DepsCapable {
+    AutoExecuteCapable {
   /** The initial query parameters */
   initialQuery: Q;
 
@@ -140,7 +140,6 @@ export function useQuery<Q, R, E = FetcherError>(
     initialQuery: options.initialQuery,
     autoExecute: options.autoExecute,
     execute,
-    deps: options.deps,
   });
 
   const executeWrapper = useCallback(() => {
