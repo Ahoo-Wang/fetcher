@@ -14,14 +14,17 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { AutoExecuteCapable } from '../types';
 
+export interface QueryOptions<Q> {
+  /** The initial query parameters to be stored and managed */
+  initialQuery?: Q;
+  query?: Q;
+}
+
 /**
  * Configuration options for the useQueryState hook
  * @template Q - The type of the query parameters
  */
-export interface UseQueryStateOptions<Q> extends AutoExecuteCapable {
-  /** The initial query parameters to be stored and managed */
-  initialQuery?: Q;
-  query?: Q;
+export interface UseQueryStateOptions<Q> extends QueryOptions<Q>, AutoExecuteCapable {
   /** Function to execute with the current query parameters. Called when autoExecute is true */
   execute: (query: Q) => Promise<void>;
 }
@@ -44,9 +47,15 @@ export interface UseQueryStateReturn<Q> {
  * getting and setting the current query, and optionally automatically executing
  * queries when the query changes or on component mount.
  *
- * @template Q - The type of the query parameters
+ * @template Q - The type of the query parameters, which can be any object type representing query data
  * @param options - Configuration options for the hook
- * @returns An object containing getQuery and setQuery functions
+ * @param options.initialQuery - Optional initial query parameters to be stored and managed. Used if no query is provided.
+ * @param options.query - Optional current query parameters. If provided, overrides initialQuery and updates the state.
+ * @param options.autoExecute - Boolean flag indicating whether to automatically execute the query on mount or when query changes. Defaults to true.
+ * @param options.execute - Function to execute with the current query parameters. Called when autoExecute is true and query changes.
+ * @returns An object containing functions to manage the query state
+ * @returns getQuery - Function that returns the current query parameters of type Q
+ * @returns setQuery - Function that updates the query parameters and triggers execution if autoExecute is enabled
  *
  * @example
  * ```typescript
@@ -83,8 +92,20 @@ export interface UseQueryStateReturn<Q> {
  * }
  * ```
  *
- * @throws This hook does not throw exceptions directly, but the execute function
- * may throw exceptions that should be handled by the caller.
+ * @example
+ * // Example with autoExecute disabled
+ * const { getQuery, setQuery } = useQueryState<UserQuery>({
+ *   initialQuery: { id: '1' },
+ *   autoExecute: false,
+ *   execute: executeQuery,
+ * });
+ *
+ * // Manually trigger execution
+ * setQuery({ id: '2' });
+ * executeQuery(getQuery());
+ *
+ * @throws {Error} Throws an error if neither initialQuery nor query is provided in the options.
+ * @throws Exceptions may also be thrown by the execute function if it encounters errors during query execution.
  */
 export function useQueryState<Q>(
   options: UseQueryStateOptions<Q>,
