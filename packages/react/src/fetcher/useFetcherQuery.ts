@@ -155,8 +155,11 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
     execute,
   });
 
-  const executeWrapper = useCallback(() => {
-    return execute(getQuery());
+  const executeWrapper = useCallback(async () => {
+    const query = getQuery();
+    if (query) {
+      return await execute(query);
+    }
   }, [execute, getQuery]);
 
   return useMemo(
