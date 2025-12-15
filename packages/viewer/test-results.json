@@ -1,0 +1,1378 @@
+
+> @ahoo-wang/fetcher-viewer@3.2.8 test D:\workspace\code\linyi\front\fetcher\packages\viewer
+> vitest run --coverage "--" "TableSettingPanel.test.tsx" "--reporter=json"
+
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mD:/workspace/code/linyi/front/fetcher/packages/viewer[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [31m❯[39m test/index.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 10557[2mms[22m[39m
+[31m   [31m×[31m index.ts[2m > [22mshould export all required modules[39m[33m 10554[2mms[22m[39m
+[31m     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+[90mstdout[2m | test/table/cell/ActionsCell.test.tsx[2m > [22m[2mActionsCell[2m > [22m[2mrenders primary action button when only primary action is provided
+[22m[39mactionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: []
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+actionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: []
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+
+[90mstderr[2m | test/table/cell/ActionsCell.test.tsx[2m > [22m[2mActionsCell[2m > [22m[2mrenders primary action button when only primary action is provided
+[22m[39mA props object containing a "key" prop is being spread into JSX:
+  let props = {key: someKey, title: ...};
+  <ActionCell {...props} />
+React keys must be passed directly to JSX without using spread:
+  let props = {title: ...};
+  <ActionCell key={someKey} {...props} />
+
+[90mstdout[2m | test/table/cell/ActionsCell.test.tsx[2m > [22m[2mActionsCell[2m > [22m[2mrenders primary action and dropdown when secondary actions are provided
+[22m[39mactionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+actionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+
+[90mstdout[2m | test/table/cell/ActionsCell.test.tsx[2m > [22m[2mActionsCell[2m > [22m[2mrenders custom more action title when provided
+[22m[39mactionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ],
+    moreActionTitle: [32m'Actions'[39m
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+actionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ],
+    moreActionTitle: [32m'Actions'[39m
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+
+[90mstdout[2m | test/table/cell/ActionsCell.test.tsx[2m > [22m[2mActionsCell[2m > [22m[2mrenders default "More" title when no custom title is provided
+[22m[39mactionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+actionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+
+[90mstdout[2m | test/table/cell/ActionsCell.test.tsx[2m > [22m[2mActionsCell[2m > [22m[2mcalls click handler with correct parameters when primary action is clicked
+[22m[39mactionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+actionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+
+[90mstdout[2m | test/table/cell/ActionsCell.test.tsx[2m > [22m[2mActionsCell[2m > [22m[2mrenders dropdown trigger when secondary actions are present
+[22m[39mactionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+actionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+
+[90mstdout[2m | test/table/cell/ActionsCell.test.tsx[2m > [22m[2mActionsCell[2m > [22m[2mrenders dropdown trigger for multiple secondary actions
+[22m[39mactionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+actionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m, [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+
+[90mstdout[2m | test/table/cell/ActionsCell.test.tsx[2m > [22m[2mActionsCell[2m > [22m[2mrenders dropdown trigger for single secondary action
+[22m[39mactionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+actionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: [ [36m[Object][39m ]
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+
+[90mstdout[2m | test/table/cell/ActionsCell.test.tsx[2m > [22m[2mActionsCell[2m > [22m[2mpasses record data correctly to click handler for primary action
+[22m[39mactionRender {
+  value: {
+    primaryAction: { title: [32m'View'[39m, key: [32m'view'[39m },
+    secondaryActions: []
+  },
+  record: {
+    id: [33m42[39m,
+    name: [32m'Complex Item'[39m,
+    nested: { prop: [32m'value'[39m },
+    array: [ [33m1[39m, [33m2[39m, [33m3[39m ]
+  },
+  index: [33m5[39m
+}
+actionRender {
+  value: {
+    primaryAction: { title: [32m'View'[39m, key: [32m'view'[39m },
+    secondaryActions: []
+  },
+  record: {
+    id: [33m42[39m,
+    name: [32m'Complex Item'[39m,
+    nested: { prop: [32m'value'[39m },
+    array: [ [33m1[39m, [33m2[39m, [33m3[39m ]
+  },
+  index: [33m5[39m
+}
+
+[90mstdout[2m | test/table/cell/ActionsCell.test.tsx[2m > [22m[2mActionsCell[2m > [22m[2mhandles empty secondary actions array gracefully
+[22m[39mactionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: []
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+actionRender {
+  value: {
+    primaryAction: { title: [32m'Edit'[39m, key: [32m'edit'[39m },
+    secondaryActions: []
+  },
+  record: { id: [33m1[39m, name: [32m'Test Item'[39m },
+  index: [33m0[39m
+}
+
+ [31m❯[39m test/table/cell/ActionsCell.test.tsx [2m([22m[2m10 tests[22m[2m | [22m[31m10 failed[39m[2m)[22m[32m 98[2mms[22m[39m
+[31m   [31m×[31m ActionsCell[2m > [22mrenders primary action button when only primary action is provided[39m[32m 47[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'value')[39m
+[31m   [31m×[31m ActionsCell[2m > [22mrenders primary action and dropdown when secondary actions are provided[39m[32m 15[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'index')[39m
+[31m   [31m×[31m ActionsCell[2m > [22mrenders custom more action title when provided[39m[32m 4[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'index')[39m
+[31m   [31m×[31m ActionsCell[2m > [22mrenders default "More" title when no custom title is provided[39m[32m 3[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'index')[39m
+[31m   [31m×[31m ActionsCell[2m > [22mcalls click handler with correct parameters when primary action is clicked[39m[32m 5[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'index')[39m
+[31m   [31m×[31m ActionsCell[2m > [22mrenders dropdown trigger when secondary actions are present[39m[32m 4[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'index')[39m
+[31m   [31m×[31m ActionsCell[2m > [22mrenders dropdown trigger for multiple secondary actions[39m[32m 4[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'index')[39m
+[31m   [31m×[31m ActionsCell[2m > [22mrenders dropdown trigger for single secondary action[39m[32m 4[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'index')[39m
+[31m   [31m×[31m ActionsCell[2m > [22mpasses record data correctly to click handler for primary action[39m[32m 4[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'value')[39m
+[31m   [31m×[31m ActionsCell[2m > [22mhandles empty secondary actions array gracefully[39m[32m 4[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'value')[39m
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mrenders without crashing
+[22m[39mTableSettingPanel function
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mdisplays section titles
+[22m[39mTableSettingPanel function
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mdisplays the lock tip text
+[22m[39mTableSettingPanel function
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mrenders fixed columns in the fixed section
+[22m[39mTableSettingPanel function
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mrenders visible non-fixed columns in the visible section
+[22m[39mTableSettingPanel function
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mrenders hidden columns in the hidden section
+[22m[39mTableSettingPanel function
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mcalls onColumnsChange when visibility is toggled
+[22m[39mTableSettingPanel function
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mhandles empty columns array
+[22m[39mTableSettingPanel function
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mhandles columns with only fixed columns
+[22m[39mTableSettingPanel function
+
+ [31m❯[39m test/table/cell/ActionCell.test.tsx [2m([22m[2m7 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[32m 60[2mms[22m[39m
+[31m   [31m×[31m ActionCell[2m > [22mrenders button with correct title when value is provided[39m[32m 42[2mms[22m[39m
+[31m     → Objects are not valid as a React child (found: object with keys {title, key}). If you meant to render a collection of children, use an array instead.[39m
+   [32m✓[39m ActionCell[2m > [22mrenders null when no value is provided[32m 4[2mms[22m[39m
+   [32m✓[39m ActionCell[2m > [22mrenders null when value is undefined[32m 2[2mms[22m[39m
+[31m   [31m×[31m ActionCell[2m > [22mcalls click handler with correct parameters when button is clicked[39m[32m 2[2mms[22m[39m
+[31m     → Objects are not valid as a React child (found: object with keys {title, key}). If you meant to render a collection of children, use an array instead.[39m
+[31m   [31m×[31m ActionCell[2m > [22mrenders with link button type by default[39m[32m 2[2mms[22m[39m
+[31m     → Objects are not valid as a React child (found: object with keys {title, key}). If you meant to render a collection of children, use an array instead.[39m
+[31m   [31m×[31m ActionCell[2m > [22mhandles different action keys and titles[39m[32m 2[2mms[22m[39m
+[31m     → Objects are not valid as a React child (found: object with keys {title, key}). If you meant to render a collection of children, use an array instead.[39m
+[31m   [31m×[31m ActionCell[2m > [22mpasses record data correctly to click handler[39m[32m 2[2mms[22m[39m
+[31m     → Objects are not valid as a React child (found: object with keys {title, key}). If you meant to render a collection of children, use an array instead.[39m
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mhandles columns with only hidden columns
+[22m[39mTableSettingPanel function
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mRendering[2m > [22m[2mrenders without crashing
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mrenders draggable items for non-primary key columns
+[22m[39mTableSettingPanel function
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mdoes not render draggable items for primary key columns
+[22m[39mTableSettingPanel function
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mapplies custom className when provided
+[22m[39mTableSettingPanel function
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mRendering[2m > [22m[2mrenders warning alert for unsupported filter type
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mhandles drag start event
+[22m[39mTableSettingPanel function
+handleDragStart SyntheticBaseEvent {
+  _reactName: [32m'onDragStart'[39m,
+  _targetInst: [1mnull[22m,
+  type: [32m'dragstart'[39m,
+  nativeEvent: Event {
+    isTrusted: [36m[Getter][39m,
+    dataTransfer: { effectAllowed: [32m''[39m, setDragImage: [36m[Function][39m }
+  },
+  target: [36m<ref *1>[39m HTMLDivElement {
+    [32m'__reactFiber$uvft3y4crcj'[39m: FiberNode {
+      tag: [33m5[39m,
+      key: [32m'col1'[39m,
+      elementType: [32m'div'[39m,
+      type: [32m'div'[39m,
+      stateNode: [36m[Circular *1][39m,
+      return: [36m[FiberNode][39m,
+      child: [36m[FiberNode][39m,
+      sibling: [1mnull[22m,
+      index: [33m0[39m,
+      ref: [1mnull[22m,
+      refCleanup: [1mnull[22m,
+      pendingProps: [36m[Object][39m,
+      memoizedProps: [36m[Object][39m,
+      updateQueue: [1mnull[22m,
+      memoizedState: [1mnull[22m,
+      dependencies: [1mnull[22m,
+      mode: [33m3[39m,
+      flags: [33m0[39m,
+      subtreeFlags: [33m14158341[39m,
+      deletions: [1mnull[22m,
+      lanes: [33m0[39m,
+      childLanes: [33m0[39m,
+      alternate: [1mnull[22m,
+      actualDuration: [33m10.486399999994319[39m,
+      actualStartTime: [33m17671.0227[39m,
+      selfBaseDuration: [33m0.01209999999991851[39m,
+      treeBaseDuration: [33m6.215599999992264[39m,
+      _debugInfo: [1mnull[22m,
+      _debugOwner: [36m[FiberNode][39m,
+      _debugStack: Error: react-stack-top-frame
+          at process.env.NODE_ENV.exports.jsxDEV (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react@19.2.0\node_modules\[4mreact[24m\cjs\react-jsx-dev-runtime.development.js:333:13)
+          at renderDraggableItem [90m(D:\workspace\code\linyi\front\fetcher\packages\viewer\[39msrc\table\setting\TableSettingPanel.tsx:120:5[90m)[39m
+          at map [90m(D:\workspace\code\linyi\front\fetcher\packages\viewer\[39msrc\table\setting\TableSettingPanel.tsx:156:35[90m)[39m
+          at Array.map (<anonymous>)
+          at TableSettingPanel [90m(D:\workspace\code\linyi\front\fetcher\packages\viewer\[39msrc\table\setting\TableSettingPanel.tsx:156:20[90m)[39m
+          at Object.react_stack_bottom_frame (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react-dom@19.2.0_react@19.2.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:25904:20)
+          at renderWithHooks (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react-dom@19.2.0_react@19.2.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:7662:22)
+          at updateFunctionComponent (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react-dom@19.2.0_react@19.2.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:10166:19)
+          at beginWork (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react-dom@19.2.0_react@19.2.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:11778:18)
+          at runWithFiberInDEV (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react-dom@19.2.0_react@19.2.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:874:13),
+      _debugTask: [1mnull[22m,
+      _debugNeedsRemount: [33mfalse[39m,
+      _debugHookTypes: [1mnull[22m
+    },
+    [32m'__reactProps$uvft3y4crcj'[39m: {
+      className: [32m'_item_d8c9c3 '[39m,
+      draggable: [33mtrue[39m,
+      onDragStart: [36m[Function: onDragStart][39m,
+      onDragOver: [36m[Function: _temp4][39m,
+      onDragEnd: [36m[Function: t4][39m,
+      onDrop: [36m[Function: onDrop][39m,
+      children: [36m[Object][39m
+    },
+    [[32mSymbol(SameObject caches)[39m]: [Object: null prototype] { attributes: NamedNodeMap {} }
+  },
+  currentTarget: [36m<ref *1>[39m HTMLDivElement {
+    [32m'__reactFiber$uvft3y4crcj'[39m: FiberNode {
+      tag: [33m5[39m,
+      key: [32m'col1'[39m,
+      elementType: [32m'div'[39m,
+      type: [32m'div'[39m,
+      stateNode: [36m[Circular *1][39m,
+      return: [36m[FiberNode][39m,
+      child: [36m[FiberNode][39m,
+      sibling: [1mnull[22m,
+      index: [33m0[39m,
+      ref: [1mnull[22m,
+      refCleanup: [1mnull[22m,
+      pendingProps: [36m[Object][39m,
+      memoizedProps: [36m[Object][39m,
+      updateQueue: [1mnull[22m,
+      memoizedState: [1mnull[22m,
+      dependencies: [1mnull[22m,
+      mode: [33m3[39m,
+      flags: [33m0[39m,
+      subtreeFlags: [33m14158341[39m,
+      deletions: [1mnull[22m,
+      lanes: [33m0[39m,
+      childLanes: [33m0[39m,
+      alternate: [1mnull[22m,
+      actualDuration: [33m10.486399999994319[39m,
+      actualStartTime: [33m17671.0227[39m,
+      selfBaseDuration: [33m0.01209999999991851[39m,
+      treeBaseDuration: [33m6.215599999992264[39m,
+      _debugInfo: [1mnull[22m,
+      _debugOwner: [36m[FiberNode][39m,
+      _debugStack: Error: react-stack-top-frame
+          at process.env.NODE_ENV.exports.jsxDEV (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react@19.2.0\node_modules\[4mreact[24m\cjs\react-jsx-dev-runtime.development.js:333:13)
+          at renderDraggableItem [90m(D:\workspace\code\linyi\front\fetcher\packages\viewer\[39msrc\table\setting\TableSettingPanel.tsx:120:5[90m)[39m
+          at map [90m(D:\workspace\code\linyi\front\fetcher\packages\viewer\[39msrc\table\setting\TableSettingPanel.tsx:156:35[90m)[39m
+          at Array.map (<anonymous>)
+          at TableSettingPanel [90m(D:\workspace\code\linyi\front\fetcher\packages\viewer\[39msrc\table\setting\TableSettingPanel.tsx:156:20[90m)[39m
+          at Object.react_stack_bottom_frame (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react-dom@19.2.0_react@19.2.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:25904:20)
+          at renderWithHooks (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react-dom@19.2.0_react@19.2.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:7662:22)
+          at updateFunctionComponent (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react-dom@19.2.0_react@19.2.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:10166:19)
+          at beginWork (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react-dom@19.2.0_react@19.2.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:11778:18)
+          at runWithFiberInDEV (D:\workspace\code\linyi\front\fetcher\node_modules\[4m.pnpm[24m\react-dom@19.2.0_react@19.2.0\node_modules\[4mreact-dom[24m\cjs\react-dom-client.development.js:874:13),
+      _debugTask: [1mnull[22m,
+      _debugNeedsRemount: [33mfalse[39m,
+      _debugHookTypes: [1mnull[22m
+    },
+    [32m'__reactProps$uvft3y4crcj'[39m: {
+      className: [32m'_item_d8c9c3 '[39m,
+      draggable: [33mtrue[39m,
+      onDragStart: [36m[Function: onDragStart][39m,
+      onDragOver: [36m[Function: _temp4][39m,
+      onDragEnd: [36m[Function: t4][39m,
+      onDrop: [36m[Function: onDrop][39m,
+      children: [36m[Object][39m
+    },
+    [[32mSymbol(SameObject caches)[39m]: [Object: null prototype] { attributes: NamedNodeMap {} }
+  },
+  eventPhase: [33m3[39m,
+  bubbles: [33mtrue[39m,
+  cancelable: [33mfalse[39m,
+  timeStamp: [33m1764923431985[39m,
+  defaultPrevented: [33mfalse[39m,
+  isTrusted: [33mfalse[39m,
+  view: [90mundefined[39m,
+  detail: [90mundefined[39m,
+  screenX: [90mundefined[39m,
+  screenY: [90mundefined[39m,
+  clientX: [90mundefined[39m,
+  clientY: [90mundefined[39m,
+  pageX: [90mundefined[39m,
+  pageY: [90mundefined[39m,
+  ctrlKey: [90mundefined[39m,
+  shiftKey: [90mundefined[39m,
+  altKey: [90mundefined[39m,
+  metaKey: [90mundefined[39m,
+  getModifierState: [36m[Function: modifierStateGetter][39m,
+  button: [90mundefined[39m,
+  buttons: [90mundefined[39m,
+  relatedTarget: [90mundefined[39m,
+  movementX: [33m0[39m,
+  movementY: [33m0[39m,
+  dataTransfer: {
+    effectAllowed: [32m''[39m,
+    setDragImage: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(nodejs.dispose)[39m]: [36m[Function (anonymous)][39m
+    }
+  },
+  isDefaultPrevented: [36m[Function: functionThatReturnsFalse][39m,
+  isPropagationStopped: [36m[Function: functionThatReturnsFalse][39m
+} [33m0[39m fixed
+e.currentTarget [33m0[39m
+TableSettingPanel function
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mRendering[2m > [22m[2mdisplays correct unsupported type message
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mhandles drag over event
+[22m[39mTableSettingPanel function
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mhandles drag end event
+[22m[39mTableSettingPanel function
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mRendering[2m > [22m[2mrenders as an Alert component with correct structure
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mprevents dropping when fixed columns limit is reached
+[22m[39mTableSettingPanel function
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mRendering[2m > [22m[2mdisplays warning icon for visual indication
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstdout[2m | test/table/setting/TableSettingPanel.test.tsx[2m > [22m[2mTableSettingPanel[2m > [22m[2mcorrectly filters columns into different groups
+[22m[39mTableSettingPanel function
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mRendering[2m > [22m[2mhandles different type values correctly
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mFunctionality[2m > [22m[2mexposes getValue method via ref
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mFunctionality[2m > [22m[2mgetValue method always returns undefined
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mFunctionality[2m > [22m[2mgetValue returns undefined regardless of props
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mFunctionality[2m > [22m[2mmaintains ref functionality across re-renders
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+ [31m❯[39m test/table/setting/TableSettingPanel.test.tsx [2m([22m[2m18 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[33m 1693[2mms[22m[39m
+   [33m[2m✓[22m[39m TableSettingPanel[2m > [22mrenders without crashing [33m 483[2mms[22m[39m
+   [32m✓[39m TableSettingPanel[2m > [22mdisplays section titles[32m 90[2mms[22m[39m
+   [32m✓[39m TableSettingPanel[2m > [22mdisplays the lock tip text[32m 62[2mms[22m[39m
+   [32m✓[39m TableSettingPanel[2m > [22mrenders fixed columns in the fixed section[32m 68[2mms[22m[39m
+   [32m✓[39m TableSettingPanel[2m > [22mrenders visible non-fixed columns in the visible section[32m 70[2mms[22m[39m
+   [32m✓[39m TableSettingPanel[2m > [22mrenders hidden columns in the hidden section[32m 63[2mms[22m[39m
+[31m   [31m×[31m TableSettingPanel[2m > [22mcalls onColumnsChange when visibility is toggled[39m[32m 61[2mms[22m[39m
+[31m     → expected undefined to be 'checkbox' // Object.is equality[39m
+   [32m✓[39m TableSettingPanel[2m > [22mhandles empty columns array[32m 24[2mms[22m[39m
+   [32m✓[39m TableSettingPanel[2m > [22mhandles columns with only fixed columns[32m 77[2mms[22m[39m
+   [32m✓[39m TableSettingPanel[2m > [22mhandles columns with only hidden columns[32m 65[2mms[22m[39m
+   [32m✓[39m TableSettingPanel[2m > [22mrenders draggable items for non-primary key columns[32m 177[2mms[22m[39m
+[31m   [31m×[31m TableSettingPanel[2m > [22mdoes not render draggable items for primary key columns[39m[32m 59[2mms[22m[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+   [32m✓[39m TableSettingPanel[2m > [22mapplies custom className when provided[32m 51[2mms[22m[39m
+   [32m✓[39m TableSettingPanel[2m > [22mhandles drag start event[32m 83[2mms[22m[39m
+[31m   [31m×[31m TableSettingPanel[2m > [22mhandles drag over event[39m[32m 72[2mms[22m[39m
+[31m     → expected "spy" to be called at least once[39m
+   [32m✓[39m TableSettingPanel[2m > [22mhandles drag end event[32m 49[2mms[22m[39m
+   [32m✓[39m TableSettingPanel[2m > [22mprevents dropping when fixed columns limit is reached[32m 61[2mms[22m[39m
+[31m   [31m×[31m TableSettingPanel[2m > [22mcorrectly filters columns into different groups[39m[32m 72[2mms[22m[39m
+[31m     → Found multiple elements with the text: Column 1
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+[36m<span[31m
+  [33mclass[31m=[32m"ant-checkbox-label"[31m
+[36m>[31m
+  [0mColumn 1[0m
+[36m</span>[31m
+
+Ignored nodes: comments, script, style
+[36m<span[31m
+  [33mclass[31m=[32m"ant-checkbox-label"[31m
+[36m>[31m
+  [0mColumn 1[0m
+[36m</span>[31m
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div[31m
+    [33mclass[31m=[32m"_item_d8c9c3 "[31m
+    [33mdraggable[31m=[32m"true"[31m
+    [33mstyle[31m=[32m"background-color: rgb(245, 245, 245); transform: scale(1.02); opacity: 1; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); position: absolute; top: -1000px; width: 0px; height: 0px;"[31m
+  [36m>[31m
+    [36m<div[31m
+      [33mstyle[31m=[32m"display: flex; justify-content: space-between; width: 100%;"[31m
+    [36m>[31m
+      [36m<label[31m
+        [33mclass[31m=[32m"ant-checkbox-wrapper css-var-root ant-checkbox-css-var"[31m
+      [36m>[31m
+        [36m<span[31m
+          [33mclass[31m=[32m"ant-checkbox ant-wave-target ant-checkbox-checked"[31m
+        [36m>[31m
+          [36m<input[31m
+            [33mchecked[31m=[32m""[31m
+            [33mclass[31m=[32m"ant-checkbox-input"[31m
+            [33mtype[31m=[32m"checkbox"[31m
+          [36m/>[31m
+          [36m<span[31m
+            [33mclass[31m=[32m"ant-checkbox-inner"[31m
+          [36m/>[31m
+        [36m</span>[31m
+        [36m<span[31m
+          [33mclass[31m=[32m"ant-checkbox-label"[31m
+        [36m>[31m
+          [0mColumn 1[0m
+        [36m</span>[31m
+      [36m</label>[31m
+      [36m<span[31m
+        [33maria-label[31m=[32m"drag"[31m
+        [33mclass[31m=[32m"anticon anticon-drag"[31m
+        [33mrole[31m=[32m"img"[31m
+      [36m>[31m
+        [36m<svg[31m
+          [33maria-hidden[31m=[32m"true"[31m
+          [33mdata-icon[31m=[32m"drag"[31m
+          [33mfill[31m=[32m"currentColor"[31m
+          [33mfocusable[31m=[32m"false"[31m
+          [33mheight[31m=[32m"1em"[31m
+          [33mviewBox[31m=[32m"64 64 896 896"[31m
+          [33mwidth[31m=[32m"1em"[31m
+        [36m>[31m
+          [36m<path[31m
+            [33md[31m=[32m"M909.3 506.3L781.7 405.6a7.23 7.23 0 00-11.7 5.7V476H548V254h64.8c6 0 9.4-7 5.7-11.7L517.7 114.7a7.14 7.14 0 00-11.3 0L405.6 242.3a7.23 7.23 0 005.7 11.7H476v222H254v-64.8c0-6-7-9.4-11.7-5.7L114.7 506.3a7.14 7.14 0 000 11.3l127.5 100.8c4.7 3.7 11.7.4 11.7-5.7V548h222v222h-64.8c-6 0-9.4 7-5.7 11.7l100.8 127.5c2.9 3.7 8.5 3.7 11.3 0l100.8-127.5c3.7-4.7.4-11.7-5.7-11.7H548V548h222v64.8c0 6 7 9.4 11.7 5.7l127.5-100.8a7.3 7.3 0 00.1-11.4z"[31m
+          [36m/>[31m
+        [36m</svg>[31m
+      [36m</span>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"ant-space ant-space-vertical css-var-root"[31m
+      [33mstyle[31m=[32m"display: flex;"[31m
+    [36m>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"ant-space-item"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"_groupTitle_d8c9c3"[31m
+        [36m>[31m
+          [0m已显示字段[0m
+        [36m</div>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"ant-space-item"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"_item_d8c9c3 "[31m
+          [33mdraggable[31m=[32m"true"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mstyle[31m=[32m"display: flex; justify-content: space-between; width: 100%;"[31m
+          [36m>[31m
+            [36m<label[31m
+              [33mclass[31m=[32m"ant-checkbox-wrapper css-var-root ant-checkbox-css-var"[31m
+            [36m>[31m
+              [36m<span[31m
+                [33mclass[31m=[32m"ant-checkbox ant-wave-target ant-checkbox-checked"[31m
+              [36m>[31m
+                [36m<input[31m
+                  [33mchecked[31m=[32m""[31m
+                  [33mclass[31m=[32m"ant-checkbox-input"[31m
+                  [33mtype[31m=[32m"checkbox"[31m
+                [36m/>[31m
+                [36m<span[31m
+                  [33mclass[31m=[32m"ant-checkbox-inner"[31m
+                [36m/>[31m
+              [36m</span>[31m
+              [36m<span[31m
+                [33mclass[31m=[32m"ant-checkbox-label"[31m
+              [36m>[31m
+                [0mColumn 1[0m
+              [36m</span>[31m
+            [36m</label>[31m
+            [36m<span[31m
+              [33maria-label[31m=[32m"drag"[31m
+              [33mclass[31m=[32m"anticon anticon-drag"[31m
+              [33mrole[31m=[32m"img"[31m
+            [36m>[31m
+              [36m<svg[31m
+                [33maria-hidden[31m=[32m"true"[31m
+                [33mdata-icon[31m=[32m"drag"[31m
+                [33mfill[31m=[32m"currentColor"[31m
+                [33mfocusable[31m=[32m"false"[31m
+                [33mheight[31m=[32m"1em"[31m
+                [33mviewBox[31m=[32m"64 64 896 896"[31m
+                [33mwidth[31m=[32m"1em"[31m
+              [36m>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M909.3 506.3L781.7 405.6a7.23 7.23 0 00-11.7 5.7V476H548V254h64.8c6 0 9.4-7 5.7-11.7L517.7 114.7a7.14 7.14 0 00-11.3 0L405.6 242.3a7.23 7.23 0 005.7 11.7H476v222H254v-64.8c0-6-7-9.4-11.7-5.7L114.7 506.3a7.14 7.14 0 000 11.3l127.5 100.8c4.7 3.7 11.7.4 11.7-5.7V548h222v222h-64.8c-6 0-9.4 7-5.7 11.7l100.8 127.5c2.9 3.7 8.5 3.7 11.3 0l100.8-127.5c3.7-4.7.4-11.7-5.7-11.7H548V548h222v64.8c0 6 7 9.4 11.7 5.7l127.5-100.8a7.3 7.3 0 00.1-11.4z"[31m
+                [36m/>[31m
+              [36m</svg>[31m
+            [36m</span>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"ant-space-item"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"_tips_d8c9c3"[31m
+        [36m>[31m
+          [0m请将需要锁定的字段拖至上方（最多支持3列）[0m
+        [36m</div>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"ant-space-item"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"_item_d8c9c3 "[31m
+          [33mdraggable[31m=[32m"true"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mstyle[31m=[32m"display: flex; justify-content: space-between; width: 100%;"[31m
+          [36m>[31m
+            [36m<label[31m
+              [33mclass[31m=[32m"ant-checkbox-wrapper css-var-root ant-checkbox-css-var"[31m
+            [36m>[31m
+              [36m<span[31m
+                [33mclass[31m=[32m"ant-checkbox ant-wave-target ant-checkbox-checked"[31m
+              [36m>[31m
+                [36m<input[31m
+                  [33mchecked[31m=[32m""[31m
+                  [33mclass[31m=[32m"ant-checkbox-input"[31m
+                  [33mtype[31m=[32m"checkbox"[31m
+                [36m/>[31m
+                [36m<span[31m
+                  [33mclass[31m=[32m"ant-checkbox-inner"[31m
+                [36m/>[31m
+              [36m</span>[31m
+              [36m<span[31m
+                [33mclass[31m=[32m"ant-checkbox-label"[31m
+              [36m>[31m
+                [0mColumn 2[0m
+              [36m</span>[31m
+            [36m</label>[31m
+            [36m<span[31m
+              [33maria-label[31m=[32m"drag"[31m
+              [33mclass[31m=[32m"anticon anticon-drag"[31m
+              [33mrole[31m=[32m"img"[31m
+            [36m>[31m
+              [36m<svg[31m
+                [33maria-hidden[31m=[32m"true"[31m
+                [33mdata-icon[31m=[32m"drag"[31m
+                [33mfill[31m=[32m"currentColor"[31m
+                [33mfocusable[31m=[32m"false"[31m
+                [33mheight[31m=[32m"1em"[31m
+                [33mviewBox[31m=[32m"64 64 896 896"[31m
+                [33mwidth[31m=[32m"1em"[31m
+              [36m>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M909.3 506.3L781.7 405.6a7.23 7.23 0 00-11.7 5.7V476H548V254h64.8c6 0 9.4-7 5.7-11.7L517.7 114.7a7.14 7.14 0 00-11.3 0L405.6 242.3a7.23 7.23 0 005.7 11.7H476v222H254v-64.8c0-6-7-9.4-11.7-5.7L114.7 506.3a7.14 7.14 0 000 11.3l127.5 100.8c4.7 3.7 11.7.4 11.7-5.7V548h222v222h-64.8c-6 0-9.4 7-5.7 11.7l100.8 127.5c2.9 3.7 8.5 3.7 11.3 0l100.8-127.5c3.7-4.7.4-11.7-5.7-11.7H548V548h222v64.8c0 6 7 9.4 11.7 5.7l127.5-100.8a7.3 7.3 0 00.1-11.4z"[31m
+                [36m/>[31m
+              [36m</svg>[31m
+            [36m</span>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"ant-space-item"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"_groupTitle_d8c9c3"[31m
+        [36m>[31m
+          [0m未显示字段[0m
+        [36m</div>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"ant-space-item"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"_item_d8c9c3"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mstyle[31m=[32m"display: flex; justify-content: space-between; width: 100%;"[31m
+          [36m>[31m
+            [36m<label[31m
+              [33mclass[31m=[32m"ant-checkbox-wrapper ant-checkbox-wrapper-disabled css-var-root ant-checkbox-css-var"[31m
+            [36m>[31m
+              [36m<span[31m
+                [33mclass[31m=[32m"ant-checkbox ant-wave-target ant-checkbox-disabled"[31m
+              [36m>[31m
+                [36m<input[31m
+                  [33mclass[31m=[32m"ant-checkbox-input"[31m
+                  [33mdisabled[31m=[32m""[31m
+                  [33mtype[31m=[32m"checkbox"[31m
+                [36m/>[31m
+                [36m<span[31m
+                  [33mclass[31m=[32m"ant-checkbox-inner"[31m
+                [36m/>[31m
+              [36m</span>[31m
+              [36m<span[31m
+                [33mclass[31m=[32m"ant-checkbox-label"[31m
+              [36m>[31m
+                [0mPrimary Key Column[0m
+              [36m</span>[31m
+            [36m</label>[31m
+            [36m<span[31m
+              [33maria-label[31m=[32m"drag"[31m
+              [33mclass[31m=[32m"anticon anticon-drag"[31m
+              [33mrole[31m=[32m"img"[31m
+            [36m>[31m
+              [36m<svg[31m
+                [33maria-hidden[31m=[32m"true"[31m
+                [33mdata-icon[31m=[32m"drag"[31m
+                [33mfill[31m=[32m"currentColor"[31m
+                [33mfocusable[31m=[32m"false"[31m
+                [33mheight[31m=[32m"1em"[31m
+                [33mviewBox[31m=[32m"64 64 896 896"[31m
+                [33mwidth[31m=[32m"1em"[31m
+              [36m>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M909.3 506.3L781.7 405.6a7.23 7.23 0 00-11.7 5.7V476H548V254h64.8c6 0 9.4-7 5.7-11.7L517.7 114.7a7.14 7.14 0 00-11.3 0L405.6 242.3a7.23 7.23 0 005.7 11.7H476v222H254v-64.8c0-6-7-9.4-11.7-5.7L114.7 506.3a7.14 7.14 0 000 11.3l127.5 100.8c4.7 3.7 11.7.4 11.7-5.7V548h222v222h-64.8c-6 0-9.4 7-5.7 11.7l100.8 127.5c2.9 3.7 8.5 3.7 11.3 0l100.8-127.5c3.7-4.7.4-11.7-5.7-11.7H548V548h222v64.8c0 6 7 9.4 11.7 5.7l127.5-100.8a7.3 7.3 0 00.1-11.4z"[31m
+                [36m/>[31m
+              [36m</svg>[31m
+            [36m</span>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m[39m
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mAccessibility[2m > [22m[2mhas proper ARIA role
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mAccessibility[2m > [22m[2mis announced by screen readers
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mError Handling[2m > [22m[2mhandles undefined type gracefully
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mError Handling[2m > [22m[2mhandles null type gracefully
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mError Handling[2m > [22m[2mhandles empty string type
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstderr[2m | test/table/cell/TagsCell.test.tsx[2m > [22m[2mTagsCell Component[2m > [22m[2mError Boundaries and Resilience[2m > [22m[2mshould handle malformed attributes gracefully
+[22m[39mReact does not recognize the `invalidProp` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `invalidprop` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+React does not recognize the `anotherInvalid` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `anotherinvalid` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mError Handling[2m > [22m[2mhandles special characters in type
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+ [32m✓[39m test/table/cell/LinkCell.test.tsx [2m([22m[2m28 tests[22m[2m)[22m[33m 1767[2mms[22m[39m
+   [33m[2m✓[22m[39m LinkCell[2m > [22mshould render link text correctly [33m 557[2mms[22m[39m
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mPerformance[2m > [22m[2mdoes not re-render unnecessarily with same props
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+ [32m✓[39m test/table/cell/CalendarTime.test.tsx [2m([22m[2m33 tests[22m[2m)[22m[33m 1866[2mms[22m[39m
+   [33m[2m✓[22m[39m CalendarTimeCell Component[2m > [22mBasic Rendering[2m > [22mshould render today datetime with default calendar format [33m 507[2mms[22m[39m
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mPerformance[2m > [22m[2mhandles rapid prop changes without issues
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+Warning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mTypeScript Integration[2m > [22m[2maccepts correct TypeScript props
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+[90mstderr[2m | test/filter/FallbackFilter.test.tsx[2m > [22m[2mFallbackFilter[2m > [22m[2mTypeScript Integration[2m > [22m[2mworks with ref typing
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+ [32m✓[39m test/table/cell/TagsCell.test.tsx [2m([22m[2m28 tests[22m[2m)[22m[33m 2567[2mms[22m[39m
+   [33m[2m✓[22m[39m TagsCell Component[2m > [22mBasic Rendering[2m > [22mshould render multiple tags correctly [33m 344[2mms[22m[39m
+   [33m[2m✓[22m[39m TagsCell Component[2m > [22mBasic Rendering[2m > [22mshould render with different index values [33m 375[2mms[22m[39m
+   [33m[2m✓[22m[39m TagsCell Component[2m > [22mPerformance and Memory[2m > [22mshould render efficiently with many tags [33m 346[2mms[22m[39m
+ [32m✓[39m test/components/RemoteSelect.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 2150[2mms[22m[39m
+   [33m[2m✓[22m[39m RemoteSelect[2m > [22mrenders without crashing [33m 1121[2mms[22m[39m
+   [33m[2m✓[22m[39m RemoteSelect[2m > [22mcalls search on input change [33m 479[2mms[22m[39m
+ [32m✓[39m test/table/cell/CurrencyCell.test.tsx [2m([22m[2m26 tests[22m[2m)[22m[33m 2467[2mms[22m[39m
+   [33m[2m✓[22m[39m CurrencyCell[2m > [22mshould render formatted currency with default options [33m 1146[2mms[22m[39m
+ [32m✓[39m test/filter/FallbackFilter.test.tsx [2m([22m[2m20 tests[22m[2m)[22m[33m 2418[2mms[22m[39m
+   [33m[2m✓[22m[39m FallbackFilter[2m > [22mRendering[2m > [22mrenders without crashing [33m 832[2mms[22m[39m
+ [32m✓[39m test/table/cell/DateTimeCell.test.tsx [2m([22m[2m32 tests[22m[2m)[22m[33m 2987[2mms[22m[39m
+   [33m[2m✓[22m[39m DateTimeCell Component[2m > [22mBasic Rendering[2m > [22mshould render string datetime with default format [33m 855[2mms[22m[39m
+ [32m✓[39m test/table/cell/ImageGroupCell.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[33m 3096[2mms[22m[39m
+   [33m[2m✓[22m[39m ImageGroupCell Component[2m > [22mBasic Rendering[2m > [22mshould render image group with string array [33m 1032[2mms[22m[39m
+   [33m[2m✓[22m[39m ImageGroupCell Component[2m > [22mBasic Rendering[2m > [22mshould render with different index values [33m 311[2mms[22m[39m
+   [33m[2m✓[22m[39m ImageGroupCell Component[2m > [22mNull and Invalid Values[2m > [22mshould apply style attribute to all images [33m 400[2mms[22m[39m
+ [32m✓[39m test/components/TagInput.test.tsx [2m([22m[2m29 tests[22m[2m)[22m[33m 3198[2mms[22m[39m
+   [33m[2m✓[22m[39m TagInput[2m > [22mrenders without crashing [33m 966[2mms[22m[39m
+ [32m✓[39m test/filter/AssemblyFilter.test.tsx [2m([22m[2m19 tests[22m[2m)[22m[33m 5313[2mms[22m[39m
+   [33m[2m✓[22m[39m AssemblyFilter[2m > [22mRendering[2m > [22mrenders without crashing [33m 963[2mms[22m[39m
+   [33m[2m✓[22m[39m AssemblyFilter[2m > [22mRendering[2m > [22mrenders all required components [33m 725[2mms[22m[39m
+   [33m[2m✓[22m[39m AssemblyFilter[2m > [22mRendering[2m > [22mdisplays field label correctly [33m 333[2mms[22m[39m
+   [33m[2m✓[22m[39m AssemblyFilter[2m > [22mSupported Operators[2m > [22mrenders options for all supported operators [33m 330[2mms[22m[39m
+   [33m[2m✓[22m[39m AssemblyFilter[2m > [22mProps Forwarding[2m > [22mforwards operator props to Select component [33m 588[2mms[22m[39m
+   [33m[2m✓[22m[39m AssemblyFilter[2m > [22mProps Forwarding[2m > [22mforwards label props to Button component [33m 486[2mms[22m[39m
+ [32m✓[39m test/filter/SelectFilter.test.tsx [2m([22m[2m17 tests[22m[2m)[22m[33m 5297[2mms[22m[39m
+   [33m[2m✓[22m[39m SelectFilter[2m > [22mRendering[2m > [22mrenders without crashing [33m 768[2mms[22m[39m
+   [33m[2m✓[22m[39m SelectFilter[2m > [22mSupported Operators[2m > [22msupports IN operator [33m 582[2mms[22m[39m
+   [33m[2m✓[22m[39m SelectFilter[2m > [22mSupported Operators[2m > [22msupports NOT_IN operator [33m 441[2mms[22m[39m
+   [33m[2m✓[22m[39m SelectFilter[2m > [22mValue Input Supplier[2m > [22mrenders Select component for IN operator [33m 501[2mms[22m[39m
+   [33m[2m✓[22m[39m SelectFilter[2m > [22mValue Input Supplier[2m > [22mrenders Select component for NOT_IN operator [33m 426[2mms[22m[39m
+   [33m[2m✓[22m[39m SelectFilter[2m > [22mValue Input Supplier[2m > [22mpasses options to Select component [33m 551[2mms[22m[39m
+   [33m[2m✓[22m[39m SelectFilter[2m > [22mEdge Cases[2m > [22mhandles empty array value [33m 529[2mms[22m[39m
+ [32m✓[39m test/filter/BoolFilter.test.tsx [2m([22m[2m14 tests[22m[2m)[22m[32m 127[2mms[22m[39m
+ [32m✓[39m test/registry/componentRegistry.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m test/filter/TextFilter.test.tsx [2m([22m[2m23 tests[22m[2m)[22m[33m 7078[2mms[22m[39m
+   [33m[2m✓[22m[39m TextFilter[2m > [22mRendering[2m > [22mrenders without crashing [33m 1423[2mms[22m[39m
+   [33m[2m✓[22m[39m TextFilter[2m > [22mSupported Operators[2m > [22msupports all expected operators [33m 969[2mms[22m[39m
+   [33m[2m✓[22m[39m TextFilter[2m > [22mValue Input Supplier[2m > [22mrenders Input for default operators [33m 545[2mms[22m[39m
+   [33m[2m✓[22m[39m TextFilter[2m > [22mValue Input Supplier[2m > [22mrenders Input for CONTAINS operator [33m 501[2mms[22m[39m
+   [33m[2m✓[22m[39m TextFilter[2m > [22mValue Input Supplier[2m > [22mrenders Input for STARTS_WITH operator [33m 431[2mms[22m[39m
+   [33m[2m✓[22m[39m TextFilter[2m > [22mEdge Cases[2m > [22mhandles empty string value [33m 326[2mms[22m[39m
+[90mstderr[2m | test/table/cell/TagCell.test.tsx[2m > [22m[2mTagCell Component[2m > [22m[2mError Boundaries and Resilience[2m > [22m[2mshould handle malformed attributes gracefully
+[22m[39mReact does not recognize the `invalidProp` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `invalidprop` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+React does not recognize the `anotherInvalid` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `anotherinvalid` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+
+ [32m✓[39m test/filter/IdFilter.test.tsx [2m([22m[2m31 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[33m 7412[2mms[22m[39m
+   [33m[2m✓[22m[39m IdFilter[2m > [22mRendering[2m > [22mrenders without crashing [33m 1544[2mms[22m[39m
+   [33m[2m✓[22m[39m IdFilter[2m > [22mRendering[2m > [22mrenders all required components [33m 1333[2mms[22m[39m
+   [33m[2m✓[22m[39m IdFilter[2m > [22mRendering[2m > [22mdisplays field label correctly [33m 469[2mms[22m[39m
+   [33m[2m✓[22m[39m IdFilter[2m > [22mInput Component Types[2m > [22mrenders Input component for ID operator [33m 428[2mms[22m[39m
+   [33m[2m✓[22m[39m IdFilter[2m > [22mInternationalization[2m > [22muses default Chinese locale when no locale provided [33m 419[2mms[22m[39m
+   [33m[2m✓[22m[39m IdFilter[2m > [22mProps Forwarding[2m > [22mforwards operator props to Select component [33m 361[2mms[22m[39m
+   [33m[2m✓[22m[39m IdFilter[2m > [22mProps Forwarding[2m > [22mforwards value props to input component [33m 344[2mms[22m[39m
+ [32m✓[39m test/table/cell/TagCell.test.tsx [2m([22m[2m32 tests[22m[2m)[22m[33m 7688[2mms[22m[39m
+   [33m[2m✓[22m[39m TagCell Component[2m > [22mBasic Rendering[2m > [22mshould render a simple string tag correctly [33m 547[2mms[22m[39m
+   [33m[2m✓[22m[39m TagCell Component[2m > [22mTagProps Attributes[2m > [22mshould apply color attribute [33m 461[2mms[22m[39m
+   [33m[2m✓[22m[39m TagCell Component[2m > [22mSpecial Characters and Edge Cases[2m > [22mshould handle special characters [33m 862[2mms[22m[39m
+   [33m[2m✓[22m[39m TagCell Component[2m > [22mSpecial Characters and Edge Cases[2m > [22mshould handle unicode characters [33m 344[2mms[22m[39m
+   [33m[2m✓[22m[39m TagCell Component[2m > [22mPerformance and Memory[2m > [22mshould handle large datasets without memory issues [33m 4268[2mms[22m[39m
+ [32m✓[39m test/components/NumberRange.test.tsx [2m([22m[2m32 tests[22m[2m)[22m[33m 8257[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberRange[2m > [22mrenders without crashing [33m 890[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberRange[2m > [22mapplies default props correctly [33m 462[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberRange[2m > [22mhandles placeholder array with insufficient length [33m 328[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberRange[2m > [22mValue handling[2m > [22mhandles undefined value (uncontrolled) [33m 314[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberRange[2m > [22mhandles single number value [33m 305[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberRange[2m > [22mhandles partial array value [33m 306[2mms[22m[39m
+   [33m[2m✓[22m[39m Controlled vs Uncontrolled[2m > [22mworks in controlled mode [33m 364[2mms[22m[39m
+   [33m[2m✓[22m[39m Controlled vs Uncontrolled[2m > [22mworks in uncontrolled mode [33m 404[2mms[22m[39m
+   [33m[2m✓[22m[39m onChange callback[2m > [22mcalls onChange when start value changes [33m 453[2mms[22m[39m
+   [33m[2m✓[22m[39m onChange callback[2m > [22mcalls onChange when end value changes [33m 469[2mms[22m[39m
+   [33m[2m✓[22m[39m onChange callback[2m > [22mhandles null values from InputNumber [33m 442[2mms[22m[39m
+   [33m[2m✓[22m[39m onChange callback[2m > [22mdoes not call onChange when not provided [33m 420[2mms[22m[39m
+   [33m[2m✓[22m[39m Props constraints[2m > [22mapplies min and max constraints [33m 393[2mms[22m[39m
+   [33m[2m✓[22m[39m Props constraints[2m > [22madjusts min/max based on values [33m 406[2mms[22m[39m
+ [32m✓[39m test/filter/DateTimeFilter.test.tsx [2m([22m[2m41 tests[22m[2m)[22m[33m 8382[2mms[22m[39m
+   [33m[2m✓[22m[39m DateTimeFilter[2m > [22mRendering[2m > [22mrenders without crashing [33m 2122[2mms[22m[39m
+   [33m[2m✓[22m[39m DateTimeFilter[2m > [22mRendering[2m > [22mrenders field label correctly [33m 1023[2mms[22m[39m
+   [33m[2m✓[22m[39m DateTimeFilter[2m > [22mRendering[2m > [22mrenders operator selector [33m 551[2mms[22m[39m
+   [33m[2m✓[22m[39m DateTimeFilter[2m > [22mSupported Operators[2m > [22mincludes all expected operators [33m 556[2mms[22m[39m
+   [33m[2m✓[22m[39m DateTimeFilter[2m > [22mValue Input Rendering by Operator[2m > [22mrenders null for operators without input (TODAY, TOMORROW, etc.) [33m 380[2mms[22m[39m
+   [33m[2m✓[22m[39m DateTimeFilter[2m > [22mValue Input Rendering by Operator[2m > [22mrenders InputNumber for RECENT_DAYS and EARLIER_DAYS operators [33m 399[2mms[22m[39m
+   [33m[2m✓[22m[39m DateTimeFilter[2m > [22mValue Input Rendering by Operator[2m > [22mrenders DatePicker with date picker for comparison operators (GT, LT, GTE, LTE) [33m 398[2mms[22m[39m
+ [32m✓[39m test/filter/NumberFilter.test.tsx [2m([22m[2m42 tests[22m[2m)[22m[33m 10397[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberFilter[2m > [22mRendering[2m > [22mrenders without crashing [33m 923[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberFilter[2m > [22mSupported Operators[2m > [22msupports all expected operators [33m 832[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberFilter[2m > [22mSupported Operators[2m > [22mrenders correctly with GT operator [33m 301[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberFilter[2m > [22mSupported Operators[2m > [22mrenders correctly with LT operator [33m 447[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberFilter[2m > [22mSupported Operators[2m > [22mrenders correctly with BETWEEN operator [33m 366[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberFilter[2m > [22mValue Input Supplier[2m > [22mrenders InputNumber for default operators [33m 410[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberFilter[2m > [22mValue Input Supplier[2m > [22mrenders TagInput for IN operator [33m 395[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberFilter[2m > [22mValue Input Supplier[2m > [22mrenders TagInput for NOT_IN operator [33m 375[2mms[22m[39m
+   [33m[2m✓[22m[39m NumberFilter[2m > [22mValue Input Supplier[2m > [22mrenders NumberRange for BETWEEN operator [33m 333[2mms[22m[39m
+ [32m✓[39m test/table/cell/AvatarCell.test.tsx [2m([22m[2m24 tests[22m[2m)[22m[33m 1346[2mms[22m[39m
+   [33m[2m✓[22m[39m AvatarCell Component[2m > [22mBasic Rendering[2m > [22mshould render avatar with image URL [33m 388[2mms[22m[39m
+[90mstderr[2m | test/filter/TypedFilter.test.tsx[2m > [22m[2mTypedFilter[2m > [22m[2mrenders FallbackConditionFilter for unregistered type
+[22m[39mWarning: [antd: Alert] `message` is deprecated. Please use `title` instead.
+
+ [32m✓[39m test/filter/utils.test.ts [2m([22m[2m58 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m test/filter/useFilterState.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 154[2mms[22m[39m
+ [32m✓[39m test/table/cell/currencyFormatter.test.ts [2m([22m[2m61 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+ [32m✓[39m test/filter/TypedFilter.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 484[2mms[22m[39m
+   [33m[2m✓[22m[39m TypedFilter[2m > [22mrenders FallbackConditionFilter for unregistered type [33m 426[2mms[22m[39m
+ [32m✓[39m test/filter/operator/locale/operator.zh_CN.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m test/table/cell/TextCell.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[33m 1133[2mms[22m[39m
+   [33m[2m✓[22m[39m TextCell[2m > [22mshould render text value correctly [33m 473[2mms[22m[39m
+ [32m✓[39m test/table/cell/ImageCell.test.tsx [2m([22m[2m20 tests[22m[2m)[22m[33m 1344[2mms[22m[39m
+   [33m[2m✓[22m[39m ImageCell Component[2m > [22mBasic Rendering[2m > [22mshould render image with string URL [33m 386[2mms[22m[39m
+ [32m✓[39m test/table/setting/TableFieldItem.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 1284[2mms[22m[39m
+   [33m[2m✓[22m[39m TableFieldItem[2m > [22mrenders without crashing [33m 424[2mms[22m[39m
+ [32m✓[39m test/table/cell/TypedCell.test.tsx [2m([22m[2m23 tests[22m[2m)[22m[33m 833[2mms[22m[39m
+   [33m[2m✓[22m[39m typedCellRender[2m > [22mshould render text cell correctly when called [33m 463[2mms[22m[39m
+ [32m✓[39m test/table/cell/utils.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m test/table/cell/cellRegistry.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m test/filter/filterRegistry.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 20 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m test/index.test.ts[2m > [22mindex.ts[2m > [22mshould export all required modules
+[31m[1mError[22m: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+[36m [2m❯[22m test/index.test.ts:[2m18:3[22m[39m
+    [90m 16| [39m[90m// This test ensures that all exports are properly defined[39m
+    [90m 17| [39m[34mdescribe[39m([32m'index.ts'[39m[33m,[39m () [33m=>[39m {
+    [90m 18| [39m  [34mit[39m([32m'should export all required modules'[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m   | [39m  [31m^[39m
+    [90m 19| [39m    [90m// Dynamically import the index file to check exports[39m
+    [90m 20| [39m    [35mconst[39m module [33m=[39m [35mawait[39m [35mimport[39m([32m'../src/index'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/20]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/table/setting/TableSettingPanel.test.tsx[2m > [22mTableSettingPanel[2m > [22mcalls onColumnsChange when visibility is toggled
+[31m[1mAssertionError[22m: expected undefined to be 'checkbox' // Object.is equality[39m
+
+[32m- Expected:[39m 
+"checkbox"
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m test/table/setting/TableSettingPanel.test.tsx:[2m120:34[22m[39m
+    [90m118| [39m
+    [90m119| [39m    [34mexpect[39m(column2Checkbox)[33m.[39m[34mtoBeTruthy[39m()[33m;[39m
+    [90m120| [39m    [34mexpect[39m(column2Checkbox[33m.[39mtype)[33m.[39m[34mtoBe[39m([32m'checkbox'[39m)[33m;[39m
+    [90m   | [39m                                 [31m^[39m
+    [90m121| [39m    [34mexpect[39m(column2Checkbox[33m.[39mchecked)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m122| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/20]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/table/setting/TableSettingPanel.test.tsx[2m > [22mTableSettingPanel[2m > [22mdoes not render draggable items for primary key columns
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m test/table/setting/TableSettingPanel.test.tsx:[2m214:38[22m[39m
+    [90m212| [39m    [90m// The primary key column should not be draggable[39m
+    [90m213| [39m    const nonDraggableItems = document.querySelectorAll('[draggable="f…
+    [90m214| [39m    expect(nonDraggableItems.length).toBe(1); // hidden primary key co…
+    [90m   | [39m                                     [31m^[39m
+    [90m215| [39m  })[33m;[39m
+    [90m216| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/20]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/table/setting/TableSettingPanel.test.tsx[2m > [22mTableSettingPanel[2m > [22mhandles drag over event
+[31m[1mAssertionError[22m: expected "spy" to be called at least once[39m
+[36m [2m❯[22m test/table/setting/TableSettingPanel.test.tsx:[2m277:42[22m[39m
+    [90m275| [39m    [34mfireEvent[39m(draggableItem[33m,[39m dragOverEvent)[33m;[39m
+    [90m276| [39m
+    [90m277| [39m    [34mexpect[39m(dragOverEvent[33m.[39mpreventDefault)[33m.[39m[34mtoHaveBeenCalled[39m()[33m;[39m
+    [90m   | [39m                                         [31m^[39m
+    [90m278| [39m  })[33m;[39m
+    [90m279| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/20]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/table/setting/TableSettingPanel.test.tsx[2m > [22mTableSettingPanel[2m > [22mcorrectly filters columns into different groups
+[31m[1mTestingLibraryElementError[22m[39m: Found multiple elements with the text: Column 1
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+[36m<span[39m
+  [33mclass[39m=[32m"ant-checkbox-label"[39m
+[36m>[39m
+  [0mColumn 1[0m
+[36m</span>[39m
+
+Ignored nodes: comments, script, style
+[36m<span[39m
+  [33mclass[39m=[32m"ant-checkbox-label"[39m
+[36m>[39m
+  [0mColumn 1[0m
+[36m</span>[39m
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div[39m
+    [33mclass[39m=[32m"_item_d8c9c3 "[39m
+    [33mdraggable[39m=[32m"true"[39m
+    [33mstyle[39m=[32m"background-color: rgb(245, 245, 245); transform: scale(1.02); opacity: 1; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); position: absolute; top: -1000px; width: 0px; height: 0px;"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mstyle[39m=[32m"display: flex; justify-content: space-between; width: 100%;"[39m
+    [36m>[39m
+      [36m<label[39m
+        [33mclass[39m=[32m"ant-checkbox-wrapper css-var-root ant-checkbox-css-var"[39m
+      [36m>[39m
+        [36m<span[39m
+          [33mclass[39m=[32m"ant-checkbox ant-wave-target ant-checkbox-checked"[39m
+        [36m>[39m
+          [36m<input[39m
+            [33mchecked[39m=[32m""[39m
+            [33mclass[39m=[32m"ant-checkbox-input"[39m
+            [33mtype[39m=[32m"checkbox"[39m
+          [36m/>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"ant-checkbox-inner"[39m
+          [36m/>[39m
+        [36m</span>[39m
+        [36m<span[39m
+          [33mclass[39m=[32m"ant-checkbox-label"[39m
+        [36m>[39m
+          [0mColumn 1[0m
+        [36m</span>[39m
+      [36m</label>[39m
+      [36m<span[39m
+        [33maria-label[39m=[32m"drag"[39m
+        [33mclass[39m=[32m"anticon anticon-drag"[39m
+        [33mrole[39m=[32m"img"[39m
+      [36m>[39m
+        [36m<svg[39m
+          [33maria-hidden[39m=[32m"true"[39m
+          [33mdata-icon[39m=[32m"drag"[39m
+          [33mfill[39m=[32m"currentColor"[39m
+          [33mfocusable[39m=[32m"false"[39m
+          [33mheight[39m=[32m"1em"[39m
+          [33mviewBox[39m=[32m"64 64 896 896"[39m
+          [33mwidth[39m=[32m"1em"[39m
+        [36m>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M909.3 506.3L781.7 405.6a7.23 7.23 0 00-11.7 5.7V476H548V254h64.8c6 0 9.4-7 5.7-11.7L517.7 114.7a7.14 7.14 0 00-11.3 0L405.6 242.3a7.23 7.23 0 005.7 11.7H476v222H254v-64.8c0-6-7-9.4-11.7-5.7L114.7 506.3a7.14 7.14 0 000 11.3l127.5 100.8c4.7 3.7 11.7.4 11.7-5.7V548h222v222h-64.8c-6 0-9.4 7-5.7 11.7l100.8 127.5c2.9 3.7 8.5 3.7 11.3 0l100.8-127.5c3.7-4.7.4-11.7-5.7-11.7H548V548h222v64.8c0 6 7 9.4 11.7 5.7l127.5-100.8a7.3 7.3 0 00.1-11.4z"[39m
+          [36m/>[39m
+        [36m</svg>[39m
+      [36m</span>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"ant-space ant-space-vertical css-var-root"[39m
+      [33mstyle[39m=[32m"display: flex;"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"ant-space-item"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"_groupTitle_d8c9c3"[39m
+        [36m>[39m
+          [0m已显示字段[0m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"ant-space-item"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"_item_d8c9c3 "[39m
+          [33mdraggable[39m=[32m"true"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mstyle[39m=[32m"display: flex; justify-content: space-between; width: 100%;"[39m
+          [36m>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"ant-checkbox-wrapper css-var-root ant-checkbox-css-var"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-checkbox ant-wave-target ant-checkbox-checked"[39m
+              [36m>[39m
+                [36m<input[39m
+                  [33mchecked[39m=[32m""[39m
+                  [33mclass[39m=[32m"ant-checkbox-input"[39m
+                  [33mtype[39m=[32m"checkbox"[39m
+                [36m/>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ant-checkbox-inner"[39m
+                [36m/>[39m
+              [36m</span>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-checkbox-label"[39m
+              [36m>[39m
+                [0mColumn 1[0m
+              [36m</span>[39m
+            [36m</label>[39m
+            [36m<span[39m
+              [33maria-label[39m=[32m"drag"[39m
+              [33mclass[39m=[32m"anticon anticon-drag"[39m
+              [33mrole[39m=[32m"img"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mdata-icon[39m=[32m"drag"[39m
+                [33mfill[39m=[32m"currentColor"[39m
+                [33mfocusable[39m=[32m"false"[39m
+                [33mheight[39m=[32m"1em"[39m
+                [33mviewBox[39m=[32m"64 64 896 896"[39m
+                [33mwidth[39m=[32m"1em"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M909.3 506.3L781.7 405.6a7.23 7.23 0 00-11.7 5.7V476H548V254h64.8c6 0 9.4-7 5.7-11.7L517.7 114.7a7.14 7.14 0 00-11.3 0L405.6 242.3a7.23 7.23 0 005.7 11.7H476v222H254v-64.8c0-6-7-9.4-11.7-5.7L114.7 506.3a7.14 7.14 0 000 11.3l127.5 100.8c4.7 3.7 11.7.4 11.7-5.7V548h222v222h-64.8c-6 0-9.4 7-5.7 11.7l100.8 127.5c2.9 3.7 8.5 3.7 11.3 0l100.8-127.5c3.7-4.7.4-11.7-5.7-11.7H548V548h222v64.8c0 6 7 9.4 11.7 5.7l127.5-100.8a7.3 7.3 0 00.1-11.4z"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</span>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"ant-space-item"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"_tips_d8c9c3"[39m
+        [36m>[39m
+          [0m请将需要锁定的字段拖至上方（最多支持3列）[0m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"ant-space-item"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"_item_d8c9c3 "[39m
+          [33mdraggable[39m=[32m"true"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mstyle[39m=[32m"display: flex; justify-content: space-between; width: 100%;"[39m
+          [36m>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"ant-checkbox-wrapper css-var-root ant-checkbox-css-var"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-checkbox ant-wave-target ant-checkbox-checked"[39m
+              [36m>[39m
+                [36m<input[39m
+                  [33mchecked[39m=[32m""[39m
+                  [33mclass[39m=[32m"ant-checkbox-input"[39m
+                  [33mtype[39m=[32m"checkbox"[39m
+                [36m/>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ant-checkbox-inner"[39m
+                [36m/>[39m
+              [36m</span>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-checkbox-label"[39m
+              [36m>[39m
+                [0mColumn 2[0m
+              [36m</span>[39m
+            [36m</label>[39m
+            [36m<span[39m
+              [33maria-label[39m=[32m"drag"[39m
+              [33mclass[39m=[32m"anticon anticon-drag"[39m
+              [33mrole[39m=[32m"img"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mdata-icon[39m=[32m"drag"[39m
+                [33mfill[39m=[32m"currentColor"[39m
+                [33mfocusable[39m=[32m"false"[39m
+                [33mheight[39m=[32m"1em"[39m
+                [33mviewBox[39m=[32m"64 64 896 896"[39m
+                [33mwidth[39m=[32m"1em"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M909.3 506.3L781.7 405.6a7.23 7.23 0 00-11.7 5.7V476H548V254h64.8c6 0 9.4-7 5.7-11.7L517.7 114.7a7.14 7.14 0 00-11.3 0L405.6 242.3a7.23 7.23 0 005.7 11.7H476v222H254v-64.8c0-6-7-9.4-11.7-5.7L114.7 506.3a7.14 7.14 0 000 11.3l127.5 100.8c4.7 3.7 11.7.4 11.7-5.7V548h222v222h-64.8c-6 0-9.4 7-5.7 11.7l100.8 127.5c2.9 3.7 8.5 3.7 11.3 0l100.8-127.5c3.7-4.7.4-11.7-5.7-11.7H548V548h222v64.8c0 6 7 9.4 11.7 5.7l127.5-100.8a7.3 7.3 0 00.1-11.4z"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</span>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"ant-space-item"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"_groupTitle_d8c9c3"[39m
+        [36m>[39m
+          [0m未显示字段[0m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"ant-space-item"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"_item_d8c9c3"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mstyle[39m=[32m"display: flex; justify-content: space-between; width: 100%;"[39m
+          [36m>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"ant-checkbox-wrapper ant-checkbox-wrapper-disabled css-var-root ant-checkbox-css-var"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-checkbox ant-wave-target ant-checkbox-disabled"[39m
+              [36m>[39m
+                [36m<input[39m
+                  [33mclass[39m=[32m"ant-checkbox-input"[39m
+                  [33mdisabled[39m=[32m""[39m
+                  [33mtype[39m=[32m"checkbox"[39m
+                [36m/>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ant-checkbox-inner"[39m
+                [36m/>[39m
+              [36m</span>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-checkbox-label"[39m
+              [36m>[39m
+                [0mPrimary Key Column[0m
+              [36m</span>[39m
+            [36m</label>[39m
+            [36m<span[39m
+              [33maria-label[39m=[32m"drag"[39m
+              [33mclass[39m=[32m"anticon anticon-drag"[39m
+              [33mrole[39m=[32m"img"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mdata-icon[39m=[32m"drag"[39m
+                [33mfill[39m=[32m"currentColor"[39m
+                [33mfocusable[39m=[32m"false"[39m
+                [33mheight[39m=[32m"1em"[39m
+                [33mviewBox[39m=[32m"64 64 896 896"[39m
+                [33mwidth[39m=[32m"1em"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M909.3 506.3L781.7 405.6a7.23 7.23 0 00-11.7 5.7V476H548V254h64.8c6 0 9.4-7 5.7-11.7L517.7 114.7a7.14 7.14 0 00-11.3 0L405.6 242.3a7.23 7.23 0 005.7 11.7H476v222H254v-64.8c0-6-7-9.4-11.7-5.7L114.7 506.3a7.14 7.14 0 000 11.3l127.5 100.8c4.7 3.7 11.7.4 11.7-5.7V548h222v222h-64.8c-6 0-9.4 7-5.7 11.7l100.8 127.5c2.9 3.7 8.5 3.7 11.3 0l100.8-127.5c3.7-4.7.4-11.7-5.7-11.7H548V548h222v64.8c0 6 7 9.4 11.7 5.7l127.5-100.8a7.3 7.3 0 00.1-11.4z"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</span>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+[90m [2m❯[22m Object.getElementError ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2m❯[22m getElementError ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:[2m20:35[22m[39m
+[90m [2m❯[22m getMultipleElementsFoundError ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:[2m23:10[22m[39m
+[90m [2m❯[22m ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:[2m55:13[22m[39m
+[90m [2m❯[22m getByText ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:[2m95:19[22m[39m
+[36m [2m❯[22m test/table/setting/TableSettingPanel.test.tsx:[2m345:19[22m[39m
+    [90m343| [39m
+    [90m344| [39m    [90m// Verify all columns are rendered[39m
+    [90m345| [39m    [34mexpect[39m(screen[33m.[39m[34mgetByText[39m([32m'Column 1'[39m))[33m.[39m[34mtoBeTruthy[39m()[33m;[39m
+    [90m   | [39m                  [31m^[39m
+    [90m346| [39m    [34mexpect[39m(screen[33m.[39m[34mgetByText[39m([32m'Column 2'[39m))[33m.[39m[34mtoBeTruthy[39m()[33m;[39m
+    [90m347| [39m    [34mexpect[39m(screen[33m.[39m[34mgetByText[39m([32m'Primary Key Column'[39m))[33m.[39m[34mtoBeTruthy[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/20]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/table/cell/ActionCell.test.tsx[2m > [22mActionCell[2m > [22mrenders button with correct title when value is provided
+[41m[1m FAIL [22m[49m test/table/cell/ActionCell.test.tsx[2m > [22mActionCell[2m > [22mcalls click handler with correct parameters when button is clicked
+[41m[1m FAIL [22m[49m test/table/cell/ActionCell.test.tsx[2m > [22mActionCell[2m > [22mrenders with link button type by default
+[41m[1m FAIL [22m[49m test/table/cell/ActionCell.test.tsx[2m > [22mActionCell[2m > [22mhandles different action keys and titles
+[41m[1m FAIL [22m[49m test/table/cell/ActionCell.test.tsx[2m > [22mActionCell[2m > [22mpasses record data correctly to click handler
+[31m[1mError[22m: Objects are not valid as a React child (found: object with keys {title, key}). If you meant to render a collection of children, use an array instead.[39m
+[90m [2m❯[22m mapIntoArray ../../node_modules/.pnpm/react@19.2.0/node_modules/react/cjs/react.development.js:[2m441:15[22m[39m
+[90m [2m❯[22m mapChildren ../../node_modules/.pnpm/react@19.2.0/node_modules/react/cjs/react.development.js:[2m455:7[22m[39m
+[90m [2m❯[22m Object.forEach ../../node_modules/.pnpm/react@19.2.0/node_modules/react/cjs/react.development.js:[2m765:9[22m[39m
+[90m [2m❯[22m toArray ../../node_modules/.pnpm/@rc-component+util@1.4.0_re_c92f6e4cc8032cb67d4e3293217d1585/node_modules/@rc-component/util/lib/Children/toArray.js:[2m12:27[22m[39m
+[90m [2m❯[22m Button ../../node_modules/.pnpm/antd@6.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/antd/lib/button/button.js:[2m79:40[22m[39m
+[90m [2m❯[22m Object.react_stack_bottom_frame ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m25904:20[22m[39m
+[90m [2m❯[22m renderWithHooks ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m7662:22[22m[39m
+[90m [2m❯[22m updateForwardRef ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m9724:19[22m[39m
+[90m [2m❯[22m beginWork ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m12117:18[22m[39m
+[90m [2m❯[22m runWithFiberInDEV ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m874:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/20]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/table/cell/ActionsCell.test.tsx[2m > [22mActionsCell[2m > [22mrenders primary action button when only primary action is provided
+[41m[1m FAIL [22m[49m test/table/cell/ActionsCell.test.tsx[2m > [22mActionsCell[2m > [22mpasses record data correctly to click handler for primary action
+[41m[1m FAIL [22m[49m test/table/cell/ActionsCell.test.tsx[2m > [22mActionsCell[2m > [22mhandles empty secondary actions array gracefully
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'value')[39m
+[36m [2m❯[22m ActionCell src/table/cell/ActionCell.tsx:[2m158:12[22m[39m
+    [90m156| [39m
+    [90m157| [39m  // Early return if no value is provided - prevents rendering empty o…
+    [90m158| [39m  [35mif[39m ([33m![39mdata[33m.[39mvalue) {
+    [90m   | [39m           [31m^[39m
+    [90m159| [39m    [35mreturn[39m [35mnull[39m[33m;[39m
+    [90m160| [39m  }
+[90m [2m❯[22m Object.react_stack_bottom_frame ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m25904:20[22m[39m
+[90m [2m❯[22m renderWithHooks ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m7662:22[22m[39m
+[90m [2m❯[22m updateFunctionComponent ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m10166:19[22m[39m
+[90m [2m❯[22m beginWork ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m11778:18[22m[39m
+[90m [2m❯[22m runWithFiberInDEV ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m874:13[22m[39m
+[90m [2m❯[22m performUnitOfWork ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m17641:22[22m[39m
+[90m [2m❯[22m workLoopSync ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m17469:41[22m[39m
+[90m [2m❯[22m renderRootSync ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m17450:11[22m[39m
+[90m [2m❯[22m performWorkOnRoot ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m16583:35[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/20]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/table/cell/ActionsCell.test.tsx[2m > [22mActionsCell[2m > [22mrenders primary action and dropdown when secondary actions are provided
+[41m[1m FAIL [22m[49m test/table/cell/ActionsCell.test.tsx[2m > [22mActionsCell[2m > [22mrenders custom more action title when provided
+[41m[1m FAIL [22m[49m test/table/cell/ActionsCell.test.tsx[2m > [22mActionsCell[2m > [22mrenders default "More" title when no custom title is provided
+[41m[1m FAIL [22m[49m test/table/cell/ActionsCell.test.tsx[2m > [22mActionsCell[2m > [22mcalls click handler with correct parameters when primary action is clicked
+[41m[1m FAIL [22m[49m test/table/cell/ActionsCell.test.tsx[2m > [22mActionsCell[2m > [22mrenders dropdown trigger when secondary actions are present
+[41m[1m FAIL [22m[49m test/table/cell/ActionsCell.test.tsx[2m > [22mActionsCell[2m > [22mrenders dropdown trigger for multiple secondary actions
+[41m[1m FAIL [22m[49m test/table/cell/ActionsCell.test.tsx[2m > [22mActionsCell[2m > [22mrenders dropdown trigger for single secondary action
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'index')[39m
+[36m [2m❯[22m map src/table/cell/ActionsCell.tsx:[2m103:33[22m[39m
+    [90m101| [39m      data[33m.[39mvalue[33m.[39msecondaryActions[33m.[39m[34mmap[39m(actionProps [33m=>[39m {
+    [90m102| [39m        [35mreturn[39m {
+    [90m103| [39m          key[33m:[39m actionProps[33m.[39mdata[33m.[39mindex[33m,[39m
+    [90m   | [39m                                [31m^[39m
+    [90m104| [39m          label[33m:[39m [33m<[39m[33mActionCell[39m [33m{[39m[33m...[39mactionProps[33m}[39m [33m/[39m[33m>[39m[33m,[39m
+    [90m105| [39m        }[33m;[39m
+[90m [2m❯[22m actionRender src/table/cell/ActionsCell.tsx:[2m101:35[22m[39m
+[90m [2m❯[22m ActionsCell src/table/cell/ActionsCell.tsx:[2m226:10[22m[39m
+[90m [2m❯[22m Object.react_stack_bottom_frame ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m25904:20[22m[39m
+[90m [2m❯[22m renderWithHooks ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m7662:22[22m[39m
+[90m [2m❯[22m updateFunctionComponent ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m10166:19[22m[39m
+[90m [2m❯[22m beginWork ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m11778:18[22m[39m
+[90m [2m❯[22m runWithFiberInDEV ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m874:13[22m[39m
+[90m [2m❯[22m performUnitOfWork ../../node_modules/.pnpm/react-dom@19.2.0_react@19.2.0/node_modules/react-dom/cjs/react-dom-client.development.js:[2m17641:22[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/20]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m32 passed[39m[22m[90m (36)[39m
+[2m      Tests [22m [1m[31m20 failed[39m[22m[2m | [22m[1m[32m810 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (831)[39m
+[2m   Start at [22m 16:30:14
+[2m   Duration [22m 32.00s[2m (transform 18.16s, setup 8.15s, collect 353.15s, tests 101.59s, environment 89.30s, prepare 9.98s)[22m
+
+ ELIFECYCLE  Test failed. See above for more details.

@@ -50,6 +50,8 @@
  * ```
  */
 
+export * from './ActionCell';
+export * from './ActionsCell';
 export * from './AvatarCell';
 export * from './CalendarTime';
 export * from './cellRegistry';
