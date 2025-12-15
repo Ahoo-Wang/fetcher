@@ -13,7 +13,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AutoExecuteCapable } from '../types';
-import { useLatest } from './useLatest';
 
 /**
  * Configuration options for the useQueryState hook
