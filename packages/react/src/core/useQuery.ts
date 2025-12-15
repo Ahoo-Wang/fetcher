@@ -16,7 +16,7 @@ import {
   useLatest,
   UseExecutePromiseReturn,
   UseExecutePromiseOptions,
-  PromiseSupplier,
+  PromiseSupplier, QueryOptions,
 } from './index';
 import { useCallback, useMemo } from 'react';
 import { AttributesCapable, FetcherError } from '@ahoo-wang/fetcher';
@@ -31,10 +31,9 @@ import { AutoExecuteCapable } from '../types';
  */
 export interface UseQueryOptions<Q, R, E = FetcherError>
   extends UseExecutePromiseOptions<R, E>,
+    QueryOptions<Q>,
     AttributesCapable,
     AutoExecuteCapable {
-  /** The initial query parameters */
-  initialQuery: Q;
 
   /** Function to execute the query with given parameters and optional attributes */
   execute: (
@@ -59,7 +58,7 @@ export interface UseQueryReturn<
   execute: () => Promise<void>;
 }
 
- 
+
 /**
  * A React hook for managing query-based asynchronous operations
  * @template Q - The type of the query parameters
@@ -138,6 +137,7 @@ export function useQuery<Q, R, E = FetcherError>(
 
   const { getQuery, setQuery } = useQueryState({
     initialQuery: options.initialQuery,
+    query: options.query,
     autoExecute: options.autoExecute,
     execute,
   });
