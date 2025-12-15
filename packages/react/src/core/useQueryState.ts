@@ -121,9 +121,9 @@ export function useQueryState<Q>(
   }, []);
 
   const executeWrapper = useCallback(() => {
-    const query = getQuery();
-    if (autoExecute && query) {
-      execute(query);
+    const currentQuery = getQuery();
+    if (autoExecute && isValidateQuery(currentQuery)) {
+      execute(currentQuery);
     }
   }, [autoExecute, execute, getQuery]);
   const setQuery = useCallback(
@@ -135,11 +135,15 @@ export function useQueryState<Q>(
   );
 
   useEffect(() => {
-    if (query) {
+    if (isValidateQuery(query)) {
       queryRef.current = query;
     }
     executeWrapper();
   }, [executeWrapper, query]);
 
   return { getQuery, setQuery };
+}
+
+export function isValidateQuery<Q>(query: Q | undefined): query is Q {
+  return query !== undefined;
 }
