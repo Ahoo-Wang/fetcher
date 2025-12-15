@@ -16,7 +16,7 @@ import {
   useLatest,
   UseExecutePromiseReturn,
   UseExecutePromiseOptions,
-  PromiseSupplier, QueryOptions,
+  PromiseSupplier, QueryOptions, isValidateQuery,
 } from './index';
 import { useCallback, useMemo } from 'react';
 import { AttributesCapable, FetcherError } from '@ahoo-wang/fetcher';
@@ -142,8 +142,11 @@ export function useQuery<Q, R, E = FetcherError>(
     execute,
   });
 
-  const executeWrapper = useCallback(() => {
-    return execute(getQuery());
+  const executeWrapper = useCallback(async () => {
+    const query = getQuery();
+    if (isValidateQuery(query)) {
+      return await execute(query);
+    }
   }, [execute, getQuery]);
 
   return useMemo(
