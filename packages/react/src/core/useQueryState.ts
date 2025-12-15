@@ -17,6 +17,7 @@ import { AutoExecuteCapable } from '../types';
 export interface QueryOptions<Q> {
   /** The initial query parameters to be stored and managed */
   initialQuery?: Q;
+  /** The current query parameters. If provided, overrides initialQuery and updates the state. */
   query?: Q;
 }
 
@@ -24,7 +25,8 @@ export interface QueryOptions<Q> {
  * Configuration options for the useQueryState hook
  * @template Q - The type of the query parameters
  */
-export interface UseQueryStateOptions<Q> extends QueryOptions<Q>, AutoExecuteCapable {
+export interface UseQueryStateOptions<Q>
+  extends QueryOptions<Q>, AutoExecuteCapable {
   /** Function to execute with the current query parameters. Called when autoExecute is true */
   execute: (query: Q) => Promise<void>;
 }
