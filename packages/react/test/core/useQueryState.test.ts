@@ -447,7 +447,7 @@ describe('useQueryState', () => {
       });
 
       await vi.waitFor(() => {
-        expect(callCount).toBe(3); // 1 initial + 1 on rerender + 1 on setQuery
+        expect(callCount).toBe(2); // 1 initial + 0 on rerender + 1 on setQuery
         expect(execute2).toHaveBeenCalledWith({ id: 'updated' });
       });
     });
