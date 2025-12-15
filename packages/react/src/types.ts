@@ -17,6 +17,8 @@ export interface DepsCapable {
   deps?: DependencyList;
 }
 
+export const EMPTY_DEPS: DependencyList = [];
+
 export interface AutoExecuteCapable {
   /**
    * Whether to automatically execute the query on component mount. Defaults to true.

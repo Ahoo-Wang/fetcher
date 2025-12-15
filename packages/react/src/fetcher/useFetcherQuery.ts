@@ -15,7 +15,7 @@ import { useFetcher, UseFetcherOptions, UseFetcherReturn } from './index';
 import { FetcherError, FetchRequest, JsonResultExtractor } from '@ahoo-wang/fetcher';
 import { useLatest, useQueryState, UseQueryStateReturn } from '../core';
 import { useCallback, useMemo } from 'react';
-import { AutoExecuteCapable } from '../types';
+import { AutoExecuteCapable, DepsCapable } from '../types';
 
 /**
  * Configuration options for the useFetcherQuery hook
@@ -24,7 +24,7 @@ import { AutoExecuteCapable } from '../types';
  * @template E - The type of the error value
  */
 export interface UseFetcherQueryOptions<Q, R, E = FetcherError>
-  extends UseFetcherOptions<R, E>, AutoExecuteCapable {
+  extends UseFetcherOptions<R, E>, AutoExecuteCapable, DepsCapable {
   /** The URL endpoint to send the POST request to */
   url: string;
   /** The initial query parameters to be sent as the request body */
@@ -154,6 +154,7 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
     initialQuery: useFetcherQueryOptions.initialQuery,
     autoExecute: useFetcherQueryOptions.autoExecute,
     execute,
+    deps: useFetcherQueryOptions.deps,
   });
 
   const executeWrapper = useCallback(() => {
