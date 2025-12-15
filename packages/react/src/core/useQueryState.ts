@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { DependencyList, useCallback, useEffect, useRef } from 'react';
-import { AutoExecuteCapable, DepsCapable } from '../types';
+import { useCallback, useEffect, useRef } from 'react';
+import { AutoExecuteCapable, DepsCapable, EMPTY_DEPS } from '../types';
 
 /**
  * Configuration options for the useQueryState hook
@@ -88,7 +88,7 @@ export interface UseQueryStateReturn<Q> {
 export function useQueryState<Q>(
   options: UseQueryStateOptions<Q>,
 ): UseQueryStateReturn<Q> {
-  const { initialQuery, autoExecute = true, execute } = options;
+  const { initialQuery, autoExecute = true, execute, deps = EMPTY_DEPS } = options;
   const queryRef = useRef(initialQuery);
 
   const getQuery = useCallback(() => {
@@ -97,20 +97,20 @@ export function useQueryState<Q>(
 
   const executeWrapper = useCallback(() => {
     if (autoExecute) {
-      execute(queryRef.current);
+      execute(getQuery());
     }
-  }, [execute, getQuery]);
+  }, [autoExecute, execute, getQuery]);
   const setQuery = useCallback(
     (query: Q) => {
       queryRef.current = query;
       executeWrapper();
     },
-    [autoExecute, execute],
+    [queryRef, executeWrapper],
   );
 
   useEffect(() => {
     executeWrapper();
-  }, [autoExecute, execute]);
+  }, [executeWrapper, ...deps]);
 
   return { getQuery, setQuery };
 }
