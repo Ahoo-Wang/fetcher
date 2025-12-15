@@ -163,7 +163,6 @@ export function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
     execute,
     reset,
     abort,
-    query,
     getQuery,
     setQuery,
   } = useFetcherQuery(debouncedExecuteOptions);
@@ -193,7 +192,6 @@ export function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
       status,
       reset,
       abort,
-      query,
       getQuery,
       setQuery: setQueryFn,
       run,
@@ -207,7 +205,6 @@ export function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
       status,
       reset,
       abort,
-      query,
       getQuery,
       setQueryFn,
       run,
