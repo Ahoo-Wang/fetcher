@@ -32,10 +32,7 @@ export interface UseQueryStateOptions<Q> extends AutoExecuteCapable {
  */
 export interface UseQueryStateReturn<Q> {
   query: Q;
-  /** Function to retrieve the current query parameters
-   *
-   * @deprecated use query instead
-   * */
+  /** Function to retrieve the current query parameters */
   getQuery: () => Q;
   /** Function to update the query parameters. Triggers execution if autoExecute is true */
   setQuery: (query: Q) => void;
