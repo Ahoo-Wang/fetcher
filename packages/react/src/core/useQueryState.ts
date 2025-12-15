@@ -12,13 +12,13 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { AutoExecuteCapable, DepsCapable, EMPTY_DEPS } from '../types';
+import { AutoExecuteCapable } from '../types';
 
 /**
  * Configuration options for the useQueryState hook
  * @template Q - The type of the query parameters
  */
-export interface UseQueryStateOptions<Q> extends AutoExecuteCapable, DepsCapable {
+export interface UseQueryStateOptions<Q> extends AutoExecuteCapable {
   /** The initial query parameters to be stored and managed */
   initialQuery: Q;
   /** Function to execute with the current query parameters. Called when autoExecute is true */
@@ -88,7 +88,7 @@ export interface UseQueryStateReturn<Q> {
 export function useQueryState<Q>(
   options: UseQueryStateOptions<Q>,
 ): UseQueryStateReturn<Q> {
-  const { initialQuery, autoExecute = true, execute, deps = EMPTY_DEPS } = options;
+  const { initialQuery, autoExecute = true, execute } = options;
   const queryRef = useRef(initialQuery);
 
   const getQuery = useCallback(() => {
@@ -110,7 +110,7 @@ export function useQueryState<Q>(
 
   useEffect(() => {
     executeWrapper();
-  }, [executeWrapper, ...deps]);
+  }, [executeWrapper]);
 
   return { getQuery, setQuery };
 }
