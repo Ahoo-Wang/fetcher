@@ -27,6 +27,9 @@ export default mergeConfig(
           '**/**.stories.tsx',
           //TODO exclude
           'src/filter/panel/**',
+          'src/viewer/**',
+          'src/table/**',
+          'src/topbar/**',
         ],
       },
     },

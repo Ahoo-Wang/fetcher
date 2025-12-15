@@ -169,7 +169,7 @@ export interface ActionsCellProps<RecordType = any> extends CellProps<
  * />
  * ```
  */
-function actionRender(props: ActionsCellProps) {
+function renderActions(props: ActionsCellProps) {
   const { data } = props;
 
   let secondaryButtons: MenuProps['items'] = [];
@@ -239,5 +239,5 @@ function actionRender(props: ActionsCellProps) {
 export function ActionsCell<RecordType = any>(
   props: ActionsCellProps<RecordType>,
 ) {
-  return actionRender(props);
+  return renderActions(props);
 }

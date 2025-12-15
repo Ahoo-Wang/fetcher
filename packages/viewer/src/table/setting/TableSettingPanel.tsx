@@ -3,7 +3,7 @@ import { TableFieldItem } from './TableFieldItem';
 import styles from './TableSettingPanel.module.css';
 import { Space } from 'antd';
 import { ViewColumn, ViewDefinition } from '../../viewer';
-import { useViewerSharedValue } from '../../viewer/ViewerSharedValueContext';
+import { useViewerSharedValue } from '../../viewer';
 
 export interface TableSettingPanelProps {
   viewDefinition: ViewDefinition;
@@ -16,7 +16,7 @@ interface DragState {
 }
 
 export function TableSettingPanel(props: TableSettingPanelProps) {
-  const { viewDefinition, className } = props;
+  const { viewDefinition } = props;
   const [dragState, setDragState] = useState<DragState | null>(null);
 
   const { viewColumns, setViewColumns } = useViewerSharedValue();
@@ -28,7 +28,6 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     };
   });
 
-  console.log('TableSettingPanel function');
   const fixedColumns = columns.filter(col => col.fixed);
   const visibleColumns = columns.filter(col => col.visible && !col.fixed);
   const hiddenColumns = columns.filter(col => !col.visible);
@@ -46,10 +45,6 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
       group: 'fixed' | 'visible',
       index: number,
     ) => {
-      console.log('handleDragStart', e, index, group);
-
-      // 拖拽样式
-      console.log('e.currentTarget', e.currentTarget.clientWidth);
       // Create custom drag image with desired styling
       const dragElement = e.currentTarget.cloneNode(true) as HTMLElement;
       dragElement.style.backgroundColor = '#F5F5F5';
@@ -84,7 +79,6 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
   }, []);
 
   const handleDragEnd = useCallback(() => {
-    console.log('handleDragEnd');
     setDragState(null);
   }, [setDragState]);
 
@@ -109,14 +103,10 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
 
     const targetIndex = group === 'fixed' ? dragIndex + 1 : dragIndex;
     const newColumns = [...columns];
-    console.log('origin columns', newColumns);
     const [originItem] = newColumns.splice(dragState.index, 1);
-    console.log('origin item', originItem, newColumns);
     originItem.fixed = group === 'fixed';
     newColumns.splice(targetIndex, 0, originItem);
-    console.log('final columns', newColumns);
     newColumns.forEach((col, i) => (col.index = i));
-    console.log('re index columns', newColumns);
     setViewColumns(newColumns);
   };
 

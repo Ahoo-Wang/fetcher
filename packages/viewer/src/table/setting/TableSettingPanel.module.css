@@ -6,14 +6,6 @@
   cursor: move;
 }
 
-/*.item[draggable="true"]:active {*/
-/*  background-color: #F5F5F5;*/
-/*  opacity: 0.9;*/
-/*  transform: scale(1.02);*/
-/*  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);*/
-/*  z-index: 1000;*/
-/*}*/
-
 .item.dragging {
   background-color: #F5F5F5 !important;
   transform: scale(1.01) !important;

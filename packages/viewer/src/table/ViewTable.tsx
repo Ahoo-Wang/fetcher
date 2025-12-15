@@ -114,7 +114,6 @@ export function ViewTable<RecordType = any>(props: ViewTableProps<RecordType>) {
                 ? 'start'
                 : '',
             render: (value, record, index) => {
-              // console.log('column render => ', value, record, index);
               const cellRender = typedCellRender(
                 columnDefinition.type,
                 columnDefinition.attributes || {},

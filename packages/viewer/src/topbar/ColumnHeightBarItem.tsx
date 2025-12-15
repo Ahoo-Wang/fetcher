@@ -29,7 +29,6 @@ export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
 
   const handleSelect = ({ key }: { key: string }) => {
     setTableSize(key as SizeType);
-    console.log('handleSelect', key);
   };
 
   return (

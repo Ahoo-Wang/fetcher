@@ -1,10 +1,6 @@
 import React, { RefAttributes, useImperativeHandle, useState } from 'react';
 import styles from './BarItem.module.css';
 
-export interface BarItemRef {
-  toggle: () => void;
-}
-
 export interface BarItemProps {
   icon: React.ReactNode;
   active: boolean;
