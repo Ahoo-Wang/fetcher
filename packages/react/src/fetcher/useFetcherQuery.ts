@@ -13,7 +13,7 @@
 
 import { useFetcher, UseFetcherOptions, UseFetcherReturn } from './index';
 import { FetcherError, FetchRequest, JsonResultExtractor } from '@ahoo-wang/fetcher';
-import { QueryOptions, useLatest, useQueryState, UseQueryStateReturn } from '../core';
+import { isValidateQuery, QueryOptions, useLatest, useQueryState, UseQueryStateReturn } from '../core';
 import { useCallback, useMemo } from 'react';
 import { AutoExecuteCapable } from '../types';
 
@@ -157,7 +157,7 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
 
   const executeWrapper = useCallback(async () => {
     const query = getQuery();
-    if (query) {
+    if (isValidateQuery(query)) {
       return await execute(query);
     }
   }, [execute, getQuery]);
