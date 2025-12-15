@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-react",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "React integration for Fetcher HTTP client. Provides React Hooks and components for seamless data fetching with automatic re-rendering and loading states.",
   "keywords": [
     "fetch",
@@ -55,6 +55,7 @@
     "@ahoo-wang/fetcher-eventbus": "workspace:^3.0.0",
     "@ahoo-wang/fetcher-storage": "workspace:^3.0.0",
     "@ahoo-wang/fetcher-wow": "workspace:^3.0.0",
+    "@ahoo-wang/fetcher-cosec": "workspace:^3.5.1",
     "react": "catalog:",
     "react-dom": "catalog:"
   },

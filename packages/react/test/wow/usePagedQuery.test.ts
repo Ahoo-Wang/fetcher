@@ -22,11 +22,11 @@ import {
 } from '@ahoo-wang/fetcher-wow';
 
 // Mock useQuery
-vi.mock('../../src/wow/useQuery', () => ({
+vi.mock('../../src/core/useQuery', () => ({
   useQuery: vi.fn(),
 }));
 
-import { useQuery } from '../../src/wow/useQuery';
+import { useQuery } from '../../src/core/useQuery';
 
 describe('usePagedQuery', () => {
   const mockPagedList: PagedList<{ id: number; name: string }> = {

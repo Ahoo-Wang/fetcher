@@ -13,7 +13,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { useDebouncedFetcher } from '../useDebouncedFetcher';
+import { useDebouncedFetcher } from '../debounced/useDebouncedFetcher';
 import { ResultExtractors } from '@ahoo-wang/fetcher';
 import {
   Button,

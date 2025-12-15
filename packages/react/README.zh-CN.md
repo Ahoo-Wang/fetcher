@@ -27,37 +27,47 @@
 - [快速开始](#快速开始)
 - [使用方法](#使用方法)
   - [核心 Hooks](#核心-hooks)
-    - [useFetcher](#usefetcher-hook)
     - [useExecutePromise](#useexecutepromise)
     - [usePromiseState](#usepromisestate)
-  - [防抖 Hooks](#防抖-hooks)
-    - [useDebouncedCallback](#usedebouncedcallback)
-    - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
-    - [useDebouncedFetcher](#usedebouncedfetcher)
-    - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
-    - [useDebouncedQuery](#usedebouncedquery)
-  - [工具 Hooks](#工具-hooks)
-    - [useRequestId](#userequestid)
-    - [useLatest](#uselatest)
-    - [useRefs](#userefs)
+    - [useRequestId](#userequestid-hook)
+    - [useLatest](#uselatest-hook)
+    - [useRefs](#userefs-hook)
+    - [useQuery](#usequery-hook)
+    - [useQueryState](#usequerystate-hook)
+    - [useMounted](#usemounted-hook)
+    - [useForceUpdate](#useforceupdate-hook)
+    - [防抖 Hooks](#防抖-hooks)
+      - [useDebouncedCallback](#usedebouncedcallback)
+      - [useDebouncedExecutePromise](#usedebouncedexecutepromise)
+      - [useDebouncedQuery](#usedebouncedquery)
+  - [Fetcher Hooks](#fetcher-hooks)
+    - [useFetcher](#usefetcher-hook)
+    - [useFetcherQuery](#usefetcherquery-hook)
+    - [防抖 Fetcher Hooks](#防抖-fetcher-hooks)
+      - [useDebouncedFetcher](#usedebouncedfetcher)
+      - [useDebouncedFetcherQuery](#usedebouncedfetcherquery)
   - [存储 Hooks](#存储-hooks)
-    - [useKeyStorage](#usekeystorage)
+    - [useKeyStorage](#usekeystorage-hook)
     - [useImmerKeyStorage](#useimmerkeystorage-hook)
   - [事件 Hooks](#事件-hooks)
     - [useEventSubscription](#useeventsubscription-hook)
+  - [CoSec 安全 Hooks](#cosec-安全-hooks)
+    - [useSecurity](#usesecurity-hook)
+    - [SecurityProvider](#securityprovider)
+    - [useSecurityContext](#usesecuritycontext-hook)
+    - [RouteGuard](#routeguard)
   - [Wow 查询 Hooks](#wow-查询-hooks)
     - [基础查询 Hooks](#基础查询-hooks)
       - [useListQuery](#uselistquery-hook)
       - [usePagedQuery](#usepagedquery-hook)
       - [useSingleQuery](#usesinglequery-hook)
       - [useCountQuery](#usecountquery-hook)
-    - [获取查询 Hooks](#获取查询-hooks)
+      - [useListStreamQuery](#useliststreamquery-hook)
+    - [Fetcher 查询 Hooks](#fetcher-查询-hooks)
       - [useFetcherListQuery](#usefetcherlistquery-hook)
       - [useFetcherPagedQuery](#usefetcherpagedquery-hook)
       - [useFetcherSingleQuery](#usefetchersinglequery-hook)
       - [useFetcherCountQuery](#usefetchercountquery-hook)
-    - [流查询 Hooks](#流查询-hooks)
-      - [useListStreamQuery](#useliststreamquery-hook)
       - [useFetcherListStreamQuery](#usefetcherliststreamquery-hook)
 - [最佳实践](#最佳实践)
 - [API 参考](#api-参考)
@@ -101,22 +111,811 @@ function App() {
 
 ### 核心 Hooks
 
-#### useFetcher Hook
+#### useExecutePromise
 
-`useFetcher` hook 提供完整的数据获取功能，具有自动状态管理、竞态条件保护和灵活的配置选项。
+`useExecutePromise` hook 用于管理异步操作，具有自动状态处理、竞态条件保护和 Promise 状态选项。它包含用于取消操作的自动 AbortController 支持。
+
+```typescript jsx
+import { useExecutePromise } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { loading, result, error, execute, reset, abort } = useExecutePromise<string>({
+    onAbort: () => {
+      console.log('操作已被中止');
+    }
+  });
+
+  const fetchData = async () => {
+    const response = await fetch('/api/data');
+    return response.text();
+  };
+
+  const handleFetch = () => {
+    execute(fetchData); // 使用 Promise 供应商
+  };
+
+  const handleDirectPromise = () => {
+    const promise = fetch('/api/data').then(res => res.text());
+    execute(promise); // 使用直接 Promise
+  };
+
+  const handleAbort = () => {
+    abort(); // 手动中止当前操作
+  };
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+  return (
+    <div>
+      <button onClick={handleFetch}>使用供应商获取</button>
+      <button onClick={handleDirectPromise}>使用 Promise 获取</button>
+      <button onClick={handleAbort} disabled={!loading}>中止</button>
+      <button onClick={reset}>重置</button>
+      {result && <p>{result}</p>}
+    </div>
+  );
+};
+```
+
+##### 中止控制器支持
+
+该 hook 会为每个操作自动创建一个 AbortController，并提供管理取消的方法：
+
+- **自动清理**: 组件卸载时操作会自动中止
+- **手动中止**: 使用 `abort()` 方法中止正在进行的操作
+- **onAbort 回调**: 配置在操作中止时触发的回调（手动或自动）
+- **AbortController 访问**: AbortController 会传递给 Promise 供应商以进行高级取消处理
+
+#### usePromiseState
+
+`usePromiseState` hook 提供 Promise 操作的状态管理，无执行逻辑。支持静态选项和动态选项供应商。
+
+```typescript jsx
+import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { status, loading, result, error, setSuccess, setError, setIdle } = usePromiseState<string>();
+
+  const handleSuccess = () => setSuccess('数据已加载');
+  const handleError = () => setError(new Error('加载失败'));
+
+  return (
+    <div>
+      <button onClick={handleSuccess}>设置成功</button>
+      <button onClick={handleError}>设置错误</button>
+      <button onClick={setIdle}>重置</button>
+      <p>状态: {status}</p>
+      {loading && <p>加载中...</p>}
+      {result && <p>结果: {result}</p>}
+      {error && <p>错误: {error.message}</p>}
+    </div>
+  );
+};
+```
+
+##### 使用选项供应商的 usePromiseState
+
+```typescript jsx
+import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  // 使用选项供应商进行动态配置
+  const optionsSupplier = () => ({
+    initialStatus: PromiseStatus.IDLE,
+    onSuccess: async (result: string) => {
+      await saveToAnalytics(result);
+      console.log('成功:', result);
+    },
+    onError: async (error) => {
+      await logErrorToServer(error);
+      console.error('错误:', error);
+    },
+  });
+
+  const { setSuccess, setError } = usePromiseState<string>(optionsSupplier);
+
+  return (
+    <div>
+      <button onClick={() => setSuccess('动态成功!')}>设置成功</button>
+      <button onClick={() => setError(new Error('动态错误!'))}>设置错误</button>
+    </div>
+  );
+};
+```
+
+#### useRequestId
+
+`useRequestId` hook 提供请求 ID 管理，用于防止异步操作中的竞态条件。
+
+```typescript jsx
+import { useRequestId } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { generate, isLatest, invalidate } = useRequestId();
+
+  const handleFetch = async () => {
+    const requestId = generate();
+
+    try {
+      const result = await fetchData();
+
+      if (isLatest(requestId)) {
+        setData(result);
+      }
+    } catch (error) {
+      if (isLatest(requestId)) {
+        setError(error);
+      }
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleFetch}>获取数据</button>
+      <button onClick={invalidate}>取消进行中</button>
+    </div>
+  );
+};
+```
+
+#### useLatest
+
+`useLatest` hook 返回包含最新值的 ref 对象，用于在异步回调中访问当前值。
+
+```typescript jsx
+import { useLatest } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const [count, setCount] = useState(0);
+  const latestCount = useLatest(count);
+
+  const handleAsync = async () => {
+    await someAsyncOperation();
+    console.log('最新计数:', latestCount.current); // 始终是最新的
+  };
+
+  return (
+    <div>
+      <p>计数: {count}</p>
+      <button onClick={() => setCount(c => c + 1)}>增加</button>
+      <button onClick={handleAsync}>异步日志</button>
+    </div>
+  );
+};
+```
+
+#### useRefs
+
+`useRefs` hook 提供 Map-like 接口用于动态管理多个 React refs。它允许通过键注册、检索和管理 refs，并在组件卸载时自动清理。
+
+```typescript jsx
+import { useRefs } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const refs = useRefs<HTMLDivElement>();
+
+  const handleFocus = (key: string) => {
+    const element = refs.get(key);
+    element?.focus();
+  };
+
+  return (
+    <div>
+      <div ref={refs.register('first')} tabIndex={0}>第一个元素</div>
+      <div ref={refs.register('second')} tabIndex={0}>第二个元素</div>
+      <button onClick={() => handleFocus('first')}>聚焦第一个</button>
+      <button onClick={() => handleFocus('second')}>聚焦第二个</button>
+    </div>
+  );
+};
+```
+
+主要特性:
+
+- **动态注册**: 使用字符串、数字或符号键注册 refs
+- **Map-like API**: 完整的 Map 接口，包括 get、set、has、delete 等
+- **自动清理**: 组件卸载时清除 refs
+- **类型安全**: 完整的 TypeScript 支持 ref 类型
+
+#### useQuery
+
+`useQuery` hook 提供完整的查询基础异步操作管理解决方案，具有自动状态管理和执行控制。
+
+```typescript jsx
+import { useQuery } from '@ahoo-wang/fetcher-react';
+
+interface UserQuery {
+  id: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+}
+
+function UserComponent() {
+  const { loading, result, error, execute, setQuery } = useQuery<UserQuery, User>({
+    initialQuery: { id: '1' },
+    execute: async (query) => {
+      const response = await fetch(`/api/users/${query.id}`);
+      return response.json();
+    },
+    autoExecute: true,
+  });
+
+  const handleUserChange = (userId: string) => {
+    setQuery({ id: userId }); // 如果 autoExecute 为 true 会自动执行
+  };
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+  return (
+    <div>
+      <button onClick={() => handleUserChange('2')}>加载用户 2</button>
+      {result && <p>用户: {result.name}</p>}
+    </div>
+  );
+}
+```
+
+#### useQueryState
+
+`useQueryState` hook 提供查询参数的状态管理，具有自动执行功能。
+
+```typescript jsx
+import { useQueryState } from '@ahoo-wang/fetcher-react';
+
+interface UserQuery {
+  id: string;
+  name?: string;
+}
+
+function UserComponent() {
+  const executeQuery = async (query: UserQuery) => {
+    // 执行查询逻辑
+    console.log('执行查询:', query);
+  };
+
+  const { getQuery, setQuery } = useQueryState<UserQuery>({
+    initialQuery: { id: '1' },
+    autoExecute: true,
+    execute: executeQuery,
+  });
+
+  const handleQueryChange = (newQuery: UserQuery) => {
+    setQuery(newQuery); // 如果 autoExecute 为 true 会自动执行
+  };
+
+  const currentQuery = getQuery(); // 获取当前查询参数
+
+  return (
+    <div>
+      <button onClick={() => handleQueryChange({ id: '2', name: 'John' })}>
+        更新查询
+      </button>
+    </div>
+  );
+}
+```
+
+#### useMounted
+
+`useMounted` hook 提供检查组件是否仍挂载的方法，用于避免在卸载组件上更新状态。
+
+```typescript jsx
+import { useMounted } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const isMounted = useMounted();
+
+  const handleAsyncOperation = async () => {
+    const result = await someAsyncOperation();
+
+    // 检查组件是否仍挂载后再更新状态
+    if (isMounted()) {
+      setData(result);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleAsyncOperation}>执行异步操作</button>
+    </div>
+  );
+};
+```
+
+#### useForceUpdate
+
+`useForceUpdate` hook 提供强制组件重新渲染的方法，用于在需要基于外部变化触发渲染时使用。
+
+```typescript jsx
+import { useForceUpdate } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const forceUpdate = useForceUpdate();
+
+  const handleExternalChange = () => {
+    // 执行不会触发重新渲染的外部操作
+    updateExternalState();
+
+    // 强制组件重新渲染以反映变化
+    forceUpdate();
+  };
+
+  return (
+    <div>
+      <button onClick={handleExternalChange}>强制更新</button>
+    </div>
+  );
+};
+```
+
+### 防抖 Hooks
+
+🚀 **React 应用的高级防抖** - 强大的 hooks，将防抖与异步操作结合，为 API 调用、用户交互和 Promise 执行提供无缝的速率限制。
+
+#### useDebouncedCallback
+
+React hook，为任何回调函数提供防抖版本，支持前缘/后缘执行选项。
+
+```typescript jsx
+import { useDebouncedCallback } from '@ahoo-wang/fetcher-react';
+
+const SearchComponent = () => {
+  const { run: debouncedSearch, cancel, isPending } = useDebouncedCallback(
+    async (query: string) => {
+      const response = await fetch(`/api/search?q=${query}`);
+      const results = await response.json();
+      console.log('搜索结果:', results);
+    },
+    { delay: 300 }
+  );
+
+  const handleSearch = (query: string) => {
+    if (query.trim()) {
+      debouncedSearch(query);
+    } else {
+      cancel(); // 取消任何待处理的搜索
+    }
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        placeholder="搜索..."
+        onChange={(e) => handleSearch(e.target.value)}
+      />
+      {isPending() && <div>搜索中...</div>}
+    </div>
+  );
+};
+```
+
+**配置选项:**
+
+- `delay`: 执行前的延迟毫秒数（必需，正数）
+- `leading`: 第一次调用时立即执行（默认：false）
+- `trailing`: 最后一次调用后延迟执行（默认：true）
+
+#### useDebouncedExecutePromise
+
+将 Promise 执行与防抖功能结合，适用于 API 调用和异步操作。
+
+```typescript jsx
+import { useDebouncedExecutePromise } from '@ahoo-wang/fetcher-react';
+
+const DataFetcher = () => {
+  const { loading, result, error, run } = useDebouncedExecutePromise({
+    debounce: { delay: 300 },
+  });
+
+  const handleLoadUser = (userId: string) => {
+    run(async () => {
+      const response = await fetch(`/api/users/${userId}`);
+      return response.json();
+    });
+  };
+
+  return (
+    <div>
+      <button onClick={() => handleLoadUser('user123')}>
+        加载用户
+      </button>
+      {loading && <div>加载中...</div>}
+      {error && <div>错误: {error.message}</div>}
+      {result && <div>用户: {result.name}</div>}
+    </div>
+  );
+};
+```
+
+#### useDebouncedQuery
+
+将通用查询执行与防抖结合，适用于自定义查询操作，您希望根据查询参数防抖执行。
+
+```typescript jsx
+import { useDebouncedQuery } from '@ahoo-wang/fetcher-react';
+
+interface SearchQuery {
+  keyword: string;
+  limit: number;
+  filters?: { category?: string };
+}
+
+interface SearchResult {
+  items: Array<{ id: string; title: string }>;
+  total: number;
+}
+
+const SearchComponent = () => {
+  const {
+    loading,
+    result,
+    error,
+    run,
+    cancel,
+    isPending,
+    setQuery,
+    getQuery,
+  } = useDebouncedQuery<SearchQuery, SearchResult>({
+    initialQuery: { keyword: '', limit: 10 },
+    execute: async (query) => {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        body: JSON.stringify(query),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return response.json();
+    },
+    debounce: { delay: 300 }, // 防抖 300ms
+    autoExecute: false, // 挂载时不执行
+  });
+
+  const handleSearch = (keyword: string) => {
+    setQuery({ keyword, limit: 10 }); // 如果 autoExecute 为 true，这将触发防抖执行
+  };
+
+  const handleManualSearch = () => {
+    run(); // 使用当前查询手动防抖执行
+  };
+
+  const handleCancel = () => {
+    cancel(); // 取消任何待处理的防抖执行
+  };
+
+  if (loading) return <div>搜索中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="搜索..."
+      />
+      <button onClick={handleManualSearch} disabled={isPending()}>
+        {isPending() ? '搜索中...' : '搜索'}
+      </button>
+      <button onClick={handleCancel}>取消</button>
+      {result && (
+        <div>
+          找到 {result.total} 项:
+          {result.items.map(item => (
+            <div key={item.id}>{item.title}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+**主要特性:**
+
+- **查询状态管理**: 使用 `setQuery` 和 `getQuery` 自动查询参数处理
+- **防抖执行**: 在快速查询更改期间防止过多操作
+- **自动执行**: 可选的在查询参数更改时自动执行
+- **手动控制**: `run()` 用于手动执行，`cancel()` 用于取消
+- **待处理状态**: `isPending()` 检查防抖调用是否排队
+- **自定义执行**: 灵活的 execute 函数用于任何查询操作
+
+### Fetcher Hooks
+
+#### useFetcher
+
+`useFetcher` hook 提供完整的数据获取功能，具有自动状态管理、竞态条件保护和灵活的配置选项。它包含从 `useExecutePromise` 继承的内置 AbortController 支持。
 
 ```typescript jsx
 import { useFetcher } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const { loading, error, result, execute } = useFetcher<string>();
+  const { loading, error, result, execute, abort } = useFetcher<string>({
+    onAbort: () => {
+      console.log('获取操作已被中止');
+    }
+  });
 
   const handleFetch = () => {
     execute({ url: '/api/users', method: 'GET' });
+  };
+
+  const handleAbort = () => {
+    abort(); // 取消当前获取操作
+  };
+```
+
+#### 自动执行示例
+
+```typescript jsx
+import { useListQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+    list: async (listQuery) => fetchListData(listQuery),
+    autoExecute: true, // 组件挂载时自动执行
+  });
+
+  // 查询将在组件挂载时自动执行
+  // 您仍然可以使用 execute() 手动触发或更新条件
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <ul>
+        {result?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
 };
 ```
 
-### useImmerKeyStorage Hook
+#### useFetcherQuery
+
+`useFetcherQuery` hook 提供构建与 Fetcher 库集成的专用查询 hooks 的基础。
+
+```typescript jsx
+import { useFetcherQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { data, loading, error, execute } = useFetcherQuery({
+    url: '/api/data',
+    initialQuery: { /* 查询参数 */ },
+    execute: async (query) => {
+      // 自定义执行逻辑
+      return fetchData(query);
+    },
+    autoExecute: true,
+  });
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  );
+};
+```
+
+### 防抖 Fetcher Hooks
+
+#### useDebouncedFetcher
+
+专门的 hook，将 HTTP 获取与防抖结合，基于核心 fetcher 库构建。
+
+```typescript jsx
+import { useDebouncedFetcher } from '@ahoo-wang/fetcher-react';
+
+const SearchInput = () => {
+  const [query, setQuery] = useState('');
+  const { loading, result, error, run } = useDebouncedFetcher({
+    debounce: { delay: 300 },
+    onSuccess: (data) => {
+      setSearchResults(data.results);
+    }
+  });
+
+  const handleChange = (value: string) => {
+    setQuery(value);
+    if (value.trim()) {
+      run({
+        url: '/api/search',
+        method: 'GET',
+        params: { q: value }
+      });
+    }
+  };
+
+  return (
+    <div>
+      <input
+        value={query}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder="搜索..."
+      />
+      {loading && <div>搜索中...</div>}
+      {error && <div>错误: {error.message}</div>}
+      {result && <SearchResults data={result} />}
+    </div>
+  );
+};
+```
+
+**防抖策略:**
+
+- **前缘**: 第一次调用时立即执行，然后对后续调用进行防抖
+- **后缘**: 最后一次调用后延迟执行（默认行为）
+- **前缘 + 后缘**: 立即执行，如果再次调用则在延迟后再次执行
+
+#### useDebouncedFetcherQuery
+
+将基于查询的 HTTP 获取与防抖结合，非常适合搜索输入和动态查询场景，您希望根据查询参数防抖 API 调用。
+
+```typescript jsx
+import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
+
+interface SearchQuery {
+  keyword: string;
+  limit: number;
+  filters?: { category?: string };
+}
+
+interface SearchResult {
+  items: Array<{ id: string; title: string }>;
+  total: number;
+}
+
+const SearchComponent = () => {
+  const {
+    loading,
+    result,
+    error,
+    run,
+    cancel,
+    isPending,
+    setQuery,
+    getQuery,
+  } = useDebouncedFetcherQuery<SearchQuery, SearchResult>({
+    url: '/api/search',
+    initialQuery: { keyword: '', limit: 10 },
+    debounce: { delay: 300 }, // 防抖 300ms
+    autoExecute: false, // 挂载时不执行
+  });
+
+  const handleSearch = (keyword: string) => {
+    setQuery({ keyword, limit: 10 }); // 如果 autoExecute 为 true，这将触发防抖执行
+  };
+
+  const handleManualSearch = () => {
+    run(); // 使用当前查询手动防抖执行
+  };
+
+  const handleCancel = () => {
+    cancel(); // 取消任何待处理的防抖执行
+  };
+
+  if (loading) return <div>搜索中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="搜索..."
+      />
+      <button onClick={handleManualSearch} disabled={isPending()}>
+        {isPending() ? '搜索中...' : '搜索'}
+      </button>
+      <button onClick={handleCancel}>取消</button>
+      {result && (
+        <div>
+          找到 {result.total} 项:
+          {result.items.map(item => (
+            <div key={item.id}>{item.title}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+**主要特性:**
+
+- **查询状态管理**: 使用 `setQuery` 和 `getQuery` 自动查询参数处理
+- **防抖执行**: 在快速用户输入期间防止过多 API 调用
+- **自动执行**: 可选的在查询参数更改时自动执行
+- **手动控制**: `run()` 用于手动执行，`cancel()` 用于取消
+- **待处理状态**: `isPending()` 检查防抖调用是否排队
+
+### 存储 Hooks
+
+#### useKeyStorage
+
+`useKeyStorage` hook 为 KeyStorage 实例提供响应式状态管理。它订阅存储更改并返回当前值以及设置器函数。可选择接受默认值以在存储为空时使用。
+
+```typescript jsx
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { useKeyStorage } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const keyStorage = new KeyStorage<string>({ key: 'my-key' });
+
+  // 不使用默认值 - 可能为 null
+  const [value, setValue] = useKeyStorage(keyStorage);
+
+  return (
+    <div>
+      <p>当前值: {value || '无存储值'}</p>
+      <button onClick={() => setValue('new value')}>
+        更新值
+      </button>
+    </div>
+  );
+};
+```
+
+#### 使用默认值
+
+```typescript jsx
+const MyComponent = () => {
+  const keyStorage = new KeyStorage<string>({ key: 'theme' });
+
+  // 使用默认值 - 保证不为 null
+  const [theme, setTheme] = useKeyStorage(keyStorage, 'light');
+
+  return (
+    <div className={theme}>
+      <p>当前主题: {theme}</p>
+      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+        切换主题
+      </button>
+    </div>
+  );
+};
+```
+
+#### 更多示例
+
+```typescript jsx
+// 处理不同类型的值
+const numberStorage = new KeyStorage<number>({ key: 'counter' });
+const [count, setCount] = useKeyStorage(numberStorage, 0); // 默认为 0
+
+// 处理对象
+interface User {
+  id: string;
+  name: string;
+}
+
+const userStorage = new KeyStorage<User>({ key: 'current-user' });
+const [user, setUser] = useKeyStorage(userStorage, { id: '', name: '访客' });
+
+// 复杂状态管理
+const settingsStorage = new KeyStorage<{ volume: number; muted: boolean }>({
+  key: 'audio-settings',
+});
+const [settings, setSettings] = useKeyStorage(settingsStorage, {
+  volume: 50,
+  muted: false,
+});
+
+// 更新特定属性
+const updateVolume = (newVolume: number) => {
+  setSettings({ ...settings, volume: newVolume });
+};
+```
+
+### useImmerKeyStorage
 
 🚀 **Immer 驱动的不可变状态管理** - `useImmerKeyStorage` hook 通过集成 Immer 的 `produce` 函数扩展了 `useKeyStorage`，允许开发者以直观的"可变"方式更新存储值，同时在底层保持不可变性。非常适合复杂对象的操作，具有自动存储同步功能。
 
@@ -374,13 +1173,179 @@ const [prefs, updatePrefs] = useImmerKeyStorage(prefsStorage);
 // updatePrefs(draft => { draft.theme = 'invalid'; });
 ```
 
-## Wow 查询 Hooks
+### 事件 Hooks
+
+#### useEventSubscription
+
+`useEventSubscription` hook 为类型化事件总线提供了 React 接口。它自动管理订阅生命周期，同时提供手动控制功能以增加灵活性。
+
+```typescript jsx
+import { useEventSubscription } from '@ahoo-wang/fetcher-react';
+import { eventBus } from './eventBus';
+
+function MyComponent() {
+  const { subscribe, unsubscribe } = useEventSubscription({
+    bus: eventBus,
+    handler: {
+      name: 'myEvent',
+      handle: (event) => {
+        console.log('收到事件:', event);
+      }
+    }
+  });
+
+  // hook 在组件挂载时自动订阅，在卸载时自动取消订阅
+  // 如需要，您也可以手动控制订阅
+  const handleToggleSubscription = () => {
+    if (someCondition) {
+      subscribe();
+    } else {
+      unsubscribe();
+    }
+  };
+
+  return <div>我的组件</div>;
+}
+```
+
+关键特性:
+
+- **自动生命周期管理**: 在组件挂载时自动订阅，在卸载时自动取消订阅
+- **手动控制**: 提供 `subscribe` 和 `unsubscribe` 函数以进行额外控制
+- **类型安全**: 完全支持 TypeScript，具有泛型事件类型
+- **错误处理**: 对失败的订阅尝试记录警告
+- **事件总线集成**: 与 `@ahoo-wang/fetcher-eventbus` TypedEventBus 实例无缝配合
+
+### CoSec 安全 Hooks
+
+🛡️ **企业安全集成** - 强大的 React hooks，用于使用 CoSec 令牌管理认证状态，提供与企业安全系统的无缝集成和自动令牌生命周期管理。
+
+#### useSecurity
+
+`useSecurity` hook 使用 CoSec 令牌提供对认证状态和操作的响应式访问。它与 TokenStorage 集成以持久化令牌，并在令牌更改时响应式更新状态。
+
+```typescript jsx
+import { useSecurity } from '@ahoo-wang/fetcher-react';
+import { tokenStorage } from './tokenStorage';
+import { useNavigate } from 'react-router-dom';
+
+function App() {
+  const navigate = useNavigate();
+
+  const { currentUser, authenticated, signIn, signOut } = useSecurity(tokenStorage, {
+    onSignIn: () => {
+      // 登录成功后重定向到仪表板
+      navigate('/dashboard');
+    },
+    onSignOut: () => {
+      // 登出后重定向到登录页面
+      navigate('/login');
+    }
+  });
+
+  const handleSignIn = async () => {
+    // 直接令牌
+    await signIn(compositeToken);
+
+    // 或异步函数
+    await signIn(async () => {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password })
+      });
+      return response.json();
+    });
+  };
+
+  if (!authenticated) {
+    return <button onClick={handleSignIn}>登录</button>;
+  }
+
+  return (
+    <div>
+      <p>欢迎, {currentUser.sub}!</p>
+      <button onClick={signOut}>登出</button>
+    </div>
+  );
+}
+```
+
+**关键特性:**
+
+- **响应式认证状态**: 当令牌更改时自动更新
+- **灵活的登录方法**: 支持直接令牌和异步令牌提供者
+- **生命周期回调**: 可配置的登录和登出事件回调
+- **类型安全**: 完全支持 TypeScript，具有 CoSec JWT 负载类型
+- **令牌持久化**: 与 TokenStorage 集成以实现跨会话持久化
+
+#### SecurityProvider
+
+`SecurityProvider` 组件包装您的应用程序以通过 React 上下文提供认证上下文。它在内部使用 `useSecurity` hook，并通过 `useSecurityContext` hook 使认证状态可用于所有子组件。
+
+```tsx
+import { SecurityProvider } from '@ahoo-wang/fetcher-react';
+import { tokenStorage } from './tokenStorage';
+import { useNavigate } from 'react-router-dom';
+
+function App() {
+  const navigate = useNavigate();
+
+  return (
+    <SecurityProvider
+      tokenStorage={tokenStorage}
+      onSignIn={() => navigate('/dashboard')}
+      onSignOut={() => navigate('/login')}
+    >
+      <MyApp />
+    </SecurityProvider>
+  );
+}
+```
+
+**配置选项:**
+
+- `tokenStorage`: 用于管理认证令牌的 TokenStorage 实例
+- `onSignIn`: 登录成功时调用的回调函数
+- `onSignOut`: 登出时调用的回调函数
+- `children`: 将有权访问安全上下文的子组件
+
+#### useSecurityContext
+
+`useSecurityContext` hook 在被 `SecurityProvider` 包装的组件中提供对认证状态和方法的访问。它通过 React 上下文提供与 `useSecurity` 相同的接口。
+
+```tsx
+import { useSecurityContext } from '@ahoo-wang/fetcher-react';
+
+function UserProfile() {
+  const { currentUser, authenticated, signOut } = useSecurityContext();
+
+  if (!authenticated) {
+    return <div>请登录</div>;
+  }
+
+  return (
+    <div>
+      <p>欢迎, {currentUser.sub}!</p>
+      <button onClick={signOut}>登出</button>
+    </div>
+  );
+}
+```
+
+**上下文优势:**
+
+- **消除属性钻取**: 无需传递属性即可访问认证状态
+- **组件隔离**: 无论组件树深度如何，组件都可以访问认证状态
+- **集中式状态**: 应用程序中认证的单一真实来源
+- **自动重新渲染**: 当认证状态更改时，组件自动重新渲染
+
+### Wow 查询 Hooks
 
 Wow 查询 Hooks 提供高级数据查询功能，具有内置的状态管理，用于条件、投影、排序、分页和限制。这些 hooks 专为与 `@ahoo-wang/fetcher-wow` 包配合使用而设计，用于复杂的查询操作。
 
-### 基础查询 Hooks
+#### 基础查询 Hooks
 
-#### useListQuery Hook
+##### useListQuery
 
 `useListQuery` hook 管理列表查询，具有条件、投影、排序和限制的状态管理。
 
@@ -391,7 +1356,7 @@ const MyComponent = () => {
   const { result, loading, error, execute, setCondition, setLimit } = useListQuery({
     initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
     execute: async (listQuery) => {
-      // Your list fetching logic here
+      // 您的列表获取逻辑
       return fetchListData(listQuery);
     },
   });
@@ -417,7 +1382,37 @@ const MyComponent = () => {
 };
 ```
 
-### usePagedQuery Hook
+##### 自动执行示例
+
+```typescript jsx
+import { useListQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+    execute: async (listQuery) => fetchListData(listQuery),
+    autoExecute: true, // 组件挂载时自动执行
+  });
+
+  // 查询将在组件挂载时自动执行
+  // 您仍然可以使用 execute() 手动触发或更新条件
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <ul>
+        {result?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
+##### usePagedQuery
 
 `usePagedQuery` hook 管理分页查询，具有条件、投影、分页和排序的状态管理。
 
@@ -433,7 +1428,7 @@ const MyComponent = () => {
       sort: []
     },
     execute: async (pagedQuery) => {
-      // Your paged fetching logic here
+      // 您的分页获取逻辑
       return fetchPagedData(pagedQuery);
     },
   });
@@ -464,7 +1459,47 @@ const MyComponent = () => {
 };
 ```
 
-### useSingleQuery Hook
+###### 自动执行示例
+
+```typescript jsx
+import { usePagedQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition, setPagination } = usePagedQuery({
+    initialQuery: {
+      condition: {},
+      pagination: { index: 1, size: 10 },
+      projection: {},
+      sort: []
+    },
+    execute: async (pagedQuery) => fetchPagedData(pagedQuery),
+    autoExecute: true, // 组件挂载时自动执行
+  });
+
+  // 查询将在组件挂载时自动执行
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <ul>
+        {result?.list?.map((item, index) => (
+          <li key={index}>{item.name}</li>
+        ))}
+      </ul>
+      <button onClick={() => setPagination({ index: result?.pagination?.index! - 1, size: 10 })} disabled={result?.pagination?.index === 1}>
+        上一页
+      </button>
+      <button onClick={() => setPagination({ index: result?.pagination?.index! + 1, size: 10 })}>
+        下一页
+      </button>
+    </div>
+  );
+};
+```
+
+##### useSingleQuery
 
 `useSingleQuery` hook 管理单个查询，具有条件、投影和排序的状态管理。
 
@@ -497,7 +1532,32 @@ const MyComponent = () => {
 };
 ```
 
-### useCountQuery Hook
+###### 自动执行示例
+
+```typescript jsx
+import { useSingleQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useSingleQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [] },
+    execute: async (singleQuery) => fetchSingleData(singleQuery),
+    autoExecute: true, // 组件挂载时自动执行
+  });
+
+  // 查询将在组件挂载时自动执行
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      {result && <p>用户: {result.name}</p>}
+    </div>
+  );
+};
+```
+
+##### useCountQuery
 
 `useCountQuery` hook 管理计数查询，具有条件的状态管理。
 
@@ -530,44 +1590,15 @@ const MyComponent = () => {
 };
 ```
 
-### 获取查询 Hooks
-
-#### useFetcherCountQuery Hook
-
-`useFetcherCountQuery` hook 是使用 Fetcher 库执行计数查询的专用 React hook。它专为需要检索匹配特定条件的记录数量的场景而设计，返回表示计数的数字。
+###### 自动执行示例
 
 ```typescript jsx
-import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
-import { all } from '@ahoo-wang/fetcher-wow';
-
-function UserCountComponent() {
-  const { data: count, loading, error, execute } = useFetcherCountQuery({
-    url: '/api/users/count',
-    initialQuery: all(),
-    autoExecute: true,
-  });
-
-  if (loading) return <div>加载中...</div>;
-  if (error) return <div>错误: {error.message}</div>;
-
-  return (
-    <div>
-      <div>活跃用户总数: {count}</div>
-      <button onClick={execute}>刷新计数</button>
-    </div>
-  );
-}
-```
-
-#### 自动执行示例
-
-```typescript jsx
-import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
+import { useCountQuery } from '@ahoo-wang/fetcher-react';
 
 const MyComponent = () => {
-  const { data: count, loading, error, execute } = useFetcherCountQuery({
-    url: '/api/users/count',
-    initialQuery: { status: 'active' },
+  const { result, loading, error, execute, setCondition } = useCountQuery({
+    initialQuery: {},
+    execute: async (condition) => fetchCount(condition),
     autoExecute: true, // 组件挂载时自动执行
   });
 
@@ -578,13 +1609,150 @@ const MyComponent = () => {
 
   return (
     <div>
+      <p>总数: {result}</p>
+    </div>
+  );
+};
+```
+
+##### useListStreamQuery
+
+`useListStreamQuery` hook 管理列表流查询，返回服务器发送事件的 readable stream。
+
+```typescript jsx
+import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListStreamQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
+    execute: async (listQuery) => {
+      // 您的流获取逻辑
+      return fetchListStream(listQuery);
+    },
+  });
+
+  useEffect(() => {
+    if (result) {
+      const reader = result.getReader();
+      const readStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            console.log('接收到:', value);
+            // 处理流事件
+          }
+        } catch (error) {
+          console.error('流错误:', error);
+        }
+      };
+      readStream();
+    }
+  }, [result]);
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <button onClick={execute}>开始流</button>
+    </div>
+  );
+};
+```
+
+###### 自动执行示例
+
+```typescript jsx
+import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
+
+const MyComponent = () => {
+  const { result, loading, error, execute, setCondition } = useListStreamQuery({
+    initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
+    execute: async (listQuery) => fetchListStream(listQuery),
+    autoExecute: true, // 组件挂载时自动执行
+  });
+
+  useEffect(() => {
+    if (result) {
+      const reader = result.getReader();
+      const readStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            console.log('接收到:', value);
+            // 处理流事件
+          }
+        } catch (error) {
+          console.error('流错误:', error);
+        }
+      };
+      readStream();
+    }
+  }, [result]);
+
+  // 流将在组件挂载时自动启动
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      {/* 流已自动启动 */}
+    </div>
+  );
+};
+```
+
+#### Fetcher 查询 Hooks
+
+##### useFetcherCountQuery
+
+`useFetcherCountQuery` hook 是使用 Fetcher 库执行计数查询的专用 React hook。它专为需要检索匹配特定条件的记录数量的场景而设计，返回表示计数的数字。
+
+```typescript jsx
+import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
+import { all } from '@ahoo-wang/fetcher-wow';
+function UserCountComponent() {
+  const { data: count, loading, error, execute } = useFetcherCountQuery({
+    url: '/api/users/count',
+    initialQuery: all(),
+    autoExecute: true,
+  });
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+  return (
+    <div>
+      <div>活跃用户总数: {count}</div>
+      <button onClick={execute}>刷新计数</button>
+    </div>
+  );
+}
+```
+
+###### 自动执行示例
+
+```typescript jsx
+import { useFetcherCountQuery } from '@ahoo-wang/fetcher-react';
+const MyComponent = () => {
+  const { data: count, loading, error, execute } = useFetcherCountQuery({
+    url: '/api/users/count',
+    initialQuery: { status: 'active' },
+    autoExecute: true, // 组件挂载时自动执行
+  });
+  // 查询将在组件挂载时自动执行
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+  return (
+    <div>
       <p>活跃用户总数: {count}</p>
     </div>
   );
 };
 ```
 
-### useFetcherPagedQuery Hook
+##### useFetcherPagedQuery
 
 `useFetcherPagedQuery` hook 是使用 Fetcher 库执行分页查询的专用 React hook。它专为需要检索匹配查询条件的分页数据的场景而设计，返回包含当前页面项目以及分页元数据的 PagedList。
 
@@ -653,7 +1821,7 @@ function UserListComponent() {
 }
 ```
 
-#### 自动执行示例
+###### 自动执行示例
 
 ```typescript jsx
 import { useFetcherPagedQuery } from '@ahoo-wang/fetcher-react';
@@ -689,7 +1857,7 @@ const MyComponent = () => {
 };
 ```
 
-### useFetcherListQuery Hook
+##### useFetcherListQuery
 
 `useFetcherListQuery` hook 是使用 Fetcher 库执行列表查询的专用 React hook。它专为获取项目列表而设计，支持通过 ListQuery 类型进行过滤、排序和分页，返回结果数组。
 
@@ -750,7 +1918,7 @@ function UserListComponent() {
 }
 ```
 
-#### 自动执行示例
+###### 自动执行示例
 
 ```typescript jsx
 import { useFetcherListQuery } from '@ahoo-wang/fetcher-react';
@@ -785,7 +1953,7 @@ const MyComponent = () => {
 };
 ```
 
-### useFetcherListStreamQuery Hook
+##### useFetcherListStreamQuery
 
 `useFetcherListStreamQuery` hook 是使用 Fetcher 库通过服务器发送事件执行列表流查询的专用 React hook。它专为需要检索匹配列表查询条件的数据流场景而设计，返回 JSON 服务器发送事件的 ReadableStream，用于实时数据流式传输。
 
@@ -848,7 +2016,7 @@ function UserStreamComponent() {
 }
 ```
 
-#### 自动执行示例
+###### 自动执行示例
 
 ```typescript jsx
 import { useFetcherListStreamQuery } from '@ahoo-wang/fetcher-react';
@@ -904,7 +2072,7 @@ const MyComponent = () => {
 };
 ```
 
-### useFetcherSingleQuery Hook
+##### useFetcherSingleQuery
 
 `useFetcherSingleQuery` hook 是使用 Fetcher 库执行单个项目查询的专用 React hook。它专为获取单个项目而设计，支持通过 SingleQuery 类型进行过滤和排序，返回单个结果项目。
 
@@ -948,7 +2116,7 @@ function UserProfileComponent({ userId }: { userId: string }) {
 }
 ```
 
-#### 自动执行示例
+###### 自动执行示例
 
 ```typescript jsx
 import { useFetcherSingleQuery } from '@ahoo-wang/fetcher-react';
@@ -980,59 +2148,11 @@ const MyComponent = () => {
 };
 ```
 
-### 流查询 Hooks
-
-#### useListStreamQuery Hook
-
-`useListStreamQuery` hook 管理列表流查询，返回服务器发送事件的 readable stream。
-
-```typescript jsx
-import { useListStreamQuery } from '@ahoo-wang/fetcher-react';
-
-const MyComponent = () => {
-  const { result, loading, error, execute, setCondition } = useListStreamQuery({
-    initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
-    execute: async (listQuery) => {
-      // 您的流获取逻辑
-      return fetchListStream(listQuery);
-    },
-  });
-
-  useEffect(() => {
-    if (result) {
-      const reader = result.getReader();
-      const readStream = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            console.log('接收到:', value);
-            // 处理流事件
-          }
-        } catch (error) {
-          console.error('流错误:', error);
-        }
-      };
-      readStream();
-    }
-  }, [result]);
-
-  if (loading) return <div>加载中...</div>;
-  if (error) return <div>错误: {error.message}</div>;
-
-  return (
-    <div>
-      <button onClick={execute}>开始流</button>
-    </div>
-  );
-};
-```
-
 ## 最佳实践
 
 ### 性能优化
 
-- 谨慎使用 `autoExecute: true`，避免在挂载时进行不必要的请求
+- 使用 `autoExecute: false` 来控制查询的执行时机
 - 当启用 `autoExecute` 时，使用 `setQuery` 更新查询以触发自动重新执行
 - 在 `execute` 函数中记忆化昂贵的计算
 
@@ -1054,6 +2174,478 @@ const MyComponent = () => {
 - 使用 `useKeyStorage` 进行持久化的客户端数据存储
 - 实现乐观更新以改善用户体验
 
+## 🚀 高级使用示例
+
+### 自定义 Hook 组合
+
+通过组合多个 fetcher-react hooks 创建可重用的 hooks：
+
+```typescript jsx
+import { useFetcher, usePromiseState, useLatest } from '@ahoo-wang/fetcher-react';
+import { useCallback, useEffect } from 'react';
+
+function useUserProfile(userId: string) {
+  const latestUserId = useLatest(userId);
+  const { loading, result: profile, error, execute } = useFetcher();
+
+  const fetchProfile = useCallback(() => {
+    execute({
+      url: `/api/users/${latestUserId.current}`,
+      method: 'GET'
+    });
+  }, [execute, latestUserId]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchProfile();
+    }
+  }, [userId, fetchProfile]);
+
+  return { profile, loading, error, refetch: fetchProfile };
+}
+
+// 使用
+function UserProfile({ userId }: { userId: string }) {
+  const { profile, loading, error, refetch } = useUserProfile(userId);
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return (
+    <div>
+      <h2>{profile?.name}</h2>
+      <button onClick={refetch}>刷新</button>
+    </div>
+  );
+}
+```
+
+### 错误边界集成
+
+与 React 错误边界集成以获得更好的错误处理：
+
+```typescript jsx
+import { Component, ErrorInfo, ReactNode } from 'react';
+
+class FetchErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  { hasError: boolean; error?: Error }
+  > {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('获取错误边界捕获到错误:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || <div>出现问题。</div>;
+    }
+
+    return this.props.children;
+  }
+}
+
+// 与 hooks 一起使用
+function DataComponent() {
+  const { result, loading, error, execute } = useFetcher();
+
+  // 错误将被边界捕获（如果抛出）
+  if (error) {
+    throw error;
+  }
+
+  return (
+    <div>
+      {loading ? '加载中...' : JSON.stringify(result)}
+    </div>
+  );
+}
+
+// 包装使用 fetcher hooks 的组件
+function App() {
+  return (
+    <FetchErrorBoundary fallback={<div>加载数据失败</div>}>
+      <DataComponent />
+    </FetchErrorBoundary>
+  );
+}
+```
+
+### Suspense 集成
+
+与 React Suspense 一起使用以获得更好的加载状态：
+
+```typescript jsx
+import { Suspense, useState } from 'react';
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+// 创建抛出 Promise 的资源
+function createDataResource<T>(promise: Promise<T>) {
+  let status = 'pending';
+  let result: T;
+  let error: Error;
+
+  const suspender = promise.then(
+    (data) => {
+      status = 'success';
+      result = data;
+    },
+    (err) => {
+      status = 'error';
+      error = err;
+    }
+  );
+
+  return {
+    read() {
+      if (status === 'pending') {
+        throw suspender;
+      } else if (status === 'error') {
+        throw error;
+      } else {
+        return result;
+      }
+    }
+  };
+}
+
+function DataComponent({ resource }: { resource: any }) {
+  const data = resource.read(); // 如果待处理将抛出
+  return <div>{JSON.stringify(data)}</div>;
+}
+
+function App() {
+  const [resource, setResource] = useState<any>(null);
+
+  const handleFetch = () => {
+    const { execute } = useFetcher();
+    const promise = execute({ url: '/api/data', method: 'GET' });
+    setResource(createDataResource(promise));
+  };
+
+  return (
+    <div>
+      <button onClick={handleFetch}>获取数据</button>
+      <Suspense fallback={<div>加载中...</div>}>
+        {resource && <DataComponent resource={resource} />}
+      </Suspense>
+    </div>
+  );
+}
+```
+
+### 性能优化模式
+
+优化性能的高级模式：
+
+```typescript jsx
+import { useMemo, useCallback, useRef } from 'react';
+import { useListQuery } from '@ahoo-wang/fetcher-react';
+
+function OptimizedDataTable({ filters, sortBy }) {
+  // 记忆化查询配置以防止不必要的重新执行
+  const queryConfig = useMemo(() => ({
+    condition: filters,
+    sort: [{ field: sortBy, order: 'asc' }],
+    limit: 50
+  }), [filters, sortBy]);
+
+  const { result, loading, execute, setCondition } = useListQuery({
+    initialQuery: queryConfig,
+    execute: useCallback(async (query) => {
+      // 防抖 API 调用
+      await new Promise(resolve => setTimeout(resolve, 300));
+      return fetchData(query);
+    }, []),
+    autoExecute: true
+  });
+
+  // 使用 ref 跟踪最新过滤器而不引起重新渲染
+  const filtersRef = useRef(filters);
+
+  useEffect(() => {
+    filtersRef.current = filters;
+  });
+
+  // 防抖搜索
+  const debouncedSearch = useMemo(
+    () => debounce((searchTerm: string) => {
+      setCondition({ ...filtersRef.current, search: searchTerm });
+    }, 500),
+    [setCondition]
+  );
+
+  return (
+    <div>
+      <input
+        onChange={(e) => debouncedSearch(e.target.value)}
+        placeholder="搜索..."
+      />
+      {loading ? '加载中...' : (
+        <table>
+          <tbody>
+            {result?.map(item => (
+              <tr key={item.id}>
+                <td>{item.name}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+// 防抖工具
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+```
+
+### 真实世界集成示例
+
+显示与流行库集成的完整示例：
+
+#### 与 React Query (TanStack Query) 集成
+
+```typescript jsx
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+function useUserData(userId: string) {
+  return useQuery({
+    queryKey: ['user', userId],
+    queryFn: async () => {
+      const { execute } = useFetcher();
+      const result = await execute({
+        url: `/api/users/${userId}`,
+        method: 'GET'
+      });
+      return result;
+    }
+  });
+}
+
+function UserProfile({ userId }: { userId: string }) {
+  const { data, isLoading, error } = useUserData(userId);
+
+  if (isLoading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return <div>欢迎, {data.name}!</div>;
+}
+```
+
+#### 与 Redux Toolkit 集成
+
+```typescript jsx
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+const fetchUserData = createAsyncThunk(
+  'user/fetchData',
+  async (userId: string) => {
+    const { execute } = useFetcher();
+    return await execute({
+      url: `/api/users/${userId}`,
+      method: 'GET'
+    });
+  }
+);
+
+const userSlice = createSlice({
+  name: 'user',
+  initialState: { data: null, loading: false, error: null },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchUserData.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchUserData.fulfilled, (state, action) => {
+        state.loading = false;
+        state.data = action.payload;
+      })
+      .addCase(fetchUserData.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      });
+  }
+});
+
+function UserComponent({ userId }: { userId: string }) {
+  const dispatch = useDispatch();
+  const { data, loading, error } = useSelector((state) => state.user);
+
+  useEffect(() => {
+    dispatch(fetchUserData(userId));
+  }, [userId, dispatch]);
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error}</div>;
+
+  return <div>{data?.name}</div>;
+}
+```
+
+#### 与 Zustand 集成
+
+```typescript jsx
+import { create } from 'zustand';
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+interface UserStore {
+  user: any;
+  loading: boolean;
+  error: string | null;
+  fetchUser: (userId: string) => Promise<void>;
+}
+
+const useUserStore = create<UserStore>((set) => ({
+  user: null,
+  loading: false,
+  error: null,
+  fetchUser: async (userId) => {
+    set({ loading: true, error: null });
+    try {
+      const { execute } = useFetcher();
+      const user = await execute({
+        url: `/api/users/${userId}`,
+        method: 'GET'
+      });
+      set({ user, loading: false });
+    } catch (error) {
+      set({ error: error.message, loading: false });
+    }
+  }
+}));
+
+function UserComponent({ userId }: { userId: string }) {
+  const { user, loading, error, fetchUser } = useUserStore();
+
+  useEffect(() => {
+    fetchUser(userId);
+  }, [userId, fetchUser]);
+
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error}</div>;
+
+  return <div>{user?.name}</div>;
+}
+```
+
+### 测试模式
+
+Hooks 的综合测试示例：
+
+```typescript jsx
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { useFetcher, useListQuery } from '@ahoo-wang/fetcher-react';
+
+// 模拟 fetcher
+jest.mock('@ahoo-wang/fetcher', () => ({
+  Fetcher: jest.fn().mockImplementation(() => ({
+    request: jest.fn(),
+  })),
+}));
+
+describe('useFetcher', () => {
+  it('应处理成功的获取', async () => {
+    const mockData = { id: 1, name: 'Test' };
+    const mockFetcher = { request: jest.fn().mockResolvedValue(mockData) };
+
+    const { result } = renderHook(() => useFetcher({ fetcher: mockFetcher }));
+
+    act(() => {
+      result.current.execute({ url: '/api/test', method: 'GET' });
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.result).toEqual(mockData);
+      expect(result.current.error).toBe(null);
+    });
+  });
+
+  it('应处理获取错误', async () => {
+    const mockError = new Error('网络错误');
+    const mockFetcher = { request: jest.fn().mockRejectedValue(mockError) };
+
+    const { result } = renderHook(() => useFetcher({ fetcher: mockFetcher }));
+
+    act(() => {
+      result.current.execute({ url: '/api/test', method: 'GET' });
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.error).toEqual(mockError);
+      expect(result.current.result).toBe(null);
+    });
+  });
+});
+
+describe('useListQuery', () => {
+  it('应管理查询状态', async () => {
+    const mockData = [{ id: 1, name: 'Item 1' }];
+    const mockExecute = jest.fn().mockResolvedValue(mockData);
+
+    const { result } = renderHook(() =>
+      useListQuery({
+        initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+        execute: mockExecute,
+      }),
+    );
+
+    act(() => {
+      result.current.execute();
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.result).toEqual(mockData);
+    });
+
+    expect(mockExecute).toHaveBeenCalledWith({
+      condition: {},
+      projection: {},
+      sort: [],
+      limit: 10,
+    });
+  });
+
+  it('应更新条件', () => {
+    const { result } = renderHook(() =>
+      useListQuery({
+        initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
+        execute: jest.fn(),
+      }),
+    );
+
+    act(() => {
+      result.current.setCondition({ status: 'active' });
+    });
+
+    expect(result.current.condition).toEqual({ status: 'active' });
+  });
+});
+```
+
 ## API 参考
 
 ### 防抖 Hooks
@@ -1067,7 +2659,7 @@ function useDebouncedCallback<T extends (...args: any[]) => any>(
 ): UseDebouncedCallbackReturn<T>;
 ```
 
-一个 React hook，为回调函数提供防抖版本，支持前缘/后缘执行选项。
+为回调函数提供防抖版本的 React hook，支持前缘/后缘执行选项。
 
 **类型参数:**
 
@@ -1167,84 +2759,6 @@ function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
 
 将基于查询的 HTTP 获取与防抖相结合，非常适合搜索输入和动态查询场景，您希望根据查询参数防抖 API 调用。
 
-```typescript jsx
-import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
-
-interface SearchQuery {
-  keyword: string;
-  limit: number;
-  filters?: { category?: string };
-}
-
-interface SearchResult {
-  items: Array<{ id: string; title: string }>;
-  total: number;
-}
-
-const SearchComponent = () => {
-  const {
-    loading,
-    result,
-    error,
-    run,
-    cancel,
-    isPending,
-    setQuery,
-    getQuery,
-  } = useDebouncedFetcherQuery<SearchQuery, SearchResult>({
-    url: '/api/search',
-    initialQuery: { keyword: '', limit: 10 },
-    debounce: { delay: 300 }, // 防抖 300ms
-    autoExecute: false, // 挂载时不执行
-  });
-
-  const handleSearch = (keyword: string) => {
-    setQuery({ keyword, limit: 10 }); // 如果 autoExecute 为 true，这将触发防抖执行
-  };
-
-  const handleManualSearch = () => {
-    run(); // 使用当前查询手动防抖执行
-  };
-
-  const handleCancel = () => {
-    cancel(); // 取消任何待处理的防抖执行
-  };
-
-  if (loading) return <div>搜索中...</div>;
-  if (error) return <div>错误: {error.message}</div>;
-
-  return (
-    <div>
-      <input
-        type="text"
-        onChange={(e) => handleSearch(e.target.value)}
-        placeholder="搜索..."
-      />
-      <button onClick={handleManualSearch} disabled={isPending()}>
-        {isPending() ? '搜索中...' : '搜索'}
-      </button>
-      <button onClick={handleCancel}>取消</button>
-      {result && (
-        <div>
-          找到 {result.total} 项:
-          {result.items.map(item => (
-            <div key={item.id}>{item.title}</div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-```
-
-**主要特性:**
-
-- **查询状态管理**: 使用 `setQuery` 和 `getQuery` 自动查询参数处理
-- **防抖执行**: 在快速用户输入期间防止过多 API 调用
-- **自动执行**: 可选的在查询参数更改时自动执行
-- **手动控制**: `run()` 用于手动执行，`cancel()` 用于取消
-- **待处理状态**: `isPending()` 检查防抖调用是否排队
-
 **类型参数:**
 
 - `Q`: 查询参数的类型
@@ -1278,93 +2792,13 @@ const SearchComponent = () => {
 
 #### useDebouncedQuery
 
-将通用查询执行与防抖相结合，非常适合自定义查询操作，您希望根据查询参数防抖执行。
-
-```typescript jsx
-import { useDebouncedQuery } from '@ahoo-wang/fetcher-react';
-
-interface SearchQuery {
-  keyword: string;
-  limit: number;
-  filters?: { category?: string };
-}
-
-interface SearchResult {
-  items: Array<{ id: string; title: string }>;
-  total: number;
-}
-
-const SearchComponent = () => {
-  const {
-    loading,
-    result,
-    error,
-    run,
-    cancel,
-    isPending,
-    setQuery,
-    getQuery,
-  } = useDebouncedQuery<SearchQuery, SearchResult>({
-    initialQuery: { keyword: '', limit: 10 },
-    execute: async (query) => {
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        body: JSON.stringify(query),
-        headers: { 'Content-Type': 'application/json' },
-      });
-      return response.json();
-    },
-    debounce: { delay: 300 }, // 防抖 300ms
-    autoExecute: false, // 挂载时不执行
-  });
-
-  const handleSearch = (keyword: string) => {
-    setQuery({ keyword, limit: 10 }); // 如果 autoExecute 为 true，这将触发防抖执行
-  };
-
-  const handleManualSearch = () => {
-    run(); // 使用当前查询手动防抖执行
-  };
-
-  const handleCancel = () => {
-    cancel(); // 取消任何待处理的防抖执行
-  };
-
-  if (loading) return <div>搜索中...</div>;
-  if (error) return <div>错误: {error.message}</div>;
-
-  return (
-    <div>
-      <input
-        type="text"
-        onChange={(e) => handleSearch(e.target.value)}
-        placeholder="搜索..."
-      />
-      <button onClick={handleManualSearch} disabled={isPending()}>
-        {isPending() ? '搜索中...' : '搜索'}
-      </button>
-      <button onClick={handleCancel}>取消</button>
-      {result && (
-        <div>
-          找到 {result.total} 项:
-          {result.items.map(item => (
-            <div key={item.id}>{item.title}</div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+```typescript
+function useDebouncedQuery<Q, R, E = FetcherError>(
+  options: UseDebouncedQueryOptions<Q, R, E>,
+): UseDebouncedQueryReturn<Q, R, E>;
 ```
 
-**主要特性:**
-
-- **查询状态管理**: 使用 `setQuery` 和 `getQuery` 自动查询参数处理
-- **防抖执行**: 在快速查询更改期间防止过多操作
-- **自动执行**: 可选的在查询参数更改时自动执行
-- **手动控制**: `run()` 用于手动执行，`cancel()` 用于取消
-- **待处理状态**: `isPending()` 检查防抖调用是否排队
-- **自定义执行**: 灵活的 execute 函数用于任何查询操作
+将通用查询执行与防抖相结合，非常适合自定义查询操作，您希望根据查询参数防抖执行。
 
 **类型参数:**
 
@@ -1499,9 +2933,7 @@ function usePromiseState<R = unknown, E = unknown>(
 - `setError`: 设置状态为 ERROR 并提供错误
 - `setIdle`: 设置状态为 IDLE
 
-### 工具 Hooks
-
-#### useRequestId
+### useRequestId
 
 ```typescript
 function useRequestId(): UseRequestIdReturn;
@@ -1572,68 +3004,170 @@ React hook，用于使用 Map-like 接口管理多个 refs，允许通过键动�
 - `RefKey = string | number | symbol`
 - `UseRefsReturn<T> extends Iterable<[RefKey, T]>`
 
-### 事件 Hooks
+### useQuery
 
-#### useEventSubscription Hook
-
-`useEventSubscription` hook 为类型化事件总线提供了 React 接口。它自动管理订阅生命周期，同时提供手动控制功能以增加灵活性。
-
-```typescript jsx
-import { useEventSubscription } from '@ahoo-wang/fetcher-react';
-import { eventBus } from './eventBus';
-
-function MyComponent() {
-  const { subscribe, unsubscribe } = useEventSubscription({
-    bus: eventBus,
-    handler: {
-      name: 'myEvent',
-      handle: (event) => {
-        console.log('收到事件:', event);
-      }
-    }
-  });
-
-  // hook 在组件挂载时自动订阅，在卸载时自动取消订阅
-  // 如需要，您也可以手动控制订阅
-  const handleToggleSubscription = () => {
-    if (someCondition) {
-      subscribe();
-    } else {
-      unsubscribe();
-    }
-  };
-
-  return <div>我的组件</div>;
-}
+```typescript
+function useQuery<Q, R, E = FetcherError>(
+  options: UseQueryOptions<Q, R, E>,
+): UseQueryReturn<Q, R, E>;
 ```
 
-关键特性:
+用于管理基于查询的异步操作的 React hook，具有自动状态管理和执行控制。
 
-- **自动生命周期管理**: 在组件挂载时自动订阅，在卸载时自动取消订阅
-- **手动控制**: 提供 `subscribe` 和 `unsubscribe` 函数以进行额外控制
-- **类型安全**: 完全支持 TypeScript，具有泛型事件类型
-- **错误处理**: 对失败的订阅尝试记录警告
-- **事件总线集成**: 与 `@ahoo-wang/fetcher-eventbus` TypedEventBus 实例无缝配合
+**类型参数:**
 
-### 存储 Hooks
-
-#### useKeyStorage
-
-```typescript jsx
-function useKeyStorage<T>(
-  keyStorage: KeyStorage<T>,
-): [T | null, (value: T) => void];
-```
-
-为 KeyStorage 实例提供状态管理的 React hook。
+- `Q`: 查询参数的类型
+- `R`: 结果值的类型
+- `E`: 错误值的类型（默认为 FetcherError）
 
 **参数:**
 
-- `keyStorage`: 要订阅和管理的 KeyStorage 实例
+- `options`: 查询的配置选项
+  - `initialQuery`: 初始查询参数
+  - `execute`: 使用给定参数和可选属性执行查询的函数
+  - `autoExecute?`: 是否在挂载和查询更改时自动执行查询
+  - 所有来自 `UseExecutePromiseOptions` 的选项
 
 **返回值:**
 
-- 包含当前存储值和更新函数的元组
+包含查询状态和控制函数的对象：
+
+- `loading`: 布尔值，指示查询当前是否正在执行
+- `result`: 查询的解析值
+- `error`: 执行期间发生的任何错误
+- `status`: 当前执行状态
+- `execute`: 使用当前参数执行查询的函数
+- `reset`: 重置 Promise 状态的函数
+- `abort`: 中止当前操作的函数
+- `getQuery`: 检索当前查询参数的函数
+- `setQuery`: 更新查询参数的函数
+
+### useQueryState
+
+```typescript
+function useQueryState<Q>(
+  options: UseQueryStateOptions<Q>,
+): UseQueryStateReturn<Q>;
+```
+
+用于管理查询状态的 React hook，具有自动执行功能。
+
+**类型参数:**
+
+- `Q`: 查询参数的类型
+
+**参数:**
+
+- `options`: hook 的配置选项
+  - `initialQuery`: 要存储和管理的初始查询参数
+  - `autoExecute?`: 是否在查询更改时或组件挂载时自动执行
+  - `execute`: 使用当前查询参数执行的函数
+
+**返回值:**
+
+包含以下内容的对象：
+
+- `getQuery`: 检索当前查询参数的函数
+- `setQuery`: 更新查询参数的函数。如果 autoExecute 为 true 会触发执行
+
+### useMounted
+
+```typescript
+function useMounted(): () => boolean;
+```
+
+返回检查组件是否仍挂载的函数的 React hook。
+
+**返回值:**
+
+当组件仍挂载时返回 `true`，否则返回 `false` 的函数。
+
+### useForceUpdate
+
+```typescript
+function useForceUpdate(): () => void;
+```
+
+返回强制组件重新渲染的函数的 React hook。
+
+**返回值:**
+
+调用时强制组件重新渲染的函数。
+
+### useEventSubscription
+
+```typescript
+function useEventSubscription<EVENT = unknown>(
+  options: UseEventSubscriptionOptions<EVENT>,
+): UseEventSubscriptionReturn;
+```
+
+为类型化事件总线提供 React 接口的 hook。自动管理订阅生命周期，同时提供手动控制功能。
+
+**类型参数:**
+
+- `EVENT`: 事件总线处理的事件类型（默认为 unknown）
+
+**参数:**
+
+- `options`: 订阅的配置选项
+  - `bus`: 要订阅的 TypedEventBus 实例
+  - `handler`: 具有名称和处理方法的事件处理函数
+
+**返回值:**
+
+包含以下内容的对象：
+
+- `subscribe`: 手动订阅事件总线的函数（返回布尔值成功状态）
+- `unsubscribe`: 手动取消订阅事件总线的函数（返回布尔值成功状态）
+
+**相关类型:**
+
+- `UseEventSubscriptionOptions<EVENT>`: 具有 bus 和 handler 属性的配置接口
+- `UseEventSubscriptionReturn`: 具有 subscribe 和 unsubscribe 方法的返回接口
+
+### useKeyStorage
+
+```typescript
+// 不使用默认值 - 可能返回 null
+function useKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+): [T | null, (value: T) => void];
+
+// 使用默认值 - 保证非空
+function useKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+  defaultValue: T,
+): [T, (value: T) => void];
+```
+
+为 KeyStorage 实例提供响应式状态管理的 React hook。订阅存储更改并返回当前值以及设置器函数。可选择接受默认值以在存储为空时使用。
+
+**类型参数:**
+
+- `T`: 存储在键存储中的值的类型
+
+**参数:**
+
+- `keyStorage`: 要订阅和管理的 KeyStorage 实例。应该是稳定引用（useRef、memo 或模块级实例）
+- `defaultValue` _(可选)_: 当存储为空时使用的默认值。提供时，hook 保证返回的值永远不会为 null
+
+**返回值:**
+
+- **不使用默认值**: `[T | null, (value: T) => void]` - 元组，其中第一个元素在存储为空时可能为 null
+- **使用默认值**: `[T, (value: T) => void]` - 元组，其中第一个元素保证不为 null（存储的值或默认值）
+
+**示例:**
+
+```typescript
+// 不使用默认值
+const [value, setValue] = useKeyStorage(keyStorage);
+// value: string | null
+
+// 使用默认值
+const [theme, setTheme] = useKeyStorage(themeStorage, 'light');
+// theme: string (永不为 null)
+```
 
 ### useImmerKeyStorage
 
@@ -1658,11 +3192,11 @@ function useImmerKeyStorage<T>(
 
 **类型参数:**
 
-- `T`: 存储值的数据类型
+- `T`: 存储在键存储中的值的类型
 
 **参数:**
 
-- `keyStorage`: 要订阅和管理的 KeyStorage 实例。应该是稳定的引用（useRef、memo 或模块级实例）
+- `keyStorage`: 要订阅和管理的 KeyStorage 实例。应该是稳定引用（useRef、memo 或模块级实例）
 - `defaultValue` _(可选)_: 当存储为空时使用的默认值。提供时，hook 保证返回的值永远不会为 null
 
 **返回值:**
@@ -1721,7 +3255,7 @@ function useListQuery<R, FIELDS extends string = string, E = FetcherError>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 list 函数的配置选项
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1746,7 +3280,7 @@ function usePagedQuery<R, FIELDS extends string = string, E = unknown>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 query 函数的配置选项
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1771,7 +3305,7 @@ function useSingleQuery<R, FIELDS extends string = string, E = unknown>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 query 函数的配置选项
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1795,7 +3329,7 @@ function useCountQuery<FIELDS extends string = string, E = FetcherError>(
 **参数:**
 
 - `options`: 包含 initialQuery 和 execute 函数的配置选项
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1821,7 +3355,7 @@ function useFetcherCountQuery<FIELDS extends string = string, E = FetcherError>(
 - `options`: 计数查询的配置选项，包括条件、fetcher 实例和其他查询设置
   - `url`: 从中获取计数的 URL
   - `initialQuery`: 计数查询的初始条件
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1852,7 +3386,7 @@ function useFetcherPagedQuery<
 - `options`: 分页查询的配置选项，包括分页查询参数、fetcher 实例和其他查询设置
   - `url`: 从中获取分页数据的 URL
   - `initialQuery`: 初始分页查询配置
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1883,7 +3417,7 @@ function useFetcherListQuery<
 - `options`: 列表查询的配置选项，包括列表查询参数、fetcher 实例和其他查询设置
   - `url`: 从中获取列表数据的 URL
   - `initialQuery`: 初始列表查询配置
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1914,7 +3448,7 @@ function useFetcherListStreamQuery<
 - `options`: 列表流查询的配置选项，包括列表查询参数、fetcher 实例和其他查询设置
   - `url`: 从中获取流数据的 URL
   - `initialQuery`: 初始列表查询配置
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1945,7 +3479,7 @@ function useFetcherSingleQuery<
 - `options`: 单个查询的配置选项，包括单个查询参数、fetcher 实例和其他查询设置
   - `url`: 从中获取单个项目的 URL
   - `initialQuery`: 初始单个查询配置
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
@@ -1974,7 +3508,7 @@ function useListStreamQuery<
 **参数:**
 
 - `options`: 包含 initialQuery 和 listStream 函数的配置选项
-  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 false）
+  - `autoExecute`: 是否在组件挂载时自动执行查询（默认为 true）
 
 **返回值:**
 
