@@ -119,7 +119,7 @@ describe('ActionsCell', () => {
     const primaryButton = screen.getByRole('button', { name: 'Edit' });
     fireEvent.click(primaryButton);
 
-    expect(mockClickHandler).toHaveBeenCalledWith('edit', testRecord);
+    expect(mockClickHandler).toHaveBeenCalledWith(testRecord);
     expect(mockClickHandler).toHaveBeenCalledTimes(1);
   });
 
@@ -205,7 +205,7 @@ describe('ActionsCell', () => {
     // Test primary action
     const primaryButton = screen.getByRole('button', { name: 'View' });
     fireEvent.click(primaryButton);
-    expect(mockClickHandler).toHaveBeenCalledWith('view', complexRecord);
+    expect(mockClickHandler).toHaveBeenCalledWith(complexRecord);
   });
 
   it('handles empty secondary actions array gracefully', () => {

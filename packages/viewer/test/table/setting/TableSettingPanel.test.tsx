@@ -13,77 +13,124 @@
 
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { TableSettingPanel } from '../../../src/table/setting';
-import type { ViewColumn } from '../../../src';
+import { TableSettingPanel, ViewColumnDefinition } from '../../../src';
+import type { ViewColumn, ViewDefinition } from '../../../src';
+import ViewerSharedValueContext from '../../../src/viewer/ViewerSharedValueContext';
+import React from 'react';
 
 describe('TableSettingPanel', () => {
-  const mockColumnDefinition1 = {
+  const mockColumnDefinition1: ViewColumnDefinition = {
     title: 'Column 1',
     dataIndex: 'col1',
-    cell: { type: 'text' },
+    type: 'text',
     primaryKey: false,
+    sorter: false,
   };
 
-  const mockColumnDefinition2 = {
+  const mockColumnDefinition2: ViewColumnDefinition = {
     title: 'Column 2',
     dataIndex: 'col2',
-    cell: { type: 'text' },
+    type: 'text',
     primaryKey: false,
+    sorter: false,
   };
 
-  const mockColumnDefinition3 = {
+  const mockColumnDefinition3: ViewColumnDefinition = {
     title: 'Primary Key Column',
     dataIndex: 'primaryKey',
-    cell: { type: 'text' },
+    type: 'text',
     primaryKey: true,
+    sorter: false,
   };
 
-  const createMockColumns = (): (ViewColumn & { index: number })[] => [
+  const mockViewDefinition: ViewDefinition = {
+    name: 'test-view',
+    columns: [
+      mockColumnDefinition1,
+      mockColumnDefinition2,
+      mockColumnDefinition3,
+    ],
+    availableFilters: [],
+    dataSourceUrl: '/api/test',
+    defaultPageSize: 10,
+  };
+
+  const createMockColumns = (): ViewColumn[] => [
     {
-      columnDefinition: mockColumnDefinition1,
+      dataIndex: 'col1',
       fixed: true,
       visible: true,
-      index: 0,
     },
     {
-      columnDefinition: mockColumnDefinition2,
+      dataIndex: 'col2',
       fixed: false,
       visible: true,
-      index: 1,
     },
     {
-      columnDefinition: mockColumnDefinition3,
+      dataIndex: 'primaryKey',
       fixed: false,
       visible: false,
-      index: 2,
     },
   ];
 
+  const mockContextValue = {
+    aggregateName: 'test-aggregate',
+    viewName: 'test-view',
+    viewColumns: createMockColumns(),
+    setViewColumns: vi.fn(),
+    showFilterPanel: true,
+    setShowFilterPanel: vi.fn(),
+    refreshData: vi.fn(),
+    tableSize: 'middle' as const,
+    setTableSize: vi.fn(),
+  };
+
+  const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+    <ViewerSharedValueContext.Provider value={mockContextValue}>
+      {children}
+    </ViewerSharedValueContext.Provider>
+  );
+
   const defaultProps = {
-    columns: createMockColumns(),
-    onColumnsChange: vi.fn(),
+    viewDefinition: mockViewDefinition,
   };
 
   it('renders without crashing', () => {
-    const { container } = render(<TableSettingPanel {...defaultProps} />);
+    const { container } = render(
+      <TestWrapper>
+        <TableSettingPanel {...defaultProps} />
+      </TestWrapper>,
+    );
     expect(container.firstChild).toBeTruthy();
   });
 
   it('displays section titles', () => {
-    render(<TableSettingPanel {...defaultProps} />);
+    render(
+      <TestWrapper>
+        <TableSettingPanel {...defaultProps} />
+      </TestWrapper>,
+    );
     expect(screen.getByText('已显示字段')).toBeTruthy();
     expect(screen.getByText('未显示字段')).toBeTruthy();
   });
 
   it('displays the lock tip text', () => {
-    render(<TableSettingPanel {...defaultProps} />);
+    render(
+      <TestWrapper>
+        <TableSettingPanel {...defaultProps} />
+      </TestWrapper>,
+    );
     expect(
       screen.getByText('请将需要锁定的字段拖至上方（最多支持3列）'),
     ).toBeTruthy();
   });
 
   it('renders fixed columns in the fixed section', () => {
-    render(<TableSettingPanel {...defaultProps} />);
+    render(
+      <TestWrapper>
+        <TableSettingPanel {...defaultProps} />
+      </TestWrapper>,
+    );
     const fixedSection = screen.getByText('已显示字段').parentElement;
     expect(fixedSection).toBeTruthy();
 
@@ -92,13 +139,21 @@ describe('TableSettingPanel', () => {
   });
 
   it('renders visible non-fixed columns in the visible section', () => {
-    render(<TableSettingPanel {...defaultProps} />);
+    render(
+      <TestWrapper>
+        <TableSettingPanel {...defaultProps} />
+      </TestWrapper>,
+    );
     // Should contain the visible non-fixed column
     expect(screen.getByText('Column 2')).toBeTruthy();
   });
 
   it('renders hidden columns in the hidden section', () => {
-    render(<TableSettingPanel {...defaultProps} />);
+    render(
+      <TestWrapper>
+        <TableSettingPanel {...defaultProps} />
+      </TestWrapper>,
+    );
     const hiddenSection = screen.getByText('未显示字段').parentElement;
     expect(hiddenSection).toBeTruthy();
 
@@ -107,9 +162,10 @@ describe('TableSettingPanel', () => {
   });
 
   it('calls onColumnsChange when visibility is toggled', () => {
-    const mockOnChange = vi.fn();
     render(
-      <TableSettingPanel {...defaultProps} onColumnsChange={mockOnChange} />,
+      <TestWrapper>
+        <TableSettingPanel {...defaultProps} />
+      </TestWrapper>,
     );
 
     // Find the checkbox for Column 2 (visible column)
@@ -124,16 +180,23 @@ describe('TableSettingPanel', () => {
 
     fireEvent.click(column2Checkbox);
 
-    expect(mockOnChange).toHaveBeenCalledTimes(1);
-    const calledColumns = mockOnChange.mock.calls[0][0];
+    expect(mockContextValue.setViewColumns).toHaveBeenCalledTimes(1);
+    const calledColumns = mockContextValue.setViewColumns.mock.calls[0][0];
     expect(calledColumns).toHaveLength(3);
     // Column 2 should now be invisible
     expect(calledColumns[1].visible).toBe(false);
   });
 
   it('handles empty columns array', () => {
+    const emptyContextValue = {
+      ...mockContextValue,
+      viewColumns: [],
+    };
+
     const { container } = render(
-      <TableSettingPanel columns={[]} onColumnsChange={vi.fn()} />,
+      <ViewerSharedValueContext.Provider value={emptyContextValue}>
+        <TableSettingPanel {...defaultProps} />
+      </ViewerSharedValueContext.Provider>,
     );
     expect(container.firstChild).toBeTruthy();
   });
@@ -145,11 +208,15 @@ describe('TableSettingPanel', () => {
       visible: true,
     }));
 
+    const fixedOnlyContextValue = {
+      ...mockContextValue,
+      viewColumns: fixedOnlyColumns,
+    };
+
     render(
-      <TableSettingPanel
-        columns={fixedOnlyColumns}
-        onColumnsChange={vi.fn()}
-      />,
+      <ViewerSharedValueContext.Provider value={fixedOnlyContextValue}>
+        <TableSettingPanel {...defaultProps} />
+      </ViewerSharedValueContext.Provider>,
     );
 
     expect(screen.getByText('Column 1')).toBeTruthy();
@@ -160,39 +227,31 @@ describe('TableSettingPanel', () => {
   it('handles columns with only hidden columns', () => {
     const hiddenOnlyColumns = [
       {
-        columnDefinition: {
-          ...mockColumnDefinition1,
-          dataIndex: 'hidden-col1',
-        },
+        dataIndex: 'col1',
         fixed: false,
         visible: false,
-        index: 0,
       },
       {
-        columnDefinition: {
-          ...mockColumnDefinition2,
-          dataIndex: 'hidden-col2',
-        },
+        dataIndex: 'col2',
         fixed: false,
         visible: false,
-        index: 1,
       },
       {
-        columnDefinition: {
-          ...mockColumnDefinition3,
-          dataIndex: 'hidden-primary',
-        },
+        dataIndex: 'primaryKey',
         fixed: false,
         visible: false,
-        index: 2,
       },
     ];
 
+    const hiddenOnlyContextValue = {
+      ...mockContextValue,
+      viewColumns: hiddenOnlyColumns,
+    };
+
     render(
-      <TableSettingPanel
-        columns={hiddenOnlyColumns}
-        onColumnsChange={vi.fn()}
-      />,
+      <ViewerSharedValueContext.Provider value={hiddenOnlyContextValue}>
+        <TableSettingPanel {...defaultProps} />
+      </ViewerSharedValueContext.Provider>,
     );
 
     expect(screen.getByText('Column 1')).toBeTruthy();
@@ -201,7 +260,11 @@ describe('TableSettingPanel', () => {
   });
 
   it('renders draggable items for non-primary key columns', () => {
-    render(<TableSettingPanel {...defaultProps} />);
+    render(
+      <TestWrapper>
+        <TableSettingPanel {...defaultProps} />
+      </TestWrapper>,
+    );
 
     // Check that draggable attribute is set correctly
     const draggableItems = document.querySelectorAll('[draggable="true"]');
@@ -209,7 +272,11 @@ describe('TableSettingPanel', () => {
   });
 
   it('does not render draggable items for primary key columns', () => {
-    render(<TableSettingPanel {...defaultProps} />);
+    render(
+      <TestWrapper>
+        <TableSettingPanel {...defaultProps} />
+      </TestWrapper>,
+    );
 
     // The primary key column should not be draggable (it's in the hidden section)
     const draggableItems = document.querySelectorAll('[draggable="true"]');
@@ -222,7 +289,9 @@ describe('TableSettingPanel', () => {
   it('applies custom className when provided', () => {
     const customClass = 'custom-panel-class';
     const { container } = render(
-      <TableSettingPanel {...defaultProps} className={customClass} />,
+      <TestWrapper>
+        <TableSettingPanel {...defaultProps} className={customClass} />
+      </TestWrapper>,
     );
 
     // The className should be applied to the root element
@@ -232,7 +301,11 @@ describe('TableSettingPanel', () => {
   });
 
   it('handles drag events without crashing', () => {
-    render(<TableSettingPanel {...defaultProps} />);
+    render(
+      <TestWrapper>
+        <TableSettingPanel {...defaultProps} />
+      </TestWrapper>,
+    );
 
     const draggableItem = document.querySelector(
       '[draggable="true"]',
@@ -274,47 +347,62 @@ describe('TableSettingPanel', () => {
     const uniqueColumn1 = {
       title: 'Unique Column 1',
       dataIndex: 'unique-col1',
-      cell: { type: 'text' },
+      type: 'text',
       primaryKey: false,
+      sorter: false,
     };
 
     const uniqueColumn2 = {
       title: 'Unique Column 2',
       dataIndex: 'unique-col2',
-      cell: { type: 'text' },
+      type: 'text',
       primaryKey: false,
+      sorter: false,
     };
 
     const uniqueColumn3 = {
       title: 'Unique Primary Key Column',
       dataIndex: 'unique-primary',
-      cell: { type: 'text' },
+      type: 'text',
       primaryKey: true,
+      sorter: false,
     };
 
-    const testColumns = [
+    const uniqueViewDefinition: ViewDefinition = {
+      name: 'unique-test-view',
+      columns: [uniqueColumn1, uniqueColumn2, uniqueColumn3],
+      availableFilters: [],
+      dataSourceUrl: '/api/unique',
+      defaultPageSize: 10,
+    };
+
+    const uniqueColumns = [
       {
-        columnDefinition: uniqueColumn1,
+        dataIndex: 'unique-col1',
         fixed: true,
         visible: true,
-        index: 0,
       },
       {
-        columnDefinition: uniqueColumn2,
+        dataIndex: 'unique-col2',
         fixed: false,
         visible: true,
-        index: 1,
       },
       {
-        columnDefinition: uniqueColumn3,
+        dataIndex: 'unique-primary',
         fixed: false,
         visible: false,
-        index: 2,
       },
     ];
 
+    const uniqueContextValue = {
+      ...mockContextValue,
+      viewColumns: uniqueColumns,
+    };
+
     render(
-      <TableSettingPanel columns={testColumns} onColumnsChange={vi.fn()} />,
+      <ViewerSharedValueContext.Provider value={uniqueContextValue}>
+        <TableSettingPanel viewDefinition={uniqueViewDefinition} />
+      </ViewerSharedValueContext.Provider>,
     );
 
     // Verify all columns are rendered

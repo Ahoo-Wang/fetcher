@@ -67,7 +67,7 @@ describe('ActionCell', () => {
     const button = screen.getByRole('button', { name: 'Edit' });
     fireEvent.click(button);
 
-    expect(mockClickHandler).toHaveBeenCalledWith('edit', {
+    expect(mockClickHandler).toHaveBeenCalledWith({
       id: 1,
       name: 'Test Item',
     });
@@ -93,7 +93,7 @@ describe('ActionCell', () => {
     const button = screen.getByRole('button', { name: 'Delete' });
     fireEvent.click(button);
 
-    expect(mockClickHandler).toHaveBeenCalledWith('delete', {
+    expect(mockClickHandler).toHaveBeenCalledWith({
       id: 1,
       name: 'Test Item',
     });
@@ -122,6 +122,6 @@ describe('ActionCell', () => {
     const button = screen.getByRole('button', { name: 'View' });
     fireEvent.click(button);
 
-    expect(mockClickHandler).toHaveBeenCalledWith('view', complexRecord);
+    expect(mockClickHandler).toHaveBeenCalledWith(complexRecord);
   });
 });
