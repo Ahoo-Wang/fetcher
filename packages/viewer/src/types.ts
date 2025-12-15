@@ -15,11 +15,6 @@ import React from 'react';
 
 export type Optional<T = any> = T | undefined;
 
-export interface DataSourceCapable<RecordType = any> {
-  list: RecordType[];
-  total: number;
-}
-
 export interface StyleCapable {
   style?: React.CSSProperties;
   className?: string;
@@ -28,8 +23,3 @@ export interface StyleCapable {
 export interface AttributesCapable<Attributes = any> {
   attributes?: Attributes;
 }
-
-
-
-
-

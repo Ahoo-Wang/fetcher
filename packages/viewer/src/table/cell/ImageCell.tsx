@@ -36,7 +36,7 @@ import { ImageProps } from 'antd/es/image';
  * });
  * ```
  */
-export const IMAGE_CELL_TYPE: string = 'image';
+export const IMAGE_CELL_TYPE = 'image';
 
 /**
  * Props for the ImageCell component, extending CellProps with string value type and ImageProps attributes.

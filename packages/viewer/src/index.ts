@@ -16,4 +16,3 @@ export * from './registry';
 export * from './components';
 export * from './table';
 export * from './types';
-export * from './viewer';
