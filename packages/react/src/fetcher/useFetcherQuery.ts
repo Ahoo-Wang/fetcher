@@ -150,15 +150,15 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
     [fetcherExecute, latestOptionsRef],
   );
 
-  const { query,getQuery, setQuery } = useQueryState({
+  const { getQuery, setQuery } = useQueryState({
     initialQuery: useFetcherQueryOptions.initialQuery,
     autoExecute: useFetcherQueryOptions.autoExecute,
     execute,
   });
 
   const executeWrapper = useCallback(() => {
-    return execute(query);
-  }, [execute, query]);
+    return execute(getQuery());
+  }, [execute, getQuery]);
 
   return useMemo(
     () => ({
@@ -169,7 +169,6 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
       execute: executeWrapper,
       reset,
       abort,
-      query,
       getQuery,
       setQuery,
     }),
@@ -181,7 +180,6 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
       executeWrapper,
       reset,
       abort,
-      query,
       getQuery,
       setQuery,
     ],
