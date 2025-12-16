@@ -17,7 +17,7 @@ import React from 'react';
 import {
   SecurityProvider,
   useSecurityContext,
-} from '../../src/cosec/SecurityContext';
+} from '../../src';
 import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
 import { InMemoryStorage } from '@ahoo-wang/fetcher-storage';
 import { ANONYMOUS_USER } from '../../src';

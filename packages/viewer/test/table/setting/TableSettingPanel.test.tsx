@@ -13,9 +13,12 @@
 
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { TableSettingPanel, ViewColumnDefinition } from '../../../src';
+import {
+  TableSettingPanel,
+  ViewColumnDefinition,
+  ViewerSharedValueProvider,
+} from '../../../src';
 import type { ViewColumn, ViewDefinition } from '../../../src';
-import ViewerSharedValueContext from '../../../src/viewer/ViewerSharedValueContext';
 import React from 'react';
 
 describe('TableSettingPanel', () => {
@@ -86,9 +89,9 @@ describe('TableSettingPanel', () => {
   };
 
   const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-    <ViewerSharedValueContext.Provider value={mockContextValue}>
+    <ViewerSharedValueProvider {...mockContextValue}>
       {children}
-    </ViewerSharedValueContext.Provider>
+    </ViewerSharedValueProvider>
   );
 
   const defaultProps = {
@@ -194,9 +197,9 @@ describe('TableSettingPanel', () => {
     };
 
     const { container } = render(
-      <ViewerSharedValueContext.Provider value={emptyContextValue}>
+      <ViewerSharedValueProvider {...emptyContextValue}>
         <TableSettingPanel {...defaultProps} />
-      </ViewerSharedValueContext.Provider>,
+      </ViewerSharedValueProvider>,
     );
     expect(container.firstChild).toBeTruthy();
   });
@@ -214,9 +217,9 @@ describe('TableSettingPanel', () => {
     };
 
     render(
-      <ViewerSharedValueContext.Provider value={fixedOnlyContextValue}>
+      <ViewerSharedValueProvider {...fixedOnlyContextValue}>
         <TableSettingPanel {...defaultProps} />
-      </ViewerSharedValueContext.Provider>,
+      </ViewerSharedValueProvider>,
     );
 
     expect(screen.getByText('Column 1')).toBeTruthy();
@@ -249,9 +252,9 @@ describe('TableSettingPanel', () => {
     };
 
     render(
-      <ViewerSharedValueContext.Provider value={hiddenOnlyContextValue}>
+      <ViewerSharedValueProvider {...hiddenOnlyContextValue}>
         <TableSettingPanel {...defaultProps} />
-      </ViewerSharedValueContext.Provider>,
+      </ViewerSharedValueProvider>,
     );
 
     expect(screen.getByText('Column 1')).toBeTruthy();
@@ -400,9 +403,9 @@ describe('TableSettingPanel', () => {
     };
 
     render(
-      <ViewerSharedValueContext.Provider value={uniqueContextValue}>
+      <ViewerSharedValueProvider {...uniqueContextValue}>
         <TableSettingPanel viewDefinition={uniqueViewDefinition} />
-      </ViewerSharedValueContext.Provider>,
+      </ViewerSharedValueProvider>,
     );
 
     // Verify all columns are rendered
