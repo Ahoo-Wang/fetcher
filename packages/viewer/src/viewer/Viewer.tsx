@@ -8,9 +8,9 @@ import {
 import { View, ViewColumn, ViewDefinition } from './';
 import styles from './Viewer.module.css';
 import { StyleCapable } from '../types';
-import ViewerSharedValueContext from './ViewerSharedValueContext';
+import { ViewerSharedValueProvider } from './ViewerSharedValueContext';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Condition, PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
+import { all, Condition, PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
 import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
 import { FetcherError } from '@ahoo-wang/fetcher';
 import {
@@ -91,7 +91,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
   const onPaginationChange = useCallback(
     (page: number, pageSize: number) => {
       setQuery({
-        ...getQuery(),
+        ...(getQuery() || { condition: all() }),
         pagination: { index: page, size: pageSize },
       });
       run();
@@ -104,18 +104,16 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
   }, [run]);
 
   return (
-    <ViewerSharedValueContext.Provider
-      value={{
-        aggregateName: definition.name,
-        viewName: view.name,
-        viewColumns: viewColumns,
-        setViewColumns: updateViewColumns,
-        showFilterPanel: showFilterPanel,
-        setShowFilterPanel: updateShowFilterPanel,
-        refreshData: refreshData,
-        tableSize: viewTableSize,
-        setTableSize: updateTableSize,
-      }}
+    <ViewerSharedValueProvider
+      aggregateName={definition.name}
+      viewName={view.name}
+      viewColumns={viewColumns}
+      setViewColumns={updateViewColumns}
+      showFilterPanel={showFilterPanel}
+      setShowFilterPanel={updateShowFilterPanel}
+      refreshData={refreshData}
+      tableSize={viewTableSize}
+      setTableSize={updateTableSize}
     >
       <Layout className={props.className} style={props.style}>
         <Sider className={styles.personalViews}>
@@ -168,6 +166,6 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
           </Content>
         </Layout>
       </Layout>
-    </ViewerSharedValueContext.Provider>
+    </ViewerSharedValueProvider>
   );
 }
