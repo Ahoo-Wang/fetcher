@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { ViewColumn, ViewDefinition } from './types';
+import { ViewColumn } from './types';
 import type { SizeType } from 'antd/es/config-provider/SizeContext';
 
 const ViewerSharedValueContext = createContext({

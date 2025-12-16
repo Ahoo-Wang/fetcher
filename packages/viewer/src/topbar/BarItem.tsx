@@ -1,4 +1,4 @@
-import React, { RefAttributes, useImperativeHandle, useState } from 'react';
+import React from 'react';
 import styles from './BarItem.module.css';
 
 export interface BarItemProps {

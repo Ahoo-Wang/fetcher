@@ -10,7 +10,7 @@ import styles from './Viewer.module.css';
 import { StyleCapable } from '../types';
 import ViewerSharedValueContext from './ViewerSharedValueContext';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { all, Condition, PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
+import { Condition, PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
 import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
 import { FetcherError } from '@ahoo-wang/fetcher';
 import {
@@ -33,9 +33,9 @@ export interface ViewerProps<RecordType> extends StyleCapable {
 }
 
 export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
-  const { name, view, definition, actionColumn, paginationProps } = props;
+  const { view, definition, actionColumn, paginationProps } = props;
 
-  const { loading, result, getQuery, setQuery, run } = useDebouncedFetcherQuery<
+  const { result, getQuery, setQuery, run } = useDebouncedFetcherQuery<
     PagedQuery,
     PagedList<RecordType>
   >({

@@ -14,7 +14,7 @@
 import { CellProps } from './types';
 import { Typography } from 'antd';
 import { TextProps } from 'antd/es/typography/Text';
-import dayjs, { Dayjs } from 'dayjs';
+import { Dayjs } from 'dayjs';
 import { parseDayjs } from './utils';
 
 const { Text } = Typography;

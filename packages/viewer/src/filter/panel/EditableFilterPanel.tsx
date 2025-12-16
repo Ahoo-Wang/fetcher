@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import React, { useState, Key, useRef } from 'react';
+import React, { useState, Key } from 'react';
 import { Button } from 'antd';
 import { AvailableFilterGroup, AvailableFilter } from './AvailableFilterSelect';
 import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
@@ -20,7 +20,6 @@ import {
   ActiveFilter,
   FilterPanelProps,
   FilterPanel,
-  FilterPanelRef,
 } from './FilterPanel';
 
 export interface EditableFilterPanelProps extends Omit<

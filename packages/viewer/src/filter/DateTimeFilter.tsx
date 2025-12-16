@@ -120,6 +120,7 @@ export function DateTimeFilter(props: FilterProps) {
     valueInputRender: (filterState: UseFilterStateReturn) => {
       switch (filterState.operator) {
         case Operator.BETWEEN: {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { placeholder, ...rangResetProps } = props.value || {};
           return (
             <DatePicker.RangePicker

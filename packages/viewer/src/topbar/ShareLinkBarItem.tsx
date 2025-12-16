@@ -1,7 +1,7 @@
 import { RefAttributes } from 'react';
 import { BarItem, BarItemRef } from './BarItem';
 import { TopBarItemProps } from './types';
-import { LinkOutlined, ReloadOutlined } from '@ant-design/icons';
+import { LinkOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 
 export const SHARE_LINK_BAR_ITEM_TYPE: string = 'share-link';
