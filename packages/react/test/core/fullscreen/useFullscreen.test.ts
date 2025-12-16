@@ -13,10 +13,9 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useFullscreen } from '../../../src';
 
 // Mock the utils module
-vi.mock('../../../src/components/fullscreen/utils', () => ({
+vi.mock('../../../src/core/fullscreen/utils', () => ({
   getFullscreenElement: vi.fn(),
   enterFullscreen: vi.fn(),
   exitFullscreen: vi.fn(),
@@ -29,7 +28,7 @@ import {
   enterFullscreen,
   exitFullscreen,
   addFullscreenChangeListener,
-  removeFullscreenChangeListener,
+  removeFullscreenChangeListener, useFullscreen,
 } from '../../../src';
 
 describe('useFullscreen hook', () => {
