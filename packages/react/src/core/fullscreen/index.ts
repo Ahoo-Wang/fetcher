@@ -11,4 +11,5 @@
  * limitations under the License.
  */
 
-export * from './Fullscreen';
+export * from './useFullscreen';
+export * from './utils';

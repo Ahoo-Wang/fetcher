@@ -13,8 +13,8 @@
 
 import { Button, ButtonProps } from 'antd';
 import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
-import { useFullscreen } from './useFullscreen';
 import { RefObject, ReactNode } from 'react';
+import { useFullscreen } from '@ahoo-wang/fetcher-react';
 
 export interface FullScreenProps extends Omit<
   ButtonProps,

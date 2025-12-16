@@ -33,7 +33,7 @@ import {
   exitFullscreen,
   addFullscreenChangeListener,
   removeFullscreenChangeListener,
-} from '../../../src/components/fullscreen/utils';
+} from '../../../../react/src/core/fullscreen/utils';
 
 const mockGetFullscreenElement = vi.mocked(getFullscreenElement);
 const mockEnterFullscreen = vi.mocked(enterFullscreen);
