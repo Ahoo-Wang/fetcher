@@ -12,8 +12,8 @@
  */
 
 import {
+  DEFAULT_INTERCEPTOR_ORDER_STEP,
   FetchExchange,
-  REQUEST_BODY_INTERCEPTOR_ORDER,
   type RequestInterceptor,
 } from '@ahoo-wang/fetcher';
 import { AppIdCapable, CoSecHeaders, DeviceIdStorageCapable } from './types';
@@ -21,7 +21,8 @@ import { idGenerator } from './idGenerator';
 
 export interface CoSecRequestOptions
   extends AppIdCapable,
-    DeviceIdStorageCapable {}
+    DeviceIdStorageCapable {
+}
 
 /**
  * The name of the CoSecRequestInterceptor.
@@ -30,10 +31,9 @@ export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
 
 /**
  * The order of the CoSecRequestInterceptor.
- * Set to REQUEST_BODY_INTERCEPTOR_ORDER + 1000 to ensure it runs after RequestBodyInterceptor.
  */
 export const COSEC_REQUEST_INTERCEPTOR_ORDER =
-  REQUEST_BODY_INTERCEPTOR_ORDER + 1000;
+  Number.MIN_SAFE_INTEGER + DEFAULT_INTERCEPTOR_ORDER_STEP;
 
 export const IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY = 'Ignore-Refresh-Token';
 

@@ -11,10 +11,12 @@
  * limitations under the License.
  */
 
-import { type RequestInterceptor } from './interceptor';
+import {
+  BUILT_IN_INTERCEPTOR_ORDER_STEP,
+  type RequestInterceptor,
+} from './interceptor';
 import { FetchExchange } from './fetchExchange';
 import { CONTENT_TYPE_HEADER, ContentTypeValues } from './fetchRequest';
-import { URL_RESOLVE_INTERCEPTOR_ORDER } from './urlResolveInterceptor';
 
 /**
  * The name of the RequestBodyInterceptor.
@@ -23,10 +25,8 @@ export const REQUEST_BODY_INTERCEPTOR_NAME = 'RequestBodyInterceptor';
 
 /**
  * The order of the RequestBodyInterceptor.
- * Set to URL_RESOLVE_INTERCEPTOR_ORDER + 1000 to ensure it runs early among request interceptors.
  */
-export const REQUEST_BODY_INTERCEPTOR_ORDER =
-  URL_RESOLVE_INTERCEPTOR_ORDER + 1000;
+export const REQUEST_BODY_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + BUILT_IN_INTERCEPTOR_ORDER_STEP;
 
 /**
  * Interceptor responsible for converting plain objects to JSON strings for HTTP request bodies.

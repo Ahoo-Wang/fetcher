@@ -15,6 +15,10 @@ import { type NamedCapable } from './types';
 import { type OrderedCapable, toSorted } from './orderedCapable';
 import { FetchExchange } from './fetchExchange';
 
+export const DEFAULT_INTERCEPTOR_ORDER_STEP = 1000;
+
+export const BUILT_IN_INTERCEPTOR_ORDER_STEP = DEFAULT_INTERCEPTOR_ORDER_STEP * 10;
+
 /**
  * Interface for HTTP interceptors in the fetcher pipeline.
  *
@@ -92,7 +96,8 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
  * };
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface RequestInterceptor extends Interceptor {}
+export interface RequestInterceptor extends Interceptor {
+}
 
 /**
  * Interface for response interceptors.
@@ -116,7 +121,8 @@ export interface RequestInterceptor extends Interceptor {}
  * };
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ResponseInterceptor extends Interceptor {}
+export interface ResponseInterceptor extends Interceptor {
+}
 
 /**
  * Interface for error interceptors.
@@ -145,7 +151,8 @@ export interface ResponseInterceptor extends Interceptor {}
  * };
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ErrorInterceptor extends Interceptor {}
+export interface ErrorInterceptor extends Interceptor {
+}
 
 /**
  * Registry for a collection of interceptors of the same type.

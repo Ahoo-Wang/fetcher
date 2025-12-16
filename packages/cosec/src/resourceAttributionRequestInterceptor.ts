@@ -11,7 +11,11 @@
  * limitations under the License.
  */
 
-import { FetchExchange, RequestInterceptor } from '@ahoo-wang/fetcher';
+import {
+  DEFAULT_INTERCEPTOR_ORDER_STEP,
+  FetchExchange,
+  RequestInterceptor, URL_RESOLVE_INTERCEPTOR_ORDER,
+} from '@ahoo-wang/fetcher';
 import { TokenStorage } from './tokenStorage';
 
 const TENANT_ID_PATH_KEY = 'tenantId';
@@ -44,7 +48,7 @@ export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME =
  * Order priority for the ResourceAttributionRequestInterceptor, set to maximum safe integer to ensure it runs last
  */
 export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER =
-  Number.MAX_SAFE_INTEGER;
+  URL_RESOLVE_INTERCEPTOR_ORDER - DEFAULT_INTERCEPTOR_ORDER_STEP;
 
 /**
  * Request interceptor that automatically adds tenant and owner ID path parameters to requests
@@ -52,8 +56,7 @@ export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER =
  * requests need to include tenant-specific information in the URL path.
  */
 export class ResourceAttributionRequestInterceptor
-  implements RequestInterceptor
-{
+  implements RequestInterceptor {
   readonly name = RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME;
   readonly order = RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER;
   private readonly tenantIdPathKey: string;
@@ -65,10 +68,10 @@ export class ResourceAttributionRequestInterceptor
    * @param options - Configuration options for resource attribution including tenantId, ownerId and tokenStorage
    */
   constructor({
-    tenantId = TENANT_ID_PATH_KEY,
-    ownerId = OWNER_ID_PATH_KEY,
-    tokenStorage,
-  }: ResourceAttributionOptions) {
+                tenantId = TENANT_ID_PATH_KEY,
+                ownerId = OWNER_ID_PATH_KEY,
+                tokenStorage,
+              }: ResourceAttributionOptions) {
     this.tenantIdPathKey = tenantId;
     this.ownerIdPathKey = ownerId;
     this.tokenStorage = tokenStorage;
