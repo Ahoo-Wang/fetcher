@@ -1,13 +1,13 @@
 import { TopBarItemProps } from './types';
-import { RefAttributes, useState } from 'react';
-import { BarItem, BarItemRef } from './BarItem';
+import { useState } from 'react';
+import { BarItem } from './BarItem';
 import { FilterOutlined } from '@ant-design/icons';
 import { useViewerSharedValue } from '../viewer';
 
 export const FILTER_BAR_ITEM_TYPE: string = 'filter';
 
 export interface FilterBarItemProps
-  extends TopBarItemProps, RefAttributes<BarItemRef> {}
+  extends TopBarItemProps {}
 
 export function FilterBarItem(props: FilterBarItemProps) {
   const { style, className } = props;

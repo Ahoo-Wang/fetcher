@@ -1,30 +1,8 @@
 import { AttributesCapable } from '../types';
 import { ActionsData } from './cell';
-import { ViewColumn, ViewColumnDefinition, ViewDefinition } from '../viewer';
+import { ViewDefinition } from '../viewer';
 import { TableProps } from 'antd';
-import { COLUMN_HEIGHT_TYPE } from '../topbar';
-
-/**
- * Configuration for a cell in a table column.
- *
- * @interface ColumnsCell
- *
- * @example
- * ```tsx
- * const textCell: ColumnsCell = {
- *   type: 'text'
- * };
- *
- * const linkCell: ColumnsCell = {
- *   type: 'link',
- *   attributes: { target: '_blank' }
- * };
- * ```
- */
-export interface ColumnsCell {
-  type: string;
-  attributes?: any;
-}
+import { SizeType } from 'antd/es/config-provider/SizeContext';
 
 /**
  * Definition for an action column in a view table.
@@ -70,27 +48,6 @@ export interface ViewTableActionColumn<RecordType = any> {
   configurePanelTitle?: string;
 }
 
-/**
- * Props for a view column with additional attributes capability.
- *
- * @interface ViewColumnProps
- * @extends AttributesCapable<any>
- * @extends ViewColumnDefinition
- *
- * @example
- * ```tsx
- * const columnProps: ViewColumnProps = {
- *   title: 'Name',
- *   dataIndex: 'name',
- *   cell: { type: 'text' },
- *   primaryKey: false,
- *   attributes: { width: 200, sorter: true }
- * };
- * ```
- */
-export interface ViewColumnProps extends ViewColumn {
-  columnDefinition: ViewColumnDefinition;
-}
 
 /**
  * Props for the ViewTable component.
@@ -137,5 +94,5 @@ export interface ViewTableProps<
   viewDefinition: ViewDefinition;
   dataSource: RecordType[];
   actionColumn?: ViewTableActionColumn<RecordType>;
-  tableSize?: COLUMN_HEIGHT_TYPE
+  tableSize?: SizeType
 }

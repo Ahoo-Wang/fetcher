@@ -1,6 +1,5 @@
 import { TopBarItemProps } from './types';
-import { RefAttributes } from 'react';
-import { BarItem, BarItemRef } from './BarItem';
+import { BarItem } from './BarItem';
 import { Dropdown, MenuProps } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
 import { useViewerSharedValue } from '../viewer';
@@ -9,7 +8,7 @@ import { SizeType } from 'antd/es/config-provider/SizeContext';
 export const COLUMN_HEIGHT_BAR_ITEM_TYPE: string = 'column-height';
 
 export interface ColumnHeightBarItemProps
-  extends TopBarItemProps, RefAttributes<BarItemRef> {}
+  extends TopBarItemProps {}
 
 export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
   const { className } = props;
