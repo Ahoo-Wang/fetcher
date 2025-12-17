@@ -54,7 +54,7 @@ const { Text } = Typography;
  * }
  * ```
  */
-export const CURRENCY_CELL_TYPE = 'currency';
+export const CURRENCY_CELL_TYPE: string = 'currency';
 
 /**
  * Attributes for currency cell formatting, extending TextProps with currency-specific options.
@@ -159,8 +159,11 @@ export interface CurrencyAttributes extends TextProps {
  * };
  * ```
  */
-export interface CurrencyCellProps<RecordType = any>
-  extends CellProps<number | string, RecordType, CurrencyAttributes> {}
+export interface CurrencyCellProps<RecordType = any> extends CellProps<
+  number | string,
+  RecordType,
+  CurrencyAttributes
+> {}
 
 /**
  * Renders a currency cell using the formatCurrency function and Ant Design's Typography.Text component.

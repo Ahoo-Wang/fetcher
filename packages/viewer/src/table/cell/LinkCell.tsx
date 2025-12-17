@@ -35,7 +35,7 @@ const { Link } = Typography;
  * const linkRenderer = typedCellRender(LINK_CELL_TYPE, { href: '#' });
  * ```
  */
-export const LINK_CELL_TYPE = 'link';
+export const LINK_CELL_TYPE: string = 'link';
 
 /**
  * Props for the LinkCell component, extending CellProps with string value type and LinkProps attributes.
@@ -62,9 +62,11 @@ export const LINK_CELL_TYPE = 'link';
  * };
  * ```
  */
-export interface LinkCellProps<RecordType = any>
-  extends CellProps<string, RecordType, LinkProps> {
-}
+export interface LinkCellProps<RecordType = any> extends CellProps<
+  string,
+  RecordType,
+  LinkProps
+> {}
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const EMAIL_PREFIX = 'mailto:';
@@ -131,9 +133,9 @@ export function LinkCell<RecordType = any>(props: LinkCellProps<RecordType>) {
   const linkProps = isEmail
     ? props.attributes
     : {
-      ...props.attributes,
-      ...(props.attributes?.target === undefined ? { target: '_blank' } : {}),
-    };
+        ...props.attributes,
+        ...(props.attributes?.target === undefined ? { target: '_blank' } : {}),
+      };
   return (
     <Link href={href} {...linkProps}>
       {props.attributes?.children ?? props.data.value}
