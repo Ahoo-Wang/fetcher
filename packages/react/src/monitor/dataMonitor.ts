@@ -38,9 +38,9 @@ const DEFAULT_MAX_RETRY_COUNT: number = 3;
  * ```
  */
 export interface DataMonitorOptions {
-  key: string;
-  maxRetryCount: number;
-  browserNotification: boolean;
+  key?: string;
+  maxRetryCount?: number;
+  browserNotification?: boolean;
 }
 
 /**
@@ -383,14 +383,10 @@ export class DataMonitor {
 
       return await exchange.requiredResponse.json();
     } catch (e) {
-      if (retry < this.options.maxRetryCount) {
+      if (retry < (this.options.maxRetryCount || 0)) {
         // Exponential backoff: wait 1s, 2s, 4s, etc.
-        setTimeout(
-          () => {
-            this.fetchLatestData(monitor, retry + 1);
-          },
-          1000 * (1 << retry),
-        );
+        await new Promise(resolve => setTimeout(resolve, 1000 * (1 << retry)));
+        return await this.fetchLatestData(monitor, retry + 1);
       } else {
         throw e;
       }
