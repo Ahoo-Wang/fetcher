@@ -36,7 +36,7 @@ import { PreviewGroupProps } from 'antd/es/image/PreviewGroup';
  * });
  * ```
  */
-export const IMAGE_GROUP_CELL_TYPE = 'image-group';
+export const IMAGE_GROUP_CELL_TYPE: string = 'image-group';
 
 /**
  * Props for the ImageGroupCell component, extending CellProps with string array value type and ImageProps attributes.

@@ -2,7 +2,6 @@ import { AttributesCapable } from '../types';
 import { ActionsData } from './cell';
 import { ViewColumn, ViewColumnDefinition, ViewDefinition } from '../viewer';
 import { TableProps } from 'antd';
-import { COLUMN_HEIGHT_TYPE } from '../topbar';
 
 /**
  * Configuration for a cell in a table column.
@@ -137,5 +136,4 @@ export interface ViewTableProps<
   viewDefinition: ViewDefinition;
   dataSource: RecordType[];
   actionColumn?: ViewTableActionColumn<RecordType>;
-  tableSize?: COLUMN_HEIGHT_TYPE
 }
