@@ -1,5 +1,5 @@
 import { KeyStorage, KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
-import { MonitorConfig } from './types';
+import { MonitorConfig, MonitorMap } from './types';
 import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,
@@ -9,10 +9,10 @@ import { DEFAULT_COSEC_TOKEN_KEY } from '@ahoo-wang/fetcher-cosec';
 export const DEFAULT_MONITOR_KEY = 'react-fetcher-monitor';
 
 export interface MonitorStorageOptions extends Partial<
-  Omit<KeyStorageOptions<Map<string, MonitorConfig>>, 'serializer'>
+  Omit<KeyStorageOptions<MonitorMap>, 'serializer'>
 > {}
 
-export class MonitorStorage extends KeyStorage<Map<string, MonitorConfig>> {
+export class MonitorStorage extends KeyStorage<MonitorMap> {
   constructor({
     key = DEFAULT_MONITOR_KEY,
     eventBus = new BroadcastTypedEventBus({
@@ -24,19 +24,19 @@ export class MonitorStorage extends KeyStorage<Map<string, MonitorConfig>> {
   }
 
   setMonitor(monitorState: MonitorConfig): void {
-    const monitors: Map<string, MonitorConfig> = this.get() ?? new Map();
-    monitors.set(monitorState.id, monitorState);
+    const monitors: MonitorMap = this.get() ?? {};
+    monitors[monitorState.id] = monitorState;
     this.set(monitors);
   }
 
   removeMonitor(id: string): void {
-    const monitors: Map<string, MonitorConfig> = this.get() ?? new Map();
-    monitors.delete(id);
+    const monitors = this.get() ?? {};
+    delete monitors[id];
     this.set(monitors);
   }
 
   getMonitor(id: string): MonitorConfig | undefined {
-    const monitors: Map<string, MonitorConfig> = this.get() ?? new Map();
-    return monitors.get(id);
+    const monitors = this.get() ?? {};
+    return monitors[id];
   }
 }
