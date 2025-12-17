@@ -12,7 +12,7 @@
  */
 
 import { RouteGuardProps } from './RouteGuard';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useCallback, useEffect } from 'react';
 import { JwtTokenManager } from '@ahoo-wang/fetcher-cosec';
 import { useSecurityContext } from './SecurityContext';
 
@@ -29,12 +29,19 @@ export function RefreshableRouteGuard({
                                       }: RefreshableRouteGuardProps) {
   const { authenticated } = useSecurityContext();
   const refreshable = tokenManager.isRefreshNeeded && tokenManager.isRefreshable;
-
-  useEffect(() => {
+  const refreshToken = useCallback(async () => {
     if (refreshable) {
-      tokenManager.refresh();
+      try {
+        await tokenManager.refresh();
+      } catch (error) {
+        console.error(error);
+      }
     }
   }, [refreshable, tokenManager]);
+
+  useEffect(() => {
+    refreshToken();
+  }, [refreshToken]);
 
   if (authenticated) {
     return <>{children}</>;
