@@ -12,514 +12,348 @@
  */
 
 import '@testing-library/jest-dom';
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { RefObject, ReactNode } from 'react';
 import { Fullscreen } from '../../../src';
-import { createRef } from 'react';
-import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
 
-// Mock the utils module
-vi.mock('../../../src/components/fullscreen/utils', () => ({
-  getFullscreenElement: vi.fn(),
-  enterFullscreen: vi.fn(),
-  exitFullscreen: vi.fn(),
-  addFullscreenChangeListener: vi.fn(),
-  removeFullscreenChangeListener: vi.fn(),
+// Mock the useFullscreen hook
+vi.mock('@ahoo-wang/fetcher-react', () => ({
+  useFullscreen: vi.fn(),
 }));
 
-import {
-  getFullscreenElement,
-  enterFullscreen,
-  exitFullscreen,
-  addFullscreenChangeListener,
-  removeFullscreenChangeListener,
-} from '../../../src/components/fullscreen/utils';
+import { useFullscreen } from '@ahoo-wang/fetcher-react';
 
-const mockGetFullscreenElement = vi.mocked(getFullscreenElement);
-const mockEnterFullscreen = vi.mocked(enterFullscreen);
-const mockExitFullscreen = vi.mocked(exitFullscreen);
-const mockAddFullscreenChangeListener = vi.mocked(addFullscreenChangeListener);
-const mockRemoveFullscreenChangeListener = vi.mocked(
-  removeFullscreenChangeListener,
-);
+const mockUseFullscreen = vi.mocked(useFullscreen);
 
-describe('Fullscreen component', () => {
-  let mockElement: HTMLElement;
-  let mockTargetRef: React.RefObject<HTMLElement>;
+describe('Fullscreen', () => {
+  let mockToggle: () => Promise<void>;
+  let mockTargetRef: RefObject<HTMLElement>;
 
   beforeEach(() => {
-    // Create real DOM elements and refs
-    mockElement = document.createElement('div');
-    document.body.appendChild(mockElement);
-    mockTargetRef = { current: mockElement };
+    mockToggle = vi.fn().mockResolvedValue(undefined);
+    mockTargetRef = { current: document.createElement('div') };
 
-    // Reset all mocks
-    vi.clearAllMocks();
-
-    // Default mock implementations
-    mockGetFullscreenElement.mockReturnValue(null);
-    mockEnterFullscreen.mockResolvedValue(undefined);
-    mockExitFullscreen.mockResolvedValue(undefined);
-    mockAddFullscreenChangeListener.mockImplementation(() => {});
-    mockRemoveFullscreenChangeListener.mockImplementation(() => {});
+    // Default mock implementation
+    mockUseFullscreen.mockReturnValue({
+      isFullscreen: false,
+      toggle: mockToggle,
+      enter: vi.fn(),
+      exit: vi.fn(),
+    });
   });
 
   afterEach(() => {
-    document.body.removeChild(mockElement);
+    vi.clearAllMocks();
   });
 
-  describe('basic rendering', () => {
-    it('renders a button with default props', () => {
-      render(<Fullscreen />);
-
-      const button = screen.getByRole('button');
-      expect(button).toBeInTheDocument();
-      expect(button).toHaveClass('ant-btn');
-    });
-
-    it('renders with correct display name', () => {
-      render(<Fullscreen />);
-
-      expect(Fullscreen.displayName).toBe('FullScreen');
-    });
-
-    it('renders enter icon by default', () => {
-      render(<Fullscreen />);
-
-      const button = screen.getByRole('button');
-      const icon = button.querySelector('.anticon-fullscreen');
-      expect(icon).toBeInTheDocument();
-    });
-
-    it('renders exit icon when in fullscreen mode', () => {
-      render(<Fullscreen />);
-
-      // Simulate entering fullscreen
-      mockGetFullscreenElement.mockReturnValue(document.documentElement);
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-      });
-
-      const button = screen.getByRole('button');
-      const icon = button.querySelector('.anticon-fullscreen-exit');
-      expect(icon).toBeInTheDocument();
-    });
+  it('renders without crashing', () => {
+    const { container } = render(<Fullscreen />);
+    expect(container.firstChild).toBeTruthy();
   });
 
-  describe('props handling', () => {
-    it('passes button props to underlying Button component', () => {
-      render(
-        <Fullscreen
-          type="primary"
-          size="large"
-          disabled
-          className="custom-class"
-          data-testid="fullscreen-btn"
-        />,
-      );
+  it('renders a Button component', () => {
+    render(<Fullscreen />);
+    const button = screen.getByRole('button');
+    expect(button).toBeInTheDocument();
+  });
 
-      const button = screen.getByTestId('fullscreen-btn');
-      expect(button).toHaveClass(
-        'ant-btn-primary',
-        'ant-btn-lg',
-        'custom-class',
-      );
-      expect(button).toBeDisabled();
+  it('passes through button props correctly', () => {
+    render(<Fullscreen type="primary" size="large" disabled />);
+    const button = screen.getByRole('button');
+
+    expect(button).toHaveClass('ant-btn-primary');
+    expect(button).toHaveClass('ant-btn-lg');
+    expect(button).toBeDisabled();
+  });
+
+  it('displays enter icon when not in fullscreen', () => {
+    mockUseFullscreen.mockReturnValue({
+      isFullscreen: false,
+      toggle: mockToggle,
+      enter: vi.fn(),
+      exit: vi.fn(),
     });
 
-    it('accepts custom enter icon', () => {
-      const customIcon = <span data-testid="custom-enter-icon">Enter</span>;
+    render(<Fullscreen />);
+    const button = screen.getByRole('button');
 
-      render(<Fullscreen enterIcon={customIcon} />);
+    // Check for fullscreen-outlined icon (default enter icon)
+    expect(button.querySelector('.anticon-fullscreen')).toBeInTheDocument();
+  });
 
-      const icon = screen.getByTestId('custom-enter-icon');
-      expect(icon).toBeInTheDocument();
+  it('displays exit icon when in fullscreen', () => {
+    mockUseFullscreen.mockReturnValue({
+      isFullscreen: true,
+      toggle: mockToggle,
+      enter: vi.fn(),
+      exit: vi.fn(),
     });
 
-    it('accepts custom exit icon', () => {
-      const customIcon = <span data-testid="custom-exit-icon">Exit</span>;
+    render(<Fullscreen />);
+    const button = screen.getByRole('button');
 
-      render(<Fullscreen exitIcon={customIcon} />);
+    // Check for fullscreen-exit-outlined icon (default exit icon)
+    expect(
+      button.querySelector('.anticon-fullscreen-exit'),
+    ).toBeInTheDocument();
+  });
 
-      // Simulate entering fullscreen to show exit icon
-      mockGetFullscreenElement.mockReturnValue(document.documentElement);
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-      });
+  it('uses custom enter icon', () => {
+    const customEnterIcon = <span data-testid="custom-enter">Enter</span>;
 
-      const icon = screen.getByTestId('custom-exit-icon');
-      expect(icon).toBeInTheDocument();
+    mockUseFullscreen.mockReturnValue({
+      isFullscreen: false,
+      toggle: mockToggle,
+      enter: vi.fn(),
+      exit: vi.fn(),
     });
 
-    it('passes target prop to useFullscreen hook', () => {
-      render(<Fullscreen target={mockTargetRef} />);
+    render(<Fullscreen enterIcon={customEnterIcon} />);
+    expect(screen.getByTestId('custom-enter')).toBeInTheDocument();
+  });
 
-      // The hook should be called with the target
-      // This is verified by the mock setup and the fact that enterFullscreen is called with mockElement
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
+  it('uses custom exit icon', () => {
+    const customExitIcon = <span data-testid="custom-exit">Exit</span>;
 
-      expect(mockEnterFullscreen).toHaveBeenCalledWith(mockElement);
+    mockUseFullscreen.mockReturnValue({
+      isFullscreen: true,
+      toggle: mockToggle,
+      enter: vi.fn(),
+      exit: vi.fn(),
     });
 
-    it('passes onChange callback to useFullscreen hook', () => {
-      const onChange = vi.fn();
+    render(<Fullscreen exitIcon={customExitIcon} />);
+    expect(screen.getByTestId('custom-exit')).toBeInTheDocument();
+  });
 
-      render(<Fullscreen onChange={onChange} />);
+  it('calls toggle function when button is clicked', async () => {
+    render(<Fullscreen />);
 
-      // Simulate fullscreen change
-      mockGetFullscreenElement.mockReturnValue(document.documentElement);
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-      });
+    const button = screen.getByRole('button');
+    await fireEvent.click(button);
 
-      expect(onChange).toHaveBeenCalledWith(true);
+    expect(mockToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes target and onChange to useFullscreen hook', () => {
+    const onChange = vi.fn();
+
+    render(<Fullscreen target={mockTargetRef} onChange={onChange} />);
+
+    expect(mockUseFullscreen).toHaveBeenCalledWith({
+      target: mockTargetRef,
+      onChange,
     });
   });
 
-  describe('user interactions', () => {
-    it('calls toggle function when button is clicked', () => {
-      render(<Fullscreen />);
+  it('handles undefined target gracefully', () => {
+    render(<Fullscreen target={undefined} />);
 
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
-
-      expect(mockEnterFullscreen).toHaveBeenCalledWith(
-        document.documentElement,
-      );
-    });
-
-    it('calls exit when in fullscreen and clicked', () => {
-      render(<Fullscreen />);
-
-      // Enter fullscreen first
-      mockGetFullscreenElement.mockReturnValue(document.documentElement);
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-      });
-
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
-
-      expect(mockExitFullscreen).toHaveBeenCalledTimes(1);
-    });
-
-    it('toggles between enter and exit calls', () => {
-      render(<Fullscreen />);
-
-      const button = screen.getByRole('button');
-
-      // First click: should call enter
-      fireEvent.click(button);
-      expect(mockEnterFullscreen).toHaveBeenCalledTimes(1);
-      expect(mockExitFullscreen).not.toHaveBeenCalled();
-
-      // Simulate entering fullscreen (change component state)
-      mockGetFullscreenElement.mockReturnValue(document.documentElement);
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-      });
-
-      // Second click: should call exit
-      fireEvent.click(button);
-      expect(mockExitFullscreen).toHaveBeenCalledTimes(1);
-      expect(mockEnterFullscreen).toHaveBeenCalledTimes(1);
+    expect(mockUseFullscreen).toHaveBeenCalledWith({
+      target: undefined,
+      onChange: undefined,
     });
   });
 
-  describe('icon switching behavior', () => {
-    it('switches from enter to exit icon when entering fullscreen', () => {
-      render(<Fullscreen />);
+  it('handles null target ref gracefully', () => {
+    const nullRef = { current: null };
 
-      // Initially shows enter icon
-      let button = screen.getByRole('button');
-      expect(button.querySelector('.anticon-fullscreen')).toBeInTheDocument();
-      expect(
-        button.querySelector('.anticon-fullscreen-exit'),
-      ).not.toBeInTheDocument();
+    render(<Fullscreen target={nullRef} />);
 
-      // Enter fullscreen
-      mockGetFullscreenElement.mockReturnValue(document.documentElement);
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-      });
-
-      // Should show exit icon
-      button = screen.getByRole('button');
-      expect(
-        button.querySelector('.anticon-fullscreen'),
-      ).not.toBeInTheDocument();
-      expect(
-        button.querySelector('.anticon-fullscreen-exit'),
-      ).toBeInTheDocument();
-    });
-
-    it('shows exit icon when in fullscreen mode', () => {
-      render(<Fullscreen />);
-
-      // Initially shows enter icon
-      let button = screen.getByRole('button');
-      expect(button.querySelector('.anticon-fullscreen')).toBeInTheDocument();
-
-      // Simulate entering fullscreen
-      mockGetFullscreenElement.mockReturnValue(document.documentElement);
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-      });
-
-      // Should show exit icon
-      button = screen.getByRole('button');
-      expect(
-        button.querySelector('.anticon-fullscreen-exit'),
-      ).toBeInTheDocument();
-      expect(
-        button.querySelector('.anticon-fullscreen'),
-      ).not.toBeInTheDocument();
-    });
-
-    it('uses custom icons correctly', () => {
-      const enterIcon = <span data-testid="enter">Enter FS</span>;
-      const exitIcon = <span data-testid="exit">Exit FS</span>;
-
-      render(<Fullscreen enterIcon={enterIcon} exitIcon={exitIcon} />);
-
-      // Initially shows custom enter icon
-      expect(screen.getByTestId('enter')).toBeInTheDocument();
-      expect(screen.queryByTestId('exit')).not.toBeInTheDocument();
-
-      // Enter fullscreen
-      mockGetFullscreenElement.mockReturnValue(document.documentElement);
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-      });
-
-      // Should show custom exit icon
-      expect(screen.queryByTestId('enter')).not.toBeInTheDocument();
-      expect(screen.getByTestId('exit')).toBeInTheDocument();
+    expect(mockUseFullscreen).toHaveBeenCalledWith({
+      target: nullRef,
+      onChange: undefined,
     });
   });
 
-  describe('target element handling', () => {
-    it('uses target element when provided', () => {
-      render(<Fullscreen target={mockTargetRef} />);
+  it('passes onChange callback correctly', () => {
+    const onChange = vi.fn();
 
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
+    render(<Fullscreen onChange={onChange} />);
 
-      expect(mockEnterFullscreen).toHaveBeenCalledWith(mockElement);
-    });
-
-    it('uses document.documentElement when no target provided', () => {
-      render(<Fullscreen />);
-
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
-
-      expect(mockEnterFullscreen).toHaveBeenCalledWith(
-        document.documentElement,
-      );
-    });
-
-    it('uses document.documentElement when target.current is null', () => {
-      const nullRef = createRef<HTMLElement>();
-      nullRef.current = null;
-
-      render(<Fullscreen target={nullRef} />);
-
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
-
-      expect(mockEnterFullscreen).toHaveBeenCalledWith(
-        document.documentElement,
-      );
-    });
-
-    it('handles target element becoming null during lifecycle', () => {
-      render(<Fullscreen target={mockTargetRef} />);
-
-      // Simulate target becoming null
-      (mockTargetRef as any).current = null;
-
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
-
-      expect(mockEnterFullscreen).toHaveBeenCalledWith(
-        document.documentElement,
-      );
+    expect(mockUseFullscreen).toHaveBeenCalledWith({
+      target: undefined,
+      onChange,
     });
   });
 
-  describe('callback handling', () => {
-    it('calls onChange when fullscreen state changes', () => {
-      const onChange = vi.fn();
+  it('does not pass excluded props to Button', () => {
+    render(
+      <Fullscreen
+        icon={<span />}
+        onClick={() => {}}
+        onChange={() => {}}
+        target={mockTargetRef}
+      />,
+    );
 
-      render(<Fullscreen onChange={onChange} />);
+    const button = screen.getByRole('button');
 
-      // Enter fullscreen
-      mockGetFullscreenElement.mockReturnValue(document.documentElement);
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-      });
+    // These props should not be passed to Button
+    expect(button).not.toHaveAttribute('icon');
+    expect(button).not.toHaveAttribute('onClick');
+    expect(button).not.toHaveAttribute('onChange');
+    expect(button).not.toHaveAttribute('target');
+  });
 
-      expect(onChange).toHaveBeenCalledWith(true);
-      expect(onChange).toHaveBeenCalledTimes(1);
+  it('handles multiple prop combinations', () => {
+    const onChange = vi.fn();
+    const customEnterIcon = <span>Custom Enter</span>;
+    const customExitIcon = <span>Custom Exit</span>;
+
+    mockUseFullscreen.mockReturnValue({
+      isFullscreen: false,
+      toggle: mockToggle,
+      enter: vi.fn(),
+      exit: vi.fn(),
     });
 
-    it('does not call onChange when state does not change', () => {
-      const onChange = vi.fn();
+    render(
+      <Fullscreen
+        target={mockTargetRef}
+        onChange={onChange}
+        enterIcon={customEnterIcon}
+        exitIcon={customExitIcon}
+        type="primary"
+        size="small"
+        className="custom-class"
+      />,
+    );
 
-      render(<Fullscreen onChange={onChange} />);
+    const button = screen.getByRole('button');
 
-      // Same state multiple times
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-        callback();
-      });
+    expect(button).toHaveClass('ant-btn-primary');
+    expect(button).toHaveClass('ant-btn-sm');
+    expect(button).toHaveClass('custom-class');
+    expect(screen.getByText('Custom Enter')).toBeInTheDocument();
 
-      expect(onChange).not.toHaveBeenCalled();
-    });
-
-    it('handles onChange callback throwing error gracefully', () => {
-      const onChange = vi.fn().mockImplementation(() => {
-        throw new Error('Callback error');
-      });
-
-      render(<Fullscreen onChange={onChange} />);
-
-      expect(() => {
-        mockGetFullscreenElement.mockReturnValue(document.documentElement);
-        act(() => {
-          const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-          callback();
-        });
-      }).toThrow('Callback error');
+    expect(mockUseFullscreen).toHaveBeenCalledWith({
+      target: mockTargetRef,
+      onChange,
     });
   });
 
-  describe('accessibility', () => {
-    it('renders button with proper role', () => {
-      render(<Fullscreen />);
-
-      const button = screen.getByRole('button');
-      expect(button).toBeInTheDocument();
+  it('maintains button functionality with various states', async () => {
+    // Test with fullscreen true
+    mockUseFullscreen.mockReturnValue({
+      isFullscreen: true,
+      toggle: mockToggle,
+      enter: vi.fn(),
+      exit: vi.fn(),
     });
 
-    it('maintains button accessibility when disabled', () => {
-      render(<Fullscreen disabled />);
+    const { rerender } = render(<Fullscreen />);
+    let button = screen.getByRole('button');
 
-      const button = screen.getByRole('button');
-      expect(button).toBeDisabled();
+    expect(
+      button.querySelector('.anticon-fullscreen-exit'),
+    ).toBeInTheDocument();
+
+    await fireEvent.click(button);
+    expect(mockToggle).toHaveBeenCalledTimes(1);
+
+    // Test with fullscreen false
+    mockUseFullscreen.mockReturnValue({
+      isFullscreen: false,
+      toggle: mockToggle,
+      enter: vi.fn(),
+      exit: vi.fn(),
     });
 
-    it('supports custom aria-label', () => {
-      render(<Fullscreen aria-label="Toggle fullscreen" />);
+    rerender(<Fullscreen />);
+    button = screen.getByRole('button');
 
-      const button = screen.getByLabelText('Toggle fullscreen');
-      expect(button).toBeInTheDocument();
+    expect(button.querySelector('.anticon-fullscreen')).toBeInTheDocument();
+  });
+
+  it('handles async toggle function', async () => {
+    mockToggle.mockImplementation(
+      () => new Promise(resolve => setTimeout(resolve, 10)),
+    );
+
+    render(<Fullscreen />);
+
+    const button = screen.getByRole('button');
+    await fireEvent.click(button);
+
+    expect(mockToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles toggle function throwing error', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    mockToggle.mockRejectedValue(new Error('Fullscreen failed'));
+
+    render(<Fullscreen />);
+
+    const button = screen.getByRole('button');
+    await fireEvent.click(button);
+
+    expect(mockToggle).toHaveBeenCalledTimes(1);
+    // Error should be handled by the hook, not bubble up
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('has correct displayName', () => {
+    expect(Fullscreen.displayName).toBe('FullScreen');
+  });
+
+  // Edge cases and error conditions
+  it('handles undefined enterIcon gracefully', () => {
+    mockUseFullscreen.mockReturnValue({
+      isFullscreen: false,
+      toggle: mockToggle,
+      enter: vi.fn(),
+      exit: vi.fn(),
+    });
+
+    render(<Fullscreen enterIcon={undefined} />);
+
+    const button = screen.getByRole('button');
+    expect(button.querySelector('.anticon-fullscreen')).toBeInTheDocument();
+  });
+
+  it('handles undefined exitIcon gracefully', () => {
+    mockUseFullscreen.mockReturnValue({
+      isFullscreen: true,
+      toggle: mockToggle,
+      enter: vi.fn(),
+      exit: vi.fn(),
+    });
+
+    render(<Fullscreen exitIcon={undefined} />);
+
+    const button = screen.getByRole('button');
+    expect(
+      button.querySelector('.anticon-fullscreen-exit'),
+    ).toBeInTheDocument();
+  });
+
+  it('handles null onChange callback', () => {
+    render(<Fullscreen onChange={null as any} />);
+
+    expect(mockUseFullscreen).toHaveBeenCalledWith({
+      target: undefined,
+      onChange: null,
     });
   });
 
-  describe('edge cases', () => {
-    it('handles rapid state changes', () => {
-      const onChange = vi.fn();
+  it('renders with minimal props', () => {
+    render(<Fullscreen />);
 
-      render(<Fullscreen onChange={onChange} />);
-
-      // Rapid fullscreen changes
-      mockGetFullscreenElement.mockReturnValue(document.documentElement);
-      act(() => {
-        const callback = mockAddFullscreenChangeListener.mock.calls[0][0];
-        callback();
-      });
-
-      expect(onChange).toHaveBeenCalledWith(true);
-      expect(onChange).toHaveBeenCalledTimes(1);
-    });
-
-    it('handles component unmounting', () => {
-      const { unmount } = render(<Fullscreen />);
-
-      unmount();
-
-      expect(mockRemoveFullscreenChangeListener).toHaveBeenCalledTimes(1);
-    });
-
-    it('handles re-rendering with different props', () => {
-      const { rerender } = render(<Fullscreen />);
-
-      // Re-render with different props
-      rerender(<Fullscreen type="primary" />);
-
-      const button = screen.getByRole('button');
-      expect(button).toHaveClass('ant-btn-primary');
-    });
-
-    it('handles undefined target prop', () => {
-      render(<Fullscreen target={undefined} />);
-
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
-
-      expect(mockEnterFullscreen).toHaveBeenCalledWith(
-        document.documentElement,
-      );
-    });
-
-    it('works with real DOM elements', () => {
-      const realElement = document.createElement('div');
-      document.body.appendChild(realElement);
-      const realRef = createRef<HTMLElement>();
-      realRef.current = realElement;
-
-      render(<Fullscreen target={realRef} />);
-
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
-
-      expect(mockEnterFullscreen).toHaveBeenCalledWith(realElement);
-
-      document.body.removeChild(realElement);
-    });
+    const button = screen.getByRole('button');
+    expect(button).toBeInTheDocument();
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveClass('ant-btn');
   });
 
-  describe('integration with Antd Button', () => {
-    it('passes button props to underlying Button component', () => {
-      render(<Fullscreen type="primary" size="large" loading disabled />);
+  it('maintains accessibility', () => {
+    render(<Fullscreen aria-label="Toggle fullscreen" />);
 
-      const button = screen.getByRole('button');
-      expect(button).toHaveClass(
-        'ant-btn',
-        'ant-btn-primary',
-        'ant-btn-lg',
-        'ant-btn-loading',
-      );
-      expect(button).toBeDisabled();
-    });
-
-    it('excludes invalid props from Button', () => {
-      // These props should not be passed to Button
-      render(
-        <Fullscreen
-          target={mockTargetRef}
-          onChange={() => {}}
-          enterIcon={<div />}
-          exitIcon={<div />}
-        />,
-      );
-
-      const button = screen.getByRole('button');
-      expect(button).toBeInTheDocument();
-      // Component should render without errors despite these props
-    });
+    const button = screen.getByRole('button');
+    expect(button).toHaveAttribute('aria-label', 'Toggle fullscreen');
   });
 });

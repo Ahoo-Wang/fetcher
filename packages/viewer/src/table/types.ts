@@ -2,7 +2,28 @@ import { AttributesCapable } from '../types';
 import { ActionsData } from './cell';
 import { ViewDefinition } from '../viewer';
 import { TableProps } from 'antd';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
+
+/**
+ * Configuration for a cell in a table column.
+ *
+ * @interface ColumnsCell
+ *
+ * @example
+ * ```tsx
+ * const textCell: ColumnsCell = {
+ *   type: 'text'
+ * };
+ *
+ * const linkCell: ColumnsCell = {
+ *   type: 'link',
+ *   attributes: { target: '_blank' }
+ * };
+ * ```
+ */
+export interface ColumnsCell {
+  type: string;
+  attributes?: any;
+}
 
 /**
  * Definition for an action column in a view table.
@@ -47,7 +68,6 @@ export interface ViewTableActionColumn<RecordType = any> {
   configurable: boolean;
   configurePanelTitle?: string;
 }
-
 
 /**
  * Props for the ViewTable component.
@@ -94,5 +114,4 @@ export interface ViewTableProps<
   viewDefinition: ViewDefinition;
   dataSource: RecordType[];
   actionColumn?: ViewTableActionColumn<RecordType>;
-  tableSize?: SizeType
 }

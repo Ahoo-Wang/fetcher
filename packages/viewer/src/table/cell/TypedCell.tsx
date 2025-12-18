@@ -22,8 +22,6 @@ import { CellData } from './types';
  * specific cell rendering components from the cell registry.
  * Common types include 'text', 'number', 'date', etc.
  *
- * @typedef {string} CellType
- *
  * @example
  * ```tsx
  * const textType: CellType = 'text';
@@ -40,7 +38,6 @@ export type CellType = string;
  * or asynchronous for cases requiring data fetching or complex computations.
  *
  * @template RecordType - The type of the record containing the cell data.
- * @typedef CellRenderer
  * @param value - The value to render in the cell. Can be any type depending on the cell implementation.
  * @param record - The full record object providing context for the cell rendering.
  * @param index - The zero-based index of the row in the table.

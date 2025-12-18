@@ -57,8 +57,8 @@ export class InterceptorManager {
    * 3. FetchInterceptor (order: Number.MAX_SAFE_INTEGER) - Executes the actual HTTP request
    */
   readonly request: InterceptorRegistry = new InterceptorRegistry([
-    new UrlResolveInterceptor(),
     new RequestBodyInterceptor(),
+    new UrlResolveInterceptor(),
     new FetchInterceptor(),
   ]);
 

@@ -7,8 +7,7 @@ import { SizeType } from 'antd/es/config-provider/SizeContext';
 
 export const COLUMN_HEIGHT_BAR_ITEM_TYPE: string = 'column-height';
 
-export interface ColumnHeightBarItemProps
-  extends TopBarItemProps {}
+export interface ColumnHeightBarItemProps extends TopBarItemProps {}
 
 export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
   const { className } = props;

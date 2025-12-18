@@ -11,8 +11,12 @@
  * limitations under the License.
  */
 
-import { type RequestInterceptor } from './interceptor';
+import {
+  BUILT_IN_INTERCEPTOR_ORDER_STEP,
+  type RequestInterceptor,
+} from './interceptor';
 import { FetchExchange } from './fetchExchange';
+import { FETCH_INTERCEPTOR_ORDER } from './fetchInterceptor';
 
 /**
  * The name of the UrlResolveInterceptor.
@@ -21,9 +25,8 @@ export const URL_RESOLVE_INTERCEPTOR_NAME = 'UrlResolveInterceptor';
 
 /**
  * The order of the UrlResolveInterceptor.
- * Set to Number.MIN_SAFE_INTEGER + 1000 to ensure it runs earliest among request interceptors.
  */
-export const URL_RESOLVE_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + 1000;
+export const URL_RESOLVE_INTERCEPTOR_ORDER = FETCH_INTERCEPTOR_ORDER - BUILT_IN_INTERCEPTOR_ORDER_STEP;
 
 /**
  * Interceptor responsible for resolving the final URL for a request.

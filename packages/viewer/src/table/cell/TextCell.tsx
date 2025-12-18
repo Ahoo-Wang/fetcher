@@ -35,7 +35,7 @@ const { Text } = Typography;
  * const textRenderer = typedCellRender(TEXT_CELL_TYPE, { ellipsis: true });
  * ```
  */
-export const TEXT_CELL_TYPE = 'text';
+export const TEXT_CELL_TYPE: string = 'text';
 
 /**
  * Props for the TextCell component, extending CellProps with string value type and TextProps attributes.

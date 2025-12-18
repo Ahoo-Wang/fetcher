@@ -12,6 +12,7 @@
  */
 
 export * from './debounced';
+export * from './fullscreen';
 export * from './useExecutePromise';
 export * from './usePromiseState';
 export * from './useRequestId';

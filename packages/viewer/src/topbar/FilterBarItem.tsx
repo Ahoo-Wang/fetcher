@@ -6,8 +6,7 @@ import { useViewerSharedValue } from '../viewer';
 
 export const FILTER_BAR_ITEM_TYPE: string = 'filter';
 
-export interface FilterBarItemProps
-  extends TopBarItemProps {}
+export interface FilterBarItemProps extends TopBarItemProps {}
 
 export function FilterBarItem(props: FilterBarItemProps) {
   const { style, className } = props;

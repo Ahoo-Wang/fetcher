@@ -39,7 +39,7 @@ const { Text } = Typography;
  * });
  * ```
  */
-export const DATETIME_CELL_TYPE = 'datetime';
+export const DATETIME_CELL_TYPE: string = 'datetime';
 
 /**
  * Props for the DateTimeCell component, extending CellProps with datetime value type and TextProps attributes.
@@ -69,13 +69,11 @@ export const DATETIME_CELL_TYPE = 'datetime';
  * };
  * ```
  */
-export interface DateTimeCellProps<RecordType = any>
-  extends CellProps<
-    string | number | Date | Dayjs,
-    RecordType,
-    TextProps & { format?: string | ((dayjs: Dayjs) => string) }
-  > {
-}
+export interface DateTimeCellProps<RecordType = any> extends CellProps<
+  string | number | Date | Dayjs,
+  RecordType,
+  TextProps & { format?: string | ((dayjs: Dayjs) => string) }
+> {}
 
 export const DEFAULT_DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 

@@ -37,7 +37,7 @@ import { SpaceProps } from 'antd/es/space';
  * });
  * ```
  */
-export const TAGS_CELL_TYPE = 'tags';
+export const TAGS_CELL_TYPE: string = 'tags';
 
 /**
  * Props for the TagsCell component, extending CellProps with string array value type and tag attributes mapping.

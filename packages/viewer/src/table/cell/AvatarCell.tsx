@@ -36,7 +36,7 @@ import { isValidImageSrc } from './utils';
  * });
  * ```
  */
-export const AVATAR_CELL_TYPE = 'avatar';
+export const AVATAR_CELL_TYPE: string = 'avatar';
 
 /**
  * Props for the AvatarCell component, extending CellProps with string value type and AvatarProps attributes.
@@ -66,8 +66,11 @@ export const AVATAR_CELL_TYPE = 'avatar';
  * };
  * ```
  */
-export interface AvatarCellProps<RecordType = any>
-  extends CellProps<string, RecordType, AvatarProps> {}
+export interface AvatarCellProps<RecordType = any> extends CellProps<
+  string,
+  RecordType,
+  AvatarProps
+> {}
 
 /**
  * Renders an avatar cell using Ant Design's Avatar component.
