@@ -228,6 +228,11 @@ export class DataMonitor {
    * ```
    */
   async registerMonitor(monitorConfig: MonitorConfig): Promise<void> {
+    const currentMonitor = this.monitors[monitorConfig.id];
+    if (currentMonitor) {
+      this.stopMonitoring(currentMonitor);
+    }
+
     // fetch latestData
     monitorConfig.latestData = await this.fetchLatestData(monitorConfig);
     // persist monitorConfig

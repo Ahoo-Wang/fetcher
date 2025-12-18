@@ -14,8 +14,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { TableSettingPanel } from '../TableSettingPanel';
-import { TEXT_CELL_TYPE, TAG_CELL_TYPE, CURRENCY_CELL_TYPE } from '../../cell';
-import { ViewColumn } from '../../types';
+import { ViewColumn } from '../../../viewer';
 
 const meta: Meta = {
   title: 'Viewer/Table/Setting/TableSettingPanel',
@@ -52,56 +51,31 @@ type Story = StoryObj<typeof meta>;
 
 const sampleColumns: (ViewColumn & { index: number })[] = [
   {
-    columnDefinition: {
-      title: 'ID',
-      dataIndex: 'id',
-      cell: { type: TEXT_CELL_TYPE },
-      primaryKey: true,
-    },
+    dataIndex: 'id',
     visible: true,
     fixed: true,
     index: 0,
   },
   {
-    columnDefinition: {
-      title: 'Product Name',
-      dataIndex: 'name',
-      cell: { type: TEXT_CELL_TYPE },
-      primaryKey: false,
-    },
+    dataIndex: 'name',
     visible: true,
     fixed: false,
     index: 1,
   },
   {
-    columnDefinition: {
-      title: 'Category',
-      dataIndex: 'category',
-      cell: { type: TAG_CELL_TYPE },
-      primaryKey: false,
-    },
+    dataIndex: 'category',
     visible: true,
     fixed: false,
     index: 2,
   },
   {
-    columnDefinition: {
-      title: 'Price',
-      dataIndex: 'price',
-      cell: { type: CURRENCY_CELL_TYPE },
-      primaryKey: false,
-    },
+    dataIndex: 'price',
     visible: false,
     fixed: false,
     index: 3,
   },
   {
-    columnDefinition: {
-      title: 'Status',
-      dataIndex: 'status',
-      cell: { type: TAG_CELL_TYPE },
-      primaryKey: false,
-    },
+    dataIndex: 'status',
     visible: false,
     fixed: false,
     index: 4,
@@ -139,7 +113,7 @@ export const WithHiddenColumns: Story = {
       { ...sampleColumns[2], visible: false },
       { ...sampleColumns[3], visible: true },
       { ...sampleColumns[4], visible: false },
-    ]
+    ],
   },
   render: args => <TableSettingPanelWrapper {...args} />,
 };

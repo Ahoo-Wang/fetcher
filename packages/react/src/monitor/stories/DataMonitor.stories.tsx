@@ -12,7 +12,7 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { DataMonitor } from '../dataMonitor';
 import { DataUpdatedEvent, MonitorConfig, NotifyContent } from '../types';
 import {
@@ -21,17 +21,13 @@ import {
   List,
   Space,
   Typography,
-  Alert,
   Badge,
   Statistic,
   Row,
   Col,
   Tag,
-  Switch,
   InputNumber,
-  Divider,
 } from 'antd';
-import { ResultExtractors } from '@ahoo-wang/fetcher';
 import { useEventSubscription } from '../../eventbus';
 
 const { Title, Text, Paragraph } = Typography;
@@ -99,8 +95,6 @@ const DataMonitorDemo: React.FC = () => {
   });
 
   const startMonitoring = async () => {
-    if (!monitor) return;
-
     const monitorConfig: MonitorConfig<Weather> = {
       id: 'posts-monitor',
       fetchRequest: {

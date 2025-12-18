@@ -33,7 +33,7 @@ import { CellProps } from './types';
  * const tagRenderer = typedCellRender(TAG_CELL_TYPE, { color: 'blue' });
  * ```
  */
-export const TAG_CELL_TYPE = 'tag';
+export const TAG_CELL_TYPE: string = 'tag';
 
 /**
  * Props for the TagCell component, extending CellProps with string value type and TagProps attributes.

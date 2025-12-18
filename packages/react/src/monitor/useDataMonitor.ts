@@ -2,6 +2,8 @@ import { DataUpdatedEvent, MonitorConfig, MonitorState } from './types';
 import { useDataMonitorContext } from './DataMonitorContext';
 import { useEventSubscription } from '../eventbus';
 
+const DEFAULT_EVENT_HANDLE_NAME: string = 'use-data-monitor-handler';
+
 /**
  * Return type for the useDataMonitor hook.
  * Provides methods to interact with the DataMonitor instance.
@@ -40,6 +42,7 @@ export interface UseDataMonitorReturn {
  * ```
  */
 export interface UseDataMonitorOptions {
+  handlerName?: string;
   eventHandler?: (event: DataUpdatedEvent) => void;
 }
 
@@ -93,7 +96,7 @@ export function useDataMonitor(
   useEventSubscription({
     bus: monitor.eventBus,
     handler: {
-      name: 'demo-notification',
+      name: options?.handlerName ?? DEFAULT_EVENT_HANDLE_NAME,
       order: 1,
       handle: (event: DataUpdatedEvent) => {
         if (options?.eventHandler) {
@@ -104,8 +107,9 @@ export function useDataMonitor(
   });
 
   return {
-    getMonitor: monitor.getMonitor,
-    register: monitor.registerMonitor,
-    unregister: monitor.unregisterMonitor,
+    getMonitor: (id: string) => monitor.getMonitor(id),
+    register: (monitorConfig: MonitorConfig) =>
+      monitor.registerMonitor(monitorConfig),
+    unregister: (id: string) => monitor.unregisterMonitor(id),
   };
 }
