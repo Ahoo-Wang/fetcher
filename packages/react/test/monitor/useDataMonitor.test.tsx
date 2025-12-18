@@ -128,7 +128,7 @@ describe('useDataMonitor', () => {
     expect(mockUseEventSubscription).toHaveBeenCalledWith({
       bus: mockEventBus,
       handler: {
-        name: 'demo-notification',
+        name: 'use-data-monitor-handler',
         order: 1,
         handle: expect.any(Function),
       },
@@ -150,7 +150,7 @@ describe('useDataMonitor', () => {
     expect(mockUseEventSubscription).toHaveBeenCalledWith({
       bus: mockEventBus,
       handler: {
-        name: 'demo-notification',
+        name: 'use-data-monitor-handler',
         order: 1,
         handle: expect.any(Function),
       },
@@ -306,7 +306,7 @@ describe('useDataMonitor', () => {
     expect(mockUseEventSubscription).toHaveBeenCalledWith({
       bus: mockEventBus,
       handler: {
-        name: 'demo-notification',
+        name: 'use-data-monitor-handler',
         order: 1,
         handle: expect.any(Function),
       },
