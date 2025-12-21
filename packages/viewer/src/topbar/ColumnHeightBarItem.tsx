@@ -12,7 +12,7 @@ export interface ColumnHeightBarItemProps extends TopBarItemProps {}
 export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
   const { className } = props;
 
-  const { tableSize, setTableSize } = useViewerSharedValue();
+  const { view, actions } = useViewerSharedValue();
 
   const items: MenuProps['items'] = [
     {
@@ -26,7 +26,7 @@ export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
   ];
 
   const handleSelect = ({ key }: { key: string }) => {
-    setTableSize(key as SizeType);
+    actions.updateTableSize(key as SizeType);
   };
 
   return (
@@ -35,7 +35,7 @@ export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
       menu={{
         items,
         selectable: true,
-        defaultSelectedKeys: [tableSize || 'middle'],
+        defaultSelectedKeys: [view.tableSize || 'middle'],
         onSelect: handleSelect,
       }}
       trigger={['click']}

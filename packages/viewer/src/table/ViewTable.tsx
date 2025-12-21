@@ -4,9 +4,11 @@ import { ViewTableProps } from './types';
 import { SettingOutlined } from '@ant-design/icons';
 import styles from './ViewTable.module.css';
 import { TableSettingPanel } from './setting';
-import { useViewerSharedValue } from '../viewer';
 
 import type { TableColumnsType } from 'antd';
+import type { TableRowSelection } from 'antd/es/table/interface';
+import { TableRecordType } from '../types';
+import { Key, useState } from 'react';
 
 /**
  * Renders a view table using Ant Design's Table component with typed cell rendering.
@@ -93,11 +95,19 @@ import type { TableColumnsType } from 'antd';
  * />
  * ```
  */
-export function ViewTable<RecordType = any>(props: ViewTableProps<RecordType>) {
-  const { viewDefinition, dataSource, actionColumn, attributes } = props;
-
-  const { viewColumns, tableSize } = useViewerSharedValue();
-  const tableColumns: TableColumnsType<RecordType> = viewColumns
+export function ViewTable<RecordType extends TableRecordType<any>>(
+  props: ViewTableProps<RecordType>,
+) {
+  const {
+    view,
+    viewDefinition,
+    dataSource,
+    actionColumn,
+    onSortChanged,
+    onSelectChange,
+    attributes,
+  } = props;
+  const tableColumns: TableColumnsType<RecordType> = view.columns
     .filter(it => it.visible)
     .map(it => {
       const columnDefinition = viewDefinition.columns.find(
@@ -114,6 +124,9 @@ export function ViewTable<RecordType = any>(props: ViewTableProps<RecordType>) {
                 ? 'start'
                 : '',
             render: (value, record, index) => {
+              if (columnDefinition.render) {
+                return columnDefinition.render(value, record, index);
+              }
               const cellRender = typedCellRender(
                 columnDefinition.type,
                 columnDefinition.attributes || {},
@@ -126,6 +139,7 @@ export function ViewTable<RecordType = any>(props: ViewTableProps<RecordType>) {
                 );
               }
             },
+            sorter: columnDefinition.sorter,
             ...columnDefinition.attributes,
             width: it.width,
           }
@@ -179,20 +193,37 @@ export function ViewTable<RecordType = any>(props: ViewTableProps<RecordType>) {
         const data = {
           value: actionsData,
           record: record,
-          index: viewColumns.length + 1,
+          index: view.columns.length + 1,
         };
         return <ActionsCell data={data} />;
       },
     });
   }
 
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
+  const rowSelection: TableRowSelection<RecordType> = {
+    selectedRowKeys,
+    fixed: true,
+    onChange: (selectedRowKeys, selectedRows) => {
+      setSelectedRowKeys(selectedRowKeys);
+      onSelectChange?.(selectedRows);
+      console.log(selectedRowKeys, selectedRows);
+    },
+  };
+
   return (
     <Table<RecordType>
       dataSource={dataSource}
+      rowSelection={viewDefinition.checkable ? rowSelection : undefined}
       columns={tableColumns}
       {...attributes}
       scroll={{ x: 'max-content' }}
-      size={tableSize}
+      size={view.tableSize}
+      onChange={(_pagination, _filters, sorter, extra) => {
+        if (extra.action === 'sort' && onSortChanged) {
+          onSortChanged(sorter);
+        }
+      }}
     />
   );
 }

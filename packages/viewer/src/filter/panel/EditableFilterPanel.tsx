@@ -27,10 +27,12 @@ export interface EditableFilterPanelProps extends Omit<
   'actions'
 > {
   availableFilters: AvailableFilterGroup[];
+  onChange?: (filters: ActiveFilter[]) => void;
+
 }
 
 export function EditableFilterPanel(props: EditableFilterPanelProps) {
-  const { ref, row, col, availableFilters, filters, onSearch } = props;
+  const { ref, row, col, availableFilters, filters, onSearch,onChange } = props;
   const [activeFilters, setActiveFilters] = useState(filters);
   const [modalOpen, setModalOpen] = useState(false);
   const generator = useRequestId();
@@ -50,13 +52,20 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
           operator: available.operator,
         }) as ActiveFilter,
     );
-    setActiveFilters([...activeFilters, ...newFilters]);
+    const newActiveFilters = [...activeFilters, ...newFilters];
+    setActiveFilters(newActiveFilters);
+    if (onChange) {
+      onChange(newActiveFilters);
+    }
     setModalOpen(false);
   };
 
   const removeFilter = (key: Key) => {
     const newFilters = activeFilters.filter(f => f.key !== key);
     setActiveFilters(newFilters);
+    if (onChange) {
+      onChange(newFilters);
+    }
   };
 
   const editableFilters = activeFilters.map(filter => ({

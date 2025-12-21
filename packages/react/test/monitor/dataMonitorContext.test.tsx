@@ -179,7 +179,7 @@ describe('DataMonitorContext', () => {
 
     it('should handle empty children', () => {
       expect(() => {
-        render(<DataMonitorProvider />);
+        render(<DataMonitorProvider children={undefined} />);
       }).not.toThrow();
     });
 
