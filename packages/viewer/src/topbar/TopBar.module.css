@@ -1,3 +1,20 @@
+.topBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.leftItems {
+    line-height: 32px;
+}
+
+.rightItems {
+    display: flex;
+    gap: 8px;
+    height: 32px;
+    align-items: center;
+}
+
 .barItemGroup {
     display: flex;
 }

@@ -19,9 +19,9 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
   const { viewDefinition } = props;
   const [dragState, setDragState] = useState<DragState | null>(null);
 
-  const { viewColumns, setViewColumns } = useViewerSharedValue();
+  const { view, actions } = useViewerSharedValue();
 
-  const columns = viewColumns.map((col, index) => {
+  const columns = view.columns.map((col, index) => {
     return {
       ...col,
       index,
@@ -36,7 +36,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     const newColumns = columns.map((col, i) =>
       i === index ? { ...col, visible } : col,
     );
-    setViewColumns(newColumns);
+    actions.updateColumns(newColumns);
   };
 
   const handleDragStart = useCallback(
@@ -107,7 +107,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     originItem.fixed = group === 'fixed';
     newColumns.splice(targetIndex, 0, originItem);
     newColumns.forEach((col, i) => (col.index = i));
-    setViewColumns(newColumns);
+    actions.updateColumns(newColumns);
   };
 
   const renderDraggableItem = (

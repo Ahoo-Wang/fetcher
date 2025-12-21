@@ -1,20 +1,18 @@
 import { createContext, ReactNode, useContext } from 'react';
-import { ViewColumn } from './types';
-import type { SizeType } from 'antd/es/config-provider/SizeContext';
+import { View } from './types';
+import { ViewActions } from './Viewer';
+
+
 
 export interface ViewerSharedValue {
   aggregateName: string;
-  viewName: string;
-  viewColumns: ViewColumn[];
-  setViewColumns: (viewColumns: ViewColumn[]) => void;
+  view: View;
+  actions: ViewActions;
 
   showFilterPanel: boolean;
   setShowFilterPanel: (showFilterPanel: boolean) => void;
 
   refreshData: () => void;
-
-  tableSize: SizeType;
-  setTableSize: (size: SizeType) => void;
 }
 
 export type ViewerSharedValueContext = ViewerSharedValue;

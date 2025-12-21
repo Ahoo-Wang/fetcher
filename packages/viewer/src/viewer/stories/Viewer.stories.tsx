@@ -1,10 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { Viewer } from '../Viewer';
-import { ViewColumn, ViewDefinition } from '../types';
+import { View, ViewColumn, ViewDefinition } from '../types';
 import { ViewTableActionColumn } from '../../table';
-import { Button, Popover } from 'antd';
+import { Button } from 'antd';
 import type { MaterializedSnapshot } from '@ahoo-wang/fetcher-wow';
+import {
+  COLUMN_HEIGHT_BAR_ITEM_TYPE,
+  FILTER_BAR_ITEM_TYPE,
+  REFRESH_DATA_BAR_ITEM_TYPE,
+} from '../../topbar';
+import { SHARE_LINK_BAR_ITEM_TYPE } from '../../topbar/ShareLinkBarItem';
+
 
 export interface BusinessPartnerId {
   bizId: string;
@@ -63,7 +70,7 @@ export interface SkuCostState {
 const meta: Meta = {
   title: 'Viewer',
   component: Viewer,
-  tags: ['autodocs'],
+  tags: ['autodocs']
 };
 const viewDefinition: ViewDefinition = {
   name: 'SKU成本',
@@ -74,7 +81,7 @@ const viewDefinition: ViewDefinition = {
       primaryKey: true,
       type: 'id',
       attributes: {},
-      sorter: false,
+      sorter: { multiple: 1 },
     },
     {
       title: '供应商编号',
@@ -114,7 +121,7 @@ const viewDefinition: ViewDefinition = {
       primaryKey: false,
       type: 'text',
       attributes: {},
-      sorter: false,
+      sorter: { multiple: 2 },
     },
     {
       title: 'SKU订货号',
@@ -142,7 +149,7 @@ const viewDefinition: ViewDefinition = {
             name: 'state.id',
             label: '成本编号',
           },
-          component: 'id'
+          component: 'id',
         },
         {
           field: {
@@ -183,7 +190,8 @@ const viewDefinition: ViewDefinition = {
     },
   ],
   dataSourceUrl: 'http://localhost:8080/tenant/mydao/sku_cost/snapshot/paged',
-  defaultPageSize: 10,
+  internalCondition: {},
+  checkable: true,
 };
 
 const columns: ViewColumn[] = [
@@ -237,38 +245,58 @@ const columns: ViewColumn[] = [
   },
 ];
 
-const actionColumn: ViewTableActionColumn<MaterializedSnapshot<SkuCostState>> = {
-  title: 'More',
-  dataIndex: 'id',
-  configurable: true,
-  actions: record => {
-    if (record.state.id === '3S98-SK-190TH') {
-      return {
-        primaryAction: record => (
-          <Button type="link" onClick={() => console.log('View', record)}>
-            Custom Action
-          </Button>
-        ),
-        moreActionTitle: 'More',
-        secondaryActions: [],
-      };
-    } else {
-      return {
-        primaryAction: {
-          data: { value: 'Edit', record, index: 0 },
-          attributes: { onClick: () => console.log('Edit', record) },
-        },
-        moreActionTitle: '更多',
-        secondaryActions: [
-          {
-            data: { value: 'Delete', record, index: 1 },
-            attributes: { onClick: () => console.log('Delete', record) },
-          },
-        ],
-      };
-    }
-  },
+const view: View = {
+  id: '1',
+  name: 'Custom View',
+  filters: [
+    {
+      key: 'name',
+      type: 'id',
+      field: {
+        name: 'state.id',
+        label: '成本编号',
+      },
+    },
+  ],
+  columns: columns,
+  tableSize: 'middle',
+  condition: {},
+  pageSize: 10,
 };
+
+const actionColumn: ViewTableActionColumn<MaterializedSnapshot<SkuCostState>> =
+  {
+    title: 'More',
+    dataIndex: 'id',
+    configurable: true,
+    actions: record => {
+      if (record.state.id === '3S98-SK-190TH') {
+        return {
+          primaryAction: record => (
+            <Button type="link" onClick={() => console.log('View', record)}>
+              Custom Action
+            </Button>
+          ),
+          moreActionTitle: 'More',
+          secondaryActions: [],
+        };
+      } else {
+        return {
+          primaryAction: {
+            data: { value: 'Edit', record, index: 0 },
+            attributes: { onClick: () => console.log('Edit', record) },
+          },
+          moreActionTitle: '更多',
+          secondaryActions: [
+            {
+              data: { value: 'Delete', record, index: 1 },
+              attributes: { onClick: () => console.log('Delete', record) },
+            },
+          ],
+        };
+      }
+    },
+  };
 
 export default meta;
 
@@ -277,22 +305,40 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     name: 'users',
-    view: {
-      id: 'a1',
-      name: 'my product',
-      columns: columns,
-      filters: [
+    view: view,
+    definition: viewDefinition,
+    actionColumn: actionColumn,
+    topBar: {
+      barItems: [
+        FILTER_BAR_ITEM_TYPE,
+        REFRESH_DATA_BAR_ITEM_TYPE,
+        COLUMN_HEIGHT_BAR_ITEM_TYPE,
+        SHARE_LINK_BAR_ITEM_TYPE,
+      ],
+      enableFullscreen: true,
+      bulkOperationName: 'Bulk',
+      bulkActions: [
         {
-          key: 'name',
-          type: 'id',
-          field: {
-            name: 'state.id',
-            label: '成本编号',
+          title: 'Bulk Delete',
+          onClick: (items: MaterializedSnapshot<SkuCostState>[]) => {
+            console.log('Bulk Delete', items);
           },
         },
       ],
+      primaryAction: {
+        title: 'Primary Button',
+        onClick: (items: MaterializedSnapshot<SkuCostState>[]) => {
+          console.log('Primary Button', items);
+        },
+      },
+      secondaryActions: [
+        {
+          title: 'Secondary Button',
+          onClick: (items: MaterializedSnapshot<SkuCostState>[]) => {
+            console.log('Secondary Button', items);
+          },
+        },
+      ]
     },
-    definition: viewDefinition,
-    actionColumn: actionColumn,
   },
 };

@@ -1,7 +1,8 @@
 import { AttributesCapable } from '../types';
 import { ActionsData } from './cell';
-import { ViewColumn, ViewColumnDefinition, ViewDefinition } from '../viewer';
+import { View, ViewDefinition } from '../viewer';
 import { TableProps } from 'antd';
+import type { SorterResult } from 'antd/es/table/interface';
 
 /**
  * Configuration for a cell in a table column.
@@ -70,28 +71,6 @@ export interface ViewTableActionColumn<RecordType = any> {
 }
 
 /**
- * Props for a view column with additional attributes capability.
- *
- * @interface ViewColumnProps
- * @extends AttributesCapable<any>
- * @extends ViewColumnDefinition
- *
- * @example
- * ```tsx
- * const columnProps: ViewColumnProps = {
- *   title: 'Name',
- *   dataIndex: 'name',
- *   cell: { type: 'text' },
- *   primaryKey: false,
- *   attributes: { width: 200, sorter: true }
- * };
- * ```
- */
-export interface ViewColumnProps extends ViewColumn {
-  columnDefinition: ViewColumnDefinition;
-}
-
-/**
  * Props for the ViewTable component.
  *
  * @template RecordType - The type of the records in the data source.
@@ -133,7 +112,12 @@ export interface ViewTableProps<
   RecordType = any,
   Attributes = Omit<TableProps<RecordType>, 'columns' | 'dataSource'>,
 > extends AttributesCapable<Attributes> {
+  view: View;
   viewDefinition: ViewDefinition;
   dataSource: RecordType[];
   actionColumn?: ViewTableActionColumn<RecordType>;
+  onSortChanged?: (
+    sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
+  ) => void;
+  onSelectChange?: (items: RecordType[]) => void
 }

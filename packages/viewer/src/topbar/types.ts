@@ -1,4 +1,3 @@
 import { StyleCapable } from '../types';
 
-export interface TopBarItemProps extends StyleCapable {
-}
+export interface TopBarItemProps extends StyleCapable {}
