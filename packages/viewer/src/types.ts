@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import React from 'react';
+import React, { Key } from 'react';
 
 export type Optional<T = any> = T | undefined;
 
@@ -29,7 +29,8 @@ export interface AttributesCapable<Attributes = any> {
   attributes?: Attributes;
 }
 
+export interface KeyCapable {
+  key: Key;
+}
 
-
-
-
+export type TableRecordType<RecordType> = RecordType & KeyCapable;
