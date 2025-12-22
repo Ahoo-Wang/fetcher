@@ -11,10 +11,10 @@
  * limitations under the License.
  */
 
+export * from './components';
 export * from './filter';
 export * from './registry';
-export * from './components';
 export * from './table';
-export * from './types';
+export * from './topbar';
 export * from './viewer';
-export * from './topbar'
+export * from './types';
