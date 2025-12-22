@@ -5,14 +5,12 @@
 }
 
 .leftItems {
+    height: 32px;
     line-height: 32px;
 }
 
 .rightItems {
-    display: flex;
-    gap: 8px;
     height: 32px;
-    align-items: center;
 }
 
 .barItemGroup {
