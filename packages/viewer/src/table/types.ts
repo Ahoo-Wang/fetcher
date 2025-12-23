@@ -1,6 +1,6 @@
 import { AttributesCapable } from '../types';
 import { ActionsData } from './cell';
-import { View, ViewDefinition } from '../viewer';
+import { ViewDefinition } from '../viewer';
 import { TableProps } from 'antd';
 import type { SorterResult } from 'antd/es/table/interface';
 

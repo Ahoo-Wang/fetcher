@@ -7,7 +7,6 @@ import { StyleCapable, TableRecordType } from '../types';
 import {
   RefAttributes,
   useCallback,
-  useEffect,
   useImperativeHandle,
   useMemo,
   useState,

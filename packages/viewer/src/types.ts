@@ -12,7 +12,6 @@
  */
 
 import React, { Key } from 'react';
-import { TableStateReducerAction } from './viewer/useTableStateReducer';
 
 export type Optional<T = any> = T | undefined;
 
