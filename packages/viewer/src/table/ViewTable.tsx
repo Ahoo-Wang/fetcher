@@ -9,6 +9,7 @@ import type { TableColumnsType } from 'antd';
 import type { TableRowSelection } from 'antd/es/table/interface';
 import { TableRecordType } from '../types';
 import { Key, useState } from 'react';
+import { useTableStateContext } from '../viewer/TableStateContext';
 
 /**
  * Renders a view table using Ant Design's Table component with typed cell rendering.
@@ -99,7 +100,6 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
   props: ViewTableProps<RecordType>,
 ) {
   const {
-    view,
     viewDefinition,
     dataSource,
     actionColumn,
@@ -107,7 +107,10 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
     onSelectChange,
     attributes,
   } = props;
-  const tableColumns: TableColumnsType<RecordType> = view.columns
+
+  const { columns, tableSize } = useTableStateContext();
+
+  const tableColumns: TableColumnsType<RecordType> = columns
     .filter(it => it.visible)
     .map(it => {
       const columnDefinition = viewDefinition.columns.find(
@@ -193,7 +196,7 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
         const data = {
           value: actionsData,
           record: record,
-          index: view.columns.length + 1,
+          index: columns.length + 1,
         };
         return <ActionsCell data={data} />;
       },
@@ -218,7 +221,7 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
       columns={tableColumns}
       {...attributes}
       scroll={{ x: 'max-content' }}
-      size={view.tableSize}
+      size={tableSize}
       onChange={(_pagination, _filters, sorter, extra) => {
         if (extra.action === 'sort' && onSortChanged) {
           onSortChanged(sorter);

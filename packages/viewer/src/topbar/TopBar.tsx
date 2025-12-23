@@ -1,6 +1,6 @@
 import { barItemRegistry } from './barItemRegistry';
 import { BarItemType, TypedBarItem } from './TypedBarItem';
-import { TopBarActionItem, useViewerSharedValue } from '../viewer';
+import { TopBarActionItem } from '../viewer';
 
 import { Delimiter } from './Delimiter';
 
@@ -19,10 +19,12 @@ import { BarItem } from './BarItem';
 import { Point } from './Point';
 
 export interface TopBarPropsCapable<RecordType> {
-  topBar: TopBarProps<RecordType>;
+  topBar: Omit<TopBarProps<RecordType>, 'aggregateName' | 'viewName'>;
 }
 
 export interface TopBarProps<RecordType> {
+  aggregateName: string;
+  viewName: string;
   barItems: BarItemType[];
   fullscreenTarget?: RefObject<HTMLElement | null>;
   enableFullscreen?: boolean;
@@ -64,6 +66,8 @@ function renderMenuItem<RecordType>(
 
 export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   const {
+    aggregateName,
+    viewName,
     barItems,
     fullscreenTarget,
     enableFullscreen,
@@ -73,7 +77,6 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     secondaryActions,
     tableSelectedItems,
   } = props;
-  const { aggregateName, view } = useViewerSharedValue();
 
   let bulkMenuItems: MenuProps['items'] = [];
   if (bulkActions?.length) {
@@ -108,7 +111,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
         <Delimiter />
         {aggregateName}
         <Point />
-        {view.name}
+        {viewName}
       </Flex>
       <Flex gap="8px" align="center" className={styles.rightItems}>
         {barItems.map((barItem, index) => {

@@ -12,6 +12,7 @@ export interface ViewDefinition {
   columns: ViewColumnDefinition[];
   availableFilters: AvailableFilterGroup[];
   dataSourceUrl: string;
+  countUrl: string;
   internalCondition?: Condition;
   checkable?: boolean;
 }
@@ -21,18 +22,25 @@ export interface ViewColumnDefinition extends TypeCapable, AttributesCapable {
   dataIndex: string;
   primaryKey: boolean;
   render?: (value: any, record: any, index: number) => React.ReactNode;
-  sorter: boolean | { multiple: number};
+  sorter: boolean | { multiple: number };
 }
+
+export type ViewType = 'PERSONAL' | 'PUBLIC';
+export type ViewSource = 'SYSTEM' | 'CUSTOM';
 
 export interface View {
   id: string;
   name: string;
+  viewType: ViewType;
+  viewSource: ViewSource;
+  isDefault: boolean;
   filters: ActiveFilter[];
   columns: ViewColumn[];
   tableSize: SizeType;
   condition: Condition;
   pageSize: number;
   sort?: FieldSort[];
+  sortId: number;
 }
 
 export interface ViewColumn {
@@ -40,11 +48,12 @@ export interface ViewColumn {
   fixed: boolean;
   visible: boolean;
   width?: string;
-  sortOrder?: SortOrder
+  sortOrder?: SortOrder;
 }
 
-
-export interface TopBarActionItem<RecordType> extends AttributesCapable<Omit<ButtonProps, 'onClick'>> {
+export interface TopBarActionItem<RecordType> extends AttributesCapable<
+  Omit<ButtonProps, 'onClick'>
+> {
   title: string;
   onClick?: (items: RecordType[]) => void;
   render?: (items: RecordType[]) => React.ReactNode;

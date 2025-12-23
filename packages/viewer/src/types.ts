@@ -12,6 +12,7 @@
  */
 
 import React, { Key } from 'react';
+import { TableStateReducerAction } from './viewer/useTableStateReducer';
 
 export type Optional<T = any> = T | undefined;
 
@@ -31,6 +32,11 @@ export interface AttributesCapable<Attributes = any> {
 
 export interface KeyCapable {
   key: Key;
+}
+
+export interface ReducerActionCapable<TYPE = any> {
+  type: TYPE;
+  payload: any;
 }
 
 export type TableRecordType<RecordType> = RecordType & KeyCapable;

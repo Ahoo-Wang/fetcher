@@ -11,16 +11,12 @@
  * limitations under the License.
  */
 
-import React, { useState, Key } from 'react';
+import React, { useState, Key, useEffect } from 'react';
 import { Button } from 'antd';
 import { AvailableFilterGroup, AvailableFilter } from './AvailableFilterSelect';
 import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
 import { useRequestId } from '@ahoo-wang/fetcher-react';
-import {
-  ActiveFilter,
-  FilterPanelProps,
-  FilterPanel,
-} from './FilterPanel';
+import { ActiveFilter, FilterPanelProps, FilterPanel } from './FilterPanel';
 
 export interface EditableFilterPanelProps extends Omit<
   FilterPanelProps,
@@ -28,14 +24,18 @@ export interface EditableFilterPanelProps extends Omit<
 > {
   availableFilters: AvailableFilterGroup[];
   onChange?: (filters: ActiveFilter[]) => void;
-
 }
 
 export function EditableFilterPanel(props: EditableFilterPanelProps) {
-  const { ref, row, col, availableFilters, filters, onSearch,onChange } = props;
+  const { ref, row, col, availableFilters, filters, onSearch, onChange } =
+    props;
   const [activeFilters, setActiveFilters] = useState(filters);
   const [modalOpen, setModalOpen] = useState(false);
   const generator = useRequestId();
+
+  useEffect(() => {
+    setActiveFilters(filters);
+  }, [filters]);
 
   const handleAddFilter = (selectedAvailableFilters: AvailableFilter[]) => {
     if (selectedAvailableFilters.length === 0) {

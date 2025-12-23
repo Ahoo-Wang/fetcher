@@ -2,8 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { TableFieldItem } from './TableFieldItem';
 import styles from './TableSettingPanel.module.css';
 import { Space } from 'antd';
-import { ViewColumn, ViewDefinition } from '../../viewer';
-import { useViewerSharedValue } from '../../viewer';
+import { useTableStateContext, ViewColumn, ViewDefinition } from '../../viewer';
 
 export interface TableSettingPanelProps {
   viewDefinition: ViewDefinition;
@@ -19,24 +18,24 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
   const { viewDefinition } = props;
   const [dragState, setDragState] = useState<DragState | null>(null);
 
-  const { view, actions } = useViewerSharedValue();
+  const { columns, updateColumns } = useTableStateContext();
 
-  const columns = view.columns.map((col, index) => {
+  const localColumns = columns.map((col, index) => {
     return {
       ...col,
       index,
     };
   });
 
-  const fixedColumns = columns.filter(col => col.fixed);
-  const visibleColumns = columns.filter(col => col.visible && !col.fixed);
-  const hiddenColumns = columns.filter(col => !col.visible);
+  const fixedColumns = localColumns.filter(col => col.fixed);
+  const visibleColumns = localColumns.filter(col => col.visible && !col.fixed);
+  const hiddenColumns = localColumns.filter(col => !col.visible);
 
   const handleVisibilityChange = (index: number, visible: boolean) => {
-    const newColumns = columns.map((col, i) =>
+    const newColumns = localColumns.map((col, i) =>
       i === index ? { ...col, visible } : col,
     );
-    actions.updateColumns(newColumns);
+    updateColumns(newColumns);
   };
 
   const handleDragStart = useCallback(
@@ -102,12 +101,12 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     // newColumns.splice(dropIndex, 0, draggedItem);
 
     const targetIndex = group === 'fixed' ? dragIndex + 1 : dragIndex;
-    const newColumns = [...columns];
+    const newColumns = [...localColumns];
     const [originItem] = newColumns.splice(dragState.index, 1);
     originItem.fixed = group === 'fixed';
     newColumns.splice(targetIndex, 0, originItem);
     newColumns.forEach((col, i) => (col.index = i));
-    actions.updateColumns(newColumns);
+    updateColumns(newColumns);
   };
 
   const renderDraggableItem = (
