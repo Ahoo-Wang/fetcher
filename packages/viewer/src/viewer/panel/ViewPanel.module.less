@@ -1,0 +1,103 @@
+.top {
+    height: 32px;
+}
+
+.title {
+    font-size: 16px;
+    line-height: 24px;
+}
+
+.customCollapse {
+    border: none;
+    background-color: #FFFFFF;
+
+    :global {
+        .ant-collapse-header {
+            padding: 4px 8px !important;
+        }
+
+        .ant-collapse-item {
+            margin-bottom: 16px;
+        }
+
+        .ant-collapse-panel {
+            border-top: none;
+        }
+
+        .ant-collapse-body {
+            padding: 12px 0 16px !important;
+        }
+    }
+
+}
+
+.viewItem {
+    height: 38px;
+    padding: 8px;
+    font-size: 14px;
+    line-height: 22px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.active {
+    background-color: #e0ebff;
+    color: #3a62f0;
+}
+
+.viewName {
+    max-width: 120px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    /* 关键：给父容器加相对定位，让自定义 tooltip 基于此定位 */
+    position: relative;
+}
+
+.active .viewName {
+    max-width: none;
+    flex: 1;
+}
+
+.viewNameText {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+
+/* 自定义 tooltip 样式 */
+.viewNameText::after {
+    /* 内容为完整文本，通过 JS 动态赋值（也可写死，但推荐动态） */
+    content: attr(data-tooltip);
+    /* 定位：基于父容器绝对定位 */
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 8px); /* 显示在文本上方，间距 8px */
+    /* 样式定制 */
+    background: #333;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap; /* 提示文本不折行 */
+    /* 默认隐藏 */
+    opacity: 0;
+    visibility: hidden;
+    /* 过渡动画，更丝滑 */
+    transition: all 0.2s ease;
+    /* 防止遮挡 */
+    z-index: 999;
+}
+
+/* 鼠标悬停时显示 tooltip */
+.viewNameText:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.viewNameTag {
+    white-space: nowrap;
+    flex-shrink: 0;
+}

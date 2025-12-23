@@ -4,6 +4,7 @@ export * from './barItemRegistry';
 export * from './ColumnHeightBarItem'
 export * from './Delimiter'
 export * from './FilterBarItem'
+export * from './Point'
 export * from './RefreshDataBarItem'
 export * from './ShareLinkBarItem'
 export * from './TopBar';

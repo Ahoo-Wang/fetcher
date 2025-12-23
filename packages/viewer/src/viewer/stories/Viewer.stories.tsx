@@ -9,9 +9,9 @@ import {
   COLUMN_HEIGHT_BAR_ITEM_TYPE,
   FILTER_BAR_ITEM_TYPE,
   REFRESH_DATA_BAR_ITEM_TYPE,
+  SHARE_LINK_BAR_ITEM_TYPE,
 } from '../../topbar';
-import { SHARE_LINK_BAR_ITEM_TYPE } from '../../topbar/ShareLinkBarItem';
-
+import { ActiveFilter } from '../../filter';
 
 export interface BusinessPartnerId {
   bizId: string;
@@ -70,7 +70,7 @@ export interface SkuCostState {
 const meta: Meta = {
   title: 'Viewer',
   component: Viewer,
-  tags: ['autodocs']
+  tags: ['autodocs'],
 };
 const viewDefinition: ViewDefinition = {
   name: 'SKU成本',
@@ -189,7 +189,10 @@ const viewDefinition: ViewDefinition = {
       ],
     },
   ],
-  dataSourceUrl: 'http://localhost:8080/tenant/mydao/sku_cost/snapshot/paged',
+  dataSourceUrl:
+    'http://procurement-service.dev.svc.cluster.local/tenant/mydao/sku_cost/snapshot/paged',
+  countUrl:
+    'http://procurement-service.dev.svc.cluster.local/tenant/mydao/sku_cost/snapshot/count',
   internalCondition: {},
   checkable: true,
 };
@@ -245,10 +248,12 @@ const columns: ViewColumn[] = [
   },
 ];
 
-const view: View = {
-  id: '1',
-  name: 'Custom View',
-  filters: [
+const createSampleView = (
+  id: string,
+  name: string,
+  viewType: 'PERSONAL' | 'PUBLIC' = 'PERSONAL',
+  viewSource: 'SYSTEM' | 'CUSTOM' = 'CUSTOM',
+  filters: ActiveFilter[] = [
     {
       key: 'name',
       type: 'id',
@@ -258,11 +263,44 @@ const view: View = {
       },
     },
   ],
+): View => ({
+  id,
+  name,
+  viewType,
+  viewSource,
+  isDefault: false,
+  filters: filters,
   columns: columns,
   tableSize: 'middle',
   condition: {},
   pageSize: 10,
-};
+  sortId: 0,
+});
+
+const sampleViews: View[] = [
+  createSampleView('1', 'My Personal View', 'PERSONAL'),
+  createSampleView('2', 'Another Personal View', 'PERSONAL', 'CUSTOM', [
+    {
+      key: 'id',
+      type: 'id',
+      field: {
+        name: 'state.id',
+        label: '成本编号',
+      },
+    },
+    {
+      key: 'brandName',
+      type: 'text',
+      field: {
+        name: 'state.skuId.brandName',
+        label: '品牌名称',
+      },
+    },
+  ]),
+  createSampleView('3', 'Team Public View', 'PUBLIC'),
+  createSampleView('4', 'Company Public View', 'PUBLIC'),
+  createSampleView('5', 'System Public View', 'PUBLIC', 'SYSTEM'),
+];
 
 const actionColumn: ViewTableActionColumn<MaterializedSnapshot<SkuCostState>> =
   {
@@ -305,7 +343,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     name: 'users',
-    view: view,
+    views: sampleViews,
     definition: viewDefinition,
     actionColumn: actionColumn,
     topBar: {
@@ -338,7 +376,7 @@ export const Default: Story = {
             console.log('Secondary Button', items);
           },
         },
-      ]
+      ],
     },
   },
 };
