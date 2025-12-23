@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Checkbox } from 'antd';
+import { Checkbox, Flex } from 'antd';
 import { DragOutlined } from '@ant-design/icons';
 import { ViewColumnDefinition } from '../../viewer';
 
@@ -68,23 +68,15 @@ export interface TableFieldItemProps {
  */
 export function TableFieldItem(props: TableFieldItemProps) {
   return (
-    <>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          width: '100%',
-        }}
+    <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+      <Checkbox
+        checked={props.visible}
+        disabled={props.columnDefinition.primaryKey}
+        onChange={e => props.onVisibleChange(e.target.checked)}
       >
-        <Checkbox
-          defaultChecked={props.visible}
-          disabled={props.columnDefinition.primaryKey}
-          onChange={e => props.onVisibleChange(e.target.checked)}
-        >
-          {props.columnDefinition.title}
-        </Checkbox>
-        <DragOutlined />
-      </div>
-    </>
+        {props.columnDefinition.title}
+      </Checkbox>
+      <DragOutlined />
+    </Flex>
   );
 }

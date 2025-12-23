@@ -14,7 +14,11 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { TableSettingPanel } from '../TableSettingPanel';
-import { ViewColumn } from '../../../viewer';
+import {
+  ViewColumn,
+  ViewDefinition,
+  TableStateContextProvider,
+} from '../../../viewer';
 
 const meta: Meta = {
   title: 'Viewer/Table/Setting/TableSettingPanel',
@@ -30,14 +34,9 @@ const meta: Meta = {
   },
   tags: ['autodocs'],
   argTypes: {
-    columns: {
+    viewDefinition: {
       control: 'object',
-      description: 'Array of columns with visibility and fixed state',
-    },
-    onColumnsChange: {
-      action: 'columnsChanged',
-      description:
-        'Callback fired when columns are reordered or visibility changes',
+      description: 'View definition containing column definitions',
     },
     className: {
       control: 'text',
@@ -49,66 +48,113 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const sampleColumns: (ViewColumn & { index: number })[] = [
+const sampleViewDefinition: ViewDefinition = {
+  name: 'Sample View',
+  columns: [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      primaryKey: true,
+      type: 'text',
+      sorter: true,
+    },
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      primaryKey: false,
+      type: 'text',
+      sorter: true,
+    },
+    {
+      title: 'Category',
+      dataIndex: 'category',
+      primaryKey: false,
+      type: 'text',
+      sorter: true,
+    },
+    {
+      title: 'Price',
+      dataIndex: 'price',
+      primaryKey: false,
+      type: 'number',
+      sorter: true,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      primaryKey: false,
+      type: 'text',
+      sorter: true,
+    },
+  ],
+  availableFilters: [],
+  dataSourceUrl: '/api/sample',
+  countUrl: '/api/sample/count',
+};
+
+const sampleColumns: ViewColumn[] = [
   {
     dataIndex: 'id',
     visible: true,
     fixed: true,
-    index: 0,
   },
   {
     dataIndex: 'name',
     visible: true,
     fixed: false,
-    index: 1,
   },
   {
     dataIndex: 'category',
     visible: true,
     fixed: false,
-    index: 2,
   },
   {
     dataIndex: 'price',
     visible: false,
     fixed: false,
-    index: 3,
   },
   {
     dataIndex: 'status',
     visible: false,
     fixed: false,
-    index: 4,
   },
 ];
 
 const TableSettingPanelWrapper = (args: any) => {
-  const [columns, setColumns] = useState(args.columns);
+  const [columns, setColumns] = useState(args.initialColumns || sampleColumns);
 
   const handleColumnsChange = (newColumns: ViewColumn[]) => {
     setColumns(newColumns);
-    args.onColumnsChange(newColumns);
   };
 
   return (
-    <TableSettingPanel
-      {...args}
+    <TableStateContextProvider
       columns={columns}
-      onColumnsChange={handleColumnsChange}
-    />
+      tableSize="middle"
+      updateColumns={handleColumnsChange}
+      updateTableSize={() => {}}
+      refreshData={() => {}}
+    >
+      <TableSettingPanel
+        viewDefinition={args.viewDefinition || sampleViewDefinition}
+        className={args.className}
+      />
+    </TableStateContextProvider>
   );
 };
 
 export const Basic: Story = {
   args: {
-    columns: sampleColumns,
+    viewDefinition: sampleViewDefinition,
+    initialColumns: sampleColumns,
   },
   render: args => <TableSettingPanelWrapper {...args} />,
 };
 
 export const WithHiddenColumns: Story = {
   args: {
-    columns: [
+    viewDefinition: sampleViewDefinition,
+    initialColumns: [
       ...sampleColumns.slice(0, 2),
       { ...sampleColumns[2], visible: false },
       { ...sampleColumns[3], visible: true },
@@ -120,19 +166,21 @@ export const WithHiddenColumns: Story = {
 
 export const AllVisible: Story = {
   args: {
-    columns: sampleColumns.map(col => ({ ...col, visible: true })),
+    viewDefinition: sampleViewDefinition,
+    initialColumns: sampleColumns.map(col => ({ ...col, visible: true })),
   },
   render: args => <TableSettingPanelWrapper {...args} />,
 };
 
 export const FixedLimitReached: Story = {
   args: {
-    columns: [
-      { ...sampleColumns[0], fixed: true, visible: true, index: 0 },
-      { ...sampleColumns[1], fixed: true, visible: true, index: 1 },
-      { ...sampleColumns[2], fixed: true, visible: true, index: 2 },
-      { ...sampleColumns[3], fixed: false, visible: true, index: 3 },
-      { ...sampleColumns[4], fixed: false, visible: false, index: 4 },
+    viewDefinition: sampleViewDefinition,
+    initialColumns: [
+      { ...sampleColumns[0], fixed: true, visible: true },
+      { ...sampleColumns[1], fixed: true, visible: true },
+      { ...sampleColumns[2], fixed: true, visible: true },
+      { ...sampleColumns[3], fixed: false, visible: true },
+      { ...sampleColumns[4], fixed: false, visible: false },
     ],
   },
   render: args => <TableSettingPanelWrapper {...args} />,
@@ -140,12 +188,13 @@ export const FixedLimitReached: Story = {
 
 export const MixedStates: Story = {
   args: {
-    columns: [
-      { ...sampleColumns[0], fixed: true, visible: true, index: 0 },
-      { ...sampleColumns[1], fixed: false, visible: true, index: 1 },
-      { ...sampleColumns[2], fixed: false, visible: true, index: 2 },
-      { ...sampleColumns[3], fixed: false, visible: false, index: 3 },
-      { ...sampleColumns[4], fixed: false, visible: false, index: 4 },
+    viewDefinition: sampleViewDefinition,
+    initialColumns: [
+      { ...sampleColumns[0], fixed: true, visible: true },
+      { ...sampleColumns[1], fixed: false, visible: true },
+      { ...sampleColumns[2], fixed: false, visible: true },
+      { ...sampleColumns[3], fixed: false, visible: false },
+      { ...sampleColumns[4], fixed: false, visible: false },
     ],
   },
   render: args => <TableSettingPanelWrapper {...args} />,

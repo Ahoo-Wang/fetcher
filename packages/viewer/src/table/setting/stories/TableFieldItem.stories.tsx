@@ -30,17 +30,13 @@ const meta: Meta = {
   },
   tags: ['autodocs'],
   argTypes: {
-    column: {
+    columnDefinition: {
       control: 'object',
       description: 'Column definition with title and cell configuration',
     },
     fixed: {
       control: 'boolean',
       description: 'Whether the column is fixed and cannot be hidden',
-    },
-    index: {
-      control: 'number',
-      description: 'Index position of the column',
     },
     visible: {
       control: 'boolean',
@@ -66,51 +62,47 @@ const primaryKeyColumn = {
 
 export const Visible: Story = {
   args: {
-    column: sampleColumn,
+    columnDefinition: sampleColumn,
     fixed: false,
-    index: 0,
     visible: true,
-    onVisibleChange: (column: ViewColumnDefinition, visible: boolean) => {
-      console.log('Visible changed:', column.title, visible);
+    onVisibleChange: (visible: boolean) => {
+      console.log('Visible changed:', visible);
     },
   },
 };
 
 export const Hidden: Story = {
   args: {
-    column: sampleColumn,
+    columnDefinition: sampleColumn,
     fixed: false,
-    index: 1,
     visible: false,
-    onVisibleChange: (column: ViewColumnDefinition, visible: boolean) => {
-      console.log('Visible changed:', column.title, visible);
+    onVisibleChange: (visible: boolean) => {
+      console.log('Visible changed:', visible);
     },
   },
 };
 
 export const PrimaryKey: Story = {
   args: {
-    column: primaryKeyColumn,
+    columnDefinition: primaryKeyColumn,
     fixed: true,
-    index: 0,
     visible: true,
-    onVisibleChange: (column: ViewColumnDefinition, visible: boolean) => {
-      console.log('Visible changed:', column.title, visible);
+    onVisibleChange: (visible: boolean) => {
+      console.log('Visible changed:', visible);
     },
   },
 };
 
 export const FixedColumn: Story = {
   args: {
-    column: {
+    columnDefinition: {
       ...sampleColumn,
       title: 'Fixed Column',
     },
     fixed: true,
-    index: 2,
     visible: true,
-    onVisibleChange: (column: ViewColumnDefinition, visible: boolean) => {
-      console.log('Visible changed:', column.title, visible);
+    onVisibleChange: (visible: boolean) => {
+      console.log('Visible changed:', visible);
     },
   },
 };

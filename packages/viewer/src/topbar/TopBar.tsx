@@ -1,26 +1,30 @@
 import { barItemRegistry } from './barItemRegistry';
 import { BarItemType, TypedBarItem } from './TypedBarItem';
-import { TopBarActionItem, useViewerSharedValue } from '../viewer';
+import { TopBarActionItem } from '../viewer';
 
 import { Delimiter } from './Delimiter';
 
 import styles from './TopBar.module.css';
 import { AutoRefreshBarItem } from './AutoRefreshBarItem';
-import { Button, Dropdown, MenuProps, Space } from 'antd';
+import { Button, Dropdown, Flex, MenuProps, Space } from 'antd';
 import {
   DownOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { RefObject, useCallback } from 'react';
 import { useFullscreen } from '@ahoo-wang/fetcher-react';
 import { BarItem } from './BarItem';
+import { Point } from './Point';
 
 export interface TopBarPropsCapable<RecordType> {
-  topBar: TopBarProps<RecordType>;
+  topBar: Omit<TopBarProps<RecordType>, 'aggregateName' | 'viewName'>;
 }
 
 export interface TopBarProps<RecordType> {
+  aggregateName: string;
+  viewName: string;
   barItems: BarItemType[];
   fullscreenTarget?: RefObject<HTMLElement | null>;
   enableFullscreen?: boolean;
@@ -32,9 +36,16 @@ export interface TopBarProps<RecordType> {
   secondaryActions?: TopBarActionItem<RecordType>[];
 
   tableSelectedItems: RecordType[];
+
+  showViewPanel: boolean;
+  onViewPanelUnfold: () => void;
 }
 
-function renderMenuItem<RecordType>(item: TopBarActionItem<RecordType>, index: number, tableSelectedItems: RecordType[]) {
+function renderMenuItem<RecordType>(
+  item: TopBarActionItem<RecordType>,
+  index: number,
+  tableSelectedItems: RecordType[],
+) {
   if (item.render) {
     return {
       key: index,
@@ -58,6 +69,8 @@ function renderMenuItem<RecordType>(item: TopBarActionItem<RecordType>, index: n
 
 export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   const {
+    aggregateName,
+    viewName,
     barItems,
     fullscreenTarget,
     enableFullscreen,
@@ -66,8 +79,9 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     primaryAction,
     secondaryActions,
     tableSelectedItems,
+    showViewPanel,
+    onViewPanelUnfold,
   } = props;
-  const { aggregateName, view } = useViewerSharedValue();
 
   let bulkMenuItems: MenuProps['items'] = [];
   if (bulkActions?.length) {
@@ -87,8 +101,6 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     );
   }
 
-
-
   const { isFullscreen, toggle } = useFullscreen({ target: fullscreenTarget });
 
   const handleFullscreenClick = useCallback(() => {
@@ -96,11 +108,21 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   }, [toggle]);
 
   return (
-    <div className={styles.topBar}>
-      <div className={styles.leftItems}>
-        {aggregateName} | {view.name}
-      </div>
-      <div className={styles.rightItems}>
+    <Flex align="center" justify="space-between">
+      <Flex gap="8px" align="center" className={styles.leftItems}>
+        {!showViewPanel && (
+          <>
+            <div onClick={onViewPanelUnfold}>
+              <BarItem icon={<MenuUnfoldOutlined />} active={false} />
+            </div>
+            <Delimiter />
+          </>
+        )}
+        {aggregateName}
+        <Point />
+        {viewName}
+      </Flex>
+      <Flex gap="8px" align="center" className={styles.rightItems}>
         {barItems.map((barItem, index) => {
           const BarItemComponent = barItemRegistry.get(barItem);
           if (!BarItemComponent) {
@@ -120,43 +142,50 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             </Dropdown>
           </>
         )}
-        {
-          primaryAction && (
-            <>
-              <Delimiter />
-              <Space.Compact>
-                {primaryAction.render ? primaryAction.render(tableSelectedItems) : (
-                  <Button
-                    type="primary"
-                    {...primaryAction.attributes}
-                    onClick={() => primaryAction.onClick?.(tableSelectedItems)}
-                  >
-                    {primaryAction.title}
-                  </Button>
-                )}
-                {secondaryMenuItems.length > 0 && (
-                    <Dropdown menu={{ items: secondaryMenuItems }} trigger={['click']}>
-                      <Button type="primary" icon={<DownOutlined />} />
-                    </Dropdown>
-                )}
-              </Space.Compact>
-            </>
-          )
-        }
+        {primaryAction && (
+          <>
+            <Delimiter />
+            <Space.Compact>
+              {primaryAction.render ? (
+                primaryAction.render(tableSelectedItems)
+              ) : (
+                <Button
+                  type="primary"
+                  {...primaryAction.attributes}
+                  onClick={() => primaryAction.onClick?.(tableSelectedItems)}
+                >
+                  {primaryAction.title}
+                </Button>
+              )}
+              {secondaryMenuItems.length > 0 && (
+                <Dropdown
+                  menu={{ items: secondaryMenuItems }}
+                  trigger={['click']}
+                >
+                  <Button type="primary" icon={<DownOutlined />} />
+                </Dropdown>
+              )}
+            </Space.Compact>
+          </>
+        )}
         {enableFullscreen && fullscreenTarget && (
           <>
             <Delimiter />
             <div onClick={handleFullscreenClick}>
               <BarItem
                 icon={
-                  isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />
+                  isFullscreen ? (
+                    <FullscreenExitOutlined />
+                  ) : (
+                    <FullscreenOutlined />
+                  )
                 }
                 active={false}
               />
             </div>
           </>
         )}
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 }

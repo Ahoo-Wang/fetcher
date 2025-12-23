@@ -1,13 +1,9 @@
 import { createContext, ReactNode, useContext } from 'react';
 import { View } from './types';
-import { ViewActions } from './Viewer';
-
-
 
 export interface ViewerSharedValue {
   aggregateName: string;
   view: View;
-  actions: ViewActions;
 
   showFilterPanel: boolean;
   setShowFilterPanel: (showFilterPanel: boolean) => void;

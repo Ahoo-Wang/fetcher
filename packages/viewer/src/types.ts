@@ -33,4 +33,9 @@ export interface KeyCapable {
   key: Key;
 }
 
+export interface ReducerActionCapable<TYPE = any> {
+  type: TYPE;
+  payload: any;
+}
+
 export type TableRecordType<RecordType> = RecordType & KeyCapable;

@@ -1,6 +1,6 @@
 import { AttributesCapable } from '../types';
 import { ActionsData } from './cell';
-import { View, ViewDefinition } from '../viewer';
+import { ViewDefinition } from '../viewer';
 import { TableProps } from 'antd';
 import type { SorterResult } from 'antd/es/table/interface';
 
@@ -112,12 +112,11 @@ export interface ViewTableProps<
   RecordType = any,
   Attributes = Omit<TableProps<RecordType>, 'columns' | 'dataSource'>,
 > extends AttributesCapable<Attributes> {
-  view: View;
   viewDefinition: ViewDefinition;
   dataSource: RecordType[];
   actionColumn?: ViewTableActionColumn<RecordType>;
   onSortChanged?: (
     sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
   ) => void;
-  onSelectChange?: (items: RecordType[]) => void
+  onSelectChange?: (items: RecordType[]) => void;
 }

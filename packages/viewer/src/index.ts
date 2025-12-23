@@ -18,3 +18,4 @@ export * from './table';
 export * from './topbar';
 export * from './viewer';
 export * from './types';
+export * from './utils';
