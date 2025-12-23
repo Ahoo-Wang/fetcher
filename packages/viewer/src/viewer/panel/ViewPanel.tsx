@@ -4,7 +4,7 @@ import { MenuFoldOutlined } from '@ant-design/icons';
 import { View } from '../types';
 import { ViewItemGroup } from './ViewItemGroup';
 
-import styles from './ViewPanel.module.css';
+import styles from './ViewPanel.module.less';
 
 export interface ViewPanelProps {
   aggregateName: string;
@@ -12,10 +12,13 @@ export interface ViewPanelProps {
   activeView: View;
   countUrl: string;
   onViewChange: (view: View) => void;
+
+  showViewPanel: boolean;
+  onViewPanelFold: () => void;
 }
 
 export function ViewPanel(props: ViewPanelProps) {
-  const { aggregateName, views, activeView, countUrl, onViewChange } = props;
+  const { aggregateName, views, activeView, countUrl, onViewChange, onViewPanelFold } = props;
 
   const personalViews = views.filter(v => v.viewType === 'PERSONAL');
   const publicViews = views.filter(v => v.viewType === 'PUBLIC');
@@ -51,15 +54,16 @@ export function ViewPanel(props: ViewPanelProps) {
     <Flex vertical gap="16px">
       <Flex align="center" justify="space-between" className={styles.top}>
         <div className={styles.title}>{aggregateName}</div>
-        <div>
+        <div onClick={onViewPanelFold}>
           <BarItem icon={<MenuFoldOutlined />} active={false} />
         </div>
       </Flex>
-      <Collapse
-        items={items}
-        defaultActiveKey={['1', '2']}
-        classNames={styles.customCollapse}
-      />
+        <Collapse
+          items={items}
+          defaultActiveKey={['1', '2']}
+          className={styles.customCollapse}
+        />
+
     </Flex>
   );
 }

@@ -54,6 +54,7 @@
     "eslint": "catalog:",
     "eslint-plugin-storybook": "^9.1.17",
     "globals": "catalog:",
+    "less": "^4.5.1",
     "playwright": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",

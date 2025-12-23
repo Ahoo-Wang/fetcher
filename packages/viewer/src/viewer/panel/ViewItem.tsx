@@ -2,7 +2,7 @@ import { View } from '../index';
 import { Flex, Tag } from 'antd';
 import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
 import { Condition } from '@ahoo-wang/fetcher-wow';
-import styles from './ViewPanel.module.css';
+import styles from './ViewPanel.module.less';
 
 export interface ViewItemProps {
   view: View;
@@ -28,8 +28,14 @@ export function ViewItem(props: ViewItemProps) {
       justify="space-between"
       className={`${styles.viewItem} ${active ? styles.active : ''}`}
     >
-      <div>
-        {view.name} {view.viewSource === 'SYSTEM' && <Tag>系统</Tag>}
+      <div className={styles.viewName}>
+        {/* 核心：用 data-tooltip 存储完整文本，配合 CSS 显示 */}
+        <span className={styles.viewNameText} data-tooltip={view.name}>
+          {view.name}
+        </span>
+        {view.viewSource === 'SYSTEM' && (
+          <Tag className={styles.viewNameTag}>系统</Tag>
+        )}
       </div>
       {!active && <div>{result && result > 999 ? '999+' : result || 0}</div>}
     </Flex>

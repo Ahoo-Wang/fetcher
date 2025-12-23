@@ -36,6 +36,9 @@ export interface TopBarProps<RecordType> {
   secondaryActions?: TopBarActionItem<RecordType>[];
 
   tableSelectedItems: RecordType[];
+
+  showViewPanel: boolean;
+  onViewPanelUnfold: () => void;
 }
 
 function renderMenuItem<RecordType>(
@@ -76,6 +79,8 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     primaryAction,
     secondaryActions,
     tableSelectedItems,
+    showViewPanel,
+    onViewPanelUnfold,
   } = props;
 
   let bulkMenuItems: MenuProps['items'] = [];
@@ -105,10 +110,14 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   return (
     <Flex align="center" justify="space-between">
       <Flex gap="8px" align="center" className={styles.leftItems}>
-        <div>
-          <BarItem icon={<MenuUnfoldOutlined />} active={false} />
-        </div>
-        <Delimiter />
+        {!showViewPanel && (
+          <>
+            <div onClick={onViewPanelUnfold}>
+              <BarItem icon={<MenuUnfoldOutlined />} active={false} />
+            </div>
+            <Delimiter />
+          </>
+        )}
         {aggregateName}
         <Point />
         {viewName}

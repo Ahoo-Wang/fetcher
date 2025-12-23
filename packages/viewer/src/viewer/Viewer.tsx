@@ -76,16 +76,20 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     return temp;
   }, [defaultViewId, views]);
 
+  // current active view
   const [activeView, setActiveView] = useState<View>(initialActiveView);
 
+  // table selected data
   const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
 
+  // table state reducer
   const { columns, tableSize, updateColumns, updateTableSize } =
     useTableStateReducer({
       columns: activeView.columns,
       tableSize: activeView.tableSize,
     });
 
+  // filter state reducer
   const {
     activeFilters,
     updateActiveFilters,
@@ -99,11 +103,22 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     showFilterPanel: true,
   });
 
+  // page size
   const [pageSize, setPageSize] = useState(activeView.pageSize);
-
+  // query sort
   const [querySort, setQuerySort] = useState<FieldSort[]>(
     activeView.sort || [],
   );
+
+  const [showViewPanel, setShowViewPanel] = useState(true);
+
+  const onViewPanelFold = useCallback(() => {
+    setShowViewPanel(false);
+  }, [setShowViewPanel]);
+
+  const onViewPanelUnfold = useCallback(() => {
+    setShowViewPanel(true);
+  }, [setShowViewPanel]);
 
   // region init query
   const { result, getQuery, setQuery, run } = useDebouncedFetcherQuery<
@@ -273,15 +288,21 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
         updateShowFilterPanel={updateShowFilterPanel}
       >
         <Layout className={props.className} style={props.style}>
-          <Sider className={styles.userViews} width={220}>
-            <ViewPanel
-              aggregateName={definition.name}
-              views={views}
-              activeView={activeView}
-              countUrl={definition.countUrl}
-              onViewChange={onViewChanged}
-            />
-          </Sider>
+          {
+            showViewPanel && (
+              <Sider className={styles.userViews} width={220}>
+                <ViewPanel
+                  aggregateName={definition.name}
+                  views={views}
+                  activeView={activeView}
+                  countUrl={definition.countUrl}
+                  onViewChange={onViewChanged}
+                  showViewPanel={showViewPanel}
+                  onViewPanelFold={onViewPanelFold}
+                />
+              </Sider>
+            )
+          }
           <Layout className={styles.container}>
             <Content>
               <Space
@@ -295,6 +316,8 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                     tableSelectedItems={tableSelectedData}
                     aggregateName={definition.name}
                     viewName={activeView.name}
+                    showViewPanel={showViewPanel}
+                    onViewPanelUnfold={onViewPanelUnfold}
                   />
                 </Header>
                 {showFilterPanel && (
