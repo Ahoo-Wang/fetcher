@@ -285,7 +285,6 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
     onChange: (selectedRowKeys, selectedRows) => {
       setSelectedRowKeys(selectedRowKeys);
       onSelectChange?.(selectedRows); // Notify parent component of selection changes
-      console.log(selectedRowKeys, selectedRows); // Debug logging
     },
   };
 
