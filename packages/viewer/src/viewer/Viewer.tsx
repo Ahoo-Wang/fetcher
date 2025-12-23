@@ -270,7 +270,6 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     [setTableSelectedData],
   );
 
-  console.log('activeFilters => ', activeFilters);
   return (
     <TableStateContextProvider
       columns={columns}
