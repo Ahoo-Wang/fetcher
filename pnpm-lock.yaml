@@ -1845,13 +1845,6 @@ packages:
       moment:
         optional: true
 
-  '@rc-component/portal@2.1.0':
-    resolution: {integrity: sha512-P25IXWkzvBbyEtrAHRfqSNRkILXgAjDfuk0s4daPfHHO0XzVk3D3KJY3Lh069xwuBGtsTZpg+mP4WBLYl9GNaA==}
-    engines: {node: '>=12.x'}
-    peerDependencies:
-      react: '>=18.0.0'
-      react-dom: '>=18.0.0'
-
   '@rc-component/portal@2.1.1':
     resolution: {integrity: sha512-i6cOWcegxgN36WH0Z+dUzb+1MSLXDys64uvPivO+fkLqqGxi1fq43ueWY0w7PamAUH4ewFYeEu7N263a+HPcdQ==}
     engines: {node: '>=12.x'}
@@ -4878,13 +4871,6 @@ snapshots:
     optionalDependencies:
       dayjs: 1.11.19
 
-  '@rc-component/portal@2.1.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@rc-component/util': 1.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      clsx: 2.1.1
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
   '@rc-component/portal@2.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@rc-component/util': 1.6.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -5035,9 +5021,9 @@ snapshots:
   '@rc-component/trigger@3.7.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@rc-component/motion': 1.1.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@rc-component/portal': 2.1.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@rc-component/portal': 2.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@rc-component/resize-observer': 1.0.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@rc-component/util': 1.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@rc-component/util': 1.6.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       clsx: 2.1.1
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
