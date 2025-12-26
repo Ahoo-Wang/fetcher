@@ -28,7 +28,7 @@ describe('TableSettingPanel', () => {
 
   const mockColumns: ViewColumn[] = [
     {
-      dataIndex: 'id',
+      name: 'id',
       visible: true,
       fixed: true,
     },
@@ -36,10 +36,10 @@ describe('TableSettingPanel', () => {
 
   const mockViewDefinition: ViewDefinition = {
     name: 'Test View',
-    columns: [
+    fields: [
       {
-        title: 'ID',
-        dataIndex: 'id',
+        label: 'ID',
+        name: 'id',
         type: 'text',
         primaryKey: true,
         sorter: true,

@@ -24,13 +24,13 @@ type Story = StoryObj<typeof meta>;
 const sampleView: View = {
   id: '1',
   name: 'Sample View',
-  viewType: 'PERSONAL',
-  viewSource: 'CUSTOM',
+  type: 'PERSONAL',
+  source: 'CUSTOM',
   isDefault: false,
   filters: [],
   columns: [
     {
-      dataIndex: 'id',
+      name: 'id',
       fixed: false,
       visible: true,
     },
@@ -43,7 +43,7 @@ const sampleView: View = {
 const systemView: View = {
   ...sampleView,
   name: 'System View',
-  viewSource: 'SYSTEM',
+  source: 'SYSTEM',
 };
 
 export const Default: Story = {

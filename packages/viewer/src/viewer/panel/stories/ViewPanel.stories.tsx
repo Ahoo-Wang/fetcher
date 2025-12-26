@@ -24,18 +24,18 @@ type Story = StoryObj<typeof meta>;
 const createSampleView = (
   id: string,
   name: string,
-  viewType: 'PERSONAL' | 'PUBLIC' = 'PERSONAL',
+  viewType: 'PERSONAL' | 'SHARED' = 'PERSONAL',
   viewSource: 'SYSTEM' | 'CUSTOM' = 'CUSTOM',
 ): View => ({
   id,
   name,
-  viewType,
-  viewSource,
+  type: viewType,
+  source: viewSource,
   isDefault: false,
   filters: [],
   columns: [
     {
-      dataIndex: 'id',
+      name: 'id',
       fixed: false,
       visible: true,
     },
@@ -67,7 +67,7 @@ export const Default: Story = {
 export const OnlyPersonalViews: Story = {
   args: {
     aggregateName: 'aggregateName',
-    views: sampleViews.filter(v => v.viewType === 'PERSONAL'),
+    views: sampleViews.filter(v => v.type === 'PERSONAL'),
     activeView: sampleViews[0],
     countUrl: '/api/count',
     onViewChange: (view: View) => console.log('View changed to:', view.name),
@@ -77,7 +77,7 @@ export const OnlyPersonalViews: Story = {
 export const OnlyPublicViews: Story = {
   args: {
     aggregateName: 'aggregateName',
-    views: sampleViews.filter(v => v.viewType === 'PUBLIC'),
+    views: sampleViews.filter(v => v.type === 'PUBLIC'),
     activeView: sampleViews[2],
     countUrl: '/api/count',
     onViewChange: (view: View) => console.log('View changed to:', view.name),
