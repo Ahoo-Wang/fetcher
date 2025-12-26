@@ -67,7 +67,7 @@ import { useTableStateContext } from '../viewer';
  *     }
  *   ],
  *   availableFilters: [],
- *   dataSourceUrl: '/api/users',
+ *   dataUrl: '/api/users',
  *   countUrl: '/api/users/count',
  *   checkable: true
  * };

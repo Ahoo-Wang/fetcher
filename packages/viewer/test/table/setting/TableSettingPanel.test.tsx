@@ -96,7 +96,7 @@ describe('TableSettingPanel', () => {
       },
     ],
     availableFilters: [],
-    dataSourceUrl: '/api/test',
+    dataUrl: '/api/test',
     countUrl: '/api/test/count',
   };
 

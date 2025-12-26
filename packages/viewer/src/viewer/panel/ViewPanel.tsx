@@ -72,7 +72,7 @@ export interface ViewPanelProps {
  *   {
  *     id: 'public-1',
  *     name: 'All Team Members',
- *     viewType: 'PUBLIC',
+ *     viewType: 'SHARED',
  *     viewSource: 'CUSTOM',
  *     isDefault: true,
  *     filters: [],
@@ -89,7 +89,7 @@ export interface ViewPanelProps {
  *   {
  *     id: 'system-1',
  *     name: 'Admin Users',
- *     viewType: 'PUBLIC',
+ *     viewType: 'SHARED',
  *     viewSource: 'SYSTEM',
  *     isDefault: false,
  *     filters: [],

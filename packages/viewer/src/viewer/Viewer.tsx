@@ -149,7 +149,7 @@ export interface ViewerProps<RecordType>
  *     }
  *   ],
  *   availableFilters: [],
- *   dataSourceUrl: '/api/users',
+ *   dataUrl: '/api/users',
  *   countUrl: '/api/users/count',
  *   checkable: true
  * };
@@ -266,7 +266,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     PagedQuery,
     PagedList<RecordType>
   >({
-    url: definition.dataSourceUrl,
+    url: definition.dataUrl,
     initialQuery: activeView.pagedQuery,
     debounce: {
       delay: 300, // 300ms debounce delay
@@ -413,7 +413,6 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     [setTableSelectedData],
   );
 
-  console.log('activeFilters => ', activeFilters);
   return (
     <TableStateContextProvider
       columns={columns}

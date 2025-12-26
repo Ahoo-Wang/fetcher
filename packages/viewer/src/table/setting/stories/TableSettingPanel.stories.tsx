@@ -88,7 +88,7 @@ const sampleViewDefinition: ViewDefinition = {
     },
   ],
   availableFilters: [],
-  dataSourceUrl: '/api/sample',
+  dataUrl: '/api/sample',
   countUrl: '/api/sample/count',
 };
 

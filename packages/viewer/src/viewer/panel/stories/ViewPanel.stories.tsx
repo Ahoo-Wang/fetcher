@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { ViewPanel } from '../ViewPanel';
-import { View } from '../../types';
+import { View, ViewSource, ViewType } from '../../types';
+import { Operator } from '@ahoo-wang/fetcher-wow';
 
 const meta: Meta<typeof ViewPanel> = {
   title: 'Viewer/Panel/ViewPanel',
@@ -24,8 +25,8 @@ type Story = StoryObj<typeof meta>;
 const createSampleView = (
   id: string,
   name: string,
-  viewType: 'PERSONAL' | 'SHARED' = 'PERSONAL',
-  viewSource: 'SYSTEM' | 'CUSTOM' = 'CUSTOM',
+  viewType: ViewType = 'PERSONAL',
+  viewSource: ViewSource = 'CUSTOM',
 ): View => ({
   id,
   name,
@@ -44,14 +45,19 @@ const createSampleView = (
   condition: {},
   pageSize: 10,
   sortId: 0,
+  pagedQuery: {
+    condition: {
+      operator: Operator.ALL,
+    }
+  }
 });
 
 const sampleViews: View[] = [
   createSampleView('1', 'My Personal View', 'PERSONAL'),
   createSampleView('2', 'Another Personal View', 'PERSONAL'),
-  createSampleView('3', 'Team Public View', 'PUBLIC'),
-  createSampleView('4', 'Company Public View', 'PUBLIC'),
-  createSampleView('5', 'System Public View', 'PUBLIC', 'SYSTEM'),
+  createSampleView('3', 'Team Public View', 'SHARED'),
+  createSampleView('4', 'Company Public View', 'SHARED'),
+  createSampleView('5', 'System Public View', 'SHARED', 'SYSTEM'),
 ];
 
 export const Default: Story = {
@@ -77,7 +83,7 @@ export const OnlyPersonalViews: Story = {
 export const OnlyPublicViews: Story = {
   args: {
     aggregateName: 'aggregateName',
-    views: sampleViews.filter(v => v.type === 'PUBLIC'),
+    views: sampleViews.filter(v => v.type === 'SHARED'),
     activeView: sampleViews[2],
     countUrl: '/api/count',
     onViewChange: (view: View) => console.log('View changed to:', view.name),

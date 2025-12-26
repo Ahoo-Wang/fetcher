@@ -12,7 +12,7 @@ export interface ViewDefinition {
   name: string;
   fields: ViewColumnDefinition[];
   availableFilters: AvailableFilterGroup[];
-  dataSourceUrl: string;
+  dataUrl: string;
   countUrl: string;
   internalCondition?: Condition;
   checkable?: boolean;
