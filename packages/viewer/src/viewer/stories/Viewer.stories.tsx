@@ -11,7 +11,6 @@ import {
 import { ViewTableActionColumn } from '../../table';
 import { Button } from 'antd';
 import {
-  Condition,
   MaterializedSnapshot,
   Operator,
 } from '@ahoo-wang/fetcher-wow';
@@ -200,7 +199,7 @@ const viewDefinition: ViewDefinition = {
       ],
     },
   ],
-  dataSourceUrl:
+  dataUrl:
     'http://procurement-service.dev.svc.cluster.local/tenant/mydao/sku_cost/snapshot/paged',
   countUrl:
     'http://procurement-service.dev.svc.cluster.local/tenant/mydao/sku_cost/snapshot/count',
