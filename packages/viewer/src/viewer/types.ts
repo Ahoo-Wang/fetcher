@@ -3,13 +3,14 @@ import { TypeCapable } from '../registry';
 import { AttributesCapable } from '../types';
 import { SortOrder } from 'antd/es/table/interface';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import { Condition, FieldSort, PagedQuery } from '@ahoo-wang/fetcher-wow';
 import React from 'react';
 import { ButtonProps } from 'antd';
+import { NamedCapable } from '@ahoo-wang/fetcher';
 
 export interface ViewDefinition {
   name: string;
-  columns: ViewColumnDefinition[];
+  fields: ViewColumnDefinition[];
   availableFilters: AvailableFilterGroup[];
   dataSourceUrl: string;
   countUrl: string;
@@ -17,22 +18,22 @@ export interface ViewDefinition {
   checkable?: boolean;
 }
 
-export interface ViewColumnDefinition extends TypeCapable, AttributesCapable {
-  title: string;
-  dataIndex: string;
+export interface ViewColumnDefinition
+  extends NamedCapable, TypeCapable, AttributesCapable {
+  label: string;
   primaryKey: boolean;
   render?: (value: any, record: any, index: number) => React.ReactNode;
   sorter: boolean | { multiple: number };
 }
 
-export type ViewType = 'PERSONAL' | 'PUBLIC';
+export type ViewType = 'PERSONAL' | 'SHARED';
 export type ViewSource = 'SYSTEM' | 'CUSTOM';
 
 export interface View {
   id: string;
   name: string;
-  viewType: ViewType;
-  viewSource: ViewSource;
+  type: ViewType;
+  source: ViewSource;
   isDefault: boolean;
   filters: ActiveFilter[];
   columns: ViewColumn[];
@@ -41,10 +42,10 @@ export interface View {
   pageSize: number;
   sort?: FieldSort[];
   sortId: number;
+  pagedQuery: PagedQuery;
 }
 
-export interface ViewColumn {
-  dataIndex: string;
+export interface ViewColumn extends NamedCapable {
   fixed: boolean;
   visible: boolean;
   width?: string;

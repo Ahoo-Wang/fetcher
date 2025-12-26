@@ -101,7 +101,7 @@ describe('typedCellRender', () => {
       />,
     );
     const textElement = container.querySelector('.ant-typography');
-    expect(textElement?.textContent).toBe('');
+    expect(textElement?.textContent).toBe('-');
   });
 
   it('should handle empty string', () => {
@@ -117,7 +117,7 @@ describe('typedCellRender', () => {
       />,
     );
     const textElement = container.querySelector('.ant-typography');
-    expect(textElement?.textContent).toBe('');
+    expect(textElement?.textContent).toBe('-');
   });
 
   it('should pass record and index correctly', () => {

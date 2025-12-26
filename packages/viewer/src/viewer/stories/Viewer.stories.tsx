@@ -1,10 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { Viewer } from '../Viewer';
-import { View, ViewColumn, ViewDefinition } from '../types';
+import {
+  View,
+  ViewColumn,
+  ViewDefinition,
+  ViewType,
+  ViewSource,
+} from '../types';
 import { ViewTableActionColumn } from '../../table';
 import { Button } from 'antd';
-import type { MaterializedSnapshot } from '@ahoo-wang/fetcher-wow';
+import {
+  Condition,
+  MaterializedSnapshot,
+  Operator,
+} from '@ahoo-wang/fetcher-wow';
 import {
   COLUMN_HEIGHT_BAR_ITEM_TYPE,
   FILTER_BAR_ITEM_TYPE,
@@ -72,68 +82,69 @@ const meta: Meta = {
   component: Viewer,
   tags: ['autodocs'],
 };
+
 const viewDefinition: ViewDefinition = {
   name: 'SKU成本',
-  columns: [
+  fields: [
     {
-      title: '成本编号',
-      dataIndex: 'state.id',
+      label: '成本编号',
+      name: 'state.id',
       primaryKey: true,
       type: 'id',
       attributes: {},
       sorter: { multiple: 1 },
     },
     {
-      title: '供应商编号',
-      dataIndex: 'state.businessPartnerId.id',
+      label: '供应商编号',
+      name: 'state.businessPartnerId.id',
       primaryKey: false,
       type: 'text',
       attributes: {},
       sorter: false,
     },
     {
-      title: '供应商名称',
-      dataIndex: 'state.businessPartnerId.name',
+      label: '供应商名称',
+      name: 'state.businessPartnerId.name',
       primaryKey: false,
       type: 'text',
       attributes: {},
       sorter: false,
     },
     {
-      title: '供应商业务编号',
-      dataIndex: 'state.businessPartnerId.bizId',
+      label: '供应商业务编号',
+      name: 'state.businessPartnerId.bizId',
       primaryKey: false,
       type: 'text',
       attributes: {},
       sorter: false,
     },
     {
-      title: 'SKU No.',
-      dataIndex: 'state.skuId.code',
+      label: 'SKU No.',
+      name: 'state.skuId.code',
       primaryKey: false,
       type: 'text',
       attributes: {},
       sorter: false,
     },
     {
-      title: '品牌名称',
-      dataIndex: 'state.skuId.brandName',
+      label: '品牌名称',
+      name: 'state.skuId.brandName',
       primaryKey: false,
       type: 'text',
       attributes: {},
       sorter: { multiple: 2 },
     },
     {
-      title: 'SKU订货号',
-      dataIndex: 'state.skuId.orderNo',
+      label: 'SKU订货号',
+      name: 'state.skuId.orderNo',
       primaryKey: false,
       type: 'text',
       attributes: {},
       sorter: false,
     },
     {
-      title: '成本数',
-      dataIndex: 'state.costCount',
+      label: '成本数',
+      name: 'state.costCount',
       primaryKey: false,
       type: 'text',
       attributes: {},
@@ -199,49 +210,49 @@ const viewDefinition: ViewDefinition = {
 
 const columns: ViewColumn[] = [
   {
-    dataIndex: 'state.id',
+    name: 'state.id',
     fixed: true,
     visible: true,
     width: '300px',
   },
   {
-    dataIndex: 'state.businessPartnerId.id',
+    name: 'state.businessPartnerId.id',
     fixed: false,
     visible: true,
     width: '500px',
   },
   {
-    dataIndex: 'state.businessPartnerId.name',
+    name: 'state.businessPartnerId.name',
     fixed: false,
     visible: true,
     width: '300px',
   },
   {
-    dataIndex: 'state.businessPartnerId.bizId',
+    name: 'state.businessPartnerId.bizId',
     fixed: false,
     visible: true,
     width: '200px',
   },
   {
-    dataIndex: 'state.skuId.code',
+    name: 'state.skuId.code',
     fixed: false,
     visible: true,
     width: '300px',
   },
   {
-    dataIndex: 'state.skuId.brandName',
+    name: 'state.skuId.brandName',
     fixed: false,
     visible: true,
     width: '300px',
   },
   {
-    dataIndex: 'state.skuId.orderNo',
+    name: 'state.skuId.orderNo',
     fixed: false,
     visible: true,
     width: '300px',
   },
   {
-    dataIndex: 'state.costCount',
+    name: 'state.costCount',
     fixed: false,
     visible: true,
     width: '300px',
@@ -251,8 +262,8 @@ const columns: ViewColumn[] = [
 const createSampleView = (
   id: string,
   name: string,
-  viewType: 'PERSONAL' | 'PUBLIC' = 'PERSONAL',
-  viewSource: 'SYSTEM' | 'CUSTOM' = 'CUSTOM',
+  viewType: ViewType = 'PERSONAL',
+  viewSource: ViewSource = 'CUSTOM',
   filters: ActiveFilter[] = [
     {
       key: 'name',
@@ -266,8 +277,8 @@ const createSampleView = (
 ): View => ({
   id,
   name,
-  viewType,
-  viewSource,
+  type: viewType,
+  source: viewSource,
   isDefault: false,
   filters: filters,
   columns: columns,
@@ -275,6 +286,11 @@ const createSampleView = (
   condition: {},
   pageSize: 10,
   sortId: 0,
+  pagedQuery: {
+    condition: {
+      operator: Operator.ALL,
+    },
+  },
 });
 
 const sampleViews: View[] = [
@@ -297,9 +313,9 @@ const sampleViews: View[] = [
       },
     },
   ]),
-  createSampleView('3', 'Team Public View', 'PUBLIC'),
-  createSampleView('4', 'Company Public View', 'PUBLIC'),
-  createSampleView('5', 'System Public View', 'PUBLIC', 'SYSTEM'),
+  createSampleView('3', 'Team Public View', 'SHARED'),
+  createSampleView('4', 'Company Public View', 'SHARED'),
+  createSampleView('5', 'System Public View', 'SHARED', 'SYSTEM'),
 ];
 
 const actionColumn: ViewTableActionColumn<MaterializedSnapshot<SkuCostState>> =

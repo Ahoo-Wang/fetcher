@@ -28,13 +28,13 @@ const createSampleView = (
 ): View => ({
   id,
   name,
-  viewType: 'PERSONAL',
-  viewSource,
+  type: 'PERSONAL',
+  source: viewSource,
   isDefault: false,
   filters: [],
   columns: [
     {
-      dataIndex: 'id',
+      name: 'id',
       fixed: false,
       visible: true,
     },

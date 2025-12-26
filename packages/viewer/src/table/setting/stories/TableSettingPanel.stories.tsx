@@ -50,38 +50,38 @@ type Story = StoryObj<typeof meta>;
 
 const sampleViewDefinition: ViewDefinition = {
   name: 'Sample View',
-  columns: [
+  fields: [
     {
-      title: 'ID',
-      dataIndex: 'id',
+      label: 'ID',
+      name: 'id',
       primaryKey: true,
       type: 'text',
       sorter: true,
     },
     {
-      title: 'Name',
-      dataIndex: 'name',
+      label: 'Name',
+      name: 'name',
       primaryKey: false,
       type: 'text',
       sorter: true,
     },
     {
-      title: 'Category',
-      dataIndex: 'category',
+      label: 'Category',
+      name: 'category',
       primaryKey: false,
       type: 'text',
       sorter: true,
     },
     {
-      title: 'Price',
-      dataIndex: 'price',
+      label: 'Price',
+      name: 'price',
       primaryKey: false,
       type: 'number',
       sorter: true,
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
+      label: 'Status',
+      name: 'status',
       primaryKey: false,
       type: 'text',
       sorter: true,
@@ -94,27 +94,27 @@ const sampleViewDefinition: ViewDefinition = {
 
 const sampleColumns: ViewColumn[] = [
   {
-    dataIndex: 'id',
+    name: 'id',
     visible: true,
     fixed: true,
   },
   {
-    dataIndex: 'name',
+    name: 'name',
     visible: true,
     fixed: false,
   },
   {
-    dataIndex: 'category',
+    name: 'category',
     visible: true,
     fixed: false,
   },
   {
-    dataIndex: 'price',
+    name: 'price',
     visible: false,
     fixed: false,
   },
   {
-    dataIndex: 'status',
+    name: 'status',
     visible: false,
     fixed: false,
   },
