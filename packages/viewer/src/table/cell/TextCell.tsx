@@ -118,5 +118,5 @@ export interface TextCellProps<RecordType = any>
  * ```
  */
 export function TextCell<RecordType = any>(props: TextCellProps<RecordType>) {
-  return <Text {...props.attributes}>{props.attributes?.children ?? props.data.value}</Text>;
+  return <Text {...props.attributes}>{props.attributes?.children ?? (props.data.value || '-')}</Text>;
 }

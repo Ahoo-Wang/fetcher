@@ -33,25 +33,155 @@ import { mapToTableRecord } from '../utils';
 
 const { Header, Footer, Sider, Content } = Layout;
 
+/**
+ * Ref interface for the Viewer component.
+ *
+ * Provides imperative methods to control the viewer from parent components.
+ */
 export interface ViewerRef {
+  /** Refreshes the data by re-executing the current query */
   refreshData: () => void;
 }
 
+/**
+ * Props for the Viewer component.
+ *
+ * The Viewer is a comprehensive data viewing component that provides:
+ * - Multiple view management with persistent configurations
+ * - Advanced filtering with editable filter panels
+ * - Table display with sorting, selection, and pagination
+ * - State management for table and filter configurations
+ * - Responsive layout with collapsible panels
+ */
 export interface ViewerProps<RecordType>
   extends
     TopBarPropsCapable<RecordType>,
     StyleCapable,
     RefAttributes<ViewerRef> {
+  /** Display name for the viewer instance */
   name: string;
+  /** Array of available views for switching between different data perspectives */
   views: View[];
+  /** Optional ID of the default view to select on initialization */
   defaultViewId?: string;
+  /** View definition containing column configurations and data source information */
   definition: ViewDefinition;
+  /** Action column configuration for table row actions */
   actionColumn: ViewTableActionColumn<TableRecordType<RecordType>>;
-
+  /** Additional pagination props (excluding total which is managed internally) */
   paginationProps?: Omit<PaginationProps, 'total'>;
 }
 
+/**
+ * Viewer Component
+ *
+ * A comprehensive data viewing component that provides a complete data management interface.
+ * It integrates views, filters, table display, and pagination into a cohesive user experience.
+ *
+ * Key features:
+ * - Multiple view management with persistent configurations
+ * - Advanced filtering with editable filter panels
+ * - Sortable, selectable table with customizable columns
+ * - Responsive layout with collapsible side panels
+ * - State management for all viewer configurations
+ * - Debounced queries for optimal performance
+ *
+ * @template RecordType - The type of data records being displayed
+ * @param props - Viewer configuration and data
+ * @param props.name - Display name for the viewer
+ * @param props.views - Available views for data perspective switching
+ * @param props.defaultViewId - Optional default view selection
+ * @param props.definition - Column and data source configuration
+ * @param props.actionColumn - Row action column configuration
+ * @param props.paginationProps - Additional pagination settings
+ * @param props.topBar - Top bar configuration and actions
+ * @param props.className - CSS class for styling
+ * @param props.style - Inline styles
+ * @param props.ref - Ref for imperative methods
+ *
+ * @example
+ * ```tsx
+ * import { Viewer } from './Viewer';
+ * import type { View, ViewDefinition } from './types';
+ *
+ * interface User {
+ *   id: number;
+ *   name: string;
+ *   email: string;
+ *   status: 'active' | 'inactive';
+ * }
+ *
+ * const userViews: View[] = [
+ *   {
+ *     id: 'all-users',
+ *     name: 'All Users',
+ *     viewType: 'PUBLIC',
+ *     viewSource: 'CUSTOM',
+ *     isDefault: true,
+ *     filters: [],
+ *     columns: [
+ *       { dataIndex: 'id', fixed: false, visible: true },
+ *       { dataIndex: 'name', fixed: false, visible: true },
+ *       { dataIndex: 'email', fixed: false, visible: true },
+ *       { dataIndex: 'status', fixed: false, visible: true }
+ *     ],
+ *     tableSize: 'middle',
+ *     condition: {},
+ *     pageSize: 20
+ *   }
+ * ];
+ *
+ * const userDefinition: ViewDefinition = {
+ *   name: 'User Management',
+ *   columns: [
+ *     {
+ *       title: 'ID',
+ *       dataIndex: 'id',
+ *       type: 'number',
+ *       primaryKey: true,
+ *       sorter: true
+ *     },
+ *     {
+ *       title: 'Name',
+ *       dataIndex: 'name',
+ *       type: 'text',
+ *       sorter: true
+ *     }
+ *   ],
+ *   availableFilters: [],
+ *   dataSourceUrl: '/api/users',
+ *   countUrl: '/api/users/count',
+ *   checkable: true
+ * };
+ *
+ * const actionColumn: ViewTableActionColumn<User> = {
+ *   title: 'Actions',
+ *   configurable: true,
+ *   actions: (record) => ({
+ *     primaryAction: {
+ *       data: { value: 'Edit', record, index: 0 },
+ *       attributes: { onClick: () => handleEdit(record) }
+ *     }
+ *   })
+ * };
+ *
+ * function UserManagement() {
+ *   const viewerRef = useRef<ViewerRef>(null);
+ *
+ *   return (
+ *     <Viewer<User>
+ *       ref={viewerRef}
+ *       name="User Management"
+ *       views={userViews}
+ *       definition={userDefinition}
+ *       actionColumn={actionColumn}
+ *     />
+ *   );
+ * }
+ * ```
+ */
 export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
+  // Extract props for cleaner code
   const {
     ref,
     views,
@@ -62,7 +192,10 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     paginationProps,
   } = props;
 
-  // get default view
+  /**
+   * Determine the initial active view based on configuration.
+   * Priority: defaultViewId > isDefault flag > first view in array.
+   */
   const initialActiveView = useMemo<View>(() => {
     let temp;
     if (defaultViewId) {
@@ -76,20 +209,26 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     return temp;
   }, [defaultViewId, views]);
 
-  // current active view
+  // Current active view state
   const [activeView, setActiveView] = useState<View>(initialActiveView);
 
-  // table selected data
+  // Table row selection state
   const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
 
-  // table state reducer
+  /**
+   * Table state management using reducer pattern.
+   * Manages column configurations and table sizing preferences.
+   */
   const { columns, tableSize, updateColumns, updateTableSize } =
     useTableStateReducer({
       columns: activeView.columns,
       tableSize: activeView.tableSize,
     });
 
-  // filter state reducer
+  /**
+   * Filter state management using reducer pattern.
+   * Manages active filters, query conditions, and filter panel visibility.
+   */
   const {
     activeFilters,
     updateActiveFilters,
@@ -99,15 +238,13 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     updateShowFilterPanel,
   } = useFilterStateReducer({
     activeFilters: activeView.filters,
-    queryCondition: activeView.condition,
+    queryCondition: activeView.pagedQuery.condition,
     showFilterPanel: true,
   });
 
   // page size
-  const [pageSize, setPageSize] = useState(activeView.pageSize);
-  // query sort
-  const [querySort, setQuerySort] = useState<FieldSort[]>(
-    activeView.sort || [],
+  const [pageSize, setPageSize] = useState(
+    activeView.pagedQuery.pagination?.size || 10,
   );
 
   const [showViewPanel, setShowViewPanel] = useState(true);
@@ -120,27 +257,32 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     setShowViewPanel(true);
   }, [setShowViewPanel]);
 
-  // region init query
+  /**
+   * Data fetching with debounced queries.
+   * Automatically fetches paginated, filtered, and sorted data from the API.
+   * Uses debouncing to prevent excessive API calls during rapid state changes.
+   */
   const { result, getQuery, setQuery, run } = useDebouncedFetcherQuery<
     PagedQuery,
     PagedList<RecordType>
   >({
     url: definition.dataSourceUrl,
-    initialQuery: {
-      condition: queryCondition,
-      pagination: { index: 1, size: activeView.pageSize },
-      sort: querySort,
-    },
+    initialQuery: activeView.pagedQuery,
     debounce: {
-      delay: 300,
-      leading: true,
+      delay: 300, // 300ms debounce delay
+      leading: true, // Execute immediately on first change
     },
-    autoExecute: true,
+    autoExecute: true, // Start fetching immediately on mount
     onError: (error: FetcherError) => {
-      console.log(error);
+      console.log(error); // Log errors for debugging
     },
   });
 
+  /**
+   * Refresh data callback.
+   * Re-executes the current query to refresh table data.
+   * Exposed via ref for external control.
+   */
   const refreshData = useCallback(() => {
     run();
   }, [run]);
@@ -233,7 +375,6 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
       pagination: { index: 1, size: pageSize },
       sort: fieldSorts,
     });
-    setQuerySort(fieldSorts);
   };
 
   // endregion
@@ -244,7 +385,8 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
       updateColumns(activeView.columns);
       updateTableSize(activeView.tableSize);
       updateActiveFilters(activeView.filters);
-      updateQueryCondition(activeView.condition);
+      updateQueryCondition(activeView.pagedQuery.condition);
+      setPageSize(activeView.pagedQuery.pagination?.size || 10);
     },
     [
       setActiveView,
@@ -252,6 +394,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
       updateTableSize,
       updateActiveFilters,
       updateQueryCondition,
+      setPageSize,
     ],
   );
 
@@ -288,21 +431,19 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
         updateShowFilterPanel={updateShowFilterPanel}
       >
         <Layout className={props.className} style={props.style}>
-          {
-            showViewPanel && (
-              <Sider className={styles.userViews} width={220}>
-                <ViewPanel
-                  aggregateName={definition.name}
-                  views={views}
-                  activeView={activeView}
-                  countUrl={definition.countUrl}
-                  onViewChange={onViewChanged}
-                  showViewPanel={showViewPanel}
-                  onViewPanelFold={onViewPanelFold}
-                />
-              </Sider>
-            )
-          }
+          {showViewPanel && (
+            <Sider className={styles.userViews} width={220}>
+              <ViewPanel
+                aggregateName={definition.name}
+                views={views}
+                activeView={activeView}
+                countUrl={definition.countUrl}
+                onViewChange={onViewChanged}
+                showViewPanel={showViewPanel}
+                onViewPanelFold={onViewPanelFold}
+              />
+            </Sider>
+          )}
           <Layout className={styles.container}>
             <Content>
               <Space

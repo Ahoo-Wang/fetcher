@@ -30,27 +30,27 @@ describe('TableSettingPanel', () => {
 
   const mockColumns: ViewColumn[] = [
     {
-      dataIndex: 'id',
+      name: 'id',
       visible: true,
       fixed: true,
     },
     {
-      dataIndex: 'name',
+      name: 'name',
       visible: true,
       fixed: false,
     },
     {
-      dataIndex: 'category',
+      name: 'category',
       visible: true,
       fixed: false,
     },
     {
-      dataIndex: 'price',
+      name: 'price',
       visible: false,
       fixed: false,
     },
     {
-      dataIndex: 'status',
+      name: 'status',
       visible: false,
       fixed: false,
     },
@@ -58,38 +58,38 @@ describe('TableSettingPanel', () => {
 
   const mockViewDefinition: ViewDefinition = {
     name: 'Test View',
-    columns: [
+    fields: [
       {
-        title: 'ID',
-        dataIndex: 'id',
+        label: 'ID',
+        name: 'id',
         type: 'text',
         primaryKey: true,
         sorter: true,
       },
       {
-        title: 'Name',
-        dataIndex: 'name',
+        label: 'Name',
+        name: 'name',
         type: 'text',
         primaryKey: false,
         sorter: true,
       },
       {
-        title: 'Category',
-        dataIndex: 'category',
+        label: 'Category',
+        name: 'category',
         type: 'text',
         primaryKey: false,
         sorter: true,
       },
       {
-        title: 'Price',
-        dataIndex: 'price',
+        label: 'Price',
+        name: 'price',
         type: 'number',
         primaryKey: false,
         sorter: true,
       },
       {
-        title: 'Status',
-        dataIndex: 'status',
+        label: 'Status',
+        name: 'status',
         type: 'text',
         primaryKey: false,
         sorter: true,
@@ -169,7 +169,7 @@ describe('TableSettingPanel', () => {
 
     // Price column should now be visible
     const priceColumn = updatedColumns.find(
-      (col: ViewColumn) => col.dataIndex === 'price',
+      (col: ViewColumn) => col.name === 'price',
     );
     expect(priceColumn?.visible).toBe(true);
   });
@@ -192,8 +192,8 @@ describe('TableSettingPanel', () => {
 
   it('handles columns with only fixed columns', () => {
     const fixedOnlyColumns: ViewColumn[] = [
-      { dataIndex: 'id', visible: true, fixed: true },
-      { dataIndex: 'name', visible: true, fixed: true },
+      { name: 'id', visible: true, fixed: true },
+      { name: 'name', visible: true, fixed: true },
     ];
 
     mockUseTableStateContext.mockReturnValue({
@@ -213,8 +213,8 @@ describe('TableSettingPanel', () => {
 
   it('handles columns with only hidden columns', () => {
     const hiddenOnlyColumns: ViewColumn[] = [
-      { dataIndex: 'price', visible: false, fixed: false },
-      { dataIndex: 'status', visible: false, fixed: false },
+      { name: 'price', visible: false, fixed: false },
+      { name: 'status', visible: false, fixed: false },
     ];
 
     mockUseTableStateContext.mockReturnValue({
@@ -333,10 +333,10 @@ describe('TableSettingPanel', () => {
   it('prevents dropping when fixed columns limit is reached', () => {
     // Set up 3 fixed columns (at the limit)
     const maxFixedColumns: ViewColumn[] = [
-      { dataIndex: 'id', visible: true, fixed: true },
-      { dataIndex: 'name', visible: true, fixed: true },
-      { dataIndex: 'category', visible: true, fixed: true },
-      { dataIndex: 'price', visible: true, fixed: false },
+      { name: 'id', visible: true, fixed: true },
+      { name: 'name', visible: true, fixed: true },
+      { name: 'category', visible: true, fixed: true },
+      { name: 'price', visible: true, fixed: false },
     ];
 
     mockUseTableStateContext.mockReturnValue({
@@ -386,7 +386,7 @@ describe('TableSettingPanel', () => {
   it('handles columns with missing view definition entries', () => {
     const incompleteViewDefinition: ViewDefinition = {
       ...mockViewDefinition,
-      columns: [mockViewDefinition.columns[0]], // Only ID column defined
+      fields: [mockViewDefinition.fields[0]], // Only ID column defined
     };
 
     render(<TableSettingPanel viewDefinition={incompleteViewDefinition} />);
@@ -402,7 +402,7 @@ describe('TableSettingPanel', () => {
   it('handles viewDefinition with no columns', () => {
     const emptyViewDefinition: ViewDefinition = {
       ...mockViewDefinition,
-      columns: [],
+      fields: [],
     };
 
     render(<TableSettingPanel viewDefinition={emptyViewDefinition} />);
@@ -458,7 +458,7 @@ describe('TableSettingPanel', () => {
 
     // Price should now be visible
     const priceColumn = updatedColumns.find(
-      (col: ViewColumn) => col.dataIndex === 'price',
+      (col: ViewColumn) => col.name === 'price',
     );
     expect(priceColumn?.visible).toBe(true);
   });

@@ -217,8 +217,8 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
   ) => {
     // Find the column definition from the view definition
     // This provides metadata like title, primary key status, etc.
-    const columnDefinition = viewDefinition.columns.find(
-      col => col.dataIndex === column.dataIndex,
+    const columnDefinition = viewDefinition.fields.find(
+      col => col.name === column.name,
     );
     if (!columnDefinition) {
       return <></>; // Column not found in definition
@@ -227,7 +227,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     return (
       <div
         className={`${styles.item} ${dragState?.index === column.index ? styles.dragging : ''}`}
-        key={columnDefinition.dataIndex}
+        key={columnDefinition.name}
         draggable={!columnDefinition.primaryKey} // Primary key columns cannot be reordered
         onDragStart={e => handleDragStart(e, group, column.index)}
         onDragOver={handleDragOver}
@@ -255,15 +255,15 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
    */
   const renderStaticItem = (column: ViewColumn & { index: number }) => {
     // Find the column definition from the view definition
-    const columnDefinition = viewDefinition.columns.find(
-      col => col.dataIndex === column.dataIndex,
+    const columnDefinition = viewDefinition.fields.find(
+      col => col.name === column.name,
     );
     if (!columnDefinition) {
       return <></>; // Column not found in definition
     }
 
     return (
-      <div className={styles.item} key={columnDefinition.dataIndex}>
+      <div className={styles.item} key={columnDefinition.name}>
         <TableFieldItem
           columnDefinition={columnDefinition}
           fixed={column.fixed || false}

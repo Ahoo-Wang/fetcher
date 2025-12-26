@@ -44,7 +44,7 @@ describe('TextCell', () => {
     const { container } = render(<TextCell {...props} />);
     const textElement = container.querySelector('.ant-typography');
     expect(textElement).toBeInTheDocument();
-    expect(textElement?.textContent).toBe('');
+    expect(textElement?.textContent).toBe('-');
   });
 
   it('should render special characters', () => {
@@ -167,7 +167,7 @@ describe('TextCell', () => {
 
     const { container } = render(<TextCell {...props} />);
     const textElement = container.querySelector('.ant-typography');
-    expect(textElement?.textContent).toBe('');
+    expect(textElement?.textContent).toBe('-');
   });
 
   it('should handle null value (renders empty)', () => {
@@ -183,7 +183,7 @@ describe('TextCell', () => {
     const { container } = render(<TextCell {...props} />);
     const textElement = container.querySelector('.ant-typography');
     expect(textElement).toBeInTheDocument();
-    expect(textElement?.textContent).toBe('');
+    expect(textElement?.textContent).toBe('-');
   });
 
   it('should handle undefined value (renders empty)', () => {
@@ -199,7 +199,7 @@ describe('TextCell', () => {
     const { container } = render(<TextCell {...props} />);
     const textElement = container.querySelector('.ant-typography');
     expect(textElement).toBeInTheDocument();
-    expect(textElement?.textContent).toBe('');
+    expect(textElement?.textContent).toBe('-');
   });
 
   it('should handle object value (throws error)', () => {

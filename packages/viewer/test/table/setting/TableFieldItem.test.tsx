@@ -18,8 +18,8 @@ import { ViewColumnDefinition } from '../../../src';
 
 describe('TableFieldItem', () => {
   const mockColumnDefinition: ViewColumnDefinition = {
-    title: 'Test Column',
-    dataIndex: 'testColumn',
+    label: 'Test Column',
+    name: 'testColumn',
     type: 'text',
     primaryKey: false,
     sorter: true,
@@ -124,7 +124,7 @@ describe('TableFieldItem', () => {
       ...defaultProps,
       columnDefinition: {
         ...mockColumnDefinition,
-        title: customTitle,
+        label: customTitle,
       },
     };
 

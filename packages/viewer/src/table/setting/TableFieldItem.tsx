@@ -74,7 +74,7 @@ export function TableFieldItem(props: TableFieldItemProps) {
         disabled={props.columnDefinition.primaryKey}
         onChange={e => props.onVisibleChange(e.target.checked)}
       >
-        {props.columnDefinition.title}
+        {props.columnDefinition.label}
       </Checkbox>
       <DragOutlined />
     </Flex>

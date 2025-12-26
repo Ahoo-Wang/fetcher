@@ -142,15 +142,15 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
     .filter(it => it.visible) // Only include columns marked as visible
     .map(it => {
       // Find the column definition that matches this column's dataIndex
-      const columnDefinition = viewDefinition.columns.find(
-        col => col.dataIndex === it.dataIndex,
+      const columnDefinition = viewDefinition.fields.find(
+        col => col.name === it.name,
       );
 
       return columnDefinition
         ? {
             // Standard column properties from definition
-            title: columnDefinition.title,
-            dataIndex: it.dataIndex.split('.'), // Support nested properties (e.g., 'user.name')
+            title: columnDefinition.label,
+            dataIndex: it.name.split('.'), // Support nested properties (e.g., 'user.name')
 
             // Fixed positioning: primary keys and explicitly fixed columns go to start
             fixed: columnDefinition.primaryKey
@@ -197,7 +197,7 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
         : {
             // Fallback for columns without definitions (shouldn't normally happen)
             title: '未知', // "Unknown" in Chinese
-            dataIndex: it.dataIndex,
+            dataIndex: it.name,
             render: (value, record, index) => {
               return (
                 <TextCell
@@ -218,7 +218,7 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
     // Priority: explicit dataIndex > primary key column > fallback to 'id'
     const dataIndex =
       actionColumn.dataIndex ||
-      viewDefinition.columns.find(x => x.primaryKey)?.dataIndex ||
+      viewDefinition.fields.find(x => x.primaryKey)?.name ||
       'id';
 
     tableColumns.push({
