@@ -138,15 +138,13 @@ export function createExecuteApiHooks<API extends Record<string, any>>(
     if (Object.prototype.hasOwnProperty.call(api, key)) {
       const method = api[key];
       if (typeof method === 'function') {
+        const boundMethod = method.bind(api);
         const hookName = `use${key.charAt(0).toUpperCase() + key.slice(1)}`;
 
         result[hookName] = function useHook(
           options?: UseExecutePromiseOptions<any, FetcherError>,
         ) {
-          return useApiMethodExecute(
-            method as (...args: any[]) => Promise<any>,
-            options,
-          );
+          return useApiMethodExecute(boundMethod, options);
         };
       }
     }
