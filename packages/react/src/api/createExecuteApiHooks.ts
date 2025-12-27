@@ -16,7 +16,7 @@ import {
   useExecutePromise,
   UseExecutePromiseReturn,
   UseExecutePromiseOptions,
-} from '../core/useExecutePromise';
+} from '../core';
 import { FetcherError } from '@ahoo-wang/fetcher';
 
 /**
@@ -85,6 +85,56 @@ function useApiMethodExecute<
 }
 
 /**
+ * Creates a hook function for a given API method.
+ * @param method - The bound API method.
+ * @param methodName - The name of the method.
+ * @returns A hook function.
+ */
+function createHookForMethod<E>(method: (...args: any[]) => Promise<any>) {
+  return function useApiMethod(options?: UseExecutePromiseOptions<any, E>) {
+    return useApiMethodExecute(method, options);
+  };
+}
+
+/**
+ * Collects all function methods from an object and its prototype chain.
+ * @param obj - The object to collect methods from.
+ * @returns A map of method names to bound methods.
+ */
+function collectMethods(
+  obj: Record<string, any>,
+): Map<string, (...args: any[]) => Promise<any>> {
+  const methods = new Map<string, (...args: any[]) => Promise<any>>();
+  const processedKeys = new Set<string>();
+
+  // Helper function to process an object for methods
+  const processObject = (target: Record<string, any>) => {
+    Object.getOwnPropertyNames(target).forEach(key => {
+      if (!processedKeys.has(key) && key !== 'constructor') {
+        processedKeys.add(key);
+        const value = target[key];
+        if (typeof value === 'function') {
+          // Bind method to the original object to preserve 'this' context
+          methods.set(key, value.bind(obj));
+        }
+      }
+    });
+  };
+
+  // Process own properties first
+  processObject(obj);
+
+  // Process prototype chain
+  let proto = Object.getPrototypeOf(obj);
+  while (proto && proto !== Object.prototype) {
+    processObject(proto);
+    proto = Object.getPrototypeOf(proto);
+  }
+
+  return methods;
+}
+
+/**
  * Creates type-safe React hooks for API methods.
  * Each API method that returns a Promise is wrapped into a hook that extends useExecutePromise.
  * The generated hooks provide automatic state management, abort support, and error handling.
@@ -147,49 +197,13 @@ export function createExecuteApiHooks<
   const { api } = options;
 
   const result = {} as any;
+  const methods = collectMethods(api);
 
-  // Collect all function properties from the API object and its prototype chain
-  const processedKeys = new Set<string>();
-
-  // First, collect own properties
-  Object.getOwnPropertyNames(api).forEach(key => {
-    if (!processedKeys.has(key)) {
-      processedKeys.add(key);
-      const method = api[key];
-      if (typeof method === 'function') {
-        const boundMethod = method.bind(api);
-        const hookName = `use${key.charAt(0).toUpperCase() + key.slice(1)}`;
-
-        result[hookName] = function useHook(
-          options?: UseExecutePromiseOptions<any, E>,
-        ) {
-          return useApiMethodExecute(boundMethod, options);
-        };
-      }
-    }
+  // Create hooks for each collected method
+  methods.forEach((boundMethod, methodName) => {
+    const hookName = `use${methodName.charAt(0).toUpperCase() + methodName.slice(1)}`;
+    result[hookName] = createHookForMethod<E>(boundMethod);
   });
-
-  // Then, collect prototype methods (for class instances)
-  let proto = Object.getPrototypeOf(api);
-  while (proto && proto !== Object.prototype) {
-    Object.getOwnPropertyNames(proto).forEach(key => {
-      if (!processedKeys.has(key) && key !== 'constructor') {
-        processedKeys.add(key);
-        const method = proto[key];
-        if (typeof method === 'function') {
-          const boundMethod = method.bind(api);
-          const hookName = `use${key.charAt(0).toUpperCase() + key.slice(1)}`;
-
-          result[hookName] = function useHook(
-            options?: UseExecutePromiseOptions<any, E>,
-          ) {
-            return useApiMethodExecute(boundMethod, options);
-          };
-        }
-      }
-    });
-    proto = Object.getPrototypeOf(proto);
-  }
 
   return result;
 }
