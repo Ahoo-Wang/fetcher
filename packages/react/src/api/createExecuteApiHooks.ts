@@ -31,6 +31,22 @@ export interface CreateExecuteApiHooksOptions<API extends Record<string, any>> {
 }
 
 /**
+ * Options for useApiMethodExecute hook.
+ * @template E - The error type.
+ */
+export interface UseApiMethodExecuteOptions<
+  E = FetcherError,
+> extends UseExecutePromiseOptions<any, E> {
+  /**
+   * Whether to append AbortController to API method parameters.
+   * When true (default), extends parameters to method.length and appends abortController.
+   * When false, calls methods with original parameters without abortController.
+   * @default true
+   */
+  appendAbortController?: boolean;
+}
+
+/**
  * The return type of createExecuteApiHooks.
  * Creates a hook for each function method in the API object, prefixed with 'use' and capitalized.
  * Each hook accepts optional useExecutePromise options and returns the useExecutePromise interface
@@ -42,9 +58,10 @@ export type APIHooks<API extends Record<string, any>, E = FetcherError> = {
   [K in keyof API as API[K] extends (...args: any[]) => Promise<any>
     ? `use${Capitalize<string & K>}`
     : never]: API[K] extends (...args: any[]) => Promise<any>
-    ? (
-        options?: UseExecutePromiseOptions<Awaited<ReturnType<API[K]>>, E>,
-      ) => UseExecutePromiseReturn<Awaited<ReturnType<API[K]>>, E> & {
+    ? (options?: UseApiMethodExecuteOptions<E>) => UseExecutePromiseReturn<
+        Awaited<ReturnType<API[K]>>,
+        E
+      > & {
         execute: (...params: Parameters<API[K]>) => Promise<void>;
       }
     : never;
@@ -62,20 +79,36 @@ function useApiMethodExecute<
   E = FetcherError,
 >(
   method: TMethod,
-  options?: UseExecutePromiseOptions<Awaited<ReturnType<TMethod>>, E>,
+  options?: UseApiMethodExecuteOptions<E>,
 ): Omit<UseExecutePromiseReturn<Awaited<ReturnType<TMethod>>, E>, 'execute'> & {
   execute: (...params: Parameters<TMethod>) => Promise<void>;
 } {
+  const { appendAbortController = true, ...restOptions } = options || {};
+
   const { execute: originalExecute, ...rest } = useExecutePromise<
     Awaited<ReturnType<TMethod>>,
     E
-  >(options);
+  >(restOptions);
 
   const execute = useCallback(
     (...params: Parameters<TMethod>) => {
-      return originalExecute(() => method(...params));
+      return originalExecute(abortController => {
+        if (appendAbortController) {
+          // 扩展参数到 method.length - 1，然后追加 abortController
+          const extendedParams = [...params];
+          while (extendedParams.length < method.length - 1) {
+            extendedParams.push(undefined);
+          }
+          // 追加 abortController
+          extendedParams.push(abortController);
+
+          return method(...extendedParams);
+        } else {
+          return method(...params);
+        }
+      });
     },
-    [originalExecute, method],
+    [originalExecute, method, appendAbortController],
   );
 
   return {
@@ -91,7 +124,7 @@ function useApiMethodExecute<
  * @returns A hook function.
  */
 function createHookForMethod<E>(method: (...args: any[]) => Promise<any>) {
-  return function useApiMethod(options?: UseExecutePromiseOptions<any, E>) {
+  return function useApiMethod(options?: UseApiMethodExecuteOptions<E>) {
     return useApiMethodExecute(method, options);
   };
 }
