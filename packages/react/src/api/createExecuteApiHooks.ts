@@ -15,20 +15,36 @@ import { useCallback } from 'react';
 import {
   useExecutePromise,
   UseExecutePromiseReturn,
-  UseExecutePromiseOptions, useLatest,
+  UseExecutePromiseOptions,
+  useLatest,
 } from '../core';
 import { FetcherError } from '@ahoo-wang/fetcher';
+import {
+  collectMethods,
+  methodNameToHookName,
+  CreateApiHooksOptions,
+  HookName,
+  ApiMethod,
+  FunctionParameters,
+  FunctionReturnType,
+  OnBeforeExecuteCallback,
+} from './apiHooks';
 
 /**
  * Configuration options for createExecuteApiHooks.
  * @template API - The API object type containing methods that return promises.
  */
-export interface CreateExecuteApiHooksOptions<API extends Record<string, any>> {
-  /**
-   * The API object containing methods to be wrapped into hooks.
-   */
-  api: API;
-}
+export interface CreateExecuteApiHooksOptions<
+  API extends Record<string, any>,
+> extends CreateApiHooksOptions<API> {}
+
+/**
+ * Configuration options for createQueryApiHooks.
+ * @template API - The API object type containing query methods.
+ */
+export interface CreateQueryApiHooksOptions<
+  API extends Record<string, any>,
+> extends CreateApiHooksOptions<API> {}
 
 /**
  * Options for useApiMethodExecute hook.
@@ -58,7 +74,7 @@ export interface UseApiMethodExecuteOptions<
    *   }
    * }
    */
-  onBeforeExecute?: (abortController: AbortController, args: TArgs) => void;
+  onBeforeExecute?: OnBeforeExecuteCallback<TArgs>;
 }
 
 /**
@@ -70,18 +86,18 @@ export interface UseApiMethodExecuteOptions<
  * @template E - The error type for all hooks (defaults to FetcherError).
  */
 export type APIHooks<API extends Record<string, any>, E = FetcherError> = {
-  [K in keyof API as API[K] extends (...args: any[]) => Promise<any>
-    ? `use${Capitalize<string & K>}`
-    : never]: API[K] extends (...args: any[]) => Promise<any>
+  [K in keyof API as API[K] extends ApiMethod
+    ? HookName<string & K>
+    : never]: API[K] extends ApiMethod
     ? (
-      options?: UseApiMethodExecuteOptions<
-        Parameters<API[K]>,
-        Awaited<ReturnType<API[K]>>,
-        E
-      >,
-    ) => UseExecutePromiseReturn<Awaited<ReturnType<API[K]>>, E> & {
-      execute: (...params: Parameters<API[K]>) => Promise<void>;
-    }
+        options?: UseApiMethodExecuteOptions<
+          FunctionParameters<API[K]>,
+          FunctionReturnType<API[K]>,
+          E
+        >,
+      ) => UseExecutePromiseReturn<FunctionReturnType<API[K]>, E> & {
+        execute: (...params: FunctionParameters<API[K]>) => Promise<void>;
+      }
     : never;
 };
 
@@ -144,44 +160,6 @@ function createHookForMethod<E>(method: (...args: any[]) => Promise<any>) {
 }
 
 /**
- * Collects all function methods from an object and its prototype chain.
- * @param obj - The object to collect methods from.
- * @returns A map of method names to bound methods.
- */
-function collectMethods(
-  obj: Record<string, any>,
-): Map<string, (...args: any[]) => Promise<any>> {
-  const methods = new Map<string, (...args: any[]) => Promise<any>>();
-  const processedKeys = new Set<string>();
-
-  // Helper function to process an object for methods
-  const processObject = (target: Record<string, any>) => {
-    Object.getOwnPropertyNames(target).forEach(key => {
-      if (!processedKeys.has(key) && key !== 'constructor') {
-        processedKeys.add(key);
-        const value = target[key];
-        if (typeof value === 'function') {
-          // Bind method to the original object to preserve 'this' context
-          methods.set(key, value.bind(obj));
-        }
-      }
-    });
-  };
-
-  // Process own properties first
-  processObject(obj);
-
-  // Process prototype chain
-  let proto = Object.getPrototypeOf(obj);
-  while (proto && proto !== Object.prototype) {
-    processObject(proto);
-    proto = Object.getPrototypeOf(proto);
-  }
-
-  return methods;
-}
-
-/**
  * Creates type-safe React hooks for API methods.
  * Each API method that returns a Promise is wrapped into a hook that extends useExecutePromise.
  * The generated hooks provide automatic state management, abort support, and error handling.
@@ -237,11 +215,11 @@ export function createExecuteApiHooks<
   const { api } = options;
 
   const result = {} as any;
-  const methods = collectMethods(api);
+  const methods = collectMethods<(...args: any[]) => Promise<any>>(api);
 
   // Create hooks for each collected method
   methods.forEach((boundMethod, methodName) => {
-    const hookName = `use${methodName.charAt(0).toUpperCase() + methodName.slice(1)}`;
+    const hookName = methodNameToHookName(methodName);
     result[hookName] = createHookForMethod<E>(boundMethod);
   });
 

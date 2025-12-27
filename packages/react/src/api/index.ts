@@ -11,4 +11,6 @@
  * limitations under the License.
  */
 
+export * from './apiHooks';
 export * from './createExecuteApiHooks';
+export * from './createQueryApiHooks';
