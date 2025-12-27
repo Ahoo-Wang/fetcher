@@ -13,7 +13,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { createExecuteApiHooks } from '../../src/api/createExecuteApiHooks';
+import { createExecuteApiHooks } from '../../src';
 
 describe('createExecuteApiHooks', () => {
   // Mock API object
@@ -40,9 +40,7 @@ describe('createExecuteApiHooks', () => {
   it('should execute API method and update state correctly for successful call', async () => {
     const apiHooks = createExecuteApiHooks({ api: mockApi });
 
-    const { result } = renderHook(() =>
-      apiHooks.useGetUser({ appendAbortController: false }),
-    );
+    const { result } = renderHook(() => apiHooks.useGetUser());
 
     expect(result.current.loading).toBe(false);
     expect(result.current.result).toBeUndefined();
@@ -63,9 +61,7 @@ describe('createExecuteApiHooks', () => {
   it('should handle API method with multiple parameters', async () => {
     const apiHooks = createExecuteApiHooks({ api: mockApi });
 
-    const { result } = renderHook(() =>
-      apiHooks.useCreateUser({ appendAbortController: false }),
-    );
+    const { result } = renderHook(() => apiHooks.useCreateUser());
 
     await act(async () => {
       await result.current.execute({ name: 'Jane Doe' });
@@ -81,9 +77,7 @@ describe('createExecuteApiHooks', () => {
     };
     const apiHooks = createExecuteApiHooks({ api: errorApi });
 
-    const { result } = renderHook(() =>
-      apiHooks.useGetUser({ appendAbortController: false }),
-    );
+    const { result } = renderHook(() => apiHooks.useGetUser());
 
     await act(async () => {
       await result.current.execute('user123');
@@ -100,9 +94,7 @@ describe('createExecuteApiHooks', () => {
   it('should reset state correctly', async () => {
     const apiHooks = createExecuteApiHooks({ api: mockApi });
 
-    const { result } = renderHook(() =>
-      apiHooks.useGetUser({ appendAbortController: false }),
-    );
+    const { result } = renderHook(() => apiHooks.useGetUser());
 
     await act(async () => {
       await result.current.execute('user123');
@@ -132,9 +124,7 @@ describe('createExecuteApiHooks', () => {
     };
     const apiHooks = createExecuteApiHooks({ api: slowApi });
 
-    const { result } = renderHook(() =>
-      apiHooks.useGetUser({ appendAbortController: false }),
-    );
+    const { result } = renderHook(() => apiHooks.useGetUser());
 
     await act(async () => {
       result.current.execute('user123');
@@ -163,10 +153,7 @@ describe('createExecuteApiHooks', () => {
     const errorApiHooks = createExecuteApiHooks({ api: errorApi });
 
     const { result: errorResult } = renderHook(() =>
-      errorApiHooks.useGetUser({
-        propagateError: true,
-        appendAbortController: false,
-      }),
+      errorApiHooks.useGetUser({ propagateError: true }),
     );
 
     await expect(
@@ -191,12 +178,8 @@ describe('createExecuteApiHooks', () => {
     };
     const apiHooks = createExecuteApiHooks({ api: typedApi });
 
-    const { result: getResult } = renderHook(() =>
-      apiHooks.useGetUser({ appendAbortController: false }),
-    );
-    const { result: createResult } = renderHook(() =>
-      apiHooks.useCreateUser({ appendAbortController: false }),
-    );
+    const { result: getResult } = renderHook(() => apiHooks.useGetUser());
+    const { result: createResult } = renderHook(() => apiHooks.useCreateUser());
 
     // These should not throw at runtime due to type safety
     expect(typeof getResult.current.execute).toBe('function');
@@ -223,9 +206,7 @@ describe('createExecuteApiHooks', () => {
       api: customErrorApi,
     });
 
-    const { result } = renderHook(() =>
-      apiHooks.useGetUser({ appendAbortController: false }),
-    );
+    const { result } = renderHook(() => apiHooks.useGetUser());
 
     await act(async () => {
       await result.current.execute('user123');
@@ -258,9 +239,7 @@ describe('createExecuteApiHooks', () => {
     expect(typeof apiHooks.useCreateUser).toBe('function');
 
     // Test getUser hook
-    const { result: getResult } = renderHook(() =>
-      apiHooks.useGetUser({ appendAbortController: false }),
-    );
+    const { result: getResult } = renderHook(() => apiHooks.useGetUser());
 
     await act(async () => {
       await getResult.current.execute('user123');
@@ -269,9 +248,7 @@ describe('createExecuteApiHooks', () => {
     expect(getResult.current.result).toEqual({ id: 'user123', url: '/api' });
 
     // Test createUser hook
-    const { result: createResult } = renderHook(() =>
-      apiHooks.useCreateUser({ appendAbortController: false }),
-    );
+    const { result: createResult } = renderHook(() => apiHooks.useCreateUser());
 
     await act(async () => {
       await createResult.current.execute({ name: 'John' });
@@ -284,46 +261,57 @@ describe('createExecuteApiHooks', () => {
     });
   });
 
-  it('should append AbortController when enabled', async () => {
-    const mockApiWithController = {
-      getUser: vi.fn((id: string, controller?: AbortController) =>
-        Promise.resolve({ id, hasController: !!controller }),
-      ),
-    };
-    const apiHooks = createExecuteApiHooks({ api: mockApiWithController });
-
-    const { result } = renderHook(() =>
-      apiHooks.useGetUser({ appendAbortController: true }),
-    );
-
-    await act(async () => {
-      await result.current.execute('user123');
-    });
-
-    expect(mockApiWithController.getUser).toHaveBeenCalledWith(
-      'user123',
-      expect.any(AbortController),
-    );
-  });
-
-  it('should not append AbortController when disabled', async () => {
-    const mockApiWithoutController = {
+  it('should call onBeforeExecute with abortController and parameters', async () => {
+    const customApi = {
       getUser: vi.fn((id: string) => Promise.resolve({ id })),
     };
-    const apiHooks = createExecuteApiHooks({ api: mockApiWithoutController });
+    const apiHooks = createExecuteApiHooks({ api: customApi });
+
+    let receivedController: AbortController | undefined;
+    let receivedArgs: any[] | undefined;
 
     const { result } = renderHook(() =>
-      apiHooks.useGetUser({ appendAbortController: false }),
+      apiHooks.useGetUser({
+        onBeforeExecute: (abortController, args) => {
+          receivedController = abortController;
+          receivedArgs = [...args]; // Copy args before modification
+          // Modify args in place
+          if (args[0] === 'user123') {
+            args[0] = 'modified-user123';
+          }
+        },
+      }),
     );
 
     await act(async () => {
       await result.current.execute('user123');
     });
 
-    expect(mockApiWithoutController.getUser).toHaveBeenCalledWith('user123');
-    expect(mockApiWithoutController.getUser).not.toHaveBeenCalledWith(
-      'user123',
-      expect.anything(),
+    expect(receivedController).toBeInstanceOf(AbortController);
+    expect(receivedArgs).toEqual(['user123']); // Original args
+    expect(customApi.getUser).toHaveBeenCalledWith('modified-user123'); // Args were modified
+  });
+
+  it('should allow onBeforeExecute to inspect parameters without modification', async () => {
+    const customApi = {
+      getUser: vi.fn((id: string) => Promise.resolve({ id })),
+    };
+    const apiHooks = createExecuteApiHooks({ api: customApi });
+
+    const { result } = renderHook(() =>
+      apiHooks.useGetUser({
+        onBeforeExecute: (abortController, args) => {
+          // Just inspect, don't modify
+          expect(args).toEqual(['user123']);
+          expect(abortController).toBeInstanceOf(AbortController);
+        },
+      }),
     );
+
+    await act(async () => {
+      await result.current.execute('user123');
+    });
+
+    expect(customApi.getUser).toHaveBeenCalledWith('user123'); // Args unchanged
   });
 });

@@ -32,24 +32,39 @@ export interface CreateExecuteApiHooksOptions<API extends Record<string, any>> {
 
 /**
  * Options for useApiMethodExecute hook.
+ * @template TArgs - The parameter types of the API method.
+ * @template TData - The return type of the API method (resolved).
  * @template E - The error type.
  */
 export interface UseApiMethodExecuteOptions<
+  TArgs = any[],
+  TData = any,
   E = FetcherError,
-> extends UseExecutePromiseOptions<any, E> {
+> extends UseExecutePromiseOptions<TData, E> {
   /**
-   * Whether to append AbortController to API method parameters.
-   * When true (default), extends parameters to method.length and appends abortController.
-   * When false, calls methods with original parameters without abortController.
-   * @default true
+   * Callback executed before method invocation.
+   * Allows users to handle abortController and inspect/modify parameters.
+   * Note: Parameters can be modified in place for objects/arrays.
+   * @param abortController - The AbortController for the request.
+   * @param args - The arguments passed to the API method (type-safe).
+   *
+   * @example
+   * onBeforeExecute: (abortController, args) => {
+   *   // args is now typed as Parameters<TMethod>
+   *   const [id, options] = args;
+   *   // Modify parameters in place
+   *   if (options && typeof options === 'object') {
+   *     options.timestamp = Date.now();
+   *   }
+   * }
    */
-  appendAbortController?: boolean;
+  onBeforeExecute?: (abortController: AbortController, args: TArgs) => void;
 }
 
 /**
  * The return type of createExecuteApiHooks.
  * Creates a hook for each function method in the API object, prefixed with 'use' and capitalized.
- * Each hook accepts optional useExecutePromise options and returns the useExecutePromise interface
+ * Each hook accepts optional useExecutepromise options and returns the useExecutepromise interface
  * with a modified execute function that takes the API method parameters instead of a promise supplier.
  * @template API - The API object type.
  * @template E - The error type for all hooks (defaults to FetcherError).
@@ -58,10 +73,13 @@ export type APIHooks<API extends Record<string, any>, E = FetcherError> = {
   [K in keyof API as API[K] extends (...args: any[]) => Promise<any>
     ? `use${Capitalize<string & K>}`
     : never]: API[K] extends (...args: any[]) => Promise<any>
-    ? (options?: UseApiMethodExecuteOptions<E>) => UseExecutePromiseReturn<
-        Awaited<ReturnType<API[K]>>,
-        E
-      > & {
+    ? (
+        options?: UseApiMethodExecuteOptions<
+          Parameters<API[K]>,
+          Awaited<ReturnType<API[K]>>,
+          E
+        >,
+      ) => UseExecutePromiseReturn<Awaited<ReturnType<API[K]>>, E> & {
         execute: (...params: Parameters<API[K]>) => Promise<void>;
       }
     : never;
@@ -79,11 +97,15 @@ function useApiMethodExecute<
   E = FetcherError,
 >(
   method: TMethod,
-  options?: UseApiMethodExecuteOptions<E>,
+  options?: UseApiMethodExecuteOptions<
+    Parameters<TMethod>,
+    Awaited<ReturnType<TMethod>>,
+    E
+  >,
 ): Omit<UseExecutePromiseReturn<Awaited<ReturnType<TMethod>>, E>, 'execute'> & {
   execute: (...params: Parameters<TMethod>) => Promise<void>;
 } {
-  const { appendAbortController = true, ...restOptions } = options || {};
+  const { onBeforeExecute, ...restOptions } = options || {};
 
   const { execute: originalExecute, ...rest } = useExecutePromise<
     Awaited<ReturnType<TMethod>>,
@@ -93,22 +115,15 @@ function useApiMethodExecute<
   const execute = useCallback(
     (...params: Parameters<TMethod>) => {
       return originalExecute(abortController => {
-        if (appendAbortController) {
-          // 扩展参数到 method.length - 1，然后追加 abortController
-          const extendedParams = [...params];
-          while (extendedParams.length < method.length - 1) {
-            extendedParams.push(undefined);
-          }
-          // 追加 abortController
-          extendedParams.push(abortController);
-
-          return method(...extendedParams);
-        } else {
-          return method(...params);
+        if (onBeforeExecute) {
+          // Call onBeforeExecute with abortController and parameters
+          onBeforeExecute(abortController, params);
         }
+        // Always call method with (potentially modified) parameters
+        return method(...params);
       });
     },
-    [originalExecute, method, appendAbortController],
+    [originalExecute, method, onBeforeExecute],
   );
 
   return {
@@ -120,12 +135,13 @@ function useApiMethodExecute<
 /**
  * Creates a hook function for a given API method.
  * @param method - The bound API method.
- * @param methodName - The name of the method.
  * @returns A hook function.
  */
 function createHookForMethod<E>(method: (...args: any[]) => Promise<any>) {
-  return function useApiMethod(options?: UseApiMethodExecuteOptions<E>) {
-    return useApiMethodExecute(method, options);
+  return function useApiMethod(
+    options?: UseApiMethodExecuteOptions<any[], any, E>,
+  ) {
+    return useApiMethodExecute(method as any, options as any);
   };
 }
 
@@ -178,46 +194,39 @@ function collectMethods(
  *
  * @example
  * ```typescript
- * // 默认错误类型 (FetcherError)
+ * // Default behavior (no onBeforeExecute)
  * const userApi = {
  *   getUser: (id: string) => fetch(`/api/users/${id}`).then(res => res.json()),
- *   createUser: (user: UserInput) => fetch('/api/users', {
+ *   createUser: (data: UserInput) => fetch('/api/users', {
  *     method: 'POST',
- *     body: JSON.stringify(user),
+ *     body: JSON.stringify(data),
  *   }).then(res => res.json()),
  * };
  *
  * const apiHooks = createExecuteApiHooks({ api: userApi });
  *
- * // 自定义错误类型
- * class ValidationError extends Error {
- *   constructor(message: string, public field: string) {
- *     super(message);
- *   }
- * }
- *
- * const validationApi = {
- *   validateUser: (data: UserData) => Promise.reject(new ValidationError('Invalid email', 'email')),
- * };
- *
- * const validationHooks = createExecuteApiHooks<typeof validationApi, ValidationError>({
- *   api: validationApi,
- * });
- *
  * function UserComponent() {
- *   const { loading, result, error, execute } = apiHooks.useGetUser({
- *     propagateError: true,
- *     onAbort: () => console.log('Request aborted'),
- *   });
+ *   const { loading, result, error, execute } = apiHooks.useGetUser();
  *
  *   const handleFetchUser = (userId: string) => {
- *     execute(userId);
+ *     execute(userId); // Calls getUser(userId) directly
  *   };
  *
- *   // error: FetcherError | undefined
- *
- *   const { error: validationError } = validationHooks.useValidateUser();
- *   // validationError: ValidationError | undefined
+ *   // Custom onBeforeExecute to handle abortController and modify parameters
+ *   const { execute: customExecute } = apiHooks.useCreateUser({
+ *     onBeforeExecute: (abortController, args) => {
+ *       // args is now fully type-safe as Parameters<createUser>
+ *       const [data] = args;
+ *       // Modify parameters in place (assuming data is mutable)
+ *       if (data && typeof data === 'object') {
+ *         (data as any).timestamp = Date.now();
+ *       }
+ *       // Could also set up abortController.signal
+ *       abortController.signal.addEventListener('abort', () => {
+ *         console.log('Request aborted');
+ *       });
+ *     },
+ *   });
  *
  *   // ... component logic
  * }
