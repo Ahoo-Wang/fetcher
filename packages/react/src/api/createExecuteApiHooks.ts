@@ -15,7 +15,7 @@ import { useCallback } from 'react';
 import {
   useExecutePromise,
   UseExecutePromiseReturn,
-  UseExecutePromiseOptions,
+  UseExecutePromiseOptions, useLatest,
 } from '../core';
 import { FetcherError } from '@ahoo-wang/fetcher';
 
@@ -74,14 +74,14 @@ export type APIHooks<API extends Record<string, any>, E = FetcherError> = {
     ? `use${Capitalize<string & K>}`
     : never]: API[K] extends (...args: any[]) => Promise<any>
     ? (
-        options?: UseApiMethodExecuteOptions<
-          Parameters<API[K]>,
-          Awaited<ReturnType<API[K]>>,
-          E
-        >,
-      ) => UseExecutePromiseReturn<Awaited<ReturnType<API[K]>>, E> & {
-        execute: (...params: Parameters<API[K]>) => Promise<void>;
-      }
+      options?: UseApiMethodExecuteOptions<
+        Parameters<API[K]>,
+        Awaited<ReturnType<API[K]>>,
+        E
+      >,
+    ) => UseExecutePromiseReturn<Awaited<ReturnType<API[K]>>, E> & {
+      execute: (...params: Parameters<API[K]>) => Promise<void>;
+    }
     : never;
 };
 
@@ -105,25 +105,23 @@ function useApiMethodExecute<
 ): Omit<UseExecutePromiseReturn<Awaited<ReturnType<TMethod>>, E>, 'execute'> & {
   execute: (...params: Parameters<TMethod>) => Promise<void>;
 } {
-  const { onBeforeExecute, ...restOptions } = options || {};
-
   const { execute: originalExecute, ...rest } = useExecutePromise<
     Awaited<ReturnType<TMethod>>,
     E
-  >(restOptions);
-
+  >(options);
+  const onBeforeExecuteRef = useLatest(options?.onBeforeExecute);
   const execute = useCallback(
     (...params: Parameters<TMethod>) => {
       return originalExecute(abortController => {
-        if (onBeforeExecute) {
+        if (onBeforeExecuteRef.current) {
           // Call onBeforeExecute with abortController and parameters
-          onBeforeExecute(abortController, params);
+          onBeforeExecuteRef.current(abortController, params);
         }
         // Always call method with (potentially modified) parameters
         return method(...params);
       });
     },
-    [originalExecute, method, onBeforeExecute],
+    [originalExecute, method, onBeforeExecuteRef],
   );
 
   return {
