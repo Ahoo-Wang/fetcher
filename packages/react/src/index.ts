@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+export * from './api';
 export * from './core';
 export * from './cosec';
 export * from './storage';
