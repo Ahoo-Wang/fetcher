@@ -36,20 +36,15 @@ export interface CreateExecuteApiHooksOptions<API extends Record<string, any>> {
  * Each hook accepts optional useExecutePromise options and returns the useExecutePromise interface
  * with a modified execute function that takes the API method parameters instead of a promise supplier.
  * @template API - The API object type.
+ * @template E - The error type for all hooks (defaults to FetcherError).
  */
-export type APIHooks<API extends Record<string, any>> = {
+export type APIHooks<API extends Record<string, any>, E = FetcherError> = {
   [K in keyof API as API[K] extends (...args: any[]) => Promise<any>
     ? `use${Capitalize<string & K>}`
     : never]: API[K] extends (...args: any[]) => Promise<any>
     ? (
-        options?: UseExecutePromiseOptions<
-          Awaited<ReturnType<API[K]>>,
-          FetcherError
-        >,
-      ) => UseExecutePromiseReturn<
-        Awaited<ReturnType<API[K]>>,
-        FetcherError
-      > & {
+        options?: UseExecutePromiseOptions<Awaited<ReturnType<API[K]>>, E>,
+      ) => UseExecutePromiseReturn<Awaited<ReturnType<API[K]>>, E> & {
         execute: (...params: Parameters<API[K]>) => Promise<void>;
       }
     : never;
@@ -62,21 +57,18 @@ export type APIHooks<API extends Record<string, any>> = {
  * @param options - Options for useExecutePromise.
  * @returns The wrapped hook return value.
  */
-function useApiMethodExecute<TMethod extends (...args: any[]) => Promise<any>>(
+function useApiMethodExecute<
+  TMethod extends (...args: any[]) => Promise<any>,
+  E = FetcherError,
+>(
   method: TMethod,
-  options?: UseExecutePromiseOptions<
-    Awaited<ReturnType<TMethod>>,
-    FetcherError
-  >,
-): Omit<
-  UseExecutePromiseReturn<Awaited<ReturnType<TMethod>>, FetcherError>,
-  'execute'
-> & {
+  options?: UseExecutePromiseOptions<Awaited<ReturnType<TMethod>>, E>,
+): Omit<UseExecutePromiseReturn<Awaited<ReturnType<TMethod>>, E>, 'execute'> & {
   execute: (...params: Parameters<TMethod>) => Promise<void>;
 } {
   const { execute: originalExecute, ...rest } = useExecutePromise<
     Awaited<ReturnType<TMethod>>,
-    FetcherError
+    E
   >(options);
 
   const execute = useCallback(
@@ -103,6 +95,7 @@ function useApiMethodExecute<TMethod extends (...args: any[]) => Promise<any>>(
  *
  * @example
  * ```typescript
+ * // 默认错误类型 (FetcherError)
  * const userApi = {
  *   getUser: (id: string) => fetch(`/api/users/${id}`).then(res => res.json()),
  *   createUser: (user: UserInput) => fetch('/api/users', {
@@ -112,6 +105,21 @@ function useApiMethodExecute<TMethod extends (...args: any[]) => Promise<any>>(
  * };
  *
  * const apiHooks = createExecuteApiHooks({ api: userApi });
+ *
+ * // 自定义错误类型
+ * class ValidationError extends Error {
+ *   constructor(message: string, public field: string) {
+ *     super(message);
+ *   }
+ * }
+ *
+ * const validationApi = {
+ *   validateUser: (data: UserData) => Promise.reject(new ValidationError('Invalid email', 'email')),
+ * };
+ *
+ * const validationHooks = createExecuteApiHooks<typeof validationApi, ValidationError>({
+ *   api: validationApi,
+ * });
  *
  * function UserComponent() {
  *   const { loading, result, error, execute } = apiHooks.useGetUser({
@@ -123,31 +131,64 @@ function useApiMethodExecute<TMethod extends (...args: any[]) => Promise<any>>(
  *     execute(userId);
  *   };
  *
+ *   // error: FetcherError | undefined
+ *
+ *   const { error: validationError } = validationHooks.useValidateUser();
+ *   // validationError: ValidationError | undefined
+ *
  *   // ... component logic
  * }
  * ```
  */
-export function createExecuteApiHooks<API extends Record<string, any>>(
-  options: CreateExecuteApiHooksOptions<API>,
-): APIHooks<API> {
+export function createExecuteApiHooks<
+  API extends Record<string, any>,
+  E = FetcherError,
+>(options: CreateExecuteApiHooksOptions<API>): APIHooks<API, E> {
   const { api } = options;
 
   const result = {} as any;
 
-  for (const key in api) {
-    if (Object.prototype.hasOwnProperty.call(api, key)) {
+  // Collect all function properties from the API object and its prototype chain
+  const processedKeys = new Set<string>();
+
+  // First, collect own properties
+  Object.getOwnPropertyNames(api).forEach(key => {
+    if (!processedKeys.has(key)) {
+      processedKeys.add(key);
       const method = api[key];
       if (typeof method === 'function') {
         const boundMethod = method.bind(api);
         const hookName = `use${key.charAt(0).toUpperCase() + key.slice(1)}`;
 
         result[hookName] = function useHook(
-          options?: UseExecutePromiseOptions<any, FetcherError>,
+          options?: UseExecutePromiseOptions<any, E>,
         ) {
           return useApiMethodExecute(boundMethod, options);
         };
       }
     }
+  });
+
+  // Then, collect prototype methods (for class instances)
+  let proto = Object.getPrototypeOf(api);
+  while (proto && proto !== Object.prototype) {
+    Object.getOwnPropertyNames(proto).forEach(key => {
+      if (!processedKeys.has(key) && key !== 'constructor') {
+        processedKeys.add(key);
+        const method = proto[key];
+        if (typeof method === 'function') {
+          const boundMethod = method.bind(api);
+          const hookName = `use${key.charAt(0).toUpperCase() + key.slice(1)}`;
+
+          result[hookName] = function useHook(
+            options?: UseExecutePromiseOptions<any, E>,
+          ) {
+            return useApiMethodExecute(boundMethod, options);
+          };
+        }
+      }
+    });
+    proto = Object.getPrototypeOf(proto);
   }
 
   return result;
