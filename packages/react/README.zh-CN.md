@@ -19,6 +19,7 @@
 - ⚡ **性能优化**: 使用 useMemo、useCallback 和智能依赖管理进行优化
 - 🎯 **选项灵活性**: 支持静态选项和动态选项供应商
 - 🔧 **开发者体验**: 内置加载状态、错误处理和自动重新渲染
+- 🏗️ **API Hooks 生成**: 从 API 对象自动生成类型安全的 React hooks
 - 📊 **高级查询 Hooks**: 专门用于列表、分页、单个、计数和流查询的 hooks，具有状态管理功能
 
 ## 目录
@@ -26,6 +27,7 @@
 - [安装](#安装)
 - [快速开始](#快速开始)
 - [使用方法](#使用方法)
+  - [API Hooks](#api-hooks)
   - [核心 Hooks](#核心-hooks)
     - [useExecutePromise](#useexecutepromise)
     - [usePromiseState](#usepromisestate)
@@ -108,6 +110,188 @@ function App() {
 ```
 
 ## 使用方法
+
+### API Hooks
+
+#### createExecuteApiHooks
+
+🚀 **自动类型安全 API Hooks 生成** - 从 API 对象自动生成完全类型化的 React hooks，具有自动方法发现、类方法支持和高级执行控制。
+
+`createExecuteApiHooks` 函数自动发现 API 对象中的所有函数方法（包括类实例的原型链），并使用命名模式 `use{首字母大写的方法名}` 创建相应的 React hooks。每个生成的 hook 都提供完整的状态管理、错误处理，并支持具有类型安全参数访问的自定义执行回调。
+
+**主要特性：**
+
+- **自动方法发现**：遍历对象属性和原型链
+- **类型安全 Hook 生成**：参数和返回类型的完整 TypeScript 推断
+- **类方法支持**：处理静态方法和具有 `this` 绑定的类实例
+- **执行控制**：`onBeforeExecute` 回调用于参数检查/修改和中止控制器访问
+- **自定义错误类型**：支持指定超出默认 `FetcherError` 的错误类型
+
+```typescript jsx
+import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
+
+// 定义您的 API 对象（可以是类实例或普通对象）
+class UserApi {
+  async getUser(id: string): Promise<User> {
+    const response = await fetch(`/api/users/${id}`);
+    return response.json();
+  }
+
+  async createUser(data: { name: string; email: string }): Promise<User> {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User> {
+    const response = await fetch(`/api/users/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    return response.json();
+  }
+}
+
+const userApi = new UserApi();
+
+// 生成类型安全的 hooks
+const apiHooks = createExecuteApiHooks({ api: userApi });
+
+function UserComponent() {
+  // Hooks 自动生成，具有正确的类型
+  const { loading: getLoading, result: user, error: getError, execute: getUser } = apiHooks.useGetUser();
+  const { loading: createLoading, result: createdUser, error: createError, execute: createUser } = apiHooks.useCreateUser({
+    onBeforeExecute: (abortController, args) => {
+      // args 完全类型化为 [data: { name: string; email: string }]
+      const [data] = args;
+      // 如果需要，可以就地修改参数
+      data.email = data.email.toLowerCase();
+      // 访问中止控制器以进行自定义取消
+      abortController.signal.addEventListener('abort', () => {
+        console.log('用户创建已取消');
+      });
+    },
+  });
+
+  const handleFetchUser = (userId: string) => {
+    getUser(userId); // 完全类型化 - 仅接受字符串参数
+  };
+
+  const handleCreateUser = (userData: { name: string; email: string }) => {
+    createUser(userData); // 完全类型化 - 仅接受正确的数据形状
+  };
+
+  return (
+    <div>
+      <button onClick={() => handleFetchUser('123')}>
+        获取用户
+      </button>
+      {getLoading && <div>正在加载用户...</div>}
+      {getError && <div>错误: {getError.message}</div>}
+      {user && <div>用户: {user.name}</div>}
+
+      <button onClick={() => handleCreateUser({ name: 'John', email: 'john@example.com' })}>
+        创建用户
+      </button>
+      {createLoading && <div>正在创建用户...</div>}
+      {createError && <div>错误: {createError.message}</div>}
+      {createdUser && <div>已创建: {createdUser.name}</div>}
+    </div>
+  );
+}
+```
+
+**自定义错误类型：**
+
+```typescript jsx
+import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
+
+// 定义自定义错误类型
+class ApiError extends Error {
+  constructor(
+    public statusCode: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+// 使用自定义错误类型生成 hooks
+const apiHooks = createExecuteApiHooks<
+  { getData: (id: string) => Promise<Data> },
+  ApiError
+>({
+  api: { getData },
+  errorType: ApiError,
+});
+
+function MyComponent() {
+  const { error, execute } = apiHooks.useGetData();
+
+  // error 现在类型化为 ApiError | undefined
+  if (error) {
+    console.log('状态码:', error.statusCode); // TypeScript 知道 statusCode
+  }
+}
+```
+
+**具有类方法的高级用法：**
+
+```typescript jsx
+import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
+
+class ApiClient {
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  async get(endpoint: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`);
+    return response.json();
+  }
+
+  async post(endpoint: string, data: any): Promise<any> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  }
+
+  // 静态方法示例
+  static async healthCheck(): Promise<{ status: string }> {
+    const response = await fetch('/api/health');
+    return response.json();
+  }
+}
+
+const apiClient = new ApiClient('/api');
+const apiHooks = createExecuteApiHooks({ api: apiClient });
+
+// 生成的 hooks: useGet, usePost
+// 静态方法也会被发现: useHealthCheck
+
+function ApiComponent() {
+  const { execute: getData } = apiHooks.useGet();
+  const { execute: postData } = apiHooks.usePost();
+  const { execute: healthCheck } = apiHooks.useHealthCheck();
+
+  return (
+    <div>
+      <button onClick={() => getData('/users')}>获取用户</button>
+      <button onClick={() => postData('/users', { name: '新用户' })}>创建用户</button>
+      <button onClick={() => healthCheck()}>健康检查</button>
+    </div>
+  );
+}
+```
 
 ### 核心 Hooks
 

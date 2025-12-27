@@ -21,6 +21,7 @@ robust data fetching capabilities.
 - ⚡ **Performance**: Optimized with useMemo, useCallback, and smart dependency management
 - 🎯 **Options Flexibility**: Support for both static options and dynamic option suppliers
 - 🔧 **Developer Experience**: Built-in loading states, error handling, and automatic re-rendering
+- 🏗️ **API Hooks Generation**: Automatic type-safe React hooks generation from API objects
 - 📊 **Advanced Query Hooks**: Specialized hooks for list, paged, single, count, and stream queries with state management
 
 ## Table of Contents
@@ -28,6 +29,7 @@ robust data fetching capabilities.
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
+  - [API Hooks](#api-hooks)
   - [Core Hooks](#core-hooks)
     - [useExecutePromise](#useexecutepromise-hook)
     - [usePromiseState](#usepromisestate-hook)
@@ -110,6 +112,188 @@ function App() {
 ```
 
 ## Usage
+
+### API Hooks
+
+#### createExecuteApiHooks
+
+🚀 **Automatic Type-Safe API Hooks Generation** - Generate fully typed React hooks from API objects with automatic method discovery, class method support, and advanced execution control.
+
+The `createExecuteApiHooks` function automatically discovers all function methods from an API object (including prototype chains for class instances) and creates corresponding React hooks with the naming pattern `use{CapitalizedMethodName}`. Each generated hook provides full state management, error handling, and supports custom execution callbacks with type-safe parameter access.
+
+**Key Features:**
+
+- **Automatic Method Discovery**: Traverses object properties and prototype chains
+- **Type-Safe Hook Generation**: Full TypeScript inference for parameters and return types
+- **Class Method Support**: Handles both static methods and class instances with `this` binding
+- **Execution Control**: `onBeforeExecute` callback for parameter inspection/modification and abort controller access
+- **Custom Error Types**: Support for specifying error types beyond the default `FetcherError`
+
+```typescript jsx
+import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
+
+// Define your API object (can be a class instance or plain object)
+class UserApi {
+  async getUser(id: string): Promise<User> {
+    const response = await fetch(`/api/users/${id}`);
+    return response.json();
+  }
+
+  async createUser(data: { name: string; email: string }): Promise<User> {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User> {
+    const response = await fetch(`/api/users/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    return response.json();
+  }
+}
+
+const userApi = new UserApi();
+
+// Generate type-safe hooks
+const apiHooks = createExecuteApiHooks({ api: userApi });
+
+function UserComponent() {
+  // Hooks are automatically generated with proper typing
+  const { loading: getLoading, result: user, error: getError, execute: getUser } = apiHooks.useGetUser();
+  const { loading: createLoading, result: createdUser, error: createError, execute: createUser } = apiHooks.useCreateUser({
+    onBeforeExecute: (abortController, args) => {
+      // args is fully typed as [data: { name: string; email: string }]
+      const [data] = args;
+      // Modify parameters in place if needed
+      data.email = data.email.toLowerCase();
+      // Access abort controller for custom cancellation
+      abortController.signal.addEventListener('abort', () => {
+        console.log('User creation cancelled');
+      });
+    },
+  });
+
+  const handleFetchUser = (userId: string) => {
+    getUser(userId); // Fully typed - only accepts string parameter
+  };
+
+  const handleCreateUser = (userData: { name: string; email: string }) => {
+    createUser(userData); // Fully typed - only accepts correct data shape
+  };
+
+  return (
+    <div>
+      <button onClick={() => handleFetchUser('123')}>
+        Fetch User
+      </button>
+      {getLoading && <div>Loading user...</div>}
+      {getError && <div>Error: {getError.message}</div>}
+      {user && <div>User: {user.name}</div>}
+
+      <button onClick={() => handleCreateUser({ name: 'John', email: 'john@example.com' })}>
+        Create User
+      </button>
+      {createLoading && <div>Creating user...</div>}
+      {createError && <div>Error: {createError.message}</div>}
+      {createdUser && <div>Created: {createdUser.name}</div>}
+    </div>
+  );
+}
+```
+
+**Custom Error Types:**
+
+```typescript jsx
+import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
+
+// Define custom error type
+class ApiError extends Error {
+  constructor(
+    public statusCode: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+// Generate hooks with custom error type
+const apiHooks = createExecuteApiHooks<
+  { getData: (id: string) => Promise<Data> },
+  ApiError
+>({
+  api: { getData },
+  errorType: ApiError,
+});
+
+function MyComponent() {
+  const { error, execute } = apiHooks.useGetData();
+
+  // error is now typed as ApiError | undefined
+  if (error) {
+    console.log('Status code:', error.statusCode); // TypeScript knows about statusCode
+  }
+}
+```
+
+**Advanced Usage with Class Methods:**
+
+```typescript jsx
+import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
+
+class ApiClient {
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  async get(endpoint: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`);
+    return response.json();
+  }
+
+  async post(endpoint: string, data: any): Promise<any> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  }
+
+  // Static method example
+  static async healthCheck(): Promise<{ status: string }> {
+    const response = await fetch('/api/health');
+    return response.json();
+  }
+}
+
+const apiClient = new ApiClient('/api');
+const apiHooks = createExecuteApiHooks({ api: apiClient });
+
+// Generated hooks: useGet, usePost
+// Static methods are also discovered: useHealthCheck
+
+function ApiComponent() {
+  const { execute: getData } = apiHooks.useGet();
+  const { execute: postData } = apiHooks.usePost();
+  const { execute: healthCheck } = apiHooks.useHealthCheck();
+
+  return (
+    <div>
+      <button onClick={() => getData('/users')}>Get Users</button>
+      <button onClick={() => postData('/users', { name: 'New User' })}>Create User</button>
+      <button onClick={() => healthCheck()}>Health Check</button>
+    </div>
+  );
+}
+```
 
 ### Core Hooks
 
