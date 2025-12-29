@@ -63,7 +63,7 @@ export function AutoRefreshBarItem({
     }
     if (selectedItem.refreshInterval > 0) {
       intervalIdRef.current = setInterval(() => {
-        refreshData();
+        refreshData?.();
       }, selectedItem.refreshInterval);
     }
 

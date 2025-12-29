@@ -113,10 +113,12 @@ export interface ViewTableProps<
   Attributes = Omit<TableProps<RecordType>, 'columns' | 'dataSource'>,
 > extends AttributesCapable<Attributes> {
   viewDefinition: ViewDefinition;
+  enableBatchOperation: boolean;
   dataSource: RecordType[];
   actionColumn?: ViewTableActionColumn<RecordType>;
   onSortChanged?: (
     sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
   ) => void;
   onSelectChange?: (items: RecordType[]) => void;
+  onClickPrimaryKey?: (id: any, record: RecordType) => void;
 }

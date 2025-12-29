@@ -1,39 +1,39 @@
 import { barItemRegistry } from './barItemRegistry';
 import { BarItemType, TypedBarItem } from './TypedBarItem';
-import { TopBarActionItem } from '../viewer';
+import { BatchOperationConfig, TopBarActionItem } from '../viewer';
 
-import { Delimiter } from './Delimiter';
 
 import styles from './TopBar.module.css';
 import { AutoRefreshBarItem } from './AutoRefreshBarItem';
-import { Button, Dropdown, Flex, MenuProps, Space } from 'antd';
+import { Button, Divider, Dropdown, Flex, MenuProps, Space } from 'antd';
 import {
   DownOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import { RefObject, useCallback } from 'react';
+import React, { RefObject, useCallback } from 'react';
 import { useFullscreen } from '@ahoo-wang/fetcher-react';
 import { BarItem } from './BarItem';
 import { Point } from './Point';
+import { ActionItem } from '../types';
 
 export interface TopBarPropsCapable<RecordType> {
-  topBar: Omit<TopBarProps<RecordType>, 'aggregateName' | 'viewName'>;
+  topBar: Omit<TopBarProps<RecordType>, 'title' | 'viewName'>;
 }
 
 export interface TopBarProps<RecordType> {
-  aggregateName: string;
+  title: string;
   viewName: string;
   barItems: BarItemType[];
   fullscreenTarget?: RefObject<HTMLElement | null>;
   enableFullscreen?: boolean;
 
-  bulkOperationName?: string;
-  bulkActions: TopBarActionItem<RecordType>[];
+  batchOperationConfig?: BatchOperationConfig<RecordType>;
 
-  primaryAction?: TopBarActionItem<RecordType>;
-  secondaryActions?: TopBarActionItem<RecordType>[];
+  primaryAction?: ActionItem<RecordType>;
+  secondaryActions?: ActionItem<RecordType>[];
+
 
   tableSelectedItems: RecordType[];
 
@@ -69,13 +69,12 @@ function renderMenuItem<RecordType>(
 
 export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   const {
-    aggregateName,
+    title,
     viewName,
     barItems,
     fullscreenTarget,
     enableFullscreen,
-    bulkOperationName,
-    bulkActions,
+    batchOperationConfig,
     primaryAction,
     secondaryActions,
     tableSelectedItems,
@@ -83,9 +82,9 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     onViewPanelUnfold,
   } = props;
 
-  let bulkMenuItems: MenuProps['items'] = [];
-  if (bulkActions?.length) {
-    bulkMenuItems = bulkActions.map(
+  let batchMenuItems: MenuProps['items'] = [];
+  if (batchOperationConfig?.enabled) {
+    batchMenuItems = batchOperationConfig!.actions.map(
       (action: TopBarActionItem<RecordType>, index: number) => {
         return renderMenuItem(action, index, tableSelectedItems);
       },
@@ -115,10 +114,10 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             <div onClick={onViewPanelUnfold}>
               <BarItem icon={<MenuUnfoldOutlined />} active={false} />
             </div>
-            <Delimiter />
+            <Divider orientation="vertical" />
           </>
         )}
-        {aggregateName}
+        {title}
         <Point />
         {viewName}
       </Flex>
@@ -130,21 +129,21 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
           }
           return <TypedBarItem type={barItem} key={index} />;
         })}
-        <Delimiter />
+        <Divider orientation="vertical" />
         <AutoRefreshBarItem />
-        {bulkMenuItems.length > 0 && (
+        {batchOperationConfig?.enabled && (
           <>
-            <Delimiter />
-            <Dropdown menu={{ items: bulkMenuItems }} trigger={['click']}>
+            <Divider orientation="vertical" />
+            <Dropdown menu={{ items: batchMenuItems }} trigger={['click']}>
               <Button icon={<DownOutlined />} iconPlacement="end">
-                {bulkOperationName && '批量操作'}
+                {batchOperationConfig?.title && '批量操作'}
               </Button>
             </Dropdown>
           </>
         )}
         {primaryAction && (
           <>
-            <Delimiter />
+            <Divider orientation="vertical" />
             <Space.Compact>
               {primaryAction.render ? (
                 primaryAction.render(tableSelectedItems)
@@ -170,7 +169,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
         )}
         {enableFullscreen && fullscreenTarget && (
           <>
-            <Delimiter />
+            <Divider orientation="vertical" />
             <div onClick={handleFullscreenClick}>
               <BarItem
                 icon={

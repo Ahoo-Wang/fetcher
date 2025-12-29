@@ -29,7 +29,7 @@ describe('TableSettingPanel', () => {
   const mockColumns: ViewColumn[] = [
     {
       name: 'id',
-      visible: true,
+      hidden: true,
       fixed: true,
     },
   ];

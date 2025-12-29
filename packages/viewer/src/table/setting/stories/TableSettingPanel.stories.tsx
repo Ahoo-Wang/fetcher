@@ -95,27 +95,27 @@ const sampleViewDefinition: ViewDefinition = {
 const sampleColumns: ViewColumn[] = [
   {
     name: 'id',
-    visible: true,
+    hidden: true,
     fixed: true,
   },
   {
     name: 'name',
-    visible: true,
+    hidden: true,
     fixed: false,
   },
   {
     name: 'category',
-    visible: true,
+    hidden: true,
     fixed: false,
   },
   {
     name: 'price',
-    visible: false,
+    hidden: false,
     fixed: false,
   },
   {
     name: 'status',
-    visible: false,
+    hidden: false,
     fixed: false,
   },
 ];

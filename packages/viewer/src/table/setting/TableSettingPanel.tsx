@@ -79,10 +79,10 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
   const fixedColumns = localColumns.filter(col => col.fixed);
 
   // Visible columns are shown in the table but can be reordered
-  const visibleColumns = localColumns.filter(col => col.visible && !col.fixed);
+  const visibleColumns = localColumns.filter(col => col.hidden && !col.fixed);
 
   // Hidden columns are not displayed in the table but can be made visible
-  const hiddenColumns = localColumns.filter(col => !col.visible);
+  const hiddenColumns = localColumns.filter(col => !col.hidden);
 
   /**
    * Handles changes to column visibility.
@@ -94,7 +94,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
    */
   const handleVisibilityChange = (index: number, visible: boolean) => {
     const newColumns = localColumns.map((col, i) =>
-      i === index ? { ...col, visible } : col,
+      i === index ? { ...col, hidden: visible } : col,
     );
     updateColumns(newColumns);
   };
@@ -237,7 +237,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
         <TableFieldItem
           columnDefinition={columnDefinition}
           fixed={column.fixed || false}
-          visible={column.visible}
+          visible={column.hidden}
           onVisibleChange={visible =>
             handleVisibilityChange(column.index, visible)
           }
@@ -267,7 +267,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
         <TableFieldItem
           columnDefinition={columnDefinition}
           fixed={column.fixed || false}
-          visible={column.visible}
+          visible={column.hidden}
           onVisibleChange={visible =>
             handleVisibilityChange(column.index, visible)
           }

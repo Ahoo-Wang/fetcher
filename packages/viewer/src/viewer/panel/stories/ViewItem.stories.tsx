@@ -32,7 +32,7 @@ const sampleView: View = {
     {
       name: 'id',
       fixed: false,
-      visible: true,
+      hidden: true,
     },
   ],
   tableSize: 'middle',

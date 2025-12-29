@@ -31,27 +31,27 @@ describe('TableSettingPanel', () => {
   const mockColumns: ViewColumn[] = [
     {
       name: 'id',
-      visible: true,
+      hidden: true,
       fixed: true,
     },
     {
       name: 'name',
-      visible: true,
+      hidden: true,
       fixed: false,
     },
     {
       name: 'category',
-      visible: true,
+      hidden: true,
       fixed: false,
     },
     {
       name: 'price',
-      visible: false,
+      hidden: false,
       fixed: false,
     },
     {
       name: 'status',
-      visible: false,
+      hidden: false,
       fixed: false,
     },
   ];
@@ -192,8 +192,8 @@ describe('TableSettingPanel', () => {
 
   it('handles columns with only fixed columns', () => {
     const fixedOnlyColumns: ViewColumn[] = [
-      { name: 'id', visible: true, fixed: true },
-      { name: 'name', visible: true, fixed: true },
+      { name: 'id', hidden: true, fixed: true },
+      { name: 'name', hidden: true, fixed: true },
     ];
 
     mockUseTableStateContext.mockReturnValue({
@@ -213,8 +213,8 @@ describe('TableSettingPanel', () => {
 
   it('handles columns with only hidden columns', () => {
     const hiddenOnlyColumns: ViewColumn[] = [
-      { name: 'price', visible: false, fixed: false },
-      { name: 'status', visible: false, fixed: false },
+      { name: 'price', hidden: false, fixed: false },
+      { name: 'status', hidden: false, fixed: false },
     ];
 
     mockUseTableStateContext.mockReturnValue({
@@ -333,10 +333,10 @@ describe('TableSettingPanel', () => {
   it('prevents dropping when fixed columns limit is reached', () => {
     // Set up 3 fixed columns (at the limit)
     const maxFixedColumns: ViewColumn[] = [
-      { name: 'id', visible: true, fixed: true },
-      { name: 'name', visible: true, fixed: true },
-      { name: 'category', visible: true, fixed: true },
-      { name: 'price', visible: true, fixed: false },
+      { name: 'id', hidden: true, fixed: true },
+      { name: 'name', hidden: true, fixed: true },
+      { name: 'category', hidden: true, fixed: true },
+      { name: 'price', hidden: true, fixed: false },
     ];
 
     mockUseTableStateContext.mockReturnValue({

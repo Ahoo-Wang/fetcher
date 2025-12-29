@@ -9,7 +9,7 @@ import { UseTableStateReducerReturn } from './useTableStateReducer';
  */
 export type TableStateContext = UseTableStateReducerReturn & {
   /** Function to refresh/reload table data */
-  refreshData: () => void;
+  refreshData?: () => void;
 };
 
 /**

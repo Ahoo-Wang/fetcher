@@ -15,7 +15,6 @@ export interface ViewDefinition {
   dataUrl: string;
   countUrl: string;
   internalCondition?: Condition;
-  checkable?: boolean;
 }
 
 export interface ViewColumnDefinition
@@ -23,7 +22,7 @@ export interface ViewColumnDefinition
   label: string;
   primaryKey: boolean;
   render?: (value: any, record: any, index: number) => React.ReactNode;
-  sorter: boolean | { multiple: number };
+  sorter?: boolean | { multiple: number } | null;
 }
 
 export type ViewType = 'PERSONAL' | 'SHARED';
@@ -47,7 +46,7 @@ export interface View {
 
 export interface ViewColumn extends NamedCapable {
   fixed: boolean;
-  visible: boolean;
+  hidden: boolean;
   width?: string;
   sortOrder?: SortOrder;
 }
