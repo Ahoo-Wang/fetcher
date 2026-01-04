@@ -2,9 +2,10 @@ import type { Meta, StoryObj } from '@storybook/react';
 
 import { ViewItemGroup } from '../ViewItemGroup';
 import { View, ViewColumn } from '../../types';
+import { Operator } from '@ahoo-wang/fetcher-wow';
 
 const meta: Meta<typeof ViewItemGroup> = {
-  title: 'Viewer/Panel/ViewItemGroup',
+  title: 'Viewer/Viewer/Panel/ViewItemGroup',
   component: ViewItemGroup,
   tags: ['autodocs'],
   parameters: {
@@ -40,8 +41,12 @@ const createSampleView = (
     },
   ],
   tableSize: 'middle',
-  condition: {},
-  pageSize: 10,
+  sortId: 0,
+  pagedQuery: {
+    condition: {
+      operator: Operator.ALL,
+    },
+  },
 });
 
 const sampleViews: View[] = [

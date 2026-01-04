@@ -68,7 +68,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
         },
         sorter: columnDefinition.sorter,
         width: column?.width,
-        hidden: column?.hidden || true,
+        hidden: column ? column!.hidden : true,
         ...columnDefinition.attributes,
       };
     },

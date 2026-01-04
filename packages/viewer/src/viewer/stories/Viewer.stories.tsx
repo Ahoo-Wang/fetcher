@@ -10,10 +10,7 @@ import {
 } from '../types';
 import { ViewTableActionColumn } from '../../table';
 import { Button } from 'antd';
-import {
-  MaterializedSnapshot,
-  Operator,
-} from '@ahoo-wang/fetcher-wow';
+import { MaterializedSnapshot, Operator } from '@ahoo-wang/fetcher-wow';
 import {
   COLUMN_HEIGHT_BAR_ITEM_TYPE,
   FILTER_BAR_ITEM_TYPE,
@@ -204,56 +201,55 @@ const viewDefinition: ViewDefinition = {
   countUrl:
     'http://procurement-service.dev.svc.cluster.local/tenant/mydao/sku_cost/snapshot/count',
   internalCondition: {},
-  checkable: true,
 };
 
 const columns: ViewColumn[] = [
   {
     name: 'state.id',
     fixed: true,
-    hidden: true,
+    hidden: false,
     width: '300px',
   },
   {
     name: 'state.businessPartnerId.id',
     fixed: false,
-    hidden: true,
+    hidden: false,
     width: '500px',
   },
   {
     name: 'state.businessPartnerId.name',
     fixed: false,
-    hidden: true,
+    hidden: false,
     width: '300px',
   },
   {
     name: 'state.businessPartnerId.bizId',
     fixed: false,
-    hidden: true,
+    hidden: false,
     width: '200px',
   },
   {
     name: 'state.skuId.code',
     fixed: false,
-    hidden: true,
+    hidden: false,
     width: '300px',
   },
   {
     name: 'state.skuId.brandName',
     fixed: false,
-    hidden: true,
+    hidden: false,
     width: '300px',
   },
   {
     name: 'state.skuId.orderNo',
     fixed: false,
-    hidden: true,
+    hidden: false,
     width: '300px',
   },
   {
     name: 'state.costCount',
     fixed: false,
-    hidden: true,
+    hidden: false,
     width: '300px',
   },
 ];
@@ -271,6 +267,12 @@ const createSampleView = (
         name: 'state.id',
         label: '成本编号',
       },
+      value: {
+        defaultValue: undefined,
+      },
+      operator: {
+        defaultValue: undefined,
+      },
     },
   ],
 ): View => ({
@@ -282,12 +284,14 @@ const createSampleView = (
   filters: filters,
   columns: columns,
   tableSize: 'middle',
-  condition: {},
-  pageSize: 10,
   sortId: 0,
   pagedQuery: {
     condition: {
       operator: Operator.ALL,
+    },
+    pagination: {
+      index: 1,
+      size: 10,
     },
   },
 });
@@ -302,6 +306,12 @@ const sampleViews: View[] = [
         name: 'state.id',
         label: '成本编号',
       },
+      value: {
+        defaultValue: undefined,
+      },
+      operator: {
+        defaultValue: undefined,
+      },
     },
     {
       key: 'brandName',
@@ -309,6 +319,12 @@ const sampleViews: View[] = [
       field: {
         name: 'state.skuId.brandName',
         label: '品牌名称',
+      },
+      value: {
+        defaultValue: undefined,
+      },
+      operator: {
+        defaultValue: undefined,
       },
     },
   ]),
@@ -361,16 +377,19 @@ export const Default: Story = {
     views: sampleViews,
     definition: viewDefinition,
     actionColumn: actionColumn,
-    topBar: {
-      barItems: [
-        FILTER_BAR_ITEM_TYPE,
-        REFRESH_DATA_BAR_ITEM_TYPE,
-        COLUMN_HEIGHT_BAR_ITEM_TYPE,
-        SHARE_LINK_BAR_ITEM_TYPE,
-      ],
-      enableFullscreen: true,
-      bulkOperationName: 'Bulk',
-      bulkActions: [
+    supportedTopbarItems: [
+      FILTER_BAR_ITEM_TYPE,
+      REFRESH_DATA_BAR_ITEM_TYPE,
+      COLUMN_HEIGHT_BAR_ITEM_TYPE,
+      SHARE_LINK_BAR_ITEM_TYPE,
+    ],
+    viewManagement: {
+      enabled: false,
+    },
+    batchOperationConfig: {
+      enabled: true,
+      title: 'Batch Operate',
+      actions: [
         {
           title: 'Bulk Delete',
           onClick: (items: MaterializedSnapshot<SkuCostState>[]) => {
@@ -378,20 +397,26 @@ export const Default: Story = {
           },
         },
       ],
-      primaryAction: {
-        title: 'Primary Button',
+    },
+    primaryAction: {
+      title: 'Primary Button',
+      onClick: (items: MaterializedSnapshot<SkuCostState>[]) => {
+        console.log('Primary Button', items);
+      },
+    },
+    secondaryActions: [
+      {
+        title: 'Secondary Button',
         onClick: (items: MaterializedSnapshot<SkuCostState>[]) => {
-          console.log('Primary Button', items);
+          console.log('Secondary Button', items);
         },
       },
-      secondaryActions: [
-        {
-          title: 'Secondary Button',
-          onClick: (items: MaterializedSnapshot<SkuCostState>[]) => {
-            console.log('Secondary Button', items);
-          },
-        },
-      ],
+    ],
+    onClickPrimaryKey: (
+      id: string,
+      record: MaterializedSnapshot<SkuCostState>,
+    ) => {
+      console.log('Click Primary Key', id, record);
     },
   },
 };

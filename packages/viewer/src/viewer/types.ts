@@ -37,9 +37,6 @@ export interface View {
   filters: ActiveFilter[];
   columns: ViewColumn[];
   tableSize: SizeType;
-  condition: Condition;
-  pageSize: number;
-  sort?: FieldSort[];
   sortId: number;
   pagedQuery: PagedQuery;
 }

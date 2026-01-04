@@ -13,6 +13,7 @@ import { useTableStateReducer } from './useTableStateReducer';
 import { useFilterStateReducer } from './useFilterStateReducer';
 import { TableStateContextProvider } from './TableStateContext';
 import { FilterStateContextProvider } from './FilterStateContext';
+import { deepEqual } from '../utils';
 
 const { Header, Footer, Sider, Content } = Layout;
 
@@ -40,7 +41,6 @@ export type ViewManagement =
 export interface BatchOperationConfig<RecordType> {
   enabled: boolean;
   title: string;
-  key: string;
   actions: ActionItem<RecordType>[];
 }
 
@@ -115,6 +115,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
 
   // Current active view state
   const [activeView, setActiveView] = useState<View>(initialActiveView);
+  const [viewChanged, setViewChanged] = useState(false);
 
   // Table row selection state
   const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
@@ -203,7 +204,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
 
   const onPaginationChange = useCallback(
     (page: number, pageSize: number) => {
-      if (pageSize !== activeView.pageSize) {
+      if (pageSize !== activeView.pagedQuery.pagination?.size) {
         setPageSize(pageSize);
       }
       onPageChange?.(page, pageSize);
@@ -221,7 +222,9 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
 
   const onViewChanged = useCallback(
     (activeView: View) => {
+      onViewChange?.(activeView);
       setActiveView(activeView);
+      setViewChanged(false);
       updateColumns(activeView.columns);
       updateTableSize(activeView.tableSize);
       updateActiveFilters(activeView.filters);
@@ -229,6 +232,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
       setPageSize(activeView.pagedQuery.pagination?.size || 10);
     },
     [
+      onViewChange,
       setActiveView,
       updateColumns,
       updateTableSize,
@@ -237,6 +241,27 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
       setPageSize,
     ],
   );
+
+  const hasViewChanged = useMemo(() => {
+    const newActiveView = {
+      ...activeView,
+      filters: activeFilters,
+      columns: columns,
+      tableSize: tableSize,
+      pagedQuery: {
+        condition: queryCondition,
+        pagination: {
+          index: 1,
+          size: pageSize,
+        },
+      },
+    };
+    return !deepEqual(activeView, newActiveView);
+  }, [activeView, activeFilters, queryCondition, columns, tableSize, pageSize]);
+
+  useEffect(() => {
+    setViewChanged(hasViewChanged);
+  }, [hasViewChanged]);
 
   const onTableSelectedDataChange = useCallback(
     (selectedData: RecordType[]) => {
@@ -299,6 +324,8 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                     secondaryActions={secondaryActions}
                     barItems={supportedTopbarItems}
                     batchOperationConfig={batchOperationConfig}
+                    viewChanged={viewChanged}
+                    viewManagement={viewManagement}
                   />
                 </Header>
                 {showFilterPanel && (
@@ -319,6 +346,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                   onSelectChange={onTableSelectedDataChange}
                   attributes={{ pagination: false }}
                   enableBatchOperation={batchOperationConfig?.enabled || false}
+                  onClickPrimaryKey={onClickPrimaryKey}
                 ></ViewTable>
                 {(paginationProps || batchOperationConfig?.enabled) && (
                   <Footer className={styles.pagination}>

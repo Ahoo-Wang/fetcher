@@ -1,39 +1,37 @@
+/**
+ * Context for managing table state including column visibility, table size, and related actions.
+ *
+ * This context provides access to table configuration and state management functions
+ * that are consumed by various table components in the viewer package.
+ *
+ * @example
+ * ```tsx
+ * // Provider usage
+ * <TableStateContextProvider
+ *   columns={columns}
+ *   tableSize={tableSize}
+ *   updateColumns={updateColumns}
+ *   updateTableSize={updateTableSize}
+ * >
+ *   <ViewTable {...props} />
+ * </TableStateContextProvider>
+ * ```
+ */
 import { createContext, ReactNode, useContext } from 'react';
 import { UseTableStateReducerReturn } from './useTableStateReducer';
 
 /**
- * Table State Context Type
- *
- * Represents the complete table state management interface provided by the context.
- * Extends the table state reducer with data refresh functionality.
+ * Type representing the table state context values.
+ * Extends UseTableStateReducerReturn with optional refreshData function.
  */
 export type TableStateContext = UseTableStateReducerReturn & {
-  /** Function to refresh/reload table data */
   refreshData?: () => void;
 };
 
 /**
- * React Context for Table State Management
- *
- * Provides centralized management of table-related state across the viewer component tree.
- * Includes column configurations, table sizing, and data refresh capabilities.
- *
- * @example
- * ```tsx
- * import { useTableStateContext } from './TableStateContext';
- *
- * function TableControls() {
- *   const { columns, tableSize, refreshData } = useTableStateContext();
- *
- *   return (
- *     <div>
- *       <button onClick={refreshData}>Refresh Data</button>
- *       <span>Table Size: {tableSize}</span>
- *       <span>Visible Columns: {columns.filter(c => c.visible).length}</span>
- *     </div>
- *   );
- * }
- * ```
+ * React context for sharing table state across components.
+ * This context is used to provide column configuration, table size settings,
+ * and state update functions to child components.
  */
 export const TableStateContext = createContext<TableStateContext | undefined>(
   undefined,
@@ -41,90 +39,25 @@ export const TableStateContext = createContext<TableStateContext | undefined>(
 
 /**
  * Props for the TableStateContextProvider component.
- *
- * Extends the TableStateContext interface with React children for component composition.
+ * Extends TableStateContext with children prop for React node composition.
  */
 export interface TableStateContextOptions extends TableStateContext {
-  /** Child components that will have access to the table state context */
   children: ReactNode;
 }
 
 /**
- * Table State Context Provider Component
+ * Provider component that wraps table components with the table state context.
  *
- * Provides table state management to all descendant components in the React tree.
- * This component should wrap the parts of your application that need access to table state.
+ * This provider makes table configuration and state management functions
+ * available to descendant components through React's context API.
  *
- * @param props - Provider configuration and child components
- * @param props.children - Components that will have access to table state
- * @param props.columns - Current column configurations with visibility and sizing
- * @param props.tableSize - Current table size (small, middle, large)
- * @param props.updateColumns - Function to update column configurations
- * @param props.updateTableSize - Function to change table size
- * @param props.refreshData - Function to refresh/reload table data
- *
- * @example
- * ```tsx
- * import { TableStateContextProvider } from './TableStateContext';
- * import { useTableState } from './useTableStateReducer';
- *
- * function DataTable({ definition, dataSource }) {
- *   // Initialize table state management
- *   const tableState = useTableState({
- *     initialColumns: definition.columns,
- *     initialTableSize: 'middle'
- *   });
- *
- *   const handleRefresh = async () => {
- *     // Fetch fresh data from API
- *     const newData = await fetchData();
- *     setDataSource(newData);
- *   };
- *
- *   return (
- *     <TableStateContextProvider
- *       columns={tableState.columns}
- *       tableSize={tableState.tableSize}
- *       updateColumns={tableState.updateColumns}
- *       updateTableSize={tableState.updateTableSize}
- *       refreshData={handleRefresh}
- *     >
- *       <ViewTable
- *         viewDefinition={definition}
- *         dataSource={dataSource}
- *       />
- *       <TableSettings />
- *       <RefreshButton />
- *     </TableStateContextProvider>
- *   );
- * }
- * ```
- *
- * @example
- * ```tsx
- * // Integration with Viewer component
- * function DataViewer({ definition, dataSource, onRefresh }) {
- *   const tableState = useTableState({
- *     initialColumns: definition.columns,
- *     initialTableSize: definition.tableSize || 'middle'
- *   });
- *
- *   return (
- *     <TableStateContextProvider
- *       columns={tableState.columns}
- *       tableSize={tableState.tableSize}
- *       updateColumns={tableState.updateColumns}
- *       updateTableSize={tableState.updateTableSize}
- *       refreshData={onRefresh}
- *     >
- *       <Viewer
- *         definition={definition}
- *         dataSource={dataSource}
- *       />
- *     </TableStateContextProvider>
- *   );
- * }
- * ```
+ * @param props - The props for the provider
+ * @param props.children - The child components that will consume the context
+ * @param props.columns - Current column configuration
+ * @param props.tableSize - Current table size setting
+ * @param props.updateColumns - Function to update column configuration
+ * @param props.updateTableSize - Function to update table size
+ * @param props.refreshData - Optional function to refresh table data
  */
 export function TableStateContextProvider({
   children,
@@ -138,88 +71,17 @@ export function TableStateContextProvider({
 }
 
 /**
- * Hook to Access Table State Context
+ * Custom hook to access the table state context.
  *
- * Provides access to the table state context within components.
- * Must be used within a TableStateContextProvider component tree.
+ * This hook provides convenient access to table configuration and state management
+ * functions throughout the component hierarchy.
  *
- * @returns Table state context with all table management functions
- * @throws Error if used outside of TableStateContextProvider
- *
- * @example
- * ```tsx
- * import { useTableStateContext } from './TableStateContext';
- *
- * function ColumnVisibilityToggle({ columnId }) {
- *   const { columns, updateColumns } = useTableStateContext();
- *
- *   const column = columns.find(c => c.dataIndex === columnId);
- *   const isVisible = column?.visible ?? true;
- *
- *   const handleToggle = () => {
- *     const updatedColumns = columns.map(c =>
- *       c.dataIndex === columnId
- *         ? { ...c, visible: !isVisible }
- *         : c
- *     );
- *     updateColumns(updatedColumns);
- *   };
- *
- *   return (
- *     <button onClick={handleToggle}>
- *       {isVisible ? 'Hide' : 'Show'} Column
- *     </button>
- *   );
- * }
- * ```
+ * @returns The current table state context values
+ * @throws Error if used outside of a TableStateContextProvider
  *
  * @example
  * ```tsx
- * // Table size controls
- * function TableSizeSelector() {
- *   const { tableSize, updateTableSize } = useTableStateContext();
- *
- *   return (
- *     <select
- *       value={tableSize}
- *       onChange={(e) => updateTableSize(e.target.value as SizeType)}
- *     >
- *       <option value="small">Small</option>
- *       <option value="middle">Medium</option>
- *       <option value="large">Large</option>
- *     </select>
- *   );
- * }
- * ```
- *
- * @example
- * ```tsx
- * // Data refresh functionality
- * function RefreshControls() {
- *   const { refreshData } = useTableStateContext();
- *
- *   return (
- *     <div>
- *       <button onClick={refreshData}>Refresh Data</button>
- *       <AutoRefreshToggle />
- *     </div>
- *   );
- * }
- * ```
- *
- * @example
- * ```tsx
- * // Error handling pattern
- * function SafeTableComponent() {
- *   try {
- *     const tableState = useTableStateContext();
- *     return <TableUI {...tableState} />;
- *   } catch (error) {
- *     // Handle case where context is not available
- *     console.warn('TableStateContext not found, using defaults');
- *     return <DefaultTable />;
- *   }
- * }
+ * const { columns, tableSize, updateColumns, updateTableSize } = useTableStateContext();
  * ```
  */
 export function useTableStateContext(): TableStateContext {
