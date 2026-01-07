@@ -15,7 +15,8 @@ import React, { useState, useCallback } from 'react';
 import { TableFieldItem } from './TableFieldItem';
 import styles from './TableSettingPanel.module.css';
 import { Space } from 'antd';
-import { useTableStateContext, ViewColumn, ViewDefinition } from '../../viewer';
+import { ViewColumn, ViewDefinition } from '../../viewer';
+import { useActiveViewStateContext } from '../../viewer/ActiveViewStateContext';
 
 /**
  * Props for the TableSettingPanel component.
@@ -63,11 +64,11 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
 
   // Get column state and update function from the table context
   // This provides access to the current column configuration and persistence
-  const { columns, updateColumns } = useTableStateContext();
+  const { activeView, updateColumns } = useActiveViewStateContext();
 
   // Add index information to each column for easier manipulation
   // This creates a local copy with sequential indices for drag/drop operations
-  const localColumns = columns.map((col, index) => {
+  const localColumns = activeView.columns.map((col, index) => {
     return {
       ...col,
       index,
@@ -166,12 +167,12 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
    * Handles the drop event when a column is dropped onto a new position.
    * Performs validation and reorders columns based on the drop location.
    *
-   * @param e - The drop event
+   * @param _e - The drop event
    * @param group - The target group ('fixed' or 'visible') for the drop
    * @param dragIndex - The index within the target group where the drop occurred
    */
   const handleDrop = (
-    e: React.DragEvent<HTMLDivElement>,
+    _e: React.DragEvent<HTMLDivElement>,
     group: 'fixed' | 'visible',
     dragIndex: number,
   ) => {

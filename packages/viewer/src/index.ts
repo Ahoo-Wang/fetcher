@@ -19,3 +19,4 @@ export * from './topbar';
 export * from './viewer';
 export * from './types';
 export * from './utils';
+export * from './useRefreshDataEventBus';

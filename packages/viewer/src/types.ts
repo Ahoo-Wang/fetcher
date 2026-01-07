@@ -48,3 +48,7 @@ export interface ActionItem<RecordType> extends AttributesCapable<
   onClick: (record: RecordType[]) => void;
   render?: (record: RecordType[]) => React.ReactNode;
 }
+
+
+export type SaveViewMethod = 'Update' | 'SaveAs'
+

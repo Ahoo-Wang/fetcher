@@ -80,6 +80,7 @@ const meta: Meta = {
 };
 
 const viewDefinition: ViewDefinition = {
+  id: 'sku-cost',
   name: 'SKU成本',
   fields: [
     {
@@ -200,7 +201,6 @@ const viewDefinition: ViewDefinition = {
     'http://procurement-service.dev.svc.cluster.local/tenant/mydao/sku_cost/snapshot/paged',
   countUrl:
     'http://procurement-service.dev.svc.cluster.local/tenant/mydao/sku_cost/snapshot/count',
-  internalCondition: {},
 };
 
 const columns: ViewColumn[] = [
@@ -278,6 +278,7 @@ const createSampleView = (
 ): View => ({
   id,
   name,
+  definitionId: '',
   type: viewType,
   source: viewSource,
   isDefault: false,
@@ -418,5 +419,112 @@ export const Default: Story = {
     ) => {
       console.log('Click Primary Key', id, record);
     },
+  },
+};
+
+export const Empty: Story = {
+  args: {
+    ...Default.args,
+    dataSource: [],
+    name: 'empty-view',
+  },
+};
+
+export const WithViewManagement: Story = {
+  args: {
+    ...Default.args,
+    viewManagement: {
+      enabled: true,
+      onCreateView: (view: View) => console.log('Create view:', view),
+      onDeleteView: (view: View) => console.log('Delete view:', view),
+      onUpdateView: (view: View) => console.log('Update view:', view),
+    },
+    name: 'with-view-management',
+  },
+};
+
+export const SmallTableSize: Story = {
+  args: {
+    ...Default.args,
+    views: sampleViews.map(v => ({ ...v, tableSize: 'small' as const })),
+    name: 'small-table-size',
+  },
+};
+
+export const LargeTableSize: Story = {
+  args: {
+    ...Default.args,
+    views: sampleViews.map(v => ({ ...v, tableSize: 'large' as const })),
+    name: 'large-table-size',
+  },
+};
+
+export const NoBatchOperations: Story = {
+  args: {
+    ...Default.args,
+    batchOperationConfig: undefined,
+    name: 'no-batch-operations',
+  },
+};
+
+export const NoTopBarItems: Story = {
+  args: {
+    ...Default.args,
+    supportedTopbarItems: [],
+    name: 'no-topbar-items',
+  },
+};
+
+export const OnlyFilterAndRefresh: Story = {
+  args: {
+    ...Default.args,
+    supportedTopbarItems: [FILTER_BAR_ITEM_TYPE, REFRESH_DATA_BAR_ITEM_TYPE],
+    name: 'only-filter-refresh',
+  },
+};
+
+export const WithInitialFilters: Story = {
+  args: {
+    ...Default.args,
+    views: [
+      createSampleView('1', 'Filtered View', 'PERSONAL', 'CUSTOM', [
+        {
+          key: 'brandName',
+          type: 'text',
+          field: {
+            name: 'state.skuId.brandName',
+            label: '品牌名称',
+          },
+          value: {
+            defaultValue: 'Nike',
+          },
+          operator: {
+            defaultValue: Operator.CONTAINS,
+          },
+        },
+      ]),
+      ...sampleViews.slice(1),
+    ],
+    name: 'with-initial-filters',
+  },
+};
+
+export const SinglePersonalView: Story = {
+  args: {
+    ...Default.args,
+    views: [createSampleView('1', 'My Only View', 'PERSONAL')],
+    name: 'single-personal-view',
+  },
+};
+
+export const MultipleSharedViews: Story = {
+  args: {
+    ...Default.args,
+    views: [
+      createSampleView('1', 'Team Dashboard', 'SHARED', 'CUSTOM'),
+      createSampleView('2', 'Department Overview', 'SHARED', 'CUSTOM'),
+      createSampleView('3', 'Company Report', 'SHARED', 'SYSTEM'),
+    ],
+    name: 'multiple-shared-views',
   },
 };

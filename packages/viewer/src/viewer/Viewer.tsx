@@ -1,42 +1,29 @@
 import { ViewTable, ViewTableActionColumn } from '../table';
 import { Layout, Modal, Pagination, PaginationProps, Space } from 'antd';
 import { EditableFilterPanel } from '../filter';
-import { View, ViewDefinition, ViewPanel } from './';
+import { SaveViewModal, View, ViewDefinition, ViewPanel, ViewType } from './';
 import styles from './Viewer.module.css';
-import { ActionItem } from '../types';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Condition, Operator } from '@ahoo-wang/fetcher-wow';
+import { ActionItem, SaveViewMethod } from '../types';
+import { useCallback, useEffect, useState } from 'react';
+import { Condition, Operator, PagedQuery } from '@ahoo-wang/fetcher-wow';
 import { BarItemType, TopBar } from '../topbar';
 import type { SorterResult } from 'antd/es/table/interface';
 import type * as React from 'react';
-import { useTableStateReducer } from './useTableStateReducer';
 import { useFilterStateReducer } from './useFilterStateReducer';
-import { TableStateContextProvider } from './TableStateContext';
 import { FilterStateContextProvider } from './FilterStateContext';
-import { deepEqual } from '../utils';
+import { useActiveViewStateReducer } from './useActiveViewStateReducer';
+import { ActiveViewStateContextProvider } from './ActiveViewStateContext';
+import { useRefreshDataEventBus } from '../useRefreshDataEventBus';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 
 const { Header, Footer, Sider, Content } = Layout;
 
-/**
- * Ref interface for the Viewer component.
- *
- * Provides imperative methods to control the viewer from parent components.
- */
-export interface ViewerRef {
-  /** Refreshes the data by re-executing the current query */
-  refreshData: () => void;
+export interface ViewManagement {
+  enabled: boolean;
+  onCreateView?: (view: View, onSuccess?: (newView: View) => void) => void;
+  onDeleteView?: (view: View, onSuccess?: () => void) => void;
+  onUpdateView?: (view: View, onSuccess?: (newView: View) => void) => void;
 }
-
-export type ViewManagement =
-  | {
-      enabled: false;
-    }
-  | {
-      enabled: true;
-      onCreateView?: (view: View) => void;
-      onDeleteView?: (view: View) => void;
-      onUpdateView?: (view: View) => void;
-    };
 
 export interface BatchOperationConfig<RecordType> {
   enabled: boolean;
@@ -46,7 +33,7 @@ export interface BatchOperationConfig<RecordType> {
 
 export interface ViewerProps<RecordType> {
   views: View[];
-  defaultView?: View;
+  defaultView: View;
   definition: ViewDefinition;
   actionColumn?: ViewTableActionColumn<RecordType>;
   paginationProps?: Omit<PaginationProps, 'onChange' | 'onShowSizeChange'>;
@@ -66,12 +53,8 @@ export interface ViewerProps<RecordType> {
   onClickPrimaryKey?: (id: any, record: RecordType) => void;
 
   // data change callbacks
-  onRefreshData?: () => void;
-  onFilterChange?: (condition: Condition) => void;
-  onSortChange?: (
-    sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
-  ) => void;
-  onPageChange?: (page: number, pageSize: number) => void;
+  onLoadData: (pagedQuery: PagedQuery) => void;
+
   onViewChange?: (view: View) => void;
 }
 
@@ -90,69 +73,33 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     primaryAction,
     secondaryActions,
     onClickPrimaryKey,
-    onRefreshData,
-    onFilterChange,
-    onSortChange,
-    onPageChange,
+    onLoadData,
     onViewChange,
   } = props;
-  /**
-   * Determine the initial active view based on configuration.
-   * Priority: defaultViewId > isDefault flag > first view in array.
-   */
-  const initialActiveView = useMemo<View>(() => {
-    let temp;
-    if (defaultView) {
-      temp = defaultView;
-    } else {
-      temp = views.find(v => v.isDefault);
-    }
-    if (!temp) {
-      temp = views[0];
-    }
-    return temp;
-  }, [defaultView, views]);
-
-  // Current active view state
-  const [activeView, setActiveView] = useState<View>(initialActiveView);
-  const [viewChanged, setViewChanged] = useState(false);
-
   // Table row selection state
   const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
-
-  /**
-   * Table state management using reducer pattern.
-   * Manages column configurations and table sizing preferences.
-   */
-  const { columns, tableSize, updateColumns, updateTableSize } =
-    useTableStateReducer({
-      columns: activeView.columns,
-      tableSize: activeView.tableSize,
-    });
+  const {
+    activeView,
+    changed,
+    updateFilters,
+    updateColumns,
+    updateTableSize,
+    updateConditions,
+    updatePageSize,
+    reset,
+    switchView,
+  } = useActiveViewStateReducer(defaultView);
 
   /**
    * Filter state management using reducer pattern.
    * Manages active filters, query conditions, and filter panel visibility.
    */
-  const {
-    activeFilters,
-    updateActiveFilters,
-    queryCondition,
-    updateQueryCondition,
-    showFilterPanel,
-    updateShowFilterPanel,
-  } = useFilterStateReducer({
-    activeFilters: activeView.filters,
-    queryCondition: activeView.pagedQuery.condition,
+  const { showFilterPanel, updateShowFilterPanel } = useFilterStateReducer({
     showFilterPanel: true,
   });
 
   // page size
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(
-    activeView.pagedQuery.pagination?.size || 10,
-  );
-
   const [showViewPanel, setShowViewPanel] = useState(true);
 
   const onViewPanelFold = useCallback(() => {
@@ -164,7 +111,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
   }, [setShowViewPanel]);
 
   const onSearch = (condition: Condition) => {
-    const newActiveFilters = activeFilters.map(af => {
+    const newActiveFilters = activeView.filters.map(af => {
       if (condition.operator === Operator.AND) {
         const queriedCondition = condition.children?.find(
           c => c.field === af.field.name,
@@ -195,27 +142,40 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
         };
       }
     });
-    updateActiveFilters(newActiveFilters);
-    updateQueryCondition(condition);
+    updateFilters(newActiveFilters);
+    updateConditions(condition);
 
     setCurrentPage(1);
-    onFilterChange?.(condition);
+    onLoadData?.({
+      ...activeView.pagedQuery,
+      condition,
+      pagination: {
+        index: 1,
+        size: activeView.pageSize,
+      },
+    });
   };
 
   const onPaginationChange = useCallback(
     (page: number, pageSize: number) => {
-      if (pageSize !== activeView.pagedQuery.pagination?.size) {
-        setPageSize(pageSize);
-      }
-      onPageChange?.(page, pageSize);
+      updatePageSize(pageSize);
+      setCurrentPage(page);
+
+      onLoadData?.({
+        ...activeView.pagedQuery,
+        pagination: {
+          index: page,
+          size: pageSize,
+        },
+      });
     },
-    [setPageSize, onPageChange, activeView],
+    [updatePageSize, setCurrentPage, onLoadData, activeView],
   );
 
   const onSortChanged = (
     sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
   ) => {
-    onSortChange?.(sorter);
+    console.log('sort changed', sorter);
   };
 
   // endregion
@@ -223,45 +183,10 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
   const onViewChanged = useCallback(
     (activeView: View) => {
       onViewChange?.(activeView);
-      setActiveView(activeView);
-      setViewChanged(false);
-      updateColumns(activeView.columns);
-      updateTableSize(activeView.tableSize);
-      updateActiveFilters(activeView.filters);
-      updateQueryCondition(activeView.pagedQuery.condition);
-      setPageSize(activeView.pagedQuery.pagination?.size || 10);
+      switchView(activeView);
     },
-    [
-      onViewChange,
-      setActiveView,
-      updateColumns,
-      updateTableSize,
-      updateActiveFilters,
-      updateQueryCondition,
-      setPageSize,
-    ],
+    [onViewChange, switchView],
   );
-
-  const hasViewChanged = useMemo(() => {
-    const newActiveView = {
-      ...activeView,
-      filters: activeFilters,
-      columns: columns,
-      tableSize: tableSize,
-      pagedQuery: {
-        condition: queryCondition,
-        pagination: {
-          index: 1,
-          size: pageSize,
-        },
-      },
-    };
-    return !deepEqual(activeView, newActiveView);
-  }, [activeView, activeFilters, queryCondition, columns, tableSize, pageSize]);
-
-  useEffect(() => {
-    setViewChanged(hasViewChanged);
-  }, [hasViewChanged]);
 
   const onTableSelectedDataChange = useCallback(
     (selectedData: RecordType[]) => {
@@ -276,20 +201,68 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     };
   }, []);
 
+  const [saveViewModalOpen, setSaveViewModalOpen] = useState(false);
+  const [saveViewModalMode, setSaveViewModalMode] = useState<
+    'Create' | 'SaveAs'
+  >('Create');
+  const [modal, contextHolder] = Modal.useModal();
+
+  const onSaveView = (method: SaveViewMethod) => {
+    switch (method) {
+      case 'Update':
+        modal.confirm({
+          title: '确认覆盖当前视图？',
+          icon: <ExclamationCircleOutlined />,
+          content: '确认后将覆盖原筛选条件',
+          okText: '确认',
+          cancelText: '取消',
+          onOk: () => {
+            viewManagement.onUpdateView?.(activeView);
+          },
+        });
+        break;
+      case 'SaveAs':
+        setSaveViewModalOpen(true);
+        setSaveViewModalMode('SaveAs');
+        break;
+    }
+  };
+
+  const handleSaveViewModalConfirm = (name: string, type: ViewType) => {
+    const newView = { ...activeView, name, type };
+    viewManagement.onCreateView?.(newView, (result) => {
+      switchView(result);
+      setSaveViewModalOpen(false);
+    });
+  };
+
+  const onReset = () => {
+    const originView = reset();
+    onLoadData?.(originView.pagedQuery);
+  };
+
+  const { subscribe } = useRefreshDataEventBus();
+  subscribe({
+    name: 'Fetcher-Viewer-Refresh-Data',
+    handle(): void {
+      onLoadData?.(activeView.pagedQuery);
+    },
+  });
+
   return (
-    <TableStateContextProvider
-      columns={columns}
-      tableSize={tableSize}
+    <ActiveViewStateContextProvider
+      activeView={activeView}
+      changed={changed}
       updateColumns={updateColumns}
+      updateFilters={updateFilters}
       updateTableSize={updateTableSize}
-      refreshData={onRefreshData}
+      updateConditions={updateConditions}
+      updatePageSize={updatePageSize}
+      switchView={switchView}
+      reset={reset}
     >
       <FilterStateContextProvider
-        activeFilters={activeFilters}
-        queryCondition={queryCondition}
         showFilterPanel={showFilterPanel}
-        updateActiveFilters={updateActiveFilters}
-        updateQueryCondition={updateQueryCondition}
         updateShowFilterPanel={updateShowFilterPanel}
       >
         <Layout>
@@ -318,23 +291,26 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                     tableSelectedItems={tableSelectedData}
                     title={definition.name}
                     viewName={activeView.name}
+                    viewSource={activeView.source}
                     showViewPanel={showViewPanel}
                     onViewPanelUnfold={onViewPanelUnfold}
                     primaryAction={primaryAction}
                     secondaryActions={secondaryActions}
                     barItems={supportedTopbarItems}
                     batchOperationConfig={batchOperationConfig}
-                    viewChanged={viewChanged}
+                    viewChanged={changed}
                     viewManagement={viewManagement}
+                    onSaveView={onSaveView}
+                    onReset={onReset}
                   />
                 </Header>
                 {showFilterPanel && (
                   <div className={styles.filterPanel}>
                     <EditableFilterPanel
-                      filters={activeFilters}
+                      filters={activeView.filters}
                       availableFilters={definition.availableFilters}
                       onSearch={onSearch}
-                      onChange={updateActiveFilters}
+                      onChange={updateFilters}
                     />
                   </div>
                 )}
@@ -357,7 +333,9 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                     </span>
                     <Pagination
                       showTotal={total => `total ${total} items`}
-                      defaultPageSize={pageSize}
+                      defaultPageSize={
+                        activeView.pagedQuery?.pagination?.size || 10
+                      }
                       defaultCurrent={currentPage}
                       current={currentPage}
                       pageSizeOptions={['10', '20', '50', '100', '200']}
@@ -369,8 +347,15 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
               </Space>
             </Content>
           </Layout>
+          <SaveViewModal
+            mode={saveViewModalMode}
+            open={saveViewModalOpen}
+            onSaveView={handleSaveViewModalConfirm}
+            onCancel={() => setSaveViewModalOpen(false)}
+          />
+          {contextHolder}
         </Layout>
       </FilterStateContextProvider>
-    </TableStateContextProvider>
+    </ActiveViewStateContextProvider>
   );
 }

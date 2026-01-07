@@ -1,7 +1,5 @@
-import { ActiveFilter } from '../filter/panel';
 import { ReducerActionCapable } from '../types';
 import { useCallback, useReducer } from 'react';
-import { Condition } from '@ahoo-wang/fetcher-wow';
 
 /**
  * Filter State Interface
@@ -10,10 +8,6 @@ import { Condition } from '@ahoo-wang/fetcher-wow';
  * query conditions, and UI panel visibility.
  */
 export interface FilterState {
-  /** Array of currently active filters applied to the data */
-  activeFilters: ActiveFilter[];
-  /** Query condition object used for data filtering */
-  queryCondition: Condition;
   /** Whether the filter panel is currently visible */
   showFilterPanel: boolean;
 }
@@ -42,18 +36,10 @@ export interface FilterStateReducerAction extends ReducerActionCapable<FilterSta
  * access to current state and state update functions.
  */
 export interface FilterStateReducerReturn {
-  /** Current array of active filters */
-  activeFilters: ActiveFilter[];
   /** Current filter panel visibility state */
   showFilterPanel: boolean;
-  /** Current query condition for data filtering */
-  queryCondition: Condition;
-  /** Function to update the active filters array */
-  updateActiveFilters: (activeFilters: ActiveFilter[]) => void;
   /** Function to show/hide the filter panel */
   updateShowFilterPanel: (showFilterPanel: boolean) => void;
-  /** Function to update the query condition */
-  updateQueryCondition: (condition: Condition) => void;
 }
 
 /**
@@ -71,12 +57,8 @@ const filterStateReducer = (
   action: FilterStateReducerAction,
 ): FilterState => {
   switch (action.type) {
-    case 'UPDATE_ACTIVE_FILTERS':
-      return { ...state, activeFilters: action.payload };
     case 'UPDATE_SHOW_FILTER_PANEL':
       return { ...state, showFilterPanel: action.payload };
-    case 'UPDATE_QUERY_CONDITION':
-      return { ...state, queryCondition: action.payload };
     default:
       return state;
   }
@@ -217,16 +199,6 @@ export function useFilterStateReducer(
   >(filterStateReducer, state);
 
   /**
-   * Update active filters callback.
-   *
-   * Memoized with useCallback to prevent unnecessary re-renders in consuming components.
-   * Dispatches an action to update the active filters array.
-   */
-  const updateActiveFilters = useCallback((activeFilters: ActiveFilter[]) => {
-    dispatch({ type: 'UPDATE_ACTIVE_FILTERS', payload: activeFilters });
-  }, []);
-
-  /**
    * Update filter panel visibility callback.
    *
    * Memoized with useCallback for performance. Controls whether the filter panel
@@ -237,26 +209,12 @@ export function useFilterStateReducer(
   }, []);
 
   /**
-   * Update query condition callback.
-   *
-   * Memoized with useCallback for performance. Updates the condition object used
-   * for data filtering and querying.
-   */
-  const updateQueryCondition = useCallback((condition: Condition) => {
-    dispatch({ type: 'UPDATE_QUERY_CONDITION', payload: condition });
-  }, []);
-
-  /**
    * Return the complete filter state management interface.
    *
    * Provides current state values and memoized update functions for optimal performance.
    */
   return {
-    activeFilters: filterState.activeFilters,
     showFilterPanel: filterState.showFilterPanel,
-    queryCondition: filterState.queryCondition,
-    updateActiveFilters,
     updateShowFilterPanel,
-    updateQueryCondition,
   };
 }

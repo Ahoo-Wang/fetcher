@@ -20,7 +20,8 @@ import React, { RefObject, useCallback } from 'react';
 import { useFullscreen } from '@ahoo-wang/fetcher-react';
 import { BarItem } from './BarItem';
 import { Point } from './Point';
-import { ActionItem } from '../types';
+import { ActionItem, SaveViewMethod } from '../types';
+import type { ItemType } from 'antd/es/menu/interface';
 
 export interface TopBarPropsCapable<RecordType> {
   topBar: Omit<TopBarProps<RecordType>, 'title' | 'viewName'>;
@@ -41,6 +42,8 @@ export interface TopBarProps<RecordType> {
 
   viewChanged: boolean;
   viewManagement?: ViewManagement;
+  onSaveView?: (method: SaveViewMethod) => void;
+  onReset?: () => void;
   tableSelectedItems: RecordType[];
 
   showViewPanel: boolean;
@@ -51,7 +54,7 @@ function renderMenuItem<RecordType>(
   item: TopBarActionItem<RecordType>,
   index: number,
   tableSelectedItems: RecordType[],
-) {
+): ItemType {
   if (item.render) {
     return {
       key: index,
@@ -73,6 +76,17 @@ function renderMenuItem<RecordType>(
   }
 }
 
+const saveMethodItems: MenuProps['items'] = [
+  {
+    label: '覆盖当前视图',
+    key: 'Update',
+  },
+  {
+    label: '另存为新视图',
+    key: 'SaveAs',
+  },
+];
+
 export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   const {
     title,
@@ -88,6 +102,8 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     showViewPanel,
     onViewPanelUnfold,
     viewChanged,
+    onSaveView,
+    onReset,
   } = props;
 
   let batchMenuItems: MenuProps['items'] = [];
@@ -115,24 +131,17 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   }, [toggle]);
 
   const handleMenuClick: MenuProps['onClick'] = e => {
-    console.log('click', e);
+    onSaveView?.(e.key as SaveViewMethod);
   };
-
-  const items: MenuProps['items'] = [
-    {
-      label: '覆盖当前视图',
-      key: '1',
-    },
-    {
-      label: '另存为新视图',
-      key: '2',
-    },
-  ];
 
   const menuProps = {
-    items,
+    items: saveMethodItems,
     onClick: handleMenuClick,
   };
+
+  const handleReset = useCallback(() => {
+    onReset?.();
+  }, [onReset]);
 
   return (
     <>
@@ -153,7 +162,11 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             <>
               <div style={{ color: 'rgba(0,0,0,0.45)' }}>(已编辑)</div>
               {viewSource === 'SYSTEM' ? (
-                <Button type="default" size="small">
+                <Button
+                  type="default"
+                  size="small"
+                  onClick={() => onSaveView?.('SaveAs')}
+                >
                   另存为
                 </Button>
               ) : (
@@ -167,7 +180,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
                   </Button>
                 </Dropdown>
               )}
-              <Button type="default" size="small">
+              <Button type="default" size="small" onClick={handleReset}>
                 重置
               </Button>
             </>

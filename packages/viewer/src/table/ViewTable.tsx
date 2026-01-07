@@ -8,7 +8,7 @@ import { TableSettingPanel } from './setting';
 import type { TableColumnsType } from 'antd';
 import type { TableRowSelection } from 'antd/es/table/interface';
 import { Key, useState } from 'react';
-import { useTableStateContext } from '../viewer';
+import { useActiveViewStateContext } from '../viewer/ActiveViewStateContext';
 
 export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   // Extract props for easier access and type safety
@@ -24,11 +24,11 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   } = props;
 
   // Get table state from context (column visibility, table size, etc.)
-  const { columns, tableSize } = useTableStateContext();
+  const { activeView } = useActiveViewStateContext();
 
   const tableColumns: TableColumnsType<RecordType> = viewDefinition.fields.map(
     columnDefinition => {
-      const column = columns.find(it => it.name === columnDefinition.name);
+      const column = activeView.columns.find(it => it.name === columnDefinition.name);
       return {
         title: columnDefinition.label,
         dataIndex: columnDefinition.name.split('.'),
@@ -130,7 +130,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
         const data = {
           value: actionsData,
           record: record,
-          index: columns.length + 1, // Use next available index
+          index: activeView.columns.length + 1, // Use next available index
         };
         return <ActionsCell data={data} />;
       },
@@ -161,7 +161,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
       columns={tableColumns}
       {...attributes}
       scroll={{ x: 'max-content' }}
-      size={tableSize}
+      size={activeView.tableSize}
       onChange={(_pagination, _filters, sorter, extra) => {
         if (extra.action === 'sort' && onSortChanged) {
           onSortChanged(sorter);
