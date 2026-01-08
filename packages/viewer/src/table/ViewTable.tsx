@@ -1,32 +1,25 @@
-import { Table, Popover } from 'antd';
-import { ActionsCell, TextCell, typedCellRender } from './cell';
-import { ViewTableProps } from './types';
+import { Table, Popover, TableProps } from 'antd';
+import { ActionCell, ActionsCell, TextCell, typedCellRender } from './cell';
+import { ViewTableActionColumn } from './types';
 import { SettingOutlined } from '@ant-design/icons';
 import styles from './ViewTable.module.css';
 import { TableSettingPanel } from './setting';
 
 import type { TableColumnsType } from 'antd';
-import type { TableRowSelection } from 'antd/es/table/interface';
-import { TableRecordType } from '../types';
+import type { SorterResult, TableRowSelection } from 'antd/es/table/interface';
 import { Key, useState } from 'react';
-import { useTableStateContext } from '../viewer';
+import { useActiveViewStateContext } from '../viewer/ActiveViewStateContext';
+import { AttributesCapable } from '../types';
+import { ViewDefinition } from '../viewer';
+
 
 /**
- * ViewTable Component
+ * Props for the ViewTable component.
  *
- * A comprehensive table component that provides advanced data display capabilities
- * with column management, sorting, selection, and customizable actions. It integrates
- * with the viewer's table state context for dynamic column visibility and configuration.
- *
- * @template RecordType - The type of records displayed in the table, must extend TableRecordType
- *
- * @param props - The properties for configuring the table
- * @param props.viewDefinition - Defines the table structure, columns, and behavior
- * @param props.dataSource - Array of records to display in the table
- * @param props.actionColumn - Optional action column configuration for row-level actions
- * @param props.onSortChanged - Callback fired when table sorting changes
- * @param props.onSelectChange - Callback fired when row selection changes
- * @param props.attributes - Additional Ant Design Table props
+ * @template RecordType - The type of the records in the data source.
+ * @template Attributes - The type of additional attributes for the table.
+ * @interface ViewTableProps
+ * @extends AttributesCapable<Attributes>
  *
  * @example
  * ```tsx
@@ -34,88 +27,46 @@ import { useTableStateContext } from '../viewer';
  *   id: number;
  *   name: string;
  *   email: string;
- *   status: 'active' | 'inactive';
  * }
  *
- * const viewDefinition: ViewDefinition = {
- *   name: 'Users',
+ * const tableProps: ViewTableProps<User> = {
  *   columns: [
- *     {
- *       title: 'ID',
- *       dataIndex: 'id',
- *       type: 'number',
- *       primaryKey: true,
- *       sorter: true
- *     },
  *     {
  *       title: 'Name',
  *       dataIndex: 'name',
- *       type: 'text',
- *       sorter: true
+ *       cell: { type: 'text' },
+ *       primaryKey: false
  *     },
  *     {
  *       title: 'Email',
  *       dataIndex: 'email',
- *       type: 'link',
- *       attributes: { target: '_blank' }
- *     },
- *     {
- *       title: 'Status',
- *       dataIndex: 'status',
- *       type: 'tag',
- *       sorter: true
+ *       cell: { type: 'link' },
+ *       primaryKey: false
  *     }
  *   ],
- *   availableFilters: [],
- *   dataUrl: '/api/users',
- *   countUrl: '/api/users/count',
- *   checkable: true
+ *   dataSource: [
+ *     { id: 1, name: 'John Doe', email: 'john@example.com' }
+ *   ],
+ *   attributes: { pagination: { pageSize: 10 } }
  * };
- *
- * const actionColumn: ViewTableActionColumn<User> = {
- *   title: 'Actions',
- *   configurable: true,
- *   configurePanelTitle: 'Table Settings',
- *   actions: (record) => ({
- *     primaryAction: {
- *       data: { value: 'Edit', record, index: 0 },
- *       attributes: { onClick: () => handleEdit(record.id) }
- *     },
- *     secondaryActions: [
- *       {
- *         data: { value: 'Delete', record, index: 0 },
- *         attributes: { onClick: () => handleDelete(record.id), danger: true }
- *       }
- *     ]
- *   })
- * };
- *
- * function UserTable() {
- *   const [data, setData] = useState<User[]>([]);
- *
- *   return (
- *     <ViewTable
- *       viewDefinition={viewDefinition}
- *       dataSource={data}
- *       actionColumn={actionColumn}
- *       onSortChanged={(sorter) => {
- *         console.log('Sort changed:', sorter);
- *       }}
- *       onSelectChange={(selectedUsers) => {
- *         console.log('Selected users:', selectedUsers);
- *       }}
- *       attributes={{
- *         pagination: { pageSize: 20 },
- *         loading: false
- *       }}
- *     />
- *   );
- * }
  * ```
  */
-export function ViewTable<RecordType extends TableRecordType<any>>(
-  props: ViewTableProps<RecordType>,
-) {
+export interface ViewTableProps<
+  RecordType = any,
+  Attributes = Omit<TableProps<RecordType>, 'columns' | 'dataSource'>,
+> extends AttributesCapable<Attributes> {
+  viewDefinition: ViewDefinition;
+  enableBatchOperation: boolean;
+  dataSource: RecordType[];
+  actionColumn?: ViewTableActionColumn<RecordType>;
+  onSortChanged?: (
+    sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
+  ) => void;
+  onSelectChange?: (items: RecordType[]) => void;
+  onClickPrimaryKey?: (id: any, record: RecordType) => void;
+}
+
+export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   // Extract props for easier access and type safety
   const {
     viewDefinition,
@@ -124,89 +75,61 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
     onSortChanged,
     onSelectChange,
     attributes,
+    enableBatchOperation,
+    onClickPrimaryKey,
   } = props;
 
   // Get table state from context (column visibility, table size, etc.)
-  const { columns, tableSize } = useTableStateContext();
+  const { activeView } = useActiveViewStateContext();
 
-  /**
-   * Transform view columns into Ant Design table columns.
-   *
-   * This process:
-   * 1. Filters only visible columns from the table state
-   * 2. Maps each column to its definition in viewDefinition
-   * 3. Creates appropriate render functions based on column type
-   * 4. Handles special cases like primary key columns and custom renderers
-   */
-  const tableColumns: TableColumnsType<RecordType> = columns
-    .filter(it => it.visible) // Only include columns marked as visible
-    .map(it => {
-      // Find the column definition that matches this column's dataIndex
-      const columnDefinition = viewDefinition.fields.find(
-        col => col.name === it.name,
-      );
-
-      return columnDefinition
-        ? {
-            // Standard column properties from definition
-            title: columnDefinition.label,
-            dataIndex: it.name.split('.'), // Support nested properties (e.g., 'user.name')
-
-            // Fixed positioning: primary keys and explicitly fixed columns go to start
-            fixed: columnDefinition.primaryKey
-              ? 'start'
-              : it.fixed
-                ? 'start'
-                : '',
-
-            /**
-             * Render function that handles different cell types.
-             * Priority: custom render > typed cell renderer > fallback text cell
-             */
-            render: (value, record, index) => {
-              // Use custom render function if provided
-              if (columnDefinition.render) {
-                return columnDefinition.render(value, record, index);
-              }
-
-              // Use typed cell renderer based on column type (text, number, link, etc.)
-              const cellRender = typedCellRender(
-                columnDefinition.type,
-                columnDefinition.attributes || {},
-              );
-
-              if (cellRender) {
-                return cellRender(value, record, index);
-              } else {
-                // Fallback to basic text cell for unknown types
-                return (
-                  <TextCell data={{ value: String(value), record, index }} />
-                );
-              }
-            },
-
-            // Enable sorting if specified in definition
-            sorter: columnDefinition.sorter,
-
-            // Spread any additional attributes from column definition
-            ...columnDefinition.attributes,
-
-            // Use width from table state (user-configurable)
-            width: it.width,
+  const tableColumns: TableColumnsType<RecordType> = viewDefinition.fields.map(
+    columnDefinition => {
+      const column = activeView.columns.find(it => it.name === columnDefinition.name);
+      return {
+        key: columnDefinition.name,
+        title: columnDefinition.label,
+        dataIndex: columnDefinition.name.split('.'),
+        fixed: columnDefinition.primaryKey
+          ? 'start'
+          : column?.fixed
+            ? 'start'
+            : '',
+        render: (value: any, record: RecordType, index: number) => {
+          if (columnDefinition.render) {
+            return columnDefinition.render(value, record, index);
           }
-        : {
-            // Fallback for columns without definitions (shouldn't normally happen)
-            title: '未知', // "Unknown" in Chinese
-            dataIndex: it.name,
-            render: (value, record, index) => {
-              return (
-                <TextCell
-                  data={{ value: String(value) || 'ERROR', record, index }}
-                />
-              );
-            },
-          };
-    });
+
+          if (columnDefinition.primaryKey) {
+            return (
+              <ActionCell
+                data={{ value, record, index }}
+                attributes={{
+                  onClick: (record: RecordType) => {
+                    onClickPrimaryKey?.(value, record);
+                  },
+                }}
+              />
+            );
+          }
+
+          const cellRender = typedCellRender(
+            columnDefinition.type,
+            columnDefinition.attributes || {},
+          );
+
+          if (cellRender) {
+            return cellRender(value, record, index);
+          } else {
+            return <TextCell data={{ value: String(value), record, index }} />;
+          }
+        },
+        sorter: columnDefinition.sorter,
+        width: column?.width,
+        hidden: column ? column!.hidden : true,
+        ...columnDefinition.attributes,
+      };
+    },
+  );
   /**
    * Add action column if configured.
    *
@@ -264,7 +187,7 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
         const data = {
           value: actionsData,
           record: record,
-          index: columns.length + 1, // Use next available index
+          index: activeView.columns.length + 1, // Use next available index
         };
         return <ActionsCell data={data} />;
       },
@@ -282,8 +205,8 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
   const rowSelection: TableRowSelection<RecordType> = {
     selectedRowKeys,
     fixed: true, // Keep selection column fixed during horizontal scroll
-    onChange: (selectedRowKeys, selectedRows) => {
-      setSelectedRowKeys(selectedRowKeys);
+    onChange: (keys, selectedRows) => {
+      setSelectedRowKeys(keys);
       onSelectChange?.(selectedRows); // Notify parent component of selection changes
     },
   };
@@ -291,11 +214,11 @@ export function ViewTable<RecordType extends TableRecordType<any>>(
   return (
     <Table<RecordType>
       dataSource={dataSource}
-      rowSelection={viewDefinition.checkable ? rowSelection : undefined}
+      rowSelection={enableBatchOperation ? rowSelection : undefined}
       columns={tableColumns}
       {...attributes}
       scroll={{ x: 'max-content' }}
-      size={tableSize}
+      size={activeView.tableSize}
       onChange={(_pagination, _filters, sorter, extra) => {
         if (extra.action === 'sort' && onSortChanged) {
           onSortChanged(sorter);

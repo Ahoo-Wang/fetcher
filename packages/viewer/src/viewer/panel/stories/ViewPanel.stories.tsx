@@ -5,7 +5,7 @@ import { View, ViewSource, ViewType } from '../../types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 const meta: Meta<typeof ViewPanel> = {
-  title: 'Viewer/Panel/ViewPanel',
+  title: 'Viewer/Viewer/Panel/ViewPanel',
   component: ViewPanel,
   tags: ['autodocs'],
   parameters: {
@@ -38,12 +38,10 @@ const createSampleView = (
     {
       name: 'id',
       fixed: false,
-      visible: true,
+      hidden: true,
     },
   ],
   tableSize: 'middle',
-  condition: {},
-  pageSize: 10,
   sortId: 0,
   pagedQuery: {
     condition: {

@@ -1,40 +1,49 @@
 import { barItemRegistry } from './barItemRegistry';
 import { BarItemType, TypedBarItem } from './TypedBarItem';
-import { TopBarActionItem } from '../viewer';
-
-import { Delimiter } from './Delimiter';
+import {
+  BatchOperationConfig,
+  TopBarActionItem,
+  ViewManagement,
+  ViewSource,
+} from '../viewer';
 
 import styles from './TopBar.module.css';
 import { AutoRefreshBarItem } from './AutoRefreshBarItem';
-import { Button, Dropdown, Flex, MenuProps, Space } from 'antd';
+import { Button, Divider, Dropdown, Flex, MenuProps, Space } from 'antd';
 import {
   DownOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import { RefObject, useCallback } from 'react';
+import React, { RefObject, useCallback } from 'react';
 import { useFullscreen } from '@ahoo-wang/fetcher-react';
 import { BarItem } from './BarItem';
 import { Point } from './Point';
+import { ActionItem, SaveViewMethod } from '../types';
+import type { ItemType } from 'antd/es/menu/interface';
 
 export interface TopBarPropsCapable<RecordType> {
-  topBar: Omit<TopBarProps<RecordType>, 'aggregateName' | 'viewName'>;
+  topBar: Omit<TopBarProps<RecordType>, 'title' | 'viewName'>;
 }
 
 export interface TopBarProps<RecordType> {
-  aggregateName: string;
+  title: string;
   viewName: string;
+  viewSource: ViewSource;
   barItems: BarItemType[];
   fullscreenTarget?: RefObject<HTMLElement | null>;
   enableFullscreen?: boolean;
 
-  bulkOperationName?: string;
-  bulkActions: TopBarActionItem<RecordType>[];
+  batchOperationConfig?: BatchOperationConfig<RecordType>;
 
-  primaryAction?: TopBarActionItem<RecordType>;
-  secondaryActions?: TopBarActionItem<RecordType>[];
+  primaryAction?: ActionItem<RecordType>;
+  secondaryActions?: ActionItem<RecordType>[];
 
+  viewChanged: boolean;
+  viewManagement?: ViewManagement;
+  onSaveAsView?: (method: SaveViewMethod) => void;
+  onReset?: () => void;
   tableSelectedItems: RecordType[];
 
   showViewPanel: boolean;
@@ -45,7 +54,7 @@ function renderMenuItem<RecordType>(
   item: TopBarActionItem<RecordType>,
   index: number,
   tableSelectedItems: RecordType[],
-) {
+): ItemType {
   if (item.render) {
     return {
       key: index,
@@ -67,25 +76,39 @@ function renderMenuItem<RecordType>(
   }
 }
 
+const saveMethodItems: MenuProps['items'] = [
+  {
+    label: '覆盖当前视图',
+    key: 'Update',
+  },
+  {
+    label: '另存为新视图',
+    key: 'SaveAs',
+  },
+];
+
 export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   const {
-    aggregateName,
+    title,
     viewName,
+    viewSource,
     barItems,
     fullscreenTarget,
     enableFullscreen,
-    bulkOperationName,
-    bulkActions,
+    batchOperationConfig,
     primaryAction,
     secondaryActions,
     tableSelectedItems,
     showViewPanel,
     onViewPanelUnfold,
+    viewChanged,
+    onSaveAsView,
+    onReset,
   } = props;
 
-  let bulkMenuItems: MenuProps['items'] = [];
-  if (bulkActions?.length) {
-    bulkMenuItems = bulkActions.map(
+  let batchMenuItems: MenuProps['items'] = [];
+  if (batchOperationConfig?.enabled) {
+    batchMenuItems = batchOperationConfig!.actions.map(
       (action: TopBarActionItem<RecordType>, index: number) => {
         return renderMenuItem(action, index, tableSelectedItems);
       },
@@ -107,85 +130,128 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     toggle().then();
   }, [toggle]);
 
+  const handleMenuClick: MenuProps['onClick'] = e => {
+    onSaveAsView?.(e.key as SaveViewMethod);
+  };
+
+  const menuProps = {
+    items: saveMethodItems,
+    onClick: handleMenuClick,
+  };
+
+  const handleReset = useCallback(() => {
+    onReset?.();
+  }, [onReset]);
+
   return (
-    <Flex align="center" justify="space-between">
-      <Flex gap="8px" align="center" className={styles.leftItems}>
-        {!showViewPanel && (
-          <>
-            <div onClick={onViewPanelUnfold}>
-              <BarItem icon={<MenuUnfoldOutlined />} active={false} />
-            </div>
-            <Delimiter />
-          </>
-        )}
-        {aggregateName}
-        <Point />
-        {viewName}
-      </Flex>
-      <Flex gap="8px" align="center" className={styles.rightItems}>
-        {barItems.map((barItem, index) => {
-          const BarItemComponent = barItemRegistry.get(barItem);
-          if (!BarItemComponent) {
-            return null;
-          }
-          return <TypedBarItem type={barItem} key={index} />;
-        })}
-        <Delimiter />
-        <AutoRefreshBarItem />
-        {bulkMenuItems.length > 0 && (
-          <>
-            <Delimiter />
-            <Dropdown menu={{ items: bulkMenuItems }} trigger={['click']}>
-              <Button icon={<DownOutlined />} iconPlacement="end">
-                {bulkOperationName && '批量操作'}
-              </Button>
-            </Dropdown>
-          </>
-        )}
-        {primaryAction && (
-          <>
-            <Delimiter />
-            <Space.Compact>
-              {primaryAction.render ? (
-                primaryAction.render(tableSelectedItems)
-              ) : (
+    <>
+      <Flex align="center" justify="space-between">
+        <Flex gap="8px" align="center" className={styles.leftItems}>
+          {!showViewPanel && (
+            <>
+              <div onClick={onViewPanelUnfold}>
+                <BarItem icon={<MenuUnfoldOutlined />} active={false} />
+              </div>
+              <Divider orientation="vertical" />
+              {title}
+              <Point />
+            </>
+          )}
+          {viewName}
+          {viewChanged && (
+            <>
+              <div style={{ color: 'rgba(0,0,0,0.45)' }}>(已编辑)</div>
+              {viewSource === 'SYSTEM' ? (
                 <Button
-                  type="primary"
-                  {...primaryAction.attributes}
-                  onClick={() => primaryAction.onClick?.(tableSelectedItems)}
+                  type="default"
+                  size="small"
+                  onClick={() => onSaveAsView?.('SaveAs')}
                 >
-                  {primaryAction.title}
+                  另存为
                 </Button>
-              )}
-              {secondaryMenuItems.length > 0 && (
-                <Dropdown
-                  menu={{ items: secondaryMenuItems }}
-                  trigger={['click']}
-                >
-                  <Button type="primary" icon={<DownOutlined />} />
+              ) : (
+                <Dropdown menu={menuProps} trigger={['click']}>
+                  <Button
+                    size="small"
+                    icon={<DownOutlined />}
+                    iconPlacement="end"
+                  >
+                    保存
+                  </Button>
                 </Dropdown>
               )}
-            </Space.Compact>
-          </>
-        )}
-        {enableFullscreen && fullscreenTarget && (
-          <>
-            <Delimiter />
-            <div onClick={handleFullscreenClick}>
-              <BarItem
-                icon={
-                  isFullscreen ? (
-                    <FullscreenExitOutlined />
-                  ) : (
-                    <FullscreenOutlined />
-                  )
-                }
-                active={false}
-              />
-            </div>
-          </>
-        )}
+              <Button type="default" size="small" onClick={handleReset}>
+                重置
+              </Button>
+            </>
+          )}
+        </Flex>
+        <Flex gap="8px" align="center" className={styles.rightItems}>
+          {barItems.map((barItem, index) => {
+            const BarItemComponent = barItemRegistry.get(barItem);
+            if (!BarItemComponent) {
+              return null;
+            }
+            return <TypedBarItem type={barItem} key={index} />;
+          })}
+          <Divider orientation="vertical" />
+          <AutoRefreshBarItem />
+          {batchOperationConfig?.enabled && (
+            <>
+              <Divider orientation="vertical" />
+              <Dropdown menu={{ items: batchMenuItems }} trigger={['click']}>
+                <Button icon={<DownOutlined />} iconPlacement="end">
+                  {batchOperationConfig?.title && '批量操作'}
+                </Button>
+              </Dropdown>
+            </>
+          )}
+          {primaryAction && (
+            <>
+              <Divider orientation="vertical" />
+              <Space.Compact>
+                {primaryAction.render ? (
+                  primaryAction.render(tableSelectedItems)
+                ) : (
+                  <Button
+                    type="primary"
+                    {...primaryAction.attributes}
+                    onClick={() => primaryAction.onClick?.(tableSelectedItems)}
+                  >
+                    {primaryAction.title}
+                  </Button>
+                )}
+                {secondaryMenuItems.length > 0 && (
+                  <Dropdown
+                    menu={{ items: secondaryMenuItems }}
+                    trigger={['click']}
+                    placement="bottomRight"
+                  >
+                    <Button type="primary" icon={<DownOutlined />} />
+                  </Dropdown>
+                )}
+              </Space.Compact>
+            </>
+          )}
+          {enableFullscreen && fullscreenTarget && (
+            <>
+              <Divider orientation="vertical" />
+              <div onClick={handleFullscreenClick}>
+                <BarItem
+                  icon={
+                    isFullscreen ? (
+                      <FullscreenExitOutlined />
+                    ) : (
+                      <FullscreenOutlined />
+                    )
+                  }
+                  active={false}
+                />
+              </div>
+            </>
+          )}
+        </Flex>
       </Flex>
-    </Flex>
+    </>
   );
 }

@@ -40,6 +40,7 @@ export function TypedFilter(props: TypedFilterProps) {
     ...props,
     value: valueProps,
   };
+
   return React.createElement(FilterComponent, filterProps);
 }
 

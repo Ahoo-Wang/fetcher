@@ -10,10 +10,7 @@ import {
 } from '../types';
 import { ViewTableActionColumn } from '../../table';
 import { Button } from 'antd';
-import {
-  MaterializedSnapshot,
-  Operator,
-} from '@ahoo-wang/fetcher-wow';
+import { MaterializedSnapshot, Operator } from '@ahoo-wang/fetcher-wow';
 import {
   COLUMN_HEIGHT_BAR_ITEM_TYPE,
   FILTER_BAR_ITEM_TYPE,
@@ -83,6 +80,7 @@ const meta: Meta = {
 };
 
 const viewDefinition: ViewDefinition = {
+  id: 'sku-cost',
   name: 'SKU成本',
   fields: [
     {
@@ -203,57 +201,55 @@ const viewDefinition: ViewDefinition = {
     'http://procurement-service.dev.svc.cluster.local/tenant/mydao/sku_cost/snapshot/paged',
   countUrl:
     'http://procurement-service.dev.svc.cluster.local/tenant/mydao/sku_cost/snapshot/count',
-  internalCondition: {},
-  checkable: true,
 };
 
 const columns: ViewColumn[] = [
   {
     name: 'state.id',
     fixed: true,
-    visible: true,
+    hidden: false,
     width: '300px',
   },
   {
     name: 'state.businessPartnerId.id',
     fixed: false,
-    visible: true,
+    hidden: false,
     width: '500px',
   },
   {
     name: 'state.businessPartnerId.name',
     fixed: false,
-    visible: true,
+    hidden: false,
     width: '300px',
   },
   {
     name: 'state.businessPartnerId.bizId',
     fixed: false,
-    visible: true,
+    hidden: false,
     width: '200px',
   },
   {
     name: 'state.skuId.code',
     fixed: false,
-    visible: true,
+    hidden: false,
     width: '300px',
   },
   {
     name: 'state.skuId.brandName',
     fixed: false,
-    visible: true,
+    hidden: false,
     width: '300px',
   },
   {
     name: 'state.skuId.orderNo',
     fixed: false,
-    visible: true,
+    hidden: false,
     width: '300px',
   },
   {
     name: 'state.costCount',
     fixed: false,
-    visible: true,
+    hidden: false,
     width: '300px',
   },
 ];
@@ -271,23 +267,32 @@ const createSampleView = (
         name: 'state.id',
         label: '成本编号',
       },
+      value: {
+        defaultValue: undefined,
+      },
+      operator: {
+        defaultValue: undefined,
+      },
     },
   ],
 ): View => ({
   id,
   name,
+  definitionId: '',
   type: viewType,
   source: viewSource,
   isDefault: false,
   filters: filters,
   columns: columns,
   tableSize: 'middle',
-  condition: {},
-  pageSize: 10,
   sortId: 0,
   pagedQuery: {
     condition: {
       operator: Operator.ALL,
+    },
+    pagination: {
+      index: 1,
+      size: 10,
     },
   },
 });
@@ -302,6 +307,12 @@ const sampleViews: View[] = [
         name: 'state.id',
         label: '成本编号',
       },
+      value: {
+        defaultValue: undefined,
+      },
+      operator: {
+        defaultValue: undefined,
+      },
     },
     {
       key: 'brandName',
@@ -309,6 +320,12 @@ const sampleViews: View[] = [
       field: {
         name: 'state.skuId.brandName',
         label: '品牌名称',
+      },
+      value: {
+        defaultValue: undefined,
+      },
+      operator: {
+        defaultValue: undefined,
       },
     },
   ]),
@@ -361,16 +378,19 @@ export const Default: Story = {
     views: sampleViews,
     definition: viewDefinition,
     actionColumn: actionColumn,
-    topBar: {
-      barItems: [
-        FILTER_BAR_ITEM_TYPE,
-        REFRESH_DATA_BAR_ITEM_TYPE,
-        COLUMN_HEIGHT_BAR_ITEM_TYPE,
-        SHARE_LINK_BAR_ITEM_TYPE,
-      ],
-      enableFullscreen: true,
-      bulkOperationName: 'Bulk',
-      bulkActions: [
+    supportedTopbarItems: [
+      FILTER_BAR_ITEM_TYPE,
+      REFRESH_DATA_BAR_ITEM_TYPE,
+      COLUMN_HEIGHT_BAR_ITEM_TYPE,
+      SHARE_LINK_BAR_ITEM_TYPE,
+    ],
+    viewManagement: {
+      enabled: false,
+    },
+    batchOperationConfig: {
+      enabled: true,
+      title: 'Batch Operate',
+      actions: [
         {
           title: 'Bulk Delete',
           onClick: (items: MaterializedSnapshot<SkuCostState>[]) => {
@@ -378,20 +398,133 @@ export const Default: Story = {
           },
         },
       ],
-      primaryAction: {
-        title: 'Primary Button',
+    },
+    primaryAction: {
+      title: 'Primary Button',
+      onClick: (items: MaterializedSnapshot<SkuCostState>[]) => {
+        console.log('Primary Button', items);
+      },
+    },
+    secondaryActions: [
+      {
+        title: 'Secondary Button',
         onClick: (items: MaterializedSnapshot<SkuCostState>[]) => {
-          console.log('Primary Button', items);
+          console.log('Secondary Button', items);
         },
       },
-      secondaryActions: [
+    ],
+    onClickPrimaryKey: (
+      id: string,
+      record: MaterializedSnapshot<SkuCostState>,
+    ) => {
+      console.log('Click Primary Key', id, record);
+    },
+  },
+};
+
+export const Empty: Story = {
+  args: {
+    ...Default.args,
+    dataSource: [],
+    name: 'empty-view',
+  },
+};
+
+export const WithViewManagement: Story = {
+  args: {
+    ...Default.args,
+    viewManagement: {
+      enabled: true,
+      onCreateView: (view: View) => console.log('Create view:', view),
+      onDeleteView: (view: View) => console.log('Delete view:', view),
+      onUpdateView: (view: View) => console.log('Update view:', view),
+    },
+    name: 'with-view-management',
+  },
+};
+
+export const SmallTableSize: Story = {
+  args: {
+    ...Default.args,
+    views: sampleViews.map(v => ({ ...v, tableSize: 'small' as const })),
+    name: 'small-table-size',
+  },
+};
+
+export const LargeTableSize: Story = {
+  args: {
+    ...Default.args,
+    views: sampleViews.map(v => ({ ...v, tableSize: 'large' as const })),
+    name: 'large-table-size',
+  },
+};
+
+export const NoBatchOperations: Story = {
+  args: {
+    ...Default.args,
+    batchOperationConfig: undefined,
+    name: 'no-batch-operations',
+  },
+};
+
+export const NoTopBarItems: Story = {
+  args: {
+    ...Default.args,
+    supportedTopbarItems: [],
+    name: 'no-topbar-items',
+  },
+};
+
+export const OnlyFilterAndRefresh: Story = {
+  args: {
+    ...Default.args,
+    supportedTopbarItems: [FILTER_BAR_ITEM_TYPE, REFRESH_DATA_BAR_ITEM_TYPE],
+    name: 'only-filter-refresh',
+  },
+};
+
+export const WithInitialFilters: Story = {
+  args: {
+    ...Default.args,
+    views: [
+      createSampleView('1', 'Filtered View', 'PERSONAL', 'CUSTOM', [
         {
-          title: 'Secondary Button',
-          onClick: (items: MaterializedSnapshot<SkuCostState>[]) => {
-            console.log('Secondary Button', items);
+          key: 'brandName',
+          type: 'text',
+          field: {
+            name: 'state.skuId.brandName',
+            label: '品牌名称',
+          },
+          value: {
+            defaultValue: 'Nike',
+          },
+          operator: {
+            defaultValue: Operator.CONTAINS,
           },
         },
-      ],
-    },
+      ]),
+      ...sampleViews.slice(1),
+    ],
+    name: 'with-initial-filters',
+  },
+};
+
+export const SinglePersonalView: Story = {
+  args: {
+    ...Default.args,
+    views: [createSampleView('1', 'My Only View', 'PERSONAL')],
+    name: 'single-personal-view',
+  },
+};
+
+export const MultipleSharedViews: Story = {
+  args: {
+    ...Default.args,
+    views: [
+      createSampleView('1', 'Team Dashboard', 'SHARED', 'CUSTOM'),
+      createSampleView('2', 'Department Overview', 'SHARED', 'CUSTOM'),
+      createSampleView('3', 'Company Report', 'SHARED', 'SYSTEM'),
+    ],
+    name: 'multiple-shared-views',
   },
 };

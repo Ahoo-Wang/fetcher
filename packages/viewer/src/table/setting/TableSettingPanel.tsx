@@ -15,7 +15,8 @@ import React, { useState, useCallback } from 'react';
 import { TableFieldItem } from './TableFieldItem';
 import styles from './TableSettingPanel.module.css';
 import { Space } from 'antd';
-import { useTableStateContext, ViewColumn, ViewDefinition } from '../../viewer';
+import { ViewColumn, ViewDefinition } from '../../viewer';
+import { useActiveViewStateContext } from '../../viewer/ActiveViewStateContext';
 
 /**
  * Props for the TableSettingPanel component.
@@ -63,11 +64,11 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
 
   // Get column state and update function from the table context
   // This provides access to the current column configuration and persistence
-  const { columns, updateColumns } = useTableStateContext();
+  const { activeView, updateColumns } = useActiveViewStateContext();
 
   // Add index information to each column for easier manipulation
   // This creates a local copy with sequential indices for drag/drop operations
-  const localColumns = columns.map((col, index) => {
+  const localColumns = activeView.columns.map((col, index) => {
     return {
       ...col,
       index,
@@ -79,10 +80,10 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
   const fixedColumns = localColumns.filter(col => col.fixed);
 
   // Visible columns are shown in the table but can be reordered
-  const visibleColumns = localColumns.filter(col => col.visible && !col.fixed);
+  const visibleColumns = localColumns.filter(col => !col.hidden && !col.fixed);
 
   // Hidden columns are not displayed in the table but can be made visible
-  const hiddenColumns = localColumns.filter(col => !col.visible);
+  const hiddenColumns = localColumns.filter(col => col.hidden);
 
   /**
    * Handles changes to column visibility.
@@ -90,11 +91,11 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
    * updates the column state and persists the change through the context.
    *
    * @param index - The index of the column being changed
-   * @param visible - The new visibility state
+   * @param hidden - The new visibility state
    */
-  const handleVisibilityChange = (index: number, visible: boolean) => {
+  const handleVisibilityChange = (index: number, hidden: boolean) => {
     const newColumns = localColumns.map((col, i) =>
-      i === index ? { ...col, visible } : col,
+      i === index ? { ...col, hidden: hidden } : col,
     );
     updateColumns(newColumns);
   };
@@ -166,12 +167,12 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
    * Handles the drop event when a column is dropped onto a new position.
    * Performs validation and reorders columns based on the drop location.
    *
-   * @param e - The drop event
+   * @param _e - The drop event
    * @param group - The target group ('fixed' or 'visible') for the drop
    * @param dragIndex - The index within the target group where the drop occurred
    */
   const handleDrop = (
-    e: React.DragEvent<HTMLDivElement>,
+    _e: React.DragEvent<HTMLDivElement>,
     group: 'fixed' | 'visible',
     dragIndex: number,
   ) => {
@@ -237,7 +238,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
         <TableFieldItem
           columnDefinition={columnDefinition}
           fixed={column.fixed || false}
-          visible={column.visible}
+          hidden={column.hidden}
           onVisibleChange={visible =>
             handleVisibilityChange(column.index, visible)
           }
@@ -267,9 +268,9 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
         <TableFieldItem
           columnDefinition={columnDefinition}
           fixed={column.fixed || false}
-          visible={column.visible}
-          onVisibleChange={visible =>
-            handleVisibilityChange(column.index, visible)
+          hidden={column.hidden}
+          onVisibleChange={hidden =>
+            handleVisibilityChange(column.index, hidden)
           }
         />
       </div>

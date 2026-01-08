@@ -1,7 +1,7 @@
 import { Button, Dropdown, MenuProps } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { useTableStateContext } from '../viewer';
+import { useRefreshDataEventBus } from '../';
 
 export interface AutoRefreshItem {
   label: string;
@@ -47,7 +47,7 @@ export function AutoRefreshBarItem({
 
   const intervalIdRef = useRef<number | null>(null);
 
-  const { refreshData } = useTableStateContext();
+  const { publish } = useRefreshDataEventBus();
 
   const handleMenuClick: MenuProps['onClick'] = menuInfo => {
     const item = finalItems.find(i => i.key === menuInfo.key);
@@ -62,8 +62,8 @@ export function AutoRefreshBarItem({
       intervalIdRef.current = null;
     }
     if (selectedItem.refreshInterval > 0) {
-      intervalIdRef.current = setInterval(() => {
-        refreshData();
+      intervalIdRef.current = setInterval(async () => {
+        await publish();
       }, selectedItem.refreshInterval);
     }
 
@@ -72,7 +72,7 @@ export function AutoRefreshBarItem({
         clearInterval(intervalIdRef.current);
       }
     };
-  }, [selectedItem, refreshData]);
+  }, [selectedItem, publish]);
 
   const menuItems: MenuProps['items'] = finalItems.map(i => ({
     key: i.key,

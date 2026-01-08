@@ -12,6 +12,7 @@
  */
 
 import React, { Key } from 'react';
+import { ButtonProps } from 'antd';
 
 export type Optional<T = any> = T | undefined;
 
@@ -39,3 +40,15 @@ export interface ReducerActionCapable<TYPE = any> {
 }
 
 export type TableRecordType<RecordType> = RecordType & KeyCapable;
+
+export interface ActionItem<RecordType> extends AttributesCapable<
+  Omit<ButtonProps, 'onClick'>
+> {
+  title: string;
+  onClick: (record: RecordType[]) => void;
+  render?: (record: RecordType[]) => React.ReactNode;
+}
+
+
+export type SaveViewMethod = 'Update' | 'SaveAs'
+

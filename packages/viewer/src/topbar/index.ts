@@ -2,7 +2,6 @@ export * from './AutoRefreshBarItem'
 export * from './BarItem';
 export * from './barItemRegistry';
 export * from './ColumnHeightBarItem'
-export * from './Delimiter'
 export * from './FilterBarItem'
 export * from './Point'
 export * from './RefreshDataBarItem'

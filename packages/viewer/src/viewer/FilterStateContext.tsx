@@ -52,12 +52,8 @@ export interface FilterStateContextOptions extends FilterStateContext {
  *
  * @param props - Provider configuration and child components
  * @param props.children - Components that will have access to filter state
- * @param props.activeFilters - Current active filter configurations
  * @param props.showFilterPanel - Whether the filter panel is visible
- * @param props.queryCondition - Current query condition for data filtering
- * @param props.updateActiveFilters - Function to update active filters
  * @param props.updateShowFilterPanel - Function to toggle filter panel visibility
- * @param props.updateQueryCondition - Function to update query conditions
  *
  * @example
  * ```tsx
