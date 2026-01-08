@@ -80,10 +80,10 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
   const fixedColumns = localColumns.filter(col => col.fixed);
 
   // Visible columns are shown in the table but can be reordered
-  const visibleColumns = localColumns.filter(col => col.hidden && !col.fixed);
+  const visibleColumns = localColumns.filter(col => !col.hidden && !col.fixed);
 
   // Hidden columns are not displayed in the table but can be made visible
-  const hiddenColumns = localColumns.filter(col => !col.hidden);
+  const hiddenColumns = localColumns.filter(col => col.hidden);
 
   /**
    * Handles changes to column visibility.
@@ -91,11 +91,11 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
    * updates the column state and persists the change through the context.
    *
    * @param index - The index of the column being changed
-   * @param visible - The new visibility state
+   * @param hidden - The new visibility state
    */
-  const handleVisibilityChange = (index: number, visible: boolean) => {
+  const handleVisibilityChange = (index: number, hidden: boolean) => {
     const newColumns = localColumns.map((col, i) =>
-      i === index ? { ...col, hidden: visible } : col,
+      i === index ? { ...col, hidden: hidden } : col,
     );
     updateColumns(newColumns);
   };
@@ -238,7 +238,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
         <TableFieldItem
           columnDefinition={columnDefinition}
           fixed={column.fixed || false}
-          visible={column.hidden}
+          hidden={column.hidden}
           onVisibleChange={visible =>
             handleVisibilityChange(column.index, visible)
           }
@@ -268,9 +268,9 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
         <TableFieldItem
           columnDefinition={columnDefinition}
           fixed={column.fixed || false}
-          visible={column.hidden}
-          onVisibleChange={visible =>
-            handleVisibilityChange(column.index, visible)
+          hidden={column.hidden}
+          onVisibleChange={hidden =>
+            handleVisibilityChange(column.index, hidden)
           }
         />
       </div>

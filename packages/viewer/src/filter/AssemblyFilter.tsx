@@ -68,6 +68,7 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
     filterValueConverter: props.filterValueConverter,
     onChange: props.onChange,
   });
+
   const valueInput = props.valueInputRender?.(filterState);
   const options = supportedOperators.map(supportedOperator => ({
     value: supportedOperator,

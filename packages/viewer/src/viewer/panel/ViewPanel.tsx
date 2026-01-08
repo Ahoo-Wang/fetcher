@@ -1,10 +1,16 @@
-import { Collapse, CollapseProps, Flex } from 'antd';
+import { Collapse, CollapseProps, Flex, Space } from 'antd';
 import { BarItem } from '../../topbar';
-import { MenuFoldOutlined } from '@ant-design/icons';
-import { View } from '../types';
+import {
+  MenuFoldOutlined,
+  PlusOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
+import { View, ViewType } from '../types';
 import { ViewItemGroup } from './ViewItemGroup';
 
 import styles from './ViewPanel.module.less';
+import { useMemo, useState, MouseEvent } from 'react';
+import { ViewManageModal } from './ViewManageModal';
 
 /**
  * Props for the ViewPanel component.
@@ -27,6 +33,10 @@ export interface ViewPanelProps {
   showViewPanel: boolean;
   /** Callback function called when user clicks the fold/unfold button */
   onViewPanelFold: () => void;
+
+  onCreateView?: (viewType: ViewType) => void;
+  onEditViewName?: (view: View, onSuccess?: () => void) => void;
+  onDeleteView?: (view: View, onSuccess?: () => void) => void;
 }
 
 /**
@@ -172,25 +182,59 @@ export function ViewPanel(props: ViewPanelProps) {
     countUrl,
     onViewChange,
     onViewPanelFold,
+    onCreateView,
+    onEditViewName,
+    onDeleteView,
   } = props;
 
-  /**
-   * Separate views into personal and public categories.
-   * Personal views are user-specific, public views are shared across users.
-   * This categorization drives the collapsible sections in the UI.
-   */
-  const personalViews = views.filter(v => v.type === 'PERSONAL');
-  const publicViews = views.filter(v => v.type === 'SHARED');
+  const personalViews = useMemo(() => {
+    return views.filter(v => v.type === 'PERSONAL');
+  }, [views]);
+  const sharedViews = useMemo(() => {
+    return views.filter(v => v.type === 'SHARED');
+  }, [views]);
 
-  /**
-   * Configuration for the collapsible sections.
-   * Each section contains a ViewItemGroup with the filtered views.
-   * Both sections are expanded by default for better user experience.
-   */
+  const [personalViewManageOpened, setPersonalViewManageOpened] =
+    useState(false);
+  const [sharedViewManageOpened, setSharedViewManageOpened] = useState(false);
+
+  const handleOpenViewManage = (e: MouseEvent, type: ViewType) => {
+    e.preventDefault();
+    e.stopPropagation();
+    switch (type) {
+      case 'PERSONAL':
+        setPersonalViewManageOpened(true);
+        break;
+      case 'SHARED':
+        setSharedViewManageOpened(true);
+        break;
+    }
+  };
+
+  const handleCreateView = (e: MouseEvent, type: ViewType) => {
+    e.stopPropagation();
+    onCreateView?.(type);
+  };
+
+  const handleEditViewName = (view: View, onSuccess?: () => void) => {
+    onEditViewName?.(view, onSuccess);
+  };
+
+  const handleDeleteView = (view: View, onSuccess?: () => void) => {
+    onDeleteView?.(view, onSuccess);
+  };
+
+  const genExtra = (type: ViewType) => (
+    <Space>
+      <SettingOutlined onClick={e => handleOpenViewManage(e, type)} />
+      <PlusOutlined onClick={e => handleCreateView(e, type)} />
+    </Space>
+  );
+
   const items: CollapseProps['items'] = [
     {
       key: '1',
-      label: '个人', // "Personal" in Chinese
+      label: '个人',
       children: (
         <ViewItemGroup
           views={personalViews}
@@ -199,34 +243,54 @@ export function ViewPanel(props: ViewPanelProps) {
           onViewChange={view => onViewChange(view)}
         />
       ),
+      extra: genExtra('PERSONAL'),
     },
     {
       key: '2',
       label: '公共', // "Public" in Chinese
       children: (
         <ViewItemGroup
-          views={publicViews}
+          views={sharedViews}
           activeView={activeView}
           countUrl={countUrl}
           onViewChange={view => onViewChange(view)}
         />
       ),
+      extra: genExtra('SHARED'),
     },
   ];
 
   return (
-    <Flex vertical gap="16px">
-      <Flex align="center" justify="space-between" className={styles.top}>
-        <div className={styles.title}>{aggregateName}</div>
-        <div onClick={onViewPanelFold}>
-          <BarItem icon={<MenuFoldOutlined />} active={false} />
-        </div>
+    <>
+      <Flex vertical gap="16px">
+        <Flex align="center" justify="space-between" className={styles.top}>
+          <div className={styles.title}>{aggregateName}</div>
+          <div onClick={onViewPanelFold}>
+            <BarItem icon={<MenuFoldOutlined />} active={false} />
+          </div>
+        </Flex>
+        <Collapse
+          items={items}
+          defaultActiveKey={['1', '2']}
+          className={styles.customCollapse}
+        />
       </Flex>
-      <Collapse
-        items={items}
-        defaultActiveKey={['1', '2']}
-        className={styles.customCollapse}
+      <ViewManageModal
+        viewType="PERSONAL"
+        views={personalViews}
+        open={personalViewManageOpened}
+        onCancel={() => setPersonalViewManageOpened(false)}
+        onEditViewName={handleEditViewName}
+        onDeleteView={handleDeleteView}
       />
-    </Flex>
+      <ViewManageModal
+        viewType="SHARED"
+        views={sharedViews}
+        open={sharedViewManageOpened}
+        onCancel={() => setSharedViewManageOpened(false)}
+        onEditViewName={handleEditViewName}
+        onDeleteView={handleDeleteView}
+      />
+    </>
   );
 }

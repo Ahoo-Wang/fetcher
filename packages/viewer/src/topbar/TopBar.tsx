@@ -42,7 +42,7 @@ export interface TopBarProps<RecordType> {
 
   viewChanged: boolean;
   viewManagement?: ViewManagement;
-  onSaveView?: (method: SaveViewMethod) => void;
+  onSaveAsView?: (method: SaveViewMethod) => void;
   onReset?: () => void;
   tableSelectedItems: RecordType[];
 
@@ -102,7 +102,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     showViewPanel,
     onViewPanelUnfold,
     viewChanged,
-    onSaveView,
+    onSaveAsView,
     onReset,
   } = props;
 
@@ -131,7 +131,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   }, [toggle]);
 
   const handleMenuClick: MenuProps['onClick'] = e => {
-    onSaveView?.(e.key as SaveViewMethod);
+    onSaveAsView?.(e.key as SaveViewMethod);
   };
 
   const menuProps = {
@@ -165,7 +165,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
                 <Button
                   type="default"
                   size="small"
-                  onClick={() => onSaveView?.('SaveAs')}
+                  onClick={() => onSaveAsView?.('SaveAs')}
                 >
                   另存为
                 </Button>

@@ -30,6 +30,7 @@ export default mergeConfig(
           'src/viewer/**',
           'src/table/**',
           'src/topbar/**',
+          'src/fetcherviewer/**',
         ],
       },
     },

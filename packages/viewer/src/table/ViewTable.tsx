@@ -1,14 +1,70 @@
-import { Table, Popover } from 'antd';
+import { Table, Popover, TableProps } from 'antd';
 import { ActionCell, ActionsCell, TextCell, typedCellRender } from './cell';
-import { ViewTableProps } from './types';
+import { ViewTableActionColumn } from './types';
 import { SettingOutlined } from '@ant-design/icons';
 import styles from './ViewTable.module.css';
 import { TableSettingPanel } from './setting';
 
 import type { TableColumnsType } from 'antd';
-import type { TableRowSelection } from 'antd/es/table/interface';
+import type { SorterResult, TableRowSelection } from 'antd/es/table/interface';
 import { Key, useState } from 'react';
 import { useActiveViewStateContext } from '../viewer/ActiveViewStateContext';
+import { AttributesCapable } from '../types';
+import { ViewDefinition } from '../viewer';
+
+
+/**
+ * Props for the ViewTable component.
+ *
+ * @template RecordType - The type of the records in the data source.
+ * @template Attributes - The type of additional attributes for the table.
+ * @interface ViewTableProps
+ * @extends AttributesCapable<Attributes>
+ *
+ * @example
+ * ```tsx
+ * interface User {
+ *   id: number;
+ *   name: string;
+ *   email: string;
+ * }
+ *
+ * const tableProps: ViewTableProps<User> = {
+ *   columns: [
+ *     {
+ *       title: 'Name',
+ *       dataIndex: 'name',
+ *       cell: { type: 'text' },
+ *       primaryKey: false
+ *     },
+ *     {
+ *       title: 'Email',
+ *       dataIndex: 'email',
+ *       cell: { type: 'link' },
+ *       primaryKey: false
+ *     }
+ *   ],
+ *   dataSource: [
+ *     { id: 1, name: 'John Doe', email: 'john@example.com' }
+ *   ],
+ *   attributes: { pagination: { pageSize: 10 } }
+ * };
+ * ```
+ */
+export interface ViewTableProps<
+  RecordType = any,
+  Attributes = Omit<TableProps<RecordType>, 'columns' | 'dataSource'>,
+> extends AttributesCapable<Attributes> {
+  viewDefinition: ViewDefinition;
+  enableBatchOperation: boolean;
+  dataSource: RecordType[];
+  actionColumn?: ViewTableActionColumn<RecordType>;
+  onSortChanged?: (
+    sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
+  ) => void;
+  onSelectChange?: (items: RecordType[]) => void;
+  onClickPrimaryKey?: (id: any, record: RecordType) => void;
+}
 
 export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   // Extract props for easier access and type safety
@@ -30,6 +86,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     columnDefinition => {
       const column = activeView.columns.find(it => it.name === columnDefinition.name);
       return {
+        key: columnDefinition.name,
         title: columnDefinition.label,
         dataIndex: columnDefinition.name.split('.'),
         fixed: columnDefinition.primaryKey
@@ -148,8 +205,8 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   const rowSelection: TableRowSelection<RecordType> = {
     selectedRowKeys,
     fixed: true, // Keep selection column fixed during horizontal scroll
-    onChange: (selectedRowKeys, selectedRows) => {
-      setSelectedRowKeys(selectedRowKeys);
+    onChange: (keys, selectedRows) => {
+      setSelectedRowKeys(keys);
       onSelectChange?.(selectedRows); // Notify parent component of selection changes
     },
   };

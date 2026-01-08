@@ -8,9 +8,11 @@ import {
   ViewDefinition,
   ViewManagement,
 } from '../viewer';
-import { ActionItem } from '../types';
+import { ActionItem, TableRecordType } from '../types';
 import { and, eq, isIn, PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
 import {
+  CreateView,
+  EditView,
   ViewAggregatedFields,
   viewerDefinitionQueryClientFactory,
   viewQueryClientFactory,
@@ -26,7 +28,7 @@ export interface FetcherViewerProps<RecordType> {
   definitionId: string;
   ownerId: string;
   defaultViewId?: string;
-  actionColumn?: ViewTableActionColumn<RecordType>;
+  actionColumn?: ViewTableActionColumn<TableRecordType<RecordType>>;
   paginationProps?: Omit<PaginationProps, 'onChange' | 'onShowSizeChange'>;
 
   supportedTopbarItems: BarItemType[];
@@ -63,10 +65,7 @@ export function FetcherViewer<RecordType>(
   const [views, setViews] = useState<View[]>([]);
   const [defaultView, setDefaultView] = useState<View>();
 
-  const {
-    result: dataResult,
-    execute,
-  } = useFetcher<PagedList<RecordType>>({
+  const { result: dataResult, execute } = useFetcher<PagedList<RecordType>>({
     resultExtractor: ResultExtractors.Json,
   });
 
@@ -132,10 +131,14 @@ export function FetcherViewer<RecordType>(
   const viewManagement: ViewManagement = {
     enabled: true,
     onCreateView: (view: View, onSuccess?: (newView: View) => void) => {
-      const { id, ...createViewCommand } = view;
+      const createViewCommand: CreateView = {
+        ...view,
+        source: 'CUSTOM',
+      };
+
       viewCommandClient
         .createView(view.type, {
-          body: { ...createViewCommand, source: 'CUSTOM' },
+          body: createViewCommand,
         })
         .then(result => {
           const newView: View = {
@@ -145,6 +148,30 @@ export function FetcherViewer<RecordType>(
           };
           setViews([...views, newView]);
           onSuccess?.(newView);
+        });
+    },
+    onUpdateView: (view: View, onSuccess?: (newView: View) => void) => {
+      const editViewCommand: EditView = {
+        ...view,
+      };
+
+      viewCommandClient
+        .editView(view.type, view.id, {
+          body: editViewCommand,
+        })
+        .then(() => {
+          setViews(views.map(v => (v.id === view.id ? { ...view } : v)));
+          onSuccess?.(view);
+        });
+    },
+    onDeleteView: (view: View, onSuccess?: () => void) => {
+      viewCommandClient
+        .defaultDeleteAggregate(view.id, {
+          body: {},
+        })
+        .then(() => {
+          setViews(views.filter(v => v.id !== view.id));
+          onSuccess?.();
         });
     },
   };

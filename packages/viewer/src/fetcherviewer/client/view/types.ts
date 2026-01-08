@@ -1,5 +1,7 @@
 import { PagedQuery } from "@ahoo-wang/fetcher-wow";
-import { ActiveFilter } from "../types";
+import { ActiveFilter } from '../../../filter';
+import { ViewColumn, ViewSource, ViewType } from '../../../viewer';
+import { SizeType } from 'antd/es/config-provider/SizeContext';
 
 /**
  * 创建视图
@@ -72,7 +74,7 @@ export interface CreateView {
   /** - format: int32 */
   sort: number;
   source: ViewSource;
-  tableSize: string;
+  tableSize: SizeType;
 }
 
 /**
@@ -146,9 +148,8 @@ export interface EditView {
   /** - format: int32 */
   sort: number;
   source: ViewSource;
-  tableSize: string;
+  tableSize: SizeType;
 }
-
 
 /**
  * - key: viewer.view.ViewAggregatedFields
@@ -303,52 +304,6 @@ export enum ViewAggregatedFields {
     STATE_TYPE = `state.type`
 }
 
-/**
- * - key: viewer.view.ViewColumn
- * - schema:
- * ```json
- * {
- *   "type": "object",
- *   "properties": {
- *     "fixed": {
- *       "type": "boolean"
- *     },
- *     "name": {
- *       "type": "string"
- *     },
- *     "sortOrder": {
- *       "type": [
- *         "string",
- *         "null"
- *       ]
- *     },
- *     "visible": {
- *       "type": "boolean"
- *     },
- *     "width": {
- *       "type": [
- *         "string",
- *         "null"
- *       ]
- *     }
- *   },
- *   "required": [
- *     "fixed",
- *     "name",
- *     "sortOrder",
- *     "visible",
- *     "width"
- *   ]
- * }
- * ```
- */
-export interface ViewColumn {
-    fixed: boolean;
-    name: string;
-    sortOrder: string | null;
-    visible: boolean;
-    width: string | null;
-}
 
 /**
  * 视图已创建
@@ -504,111 +459,4 @@ export interface ViewEdited {
     source: ViewSource;
     tableSize: string;
     type: ViewType;
-}
-
-/**
- * - key: viewer.view.ViewSource
- * - schema:
- * ```json
- * {
- *   "type": "string",
- *   "enum": [
- *     "SYSTEM",
- *     "CUSTOM"
- *   ]
- * }
- * ```
- */
-export enum ViewSource {
-    SYSTEM = `SYSTEM`,
-    CUSTOM = `CUSTOM`
-}
-
-/**
- * - key: viewer.view.ViewState
- * - schema:
- * ```json
- * {
- *   "type": "object",
- *   "properties": {
- *     "columns": {
- *       "type": "array",
- *       "items": {
- *         "$ref": "#/components/schemas/viewer.view.ViewColumn"
- *       }
- *     },
- *     "definitionId": {
- *       "type": "string"
- *     },
- *     "filters": {
- *       "type": "array",
- *       "items": {
- *         "$ref": "#/components/schemas/viewer.ActiveFilter"
- *       }
- *     },
- *     "id": {
- *       "type": "string"
- *     },
- *     "name": {
- *       "type": "string"
- *     },
- *     "pageSize": {
- *       "type": "integer",
- *       "format": "int32"
- *     },
- *     "pagedQuery": {
- *       "$ref": "#/components/schemas/wow.api.query.PagedQuery"
- *     },
- *     "sort": {
- *       "type": "integer",
- *       "format": "int32"
- *     },
- *     "source": {
- *       "$ref": "#/components/schemas/viewer.view.ViewSource"
- *     },
- *     "tableSize": {
- *       "type": "string"
- *     },
- *     "type": {
- *       "$ref": "#/components/schemas/viewer.view.ViewType"
- *     }
- *   },
- *   "required": [
- *     "id"
- *   ]
- * }
- * ```
- */
-export interface ViewState {
-    columns: ViewColumn[];
-    definitionId: string;
-    filters: ActiveFilter[];
-    id: string;
-    name: string;
-    /** - format: int32 */
-    pageSize: number;
-    pagedQuery: PagedQuery;
-    /** - format: int32 */
-    sort: number;
-    source: ViewSource;
-    tableSize: string;
-    type: ViewType;
-}
-
-/**
- * - key: viewer.view.ViewType
- * - schema:
- * ```json
- * {
- *   "type": "string",
- *   "enum": [
- *     "SHARED",
- *     "PERSONAL"
- *   ]
- * }
- * ```
- */
-export enum ViewType {
-    SHARED = `SHARED`,
-    PERSONAL = `PERSONAL`
 }

@@ -1,21 +1,26 @@
 import { Modal, Form, Radio, Input } from 'antd';
 import { View, ViewType } from '../types';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { FormInstance } from 'antd/es/form/hooks/useForm';
 
 export interface SaveViewModalProps {
   mode: 'Create' | 'SaveAs';
   open?: boolean;
+  defaultViewType?: ViewType;
   onSaveView?: (name: string, type: ViewType) => void;
   onCancel?: () => void;
 }
 
 export function SaveViewModal(props: SaveViewModalProps) {
-  const { mode, open, onSaveView, onCancel } = props;
+  const { mode, open, defaultViewType, onSaveView, onCancel } = props;
 
   const handleOk = () => {
     formRef.current?.submit();
   };
+
+  useEffect(() => {
+    formRef.current?.setFieldValue('type', defaultViewType);
+  }, [open, defaultViewType]);
 
   const handleCancel = () => {
     onCancel?.();
@@ -51,7 +56,7 @@ export function SaveViewModal(props: SaveViewModalProps) {
         ref={formRef}
         name="basic"
         labelCol={{ span: 5 }}
-        initialValues={{ type: 'PERSONAL' }}
+        initialValues={{ type: defaultViewType || 'PERSONAL' }}
         onFinish={onFinish}
         autoComplete="off"
       >

@@ -1,10 +1,10 @@
 import { ViewTable, ViewTableActionColumn } from '../table';
 import { Layout, Modal, Pagination, PaginationProps, Space } from 'antd';
-import { EditableFilterPanel } from '../filter';
+import { EditableFilterPanel, FilterPanelRef } from '../filter';
 import { SaveViewModal, View, ViewDefinition, ViewPanel, ViewType } from './';
 import styles from './Viewer.module.css';
-import { ActionItem, SaveViewMethod } from '../types';
-import { useCallback, useEffect, useState } from 'react';
+import { ActionItem, SaveViewMethod, TableRecordType } from '../types';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Condition, Operator, PagedQuery } from '@ahoo-wang/fetcher-wow';
 import { BarItemType, TopBar } from '../topbar';
 import type { SorterResult } from 'antd/es/table/interface';
@@ -15,6 +15,7 @@ import { useActiveViewStateReducer } from './useActiveViewStateReducer';
 import { ActiveViewStateContextProvider } from './ActiveViewStateContext';
 import { useRefreshDataEventBus } from '../useRefreshDataEventBus';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { mapToTableRecord } from '../utils';
 
 const { Header, Footer, Sider, Content } = Layout;
 
@@ -35,7 +36,7 @@ export interface ViewerProps<RecordType> {
   views: View[];
   defaultView: View;
   definition: ViewDefinition;
-  actionColumn?: ViewTableActionColumn<RecordType>;
+  actionColumn?: ViewTableActionColumn<TableRecordType<RecordType>>;
   paginationProps?: Omit<PaginationProps, 'onChange' | 'onShowSizeChange'>;
 
   dataSource: RecordType[];
@@ -173,12 +174,13 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
   );
 
   const onSortChanged = (
-    sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
+    sorter:
+      | SorterResult<TableRecordType<RecordType>>
+      | SorterResult<TableRecordType<RecordType>>[],
   ) => {
     console.log('sort changed', sorter);
   };
-
-  // endregion
+  const editableFilterPanelRef = useRef<FilterPanelRef | null>(null);
 
   const onViewChanged = useCallback(
     (activeView: View) => {
@@ -206,6 +208,13 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     'Create' | 'SaveAs'
   >('Create');
   const [modal, contextHolder] = Modal.useModal();
+  const [defaultViewType, setDefaultViewType] = useState<ViewType>('PERSONAL');
+
+  const handleCreateView = (type: ViewType) => {
+    setDefaultViewType(type);
+    setSaveViewModalMode('Create');
+    setSaveViewModalOpen(true);
+  };
 
   const onSaveView = (method: SaveViewMethod) => {
     switch (method) {
@@ -217,7 +226,9 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
           okText: '确认',
           cancelText: '取消',
           onOk: () => {
-            viewManagement.onUpdateView?.(activeView);
+            viewManagement.onUpdateView?.(activeView, result => {
+              switchView(result);
+            });
           },
         });
         break;
@@ -230,14 +241,23 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
 
   const handleSaveViewModalConfirm = (name: string, type: ViewType) => {
     const newView = { ...activeView, name, type };
-    viewManagement.onCreateView?.(newView, (result) => {
+    viewManagement.onCreateView?.(newView, result => {
       switchView(result);
       setSaveViewModalOpen(false);
     });
   };
 
+  const handleEditViewName = (view: View, onSuccess?: () => void) => {
+    viewManagement.onUpdateView?.(view, onSuccess);
+  };
+
+  const handleDeleteView = (view: View, onSuccess?: () => void) => {
+    viewManagement.onDeleteView?.(view, onSuccess);
+  };
+
   const onReset = () => {
     const originView = reset();
+    editableFilterPanelRef.current?.reset();
     onLoadData?.(originView.pagedQuery);
   };
 
@@ -276,6 +296,9 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                 onViewChange={onViewChanged}
                 showViewPanel={showViewPanel}
                 onViewPanelFold={onViewPanelFold}
+                onCreateView={handleCreateView}
+                onEditViewName={handleEditViewName}
+                onDeleteView={handleDeleteView}
               />
             </Sider>
           )}
@@ -300,13 +323,14 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                     batchOperationConfig={batchOperationConfig}
                     viewChanged={changed}
                     viewManagement={viewManagement}
-                    onSaveView={onSaveView}
+                    onSaveAsView={onSaveView}
                     onReset={onReset}
                   />
                 </Header>
                 {showFilterPanel && (
                   <div className={styles.filterPanel}>
                     <EditableFilterPanel
+                      ref={editableFilterPanelRef}
                       filters={activeView.filters}
                       availableFilters={definition.availableFilters}
                       onSearch={onSearch}
@@ -314,8 +338,8 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                     />
                   </div>
                 )}
-                <ViewTable<RecordType>
-                  dataSource={dataSource}
+                <ViewTable<TableRecordType<RecordType>>
+                  dataSource={mapToTableRecord(dataSource)}
                   viewDefinition={definition}
                   actionColumn={actionColumn}
                   onSortChanged={onSortChanged}
@@ -350,6 +374,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
           <SaveViewModal
             mode={saveViewModalMode}
             open={saveViewModalOpen}
+            defaultViewType={defaultViewType}
             onSaveView={handleSaveViewModalConfirm}
             onCancel={() => setSaveViewModalOpen(false)}
           />
