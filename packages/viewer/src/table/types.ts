@@ -1,8 +1,4 @@
-import { AttributesCapable } from '../types';
 import { ActionsData } from './cell';
-import { ViewDefinition } from '../viewer';
-import { TableProps } from 'antd';
-import type { SorterResult } from 'antd/es/table/interface';
 
 /**
  * Configuration for a cell in a table column.
