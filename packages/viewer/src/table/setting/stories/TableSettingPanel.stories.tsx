@@ -15,10 +15,14 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { TableSettingPanel } from '../TableSettingPanel';
 import {
+  ActiveViewState,
+  useActiveViewStateReducer,
   ViewColumn,
   ViewDefinition,
-  TableStateContextProvider,
+  ActiveViewStateContext,
+  ActiveViewStateContextProvider,
 } from '../../../viewer';
+import { all } from '@ahoo-wang/fetcher-wow';
 
 const meta: Meta = {
   title: 'Viewer/Table/Setting/TableSettingPanel',
@@ -49,6 +53,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const sampleViewDefinition: ViewDefinition = {
+  id:'sample',
   name: 'Sample View',
   fields: [
     {
@@ -120,26 +125,37 @@ const sampleColumns: ViewColumn[] = [
   },
 ];
 
-const TableSettingPanelWrapper = (args: any) => {
-  const [columns, setColumns] = useState(args.initialColumns || sampleColumns);
+const activeViewState: ActiveViewState = {
+  id: 'default-user',
+  name: '全部用户',
+  definitionId: 'use',
+  type: 'SHARED',
+  source: 'SYSTEM',
+  isDefault: true,
+  filters: [],
+  columns: sampleColumns,
+  tableSize: 'middle',
+  pageSize: 10,
+  sort: 1,
+  pagedQuery: {
+    condition: all(),
+  },
+};
 
-  const handleColumnsChange = (newColumns: ViewColumn[]) => {
-    setColumns(newColumns);
+const TableSettingPanelWrapper = (args: any) => {
+  const activeViewStateReturn = useActiveViewStateReducer(activeViewState);
+
+  const activeViewStateContext: ActiveViewStateContext = {
+    ...activeViewStateReturn,
   };
 
   return (
-    <TableStateContextProvider
-      columns={columns}
-      tableSize="middle"
-      updateColumns={handleColumnsChange}
-      updateTableSize={() => {}}
-      refreshData={() => {}}
-    >
+    <ActiveViewStateContextProvider {...activeViewStateContext}>
       <TableSettingPanel
         viewDefinition={args.viewDefinition || sampleViewDefinition}
         className={args.className}
       />
-    </TableStateContextProvider>
+    </ActiveViewStateContextProvider>
   );
 };
 
