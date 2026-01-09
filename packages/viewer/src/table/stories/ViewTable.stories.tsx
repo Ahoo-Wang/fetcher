@@ -1,13 +1,14 @@
 import { Meta, StoryObj } from '@storybook/react';
 import { ViewTable } from '../ViewTable';
 import {
-  TableStateContext,
-  TableStateContextProvider,
+  ActiveViewState,
+  useActiveViewStateReducer,
   ViewColumn,
   ViewDefinition,
+  ActiveViewStateContext,
+  ActiveViewStateContextProvider,
 } from '../../viewer';
-import { useState } from 'react';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
+import { all } from '@ahoo-wang/fetcher-wow';
 
 // Mock data for demonstration
 const mockData = [
@@ -39,6 +40,7 @@ const mockData = [
 
 // Mock view definition
 const mockViewDefinition: ViewDefinition = {
+  id: 'use',
   name: 'Users',
   fields: [
     { name: 'id', label: 'ID', primaryKey: true, type: 'number' },
@@ -51,7 +53,6 @@ const mockViewDefinition: ViewDefinition = {
   availableFilters: [],
   dataUrl: 'https://example.com/api/users',
   countUrl: 'https://example.com/api/users/count',
-  internalCondition: {},
 };
 
 const sampleColumns: ViewColumn[] = [
@@ -87,24 +88,34 @@ const sampleColumns: ViewColumn[] = [
   },
 ];
 
+const activeViewState: ActiveViewState = {
+  id: 'default-user',
+  name: '全部用户',
+  definitionId: 'use',
+  type: 'SHARED',
+  source: 'SYSTEM',
+  isDefault: true,
+  filters: [],
+  columns: sampleColumns,
+  tableSize: 'middle',
+  pageSize: 10,
+  sort: 1,
+  pagedQuery: {
+    condition: all(),
+  },
+};
+
 const ViewTableWrapper = (args: any) => {
-  const [columns, setColumns] = useState(args.initialColumns || sampleColumns);
-  const [tableSize, setTableSize] = useState<SizeType>('middle');
-  const tableStateContext: TableStateContext = {
-    columns: columns,
-    tableSize: tableSize,
-    updateColumns: newColumns => {
-      setColumns(newColumns);
-    },
-    updateTableSize: value => {
-      setTableSize(value);
-    },
+  const activeViewStateReturn = useActiveViewStateReducer(activeViewState);
+
+  const activeViewStateContext: ActiveViewStateContext = {
+    ...activeViewStateReturn,
   };
 
   return (
-    <TableStateContextProvider {...tableStateContext} refreshData={() => {}}>
+    <ActiveViewStateContextProvider {...activeViewStateContext}>
       <ViewTable {...args}></ViewTable>
-    </TableStateContextProvider>
+    </ActiveViewStateContextProvider>
   );
 };
 

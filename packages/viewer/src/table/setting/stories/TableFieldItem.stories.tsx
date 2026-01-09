@@ -49,13 +49,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const sampleColumn = {
-  title: 'Product Name',
+  label: 'Product Name',
   dataIndex: 'name',
   cell: { type: TEXT_CELL_TYPE },
 };
 
 const primaryKeyColumn = {
-  title: 'ID',
+  label: 'ID',
   dataIndex: 'id',
   primaryKey: true,
 };
@@ -97,7 +97,7 @@ export const FixedColumn: Story = {
   args: {
     columnDefinition: {
       ...sampleColumn,
-      title: 'Fixed Column',
+      label: 'Fixed Column',
     },
     fixed: true,
     visible: true,
