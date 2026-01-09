@@ -58,8 +58,8 @@ catalogs:
       specifier: ^7.0.1
       version: 7.0.1
     globals:
-      specifier: ^16.5.0
-      version: 16.5.0
+      specifier: ^17.0.0
+      version: 17.0.0
     immer:
       specifier: ^11.0.1
       version: 11.1.0
@@ -169,7 +169,7 @@ importers:
         version: 9.1.17(eslint@9.39.2)(storybook@9.1.17(@testing-library/dom@10.4.1)(msw@2.12.4(@types/node@24.10.4)(typescript@5.9.3))(prettier@3.7.4)(vite@7.3.1(@types/node@24.10.4)(less@4.5.1)(yaml@2.8.2)))(typescript@5.9.3)
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       less:
         specifier: ^4.5.1
         version: 4.5.1
@@ -248,7 +248,7 @@ importers:
         version: 9.39.2
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       prettier:
         specifier: 'catalog:'
         version: 3.7.4
@@ -300,7 +300,7 @@ importers:
         version: 9.39.2
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       prettier:
         specifier: 'catalog:'
         version: 3.7.4
@@ -346,7 +346,7 @@ importers:
         version: 9.39.2
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       msw:
         specifier: 'catalog:'
         version: 2.12.4(@types/node@24.10.4)(typescript@5.9.3)
@@ -392,7 +392,7 @@ importers:
         version: 9.39.2
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       prettier:
         specifier: 'catalog:'
         version: 3.7.4
@@ -435,7 +435,7 @@ importers:
         version: 9.39.2
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       prettier:
         specifier: 'catalog:'
         version: 3.7.4
@@ -474,7 +474,7 @@ importers:
         version: 9.39.2
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       msw:
         specifier: 'catalog:'
         version: 2.12.4(@types/node@24.10.4)(typescript@5.9.3)
@@ -544,7 +544,7 @@ importers:
         version: 9.39.2
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       prettier:
         specifier: 'catalog:'
         version: 3.7.4
@@ -602,7 +602,7 @@ importers:
         version: 9.39.2
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       msw:
         specifier: 'catalog:'
         version: 2.12.4(@types/node@24.10.4)(typescript@5.9.3)
@@ -644,7 +644,7 @@ importers:
         version: 9.39.2
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       prettier:
         specifier: 'catalog:'
         version: 3.7.4
@@ -732,7 +732,7 @@ importers:
         version: 7.0.1(eslint@9.39.2)
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       jsdom:
         specifier: 'catalog:'
         version: 27.3.0(postcss@8.5.6)
@@ -781,7 +781,7 @@ importers:
         version: 9.39.2
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       prettier:
         specifier: 'catalog:'
         version: 3.7.4
@@ -884,7 +884,7 @@ importers:
         version: 7.0.1(eslint@9.39.2)
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       jsdom:
         specifier: 'catalog:'
         version: 27.3.0(postcss@8.5.6)
@@ -942,7 +942,7 @@ importers:
         version: 9.39.2
       globals:
         specifier: 'catalog:'
-        version: 16.5.0
+        version: 17.0.0
       prettier:
         specifier: 'catalog:'
         version: 3.7.4
@@ -2913,8 +2913,8 @@ packages:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
     engines: {node: '>=18'}
 
-  globals@16.5.0:
-    resolution: {integrity: sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ==}
+  globals@17.0.0:
+    resolution: {integrity: sha512-gv5BeD2EssA793rlFWVPMMCqefTlpusw6/2TbAVMy0FzcG8wKJn4O+NqJ4+XWmmwrayJgw5TzrmWjFgmz1XPqw==}
     engines: {node: '>=18'}
 
   graceful-fs@4.2.11:
@@ -6115,7 +6115,7 @@ snapshots:
 
   globals@14.0.0: {}
 
-  globals@16.5.0: {}
+  globals@17.0.0: {}
 
   graceful-fs@4.2.11:
     optional: true
