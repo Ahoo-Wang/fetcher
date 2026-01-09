@@ -24,7 +24,7 @@ import { ViewColumnDefinition } from '../../viewer';
  * @param props - The properties for the TableFieldItem component
  * @param props.columnDefinition - The column definition including title and primary key flag
  * @param props.fixed - Whether the column is fixed and cannot be hidden
- * @param props.visible - Whether the column is currently visible
+ * @param props.hidden - Whether the column is currently visible
  * @param props.onVisibleChange - Callback function triggered when visibility changes
  *
  * @returns A React element representing the table field item
@@ -40,7 +40,7 @@ import { ViewColumnDefinition } from '../../viewer';
  *   }}
  *   fixed={false}
  *   visible={true}
- *   onVisibleChange={(visible) => console.log('Visibility changed:', visible)}
+ *   onVisibleChange={(hidden) => console.log('Visibility changed:', visible)}
  * />
  * ```
  */
@@ -50,9 +50,9 @@ export interface TableFieldItemProps {
   /** Whether the column is fixed and cannot be hidden */
   fixed: boolean;
   /** Whether the column is currently visible */
-  visible: boolean;
+  hidden: boolean;
   /** Callback function triggered when visibility changes */
-  onVisibleChange: (visible: boolean) => void;
+  onVisibleChange: (hidden: boolean) => void;
 }
 
 /**
@@ -70,9 +70,9 @@ export function TableFieldItem(props: TableFieldItemProps) {
   return (
     <Flex align="center" justify="space-between" style={{ width: '100%' }}>
       <Checkbox
-        checked={props.visible}
+        checked={!props.hidden}
         disabled={props.columnDefinition.primaryKey}
-        onChange={e => props.onVisibleChange(e.target.checked)}
+        onChange={e => props.onVisibleChange(!e.target.checked)}
       >
         {props.columnDefinition.label}
       </Checkbox>

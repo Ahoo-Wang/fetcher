@@ -1,7 +1,7 @@
 import { TopBarItemProps } from './types';
 import { BarItem } from './BarItem';
 import { ReloadOutlined } from '@ant-design/icons';
-import { useTableStateContext } from '../viewer';
+import { useRefreshDataEventBus } from '../';
 
 export const REFRESH_DATA_BAR_ITEM_TYPE: string = 'refresh_data';
 
@@ -10,10 +10,10 @@ export interface RefreshDataBarItemProps extends TopBarItemProps {}
 export function RefreshDataBarItem(props: RefreshDataBarItemProps) {
   const { style, className } = props;
 
-  const { refreshData } = useTableStateContext();
+  const { publish } = useRefreshDataEventBus();
 
-  const handleClick = () => {
-    refreshData();
+  const handleClick = async () => {
+    await publish();
   };
 
   return (

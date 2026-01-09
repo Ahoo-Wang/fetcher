@@ -3,7 +3,7 @@ import { BarItem } from './BarItem';
 import { Dropdown, MenuProps } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { useTableStateContext } from '../viewer/TableStateContext';
+import { useActiveViewStateContext } from '../viewer/ActiveViewStateContext';
 
 export const COLUMN_HEIGHT_BAR_ITEM_TYPE: string = 'column-height';
 
@@ -12,7 +12,7 @@ export interface ColumnHeightBarItemProps extends TopBarItemProps {}
 export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
   const { className } = props;
 
-  const { tableSize, updateTableSize } = useTableStateContext();
+  const { activeView, updateTableSize } = useActiveViewStateContext();
 
   const items: MenuProps['items'] = [
     {
@@ -35,7 +35,7 @@ export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
       menu={{
         items,
         selectable: true,
-        defaultSelectedKeys: [tableSize || 'middle'],
+        defaultSelectedKeys: [activeView.tableSize || 'middle'],
         onSelect: handleSelect,
       }}
       trigger={['click']}
