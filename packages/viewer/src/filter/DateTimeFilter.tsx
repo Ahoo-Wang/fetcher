@@ -26,6 +26,7 @@ import { ExtendedOperator, SelectOperator } from './operator';
 
 export const DATE_TIME_FILTER_NAME = 'datetime';
 const TIME_FORMAT = 'HH:mm:ss';
+const DAY_DATE_UNIT = 'day';
 const DateTimeNumberValueOperators = new Set([
   Operator.RECENT_DAYS,
   Operator.EARLIER_DAYS,
@@ -78,7 +79,12 @@ export const TimestampConditionValueParser: ConditionValueParser = (
     if (!Array.isArray(value) || value.length !== 2) {
       return undefined;
     }
-    return [value[0]?.valueOf(), value[1]?.valueOf()];
+    const start = value[0];
+    let end = value[1];
+    if (end.startOf(DAY_DATE_UNIT).isSame(end)) {
+      end = end.endOf(DAY_DATE_UNIT);
+    }
+    return [start.valueOf(), end.valueOf()];
   }
   if (DateTimeNumberValueOperators.has(operator)) {
     return value;

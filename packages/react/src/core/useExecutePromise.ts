@@ -27,7 +27,7 @@ import { useLatest } from './useLatest';
  * @template R - The type of the resolved value from the promise.
  * @template E - The type of the error value, defaults to unknown.
  */
-export interface UseExecutePromiseOptions<R, E = unknown>
+export interface UseExecutePromiseOptions<R, E = FetcherError>
   extends UsePromiseStateOptions<R, E> {
   /**
    * Whether to propagate errors thrown by the promise.

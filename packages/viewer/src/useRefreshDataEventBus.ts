@@ -3,7 +3,7 @@ import {
   EventHandler,
   SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 
 const RefreshDataEventType = 'REFRESH_DATA_EVENTS';
 
