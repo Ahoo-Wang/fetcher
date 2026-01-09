@@ -8,10 +8,8 @@ import { TableSettingPanel } from './setting';
 import type { TableColumnsType } from 'antd';
 import type { SorterResult, TableRowSelection } from 'antd/es/table/interface';
 import { Key, useState } from 'react';
-import { useActiveViewStateContext } from '../viewer/ActiveViewStateContext';
 import { AttributesCapable } from '../types';
-import { ViewDefinition } from '../viewer';
-
+import { ViewDefinition, useActiveViewStateContext } from '../viewer';
 
 /**
  * Props for the ViewTable component.
@@ -82,54 +80,53 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   // Get table state from context (column visibility, table size, etc.)
   const { activeView } = useActiveViewStateContext();
 
-  const tableColumns: TableColumnsType<RecordType> = viewDefinition.fields.map(
-    columnDefinition => {
-      const column = activeView.columns.find(it => it.name === columnDefinition.name);
-      return {
-        key: columnDefinition.name,
-        title: columnDefinition.label,
-        dataIndex: columnDefinition.name.split('.'),
-        fixed: columnDefinition.primaryKey
+  const tableColumns: TableColumnsType<RecordType> = activeView.columns.map(col=>{
+    const columnDefinition = viewDefinition.fields.find(f => f.name === col.name)
+    return {
+      key: col.name,
+      title: columnDefinition?.label || 'UNKNOWN',
+      dataIndex: col.name.split('.'),
+      fixed: columnDefinition?.primaryKey
+        ? 'start'
+        : col?.fixed
           ? 'start'
-          : column?.fixed
-            ? 'start'
-            : '',
-        render: (value: any, record: RecordType, index: number) => {
-          if (columnDefinition.render) {
-            return columnDefinition.render(value, record, index);
-          }
+          : '',
+      render: (value: any, record: RecordType, index: number) => {
+        if (columnDefinition?.render) {
+          return columnDefinition.render(value, record, index);
+        }
 
-          if (columnDefinition.primaryKey) {
-            return (
-              <ActionCell
-                data={{ value, record, index }}
-                attributes={{
-                  onClick: (record: RecordType) => {
-                    onClickPrimaryKey?.(value, record);
-                  },
-                }}
-              />
-            );
-          }
-
-          const cellRender = typedCellRender(
-            columnDefinition.type,
-            columnDefinition.attributes || {},
+        if (columnDefinition?.primaryKey) {
+          return (
+            <ActionCell
+              data={{ value, record, index }}
+              attributes={{
+                onClick: (record: RecordType) => {
+                  onClickPrimaryKey?.(value, record);
+                },
+              }}
+            />
           );
+        }
 
-          if (cellRender) {
-            return cellRender(value, record, index);
-          } else {
-            return <TextCell data={{ value: String(value), record, index }} />;
-          }
-        },
-        sorter: columnDefinition.sorter,
-        width: column?.width,
-        hidden: column ? column!.hidden : true,
-        ...columnDefinition.attributes,
-      };
-    },
-  );
+        const cellRender = typedCellRender(
+          columnDefinition?.type || 'text',
+          columnDefinition?.attributes || {},
+        );
+
+        if (cellRender) {
+          return cellRender(value, record, index);
+        } else {
+          return <TextCell data={{ value: String(value), record, index }} />;
+        }
+      },
+      sorter: columnDefinition?.sorter,
+      width: col.width,
+      hidden: col.hidden,
+      ...columnDefinition?.attributes || {},
+    };
+  })
+
   /**
    * Add action column if configured.
    *
