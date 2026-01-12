@@ -15,8 +15,11 @@ import React, { useState, useCallback } from 'react';
 import { TableFieldItem } from './TableFieldItem';
 import styles from './TableSettingPanel.module.css';
 import { Space } from 'antd';
-import { ViewColumn, ViewDefinition } from '../../viewer';
-import { useActiveViewStateContext } from '../../viewer/ActiveViewStateContext';
+import {
+  ViewColumn,
+  FieldDefinition,
+  useActiveViewStateContext,
+} from '../../viewer';
 
 /**
  * Props for the TableSettingPanel component.
@@ -24,8 +27,7 @@ import { useActiveViewStateContext } from '../../viewer/ActiveViewStateContext';
  * visibility toggles and drag-and-drop reordering.
  */
 export interface TableSettingPanelProps {
-  /** The view definition containing column metadata and configuration */
-  viewDefinition: ViewDefinition;
+  fields: FieldDefinition[];
   /** Optional CSS class name for additional styling */
   className?: string;
 }
@@ -57,7 +59,7 @@ interface DragState {
  * @returns A React element representing the table settings panel
  */
 export function TableSettingPanel(props: TableSettingPanelProps) {
-  const { viewDefinition, className } = props;
+  const { fields, className } = props;
 
   // State for tracking the current drag operation
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -218,7 +220,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
   ) => {
     // Find the column definition from the view definition
     // This provides metadata like title, primary key status, etc.
-    const columnDefinition = viewDefinition.fields.find(
+    const columnDefinition = fields.find(
       col => col.name === column.name,
     );
     if (!columnDefinition) {
@@ -256,7 +258,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
    */
   const renderStaticItem = (column: ViewColumn & { index: number }) => {
     // Find the column definition from the view definition
-    const columnDefinition = viewDefinition.fields.find(
+    const columnDefinition = fields.find(
       col => col.name === column.name,
     );
     if (!columnDefinition) {

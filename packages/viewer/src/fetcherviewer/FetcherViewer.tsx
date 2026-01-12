@@ -4,7 +4,7 @@ import { BarItemType } from '../topbar';
 import {
   BatchOperationConfig,
   Viewer,
-  View,
+  ViewState,
   ViewDefinition,
   ViewManagement,
 } from '../viewer';
@@ -41,7 +41,7 @@ export interface FetcherViewerProps<RecordType> {
   onClickPrimaryKey?: (id: any, record: RecordType) => void;
 
   // data change callbacks
-  onViewChange?: (view: View) => void;
+  onViewChange?: (view: ViewState) => void;
 }
 
 export function FetcherViewer<RecordType>(
@@ -62,8 +62,8 @@ export function FetcherViewer<RecordType>(
   } = props;
 
   const [definition, setDefinition] = useState<ViewDefinition>();
-  const [views, setViews] = useState<View[]>([]);
-  const [defaultView, setDefaultView] = useState<View>();
+  const [views, setViews] = useState<ViewState[]>([]);
+  const [defaultView, setDefaultView] = useState<ViewState>();
 
   const { result: dataResult, execute } = useFetcher<PagedList<RecordType>>({
     resultExtractor: ResultExtractors.Json,
@@ -91,7 +91,7 @@ export function FetcherViewer<RecordType>(
         setDefinition(viewDefinition);
         setViews(viewList);
 
-        let initialActiveView: View | undefined;
+        let initialActiveView: ViewState | undefined;
         if (defaultViewId) {
           initialActiveView = viewList.find(v => v.id === defaultViewId);
         } else {
@@ -130,7 +130,7 @@ export function FetcherViewer<RecordType>(
 
   const viewManagement: ViewManagement = {
     enabled: true,
-    onCreateView: (view: View, onSuccess?: (newView: View) => void) => {
+    onCreateView: (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
       const createViewCommand: CreateView = {
         ...view,
         source: 'CUSTOM',
@@ -141,7 +141,7 @@ export function FetcherViewer<RecordType>(
           body: createViewCommand,
         })
         .then(result => {
-          const newView: View = {
+          const newView: ViewState = {
             ...view,
             id: result.aggregateId,
             source: 'CUSTOM',
@@ -150,7 +150,7 @@ export function FetcherViewer<RecordType>(
           onSuccess?.(newView);
         });
     },
-    onUpdateView: (view: View, onSuccess?: (newView: View) => void) => {
+    onUpdateView: (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
       const editViewCommand: EditView = {
         ...view,
       };
@@ -164,7 +164,7 @@ export function FetcherViewer<RecordType>(
           onSuccess?.(view);
         });
     },
-    onDeleteView: (view: View, onSuccess?: () => void) => {
+    onDeleteView: (view: ViewState, onSuccess?: () => void) => {
       viewCommandClient
         .defaultDeleteAggregate(view.id, {
           body: {},

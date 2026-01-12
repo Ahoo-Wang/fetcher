@@ -135,8 +135,8 @@ export default meta;
 // Default story - basic usage
 export const Default: StoryObj = {
   args: {
-    viewDefinition: mockViewDefinition,
-    dataSource: mockData,
+    fields: mockViewDefinition.fields,
+    columns: sampleColumns,
     actionColumn: {
       title: 'Actions',
       configurable: true,
@@ -155,6 +155,8 @@ export const Default: StoryObj = {
         ],
       }),
     },
+    defaultTableSize: 'middle',
+    dataSource: mockData,
     enableBatchOperation: false,
     onSortChanged: undefined,
     onSelectChange: undefined,

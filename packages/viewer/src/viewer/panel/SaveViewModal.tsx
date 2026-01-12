@@ -1,5 +1,5 @@
 import { Modal, Form, Radio, Input } from 'antd';
-import { View, ViewType } from '../types';
+import { ViewState, ViewType } from '../types';
 import { useEffect, useRef } from 'react';
 import type { FormInstance } from 'antd/es/form/hooks/useForm';
 
@@ -60,14 +60,14 @@ export function SaveViewModal(props: SaveViewModalProps) {
         onFinish={onFinish}
         autoComplete="off"
       >
-        <Form.Item<View>
+        <Form.Item<ViewState>
           label="视图类型"
           name="type"
           rules={[{ required: true }]}
         >
           <Radio.Group options={options} optionType="button" />
         </Form.Item>
-        <Form.Item<View>
+        <Form.Item<ViewState>
           label="视图名称"
           name="name"
           rules={[{ required: true, message: '请输入视图名称' }]}

@@ -1,7 +1,17 @@
 import { ViewTable, ViewTableActionColumn } from '../table';
 import { Layout, Modal, Pagination, PaginationProps, Space } from 'antd';
 import { EditableFilterPanel, FilterPanelRef } from '../filter';
-import { SaveViewModal, View, ViewDefinition, ViewPanel, ViewType } from './';
+import {
+  SaveViewModal,
+  ViewState,
+  ViewDefinition,
+  ViewPanel,
+  ViewType,
+  useFilterStateReducer,
+  FilterStateContextProvider,
+  useActiveViewStateReducer,
+  ActiveViewStateContextProvider,
+} from './';
 import styles from './Viewer.module.css';
 import { ActionItem, SaveViewMethod, TableRecordType } from '../types';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -9,11 +19,7 @@ import { Condition, Operator, PagedQuery } from '@ahoo-wang/fetcher-wow';
 import { BarItemType, TopBar } from '../topbar';
 import type { SorterResult } from 'antd/es/table/interface';
 import type * as React from 'react';
-import { useFilterStateReducer } from './useFilterStateReducer';
-import { FilterStateContextProvider } from './FilterStateContext';
-import { useActiveViewStateReducer } from './useActiveViewStateReducer';
-import { ActiveViewStateContextProvider } from './ActiveViewStateContext';
-import { useRefreshDataEventBus } from '../useRefreshDataEventBus';
+import { useRefreshDataEventBus } from '../';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { mapToTableRecord } from '../utils';
 
@@ -21,9 +27,9 @@ const { Header, Footer, Sider, Content } = Layout;
 
 export interface ViewManagement {
   enabled: boolean;
-  onCreateView?: (view: View, onSuccess?: (newView: View) => void) => void;
-  onDeleteView?: (view: View, onSuccess?: () => void) => void;
-  onUpdateView?: (view: View, onSuccess?: (newView: View) => void) => void;
+  onCreateView?: (view: ViewState, onSuccess?: (newView: ViewState) => void) => void;
+  onDeleteView?: (view: ViewState, onSuccess?: () => void) => void;
+  onUpdateView?: (view: ViewState, onSuccess?: (newView: ViewState) => void) => void;
 }
 
 export interface BatchOperationConfig<RecordType> {
@@ -33,8 +39,8 @@ export interface BatchOperationConfig<RecordType> {
 }
 
 export interface ViewerProps<RecordType> {
-  views: View[];
-  defaultView: View;
+  views: ViewState[];
+  defaultView: ViewState;
   definition: ViewDefinition;
   actionColumn?: ViewTableActionColumn<TableRecordType<RecordType>>;
   paginationProps?: Omit<PaginationProps, 'onChange' | 'onShowSizeChange'>;
@@ -45,7 +51,7 @@ export interface ViewerProps<RecordType> {
 
   supportedTopbarItems: BarItemType[];
 
-  batchOperationConfig?: BatchOperationConfig<RecordType>;
+  batchOperation: false | BatchOperationConfig<RecordType>;
 
   primaryAction?: ActionItem<RecordType>;
   secondaryActions?: ActionItem<RecordType>[];
@@ -56,7 +62,7 @@ export interface ViewerProps<RecordType> {
   // data change callbacks
   onLoadData: (pagedQuery: PagedQuery) => void;
 
-  onViewChange?: (view: View) => void;
+  onViewChange?: (view: ViewState) => void;
 }
 
 export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
@@ -70,7 +76,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     dataSource,
     viewManagement,
     supportedTopbarItems,
-    batchOperationConfig,
+    batchOperation,
     primaryAction,
     secondaryActions,
     onClickPrimaryKey,
@@ -178,12 +184,12 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
       | SorterResult<TableRecordType<RecordType>>
       | SorterResult<TableRecordType<RecordType>>[],
   ) => {
-    console.log('sort changed', sorter);
+    console.log('viewer sort changed', sorter);
   };
   const editableFilterPanelRef = useRef<FilterPanelRef | null>(null);
 
   const onViewChanged = useCallback(
-    (activeView: View) => {
+    (activeView: ViewState) => {
       onViewChange?.(activeView);
       switchView(activeView);
     },
@@ -247,11 +253,11 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
     });
   };
 
-  const handleEditViewName = (view: View, onSuccess?: () => void) => {
+  const handleEditViewName = (view: ViewState, onSuccess?: () => void) => {
     viewManagement.onUpdateView?.(view, onSuccess);
   };
 
-  const handleDeleteView = (view: View, onSuccess?: () => void) => {
+  const handleDeleteView = (view: ViewState, onSuccess?: () => void) => {
     viewManagement.onDeleteView?.(view, onSuccess);
   };
 
@@ -320,7 +326,7 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                     primaryAction={primaryAction}
                     secondaryActions={secondaryActions}
                     barItems={supportedTopbarItems}
-                    batchOperationConfig={batchOperationConfig}
+                    batchOperationConfig={batchOperation || undefined}
                     viewChanged={changed}
                     viewManagement={viewManagement}
                     onSaveAsView={onSaveView}
@@ -340,15 +346,17 @@ export function Viewer<RecordType>(props: ViewerProps<RecordType>) {
                 )}
                 <ViewTable<TableRecordType<RecordType>>
                   dataSource={mapToTableRecord(dataSource)}
-                  viewDefinition={definition}
+                  fields={definition.fields}
+                  columns={activeView.columns}
+                  defaultTableSize={activeView.tableSize}
                   actionColumn={actionColumn}
                   onSortChanged={onSortChanged}
                   onSelectChange={onTableSelectedDataChange}
                   attributes={{ pagination: false }}
-                  enableBatchOperation={batchOperationConfig?.enabled || false}
+                  enableRowSelection={batchOperation && true}
                   onClickPrimaryKey={onClickPrimaryKey}
                 ></ViewTable>
-                {(paginationProps || batchOperationConfig?.enabled) && (
+                {(paginationProps || batchOperation) && (
                   <Footer className={styles.pagination}>
                     <span>
                       {tableSelectedData.length

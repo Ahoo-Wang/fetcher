@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { ViewManageModal } from '../';
-import { View } from '../../types';
+import { ViewState } from '../../types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { useState } from 'react';
 import { Button } from 'antd';
@@ -37,7 +37,7 @@ const createView = (
   id: string,
   name: string,
   source: 'CUSTOM' | 'SYSTEM',
-): View => ({
+): ViewState => ({
   id,
   name,
   definitionId: 'def-1',
@@ -62,25 +62,25 @@ const createView = (
   },
 });
 
-const personalViews: View[] = [
+const personalViews: ViewState[] = [
   createView('1', 'My Default View', 'SYSTEM'),
   createView('2', 'Analytics View', 'CUSTOM'),
   createView('3', 'Recent Items', 'CUSTOM'),
 ];
 
-const sharedViews: View[] = [
+const sharedViews: ViewState[] = [
   createView('4', 'All Items', 'SYSTEM'),
   createView('5', 'Recent Updates', 'SYSTEM'),
   createView('6', 'Archived', 'SYSTEM'),
 ];
 
-const mixedViews: View[] = [
+const mixedViews: ViewState[] = [
   createView('7', 'Personal Dashboard', 'CUSTOM'),
   createView('8', 'Team Overview', 'SYSTEM'),
   createView('9', 'My Filters', 'CUSTOM'),
 ];
 
-const emptyViews: View[] = [];
+const emptyViews: ViewState[] = [];
 
 const ViewManageModalWrapper = (args: any) => {
   const [open, setOpen] = useState(args.open);

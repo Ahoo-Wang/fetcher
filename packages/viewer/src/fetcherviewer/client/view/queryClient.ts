@@ -1,7 +1,7 @@
 import { QueryClientFactory, QueryClientOptions, ResourceAttributionPathSpec } from "@ahoo-wang/fetcher-wow";
 import { ViewAggregatedFields, ViewCreated, ViewEdited } from "./types";
 import { VIEWER_BOUNDED_CONTEXT_ALIAS } from "../boundedContext";
-import { View } from '../../../viewer';
+import { ViewState } from '../../../viewer';
 
 const DEFAULT_QUERY_CLIENT_OPTIONS: QueryClientOptions = {
     contextAlias: VIEWER_BOUNDED_CONTEXT_ALIAS,
@@ -16,4 +16,4 @@ export enum ViewDomainEventTypeMapTitle {
 
 export type ViewDomainEventType = ViewCreated | ViewEdited;
 
-export const viewQueryClientFactory = new QueryClientFactory<View, ViewAggregatedFields | string, ViewDomainEventType>(DEFAULT_QUERY_CLIENT_OPTIONS);
+export const viewQueryClientFactory = new QueryClientFactory<ViewState, ViewAggregatedFields | string, ViewDomainEventType>(DEFAULT_QUERY_CLIENT_OPTIONS);

@@ -11,13 +11,13 @@ import { NamedCapable } from '@ahoo-wang/fetcher';
 export interface ViewDefinition {
   id: string;
   name: string;
-  fields: ViewColumnDefinition[];
+  fields: FieldDefinition[];
   availableFilters: AvailableFilterGroup[];
   dataUrl: string;
   countUrl: string;
 }
 
-export interface ViewColumnDefinition
+export interface FieldDefinition
   extends NamedCapable, TypeCapable, AttributesCapable {
   label: string;
   primaryKey: boolean;
@@ -28,7 +28,7 @@ export interface ViewColumnDefinition
 export type ViewType = 'PERSONAL' | 'SHARED';
 export type ViewSource = 'SYSTEM' | 'CUSTOM';
 
-export interface View {
+export interface ViewState {
   id: string;
   name: string;
   definitionId: string;

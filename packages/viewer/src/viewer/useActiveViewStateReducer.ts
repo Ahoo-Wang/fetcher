@@ -1,4 +1,4 @@
-import { View, ViewColumn } from './types';
+import { ViewState, ViewColumn } from './types';
 import { ReducerActionCapable } from '../types';
 import { Condition } from '@ahoo-wang/fetcher-wow';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
@@ -6,7 +6,7 @@ import { ActiveFilter } from '../filter';
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { deepEqual } from '../utils';
 
-export interface ActiveViewState extends View {}
+export interface ActiveViewState extends ViewState {}
 
 export type ActiveViewStateReducerActionType =
   | 'UPDATE_FILTERS'
@@ -28,7 +28,7 @@ export interface ActiveViewStateReducerReturn {
   updateConditions: (conditions: Condition) => void;
   updatePageSize: (pageSize: number) => void;
   reset: () => ActiveViewState;
-  switchView: (view: View) => void;
+  switchView: (view: ViewState) => void;
 }
 
 const activeViewStateReducer = (
@@ -109,7 +109,7 @@ export function useActiveViewStateReducer(
     return originalStateRef.current
   };
 
-  const switchView = (view: View) => {
+  const switchView = (view: ViewState) => {
     originalStateRef.current = { ...view };
     dispatch({ type: 'SWITCH_VIEW', payload: { ...view } });
   };

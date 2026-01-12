@@ -1,4 +1,4 @@
-import { View } from '../index';
+import { ViewState } from '../index';
 import { Flex, Tag } from 'antd';
 import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
 import { Condition } from '@ahoo-wang/fetcher-wow';
@@ -11,7 +11,7 @@ import styles from './ViewPanel.module.less';
  */
 export interface ViewItemProps {
   /** The view configuration containing name, type, filters, and other metadata */
-  view: View;
+  view: ViewState;
   /** API endpoint URL for fetching the count of records matching this view's condition */
   countUrl: string;
   /** Whether this view item is currently active/selected */

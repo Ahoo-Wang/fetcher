@@ -7,9 +7,14 @@ import { TableSettingPanel } from './setting';
 
 import type { TableColumnsType } from 'antd';
 import type { SorterResult, TableRowSelection } from 'antd/es/table/interface';
-import { Key, useState } from 'react';
+import { Key, RefAttributes, useImperativeHandle, useState } from 'react';
 import { AttributesCapable } from '../types';
-import { ViewDefinition, useActiveViewStateContext } from '../viewer';
+import { ViewColumn, FieldDefinition } from '../viewer';
+import { SizeType } from 'antd/es/config-provider/SizeContext';
+
+export interface ViewTableRef {
+  updateTableSize: (size: SizeType) => void;
+}
 
 /**
  * Props for the ViewTable component.
@@ -52,11 +57,14 @@ import { ViewDefinition, useActiveViewStateContext } from '../viewer';
 export interface ViewTableProps<
   RecordType = any,
   Attributes = Omit<TableProps<RecordType>, 'columns' | 'dataSource'>,
-> extends AttributesCapable<Attributes> {
-  viewDefinition: ViewDefinition;
-  enableBatchOperation: boolean;
-  dataSource: RecordType[];
+>
+  extends AttributesCapable<Attributes>, RefAttributes<ViewTableRef> {
+  fields: FieldDefinition[];
+  columns: ViewColumn[];
   actionColumn?: ViewTableActionColumn<RecordType>;
+  defaultTableSize: SizeType;
+  dataSource: RecordType[];
+  enableRowSelection: boolean;
   onSortChanged?: (
     sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
   ) => void;
@@ -67,30 +75,32 @@ export interface ViewTableProps<
 export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   // Extract props for easier access and type safety
   const {
-    viewDefinition,
-    dataSource,
+    ref,
+    fields,
+    columns,
     actionColumn,
+    defaultTableSize,
+    dataSource,
+    enableRowSelection,
     onSortChanged,
     onSelectChange,
-    attributes,
-    enableBatchOperation,
     onClickPrimaryKey,
+    attributes,
   } = props;
 
-  // Get table state from context (column visibility, table size, etc.)
-  const { activeView } = useActiveViewStateContext();
+  const [tableSize, setTableSize] = useState<SizeType>(defaultTableSize);
 
-  const tableColumns: TableColumnsType<RecordType> = activeView.columns.map(col=>{
-    const columnDefinition = viewDefinition.fields.find(f => f.name === col.name)
+  const tableColumns: TableColumnsType<RecordType> = columns.map(col => {
+    const columnDefinition = fields.find(f => f.name === col.name);
     return {
       key: col.name,
       title: columnDefinition?.label || 'UNKNOWN',
       dataIndex: col.name.split('.'),
-      fixed: columnDefinition?.primaryKey
-        ? 'start'
-        : col?.fixed
-          ? 'start'
-          : '',
+      fixed: columnDefinition?.primaryKey ? 'start' : col?.fixed ? 'start' : '',
+      sorter: columnDefinition?.sorter,
+      defaultSortOrder: col.sortOrder,
+      width: col.width,
+      hidden: col.hidden,
       render: (value: any, record: RecordType, index: number) => {
         if (columnDefinition?.render) {
           return columnDefinition.render(value, record, index);
@@ -120,12 +130,9 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
           return <TextCell data={{ value: String(value), record, index }} />;
         }
       },
-      sorter: columnDefinition?.sorter,
-      width: col.width,
-      hidden: col.hidden,
-      ...columnDefinition?.attributes || {},
+      ...(columnDefinition?.attributes || {}),
     };
-  })
+  });
 
   /**
    * Add action column if configured.
@@ -137,21 +144,14 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     // Determine which field to use as the dataIndex for the action column
     // Priority: explicit dataIndex > primary key column > fallback to 'id'
     const dataIndex =
-      actionColumn.dataIndex ||
-      viewDefinition.fields.find(x => x.primaryKey)?.name ||
-      'id';
+      actionColumn.dataIndex || fields.find(x => x.primaryKey)?.name || 'id';
 
     tableColumns.push({
-      /**
-       * Dynamic title that includes settings icon when configurable.
-       * Clicking the settings icon opens a popover with column visibility controls.
-       */
+      key: 'action',
       title: () => {
         if (actionColumn.configurable) {
           // Create the settings panel component
-          const settingPanel = (
-            <TableSettingPanel viewDefinition={viewDefinition} />
-          );
+          const settingPanel = <TableSettingPanel fields={fields} />;
 
           return (
             <div className={styles.configurableColumnHeader}>
@@ -169,22 +169,15 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
         }
         return actionColumn.title;
       },
-
       dataIndex: dataIndex,
-      key: 'action',
-      fixed: 'end', // Always fixed to the right side
-      width: '200px', // Fixed width for action buttons
-
-      /**
-       * Render function for action cells.
-       * Calls the actionColumn.actions function to get action data for each row.
-       */
+      fixed: 'end',
+      width: '200px',
       render: (_, record) => {
         const actionsData = props.actionColumn!.actions(record);
         const data = {
           value: actionsData,
           record: record,
-          index: activeView.columns.length + 1, // Use next available index
+          index: columns.length + 1, // Use next available index
         };
         return <ActionsCell data={data} />;
       },
@@ -208,14 +201,18 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     },
   };
 
+  useImperativeHandle<ViewTableRef, ViewTableRef>(ref, () => ({
+    updateTableSize: setTableSize,
+  }));
+
   return (
     <Table<RecordType>
       dataSource={dataSource}
-      rowSelection={enableBatchOperation ? rowSelection : undefined}
+      rowSelection={enableRowSelection ? rowSelection : undefined}
       columns={tableColumns}
       {...attributes}
       scroll={{ x: 'max-content' }}
-      size={activeView.tableSize}
+      size={tableSize}
       onChange={(_pagination, _filters, sorter, extra) => {
         if (extra.action === 'sort' && onSortChanged) {
           onSortChanged(sorter);

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { ViewItem } from '../ViewItem';
-import { View } from '../../types';
+import { ViewState } from '../../types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 const meta: Meta<typeof ViewItem> = {
@@ -22,7 +22,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const sampleView: View = {
+const sampleView: ViewState = {
   id: '1',
   name: 'Sample View',
   type: 'PERSONAL',
@@ -45,7 +45,7 @@ const sampleView: View = {
   }
 };
 
-const systemView: View = {
+const systemView: ViewState = {
   ...sampleView,
   name: 'System View',
   source: 'SYSTEM',

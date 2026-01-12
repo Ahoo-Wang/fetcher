@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { ViewManageItem } from '../ViewManageItem';
-import { View } from '../../types';
+import { ViewState } from '../../types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { useState } from 'react';
 
@@ -28,7 +28,7 @@ export default meta;
 
 type Story = StoryObj<typeof ViewManageItem>;
 
-const sampleView: View = {
+const sampleView: ViewState = {
   id: '1',
   name: 'My View',
   definitionId: 'def-1',
@@ -53,21 +53,21 @@ const sampleView: View = {
   },
 };
 
-const systemView: View = {
+const systemView: ViewState = {
   ...sampleView,
   id: '2',
   name: 'System View',
   source: 'SYSTEM',
 };
 
-const customView: View = {
+const customView: ViewState = {
   ...sampleView,
   id: '3',
   name: 'Custom View',
   source: 'CUSTOM',
 };
 
-const sharedView: View = {
+const sharedView: ViewState = {
   ...sampleView,
   id: '4',
   name: 'Shared View',
@@ -88,13 +88,13 @@ const ViewManageItemWrapper = (args: any) => {
     setEditing(false);
   };
 
-  const handleSave = (view: View) => {
+  const handleSave = (view: ViewState) => {
     console.log('Save view:', view);
     setViewName(view.name);
     setEditing(false);
   };
 
-  const handleDelete = (view: View) => {
+  const handleDelete = (view: ViewState) => {
     console.log('Delete view:', view);
   };
 

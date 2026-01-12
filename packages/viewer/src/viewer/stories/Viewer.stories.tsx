@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 
 import { Viewer } from '../Viewer';
 import {
-  View,
+  ViewState,
   ViewColumn,
   ViewDefinition,
   ViewType,
@@ -275,7 +275,7 @@ const createSampleView = (
       },
     },
   ],
-): View => ({
+): ViewState => ({
   id,
   name,
   definitionId: '',
@@ -285,7 +285,8 @@ const createSampleView = (
   filters: filters,
   columns: columns,
   tableSize: 'middle',
-  sortId: 0,
+  sort: 1,
+  pageSize: 10,
   pagedQuery: {
     condition: {
       operator: Operator.ALL,
@@ -297,7 +298,7 @@ const createSampleView = (
   },
 });
 
-const sampleViews: View[] = [
+const sampleViews: ViewState[] = [
   createSampleView('1', 'My Personal View', 'PERSONAL'),
   createSampleView('2', 'Another Personal View', 'PERSONAL', 'CUSTOM', [
     {
@@ -376,6 +377,7 @@ export const Default: Story = {
   args: {
     name: 'users',
     views: sampleViews,
+    defaultView: sampleViews[0],
     definition: viewDefinition,
     actionColumn: actionColumn,
     supportedTopbarItems: [
@@ -435,9 +437,9 @@ export const WithViewManagement: Story = {
     ...Default.args,
     viewManagement: {
       enabled: true,
-      onCreateView: (view: View) => console.log('Create view:', view),
-      onDeleteView: (view: View) => console.log('Delete view:', view),
-      onUpdateView: (view: View) => console.log('Update view:', view),
+      onCreateView: (view: ViewState) => console.log('Create view:', view),
+      onDeleteView: (view: ViewState) => console.log('Delete view:', view),
+      onUpdateView: (view: ViewState) => console.log('Update view:', view),
     },
     name: 'with-view-management',
   },

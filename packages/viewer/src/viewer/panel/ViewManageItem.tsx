@@ -1,15 +1,15 @@
-import { View } from '../types';
+import { ViewState } from '../types';
 import { Button, Flex, Input, Popconfirm, Space, Tag } from 'antd';
 import { DeleteOutlined, DragOutlined, EditOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 
 export interface ViewManageItemProps {
-  view: View;
+  view: ViewState;
   editing: boolean;
-  onEdit: (view: View) => void;
+  onEdit: (view: ViewState) => void;
   onCancel: () => void;
-  onSave: (view: View) => void;
-  onDelete: (view: View) => void;
+  onSave: (view: ViewState) => void;
+  onDelete: (view: ViewState) => void;
 }
 
 export function ViewManageItem(props: ViewManageItemProps) {

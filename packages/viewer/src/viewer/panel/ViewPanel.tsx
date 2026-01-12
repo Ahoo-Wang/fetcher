@@ -5,7 +5,7 @@ import {
   PlusOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { View, ViewType } from '../types';
+import { ViewState, ViewType } from '../types';
 import { ViewItemGroup } from './ViewItemGroup';
 
 import styles from './ViewPanel.module.less';
@@ -21,13 +21,13 @@ export interface ViewPanelProps {
   /** Name of the aggregate/entity being viewed (displayed as panel title) */
   aggregateName: string;
   /** Array of all available views (both personal and public) */
-  views: View[];
+  views: ViewState[];
   /** The currently active/selected view */
-  activeView: View;
+  activeView: ViewState;
   /** API endpoint URL for fetching record counts for views */
   countUrl: string;
   /** Callback function called when user selects a different view */
-  onViewChange: (view: View) => void;
+  onViewChange: (view: ViewState) => void;
 
   /** Whether the view panel is currently visible (used for fold/unfold logic) */
   showViewPanel: boolean;
@@ -35,8 +35,8 @@ export interface ViewPanelProps {
   onViewPanelFold: () => void;
 
   onCreateView?: (viewType: ViewType) => void;
-  onEditViewName?: (view: View, onSuccess?: () => void) => void;
-  onDeleteView?: (view: View, onSuccess?: () => void) => void;
+  onEditViewName?: (view: ViewState, onSuccess?: () => void) => void;
+  onDeleteView?: (view: ViewState, onSuccess?: () => void) => void;
 }
 
 /**
@@ -216,11 +216,11 @@ export function ViewPanel(props: ViewPanelProps) {
     onCreateView?.(type);
   };
 
-  const handleEditViewName = (view: View, onSuccess?: () => void) => {
+  const handleEditViewName = (view: ViewState, onSuccess?: () => void) => {
     onEditViewName?.(view, onSuccess);
   };
 
-  const handleDeleteView = (view: View, onSuccess?: () => void) => {
+  const handleDeleteView = (view: ViewState, onSuccess?: () => void) => {
     onDeleteView?.(view, onSuccess);
   };
 

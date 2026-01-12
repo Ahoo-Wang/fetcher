@@ -1,4 +1,4 @@
-import { View } from '../types';
+import { ViewState } from '../types';
 import { Flex } from 'antd';
 import { ViewItem } from './ViewItem';
 
@@ -9,13 +9,13 @@ import { ViewItem } from './ViewItem';
  */
 export interface ViewItemGroupProps {
   /** Array of view configurations to display in the group */
-  views: View[];
+  views: ViewState[];
   /** The currently active/selected view */
-  activeView: View;
+  activeView: ViewState;
   /** API endpoint URL for fetching record counts for each view */
   countUrl: string;
   /** Callback function called when a view is selected/clicked */
-  onViewChange: (view: View) => void;
+  onViewChange: (view: ViewState) => void;
 }
 
 /**
