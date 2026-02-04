@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   NoneSpaceIdProvider,
   SpaceIdStorage,
@@ -22,7 +22,6 @@ import {
   SpaceIdProviderOptions,
 } from '../src';
 import { FetchExchange, Fetcher, FetchRequest } from '@ahoo-wang/fetcher';
-import { TypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
 const mockStorage = {
   getItem: vi.fn(),
@@ -45,17 +44,23 @@ vi.stubGlobal(
 );
 vi.stubGlobal('window', { localStorage: mockStorage });
 
-const createMockEventBus = (): TypedEventBus<any> => {
-  const handlers: any[] = [];
-  return {
-    type: 'test',
-    handlers,
-    emit: vi.fn().mockResolvedValue(undefined),
-    on: vi.fn().mockReturnValue(true),
-    off: vi.fn().mockReturnValue(true),
+vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
+  BroadcastTypedEventBus: vi.fn().mockImplementation(() => ({
+    emit: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
     destroy: vi.fn(),
-  };
-};
+  })),
+  SerialTypedEventBus: vi.fn().mockImplementation(() => ({
+    emit: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+    destroy: vi.fn(),
+  })),
+  nameGenerator: {
+    generate: vi.fn((prefix: string) => `${prefix}_1`),
+  },
+}));
 
 const createMockFetcher = (): Fetcher =>
   ({
@@ -160,10 +165,14 @@ describe('SpaceIdStorage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStorage.getItem.mockReturnValue(null);
-    mockStorage.setItem.mockImplementation(() => {});
-    mockStorage.removeItem.mockImplementation(() => {});
-    mockBroadcastChannel.postMessage.mockImplementation(() => {});
-    mockBroadcastChannel.close.mockImplementation(() => {});
+    mockStorage.setItem.mockImplementation(() => {
+    });
+    mockStorage.removeItem.mockImplementation(() => {
+    });
+    mockBroadcastChannel.postMessage.mockImplementation(() => {
+    });
+    mockBroadcastChannel.close.mockImplementation(() => {
+    });
 
     spaceIdStorage = new SpaceIdStorage({
       storage: mockStorage as unknown as Storage,
@@ -191,8 +200,13 @@ describe('SpaceIdStorage', () => {
     });
 
     it('should initialize with custom eventBus', () => {
-      const mockEventBus = createMockEventBus();
-      const storage = new SpaceIdStorage({ eventBus: mockEventBus });
+      const mockEventBus = {
+        emit: vi.fn(),
+        on: vi.fn(),
+        off: vi.fn(),
+        destroy: vi.fn(),
+      };
+      const storage = new SpaceIdStorage({ eventBus: mockEventBus as any });
       expect(storage).toBeDefined();
       storage.destroy();
     });
@@ -212,10 +226,15 @@ describe('SpaceIdStorage', () => {
 
     it('should initialize with all custom options', () => {
       const customKey = 'custom-key';
-      const customEventBus = createMockEventBus();
+      const mockEventBus = {
+        emit: vi.fn(),
+        on: vi.fn(),
+        off: vi.fn(),
+        destroy: vi.fn(),
+      };
       const storage = new SpaceIdStorage({
         key: customKey,
-        eventBus: customEventBus,
+        eventBus: mockEventBus as any,
         storage: mockStorage as unknown as Storage,
       });
       expect(storage).toBeDefined();
@@ -374,8 +393,13 @@ describe('SpaceIdStorage', () => {
     });
 
     it('should destroy with custom eventBus', () => {
-      const mockEventBus = createMockEventBus();
-      const storage = new SpaceIdStorage({ eventBus: mockEventBus });
+      const mockEventBus = {
+        emit: vi.fn(),
+        on: vi.fn(),
+        off: vi.fn(),
+        destroy: vi.fn(),
+      };
+      const storage = new SpaceIdStorage({ eventBus: mockEventBus as any });
       storage.destroy();
       expect(mockEventBus.destroy).toHaveBeenCalled();
     });
@@ -390,10 +414,14 @@ describe('DefaultSpaceIdProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStorage.getItem.mockReturnValue(null);
-    mockStorage.setItem.mockImplementation(() => {});
-    mockStorage.removeItem.mockImplementation(() => {});
-    mockBroadcastChannel.postMessage.mockImplementation(() => {});
-    mockBroadcastChannel.close.mockImplementation(() => {});
+    mockStorage.setItem.mockImplementation(() => {
+    });
+    mockStorage.removeItem.mockImplementation(() => {
+    });
+    mockBroadcastChannel.postMessage.mockImplementation(() => {
+    });
+    mockBroadcastChannel.close.mockImplementation(() => {
+    });
 
     spaceIdStorage = new SpaceIdStorage({
       storage: mockStorage as unknown as Storage,
@@ -560,14 +588,10 @@ describe('DefaultSpaceIdProvider', () => {
 
   describe('predicate behavior', () => {
     it('should call predicate with correct exchange object', () => {
-      const testExchange: FetchExchange = createMockExchange();
+      const testExchange = createMockExchange();
       predicate.test = vi.fn().mockReturnValue(false);
       provider.resolveSpaceId(testExchange);
       expect(predicate.test).toHaveBeenCalledWith(testExchange);
-      const calls = (
-        predicate.test as unknown as { mock: { calls: FetchExchange[][] } }
-      ).mock.calls;
-      expect(calls[0][0]).toBe(testExchange);
     });
 
     it('should only call predicate once per resolveSpaceId call', () => {
@@ -692,8 +716,13 @@ describe('SpaceIdProvider interface compliance', () => {
   });
 
   it('DefaultSpaceIdProvider instance should satisfy SpaceIdProvider interface', () => {
-    const mockEventBus = createMockEventBus();
-    const storage = new SpaceIdStorage({ eventBus: mockEventBus });
+    const mockEventBus = {
+      emit: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+      destroy: vi.fn(),
+    };
+    const storage = new SpaceIdStorage({ eventBus: mockEventBus as any });
     const testPredicate: SpacedResourcePredicate = {
       test: () => false,
     };
