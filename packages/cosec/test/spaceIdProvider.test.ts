@@ -165,14 +165,10 @@ describe('SpaceIdStorage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStorage.getItem.mockReturnValue(null);
-    mockStorage.setItem.mockImplementation(() => {
-    });
-    mockStorage.removeItem.mockImplementation(() => {
-    });
-    mockBroadcastChannel.postMessage.mockImplementation(() => {
-    });
-    mockBroadcastChannel.close.mockImplementation(() => {
-    });
+    mockStorage.setItem.mockImplementation(() => {});
+    mockStorage.removeItem.mockImplementation(() => {});
+    mockBroadcastChannel.postMessage.mockImplementation(() => {});
+    mockBroadcastChannel.close.mockImplementation(() => {});
 
     spaceIdStorage = new SpaceIdStorage({
       storage: mockStorage as unknown as Storage,
@@ -392,16 +388,16 @@ describe('SpaceIdStorage', () => {
       expect(() => storage.destroy()).not.toThrow();
     });
 
-    it('should destroy with custom eventBus', () => {
+    it('should remove handler from custom eventBus on destroy', () => {
       const mockEventBus = {
         emit: vi.fn(),
         on: vi.fn(),
-        off: vi.fn(),
+        off: vi.fn().mockReturnValue(true),
         destroy: vi.fn(),
       };
       const storage = new SpaceIdStorage({ eventBus: mockEventBus as any });
       storage.destroy();
-      expect(mockEventBus.destroy).toHaveBeenCalled();
+      expect(mockEventBus.off).toHaveBeenCalled();
     });
   });
 });
@@ -414,14 +410,10 @@ describe('DefaultSpaceIdProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStorage.getItem.mockReturnValue(null);
-    mockStorage.setItem.mockImplementation(() => {
-    });
-    mockStorage.removeItem.mockImplementation(() => {
-    });
-    mockBroadcastChannel.postMessage.mockImplementation(() => {
-    });
-    mockBroadcastChannel.close.mockImplementation(() => {
-    });
+    mockStorage.setItem.mockImplementation(() => {});
+    mockStorage.removeItem.mockImplementation(() => {});
+    mockBroadcastChannel.postMessage.mockImplementation(() => {});
+    mockBroadcastChannel.close.mockImplementation(() => {});
 
     spaceIdStorage = new SpaceIdStorage({
       storage: mockStorage as unknown as Storage,
