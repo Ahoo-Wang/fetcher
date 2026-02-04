@@ -26,6 +26,7 @@ export const NoneSpaceIdProvider: SpaceIdProvider = {
 
 export const DEFAULT_COSEC_SPACE_ID_KEY = 'cosec-space-id';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface SpaceIdStorageOptions extends Partial<KeyStorageOptions<SpaceId>> {
 }
 
