@@ -18,10 +18,13 @@ import {
 } from '@ahoo-wang/fetcher';
 import { AppIdCapable, CoSecHeaders, DeviceIdStorageCapable } from './types';
 import { idGenerator } from './idGenerator';
+import { NoneSpaceIdProvider, SpaceIdProvider } from './spaceIdProvider';
+import { DeviceIdStorage } from './deviceIdStorage';
 
 export interface CoSecRequestOptions
   extends AppIdCapable,
     DeviceIdStorageCapable {
+  spaceIdProvider?: SpaceIdProvider;
 }
 
 /**
@@ -56,14 +59,18 @@ export const IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY = 'Ignore-Refresh-Token';
 export class CoSecRequestInterceptor implements RequestInterceptor {
   readonly name = COSEC_REQUEST_INTERCEPTOR_NAME;
   readonly order = COSEC_REQUEST_INTERCEPTOR_ORDER;
-  private options: CoSecRequestOptions;
+  private readonly appId: string;
+  private readonly deviceIdStorage: DeviceIdStorage;
+  private readonly spaceIdProvider: SpaceIdProvider;
 
   /**
    * Creates a new CoSecRequestInterceptor instance.
    * @param options - The CoSec configuration options including appId, deviceIdStorage, and tokenManager
    */
-  constructor(options: CoSecRequestOptions) {
-    this.options = options;
+  constructor({ appId, deviceIdStorage, spaceIdProvider }: CoSecRequestOptions) {
+    this.appId = appId;
+    this.deviceIdStorage = deviceIdStorage;
+    this.spaceIdProvider = spaceIdProvider ?? NoneSpaceIdProvider;
   }
 
   /**
@@ -93,14 +100,19 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     const requestId = idGenerator.generateId();
 
     // Get or create a device ID
-    const deviceId = this.options.deviceIdStorage.getOrCreate();
+    const deviceId = this.deviceIdStorage.getOrCreate();
+
+    const spaceId = this.spaceIdProvider.resolveSpaceId(exchange);
 
     // Ensure request headers object exists
     const requestHeaders = exchange.ensureRequestHeaders();
 
     // Add CoSec headers to the request
-    requestHeaders[CoSecHeaders.APP_ID] = this.options.appId;
+    requestHeaders[CoSecHeaders.APP_ID] = this.appId;
     requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;
     requestHeaders[CoSecHeaders.REQUEST_ID] = requestId;
+    if (spaceId) {
+      requestHeaders[CoSecHeaders.SPACE_ID] = spaceId;
+    }
   }
 }
