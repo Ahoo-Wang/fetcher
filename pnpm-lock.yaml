@@ -22,7 +22,7 @@ catalogs:
       specifier: ^24.10.7
       version: 24.10.7
     '@types/react':
-      specifier: ^19.2.10
+      specifier: ^19.2.11
       version: 19.2.7
     '@types/react-dom':
       specifier: ^19.2.3
@@ -130,7 +130,7 @@ importers:
         version: 9.1.17(storybook@9.1.17(@testing-library/dom@10.4.1)(msw@2.12.7(@types/node@24.10.7)(typescript@5.9.3))(prettier@3.8.1)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2)))
       '@storybook/addon-docs':
         specifier: ^9.1.17
-        version: 9.1.17(@types/react@19.2.10)(storybook@9.1.17(@testing-library/dom@10.4.1)(msw@2.12.7(@types/node@24.10.7)(typescript@5.9.3))(prettier@3.8.1)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2)))
+        version: 9.1.17(@types/react@19.2.11)(storybook@9.1.17(@testing-library/dom@10.4.1)(msw@2.12.7(@types/node@24.10.7)(typescript@5.9.3))(prettier@3.8.1)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2)))
       '@storybook/addon-onboarding':
         specifier: ^9.1.17
         version: 9.1.17(storybook@9.1.17(@testing-library/dom@10.4.1)(msw@2.12.7(@types/node@24.10.7)(typescript@5.9.3))(prettier@3.8.1)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2)))
@@ -145,10 +145,10 @@ importers:
         version: 9.1.17(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(rollup@4.55.1)(storybook@9.1.17(@testing-library/dom@10.4.1)(msw@2.12.7(@types/node@24.10.7)(typescript@5.9.3))(prettier@3.8.1)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2)))(typescript@5.9.3)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2))
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.10
+        version: 19.2.11
       '@types/react-dom':
         specifier: 'catalog:'
-        version: 19.2.3(@types/react@19.2.10)
+        version: 19.2.3(@types/react@19.2.11)
       '@vitest/browser':
         specifier: 3.2.4
         version: 3.2.4(msw@2.12.7(@types/node@24.10.7)(typescript@5.9.3))(playwright@1.58.1)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2))(vitest@3.2.4)
@@ -2453,8 +2453,8 @@ packages:
     peerDependencies:
       '@types/react': ^19.2.0
 
-  '@types/react@19.2.10':
-    resolution: {integrity: sha512-WPigyYuGhgZ/cTPRXB2EwUw+XvsRA3GqHlsP4qteqrnnjDrApbS7MxcGr/hke5iUoeB7E/gQtrs9I37zAJ0Vjw==}
+  '@types/react@19.2.11':
+    resolution: {integrity: sha512-tORuanb01iEzWvMGVGv2ZDhYZVeRMrw453DCSAIn/5yvcSVnMoUMTyf33nQJLahYEnv9xqrTNbgz4qY5EfSh0g==}
 
   '@types/react@19.2.7':
     resolution: {integrity: sha512-MWtvHrGZLFttgeEj28VXHxpmwYbor/ATPYbBfSFZEIRK0ecCFLl2Qo55z52Hss+UV9CRN7trSeq1zbgx7YDWWg==}
@@ -5030,10 +5030,10 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@mdx-js/react@3.1.1(@types/react@19.2.10)(react@19.2.4)':
+  '@mdx-js/react@3.1.1(@types/react@19.2.11)(react@19.2.4)':
     dependencies:
       '@types/mdx': 2.0.13
-      '@types/react': 19.2.10
+      '@types/react': 19.2.11
       react: 19.2.4
 
   '@microsoft/api-extractor-model@7.28.13(@types/node@24.10.7)':
@@ -5958,9 +5958,9 @@ snapshots:
       axe-core: 4.11.1
       storybook: 9.1.17(@testing-library/dom@10.4.1)(msw@2.12.7(@types/node@24.10.7)(typescript@5.9.3))(prettier@3.8.1)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2))
 
-  '@storybook/addon-docs@9.1.17(@types/react@19.2.10)(storybook@9.1.17(@testing-library/dom@10.4.1)(msw@2.12.7(@types/node@24.10.7)(typescript@5.9.3))(prettier@3.8.1)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2)))':
+  '@storybook/addon-docs@9.1.17(@types/react@19.2.11)(storybook@9.1.17(@testing-library/dom@10.4.1)(msw@2.12.7(@types/node@24.10.7)(typescript@5.9.3))(prettier@3.8.1)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2)))':
     dependencies:
-      '@mdx-js/react': 3.1.1(@types/react@19.2.10)(react@19.2.4)
+      '@mdx-js/react': 3.1.1(@types/react@19.2.11)(react@19.2.4)
       '@storybook/csf-plugin': 9.1.17(storybook@9.1.17(@testing-library/dom@10.4.1)(msw@2.12.7(@types/node@24.10.7)(typescript@5.9.3))(prettier@3.8.1)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2)))
       '@storybook/icons': 1.6.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@storybook/react-dom-shim': 9.1.17(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@9.1.17(@testing-library/dom@10.4.1)(msw@2.12.7(@types/node@24.10.7)(typescript@5.9.3))(prettier@3.8.1)(vite@7.3.1(@types/node@24.10.7)(less@4.5.1)(yaml@2.8.2)))
@@ -6130,15 +6130,15 @@ snapshots:
     dependencies:
       undici-types: 7.16.0
 
-  '@types/react-dom@19.2.3(@types/react@19.2.10)':
+  '@types/react-dom@19.2.3(@types/react@19.2.11)':
     dependencies:
-      '@types/react': 19.2.10
+      '@types/react': 19.2.11
 
   '@types/react-dom@19.2.3(@types/react@19.2.7)':
     dependencies:
       '@types/react': 19.2.7
 
-  '@types/react@19.2.10':
+  '@types/react@19.2.11':
     dependencies:
       csstype: 3.2.3
 
