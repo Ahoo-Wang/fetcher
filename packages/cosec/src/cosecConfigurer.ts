@@ -23,6 +23,7 @@ import { TokenRefresher } from './tokenRefresher';
 import { TokenStorage } from './tokenStorage';
 import { UnauthorizedErrorInterceptor } from './unauthorizedErrorInterceptor';
 import { AppIdCapable, DeviceIdStorageCapable } from './types';
+import { NoneSpaceIdProvider, SpaceIdProvider } from './spaceIdProvider';
 
 /**
  * Simplified configuration interface for CoSec setup.
@@ -35,40 +36,42 @@ export interface CoSecConfig
    * Application ID to be sent in the CoSec-App-Id header.
    * This is required for identifying your application in the CoSec system.
    */
-  appId: string;
+  readonly appId: string;
 
   /**
    * Custom token storage implementation.
    * If not provided, a default TokenStorage instance will be created.
    * Useful for custom storage backends or testing scenarios.
    */
-  tokenStorage?: TokenStorage;
+  readonly tokenStorage?: TokenStorage;
 
   /**
    * Custom device ID storage implementation.
    * If not provided, a default DeviceIdStorage instance will be created.
    * Useful for custom device identification strategies or testing scenarios.
    */
-  deviceIdStorage?: DeviceIdStorage;
+  readonly deviceIdStorage?: DeviceIdStorage;
 
   /**
    * Token refresher implementation for handling expired tokens.
    * If not provided, authentication interceptors will not be added.
    * This enables CoSec configuration without full JWT authentication.
    */
-  tokenRefresher?: TokenRefresher;
+  readonly tokenRefresher?: TokenRefresher;
+
+  readonly spaceIdProvider?: SpaceIdProvider;
 
   /**
    * Callback function invoked when an unauthorized (401) response is detected.
    * If not provided, 401 errors will not be intercepted.
    */
-  onUnauthorized?: (exchange: FetchExchange) => Promise<void> | void;
+  readonly onUnauthorized?: (exchange: FetchExchange) => Promise<void> | void;
 
   /**
    * Callback function invoked when a forbidden (403) response is detected.
    * If not provided, 403 errors will not be intercepted.
    */
-  onForbidden?: (exchange: FetchExchange) => Promise<void>;
+  readonly onForbidden?: (exchange: FetchExchange) => Promise<void>;
 }
 
 /**
@@ -135,6 +138,7 @@ export class CoSecConfigurer implements FetcherConfigurer {
    * When undefined, authentication interceptors will not be added.
    */
   readonly tokenManager?: JwtTokenManager;
+  readonly spaceIdProvider?: SpaceIdProvider;
 
   /**
    * Creates a new CoSecConfigurer instance with the provided configuration.
@@ -165,6 +169,7 @@ export class CoSecConfigurer implements FetcherConfigurer {
     // Create storage instances with fallbacks to defaults
     this.tokenStorage = config.tokenStorage ?? new TokenStorage();
     this.deviceIdStorage = config.deviceIdStorage ?? new DeviceIdStorage();
+    this.spaceIdProvider = config.spaceIdProvider ?? NoneSpaceIdProvider;
 
     // Create token manager only if token refresher is provided
     if (config.tokenRefresher) {
@@ -213,6 +218,7 @@ export class CoSecConfigurer implements FetcherConfigurer {
       new CoSecRequestInterceptor({
         appId: this.config.appId,
         deviceIdStorage: this.deviceIdStorage,
+        spaceIdProvider: this.spaceIdProvider,
       }),
     );
 
