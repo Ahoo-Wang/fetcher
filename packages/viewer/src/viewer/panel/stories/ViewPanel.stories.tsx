@@ -42,12 +42,14 @@ const createSampleView = (
     },
   ],
   tableSize: 'middle',
-  sortId: 0,
   pagedQuery: {
     condition: {
       operator: Operator.ALL,
-    }
-  }
+    },
+  },
+  definitionId: '',
+  pageSize: 0,
+  sort: 0,
 });
 
 const sampleViews: View[] = [
