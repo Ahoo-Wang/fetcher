@@ -21,6 +21,7 @@ export * from './jwts';
 export * from './jwtToken';
 export * from './jwtTokenManager';
 export * from './resourceAttributionRequestInterceptor';
+export * from './spaceIdProvider';
 export * from './tokenRefresher';
 export * from './tokenStorage';
 export * from './types';

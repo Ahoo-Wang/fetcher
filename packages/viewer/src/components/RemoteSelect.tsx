@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Select, SelectProps, RefSelectProps } from 'antd';
+import { Select, SelectProps, RefSelectProps, Flex, Empty, Spin } from 'antd';
 import {
   UseDebouncedCallbackOptions,
   useDebouncedExecutePromise,
@@ -23,7 +23,9 @@ import { BaseOptionType, DefaultOptionType } from 'antd/lib/select';
 export interface RemoteSelectProps<
   ValueType = any,
   OptionType extends BaseOptionType | DefaultOptionType = DefaultOptionType,
-> extends Omit<SelectProps<ValueType, OptionType>, 'loading' | 'onSearch'>,
+>
+  extends
+    Omit<SelectProps<ValueType, OptionType>, 'loading' | 'onSearch'>,
     RefAttributes<RefSelectProps>,
     StyleCapable {
   debounce?: UseDebouncedCallbackOptions;
@@ -63,11 +65,29 @@ export function RemoteSelect<
   };
   return (
     <Select<ValueType, OptionType>
-      filterOption={false}
-      showSearch={true}
+      showSearch={{
+        filterOption: false,
+        onSearch: handleSearch,
+      }}
       loading={loading}
-      onSearch={handleSearch}
-      options={result ?? options}
+      notFoundContent={
+        loading ? (
+          <Flex align={'center'} gap={4}>
+            <Spin
+              size="small"
+              styles={{
+                indicator: {
+                  color: 'rgba(0, 0, 0, 0.25)',
+                },
+              }}
+            />
+            <span>数据加载中...</span>
+          </Flex>
+        ) : (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        )
+      }
+      options={loading ? [] : (result ?? options)}
       {...selectProps}
     />
   );

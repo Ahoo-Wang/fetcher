@@ -20,6 +20,7 @@ import { JwtTokenManager } from './jwtTokenManager';
 export class CoSecHeaders {
   static readonly DEVICE_ID = 'CoSec-Device-Id';
   static readonly APP_ID = 'CoSec-App-Id';
+  static readonly SPACE_ID = 'CoSec-Space-Id';
   static readonly AUTHORIZATION = 'Authorization';
   static readonly REQUEST_ID = 'CoSec-Request-Id';
 }
@@ -50,7 +51,8 @@ export interface JwtTokenManagerCapable {
 export interface CoSecOptions
   extends AppIdCapable,
     DeviceIdStorageCapable,
-    JwtTokenManagerCapable {}
+    JwtTokenManagerCapable {
+}
 
 /**
  * Authorization result interface.
