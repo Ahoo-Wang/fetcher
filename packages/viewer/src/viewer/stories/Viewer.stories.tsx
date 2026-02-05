@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
-import { Viewer } from '../Viewer';
+import { Viewer, ViewerProps } from '../Viewer';
 import {
   View,
   ViewColumn,
@@ -10,7 +10,14 @@ import {
 } from '../types';
 import { ViewTableActionColumn } from '../../table';
 import { Button } from 'antd';
-import { MaterializedSnapshot, Operator } from '@ahoo-wang/fetcher-wow';
+import {
+  all,
+  eq,
+  id,
+  MaterializedSnapshot,
+  Operator,
+  PagedQuery,
+} from '@ahoo-wang/fetcher-wow';
 import {
   COLUMN_HEIGHT_BAR_ITEM_TYPE,
   FILTER_BAR_ITEM_TYPE,
@@ -18,6 +25,11 @@ import {
   SHARE_LINK_BAR_ITEM_TYPE,
 } from '../../topbar';
 import { ActiveFilter } from '../../filter';
+import { ViewManageItem, ViewPanel } from '../panel';
+import { TableRecordType } from '../../types';
+import { useEffect, useState } from 'react';
+import { useExecutePromise, useFetcher } from '@ahoo-wang/fetcher-react';
+import { ResultExtractors } from '@ahoo-wang/fetcher';
 
 export interface BusinessPartnerId {
   bizId: string;
@@ -73,10 +85,18 @@ export interface SkuCostState {
   readonly latestCostPrice: CostPrice;
 }
 
-const meta: Meta = {
-  title: 'Viewer',
+const meta: Meta<typeof Viewer<MaterializedSnapshot<SkuCostState>>> = {
+  title: 'Viewer/Viewer/Viewer',
   component: Viewer,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A panel component that displays personal and public views in collapsible sections.',
+      },
+    },
+  },
 };
 
 const viewDefinition: ViewDefinition = {
@@ -261,11 +281,39 @@ const createSampleView = (
   viewSource: ViewSource = 'CUSTOM',
   filters: ActiveFilter[] = [
     {
-      key: 'name',
+      key: 'state.id',
       type: 'id',
       field: {
         name: 'state.id',
         label: '成本编号',
+      },
+      value: {
+        defaultValue: undefined,
+      },
+      operator: {
+        defaultValue: undefined,
+      },
+    },
+    {
+      key: 'state.skuId.code',
+      type: 'text',
+      field: {
+        name: 'state.skuId.code',
+        label: 'SKU No.',
+      },
+      value: {
+        defaultValue: undefined,
+      },
+      operator: {
+        defaultValue: undefined,
+      },
+    },
+    {
+      key: 'state.skuId.brandName',
+      type: 'text',
+      field: {
+        name: 'state.skuId.brandName',
+        label: '品牌',
       },
       value: {
         defaultValue: undefined,
@@ -285,7 +333,6 @@ const createSampleView = (
   filters: filters,
   columns: columns,
   tableSize: 'middle',
-  sortId: 0,
   pagedQuery: {
     condition: {
       operator: Operator.ALL,
@@ -295,6 +342,8 @@ const createSampleView = (
       size: 10,
     },
   },
+  pageSize: 0,
+  sort: 0,
 });
 
 const sampleViews: View[] = [
@@ -334,49 +383,179 @@ const sampleViews: View[] = [
   createSampleView('5', 'System Public View', 'SHARED', 'SYSTEM'),
 ];
 
-const actionColumn: ViewTableActionColumn<MaterializedSnapshot<SkuCostState>> =
-  {
-    title: 'More',
-    dataIndex: 'id',
-    configurable: true,
-    actions: record => {
-      if (record.state.id === '3S98-SK-190TH') {
-        return {
-          primaryAction: record => (
-            <Button type="link" onClick={() => console.log('View', record)}>
-              Custom Action
-            </Button>
-          ),
-          moreActionTitle: 'More',
-          secondaryActions: [],
-        };
-      } else {
-        return {
-          primaryAction: {
-            data: { value: 'Edit', record, index: 0 },
-            attributes: { onClick: () => console.log('Edit', record) },
+const actionColumn: ViewTableActionColumn<
+  TableRecordType<MaterializedSnapshot<SkuCostState>>
+> = {
+  title: 'More',
+  dataIndex: 'id',
+  configurable: true,
+  actions: record => {
+    if (record.state?.id === '3S98-SK-190TH') {
+      return {
+        primaryAction: record => (
+          <Button type="link" onClick={() => console.log('View', record)}>
+            Custom Action
+          </Button>
+        ),
+        moreActionTitle: 'More',
+        secondaryActions: [],
+      };
+    } else {
+      return {
+        primaryAction: {
+          data: { value: 'Edit', record, index: 0 },
+          attributes: { onClick: () => console.log('Edit', record) },
+        },
+        moreActionTitle: '更多',
+        secondaryActions: [
+          {
+            key: 'delete',
+            data: { value: 'Delete', record, index: 1 },
+            attributes: { onClick: () => console.log('Delete', record) },
           },
-          moreActionTitle: '更多',
-          secondaryActions: [
-            {
-              data: { value: 'Delete', record, index: 1 },
-              attributes: { onClick: () => console.log('Delete', record) },
-            },
-          ],
-        };
-      }
-    },
-  };
+        ],
+      };
+    }
+  },
+};
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+const ViewerWrapper = (
+  args: ViewerProps<MaterializedSnapshot<SkuCostState>>,
+) => {
+  const viewResult: View[] = [
+    {
+      id: '0V6OiaTU00em003',
+      name: '全部采购订单',
+      definitionId: 'purchase-order',
+      type: 'SHARED',
+      source: 'SYSTEM',
+      columns: [
+        {
+          name: 'state.id',
+          fixed: false,
+          width: '140px',
+          sortOrder: null,
+          hidden: true,
+        },
+        {
+          name: 'state.status',
+          fixed: false,
+          hidden: true,
+          width: '120px',
+          sortOrder: null,
+        },
+      ],
+      filters: [
+        {
+          type: 'id',
+          field: {
+            name: 'state.id',
+            label: '采购订单编号',
+          },
+          key: 'state.id',
+        },
+        {
+          type: 'select',
+          field: {
+            name: 'state.status',
+            label: '订单状态',
+          },
+          key: 'state.status',
+        },
+        {
+          type: 'select',
+          field: {
+            name: 'state.name',
+            label: '订单',
+          },
+          key: 'state.name',
+        },
+      ],
+      tableSize: 'middle',
+      pageSize: 20,
+      sort: 1,
+      pagedQuery: {
+        projection: {},
+        pagination: {
+          index: 1,
+          size: 10,
+        },
+        condition: all(),
+      },
+      isDefault: true,
+    },
+  ];
+
+  const definitionResult: ViewDefinition = {
+    id: 'purchase-order',
+    name: '采购订单管理',
+    fields: [
+      {
+        label: '采购订单编号',
+        name: 'state.id',
+        primaryKey: true,
+        sorter: null,
+        attributes: null,
+        type: 'id',
+      },
+      {
+        label: '订单状态',
+        name: 'state.status',
+        primaryKey: false,
+        sorter: null,
+        attributes: null,
+        type: 'text',
+      },
+    ],
+    availableFilters: [
+      {
+        label: '基本信息',
+        filters: [
+          {
+            field: {
+              name: 'state.id',
+              label: '采购订单编号',
+            },
+            component: 'id',
+          },
+
+          {
+            field: {
+              name: 'state.status',
+              label: '订单状态',
+            },
+            component: 'select',
+          },
+        ],
+      },
+    ],
+    dataUrl: '/procurement/tenant/mydao/purchase_order/snapshot/paged',
+    countUrl: '/procurement/tenant/mydao/purchase_order/snapshot/count',
+  };
+
+  if (definitionResult && viewResult) {
+    return (
+      <div>
+        <Viewer<MaterializedSnapshot<SkuCostState>>
+          {...args}
+          views={viewResult}
+          definition={definitionResult}
+        ></Viewer>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 export const Default: Story = {
   args: {
-    name: 'users',
     views: sampleViews,
-    definition: viewDefinition,
+    defaultView: sampleViews[0],
     actionColumn: actionColumn,
     supportedTopbarItems: [
       FILTER_BAR_ITEM_TYPE,
@@ -419,15 +598,20 @@ export const Default: Story = {
     ) => {
       console.log('Click Primary Key', id, record);
     },
-  },
+    dataSource: [],
+    onLoadData: pagedQuery => {
+      console.log('Load data with query:', pagedQuery);
+    },
+  } satisfies Story['args'],
+  render: args => <ViewerWrapper {...args} />,
 };
 
 export const Empty: Story = {
   args: {
     ...Default.args,
     dataSource: [],
-    name: 'empty-view',
   },
+  render: args => <ViewerWrapper {...args} />,
 };
 
 export const WithViewManagement: Story = {
@@ -439,48 +623,48 @@ export const WithViewManagement: Story = {
       onDeleteView: (view: View) => console.log('Delete view:', view),
       onUpdateView: (view: View) => console.log('Update view:', view),
     },
-    name: 'with-view-management',
   },
+  render: args => <ViewerWrapper {...args} />,
 };
 
 export const SmallTableSize: Story = {
   args: {
     ...Default.args,
     views: sampleViews.map(v => ({ ...v, tableSize: 'small' as const })),
-    name: 'small-table-size',
   },
+  render: args => <ViewerWrapper {...args} />,
 };
 
 export const LargeTableSize: Story = {
   args: {
     ...Default.args,
     views: sampleViews.map(v => ({ ...v, tableSize: 'large' as const })),
-    name: 'large-table-size',
   },
+  render: args => <ViewerWrapper {...args} />,
 };
 
 export const NoBatchOperations: Story = {
   args: {
     ...Default.args,
     batchOperationConfig: undefined,
-    name: 'no-batch-operations',
   },
+  render: args => <ViewerWrapper {...args} />,
 };
 
 export const NoTopBarItems: Story = {
   args: {
     ...Default.args,
     supportedTopbarItems: [],
-    name: 'no-topbar-items',
   },
+  render: args => <ViewerWrapper {...args} />,
 };
 
 export const OnlyFilterAndRefresh: Story = {
   args: {
     ...Default.args,
     supportedTopbarItems: [FILTER_BAR_ITEM_TYPE, REFRESH_DATA_BAR_ITEM_TYPE],
-    name: 'only-filter-refresh',
   },
+  render: args => <ViewerWrapper {...args} />,
 };
 
 export const WithInitialFilters: Story = {
@@ -505,16 +689,16 @@ export const WithInitialFilters: Story = {
       ]),
       ...sampleViews.slice(1),
     ],
-    name: 'with-initial-filters',
   },
+  render: args => <ViewerWrapper {...args} />,
 };
 
 export const SinglePersonalView: Story = {
   args: {
     ...Default.args,
     views: [createSampleView('1', 'My Only View', 'PERSONAL')],
-    name: 'single-personal-view',
   },
+  render: args => <ViewerWrapper {...args} />,
 };
 
 export const MultipleSharedViews: Story = {
@@ -525,6 +709,6 @@ export const MultipleSharedViews: Story = {
       createSampleView('2', 'Department Overview', 'SHARED', 'CUSTOM'),
       createSampleView('3', 'Company Report', 'SHARED', 'SYSTEM'),
     ],
-    name: 'multiple-shared-views',
   },
+  render: args => <ViewerWrapper {...args} />,
 };
