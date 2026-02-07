@@ -15,7 +15,7 @@ catalog:
   '@vitest/ui': ^3.2.4
   antd: ^6.2.3
   babel-plugin-react-compiler: ^1.0.0
-  commander: ^14.0.2
+  commander: ^14.0.3
   dayjs: ^1.11.19
   eslint: ^9.39.2
   eslint-plugin-react-compiler: ^19.1.0-rc.2
