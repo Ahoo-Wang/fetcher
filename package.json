@@ -45,6 +45,7 @@
     "@storybook/addon-vitest": "^10.2.7",
     "@storybook/react": "^10.2.7",
     "@storybook/react-vite": "^10.2.7",
+    "@vitest/browser": "catalog:",
     "antd": "catalog:",
     "eslint-plugin-storybook": "^10.2.7",
     "globals": "catalog:",

@@ -152,22 +152,20 @@ describe('useFetcher', () => {
     const mockResult = 'success data';
     mockExchange.extractResult.mockResolvedValue(mockResult);
 
-    // Mock AbortController
     const mockAbort = vi.fn();
-    global.AbortController = vi.fn().mockImplementation(() => ({
-      abort: mockAbort,
-    }));
+    class MockAbortController {
+      abort = mockAbort;
+    }
+    vi.stubGlobal('AbortController', MockAbortController);
 
     const { result, unmount } = renderHook(() => useFetcher<string>());
 
     const request = { url: '/test' };
 
-    // Start a request
     act(() => {
       result.current.execute(request);
     });
 
-    // Unmount the component, should abort the request
     unmount();
 
     expect(mockAbort).toHaveBeenCalled();
