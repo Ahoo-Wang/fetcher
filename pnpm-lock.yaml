@@ -119,6 +119,9 @@ importers:
       '@chromatic-com/storybook':
         specifier: ^5.0.0
         version: 5.0.0(storybook@10.2.7(@testing-library/dom@10.4.1)(prettier@3.8.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.39.2
       '@storybook/addon-a11y':
         specifier: ^10.0.0
         version: 10.2.7(storybook@10.2.7(@testing-library/dom@10.4.1)(prettier@3.8.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
@@ -143,6 +146,9 @@ importers:
       eslint-plugin-storybook:
         specifier: ^10.0.0
         version: 10.2.7(eslint@9.39.2)(storybook@10.2.7(@testing-library/dom@10.4.1)(prettier@3.8.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)
+      globals:
+        specifier: 'catalog:'
+        version: 17.3.0
       storybook:
         specifier: ^10.0.0
         version: 10.2.7(@testing-library/dom@10.4.1)(prettier@3.8.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
