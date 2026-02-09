@@ -12,19 +12,17 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState } from 'react';
 import { TableSettingPanel } from '../TableSettingPanel';
 import {
   ActiveViewState,
   useActiveViewStateReducer,
   ViewColumn,
   ViewDefinition,
-  ActiveViewStateContext,
   ActiveViewStateContextProvider,
 } from '../../../viewer';
 import { all } from '@ahoo-wang/fetcher-wow';
 
-const meta: Meta = {
+const meta: Meta<typeof TableSettingPanel> = {
   title: 'Viewer/Table/Setting/TableSettingPanel',
   component: TableSettingPanel,
   parameters: {
@@ -38,9 +36,13 @@ const meta: Meta = {
   },
   tags: ['autodocs'],
   argTypes: {
-    viewDefinition: {
+    fields: {
       control: 'object',
-      description: 'View definition containing column definitions',
+      description: 'Field definitions for the columns',
+    },
+    initialColumns: {
+      control: 'object',
+      description: 'Column configurations including visibility and fixed state',
     },
     className: {
       control: 'text',
@@ -53,7 +55,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const sampleViewDefinition: ViewDefinition = {
-  id:'sample',
+  id: 'sample',
   name: 'Sample View',
   fields: [
     {
@@ -100,12 +102,12 @@ const sampleViewDefinition: ViewDefinition = {
 const sampleColumns: ViewColumn[] = [
   {
     name: 'id',
-    hidden: true,
+    hidden: false,
     fixed: true,
   },
   {
     name: 'name',
-    hidden: true,
+    hidden: false,
     fixed: false,
   },
   {
@@ -120,7 +122,7 @@ const sampleColumns: ViewColumn[] = [
   },
   {
     name: 'status',
-    hidden: false,
+    hidden: true,
     fixed: false,
   },
 ];
@@ -128,7 +130,7 @@ const sampleColumns: ViewColumn[] = [
 const activeViewState: ActiveViewState = {
   id: 'default-user',
   name: '全部用户',
-  definitionId: 'use',
+  definitionId: 'sample',
   type: 'SHARED',
   source: 'SYSTEM',
   isDefault: true,
@@ -142,17 +144,27 @@ const activeViewState: ActiveViewState = {
   },
 };
 
-const TableSettingPanelWrapper = (args: any) => {
-  const activeViewStateReturn = useActiveViewStateReducer(activeViewState);
+interface TableSettingPanelWrapperProps {
+  fields: ViewDefinition['fields'];
+  viewColumns?: ViewColumn[];
+  className?: string;
+}
 
-  const activeViewStateContext: ActiveViewStateContext = {
-    ...activeViewStateReturn,
+const TableSettingPanelWrapper = (args: TableSettingPanelWrapperProps) => {
+  const columns = args.viewColumns || sampleColumns;
+  const state: ActiveViewState = {
+    ...activeViewState,
+    columns,
+    definitionId: 'sample',
   };
 
+  const activeViewStateReturn = useActiveViewStateReducer(state);
+
   return (
-    <ActiveViewStateContextProvider {...activeViewStateContext}>
+    <ActiveViewStateContextProvider {...activeViewStateReturn}>
       <TableSettingPanel
-        viewDefinition={args.viewDefinition || sampleViewDefinition}
+        fields={args.fields}
+        initialColumns={columns}
         className={args.className}
       />
     </ActiveViewStateContextProvider>
@@ -161,7 +173,7 @@ const TableSettingPanelWrapper = (args: any) => {
 
 export const Basic: Story = {
   args: {
-    viewDefinition: sampleViewDefinition,
+    fields: sampleViewDefinition.fields,
     initialColumns: sampleColumns,
   },
   render: args => <TableSettingPanelWrapper {...args} />,
@@ -169,12 +181,33 @@ export const Basic: Story = {
 
 export const WithHiddenColumns: Story = {
   args: {
-    viewDefinition: sampleViewDefinition,
+    fields: sampleViewDefinition.fields,
     initialColumns: [
-      ...sampleColumns.slice(0, 2),
-      { ...sampleColumns[2], visible: false },
-      { ...sampleColumns[3], visible: true },
-      { ...sampleColumns[4], visible: false },
+      {
+        name: 'id',
+        hidden: false,
+        fixed: true,
+      },
+      {
+        name: 'name',
+        hidden: false,
+        fixed: false,
+      },
+      {
+        name: 'category',
+        hidden: true,
+        fixed: false,
+      },
+      {
+        name: 'price',
+        hidden: false,
+        fixed: false,
+      },
+      {
+        name: 'status',
+        hidden: true,
+        fixed: false,
+      },
     ],
   },
   render: args => <TableSettingPanelWrapper {...args} />,
@@ -182,21 +215,21 @@ export const WithHiddenColumns: Story = {
 
 export const AllVisible: Story = {
   args: {
-    viewDefinition: sampleViewDefinition,
-    initialColumns: sampleColumns.map(col => ({ ...col, visible: true })),
+    fields: sampleViewDefinition.fields,
+    initialColumns: sampleColumns.map(col => ({ ...col, hidden: false })),
   },
   render: args => <TableSettingPanelWrapper {...args} />,
 };
 
 export const FixedLimitReached: Story = {
   args: {
-    viewDefinition: sampleViewDefinition,
+    fields: sampleViewDefinition.fields,
     initialColumns: [
-      { ...sampleColumns[0], fixed: true, visible: true },
-      { ...sampleColumns[1], fixed: true, visible: true },
-      { ...sampleColumns[2], fixed: true, visible: true },
-      { ...sampleColumns[3], fixed: false, visible: true },
-      { ...sampleColumns[4], fixed: false, visible: false },
+      { name: 'id', hidden: false, fixed: true },
+      { name: 'name', hidden: false, fixed: true },
+      { name: 'category', hidden: false, fixed: true },
+      { name: 'price', hidden: false, fixed: false },
+      { name: 'status', hidden: true, fixed: false },
     ],
   },
   render: args => <TableSettingPanelWrapper {...args} />,
@@ -204,13 +237,13 @@ export const FixedLimitReached: Story = {
 
 export const MixedStates: Story = {
   args: {
-    viewDefinition: sampleViewDefinition,
+    fields: sampleViewDefinition.fields,
     initialColumns: [
-      { ...sampleColumns[0], fixed: true, visible: true },
-      { ...sampleColumns[1], fixed: false, visible: true },
-      { ...sampleColumns[2], fixed: false, visible: true },
-      { ...sampleColumns[3], fixed: false, visible: false },
-      { ...sampleColumns[4], fixed: false, visible: false },
+      { name: 'id', hidden: false, fixed: true },
+      { name: 'name', hidden: false, fixed: false },
+      { name: 'category', hidden: false, fixed: false },
+      { name: 'price', hidden: true, fixed: false },
+      { name: 'status', hidden: true, fixed: false },
     ],
   },
   render: args => <TableSettingPanelWrapper {...args} />,

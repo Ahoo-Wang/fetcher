@@ -28,7 +28,6 @@ export interface ColumnsCell {
  * @template RecordType - The type of the record containing the cell data.
  * @template Attributes - The type of additional attributes.
  * @interface ViewTableActionColumn
- * @extends ViewColumnDefinition
  *
  * @example
  * ```tsx
@@ -62,6 +61,4 @@ export interface ViewTableActionColumn<RecordType = any> {
   title: string;
   dataIndex?: string;
   actions: (record: RecordType) => ActionsData<RecordType>;
-  configurable: boolean;
-  configurePanelTitle?: string;
 }

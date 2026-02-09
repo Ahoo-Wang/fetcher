@@ -7,53 +7,18 @@ import { TableSettingPanel } from './setting';
 
 import type { TableColumnsType } from 'antd';
 import type { SorterResult, TableRowSelection } from 'antd/es/table/interface';
-import { Key, RefAttributes, useImperativeHandle, useState } from 'react';
+import { RefAttributes, useImperativeHandle } from 'react';
 import { AttributesCapable } from '../types';
 import { ViewColumn, FieldDefinition } from '../viewer';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
+import { useViewTableState } from './useViewTableState';
 
 export interface ViewTableRef {
   updateTableSize: (size: SizeType) => void;
+  clearSelectedRowKeys: () => void;
+  reset: () => void;
 }
 
-/**
- * Props for the ViewTable component.
- *
- * @template RecordType - The type of the records in the data source.
- * @template Attributes - The type of additional attributes for the table.
- * @interface ViewTableProps
- * @extends AttributesCapable<Attributes>
- *
- * @example
- * ```tsx
- * interface User {
- *   id: number;
- *   name: string;
- *   email: string;
- * }
- *
- * const tableProps: ViewTableProps<User> = {
- *   columns: [
- *     {
- *       title: 'Name',
- *       dataIndex: 'name',
- *       cell: { type: 'text' },
- *       primaryKey: false
- *     },
- *     {
- *       title: 'Email',
- *       dataIndex: 'email',
- *       cell: { type: 'link' },
- *       primaryKey: false
- *     }
- *   ],
- *   dataSource: [
- *     { id: 1, name: 'John Doe', email: 'john@example.com' }
- *   ],
- *   attributes: { pagination: { pageSize: 10 } }
- * };
- * ```
- */
 export interface ViewTableProps<
   RecordType = any,
   Attributes = Omit<TableProps<RecordType>, 'columns' | 'dataSource'>,
@@ -70,6 +35,9 @@ export interface ViewTableProps<
   ) => void;
   onSelectChange?: (items: RecordType[]) => void;
   onClickPrimaryKey?: (id: any, record: RecordType) => void;
+
+  configurable: boolean;
+  configurePanelTitle?: string;
 }
 
 export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
@@ -85,10 +53,19 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     onSortChanged,
     onSelectChange,
     onClickPrimaryKey,
+    configurable,
+    configurePanelTitle,
     attributes,
   } = props;
 
-  const [tableSize, setTableSize] = useState<SizeType>(defaultTableSize);
+  const {
+    tableSize,
+    setTableSize,
+    selectedRowKeys,
+    setSelectedRowKeys,
+    reset,
+    clearSelectedRowKeys,
+  } = useViewTableState({ defaultTableSize });
 
   const tableColumns: TableColumnsType<RecordType> = columns.map(col => {
     const columnDefinition = fields.find(f => f.name === col.name);
@@ -134,12 +111,6 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     };
   });
 
-  /**
-   * Add action column if configured.
-   *
-   * The action column provides row-level actions like edit/delete buttons.
-   * It can be made configurable to allow users to show/hide table columns.
-   */
   if (actionColumn) {
     // Determine which field to use as the dataIndex for the action column
     // Priority: explicit dataIndex > primary key column > fallback to 'id'
@@ -149,16 +120,18 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     tableColumns.push({
       key: 'action',
       title: () => {
-        if (actionColumn.configurable) {
+        if (configurable) {
           // Create the settings panel component
-          const settingPanel = <TableSettingPanel fields={fields} />;
+          const settingPanel = (
+            <TableSettingPanel fields={fields} initialColumns={columns} />
+          );
 
           return (
             <div className={styles.configurableColumnHeader}>
               <span>{actionColumn.title}</span>
               <Popover
                 content={settingPanel}
-                title={actionColumn.configurePanelTitle || 'Setting'}
+                title={configurePanelTitle || 'Setting'}
                 placement="bottomRight"
                 trigger="click"
               >
@@ -184,14 +157,6 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     });
   }
 
-  /**
-   * Row selection state and configuration.
-   *
-   * Only enabled when viewDefinition.checkable is true.
-   * Provides checkbox selection for table rows with callback support.
-   */
-  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
-
   const rowSelection: TableRowSelection<RecordType> = {
     selectedRowKeys,
     fixed: true, // Keep selection column fixed during horizontal scroll
@@ -203,6 +168,8 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
 
   useImperativeHandle<ViewTableRef, ViewTableRef>(ref, () => ({
     updateTableSize: setTableSize,
+    clearSelectedRowKeys: clearSelectedRowKeys,
+    reset: reset,
   }));
 
   return (
