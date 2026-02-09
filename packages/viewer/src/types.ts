@@ -30,6 +30,18 @@ export interface AttributesCapable<Attributes = any> {
   attributes?: Attributes;
 }
 
+export interface PrimaryKeyClickHandlerCapable<RecordType = any> {
+  onClickPrimaryKey?: (id: any, record: RecordType) => void;
+}
+
+export interface ViewTableSetting {
+  title?: string
+}
+
+export interface ViewTableSettingCapable {
+  viewTableSetting: false | ViewTableSetting
+}
+
 export interface KeyCapable {
   key: Key;
 }

@@ -3,7 +3,7 @@ import { TypeCapable } from '../registry';
 import { AttributesCapable } from '../types';
 import { SortOrder } from 'antd/es/table/interface';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { PagedQuery } from '@ahoo-wang/fetcher-wow';
+import { Condition, FieldSort, Pagination, Projection } from '@ahoo-wang/fetcher-wow';
 import React from 'react';
 import { ButtonProps } from 'antd';
 import { NamedCapable } from '@ahoo-wang/fetcher';
@@ -39,8 +39,10 @@ export interface ViewState {
   columns: ViewColumn[];
   tableSize: SizeType;
   pageSize: number;
-  sort: number;
-  pagedQuery: PagedQuery;
+  condition: Condition;
+  projection?: Projection;
+  pagination?: Pagination;
+  sort?: FieldSort[];
 }
 
 export interface ViewColumn extends NamedCapable {
