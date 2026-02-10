@@ -4,95 +4,115 @@ import {
   ActiveFilter,
   AvailableFilterGroup,
   EditableFilterPanel,
+  FilterPanel,
   FilterPanelRef,
 } from '../filter';
 import type * as React from 'react';
 import { Condition } from '@ahoo-wang/fetcher-wow';
 import { RefAttributes, useImperativeHandle, useRef } from 'react';
-import { FieldDefinition, ViewState } from '../viewer';
+import { FieldDefinition, ViewColumn } from '../viewer';
 import { ViewTable, ViewTableActionColumn, ViewTableRef } from '../table';
-import { PrimaryKeyClickHandlerCapable, TableRecordType, ViewTableSettingCapable } from '../types';
-import { deepEqual, mapToTableRecord } from '../utils';
+import {
+  PrimaryKeyClickHandlerCapable,
+  TableRecordType,
+  TableSizeCapable,
+  ViewTableSettingCapable,
+} from '../types';
+import { mapToTableRecord } from '../utils';
 import type { SorterResult } from 'antd/es/table/interface';
-import { SearchDataConverterCapable, useViewState } from './';
+import { useViewState } from './';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 
+export type ViewChangeAction = 'pagination' | 'sorter' | 'filter' | 'reset';
+
 export interface ViewRef extends ViewTableRef {
-  toggleShowFilter: () => boolean;
   reset: () => void;
 }
 
-export interface ViewProps<RecordType, SearchBody>
+export interface ViewProps<RecordType>
   extends
-    SearchDataConverterCapable<SearchBody>,
     PrimaryKeyClickHandlerCapable<RecordType>,
     ViewTableSettingCapable,
+    TableSizeCapable,
     RefAttributes<ViewRef> {
-  viewState: ViewState;
   fields: FieldDefinition[];
+  // 外部State
+  availableFilters: AvailableFilterGroup[];
+  // 外部State
+  tableSize: SizeType;
+  // 外部State
   dataSource: RecordType[];
+  // 外部State
+  showFilter: boolean;
+  editableFilters?: boolean;
+  activeFilters: ActiveFilter[];
+
+  defaultColumns: ViewColumn[];
+  defaultPageSize: number;
+
   actionColumn?: ViewTableActionColumn<TableRecordType<RecordType>>;
-  defaultShowFilter: boolean;
+
   pagination:
     | false
     | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
 
   enableRowSelection: boolean;
-  onSearch?: (searchBody: SearchBody) => void;
+  onChange?: (
+    action: ViewChangeAction,
+    condition?: Condition,
+    index?: number,
+    size?: number,
+    sorter?: SorterResult<TableRecordType<RecordType>>[],
+  ) => void;
+  onFiltersChange?: (filters: ActiveFilter[]) => void;
+  onSelectedDataChange?: (data: RecordType[]) => void;
 }
 
-export function View<RecordType, SearchBody>(
-  props: ViewProps<RecordType, SearchBody>,
-) {
+export function View<RecordType>(props: ViewProps<RecordType>) {
   const {
     ref,
-    viewState,
     fields,
+    availableFilters,
     dataSource,
     actionColumn,
-    defaultShowFilter,
+    showFilter,
+    editableFilters,
     pagination,
     enableRowSelection,
+    viewTableSetting,
+    tableSize,
+    activeFilters,
+    defaultColumns,
+    defaultPageSize,
     onClickPrimaryKey,
-    onSearch,
-    searchDataConverter,
-    viewTableSetting
+    onChange,
+    onFiltersChange,
+    onSelectedDataChange
   } = props;
 
   const {
-    showFilter,
-    toggleShowFilter,
-    condition,
-    setCondition,
     page,
     setPage,
     pageSize,
     setPageSize,
-    tableSelectedData,
-    setTableSelectedData,
+    columns,
+    setColumns,
+    selectedCount,
+    updateSelectedCount,
     reset,
   } = useViewState({
-    defaultShowFilter: defaultShowFilter,
     defaultPage: 1,
-    defaultPageSize: viewState.pageSize,
-    defaultCondition: viewState.condition,
-    onSearch,
-    searchDataConverter,
+    defaultPageSize: defaultPageSize,
+    defaultColumns,
+    onChange,
   });
 
-  const filters: ActiveFilter[] = [];
-
-  const availableFilters: AvailableFilterGroup[] = [];
-  const handleSearch = (latestCondition: Condition) => {
-    if (!deepEqual(condition, latestCondition)) {
-      setCondition(condition);
-    }
+  const handleSearch = (condition: Condition) => {
+    onChange?.('filter', condition);
   };
 
-  const handleEditableFilterPanelChanged: (filters: ActiveFilter[]) => void = (
-    filters: ActiveFilter[],
-  ) => {
-    console.log('handleEditableFilterPanelChanged', filters);
+  const handleEditableFilterPanelChanged = (filters: ActiveFilter[]) => {
+    onFiltersChange?.(filters);
   };
 
   const handlePaginationChange = (
@@ -108,7 +128,8 @@ export function View<RecordType, SearchBody>(
   };
 
   const handleTableSelectedDataChange = (data: RecordType[]) => {
-    setTableSelectedData(data);
+    onSelectedDataChange?.(data);
+    updateSelectedCount(data.length);
   };
 
   const handleSortChanged = (
@@ -116,7 +137,11 @@ export function View<RecordType, SearchBody>(
       | SorterResult<TableRecordType<RecordType>>
       | SorterResult<TableRecordType<RecordType>>[],
   ) => {
-    console.log('viewer sort changed', sorter);
+    if (Array.isArray(sorter)) {
+      onChange?.('sorter', undefined, undefined, undefined, sorter);
+    } else {
+      onChange?.('sorter', undefined, undefined, undefined, [sorter]);
+    }
   };
 
   const editableFilterPanelRef = useRef<FilterPanelRef | null>(null);
@@ -128,31 +153,36 @@ export function View<RecordType, SearchBody>(
     viewTableRef.current?.reset();
   };
 
-  const updateTableSizeFn = (size: SizeType) => {
-    viewTableRef.current?.updateTableSize(size);
-  };
-
   const clearSelectedRowKeysFn = () => {
     viewTableRef.current?.clearSelectedRowKeys();
-  }
+  };
 
   useImperativeHandle<ViewRef, ViewRef>(ref, () => ({
-    toggleShowFilter,
-    updateTableSize: updateTableSizeFn,
     clearSelectedRowKeys: clearSelectedRowKeysFn,
     reset: resetFn,
   }));
 
   return (
     <Space orientation="vertical" style={{ display: 'flex' }} size="small">
-      {showFilter && (
+      {showFilter && editableFilters && (
         <div className={styles.filterPanel}>
           <EditableFilterPanel
             ref={editableFilterPanelRef}
-            filters={filters}
+            filters={activeFilters}
             availableFilters={availableFilters}
+            resetButton={false}
             onSearch={handleSearch}
             onChange={handleEditableFilterPanelChanged}
+          />
+        </div>
+      )}
+      {showFilter && !editableFilters && (
+        <div className={styles.filterPanel}>
+          <FilterPanel
+            ref={editableFilterPanelRef}
+            filters={activeFilters}
+            resetButton={false}
+            onSearch={handleSearch}
           />
         </div>
       )}
@@ -160,8 +190,9 @@ export function View<RecordType, SearchBody>(
         ref={viewTableRef}
         dataSource={mapToTableRecord(dataSource)}
         fields={fields}
-        columns={viewState.columns}
-        defaultTableSize={viewState.tableSize}
+        columns={columns}
+        onColumnsChange={setColumns}
+        tableSize={tableSize}
         actionColumn={actionColumn}
         onSortChanged={handleSortChanged}
         onSelectChange={handleTableSelectedDataChange}
@@ -171,10 +202,16 @@ export function View<RecordType, SearchBody>(
         viewTableSetting={viewTableSetting}
       ></ViewTable>
       {pagination && enableRowSelection && (
-        <>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <span>
-            {tableSelectedData.length
-              ? `已选择 ${tableSelectedData.length} 条数据`
+            {selectedCount
+              ? `已选择 ${selectedCount} 条数据`
               : ''}
           </span>
           <Pagination
@@ -182,11 +219,11 @@ export function View<RecordType, SearchBody>(
             defaultPageSize={pageSize || 10}
             defaultCurrent={page}
             current={page}
-            pageSizeOptions={['10', '20', '50', '100', '200']}
+            pageSizeOptions={['10', '20', '50', '100']}
             {...pagination}
             onChange={handlePaginationChange}
           />
-        </>
+        </div>
       )}
     </Space>
   );

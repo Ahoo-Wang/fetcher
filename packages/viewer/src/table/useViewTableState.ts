@@ -11,34 +11,21 @@
  * limitations under the License.
  */
 
-import { Key, useEffect, useState } from 'react';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
-
-/**
- * Options for configuring the view table state.
- * @template RecordType - The type of records in the data table.
- */
-export interface ViewTableStateOptions {
-  /** Default table size (small, middle, large) */
-  defaultTableSize: SizeType;
-}
+import { Key, useState } from 'react';
 
 /**
  * Return type from the useViewTableState hook containing managed state and control functions.
  * @template RecordType - The type of records in the data table.
  */
 export interface ViewTableStateReturn {
-  /** Current table size (small, middle, large) */
-  tableSize: SizeType;
-  setTableSize: (size: SizeType) => void;
   /** Currently selected row keys for batch operations */
   selectedRowKeys: Key[];
   setSelectedRowKeys: (keys: Key[]) => void;
 
-  /** Clears all selected row keys */
-  clearSelectedRowKeys: () => void;
   /** Resets table state to default values */
   reset: () => void;
+  /** Clears all selected row keys */
+  clearSelectedRowKeys: () => void;
 }
 
 /**
@@ -61,22 +48,9 @@ export interface ViewTableStateReturn {
  * });
  * ```
  */
-export function useViewTableState({
-  defaultTableSize = 'middle'
-}: ViewTableStateOptions): ViewTableStateReturn {
-  /** Current table size state */
-  const [tableSize, setTableSize] = useState<SizeType>(defaultTableSize);
+export function useViewTableState(): ViewTableStateReturn {
   /** Selected row keys for batch operations */
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
-
-  /**
-   * Synchronizes table size with default value when it changes.
-   * This ensures the table size resets to the configured default
-   * when the view definition changes.
-   */
-  useEffect(() => {
-    setTableSize(defaultTableSize);
-  }, [defaultTableSize]);
 
   /**
    * Clears all selected row keys.
@@ -92,16 +66,13 @@ export function useViewTableState({
    * Typically used when switching views or resetting user preferences.
    */
   const resetFn = () => {
-    setTableSize(defaultTableSize);
     clearSelectedRowKeysFn();
   };
 
   return {
-    tableSize,
-    setTableSize,
     selectedRowKeys,
     setSelectedRowKeys,
-    reset: resetFn,
     clearSelectedRowKeys: clearSelectedRowKeysFn,
+    reset: resetFn,
   };
 }

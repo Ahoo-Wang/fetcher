@@ -20,6 +20,8 @@ import {
 } from '@ahoo-wang/fetcher-wow';
 import type { SorterResult } from 'antd/es/table/interface';
 import { useState } from 'react';
+import { ViewChangeAction } from './View';
+import { ViewColumn } from '../viewer';
 
 export type SearchDataConverter<R> = (
   condition: Condition,
@@ -32,34 +34,32 @@ export interface SearchDataConverterCapable<R> {
   searchDataConverter?: SearchDataConverter<R>;
 }
 
-export interface UseViewStateOptions<
-  RecordType,
-  SearchBody = PagedQuery,
-> extends SearchDataConverterCapable<SearchBody> {
-  defaultShowFilter?: boolean;
+export interface UseViewStateOptions<RecordType> {
   defaultPage?: number;
   defaultPageSize?: number;
-  defaultCondition?: Condition;
 
-  onSearch?: (searchBody: SearchBody) => void;
+  defaultColumns: ViewColumn[];
+
+  onChange?: (
+    action: ViewChangeAction,
+    condition?: Condition,
+    index?: number,
+    size?: number,
+    sorter?: SorterResult<RecordType>[],
+  ) => void;
 }
 
-export interface UseViewStateReturn<RecordType> {
-  showFilter: boolean;
-  toggleShowFilter: () => boolean;
-
-  condition: Condition;
-  setCondition: (condition: Condition) => void;
+export interface UseViewStateReturn {
   page: number;
   setPage: (page: number) => void;
   pageSize: number;
   setPageSize: (pageSize: number) => void;
 
-  // sorter: SorterResult<RecordType> | SorterResult<RecordType>[];
-  setSorter: (sorter: SorterResult | SorterResult[]) => void;
+  columns: ViewColumn[];
+  setColumns: (columns: ViewColumn[]) => void;
 
-  tableSelectedData: RecordType[];
-  setTableSelectedData: (data: RecordType[]) => void;
+  selectedCount: number;
+  updateSelectedCount: (count: number) => void;
 
   reset: () => void;
 }
@@ -101,83 +101,50 @@ const defaultSearchDataConverter: SearchDataConverter<PagedQuery> = (
   };
 };
 
-export function useViewState<RecordType, SearchBody = PagedQuery>({
-  defaultShowFilter = true,
-  defaultCondition = DEFAULT_CONDITION,
+export function useViewState<RecordType>({
   defaultPage = DEFAULT_PAGE,
   defaultPageSize = DEFAULT_PAGE_SIZE,
-  searchDataConverter = defaultSearchDataConverter as SearchDataConverter<SearchBody>,
   ...options
-}: UseViewStateOptions<
-  RecordType,
-  SearchBody
->): UseViewStateReturn<RecordType> {
-  const [showFilter, setShowFilter] = useState(defaultShowFilter);
-
-  const [condition, setCondition] = useState<Condition>(defaultCondition);
+}: UseViewStateOptions<RecordType>): UseViewStateReturn {
   const [page, setPage] = useState(defaultPage);
   const [pageSize, setPageSize] = useState(defaultPageSize);
 
-  const [sorter, setSorter] = useState<SorterResult | SorterResult[]>([]);
+  const [columns, setColumns] = useState<ViewColumn[]>(options.defaultColumns);
 
-  const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
-
-  const setConditionFn = (condition: Condition) => {
-    setCondition(condition);
-    const searchData = searchDataConverter(condition, page, pageSize, sorter);
-    options.onSearch?.(searchData);
-  };
+  const [selectedCount, setSelectedCount] = useState(0);
 
   const setPageFn = (page: number) => {
     setPage(page);
-    const searchData = searchDataConverter(condition, page, pageSize, sorter);
-    options.onSearch?.(searchData);
+    options.onChange?.('pagination', undefined, page, undefined, undefined);
   };
 
   const setPageSizeFn = (pageSize: number) => {
     setPageSize(pageSize);
-    const searchData = searchDataConverter(condition, page, pageSize, sorter);
-    options.onSearch?.(searchData);
+    options.onChange?.('pagination', undefined, undefined, pageSize, undefined);
   };
-
-  const setSorterFn = (sorter: SorterResult | SorterResult[]) => {
-    setSorter(sorter);
-    const searchData = searchDataConverter(condition, page, pageSize, sorter);
-    options.onSearch?.(searchData);
-  }
-
-  const toggleShowFilter = (): boolean => {
-    setShowFilter(!showFilter);
-    return !showFilter;
+  const setColumnsFn = (columns: ViewColumn[]) => {
+    setColumns(columns);
   };
 
   const resetFn = () => {
-    setShowFilter(true);
-    setCondition(defaultCondition);
     setPage(defaultPage);
     setPageSize(defaultPageSize);
-    setSorter([]);
-    const searchData = searchDataConverter(
-      defaultCondition,
-      defaultPage,
-      defaultPageSize,
-      [],
-    );
-    options.onSearch?.(searchData);
+    options.onChange?.('reset');
   };
 
+  const updateSelectedCountFn = (count: number) => {
+    setSelectedCount(count);
+  }
+
   return {
-    showFilter,
-    toggleShowFilter,
-    condition,
-    setCondition: setConditionFn,
     page,
     setPage: setPageFn,
     pageSize,
     setPageSize: setPageSizeFn,
-    setSorter: setSorterFn,
-    tableSelectedData,
-    setTableSelectedData,
+    columns,
+    setColumns: setColumnsFn,
+    selectedCount,
+    updateSelectedCount: updateSelectedCountFn,
     reset: resetFn,
   };
 }

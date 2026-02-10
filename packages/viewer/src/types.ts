@@ -13,6 +13,7 @@
 
 import React, { Key } from 'react';
 import { ButtonProps } from 'antd';
+import { SizeType } from 'antd/es/config-provider/SizeContext';
 
 export type Optional<T = any> = T | undefined;
 
@@ -40,6 +41,10 @@ export interface ViewTableSetting {
 
 export interface ViewTableSettingCapable {
   viewTableSetting: false | ViewTableSetting
+}
+
+export interface TableSizeCapable {
+  tableSize?: SizeType;
 }
 
 export interface KeyCapable {

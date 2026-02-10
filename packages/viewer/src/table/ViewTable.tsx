@@ -23,12 +23,11 @@ import type { SorterResult, TableRowSelection } from 'antd/es/table/interface';
 import { RefAttributes, useImperativeHandle } from 'react';
 import {
   AttributesCapable,
-  PrimaryKeyClickHandlerCapable,
+  PrimaryKeyClickHandlerCapable, TableSizeCapable,
   ViewTableSetting,
   ViewTableSettingCapable,
 } from '../types';
 import { ViewColumn, FieldDefinition } from '../viewer';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useViewTableState } from './useViewTableState';
 
 /**
@@ -36,8 +35,6 @@ import { useViewTableState } from './useViewTableState';
  * Enables external control of table state without prop drilling.
  */
 export interface ViewTableRef {
-  /** Updates the table size (small, middle, large) */
-  updateTableSize: (size: SizeType) => void;
   /** Clears all selected row keys */
   clearSelectedRowKeys: () => void;
   /** Resets table state to default values */
@@ -55,15 +52,15 @@ export interface ViewTableProps<RecordType = any>
     AttributesCapable<Omit<TableProps<RecordType>, 'columns' | 'dataSource'>>,
     PrimaryKeyClickHandlerCapable<RecordType>,
     ViewTableSettingCapable,
+    TableSizeCapable,
     RefAttributes<ViewTableRef> {
   /** Field definitions describing each column's metadata */
   fields: FieldDefinition[];
   /** Column configurations including visibility, fixed position, and sorting */
   columns: ViewColumn[];
+  onColumnsChange?: (columns: ViewColumn[]) => void;
   /** Optional action column for row-level operations (edit, delete, etc.) */
   actionColumn?: ViewTableActionColumn<RecordType>;
-  /** Default table size (small, middle, large) */
-  defaultTableSize: SizeType;
   /** Data source for the table */
   dataSource: RecordType[];
   /** Enables row selection for batch operations */
@@ -102,7 +99,7 @@ export interface ViewTableProps<RecordType = any>
  *   fields={userFields}
  *   columns={userColumns}
  *   dataSource={users}
- *   defaultTableSize="middle"
+ *   tableSize="middle"
  *   enableRowSelection
  *   onSortChanged={(sorter) => console.log('Sort:', sorter)}
  *   onClickPrimaryKey={(id, user) => navigateToUser(id)}
@@ -115,8 +112,9 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     ref,
     fields,
     columns,
+    onColumnsChange,
     actionColumn,
-    defaultTableSize,
+    tableSize,
     dataSource,
     enableRowSelection,
     onSortChanged,
@@ -126,14 +124,8 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     attributes,
   } = props;
 
-  const {
-    tableSize,
-    setTableSize,
-    selectedRowKeys,
-    setSelectedRowKeys,
-    reset,
-    clearSelectedRowKeys,
-  } = useViewTableState({ defaultTableSize });
+  const { selectedRowKeys, setSelectedRowKeys, reset, clearSelectedRowKeys } =
+    useViewTableState();
 
   /**
    * Builds table columns from field definitions and column configurations.
@@ -220,7 +212,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
         if (viewTableSetting) {
           // Create the settings panel component
           const settingPanel = (
-            <TableSettingPanel fields={fields} initialColumns={columns} />
+            <TableSettingPanel fields={fields} initialColumns={columns} onChange={onColumnsChange}/>
           );
 
           return (
@@ -280,7 +272,6 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
    * Allows parent components to control table state.
    */
   useImperativeHandle<ViewTableRef, ViewTableRef>(ref, () => ({
-    updateTableSize: setTableSize,
     clearSelectedRowKeys: clearSelectedRowKeys,
     reset: reset,
   }));
@@ -296,7 +287,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
       columns={tableColumns}
       {...attributes}
       scroll={{ x: 'max-content' }}
-      size={tableSize}
+      size={tableSize || 'middle'}
       /**
        * Handles table change events.
        * Specifically processes sort events and triggers callback.

@@ -40,8 +40,7 @@ export interface ViewState {
   tableSize: SizeType;
   pageSize: number;
   condition: Condition;
-  projection?: Projection;
-  pagination?: Pagination;
+  internalCondition: Condition;
   sort?: FieldSort[];
 }
 
