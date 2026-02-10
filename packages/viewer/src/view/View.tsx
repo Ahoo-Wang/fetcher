@@ -8,7 +8,7 @@ import {
   FilterPanelRef,
 } from '../filter';
 import type * as React from 'react';
-import { Condition } from '@ahoo-wang/fetcher-wow';
+import { Condition, PagedList } from '@ahoo-wang/fetcher-wow';
 import { RefAttributes, useImperativeHandle, useRef } from 'react';
 import { FieldDefinition, ViewColumn } from '../viewer';
 import { ViewTable, ViewTableActionColumn, ViewTableRef } from '../table';
@@ -41,7 +41,7 @@ export interface ViewProps<RecordType>
   // 外部State
   tableSize: SizeType;
   // 外部State
-  dataSource: RecordType[];
+  dataSource: PagedList<RecordType>;
   // 外部State
   showFilter: boolean;
   editableFilters?: boolean;
@@ -87,7 +87,7 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
     onClickPrimaryKey,
     onChange,
     onFiltersChange,
-    onSelectedDataChange
+    onSelectedDataChange,
   } = props;
 
   const {
@@ -188,7 +188,7 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
       )}
       <ViewTable<TableRecordType<RecordType>>
         ref={viewTableRef}
-        dataSource={mapToTableRecord(dataSource)}
+        dataSource={mapToTableRecord(dataSource.list)}
         fields={fields}
         columns={columns}
         onColumnsChange={setColumns}
@@ -209,16 +209,13 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
             justifyContent: 'space-between',
           }}
         >
-          <span>
-            {selectedCount
-              ? `已选择 ${selectedCount} 条数据`
-              : ''}
-          </span>
+          <span>{selectedCount ? `已选择 ${selectedCount} 条数据` : ''}</span>
           <Pagination
             showTotal={total => `total ${total} items`}
             defaultPageSize={pageSize || 10}
             defaultCurrent={page}
             current={page}
+            total={dataSource.total}
             pageSizeOptions={['10', '20', '50', '100']}
             {...pagination}
             onChange={handlePaginationChange}

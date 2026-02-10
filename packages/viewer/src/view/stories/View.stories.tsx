@@ -13,15 +13,12 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { View } from '../View';
-import { ViewColumn, ViewState, FieldDefinition } from '../../viewer';
-import {
-  all,
-  PagedQuery,
-  Condition,
-  SortDirection,
-} from '@ahoo-wang/fetcher-wow';
-import type { SorterResult } from 'antd/es/table/interface';
+import { ViewColumn, FieldDefinition } from '../../viewer';
+import { AvailableFilterGroup } from '../../filter';
+import { SizeType } from 'antd/es/config-provider/SizeContext';
 import type { PaginationProps } from 'antd';
+import type { ActiveFilter } from '../../filter/panel/FilterPanel';
+import { PagedList } from '@ahoo-wang/fetcher-wow';
 
 interface User {
   id: number;
@@ -29,7 +26,6 @@ interface User {
   email: string;
   role: string;
   status: string;
-  lastLogin: string;
 }
 
 const mockData: User[] = [
@@ -39,7 +35,6 @@ const mockData: User[] = [
     email: 'john@example.com',
     role: 'Admin',
     status: 'Active',
-    lastLogin: '2023-01-15',
   },
   {
     id: 2,
@@ -47,7 +42,6 @@ const mockData: User[] = [
     email: 'jane@example.com',
     role: 'User',
     status: 'Inactive',
-    lastLogin: '2023-01-10',
   },
   {
     id: 3,
@@ -55,7 +49,6 @@ const mockData: User[] = [
     email: 'bob@example.com',
     role: 'Editor',
     status: 'Active',
-    lastLogin: '2023-01-12',
   },
   {
     id: 4,
@@ -63,7 +56,6 @@ const mockData: User[] = [
     email: 'alice@example.com',
     role: 'User',
     status: 'Active',
-    lastLogin: '2023-01-14',
   },
   {
     id: 5,
@@ -71,88 +63,98 @@ const mockData: User[] = [
     email: 'charlie@example.com',
     role: 'Admin',
     status: 'Inactive',
-    lastLogin: '2023-01-08',
   },
 ];
 
+const mockPagedData: PagedList<User> = {
+  list: mockData,
+  total: 100,
+};
+
 const fields: FieldDefinition[] = [
-  { name: 'id', label: 'ID', primaryKey: true, type: 'number', sorter: true },
-  {
-    name: 'name',
-    label: 'Name',
-    primaryKey: false,
-    type: 'text',
-    sorter: true,
-  },
+  { name: 'id', label: 'ID', primaryKey: true, type: 'number' },
+  { name: 'name', label: 'Name', primaryKey: false, type: 'text' },
   { name: 'email', label: 'Email', primaryKey: false, type: 'text' },
   { name: 'role', label: 'Role', primaryKey: false, type: 'text' },
   { name: 'status', label: 'Status', primaryKey: false, type: 'text' },
-  {
-    name: 'lastLogin',
-    label: 'Last Login',
-    primaryKey: false,
-    type: 'date',
-    sorter: true,
-  },
 ];
 
-const columns: ViewColumn[] = [
+const defaultColumns: ViewColumn[] = [
   { name: 'id', fixed: true, hidden: false },
   { name: 'name', fixed: false, hidden: false },
   { name: 'email', fixed: false, hidden: false },
   { name: 'role', fixed: false, hidden: false },
   { name: 'status', fixed: false, hidden: false },
-  { name: 'lastLogin', fixed: false, hidden: false },
 ];
 
-const viewState: ViewState = {
-  id: 'default-view',
-  name: 'User List',
-  definitionId: 'user-view',
-  type: 'SHARED',
-  source: 'SYSTEM',
-  isDefault: true,
-  filters: [],
-  columns,
-  tableSize: 'middle',
-  pageSize: 10,
-  condition: all(),
-};
+const availableFilters: AvailableFilterGroup[] = [
+  {
+    label: 'Status',
+    filters: [
+      { field: { name: 'status', label: 'Status' }, component: 'select' },
+      { field: { name: 'role', label: 'Role' }, component: 'select' },
+    ],
+  },
+];
 
 const meta: Meta<typeof View> = {
   title: 'Viewer/View',
   component: View,
   parameters: {
-    layout: 'padded',
+    layout: 'fullscreen',
     docs: {
       description: {
         component:
-          'A comprehensive view component that combines filter panel, data table, and pagination. Provides full CRUD functionality with search, sort, and pagination support.',
+          'A comprehensive view component that combines filter panel and data table. Manages pagination, sorting, filtering, and column configuration through controlled props.',
       },
     },
   },
   tags: ['autodocs'],
   argTypes: {
-    viewState: {
-      control: 'object',
-      description:
-        'Current view state including columns, filters, and pagination settings',
-    },
     fields: {
       control: 'object',
       description: 'Field definitions for table columns',
     },
+    availableFilters: {
+      control: 'object',
+      description: 'Available filter groups for the filter panel',
+    },
+    tableSize: {
+      control: 'select',
+      options: ['small', 'middle', 'large'],
+      description: 'Table size (small, middle, large)',
+    },
     dataSource: {
       control: 'object',
-      description: 'Data records to display in the table',
+      description: 'Data records to display',
     },
-    defaultShowFilter: {
+    showFilter: {
       control: 'boolean',
-      description: 'Whether to show the filter panel by default',
+      description: 'Whether to show the filter panel',
+    },
+    activeFilters: {
+      control: 'object',
+      description: 'Currently active filters',
+    },
+    editableFilters: {
+      control: 'boolean',
+      description: 'Whether filters are editable by user',
+    },
+    defaultColumns: {
+      control: 'object',
+      description: 'Default column configurations',
+    },
+    defaultPageSize: {
+      control: 'number',
+      description: 'Default number of items per page',
     },
     enableRowSelection: {
       control: 'boolean',
-      description: 'Whether to enable row selection for batch operations',
+      description: 'Whether to enable row selection',
+    },
+    viewTableSetting: {
+      control: 'object',
+      description: 'Table settings panel configuration',
     },
   },
 };
@@ -161,92 +163,158 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const ViewWrapper = (args: any) => {
-  const handleSearch = (searchBody: PagedQuery) => {
-    console.log('Search:', searchBody);
+  const handleChange = (
+    action: 'pagination' | 'sorter' | 'filter' | 'reset',
+    condition?: any,
+    index?: number,
+    size?: number,
+    sorter?: any[],
+  ) => {
+    console.log('View change:', { action, condition, index, size, sorter });
   };
 
-  const searchDataConverter = (
-    condition: Condition,
-    page: number,
-    pageSize: number,
-    sorter?: SorterResult | SorterResult[],
-  ): PagedQuery => {
-    return {
-      condition,
-      pagination: { index: page, size: pageSize },
-      sort: sorter
-        ? Array.isArray(sorter)
-          ? sorter.map(s => ({
-              field: String(s.field),
-              direction:
-                s.order === 'ascend' ? SortDirection.ASC : SortDirection.DESC,
-            }))
-          : [
-              {
-                field: String(sorter.field),
-                direction:
-                  sorter.order === 'ascend'
-                    ? SortDirection.ASC
-                    : SortDirection.DESC,
-              },
-            ]
-        : [],
-    };
+  const handleFiltersChange = (filters: any[]) => {
+    console.log('Filters changed:', filters);
+  };
+
+  const handleSelectedDataChange = (data: User[]) => {
+    console.log('Selected data:', data);
   };
 
   return (
     <View
       {...args}
-      onSearch={handleSearch}
-      searchDataConverter={searchDataConverter}
+      onChange={handleChange}
+      onFiltersChange={handleFiltersChange}
+      onSelectedDataChange={handleSelectedDataChange}
     />
   );
 };
 
 export const Basic: Story = {
   args: {
-    viewState,
     fields,
-    dataSource: mockData,
-    defaultShowFilter: true,
+    availableFilters,
+    tableSize: 'middle',
+    dataSource: mockPagedData,
+    showFilter: true,
+    activeFilters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: { name: 'status', label: 'Status', type: 'select' },
+        operator: {},
+        value: { defaultValue: 'Active' },
+      },
+    ] as ActiveFilter[],
+    defaultColumns,
+    defaultPageSize: 10,
     enableRowSelection: false,
     pagination: { pageSize: 10 } as PaginationProps,
+    viewTableSetting: false,
+  },
+  render: args => <ViewWrapper {...args} />,
+};
+
+export const WithEditableFilters: Story = {
+  args: {
+    fields,
+    availableFilters,
+    tableSize: 'middle',
+    dataSource: mockPagedData,
+    showFilter: true,
+    editableFilters: true,
+    activeFilters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: { name: 'status', label: 'Status', type: 'select' },
+        operator: {},
+        value: { defaultValue: 'Active' },
+      },
+    ] as ActiveFilter[],
+    defaultColumns,
+    defaultPageSize: 10,
+    enableRowSelection: false,
+    pagination: { pageSize: 10 } as PaginationProps,
+    viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
 };
 
 export const WithRowSelection: Story = {
   args: {
-    viewState,
     fields,
-    dataSource: mockData,
-    defaultShowFilter: true,
+    availableFilters,
+    tableSize: 'middle',
+    dataSource: mockPagedData,
+    showFilter: true,
+    activeFilters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: { name: 'status', label: 'Status', type: 'select' },
+        operator: {},
+        value: { defaultValue: 'Active' },
+      },
+    ] as ActiveFilter[],
+    defaultColumns,
+    defaultPageSize: 10,
     enableRowSelection: true,
     pagination: { pageSize: 10 } as PaginationProps,
+    viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
 };
 
 export const WithoutFilterPanel: Story = {
   args: {
-    viewState,
     fields,
-    dataSource: mockData,
-    defaultShowFilter: false,
+    availableFilters: [],
+    tableSize: 'middle',
+    dataSource: mockPagedData,
+    showFilter: false,
+    activeFilters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: { name: 'status', label: 'Status', type: 'select' },
+        operator: {},
+        value: { defaultValue: 'Active' },
+      },
+    ] as ActiveFilter[],
+    defaultColumns,
+    defaultPageSize: 10,
     enableRowSelection: false,
     pagination: { pageSize: 10 } as PaginationProps,
+    viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
 };
 
 export const WithActionColumn: Story = {
   args: {
-    viewState,
     fields,
-    dataSource: mockData,
-    defaultShowFilter: true,
+    availableFilters,
+    tableSize: 'middle',
+    dataSource: mockPagedData,
+    showFilter: true,
+    activeFilters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: { name: 'status', label: 'Status', type: 'select' },
+        operator: {},
+        value: { defaultValue: 'Active' },
+      },
+    ] as ActiveFilter[],
+    defaultColumns,
+    defaultPageSize: 10,
     enableRowSelection: true,
     pagination: { pageSize: 10 } as PaginationProps,
+    viewTableSetting: {
+      title: '表格设置',
+    },
     actionColumn: {
       title: 'Actions',
       actions: (record: any) => ({
@@ -271,88 +339,159 @@ export const WithActionColumn: Story = {
   render: args => <ViewWrapper {...args} />,
 };
 
-export const WithHiddenColumns: Story = {
+export const WithTableSettings: Story = {
   args: {
-    viewState: {
-      ...viewState,
-      columns: [
-        { name: 'id', fixed: true, hidden: false },
-        { name: 'name', fixed: false, hidden: false },
-        { name: 'email', fixed: false, hidden: true },
-        { name: 'role', fixed: false, hidden: true },
-        { name: 'status', fixed: false, hidden: false },
-        { name: 'lastLogin', fixed: false, hidden: false },
-      ],
-    },
     fields,
-    dataSource: mockData,
-    defaultShowFilter: true,
+    availableFilters,
+    tableSize: 'middle',
+    dataSource: mockPagedData,
+    showFilter: true,
+    activeFilters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: { name: 'status', label: 'Status', type: 'select' },
+        operator: {},
+        value: { defaultValue: 'Active' },
+      },
+    ] as ActiveFilter[],
+    defaultColumns,
+    defaultPageSize: 10,
     enableRowSelection: false,
     pagination: { pageSize: 10 } as PaginationProps,
+    viewTableSetting: { title: 'Column Settings' },
   },
   render: args => <ViewWrapper {...args} />,
 };
 
-export const WithFixedColumns: Story = {
+export const WithHiddenColumns: Story = {
   args: {
-    viewState: {
-      ...viewState,
-      columns: [
-        { name: 'id', fixed: true, hidden: false, width: '80px' },
-        { name: 'name', fixed: true, hidden: false, width: '150px' },
-        { name: 'email', fixed: false, hidden: false },
-        { name: 'role', fixed: false, hidden: false },
-        { name: 'status', fixed: false, hidden: false },
-        { name: 'lastLogin', fixed: false, hidden: false },
-      ],
-    },
     fields,
-    dataSource: mockData,
-    defaultShowFilter: true,
+    availableFilters,
+    tableSize: 'middle',
+    dataSource: mockPagedData,
+    showFilter: true,
+    activeFilters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: { name: 'status', label: 'Status', type: 'select' },
+        operator: {},
+        value: { defaultValue: 'Active' },
+      },
+    ] as ActiveFilter[],
+    defaultColumns: [
+      { name: 'id', fixed: true, hidden: false },
+      { name: 'name', fixed: false, hidden: false },
+      { name: 'email', fixed: false, hidden: true },
+      { name: 'role', fixed: false, hidden: true },
+      { name: 'status', fixed: false, hidden: false },
+    ],
+    defaultPageSize: 10,
     enableRowSelection: false,
     pagination: { pageSize: 10 } as PaginationProps,
+    viewTableSetting: { title: 'Column Settings' },
   },
   render: args => <ViewWrapper {...args} />,
 };
 
 export const SmallTableSize: Story = {
   args: {
-    viewState: {
-      ...viewState,
-      tableSize: 'small',
-    },
     fields,
-    dataSource: mockData,
-    defaultShowFilter: true,
+    availableFilters,
+    tableSize: 'small',
+    dataSource: mockPagedData,
+    showFilter: true,
+    activeFilters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: { name: 'status', label: 'Status', type: 'select' },
+        operator: {},
+        value: { defaultValue: 'Active' },
+      },
+    ] as ActiveFilter[],
+    defaultColumns,
+    defaultPageSize: 10,
     enableRowSelection: false,
     pagination: { pageSize: 10 } as PaginationProps,
+    viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
 };
 
 export const LargeTableSize: Story = {
   args: {
-    viewState: {
-      ...viewState,
-      tableSize: 'large',
-    },
     fields,
-    dataSource: mockData,
-    defaultShowFilter: true,
+    availableFilters,
+    tableSize: 'large',
+    dataSource: mockPagedData,
+    showFilter: true,
+    activeFilters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: { name: 'status', label: 'Status', type: 'select' },
+        operator: {},
+        value: { defaultValue: 'Active' },
+      },
+    ] as ActiveFilter[],
+    defaultColumns,
+    defaultPageSize: 10,
     enableRowSelection: false,
     pagination: { pageSize: 10 } as PaginationProps,
+    viewTableSetting: false,
+  },
+  render: args => <ViewWrapper {...args} />,
+};
+
+export const WithActiveFilters: Story = {
+  args: {
+    fields,
+    availableFilters,
+    tableSize: 'middle',
+    dataSource: mockPagedData,
+    showFilter: true,
+    editableFilters: true,
+    activeFilters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: { name: 'status', label: 'Status', type: 'select' },
+        operator: {},
+        value: { defaultValue: 'Active' },
+      },
+    ] as ActiveFilter[],
+    defaultColumns,
+    defaultPageSize: 10,
+    enableRowSelection: false,
+    pagination: { pageSize: 10 } as PaginationProps,
+    viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
 };
 
 export const WithoutPagination: Story = {
   args: {
-    viewState,
     fields,
-    dataSource: mockData,
-    defaultShowFilter: true,
+    availableFilters,
+    tableSize: 'middle',
+    dataSource: mockPagedData,
+    showFilter: true,
+    activeFilters: [
+      {
+        key: 'status',
+        type: 'select',
+        field: { name: 'status', label: 'Status', type: 'select' },
+        operator: {},
+        value: { defaultValue: 'Active' },
+      },
+    ] as ActiveFilter[],
+    defaultColumns,
+    defaultPageSize: 10,
     enableRowSelection: false,
     pagination: false,
+    viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
 };
