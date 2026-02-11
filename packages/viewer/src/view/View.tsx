@@ -14,7 +14,6 @@ import { FieldDefinition, ViewColumn } from '../viewer';
 import { ViewTable, ViewTableActionColumn, ViewTableRef } from '../table';
 import {
   PrimaryKeyClickHandlerCapable,
-  TableRecordType,
   TableSizeCapable,
   ViewTableSettingCapable,
 } from '../types';
@@ -26,6 +25,7 @@ import { SizeType } from 'antd/es/config-provider/SizeContext';
 export type ViewChangeAction = 'pagination' | 'sorter' | 'filter' | 'reset';
 
 export interface ViewRef extends ViewTableRef {
+  updateTableSize: (size: SizeType) => void;
   reset: () => void;
 }
 
@@ -36,21 +36,27 @@ export interface ViewProps<RecordType>
     TableSizeCapable,
     RefAttributes<ViewRef> {
   fields: FieldDefinition[];
-  // 外部State
   availableFilters: AvailableFilterGroup[];
-  // 外部State
-  tableSize: SizeType;
   // 外部State
   dataSource: PagedList<RecordType>;
   // 外部State
   showFilter: boolean;
   editableFilters?: boolean;
-  activeFilters: ActiveFilter[];
 
+  defaultActiveFilters?: ActiveFilter[];
+  externalActiveFilters?: ActiveFilter[];
+  externalUpdateActiveFilters?: (filters: ActiveFilter[]) => void;
   defaultColumns: ViewColumn[];
+  externalColumns?: ViewColumn[];
+  externalUpdateColumns?: (columns: ViewColumn[]) => void;
   defaultPageSize: number;
+  externalPageSize?: number;
+  externalUpdatePageSize?: (pageSize: number) => void;
+  defaultTableSize: SizeType;
+  externalTableSize?: SizeType;
+  externalUpdateTableSize?: (size: SizeType) => void;
 
-  actionColumn?: ViewTableActionColumn<TableRecordType<RecordType>>;
+  actionColumn?: ViewTableActionColumn<RecordType>;
 
   pagination:
     | false
@@ -62,9 +68,8 @@ export interface ViewProps<RecordType>
     condition?: Condition,
     index?: number,
     size?: number,
-    sorter?: SorterResult<TableRecordType<RecordType>>[],
+    sorter?: SorterResult<RecordType>[],
   ) => void;
-  onFiltersChange?: (filters: ActiveFilter[]) => void;
   onSelectedDataChange?: (data: RecordType[]) => void;
 }
 
@@ -80,39 +85,55 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
     pagination,
     enableRowSelection,
     viewTableSetting,
-    tableSize,
-    activeFilters,
+    defaultActiveFilters,
+    externalActiveFilters,
+    externalUpdateActiveFilters,
     defaultColumns,
+    externalColumns,
+    externalUpdateColumns,
     defaultPageSize,
+    externalPageSize,
+    externalUpdatePageSize,
+    defaultTableSize,
+    externalTableSize,
+    externalUpdateTableSize,
     onClickPrimaryKey,
     onChange,
-    onFiltersChange,
     onSelectedDataChange,
   } = props;
 
   const {
     page,
     setPage,
-    pageSize,
-    setPageSize,
+    activeFilters,
+    setActiveFilters,
     columns,
     setColumns,
+    pageSize,
+    setPageSize,
+    tableSize,
+    setTableSize,
     selectedCount,
     updateSelectedCount,
     reset,
   } = useViewState({
-    defaultPage: 1,
-    defaultPageSize: defaultPageSize,
+    defaultActiveFilters,
+    externalActiveFilters,
+    externalUpdateActiveFilters,
     defaultColumns,
+    externalColumns,
+    externalUpdateColumns,
+    defaultPageSize,
+    externalPageSize,
+    externalUpdatePageSize,
+    defaultTableSize,
+    externalTableSize,
+    externalUpdateTableSize,
     onChange,
   });
 
   const handleSearch = (condition: Condition) => {
     onChange?.('filter', condition);
-  };
-
-  const handleEditableFilterPanelChanged = (filters: ActiveFilter[]) => {
-    onFiltersChange?.(filters);
   };
 
   const handlePaginationChange = (
@@ -133,9 +154,7 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
   };
 
   const handleSortChanged = (
-    sorter:
-      | SorterResult<TableRecordType<RecordType>>
-      | SorterResult<TableRecordType<RecordType>>[],
+    sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
   ) => {
     if (Array.isArray(sorter)) {
       onChange?.('sorter', undefined, undefined, undefined, sorter);
@@ -159,6 +178,7 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
 
   useImperativeHandle<ViewRef, ViewRef>(ref, () => ({
     clearSelectedRowKeys: clearSelectedRowKeysFn,
+    updateTableSize: setTableSize,
     reset: resetFn,
   }));
 
@@ -172,7 +192,7 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
             availableFilters={availableFilters}
             resetButton={false}
             onSearch={handleSearch}
-            onChange={handleEditableFilterPanelChanged}
+            onChange={setActiveFilters}
           />
         </div>
       )}
@@ -186,9 +206,9 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
           />
         </div>
       )}
-      <ViewTable<TableRecordType<RecordType>>
+      <ViewTable<RecordType>
         ref={viewTableRef}
-        dataSource={mapToTableRecord(dataSource.list)}
+        dataSource={dataSource.list}
         fields={fields}
         columns={columns}
         onColumnsChange={setColumns}
@@ -199,7 +219,7 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
         attributes={{ pagination: false }}
         enableRowSelection={enableRowSelection}
         onClickPrimaryKey={onClickPrimaryKey}
-        viewTableSetting={viewTableSetting}
+        viewTableSetting={viewTableSetting || false}
       ></ViewTable>
       {pagination && enableRowSelection && (
         <div
@@ -211,7 +231,7 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
         >
           <span>{selectedCount ? `已选择 ${selectedCount} 条数据` : ''}</span>
           <Pagination
-            showTotal={total => `total ${total} items`}
+            showTotal={total => `共 ${total} 条数据`}
             defaultPageSize={pageSize || 10}
             defaultCurrent={page}
             current={page}

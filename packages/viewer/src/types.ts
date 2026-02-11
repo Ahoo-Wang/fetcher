@@ -40,7 +40,7 @@ export interface ViewTableSetting {
 }
 
 export interface ViewTableSettingCapable {
-  viewTableSetting: false | ViewTableSetting
+  viewTableSetting?: false | ViewTableSetting
 }
 
 export interface TableSizeCapable {

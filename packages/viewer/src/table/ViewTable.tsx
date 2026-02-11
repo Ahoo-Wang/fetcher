@@ -23,7 +23,8 @@ import type { SorterResult, TableRowSelection } from 'antd/es/table/interface';
 import { RefAttributes, useImperativeHandle } from 'react';
 import {
   AttributesCapable,
-  PrimaryKeyClickHandlerCapable, TableSizeCapable,
+  PrimaryKeyClickHandlerCapable,
+  TableSizeCapable,
   ViewTableSetting,
   ViewTableSettingCapable,
 } from '../types';
@@ -135,7 +136,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     const columnDefinition = fields.find(f => f.name === col.name);
     return {
       // Unique key for React reconciliation
-      key: col.name,
+      key: col.key,
       // Display title from field definition
       title: columnDefinition?.label || 'UNKNOWN',
       // Support nested data paths (e.g., 'user.address.city')
@@ -212,7 +213,11 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
         if (viewTableSetting) {
           // Create the settings panel component
           const settingPanel = (
-            <TableSettingPanel fields={fields} initialColumns={columns} onChange={onColumnsChange}/>
+            <TableSettingPanel
+              fields={fields}
+              initialColumns={columns}
+              onChange={onColumnsChange}
+            />
           );
 
           return (

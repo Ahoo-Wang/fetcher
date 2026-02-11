@@ -1,9 +1,14 @@
 import { ActiveFilter, AvailableFilterGroup } from '../filter';
 import { TypeCapable } from '../registry';
-import { AttributesCapable } from '../types';
+import { AttributesCapable, KeyCapable } from '../types';
 import { SortOrder } from 'antd/es/table/interface';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { Condition, FieldSort, Pagination, Projection } from '@ahoo-wang/fetcher-wow';
+import {
+  Condition,
+  FieldSort,
+  Pagination,
+  Projection,
+} from '@ahoo-wang/fetcher-wow';
 import React from 'react';
 import { ButtonProps } from 'antd';
 import { NamedCapable } from '@ahoo-wang/fetcher';
@@ -44,7 +49,7 @@ export interface ViewState {
   sort?: FieldSort[];
 }
 
-export interface ViewColumn extends NamedCapable {
+export interface ViewColumn extends NamedCapable, KeyCapable {
   fixed: boolean;
   hidden: boolean;
   width?: string;

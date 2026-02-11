@@ -1,5 +1,3 @@
-import { barItemRegistry } from './barItemRegistry';
-import { BarItemType, TypedBarItem } from './TypedBarItem';
 import {
   BatchOperationConfig,
   TopBarActionItem,
@@ -12,33 +10,26 @@ import { AutoRefreshBarItem } from './AutoRefreshBarItem';
 import { Button, Divider, Dropdown, Flex, MenuProps, Space } from 'antd';
 import {
   DownOutlined,
-  FullscreenExitOutlined,
-  FullscreenOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import React, { RefObject, useCallback } from 'react';
-import { useFullscreen } from '@ahoo-wang/fetcher-react';
+import React, { useCallback, useRef } from 'react';
 import { BarItem } from './BarItem';
 import { Point } from './Point';
 import { ActionItem, SaveViewMethod } from '../types';
 import type { ItemType } from 'antd/es/menu/interface';
-
-export interface TopBarPropsCapable<RecordType> {
-  topBar: Omit<TopBarProps<RecordType>, 'title' | 'viewName'>;
-}
+import { FilterBarItem } from './FilterBarItem';
+import { RefreshDataBarItem } from './RefreshDataBarItem';
+import { ColumnHeightBarItem } from './ColumnHeightBarItem';
+import { SizeType } from 'antd/es/config-provider/SizeContext';
 
 export interface TopBarProps<RecordType> {
   title: string;
   viewName: string;
   viewSource: ViewSource;
-  barItems: BarItemType[];
-  fullscreenTarget?: RefObject<HTMLElement | null>;
-  enableFullscreen?: boolean;
-
-  batchOperationConfig?: BatchOperationConfig<RecordType>;
 
   primaryAction?: ActionItem<RecordType>;
   secondaryActions?: ActionItem<RecordType>[];
+  batchOperationConfig?: BatchOperationConfig<RecordType>;
 
   viewChanged: boolean;
   viewManagement?: ViewManagement;
@@ -47,7 +38,12 @@ export interface TopBarProps<RecordType> {
   tableSelectedItems: RecordType[];
 
   showViewPanel: boolean;
-  onViewPanelUnfold: () => void;
+  onShowViewPanelChange?: (showViewPanel: boolean) => void;
+
+  showFilter: boolean;
+  onShowFilterChange?: (show: boolean) => void;
+  defaultTableSize: SizeType;
+  onTableSizeChange?: (size: SizeType) => void;
 }
 
 function renderMenuItem<RecordType>(
@@ -92,18 +88,19 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     title,
     viewName,
     viewSource,
-    barItems,
-    fullscreenTarget,
-    enableFullscreen,
     batchOperationConfig,
     primaryAction,
     secondaryActions,
     tableSelectedItems,
     showViewPanel,
-    onViewPanelUnfold,
+    onShowViewPanelChange,
     viewChanged,
     onSaveAsView,
     onReset,
+    showFilter,
+    onShowFilterChange,
+    defaultTableSize,
+    onTableSizeChange,
   } = props;
 
   let batchMenuItems: MenuProps['items'] = [];
@@ -124,12 +121,6 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     );
   }
 
-  const { isFullscreen, toggle } = useFullscreen({ target: fullscreenTarget });
-
-  const handleFullscreenClick = useCallback(() => {
-    toggle().then();
-  }, [toggle]);
-
   const handleMenuClick: MenuProps['onClick'] = e => {
     onSaveAsView?.(e.key as SaveViewMethod);
   };
@@ -143,13 +134,17 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     onReset?.();
   }, [onReset]);
 
+  const handleUnfoldClick = useCallback(() => {
+    onShowViewPanelChange?.(false);
+  }, [onShowViewPanelChange]);
+
   return (
     <>
       <Flex align="center" justify="space-between">
         <Flex gap="8px" align="center" className={styles.leftItems}>
           {!showViewPanel && (
             <>
-              <div onClick={onViewPanelUnfold}>
+              <div onClick={handleUnfoldClick}>
                 <BarItem icon={<MenuUnfoldOutlined />} active={false} />
               </div>
               <Divider orientation="vertical" />
@@ -187,13 +182,16 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
           )}
         </Flex>
         <Flex gap="8px" align="center" className={styles.rightItems}>
-          {barItems.map((barItem, index) => {
-            const BarItemComponent = barItemRegistry.get(barItem);
-            if (!BarItemComponent) {
-              return null;
-            }
-            return <TypedBarItem type={barItem} key={index} />;
-          })}
+          <FilterBarItem
+            defaultShowFilter={showFilter}
+            onChange={onShowFilterChange}
+          />
+          <RefreshDataBarItem />
+          <ColumnHeightBarItem
+            defaultTableSize={defaultTableSize}
+            onChange={onTableSizeChange}
+          />
+          <RefreshDataBarItem />
           <Divider orientation="vertical" />
           <AutoRefreshBarItem />
           {batchOperationConfig?.enabled && (
@@ -231,23 +229,6 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
                   </Dropdown>
                 )}
               </Space.Compact>
-            </>
-          )}
-          {enableFullscreen && fullscreenTarget && (
-            <>
-              <Divider orientation="vertical" />
-              <div onClick={handleFullscreenClick}>
-                <BarItem
-                  icon={
-                    isFullscreen ? (
-                      <FullscreenExitOutlined />
-                    ) : (
-                      <FullscreenOutlined />
-                    )
-                  }
-                  active={false}
-                />
-              </div>
             </>
           )}
         </Flex>
