@@ -6,9 +6,6 @@ settings:
 
 catalogs:
   default:
-    '@ant-design/icons':
-      specifier: ^6.0.0
-      version: 6.1.0
     '@eslint/js':
       specifier: ^9.39.2
       version: 9.39.2
@@ -48,9 +45,6 @@ catalogs:
     commander:
       specifier: ^14.0.3
       version: 14.0.3
-    dayjs:
-      specifier: ^1.11.19
-      version: 1.11.19
     eslint:
       specifier: ^9.39.2
       version: 9.39.2
@@ -78,15 +72,9 @@ catalogs:
     prettier:
       specifier: ^3.8.1
       version: 3.8.1
-    react:
-      specifier: ^19.2.4
-      version: 19.2.4
     react-compiler-runtime:
       specifier: ^1.0.0
       version: 1.0.0
-    react-dom:
-      specifier: ^19.2.4
-      version: 19.2.4
     reflect-metadata:
       specifier: ^0.2.2
       version: 0.2.2
@@ -121,7 +109,7 @@ importers:
     devDependencies:
       '@chromatic-com/storybook':
         specifier: ^5.0.0
-        version: 5.0.0(storybook@10.2.7(@testing-library/dom@10.4.1)(prettier@3.8.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 5.0.1(storybook@10.2.7(@testing-library/dom@10.4.1)(prettier@3.8.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       '@eslint/js':
         specifier: 'catalog:'
         version: 9.39.2
@@ -1196,8 +1184,8 @@ packages:
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
 
-  '@chromatic-com/storybook@5.0.0':
-    resolution: {integrity: sha512-8wUsqL8kg6R5ue8XNE7Jv/iD1SuE4+6EXMIGIuE+T2loBITEACLfC3V8W44NJviCLusZRMWbzICddz0nU0bFaw==}
+  '@chromatic-com/storybook@5.0.1':
+    resolution: {integrity: sha512-v80QBwVd8W6acH5NtDgFlUevIBaMZAh1pYpBiB40tuNzS242NTHeQHBDGYwIAbWKDnt1qfjJpcpL6pj5kAr4LA==}
     engines: {node: '>=20.0.0', yarn: '>=1.22.18'}
     peerDependencies:
       storybook: ^0.0.0-0 || ^10.1.0 || ^10.1.0-0 || ^10.2.0-0 || ^10.3.0-0
@@ -4246,7 +4234,7 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@chromatic-com/storybook@5.0.0(storybook@10.2.7(@testing-library/dom@10.4.1)(prettier@3.8.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
+  '@chromatic-com/storybook@5.0.1(storybook@10.2.7(@testing-library/dom@10.4.1)(prettier@3.8.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
       '@neoconfetti/react': 1.0.0
       chromatic: 13.3.5
