@@ -3,10 +3,7 @@ import { BarItem } from './BarItem';
 import { Dropdown, MenuProps } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { useActiveViewStateContext } from '../viewer/ActiveViewStateContext';
 import { useEffect, useState } from 'react';
-
-export const COLUMN_HEIGHT_BAR_ITEM_TYPE: string = 'column-height';
 
 export interface ColumnHeightBarItemProps extends TopBarItemProps {
   defaultTableSize: SizeType;

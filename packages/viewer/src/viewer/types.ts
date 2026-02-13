@@ -1,7 +1,7 @@
 import { ActiveFilter, AvailableFilterGroup } from '../filter';
 import { TypeCapable } from '../registry';
 import { AttributesCapable, KeyCapable } from '../types';
-import { SortOrder } from 'antd/es/table/interface';
+import { SorterResult, SortOrder } from 'antd/es/table/interface';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import {
   Condition,
@@ -46,7 +46,7 @@ export interface ViewState {
   pageSize: number;
   condition: Condition;
   internalCondition: Condition;
-  sort?: FieldSort[];
+  sorter?: SorterResult[];
 }
 
 export interface ViewColumn extends NamedCapable, KeyCapable {

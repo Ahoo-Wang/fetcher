@@ -6,20 +6,20 @@ import {
 } from '../viewer';
 
 import styles from './TopBar.module.css';
-import { AutoRefreshBarItem } from './AutoRefreshBarItem';
 import { Button, Divider, Dropdown, Flex, MenuProps, Space } from 'antd';
-import {
-  DownOutlined,
-  MenuUnfoldOutlined,
-} from '@ant-design/icons';
-import React, { useCallback, useRef } from 'react';
-import { BarItem } from './BarItem';
-import { Point } from './Point';
+import { DownOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import React, { useCallback } from 'react';
 import { ActionItem, SaveViewMethod } from '../types';
 import type { ItemType } from 'antd/es/menu/interface';
-import { FilterBarItem } from './FilterBarItem';
-import { RefreshDataBarItem } from './RefreshDataBarItem';
-import { ColumnHeightBarItem } from './ColumnHeightBarItem';
+import {
+  AutoRefreshBarItem,
+  BarItem,
+  Point,
+  FilterBarItem,
+  RefreshDataBarItem,
+  ColumnHeightBarItem,
+  ShareLinkBarItem,
+} from './';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 
 export interface TopBarProps<RecordType> {
@@ -135,7 +135,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   }, [onReset]);
 
   const handleUnfoldClick = useCallback(() => {
-    onShowViewPanelChange?.(false);
+    onShowViewPanelChange?.(true);
   }, [onShowViewPanelChange]);
 
   return (
@@ -191,7 +191,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             defaultTableSize={defaultTableSize}
             onChange={onTableSizeChange}
           />
-          <RefreshDataBarItem />
+          <ShareLinkBarItem />
           <Divider orientation="vertical" />
           <AutoRefreshBarItem />
           {batchOperationConfig?.enabled && (

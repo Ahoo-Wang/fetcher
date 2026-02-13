@@ -14,26 +14,23 @@ import { FieldDefinition, ViewColumn } from '../viewer';
 import { ViewTable, ViewTableActionColumn, ViewTableRef } from '../table';
 import {
   PrimaryKeyClickHandlerCapable,
-  TableSizeCapable,
   ViewTableSettingCapable,
 } from '../types';
-import { mapToTableRecord } from '../utils';
 import type { SorterResult } from 'antd/es/table/interface';
-import { useViewState } from './';
+import { useViewState, ViewChangeAction } from './';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-
-export type ViewChangeAction = 'pagination' | 'sorter' | 'filter' | 'reset';
 
 export interface ViewRef extends ViewTableRef {
   updateTableSize: (size: SizeType) => void;
   reset: () => void;
 }
 
+export type FilterMode = 'none' | 'normal' | 'editable';
+
 export interface ViewProps<RecordType>
   extends
     PrimaryKeyClickHandlerCapable<RecordType>,
     ViewTableSettingCapable,
-    TableSizeCapable,
     RefAttributes<ViewRef> {
   fields: FieldDefinition[];
   availableFilters: AvailableFilterGroup[];
@@ -41,7 +38,7 @@ export interface ViewProps<RecordType>
   dataSource: PagedList<RecordType>;
   // 外部State
   showFilter: boolean;
-  editableFilters?: boolean;
+  filterMode: FilterMode;
 
   defaultActiveFilters?: ActiveFilter[];
   externalActiveFilters?: ActiveFilter[];
@@ -49,12 +46,22 @@ export interface ViewProps<RecordType>
   defaultColumns: ViewColumn[];
   externalColumns?: ViewColumn[];
   externalUpdateColumns?: (columns: ViewColumn[]) => void;
+
+  defaultPage?: number;
+  externalPage?: number;
+  externalUpdatePage?: (page: number) => void;
   defaultPageSize: number;
   externalPageSize?: number;
   externalUpdatePageSize?: (pageSize: number) => void;
   defaultTableSize: SizeType;
   externalTableSize?: SizeType;
   externalUpdateTableSize?: (size: SizeType) => void;
+  defaultSorter?: SorterResult<RecordType>[];
+  externalSorter?: SorterResult<RecordType>[];
+  externalUpdateSorter?: (sorter: SorterResult<RecordType>[]) => void;
+  defaultCondition?: Condition;
+  externalCondition?: Condition;
+  externalUpdateCondition?: (condition: Condition) => void;
 
   actionColumn?: ViewTableActionColumn<RecordType>;
 
@@ -63,45 +70,25 @@ export interface ViewProps<RecordType>
     | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
 
   enableRowSelection: boolean;
-  onChange?: (
-    action: ViewChangeAction,
-    condition?: Condition,
-    index?: number,
-    size?: number,
-    sorter?: SorterResult<RecordType>[],
-  ) => void;
+  onChange?: ViewChangeAction<RecordType>;
   onSelectedDataChange?: (data: RecordType[]) => void;
 }
 
-export function View<RecordType>(props: ViewProps<RecordType>) {
-  const {
-    ref,
-    fields,
-    availableFilters,
-    dataSource,
-    actionColumn,
-    showFilter,
-    editableFilters,
-    pagination,
-    enableRowSelection,
-    viewTableSetting,
-    defaultActiveFilters,
-    externalActiveFilters,
-    externalUpdateActiveFilters,
-    defaultColumns,
-    externalColumns,
-    externalUpdateColumns,
-    defaultPageSize,
-    externalPageSize,
-    externalUpdatePageSize,
-    defaultTableSize,
-    externalTableSize,
-    externalUpdateTableSize,
-    onClickPrimaryKey,
-    onChange,
-    onSelectedDataChange,
-  } = props;
-
+export function View<RecordType>({
+  ref,
+  fields,
+  availableFilters,
+  dataSource,
+  actionColumn,
+  showFilter,
+  filterMode,
+  pagination,
+  enableRowSelection,
+  viewTableSetting,
+  onClickPrimaryKey,
+  onSelectedDataChange,
+  ...viewState
+}: ViewProps<RecordType>) {
   const {
     page,
     setPage,
@@ -113,27 +100,15 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
     setPageSize,
     tableSize,
     setTableSize,
+    setCondition,
+    setSorter,
     selectedCount,
     updateSelectedCount,
     reset,
-  } = useViewState({
-    defaultActiveFilters,
-    externalActiveFilters,
-    externalUpdateActiveFilters,
-    defaultColumns,
-    externalColumns,
-    externalUpdateColumns,
-    defaultPageSize,
-    externalPageSize,
-    externalUpdatePageSize,
-    defaultTableSize,
-    externalTableSize,
-    externalUpdateTableSize,
-    onChange,
-  });
+  } = useViewState<RecordType>(viewState);
 
   const handleSearch = (condition: Condition) => {
-    onChange?.('filter', condition);
+    setCondition(condition);
   };
 
   const handlePaginationChange = (
@@ -157,9 +132,9 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
     sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
   ) => {
     if (Array.isArray(sorter)) {
-      onChange?.('sorter', undefined, undefined, undefined, sorter);
+      setSorter(sorter.map(it => ({ ...it })));
     } else {
-      onChange?.('sorter', undefined, undefined, undefined, [sorter]);
+      setSorter([{ ...sorter }]);
     }
   };
 
@@ -184,8 +159,11 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
 
   return (
     <Space orientation="vertical" style={{ display: 'flex' }} size="small">
-      {showFilter && editableFilters && (
-        <div className={styles.filterPanel}>
+      {filterMode === 'editable' && (
+        <div
+          className={styles.filterPanel}
+          style={{ display: showFilter ? 'block' : 'none' }}
+        >
           <EditableFilterPanel
             ref={editableFilterPanelRef}
             filters={activeFilters}
@@ -196,8 +174,11 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
           />
         </div>
       )}
-      {showFilter && !editableFilters && (
-        <div className={styles.filterPanel}>
+      {filterMode === 'normal' && (
+        <div
+          className={styles.filterPanel}
+          style={{ display: showFilter ? 'block' : 'none' }}
+        >
           <FilterPanel
             ref={editableFilterPanelRef}
             filters={activeFilters}
@@ -221,7 +202,7 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
         onClickPrimaryKey={onClickPrimaryKey}
         viewTableSetting={viewTableSetting || false}
       ></ViewTable>
-      {pagination && enableRowSelection && (
+      {(pagination !== false || enableRowSelection) && (
         <div
           style={{
             display: 'flex',
@@ -232,9 +213,9 @@ export function View<RecordType>(props: ViewProps<RecordType>) {
           <span>{selectedCount ? `已选择 ${selectedCount} 条数据` : ''}</span>
           <Pagination
             showTotal={total => `共 ${total} 条数据`}
-            defaultPageSize={pageSize || 10}
             defaultCurrent={page}
             current={page}
+            pageSize={pageSize || 10}
             total={dataSource.total}
             pageSizeOptions={['10', '20', '50', '100']}
             {...pagination}

@@ -3,8 +3,6 @@ import { BarItem } from './BarItem';
 import { ReloadOutlined } from '@ant-design/icons';
 import { useRefreshDataEventBus } from '../';
 
-export const REFRESH_DATA_BAR_ITEM_TYPE: string = 'refresh_data';
-
 export interface RefreshDataBarItemProps extends TopBarItemProps {}
 
 export function RefreshDataBarItem(props: RefreshDataBarItemProps) {

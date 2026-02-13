@@ -15,3 +15,4 @@ export * from './ViewTable';
 export * from './cell';
 export * from './setting';
 export * from './types';
+export * from './useViewTableState';

@@ -102,7 +102,7 @@ export function ViewItem(props: ViewItemProps) {
    */
   const { result } = useDebouncedFetcherQuery<Condition, number>({
     url: countUrl,
-    initialQuery: view.pagedQuery.condition,
+    initialQuery: view.condition,
     debounce: {
       delay: 300, // Wait 300ms after condition changes before making API call
       leading: true, // Execute immediately on first change, then debounce subsequent changes

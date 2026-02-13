@@ -12,14 +12,20 @@
  */
 
 import { Table, Popover, TableProps } from 'antd';
-import { ActionCell, ActionsCell, TextCell, typedCellRender } from './cell';
-import { ViewTableActionColumn } from './types';
+import {
+  ActionCell,
+  ActionsCell,
+  TextCell,
+  typedCellRender,
+  ViewTableActionColumn,
+  TableSettingPanel,
+  useViewTableState,
+} from './';
 import { SettingOutlined } from '@ant-design/icons';
 import styles from './ViewTable.module.css';
-import { TableSettingPanel } from './setting';
 
 import type { TableColumnsType } from 'antd';
-import type { SorterResult, TableRowSelection } from 'antd/es/table/interface';
+import type { SorterResult } from 'antd/es/table/interface';
 import { RefAttributes, useImperativeHandle } from 'react';
 import {
   AttributesCapable,
@@ -28,8 +34,8 @@ import {
   ViewTableSetting,
   ViewTableSettingCapable,
 } from '../types';
-import { ViewColumn, FieldDefinition } from '../viewer';
-import { useViewTableState } from './useViewTableState';
+import { FieldDefinition, ViewColumn } from '../viewer';
+import { mapToTableRecord } from '../utils';
 
 /**
  * Ref interface for exposing ViewTable imperative methods to parent components.
@@ -67,9 +73,7 @@ export interface ViewTableProps<RecordType = any>
   /** Enables row selection for batch operations */
   enableRowSelection: boolean;
   /** Callback fired when sort order changes */
-  onSortChanged?: (
-    sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
-  ) => void;
+  onSortChanged?: (sorter: SorterResult<RecordType>[]) => void;
   /** Callback fired when row selection changes */
   onSelectChange?: (items: RecordType[]) => void;
   viewTableSetting: false | ViewTableSetting;
@@ -259,18 +263,21 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
    * Row selection configuration.
    * Enabled when enableRowSelection is true.
    */
-  const rowSelection: TableRowSelection<RecordType> = {
-    selectedRowKeys,
-    fixed: true, // Keep selection column fixed during horizontal scroll
-    /**
-     * Handles row selection changes.
-     * Updates local state and notifies parent component.
-     */
-    onChange: (keys, selectedRows) => {
-      setSelectedRowKeys(keys);
-      onSelectChange?.(selectedRows); // Notify parent component of selection changes
-    },
-  };
+  const rowSelection: TableProps<RecordType>['rowSelection'] =
+    enableRowSelection
+      ? {
+          selectedRowKeys,
+          fixed: true, // Keep selection column fixed during horizontal scroll
+          /**
+           * Handles row selection changes.
+           * Updates local state and notifies parent component.
+           */
+          onChange: (keys, selectedRows) => {
+            setSelectedRowKeys(keys);
+            onSelectChange?.(selectedRows); // Notify parent component of selection changes
+          },
+        }
+      : undefined;
 
   /**
    * Exposes imperative methods via ref.
@@ -287,8 +294,8 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
    */
   return (
     <Table<RecordType>
-      dataSource={dataSource}
-      rowSelection={enableRowSelection ? rowSelection : undefined}
+      dataSource={mapToTableRecord(dataSource)}
+      rowSelection={rowSelection}
       columns={tableColumns}
       {...attributes}
       scroll={{ x: 'max-content' }}
@@ -299,7 +306,11 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
        */
       onChange={(_pagination, _filters, sorter, extra) => {
         if (extra.action === 'sort' && onSortChanged) {
-          onSortChanged(sorter);
+          if (Array.isArray(sorter)) {
+            onSortChanged(sorter);
+          } else {
+            onSortChanged([sorter]);
+          }
         }
       }}
     />

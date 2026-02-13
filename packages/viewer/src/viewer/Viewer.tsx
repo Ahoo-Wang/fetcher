@@ -1,39 +1,25 @@
-import { ViewTable, ViewTableActionColumn } from '../table';
-import { Layout, Modal, Pagination, PaginationProps, Space } from 'antd';
-import { EditableFilterPanel, FilterPanelRef } from '../filter';
+import { ViewTableActionColumn } from '../table';
+import { Layout, Modal, PaginationProps, Space } from 'antd';
 import {
   SaveViewModal,
   ViewState,
   ViewDefinition,
   ViewPanel,
   ViewType,
-  SearchDataConverterCapable,
   useViewerState,
 } from './';
 import styles from './Viewer.module.css';
-import {
-  ActionItem,
-  SaveViewMethod,
-  TableRecordType,
-  ViewTableSettingCapable,
-} from '../types';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  active,
-  Condition,
-  Operator,
-  PagedList,
-  PagedQuery,
-} from '@ahoo-wang/fetcher-wow';
-import { BarItemType, TopBar } from '../topbar';
-import type { SorterResult } from 'antd/es/table/interface';
+import { ActionItem, SaveViewMethod, ViewTableSettingCapable } from '../types';
+import { useRef, useState } from 'react';
+import { Condition, PagedList } from '@ahoo-wang/fetcher-wow';
+import { TopBar } from '../topbar';
 import type * as React from 'react';
-import { useRefreshDataEventBus } from '../';
+import { useRefreshDataEventBus, ViewChangeAction, ViewRef } from '../';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
-import { mapToTableRecord } from '../utils';
 import { View } from '../view';
+import type { SorterResult } from 'antd/es/table/interface';
 
-const { Header, Footer, Sider, Content } = Layout;
+const { Header, Sider, Content } = Layout;
 
 export interface ViewManagement {
   enabled: boolean;
@@ -54,8 +40,7 @@ export interface BatchOperationConfig<RecordType> {
   actions: ActionItem<RecordType>[];
 }
 
-export interface ViewerProps<RecordType, SearchBody>
-  extends SearchDataConverterCapable<SearchBody>, ViewTableSettingCapable {
+export interface ViewerProps<RecordType> extends ViewTableSettingCapable {
   views: ViewState[];
   defaultViewId?: string;
   definition: ViewDefinition;
@@ -77,7 +62,7 @@ export interface ViewerProps<RecordType, SearchBody>
   secondaryActions?: ActionItem<RecordType>[];
 
   // callbacks
-  onLoadData: (searchBody: SearchBody) => void;
+  onLoadData?: ViewChangeAction<RecordType>;
   onViewChange?: (view: ViewState) => void;
 }
 
@@ -85,28 +70,44 @@ export interface ViewerProps<RecordType, SearchBody>
  * 管理并渲染视图
  * 不负责数据加载，不负责视图远程持久化
  *
- * @param views
- * @param defaultViewId
- * @param definition
- * @param viewManagement
- * @param otherProps
+ * @param searchDataConverter
+ * @param props
  * @constructor
  */
-export function Viewer<RecordType, SearchBody>({
-  views,
-  defaultViewId,
-  definition,
-  viewManagement,
-  ...otherProps
-}: ViewerProps<RecordType, SearchBody>) {
+export function Viewer<RecordType>({ ...props }: ViewerProps<RecordType>) {
+  const {
+    views,
+    defaultViewId,
+    definition,
+    viewManagement,
+    onLoadData,
+    ...otherProps
+  } = props;
+
   const {
     activeView,
     showFilter,
     setShowFilter,
     showViewPanel,
     setShowViewPanel,
+    viewChanged,
+    columns,
+    setColumns,
+    activeFilters,
+    setActiveFilters,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    tableSize,
     setTableSize,
-  } = useViewerState<RecordType>({
+    condition,
+    setCondition,
+    sorter,
+    setSorter,
+    onSwitchView,
+    reset,
+  } = useViewerState({
     views,
     defaultViewId,
     definition,
@@ -118,6 +119,9 @@ export function Viewer<RecordType, SearchBody>({
   >('Create');
   const [modal, contextHolder] = Modal.useModal();
   const [defaultViewType, setDefaultViewType] = useState<ViewType>('PERSONAL');
+  const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
+
+  const viewRef = useRef<ViewRef | null>(null);
 
   const handleCreateView = (type: ViewType) => {
     setDefaultViewType(type);
@@ -136,7 +140,7 @@ export function Viewer<RecordType, SearchBody>({
           cancelText: '取消',
           onOk: () => {
             viewManagement.onUpdateView?.(activeView, result => {
-              switchView(result);
+              onSwitchView(result);
             });
           },
         });
@@ -151,7 +155,7 @@ export function Viewer<RecordType, SearchBody>({
   const handleSaveViewModalConfirm = (name: string, type: ViewType) => {
     const newView = { ...activeView, name, type };
     viewManagement.onCreateView?.(newView, result => {
-      switchView(result);
+      onSwitchView(result);
       setSaveViewModalOpen(false);
     });
   };
@@ -164,19 +168,35 @@ export function Viewer<RecordType, SearchBody>({
     viewManagement.onDeleteView?.(view, onSuccess);
   };
 
-  const onReset = () => {
-    const originView = reset();
-    editableFilterPanelRef.current?.reset();
-    onLoadData?.(originView.pagedQuery);
+  const handleViewPanelFold = () => {
+    setShowViewPanel(!showViewPanel);
+  };
+
+  const handleViewChange = (view: ViewState) => {
+    onSwitchView(view);
+  };
+
+  const handleReset = () => {
+    reset();
+    // Reset logic handled by View component internally
   };
 
   const { subscribe } = useRefreshDataEventBus();
   subscribe({
-    name: 'Fetcher-Viewer-Refresh-Data',
+    name: 'Viewer-Refresh-Data',
     handle(): void {
-      onLoadData?.(activeView.pagedQuery);
+      onLoadData?.(condition, page, pageSize, sorter);
     },
   });
+
+  const handleSearch = (
+    condition: Condition,
+    page: number,
+    pageSize: number,
+    sorter?: SorterResult<RecordType>[],
+  ) => {
+    onLoadData?.(condition, page, pageSize, sorter);
+  };
 
   return (
     <Layout>
@@ -187,9 +207,9 @@ export function Viewer<RecordType, SearchBody>({
             views={views}
             activeView={activeView}
             countUrl={definition.countUrl}
-            onViewChange={onViewChanged}
+            onViewChange={handleViewChange}
             showViewPanel={showViewPanel}
-            onViewPanelFold={onViewPanelFold}
+            onViewPanelFold={handleViewPanelFold}
             onCreateView={handleCreateView}
             onEditViewName={handleEditViewName}
             onDeleteView={handleDeleteView}
@@ -212,31 +232,56 @@ export function Viewer<RecordType, SearchBody>({
                 defaultTableSize={activeView.tableSize}
                 primaryAction={otherProps.primaryAction}
                 secondaryActions={otherProps.secondaryActions}
-                batchOperationConfig={otherProps.batchOperation || undefined}
-                viewChanged={changed}
+                {...(otherProps.batchOperation !== false && {
+                  batchOperationConfig: otherProps.batchOperation,
+                })}
+                viewChanged={viewChanged}
                 viewManagement={viewManagement}
                 onSaveAsView={onSaveView}
-                onReset={onReset}
+                onReset={handleReset}
                 showViewPanel={showViewPanel}
                 showFilter={showFilter}
                 onShowFilterChange={setShowFilter}
                 onShowViewPanelChange={setShowViewPanel}
+                onTableSizeChange={setTableSize}
               />
             </Header>
             <View<RecordType>
+              ref={viewRef}
               fields={definition.fields}
-              activeFilters={activeView.filters}
               availableFilters={definition.availableFilters}
               dataSource={otherProps.dataSource}
-              defaultColumns={activeView.columns}
-              defaultPageSize={activeView.pageSize}
-              enableRowSelection={otherProps.enableRowSelection || true}
+              enableRowSelection={otherProps.enableRowSelection ?? true}
+              filterMode={'editable'}
               pagination={otherProps.pagination}
               showFilter={showFilter}
-              tableSize={activeView.tableSize}
               viewTableSetting={otherProps.viewTableSetting}
               actionColumn={otherProps.actionColumn}
-            ></View>
+              onClickPrimaryKey={otherProps.onClickPrimaryKey}
+              onSelectedDataChange={setTableSelectedData}
+              defaultActiveFilters={activeFilters}
+              externalActiveFilters={activeFilters}
+              externalUpdateActiveFilters={setActiveFilters}
+              defaultColumns={columns}
+              externalColumns={columns}
+              externalUpdateColumns={setColumns}
+              defaultPage={page}
+              externalPage={page}
+              externalUpdatePage={setPage}
+              defaultPageSize={pageSize}
+              externalPageSize={pageSize}
+              externalUpdatePageSize={setPageSize}
+              defaultTableSize={tableSize}
+              externalTableSize={tableSize}
+              externalUpdateTableSize={setTableSize}
+              defaultCondition={condition}
+              externalCondition={condition}
+              externalUpdateCondition={setCondition}
+              defaultSorter={sorter}
+              externalSorter={sorter}
+              externalUpdateSorter={setSorter}
+              onChange={handleSearch}
+            />
           </Space>
         </Content>
       </Layout>

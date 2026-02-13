@@ -1,39 +1,22 @@
-import { SearchDataConverter } from '../view';
 import { ViewColumn, ViewDefinition, ViewState } from './types';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useMemo, useState } from 'react';
 import { deepEqual } from '../utils';
 import { useActiveViewState } from '../useActiveViewState';
 import { ActiveFilter } from '../filter';
+import { Condition } from '@ahoo-wang/fetcher-wow';
+import type { SorterResult } from 'antd/es/table/interface';
 
-// const DEFAULT_CONDITION: Condition = all();
+export type SearchDataConverter<R> = (
+  condition: Condition,
+  page: number,
+  pageSize: number,
+  sorter?: SorterResult[],
+) => R;
 
 export interface SearchDataConverterCapable<R> {
   searchDataConverter?: SearchDataConverter<R>;
 }
-
-// const defaultSearchDataConverter: SearchDataConverter<PagedQuery> = (
-//   condition: Condition,
-//   page: number,
-//   pageSize: number,
-//   sorter?: SorterResult[],
-// ): PagedQuery => {
-//   const fieldSorts = sorter
-//     ? sorter
-//         .filter(s => s)
-//         .map(s => ({
-//           field: String(s.field).split(',').join('.'),
-//           direction:
-//             s.order === 'ascend' ? SortDirection.ASC : SortDirection.DESC,
-//         }))
-//     : [];
-//
-//   return {
-//     condition,
-//     pagination: { index: page, size: pageSize },
-//     sort: fieldSorts,
-//   };
-// };
 
 export interface UseViewerStateOptions {
   views: ViewState[];
@@ -43,35 +26,40 @@ export interface UseViewerStateOptions {
   defaultShowViewPanel?: boolean;
 }
 
-export interface UseViewerStateReturn {
+export interface UseViewerStateReturn<RecordType> {
   activeView: ViewState;
   showFilter: boolean;
   setShowFilter: (showFilter: boolean) => void;
   showViewPanel: boolean;
   setShowViewPanel: (showViewPanel: boolean) => void;
-
   viewChanged: boolean;
 
   columns: ViewColumn[];
   setColumns: (columns: ViewColumn[]) => void;
-
-  pageSize: number;
-  setPageSize: (size: number) => void;
-
   activeFilters: ActiveFilter[];
   setActiveFilters: (filters: ActiveFilter[]) => void;
+
+  condition: Condition;
+  setCondition: (condition: Condition) => void;
+  page: number;
+  setPage: (page: number) => void;
+  pageSize: number;
+  setPageSize: (size: number) => void;
+  sorter: SorterResult<RecordType>[];
+  setSorter: (sorter: SorterResult<RecordType>[]) => void;
 
   tableSize: SizeType;
   setTableSize: (size: SizeType) => void;
 
   onSwitchView: (view: ViewState) => void;
+  reset: () => void;
 }
 
-export function useViewerState({
+export function useViewerState<RecordType = any>({
   defaultShowFilter = true,
   defaultShowViewPanel = true,
   ...options
-}: UseViewerStateOptions): UseViewerStateReturn {
+}: UseViewerStateOptions): UseViewerStateReturn<RecordType> {
   const view = getActiveView(options.views, options.defaultViewId);
   const [activeView, setActiveView] = useState<ViewState>(view);
   const [showFilter, setShowFilter] = useState(defaultShowFilter);
@@ -80,24 +68,35 @@ export function useViewerState({
   const {
     columns,
     setColumns,
+    page,
+    setPage,
     pageSize,
     setPageSize,
     activeFilters,
     setActiveFilters,
     tableSize,
     setTableSize,
-  } = useActiveViewState({
+    condition,
+    setCondition,
+    sorter,
+    setSorter,
+    reset: resetFn,
+  } = useActiveViewState<RecordType>({
     defaultColumns: activeView.columns,
     defaultPageSize: activeView.pageSize,
     defaultActiveFilters: activeView.filters,
     defaultTableSize: activeView.tableSize,
+    defaultCondition: activeView.condition,
+    defaultSorter:
+      activeView.sorter?.map(it => ({ ...it }) as SorterResult<RecordType>) ||
+      [],
   });
 
   const viewChanged = useMemo(() => {
     const comparisonView = {
       ...activeView,
-      filters: activeFilters.map(it => ({ ...it })),
-      columns: columns.map(it => ({ ...it })),
+      filters: activeFilters,
+      columns: columns,
       pageSize: pageSize,
       tableSize: tableSize,
     };
@@ -125,14 +124,21 @@ export function useViewerState({
     setShowViewPanel: setShowViewPanelFn,
     columns,
     setColumns,
+    page,
+    setPage,
     pageSize,
     setPageSize,
     activeFilters,
     setActiveFilters,
     tableSize,
     setTableSize,
+    condition,
+    setCondition,
+    sorter,
+    setSorter,
     viewChanged,
     onSwitchView: onSwitchViewFn,
+    reset: resetFn,
   };
 }
 
@@ -152,15 +158,3 @@ function getActiveView(views: ViewState[], defaultViewId?: string): ViewState {
 
   return views[0];
 }
-
-/**
- *
- *
- * showViewPanel
- * title
- * activeView.name
- * activeView.viewSource
- * activeView.tableSize
- * onShowFilterChange
- * onTableSizeChange
- */

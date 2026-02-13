@@ -3,8 +3,6 @@ import { useEffect, useState } from 'react';
 import { BarItem } from './BarItem';
 import { FilterOutlined } from '@ant-design/icons';
 
-export const FILTER_BAR_ITEM_TYPE: string = 'filter';
-
 export interface FilterBarItemProps extends TopBarItemProps {
   defaultShowFilter: boolean;
   onChange?: (show: boolean) => void;

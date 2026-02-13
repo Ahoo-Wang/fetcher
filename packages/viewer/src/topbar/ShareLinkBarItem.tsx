@@ -3,8 +3,6 @@ import { TopBarItemProps } from './types';
 import { LinkOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 
-export const SHARE_LINK_BAR_ITEM_TYPE: string = 'share-link';
-
 export interface ShareLinkBarItemProps
   extends TopBarItemProps {}
 
