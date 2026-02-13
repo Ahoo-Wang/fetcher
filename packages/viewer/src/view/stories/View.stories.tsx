@@ -16,7 +16,8 @@ import { View } from '../View';
 import { ViewColumn, FieldDefinition } from '../../viewer';
 import { AvailableFilterGroup } from '../../filter';
 import type { PaginationProps } from 'antd';
-import { PagedList } from '@ahoo-wang/fetcher-wow';
+import { PagedList, Condition } from '@ahoo-wang/fetcher-wow';
+import type { SorterResult } from 'antd/es/table/interface';
 
 interface User {
   id: number;
@@ -70,7 +71,13 @@ const mockPagedData: PagedList<User> = {
 };
 
 const fields: FieldDefinition[] = [
-  { name: 'id', label: 'ID', primaryKey: true, type: 'number' },
+  {
+    name: 'id',
+    label: 'ID',
+    primaryKey: true,
+    type: 'number',
+    sorter: { multiple: 1 },
+  },
   { name: 'name', label: 'Name', primaryKey: false, type: 'text' },
   { name: 'email', label: 'Email', primaryKey: false, type: 'text' },
   { name: 'role', label: 'Role', primaryKey: false, type: 'text' },
@@ -86,6 +93,10 @@ const defaultColumns: ViewColumn[] = [
 ];
 
 const availableFilters: AvailableFilterGroup[] = [
+  {
+    label: 'Info',
+    filters: [{ field: { name: 'name', label: 'Name' }, component: 'text' }],
+  },
   {
     label: 'Status',
     filters: [
@@ -133,7 +144,8 @@ const meta: Meta<typeof View> = {
     filterMode: {
       control: 'select',
       options: ['none', 'normal', 'editable'],
-      description: 'Whether filter panel mode',
+      description:
+        'Filter panel mode: none (no filter), normal (read-only), editable (user can modify)',
     },
     defaultActiveFilters: {
       control: 'object',
@@ -163,13 +175,12 @@ type Story = StoryObj<typeof meta>;
 
 const ViewWrapper = (args: any) => {
   const handleChange = (
-    action: 'pagination' | 'sorter' | 'filter' | 'reset',
-    condition?: any,
-    index?: number,
-    size?: number,
-    sorter?: any[],
+    condition: Condition,
+    index: number,
+    size: number,
+    sorter?: SorterResult<User>[],
   ) => {
-    console.log('View change:', { action, condition, index, size, sorter });
+    console.log('View change:', { condition, index, size, sorter });
   };
 
   const handleSelectedDataChange = (data: User[]) => {
@@ -177,11 +188,13 @@ const ViewWrapper = (args: any) => {
   };
 
   return (
-    <View
-      {...args}
-      onChange={handleChange}
-      onSelectedDataChange={handleSelectedDataChange}
-    />
+    <div style={{ padding: '32px' }}>
+      <View
+        {...args}
+        onChange={handleChange}
+        onSelectedDataChange={handleSelectedDataChange}
+      />
+    </div>
   );
 };
 
@@ -191,20 +204,21 @@ export const Basic: Story = {
     availableFilters,
     dataSource: mockPagedData,
     showFilter: true,
+    filterMode: 'normal',
     defaultActiveFilters: [
       {
-        key: 'status',
-        type: 'select',
-        field: { type: 'select', name: 'status', label: 'Status' },
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
         operator: {},
-        value: { defaultValue: 'Active' },
+        value: {},
       },
     ],
     defaultColumns,
     defaultPageSize: 10,
     defaultTableSize: 'middle',
     enableRowSelection: false,
-    pagination: { pageSize: 10 } as PaginationProps,
+    pagination: {} as PaginationProps,
     viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
@@ -216,20 +230,21 @@ export const WithRowSelection: Story = {
     availableFilters,
     dataSource: mockPagedData,
     showFilter: true,
+    filterMode: 'normal',
     defaultActiveFilters: [
       {
-        key: 'status',
-        type: 'select',
-        field: { type: 'select', name: 'status', label: 'Status' },
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
         operator: {},
-        value: { defaultValue: 'Active' },
+        value: {},
       },
     ],
     defaultColumns,
     defaultPageSize: 10,
     defaultTableSize: 'middle',
     enableRowSelection: true,
-    pagination: { pageSize: 10 } as PaginationProps,
+    pagination: {} as PaginationProps,
     viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
@@ -241,12 +256,47 @@ export const WithoutFilterPanel: Story = {
     availableFilters: [],
     dataSource: mockPagedData,
     showFilter: false,
-    defaultActiveFilters: [],
+    filterMode: 'none',
+    defaultActiveFilters: [
+      {
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
+        operator: {},
+        value: {},
+      },
+    ],
     defaultColumns,
     defaultPageSize: 10,
     defaultTableSize: 'middle',
     enableRowSelection: false,
-    pagination: { pageSize: 10 } as PaginationProps,
+    pagination: {} as PaginationProps,
+    viewTableSetting: false,
+  },
+  render: args => <ViewWrapper {...args} />,
+};
+
+export const WithEditableFilters: Story = {
+  args: {
+    fields,
+    availableFilters,
+    dataSource: mockPagedData,
+    showFilter: true,
+    filterMode: 'editable',
+    defaultActiveFilters: [
+      {
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
+        operator: {},
+        value: {},
+      },
+    ],
+    defaultColumns,
+    defaultPageSize: 10,
+    defaultTableSize: 'middle',
+    enableRowSelection: false,
+    pagination: {} as PaginationProps,
     viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
@@ -258,13 +308,22 @@ export const WithActionColumn: Story = {
     availableFilters,
     dataSource: mockPagedData,
     showFilter: true,
-    defaultActiveFilters: [],
+    filterMode: 'normal',
+    defaultActiveFilters: [
+      {
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
+        operator: {},
+        value: {},
+      },
+    ],
     defaultColumns,
     defaultPageSize: 10,
     defaultTableSize: 'middle',
     enableRowSelection: true,
-    pagination: { pageSize: 10 } as PaginationProps,
-    viewTableSetting: { title: '表格设置' },
+    pagination: {} as PaginationProps,
+    viewTableSetting: { title: 'Column Settings' },
     actionColumn: {
       title: 'Actions',
       actions: (record: any) => ({
@@ -283,7 +342,7 @@ export const WithActionColumn: Story = {
         ],
       }),
     },
-    onClickPrimaryKey: (id: any, record: any) =>
+    onClickPrimaryKey: (id: any, record: unknown) =>
       console.log('Click primary key:', id, record),
   },
   render: args => <ViewWrapper {...args} />,
@@ -295,12 +354,21 @@ export const WithTableSettings: Story = {
     availableFilters,
     dataSource: mockPagedData,
     showFilter: true,
-    defaultActiveFilters: [],
+    filterMode: 'normal',
+    defaultActiveFilters: [
+      {
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
+        operator: {},
+        value: {},
+      },
+    ],
     defaultColumns,
     defaultPageSize: 10,
     defaultTableSize: 'middle',
     enableRowSelection: false,
-    pagination: { pageSize: 10 } as PaginationProps,
+    pagination: {} as PaginationProps,
     viewTableSetting: { title: 'Column Settings' },
   },
   render: args => <ViewWrapper {...args} />,
@@ -312,7 +380,16 @@ export const WithHiddenColumns: Story = {
     availableFilters,
     dataSource: mockPagedData,
     showFilter: true,
-    defaultActiveFilters: [],
+    filterMode: 'normal',
+    defaultActiveFilters: [
+      {
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
+        operator: {},
+        value: {},
+      },
+    ],
     defaultColumns: [
       { key: 'id', name: 'id', fixed: true, hidden: false },
       { key: 'name', name: 'name', fixed: false, hidden: false },
@@ -323,7 +400,7 @@ export const WithHiddenColumns: Story = {
     defaultPageSize: 10,
     defaultTableSize: 'middle',
     enableRowSelection: false,
-    pagination: { pageSize: 10 } as PaginationProps,
+    pagination: {} as PaginationProps,
     viewTableSetting: { title: 'Column Settings' },
   },
   render: args => <ViewWrapper {...args} />,
@@ -335,12 +412,21 @@ export const SmallTableSize: Story = {
     availableFilters,
     dataSource: mockPagedData,
     showFilter: true,
-    defaultActiveFilters: [],
+    filterMode: 'normal',
+    defaultActiveFilters: [
+      {
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
+        operator: {},
+        value: {},
+      },
+    ],
     defaultColumns,
     defaultPageSize: 10,
     defaultTableSize: 'small',
     enableRowSelection: false,
-    pagination: { pageSize: 10 } as PaginationProps,
+    pagination: {} as PaginationProps,
     viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
@@ -352,12 +438,21 @@ export const LargeTableSize: Story = {
     availableFilters,
     dataSource: mockPagedData,
     showFilter: true,
-    defaultActiveFilters: [],
+    filterMode: 'normal',
+    defaultActiveFilters: [
+      {
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
+        operator: {},
+        value: {},
+      },
+    ],
     defaultColumns,
     defaultPageSize: 10,
     defaultTableSize: 'large',
     enableRowSelection: false,
-    pagination: { pageSize: 10 } as PaginationProps,
+    pagination: {} as PaginationProps,
     viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
@@ -369,7 +464,16 @@ export const WithoutPagination: Story = {
     availableFilters,
     dataSource: mockPagedData,
     showFilter: true,
-    defaultActiveFilters: [],
+    filterMode: 'normal',
+    defaultActiveFilters: [
+      {
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
+        operator: {},
+        value: {},
+      },
+    ],
     defaultColumns,
     defaultPageSize: 10,
     defaultTableSize: 'middle',
@@ -387,21 +491,29 @@ export const ControlledActiveFilters: Story = {
     dataSource: mockPagedData,
     showFilter: true,
     filterMode: 'editable',
-    defaultActiveFilters: [],
+    defaultActiveFilters: [
+      {
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
+        operator: {},
+        value: {},
+      },
+    ],
     externalActiveFilters: [
       {
-        key: 'status',
+        key: 'name',
         type: 'text',
-        field: { name: 'status', label: 'Status' },
+        field: { type: 'text', name: 'name', label: 'Name' },
         operator: {},
-        value: { defaultValue: 'Controlled' },
+        value: {},
       },
     ],
     defaultColumns,
     defaultPageSize: 10,
     defaultTableSize: 'middle',
     enableRowSelection: false,
-    pagination: { pageSize: 10 } as PaginationProps,
+    pagination: {} as PaginationProps,
     viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
@@ -413,7 +525,16 @@ export const ControlledColumns: Story = {
     availableFilters,
     dataSource: mockPagedData,
     showFilter: true,
-    defaultActiveFilters: [],
+    filterMode: 'normal',
+    defaultActiveFilters: [
+      {
+        key: 'name',
+        type: 'text',
+        field: { type: 'text', name: 'name', label: 'Name' },
+        operator: {},
+        value: {},
+      },
+    ],
     defaultColumns,
     externalColumns: [
       { key: 'id', name: 'id', fixed: true, hidden: false },
@@ -423,8 +544,47 @@ export const ControlledColumns: Story = {
     defaultPageSize: 10,
     defaultTableSize: 'middle',
     enableRowSelection: false,
-    pagination: { pageSize: 10 } as PaginationProps,
+    pagination: {} as PaginationProps,
     viewTableSetting: { title: 'Column Settings' },
+  },
+  render: args => <ViewWrapper {...args} />,
+};
+
+export const ControlledPage: Story = {
+  args: {
+    fields,
+    availableFilters,
+    dataSource: mockPagedData,
+    showFilter: true,
+    filterMode: 'normal',
+    defaultActiveFilters: [],
+    defaultColumns,
+    defaultPageSize: 10,
+    defaultPage: 1,
+    externalPage: 1,
+    defaultTableSize: 'middle',
+    enableRowSelection: false,
+    pagination: {} as PaginationProps,
+    viewTableSetting: false,
+  },
+  render: args => <ViewWrapper {...args} />,
+};
+
+export const WithDefaultCondition: Story = {
+  args: {
+    fields,
+    availableFilters,
+    dataSource: mockPagedData,
+    showFilter: true,
+    filterMode: 'normal',
+    defaultActiveFilters: [],
+    defaultColumns,
+    defaultPageSize: 10,
+    defaultTableSize: 'middle',
+    defaultCondition: { eq: { status: 'Active' } } as Condition,
+    enableRowSelection: false,
+    pagination: {} as PaginationProps,
+    viewTableSetting: false,
   },
   render: args => <ViewWrapper {...args} />,
 };
