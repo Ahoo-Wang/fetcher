@@ -3,12 +3,7 @@ import { TypeCapable } from '../registry';
 import { AttributesCapable, KeyCapable } from '../types';
 import { SorterResult, SortOrder } from 'antd/es/table/interface';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import {
-  Condition,
-  FieldSort,
-  Pagination,
-  Projection,
-} from '@ahoo-wang/fetcher-wow';
+import { Condition } from '@ahoo-wang/fetcher-wow';
 import React from 'react';
 import { ButtonProps } from 'antd';
 import { NamedCapable } from '@ahoo-wang/fetcher';

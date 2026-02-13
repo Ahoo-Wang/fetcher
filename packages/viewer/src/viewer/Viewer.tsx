@@ -14,9 +14,8 @@ import { useRef, useState } from 'react';
 import { Condition, PagedList } from '@ahoo-wang/fetcher-wow';
 import { TopBar } from '../topbar';
 import type * as React from 'react';
-import { useRefreshDataEventBus, ViewChangeAction, ViewRef } from '../';
+import { useRefreshDataEventBus, ViewChangeAction, View, ViewRef } from '../';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
-import { View } from '../view';
 import type { SorterResult } from 'antd/es/table/interface';
 
 const { Header, Sider, Content } = Layout;
