@@ -4,7 +4,7 @@ packages:
 
 catalog:
   '@ant-design/icons': ^6.0.0
-  '@eslint/js': ^9.39.2
+  '@eslint/js': ^10.0.0
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/react': ^16.3.2
   '@types/node': ^24.10.11
@@ -19,7 +19,7 @@ catalog:
   babel-plugin-react-compiler: ^1.0.0
   commander: ^14.0.3
   dayjs: ^1.11.19
-  eslint: ^9.39.2
+  eslint: ^10.0.0
   eslint-plugin-react-compiler: ^19.1.0-rc.2
   eslint-plugin-react-hooks: ^7.0.1
   globals: ^17.3.0
