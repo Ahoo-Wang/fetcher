@@ -11,179 +11,33 @@ import { ViewItemGroup } from './ViewItemGroup';
 import styles from './ViewPanel.module.less';
 import { useMemo, useState, MouseEvent } from 'react';
 import { ViewManageModal } from './ViewManageModal';
+import { SaveViewModal } from './SaveViewModal';
+import type * as React from 'react';
 
-/**
- * Props for the ViewPanel component.
- *
- * @interface ViewPanelProps
- */
 export interface ViewPanelProps {
-  /** Name of the aggregate/entity being viewed (displayed as panel title) */
-  aggregateName: string;
-  /** Array of all available views (both personal and public) */
+  name: string;
   views: ViewState[];
-  /** The currently active/selected view */
   activeView: ViewState;
-  /** API endpoint URL for fetching record counts for views */
   countUrl: string;
-  /** Callback function called when user selects a different view */
-  onViewChange: (view: ViewState) => void;
+  onSwitchView: (view: ViewState) => void;
 
-  /** Whether the view panel is currently visible (used for fold/unfold logic) */
-  showViewPanel: boolean;
-  /** Callback function called when user clicks the fold/unfold button */
-  onViewPanelFold: () => void;
+  onShowViewPanelChange: (showViewPanel: boolean) => void;
 
-  onCreateView?: (viewType: ViewType) => void;
-  onEditViewName?: (view: ViewState, onSuccess?: () => void) => void;
-  onDeleteView?: (view: ViewState, onSuccess?: () => void) => void;
+  onCreateView: (view: ViewState, onSuccess?: () => void) => void;
+  onUpdateView: (view: ViewState, onSuccess?: () => void) => void;
+  onDeleteView: (view: ViewState, onSuccess?: () => void) => void;
 }
 
-/**
- * ViewPanel Component
- *
- * A comprehensive panel component that organizes and displays data views in a collapsible,
- * categorized interface. Views are separated into "Personal" (个人) and "Public" (公共)
- * sections, allowing users to easily manage their own views while accessing shared ones.
- * The panel includes a header with the aggregate name and a fold/unfold control.
- *
- * @param props - The properties for configuring the view panel
- * @param props.aggregateName - Display name for the data entity being viewed
- * @param props.views - Complete array of available views (mixed personal/public)
- * @param props.activeView - Currently selected view for highlighting
- * @param props.countUrl - API endpoint for fetching view record counts
- * @param props.onViewChange - Callback when user selects a different view
- * @param props.showViewPanel - Current visibility state of the panel
- * @param props.onViewPanelFold - Callback when user toggles panel visibility
- *
- * @example
- * ```tsx
- * import { ViewPanel } from './ViewPanel';
- * import type { View } from '../types';
- *
- * const userViews: View[] = [
- *   {
- *     id: 'personal-1',
- *     name: 'My Active Users',
- *     viewType: 'PERSONAL',
- *     viewSource: 'CUSTOM',
- *     isDefault: false,
- *     filters: [],
- *     columns: [
- *       { dataIndex: 'id', fixed: false, visible: true },
- *       { dataIndex: 'name', fixed: false, visible: true },
- *       { dataIndex: 'status', fixed: false, visible: true }
- *     ],
- *     tableSize: 'middle',
- *     condition: { status: 'active' },
- *     pageSize: 20,
- *     sortId: 1
- *   },
- *   {
- *     id: 'public-1',
- *     name: 'All Team Members',
- *     viewType: 'SHARED',
- *     viewSource: 'CUSTOM',
- *     isDefault: true,
- *     filters: [],
- *     columns: [
- *       { dataIndex: 'id', fixed: false, visible: true },
- *       { dataIndex: 'name', fixed: false, visible: true },
- *       { dataIndex: 'department', fixed: false, visible: true }
- *     ],
- *     tableSize: 'middle',
- *     condition: {},
- *     pageSize: 25,
- *     sortId: 2
- *   },
- *   {
- *     id: 'system-1',
- *     name: 'Admin Users',
- *     viewType: 'SHARED',
- *     viewSource: 'SYSTEM',
- *     isDefault: false,
- *     filters: [],
- *     columns: [
- *       { dataIndex: 'id', fixed: false, visible: true },
- *       { dataIndex: 'name', fixed: false, visible: true },
- *       { dataIndex: 'role', fixed: false, visible: true }
- *     ],
- *     tableSize: 'middle',
- *     condition: { role: 'admin' },
- *     pageSize: 10,
- *     sortId: 3
- *   }
- * ];
- *
- * function DataViewer() {
- *   const [activeView, setActiveView] = useState(userViews[1]); // Default to public view
- *   const [showPanel, setShowPanel] = useState(true);
- *
- *   const handleViewChange = (view: View) => {
- *     setActiveView(view);
- *     // Update table data, filters, sorting based on new view
- *     console.log('Switched to view:', view.name);
- *   };
- *
- *   const handlePanelToggle = () => {
- *     setShowPanel(!showPanel);
- *   };
- *
- *   return (
- *     <div className="data-viewer">
- *       <ViewPanel
- *         aggregateName="用户管理" // "User Management" in Chinese
- *         views={userViews}
- *         activeView={activeView}
- *         countUrl="/api/users/count"
- *         onViewChange={handleViewChange}
- *         showViewPanel={showPanel}
- *         onViewPanelFold={handlePanelToggle}
- *       />
- *     </div>
- *   );
- * }
- *     </div>
- *   );
- * }
- * ```
- *
- * @example
- * ```tsx
- * // Integration with routing and URL state
- * function RoutedViewPanel({ views, currentViewId }) {
- *   const activeView = views.find(v => v.id === currentViewId) || views[0];
- *
- *   const handleViewChange = (view: View) => {
- *     // Update URL with new view ID
- *     navigate(`/data?view=${view.id}`);
- *   };
- *
- *   return (
- *     <ViewPanel
- *       aggregateName="数据视图"
- *       views={views}
- *       activeView={activeView}
- *       countUrl="/api/records/count"
- *       onViewChange={handleViewChange}
- *       showViewPanel={true}
- *       onViewPanelFold={() => handlePanelToggle()}
- *     />
- *   );
- * }
- * ```
- */
 export function ViewPanel(props: ViewPanelProps) {
-  // Extract props for cleaner code
   const {
-    aggregateName,
+    name,
     views,
     activeView,
     countUrl,
-    onViewChange,
-    onViewPanelFold,
+    onSwitchView,
+    onShowViewPanelChange,
     onCreateView,
-    onEditViewName,
+    onUpdateView,
     onDeleteView,
   } = props;
 
@@ -197,6 +51,12 @@ export function ViewPanel(props: ViewPanelProps) {
   const [personalViewManageOpened, setPersonalViewManageOpened] =
     useState(false);
   const [sharedViewManageOpened, setSharedViewManageOpened] = useState(false);
+  const [saveViewModalType, setSaveViewModalType] = useState<
+    'Create' | 'SaveAs'
+  >('Create');
+  const [saveViewModalOpened, setSaveViewModalOpened] = useState(false);
+  const [defaultCreateViewType, setDefaultCreateViewType] =
+    useState<ViewType>('PERSONAL');
 
   const handleOpenViewManage = (e: MouseEvent, type: ViewType) => {
     e.preventDefault();
@@ -213,15 +73,26 @@ export function ViewPanel(props: ViewPanelProps) {
 
   const handleCreateView = (e: MouseEvent, type: ViewType) => {
     e.stopPropagation();
-    onCreateView?.(type);
+    setDefaultCreateViewType(type);
+    setSaveViewModalType('Create');
+    setSaveViewModalOpened(true);
+  };
+
+  const handleCreateViewConfirmed = (name: string, type: ViewType) => {
+    onCreateView?.({
+      ...activeView,
+      name,
+      type,
+    });
+    setSaveViewModalOpened(false);
   };
 
   const handleEditViewName = (view: ViewState, onSuccess?: () => void) => {
-    onEditViewName?.(view, onSuccess);
+    onUpdateView?.(view, onSuccess);
   };
 
-  const handleDeleteView = (view: ViewState, onSuccess?: () => void) => {
-    onDeleteView?.(view, onSuccess);
+  const handleDeleteView = (view: ViewState) => {
+    onDeleteView?.(view);
   };
 
   const genExtra = (type: ViewType) => (
@@ -240,7 +111,7 @@ export function ViewPanel(props: ViewPanelProps) {
           views={personalViews}
           activeView={activeView}
           countUrl={countUrl}
-          onViewChange={view => onViewChange(view)}
+          onSwitchView={view => onSwitchView(view)}
         />
       ),
       extra: genExtra('PERSONAL'),
@@ -253,7 +124,7 @@ export function ViewPanel(props: ViewPanelProps) {
           views={sharedViews}
           activeView={activeView}
           countUrl={countUrl}
-          onViewChange={view => onViewChange(view)}
+          onSwitchView={view => onSwitchView(view)}
         />
       ),
       extra: genExtra('SHARED'),
@@ -264,8 +135,12 @@ export function ViewPanel(props: ViewPanelProps) {
     <>
       <Flex vertical gap="16px">
         <Flex align="center" justify="space-between" className={styles.top}>
-          <div className={styles.title}>{aggregateName}</div>
-          <div onClick={onViewPanelFold}>
+          <div className={styles.title}>{name}</div>
+          <div
+            onClick={() => {
+              onShowViewPanelChange(false);
+            }}
+          >
             <BarItem icon={<MenuFoldOutlined />} active={false} />
           </div>
         </Flex>
@@ -290,6 +165,13 @@ export function ViewPanel(props: ViewPanelProps) {
         onCancel={() => setSharedViewManageOpened(false)}
         onEditViewName={handleEditViewName}
         onDeleteView={handleDeleteView}
+      />
+      <SaveViewModal
+        mode={saveViewModalType}
+        open={saveViewModalOpened}
+        defaultViewType={defaultCreateViewType}
+        onSaveView={handleCreateViewConfirmed}
+        onCancel={() => setSaveViewModalOpened(false)}
       />
     </>
   );

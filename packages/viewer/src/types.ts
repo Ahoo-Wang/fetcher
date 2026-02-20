@@ -62,8 +62,8 @@ export interface ActionItem<RecordType> extends AttributesCapable<
   Omit<ButtonProps, 'onClick'>
 > {
   title: string;
-  onClick: (record: RecordType[]) => void;
-  render?: (record: RecordType[]) => React.ReactNode;
+  onClick: (records: RecordType[]) => void;
+  render?: (records: RecordType[]) => React.ReactNode;
 }
 
 

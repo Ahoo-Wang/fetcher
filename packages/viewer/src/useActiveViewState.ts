@@ -7,19 +7,19 @@ import { all, Condition } from '@ahoo-wang/fetcher-wow';
 
 export const DEFAULT_CONDITION: Condition = all();
 
-export interface UseActiveViewStateOptions<RecordType> {
+export interface UseActiveViewStateOptions {
   defaultColumns: ViewColumn[];
   defaultActiveFilters: ActiveFilter[];
 
   defaultCondition?: Condition;
   defaultPage?: number;
   defaultPageSize?: number;
-  defaultSorter?: SorterResult<RecordType>[];
+  defaultSorter?: SorterResult[];
 
   defaultTableSize?: SizeType;
 }
 
-export interface UseActiveViewStateReturn<RecordType> {
+export interface UseActiveViewStateReturn {
   columns: ViewColumn[];
   setColumns: (columns: ViewColumn[]) => void;
   activeFilters: ActiveFilter[];
@@ -31,8 +31,8 @@ export interface UseActiveViewStateReturn<RecordType> {
   setPage: (page: number) => void;
   pageSize: number;
   setPageSize: (size: number) => void;
-  sorter: SorterResult<RecordType>[];
-  setSorter: (sorter: SorterResult<RecordType>[]) => void;
+  sorter: SorterResult[];
+  setSorter: (sorter: SorterResult[]) => void;
 
   tableSize: SizeType;
   setTableSize: (size: SizeType) => void;
@@ -40,14 +40,15 @@ export interface UseActiveViewStateReturn<RecordType> {
   reset: () => void;
 }
 
-export function useActiveViewState<RecordType>({
+export function useActiveViewState({
   defaultPage = 1,
   defaultPageSize = 10,
   defaultTableSize = 'middle',
   defaultCondition = DEFAULT_CONDITION,
+  defaultSorter = [],
   ...options
-}: UseActiveViewStateOptions<RecordType>): UseActiveViewStateReturn<RecordType> {
-  const { defaultColumns, defaultActiveFilters, defaultSorter } = options;
+}: UseActiveViewStateOptions): UseActiveViewStateReturn {
+  const { defaultColumns, defaultActiveFilters } = options;
   const [columns, setColumns] = useState<ViewColumn[]>(defaultColumns);
   const [activeFilters, setActiveFilters] =
     useState<ActiveFilter[]>(defaultActiveFilters);
@@ -55,38 +56,8 @@ export function useActiveViewState<RecordType>({
   const [page, setPage] = useState<number>(defaultPage);
   const [pageSize, setPageSize] = useState<number>(defaultPageSize);
   const [tableSize, setTableSize] = useState<SizeType>(defaultTableSize);
-  const [sorter, setSorter] = useState<SorterResult<RecordType>[]>(
-    defaultSorter || [],
-  );
+  const [sorter, setSorter] = useState<SorterResult[]>(defaultSorter);
   const [condition, setCondition] = useState<Condition>(defaultCondition);
-
-  useEffect(() => {
-    setPage(defaultPage);
-  }, [defaultPage]);
-
-  useEffect(() => {
-    setColumns(defaultColumns);
-  }, [defaultColumns]);
-
-  useEffect(() => {
-    setActiveFilters(defaultActiveFilters);
-  }, [defaultActiveFilters]);
-
-  useEffect(() => {
-    setTableSize(defaultTableSize);
-  }, [defaultTableSize]);
-
-  useEffect(() => {
-    setPageSize(defaultPageSize);
-  }, [defaultPageSize]);
-
-  useEffect(() => {
-    setCondition(defaultCondition);
-  }, [defaultCondition]);
-
-  useEffect(() => {
-    setSorter(defaultSorter || []);
-  }, [defaultSorter]);
 
   const setColumnsFn = (columns: ViewColumn[]) => {
     setColumns(columns.map(it => ({ ...it })));
@@ -100,7 +71,7 @@ export function useActiveViewState<RecordType>({
     setCondition({ ...condition });
   };
 
-  const setSorterFn = (sorter: SorterResult<RecordType>[]) => {
+  const setSorterFn = (sorter: SorterResult[]) => {
     setSorter(sorter.map(it => ({ ...it })));
   };
 
@@ -111,7 +82,7 @@ export function useActiveViewState<RecordType>({
     setPage(defaultPage);
     setPageSize(defaultPageSize);
     setCondition(defaultCondition);
-    setSorter(defaultSorter || []);
+    setSorter(defaultSorter);
 
     setTableSize(defaultTableSize);
   };

@@ -68,7 +68,7 @@ export const Default: Story = {
     views: sampleViews,
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onViewChange: (view: ViewState) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };
 
@@ -77,7 +77,7 @@ export const WithSystemView: Story = {
     views: viewsWithSystem,
     activeView: viewsWithSystem[1],
     countUrl: '/api/count',
-    onViewChange: (view: ViewState) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };
 
@@ -86,6 +86,6 @@ export const SingleView: Story = {
     views: [sampleViews[0]],
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onViewChange: (view: ViewState) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };

@@ -7,20 +7,24 @@ export interface SaveViewModalProps {
   mode: 'Create' | 'SaveAs';
   open?: boolean;
   defaultViewType?: ViewType;
+  defaultViewName?: string;
+
   onSaveView?: (name: string, type: ViewType) => void;
   onCancel?: () => void;
 }
 
 export function SaveViewModal(props: SaveViewModalProps) {
-  const { mode, open, defaultViewType, onSaveView, onCancel } = props;
+  const { mode, open, defaultViewType, defaultViewName, onSaveView, onCancel } =
+    props;
 
   const handleOk = () => {
     formRef.current?.submit();
   };
 
   useEffect(() => {
-    formRef.current?.setFieldValue('type', defaultViewType);
-  }, [open, defaultViewType]);
+    formRef.current?.setFieldValue('type', defaultViewType || 'PERSONAL');
+    formRef.current?.setFieldValue('name', defaultViewName || '');
+  }, [defaultViewType, defaultViewName]);
 
   const handleCancel = () => {
     onCancel?.();

@@ -62,31 +62,31 @@ const sampleViews: ViewState[] = [
 
 export const Default: Story = {
   args: {
-    aggregateName: 'aggregateName',
+    name: 'aggregateName',
     views: sampleViews,
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onViewChange: (view: ViewState) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };
 
 export const OnlyPersonalViews: Story = {
   args: {
-    aggregateName: 'aggregateName',
+    name: 'aggregateName',
     views: sampleViews.filter(v => v.type === 'PERSONAL'),
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onViewChange: (view: ViewState) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };
 
 export const OnlyPublicViews: Story = {
   args: {
-    aggregateName: 'aggregateName',
+    name: 'aggregateName',
     views: sampleViews.filter(v => v.type === 'SHARED'),
     activeView: sampleViews[2],
     countUrl: '/api/count',
-    onViewChange: (view: ViewState) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };
 
@@ -95,6 +95,6 @@ export const SingleView: Story = {
     views: [sampleViews[0]],
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onViewChange: (view: ViewState) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };

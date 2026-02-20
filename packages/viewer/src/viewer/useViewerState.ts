@@ -26,7 +26,7 @@ export interface UseViewerStateOptions {
   defaultShowViewPanel?: boolean;
 }
 
-export interface UseViewerStateReturn<RecordType> {
+export interface UseViewerStateReturn {
   activeView: ViewState;
   showFilter: boolean;
   setShowFilter: (showFilter: boolean) => void;
@@ -45,22 +45,25 @@ export interface UseViewerStateReturn<RecordType> {
   setPage: (page: number) => void;
   pageSize: number;
   setPageSize: (size: number) => void;
-  sorter: SorterResult<RecordType>[];
-  setSorter: (sorter: SorterResult<RecordType>[]) => void;
+  sorter: SorterResult[];
+  setSorter: (sorter: SorterResult[]) => void;
 
   tableSize: SizeType;
   setTableSize: (size: SizeType) => void;
 
+  views: ViewState[];
+  setViews: (views: ViewState[]) => void;
   onSwitchView: (view: ViewState) => void;
   reset: () => void;
 }
 
-export function useViewerState<RecordType = any>({
+export function useViewerState({
   defaultShowFilter = true,
   defaultShowViewPanel = true,
   ...options
-}: UseViewerStateOptions): UseViewerStateReturn<RecordType> {
+}: UseViewerStateOptions): UseViewerStateReturn {
   const view = getActiveView(options.views, options.defaultViewId);
+  const [views, setViews] = useState<ViewState[]>(options.views);
   const [activeView, setActiveView] = useState<ViewState>(view);
   const [showFilter, setShowFilter] = useState(defaultShowFilter);
   const [showViewPanel, setShowViewPanel] = useState(defaultShowViewPanel);
@@ -81,15 +84,13 @@ export function useViewerState<RecordType = any>({
     sorter,
     setSorter,
     reset: resetFn,
-  } = useActiveViewState<RecordType>({
+  } = useActiveViewState({
     defaultColumns: activeView.columns,
     defaultPageSize: activeView.pageSize,
     defaultActiveFilters: activeView.filters,
     defaultTableSize: activeView.tableSize,
     defaultCondition: activeView.condition,
-    defaultSorter:
-      activeView.sorter?.map(it => ({ ...it }) as SorterResult<RecordType>) ||
-      [],
+    defaultSorter: activeView.sorter,
   });
 
   const viewChanged = useMemo(() => {
@@ -114,6 +115,13 @@ export function useViewerState<RecordType = any>({
 
   const onSwitchViewFn = (view: ViewState) => {
     setActiveView(view);
+    setPage(1);
+    setPageSize(view.pageSize);
+    setColumns(view.columns);
+    setActiveFilters(view.filters);
+    setTableSize(view.tableSize);
+    setCondition(view.condition);
+    setSorter(view.sorter || []);
   };
 
   return {
@@ -137,6 +145,8 @@ export function useViewerState<RecordType = any>({
     sorter,
     setSorter,
     viewChanged,
+    views,
+    setViews,
     onSwitchView: onSwitchViewFn,
     reset: resetFn,
   };

@@ -1,50 +1,36 @@
-import { ViewTableActionColumn } from '../table';
-import { Layout, Modal, PaginationProps, Space } from 'antd';
+import { Layout, PaginationProps, Space } from 'antd';
 import {
-  SaveViewModal,
   ViewState,
   ViewDefinition,
   ViewPanel,
-  ViewType,
   useViewerState,
+  ViewMutationActionsCapable,
+  TopbarActionsCapable,
 } from './';
 import styles from './Viewer.module.css';
-import { ActionItem, SaveViewMethod, ViewTableSettingCapable } from '../types';
+import {
+  TopBar,
+  ViewTableSettingCapable,
+  useRefreshDataEventBus,
+  ViewChangeAction,
+  View,
+  ViewRef,
+  ViewTableActionColumn,
+} from '../';
 import { useRef, useState } from 'react';
-import { Condition, PagedList } from '@ahoo-wang/fetcher-wow';
-import { TopBar } from '../topbar';
+import { PagedList } from '@ahoo-wang/fetcher-wow';
 import type * as React from 'react';
-import { useRefreshDataEventBus, ViewChangeAction, View, ViewRef } from '../';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
-import type { SorterResult } from 'antd/es/table/interface';
 
 const { Header, Sider, Content } = Layout;
 
-export interface ViewManagement {
-  enabled: boolean;
-  onCreateView?: (
-    view: ViewState,
-    onSuccess?: (newView: ViewState) => void,
-  ) => void;
-  onDeleteView?: (view: ViewState, onSuccess?: () => void) => void;
-  onUpdateView?: (
-    view: ViewState,
-    onSuccess?: (newView: ViewState) => void,
-  ) => void;
-}
-
-export interface BatchOperationConfig<RecordType> {
-  enabled: boolean;
-  title: string;
-  actions: ActionItem<RecordType>[];
-}
-
-export interface ViewerProps<RecordType> extends ViewTableSettingCapable {
-  views: ViewState[];
+export interface ViewerProps<RecordType>
+  extends
+    ViewTableSettingCapable,
+    ViewMutationActionsCapable,
+    TopbarActionsCapable<RecordType> {
+  defaultViews: ViewState[];
   defaultViewId?: string;
   definition: ViewDefinition;
-
-  viewManagement: ViewManagement;
 
   // for view
   dataSource: PagedList<RecordType>;
@@ -55,13 +41,8 @@ export interface ViewerProps<RecordType> extends ViewTableSettingCapable {
   onClickPrimaryKey?: (id: any, record: RecordType) => void;
   enableRowSelection?: boolean;
 
-  // for topbar
-  batchOperation: false | BatchOperationConfig<RecordType>;
-  primaryAction?: ActionItem<RecordType>;
-  secondaryActions?: ActionItem<RecordType>[];
-
   // callbacks
-  onLoadData?: ViewChangeAction<RecordType>;
+  onLoadData?: ViewChangeAction;
   onViewChange?: (view: ViewState) => void;
 }
 
@@ -75,11 +56,13 @@ export interface ViewerProps<RecordType> extends ViewTableSettingCapable {
  */
 export function Viewer<RecordType>({ ...props }: ViewerProps<RecordType>) {
   const {
-    views,
+    defaultViews,
     defaultViewId,
     definition,
-    viewManagement,
     onLoadData,
+    onCreateView,
+    onUpdateView,
+    onDeleteView,
     ...otherProps
   } = props;
 
@@ -105,73 +88,83 @@ export function Viewer<RecordType>({ ...props }: ViewerProps<RecordType>) {
     sorter,
     setSorter,
     onSwitchView,
+    views,
+    setViews,
     reset,
   } = useViewerState({
-    views,
+    views: defaultViews,
     defaultViewId,
     definition,
   });
 
-  const [saveViewModalOpen, setSaveViewModalOpen] = useState(false);
-  const [saveViewModalMode, setSaveViewModalMode] = useState<
-    'Create' | 'SaveAs'
-  >('Create');
-  const [modal, contextHolder] = Modal.useModal();
-  const [defaultViewType, setDefaultViewType] = useState<ViewType>('PERSONAL');
   const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
 
   const viewRef = useRef<ViewRef | null>(null);
 
-  const handleCreateView = (type: ViewType) => {
-    setDefaultViewType(type);
-    setSaveViewModalMode('Create');
-    setSaveViewModalOpen(true);
-  };
+  // const onSaveView = (method: SaveViewMethod) => {
+  //   switch (method) {
+  //     case 'Update':
+  //       modal.confirm({
+  //         title: '确认覆盖当前视图？',
+  //         icon: <ExclamationCircleOutlined />,
+  //         content: '确认后将覆盖原筛选条件',
+  //         okText: '确认',
+  //         cancelText: '取消',
+  //         onOk: () => {
+  //           onUpdateView?.(activeView, newView => {
+  //             onSwitchView(newView);
+  //           });
+  //         },
+  //       });
+  //       break;
+  //     case 'SaveAs':
+  //       setSaveViewModalOpen(true);
+  //       setSaveViewModalMode('SaveAs');
+  //       break;
+  //   }
+  // };
 
-  const onSaveView = (method: SaveViewMethod) => {
-    switch (method) {
-      case 'Update':
-        modal.confirm({
-          title: '确认覆盖当前视图？',
-          icon: <ExclamationCircleOutlined />,
-          content: '确认后将覆盖原筛选条件',
-          okText: '确认',
-          cancelText: '取消',
-          onOk: () => {
-            viewManagement.onUpdateView?.(activeView, result => {
-              onSwitchView(result);
-            });
-          },
-        });
-        break;
-      case 'SaveAs':
-        setSaveViewModalOpen(true);
-        setSaveViewModalMode('SaveAs');
-        break;
-    }
-  };
-
-  const handleSaveViewModalConfirm = (name: string, type: ViewType) => {
-    const newView = { ...activeView, name, type };
-    viewManagement.onCreateView?.(newView, result => {
-      onSwitchView(result);
-      setSaveViewModalOpen(false);
+  const handleCreateView = (view: ViewState, onSuccess?: () => void) => {
+    console.log('onCreateView', view);
+    onCreateView?.(view, (newView: ViewState) => {
+      setViews([...views, newView]);
+      onSwitchView(newView);
+      onSuccess?.();
     });
   };
 
-  const handleEditViewName = (view: ViewState, onSuccess?: () => void) => {
-    viewManagement.onUpdateView?.(view, onSuccess);
+  const handleUpdateView = (view: ViewState, onSuccess?: () => void) => {
+    console.log('onUpdateView', view);
+    onUpdateView?.(view, (newView: ViewState) => {
+      setViews(
+        views.map(it => {
+          if (it.id === newView.id) {
+            return newView;
+          }
+          return it;
+        }),
+      );
+      onSwitchView(newView);
+      onSuccess?.();
+    });
   };
 
   const handleDeleteView = (view: ViewState, onSuccess?: () => void) => {
-    viewManagement.onDeleteView?.(view, onSuccess);
+    console.log('onDeleteView', view);
+    onDeleteView?.(view, (deletedView: ViewState) => {
+      setViews(views.filter(it => it.id !== deletedView.id));
+      if (activeView.id === deletedView.id) {
+        onSwitchView(views[0]);
+      }
+      onSuccess?.();
+    });
   };
 
-  const handleViewPanelFold = () => {
-    setShowViewPanel(!showViewPanel);
+  const handleShowViewPanelChange = (val: boolean) => {
+    setShowViewPanel(val);
   };
 
-  const handleViewChange = (view: ViewState) => {
+  const handleSwitchView = (view: ViewState) => {
     onSwitchView(view);
   };
 
@@ -188,29 +181,19 @@ export function Viewer<RecordType>({ ...props }: ViewerProps<RecordType>) {
     },
   });
 
-  const handleSearch = (
-    condition: Condition,
-    page: number,
-    pageSize: number,
-    sorter?: SorterResult<RecordType>[],
-  ) => {
-    onLoadData?.(condition, page, pageSize, sorter);
-  };
-
   return (
     <Layout>
       {showViewPanel && (
         <Sider className={styles.userViews} width={220}>
           <ViewPanel
-            aggregateName={definition.name}
+            name={definition.name}
             views={views}
             activeView={activeView}
             countUrl={definition.countUrl}
-            onViewChange={handleViewChange}
-            showViewPanel={showViewPanel}
-            onViewPanelFold={handleViewPanelFold}
+            onSwitchView={handleSwitchView}
+            onShowViewPanelChange={handleShowViewPanelChange}
             onCreateView={handleCreateView}
-            onEditViewName={handleEditViewName}
+            onUpdateView={handleUpdateView}
             onDeleteView={handleDeleteView}
           />
         </Sider>
@@ -231,12 +214,8 @@ export function Viewer<RecordType>({ ...props }: ViewerProps<RecordType>) {
                 defaultTableSize={activeView.tableSize}
                 primaryAction={otherProps.primaryAction}
                 secondaryActions={otherProps.secondaryActions}
-                {...(otherProps.batchOperation !== false && {
-                  batchOperationConfig: otherProps.batchOperation,
-                })}
+                batchActions={otherProps.batchActions}
                 viewChanged={viewChanged}
-                viewManagement={viewManagement}
-                onSaveAsView={onSaveView}
                 onReset={handleReset}
                 showViewPanel={showViewPanel}
                 showFilter={showFilter}
@@ -279,19 +258,11 @@ export function Viewer<RecordType>({ ...props }: ViewerProps<RecordType>) {
               defaultSorter={sorter}
               externalSorter={sorter}
               externalUpdateSorter={setSorter}
-              onChange={handleSearch}
+              onChange={onLoadData}
             />
           </Space>
         </Content>
       </Layout>
-      <SaveViewModal
-        mode={saveViewModalMode}
-        open={saveViewModalOpen}
-        defaultViewType={defaultViewType}
-        onSaveView={handleSaveViewModalConfirm}
-        onCancel={() => setSaveViewModalOpen(false)}
-      />
-      {contextHolder}
     </Layout>
   );
 }

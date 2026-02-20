@@ -1,15 +1,14 @@
 import {
-  BatchOperationConfig,
   TopBarActionItem,
-  ViewManagement,
+  TopbarActionsCapable,
+  ViewMutationActionsCapable,
   ViewSource,
-} from '../viewer';
-
+  SaveViewMethod,
+} from '../';
 import styles from './TopBar.module.css';
 import { Button, Divider, Dropdown, Flex, MenuProps, Space } from 'antd';
 import { DownOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
-import { ActionItem, SaveViewMethod } from '../types';
 import type { ItemType } from 'antd/es/menu/interface';
 import {
   AutoRefreshBarItem,
@@ -22,17 +21,13 @@ import {
 } from './';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 
-export interface TopBarProps<RecordType> {
+export interface TopBarProps<RecordType>
+  extends ViewMutationActionsCapable, TopbarActionsCapable<RecordType> {
   title: string;
   viewName: string;
   viewSource: ViewSource;
 
-  primaryAction?: ActionItem<RecordType>;
-  secondaryActions?: ActionItem<RecordType>[];
-  batchOperationConfig?: BatchOperationConfig<RecordType>;
-
   viewChanged: boolean;
-  viewManagement?: ViewManagement;
   onSaveAsView?: (method: SaveViewMethod) => void;
   onReset?: () => void;
   tableSelectedItems: RecordType[];
@@ -88,9 +83,9 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     title,
     viewName,
     viewSource,
-    batchOperationConfig,
     primaryAction,
     secondaryActions,
+    batchActions,
     tableSelectedItems,
     showViewPanel,
     onShowViewPanelChange,
@@ -104,8 +99,8 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   } = props;
 
   let batchMenuItems: MenuProps['items'] = [];
-  if (batchOperationConfig?.enabled) {
-    batchMenuItems = batchOperationConfig!.actions.map(
+  if (batchActions?.enabled) {
+    batchMenuItems = batchActions!.actions.map(
       (action: TopBarActionItem<RecordType>, index: number) => {
         return renderMenuItem(action, index, tableSelectedItems);
       },
@@ -194,12 +189,12 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
           <ShareLinkBarItem />
           <Divider orientation="vertical" />
           <AutoRefreshBarItem />
-          {batchOperationConfig?.enabled && (
+          {batchActions?.enabled && (
             <>
               <Divider orientation="vertical" />
               <Dropdown menu={{ items: batchMenuItems }} trigger={['click']}>
                 <Button icon={<DownOutlined />} iconPlacement="end">
-                  {batchOperationConfig?.title && '批量操作'}
+                  {batchActions?.title && '批量操作'}
                 </Button>
               </Dropdown>
             </>
