@@ -129,7 +129,7 @@ const views: ViewState[] = [
   defaultView,
   {
     id: 'custom-view',
-    name: 'My Customer',
+    name: 'My Custom View',
     definitionId: 'user-view',
     type: 'PERSONAL' as ViewType,
     source: 'CUSTOM' as ViewSource,
@@ -166,22 +166,6 @@ const viewDefinition: ViewDefinition = {
   countUrl: '/api/users/count',
 };
 
-const viewManagement = {
-  enabled: true,
-  onCreateView: (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
-    console.log('Create view:', view);
-    onSuccess?.({ ...view, id: `view-${Date.now()}` });
-  },
-  onDeleteView: (view: ViewState, onSuccess?: () => void) => {
-    console.log('Delete view:', view);
-    onSuccess?.();
-  },
-  onUpdateView: (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
-    console.log('Update view:', view);
-    onSuccess?.(view);
-  },
-};
-
 const meta: Meta<typeof Viewer> = {
   title: 'Viewer/Viewer',
   component: Viewer,
@@ -208,10 +192,6 @@ const meta: Meta<typeof Viewer> = {
       control: 'object',
       description: 'View definition including fields and filters',
     },
-    viewManagement: {
-      control: 'object',
-      description: 'View management callbacks',
-    },
     dataSource: {
       control: 'object',
       description: 'Paged data source',
@@ -224,21 +204,37 @@ const meta: Meta<typeof Viewer> = {
       control: 'boolean',
       description: 'Whether to enable row selection',
     },
-    batchActions: {
+    actionColumn: {
       control: 'object',
-      description: 'Batch operation configuration',
-    },
-    primaryAction: {
-      control: 'object',
-      description: 'Primary action button configuration',
-    },
-    secondaryActions: {
-      control: 'object',
-      description: 'Secondary action buttons configuration',
+      description: 'Action column configuration for row operations',
     },
     viewTableSetting: {
       control: 'object',
       description: 'Table settings panel configuration',
+    },
+    primaryAction: {
+      control: 'object',
+      description: 'Primary action button in top bar',
+    },
+    secondaryActions: {
+      control: 'object',
+      description: 'Secondary action buttons in top bar',
+    },
+    batchActions: {
+      control: 'object',
+      description: 'Batch actions configuration for selected rows',
+    },
+    onCreateView: {
+      action: 'create view',
+      description: 'Callback fired when creating a new view',
+    },
+    onUpdateView: {
+      action: 'update view',
+      description: 'Callback fired when updating an existing view',
+    },
+    onDeleteView: {
+      action: 'delete view',
+      description: 'Callback fired when deleting a view',
     },
     onClickPrimaryKey: {
       action: 'primary key clicked',
@@ -273,11 +269,35 @@ const ViewerWrapper = (args: any) => {
     console.log('View changed:', view);
   };
 
+  const handleCreateView = (
+    view: ViewState,
+    onSuccess?: (newView: ViewState) => void,
+  ) => {
+    console.log('Create view:', view);
+    onSuccess?.({ ...view, id: `view-${Date.now()}` });
+  };
+
+  const handleUpdateView = (
+    view: ViewState,
+    onSuccess?: (newView: ViewState) => void,
+  ) => {
+    console.log('Update view:', view);
+    onSuccess?.(view);
+  };
+
+  const handleDeleteView = (view: ViewState, onSuccess?: () => void) => {
+    console.log('Delete view:', view);
+    onSuccess?.();
+  };
+
   return (
-    <Viewer
+    <Viewer<User>
       {...args}
       onLoadData={handleLoadData}
       onViewChange={handleViewChange}
+      onCreateView={handleCreateView}
+      onUpdateView={handleUpdateView}
+      onDeleteView={handleDeleteView}
     />
   );
 };
@@ -287,55 +307,57 @@ export const Basic: Story = {
     defaultViews: views,
     defaultViewId: 'default-view',
     definition: viewDefinition,
-    viewManagement,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
     enableRowSelection: false,
-    batchActions: false,
-    viewTableSetting: { title: 'Column Settings' },
+    viewTableSetting: false,
+    batchActions: {
+      enabled: false,
+      title: 'Batch Actions',
+      actions: [],
+    },
   },
   render: args => <ViewerWrapper {...args} />,
 };
 
-export const WithViewPanel: Story = {
+export const WithRowSelection: Story = {
   args: {
     defaultViews: views,
     defaultViewId: 'default-view',
     definition: viewDefinition,
-    viewManagement,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
     enableRowSelection: true,
-    batchActions: false,
-    viewTableSetting: { title: 'Column Settings' },
+    viewTableSetting: false,
+    batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
   },
   render: args => <ViewerWrapper {...args} />,
 };
 
-export const WithBatchOperation: Story = {
+export const WithBatchActions: Story = {
   args: {
     defaultViews: views,
     defaultViewId: 'default-view',
     definition: viewDefinition,
-    viewManagement,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
     enableRowSelection: true,
+    viewTableSetting: false,
     batchActions: {
       enabled: true,
       title: 'Batch Actions',
       actions: [
         {
           title: 'Delete',
-          onClick: (items: unknown[]) => console.log('Batch delete:', items),
+          attributes: { danger: true },
+          onClick: items => console.log('Batch delete:', items),
         },
         {
           title: 'Export',
-          onClick: (items: unknown[]) => console.log('Batch export:', items),
+          onClick: items => console.log('Batch export:', items),
         },
       ],
     },
-    viewTableSetting: { title: 'Column Settings' },
   },
   render: args => <ViewerWrapper {...args} />,
 };
@@ -345,12 +367,11 @@ export const WithTableSettings: Story = {
     defaultViews: views,
     defaultViewId: 'default-view',
     definition: viewDefinition,
-    viewManagement,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
     enableRowSelection: false,
-    batchActions: false,
     viewTableSetting: { title: 'Column Settings' },
+    batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
   },
   render: args => <ViewerWrapper {...args} />,
 };
@@ -360,15 +381,14 @@ export const WithActionColumn: Story = {
     defaultViews: views,
     defaultViewId: 'default-view',
     definition: viewDefinition,
-    viewManagement,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
     enableRowSelection: true,
-    batchActions: false,
     viewTableSetting: { title: 'Column Settings' },
+    batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
     actionColumn: {
       title: 'Actions',
-      actions: (record: any) => ({
+      actions: (record) => ({
         primaryAction: {
           data: { value: 'Edit', record, index: 0 },
           attributes: { onClick: () => console.log('Edit', record) },
@@ -384,6 +404,8 @@ export const WithActionColumn: Story = {
         ],
       }),
     },
+    onClickPrimaryKey: (id, record) =>
+      console.log('Click primary key:', id, record),
   },
   render: args => <ViewerWrapper {...args} />,
 };
@@ -393,15 +415,14 @@ export const WithPrimaryAction: Story = {
     defaultViews: views,
     defaultViewId: 'default-view',
     definition: viewDefinition,
-    viewManagement,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
     enableRowSelection: false,
-    batchActions: false,
-    viewTableSetting: { title: 'Column Settings' },
+    viewTableSetting: false,
+    batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
     primaryAction: {
       title: 'Create User',
-      onClick: () => console.log('Create user'),
+      onClick: (items) => console.log('Create user'),
     },
   },
   render: args => <ViewerWrapper {...args} />,
@@ -412,24 +433,23 @@ export const WithSecondaryActions: Story = {
     defaultViews: views,
     defaultViewId: 'default-view',
     definition: viewDefinition,
-    viewManagement,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
     enableRowSelection: false,
-    batchActions: false,
-    viewTableSetting: { title: 'Column Settings' },
+    viewTableSetting: false,
+    batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
     primaryAction: {
       title: 'Create User',
-      onClick: () => console.log('Create user'),
+      onClick: (items) => console.log('Create user'),
     },
     secondaryActions: [
       {
         title: 'Export',
-        onClick: () => console.log('Export'),
+        onClick: (items) => console.log('Export', items),
       },
       {
         title: 'Import',
-        onClick: () => console.log('Import'),
+        onClick: (items) => console.log('Import'),
       },
     ],
   },
@@ -444,10 +464,8 @@ export const SmallTableSize: Story = {
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
     enableRowSelection: false,
-    batchActions: {
-      enabled: false,
-    },
-    viewTableSetting: { title: 'Column Settings' },
+    viewTableSetting: false,
+    batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
   },
   render: args => <ViewerWrapper {...args} />,
 };
@@ -457,12 +475,11 @@ export const LargeTableSize: Story = {
     defaultViews: views.map(v => ({ ...v, tableSize: 'large' as SizeType })),
     defaultViewId: 'default-view',
     definition: viewDefinition,
-    viewManagement,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
     enableRowSelection: false,
-    batchActions: false,
-    viewTableSetting: { title: 'Column Settings' },
+    viewTableSetting: false,
+    batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
   },
   render: args => <ViewerWrapper {...args} />,
 };
@@ -472,43 +489,68 @@ export const WithoutPagination: Story = {
     defaultViews: views,
     defaultViewId: 'default-view',
     definition: viewDefinition,
-    viewManagement,
     dataSource: mockPagedData,
     pagination: false,
     enableRowSelection: false,
-    batchActions: false,
-    viewTableSetting: { title: 'Column Settings' },
+    viewTableSetting: false,
+    batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
   },
   render: args => <ViewerWrapper {...args} />,
 };
 
-export const WithViewManagementDisabled: Story = {
+export const WithAllActions: Story = {
   args: {
     defaultViews: views,
     defaultViewId: 'default-view',
     definition: viewDefinition,
-    viewManagement: { enabled: false },
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
-    enableRowSelection: false,
-    batchActions: false,
+    enableRowSelection: true,
     viewTableSetting: { title: 'Column Settings' },
-  },
-  render: args => <ViewerWrapper {...args} />,
-};
-
-export const WithOnClickPrimaryKey: Story = {
-  args: {
-    defaultViews: views,
-    defaultViewId: 'default-view',
-    definition: viewDefinition,
-    viewManagement,
-    dataSource: mockPagedData,
-    pagination: {} as PaginationProps,
-    enableRowSelection: false,
-    batchActions: false,
-    viewTableSetting: { title: 'Column Settings' },
-    onClickPrimaryKey: (id: any, record: unknown) =>
+    batchActions: {
+      enabled: true,
+      title: 'Batch',
+      actions: [
+        {
+          title: 'Delete',
+          attributes: { danger: true },
+          onClick: (items) => console.log('Delete', items),
+        },
+      ],
+    },
+    primaryAction: {
+      title: 'Create',
+      onClick: (items) => console.log('Create'),
+    },
+    secondaryActions: [
+      {
+        title: 'Export',
+        onClick: (items) => console.log('Export', items),
+      },
+    ],
+    actionColumn: {
+      title: 'Actions',
+      actions: (record) => ({
+        primaryAction: {
+          data: { value: 'Edit', record, index: 0 },
+          attributes: { onClick: () => console.log('Edit', record) },
+        },
+        secondaryActions: [
+          {
+            data: { value: 'View', record, index: 1 },
+            attributes: { onClick: () => console.log('View', record) },
+          },
+          {
+            data: { value: 'Delete', record, index: 2 },
+            attributes: {
+              onClick: () => console.log('Delete', record),
+              danger: true,
+            },
+          },
+        ],
+      }),
+    },
+    onClickPrimaryKey: (id, record) =>
       console.log('Click primary key:', id, record),
   },
   render: args => <ViewerWrapper {...args} />,

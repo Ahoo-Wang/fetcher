@@ -1,14 +1,12 @@
 import {
   TopBarActionItem,
   TopbarActionsCapable,
-  ViewMutationActionsCapable,
-  ViewSource,
-  SaveViewMethod,
+  SaveViewMethod, ViewState, SaveViewModal, ViewType,
 } from '../';
 import styles from './TopBar.module.css';
-import { Button, Divider, Dropdown, Flex, MenuProps, Space } from 'antd';
-import { DownOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
-import React, { useCallback } from 'react';
+import { Button, Divider, Dropdown, Flex, MenuProps, Space, Modal } from 'antd';
+import { DownOutlined, ExclamationCircleOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import React, { useCallback, useState } from 'react';
 import type { ItemType } from 'antd/es/menu/interface';
 import {
   AutoRefreshBarItem,
@@ -22,13 +20,13 @@ import {
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 
 export interface TopBarProps<RecordType>
-  extends ViewMutationActionsCapable, TopbarActionsCapable<RecordType> {
+  extends TopbarActionsCapable<RecordType> {
   title: string;
-  viewName: string;
-  viewSource: ViewSource;
+
+  activeView: ViewState;
+  views: ViewState[];
 
   viewChanged: boolean;
-  onSaveAsView?: (method: SaveViewMethod) => void;
   onReset?: () => void;
   tableSelectedItems: RecordType[];
 
@@ -39,6 +37,10 @@ export interface TopBarProps<RecordType>
   onShowFilterChange?: (show: boolean) => void;
   defaultTableSize: SizeType;
   onTableSizeChange?: (size: SizeType) => void;
+
+  onCreateView: (view: ViewState, onSuccess?: () => void) => void;
+  onUpdateView: (view: ViewState, onSuccess?: () => void) => void;
+  onDeleteView: (view: ViewState, onSuccess?: () => void) => void;
 }
 
 function renderMenuItem<RecordType>(
@@ -81,8 +83,8 @@ const saveMethodItems: MenuProps['items'] = [
 export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   const {
     title,
-    viewName,
-    viewSource,
+    activeView,
+    views,
     primaryAction,
     secondaryActions,
     batchActions,
@@ -90,13 +92,22 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     showViewPanel,
     onShowViewPanelChange,
     viewChanged,
-    onSaveAsView,
     onReset,
     showFilter,
     onShowFilterChange,
     defaultTableSize,
     onTableSizeChange,
+    onCreateView,
+    onUpdateView,
+    onDeleteView
   } = props;
+
+  const [saveViewModalType, setSaveViewModalType] = useState<
+    'Create' | 'SaveAs'
+  >('Create');
+  const [saveViewModalOpened, setSaveViewModalOpened] = useState(false);
+  const [defaultCreateViewType, setDefaultCreateViewType] =
+    useState<ViewType>('PERSONAL');
 
   let batchMenuItems: MenuProps['items'] = [];
   if (batchActions?.enabled) {
@@ -116,8 +127,44 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     );
   }
 
+  const [modal, contextHolder] = Modal.useModal();
+  const onSaveView = (method: SaveViewMethod) => {
+    switch (method) {
+      case 'Update':
+        modal.confirm({
+          title: '确认覆盖当前视图？',
+          icon: <ExclamationCircleOutlined />,
+          content: '确认后将覆盖原筛选条件',
+          okText: '确认',
+          cancelText: '取消',
+          onOk: () => {
+            onUpdateView?.(activeView);
+          },
+        });
+        break;
+      case 'SaveAs':
+        setSaveViewModalOpened(true);
+        setSaveViewModalType('SaveAs');
+        break;
+    }
+  };
+
+  const handleCreateViewConfirmed = (name: string, type: ViewType) => {
+    onCreateView?.(
+      {
+        ...activeView,
+        name,
+        type,
+        source: 'CUSTOM',
+      },
+      () => {
+        setSaveViewModalOpened(false);
+      },
+    );
+  }
+
   const handleMenuClick: MenuProps['onClick'] = e => {
-    onSaveAsView?.(e.key as SaveViewMethod);
+    onSaveView(e.key as SaveViewMethod);
   };
 
   const menuProps = {
@@ -147,15 +194,15 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
               <Point />
             </>
           )}
-          {viewName}
+          {activeView.name}
           {viewChanged && (
             <>
               <div style={{ color: 'rgba(0,0,0,0.45)' }}>(已编辑)</div>
-              {viewSource === 'SYSTEM' ? (
+              {activeView.source === 'SYSTEM' ? (
                 <Button
                   type="default"
                   size="small"
-                  onClick={() => onSaveAsView?.('SaveAs')}
+                  onClick={() => onSaveView('SaveAs')}
                 >
                   另存为
                 </Button>
@@ -228,6 +275,15 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
           )}
         </Flex>
       </Flex>
+      {contextHolder}
+      <SaveViewModal
+        mode={saveViewModalType}
+        open={saveViewModalOpened}
+        defaultViewType={defaultCreateViewType}
+        defaultViewName={activeView.name}
+        onSaveView={handleCreateViewConfirmed}
+        onCancel={() => setSaveViewModalOpened(false)}
+      />
     </>
   );
 }

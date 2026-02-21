@@ -1,6 +1,6 @@
 import { ViewColumn, ViewDefinition, ViewState } from './types';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { deepEqual } from '../utils';
 import { useActiveViewState } from '../useActiveViewState';
 import { ActiveFilter } from '../filter';
@@ -63,6 +63,7 @@ export function useViewerState({
   ...options
 }: UseViewerStateOptions): UseViewerStateReturn {
   const view = getActiveView(options.views, options.defaultViewId);
+  const originalView = useRef<ViewState>(view);
   const [views, setViews] = useState<ViewState[]>(options.views);
   const [activeView, setActiveView] = useState<ViewState>(view);
   const [showFilter, setShowFilter] = useState(defaultShowFilter);
@@ -93,17 +94,11 @@ export function useViewerState({
     defaultSorter: activeView.sorter,
   });
 
-  const viewChanged = useMemo(() => {
-    const comparisonView = {
-      ...activeView,
-      filters: activeFilters,
-      columns: columns,
-      pageSize: pageSize,
-      tableSize: tableSize,
-    };
+  const [viewChanged, setViewChanged] = useState(false);
 
-    return !deepEqual(activeView, comparisonView);
-  }, [activeView, columns, pageSize, activeFilters, tableSize]);
+  useEffect(() => {
+    setViewChanged(!deepEqual(activeView, originalView.current));
+  }, [activeView]);
 
   const setShowFilterFn = (showFilter: boolean) => {
     setShowFilter(showFilter);
@@ -114,6 +109,7 @@ export function useViewerState({
   };
 
   const onSwitchViewFn = (view: ViewState) => {
+    originalView.current = view;
     setActiveView(view);
     setPage(1);
     setPageSize(view.pageSize);
@@ -124,6 +120,54 @@ export function useViewerState({
     setSorter(view.sorter || []);
   };
 
+  const setColumnsFn = (newColumns: ViewColumn[]) => {
+    setColumns(newColumns);
+    setActiveView({
+      ...activeView,
+      columns: newColumns,
+    });
+  };
+
+  const setPageSizeFn = (size: number) => {
+    setPageSize(size);
+    setActiveView({
+      ...activeView,
+      pageSize: size,
+    });
+  };
+
+  const setActiveFiltersFn = (filters: ActiveFilter[]) => {
+    setActiveFilters(filters);
+    setActiveView({
+      ...activeView,
+      filters: filters,
+    });
+  };
+
+  const setTableSizeFn = (size: SizeType) => {
+    setTableSize(size);
+    setActiveView({
+      ...activeView,
+      tableSize: size,
+    });
+  };
+
+  const setConditionFn = (condition: Condition) => {
+    setCondition(condition);
+    setActiveView({
+      ...activeView,
+      condition: condition,
+    });
+  };
+
+  const setSorterFn = (sorter: SorterResult[]) => {
+    setSorter(sorter);
+    setActiveView({
+      ...activeView,
+      sorter: sorter,
+    });
+  };
+
   return {
     activeView,
     showFilter,
@@ -131,19 +175,19 @@ export function useViewerState({
     showViewPanel,
     setShowViewPanel: setShowViewPanelFn,
     columns,
-    setColumns,
+    setColumns: setColumnsFn,
     page,
     setPage,
     pageSize,
-    setPageSize,
+    setPageSize: setPageSizeFn,
     activeFilters,
-    setActiveFilters,
+    setActiveFilters: setActiveFiltersFn,
     tableSize,
-    setTableSize,
+    setTableSize: setTableSizeFn,
     condition,
-    setCondition,
+    setCondition: setConditionFn,
     sorter,
-    setSorter,
+    setSorter: setSorterFn,
     viewChanged,
     views,
     setViews,

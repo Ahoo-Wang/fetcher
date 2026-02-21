@@ -1,17 +1,15 @@
 import { Collapse, CollapseProps, Flex, Space } from 'antd';
-import { BarItem } from '../../topbar';
+import { BarItem } from '../../';
 import {
   MenuFoldOutlined,
   PlusOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { ViewState, ViewType } from '../types';
-import { ViewItemGroup } from './ViewItemGroup';
+import { ViewState, ViewType } from '../';
 
 import styles from './ViewPanel.module.less';
 import { useMemo, useState, MouseEvent } from 'react';
-import { ViewManageModal } from './ViewManageModal';
-import { SaveViewModal } from './SaveViewModal';
+import { ViewManageModal, SaveViewModal, ViewItemGroup } from './';
 import type * as React from 'react';
 
 export interface ViewPanelProps {
@@ -79,12 +77,17 @@ export function ViewPanel(props: ViewPanelProps) {
   };
 
   const handleCreateViewConfirmed = (name: string, type: ViewType) => {
-    onCreateView?.({
-      ...activeView,
-      name,
-      type,
-    });
-    setSaveViewModalOpened(false);
+    onCreateView?.(
+      {
+        ...activeView,
+        name,
+        type,
+        source: 'CUSTOM',
+      },
+      () => {
+        setSaveViewModalOpened(false);
+      },
+    );
   };
 
   const handleEditViewName = (view: ViewState, onSuccess?: () => void) => {

@@ -54,7 +54,7 @@ export interface ViewerProps<RecordType>
  * @param props
  * @constructor
  */
-export function Viewer<RecordType>({ ...props }: ViewerProps<RecordType>) {
+export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) {
   const {
     defaultViews,
     defaultViewId,
@@ -100,29 +100,6 @@ export function Viewer<RecordType>({ ...props }: ViewerProps<RecordType>) {
   const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
 
   const viewRef = useRef<ViewRef | null>(null);
-
-  // const onSaveView = (method: SaveViewMethod) => {
-  //   switch (method) {
-  //     case 'Update':
-  //       modal.confirm({
-  //         title: '确认覆盖当前视图？',
-  //         icon: <ExclamationCircleOutlined />,
-  //         content: '确认后将覆盖原筛选条件',
-  //         okText: '确认',
-  //         cancelText: '取消',
-  //         onOk: () => {
-  //           onUpdateView?.(activeView, newView => {
-  //             onSwitchView(newView);
-  //           });
-  //         },
-  //       });
-  //       break;
-  //     case 'SaveAs':
-  //       setSaveViewModalOpen(true);
-  //       setSaveViewModalMode('SaveAs');
-  //       break;
-  //   }
-  // };
 
   const handleCreateView = (view: ViewState, onSuccess?: () => void) => {
     console.log('onCreateView', view);
@@ -209,8 +186,8 @@ export function Viewer<RecordType>({ ...props }: ViewerProps<RecordType>) {
               <TopBar<RecordType>
                 tableSelectedItems={tableSelectedData}
                 title={definition.name}
-                viewName={activeView.name}
-                viewSource={activeView.source}
+                activeView={activeView}
+                views={views}
                 defaultTableSize={activeView.tableSize}
                 primaryAction={otherProps.primaryAction}
                 secondaryActions={otherProps.secondaryActions}
@@ -222,6 +199,9 @@ export function Viewer<RecordType>({ ...props }: ViewerProps<RecordType>) {
                 onShowFilterChange={setShowFilter}
                 onShowViewPanelChange={setShowViewPanel}
                 onTableSizeChange={setTableSize}
+                onCreateView={handleCreateView}
+                onUpdateView={handleUpdateView}
+                onDeleteView={handleDeleteView}
               />
             </Header>
             <View<RecordType>

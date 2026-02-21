@@ -1,7 +1,7 @@
 import { ViewColumn } from './viewer';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { ActiveFilter } from './filter';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { SorterResult } from 'antd/es/table/interface';
 import { all, Condition } from '@ahoo-wang/fetcher-wow';
 
