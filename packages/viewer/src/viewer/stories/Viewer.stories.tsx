@@ -245,7 +245,7 @@ const meta: Meta<typeof Viewer> = {
       description:
         'Callback fired when view state changes (filter, pagination, sort)',
     },
-    onViewChange: {
+    onSwitchView: {
       action: 'view changed',
       description: 'Callback fired when user switches view',
     },
@@ -294,7 +294,7 @@ const ViewerWrapper = (args: any) => {
     <Viewer<User>
       {...args}
       onLoadData={handleLoadData}
-      onViewChange={handleViewChange}
+      onSwitchView={handleViewChange}
       onCreateView={handleCreateView}
       onUpdateView={handleUpdateView}
       onDeleteView={handleDeleteView}

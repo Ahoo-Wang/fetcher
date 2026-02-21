@@ -43,7 +43,7 @@ export interface ViewerProps<RecordType>
 
   // callbacks
   onLoadData?: ViewChangeAction;
-  onViewChange?: (view: ViewState) => void;
+  onSwitchView?: (view: ViewState) => void;
 }
 
 /**

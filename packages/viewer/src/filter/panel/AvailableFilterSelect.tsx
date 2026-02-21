@@ -23,7 +23,6 @@ import {
   useState,
 } from 'react';
 import { ActiveFilter } from './FilterPanel';
-import { useLatest } from '@ahoo-wang/fetcher-react';
 
 export interface AvailableFilter {
   field: FilterField;
