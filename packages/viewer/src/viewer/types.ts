@@ -6,9 +6,9 @@ import {
   AttributesCapable,
   KeyCapable,
 } from '../';
-import { SorterResult, SortOrder } from 'antd/es/table/interface';
+import { SortOrder } from 'antd/es/table/interface';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { Condition } from '@ahoo-wang/fetcher-wow';
+import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import React from 'react';
 import { NamedCapable } from '@ahoo-wang/fetcher';
 
@@ -43,12 +43,10 @@ export interface ViewState {
   columns: ViewColumn[];
   tableSize: SizeType;
   pageSize: number;
-  condition: Condition;
-  internalCondition: Condition;
-  sorter?: SorterResult[];
+  condition?: Condition;
+  internalCondition?: Condition;
+  sorter?: FieldSort[];
 }
-
-
 
 export interface ViewColumn extends NamedCapable, KeyCapable {
   fixed: boolean;

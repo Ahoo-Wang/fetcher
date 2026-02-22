@@ -21,7 +21,7 @@ import {
   FilterPanelRef,
 } from '../filter';
 import type * as React from 'react';
-import { Condition, PagedList } from '@ahoo-wang/fetcher-wow';
+import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import { RefAttributes, useImperativeHandle, useRef } from 'react';
 import { FieldDefinition, ViewColumn } from '../viewer';
 import { ViewTable, ViewTableActionColumn, ViewTableRef } from '../table';
@@ -29,7 +29,7 @@ import {
   PrimaryKeyClickHandlerCapable,
   ViewTableSettingCapable,
 } from '../types';
-import type { SorterResult } from 'antd/es/table/interface';
+import { SorterResult, SortOrder } from 'antd/es/table/interface';
 import { useViewState, ViewChangeAction } from './';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 
@@ -144,11 +144,11 @@ export interface ViewProps<RecordType>
   /** Callback to update table size (controlled mode) */
   externalUpdateTableSize?: (size: SizeType) => void;
   /** Default sort configuration */
-  defaultSorter?: SorterResult[];
+  defaultSorter?: FieldSort[];
   /** Current sort configuration (controlled mode) */
-  externalSorter?: SorterResult[];
+  externalSorter?: FieldSort[];
   /** Callback to update sorter (controlled mode) */
-  externalUpdateSorter?: (sorter: SorterResult[]) => void;
+  externalUpdateSorter?: (sorter: FieldSort[]) => void;
   /** Default filter condition */
   defaultCondition?: Condition;
   /** Current filter condition (controlled mode) */
@@ -280,23 +280,49 @@ export function View<RecordType>({
   const handleSortChanged = (
     sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
   ) => {
-    let finalSorter: SorterResult[] = [];
+    console.log('handleSortChanged.sorter', sorter);
+
+    let finalSorter: FieldSort[] = [];
     if (Array.isArray(sorter)) {
-      finalSorter = sorter.map(it => ({ ...it }) as SorterResult);
+      finalSorter = sorter
+        .filter(it => it.field)
+        .map(
+          it =>
+            ({
+              field: Array.isArray(it.field)
+                ? [...it.field].join('.')
+                : it.field,
+              direction: it.order === 'ascend' ? 'ASC' : 'DESC',
+            }) as FieldSort,
+        );
     } else {
-      finalSorter = [{ ...sorter } as SorterResult];
+      if (sorter.field) {
+        finalSorter = [
+          {
+            field: Array.isArray(sorter.field)
+              ? [...sorter.field].join('.')
+              : sorter.field,
+            direction: sorter.order === 'ascend' ? 'ASC' : 'DESC',
+          } as FieldSort,
+        ];
+      } else {
+        finalSorter = [];
+      }
     }
 
-    setSorter(finalSorter);
     const newColumns = columns.map(column => {
-      const temp = finalSorter.find(it => it.field == column.key);
+      const temp = finalSorter.find(it => it.field == column.name);
       return temp
         ? {
             ...column,
-            sortOrder: temp.order,
+            sortOrder: (temp.direction === 'ASC'
+              ? 'ascend'
+              : 'descend') as SortOrder,
           }
-        : { ...column };
+        : { ...column, sortOrder: null };
     });
+
+    setSorter(finalSorter);
     setColumns(newColumns);
   };
 

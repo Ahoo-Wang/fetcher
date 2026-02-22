@@ -2,8 +2,7 @@ import { ViewColumn } from '../viewer';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { ActiveFilter } from '../filter';
 import { useState } from 'react';
-import { SorterResult } from 'antd/es/table/interface';
-import { all, Condition } from '@ahoo-wang/fetcher-wow';
+import { all, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 
 export const DEFAULT_CONDITION: Condition = all();
 
@@ -14,7 +13,7 @@ export interface UseActiveViewStateOptions {
   defaultCondition?: Condition;
   defaultPage?: number;
   defaultPageSize?: number;
-  defaultSorter?: SorterResult[];
+  defaultSorter?: FieldSort[];
 
   defaultTableSize?: SizeType;
 }
@@ -31,8 +30,8 @@ export interface UseActiveViewStateReturn {
   setPage: (page: number) => void;
   pageSize: number;
   setPageSize: (size: number) => void;
-  sorter: SorterResult[];
-  setSorter: (sorter: SorterResult[]) => void;
+  sorter: FieldSort[];
+  setSorter: (sorter: FieldSort[]) => void;
 
   tableSize: SizeType;
   setTableSize: (size: SizeType) => void;
@@ -56,7 +55,7 @@ export function useActiveViewState({
   const [page, setPage] = useState<number>(defaultPage);
   const [pageSize, setPageSize] = useState<number>(defaultPageSize);
   const [tableSize, setTableSize] = useState<SizeType>(defaultTableSize);
-  const [sorter, setSorter] = useState<SorterResult[]>(defaultSorter);
+  const [sorter, setSorter] = useState<FieldSort[]>(defaultSorter);
   const [condition, setCondition] = useState<Condition>(defaultCondition);
 
   const setColumnsFn = (columns: ViewColumn[]) => {
@@ -71,7 +70,7 @@ export function useActiveViewState({
     setCondition({ ...condition });
   };
 
-  const setSorterFn = (sorter: SorterResult[]) => {
+  const setSorterFn = (sorter: FieldSort[]) => {
     setSorter(sorter.map(it => ({ ...it })));
   };
 

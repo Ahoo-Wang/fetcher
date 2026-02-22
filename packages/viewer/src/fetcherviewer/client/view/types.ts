@@ -1,5 +1,5 @@
-import { Condition, PagedQuery } from '@ahoo-wang/fetcher-wow';
-import { ActiveFilter, ViewColumn, ViewSource, ViewType } from '../../../';
+import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import { ActiveFilter, ViewColumn, ViewSource } from '../../../';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { SorterResult } from 'antd/es/table/interface';
 
@@ -82,7 +82,7 @@ export interface CreateView {
   condition: Condition;
   internalCondition: Condition;
   pageSize: number;
-  sorter: SorterResult[];
+  sorter: FieldSort[];
   source: ViewSource;
   tableSize: SizeType;
 }
@@ -156,7 +156,7 @@ export interface EditView {
   condition: Condition;
   internalCondition: Condition;
   pageSize: number;
-  sorter: SorterResult[];
+  sorter: FieldSort[];
   source: ViewSource;
   tableSize: SizeType;
 }
@@ -233,7 +233,7 @@ export interface ViewCreated {
   condition: Condition;
   internalCondition: Condition;
   pageSize: number;
-  sorter: SorterResult[];
+  sorter: FieldSort[];
   source: ViewSource;
   tableSize: SizeType;
 }
@@ -310,7 +310,7 @@ export interface ViewEdited {
   condition: Condition;
   internalCondition: Condition;
   pageSize: number;
-  sorter: SorterResult[];
+  sorter: FieldSort[];
   source: ViewSource;
   tableSize: SizeType;
 }

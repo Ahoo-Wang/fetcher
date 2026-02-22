@@ -11,8 +11,7 @@
  * limitations under the License.
  */
 
-import { Condition } from '@ahoo-wang/fetcher-wow';
-import type { SorterResult } from 'antd/es/table/interface';
+import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import { useState } from 'react';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import {
@@ -36,7 +35,7 @@ export type ViewChangeAction = (
   condition: Condition,
   index: number,
   size: number,
-  sorter?: SorterResult[],
+  sorter?: FieldSort[],
 ) => void;
 
 /**
@@ -99,11 +98,11 @@ export interface UseViewStateOptions {
   /** Callback to update condition (controlled mode) */
   externalUpdateCondition?: (condition: Condition) => void;
   /** Default sort configuration (uncontrolled mode) */
-  defaultSorter?: SorterResult[];
+  defaultSorter?: FieldSort[];
   /** Current sort configuration (controlled mode) */
-  externalSorter?: SorterResult[];
+  externalSorter?: FieldSort[];
   /** Callback to update sorter (controlled mode) */
-  externalUpdateSorter?: (sorter: SorterResult[]) => void;
+  externalUpdateSorter?: (sorter: FieldSort[]) => void;
 
   /** Default table size (uncontrolled mode) */
   defaultTableSize: SizeType;
@@ -145,9 +144,9 @@ export interface UseViewStateReturn {
   /** Function to update condition */
   setCondition: (condition: Condition) => void;
   /** Current sort configuration */
-  sorter: SorterResult[];
+  sorter: FieldSort[];
   /** Function to update sorter */
-  setSorter: (sorter: SorterResult[]) => void;
+  setSorter: (sorter: FieldSort[]) => void;
 
   /** Current table size */
   tableSize: SizeType;
@@ -335,7 +334,7 @@ export function useViewState({
    * Updates sort configuration and triggers onChange callback.
    * @param sorter - New sort configuration array.
    */
-  const setSorterFn = (sorter: SorterResult[]) => {
+  const setSorterFn = (sorter: FieldSort[]) => {
     setSorter(sorter);
     onChange?.(condition, page, pageSize, sorter);
   };

@@ -1,12 +1,12 @@
 import { Spin } from 'antd';
 import { PaginationProps } from 'antd';
-import { SorterResult } from 'antd/es/table/interface';
 import { ViewTableActionColumn } from '../table';
 import { ViewState, Viewer, ViewMutationActionsCapable } from '../viewer';
 import { ViewTableSettingCapable } from '../types';
 import { useViewerDefinition, useViewerViews } from './hooks';
-import { useCallback } from 'react';
-import { Condition, pagedList } from '@ahoo-wang/fetcher-wow';
+import { useCallback, useMemo } from 'react';
+import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import { useFetchData } from './hooks/useFetchData';
 
 export interface FetcherViewerProps<RecordType>
   extends ViewTableSettingCapable, ViewMutationActionsCapable {
@@ -47,7 +47,7 @@ export function FetcherViewer<RecordType = any>({
   } = props;
 
   const {
-    definition,
+    viewerDefinition,
     loading: definitionLoading,
     error: definitionError,
   } = useViewerDefinition(viewerDefinitionId);
@@ -58,17 +58,27 @@ export function FetcherViewer<RecordType = any>({
     ownerId,
   );
 
+  const defaultView = useMemo(
+    () => getDefaultView(views, defaultViewId),
+    [views, defaultViewId],
+  );
+
+  const { dataSource, setQuery } = useFetchData<RecordType>({
+    viewerDefinition,
+    defaultView,
+  });
+
   const handleLoadData = useCallback(
     (
-      condition?: Condition,
-      page?: number,
-      pageSize?: number,
-      sorter?: SorterResult[],
+      condition: Condition,
+      page: number,
+      pageSize: number,
+      sorter?: FieldSort[],
     ) => {
-      // TODO: 实现数据加载逻辑
       console.log('Load data:', { condition, page, pageSize, sorter });
+      setQuery?.(condition, page, pageSize, sorter);
     },
-    [],
+    [setQuery],
   );
 
   const handleSwitchView = useCallback(
@@ -101,24 +111,21 @@ export function FetcherViewer<RecordType = any>({
     );
   }
 
-  if (!definition) {
+  if (!viewerDefinition) {
     return <div style={{ padding: 24 }}>未找到视图定义</div>;
   }
 
   if (views && views.length === 0) {
     return <div style={{ padding: 24 }}>未找到视图</div>;
   }
-  if (views && views.length > 0) {
-    const defaultView = getDefaultView(views, defaultViewId);
+
+  if (views && views.length > 0 && defaultView) {
     return (
       <Viewer<RecordType>
-        defaultViews={views!}
+        defaultViews={views}
         defaultView={defaultView}
-        definition={definition}
-        dataSource={pagedList<RecordType>({
-          total: 0,
-          list: [],
-        })}
+        definition={viewerDefinition}
+        dataSource={dataSource || { list: [], total: 0 }}
         pagination={pagination}
         actionColumn={actionColumn}
         onClickPrimaryKey={onClickPrimaryKey}
@@ -133,13 +140,26 @@ export function FetcherViewer<RecordType = any>({
     );
   }
 
-  return <div style={{ padding: 24 }}>未找到视图</div>;
-
-
-
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+      }}
+    >
+      <Spin size="large" />
+    </div>
+  );
 }
 
-function getDefaultView(views: ViewState[], defaultViewId?: string): ViewState {
+function getDefaultView(
+  views: ViewState[] | undefined,
+  defaultViewId?: string,
+): ViewState | undefined {
+  if (!views || views.length === 0) return undefined;
+
   let activeView: ViewState | undefined;
   if (defaultViewId) {
     activeView = views.find(view => view.id === defaultViewId);

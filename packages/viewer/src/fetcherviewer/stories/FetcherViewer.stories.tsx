@@ -12,14 +12,14 @@ import {
 const ACCEPT = 'Accept';
 const CONTENT_TYPE = 'Content-Type';
 const X_WAREHOUSE_ID = 'X-Warehouse-Id';
+const COSEC_APP_ID = 'cosec-app-id';
+
 
 class TestFetcherRequestInterceptor implements RequestInterceptor {
   name = 'RequestInterceptor';
   order = URL_RESOLVE_INTERCEPTOR_ORDER - 1;
 
   async intercept(exchange: FetchExchange): Promise<void> {
-    console.log(exchange.attributes);
-
     exchange.request.cache = 'no-store';
     exchange.request.credentials = 'omit';
     exchange.request.redirect = 'follow';
@@ -29,14 +29,12 @@ class TestFetcherRequestInterceptor implements RequestInterceptor {
       [ACCEPT]: 'application/json',
       [CONTENT_TYPE]: 'application/json',
       [X_WAREHOUSE_ID]: 'mydao-SH',
+      [COSEC_APP_ID]: 'pms',
       Authorization:
         'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkJ3dEJUZDAwZmgxNEYiLCJzdWIiOiIxWkUiLCJpYXQiOjE3NzE3NTQ5NDMsImV4cCI6MTc3MjAxNDE0Mywicm9sZXMiOlsiM1F2Il0sImF0dHJpYnV0ZXMiOnsiaXNPd25lciI6ImZhbHNlIiwiYXBwSWQiOiJwbXMiLCJkZXBhcnRtZW50cyI6W10sImF1dGhlbnRpY2F0ZUlkIjoiMFZCd3RBeDMwMGZoMTQ0In0sInRlbmFudElkIjoibXlkYW8ifQ.nAlXHTMLSx2lQQbWHfiCgDr4nX-gHmLkWudScdRnEOI',
     };
 
-    console.log('exchange.attributes.tenantId', exchange.attributes.get('tenantId'));
-    console.log('url before => ', exchange.request.url);
-    exchange.request.url = exchange.request.url.replace('{tenantId}', exchange.attributes.get('tenantId'));
-    console.log('url => ', exchange.request.url);
+    exchange.request.url = exchange.request.url.replace('{tenantId}', 'mydao');
   }
 }
 

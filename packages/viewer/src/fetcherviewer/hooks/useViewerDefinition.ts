@@ -4,7 +4,7 @@ import { viewerDefinitionQueryClientFactory } from '../client';
 import { ViewDefinition } from '../../';
 
 export interface UseViewerDefinitionResult {
-  definition: ViewDefinition | undefined;
+  viewerDefinition: ViewDefinition | undefined;
   loading: boolean;
   error: Error | undefined;
   refetch: () => void;
@@ -52,5 +52,5 @@ export function useViewerDefinition(
     };
   }, [viewerDefinitionId, refreshKey]);
 
-  return { definition, loading, error, refetch };
+  return { viewerDefinition: definition, loading, error, refetch };
 }

@@ -1,22 +1,15 @@
 import { ViewColumn, ViewDefinition, ViewState } from '../types';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useEffect, useRef, useState } from 'react';
-import { deepEqual } from '../../utils';
-import { useActiveViewState } from '../../hooks/useActiveViewState';
-import { ActiveFilter } from '../../filter';
-import { Condition } from '@ahoo-wang/fetcher-wow';
-import type { SorterResult } from 'antd/es/table/interface';
+import { deepEqual, ActiveFilter, useActiveViewState } from '../../';
+import { all, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 
 export type SearchDataConverter<R> = (
   condition: Condition,
   page: number,
   pageSize: number,
-  sorter?: SorterResult[],
+  sorter?: FieldSort[],
 ) => R;
-
-export interface SearchDataConverterCapable<R> {
-  searchDataConverter?: SearchDataConverter<R>;
-}
 
 export interface UseViewerStateOptions {
   views: ViewState[];
@@ -45,8 +38,8 @@ export interface UseViewerStateReturn {
   setPage: (page: number) => void;
   pageSize: number;
   setPageSize: (size: number) => void;
-  sorter: SorterResult[];
-  setSorter: (sorter: SorterResult[]) => void;
+  sorter: FieldSort[];
+  setSorter: (sorter: FieldSort[]) => void;
 
   tableSize: SizeType;
   setTableSize: (size: SizeType) => void;
@@ -115,7 +108,7 @@ export function useViewerState({
     setColumns(view.columns);
     setActiveFilters(view.filters);
     setTableSize(view.tableSize);
-    setCondition(view.condition);
+    setCondition(view.condition || all());
     setSorter(view.sorter || []);
   };
 
@@ -159,7 +152,7 @@ export function useViewerState({
     });
   };
 
-  const setSorterFn = (sorter: SorterResult[]) => {
+  const setSorterFn = (sorter: FieldSort[]) => {
     setSorter(sorter);
     setActiveView({
       ...activeView,
