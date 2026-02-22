@@ -5,7 +5,7 @@ import {
   ViewPanel,
   useViewerState,
   ViewMutationActionsCapable,
-  TopbarActionsCapable,
+  TopbarActionsCapable, GetRecordCountActionCapable,
 } from './';
 import styles from './Viewer.module.css';
 import {
@@ -26,6 +26,7 @@ const { Header, Sider, Content } = Layout;
 export interface ViewerProps<RecordType>
   extends
     ViewTableSettingCapable,
+    GetRecordCountActionCapable,
     ViewMutationActionsCapable,
     TopbarActionsCapable<RecordType> {
   defaultViews: ViewState[];
@@ -60,6 +61,7 @@ export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) 
     defaultView,
     definition,
     onLoadData,
+    onGetRecordCount,
     onCreateView,
     onUpdateView,
     onDeleteView,
@@ -169,6 +171,7 @@ export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) 
             countUrl={definition.countUrl}
             onSwitchView={handleSwitchView}
             onShowViewPanelChange={handleShowViewPanelChange}
+            onGetRecordCount={onGetRecordCount}
             onCreateView={handleCreateView}
             onUpdateView={handleUpdateView}
             onDeleteView={handleDeleteView}

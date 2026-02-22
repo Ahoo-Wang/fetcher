@@ -26,6 +26,7 @@ export interface TypedFilterProps
 
 const DEFAULT_VALUE_STYLE: React.CSSProperties = {
   flex: 'auto',
+  width: '100%',
 };
 
 export function TypedFilter(props: TypedFilterProps) {

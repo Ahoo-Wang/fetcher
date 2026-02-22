@@ -75,8 +75,14 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
     label: operatorLocale[supportedOperator],
   }));
   return (
-    <Space.Compact block style={props.style} className={props.className}>
-      <Button {...props.label}>{props.field.label}</Button>
+    <Space.Compact
+      block
+      style={{ ...props.style, width: '100%' }}
+      className={props.className}
+    >
+      <Button {...props.label} style={{ minWidth: 100 }}>
+        {props.field.label}
+      </Button>
       <Select
         style={{ minWidth: 120 }}
         onChange={filterState.setOperator}

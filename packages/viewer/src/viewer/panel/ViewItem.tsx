@@ -2,6 +2,7 @@ import { GetRecordCountActionCapable, ViewState } from '../';
 import { Flex, Tag } from 'antd';
 import styles from './ViewPanel.module.less';
 import { useEffect, useState } from 'react';
+import { all } from '@ahoo-wang/fetcher-wow';
 
 /**
  * Props for the ViewItem component.
@@ -97,11 +98,9 @@ export function ViewItem(props: ViewItemProps) {
 
   useEffect(() => {
     if (onGetRecordCount) {
-      Promise.resolve(onGetRecordCount(countUrl, view.condition)).then(
-        recordCount => {
-          setRecordCount(recordCount || 0);
-        },
-      );
+      onGetRecordCount(countUrl, view.condition || all()).then(recordCount => {
+        setRecordCount(recordCount || 0);
+      });
     }
   }, [countUrl, onGetRecordCount, view.condition]);
 

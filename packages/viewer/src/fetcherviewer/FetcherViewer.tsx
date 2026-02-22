@@ -7,6 +7,7 @@ import { useViewerDefinition, useViewerViews } from './hooks';
 import { useCallback, useMemo } from 'react';
 import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import { useFetchData } from './hooks/useFetchData';
+import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
 
 export interface FetcherViewerProps<RecordType>
   extends ViewTableSettingCapable, ViewMutationActionsCapable {
@@ -75,7 +76,6 @@ export function FetcherViewer<RecordType = any>({
       pageSize: number,
       sorter?: FieldSort[],
     ) => {
-      console.log('Load data:', { condition, page, pageSize, sorter });
       setQuery?.(condition, page, pageSize, sorter);
     },
     [setQuery],
@@ -86,6 +86,19 @@ export function FetcherViewer<RecordType = any>({
       onSwitchView?.(view);
     },
     [onSwitchView],
+  );
+
+  const onGetRecordCount = useCallback(
+    (countUrl: string, condition: Condition): Promise<number> => {
+      const fetcher = fetcherRegistrar.default;
+
+      return fetcher.post(countUrl, {
+        body: condition,
+      },{
+        resultExtractor: TextResultExtractor
+      });
+    },
+    [],
   );
 
   if (definitionLoading || viewsLoading) {
@@ -130,6 +143,7 @@ export function FetcherViewer<RecordType = any>({
         actionColumn={actionColumn}
         onClickPrimaryKey={onClickPrimaryKey}
         enableRowSelection={enableRowSelection}
+        onGetRecordCount={onGetRecordCount}
         onSwitchView={handleSwitchView}
         onLoadData={handleLoadData}
         viewTableSetting={viewTableSetting}

@@ -369,6 +369,15 @@ export function View<RecordType>({
           style={{ display: showFilter ? 'block' : 'none' }}
         >
           <EditableFilterPanel
+            row={{ gutter: [24, 16], wrap: true }}
+            col={{
+              xxl: 12,
+              xl: 12,
+              lg: 12,
+              md: 12,
+              sm: 24,
+              xs: 24,
+            }}
             ref={editableFilterPanelRef}
             filters={activeFilters}
             availableFilters={availableFilters}

@@ -47,6 +47,7 @@ export function TextFilter(props: FilterProps) {
         default: {
           return (
             <Input
+              style={{ width: '100%' }}
               value={filterState.value}
               onChange={e => filterState.setValue(e.target.value)}
               allowClear

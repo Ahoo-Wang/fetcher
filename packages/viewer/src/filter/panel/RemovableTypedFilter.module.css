@@ -1,0 +1,3 @@
+.fullWidthItem > :first-child {
+    width: 95% !important;
+}

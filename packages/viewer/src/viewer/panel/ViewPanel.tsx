@@ -1,5 +1,5 @@
 import { Collapse, CollapseProps, Flex, Space } from 'antd';
-import { BarItem } from '../../';
+import { BarItem, GetRecordCountActionCapable } from '../../';
 import {
   MenuFoldOutlined,
   PlusOutlined,
@@ -12,7 +12,7 @@ import { useMemo, useState, MouseEvent } from 'react';
 import { ViewManageModal, SaveViewModal, ViewItemGroup } from './';
 import type * as React from 'react';
 
-export interface ViewPanelProps {
+export interface ViewPanelProps extends GetRecordCountActionCapable {
   name: string;
   views: ViewState[];
   activeView: ViewState;
@@ -37,6 +37,7 @@ export function ViewPanel(props: ViewPanelProps) {
     onCreateView,
     onUpdateView,
     onDeleteView,
+    onGetRecordCount
   } = props;
 
   const personalViews = useMemo(() => {
@@ -115,6 +116,7 @@ export function ViewPanel(props: ViewPanelProps) {
           activeView={activeView}
           countUrl={countUrl}
           onSwitchView={view => onSwitchView(view)}
+          onGetRecordCount={onGetRecordCount}
         />
       ),
       extra: genExtra('PERSONAL'),
@@ -128,6 +130,7 @@ export function ViewPanel(props: ViewPanelProps) {
           activeView={activeView}
           countUrl={countUrl}
           onSwitchView={view => onSwitchView(view)}
+          onGetRecordCount={onGetRecordCount}
         />
       ),
       extra: genExtra('SHARED'),

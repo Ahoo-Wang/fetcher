@@ -1,16 +1,14 @@
 import { useFetcherPagedQuery } from '@ahoo-wang/fetcher-react';
-import { ViewDefinition, ViewState } from '../../viewer';
+import { ViewDefinition, ViewState, ViewChangeAction } from '../../';
 import {
   all,
   and,
   Condition,
   FieldSort,
   PagedList,
-  PagedQuery,
 } from '@ahoo-wang/fetcher-wow';
 import { FetcherError } from '@ahoo-wang/fetcher';
 import { useEffect } from 'react';
-import { ViewChangeAction } from '../../view';
 
 export interface UseFetchDataOptions {
   viewerDefinition: ViewDefinition | undefined;

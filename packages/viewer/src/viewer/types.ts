@@ -60,7 +60,7 @@ export interface TopBarActionItem<RecordType> extends ActionItem<RecordType> {}
 export type GetRecordCountAction = (
   countUrl: string,
   condition: Condition,
-) => number | Promise<number>;
+) => Promise<number>;
 
 export type ViewMutationAction = (
   view: ViewState,
