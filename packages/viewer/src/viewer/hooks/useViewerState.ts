@@ -1,9 +1,9 @@
-import { ViewColumn, ViewDefinition, ViewState } from './types';
+import { ViewColumn, ViewDefinition, ViewState } from '../types';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useEffect, useRef, useState } from 'react';
-import { deepEqual } from '../utils';
-import { useActiveViewState } from '../useActiveViewState';
-import { ActiveFilter } from '../filter';
+import { deepEqual } from '../../utils';
+import { useActiveViewState } from '../../hooks/useActiveViewState';
+import { ActiveFilter } from '../../filter';
 import { Condition } from '@ahoo-wang/fetcher-wow';
 import type { SorterResult } from 'antd/es/table/interface';
 

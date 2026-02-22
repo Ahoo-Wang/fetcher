@@ -48,6 +48,8 @@ export interface ViewState {
   sorter?: SorterResult[];
 }
 
+
+
 export interface ViewColumn extends NamedCapable, KeyCapable {
   fixed: boolean;
   hidden: boolean;

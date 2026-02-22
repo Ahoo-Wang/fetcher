@@ -1,6 +1,6 @@
-import { ViewColumn } from './viewer';
+import { ViewColumn } from '../viewer';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { ActiveFilter } from './filter';
+import { ActiveFilter } from '../filter';
 import { useState } from 'react';
 import { SorterResult } from 'antd/es/table/interface';
 import { all, Condition } from '@ahoo-wang/fetcher-wow';

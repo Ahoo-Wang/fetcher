@@ -20,7 +20,7 @@ import {
   ViewColumn,
   DEFAULT_CONDITION,
   useActiveViewState,
-} from '../';
+} from '../../index';
 
 /**
  * Callback type for view state changes.

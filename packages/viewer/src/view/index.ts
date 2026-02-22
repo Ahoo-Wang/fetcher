@@ -1,2 +1,2 @@
 export * from './View'
-export * from './useViewState'
+export * from './hooks'
