@@ -29,7 +29,7 @@ export interface ViewerProps<RecordType>
     ViewMutationActionsCapable,
     TopbarActionsCapable<RecordType> {
   defaultViews: ViewState[];
-  defaultViewId?: string;
+  defaultView: ViewState;
   definition: ViewDefinition;
 
   // for view
@@ -57,7 +57,7 @@ export interface ViewerProps<RecordType>
 export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) {
   const {
     defaultViews,
-    defaultViewId,
+    defaultView,
     definition,
     onLoadData,
     onCreateView,
@@ -93,7 +93,7 @@ export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) 
     reset,
   } = useViewerState({
     views: defaultViews,
-    defaultViewId,
+    defaultView,
     definition,
   });
 

@@ -20,7 +20,7 @@ export interface SearchDataConverterCapable<R> {
 
 export interface UseViewerStateOptions {
   views: ViewState[];
-  defaultViewId?: string;
+  defaultView: ViewState;
   definition: ViewDefinition;
   defaultShowFilter?: boolean;
   defaultShowViewPanel?: boolean;
@@ -62,10 +62,9 @@ export function useViewerState({
   defaultShowViewPanel = true,
   ...options
 }: UseViewerStateOptions): UseViewerStateReturn {
-  const view = getActiveView(options.views, options.defaultViewId);
-  const originalView = useRef<ViewState>(view);
+  const originalView = useRef<ViewState>(options.defaultView);
   const [views, setViews] = useState<ViewState[]>(options.views);
-  const [activeView, setActiveView] = useState<ViewState>(view);
+  const [activeView, setActiveView] = useState<ViewState>(options.defaultView);
   const [showFilter, setShowFilter] = useState(defaultShowFilter);
   const [showViewPanel, setShowViewPanel] = useState(defaultShowViewPanel);
 
@@ -194,21 +193,4 @@ export function useViewerState({
     onSwitchView: onSwitchViewFn,
     reset: resetFn,
   };
-}
-
-function getActiveView(views: ViewState[], defaultViewId?: string): ViewState {
-  let activeView: ViewState | undefined;
-  if (defaultViewId) {
-    activeView = views.find(view => view.id === defaultViewId);
-    if (activeView) {
-      return activeView;
-    }
-  }
-
-  activeView = views.find(view => view.isDefault);
-  if (activeView) {
-    return activeView;
-  }
-
-  return views[0];
 }

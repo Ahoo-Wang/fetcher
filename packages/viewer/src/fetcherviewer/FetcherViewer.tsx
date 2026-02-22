@@ -27,13 +27,13 @@ export interface FetcherViewerProps<RecordType>
   onSwitchView?: (view: ViewState) => void;
 }
 
-export function FetcherViewer<RecordType = any>(
-  props: FetcherViewerProps<RecordType>,
-) {
+export function FetcherViewer<RecordType = any>({
+  ownerId = '(0)',
+  tenantId = '(0)',
+  ...props
+}: FetcherViewerProps<RecordType>) {
   const {
     viewerDefinitionId,
-    ownerId,
-    tenantId,
     defaultViewId,
     pagination,
     actionColumn,
@@ -105,51 +105,53 @@ export function FetcherViewer<RecordType = any>(
     return <div style={{ padding: 24 }}>未找到视图定义</div>;
   }
 
-  const defaultViews =
-    views.length > 0
-      ? views
-      : [
-          {
-            id: 'default',
-            name: '默认视图',
-            definitionId: viewerDefinitionId,
-            type: 'PERSONAL' as const,
-            source: 'SYSTEM' as const,
-            isDefault: true,
-            filters: [],
-            columns: definition.fields.map(field => ({
-              name: field.name,
-              key: field.name,
-              fixed: false,
-              hidden: false,
-            })),
-            tableSize: 'middle' as const,
-            pageSize:
-              pagination === false ? 0 : (pagination?.defaultPageSize ?? 20),
-            condition: {},
-            internalCondition: {},
-          },
-        ];
+  if (views && views.length === 0) {
+    return <div style={{ padding: 24 }}>未找到视图</div>;
+  }
+  if (views && views.length > 0) {
+    const defaultView = getDefaultView(views, defaultViewId);
+    return (
+      <Viewer<RecordType>
+        defaultViews={views!}
+        defaultView={defaultView}
+        definition={definition}
+        dataSource={pagedList<RecordType>({
+          total: 0,
+          list: [],
+        })}
+        pagination={pagination}
+        actionColumn={actionColumn}
+        onClickPrimaryKey={onClickPrimaryKey}
+        enableRowSelection={enableRowSelection}
+        onSwitchView={handleSwitchView}
+        onLoadData={handleLoadData}
+        viewTableSetting={viewTableSetting}
+        onCreateView={onCreateView}
+        onUpdateView={onUpdateView}
+        onDeleteView={onDeleteView}
+      />
+    );
+  }
 
-  return (
-    <Viewer<RecordType>
-      defaultViews={defaultViews}
-      defaultViewId={defaultViewId}
-      definition={definition}
-      dataSource={pagedList<RecordType>({
-        total: 0,
-        list: [],
-      })}
-      pagination={pagination}
-      actionColumn={actionColumn}
-      onClickPrimaryKey={onClickPrimaryKey}
-      enableRowSelection={enableRowSelection}
-      onSwitchView={handleSwitchView}
-      onLoadData={handleLoadData}
-      viewTableSetting={viewTableSetting}
-      onCreateView={onCreateView}
-      onUpdateView={onUpdateView}
-      onDeleteView={onDeleteView}
-    />
-  );
+  return <div style={{ padding: 24 }}>未找到视图</div>;
+
+
+
+}
+
+function getDefaultView(views: ViewState[], defaultViewId?: string): ViewState {
+  let activeView: ViewState | undefined;
+  if (defaultViewId) {
+    activeView = views.find(view => view.id === defaultViewId);
+    if (activeView) {
+      return activeView;
+    }
+  }
+
+  activeView = views.find(view => view.isDefault);
+  if (activeView) {
+    return activeView;
+  }
+
+  return views[0];
 }
