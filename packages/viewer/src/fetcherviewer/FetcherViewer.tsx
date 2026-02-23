@@ -1,16 +1,26 @@
 import { Spin } from 'antd';
 import { PaginationProps } from 'antd';
-import { ViewTableActionColumn } from '../table';
-import { ViewState, Viewer, ViewMutationActionsCapable } from '../viewer';
-import { ViewTableSettingCapable } from '../types';
-import { useViewerDefinition, useViewerViews } from './hooks';
+import {
+  ViewTableSettingCapable,
+  ViewTableActionColumn,
+  ViewState,
+  Viewer,
+} from '../';
+import {
+  useViewerDefinition,
+  useViewerViews,
+  useFetchData,
+  CreateView,
+  EditView,
+  ViewCommandClient,
+} from './';
 import { useCallback, useMemo } from 'react';
-import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
-import { useFetchData } from './hooks/useFetchData';
+import { CommandResult, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
 
-export interface FetcherViewerProps<RecordType>
-  extends ViewTableSettingCapable, ViewMutationActionsCapable {
+export interface FetcherViewerProps<
+  RecordType,
+> extends ViewTableSettingCapable {
   viewerDefinitionId: string;
   ownerId?: string;
   tenantId?: string;
@@ -28,6 +38,8 @@ export interface FetcherViewerProps<RecordType>
   onSwitchView?: (view: ViewState) => void;
 }
 
+const viewCommandClient = new ViewCommandClient();
+
 export function FetcherViewer<RecordType = any>({
   ownerId = '(0)',
   tenantId = '(0)',
@@ -42,9 +54,6 @@ export function FetcherViewer<RecordType = any>({
     enableRowSelection,
     onSwitchView,
     viewTableSetting,
-    onCreateView,
-    onUpdateView,
-    onDeleteView,
   } = props;
 
   const {
@@ -92,10 +101,59 @@ export function FetcherViewer<RecordType = any>({
     (countUrl: string, condition: Condition): Promise<number> => {
       const fetcher = fetcherRegistrar.default;
 
-      return fetcher.post(countUrl, {
-        body: condition,
-      },{
-        resultExtractor: TextResultExtractor
+      return fetcher.post(
+        countUrl,
+        {
+          body: condition,
+        },
+        {
+          resultExtractor: TextResultExtractor,
+        },
+      );
+    },
+    [],
+  );
+
+  const handleCreateView = useCallback(
+    (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
+      const command: CreateView = {
+        ...view,
+      };
+      viewCommandClient
+        .createView(view.type, {
+          body: command,
+        })
+        .then((result: CommandResult) => {
+          const newView = {
+            ...view,
+            id: result.aggregateId,
+          };
+          onSuccess?.(newView);
+        });
+    },
+    [],
+  );
+
+  const handleUpdateView = useCallback(
+    (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
+      const command: EditView = {
+        ...view,
+      };
+      viewCommandClient
+        .editView(view.type, view.id, {
+          body: command,
+        })
+        .then(() => {
+          onSuccess?.(view);
+        });
+    },
+    [],
+  );
+
+  const handleDeleteView = useCallback(
+    (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
+      viewCommandClient.defaultDeleteAggregate(view.id).then(() => {
+        onSuccess?.(view);
       });
     },
     [],
@@ -147,9 +205,9 @@ export function FetcherViewer<RecordType = any>({
         onSwitchView={handleSwitchView}
         onLoadData={handleLoadData}
         viewTableSetting={viewTableSetting}
-        onCreateView={onCreateView}
-        onUpdateView={onUpdateView}
-        onDeleteView={onDeleteView}
+        onCreateView={handleCreateView}
+        onUpdateView={handleUpdateView}
+        onDeleteView={handleDeleteView}
       />
     );
   }

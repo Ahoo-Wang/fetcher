@@ -35,6 +35,7 @@ class TestFetcherRequestInterceptor implements RequestInterceptor {
     };
 
     exchange.request.url = exchange.request.url.replace('{tenantId}', 'mydao');
+    exchange.request.url = exchange.request.url.replace('{ownerId}', '1ZE');
   }
 }
 
@@ -78,18 +79,6 @@ const meta: Meta<typeof FetcherViewer> = {
     viewTableSetting: {
       control: 'object',
       description: 'Table settings panel configuration',
-    },
-    onCreateView: {
-      action: 'create view',
-      description: 'Callback fired when creating a new view',
-    },
-    onUpdateView: {
-      action: 'update view',
-      description: 'Callback fired when updating an existing view',
-    },
-    onDeleteView: {
-      action: 'delete view',
-      description: 'Callback fired when deleting a view',
     },
     onClickPrimaryKey: {
       action: 'primary key clicked',

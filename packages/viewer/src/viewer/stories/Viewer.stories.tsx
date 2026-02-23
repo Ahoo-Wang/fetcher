@@ -167,7 +167,7 @@ const viewDefinition: ViewDefinition = {
 };
 
 const meta: Meta<typeof Viewer> = {
-  title: 'Viewer/Viewer',
+  title: 'Viewer',
   component: Viewer,
   parameters: {
     layout: 'fullscreen',
@@ -184,9 +184,9 @@ const meta: Meta<typeof Viewer> = {
       control: 'object',
       description: 'List of available views',
     },
-    defaultViewId: {
-      control: 'text',
-      description: 'Default view ID to display',
+    defaultView: {
+      control: 'object',
+      description: 'Default view to display',
     },
     definition: {
       control: 'object',
@@ -305,7 +305,7 @@ const ViewerWrapper = (args: any) => {
 export const Basic: Story = {
   args: {
     defaultViews: views,
-    defaultViewId: 'default-view',
+    defaultView: views[0],
     definition: viewDefinition,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
@@ -323,7 +323,7 @@ export const Basic: Story = {
 export const WithRowSelection: Story = {
   args: {
     defaultViews: views,
-    defaultViewId: 'default-view',
+    defaultView: views[0],
     definition: viewDefinition,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
@@ -337,7 +337,7 @@ export const WithRowSelection: Story = {
 export const WithBatchActions: Story = {
   args: {
     defaultViews: views,
-    defaultViewId: 'default-view',
+    defaultView: views[0],
     definition: viewDefinition,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
@@ -365,7 +365,7 @@ export const WithBatchActions: Story = {
 export const WithTableSettings: Story = {
   args: {
     defaultViews: views,
-    defaultViewId: 'default-view',
+    defaultView: views[0],
     definition: viewDefinition,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
@@ -379,7 +379,7 @@ export const WithTableSettings: Story = {
 export const WithActionColumn: Story = {
   args: {
     defaultViews: views,
-    defaultViewId: 'default-view',
+    defaultView: views[0],
     definition: viewDefinition,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
@@ -413,7 +413,7 @@ export const WithActionColumn: Story = {
 export const WithPrimaryAction: Story = {
   args: {
     defaultViews: views,
-    defaultViewId: 'default-view',
+    defaultView: views[0],
     definition: viewDefinition,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
@@ -431,7 +431,7 @@ export const WithPrimaryAction: Story = {
 export const WithSecondaryActions: Story = {
   args: {
     defaultViews: views,
-    defaultViewId: 'default-view',
+    defaultView: views[0],
     definition: viewDefinition,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
@@ -459,7 +459,7 @@ export const WithSecondaryActions: Story = {
 export const SmallTableSize: Story = {
   args: {
     defaultViews: views.map(v => ({ ...v, tableSize: 'small' as SizeType })),
-    defaultViewId: 'default-view',
+    defaultView: views[0],
     definition: viewDefinition,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
@@ -473,7 +473,7 @@ export const SmallTableSize: Story = {
 export const LargeTableSize: Story = {
   args: {
     defaultViews: views.map(v => ({ ...v, tableSize: 'large' as SizeType })),
-    defaultViewId: 'default-view',
+    defaultView: views[0],
     definition: viewDefinition,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,
@@ -487,7 +487,7 @@ export const LargeTableSize: Story = {
 export const WithoutPagination: Story = {
   args: {
     defaultViews: views,
-    defaultViewId: 'default-view',
+    defaultView: views[0],
     definition: viewDefinition,
     dataSource: mockPagedData,
     pagination: false,
@@ -501,7 +501,7 @@ export const WithoutPagination: Story = {
 export const WithAllActions: Story = {
   args: {
     defaultViews: views,
-    defaultViewId: 'default-view',
+    defaultView: views[0],
     definition: viewDefinition,
     dataSource: mockPagedData,
     pagination: {} as PaginationProps,

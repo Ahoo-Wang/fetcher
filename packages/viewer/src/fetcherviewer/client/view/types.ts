@@ -1,7 +1,6 @@
 import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import { ActiveFilter, ViewColumn, ViewSource } from '../../../';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { SorterResult } from 'antd/es/table/interface';
 
 /**
  * 创建视图
@@ -79,10 +78,10 @@ export interface CreateView {
   columns: ViewColumn[];
   filters: ActiveFilter[];
   isDefault: boolean;
-  condition: Condition;
-  internalCondition: Condition;
+  condition?: Condition;
+  internalCondition?: Condition;
   pageSize: number;
-  sorter: FieldSort[];
+  sorter?: FieldSort[];
   source: ViewSource;
   tableSize: SizeType;
 }
@@ -153,10 +152,10 @@ export interface EditView {
   columns: ViewColumn[];
   filters: ActiveFilter[];
   isDefault: boolean;
-  condition: Condition;
-  internalCondition: Condition;
+  condition?: Condition;
+  internalCondition?: Condition;
   pageSize: number;
-  sorter: FieldSort[];
+  sorter?: FieldSort[];
   source: ViewSource;
   tableSize: SizeType;
 }
