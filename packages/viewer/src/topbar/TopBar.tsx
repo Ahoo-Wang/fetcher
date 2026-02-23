@@ -84,7 +84,6 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   const {
     title,
     activeView,
-    views,
     primaryAction,
     secondaryActions,
     batchActions,
@@ -99,14 +98,13 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     onTableSizeChange,
     onCreateView,
     onUpdateView,
-    onDeleteView
   } = props;
 
   const [saveViewModalType, setSaveViewModalType] = useState<
     'Create' | 'SaveAs'
   >('Create');
   const [saveViewModalOpened, setSaveViewModalOpened] = useState(false);
-  const [defaultCreateViewType, setDefaultCreateViewType] =
+  const [defaultCreateViewType] =
     useState<ViewType>('PERSONAL');
 
   let batchMenuItems: MenuProps['items'] = [];
