@@ -5,6 +5,7 @@ import {
   ViewTableActionColumn,
   ViewState,
   Viewer,
+  useRefreshDataEventBus,
 } from '../';
 import {
   useViewerDefinition,
@@ -14,13 +15,21 @@ import {
   EditView,
   ViewCommandClient,
 } from './';
-import { useCallback, useMemo } from 'react';
+import {
+  RefAttributes,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+} from 'react';
 import { CommandResult, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
 
-export interface FetcherViewerProps<
-  RecordType,
-> extends ViewTableSettingCapable {
+export interface FetcherViewerRef {
+  refreshData: () => void;
+}
+
+export interface FetcherViewerProps<RecordType>
+  extends ViewTableSettingCapable, RefAttributes<FetcherViewerRef> {
   viewerDefinitionId: string;
   ownerId?: string;
   tenantId?: string;
@@ -41,11 +50,12 @@ export interface FetcherViewerProps<
 const viewCommandClient = new ViewCommandClient();
 
 export function FetcherViewer<RecordType = any>({
-  ownerId = '(0)',
-  tenantId = '(0)',
-  ...props
-}: FetcherViewerProps<RecordType>) {
+                                                  ownerId = '(0)',
+                                                  tenantId = '(0)',
+                                                  ...props
+                                                }: FetcherViewerProps<RecordType>) {
   const {
+    ref,
     viewerDefinitionId,
     defaultViewId,
     pagination,
@@ -162,6 +172,12 @@ export function FetcherViewer<RecordType = any>({
     },
     [],
   );
+
+  const { publish } = useRefreshDataEventBus();
+
+  useImperativeHandle<FetcherViewerRef, FetcherViewerRef>(ref, () => ({
+    refreshData: publish,
+  }));
 
   if (definitionLoading || viewsLoading) {
     return (
