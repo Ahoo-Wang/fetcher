@@ -11,6 +11,14 @@
  * limitations under the License.
  */
 
+declare const globalThis: {
+  BroadcastChannel?: new (name: string) => { postMessage: (data: unknown) => void; close: () => void; onmessage: ((event: { data: unknown }) => void) | null };
+  window?: Record<string, unknown>;
+  StorageEvent?: new (type: string, eventInitDict?: StorageEventInit) => StorageEvent;
+  localStorage?: Record<string, unknown>;
+  sessionStorage?: Record<string, unknown>;
+};
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   isBroadcastChannelSupported,
@@ -23,29 +31,30 @@ describe('CrossTabMessenger utilities', () => {
   let originalBroadcastChannel: any;
 
   beforeEach(() => {
-    originalBroadcastChannel = (global as any).BroadcastChannel;
+    originalBroadcastChannel = globalThis.BroadcastChannel;
   });
 
   afterEach(() => {
-    (global as any).BroadcastChannel = originalBroadcastChannel;
+    globalThis.BroadcastChannel = originalBroadcastChannel;
   });
 
   describe('isBroadcastChannelSupported', () => {
     it('should return true when BroadcastChannel is supported', () => {
       const MockBroadcastChannel = vi.fn();
       MockBroadcastChannel.prototype = { postMessage: vi.fn() };
-      (global as any).BroadcastChannel = MockBroadcastChannel;
+      globalThis.BroadcastChannel = MockBroadcastChannel;
       expect(isBroadcastChannelSupported()).toBe(true);
     });
 
     it('should return false when BroadcastChannel is not available', () => {
-      delete (global as any).BroadcastChannel;
+      delete globalThis.BroadcastChannel;
       expect(isBroadcastChannelSupported()).toBe(false);
     });
 
     it('should return false when BroadcastChannel.prototype.postMessage is not available', () => {
-      (global as any).BroadcastChannel = function () {};
-      delete (global as any).BroadcastChannel.prototype.postMessage;
+      const MockBroadcastChannel = function () {};
+      MockBroadcastChannel.prototype = {};
+      (globalThis as Record<string, unknown>).BroadcastChannel = MockBroadcastChannel;
       expect(isBroadcastChannelSupported()).toBe(false);
     });
   });
@@ -56,70 +65,69 @@ describe('CrossTabMessenger utilities', () => {
     let originalLocalStorage: any;
 
     beforeEach(() => {
-      originalWindow = (global as any).window;
-      originalStorageEvent = (global as any).StorageEvent;
-      originalLocalStorage = (global as any).localStorage;
+      originalWindow = globalThis.window;
+      originalStorageEvent = globalThis.StorageEvent;
+      originalLocalStorage = globalThis.localStorage;
     });
 
     afterEach(() => {
-      (global as any).window = originalWindow;
-      (global as any).StorageEvent = originalStorageEvent;
-      (global as any).localStorage = originalLocalStorage;
+      globalThis.window = originalWindow;
+      globalThis.StorageEvent = originalStorageEvent;
+      globalThis.localStorage = originalLocalStorage;
     });
 
     it('should return true when all StorageEvent requirements are met', () => {
-      (global as any).window = { addEventListener: vi.fn() };
-      (global as any).StorageEvent = function () {};
-      (global as any).localStorage = {};
+      (globalThis as Record<string, unknown>).window = { addEventListener: vi.fn() };
+      (globalThis as Record<string, unknown>).StorageEvent = function () {};
+      (globalThis as Record<string, unknown>).localStorage = {};
       expect(isStorageEventSupported()).toBe(true);
     });
 
     it('should return false when window is not available', () => {
-      delete (global as any).window;
+      delete (globalThis as Record<string, unknown>).window;
       expect(isStorageEventSupported()).toBe(false);
     });
 
     it('should return false when StorageEvent is not available', () => {
-      (global as any).window = { addEventListener: vi.fn() };
-      delete (global as any).StorageEvent;
-      (global as any).localStorage = {};
+      (globalThis as Record<string, unknown>).window = { addEventListener: vi.fn() };
+      delete (globalThis as Record<string, unknown>).StorageEvent;
+      (globalThis as Record<string, unknown>).localStorage = {};
       expect(isStorageEventSupported()).toBe(false);
     });
 
     it('should return false when addEventListener is not available', () => {
-      (global as any).window = {};
-      (global as any).StorageEvent = function () {};
-      (global as any).localStorage = {};
+      (globalThis as Record<string, unknown>).window = {};
+      (globalThis as Record<string, unknown>).StorageEvent = function () {};
+      (globalThis as Record<string, unknown>).localStorage = {};
       expect(isStorageEventSupported()).toBe(false);
     });
 
     it('should return false when neither localStorage nor sessionStorage is available', () => {
-      (global as any).window = { addEventListener: vi.fn() };
-      (global as any).StorageEvent = function () {};
-      delete (global as any).localStorage;
-      delete (global as any).sessionStorage;
+      (globalThis as Record<string, unknown>).window = { addEventListener: vi.fn() };
+      (globalThis as Record<string, unknown>).StorageEvent = function () {};
+      delete (globalThis as Record<string, unknown>).localStorage;
+      delete (globalThis as Record<string, unknown>).sessionStorage;
       expect(isStorageEventSupported()).toBe(false);
     });
 
     it('should return true when sessionStorage is available but localStorage is not', () => {
-      (global as any).window = { addEventListener: vi.fn() };
-      (global as any).StorageEvent = function () {};
-      delete (global as any).localStorage;
-      (global as any).sessionStorage = {};
+      (globalThis as Record<string, unknown>).window = { addEventListener: vi.fn() };
+      (globalThis as Record<string, unknown>).StorageEvent = function () {};
+      delete (globalThis as Record<string, unknown>).localStorage;
+      (globalThis as Record<string, unknown>).sessionStorage = {};
       expect(isStorageEventSupported()).toBe(true);
     });
   });
 
   describe('createCrossTabMessenger', () => {
     it('should return BroadcastChannelMessenger when supported', () => {
-      const mockBroadcastChannel = {
-        postMessage: vi.fn(),
-        close: vi.fn(),
-        onmessage: null,
-      };
-      const MockBroadcastChannel = vi.fn(() => mockBroadcastChannel);
-      MockBroadcastChannel.prototype = { postMessage: vi.fn() };
-      (global as any).BroadcastChannel = MockBroadcastChannel;
+      class MockBroadcastChannel {
+        postMessage = vi.fn();
+        close = vi.fn();
+        onmessage = null;
+        constructor(public name: string) {}
+      }
+      globalThis.BroadcastChannel = MockBroadcastChannel;
 
       const messenger = createCrossTabMessenger('test-channel');
       expect(messenger).toBeDefined();
@@ -129,8 +137,7 @@ describe('CrossTabMessenger utilities', () => {
     });
 
     it('should return StorageMessenger when BroadcastChannel is not supported but StorageEvent is', () => {
-      delete (global as any).BroadcastChannel;
-      // StorageEvent support is mocked in the test environment
+      delete globalThis.BroadcastChannel;
 
       const messenger = createCrossTabMessenger('test-channel');
       expect(messenger).toBeDefined();
@@ -138,11 +145,11 @@ describe('CrossTabMessenger utilities', () => {
     });
 
     it('should return undefined when neither BroadcastChannel nor StorageEvent is supported', () => {
-      delete (global as any).BroadcastChannel;
-      delete (global as any).window;
-      delete (global as any).StorageEvent;
-      delete (global as any).localStorage;
-      delete (global as any).sessionStorage;
+      delete globalThis.BroadcastChannel;
+      delete globalThis.window;
+      delete globalThis.StorageEvent;
+      delete globalThis.localStorage;
+      delete globalThis.sessionStorage;
 
       const messenger = createCrossTabMessenger('test-channel');
       expect(messenger).toBeUndefined();

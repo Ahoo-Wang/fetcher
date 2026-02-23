@@ -11,33 +11,43 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+declare const globalThis: {
+  BroadcastChannel?: new (name: string) => { postMessage: (data: unknown) => void; close: () => void; onmessage: ((event: { data: unknown }) => void) | null };
+};
+
+import { describe, it, expect, vi, beforeEach, afterEach, MockInstance } from 'vitest';
 import { BroadcastChannelMessenger } from '../../src';
 
 describe('BroadcastChannelMessenger', () => {
-  let mockBroadcastChannel: any;
   let originalBroadcastChannel: any;
+  let BroadcastChannelMock: any;
+  let lastInstance: any;
 
   beforeEach(() => {
-    mockBroadcastChannel = {
-      postMessage: vi.fn(),
-      close: vi.fn(),
-      onmessage: null,
-    };
+    originalBroadcastChannel = globalThis.BroadcastChannel;
 
-    originalBroadcastChannel = (global as any).BroadcastChannel;
-    (global as any).BroadcastChannel = vi.fn(() => mockBroadcastChannel);
+    class MockBroadcastChannel {
+      static mockClear = vi.fn();
+      postMessage = vi.fn();
+      close = vi.fn();
+      onmessage = null;
+      constructor(public name: string) {
+        lastInstance = this;
+      }
+    }
+
+    BroadcastChannelMock = MockBroadcastChannel;
+    (globalThis as Record<string, unknown>).BroadcastChannel = BroadcastChannelMock;
   });
 
   afterEach(() => {
-    (global as any).BroadcastChannel = originalBroadcastChannel;
+    (globalThis as Record<string, unknown>).BroadcastChannel = originalBroadcastChannel;
+    lastInstance = null;
   });
 
   it('should create BroadcastChannel with correct name', () => {
     const messenger = new BroadcastChannelMessenger('test-channel');
-    expect((global as any).BroadcastChannel).toHaveBeenCalledWith(
-      'test-channel',
-    );
+    expect(lastInstance.name).toBe('test-channel');
   });
 
   it('should post messages via BroadcastChannel', () => {
@@ -46,7 +56,7 @@ describe('BroadcastChannelMessenger', () => {
 
     messenger.postMessage(testData);
 
-    expect(mockBroadcastChannel.postMessage).toHaveBeenCalledWith(testData);
+    expect(lastInstance.postMessage).toHaveBeenCalledWith(testData);
   });
 
   it('should set onmessage handler on BroadcastChannel', () => {
@@ -55,7 +65,7 @@ describe('BroadcastChannelMessenger', () => {
 
     messenger.onmessage = handler;
 
-    expect(typeof mockBroadcastChannel.onmessage).toBe('function');
+    expect(typeof lastInstance.onmessage).toBe('function');
   });
 
   it('should call handler when message is received', () => {
@@ -64,8 +74,7 @@ describe('BroadcastChannelMessenger', () => {
 
     messenger.onmessage = handler;
 
-    // Simulate receiving a message
-    mockBroadcastChannel.onmessage({ data: 'test message' });
+    lastInstance.onmessage({ data: 'test message' });
 
     expect(handler).toHaveBeenCalledWith('test message');
   });
@@ -75,7 +84,7 @@ describe('BroadcastChannelMessenger', () => {
 
     messenger.close();
 
-    expect(mockBroadcastChannel.close).toHaveBeenCalled();
+    expect(lastInstance.close).toHaveBeenCalled();
   });
 
   it('should handle multiple message handlers', () => {
@@ -86,8 +95,7 @@ describe('BroadcastChannelMessenger', () => {
     messenger.onmessage = handler1;
     messenger.onmessage = handler2;
 
-    // Only the last handler should be called
-    mockBroadcastChannel.onmessage({ data: 'test' });
+    lastInstance.onmessage({ data: 'test' });
 
     expect(handler1).not.toHaveBeenCalled();
     expect(handler2).toHaveBeenCalledWith('test');
