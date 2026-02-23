@@ -23,6 +23,7 @@ export const OPERATOR_zh_CN: SelectOperatorLocale = {
   AGGREGATE_IDS: '包含任一',
   TENANT_ID: '等于',
   OWNER_ID: '等于',
+  SPACE_ID: '等于',
   DELETED: '已删除',
   ALL: '全部',
   EQ: '等于',
@@ -55,5 +56,6 @@ export const OPERATOR_zh_CN: SelectOperatorLocale = {
   RECENT_DAYS: '最近几天',
   EARLIER_DAYS: '几天前',
   RAW: '原始查询',
+
   UNDEFINED: '未设置',
 };

@@ -60,7 +60,10 @@ describe('TypedFilter', () => {
         ...mockProps,
         value: {
           ...mockProps.value,
-          style: { flex: 'auto' },
+          style: {
+            flex: 'auto',
+            width: '100%',
+          },
         },
       },
       undefined,
@@ -82,7 +85,10 @@ describe('TypedFilter', () => {
         ...propsWithAttributes,
         value: {
           ...propsWithAttributes.value,
-          style: { flex: 'auto' },
+          style: {
+            flex: 'auto',
+            width: '100%',
+          },
         },
       },
       undefined,

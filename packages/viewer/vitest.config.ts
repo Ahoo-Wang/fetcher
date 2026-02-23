@@ -28,9 +28,10 @@ export default mergeConfig(
           //TODO exclude
           'src/filter/panel/**',
           'src/viewer/**',
+          'src/fetcherviewer/**',
+          'src/view/**',
           'src/table/**',
           'src/topbar/**',
-          'src/fetcherviewer/**',
         ],
       },
     },
