@@ -2,7 +2,7 @@ import { ViewColumn } from '../viewer';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { ActiveFilter } from '../filter';
 import { useState } from 'react';
-import { all, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import { all, Condition, FieldSort, Operator } from '@ahoo-wang/fetcher-wow';
 
 export const DEFAULT_CONDITION: Condition = all();
 

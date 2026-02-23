@@ -43,7 +43,7 @@ export interface ViewState {
   columns: ViewColumn[];
   tableSize: SizeType;
   pageSize: number;
-  condition?: Condition;
+  condition: Condition;
   internalCondition?: Condition;
   sorter?: FieldSort[];
 }

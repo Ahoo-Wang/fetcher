@@ -2,7 +2,7 @@ import { ViewColumn, ViewDefinition, ViewState } from '../types';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useEffect, useRef, useState } from 'react';
 import { deepEqual, ActiveFilter, useActiveViewState } from '../../';
-import { all, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import { all, Condition, FieldSort, Operator } from '@ahoo-wang/fetcher-wow';
 
 export type SearchDataConverter<R> = (
   condition: Condition,
@@ -101,14 +101,15 @@ export function useViewerState({
   };
 
   const onSwitchViewFn = (view: ViewState) => {
+    console.log('switch view', view);
     originalView.current = view;
     setActiveView(view);
     setPage(1);
     setPageSize(view.pageSize);
     setColumns(view.columns);
+    setCondition(view.condition || all());
     setActiveFilters(view.filters);
     setTableSize(view.tableSize);
-    setCondition(view.condition || all());
     setSorter(view.sorter || []);
   };
 
@@ -146,9 +147,44 @@ export function useViewerState({
 
   const setConditionFn = (condition: Condition) => {
     setCondition(condition);
+
+    const newActiveFilters = activeFilters.map(af => {
+      if (condition.operator === Operator.AND) {
+        const queriedCondition = condition.children?.find(
+          c => c.field === af.field.name,
+        );
+        if (queriedCondition) {
+          return {
+            ...af,
+            value: { defaultValue: queriedCondition.value },
+            operator: { defaultValue: queriedCondition.operator },
+          };
+        }
+        return {
+          ...af,
+          value: { defaultValue: undefined },
+          operator: { defaultValue: undefined },
+        };
+      } else if (condition.field === af.field.name) {
+        return {
+          ...af,
+          value: { defaultValue: condition.value },
+          operator: { defaultValue: condition.operator },
+        };
+      } else {
+        return {
+          ...af,
+          value: { defaultValue: undefined },
+          operator: { defaultValue: undefined },
+        };
+      }
+    });
+    setActiveFilters(newActiveFilters);
+
     setActiveView({
       ...activeView,
       condition: condition,
+      filters: newActiveFilters,
     });
   };
 

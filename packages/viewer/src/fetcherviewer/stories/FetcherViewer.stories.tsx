@@ -97,6 +97,7 @@ type Story = StoryObj<typeof meta>;
 export const Basic: Story = {
   args: {
     viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
     tenantId: 'mydao',
     defaultViewId: '',
     pagination: {} as PaginationProps,
@@ -107,6 +108,7 @@ export const Basic: Story = {
 export const WithRowSelection: Story = {
   args: {
     viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
     tenantId: 'mydao',
     defaultViewId: '',
     pagination: {} as PaginationProps,
@@ -117,6 +119,7 @@ export const WithRowSelection: Story = {
 export const WithoutPagination: Story = {
   args: {
     viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
     tenantId: 'mydao',
     defaultViewId: '',
     pagination: false,
@@ -127,6 +130,7 @@ export const WithoutPagination: Story = {
 export const SmallPageSize: Story = {
   args: {
     viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
     tenantId: 'mydao',
     defaultViewId: '',
     pagination: { defaultPageSize: 5 } as PaginationProps,
@@ -137,6 +141,7 @@ export const SmallPageSize: Story = {
 export const LargePageSize: Story = {
   args: {
     viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
     tenantId: 'mydao',
     defaultViewId: '',
     pagination: { defaultPageSize: 50 } as PaginationProps,

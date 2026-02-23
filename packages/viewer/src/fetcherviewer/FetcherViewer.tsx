@@ -152,9 +152,13 @@ export function FetcherViewer<RecordType = any>({
 
   const handleDeleteView = useCallback(
     (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
-      viewCommandClient.defaultDeleteAggregate(view.id).then(() => {
-        onSuccess?.(view);
-      });
+      viewCommandClient
+        .defaultDeleteAggregate(view.id, {
+          body: {},
+        })
+        .then(() => {
+          onSuccess?.(view);
+        });
     },
     [],
   );

@@ -17,7 +17,7 @@ import {
   EMPTY_VALUE_OPERATORS,
   Operator,
 } from '@ahoo-wang/fetcher-wow';
-import { RefAttributes, useImperativeHandle, useState } from 'react';
+import { RefAttributes, useEffect, useImperativeHandle, useState } from 'react';
 import { FilterRef, FilterValue } from './types';
 import { Optional } from '../types';
 import { ExtendedOperator, SelectOperator } from './operator';
@@ -134,6 +134,7 @@ export function useFilterState(
     };
     return filterValueConverter(filterValue);
   };
+
   const setOperatorFn = (newOperator: SelectOperator) => {
     const afterValue = valueConverter(operator, newOperator, value);
     setOperator(newOperator);

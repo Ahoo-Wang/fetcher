@@ -5,7 +5,8 @@ import {
   ViewPanel,
   useViewerState,
   ViewMutationActionsCapable,
-  TopbarActionsCapable, GetRecordCountActionCapable,
+  TopbarActionsCapable,
+  GetRecordCountActionCapable,
 } from './';
 import styles from './Viewer.module.css';
 import {
@@ -55,7 +56,9 @@ export interface ViewerProps<RecordType>
  * @param props
  * @constructor
  */
-export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) {
+export function Viewer<RecordType = any>({
+  ...props
+}: ViewerProps<RecordType>) {
   const {
     defaultViews,
     defaultView,
@@ -65,6 +68,7 @@ export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) 
     onCreateView,
     onUpdateView,
     onDeleteView,
+    onSwitchView,
     ...otherProps
   } = props;
 
@@ -89,7 +93,7 @@ export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) 
     setCondition,
     sorter,
     setSorter,
-    onSwitchView,
+    onSwitchView: switchView,
     views,
     setViews,
     reset,
@@ -107,7 +111,8 @@ export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) 
     console.log('onCreateView', view);
     onCreateView?.(view, (newView: ViewState) => {
       setViews([...views, newView]);
-      onSwitchView(newView);
+      switchView(newView);
+      onSwitchView?.(newView);
       onSuccess?.();
     });
   };
@@ -123,7 +128,9 @@ export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) 
           return it;
         }),
       );
-      onSwitchView(newView);
+      reset();
+      switchView(newView);
+      onSwitchView?.(newView);
       onSuccess?.();
     });
   };
@@ -133,7 +140,8 @@ export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) 
     onDeleteView?.(view, (deletedView: ViewState) => {
       setViews(views.filter(it => it.id !== deletedView.id));
       if (activeView.id === deletedView.id) {
-        onSwitchView(views[0]);
+        switchView(views[0]);
+        onSwitchView?.(views[0]);
       }
       onSuccess?.();
     });
@@ -144,7 +152,9 @@ export function Viewer<RecordType = any>({ ...props }: ViewerProps<RecordType>) 
   };
 
   const handleSwitchView = (view: ViewState) => {
-    onSwitchView(view);
+    switchView(view);
+    onLoadData?.(view.condition, 1, view.pageSize, view.sorter);
+    onSwitchView?.(view);
   };
 
   const handleReset = () => {
