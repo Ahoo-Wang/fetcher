@@ -6,6 +6,7 @@ import {
   ViewState,
   Viewer,
   useRefreshDataEventBus,
+  TopbarActionsCapable,
 } from '../';
 import {
   useViewerDefinition,
@@ -29,7 +30,10 @@ export interface FetcherViewerRef {
 }
 
 export interface FetcherViewerProps<RecordType>
-  extends ViewTableSettingCapable, RefAttributes<FetcherViewerRef> {
+  extends
+    ViewTableSettingCapable,
+    RefAttributes<FetcherViewerRef>,
+    TopbarActionsCapable<RecordType> {
   viewerDefinitionId: string;
   ownerId?: string;
   tenantId?: string;
@@ -50,10 +54,10 @@ export interface FetcherViewerProps<RecordType>
 const viewCommandClient = new ViewCommandClient();
 
 export function FetcherViewer<RecordType = any>({
-                                                  ownerId = '(0)',
-                                                  tenantId = '(0)',
-                                                  ...props
-                                                }: FetcherViewerProps<RecordType>) {
+  ownerId = '(0)',
+  tenantId = '(0)',
+  ...props
+}: FetcherViewerProps<RecordType>) {
   const {
     ref,
     viewerDefinitionId,
@@ -64,6 +68,9 @@ export function FetcherViewer<RecordType = any>({
     enableRowSelection,
     onSwitchView,
     viewTableSetting,
+    primaryAction,
+    secondaryActions,
+    batchActions,
   } = props;
 
   const {
@@ -221,6 +228,9 @@ export function FetcherViewer<RecordType = any>({
         actionColumn={actionColumn}
         onClickPrimaryKey={onClickPrimaryKey}
         enableRowSelection={enableRowSelection}
+        primaryAction={primaryAction}
+        secondaryActions={secondaryActions}
+        batchActions={batchActions}
         onGetRecordCount={onGetRecordCount}
         onSwitchView={handleSwitchView}
         onLoadData={handleLoadData}

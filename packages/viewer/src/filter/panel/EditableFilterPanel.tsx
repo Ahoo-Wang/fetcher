@@ -42,7 +42,6 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
   const generator = useRequestId();
 
   useEffect(() => {
-    console.log('EditableFilterPanel - when activeFilters updated', filters);
     setActiveFilters(filters);
   }, [filters]);
 

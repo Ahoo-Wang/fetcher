@@ -12,7 +12,9 @@
  */
 
 export * from './components';
+export * from './fetcherviewer';
 export * from './filter';
+export * from './hooks';
 export * from './registry';
 export * from './table';
 export * from './topbar';
@@ -20,4 +22,3 @@ export * from './view';
 export * from './viewer';
 export * from './types';
 export * from './utils';
-export * from './hooks';

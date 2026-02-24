@@ -54,7 +54,7 @@ export default defineConfig({
           '@ant-design/icons': 'AntdIcons',
           '@ahoo-wang/fetcher': 'Fetcher',
           '@ahoo-wang/fetcher-decorator': 'FetcherDecorator',
-          '@ahoo-wang/fetcher-eventbus' : 'FetcherEventBus',
+          '@ahoo-wang/fetcher-eventbus': 'FetcherEventBus',
           '@ahoo-wang/fetcher-eventstream': 'FetcherEventStream',
           '@ahoo-wang/fetcher-storage': 'FetcherStorage',
           '@ahoo-wang/fetcher-wow': 'FetcherWow',
@@ -66,6 +66,7 @@ export default defineConfig({
   },
   esbuild: {
     keepNames: true,
+    legalComments: 'none',
   },
   plugins: [
     dts({
@@ -73,8 +74,15 @@ export default defineConfig({
       tsconfigPath: './tsconfig.json',
     }),
     react({
+      include: /\.(jsx|tsx)$/,
       babel: {
-        plugins: [['babel-plugin-react-compiler']],
+        parserOpts: {
+          plugins: ['decorators-legacy'],
+        },
+        plugins: [
+          ['babel-plugin-react-compiler'],
+          ['@babel/plugin-proposal-decorators', { legacy: true }],
+        ],
       },
     }),
   ],
