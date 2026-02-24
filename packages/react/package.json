@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-react",
-  "version": "3.10.7",
+  "version": "3.10.8",
   "description": "React integration for Fetcher HTTP client. Provides React Hooks and components for seamless data fetching with automatic re-rendering and loading states.",
   "keywords": [
     "fetch",
