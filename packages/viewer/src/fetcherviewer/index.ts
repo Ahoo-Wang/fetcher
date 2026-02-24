@@ -1,2 +1,3 @@
-export * from './FetcherViewer'
-export * from './client'
+export * from './client';
+export * from './hooks';
+export * from './FetcherViewer';

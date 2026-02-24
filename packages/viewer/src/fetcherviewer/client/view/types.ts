@@ -1,6 +1,5 @@
-import { PagedQuery } from "@ahoo-wang/fetcher-wow";
-import { ActiveFilter } from '../../../filter';
-import { ViewColumn, ViewSource, ViewType } from '../../../viewer';
+import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import { ActiveFilter, ViewColumn, ViewSource } from '../../../';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 
 /**
@@ -17,6 +16,9 @@ import { SizeType } from 'antd/es/config-provider/SizeContext';
  *         "$ref": "#/components/schemas/viewer.view.ViewColumn"
  *       }
  *     },
+ *     "condition": {
+ *       "$ref": "#/components/schemas/wow.api.query.Condition"
+ *     },
  *     "definitionId": {
  *       "type": "string"
  *     },
@@ -26,6 +28,12 @@ import { SizeType } from 'antd/es/config-provider/SizeContext';
  *         "$ref": "#/components/schemas/viewer.ActiveFilter"
  *       }
  *     },
+ *     "internalCondition": {
+ *       "$ref": "#/components/schemas/wow.api.query.Condition"
+ *     },
+ *     "isDefault": {
+ *       "type": "boolean"
+ *     },
  *     "name": {
  *       "type": "string"
  *     },
@@ -33,12 +41,11 @@ import { SizeType } from 'antd/es/config-provider/SizeContext';
  *       "type": "integer",
  *       "format": "int32"
  *     },
- *     "pagedQuery": {
- *       "$ref": "#/components/schemas/wow.api.query.PagedQuery"
- *     },
- *     "sort": {
- *       "type": "integer",
- *       "format": "int32"
+ *     "sorter": {
+ *       "type": "array",
+ *       "items": {
+ *         "$ref": "#/components/schemas/viewer.view.SorterResult"
+ *       }
  *     },
  *     "source": {
  *       "$ref": "#/components/schemas/viewer.view.ViewSource"
@@ -49,12 +56,14 @@ import { SizeType } from 'antd/es/config-provider/SizeContext';
  *   },
  *   "required": [
  *     "columns",
+ *     "condition",
  *     "definitionId",
  *     "filters",
+ *     "internalCondition",
+ *     "isDefault",
  *     "name",
  *     "pageSize",
- *     "pagedQuery",
- *     "sort",
+ *     "sorter",
  *     "source",
  *     "tableSize"
  *   ],
@@ -64,15 +73,15 @@ import { SizeType } from 'antd/es/config-provider/SizeContext';
  * ```
  */
 export interface CreateView {
-  columns: ViewColumn[];
-  definitionId: string;
-  filters: ActiveFilter[];
   name: string;
-  /** - format: int32 */
+  definitionId: string;
+  columns: ViewColumn[];
+  filters: ActiveFilter[];
+  isDefault: boolean;
+  condition?: Condition;
+  internalCondition?: Condition;
   pageSize: number;
-  pagedQuery: PagedQuery;
-  /** - format: int32 */
-  sort: number;
+  sorter?: FieldSort[];
   source: ViewSource;
   tableSize: SizeType;
 }
@@ -138,172 +147,18 @@ export interface CreateView {
  * ```
  */
 export interface EditView {
-  columns: ViewColumn[];
-  definitionId: string;
-  filters: ActiveFilter[];
   name: string;
-  /** - format: int32 */
+  definitionId: string;
+  columns: ViewColumn[];
+  filters: ActiveFilter[];
+  isDefault: boolean;
+  condition?: Condition;
+  internalCondition?: Condition;
   pageSize: number;
-  pagedQuery: PagedQuery;
-  /** - format: int32 */
-  sort: number;
+  sorter?: FieldSort[];
   source: ViewSource;
   tableSize: SizeType;
 }
-
-/**
- * - key: viewer.view.ViewAggregatedFields
- * - schema:
- * ```json
- * {
- *   "type": "string",
- *   "enum": [
- *     "",
- *     "aggregateId",
- *     "tenantId",
- *     "ownerId",
- *     "version",
- *     "eventId",
- *     "firstOperator",
- *     "operator",
- *     "firstEventTime",
- *     "eventTime",
- *     "deleted",
- *     "state",
- *     "state.columns",
- *     "state.columns.fixed",
- *     "state.columns.name",
- *     "state.columns.sortOrder",
- *     "state.columns.visible",
- *     "state.columns.width",
- *     "state.definitionId",
- *     "state.filters",
- *     "state.filters.conditionOptions",
- *     "state.filters.field",
- *     "state.filters.field.format",
- *     "state.filters.field.label",
- *     "state.filters.field.name",
- *     "state.filters.field.type",
- *     "state.filters.label",
- *     "state.filters.operator",
- *     "state.filters.operator.defaultOperator",
- *     "state.filters.operator.locale",
- *     "state.filters.operator.supportedOperators",
- *     "state.filters.type",
- *     "state.filters.value",
- *     "state.filters.value.className",
- *     "state.filters.value.defaultValue",
- *     "state.filters.value.placeholder",
- *     "state.filters.value.style",
- *     "state.id",
- *     "state.name",
- *     "state.pageSize",
- *     "state.pagedQuery",
- *     "state.pagedQuery.condition",
- *     "state.pagedQuery.condition.children",
- *     "state.pagedQuery.condition.children.children",
- *     "state.pagedQuery.condition.children.children.children",
- *     "state.pagedQuery.condition.children.children.field",
- *     "state.pagedQuery.condition.children.children.operator",
- *     "state.pagedQuery.condition.children.children.options",
- *     "state.pagedQuery.condition.children.children.value",
- *     "state.pagedQuery.condition.children.field",
- *     "state.pagedQuery.condition.children.operator",
- *     "state.pagedQuery.condition.children.options",
- *     "state.pagedQuery.condition.children.value",
- *     "state.pagedQuery.condition.field",
- *     "state.pagedQuery.condition.operator",
- *     "state.pagedQuery.condition.options",
- *     "state.pagedQuery.condition.value",
- *     "state.pagedQuery.pagination",
- *     "state.pagedQuery.pagination.index",
- *     "state.pagedQuery.pagination.size",
- *     "state.pagedQuery.projection",
- *     "state.pagedQuery.projection.exclude",
- *     "state.pagedQuery.projection.include",
- *     "state.pagedQuery.sort",
- *     "state.pagedQuery.sort.direction",
- *     "state.pagedQuery.sort.field",
- *     "state.sort",
- *     "state.source",
- *     "state.tableSize",
- *     "state.type"
- *   ]
- * }
- * ```
- */
-export enum ViewAggregatedFields {
-    AGGREGATE_ID = `aggregateId`,
-    TENANT_ID = `tenantId`,
-    OWNER_ID = `ownerId`,
-    VERSION = `version`,
-    EVENT_ID = `eventId`,
-    FIRST_OPERATOR = `firstOperator`,
-    OPERATOR = `operator`,
-    FIRST_EVENT_TIME = `firstEventTime`,
-    EVENT_TIME = `eventTime`,
-    DELETED = `deleted`,
-    STATE = `state`,
-    STATE_COLUMNS = `state.columns`,
-    STATE_COLUMNS_FIXED = `state.columns.fixed`,
-    STATE_COLUMNS_NAME = `state.columns.name`,
-    STATE_COLUMNS_SORT_ORDER = `state.columns.sortOrder`,
-    STATE_COLUMNS_VISIBLE = `state.columns.visible`,
-    STATE_COLUMNS_WIDTH = `state.columns.width`,
-    STATE_DEFINITION_ID = `state.definitionId`,
-    STATE_FILTERS = `state.filters`,
-    STATE_FILTERS_CONDITION_OPTIONS = `state.filters.conditionOptions`,
-    STATE_FILTERS_FIELD = `state.filters.field`,
-    STATE_FILTERS_FIELD_FORMAT = `state.filters.field.format`,
-    STATE_FILTERS_FIELD_LABEL = `state.filters.field.label`,
-    STATE_FILTERS_FIELD_NAME = `state.filters.field.name`,
-    STATE_FILTERS_FIELD_TYPE = `state.filters.field.type`,
-    STATE_FILTERS_LABEL = `state.filters.label`,
-    STATE_FILTERS_OPERATOR = `state.filters.operator`,
-    STATE_FILTERS_OPERATOR_DEFAULT_OPERATOR = `state.filters.operator.defaultOperator`,
-    STATE_FILTERS_OPERATOR_LOCALE = `state.filters.operator.locale`,
-    STATE_FILTERS_OPERATOR_SUPPORTED_OPERATORS = `state.filters.operator.supportedOperators`,
-    STATE_FILTERS_TYPE = `state.filters.type`,
-    STATE_FILTERS_VALUE = `state.filters.value`,
-    STATE_FILTERS_VALUE_CLASS_NAME = `state.filters.value.className`,
-    STATE_FILTERS_VALUE_DEFAULT_VALUE = `state.filters.value.defaultValue`,
-    STATE_FILTERS_VALUE_PLACEHOLDER = `state.filters.value.placeholder`,
-    STATE_FILTERS_VALUE_STYLE = `state.filters.value.style`,
-    STATE_ID = `state.id`,
-    STATE_NAME = `state.name`,
-    STATE_PAGE_SIZE = `state.pageSize`,
-    STATE_PAGED_QUERY = `state.pagedQuery`,
-    STATE_PAGED_QUERY_CONDITION = `state.pagedQuery.condition`,
-    STATE_PAGED_QUERY_CONDITION_CHILDREN = `state.pagedQuery.condition.children`,
-    STATE_PAGED_QUERY_CONDITION_CHILDREN_CHILDREN = `state.pagedQuery.condition.children.children`,
-    STATE_PAGED_QUERY_CONDITION_CHILDREN_CHILDREN_CHILDREN = `state.pagedQuery.condition.children.children.children`,
-    STATE_PAGED_QUERY_CONDITION_CHILDREN_CHILDREN_FIELD = `state.pagedQuery.condition.children.children.field`,
-    STATE_PAGED_QUERY_CONDITION_CHILDREN_CHILDREN_OPERATOR = `state.pagedQuery.condition.children.children.operator`,
-    STATE_PAGED_QUERY_CONDITION_CHILDREN_CHILDREN_OPTIONS = `state.pagedQuery.condition.children.children.options`,
-    STATE_PAGED_QUERY_CONDITION_CHILDREN_CHILDREN_VALUE = `state.pagedQuery.condition.children.children.value`,
-    STATE_PAGED_QUERY_CONDITION_CHILDREN_FIELD = `state.pagedQuery.condition.children.field`,
-    STATE_PAGED_QUERY_CONDITION_CHILDREN_OPERATOR = `state.pagedQuery.condition.children.operator`,
-    STATE_PAGED_QUERY_CONDITION_CHILDREN_OPTIONS = `state.pagedQuery.condition.children.options`,
-    STATE_PAGED_QUERY_CONDITION_CHILDREN_VALUE = `state.pagedQuery.condition.children.value`,
-    STATE_PAGED_QUERY_CONDITION_FIELD = `state.pagedQuery.condition.field`,
-    STATE_PAGED_QUERY_CONDITION_OPERATOR = `state.pagedQuery.condition.operator`,
-    STATE_PAGED_QUERY_CONDITION_OPTIONS = `state.pagedQuery.condition.options`,
-    STATE_PAGED_QUERY_CONDITION_VALUE = `state.pagedQuery.condition.value`,
-    STATE_PAGED_QUERY_PAGINATION = `state.pagedQuery.pagination`,
-    STATE_PAGED_QUERY_PAGINATION_INDEX = `state.pagedQuery.pagination.index`,
-    STATE_PAGED_QUERY_PAGINATION_SIZE = `state.pagedQuery.pagination.size`,
-    STATE_PAGED_QUERY_PROJECTION = `state.pagedQuery.projection`,
-    STATE_PAGED_QUERY_PROJECTION_EXCLUDE = `state.pagedQuery.projection.exclude`,
-    STATE_PAGED_QUERY_PROJECTION_INCLUDE = `state.pagedQuery.projection.include`,
-    STATE_PAGED_QUERY_SORT = `state.pagedQuery.sort`,
-    STATE_PAGED_QUERY_SORT_DIRECTION = `state.pagedQuery.sort.direction`,
-    STATE_PAGED_QUERY_SORT_FIELD = `state.pagedQuery.sort.field`,
-    STATE_SORT = `state.sort`,
-    STATE_SOURCE = `state.source`,
-    STATE_TABLE_SIZE = `state.tableSize`,
-    STATE_TYPE = `state.type`
-}
-
 
 /**
  * 视图已创建
@@ -369,18 +224,17 @@ export enum ViewAggregatedFields {
  * ```
  */
 export interface ViewCreated {
-    columns: ViewColumn[];
-    definitionId: string;
-    filters: ActiveFilter[];
-    name: string;
-    /** - format: int32 */
-    pageSize: number;
-    pagedQuery: PagedQuery;
-    /** - format: int32 */
-    sort: number;
-    source: ViewSource;
-    tableSize: string;
-    type: ViewType;
+  name: string;
+  definitionId: string;
+  columns: ViewColumn[];
+  filters: ActiveFilter[];
+  isDefault: boolean;
+  condition: Condition;
+  internalCondition: Condition;
+  pageSize: number;
+  sorter: FieldSort[];
+  source: ViewSource;
+  tableSize: SizeType;
 }
 
 /**
@@ -447,16 +301,214 @@ export interface ViewCreated {
  * ```
  */
 export interface ViewEdited {
-    columns: ViewColumn[];
-    definitionId: string;
-    filters: ActiveFilter[];
-    name: string;
-    /** - format: int32 */
-    pageSize: number;
-    pagedQuery: PagedQuery;
-    /** - format: int32 */
-    sort: number;
-    source: ViewSource;
-    tableSize: string;
-    type: ViewType;
+  name: string;
+  definitionId: string;
+  columns: ViewColumn[];
+  filters: ActiveFilter[];
+  isDefault: boolean;
+  condition: Condition;
+  internalCondition: Condition;
+  pageSize: number;
+  sorter: FieldSort[];
+  source: ViewSource;
+  tableSize: SizeType;
+}
+
+/**
+ * - key: viewer.view.ViewAggregatedFields
+ * - schema:
+ * ```json
+ * {
+ *   "type": "string",
+ *   "enum": [
+ *     "",
+ *     "aggregateId",
+ *     "tenantId",
+ *     "ownerId",
+ *     "version",
+ *     "eventId",
+ *     "firstOperator",
+ *     "operator",
+ *     "firstEventTime",
+ *     "eventTime",
+ *     "deleted",
+ *     "state",
+ *     "state.columns",
+ *     "state.columns.fixed",
+ *     "state.columns.hidden",
+ *     "state.columns.name",
+ *     "state.columns.sortOrder",
+ *     "state.columns.width",
+ *     "state.condition",
+ *     "state.condition.children",
+ *     "state.condition.children.children",
+ *     "state.condition.children.children.children",
+ *     "state.condition.children.children.children.children",
+ *     "state.condition.children.children.children.field",
+ *     "state.condition.children.children.children.operator",
+ *     "state.condition.children.children.children.options",
+ *     "state.condition.children.children.children.value",
+ *     "state.condition.children.children.field",
+ *     "state.condition.children.children.operator",
+ *     "state.condition.children.children.options",
+ *     "state.condition.children.children.value",
+ *     "state.condition.children.field",
+ *     "state.condition.children.operator",
+ *     "state.condition.children.options",
+ *     "state.condition.children.value",
+ *     "state.condition.field",
+ *     "state.condition.operator",
+ *     "state.condition.options",
+ *     "state.condition.value",
+ *     "state.definitionId",
+ *     "state.filters",
+ *     "state.filters.conditionOptions",
+ *     "state.filters.field",
+ *     "state.filters.field.format",
+ *     "state.filters.field.label",
+ *     "state.filters.field.name",
+ *     "state.filters.field.type",
+ *     "state.filters.key",
+ *     "state.filters.label",
+ *     "state.filters.label.className",
+ *     "state.filters.label.style",
+ *     "state.filters.operator",
+ *     "state.filters.operator.defaultOperator",
+ *     "state.filters.operator.locale",
+ *     "state.filters.operator.supportedOperators",
+ *     "state.filters.type",
+ *     "state.filters.value",
+ *     "state.filters.value.className",
+ *     "state.filters.value.defaultValue",
+ *     "state.filters.value.placeholder",
+ *     "state.filters.value.style",
+ *     "state.id",
+ *     "state.internalCondition",
+ *     "state.internalCondition.children",
+ *     "state.internalCondition.children.children",
+ *     "state.internalCondition.children.children.children",
+ *     "state.internalCondition.children.children.children.children",
+ *     "state.internalCondition.children.children.children.field",
+ *     "state.internalCondition.children.children.children.operator",
+ *     "state.internalCondition.children.children.children.options",
+ *     "state.internalCondition.children.children.children.value",
+ *     "state.internalCondition.children.children.field",
+ *     "state.internalCondition.children.children.operator",
+ *     "state.internalCondition.children.children.options",
+ *     "state.internalCondition.children.children.value",
+ *     "state.internalCondition.children.field",
+ *     "state.internalCondition.children.operator",
+ *     "state.internalCondition.children.options",
+ *     "state.internalCondition.children.value",
+ *     "state.internalCondition.field",
+ *     "state.internalCondition.operator",
+ *     "state.internalCondition.options",
+ *     "state.internalCondition.value",
+ *     "state.isDefault",
+ *     "state.name",
+ *     "state.pageSize",
+ *     "state.sorter",
+ *     "state.sorter.columnKey",
+ *     "state.sorter.field",
+ *     "state.sorter.order",
+ *     "state.source",
+ *     "state.tableSize",
+ *     "state.type"
+ *   ]
+ * }
+ * ```
+ */
+export enum ViewAggregatedFields {
+  AGGREGATE_ID = `aggregateId`,
+  TENANT_ID = `tenantId`,
+  OWNER_ID = `ownerId`,
+  VERSION = `version`,
+  EVENT_ID = `eventId`,
+  FIRST_OPERATOR = `firstOperator`,
+  OPERATOR = `operator`,
+  FIRST_EVENT_TIME = `firstEventTime`,
+  EVENT_TIME = `eventTime`,
+  DELETED = `deleted`,
+  STATE = `state`,
+  STATE_COLUMNS = `state.columns`,
+  STATE_COLUMNS_FIXED = `state.columns.fixed`,
+  STATE_COLUMNS_HIDDEN = `state.columns.hidden`,
+  STATE_COLUMNS_NAME = `state.columns.name`,
+  STATE_COLUMNS_SORT_ORDER = `state.columns.sortOrder`,
+  STATE_COLUMNS_WIDTH = `state.columns.width`,
+  STATE_CONDITION = `state.condition`,
+  STATE_CONDITION_CHILDREN = `state.condition.children`,
+  STATE_CONDITION_CHILDREN_CHILDREN = `state.condition.children.children`,
+  STATE_CONDITION_CHILDREN_CHILDREN_CHILDREN = `state.condition.children.children.children`,
+  STATE_CONDITION_CHILDREN_CHILDREN_CHILDREN_CHILDREN = `state.condition.children.children.children.children`,
+  STATE_CONDITION_CHILDREN_CHILDREN_CHILDREN_FIELD = `state.condition.children.children.children.field`,
+  STATE_CONDITION_CHILDREN_CHILDREN_CHILDREN_OPERATOR = `state.condition.children.children.children.operator`,
+  STATE_CONDITION_CHILDREN_CHILDREN_CHILDREN_OPTIONS = `state.condition.children.children.children.options`,
+  STATE_CONDITION_CHILDREN_CHILDREN_CHILDREN_VALUE = `state.condition.children.children.children.value`,
+  STATE_CONDITION_CHILDREN_CHILDREN_FIELD = `state.condition.children.children.field`,
+  STATE_CONDITION_CHILDREN_CHILDREN_OPERATOR = `state.condition.children.children.operator`,
+  STATE_CONDITION_CHILDREN_CHILDREN_OPTIONS = `state.condition.children.children.options`,
+  STATE_CONDITION_CHILDREN_CHILDREN_VALUE = `state.condition.children.children.value`,
+  STATE_CONDITION_CHILDREN_FIELD = `state.condition.children.field`,
+  STATE_CONDITION_CHILDREN_OPERATOR = `state.condition.children.operator`,
+  STATE_CONDITION_CHILDREN_OPTIONS = `state.condition.children.options`,
+  STATE_CONDITION_CHILDREN_VALUE = `state.condition.children.value`,
+  STATE_CONDITION_FIELD = `state.condition.field`,
+  STATE_CONDITION_OPERATOR = `state.condition.operator`,
+  STATE_CONDITION_OPTIONS = `state.condition.options`,
+  STATE_CONDITION_VALUE = `state.condition.value`,
+  STATE_DEFINITION_ID = `state.definitionId`,
+  STATE_FILTERS = `state.filters`,
+  STATE_FILTERS_CONDITION_OPTIONS = `state.filters.conditionOptions`,
+  STATE_FILTERS_FIELD = `state.filters.field`,
+  STATE_FILTERS_FIELD_FORMAT = `state.filters.field.format`,
+  STATE_FILTERS_FIELD_LABEL = `state.filters.field.label`,
+  STATE_FILTERS_FIELD_NAME = `state.filters.field.name`,
+  STATE_FILTERS_FIELD_TYPE = `state.filters.field.type`,
+  STATE_FILTERS_KEY = `state.filters.key`,
+  STATE_FILTERS_LABEL = `state.filters.label`,
+  STATE_FILTERS_LABEL_CLASS_NAME = `state.filters.label.className`,
+  STATE_FILTERS_LABEL_STYLE = `state.filters.label.style`,
+  STATE_FILTERS_OPERATOR = `state.filters.operator`,
+  STATE_FILTERS_OPERATOR_DEFAULT_OPERATOR = `state.filters.operator.defaultOperator`,
+  STATE_FILTERS_OPERATOR_LOCALE = `state.filters.operator.locale`,
+  STATE_FILTERS_OPERATOR_SUPPORTED_OPERATORS = `state.filters.operator.supportedOperators`,
+  STATE_FILTERS_TYPE = `state.filters.type`,
+  STATE_FILTERS_VALUE = `state.filters.value`,
+  STATE_FILTERS_VALUE_CLASS_NAME = `state.filters.value.className`,
+  STATE_FILTERS_VALUE_DEFAULT_VALUE = `state.filters.value.defaultValue`,
+  STATE_FILTERS_VALUE_PLACEHOLDER = `state.filters.value.placeholder`,
+  STATE_FILTERS_VALUE_STYLE = `state.filters.value.style`,
+  STATE_ID = `state.id`,
+  STATE_INTERNAL_CONDITION = `state.internalCondition`,
+  STATE_INTERNAL_CONDITION_CHILDREN = `state.internalCondition.children`,
+  STATE_INTERNAL_CONDITION_CHILDREN_CHILDREN = `state.internalCondition.children.children`,
+  STATE_INTERNAL_CONDITION_CHILDREN_CHILDREN_CHILDREN = `state.internalCondition.children.children.children`,
+  STATE_INTERNAL_CONDITION_CHILDREN_CHILDREN_CHILDREN_CHILDREN = `state.internalCondition.children.children.children.children`,
+  STATE_INTERNAL_CONDITION_CHILDREN_CHILDREN_CHILDREN_FIELD = `state.internalCondition.children.children.children.field`,
+  STATE_INTERNAL_CONDITION_CHILDREN_CHILDREN_CHILDREN_OPERATOR = `state.internalCondition.children.children.children.operator`,
+  STATE_INTERNAL_CONDITION_CHILDREN_CHILDREN_CHILDREN_OPTIONS = `state.internalCondition.children.children.children.options`,
+  STATE_INTERNAL_CONDITION_CHILDREN_CHILDREN_CHILDREN_VALUE = `state.internalCondition.children.children.children.value`,
+  STATE_INTERNAL_CONDITION_CHILDREN_CHILDREN_FIELD = `state.internalCondition.children.children.field`,
+  STATE_INTERNAL_CONDITION_CHILDREN_CHILDREN_OPERATOR = `state.internalCondition.children.children.operator`,
+  STATE_INTERNAL_CONDITION_CHILDREN_CHILDREN_OPTIONS = `state.internalCondition.children.children.options`,
+  STATE_INTERNAL_CONDITION_CHILDREN_CHILDREN_VALUE = `state.internalCondition.children.children.value`,
+  STATE_INTERNAL_CONDITION_CHILDREN_FIELD = `state.internalCondition.children.field`,
+  STATE_INTERNAL_CONDITION_CHILDREN_OPERATOR = `state.internalCondition.children.operator`,
+  STATE_INTERNAL_CONDITION_CHILDREN_OPTIONS = `state.internalCondition.children.options`,
+  STATE_INTERNAL_CONDITION_CHILDREN_VALUE = `state.internalCondition.children.value`,
+  STATE_INTERNAL_CONDITION_FIELD = `state.internalCondition.field`,
+  STATE_INTERNAL_CONDITION_OPERATOR = `state.internalCondition.operator`,
+  STATE_INTERNAL_CONDITION_OPTIONS = `state.internalCondition.options`,
+  STATE_INTERNAL_CONDITION_VALUE = `state.internalCondition.value`,
+  STATE_IS_DEFAULT = `state.isDefault`,
+  STATE_NAME = `state.name`,
+  STATE_PAGE_SIZE = `state.pageSize`,
+  STATE_SORTER = `state.sorter`,
+  STATE_SORTER_COLUMN_KEY = `state.sorter.columnKey`,
+  STATE_SORTER_FIELD = `state.sorter.field`,
+  STATE_SORTER_ORDER = `state.sorter.order`,
+  STATE_SOURCE = `state.source`,
+  STATE_TABLE_SIZE = `state.tableSize`,
+  STATE_TYPE = `state.type`,
 }

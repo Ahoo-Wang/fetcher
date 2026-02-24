@@ -11,21 +11,32 @@
  * limitations under the License.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  RefAttributes,
+  useImperativeHandle,
+} from 'react';
 import { TableFieldItem } from './TableFieldItem';
 import styles from './TableSettingPanel.module.css';
 import { Space } from 'antd';
-import { ViewColumn, ViewDefinition } from '../../viewer';
-import { useActiveViewStateContext } from '../../viewer/ActiveViewStateContext';
+import { ViewColumn, FieldDefinition } from '../../viewer';
+
+export interface TableSettingPanelRef {
+  reset(): void;
+}
 
 /**
  * Props for the TableSettingPanel component.
  * This component provides a UI for managing table column settings including
  * visibility toggles and drag-and-drop reordering.
  */
-export interface TableSettingPanelProps {
-  /** The view definition containing column metadata and configuration */
-  viewDefinition: ViewDefinition;
+export interface TableSettingPanelProps extends RefAttributes<TableSettingPanelRef> {
+  initialColumns: ViewColumn[];
+  onChange?: (columns: ViewColumn[]) => void;
+
+  fields: FieldDefinition[];
   /** Optional CSS class name for additional styling */
   className?: string;
 }
@@ -57,18 +68,20 @@ interface DragState {
  * @returns A React element representing the table settings panel
  */
 export function TableSettingPanel(props: TableSettingPanelProps) {
-  const { viewDefinition, className } = props;
+  const { ref, fields, initialColumns, onChange, className } = props;
 
   // State for tracking the current drag operation
   const [dragState, setDragState] = useState<DragState | null>(null);
 
-  // Get column state and update function from the table context
-  // This provides access to the current column configuration and persistence
-  const { activeView, updateColumns } = useActiveViewStateContext();
+  const [columns, setColumns] = useState(initialColumns);
+
+  useEffect(() => {
+    setColumns(initialColumns);
+  }, [initialColumns]);
 
   // Add index information to each column for easier manipulation
   // This creates a local copy with sequential indices for drag/drop operations
-  const localColumns = activeView.columns.map((col, index) => {
+  const localColumns = columns.map((col, index) => {
     return {
       ...col,
       index,
@@ -97,7 +110,8 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     const newColumns = localColumns.map((col, i) =>
       i === index ? { ...col, hidden: hidden } : col,
     );
-    updateColumns(newColumns);
+    setColumns(newColumns);
+    onChange?.(newColumns);
   };
 
   /**
@@ -201,7 +215,8 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     newColumns.forEach((col, i) => (col.index = i));
 
     // Persist the changes through the context
-    updateColumns(newColumns);
+    setColumns(newColumns);
+    onChange?.(newColumns);
   };
 
   /**
@@ -218,9 +233,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
   ) => {
     // Find the column definition from the view definition
     // This provides metadata like title, primary key status, etc.
-    const columnDefinition = viewDefinition.fields.find(
-      col => col.name === column.name,
-    );
+    const columnDefinition = fields.find(col => col.name === column.name);
     if (!columnDefinition) {
       return <></>; // Column not found in definition
     }
@@ -256,9 +269,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
    */
   const renderStaticItem = (column: ViewColumn & { index: number }) => {
     // Find the column definition from the view definition
-    const columnDefinition = viewDefinition.fields.find(
-      col => col.name === column.name,
-    );
+    const columnDefinition = fields.find(col => col.name === column.name);
     if (!columnDefinition) {
       return <></>; // Column not found in definition
     }
@@ -276,6 +287,12 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
       </div>
     );
   };
+
+  useImperativeHandle(ref, () => ({
+    reset: () => {
+      setColumns(props.initialColumns);
+    },
+  }));
 
   return (
     <Space

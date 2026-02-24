@@ -14,7 +14,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { TableFieldItem } from '../TableFieldItem';
 import { TEXT_CELL_TYPE } from '../../cell';
-import { ViewColumnDefinition } from '../../../viewer';
 
 const meta: Meta = {
   title: 'Viewer/Table/Setting/TableFieldItem',

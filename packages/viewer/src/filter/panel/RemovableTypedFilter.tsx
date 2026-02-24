@@ -16,6 +16,8 @@ import { MinusOutlined } from '@ant-design/icons';
 import { Button, Space } from 'antd';
 import React, { useState } from 'react';
 
+import styles from './RemovableTypedFilter.module.css';
+
 export interface RemovableTypedFilterProps extends TypedFilterProps {
   onRemove?: () => void;
 }
@@ -30,6 +32,8 @@ export function RemovableTypedFilter(props: RemovableTypedFilterProps) {
     <Space
       onMouseOver={() => setShowRemove(true)}
       onMouseOut={() => setShowRemove(false)}
+      style={{ width: '100%' }}
+      className={styles.fullWidthItem}
     >
       <TypedFilter {...rest} />
       {showRemove && (

@@ -1,23 +1,27 @@
-import { ActiveFilter, AvailableFilterGroup } from '../filter';
-import { TypeCapable } from '../registry';
-import { AttributesCapable } from '../types';
+import {
+  TypeCapable,
+  ActiveFilter,
+  AvailableFilterGroup,
+  ActionItem,
+  AttributesCapable,
+  KeyCapable,
+} from '../';
 import { SortOrder } from 'antd/es/table/interface';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { PagedQuery } from '@ahoo-wang/fetcher-wow';
+import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import React from 'react';
-import { ButtonProps } from 'antd';
 import { NamedCapable } from '@ahoo-wang/fetcher';
 
 export interface ViewDefinition {
   id: string;
   name: string;
-  fields: ViewColumnDefinition[];
+  fields: FieldDefinition[];
   availableFilters: AvailableFilterGroup[];
   dataUrl: string;
   countUrl: string;
 }
 
-export interface ViewColumnDefinition
+export interface FieldDefinition
   extends NamedCapable, TypeCapable, AttributesCapable {
   label: string;
   primaryKey: boolean;
@@ -28,7 +32,7 @@ export interface ViewColumnDefinition
 export type ViewType = 'PERSONAL' | 'SHARED';
 export type ViewSource = 'SYSTEM' | 'CUSTOM';
 
-export interface View {
+export interface ViewState {
   id: string;
   name: string;
   definitionId: string;
@@ -39,21 +43,48 @@ export interface View {
   columns: ViewColumn[];
   tableSize: SizeType;
   pageSize: number;
-  sort: number;
-  pagedQuery: PagedQuery;
+  condition: Condition;
+  internalCondition?: Condition;
+  sorter?: FieldSort[];
 }
 
-export interface ViewColumn extends NamedCapable {
+export interface ViewColumn extends NamedCapable, KeyCapable {
   fixed: boolean;
   hidden: boolean;
   width?: string;
   sortOrder?: SortOrder;
 }
 
-export interface TopBarActionItem<RecordType> extends AttributesCapable<
-  Omit<ButtonProps, 'onClick'>
-> {
+export interface TopBarActionItem<RecordType> extends ActionItem<RecordType> {}
+
+export type GetRecordCountAction = (
+  countUrl: string,
+  condition: Condition,
+) => Promise<number>;
+
+export type ViewMutationAction = (
+  view: ViewState,
+  onSuccess?: (newView: ViewState) => void,
+) => void;
+
+export interface BatchActionsConfig<RecordType> {
+  enabled: boolean;
   title: string;
-  onClick?: (items: RecordType[]) => void;
-  render?: (items: RecordType[]) => React.ReactNode;
+  actions: TopBarActionItem<RecordType>[];
+}
+
+export interface TopbarActionsCapable<RecordType> {
+  primaryAction?: TopBarActionItem<RecordType>;
+  secondaryActions?: TopBarActionItem<RecordType>[];
+  batchActions?: BatchActionsConfig<RecordType>;
+}
+
+export interface GetRecordCountActionCapable {
+  onGetRecordCount?: GetRecordCountAction;
+}
+
+export interface ViewMutationActionsCapable {
+  onCreateView?: ViewMutationAction;
+  onUpdateView?: ViewMutationAction;
+  onDeleteView?: ViewMutationAction;
 }

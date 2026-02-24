@@ -3,16 +3,21 @@ import { BarItem } from './BarItem';
 import { Dropdown, MenuProps } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { useActiveViewStateContext } from '../viewer/ActiveViewStateContext';
+import { useEffect, useState } from 'react';
 
-export const COLUMN_HEIGHT_BAR_ITEM_TYPE: string = 'column-height';
-
-export interface ColumnHeightBarItemProps extends TopBarItemProps {}
+export interface ColumnHeightBarItemProps extends TopBarItemProps {
+  defaultTableSize: SizeType;
+  onChange?: (size: SizeType) => void;
+}
 
 export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
-  const { className } = props;
+  const { className, defaultTableSize, onChange } = props;
 
-  const { activeView, updateTableSize } = useActiveViewStateContext();
+  const [tableSize, setTableSize] = useState<SizeType>(defaultTableSize);
+
+  useEffect(() => {
+    setTableSize(defaultTableSize);
+  }, [defaultTableSize]);
 
   const items: MenuProps['items'] = [
     {
@@ -26,7 +31,8 @@ export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
   ];
 
   const handleSelect = ({ key }: { key: string }) => {
-    updateTableSize(key as SizeType);
+    setTableSize(key as SizeType);
+    onChange?.(key as SizeType);
   };
 
   return (
@@ -35,7 +41,7 @@ export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
       menu={{
         items,
         selectable: true,
-        defaultSelectedKeys: [activeView.tableSize || 'middle'],
+        defaultSelectedKeys: [tableSize || 'middle'],
         onSelect: handleSelect,
       }}
       trigger={['click']}

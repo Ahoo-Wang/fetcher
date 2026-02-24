@@ -13,6 +13,7 @@
 
 import React, { Key } from 'react';
 import { ButtonProps } from 'antd';
+import { SizeType } from 'antd/es/config-provider/SizeContext';
 
 export type Optional<T = any> = T | undefined;
 
@@ -30,6 +31,22 @@ export interface AttributesCapable<Attributes = any> {
   attributes?: Attributes;
 }
 
+export interface PrimaryKeyClickHandlerCapable<RecordType = any> {
+  onClickPrimaryKey?: (id: any, record: RecordType) => void;
+}
+
+export interface ViewTableSetting {
+  title?: string
+}
+
+export interface ViewTableSettingCapable {
+  viewTableSetting?: false | ViewTableSetting
+}
+
+export interface TableSizeCapable {
+  tableSize?: SizeType;
+}
+
 export interface KeyCapable {
   key: Key;
 }
@@ -45,8 +62,8 @@ export interface ActionItem<RecordType> extends AttributesCapable<
   Omit<ButtonProps, 'onClick'>
 > {
   title: string;
-  onClick: (record: RecordType[]) => void;
-  render?: (record: RecordType[]) => React.ReactNode;
+  onClick: (records: RecordType[]) => void;
+  render?: (records: RecordType[]) => React.ReactNode;
 }
 
 

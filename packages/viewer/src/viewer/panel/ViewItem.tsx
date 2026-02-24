@@ -1,17 +1,17 @@
-import { View } from '../index';
+import { GetRecordCountActionCapable, ViewState } from '../';
 import { Flex, Tag } from 'antd';
-import { useDebouncedFetcherQuery } from '@ahoo-wang/fetcher-react';
-import { Condition } from '@ahoo-wang/fetcher-wow';
 import styles from './ViewPanel.module.less';
+import { useEffect, useState } from 'react';
+import { all } from '@ahoo-wang/fetcher-wow';
 
 /**
  * Props for the ViewItem component.
  *
  * @interface ViewItemProps
  */
-export interface ViewItemProps {
+export interface ViewItemProps extends GetRecordCountActionCapable {
   /** The view configuration containing name, type, filters, and other metadata */
-  view: View;
+  view: ViewState;
   /** API endpoint URL for fetching the count of records matching this view's condition */
   countUrl: string;
   /** Whether this view item is currently active/selected */
@@ -92,23 +92,17 @@ export interface ViewItemProps {
  */
 export function ViewItem(props: ViewItemProps) {
   // Extract props for cleaner code
-  const { view, countUrl, active } = props;
+  const { view, countUrl, active, onGetRecordCount } = props;
 
-  /**
-   * Fetch the count of records matching this view's condition.
-   *
-   * Uses debounced query to prevent excessive API calls when view conditions change rapidly.
-   * The query automatically executes on mount and re-executes when the condition changes.
-   */
-  const { result } = useDebouncedFetcherQuery<Condition, number>({
-    url: countUrl,
-    initialQuery: view.pagedQuery.condition,
-    debounce: {
-      delay: 300, // Wait 300ms after condition changes before making API call
-      leading: true, // Execute immediately on first change, then debounce subsequent changes
-    },
-    autoExecute: true, // Start fetching immediately when component mounts
-  });
+  const [recordCount, setRecordCount] = useState(0);
+
+  useEffect(() => {
+    if (onGetRecordCount) {
+      onGetRecordCount(countUrl, view.condition || all()).then(recordCount => {
+        setRecordCount(recordCount || 0);
+      });
+    }
+  }, [countUrl, onGetRecordCount, view.condition]);
 
   return (
     <Flex
@@ -124,7 +118,11 @@ export function ViewItem(props: ViewItemProps) {
           <Tag className={styles.viewNameTag}>系统</Tag>
         )}
       </div>
-      {!active && <div>{result && result > 999 ? '999+' : result || 0}</div>}
+      {!active && (
+        <div>
+          {recordCount && recordCount > 999 ? '999+' : recordCount || 0}
+        </div>
+      )}
     </Flex>
   );
 }

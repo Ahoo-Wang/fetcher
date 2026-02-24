@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { ViewItemGroup } from '../ViewItemGroup';
-import { View, ViewColumn } from '../../types';
+import { ViewState, ViewColumn } from '../../types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 const meta: Meta<typeof ViewItemGroup> = {
@@ -26,7 +26,7 @@ const createSampleView = (
   id: string,
   name: string,
   viewSource: 'SYSTEM' | 'CUSTOM' = 'CUSTOM',
-): View => ({
+): ViewState => ({
   id,
   name,
   type: 'PERSONAL',
@@ -51,13 +51,13 @@ const createSampleView = (
   sort: 0,
 });
 
-const sampleViews: View[] = [
+const sampleViews: ViewState[] = [
   createSampleView('1', 'Default View'),
   createSampleView('2', 'Custom View 1'),
   createSampleView('3', 'Custom View 2'),
 ];
 
-const viewsWithSystem: View[] = [
+const viewsWithSystem: ViewState[] = [
   createSampleView('1', 'Default View'),
   createSampleView('2', 'System View', 'SYSTEM'),
   createSampleView('3', 'Another Custom View'),
@@ -68,7 +68,7 @@ export const Default: Story = {
     views: sampleViews,
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onViewChange: (view: View) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };
 
@@ -77,7 +77,7 @@ export const WithSystemView: Story = {
     views: viewsWithSystem,
     activeView: viewsWithSystem[1],
     countUrl: '/api/count',
-    onViewChange: (view: View) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };
 
@@ -86,6 +86,6 @@ export const SingleView: Story = {
     views: [sampleViews[0]],
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onViewChange: (view: View) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };

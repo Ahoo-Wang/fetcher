@@ -36,31 +36,29 @@ const mockStorage = {
   length: 0,
 };
 
-const mockBroadcastChannel = {
-  postMessage: vi.fn(),
-  close: vi.fn(),
-  onmessage: null,
-};
+class MockBroadcastChannel {
+  postMessage = vi.fn();
+  close = vi.fn();
+  onmessage = null;
+  constructor(_name: string) {}
+}
 
-vi.stubGlobal(
-  'BroadcastChannel',
-  vi.fn(() => mockBroadcastChannel),
-);
+vi.stubGlobal('BroadcastChannel', MockBroadcastChannel);
 vi.stubGlobal('window', { localStorage: mockStorage });
 
 vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
-  BroadcastTypedEventBus: vi.fn().mockImplementation(() => ({
-    emit: vi.fn(),
-    on: vi.fn(),
-    off: vi.fn(),
-    destroy: vi.fn(),
-  })),
-  SerialTypedEventBus: vi.fn().mockImplementation(() => ({
-    emit: vi.fn(),
-    on: vi.fn(),
-    off: vi.fn(),
-    destroy: vi.fn(),
-  })),
+  BroadcastTypedEventBus: class BroadcastTypedEventBus {
+    emit = vi.fn();
+    on = vi.fn();
+    off = vi.fn();
+    destroy = vi.fn();
+  },
+  SerialTypedEventBus: class SerialTypedEventBus {
+    emit = vi.fn();
+    on = vi.fn();
+    off = vi.fn();
+    destroy = vi.fn();
+  },
   nameGenerator: {
     generate: vi.fn((prefix: string) => `${prefix}_1`),
   },
@@ -91,8 +89,6 @@ describe('CoSecRequestInterceptor', () => {
     mockStorage.getItem.mockReturnValue(null);
     mockStorage.setItem.mockImplementation(() => {});
     mockStorage.removeItem.mockImplementation(() => {});
-    mockBroadcastChannel.postMessage.mockImplementation(() => {});
-    mockBroadcastChannel.close.mockImplementation(() => {});
 
     mockDeviceIdStorage = new DeviceIdStorage({
       storage: mockStorage as unknown as Storage,

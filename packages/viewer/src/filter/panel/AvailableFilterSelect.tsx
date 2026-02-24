@@ -41,8 +41,7 @@ export interface AvailableFilterSelectRef {
 }
 
 export interface AvailableFilterSelectProps
-  extends StyleCapable,
-    RefAttributes<AvailableFilterSelectRef> {
+  extends StyleCapable, RefAttributes<AvailableFilterSelectRef> {
   filters: AvailableFilterGroup[];
   activeFilters?: ActiveFilter[];
 }
@@ -57,6 +56,7 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
   const [selectedFilters, setSelectedFilters] = useState<string[]>(
     activeFilterFieldNames,
   );
+
   useImperativeHandle(ref, () => ({
     getValue(): AvailableFilter[] {
       return props.filters.flatMap(group =>

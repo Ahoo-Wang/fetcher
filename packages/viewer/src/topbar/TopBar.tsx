@@ -1,53 +1,46 @@
-import { barItemRegistry } from './barItemRegistry';
-import { BarItemType, TypedBarItem } from './TypedBarItem';
 import {
-  BatchOperationConfig,
   TopBarActionItem,
-  ViewManagement,
-  ViewSource,
-} from '../viewer';
-
+  TopbarActionsCapable,
+  SaveViewMethod, ViewState, SaveViewModal, ViewType,
+} from '../';
 import styles from './TopBar.module.css';
-import { AutoRefreshBarItem } from './AutoRefreshBarItem';
-import { Button, Divider, Dropdown, Flex, MenuProps, Space } from 'antd';
-import {
-  DownOutlined,
-  FullscreenExitOutlined,
-  FullscreenOutlined,
-  MenuUnfoldOutlined,
-} from '@ant-design/icons';
-import React, { RefObject, useCallback } from 'react';
-import { useFullscreen } from '@ahoo-wang/fetcher-react';
-import { BarItem } from './BarItem';
-import { Point } from './Point';
-import { ActionItem, SaveViewMethod } from '../types';
+import { Button, Divider, Dropdown, Flex, MenuProps, Space, Modal } from 'antd';
+import { DownOutlined, ExclamationCircleOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import React, { useCallback, useState } from 'react';
 import type { ItemType } from 'antd/es/menu/interface';
+import {
+  AutoRefreshBarItem,
+  BarItem,
+  Point,
+  FilterBarItem,
+  RefreshDataBarItem,
+  ColumnHeightBarItem,
+  ShareLinkBarItem,
+} from './';
+import { SizeType } from 'antd/es/config-provider/SizeContext';
 
-export interface TopBarPropsCapable<RecordType> {
-  topBar: Omit<TopBarProps<RecordType>, 'title' | 'viewName'>;
-}
-
-export interface TopBarProps<RecordType> {
+export interface TopBarProps<RecordType>
+  extends TopbarActionsCapable<RecordType> {
   title: string;
-  viewName: string;
-  viewSource: ViewSource;
-  barItems: BarItemType[];
-  fullscreenTarget?: RefObject<HTMLElement | null>;
-  enableFullscreen?: boolean;
 
-  batchOperationConfig?: BatchOperationConfig<RecordType>;
-
-  primaryAction?: ActionItem<RecordType>;
-  secondaryActions?: ActionItem<RecordType>[];
+  activeView: ViewState;
+  views: ViewState[];
 
   viewChanged: boolean;
-  viewManagement?: ViewManagement;
-  onSaveAsView?: (method: SaveViewMethod) => void;
   onReset?: () => void;
   tableSelectedItems: RecordType[];
 
   showViewPanel: boolean;
-  onViewPanelUnfold: () => void;
+  onShowViewPanelChange?: (showViewPanel: boolean) => void;
+
+  showFilter: boolean;
+  onShowFilterChange?: (show: boolean) => void;
+  defaultTableSize: SizeType;
+  onTableSizeChange?: (size: SizeType) => void;
+
+  onCreateView: (view: ViewState, onSuccess?: () => void) => void;
+  onUpdateView: (view: ViewState, onSuccess?: () => void) => void;
+  onDeleteView: (view: ViewState, onSuccess?: () => void) => void;
 }
 
 function renderMenuItem<RecordType>(
@@ -90,25 +83,33 @@ const saveMethodItems: MenuProps['items'] = [
 export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   const {
     title,
-    viewName,
-    viewSource,
-    barItems,
-    fullscreenTarget,
-    enableFullscreen,
-    batchOperationConfig,
+    activeView,
     primaryAction,
     secondaryActions,
+    batchActions,
     tableSelectedItems,
     showViewPanel,
-    onViewPanelUnfold,
+    onShowViewPanelChange,
     viewChanged,
-    onSaveAsView,
     onReset,
+    showFilter,
+    onShowFilterChange,
+    defaultTableSize,
+    onTableSizeChange,
+    onCreateView,
+    onUpdateView,
   } = props;
 
+  const [saveViewModalType, setSaveViewModalType] = useState<
+    'Create' | 'SaveAs'
+  >('Create');
+  const [saveViewModalOpened, setSaveViewModalOpened] = useState(false);
+  const [defaultCreateViewType] =
+    useState<ViewType>('PERSONAL');
+
   let batchMenuItems: MenuProps['items'] = [];
-  if (batchOperationConfig?.enabled) {
-    batchMenuItems = batchOperationConfig!.actions.map(
+  if (batchActions?.enabled) {
+    batchMenuItems = batchActions!.actions.map(
       (action: TopBarActionItem<RecordType>, index: number) => {
         return renderMenuItem(action, index, tableSelectedItems);
       },
@@ -124,14 +125,44 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     );
   }
 
-  const { isFullscreen, toggle } = useFullscreen({ target: fullscreenTarget });
+  const [modal, contextHolder] = Modal.useModal();
+  const onSaveView = (method: SaveViewMethod) => {
+    switch (method) {
+      case 'Update':
+        modal.confirm({
+          title: '确认覆盖当前视图？',
+          icon: <ExclamationCircleOutlined />,
+          content: '确认后将覆盖原筛选条件',
+          okText: '确认',
+          cancelText: '取消',
+          onOk: () => {
+            onUpdateView?.(activeView);
+          },
+        });
+        break;
+      case 'SaveAs':
+        setSaveViewModalOpened(true);
+        setSaveViewModalType('SaveAs');
+        break;
+    }
+  };
 
-  const handleFullscreenClick = useCallback(() => {
-    toggle().then();
-  }, [toggle]);
+  const handleCreateViewConfirmed = (name: string, type: ViewType) => {
+    onCreateView?.(
+      {
+        ...activeView,
+        name,
+        type,
+        source: 'CUSTOM',
+      },
+      () => {
+        setSaveViewModalOpened(false);
+      },
+    );
+  }
 
   const handleMenuClick: MenuProps['onClick'] = e => {
-    onSaveAsView?.(e.key as SaveViewMethod);
+    onSaveView(e.key as SaveViewMethod);
   };
 
   const menuProps = {
@@ -143,13 +174,17 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     onReset?.();
   }, [onReset]);
 
+  const handleUnfoldClick = useCallback(() => {
+    onShowViewPanelChange?.(true);
+  }, [onShowViewPanelChange]);
+
   return (
     <>
       <Flex align="center" justify="space-between">
         <Flex gap="8px" align="center" className={styles.leftItems}>
           {!showViewPanel && (
             <>
-              <div onClick={onViewPanelUnfold}>
+              <div onClick={handleUnfoldClick}>
                 <BarItem icon={<MenuUnfoldOutlined />} active={false} />
               </div>
               <Divider orientation="vertical" />
@@ -157,15 +192,15 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
               <Point />
             </>
           )}
-          {viewName}
+          {activeView.name}
           {viewChanged && (
             <>
               <div style={{ color: 'rgba(0,0,0,0.45)' }}>(已编辑)</div>
-              {viewSource === 'SYSTEM' ? (
+              {activeView.source === 'SYSTEM' ? (
                 <Button
                   type="default"
                   size="small"
-                  onClick={() => onSaveAsView?.('SaveAs')}
+                  onClick={() => onSaveView('SaveAs')}
                 >
                   另存为
                 </Button>
@@ -187,21 +222,24 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
           )}
         </Flex>
         <Flex gap="8px" align="center" className={styles.rightItems}>
-          {barItems.map((barItem, index) => {
-            const BarItemComponent = barItemRegistry.get(barItem);
-            if (!BarItemComponent) {
-              return null;
-            }
-            return <TypedBarItem type={barItem} key={index} />;
-          })}
+          <FilterBarItem
+            defaultShowFilter={showFilter}
+            onChange={onShowFilterChange}
+          />
+          <RefreshDataBarItem />
+          <ColumnHeightBarItem
+            defaultTableSize={defaultTableSize}
+            onChange={onTableSizeChange}
+          />
+          <ShareLinkBarItem />
           <Divider orientation="vertical" />
           <AutoRefreshBarItem />
-          {batchOperationConfig?.enabled && (
+          {batchActions?.enabled && (
             <>
               <Divider orientation="vertical" />
               <Dropdown menu={{ items: batchMenuItems }} trigger={['click']}>
                 <Button icon={<DownOutlined />} iconPlacement="end">
-                  {batchOperationConfig?.title && '批量操作'}
+                  {batchActions?.title && '批量操作'}
                 </Button>
               </Dropdown>
             </>
@@ -233,25 +271,17 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
               </Space.Compact>
             </>
           )}
-          {enableFullscreen && fullscreenTarget && (
-            <>
-              <Divider orientation="vertical" />
-              <div onClick={handleFullscreenClick}>
-                <BarItem
-                  icon={
-                    isFullscreen ? (
-                      <FullscreenExitOutlined />
-                    ) : (
-                      <FullscreenOutlined />
-                    )
-                  }
-                  active={false}
-                />
-              </div>
-            </>
-          )}
         </Flex>
       </Flex>
+      {contextHolder}
+      <SaveViewModal
+        mode={saveViewModalType}
+        open={saveViewModalOpened}
+        defaultViewType={defaultCreateViewType}
+        defaultViewName={activeView.name}
+        onSaveView={handleCreateViewConfirmed}
+        onCancel={() => setSaveViewModalOpened(false)}
+      />
     </>
   );
 }

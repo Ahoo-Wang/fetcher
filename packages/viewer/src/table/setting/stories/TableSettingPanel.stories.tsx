@@ -12,19 +12,10 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState } from 'react';
 import { TableSettingPanel } from '../TableSettingPanel';
-import {
-  ActiveViewState,
-  useActiveViewStateReducer,
-  ViewColumn,
-  ViewDefinition,
-  ActiveViewStateContext,
-  ActiveViewStateContextProvider,
-} from '../../../viewer';
-import { all } from '@ahoo-wang/fetcher-wow';
+import { ViewColumn, FieldDefinition } from '../../../';
 
-const meta: Meta = {
+const meta: Meta<typeof TableSettingPanel> = {
   title: 'Viewer/Table/Setting/TableSettingPanel',
   component: TableSettingPanel,
   parameters: {
@@ -38,9 +29,17 @@ const meta: Meta = {
   },
   tags: ['autodocs'],
   argTypes: {
-    viewDefinition: {
+    fields: {
       control: 'object',
-      description: 'View definition containing column definitions',
+      description: 'Field definitions for the columns',
+    },
+    initialColumns: {
+      control: 'object',
+      description: 'Column configurations including visibility and fixed state',
+    },
+    onChange: {
+      action: 'columns changed',
+      description: 'Callback when columns change',
     },
     className: {
       control: 'text',
@@ -52,166 +51,105 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const sampleViewDefinition: ViewDefinition = {
-  id:'sample',
-  name: 'Sample View',
-  fields: [
-    {
-      label: 'ID',
-      name: 'id',
-      primaryKey: true,
-      type: 'text',
-      sorter: true,
-    },
-    {
-      label: 'Name',
-      name: 'name',
-      primaryKey: false,
-      type: 'text',
-      sorter: true,
-    },
-    {
-      label: 'Category',
-      name: 'category',
-      primaryKey: false,
-      type: 'text',
-      sorter: true,
-    },
-    {
-      label: 'Price',
-      name: 'price',
-      primaryKey: false,
-      type: 'number',
-      sorter: true,
-    },
-    {
-      label: 'Status',
-      name: 'status',
-      primaryKey: false,
-      type: 'text',
-      sorter: true,
-    },
-  ],
-  availableFilters: [],
-  dataUrl: '/api/sample',
-  countUrl: '/api/sample/count',
-};
-
-const sampleColumns: ViewColumn[] = [
+const sampleFields: FieldDefinition[] = [
   {
+    label: 'ID',
     name: 'id',
-    hidden: true,
-    fixed: true,
+    primaryKey: true,
+    type: 'text',
+    sorter: true,
   },
   {
+    label: 'Name',
     name: 'name',
-    hidden: true,
-    fixed: false,
+    primaryKey: false,
+    type: 'text',
+    sorter: true,
   },
   {
+    label: 'Category',
     name: 'category',
-    hidden: true,
-    fixed: false,
+    primaryKey: false,
+    type: 'text',
+    sorter: true,
   },
   {
+    label: 'Price',
     name: 'price',
-    hidden: false,
-    fixed: false,
+    primaryKey: false,
+    type: 'number',
+    sorter: true,
   },
   {
+    label: 'Status',
     name: 'status',
-    hidden: false,
-    fixed: false,
+    primaryKey: false,
+    type: 'text',
+    sorter: true,
   },
 ];
 
-const activeViewState: ActiveViewState = {
-  id: 'default-user',
-  name: '全部用户',
-  definitionId: 'use',
-  type: 'SHARED',
-  source: 'SYSTEM',
-  isDefault: true,
-  filters: [],
-  columns: sampleColumns,
-  tableSize: 'middle',
-  pageSize: 10,
-  sort: 1,
-  pagedQuery: {
-    condition: all(),
-  },
-};
-
-const TableSettingPanelWrapper = (args: any) => {
-  const activeViewStateReturn = useActiveViewStateReducer(activeViewState);
-
-  const activeViewStateContext: ActiveViewStateContext = {
-    ...activeViewStateReturn,
-  };
-
-  return (
-    <ActiveViewStateContextProvider {...activeViewStateContext}>
-      <TableSettingPanel
-        viewDefinition={args.viewDefinition || sampleViewDefinition}
-        className={args.className}
-      />
-    </ActiveViewStateContextProvider>
-  );
-};
+const sampleColumns: ViewColumn[] = [
+  { key: 'id', name: 'id', fixed: true, hidden: false },
+  { key: 'name', name: 'name', fixed: false, hidden: false },
+  { key: 'category', name: 'category', fixed: false, hidden: true },
+  { key: 'price', name: 'price', fixed: false, hidden: false },
+  { key: 'status', name: 'status', fixed: false, hidden: true },
+];
 
 export const Basic: Story = {
   args: {
-    viewDefinition: sampleViewDefinition,
+    fields: sampleFields,
     initialColumns: sampleColumns,
   },
-  render: args => <TableSettingPanelWrapper {...args} />,
 };
 
 export const WithHiddenColumns: Story = {
   args: {
-    viewDefinition: sampleViewDefinition,
-    initialColumns: [
-      ...sampleColumns.slice(0, 2),
-      { ...sampleColumns[2], visible: false },
-      { ...sampleColumns[3], visible: true },
-      { ...sampleColumns[4], visible: false },
-    ],
+    fields: sampleFields,
+    initialColumns: sampleColumns,
   },
-  render: args => <TableSettingPanelWrapper {...args} />,
 };
 
 export const AllVisible: Story = {
   args: {
-    viewDefinition: sampleViewDefinition,
-    initialColumns: sampleColumns.map(col => ({ ...col, visible: true })),
+    fields: sampleFields,
+    initialColumns: sampleColumns.map(col => ({ ...col, hidden: false })),
   },
-  render: args => <TableSettingPanelWrapper {...args} />,
 };
 
 export const FixedLimitReached: Story = {
   args: {
-    viewDefinition: sampleViewDefinition,
+    fields: sampleFields,
     initialColumns: [
-      { ...sampleColumns[0], fixed: true, visible: true },
-      { ...sampleColumns[1], fixed: true, visible: true },
-      { ...sampleColumns[2], fixed: true, visible: true },
-      { ...sampleColumns[3], fixed: false, visible: true },
-      { ...sampleColumns[4], fixed: false, visible: false },
+      { key: 'id', name: 'id', fixed: true, hidden: false },
+      { key: 'name', name: 'name', fixed: true, hidden: false },
+      { key: 'category', name: 'category', fixed: true, hidden: false },
+      { key: 'price', name: 'price', fixed: false, hidden: false },
+      { key: 'status', name: 'status', fixed: false, hidden: true },
     ],
   },
-  render: args => <TableSettingPanelWrapper {...args} />,
 };
 
 export const MixedStates: Story = {
   args: {
-    viewDefinition: sampleViewDefinition,
+    fields: sampleFields,
     initialColumns: [
-      { ...sampleColumns[0], fixed: true, visible: true },
-      { ...sampleColumns[1], fixed: false, visible: true },
-      { ...sampleColumns[2], fixed: false, visible: true },
-      { ...sampleColumns[3], fixed: false, visible: false },
-      { ...sampleColumns[4], fixed: false, visible: false },
+      { key: 'id', name: 'id', fixed: true, hidden: false },
+      { key: 'name', name: 'name', fixed: false, hidden: false },
+      { key: 'category', name: 'category', fixed: false, hidden: false },
+      { key: 'price', name: 'price', fixed: false, hidden: true },
+      { key: 'status', name: 'status', fixed: false, hidden: true },
     ],
   },
-  render: args => <TableSettingPanelWrapper {...args} />,
+};
+
+export const WithCallback: Story = {
+  args: {
+    fields: sampleFields,
+    initialColumns: sampleColumns,
+    onChange: columns => {
+      console.log('Columns changed:', columns);
+    },
+  },
 };

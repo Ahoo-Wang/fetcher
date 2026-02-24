@@ -22,17 +22,16 @@ import { ExtendedOperator } from '../../src/filter/operator';
 // Mock AssemblyFilter to test props passing
 vi.mock('../../src/filter/AssemblyFilter', () => ({
   AssemblyFilter: vi.fn(props => {
-    // Store the props for testing
-    (global as any).mockAssemblyFilterProps = props;
+    (globalThis as Record<string, any>).mockAssemblyFilterProps = props;
     return <div data-testid="assembly-filter" />;
   }),
 }));
 
 // 测试辅助函数
 const createMockProps = (
-  overrides: Partial<FilterProps<undefined>> = {},
-): FilterProps<undefined> => {
-  const defaultProps: FilterProps<undefined> = {
+  overrides: Partial<FilterProps<any>> = {},
+): FilterProps<any> => {
+  const defaultProps: FilterProps<any> = {
     field: {
       name: 'testField',
       label: 'Test Field',
@@ -50,7 +49,7 @@ const createMockProps = (
   return { ...defaultProps, ...overrides };
 };
 
-const renderWithRef = (props: Partial<FilterProps<undefined>> = {}) => {
+const renderWithRef = (props: Partial<FilterProps<any>> = {}) => {
   const ref = React.createRef<FilterRef>();
   const finalProps = createMockProps(props);
 
@@ -62,7 +61,7 @@ const renderWithRef = (props: Partial<FilterProps<undefined>> = {}) => {
 describe('BoolFilter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    delete (global as any).mockAssemblyFilterProps;
+    delete (globalThis as Record<string, unknown>).mockAssemblyFilterProps;
   });
 
   describe('Rendering', () => {
@@ -98,7 +97,7 @@ describe('BoolFilter', () => {
       });
       render(<BoolFilter {...props} />);
 
-      const mockProps = (global as any).mockAssemblyFilterProps;
+      const mockProps = (globalThis as Record<string, any>).mockAssemblyFilterProps;
       expect(mockProps).toBeDefined();
       expect(mockProps.field).toEqual(props.field);
       expect(mockProps.label).toEqual(props.label);
@@ -110,7 +109,7 @@ describe('BoolFilter', () => {
       const props = createMockProps();
       render(<BoolFilter {...props} />);
 
-      const mockProps = (global as any).mockAssemblyFilterProps;
+      const mockProps = (globalThis as Record<string, any>).mockAssemblyFilterProps;
       expect(mockProps.supportedOperators).toEqual([
         ExtendedOperator.UNDEFINED,
         Operator.TRUE,
@@ -122,7 +121,7 @@ describe('BoolFilter', () => {
       const props = createMockProps();
       render(<BoolFilter {...props} />);
 
-      const mockProps = (global as any).mockAssemblyFilterProps;
+      const mockProps = (globalThis as Record<string, any>).mockAssemblyFilterProps;
       // TrueValidateValue always returns true
       expect(typeof mockProps.validate).toBe('function');
       expect(mockProps.validate(Operator.TRUE, undefined)).toBe(true);
@@ -185,7 +184,7 @@ describe('BoolFilter', () => {
     });
 
     it('handles minimal props', () => {
-      const minimalProps: FilterProps<undefined> = {
+      const minimalProps: FilterProps<any> = {
         field: {
           name: 'test',
           label: 'Test',

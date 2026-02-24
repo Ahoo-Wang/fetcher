@@ -1,36 +1,25 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { FetcherViewer } from '../FetcherViewer';
-import {
-  COLUMN_HEIGHT_BAR_ITEM_TYPE,
-  FILTER_BAR_ITEM_TYPE,
-  REFRESH_DATA_BAR_ITEM_TYPE,
-  SHARE_LINK_BAR_ITEM_TYPE,
-} from '../../topbar';
+import type { PaginationProps } from 'antd';
 import {
   fetcher,
-  type FetchExchange,
+  FetchExchange,
   RequestInterceptor,
   URL_RESOLVE_INTERCEPTOR_ORDER,
   UrlBuilder,
 } from '@ahoo-wang/fetcher';
 
-fetcher.urlBuilder = new UrlBuilder('https://dev-api.linyikj.com');
-fetcher.timeout = 1000 * 60 * 2;
-
 const ACCEPT = 'Accept';
 const CONTENT_TYPE = 'Content-Type';
 const X_WAREHOUSE_ID = 'X-Warehouse-Id';
-const FETCHER_REQUEST_INTERCEPTOR_NAME = 'RequestInterceptor';
+const COSEC_APP_ID = 'cosec-app-id';
 
-class FetcherRequestInterceptor implements RequestInterceptor {
-  name = FETCHER_REQUEST_INTERCEPTOR_NAME;
+
+class TestFetcherRequestInterceptor implements RequestInterceptor {
+  name = 'RequestInterceptor';
   order = URL_RESOLVE_INTERCEPTOR_ORDER - 1;
 
   async intercept(exchange: FetchExchange): Promise<void> {
-    /**
-     * 有些 RequestInit 配置不方便在实例化 Fetcher 时传入，可以通过拦截器注入
-     * https://developer.mozilla.org/en-US/docs/Web/API/RequestInit
-     */
     exchange.request.cache = 'no-store';
     exchange.request.credentials = 'omit';
     exchange.request.redirect = 'follow';
@@ -40,37 +29,18 @@ class FetcherRequestInterceptor implements RequestInterceptor {
       [ACCEPT]: 'application/json',
       [CONTENT_TYPE]: 'application/json',
       [X_WAREHOUSE_ID]: 'mydao-SH',
-      authorization:
-        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVjdXRDA0SjAwZWwzQnQiLCJzdWIiOiIzaEgiLCJpYXQiOjE3Njc2OTYxNzQsImV4cCI6MTc2Nzk1NTM3NCwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InB1cmNoYXNlIiwiZGVwYXJ0bWVudHMiOltdLCJhdXRoZW50aWNhdGVJZCI6IjBWN1dEMDNyMDBlbDNCbyJ9LCJ0ZW5hbnRJZCI6Im15ZGFvIn0.q7z0KC4AEnHIMdvxP3CJNE0g19fWqRISfU2RYLnzEpw',
+      [COSEC_APP_ID]: 'pms',
+      Authorization:
+        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkJ3dEJUZDAwZmgxNEYiLCJzdWIiOiIxWkUiLCJpYXQiOjE3NzE3NTQ5NDMsImV4cCI6MTc3MjAxNDE0Mywicm9sZXMiOlsiM1F2Il0sImF0dHJpYnV0ZXMiOnsiaXNPd25lciI6ImZhbHNlIiwiYXBwSWQiOiJwbXMiLCJkZXBhcnRtZW50cyI6W10sImF1dGhlbnRpY2F0ZUlkIjoiMFZCd3RBeDMwMGZoMTQ0In0sInRlbmFudElkIjoibXlkYW8ifQ.nAlXHTMLSx2lQQbWHfiCgDr4nX-gHmLkWudScdRnEOI',
     };
 
-    const request = exchange.request;
-    request.url = exchange.request.url.replace('{tenantId}', 'mydao').replace('{ownerId}','Zh');
+    exchange.request.url = exchange.request.url.replace('{tenantId}', 'mydao');
+    exchange.request.url = exchange.request.url.replace('{ownerId}', '1ZE');
   }
 }
 
-fetcher.interceptors.request.use(new FetcherRequestInterceptor()); // 处理 fetch 方法的配置信息
-// fetcher.interceptors.error.use(new ResponseErrorInterceptor());
-
-const mockActionColumn = {
-  title: '操作',
-  dataIndex: 'id',
-  configurable: true,
-  configurePanelTitle: '表格设置',
-  actions: (record: any) => ({
-    primaryAction: {
-      data: { value: '编辑', record, index: 0 },
-      attributes: { onClick: () => console.log('Edit', record) },
-    },
-    moreActionTitle: '更多',
-    secondaryActions: [
-      {
-        data: { value: '删除', record, index: 1 },
-        attributes: { onClick: () => console.log('Delete', record) },
-      },
-    ],
-  }),
-};
+fetcher.urlBuilder = new UrlBuilder('https://dev-api.linyikj.com');
+fetcher.interceptors.request.use(new TestFetcherRequestInterceptor());
 
 const meta: Meta<typeof FetcherViewer> = {
   title: 'Viewer/FetcherViewer',
@@ -80,93 +50,101 @@ const meta: Meta<typeof FetcherViewer> = {
     docs: {
       description: {
         component:
-          'FetcherViewer is a data-driven viewer component that fetches view definitions and user views from the server.',
+          'A viewer component that fetches view definition and views from remote server. Built on top of Viewer component with integrated data fetching capabilities.',
       },
     },
   },
   tags: ['autodocs'],
   argTypes: {
-    definitionId: {
+    viewerDefinitionId: {
       control: 'text',
-      description: 'The ID of the view definition to fetch',
-    },
-    ownerId: {
-      control: 'text',
-      description: 'The ID of the view owner',
+      description: 'Unique identifier for the view definition',
     },
     defaultViewId: {
       control: 'text',
-      description: 'The ID of the default view to use',
+      description: 'Default view ID to display',
     },
-    supportedTopbarItems: {
-      control: 'multi-select',
-      options: [
-        FILTER_BAR_ITEM_TYPE,
-        REFRESH_DATA_BAR_ITEM_TYPE,
-        COLUMN_HEIGHT_BAR_ITEM_TYPE,
-        SHARE_LINK_BAR_ITEM_TYPE,
-      ],
-      description: 'Top bar items to display',
+    pagination: {
+      control: 'object',
+      description: 'Pagination configuration',
+    },
+    enableRowSelection: {
+      control: 'boolean',
+      description: 'Whether to enable row selection',
+    },
+    actionColumn: {
+      control: 'object',
+      description: 'Action column configuration for row operations',
+    },
+    viewTableSetting: {
+      control: 'object',
+      description: 'Table settings panel configuration',
+    },
+    onClickPrimaryKey: {
+      action: 'primary key clicked',
+      description: 'Callback fired when primary key cell is clicked',
+    },
+    onSwitchView: {
+      action: 'view changed',
+      description: 'Callback fired when user switches view',
     },
   },
 };
 
 export default meta;
-
 type Story = StoryObj<typeof meta>;
 
-const Template = (args: any) => {
-  return (
-    <div style={{ height: '100vh' }}>
-      <FetcherViewer {...args} />
-    </div>
-  );
+export const Basic: Story = {
+  args: {
+    viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
+    tenantId: 'mydao',
+    defaultViewId: '',
+    pagination: {} as PaginationProps,
+    enableRowSelection: false,
+  },
 };
 
-export const Default: Story = {
-  render: Template,
+export const WithRowSelection: Story = {
   args: {
-    definitionId: 'sku-cost',
-    ownerId: 'Zh',
-    defaultViewId: 'view-1',
-    supportedTopbarItems: [
-      FILTER_BAR_ITEM_TYPE,
-      REFRESH_DATA_BAR_ITEM_TYPE,
-      COLUMN_HEIGHT_BAR_ITEM_TYPE,
-      SHARE_LINK_BAR_ITEM_TYPE,
-    ],
-    actionColumn: mockActionColumn,
-    batchOperationConfig: {
-      enabled: true,
-      title: '批量操作',
-      actions: [
-        {
-          title: '批量删除',
-          onClick: (items: any[]) => {
-            console.log('Bulk Delete', items);
-          },
-        },
-      ],
-    },
-    primaryAction: {
-      title: '新增',
-      onClick: (items: any[]) => {
-        console.log('Primary Button', items);
-      },
-    },
-    secondaryActions: [
-      {
-        title: '导出',
-        onClick: (items: any[]) => {
-          console.log('Export', items);
-        },
-      },
-    ],
-    onClickPrimaryKey: (id: string, record: any) => {
-      console.log('Click Primary Key', id, record);
-    },
-    onViewChange: (view: any) => {
-      console.log('View changed:', view);
-    },
+    viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
+    tenantId: 'mydao',
+    defaultViewId: '',
+    pagination: {} as PaginationProps,
+    enableRowSelection: true,
+  },
+};
+
+export const WithoutPagination: Story = {
+  args: {
+    viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
+    tenantId: 'mydao',
+    defaultViewId: '',
+    pagination: false,
+    enableRowSelection: false,
+  },
+};
+
+export const SmallPageSize: Story = {
+  args: {
+    viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
+    tenantId: 'mydao',
+    defaultViewId: '',
+    pagination: { defaultPageSize: 5 } as PaginationProps,
+    enableRowSelection: false,
+  },
+};
+
+export const LargePageSize: Story = {
+  args: {
+    viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
+    tenantId: 'mydao',
+    defaultViewId: '',
+    pagination: { defaultPageSize: 50 } as PaginationProps,
+    enableRowSelection: false,
   },
 };

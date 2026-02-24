@@ -21,13 +21,17 @@ import { useRefs } from '@ahoo-wang/fetcher-react';
 import { RemovableTypedFilter } from './RemovableTypedFilter';
 import { RowProps } from 'antd/es/grid/row';
 
-export interface ActiveFilter
-  extends Omit<TypedFilterProps, 'onChange' | 'ref'> {
+export interface ActiveFilter extends Omit<
+  TypedFilterProps,
+  'onChange' | 'ref'
+> {
   key: Key;
   onRemove?: () => void;
 }
 
 export interface FilterPanelRef {
+  latestCondition(): Condition;
+
   /**
    * Triggers the search action using the current filter values.
    * Typically calls the `onSearch` callback with the composed filter condition.
@@ -81,14 +85,19 @@ export function FilterPanel(props: FilterPanelProps) {
     searchButton,
   } = props;
   const filterRefs = useRefs<FilterRef>();
+
+  const latestCondition = () => {
+    const conditions = Array.from(filterRefs.values())
+      .map(ref => ref?.getValue()?.condition)
+      .filter(Boolean);
+    return and(...conditions);
+  };
+
   const handleSearch = () => {
     if (!onSearch) {
       return;
     }
-    const conditions = Array.from(filterRefs.values())
-      .map(ref => ref?.getValue()?.condition)
-      .filter(Boolean);
-    const finalCondition: Condition = and(...conditions);
+    const finalCondition = latestCondition();
     onSearch(finalCondition);
   };
   const handleReset = () => {
@@ -97,6 +106,7 @@ export function FilterPanel(props: FilterPanelProps) {
     }
   };
   useImperativeHandle<FilterPanelRef, FilterPanelRef>(ref, () => ({
+    latestCondition: latestCondition,
     search: handleSearch,
     reset: handleReset,
   }));

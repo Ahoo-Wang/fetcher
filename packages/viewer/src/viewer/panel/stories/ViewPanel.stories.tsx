@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { ViewPanel } from '../ViewPanel';
-import { View, ViewSource, ViewType } from '../../types';
+import { ViewState, ViewSource, ViewType } from '../../types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 const meta: Meta<typeof ViewPanel> = {
@@ -27,7 +27,7 @@ const createSampleView = (
   name: string,
   viewType: ViewType = 'PERSONAL',
   viewSource: ViewSource = 'CUSTOM',
-): View => ({
+): ViewState => ({
   id,
   name,
   type: viewType,
@@ -52,7 +52,7 @@ const createSampleView = (
   sort: 0,
 });
 
-const sampleViews: View[] = [
+const sampleViews: ViewState[] = [
   createSampleView('1', 'My Personal View', 'PERSONAL'),
   createSampleView('2', 'Another Personal View', 'PERSONAL'),
   createSampleView('3', 'Team Public View', 'SHARED'),
@@ -62,31 +62,31 @@ const sampleViews: View[] = [
 
 export const Default: Story = {
   args: {
-    aggregateName: 'aggregateName',
+    name: 'aggregateName',
     views: sampleViews,
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onViewChange: (view: View) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };
 
 export const OnlyPersonalViews: Story = {
   args: {
-    aggregateName: 'aggregateName',
+    name: 'aggregateName',
     views: sampleViews.filter(v => v.type === 'PERSONAL'),
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onViewChange: (view: View) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };
 
 export const OnlyPublicViews: Story = {
   args: {
-    aggregateName: 'aggregateName',
+    name: 'aggregateName',
     views: sampleViews.filter(v => v.type === 'SHARED'),
     activeView: sampleViews[2],
     countUrl: '/api/count',
-    onViewChange: (view: View) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };
 
@@ -95,6 +95,6 @@ export const SingleView: Story = {
     views: [sampleViews[0]],
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onViewChange: (view: View) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
   },
 };

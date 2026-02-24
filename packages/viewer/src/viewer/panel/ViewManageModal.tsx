@@ -1,23 +1,23 @@
 import { Modal, Space } from 'antd';
-import { View, ViewType } from '../types';
+import { ViewState, ViewType } from '../types';
 import { useState } from 'react';
 import { ViewManageItem } from './ViewManageItem';
 
 export interface ViewManageModalProps {
   viewType: ViewType;
-  views: View[];
+  views: ViewState[];
   open?: boolean;
   onCancel?: () => void;
-  onDeleteView?: (view: View, onSuccess?: () => void) => void;
-  onEditViewName?: (view: View, onSuccess?: () => void) => void;
+  onDeleteView?: (view: ViewState, onSuccess?: () => void) => void;
+  onEditViewName?: (view: ViewState, onSuccess?: () => void) => void;
 }
 
 export function ViewManageModal(props: ViewManageModalProps) {
   const { viewType, views, open, onCancel, onEditViewName, onDeleteView } = props;
 
-  const [editingView, setEditingView] = useState<View | null>(null);
+  const [editingView, setEditingView] = useState<ViewState | null>(null);
 
-  const isEditing = (view: View) => {
+  const isEditing = (view: ViewState) => {
     return editingView?.id === view.id;
   };
 
@@ -31,17 +31,17 @@ export function ViewManageModal(props: ViewManageModalProps) {
     setEditingView(null);
   };
 
-  const handleStartEdit = (view: View) => {
+  const handleStartEdit = (view: ViewState) => {
     setEditingView(view);
   };
 
-  const handleDeleteView = (view: View) => {
+  const handleDeleteView = (view: ViewState) => {
     onDeleteView?.(view, () => {
       setEditingView(null);
     });
   };
 
-  const handleSaveView = (view: View) => {
+  const handleSaveView = (view: ViewState) => {
     onEditViewName?.(view, () => {
       setEditingView(null);
     });

@@ -1,204 +1,279 @@
-import { ViewTableActionColumn } from '../table';
+import { Spin } from 'antd';
 import { PaginationProps } from 'antd';
-import { BarItemType } from '../topbar';
 import {
-  BatchOperationConfig,
+  ViewTableSettingCapable,
+  ViewTableActionColumn,
+  ViewState,
   Viewer,
-  View,
-  ViewDefinition,
-  ViewManagement,
-} from '../viewer';
-import { ActionItem, TableRecordType } from '../types';
-import { and, eq, isIn, PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
+  useRefreshDataEventBus,
+  TopbarActionsCapable,
+} from '../';
 import {
+  useViewerDefinition,
+  useViewerViews,
+  useFetchData,
   CreateView,
   EditView,
-  ViewAggregatedFields,
-  viewerDefinitionQueryClientFactory,
-  viewQueryClientFactory,
-} from './client';
-import { useEffect, useState } from 'react';
-import { useFetcher } from '@ahoo-wang/fetcher-react';
-import { ResultExtractors } from '@ahoo-wang/fetcher';
-import { ViewCommandClient } from './client/view/commandClient';
+  ViewCommandClient,
+} from './';
+import {
+  RefAttributes,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+} from 'react';
+import { CommandResult, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
+
+export interface FetcherViewerRef {
+  refreshData: () => void;
+}
+
+export interface FetcherViewerProps<RecordType>
+  extends
+    ViewTableSettingCapable,
+    RefAttributes<FetcherViewerRef>,
+    TopbarActionsCapable<RecordType> {
+  viewerDefinitionId: string;
+  ownerId?: string;
+  tenantId?: string;
+
+  defaultViewId?: string;
+
+  pagination:
+    | false
+    | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
+  actionColumn?: ViewTableActionColumn<RecordType>;
+
+  onClickPrimaryKey?: (id: any, record: RecordType) => void;
+  enableRowSelection?: boolean;
+
+  onSwitchView?: (view: ViewState) => void;
+}
 
 const viewCommandClient = new ViewCommandClient();
 
-export interface FetcherViewerProps<RecordType> {
-  definitionId: string;
-  ownerId: string;
-  defaultViewId?: string;
-  actionColumn?: ViewTableActionColumn<TableRecordType<RecordType>>;
-  paginationProps?: Omit<PaginationProps, 'onChange' | 'onShowSizeChange'>;
-
-  supportedTopbarItems: BarItemType[];
-
-  batchOperationConfig?: BatchOperationConfig<RecordType>;
-  primaryAction?: ActionItem<RecordType>;
-  secondaryActions?: ActionItem<RecordType>[];
-
-  // click primary key
-  onClickPrimaryKey?: (id: any, record: RecordType) => void;
-
-  // data change callbacks
-  onViewChange?: (view: View) => void;
-}
-
-export function FetcherViewer<RecordType>(
-  props: FetcherViewerProps<RecordType>,
-) {
+export function FetcherViewer<RecordType = any>({
+  ownerId = '(0)',
+  tenantId = '(0)',
+  ...props
+}: FetcherViewerProps<RecordType>) {
   const {
-    definitionId,
-    ownerId,
+    ref,
+    viewerDefinitionId,
     defaultViewId,
+    pagination,
     actionColumn,
-    paginationProps,
-    supportedTopbarItems,
-    batchOperationConfig,
+    onClickPrimaryKey,
+    enableRowSelection,
+    onSwitchView,
+    viewTableSetting,
     primaryAction,
     secondaryActions,
-    onClickPrimaryKey,
-    onViewChange,
+    batchActions,
   } = props;
 
-  const [definition, setDefinition] = useState<ViewDefinition>();
-  const [views, setViews] = useState<View[]>([]);
-  const [defaultView, setDefaultView] = useState<View>();
+  const {
+    viewerDefinition,
+    loading: definitionLoading,
+    error: definitionError,
+  } = useViewerDefinition(viewerDefinitionId);
 
-  const { result: dataResult, execute } = useFetcher<PagedList<RecordType>>({
-    resultExtractor: ResultExtractors.Json,
+  const { views, loading: viewsLoading } = useViewerViews(
+    viewerDefinitionId,
+    tenantId,
+    ownerId,
+  );
+
+  const defaultView = useMemo(
+    () => getDefaultView(views, defaultViewId),
+    [views, defaultViewId],
+  );
+
+  const { dataSource, setQuery } = useFetchData<RecordType>({
+    viewerDefinition,
+    defaultView,
   });
 
-  useEffect(() => {
-    const abortController = new AbortController();
+  const handleLoadData = useCallback(
+    (
+      condition: Condition,
+      page: number,
+      pageSize: number,
+      sorter?: FieldSort[],
+    ) => {
+      setQuery?.(condition, page, pageSize, sorter);
+    },
+    [setQuery],
+  );
 
-    const fetchData = async () => {
-      try {
-        const [viewDefinition, viewList] = await Promise.all([
-          viewerDefinitionQueryClientFactory
-            .createSnapshotQueryClient()
-            .getStateById(definitionId, { abortController }),
-          viewQueryClientFactory.createSnapshotQueryClient().listState(
-            {
-              condition: and(
-                eq(ViewAggregatedFields.STATE_DEFINITION_ID, definitionId),
-                isIn(ViewAggregatedFields.OWNER_ID, ownerId, '(shared)'),
-              ),
-            },
-            { abortController },
-          ),
-        ]);
-        setDefinition(viewDefinition);
-        setViews(viewList);
+  const handleSwitchView = useCallback(
+    (view: ViewState) => {
+      onSwitchView?.(view);
+    },
+    [onSwitchView],
+  );
 
-        let initialActiveView: View | undefined;
-        if (defaultViewId) {
-          initialActiveView = viewList.find(v => v.id === defaultViewId);
-        } else {
-          initialActiveView = viewList.find(v => v.isDefault);
-        }
-        if (!initialActiveView) {
-          initialActiveView = viewList[0];
-        }
-        setDefaultView(initialActiveView);
+  const onGetRecordCount = useCallback(
+    (countUrl: string, condition: Condition): Promise<number> => {
+      const fetcher = fetcherRegistrar.default;
 
-        await execute({
-          url: viewDefinition.dataUrl,
-          method: 'POST',
-          body: initialActiveView.pagedQuery,
-          abortController: abortController,
-        });
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
+      return fetcher.post(
+        countUrl,
+        {
+          body: condition,
+        },
+        {
+          resultExtractor: TextResultExtractor,
+        },
+      );
+    },
+    [],
+  );
 
-    void fetchData();
-
-    return () => {
-      abortController.abort();
-    };
-  }, [defaultViewId, definitionId, execute, ownerId]);
-
-  const onLoadData = (pagedQuery: PagedQuery) => {
-    void execute({
-      url: definition!.dataUrl,
-      method: 'POST',
-      body: pagedQuery,
-    });
-  };
-
-  const viewManagement: ViewManagement = {
-    enabled: true,
-    onCreateView: (view: View, onSuccess?: (newView: View) => void) => {
-      const createViewCommand: CreateView = {
+  const handleCreateView = useCallback(
+    (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
+      const command: CreateView = {
         ...view,
-        source: 'CUSTOM',
       };
-
       viewCommandClient
         .createView(view.type, {
-          body: createViewCommand,
+          body: command,
         })
-        .then(result => {
-          const newView: View = {
+        .then((result: CommandResult) => {
+          const newView = {
             ...view,
             id: result.aggregateId,
-            source: 'CUSTOM',
           };
-          setViews([...views, newView]);
           onSuccess?.(newView);
         });
     },
-    onUpdateView: (view: View, onSuccess?: (newView: View) => void) => {
-      const editViewCommand: EditView = {
+    [],
+  );
+
+  const handleUpdateView = useCallback(
+    (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
+      const command: EditView = {
         ...view,
       };
-
       viewCommandClient
         .editView(view.type, view.id, {
-          body: editViewCommand,
+          body: command,
         })
         .then(() => {
-          setViews(views.map(v => (v.id === view.id ? { ...view } : v)));
           onSuccess?.(view);
         });
     },
-    onDeleteView: (view: View, onSuccess?: () => void) => {
+    [],
+  );
+
+  const handleDeleteView = useCallback(
+    (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
       viewCommandClient
         .defaultDeleteAggregate(view.id, {
           body: {},
         })
         .then(() => {
-          setViews(views.filter(v => v.id !== view.id));
-          onSuccess?.();
+          onSuccess?.(view);
         });
     },
-  };
+    [],
+  );
+
+  const { publish } = useRefreshDataEventBus();
+
+  useImperativeHandle<FetcherViewerRef, FetcherViewerRef>(ref, () => ({
+    refreshData: publish,
+  }));
+
+  if (definitionLoading || viewsLoading) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+        }}
+      >
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (definitionError) {
+    return (
+      <div style={{ padding: 24, color: '#ff4d4f' }}>
+        加载视图定义失败: {definitionError.message}
+      </div>
+    );
+  }
+
+  if (!viewerDefinition) {
+    return <div style={{ padding: 24 }}>未找到视图定义</div>;
+  }
+
+  if (views && views.length === 0) {
+    return <div style={{ padding: 24 }}>未找到视图</div>;
+  }
+
+  if (views && views.length > 0 && defaultView) {
+    return (
+      <Viewer<RecordType>
+        defaultViews={views}
+        defaultView={defaultView}
+        definition={viewerDefinition}
+        dataSource={dataSource || { list: [], total: 0 }}
+        pagination={pagination}
+        actionColumn={actionColumn}
+        onClickPrimaryKey={onClickPrimaryKey}
+        enableRowSelection={enableRowSelection}
+        primaryAction={primaryAction}
+        secondaryActions={secondaryActions}
+        batchActions={batchActions}
+        onGetRecordCount={onGetRecordCount}
+        onSwitchView={handleSwitchView}
+        onLoadData={handleLoadData}
+        viewTableSetting={viewTableSetting}
+        onCreateView={handleCreateView}
+        onUpdateView={handleUpdateView}
+        onDeleteView={handleDeleteView}
+      />
+    );
+  }
 
   return (
-    <>
-      {views && defaultView && definition && (
-        <Viewer<RecordType>
-          views={views}
-          defaultView={defaultView}
-          definition={definition}
-          actionColumn={actionColumn}
-          paginationProps={{
-            ...paginationProps,
-            total: dataResult?.total || 0,
-          }}
-          dataSource={dataResult?.list || []}
-          viewManagement={viewManagement}
-          supportedTopbarItems={supportedTopbarItems}
-          batchOperationConfig={batchOperationConfig}
-          primaryAction={primaryAction}
-          secondaryActions={secondaryActions}
-          onClickPrimaryKey={onClickPrimaryKey}
-          onLoadData={onLoadData}
-          onViewChange={onViewChange}
-        ></Viewer>
-      )}
-    </>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+      }}
+    >
+      <Spin size="large" />
+    </div>
   );
+}
+
+function getDefaultView(
+  views: ViewState[] | undefined,
+  defaultViewId?: string,
+): ViewState | undefined {
+  if (!views || views.length === 0) return undefined;
+
+  let activeView: ViewState | undefined;
+  if (defaultViewId) {
+    activeView = views.find(view => view.id === defaultViewId);
+    if (activeView) {
+      return activeView;
+    }
+  }
+
+  activeView = views.find(view => view.isDefault);
+  if (activeView) {
+    return activeView;
+  }
+
+  return views[0];
 }

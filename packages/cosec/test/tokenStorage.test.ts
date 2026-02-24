@@ -26,32 +26,30 @@ const mockStorage = {
 };
 
 // Mock BroadcastChannel
-const mockBroadcastChannel = {
-  postMessage: vi.fn(),
-  close: vi.fn(),
-  onmessage: null,
-};
+class MockBroadcastChannel {
+  postMessage = vi.fn();
+  close = vi.fn();
+  onmessage = null;
+  constructor(_name: string) {}
+}
 
-vi.stubGlobal(
-  'BroadcastChannel',
-  vi.fn(() => mockBroadcastChannel),
-);
+vi.stubGlobal('BroadcastChannel', MockBroadcastChannel);
 vi.stubGlobal('window', { localStorage: mockStorage });
 
 // Mock BroadcastTypedEventBus and SerialTypedEventBus
 vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
-  BroadcastTypedEventBus: vi.fn().mockImplementation(() => ({
-    emit: vi.fn(),
-    on: vi.fn(),
-    off: vi.fn(),
-    destroy: vi.fn(),
-  })),
-  SerialTypedEventBus: vi.fn().mockImplementation(() => ({
-    emit: vi.fn(),
-    on: vi.fn(),
-    off: vi.fn(),
-    destroy: vi.fn(),
-  })),
+  BroadcastTypedEventBus: class BroadcastTypedEventBus {
+    emit = vi.fn();
+    on = vi.fn();
+    off = vi.fn();
+    destroy = vi.fn();
+  },
+  SerialTypedEventBus: class SerialTypedEventBus {
+    emit = vi.fn();
+    on = vi.fn();
+    off = vi.fn();
+    destroy = vi.fn();
+  },
   nameGenerator: {
     generate: vi.fn((prefix: string) => `${prefix}_1`),
   },
@@ -59,16 +57,19 @@ vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
 
 // Mock JwtCompositeToken
 vi.mock('../src/jwtToken', () => ({
-  JwtCompositeToken: vi.fn().mockImplementation((token, earlyPeriod) => ({
-    token,
-    authenticated: true,
-    access: { payload: { userId: 'default', username: 'default' } },
-    isRefreshNeeded: vi.fn(() => false),
-    isRefreshable: vi.fn(() => true),
-  })),
-  JwtCompositeTokenSerializer: vi.fn().mockImplementation(earlyPeriod => ({
-    serialize: vi.fn(value => JSON.stringify(value.token)),
-    deserialize: vi.fn(value => {
+  JwtCompositeToken: class JwtCompositeToken {
+    token = { accessToken: '', refreshToken: '' };
+    authenticated = true;
+    access = { payload: { userId: 'default', username: 'default' } };
+    isRefreshNeeded = vi.fn(() => false);
+    isRefreshable = vi.fn(() => true);
+    constructor(_token: { accessToken: string; refreshToken: string }) {
+      this.token = _token;
+    }
+  },
+  JwtCompositeTokenSerializer: class JwtCompositeTokenSerializer {
+    serialize = vi.fn((value: { token: { accessToken: string; refreshToken: string } }) => JSON.stringify(value.token));
+    deserialize = vi.fn((value: string) => {
       const token = JSON.parse(value);
       return {
         token,
@@ -77,8 +78,9 @@ vi.mock('../src/jwtToken', () => ({
         isRefreshNeeded: vi.fn(() => false),
         isRefreshable: vi.fn(() => true),
       };
-    }),
-  })),
+    });
+    constructor(_earlyPeriod: number) {}
+  },
 }));
 
 describe('TokenStorage', () => {
@@ -89,8 +91,6 @@ describe('TokenStorage', () => {
     mockStorage.getItem.mockReturnValue(null);
     mockStorage.setItem.mockImplementation(() => {});
     mockStorage.removeItem.mockImplementation(() => {});
-    mockBroadcastChannel.postMessage.mockImplementation(() => {});
-    mockBroadcastChannel.close.mockImplementation(() => {});
 
     tokenStorage = new TokenStorage({
       key: DEFAULT_COSEC_TOKEN_KEY,
@@ -100,7 +100,6 @@ describe('TokenStorage', () => {
 
   describe('constructor', () => {
     it('should initialize with default options', () => {
-      // Mock eventBus for test environment
       const mockEventBus = {
         emit: vi.fn(),
         on: vi.fn(),
@@ -170,15 +169,13 @@ describe('TokenStorage', () => {
         refreshToken: 'stored-refresh',
       };
       mockStorage.getItem.mockReturnValue(JSON.stringify(storedToken));
-      // Mock the JwtCompositeToken to have authenticated = true
       const mockJwtToken = {
         token: storedToken,
         authenticated: true,
         isRefreshNeeded: vi.fn(() => false),
         isRefreshable: vi.fn(() => true),
       };
-      // Override the mock to return our custom object
-      vi.mocked(JwtCompositeToken).mockReturnValue(mockJwtToken as any);
+      vi.spyOn(tokenStorage, 'get').mockReturnValue(mockJwtToken as any);
       expect(tokenStorage.authenticated).toBe(true);
     });
 
@@ -288,7 +285,6 @@ describe('TokenStorage', () => {
 
     it('should destroy', () => {
       tokenStorage.destroy();
-      // destroy removes the internal handler
     });
   });
 });

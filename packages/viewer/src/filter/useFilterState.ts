@@ -134,6 +134,7 @@ export function useFilterState(
     };
     return filterValueConverter(filterValue);
   };
+
   const setOperatorFn = (newOperator: SelectOperator) => {
     const afterValue = valueConverter(operator, newOperator, value);
     setOperator(newOperator);
