@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { TagCell, TagCellProps, TAG_CELL_TYPE } from '../../../src/table/cell';
+import { TagCell, TagCellProps, TAG_CELL_TYPE } from '../../../src';
 
 describe('TagCell Component', () => {
   // Test data interfaces

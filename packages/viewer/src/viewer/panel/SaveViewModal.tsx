@@ -74,7 +74,10 @@ export function SaveViewModal(props: SaveViewModalProps) {
         <Form.Item<ViewState>
           label="视图名称"
           name="name"
-          rules={[{ required: true, message: '请输入视图名称' }]}
+          rules={[
+            { required: true, message: '请输入视图名称' },
+            { type: 'string', min: 1, message: '请输入视图名称' },
+          ]}
         >
           <Input />
         </Form.Item>

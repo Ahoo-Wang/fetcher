@@ -15,7 +15,9 @@
     "outDir": "./dist",
     "rootDir": "./packages/*/src",
     "composite": true,
-    "incremental": true
+    "incremental": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["packages/*/src", ".storybook"],
   "exclude": ["node_modules", "dist"]

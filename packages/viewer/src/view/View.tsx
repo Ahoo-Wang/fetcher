@@ -22,7 +22,7 @@ import {
 } from '../filter';
 import type * as React from 'react';
 import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
-import { RefAttributes, useImperativeHandle, useRef } from 'react';
+import { RefAttributes, useEffect, useImperativeHandle, useRef } from 'react';
 import { FieldDefinition, ViewColumn } from '../viewer';
 import { ViewTable, ViewTableActionColumn, ViewTableRef } from '../table';
 import {
@@ -356,6 +356,10 @@ export function View<RecordType>({
     reset: resetFn,
   }));
 
+  useEffect(() => {
+    clearSelectedRowKeysFn();
+  }, [dataSource]);
+
   /**
    * Renders the view component.
    * Contains filter panel (optional), data table, and pagination footer.
@@ -416,7 +420,7 @@ export function View<RecordType>({
         enableRowSelection={enableRowSelection}
         onClickPrimaryKey={onClickPrimaryKey}
         viewTableSetting={viewTableSetting || false}
-      ></ViewTable>
+      />
       {/* Pagination footer with selection count and Antd Pagination */}
       {(pagination !== false || enableRowSelection) && (
         <div

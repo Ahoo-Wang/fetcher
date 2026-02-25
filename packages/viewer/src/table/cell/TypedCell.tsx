@@ -12,7 +12,7 @@
  */
 
 import { cellRegistry } from './cellRegistry';
-import type * as React from 'react';
+import React from 'react';
 import { CellData } from './types';
 
 /**
@@ -128,9 +128,10 @@ export function typedCellRender<RecordType = any, Attributes = any>(
       record,
       index,
     };
-    return CellComponent({
+
+    return React.createElement(CellComponent, {
       attributes,
       data,
-    }) as React.ReactNode;
+    });
   };
 }

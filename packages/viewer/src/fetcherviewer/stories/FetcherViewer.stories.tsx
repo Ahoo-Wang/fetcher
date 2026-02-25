@@ -101,7 +101,7 @@ export const Basic: Story = {
     tenantId: 'mydao',
     defaultViewId: '',
     pagination: {} as PaginationProps,
-    enableRowSelection: false,
+    enableRowSelection: true,
   },
 };
 
