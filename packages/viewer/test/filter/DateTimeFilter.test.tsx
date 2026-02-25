@@ -80,11 +80,9 @@ describe('DateTimeFilter', () => {
           type: 'datetime',
         },
       });
-      render(<DateTimeFilter {...props} />);
+      const { container } = render(<DateTimeFilter {...props} />);
 
-      expect(
-        screen.getByRole('button', { name: 'Custom DateTime Label' }),
-      ).toBeDefined();
+      expect(container.textContent).toContain('Custom DateTime Label');
     });
 
     it('renders operator selector', () => {

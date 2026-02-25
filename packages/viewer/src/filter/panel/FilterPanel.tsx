@@ -133,7 +133,9 @@ export function FilterPanel(props: FilterPanelProps) {
             </Col>
           );
         })}
-        <Col {...actionsCol}>
+      </Row>
+      <Row justify="end" style={{ marginTop: '16px' }}>
+        <Col {...actionsCol} style={{ textAlign: 'right' }}>
           <Space.Compact>
             {actions}
             {showResetButton && (
@@ -151,7 +153,9 @@ export function FilterPanel(props: FilterPanelProps) {
               onClick={handleSearch}
               {...searchButton}
             >
-              {searchButton?.children || locale.filterPanel?.searchButtonTitle || 'Search'}
+              {searchButton?.children ||
+                locale.filterPanel?.searchButtonTitle ||
+                'Search'}
             </Button>
           </Space.Compact>
         </Col>

@@ -13,8 +13,11 @@
 
 import { FilterField, FilterOperatorProps, FilterValueProps } from '../types';
 import { FilterType } from '../TypedFilter';
-import { Checkbox, Flex, Typography } from 'antd';
+import { Checkbox, Col, Divider, Row } from 'antd';
 import { StyleCapable } from '../../types';
+
+import styles from './AvailableFilterSelect.module.css';
+
 import {
   RefAttributes,
   useEffect,
@@ -84,28 +87,32 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
     setSelectedFilters(activeFilterFieldNames);
   }, [activeFilterFieldNames]);
   return (
-    <>
-      {filters.map(group => (
+    <div className={styles.filterContent}>
+      {filters.map((group, index) => (
         <div key={group.label}>
-          <Typography.Title level={5}>{group.label}</Typography.Title>
-          <Flex gap="middle" wrap>
+          <span className={styles.filterGroupLabel}>{group.label}</span>
+          <Row wrap={true} gutter={[16, 16]}>
             {group.filters.map(filter => (
-              <Checkbox
-                key={filter.field.name}
-                checked={selectedFilters.includes(filter.field.name)}
-                onChange={e => {
-                  handleCheck(filter, e.target.checked);
-                }}
-                disabled={activeFilters.some(
-                  activeFilter => activeFilter.field.name === filter.field.name,
-                )}
-              >
-                {filter.field.label}
-              </Checkbox>
+              <Col span={6}>
+                <Checkbox
+                  key={filter.field.name}
+                  checked={selectedFilters.includes(filter.field.name)}
+                  onChange={e => {
+                    handleCheck(filter, e.target.checked);
+                  }}
+                  disabled={activeFilters.some(
+                    activeFilter =>
+                      activeFilter.field.name === filter.field.name,
+                  )}
+                >
+                  {filter.field.label}
+                </Checkbox>
+              </Col>
             ))}
-          </Flex>
+          </Row>
+          {index < filters.length - 1 && <Divider size="middle" />}
         </div>
       ))}
-    </>
+    </div>
   );
 }

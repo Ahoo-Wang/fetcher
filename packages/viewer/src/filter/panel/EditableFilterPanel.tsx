@@ -18,6 +18,7 @@ import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
 import { useRequestId } from '@ahoo-wang/fetcher-react';
 import { ActiveFilter, FilterPanelProps, FilterPanel } from './FilterPanel';
 import { useLocale } from '../../locale';
+import { PlusOutlined } from '@ant-design/icons';
 
 export interface EditableFilterPanelProps extends Omit<
   FilterPanelProps,
@@ -91,7 +92,7 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
         filters={editableFilters}
         onSearch={onSearch}
         actions={
-          <Button onClick={() => setModalOpen(true)}>
+          <Button onClick={() => setModalOpen(true)} icon={<PlusOutlined />}>
             {locale.filterPanel?.addFilterTitle || 'Add Filter'}
           </Button>
         }

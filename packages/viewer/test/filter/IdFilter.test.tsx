@@ -60,10 +60,10 @@ describe('IdFilter', () => {
 
     it('renders all required components', () => {
       const props = createMockProps();
-      render(<IdFilter {...props} />);
+      const { container } = render(<IdFilter {...props} />);
 
-      // 检查标签按钮
-      expect(screen.getByRole('button', { name: 'Test ID' })).toBeDefined();
+      // 检查标签（使用 Typography 组件渲染）
+      expect(container.textContent).toContain('Test ID');
 
       // 检查操作符选择器
       expect(screen.getByRole('combobox')).toBeDefined();
@@ -76,11 +76,9 @@ describe('IdFilter', () => {
       const props = createMockProps({
         field: { name: 'customField', label: 'Custom Label', type: 'string' },
       });
-      render(<IdFilter {...props} />);
+      const { container } = render(<IdFilter {...props} />);
 
-      expect(
-        screen.getByRole('button', { name: 'Custom Label' }),
-      ).toBeDefined();
+      expect(container.textContent).toContain('Custom Label');
     });
 
     it('renders in Space.Compact layout', () => {

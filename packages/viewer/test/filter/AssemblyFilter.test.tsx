@@ -71,10 +71,10 @@ describe('AssemblyFilter', () => {
 
     it('renders all required components', () => {
       const props = createMockProps();
-      render(<AssemblyFilter {...props} />);
+      const { container } = render(<AssemblyFilter {...props} />);
 
-      // 检查标签按钮
-      expect(screen.getByRole('button', { name: 'Test Field' })).toBeDefined();
+      // 检查标签（使用 Typography 组件渲染）
+      expect(container.textContent).toContain('Test Field');
 
       // 检查操作符选择器
       expect(screen.getByRole('combobox')).toBeDefined();
@@ -87,11 +87,9 @@ describe('AssemblyFilter', () => {
       const props = createMockProps({
         field: { name: 'customField', label: 'Custom Label', type: 'string' },
       });
-      render(<AssemblyFilter {...props} />);
+      const { container } = render(<AssemblyFilter {...props} />);
 
-      expect(
-        screen.getByRole('button', { name: 'Custom Label' }),
-      ).toBeDefined();
+      expect(container.textContent).toContain('Custom Label');
     });
 
     it('renders in Space.Compact layout', () => {
@@ -256,16 +254,14 @@ describe('AssemblyFilter', () => {
       expect(select).toBeDefined();
     });
 
-    it('forwards label props to Button component', () => {
+    it('forwards label props to Typography component', () => {
       const props = createMockProps({
         field: { name: 'customField', label: 'Custom Label', type: 'string' },
-        label: {},
+        label: { className: 'custom-label-class' },
       });
-      render(<AssemblyFilter {...props} />);
+      const { container } = render(<AssemblyFilter {...props} />);
 
-      expect(
-        screen.getByRole('button', { name: 'Custom Label' }),
-      ).toBeDefined();
+      expect(container.textContent).toContain('Custom Label');
     });
   });
 
