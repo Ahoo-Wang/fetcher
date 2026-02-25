@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-storage",
-  "version": "3.10.9",
+  "version": "3.10.10",
   "description": "A lightweight, cross-environment storage library with key-based storage and automatic environment detection. Provides consistent API for browser localStorage and in-memory storage with change notifications.",
   "keywords": [
     "storage",

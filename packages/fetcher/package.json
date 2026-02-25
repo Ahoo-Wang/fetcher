@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher",
-  "version": "3.10.9",
+  "version": "3.10.10",
   "description": "Fetcher is not just another HTTP client—it's a complete ecosystem designed for modern web development with native LLM\nstreaming API support. Built on the native Fetch API, Fetcher provides an Axios-like experience with powerful features\nwhile maintaining an incredibly small footprint.",
   "keywords": [
     "fetch",
