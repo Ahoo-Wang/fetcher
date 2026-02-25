@@ -2,6 +2,7 @@ import { Modal, Form, Radio, Input } from 'antd';
 import { ViewState, ViewType } from '../types';
 import { useEffect, useRef } from 'react';
 import type { FormInstance } from 'antd/es/form/hooks/useForm';
+import { useLocale } from '../../locale';
 
 export interface SaveViewModalProps {
   mode: 'Create' | 'SaveAs';
@@ -16,6 +17,8 @@ export interface SaveViewModalProps {
 export function SaveViewModal(props: SaveViewModalProps) {
   const { mode, open, defaultViewType, defaultViewName, onSaveView, onCancel } =
     props;
+
+  const { locale } = useLocale();
 
   const handleOk = () => {
     formRef.current?.submit();
@@ -32,11 +35,11 @@ export function SaveViewModal(props: SaveViewModalProps) {
 
   const options = [
     {
-      label: '个人视图',
+      label: locale.personalView || '个人视图',
       value: 'PERSONAL',
     },
     {
-      label: '公共视图',
+      label: locale.sharedView || '公共视图',
       value: 'SHARED',
     },
   ];
@@ -49,7 +52,11 @@ export function SaveViewModal(props: SaveViewModalProps) {
 
   return (
     <Modal
-      title={mode === 'Create' ? '创建视图' : '另存为新视图'}
+      title={
+        mode === 'Create'
+          ? locale.createViewMethod?.create || '创建视图'
+          : locale.createViewMethod?.saveAs || '另存为新视图'
+      }
       open={open}
       onOk={handleOk}
       okText="确认"
@@ -65,19 +72,16 @@ export function SaveViewModal(props: SaveViewModalProps) {
         autoComplete="off"
       >
         <Form.Item<ViewState>
-          label="视图类型"
+          label={locale.view?.viewType?.name || '视图类型'}
           name="type"
           rules={[{ required: true }]}
         >
           <Radio.Group options={options} optionType="button" />
         </Form.Item>
         <Form.Item<ViewState>
-          label="视图名称"
+          label={locale.view?.viewName || '视图名称'}
           name="name"
-          rules={[
-            { required: true, message: '请输入视图名称' },
-            { type: 'string', min: 1, message: '请输入视图名称' },
-          ]}
+          rules={[{ required: true }, { type: 'string', min: 1 }]}
         >
           <Input />
         </Form.Item>

@@ -15,6 +15,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { ColumnHeightBarItem } from '../../src/topbar/ColumnHeightBarItem';
 
+vi.mock('../../src/locale/useLocale', () => ({
+  useLocale: vi.fn(() => ({
+    locale: {},
+    setLocale: vi.fn(),
+  })),
+}));
+
 describe('ColumnHeightBarItem', () => {
   describe('rendering', () => {
     it('should render with defaultTableSize middle', () => {

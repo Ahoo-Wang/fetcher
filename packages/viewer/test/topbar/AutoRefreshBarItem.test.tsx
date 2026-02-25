@@ -21,6 +21,13 @@ vi.mock('../../src/hooks/useRefreshDataEventBus', () => ({
   })),
 }));
 
+vi.mock('../../src/locale/useLocale', () => ({
+  useLocale: vi.fn(() => ({
+    locale: {},
+    setLocale: vi.fn(),
+  })),
+}));
+
 describe('AutoRefreshBarItem', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -53,7 +60,7 @@ describe('AutoRefreshBarItem', () => {
     it('should display default label "刷新率：从不"', () => {
       const { container } = render(<AutoRefreshBarItem />);
 
-      expect(container.textContent).toContain('刷新率：从不');
+      expect(container.textContent).toContain('刷新率 ：从不');
     });
 
     it('should render button element', () => {

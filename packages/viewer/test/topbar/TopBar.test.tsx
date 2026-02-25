@@ -22,6 +22,13 @@ vi.mock('../../src/hooks/useRefreshDataEventBus', () => ({
   })),
 }));
 
+vi.mock('../../src/locale/useLocale', () => ({
+  useLocale: vi.fn(() => ({
+    locale: {},
+    setLocale: vi.fn(),
+  })),
+}));
+
 vi.mock('../../src/viewer/panel/SaveViewModal', () => ({
   SaveViewModal: () => null,
 }));

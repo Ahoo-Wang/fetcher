@@ -32,6 +32,7 @@ import {
 import { SorterResult, SortOrder } from 'antd/es/table/interface';
 import { useViewState, ViewChangeAction } from './';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
+import { useLocale } from '../locale';
 
 /**
  * Ref interface for exposing View component imperative methods to parent components.
@@ -235,6 +236,8 @@ export function View<RecordType>({
     reset,
   } = useViewState(viewState);
 
+  const { locale } = useLocale();
+
   /**
    * Handles search/filter condition changes from the filter panel.
    * Updates internal condition state and triggers onChange callback.
@@ -431,7 +434,13 @@ export function View<RecordType>({
           }}
         >
           {/* Selection count display */}
-          <span>{selectedCount ? `已选择 ${selectedCount} 条数据` : ''}</span>
+          <span>
+            {selectedCount
+              ? locale.selectedCountLabel
+                ? locale.selectedCountLabel.format(selectedCount)
+                : `已选择 ${selectedCount} 条数据`
+              : ''}
+          </span>
           {/* Antd Pagination component */}
           <Pagination
             showTotal={total => `共 ${total} 条数据`}

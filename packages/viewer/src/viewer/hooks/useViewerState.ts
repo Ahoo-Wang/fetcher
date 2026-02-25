@@ -76,7 +76,6 @@ export function useViewerState({
     setCondition,
     sorter,
     setSorter,
-    reset: resetFn,
   } = useActiveViewState({
     defaultColumns: activeView.columns,
     defaultPageSize: activeView.pageSize,
@@ -90,6 +89,7 @@ export function useViewerState({
 
   useEffect(() => {
     setViewChanged(!deepEqual(activeView, originalView.current));
+    console.log('handle view changed,', activeView, originalView.current);
   }, [activeView]);
 
   const setShowFilterFn = (showFilter: boolean) => {
@@ -101,7 +101,6 @@ export function useViewerState({
   };
 
   const onSwitchViewFn = (view: ViewState) => {
-    console.log('switch view', view);
     originalView.current = view;
     setActiveView(view);
     setPage(1);
@@ -162,8 +161,8 @@ export function useViewerState({
         }
         return {
           ...af,
-          value: { defaultValue: undefined },
-          operator: { defaultValue: undefined },
+          value: null,
+          operator: null,
         };
       } else if (condition.field === af.field.name) {
         return {
@@ -174,8 +173,8 @@ export function useViewerState({
       } else {
         return {
           ...af,
-          value: { defaultValue: undefined },
-          operator: { defaultValue: undefined },
+          value: null,
+          operator: null,
         };
       }
     });
@@ -194,6 +193,17 @@ export function useViewerState({
       ...activeView,
       sorter: sorter,
     });
+  };
+
+  const resetFn = () => {
+    setActiveView(originalView.current);
+    setPage(1);
+    setPageSize(originalView.current.pageSize);
+    setColumns(originalView.current.columns);
+    setCondition(originalView.current.condition || all());
+    setActiveFilters(originalView.current.filters);
+    setTableSize(originalView.current.tableSize);
+    setSorter(originalView.current.sorter || []);
   };
 
   return {

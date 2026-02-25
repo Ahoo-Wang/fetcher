@@ -2,6 +2,7 @@ import { ViewState } from '../types';
 import { Button, Flex, Input, Popconfirm, Space, Tag } from 'antd';
 import { DeleteOutlined, DragOutlined, EditOutlined } from '@ant-design/icons';
 import { useState } from 'react';
+import { useLocale } from '../../';
 
 export interface ViewManageItemProps {
   view: ViewState;
@@ -17,13 +18,17 @@ export function ViewManageItem(props: ViewManageItemProps) {
 
   const [viewName, setViewName] = useState(view.name);
 
+  const { locale } = useLocale();
+
   const handleCancel = () => {
     setViewName(view.name);
     onCancel();
   };
 
   const handleSave = () => {
-    onSave({ ...view, name: viewName });
+    if (viewName.trim() !== '') {
+      onSave({ ...view, name: viewName });
+    }
   };
 
   return (
@@ -38,10 +43,10 @@ export function ViewManageItem(props: ViewManageItemProps) {
           <Input value={viewName} onChange={e => setViewName(e.target.value)} />
           <Space orientation="horizontal">
             <Button type="default" size="small" onClick={handleCancel}>
-              取消
+              {locale.viewPanel?.cancelButton || '取消'}
             </Button>
             <Button type="primary" size="small" onClick={handleSave}>
-              保存
+              {locale.viewPanel?.saveButton || '保存'}
             </Button>
           </Space>
         </Flex>

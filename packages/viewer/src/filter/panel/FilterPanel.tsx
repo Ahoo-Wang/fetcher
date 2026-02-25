@@ -20,6 +20,7 @@ import { ClearOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRefs } from '@ahoo-wang/fetcher-react';
 import { RemovableTypedFilter } from './RemovableTypedFilter';
 import { RowProps } from 'antd/es/grid/row';
+import { useLocale } from '../../locale';
 
 export interface ActiveFilter extends Omit<
   TypedFilterProps,
@@ -86,6 +87,8 @@ export function FilterPanel(props: FilterPanelProps) {
   } = props;
   const filterRefs = useRefs<FilterRef>();
 
+  const { locale } = useLocale();
+
   const latestCondition = () => {
     const conditions = Array.from(filterRefs.values())
       .map(ref => ref?.getValue()?.condition)
@@ -148,7 +151,7 @@ export function FilterPanel(props: FilterPanelProps) {
               onClick={handleSearch}
               {...searchButton}
             >
-              {searchButton?.children || 'Search'}
+              {searchButton?.children || locale.filterPanel?.searchButtonTitle || 'Search'}
             </Button>
           </Space.Compact>
         </Col>

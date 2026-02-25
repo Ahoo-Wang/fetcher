@@ -17,6 +17,7 @@ import { AvailableFilterGroup, AvailableFilter } from './AvailableFilterSelect';
 import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
 import { useRequestId } from '@ahoo-wang/fetcher-react';
 import { ActiveFilter, FilterPanelProps, FilterPanel } from './FilterPanel';
+import { useLocale } from '../../locale';
 
 export interface EditableFilterPanelProps extends Omit<
   FilterPanelProps,
@@ -40,6 +41,8 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
   const [activeFilters, setActiveFilters] = useState(filters);
   const [modalOpen, setModalOpen] = useState(false);
   const generator = useRequestId();
+
+  const { locale } = useLocale();
 
   useEffect(() => {
     setActiveFilters(filters);
@@ -87,13 +90,17 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
         ref={ref}
         filters={editableFilters}
         onSearch={onSearch}
-        actions={<Button onClick={() => setModalOpen(true)}>Add Filter</Button>}
+        actions={
+          <Button onClick={() => setModalOpen(true)}>
+            {locale.filterPanel?.addFilterTitle || 'Add Filter'}
+          </Button>
+        }
         resetButton={resetButton}
         row={row}
         col={col}
       />
       <AvailableFilterSelectModal
-        title={'Add Filter'}
+        title={locale.filterPanel?.addFilterTitle || 'Add Filter'}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onSave={handleAddFilter}

@@ -1,5 +1,5 @@
 import { Collapse, CollapseProps, Flex, Space } from 'antd';
-import { BarItem, GetRecordCountActionCapable } from '../../';
+import { BarItem, GetRecordCountActionCapable, useLocale } from '../../';
 import {
   MenuFoldOutlined,
   PlusOutlined,
@@ -37,7 +37,7 @@ export function ViewPanel(props: ViewPanelProps) {
     onCreateView,
     onUpdateView,
     onDeleteView,
-    onGetRecordCount
+    onGetRecordCount,
   } = props;
 
   const personalViews = useMemo(() => {
@@ -56,6 +56,8 @@ export function ViewPanel(props: ViewPanelProps) {
   const [saveViewModalOpened, setSaveViewModalOpened] = useState(false);
   const [defaultCreateViewType, setDefaultCreateViewType] =
     useState<ViewType>('PERSONAL');
+
+  const { locale } = useLocale();
 
   const handleOpenViewManage = (e: MouseEvent, type: ViewType) => {
     e.preventDefault();
@@ -109,7 +111,7 @@ export function ViewPanel(props: ViewPanelProps) {
   const items: CollapseProps['items'] = [
     {
       key: '1',
-      label: '个人',
+      label: locale.view?.viewType?.personal || '个人',
       children: (
         <ViewItemGroup
           views={personalViews}
@@ -123,7 +125,7 @@ export function ViewPanel(props: ViewPanelProps) {
     },
     {
       key: '2',
-      label: '公共', // "Public" in Chinese
+      label: locale.view?.viewType?.shared || '公共',
       children: (
         <ViewItemGroup
           views={sharedViews}
