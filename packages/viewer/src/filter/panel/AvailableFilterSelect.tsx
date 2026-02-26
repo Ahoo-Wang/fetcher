@@ -91,7 +91,7 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
       {filters.map((group, index) => (
         <div key={group.label}>
           <span className={styles.filterGroupLabel}>{group.label}</span>
-          <Row wrap={true} gutter={[16, 16]}>
+          <Row wrap={true} gutter={[16, 16]} key={index}>
             {group.filters.map(filter => (
               <Col span={6}>
                 <Checkbox
