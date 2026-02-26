@@ -233,7 +233,6 @@ export function View<RecordType>({
     setSorter,
     selectedCount,
     updateSelectedCount,
-    reset,
   } = useViewState(viewState);
 
   const { locale } = useLocale();
