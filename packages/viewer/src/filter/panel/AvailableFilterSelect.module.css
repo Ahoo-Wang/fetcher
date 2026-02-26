@@ -1,0 +1,11 @@
+.filterContent {
+    background: #F4F6FA;
+    padding: 16px;
+}
+
+.filterGroupLabel {
+    display: flex;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.85);
+    margin-bottom: 16px;
+}

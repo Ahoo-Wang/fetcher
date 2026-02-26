@@ -57,8 +57,8 @@ export interface FilterProps<
     StyleCapable {
   field: FilterField;
   label?: FilterLabelProps;
-  operator?: FilterOperatorProps;
-  value?: ValuePropsType;
+  operator?: FilterOperatorProps | null;
+  value?: ValuePropsType | null;
   onChange?: (value?: FilterValue) => void;
   conditionOptions?: ConditionOptions;
 }

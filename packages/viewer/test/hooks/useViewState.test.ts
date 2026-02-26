@@ -13,8 +13,8 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useViewState } from '../../src/view/hooks';
-import { ViewColumn } from '../../src/viewer/types';
+import { useViewState } from '../../src';
+import { ViewColumn } from '../../src';
 import { Operator, SortDirection } from '@ahoo-wang/fetcher-wow';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 

@@ -21,7 +21,7 @@ import {
   UseFilterStateReturn,
   ValidateValue,
 } from './useFilterState';
-import { Button, Select, Space } from 'antd';
+import { Select, Space, Typography } from 'antd';
 import { ReactNode } from 'react';
 import { SelectOperator } from './operator';
 
@@ -80,9 +80,21 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
       style={{ ...props.style, width: '100%' }}
       className={props.className}
     >
-      <Button {...props.label} style={{ minWidth: 100 }}>
+      <Typography
+        {...props.label}
+        style={{
+          minWidth: 140,
+          background: '#FFFFFF',
+          height: '32px',
+          lineHeight: '32px',
+          borderTop: '1px solid #D9D9D9',
+          borderBottom: '1px solid #D9D9D9',
+          borderLeft: '1px solid #D9D9D9',
+          padding: '0 12px',
+        }}
+      >
         {props.field.label}
-      </Button>
+      </Typography>
       <Select
         style={{ minWidth: 120 }}
         onChange={filterState.setOperator}

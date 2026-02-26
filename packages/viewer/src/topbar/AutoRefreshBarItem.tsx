@@ -1,7 +1,7 @@
 import { Button, Dropdown, MenuProps } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { useRefreshDataEventBus } from '../';
+import { useLocale, useRefreshDataEventBus } from '../';
 
 export interface AutoRefreshItem {
   label: string;
@@ -48,6 +48,7 @@ export function AutoRefreshBarItem({
   const intervalIdRef = useRef<number | null>(null);
 
   const { publish } = useRefreshDataEventBus();
+  const { locale } = useLocale();
 
   const handleMenuClick: MenuProps['onClick'] = menuInfo => {
     const item = finalItems.find(i => i.key === menuInfo.key);
@@ -89,7 +90,7 @@ export function AutoRefreshBarItem({
   return (
     <Dropdown menu={menuProps} trigger={['click']}>
       <Button icon={<DownOutlined />} iconPlacement="end">
-        刷新率：{selectedItem.label}
+        {locale.topBar?.autoRefresh?.title || '刷新率'} ：{selectedItem.label}
       </Button>
     </Dropdown>
   );

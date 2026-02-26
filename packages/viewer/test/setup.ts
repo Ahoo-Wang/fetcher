@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import '@testing-library/jest-dom';
+
 // Mock window.matchMedia for Antd components
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

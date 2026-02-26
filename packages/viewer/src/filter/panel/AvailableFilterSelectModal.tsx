@@ -31,7 +31,7 @@ export function AvailableFilterSelectModal(props: AvailableFiltersModalProps) {
     props?.onSave?.(availableFilterSelectRef.current?.getValue() ?? []);
   };
   return (
-    <Modal {...props} onOk={handleOk}>
+    <Modal {...props} onOk={handleOk} width={880}>
       <AvailableFilterSelect
         {...props.availableFilters}
         ref={availableFilterSelectRef}

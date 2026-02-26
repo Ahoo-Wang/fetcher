@@ -122,10 +122,10 @@ describe('NumberFilter', () => {
         operator: { defaultValue: Operator.IN },
         value: { defaultValue: [1, 2, 3] },
       });
-      render(<NumberFilter {...props} />);
+      const { container } = render(<NumberFilter {...props} />);
 
       // TagInput 可能没有特定的 role，但组件应该渲染
-      expect(screen.getByRole('button', { name: 'Test Field' })).toBeDefined();
+      expect(container.textContent).toContain('Test Field');
     });
 
     it('renders TagInput for NOT_IN operator', () => {
@@ -133,9 +133,9 @@ describe('NumberFilter', () => {
         operator: { defaultValue: Operator.NOT_IN },
         value: { defaultValue: [1, 2, 3] },
       });
-      render(<NumberFilter {...props} />);
+      const { container } = render(<NumberFilter {...props} />);
 
-      expect(screen.getByRole('button', { name: 'Test Field' })).toBeDefined();
+      expect(container.textContent).toContain('Test Field');
     });
 
     it('renders NumberRange for BETWEEN operator', () => {
