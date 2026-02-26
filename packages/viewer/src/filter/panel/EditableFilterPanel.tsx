@@ -14,7 +14,6 @@
 import React, {
   useState,
   Key,
-  useEffect,
 } from 'react';
 import { Button } from 'antd';
 import { AvailableFilterGroup, AvailableFilter } from './AvailableFilterSelect';
