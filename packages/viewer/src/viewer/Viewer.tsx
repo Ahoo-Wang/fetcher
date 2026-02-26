@@ -12,7 +12,6 @@ import styles from './Viewer.module.css';
 import {
   TopBar,
   ViewTableSettingCapable,
-  useRefreshDataEventBus,
   ViewChangeAction,
   View,
   ViewRef,
@@ -128,9 +127,7 @@ export function Viewer<RecordType = any>({
           return it;
         }),
       );
-      reset();
       switchView(newView);
-      onSwitchView?.(newView);
       onSuccess?.();
     });
   };
@@ -158,17 +155,11 @@ export function Viewer<RecordType = any>({
   };
 
   const handleReset = () => {
-    reset();
+    const resetView = reset();
+    viewRef.current?.reset();
+    onLoadData?.(resetView.condition, 1, resetView.pageSize, resetView.sorter);
     // Reset logic handled by View component internally
   };
-
-  const { subscribe } = useRefreshDataEventBus();
-  subscribe({
-    name: 'Viewer-Refresh-Data',
-    handle(): void {
-      onLoadData?.(condition, page, pageSize, sorter);
-    },
-  });
 
   return (
     <Layout>

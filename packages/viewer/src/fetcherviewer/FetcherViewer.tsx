@@ -90,7 +90,7 @@ export function FetcherViewer<RecordType = any>({
     [views, defaultViewId],
   );
 
-  const { dataSource, setQuery } = useFetchData<RecordType>({
+  const { dataSource, setQuery, reload } = useFetchData<RecordType>({
     viewerDefinition,
     defaultView,
   });
@@ -180,11 +180,18 @@ export function FetcherViewer<RecordType = any>({
     [],
   );
 
-  const { publish } = useRefreshDataEventBus();
+  const { publish, subscribe } = useRefreshDataEventBus();
 
   useImperativeHandle<FetcherViewerRef, FetcherViewerRef>(ref, () => ({
     refreshData: publish,
   }));
+
+  subscribe({
+    name: 'Viewer-Refresh-Data',
+    handle: async () => {
+      await reload();
+    },
+  });
 
   if (definitionLoading || viewsLoading) {
     return (

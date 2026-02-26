@@ -11,12 +11,18 @@
  * limitations under the License.
  */
 
-import React, { useState, Key, useEffect } from 'react';
+import React, {
+  useState,
+  Key,
+} from 'react';
 import { Button } from 'antd';
 import { AvailableFilterGroup, AvailableFilter } from './AvailableFilterSelect';
 import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
-import { useRequestId } from '@ahoo-wang/fetcher-react';
-import { ActiveFilter, FilterPanelProps, FilterPanel } from './FilterPanel';
+import {
+  ActiveFilter,
+  FilterPanelProps,
+  FilterPanel,
+} from './FilterPanel';
 import { useLocale } from '../../locale';
 import { PlusOutlined } from '@ant-design/icons';
 
@@ -41,13 +47,8 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
   } = props;
   const [activeFilters, setActiveFilters] = useState(filters);
   const [modalOpen, setModalOpen] = useState(false);
-  const generator = useRequestId();
 
   const { locale } = useLocale();
-
-  useEffect(() => {
-    setActiveFilters(filters);
-  }, [filters]);
 
   const handleAddFilter = (selectedAvailableFilters: AvailableFilter[]) => {
     if (selectedAvailableFilters.length === 0) {
@@ -57,7 +58,7 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
     const newFilters = selectedAvailableFilters.map(
       available =>
         ({
-          key: generator.generate(),
+          key: available.field.name,
           type: available.component,
           field: available.field,
           value: available.value,

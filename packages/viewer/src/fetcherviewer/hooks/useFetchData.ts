@@ -20,6 +20,7 @@ export interface UseFetchDataReturn<RecordType> {
   loading: boolean;
   setQuery?: ViewChangeAction;
   error: FetcherError | undefined;
+  reload: () => Promise<void>;
 }
 
 export function useFetchData<RecordType>(
@@ -27,12 +28,11 @@ export function useFetchData<RecordType>(
 ): UseFetchDataReturn<RecordType> {
   const { viewerDefinition, defaultView } = options;
 
-  const { result, loading, error, setQuery } = useFetcherPagedQuery<RecordType>(
-    {
+  const { result, loading, error, setQuery, execute } =
+    useFetcherPagedQuery<RecordType>({
       url: viewerDefinition?.dataUrl || '',
       autoExecute: true,
-    },
-  );
+    });
 
   useEffect(() => {
     if (defaultView && viewerDefinition) {
@@ -74,5 +74,6 @@ export function useFetchData<RecordType>(
     loading,
     setQuery: setQueryFn,
     error,
+    reload: execute,
   };
 }
