@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mongo:
-        image: mongo:8.2.4
+        image: mongo:8.2.5
         ports:
           - 27017:27017
         env:
