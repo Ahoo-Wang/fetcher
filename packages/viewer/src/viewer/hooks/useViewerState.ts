@@ -89,7 +89,6 @@ export function useViewerState({
 
   useEffect(() => {
     setViewChanged(!deepEqual(activeView, originalView.current));
-    console.log('handle view changed,', activeView, originalView.current);
   }, [activeView]);
 
   const setShowFilterFn = (showFilter: boolean) => {
