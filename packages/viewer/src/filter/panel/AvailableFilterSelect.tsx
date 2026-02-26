@@ -93,9 +93,8 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
           <span className={styles.filterGroupLabel}>{group.label}</span>
           <Row wrap={true} gutter={[16, 16]} key={index}>
             {group.filters.map(filter => (
-              <Col span={6}>
+              <Col span={6} key={filter.field.name}>
                 <Checkbox
-                  key={filter.field.name}
                   checked={selectedFilters.includes(filter.field.name)}
                   onChange={e => {
                     handleCheck(filter, e.target.checked);
