@@ -77,6 +77,7 @@ export interface ViewTableProps<RecordType = any>
   /** Callback fired when row selection changes */
   onSelectChange?: (items: RecordType[]) => void;
   viewTableSetting: false | ViewTableSetting;
+  loading?: boolean;
 }
 
 /**
@@ -126,6 +127,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     onSelectChange,
     onClickPrimaryKey,
     viewTableSetting,
+    loading,
     attributes,
   } = props;
 
@@ -295,6 +297,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
    */
   return (
     <Table<RecordType>
+      loading={loading}
       dataSource={mapToTableRecord(dataSource)}
       rowSelection={rowSelection}
       columns={tableColumns}

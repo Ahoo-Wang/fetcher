@@ -90,7 +90,7 @@ export function FetcherViewer<RecordType = any>({
     [views, defaultViewId],
   );
 
-  const { dataSource, setQuery, reload } = useFetchData<RecordType>({
+  const { dataSource, loading: fetchLoading, setQuery, reload } = useFetchData<RecordType>({
     viewerDefinition,
     defaultView,
   });
@@ -230,6 +230,7 @@ export function FetcherViewer<RecordType = any>({
         defaultViews={views}
         defaultView={defaultView}
         definition={viewerDefinition}
+        loading={fetchLoading}
         dataSource={dataSource || { list: [], total: 0 }}
         pagination={pagination}
         actionColumn={actionColumn}

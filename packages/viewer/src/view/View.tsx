@@ -171,6 +171,7 @@ export interface ViewProps<RecordType>
 
   /** Whether to enable row selection for batch operations */
   enableRowSelection: boolean;
+  loading?: boolean;
   /**
    * Callback fired when view state changes (filter, pagination, or sort).
    * Provides the composed condition, current page, page size, and sorters.
@@ -211,6 +212,7 @@ export function View<RecordType>({
   viewTableSetting,
   onClickPrimaryKey,
   onSelectedDataChange,
+  loading,
   ...viewState
 }: ViewProps<RecordType>) {
   /**
@@ -408,6 +410,7 @@ export function View<RecordType>({
       {/* Data table with columns, sorting, row selection, and actions */}
       <ViewTable<RecordType>
         ref={viewTableRef}
+        loading={loading}
         dataSource={dataSource.list}
         fields={fields}
         columns={columns}
