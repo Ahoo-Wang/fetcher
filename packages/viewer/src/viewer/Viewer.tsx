@@ -41,7 +41,7 @@ export interface ViewerProps<RecordType>
   actionColumn?: ViewTableActionColumn<RecordType>;
   onClickPrimaryKey?: (id: any, record: RecordType) => void;
   enableRowSelection?: boolean;
-
+  loading?: boolean;
   // callbacks
   onLoadData?: ViewChangeAction;
   onSwitchView?: (view: ViewState) => void;
@@ -215,6 +215,7 @@ export function Viewer<RecordType = any>({
               availableFilters={definition.availableFilters}
               dataSource={otherProps.dataSource}
               enableRowSelection={otherProps.enableRowSelection ?? true}
+              loading={otherProps.loading}
               filterMode={'editable'}
               pagination={otherProps.pagination}
               showFilter={showFilter}
