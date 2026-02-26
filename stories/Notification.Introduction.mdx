@@ -1,0 +1,311 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+import { Typography, Card, Space, List, Alert, Divider, Button } from 'antd';
+
+<Meta title="React/Notification" />
+
+<div style={{ padding: '24px' }}>
+  <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <div>
+      <Typography.Title level={1}>
+        🔔 Notification 通知中心
+      </Typography.Title>
+      <Typography.Text>
+        统一的通知推送解决方案，支持多渠道通知、事件总线、跨标签页同步
+      </Typography.Text>
+    </div>
+
+    <Alert
+      message="🚀 核心特性"
+      description="基于 EventBus 的通知事件流、多渠道支持、浏览器原生通知 API、跨组件/跨标签页通信"
+      type="success"
+      showIcon
+    />
+
+    <Card>
+      <Typography.Title level={4}>📦 模块组成</Typography.Title>
+      <List
+        size="small"
+        bordered
+        dataSource={[
+          '**NotificationCenter** - 通知中心单例，管理通知发布和订阅',
+          '**NotificationChannel** - 通知渠道接口，支持自定义实现',
+          '**channelRegistry** - 渠道注册表，管理可用渠道',
+          '**BROWSER_NOTIFICATION_TYPE** - 浏览器通知渠道常量'
+        ]}
+        renderItem={(item) => <List.Item><span dangerouslySetInnerHTML={{ __html: item }} /></List.Item>}
+      />
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>⚡ 快速开始</Typography.Title>
+      <Typography.Paragraph>
+        NotificationCenter 是全局单例，通过 publish 方法发送通知
+      </Typography.Paragraph>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '13px'
+      }}>{`import { notificationCenter } from '@ahoo-wang/fetcher-react';
+
+// 发送浏览器通知
+await notificationCenter.publish('browser', {
+  title: '提示',
+  payload: {
+    body: '这是一条通知消息',
+    icon: '/icon.png',
+    tag: 'msg-1'
+  }
+});`}</pre>
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>🔌 API 参考</Typography.Title>
+      
+      <Typography.Title level={5}>notificationCenter.publish(type, message)</Typography.Title>
+      <Typography.Paragraph>发布通知事件到事件总线，触发对应渠道发送通知</Typography.Paragraph>
+      <List
+        size="small"
+        bordered
+        dataSource={[
+          '@param type - 通知渠道类型，如 "browser"',
+          '@param message - 通知消息对象 { title, payload, onClick? }',
+          '@returns Promise<void>'
+        ]}
+        renderItem={(item) => <List.Item style={{ fontFamily: 'monospace' }}>{item}</List.Item>}
+        style={{ marginBottom: 16 }}
+      />
+
+      <Typography.Title level={5}>notificationCenter.eventBus</Typography.Title>
+      <Typography.Paragraph>事件总线实例，用于订阅通知事件</Typography.Paragraph>
+      <List
+        size="small"
+        bordered
+        dataSource={[
+          'on(handler) - 订阅通知事件',
+          'off(name) - 取消订阅',
+          'emit(event) - 发布事件',
+          'destroy() - 销毁事件总线'
+        ]}
+        renderItem={(item) => <List.Item>{item}</List.Item>}
+        style={{ marginBottom: 16 }}
+      />
+
+      <Typography.Title level={5}>notificationCenter.destroy()</Typography.Title>
+      <Typography.Paragraph>销毁通知中心，移除所有订阅并释放资源</Typography.Paragraph>
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>🌐 浏览器通知</Typography.Title>
+      <Typography.Paragraph>
+        使用浏览器原生 Notification API，需要用户授权权限
+      </Typography.Paragraph>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '13px'
+      }}>{`import { 
+  notificationCenter, 
+  BROWSER_NOTIFICATION_TYPE 
+} from '@ahoo-wang/fetcher-react';
+
+// 发送浏览器通知
+await notificationCenter.publish(BROWSER_NOTIFICATION_TYPE, {
+  title: '新消息',
+  payload: {
+    body: '您有新的未读消息',
+    icon: '/favicon.ico',
+    tag: 'message-123',
+    requireInteraction: true
+  },
+  onClick: () => {
+    console.log('通知被点击');
+  }
+});`}</pre>
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>🔧 扩展自定义渠道</Typography.Title>
+      <Typography.Paragraph>
+        可以注册自定义的通知渠道，支持邮件、短信、Slack 等
+      </Typography.Paragraph>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '13px'
+      }}>{`import { 
+  channelRegistry, 
+  NotificationChannel,
+  Message 
+} from '@ahoo-wang/fetcher-react';
+
+// 定义自定义渠道
+class SlackChannel implements NotificationChannel {
+  async send(message: Message): Promise<void> {
+    // 调用 Slack Webhook 发送通知
+    await fetch('https://slack.com/webhook', {
+      method: 'POST',
+      body: JSON.stringify({ text: message.title })
+    });
+  }
+}
+
+// 注册渠道
+channelRegistry.register('slack', new SlackChannel());
+
+// 使用自定义渠道
+await notificationCenter.publish('slack', {
+  title: '系统告警',
+  payload: { level: 'warning' }
+});`}</pre>
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>📱 渠道注册表 API</Typography.Title>
+      
+      <Typography.Title level={5}>channelRegistry.register(type, channel)</Typography.Title>
+      <List
+        size="small"
+        bordered
+        dataSource={[
+          '注册新的通知渠道',
+          '@param type - 渠道类型标识符',
+          '@param channel - NotificationChannel 实例',
+          '@throws 重复注册时抛出 Error'
+        ]}
+        renderItem={(item) => <List.Item style={{ fontFamily: 'monospace' }}>{item}</List.Item>}
+        style={{ marginBottom: 12 }}
+      />
+
+      <Typography.Title level={5}>channelRegistry.unregister(type)</Typography.Title>
+      <List
+        size="small"
+        bordered
+        dataSource={[
+          '注销指定渠道'
+        ]}
+        renderItem={(item) => <List.Item>{item}</List.Item>}
+        style={{ marginBottom: 12 }}
+      />
+
+      <Typography.Title level={5}>channelRegistry.get(type)</Typography.Title>
+      <List
+        size="small"
+        bordered
+        dataSource={[
+          '获取指定渠道，不存在返回 undefined'
+        ]}
+        renderItem={(item) => <List.Item>{item}</List.Item>}
+        style={{ marginBottom: 12 }}
+      />
+
+      <Typography.Title level={5}>channelRegistry.has(type)</Typography.Title>
+      <List
+        size="small"
+        bordered
+        dataSource={[
+          '检查渠道是否已注册'
+        ]}
+        renderItem={(item) => <List.Item>{item}</List.Item>}
+      />
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>⚛️ useNotificationCenter Hook</Typography.Title>
+      <Typography.Paragraph>
+        React Hook，用于在组件中发送通知或订阅通知事件，自动管理订阅生命周期
+      </Typography.Paragraph>
+      
+      <Typography.Title level={5}>基本用法</Typography.Title>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '13px'
+      }}>{`import { useNotificationCenter } from '@ahoo-wang/fetcher-react';
+
+function MyComponent() {
+  const { send } = useNotificationCenter();
+
+  const handleNotify = async () => {
+    await send('browser', {
+      title: '提示',
+      payload: { body: '消息内容' }
+    });
+  };
+
+  return <button onClick={handleNotify}>发送通知</button>;
+}`}</pre>
+
+      <Typography.Title level={5}>监听通知事件</Typography.Title>
+      <pre style={{
+        background: '#f6f8fa',
+        border: '1px solid #d1d9e0',
+        borderRadius: '6px',
+        padding: '16px',
+        overflow: 'auto',
+        fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+        fontSize: '13px'
+      }}>{`import { useNotificationCenter } from '@ahoo-wang/fetcher-react';
+
+function NotificationLogger() {
+  const { subscribe, unsubscribe } = useNotificationCenter({
+    channelType: 'browser',
+    onNotification: (event) => {
+      console.log('收到通知:', event.message.title);
+    }
+  });
+
+  // 组件挂载时自动订阅，卸载时自动取消
+  useEffect(() => {
+    subscribe();
+    return () => unsubscribe();
+  }, []);
+
+  return <div>监听通知中...</div>;
+}`}</pre>
+
+      <Typography.Title level={5}>API</Typography.Title>
+      <List
+        size="small"
+        bordered
+        dataSource={[
+          'send(type, message) - 发送通知',
+          'subscribe() - 手动订阅',
+          'unsubscribe() - 手动取消订阅'
+        ]}
+        renderItem={(item) => <List.Item>{item}</List.Item>}
+      />
+    </Card>
+
+    <Card>
+      <Typography.Title level={4}>⚠️ 注意事项</Typography.Title>
+      <List
+        size="small"
+        dataSource={[
+          '浏览器通知需要用户授权权限才能正常显示',
+          'Notification API 需要在安全上下文 (HTTPS) 或 localhost 中使用',
+          '页面卸载时会自动调用 destroy() 释放资源',
+          '推荐在 React 组件中使用 useNotificationCenter hook 订阅通知',
+          '跨标签页通信依赖 BroadcastChannel API'
+        ]}
+        renderItem={(item) => <List.Item><span dangerouslySetInnerHTML={{ __html: item }} /></List.Item>}
+      />
+    </Card>
+
+  </Space>
+</div>

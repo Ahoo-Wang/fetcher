@@ -114,7 +114,7 @@ export function FilterPanel(props: FilterPanelProps) {
   const resetButtonProps = typeof resetButton === 'object' ? resetButton : {};
   return (
     <>
-      <Row {...row}>
+      <Row {...row} style={{ maxHeight: '128px', overflowY: 'auto' }}>
         {filters.map(filter => {
           return (
             <Col {...col} key={filter.key}>
