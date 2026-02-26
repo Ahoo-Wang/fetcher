@@ -31,8 +31,6 @@ export interface ActiveFilter extends Omit<
 }
 
 export interface FilterPanelRef {
-  latestCondition(): Condition;
-
   /**
    * Triggers the search action using the current filter values.
    * Typically calls the `onSearch` callback with the composed filter condition.
@@ -109,7 +107,6 @@ export function FilterPanel(props: FilterPanelProps) {
     }
   };
   useImperativeHandle<FilterPanelRef, FilterPanelRef>(ref, () => ({
-    latestCondition: latestCondition,
     search: handleSearch,
     reset: handleReset,
   }));

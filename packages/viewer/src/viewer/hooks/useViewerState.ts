@@ -47,7 +47,7 @@ export interface UseViewerStateReturn {
   views: ViewState[];
   setViews: (views: ViewState[]) => void;
   onSwitchView: (view: ViewState) => void;
-  reset: () => void;
+  reset: () => ViewState;
 }
 
 export function useViewerState({
@@ -194,15 +194,16 @@ export function useViewerState({
     });
   };
 
-  const resetFn = () => {
+  const resetFn = (): ViewState => {
     setActiveView(originalView.current);
     setPage(1);
     setPageSize(originalView.current.pageSize);
     setColumns(originalView.current.columns);
-    setCondition(originalView.current.condition || all());
     setActiveFilters(originalView.current.filters);
+    setCondition(originalView.current.condition || all());
     setTableSize(originalView.current.tableSize);
     setSorter(originalView.current.sorter || []);
+    return originalView.current;
   };
 
   return {

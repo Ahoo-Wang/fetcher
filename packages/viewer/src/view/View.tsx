@@ -283,8 +283,6 @@ export function View<RecordType>({
   const handleSortChanged = (
     sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
   ) => {
-    console.log('handleSortChanged.sorter', sorter);
-
     let finalSorter: FieldSort[] = [];
     if (Array.isArray(sorter)) {
       finalSorter = sorter
@@ -339,7 +337,7 @@ export function View<RecordType>({
    * Called via ref imperatively from parent components.
    */
   const resetFn = () => {
-    reset();
+    // reset();
     editableFilterPanelRef.current?.reset();
     viewTableRef.current?.reset();
   };
