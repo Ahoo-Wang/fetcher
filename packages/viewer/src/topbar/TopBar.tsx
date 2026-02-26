@@ -154,6 +154,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
         name,
         type,
         source: 'CUSTOM',
+        isDefault: false,
       },
       () => {
         setSaveViewModalOpened(false);

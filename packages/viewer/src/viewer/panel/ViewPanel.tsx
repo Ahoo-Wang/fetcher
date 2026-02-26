@@ -86,6 +86,7 @@ export function ViewPanel(props: ViewPanelProps) {
         name,
         type,
         source: 'CUSTOM',
+        isDefault: false,
       },
       () => {
         setSaveViewModalOpened(false);
