@@ -219,6 +219,7 @@ export function Viewer<RecordType = any>({
             </Header>
             <View<RecordType>
               ref={viewRef}
+              key={activeView.id}
               fields={definition.fields}
               availableFilters={definition.availableFilters}
               dataSource={otherProps.dataSource}
