@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-decorator",
-  "version": "3.11.10",
+  "version": "3.12.1",
   "description": "TypeScript decorators for clean, declarative API service definitions with Fetcher HTTP client. Enables automatic parameter binding, method mapping, and type-safe API interactions.",
   "keywords": [
     "fetch",
