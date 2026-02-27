@@ -21,7 +21,9 @@ import {
   UseFilterStateReturn,
   ValidateValue,
 } from './useFilterState';
-import { Select, Space, Typography } from 'antd';
+import { Select, Space, Typography, theme } from 'antd';
+
+const { useToken } = theme;
 import { ReactNode } from 'react';
 import { SelectOperator } from './operator';
 
@@ -74,31 +76,33 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
     value: supportedOperator,
     label: operatorLocale[supportedOperator],
   }));
+  const { token } = useToken();
   return (
     <Space.Compact
       block
-      style={{ ...props.style, width: '100%' }}
+      style={{ ...props.style }}
       className={props.className}
     >
       <Typography
-        {...props.label}
         style={{
           minWidth: 140,
-          background: '#FFFFFF',
           height: '32px',
           lineHeight: '32px',
-          borderTop: '1px solid #D9D9D9',
-          borderBottom: '1px solid #D9D9D9',
-          borderLeft: '1px solid #D9D9D9',
           padding: '0 12px',
+          background: token.colorBgContainer,
+          border: `1px solid ${token.colorBorder}`,
+          borderRight: 'none',
+          whiteSpace: 'nowrap',
+          ...props.label?.style,
         }}
+        className={props.label?.className}
       >
         {props.field.label}
       </Typography>
       <Select
         style={{ minWidth: 120 }}
-        onChange={filterState.setOperator}
         {...props.operator}
+        onChange={filterState.setOperator}
         value={filterState.operator}
         options={options}
       ></Select>
