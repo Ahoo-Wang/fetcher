@@ -81,7 +81,6 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
       className={props.className}
     >
       <Typography
-        {...props.label}
         style={{
           minWidth: 140,
           background: '#FFFFFF',
@@ -91,7 +90,9 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
           borderBottom: '1px solid #D9D9D9',
           borderLeft: '1px solid #D9D9D9',
           padding: '0 12px',
+          ...props.label?.style,
         }}
+        className={props.label?.className}
       >
         {props.field.label}
       </Typography>
