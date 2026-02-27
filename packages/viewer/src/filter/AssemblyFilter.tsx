@@ -92,6 +92,7 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
           background: token.colorBgContainer,
           border: `1px solid ${token.colorBorder}`,
           borderRight: 'none',
+          whiteSpace: 'nowrap',
           ...props.label?.style,
         }}
         className={props.label?.className}
