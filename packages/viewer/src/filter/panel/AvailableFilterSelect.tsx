@@ -26,8 +26,9 @@ import {
   useState,
 } from 'react';
 import { ActiveFilter } from './FilterPanel';
+import { AttributesCapable } from '@ahoo-wang/fetcher';
 
-export interface AvailableFilter {
+export interface AvailableFilter extends AttributesCapable {
   field: FilterField;
   component: FilterType;
   value?: FilterValueProps;

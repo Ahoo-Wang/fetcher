@@ -1,6 +1,6 @@
 import { Modal, Space } from 'antd';
 import { ViewState, ViewType } from '../types';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ViewManageItem } from './ViewManageItem';
 
 export interface ViewManageModalProps {
@@ -13,7 +13,8 @@ export interface ViewManageModalProps {
 }
 
 export function ViewManageModal(props: ViewManageModalProps) {
-  const { viewType, views, open, onCancel, onEditViewName, onDeleteView } = props;
+  const { viewType, views, open, onCancel, onEditViewName, onDeleteView } =
+    props;
 
   const [editingView, setEditingView] = useState<ViewState | null>(null);
 
@@ -21,42 +22,53 @@ export function ViewManageModal(props: ViewManageModalProps) {
     return editingView?.id === view.id;
   };
 
-  const handleOk = () => {};
-
-  const handleCancel = () => {
+  const handleOk = useCallback(() => {
     onCancel?.();
-  };
+  }, [onCancel]);
 
-  const handleCancelEdit = () => {
+  const handleCancel = useCallback(() => {
+    onCancel?.();
+  }, [onCancel]);
+
+  const handleCancelEdit = useCallback(() => {
     setEditingView(null);
-  };
+  }, [setEditingView]);
 
-  const handleStartEdit = (view: ViewState) => {
-    setEditingView(view);
-  };
+  const handleStartEdit = useCallback(
+    (view: ViewState) => {
+      setEditingView(view);
+    },
+    [setEditingView],
+  );
 
-  const handleDeleteView = (view: ViewState) => {
-    onDeleteView?.(view, () => {
-      setEditingView(null);
-    });
-  };
+  const handleDeleteView = useCallback(
+    (view: ViewState) => {
+      onDeleteView?.(view, () => {
+        setEditingView(null);
+      });
+    },
+    [onDeleteView, setEditingView],
+  );
 
-  const handleSaveView = (view: ViewState) => {
-    onEditViewName?.(view, () => {
-      setEditingView(null);
-    });
-  };
+  const handleSaveView = useCallback(
+    (view: ViewState) => {
+      onEditViewName?.(view, () => {
+        setEditingView(null);
+      });
+    },
+    [onEditViewName, setEditingView],
+  );
 
   return (
     <Modal
       title={`${viewType === 'PERSONAL' ? '个人' : '公共'}视图`}
       open={open}
       onOk={handleOk}
-      okText="确认"
+      okText="确定"
       cancelText="取消"
       onCancel={handleCancel}
     >
-      <Space orientation="vertical" size={12} style={{width: '100%'}}>
+      <Space orientation="vertical" size={12} style={{ width: '100%' }}>
         {views.map(view => (
           <ViewManageItem
             editing={isEditing(view)}
@@ -68,7 +80,6 @@ export function ViewManageModal(props: ViewManageModalProps) {
           />
         ))}
       </Space>
-
     </Modal>
   );
 }

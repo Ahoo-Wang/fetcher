@@ -124,6 +124,7 @@ export function FilterPanel(props: FilterPanelProps) {
                 field={filter.field}
                 operator={filter.operator}
                 value={filter.value}
+                attributes={filter.attributes}
                 onRemove={filter.onRemove}
                 ref={filterRefs.register(filter.key)}
               ></RemovableTypedFilter>
