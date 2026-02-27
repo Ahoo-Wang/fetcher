@@ -327,7 +327,8 @@ export function useViewState({
    */
   const setConditionFn = (condition: Condition) => {
     setCondition(condition);
-    onChange?.(condition, page, pageSize, sorter);
+    setPage(1)
+    onChange?.(condition, 1, pageSize, sorter);
   };
 
   /**
