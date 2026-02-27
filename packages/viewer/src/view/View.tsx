@@ -318,20 +318,7 @@ export function View<RecordType>({
       }
     }
 
-    const newColumns = columns.map(column => {
-      const temp = finalSorter.find(it => it.field == column.name);
-      return temp
-        ? {
-            ...column,
-            sortOrder: (temp.direction === 'ASC'
-              ? 'ascend'
-              : 'descend') as SortOrder,
-          }
-        : { ...column, sortOrder: null };
-    });
-
     setSorter(finalSorter);
-    setColumns(newColumns);
   };
 
   /** Ref for accessing EditableFilterPanel imperative methods (reset) */

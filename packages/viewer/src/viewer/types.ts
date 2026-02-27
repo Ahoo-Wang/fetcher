@@ -45,7 +45,7 @@ export interface ViewState {
   pageSize: number;
   condition: Condition;
   internalCondition?: Condition;
-  sorter?: FieldSort[];
+  sorter: FieldSort[];
 }
 
 export interface ViewColumn extends NamedCapable, KeyCapable {

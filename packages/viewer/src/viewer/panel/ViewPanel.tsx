@@ -79,6 +79,7 @@ export function ViewPanel(props: ViewPanelProps) {
     setSaveViewModalOpened(true);
   };
 
+
   const handleCreateViewConfirmed = (name: string, type: ViewType) => {
     onCreateView?.(
       {

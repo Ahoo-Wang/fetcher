@@ -3,6 +3,7 @@ import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useEffect, useRef, useState } from 'react';
 import { deepEqual, ActiveFilter, useActiveViewState } from '../../';
 import { all, Condition, FieldSort, Operator } from '@ahoo-wang/fetcher-wow';
+import { SortOrder } from 'antd/es/table/interface';
 
 export type SearchDataConverter<R> = (
   condition: Condition,
@@ -188,10 +189,24 @@ export function useViewerState({
 
   const setSorterFn = (sorter: FieldSort[]) => {
     setSorter(sorter);
-    setActiveView({
+    const newColumns = columns.map(column => {
+      const temp = sorter.find(it => it.field == column.name);
+      return temp
+        ? {
+            ...column,
+            sortOrder: (temp.direction === 'ASC'
+              ? 'ascend'
+              : 'descend') as SortOrder,
+          }
+        : { ...column, sortOrder: null };
+    });
+    setColumns(newColumns);
+    const newView: ViewState = {
       ...activeView,
       sorter: sorter,
-    });
+      columns: newColumns,
+    };
+    setActiveView(newView);
   };
 
   const resetFn = (): ViewState => {
