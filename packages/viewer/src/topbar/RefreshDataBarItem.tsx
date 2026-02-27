@@ -2,6 +2,7 @@ import { TopBarItemProps } from './types';
 import { BarItem } from './BarItem';
 import { ReloadOutlined } from '@ant-design/icons';
 import { useRefreshDataEventBus } from '../';
+import { Tooltip } from 'antd';
 
 export interface RefreshDataBarItemProps extends TopBarItemProps {}
 
@@ -15,8 +16,10 @@ export function RefreshDataBarItem(props: RefreshDataBarItemProps) {
   };
 
   return (
-    <div className={className} style={style} onClick={handleClick}>
-      <BarItem icon={<ReloadOutlined />} active={false} />
-    </div>
+    <Tooltip placement="top" title="刷新">
+      <div className={className} style={style} onClick={handleClick}>
+        <BarItem icon={<ReloadOutlined />} active={false} />
+      </div>
+    </Tooltip>
   );
 }

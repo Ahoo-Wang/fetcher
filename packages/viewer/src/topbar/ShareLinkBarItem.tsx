@@ -1,10 +1,9 @@
 import { BarItem } from './BarItem';
 import { TopBarItemProps } from './types';
 import { LinkOutlined } from '@ant-design/icons';
-import { message } from 'antd';
+import { message, Tooltip } from 'antd';
 
-export interface ShareLinkBarItemProps
-  extends TopBarItemProps {}
+export interface ShareLinkBarItemProps extends TopBarItemProps {}
 
 export function ShareLinkBarItem(props: ShareLinkBarItemProps) {
   const { className, style } = props;
@@ -25,9 +24,11 @@ export function ShareLinkBarItem(props: ShareLinkBarItemProps) {
   return (
     <>
       {contextHolder}
-      <div className={className} style={style} onClick={handleClick}>
-        <BarItem icon={<LinkOutlined />} active={false} />
-      </div>
+      <Tooltip placement="top" title="分享视图">
+        <div className={className} style={style} onClick={handleClick}>
+          <BarItem icon={<LinkOutlined />} active={false} />
+        </div>
+      </Tooltip>
     </>
   );
 }

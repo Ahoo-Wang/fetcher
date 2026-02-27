@@ -2,6 +2,7 @@ import { TopBarItemProps } from './types';
 import { useEffect, useState } from 'react';
 import { BarItem } from './BarItem';
 import { FilterOutlined } from '@ant-design/icons';
+import { Tooltip } from 'antd';
 
 export interface FilterBarItemProps extends TopBarItemProps {
   defaultShowFilter: boolean;
@@ -23,8 +24,10 @@ export function FilterBarItem(props: FilterBarItemProps) {
   };
 
   return (
-    <div className={className} style={style} onClick={handleClick}>
-      <BarItem icon={<FilterOutlined />} active={active || false} />
-    </div>
+    <Tooltip placement="top" title="过滤器">
+      <div className={className} style={style} onClick={handleClick}>
+        <BarItem icon={<FilterOutlined />} active={active || false} />
+      </div>
+    </Tooltip>
   );
 }

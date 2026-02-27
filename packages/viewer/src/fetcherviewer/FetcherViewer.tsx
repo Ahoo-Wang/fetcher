@@ -24,6 +24,8 @@ import {
 } from 'react';
 import { CommandResult, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
+import { useKeyStorage } from '@ahoo-wang/fetcher-react';
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
 export interface FetcherViewerRef {
   refreshData: () => void;
@@ -72,6 +74,13 @@ export function FetcherViewer<RecordType = any>({
     secondaryActions,
     batchActions,
   } = props;
+  const localDefaultViewIdStorage = new KeyStorage<string | undefined>({
+    key: 'fetcher-viewer-local-default-view-id',
+    defaultValue: undefined,
+  });
+  const [localDefaultViewId, setLocalDefaultViewId] = useKeyStorage<
+    string | undefined
+  >(localDefaultViewIdStorage);
 
   const {
     viewerDefinition,
@@ -86,11 +95,16 @@ export function FetcherViewer<RecordType = any>({
   );
 
   const defaultView = useMemo(
-    () => getDefaultView(views, defaultViewId),
-    [views, defaultViewId],
+    () => getDefaultView(views, localDefaultViewId, defaultViewId),
+    [views, defaultViewId, localDefaultViewId],
   );
 
-  const { dataSource, loading: fetchLoading, setQuery, reload } = useFetchData<RecordType>({
+  const {
+    dataSource,
+    loading: fetchLoading,
+    setQuery,
+    reload,
+  } = useFetchData<RecordType>({
     viewerDefinition,
     defaultView,
   });
@@ -110,8 +124,9 @@ export function FetcherViewer<RecordType = any>({
   const handleSwitchView = useCallback(
     (view: ViewState) => {
       onSwitchView?.(view);
+      setLocalDefaultViewId(view.id);
     },
-    [onSwitchView],
+    [onSwitchView, setLocalDefaultViewId],
   );
 
   const onGetRecordCount = useCallback(
@@ -266,6 +281,7 @@ export function FetcherViewer<RecordType = any>({
 
 function getDefaultView(
   views: ViewState[] | undefined,
+  localDefaultViewId?: string | null,
   defaultViewId?: string,
 ): ViewState | undefined {
   if (!views || views.length === 0) return undefined;
@@ -273,6 +289,13 @@ function getDefaultView(
   let activeView: ViewState | undefined;
   if (defaultViewId) {
     activeView = views.find(view => view.id === defaultViewId);
+    if (activeView) {
+      return activeView;
+    }
+  }
+
+  if (localDefaultViewId) {
+    activeView = views.find(view => view.id === localDefaultViewId);
     if (activeView) {
       return activeView;
     }

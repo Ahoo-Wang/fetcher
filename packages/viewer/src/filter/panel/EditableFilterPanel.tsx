@@ -51,7 +51,7 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
     const newFilters = selectedAvailableFilters.map(
       available =>
         ({
-          key: available.field.name,
+          key: available.key,
           type: available.component,
           field: available.field,
           value: available.value,

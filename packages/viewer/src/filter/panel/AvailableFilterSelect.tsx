@@ -19,6 +19,7 @@ import { StyleCapable } from '../../types';
 import styles from './AvailableFilterSelect.module.css';
 
 import {
+  Key,
   RefAttributes,
   useEffect,
   useImperativeHandle,
@@ -29,6 +30,7 @@ import { ActiveFilter } from './FilterPanel';
 import { AttributesCapable } from '@ahoo-wang/fetcher';
 
 export interface AvailableFilter extends AttributesCapable {
+  key: Key;
   field: FilterField;
   component: FilterType;
   value?: FilterValueProps;
