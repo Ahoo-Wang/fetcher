@@ -25,7 +25,6 @@ import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import {
   RefAttributes,
   useCallback,
-  useEffect,
   useImperativeHandle,
   useRef,
 } from 'react';
@@ -35,7 +34,7 @@ import {
   PrimaryKeyClickHandlerCapable,
   ViewTableSettingCapable,
 } from '../types';
-import { SorterResult, SortOrder } from 'antd/es/table/interface';
+import { SorterResult } from 'antd/es/table/interface';
 import { useViewState, ViewChangeAction } from './';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useLocale } from '../locale';
