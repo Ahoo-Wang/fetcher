@@ -33,10 +33,12 @@ const mockFilters: AvailableFilterGroup[] = [
     label: '基本筛选',
     filters: [
       {
+        key: 'name',
         field: { name: 'name', label: '姓名', type: 'string' },
         component: 'text',
       },
       {
+        key: 'age',
         field: { name: 'age', label: '年龄', type: 'number' },
         component: 'number',
       },
@@ -46,10 +48,12 @@ const mockFilters: AvailableFilterGroup[] = [
     label: '高级筛选',
     filters: [
       {
+        key: 'status',
         field: { name: 'status', label: '状态', type: 'string' },
         component: 'select',
       },
       {
+        key: 'date',
         field: { name: 'date', label: '日期', type: 'date' },
         component: 'date',
       },
