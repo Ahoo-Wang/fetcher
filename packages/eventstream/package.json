@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-eventstream",
-  "version": "3.11.9",
+  "version": "3.11.10",
   "description": "Server-Sent Events (SSE) support for Fetcher HTTP client with native LLM streaming API support. Enables real-time data streaming and token-by-token LLM response handling.",
   "keywords": [
     "fetch",

@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-openai",
-  "version": "3.11.9",
+  "version": "3.11.10",
   "description": "Type-safe OpenAI API client for Fetcher ecosystem. Provides seamless integration with OpenAI's Chat Completions API, supporting both streaming and non-streaming responses with full TypeScript support.",
   "keywords": [
     "openai",

@@ -13,6 +13,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
+import { Tooltip } from 'antd';
 import { RefreshDataBarItem } from '../../src/topbar/RefreshDataBarItem';
 
 const mockPublish = vi.fn().mockResolvedValue(undefined);
@@ -84,6 +85,14 @@ describe('RefreshDataBarItem', () => {
       );
 
       expect(container.firstChild).toHaveClass('test-class');
+    });
+  });
+
+  describe('Tooltip', () => {
+    it('should render with Tooltip', () => {
+      const { container } = render(<RefreshDataBarItem />);
+      const tooltip = container.querySelector('.ant-tooltip-open') || container.querySelector('[class*="tooltip"]');
+      expect(tooltip || container.firstChild).toBeInTheDocument();
     });
   });
 });

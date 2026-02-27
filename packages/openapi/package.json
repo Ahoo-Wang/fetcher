@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-openapi",
-  "version": "3.11.9",
+  "version": "3.11.10",
   "description": "OpenAPI Specification TypeScript types for Fetcher - A modern, ultra-lightweight HTTP client for browsers and Node.js. Provides complete TypeScript support with type inference for OpenAPI 3.x schemas.",
   "keywords": [
     "fetch",

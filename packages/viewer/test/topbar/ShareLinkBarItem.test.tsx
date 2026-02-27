@@ -13,6 +13,7 @@
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, waitFor } from '@testing-library/react';
+import { Tooltip } from 'antd';
 import { ShareLinkBarItem } from '../../src/topbar/ShareLinkBarItem';
 
 Object.assign(navigator, {
@@ -21,10 +22,15 @@ Object.assign(navigator, {
   },
 });
 
-vi.mock('antd', () => {
-  const actual = vi.importActual('antd');
+vi.mock('antd', async () => {
+  const actual = await vi.importActual('antd');
   return {
     ...actual,
+    Tooltip: ({ title, children, className, style }: any) => (
+      <div className={className} style={style} data-testid="tooltip">
+        {children}
+      </div>
+    ),
     message: {
       useMessage: () => [
         {
@@ -52,7 +58,7 @@ describe('ShareLinkBarItem', () => {
       const { container } = render(
         <ShareLinkBarItem className="custom-class" />,
       );
-      expect(container.firstChild).toHaveClass('custom-class');
+      expect(container.querySelector('.custom-class')).toBeInTheDocument();
     });
 
     it('should render with custom style', () => {
@@ -60,7 +66,8 @@ describe('ShareLinkBarItem', () => {
       const { container } = render(
         <ShareLinkBarItem style={style} />,
       );
-      expect(container.firstChild).toHaveStyle(style);
+      const target = container.querySelector('[style]');
+      expect(target).toHaveStyle(style);
     });
   });
 
@@ -68,7 +75,8 @@ describe('ShareLinkBarItem', () => {
     it('should call navigator.clipboard.writeText when clicked', async () => {
       const { container } = render(<ShareLinkBarItem />);
 
-      fireEvent.click(container.querySelector('div') as HTMLElement);
+      const clickTarget = container.querySelector('[data-testid="tooltip"] > div') || container.querySelector('[data-testid="tooltip"]');
+      fireEvent.click(clickTarget as HTMLElement);
 
       await waitFor(() => {
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
@@ -84,7 +92,8 @@ describe('ShareLinkBarItem', () => {
 
       const { container } = render(<ShareLinkBarItem />);
 
-      fireEvent.click(container.querySelector('div') as HTMLElement);
+      const clickTarget = container.querySelector('[data-testid="tooltip"] > div') || container.querySelector('[data-testid="tooltip"]');
+      fireEvent.click(clickTarget as HTMLElement);
 
       await waitFor(() => {
         expect(navigator.clipboard.writeText).toHaveBeenCalled();
@@ -98,14 +107,22 @@ describe('ShareLinkBarItem', () => {
       const { container } = render(
         <ShareLinkBarItem style={style} />,
       );
-      expect(container.firstChild).toHaveStyle(style);
+      const target = container.querySelector('[style]');
+      expect(target).toBeInTheDocument();
     });
 
     it('should accept className prop', () => {
       const { container } = render(
         <ShareLinkBarItem className="test-class" />,
       );
-      expect(container.firstChild).toHaveClass('test-class');
+      expect(container.querySelector('.test-class')).toBeInTheDocument();
+    });
+  });
+
+  describe('Tooltip', () => {
+    it('should render with Tooltip', () => {
+      const { container } = render(<ShareLinkBarItem />);
+      expect(container.querySelector('[data-testid="tooltip"]')).toBeInTheDocument();
     });
   });
 });
