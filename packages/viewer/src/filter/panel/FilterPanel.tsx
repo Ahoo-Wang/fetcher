@@ -120,6 +120,7 @@ export function FilterPanel(props: FilterPanelProps) {
             <Col {...col} key={filter.key}>
               <RemovableTypedFilter
                 {...filter}
+                key={filter.key}
                 ref={filterRefs.register(filter.key)}
               ></RemovableTypedFilter>
             </Col>
