@@ -22,7 +22,13 @@ import {
 } from '../filter';
 import type * as React from 'react';
 import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
-import { RefAttributes, useEffect, useImperativeHandle, useRef } from 'react';
+import {
+  RefAttributes,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react';
 import { FieldDefinition, ViewColumn } from '../viewer';
 import { ViewTable, ViewTableActionColumn, ViewTableRef } from '../table';
 import {
@@ -333,6 +339,13 @@ export function View<RecordType>({
   /** Ref for accessing ViewTable imperative methods (reset, clearSelectedRowKeys) */
   const viewTableRef = useRef<ViewTableRef | null>(null);
 
+  /** Clears all selected row keys. Called via ref imperatively. */
+  const clearSelectedRowKeysFn = useCallback(() => {
+    viewTableRef.current?.clearSelectedRowKeys();
+    onSelectedDataChange?.([]);
+    updateSelectedCount(0);
+  }, [onSelectedDataChange, updateSelectedCount]);
+
   /**
    * Resets all view state to default values.
    * Called via ref imperatively from parent components.
@@ -340,12 +353,7 @@ export function View<RecordType>({
   const resetFn = () => {
     // reset();
     editableFilterPanelRef.current?.reset();
-    viewTableRef.current?.reset();
-  };
-
-  /** Clears all selected row keys. Called via ref imperatively. */
-  const clearSelectedRowKeysFn = () => {
-    viewTableRef.current?.clearSelectedRowKeys();
+    clearSelectedRowKeysFn();
   };
 
   /**
@@ -358,9 +366,9 @@ export function View<RecordType>({
     reset: resetFn,
   }));
 
-  useEffect(() => {
-    clearSelectedRowKeysFn();
-  }, [dataSource]);
+  // useEffect(() => {
+  //   clearSelectedRowKeysFn();
+  // }, [dataSource, clearSelectedRowKeysFn]);
 
   /**
    * Renders the view component.

@@ -17,8 +17,8 @@ import {
   ViewRef,
   ViewTableActionColumn,
 } from '../';
-import { useRef, useState } from 'react';
-import { PagedList } from '@ahoo-wang/fetcher-wow';
+import { useCallback, useRef, useState } from 'react';
+import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import type * as React from 'react';
 
 const { Header, Sider, Content } = Layout;
@@ -107,7 +107,6 @@ export function Viewer<RecordType = any>({
   const viewRef = useRef<ViewRef | null>(null);
 
   const handleCreateView = (view: ViewState, onSuccess?: () => void) => {
-    console.log('onCreateView', view);
     onCreateView?.(view, (newView: ViewState) => {
       setViews([...views, newView]);
       switchView(newView);
@@ -117,7 +116,6 @@ export function Viewer<RecordType = any>({
   };
 
   const handleUpdateView = (view: ViewState, onSuccess?: () => void) => {
-    console.log('onUpdateView', view);
     onUpdateView?.(view, (newView: ViewState) => {
       setViews(
         views.map(it => {
@@ -133,7 +131,6 @@ export function Viewer<RecordType = any>({
   };
 
   const handleDeleteView = (view: ViewState, onSuccess?: () => void) => {
-    console.log('onDeleteView', view);
     onDeleteView?.(view, (deletedView: ViewState) => {
       setViews(views.filter(it => it.id !== deletedView.id));
       if (activeView.id === deletedView.id) {
@@ -160,6 +157,19 @@ export function Viewer<RecordType = any>({
     onLoadData?.(resetView.condition, 1, resetView.pageSize, resetView.sorter);
     // Reset logic handled by View component internally
   };
+
+  const handleChange = useCallback(
+    (
+      condition: Condition,
+      index: number,
+      size: number,
+      sorter?: FieldSort[],
+    ) => {
+      onLoadData?.(condition, index, size, sorter);
+      viewRef.current?.clearSelectedRowKeys();
+    },
+    [onLoadData],
+  );
 
   return (
     <Layout>
@@ -244,7 +254,7 @@ export function Viewer<RecordType = any>({
               defaultSorter={sorter}
               externalSorter={sorter}
               externalUpdateSorter={setSorter}
-              onChange={onLoadData}
+              onChange={handleChange}
             />
           </Space>
         </Content>
