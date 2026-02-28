@@ -46,6 +46,7 @@ export interface RemoteSelectProps<
   search: (search: string) => Promise<OptionType[]>;
   /** Initial options displayed before any search is performed */
   options?: OptionType[];
+  uniqueKey?: string;
   /**
    * Additional options that are always appended to the options list.
    * These appear after the remote search results or initial options.
@@ -60,6 +61,23 @@ const DEFAULT_DEBOUNCE = {
 };
 const DEFAULT_INITIAL_OPTIONS: any[] = [];
 const DEFAULT_ADDITIONAL_OPTIONS: any[] = [];
+
+/**
+ * Returns a new array with duplicate items removed based on the key returned by keySelector.
+ *
+ * @param array - The array to deduplicate
+ * @param keySelector - Function to extract the key for each item
+ * @returns New array with unique items
+ */
+function uniqueBy<T, K>(array: T[], keySelector: (item: T) => K): T[] {
+  const seen = new Set<K>();
+  return array.filter((item) => {
+    const key = keySelector(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 /**
  * A Select component with built-in remote search functionality.
@@ -103,6 +121,7 @@ export function RemoteSelect<
     debounce = DEFAULT_DEBOUNCE,
     search,
     options = DEFAULT_INITIAL_OPTIONS,
+    uniqueKey = 'value',
     additionalOptions = DEFAULT_ADDITIONAL_OPTIONS,
     ...selectProps
   } = props;
@@ -117,10 +136,10 @@ export function RemoteSelect<
       return search(value);
     });
   };
-  const mergedOptions = useMemo(
-    () => [...(result ?? options), ...additionalOptions],
-    [result, options, additionalOptions],
-  );
+  const mergedOptions = useMemo(() => {
+    const baseOptions = [...(result ?? options), ...additionalOptions];
+    return uniqueBy(baseOptions, (opt) => opt[uniqueKey]);
+  }, [result, options, additionalOptions, uniqueKey]);
   return (
     <Select<ValueType, OptionType>
       showSearch={{
