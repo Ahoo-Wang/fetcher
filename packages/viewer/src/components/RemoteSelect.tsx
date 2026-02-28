@@ -17,9 +17,15 @@ import {
   useDebouncedExecutePromise,
 } from '@ahoo-wang/fetcher-react';
 import { StyleCapable } from '../types';
-import { RefAttributes, useCallback, useMemo } from 'react';
+import { RefAttributes, useMemo } from 'react';
 import { BaseOptionType, DefaultOptionType } from 'antd/lib/select';
 
+/**
+ * Props for the RemoteSelect component.
+ *
+ * @template ValueType - The type of the value(s) selected in the Select
+ * @template OptionType - The type of option objects, defaults to antd's DefaultOptionType
+ */
 export interface RemoteSelectProps<
   ValueType = any,
   OptionType extends BaseOptionType | DefaultOptionType = DefaultOptionType,
@@ -27,14 +33,22 @@ export interface RemoteSelectProps<
   extends Omit<SelectProps<ValueType, OptionType>, 'loading' | 'onSearch'>,
     RefAttributes<RefSelectProps>,
     StyleCapable {
+  /** Debounce options for controlling the search delay */
   debounce?: UseDebouncedCallbackOptions;
-  search: (search: string) => Promise<OptionType[]>;
   /**
-   * 初始 Options 数据
+   * Callback function to fetch options from remote API.
+   * Called with the current search string when user types.
+   *
+   * @param search - The current search input value
+   * @returns Promise resolving to array of options
+   * @throws Error when the remote API request fails
    */
+  search: (search: string) => Promise<OptionType[]>;
+  /** Initial options displayed before any search is performed */
   options?: OptionType[];
   /**
-   * 额外的 Options 数据，始终追加 到 options 中
+   * Additional options that are always appended to the options list.
+   * These appear after the remote search results or initial options.
    */
   additionalOptions?: OptionType[];
 }
@@ -48,8 +62,38 @@ const DEFAULT_INITIAL_OPTIONS: any[] = [];
 const DEFAULT_ADDITIONAL_OPTIONS: any[] = [];
 
 /**
- * A Select component that loads options from a remote API.
- * Supports automatic fetching, loading states, and error handling.
+ * A Select component with built-in remote search functionality.
+ * Supports debounced search, loading states, and combining remote results with static options.
+ *
+ * @example
+ * ```tsx
+ * import { RemoteSelect } from '@ahoo-wang/fetcher-viewer';
+ *
+ * // Basic usage with remote search
+ * const UserSelect = () => (
+ *   <RemoteSelect
+ *     search={async (keyword) => {
+ *       const response = await fetch(`/api/users?q=${keyword}`);
+ *       return response.json();
+ *     }}
+ *     placeholder="Search users..."
+ *   />
+ * );
+ *
+ * // With initial options and additional options
+ * const StatusSelect = () => (
+ *   <RemoteSelect
+ *     search={async (keyword) => fetchOptions(keyword)}
+ *     options={[{ label: 'Pending', value: 'pending' }]}
+ *     additionalOptions={[{ label: 'Unknown', value: 'unknown' }]}
+ *   />
+ * );
+ * ```
+ *
+ * @template ValueType - The type of value(s) selected
+ * @template OptionType - The option object type
+ * @param props - Component props extending antd SelectProps
+ * @returns A Select component with remote search capability
  */
 export function RemoteSelect<
   ValueType = any,
