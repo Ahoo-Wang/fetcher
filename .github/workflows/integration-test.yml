@@ -26,11 +26,11 @@ jobs:
           --health-timeout=5s
           --health-retries=5
       wow:
-        image: ghcr.io/ahoo-wang/wow-example-server:8.0.0
+        image: ghcr.io/ahoo-wang/wow-example-server:pr-2462
         ports:
           - 8080:8080
         env:
-          SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration,org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration,org.springframework.boot.autoconfigure.elasticsearch.ReactiveElasticsearchClientAutoConfiguration
+          SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchClientAutoConfiguration,org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchRestClientAutoConfiguration
           SPRING_DATA_MONGODB_URI: mongodb://root:root@mongo:27017/wow_example_db?authSource=admin&maxIdleTimeMS=60000
           WOW_EVENTSOURCING_STORE_STORAGE: mongo
           WOW_EVENTSOURCING_SNAPSHOT_STORAGE: mongo
