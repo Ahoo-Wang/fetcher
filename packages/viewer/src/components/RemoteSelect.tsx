@@ -63,6 +63,19 @@ export function RemoteSelect<
       return search(value);
     });
   };
+
+  const uniqBy = (array: OptionType[], key: keyof OptionType): OptionType[] => {
+    const seen = new Set();
+    return array.filter(item => {
+      const value = item[key];
+      if (seen.has(value)) {
+        return false;
+      }
+      seen.add(value);
+      return true;
+    });
+  };
+
   return (
     <Select<ValueType, OptionType>
       showSearch={{
@@ -87,7 +100,11 @@ export function RemoteSelect<
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
         )
       }
-      options={loading ? [] : (result ?? options)}
+      options={
+        // 远程搜索与外部赋值场景下的数据一致性问题
+        // 当内部resul不为空时（触发过控件远程搜索），且外部直接对value进行赋值并填充外部options数据，需手动与内部result数据进行去重合并
+        loading ? [] : uniqBy([...(options || []), ...(result || [])], 'value')
+      }
       {...selectProps}
     />
   );
