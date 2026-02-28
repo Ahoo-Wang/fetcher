@@ -46,6 +46,7 @@ export interface RemoteSelectProps<
   search: (search: string) => Promise<OptionType[]>;
   /** Initial options displayed before any search is performed */
   options?: OptionType[];
+  /** Custom key field for deduplication, defaults to 'value' */
   uniqueKey?: string;
   /**
    * Additional options that are always appended to the options list.
