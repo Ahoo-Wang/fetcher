@@ -114,17 +114,13 @@ export function FilterPanel(props: FilterPanelProps) {
   const resetButtonProps = typeof resetButton === 'object' ? resetButton : {};
   return (
     <>
-      <Row {...row}>
+      <Row style={{ maxHeight: '128px', overflowY: 'auto' }} {...row} >
         {filters.map(filter => {
           return (
             <Col {...col} key={filter.key}>
               <RemovableTypedFilter
+                {...filter}
                 key={filter.key}
-                type={filter.type}
-                field={filter.field}
-                operator={filter.operator}
-                value={filter.value}
-                onRemove={filter.onRemove}
                 ref={filterRefs.register(filter.key)}
               ></RemovableTypedFilter>
             </Col>
@@ -132,7 +128,7 @@ export function FilterPanel(props: FilterPanelProps) {
         })}
       </Row>
       <Row justify="end" style={{ marginTop: '16px' }}>
-        <Col {...actionsCol} style={{ textAlign: 'right' }}>
+        <Col style={{ textAlign: 'right' }} {...actionsCol}>
           <Space.Compact>
             {actions}
             {showResetButton && (

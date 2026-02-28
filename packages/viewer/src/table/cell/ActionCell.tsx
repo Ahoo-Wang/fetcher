@@ -135,7 +135,7 @@ export function ActionCell<RecordType = any>(
       type="link" // Ant Design link button provides subtle styling without heavy borders
       {...attributes} // Spread additional button props (e.g., disabled, loading, size)
       onClick={() => attributes?.onClick?.(data.record)} // Invoke handler with action key and full record context
-      style={{ padding: 0 }}
+      style={{ padding: 0, height: '22px' }}
     >
       {data.value}
     </Button>

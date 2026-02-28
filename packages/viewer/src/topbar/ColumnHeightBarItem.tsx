@@ -1,6 +1,6 @@
 import { TopBarItemProps } from './types';
 import { BarItem } from './BarItem';
-import { Dropdown, MenuProps } from 'antd';
+import { Dropdown, MenuProps, Tooltip } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useEffect, useState } from 'react';
@@ -39,19 +39,22 @@ export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
   };
 
   return (
-    <Dropdown
-      className={className}
-      menu={{
-        items,
-        selectable: true,
-        defaultSelectedKeys: [tableSize || 'middle'],
-        onSelect: handleSelect,
-      }}
-      trigger={['click']}
-    >
-      <div onClick={e => e.preventDefault()}>
-        <BarItem icon={<ColumnHeightOutlined />} active={false} />
-      </div>
-    </Dropdown>
+    <Tooltip placement="top" title="行高">
+      <Dropdown
+        className={className}
+        menu={{
+          items,
+          selectable: true,
+          defaultSelectedKeys: [tableSize || 'middle'],
+          onSelect: handleSelect,
+        }}
+        trigger={['click']}
+        placement="bottom"
+      >
+        <div onClick={e => e.preventDefault()}>
+          <BarItem icon={<ColumnHeightOutlined />} active={false} />
+        </div>
+      </Dropdown>
+    </Tooltip>
   );
 }

@@ -60,6 +60,7 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
     label: 'Basic Filters',
     filters: [
       {
+        key: 'id',
         field: {
           name: 'id',
           label: 'ID',
@@ -68,6 +69,7 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
         component: 'id',
       },
       {
+        key: 'name',
         field: {
           name: 'name',
           label: 'Name',
@@ -76,6 +78,7 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
         component: 'text',
       },
       {
+        key: 'age',
         field: {
           name: 'age',
           label: 'Age',
@@ -84,6 +87,7 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
         component: 'number',
       },
       {
+        key: 'email',
         field: {
           name: 'email',
           label: 'Email',
@@ -92,6 +96,7 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
         component: 'text',
       },
       {
+        key: 'isActive',
         field: {
           name: 'isActive',
           label: 'Is Active',
@@ -105,6 +110,7 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
     label: 'Advanced Filters',
     filters: [
       {
+        key: 'status',
         field: {
           name: 'status',
           label: 'Status',
@@ -113,6 +119,7 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
         component: 'select',
       },
       {
+        key: 'department',
         field: {
           name: 'department',
           label: 'Department',
@@ -121,6 +128,7 @@ const sampleAvailableFilters: AvailableFilterGroup[] = [
         component: 'text',
       },
       {
+        key: 'createdAt',
         field: {
           name: 'createdAt',
           label: 'Created At',
@@ -171,6 +179,7 @@ export const MultipleGroups: Story = {
         label: 'Date Filters',
         filters: [
           {
+            key: 'createdAt',
             field: {
               name: 'createdAt',
               label: 'Created At',
@@ -179,6 +188,7 @@ export const MultipleGroups: Story = {
             component: 'date',
           },
           {
+            key: 'updatedAt',
             field: {
               name: 'updatedAt',
               label: 'Updated At',
@@ -215,6 +225,7 @@ export const WithBoolFilter: Story = {
         label: 'Boolean Filters',
         filters: [
           {
+            key: 'isActive',
             field: {
               name: 'isActive',
               label: 'Is Active',
@@ -261,6 +272,7 @@ export const WithSelectFilter: Story = {
         label: 'Select Filters',
         filters: [
           {
+            key: 'status',
             field: {
               name: 'status',
               label: 'Status',
@@ -295,6 +307,7 @@ export const WithDateTimeFilter: Story = {
         label: 'DateTime Filters',
         filters: [
           {
+            key: 'createdAt',
             field: {
               name: 'createdAt',
               label: 'Created At',

@@ -327,7 +327,8 @@ export function useViewState({
    */
   const setConditionFn = (condition: Condition) => {
     setCondition(condition);
-    onChange?.(condition, page, pageSize, sorter);
+    setPage(1);
+    onChange?.(condition, 1, pageSize, sorter);
   };
 
   /**
@@ -336,7 +337,8 @@ export function useViewState({
    */
   const setSorterFn = (sorter: FieldSort[]) => {
     setSorter(sorter);
-    onChange?.(condition, page, pageSize, sorter);
+    setPage(1);
+    onChange?.(condition, 1, pageSize, sorter);
   };
 
   /**

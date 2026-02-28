@@ -19,6 +19,7 @@ import { StyleCapable } from '../../types';
 import styles from './AvailableFilterSelect.module.css';
 
 import {
+  Key,
   RefAttributes,
   useEffect,
   useImperativeHandle,
@@ -26,8 +27,10 @@ import {
   useState,
 } from 'react';
 import { ActiveFilter } from './FilterPanel';
+import { AttributesCapable } from '@ahoo-wang/fetcher';
 
-export interface AvailableFilter {
+export interface AvailableFilter extends AttributesCapable {
+  key: Key;
   field: FilterField;
   component: FilterType;
   value?: FilterValueProps;
@@ -54,9 +57,9 @@ const EMPTY_ACTIVE_FILTERS: ActiveFilter[] = [];
 export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
   const { filters, activeFilters = EMPTY_ACTIVE_FILTERS, ref } = props;
   const activeFilterFieldNames = useMemo(() => {
-    return activeFilters?.map(activeFilter => activeFilter.field.name).sort();
+    return activeFilters?.map(activeFilter => activeFilter.key).sort();
   }, [activeFilters]);
-  const [selectedFilters, setSelectedFilters] = useState<string[]>(
+  const [selectedFilters, setSelectedFilters] = useState<Key[]>(
     activeFilterFieldNames,
   );
 
@@ -65,9 +68,9 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
       return props.filters.flatMap(group =>
         group.filters.filter(
           filter =>
-            selectedFilters.includes(filter.field.name) &&
+            selectedFilters.includes(filter.key) &&
             !activeFilters.some(
-              activeFilter => activeFilter.field.name === filter.field.name,
+              activeFilter => activeFilter.key === filter.key,
             ),
         ),
       );
@@ -75,10 +78,10 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
   }));
   const handleCheck = (filter: AvailableFilter, checked: boolean) => {
     if (checked) {
-      setSelectedFilters([...selectedFilters, filter.field.name]);
+      setSelectedFilters([...selectedFilters, filter.key]);
     } else {
       setSelectedFilters(
-        selectedFilters.filter(name => name !== filter.field.name),
+        selectedFilters.filter(name => name !== filter.key),
       );
     }
   };
@@ -93,15 +96,15 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
           <span className={styles.filterGroupLabel}>{group.label}</span>
           <Row wrap={true} gutter={[16, 16]} key={index}>
             {group.filters.map(filter => (
-              <Col span={6} key={filter.field.name}>
+              <Col span={6} key={filter.key}>
                 <Checkbox
-                  checked={selectedFilters.includes(filter.field.name)}
+                  checked={selectedFilters.includes(filter.key)}
                   onChange={e => {
                     handleCheck(filter, e.target.checked);
                   }}
                   disabled={activeFilters.some(
                     activeFilter =>
-                      activeFilter.field.name === filter.field.name,
+                      activeFilter.key === filter.key,
                   )}
                 >
                   {filter.field.label}

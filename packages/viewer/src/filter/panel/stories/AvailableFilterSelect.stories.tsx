@@ -87,14 +87,17 @@ const mockFilters: AvailableFilterGroup[] = [
     label: '用户信息',
     filters: [
       {
+        key: 'name',
         field: { name: 'name', label: '姓名', type: 'string' },
         component: 'text',
       },
       {
+        key: 'email',
         field: { name: 'email', label: '邮箱', type: 'string' },
         component: 'text',
       },
       {
+        key: 'age',
         field: { name: 'age', label: '年龄', type: 'number' },
         component: 'number',
       },
@@ -104,10 +107,12 @@ const mockFilters: AvailableFilterGroup[] = [
     label: '状态信息',
     filters: [
       {
+        key: 'status',
         field: { name: 'status', label: '状态', type: 'string' },
         component: 'text',
       },
       {
+        key: 'createdAt',
         field: { name: 'createdAt', label: '创建时间', type: 'date' },
         component: 'date',
       },

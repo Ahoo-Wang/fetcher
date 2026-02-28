@@ -1,11 +1,26 @@
 import {
   TopBarActionItem,
   TopbarActionsCapable,
-  SaveViewMethod, ViewState, SaveViewModal, ViewType,
+  SaveViewMethod,
+  ViewState,
+  SaveViewModal,
+  ViewType,
 } from '../';
 import styles from './TopBar.module.css';
-import { Button, Divider, Dropdown, Flex, MenuProps, Space, Modal } from 'antd';
-import { DownOutlined, ExclamationCircleOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Divider,
+  Dropdown,
+  Flex,
+  MenuProps,
+  Space,
+  Modal,
+} from 'antd';
+import {
+  DownOutlined,
+  ExclamationCircleOutlined,
+  MenuUnfoldOutlined,
+} from '@ant-design/icons';
 import React, { useCallback, useState } from 'react';
 import type { ItemType } from 'antd/es/menu/interface';
 import {
@@ -19,8 +34,9 @@ import {
 } from './';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 
-export interface TopBarProps<RecordType>
-  extends TopbarActionsCapable<RecordType> {
+export interface TopBarProps<
+  RecordType,
+> extends TopbarActionsCapable<RecordType> {
   title: string;
 
   activeView: ViewState;
@@ -104,8 +120,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     'Create' | 'SaveAs'
   >('Create');
   const [saveViewModalOpened, setSaveViewModalOpened] = useState(false);
-  const [defaultCreateViewType] =
-    useState<ViewType>('PERSONAL');
+  const [defaultCreateViewType] = useState<ViewType>('PERSONAL');
 
   let batchMenuItems: MenuProps['items'] = [];
   if (batchActions?.enabled) {
@@ -160,7 +175,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
         setSaveViewModalOpened(false);
       },
     );
-  }
+  };
 
   const handleMenuClick: MenuProps['onClick'] = e => {
     onSaveView(e.key as SaveViewMethod);
@@ -189,11 +204,11 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
                 <BarItem icon={<MenuUnfoldOutlined />} active={false} />
               </div>
               <Divider orientation="vertical" />
-              {title}
+              <span style={{ fontSize: '16px' }}>{title}</span>
               <Point />
             </>
           )}
-          {activeView.name}
+          <span style={{ fontSize: '16px' }}>{activeView.name}</span>
           {viewChanged && (
             <>
               <div style={{ color: 'rgba(0,0,0,0.45)' }}>(已编辑)</div>

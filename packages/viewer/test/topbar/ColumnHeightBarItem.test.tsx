@@ -15,6 +15,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { ColumnHeightBarItem } from '../../src/topbar/ColumnHeightBarItem';
 
+vi.mock('antd', () => ({
+  Tooltip: ({ title, children }: any) => (
+    <div data-testid="tooltip">{children}</div>
+  ),
+  Dropdown: ({ children, menu }: any) => (
+    <div data-testid="dropdown">{children}</div>
+  ),
+}));
+
 vi.mock('../../src/locale/useLocale', () => ({
   useLocale: vi.fn(() => ({
     locale: {},
@@ -72,6 +81,15 @@ describe('ColumnHeightBarItem', () => {
       );
 
       expect(container.firstChild).toBeInTheDocument();
+    });
+  });
+
+  describe('Tooltip', () => {
+    it('should render with Tooltip', () => {
+      const { container } = render(
+        <ColumnHeightBarItem defaultTableSize="middle" />,
+      );
+      expect(container.querySelector('[data-testid="tooltip"]')).toBeInTheDocument();
     });
   });
 });

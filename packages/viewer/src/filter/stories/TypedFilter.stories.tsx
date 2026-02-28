@@ -73,6 +73,11 @@ export const IdFilter: Story = {
     value: {
       defaultValue: '',
     },
+    label: {
+      style: {
+        width: 200,
+      },
+    },
   },
 };
 
