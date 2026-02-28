@@ -17,19 +17,26 @@ import {
   useDebouncedExecutePromise,
 } from '@ahoo-wang/fetcher-react';
 import { StyleCapable } from '../types';
-import { RefAttributes } from 'react';
+import { RefAttributes, useCallback, useMemo } from 'react';
 import { BaseOptionType, DefaultOptionType } from 'antd/lib/select';
 
 export interface RemoteSelectProps<
   ValueType = any,
   OptionType extends BaseOptionType | DefaultOptionType = DefaultOptionType,
 >
-  extends
-    Omit<SelectProps<ValueType, OptionType>, 'loading' | 'onSearch'>,
+  extends Omit<SelectProps<ValueType, OptionType>, 'loading' | 'onSearch'>,
     RefAttributes<RefSelectProps>,
     StyleCapable {
   debounce?: UseDebouncedCallbackOptions;
   search: (search: string) => Promise<OptionType[]>;
+  /**
+   * 初始 Options 数据
+   */
+  options?: OptionType[];
+  /**
+   * 额外的 Options 数据，始终追加 到 options 中
+   */
+  additionalOptions?: OptionType[];
 }
 
 const DEFAULT_DEBOUNCE = {
@@ -37,6 +44,8 @@ const DEFAULT_DEBOUNCE = {
   leading: false,
   trailing: true,
 };
+const DEFAULT_INITIAL_OPTIONS: any[] = [];
+const DEFAULT_ADDITIONAL_OPTIONS: any[] = [];
 
 /**
  * A Select component that loads options from a remote API.
@@ -49,7 +58,8 @@ export function RemoteSelect<
   const {
     debounce = DEFAULT_DEBOUNCE,
     search,
-    options,
+    options = DEFAULT_INITIAL_OPTIONS,
+    additionalOptions = DEFAULT_ADDITIONAL_OPTIONS,
     ...selectProps
   } = props;
   const { loading, result, run } = useDebouncedExecutePromise<OptionType[]>({
@@ -63,6 +73,10 @@ export function RemoteSelect<
       return search(value);
     });
   };
+  const mergedOptions = useMemo(
+    () => [...(result ?? options), ...additionalOptions],
+    [result, options, additionalOptions],
+  );
   return (
     <Select<ValueType, OptionType>
       showSearch={{
@@ -87,7 +101,7 @@ export function RemoteSelect<
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
         )
       }
-      options={loading ? [] : (result ?? options)}
+      options={loading ? [] : mergedOptions}
       {...selectProps}
     />
   );
