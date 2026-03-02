@@ -11,13 +11,13 @@
  * limitations under the License.
  */
 
-import React, { Key, RefAttributes, useImperativeHandle } from 'react';
+import React, { Key, RefAttributes, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { TypedFilterProps } from '../TypedFilter';
 import { FilterRef } from '../types';
 import { and, Condition } from '@ahoo-wang/fetcher-wow';
 import { Button, Col, Row, Space, ColProps, ButtonProps } from 'antd';
 import { ClearOutlined, SearchOutlined } from '@ant-design/icons';
-import { useRefs } from '@ahoo-wang/fetcher-react';
+import { useDebouncedCallback, useRefs } from '@ahoo-wang/fetcher-react';
 import { RemovableTypedFilter } from './RemovableTypedFilter';
 import { RowProps } from 'antd/es/grid/row';
 import { useLocale } from '../../locale';
@@ -33,13 +33,13 @@ export interface ActiveFilter extends Omit<
 export interface FilterPanelRef {
   /**
    * Triggers the search action using the current filter values.
-   * Typically calls the `onSearch` callback with the composed filter condition.
+   * Typically, calls the `onSearch` callback with the composed filter condition.
    */
   search(): void;
 
   /**
    * Resets all filter values to their initial state.
-   * Typically clears the filters and triggers any associated reset logic.
+   * Typically, clears the filters and triggers any associated reset logic.
    */
   reset(): void;
 }
@@ -84,6 +84,17 @@ export function FilterPanel(props: FilterPanelProps) {
     searchButton,
   } = props;
   const filterRefs = useRefs<FilterRef>();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hasScroll, setHasScroll] = useState(false);
+
+
+  const checkHasScroll = useCallback(() => {
+    if (containerRef.current) {
+      setHasScroll(containerRef.current.scrollHeight > 128);
+    }
+  }, []);
+
+  const updateScrollState = useDebouncedCallback(checkHasScroll, { delay: 500 });
 
   const { locale } = useLocale();
 
@@ -106,15 +117,35 @@ export function FilterPanel(props: FilterPanelProps) {
       filterRef.reset();
     }
   };
+
+  const showResetButton = resetButton !== false;
+  const resetButtonProps = typeof resetButton === 'object' ? resetButton : {};
+
   useImperativeHandle<FilterPanelRef, FilterPanelRef>(ref, () => ({
     search: handleSearch,
     reset: handleReset,
   }));
-  const showResetButton = resetButton !== false;
-  const resetButtonProps = typeof resetButton === 'object' ? resetButton : {};
+
+
+  /**
+   * 监听 filters 变化和窗口 resize 事件来检查是否需要显示滚动条
+   * - filters 变化时立即检查（无防抖）
+   * - 窗口 resize 时使用防抖检查（延迟 500ms），避免频繁触发
+   * - 清理时移除事件监听器，防止内存泄漏
+   */
+  useEffect(() => {
+    checkHasScroll();
+    window.addEventListener('resize', updateScrollState.run);
+    return () => window.removeEventListener('resize', updateScrollState.run);
+  }, [filters, checkHasScroll, updateScrollState]);
+
   return (
     <>
-      <Row style={{ maxHeight: '128px', overflowY: 'auto' }} {...row} >
+      <Row
+        ref={containerRef}
+        style={{ maxHeight: '128px', overflowY: hasScroll ? 'auto' : 'hidden' }}
+        {...row}
+      >
         {filters.map(filter => {
           return (
             <Col {...col} key={filter.key}>
