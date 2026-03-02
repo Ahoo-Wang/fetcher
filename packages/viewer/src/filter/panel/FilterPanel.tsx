@@ -136,7 +136,9 @@ export function FilterPanel(props: FilterPanelProps) {
   useEffect(() => {
     checkHasScroll();
     window.addEventListener('resize', updateScrollState.run);
-    return () => window.removeEventListener('resize', updateScrollState.run);
+    return () => {
+      window.removeEventListener('resize', updateScrollState.run);
+    };
   }, [filters, checkHasScroll, updateScrollState]);
 
   return (
