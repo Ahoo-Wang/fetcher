@@ -121,8 +121,8 @@ export function FilterPanel(props: FilterPanelProps) {
     <>
       <Row
         style={{ maxHeight: '128px', overflowY: 'auto' }}
-        {...row}
         onKeyDown={handleEnter}
+        {...row}
       >
         {filters.map(filter => {
           return (
