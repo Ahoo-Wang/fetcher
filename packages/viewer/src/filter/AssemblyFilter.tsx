@@ -76,6 +76,7 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
     value: supportedOperator,
     label: operatorLocale[supportedOperator],
   }));
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { locale: _locale, supportedOperators: _supportedOperators, ...operatorProps } = props.operator ?? {};
   const { token } = useToken();
   return (
