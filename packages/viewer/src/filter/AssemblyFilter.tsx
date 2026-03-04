@@ -76,6 +76,7 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
     value: supportedOperator,
     label: operatorLocale[supportedOperator],
   }));
+  const { locale: _locale, supportedOperators: _supportedOperators, ...operatorProps } = props.operator ?? {};
   const { token } = useToken();
   return (
     <Space.Compact
@@ -101,7 +102,7 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
       </Typography>
       <Select
         style={{ minWidth: 120 }}
-        {...props.operator}
+        {...operatorProps}
         onChange={filterState.setOperator}
         value={filterState.operator}
         options={options}
