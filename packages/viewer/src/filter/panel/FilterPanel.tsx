@@ -110,11 +110,20 @@ export function FilterPanel(props: FilterPanelProps) {
     search: handleSearch,
     reset: handleReset,
   }));
+  const handleEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
   const showResetButton = resetButton !== false;
   const resetButtonProps = typeof resetButton === 'object' ? resetButton : {};
   return (
     <>
-      <Row style={{ maxHeight: '128px', overflowY: 'auto' }} {...row} >
+      <Row
+        style={{ maxHeight: '128px', overflowY: 'auto' }}
+        {...row}
+        onKeyDown={handleEnter}
+      >
         {filters.map(filter => {
           return (
             <Col {...col} key={filter.key}>
