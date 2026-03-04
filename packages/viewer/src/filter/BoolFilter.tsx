@@ -15,9 +15,13 @@ import { FilterProps } from './types';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { ExtendedOperator } from './operator';
-import { TrueValidateValue } from './useFilterState';
+import { ConditionValueParser, TrueValidateValue } from './useFilterState';
 
 export const BOOL_FILTER = 'bool';
+
+const BoolConditionValueParser: ConditionValueParser = () => {
+  return undefined;
+};
 
 export function BoolFilter(props: FilterProps) {
   const assemblyFilterProps: AssemblyFilterProps = {
@@ -28,6 +32,7 @@ export function BoolFilter(props: FilterProps) {
       Operator.FALSE,
     ],
     validate: TrueValidateValue,
+    conditionValueParser: BoolConditionValueParser,
   };
   return <AssemblyFilter {...assemblyFilterProps}></AssemblyFilter>;
 }
