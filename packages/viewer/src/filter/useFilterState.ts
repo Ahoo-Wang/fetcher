@@ -127,7 +127,7 @@ export function useFilterState(
       field: options.field,
       operator: currentOperator,
       value: conditionValue,
-      options: options.conditionOptions ?? {},
+      options: options.conditionOptions ?? undefined,
     };
     const filterValue: FilterValue = {
       condition,
