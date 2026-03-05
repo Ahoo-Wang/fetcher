@@ -37,7 +37,7 @@ import {
 import { FieldDefinition, ViewColumn } from '../viewer';
 import { mapToTableRecord } from '../utils';
 
-const { Text } = Typography;
+const { Link } = Typography;
 
 /**
  * Ref interface for exposing ViewTable imperative methods to parent components.
@@ -177,7 +177,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
                 onClick: (record: RecordType) => {
                   onClickPrimaryKey?.(value, record);
                 },
-                children: <Text copyable={true}>{value}</Text>,
+                children: <Link copyable={true}>{value}</Link>,
                 ...columnDefinition.attributes,
               }}
             />
