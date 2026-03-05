@@ -50,9 +50,10 @@ export interface ActionCellProps<RecordType = any> extends CellProps<
   string,
   RecordType,
   Omit<ButtonProps, 'onClick'> & {
-    onClick?: (record: RecordType) => void;
-  }
-> {}
+  onClick?: (record: RecordType) => void;
+}
+> {
+}
 
 export function isActionCellProps(obj: any): obj is ActionCellProps {
   return (
@@ -137,7 +138,7 @@ export function ActionCell<RecordType = any>(
       onClick={() => attributes?.onClick?.(data.record)} // Invoke handler with action key and full record context
       style={{ padding: 0, height: '22px' }}
     >
-      {data.value}
+      {props.attributes?.children ?? data.value}
     </Button>
   );
 }
