@@ -17,17 +17,22 @@ import {
   ViewRef,
   ViewTableActionColumn,
 } from '../';
-import { useCallback, useRef, useState } from 'react';
+import { RefAttributes, useCallback, useImperativeHandle, useRef, useState } from 'react';
 import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import type * as React from 'react';
 
 const { Header, Sider, Content } = Layout;
+
+export interface ViewerRef  {
+  clearSelectedRowKeys: () => void;
+}
 
 export interface ViewerProps<RecordType>
   extends
     ViewTableSettingCapable,
     GetRecordCountActionCapable,
     ViewMutationActionsCapable,
+    RefAttributes<ViewerRef>,
     TopbarActionsCapable<RecordType> {
   defaultViews: ViewState[];
   defaultView: ViewState;
@@ -59,6 +64,7 @@ export function Viewer<RecordType = any>({
   ...props
 }: ViewerProps<RecordType>) {
   const {
+    ref,
     defaultViews,
     defaultView,
     definition,
@@ -170,6 +176,14 @@ export function Viewer<RecordType = any>({
     },
     [onLoadData],
   );
+
+  useImperativeHandle(ref, ()=> {
+    return {
+      clearSelectedRowKeys: ()=>{
+        viewRef.current?.clearSelectedRowKeys()
+      }
+    }
+  })
 
   return (
     <Layout>

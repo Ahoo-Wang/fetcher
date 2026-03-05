@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { FetcherViewer } from '../FetcherViewer';
+import { FetcherViewer, FetcherViewerRef } from '../FetcherViewer';
 import type { PaginationProps } from 'antd';
+import { Button, Space } from 'antd';
+import { useRef } from 'react';
 import {
   fetcher,
   FetchExchange,
@@ -30,8 +32,7 @@ class TestFetcherRequestInterceptor implements RequestInterceptor {
       [CONTENT_TYPE]: 'application/json',
       [X_WAREHOUSE_ID]: 'mydao-SH',
       [COSEC_APP_ID]: 'pms',
-      Authorization:
-        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkNGM09KUDAwZmg2amkiLCJzdWIiOiIxWkUiLCJpYXQiOjE3NzIwMjMzNTAsImV4cCI6MTc3MjI4MjU1MCwicm9sZXMiOlsiM1F2Il0sImF0dHJpYnV0ZXMiOnsiaXNPd25lciI6ImZhbHNlIiwiYXBwSWQiOiJwbXMiLCJkZXBhcnRtZW50cyI6W10sImF1dGhlbnRpY2F0ZUlkIjoiMFZCd3RBeDMwMGZoMTQ0In0sInRlbmFudElkIjoibXlkYW8ifQ.sRoJXFDBE3jU2JKAXu7qj5KJTsUHVgLzA48_VBeUTj0',
+      Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkNtcnVPSDAwZmg0OHUiLCJzdWIiOiIzaEsiLCJpYXQiOjE3NzI1MjMwMDksImV4cCI6MTc3Mjc4MjIwOSwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkNtcnVOcjAwZmg0OHAifSwidGVuYW50SWQiOiJteWRhbyJ9.I7Qztgtd7USVbXMMvthyZpOxUrgsXgCPDVxsCXXhoRw'
     };
 
     exchange.request.url = exchange.request.url.replace('{tenantId}', 'mydao');
@@ -147,4 +148,42 @@ export const LargePageSize: Story = {
     pagination: { defaultPageSize: 50 } as PaginationProps,
     enableRowSelection: false,
   },
+};
+
+const FetcherViewerWithClearSelectionWrapper = (args: any) => {
+  const viewerRef = useRef<FetcherViewerRef>(null);
+
+  const handleClearSelection = () => {
+    console.log('Clearing selected rows...');
+    viewerRef.current?.clearSelectedRowKeys();
+  };
+
+  const handleRefresh = () => {
+    console.log('Refreshing data...');
+    viewerRef.current?.refreshData();
+  };
+
+  return (
+    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+      <Space>
+        <Button type="primary" onClick={handleRefresh}>
+          Refresh Data
+        </Button>
+        <Button onClick={handleClearSelection}>Clear Selection</Button>
+      </Space>
+      <FetcherViewer ref={viewerRef} {...args} />
+    </Space>
+  );
+};
+
+export const WithClearSelection: Story = {
+  args: {
+    viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
+    tenantId: 'mydao',
+    defaultViewId: '',
+    pagination: {} as PaginationProps,
+    enableRowSelection: true,
+  },
+  render: args => <FetcherViewerWithClearSelectionWrapper {...args} />,
 };
