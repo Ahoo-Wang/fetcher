@@ -28,6 +28,7 @@ import {
 } from 'react';
 import { ActiveFilter } from './FilterPanel';
 import { AttributesCapable } from '@ahoo-wang/fetcher';
+import { ConditionOptions } from '@ahoo-wang/fetcher-wow';
 
 export interface AvailableFilter extends AttributesCapable {
   key: Key;
@@ -35,6 +36,7 @@ export interface AvailableFilter extends AttributesCapable {
   component: FilterType;
   value?: FilterValueProps;
   operator?: FilterOperatorProps;
+  conditionOptions?: ConditionOptions;
 }
 
 export interface AvailableFilterGroup {

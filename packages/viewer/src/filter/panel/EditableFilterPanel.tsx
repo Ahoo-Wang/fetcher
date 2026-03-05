@@ -56,6 +56,7 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
           field: available.field,
           value: available.value,
           operator: available.operator,
+          conditionOptions: available.conditionOptions,
           attributes: available.attributes,
         }) as ActiveFilter,
     );
