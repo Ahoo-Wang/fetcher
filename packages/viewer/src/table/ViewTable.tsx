@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Table, Popover, TableProps } from 'antd';
+import { Table, Popover, TableProps, Typography } from 'antd';
 import {
   ActionCell,
   ActionsCell,
@@ -37,6 +37,8 @@ import {
 import { FieldDefinition, ViewColumn } from '../viewer';
 import { mapToTableRecord } from '../utils';
 
+const { Text } = Typography;
+
 /**
  * Ref interface for exposing ViewTable imperative methods to parent components.
  * Enables external control of table state without prop drilling.
@@ -55,8 +57,7 @@ export interface ViewTableRef {
  * @template Attributes - Additional props to pass to the underlying Antd Table.
  */
 export interface ViewTableProps<RecordType = any>
-  extends
-    AttributesCapable<Omit<TableProps<RecordType>, 'columns' | 'dataSource'>>,
+  extends AttributesCapable<Omit<TableProps<RecordType>, 'columns' | 'dataSource'>>,
     PrimaryKeyClickHandlerCapable<RecordType>,
     ViewTableSettingCapable,
     TableSizeCapable,
@@ -176,6 +177,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
                 onClick: (record: RecordType) => {
                   onClickPrimaryKey?.(value, record);
                 },
+                children: <Text copyable={true}>{value}</Text>,
                 ...columnDefinition.attributes,
               }}
             />
@@ -269,17 +271,17 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   const rowSelection: TableProps<RecordType>['rowSelection'] =
     enableRowSelection
       ? {
-          selectedRowKeys,
-          fixed: true, // Keep selection column fixed during horizontal scroll
-          /**
-           * Handles row selection changes.
-           * Updates local state and notifies parent component.
-           */
-          onChange: (keys, selectedRows) => {
-            setSelectedRowKeys(keys);
-            onSelectChange?.(selectedRows); // Notify parent component of selection changes
-          },
-        }
+        selectedRowKeys,
+        fixed: true, // Keep selection column fixed during horizontal scroll
+        /**
+         * Handles row selection changes.
+         * Updates local state and notifies parent component.
+         */
+        onChange: (keys, selectedRows) => {
+          setSelectedRowKeys(keys);
+          onSelectChange?.(selectedRows); // Notify parent component of selection changes
+        },
+      }
       : undefined;
 
   /**
