@@ -102,7 +102,7 @@ describe('useViewState', () => {
       };
 
       act(() => {
-        result.current.setCondition(newCondition);
+        result.current.setCondition(newCondition, new Map());
       });
 
       expect(onChange).toHaveBeenCalled();
