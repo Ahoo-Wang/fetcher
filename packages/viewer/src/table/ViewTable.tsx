@@ -11,9 +11,8 @@
  * limitations under the License.
  */
 
-import { Table, Popover, TableProps, Typography } from 'antd';
+import { Table, Popover, TableProps } from 'antd';
 import {
-  ActionCell,
   ActionsCell,
   TextCell,
   typedCellRender,
@@ -36,9 +35,7 @@ import {
 } from '../types';
 import { FieldDefinition, ViewColumn } from '../viewer';
 import { mapToTableRecord } from '../utils';
-
-const { Link } = Typography;
-
+import { PrimaryKeyCell } from './cell/PrimaryKeyCell';
 /**
  * Ref interface for exposing ViewTable imperative methods to parent components.
  * Enables external control of table state without prop drilling.
@@ -171,13 +168,12 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
         // Primary key cells show as clickable action links
         if (columnDefinition?.primaryKey) {
           return (
-            <ActionCell
+            <PrimaryKeyCell
               data={{ value, record, index }}
               attributes={{
                 onClick: (record: RecordType) => {
                   onClickPrimaryKey?.(value, record);
                 },
-                children: <Link copyable={true}>{value}</Link>,
                 ...columnDefinition.attributes,
               }}
             />
