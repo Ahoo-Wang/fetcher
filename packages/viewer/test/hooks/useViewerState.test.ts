@@ -40,11 +40,7 @@ describe('useViewerState', () => {
     type: 'PERSONAL',
     source: 'CUSTOM',
     isDefault: true,
-    filters: [{
-      type: 'test',
-      key: 'test',
-      field: { name: 'test',label: 'test' },
-    }],
+    filters: [],
     columns: defaultColumns,
     tableSize: 'middle' as SizeType,
     pageSize: 10,
@@ -132,13 +128,13 @@ describe('useViewerState', () => {
           definition: viewDefinition,
         }),
       );
-      const condition = {
-        field: 'test',
-        operator: Operator.EQ,
-        value: '1',
-      };
+
       act(() => {
-        result.current.setCondition(condition, new Map([['test', condition]]));
+        result.current.setCondition({
+          field: 'test',
+          operator: Operator.EQ,
+          value: '1',
+        });
       });
 
       expect(result.current.viewChanged).toBe(true);

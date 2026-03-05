@@ -12,7 +12,7 @@
  */
 
 import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
-import { Key, useState } from 'react';
+import { useState } from 'react';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 import {
   ActiveFilter,
@@ -96,7 +96,7 @@ export interface UseViewStateOptions {
   /** Current filter condition (controlled mode) */
   externalCondition?: Condition;
   /** Callback to update condition (controlled mode) */
-  externalUpdateCondition?: (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => void;
+  externalUpdateCondition?: (condition: Condition) => void;
   /** Default sort configuration (uncontrolled mode) */
   defaultSorter?: FieldSort[];
   /** Current sort configuration (controlled mode) */
@@ -142,7 +142,7 @@ export interface UseViewStateReturn {
   /** Current filter condition */
   condition: Condition;
   /** Function to update condition */
-  setCondition: (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => void;
+  setCondition: (condition: Condition) => void;
   /** Current sort configuration */
   sorter: FieldSort[];
   /** Function to update sorter */
@@ -208,10 +208,10 @@ const DEFAULT_PAGE_SIZE = 10;
  * ```
  */
 export function useViewState({
-                               defaultPage = DEFAULT_PAGE,
-                               defaultPageSize = DEFAULT_PAGE_SIZE,
-                               ...options
-                             }: UseViewStateOptions): UseViewStateReturn {
+  defaultPage = DEFAULT_PAGE,
+  defaultPageSize = DEFAULT_PAGE_SIZE,
+  ...options
+}: UseViewStateOptions): UseViewStateReturn {
   /**
    * Extract controlled mode options.
    * These override internal state when provided.
@@ -323,13 +323,12 @@ export function useViewState({
   /**
    * Updates filter condition and triggers onChange callback.
    * Typically called when user applies a new filter.
-   * @param finalCondition - New filter condition.
-   * @param activeFilterValues - Map of active filter keys to their updated conditions.
+   * @param condition - New filter condition.
    */
-  const setConditionFn = (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => {
-    setCondition(finalCondition, activeFilterValues);
+  const setConditionFn = (condition: Condition) => {
+    setCondition(condition);
     setPage(1);
-    onChange?.(finalCondition, 1, pageSize, sorter);
+    onChange?.(condition, 1, pageSize, sorter);
   };
 
   /**

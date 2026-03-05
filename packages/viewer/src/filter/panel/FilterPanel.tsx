@@ -50,7 +50,7 @@ export interface FilterPanelProps extends RefAttributes<FilterPanelRef> {
   actionsCol?: ColProps;
   filters: ActiveFilter[];
   actions?: React.ReactNode;
-  onSearch?: (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => void;
+  onSearch?: (condition: Condition) => void;
   resetButton?: boolean | Omit<ButtonProps, 'onClick'>;
   searchButton?: Omit<ButtonProps, 'onClick'>;
 }
@@ -87,22 +87,19 @@ export function FilterPanel(props: FilterPanelProps) {
 
   const { locale } = useLocale();
 
+  const latestCondition = () => {
+    const conditions = Array.from(filterRefs.values())
+      .map(ref => ref?.getValue()?.condition)
+      .filter(Boolean);
+    return and(...conditions);
+  };
+
   const handleSearch = () => {
     if (!onSearch) {
       return;
     }
-    const conditions = [];
-    const activeFilterValues = new Map<Key, Condition>();
-    for (const entry of filterRefs.entries()) {
-      const key = entry[0];
-      const condition = entry[1].getValue()?.condition;
-      if (condition) {
-        conditions.push(condition);
-        activeFilterValues.set(key, condition);
-      }
-    }
-    const finalCondition = and(...conditions);
-    onSearch(finalCondition, activeFilterValues);
+    const finalCondition = latestCondition();
+    onSearch(finalCondition);
   };
   const handleReset = () => {
     for (const filterRef of filterRefs.values()) {
