@@ -69,6 +69,7 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
     conditionValueParser: props.conditionValueParser,
     filterValueConverter: props.filterValueConverter,
     onChange: props.onChange,
+    conditionOptions: props.conditionOptions,
   });
 
   const valueInput = props.valueInputRender?.(filterState);
