@@ -15,7 +15,7 @@ import {
   ViewChangeAction,
   View,
   ViewRef,
-  ViewTableActionColumn,
+  ViewTableActionColumn, FilterPanelConditionCapableRef,
 } from '../';
 import { RefAttributes, useCallback, useImperativeHandle, useRef, useState } from 'react';
 import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
@@ -23,7 +23,7 @@ import type * as React from 'react';
 
 const { Header, Sider, Content } = Layout;
 
-export interface ViewerRef  {
+export interface ViewerRef extends FilterPanelConditionCapableRef {
   clearSelectedRowKeys: () => void;
 }
 
@@ -181,7 +181,8 @@ export function Viewer<RecordType = any>({
     return {
       clearSelectedRowKeys: ()=>{
         viewRef.current?.clearSelectedRowKeys()
-      }
+      },
+      getCondition: ()=> viewRef.current?.getCondition()
     }
   })
 

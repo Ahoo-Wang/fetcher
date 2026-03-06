@@ -32,7 +32,7 @@ class TestFetcherRequestInterceptor implements RequestInterceptor {
       [CONTENT_TYPE]: 'application/json',
       [X_WAREHOUSE_ID]: 'mydao-SH',
       [COSEC_APP_ID]: 'pms',
-      Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkNtcnVPSDAwZmg0OHUiLCJzdWIiOiIzaEsiLCJpYXQiOjE3NzI1MjMwMDksImV4cCI6MTc3Mjc4MjIwOSwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkNtcnVOcjAwZmg0OHAifSwidGVuYW50SWQiOiJteWRhbyJ9.I7Qztgtd7USVbXMMvthyZpOxUrgsXgCPDVxsCXXhoRw'
+      Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkQ0UWpFSzAwUkY0bEkiLCJzdWIiOiIzaEsiLCJpYXQiOjE3NzI3ODI1MDUsImV4cCI6MTc3MzA0MTcwNSwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkNtcnVOcjAwZmg0OHAifSwidGVuYW50SWQiOiJteWRhbyJ9.cGsJkdTYLgfhBSyRjqKyDHaTW5yBV-USfrx_i9czvAw'
     };
 
     exchange.request.url = exchange.request.url.replace('{tenantId}', 'mydao');
@@ -150,7 +150,7 @@ export const LargePageSize: Story = {
   },
 };
 
-const FetcherViewerWithClearSelectionWrapper = (args: any) => {
+const FetcherViewerWithRefMethodsWrapper = (args: any) => {
   const viewerRef = useRef<FetcherViewerRef>(null);
 
   const handleClearSelection = () => {
@@ -163,6 +163,13 @@ const FetcherViewerWithClearSelectionWrapper = (args: any) => {
     viewerRef.current?.refreshData();
   };
 
+  const handleGetCondition = () => {
+    console.log('Getting current condition...');
+    const condition = viewerRef.current?.getCondition();
+    console.log('Current condition:', condition);
+    alert(`Current condition: ${JSON.stringify(condition)}`);
+  };
+
   return (
     <Space direction="vertical" style={{ width: '100%' }} size="middle">
       <Space>
@@ -170,13 +177,14 @@ const FetcherViewerWithClearSelectionWrapper = (args: any) => {
           Refresh Data
         </Button>
         <Button onClick={handleClearSelection}>Clear Selection</Button>
+        <Button onClick={handleGetCondition}>Get Condition</Button>
       </Space>
       <FetcherViewer ref={viewerRef} {...args} />
     </Space>
   );
 };
 
-export const WithClearSelection: Story = {
+export const WithRefMethods: Story = {
   args: {
     viewerDefinitionId: 'sku-cost',
     ownerId: '1ZE',
@@ -185,5 +193,5 @@ export const WithClearSelection: Story = {
     pagination: {} as PaginationProps,
     enableRowSelection: true,
   },
-  render: args => <FetcherViewerWithClearSelectionWrapper {...args} />,
+  render: args => <FetcherViewerWithRefMethodsWrapper {...args} />,
 };

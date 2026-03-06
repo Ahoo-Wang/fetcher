@@ -114,7 +114,6 @@ describe('FetcherViewer', () => {
       viewerDefinition: mockViewerDefinition as any,
       loading: false,
       error: undefined,
-      refetch: vi.fn(),
     });
 
     vi.mocked(useViewerViews).mockReturnValue({
@@ -144,7 +143,6 @@ describe('FetcherViewer', () => {
         viewerDefinition: undefined,
         loading: true,
         error: undefined,
-        refetch: vi.fn(),
       });
 
       const { container } = render(<FetcherViewer<User> {...defaultProps} />);
@@ -157,7 +155,6 @@ describe('FetcherViewer', () => {
         viewerDefinition: undefined,
         loading: false,
         error: new Error('Failed to load'),
-        refetch: vi.fn(),
       });
 
       const { container } = render(<FetcherViewer<User> {...defaultProps} />);
@@ -170,7 +167,6 @@ describe('FetcherViewer', () => {
         viewerDefinition: undefined,
         loading: false,
         error: undefined,
-        refetch: vi.fn(),
       });
 
       const { container } = render(<FetcherViewer<User> {...defaultProps} />);
@@ -206,6 +202,15 @@ describe('FetcherViewer', () => {
       render(<FetcherViewer<User> ref={ref} {...defaultProps} />);
 
       expect(ref.current).toHaveProperty('clearSelectedRowKeys');
+    });
+
+    it('should expose getCondition method via ref', () => {
+      const ref = { current: null as FetcherViewerRef | null };
+
+      render(<FetcherViewer<User> ref={ref} {...defaultProps} />);
+
+      expect(ref.current).toHaveProperty('getCondition');
+      expect(typeof ref.current?.getCondition).toBe('function');
     });
   });
 
