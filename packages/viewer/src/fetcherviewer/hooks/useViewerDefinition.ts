@@ -12,6 +12,9 @@ export interface UseViewerDefinitionResult {
   error: Error | undefined;
 }
 
+const snapshotQueryClient =
+viewerDefinitionQueryClientFactory.createSnapshotQueryClient();
+
 /**
  * 获取视图定义的 Hook
  * 
@@ -28,9 +31,6 @@ export interface UseViewerDefinitionResult {
 export function useViewerDefinition(
   viewerDefinitionId: string,
 ): UseViewerDefinitionResult {
-  const snapshotQueryClient =
-    viewerDefinitionQueryClientFactory.createSnapshotQueryClient();
-
   const {result: definition, loading, error} = useSingleQuery<ViewDefinition>({
     initialQuery: {condition: aggregateId(viewerDefinitionId)},
     execute: (query) => snapshotQueryClient.singleState(query)
