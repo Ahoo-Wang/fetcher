@@ -30,7 +30,19 @@ export interface ActiveFilter extends Omit<
   onRemove?: () => void;
 }
 
-export interface FilterPanelRef {
+
+export interface FilterPanelConditionCapableRef {
+  /**
+   * Retrieves the current filter condition composed from all active filters in the panel.
+   * Returns a Condition object that can be used for data queries, exports, or other operations
+   * that require the current filter state.
+   * @returns The composed Condition object representing all active filter values.
+   */
+  getCondition(): Condition | undefined;
+}
+
+
+export interface FilterPanelRef extends FilterPanelConditionCapableRef{
   /**
    * Triggers the search action using the current filter values.
    * Typically calls the `onSearch` callback with the composed filter condition.
@@ -42,6 +54,7 @@ export interface FilterPanelRef {
    * Typically clears the filters and triggers any associated reset logic.
    */
   reset(): void;
+
 }
 
 export interface FilterPanelProps extends RefAttributes<FilterPanelRef> {
@@ -87,11 +100,8 @@ export function FilterPanel(props: FilterPanelProps) {
 
   const { locale } = useLocale();
 
-  const handleSearch = () => {
-    if (!onSearch) {
-      return;
-    }
-    const conditions = [];
+  const getCondition = ()=>{
+    const conditions:Condition[] = [];
     const activeFilterValues = new Map<Key, Condition>();
     for (const entry of filterRefs.entries()) {
       const key = entry[0];
@@ -102,6 +112,17 @@ export function FilterPanel(props: FilterPanelProps) {
       }
     }
     const finalCondition = and(...conditions);
+    return {
+      finalCondition,
+      activeFilterValues
+    }
+  }
+
+  const handleSearch = () => {
+    if (!onSearch) {
+      return;
+    }
+    const {finalCondition,activeFilterValues} = getCondition()
     onSearch(finalCondition, activeFilterValues);
   };
   const handleReset = () => {
@@ -112,6 +133,10 @@ export function FilterPanel(props: FilterPanelProps) {
   useImperativeHandle<FilterPanelRef, FilterPanelRef>(ref, () => ({
     search: handleSearch,
     reset: handleReset,
+    getCondition(): Condition {
+      const {finalCondition} = getCondition()
+      return  finalCondition;
+    }
   }));
   const handleEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {

@@ -17,7 +17,7 @@ import {
   ActiveFilter,
   AvailableFilterGroup,
   EditableFilterPanel,
-  FilterPanel,
+  FilterPanel, FilterPanelConditionCapableRef,
   FilterPanelRef,
 } from '../filter';
 import type * as React from 'react';
@@ -44,7 +44,7 @@ import { useLocale } from '../locale';
  * Ref interface for exposing View component imperative methods to parent components.
  * Enables external control of view state including table size reset and row selection clearing.
  */
-export interface ViewRef extends ViewTableRef {
+export interface ViewRef extends ViewTableRef ,FilterPanelConditionCapableRef {
   /**
    * Updates the table size (small, middle, large).
    * @param size - The new table size to set.
@@ -351,6 +351,7 @@ export function View<RecordType>({
     clearSelectedRowKeys: clearSelectedRowKeysFn,
     updateTableSize: setTableSize,
     reset: resetFn,
+    getCondition:()=> editableFilterPanelRef.current?.getCondition(),
   }));
 
   // useEffect(() => {
