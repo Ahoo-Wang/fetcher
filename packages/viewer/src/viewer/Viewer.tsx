@@ -17,7 +17,7 @@ import {
   ViewRef,
   ViewTableActionColumn, FilterPanelConditionCapableRef,
 } from '../';
-import { RefAttributes, useCallback,useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { RefAttributes, useCallback, useImperativeHandle, useRef, useState } from 'react';
 import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import type * as React from 'react';
 
