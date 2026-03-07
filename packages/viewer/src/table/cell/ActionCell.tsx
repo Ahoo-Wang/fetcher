@@ -1,7 +1,5 @@
 import { CellProps } from './types';
-import { Typography, Button, ButtonProps, Space } from 'antd';
-
-const { Text } = Typography;
+import { Button, ButtonProps } from 'antd';
 
 /**
  * Constant representing the type identifier for action cells.
@@ -52,10 +50,10 @@ export interface ActionCellProps<RecordType = any> extends CellProps<
   string,
   RecordType,
   Omit<ButtonProps, 'onClick'> & {
-    onClick?: (record: RecordType) => void;
-    copyable?: boolean;
-  }
-> {}
+  onClick?: (record: RecordType) => void;
+}
+> {
+}
 
 export function isActionCellProps(obj: any): obj is ActionCellProps {
   return (
@@ -134,18 +132,13 @@ export function ActionCell<RecordType = any>(
 
   // Render the action button with link styling for a clean, unobtrusive appearance
   return (
-    <Space>
-      <Button
-        type="link" // Ant Design link button provides subtle styling without heavy borders
-        {...attributes} // Spread additional button props (e.g., disabled, loading, size)
-        onClick={() => attributes?.onClick?.(data.record)} // Invoke handler with action key and full record context
-        style={{ padding: 0, height: '22px' }}
-      >
-        {data.value}
-      </Button>
-      {(attributes?.copyable || false) && (
-        <Text copyable={{ text: data.value }} />
-      )}
-    </Space>
+    <Button
+      type="link" // Ant Design link button provides subtle styling without heavy borders
+      {...attributes} // Spread additional button props (e.g., disabled, loading, size)
+      onClick={() => attributes?.onClick?.(data.record)} // Invoke handler with action key and full record context
+      style={{ padding: 0, height: '22px' }}
+    >
+      {props.attributes?.children ?? data.value}
+    </Button>
   );
 }

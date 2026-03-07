@@ -69,6 +69,7 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
     conditionValueParser: props.conditionValueParser,
     filterValueConverter: props.filterValueConverter,
     onChange: props.onChange,
+    conditionOptions: props.conditionOptions,
   });
 
   const valueInput = props.valueInputRender?.(filterState);
@@ -76,6 +77,8 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
     value: supportedOperator,
     label: operatorLocale[supportedOperator],
   }));
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { locale: _locale, supportedOperators: _supportedOperators, ...operatorProps } = props.operator ?? {};
   const { token } = useToken();
   return (
     <Space.Compact
@@ -101,7 +104,7 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
       </Typography>
       <Select
         style={{ minWidth: 120 }}
-        {...props.operator}
+        {...operatorProps}
         onChange={filterState.setOperator}
         value={filterState.operator}
         options={options}

@@ -6,7 +6,7 @@ import {
   ViewState,
   Viewer,
   useRefreshDataEventBus,
-  TopbarActionsCapable,
+  TopbarActionsCapable, ViewerRef, FilterPanelConditionCapableRef,
 } from '../';
 import {
   useViewerDefinition,
@@ -21,7 +21,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useMemo,
+  useMemo, useRef,
 } from 'react';
 import {
   all,
@@ -33,8 +33,9 @@ import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
 import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
-export interface FetcherViewerRef {
+export interface FetcherViewerRef extends FilterPanelConditionCapableRef{
   refreshData: () => void;
+  clearSelectedRowKeys: () => void;
 }
 
 export interface FetcherViewerProps<RecordType>
@@ -116,6 +117,9 @@ export function FetcherViewer<RecordType = any>({
     viewerDefinition,
     defaultView,
   });
+
+  const viewerRef = useRef<ViewerRef | null>(null);
+
 
   const handleLoadData = useCallback(
     (
@@ -207,6 +211,14 @@ export function FetcherViewer<RecordType = any>({
 
   useImperativeHandle<FetcherViewerRef, FetcherViewerRef>(ref, () => ({
     refreshData: publish,
+    // 现有组件在refreshData事件触发时，视图中的数据未与已选中行的数据保持一致
+    // 暴露 clearSelectedRowKeys 方法让外部使用者手动清除选中行
+    clearSelectedRowKeys: () => {
+      viewerRef.current?.clearSelectedRowKeys();
+    },
+    getCondition: () => {
+      return viewerRef.current?.getCondition();
+    },
   }));
 
   subscribe({
@@ -250,6 +262,7 @@ export function FetcherViewer<RecordType = any>({
   if (views && views.length > 0 && defaultView) {
     return (
       <Viewer<RecordType>
+        ref={viewerRef}
         defaultViews={views}
         defaultView={defaultView}
         definition={viewerDefinition}

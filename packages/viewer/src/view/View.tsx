@@ -17,12 +17,13 @@ import {
   ActiveFilter,
   AvailableFilterGroup,
   EditableFilterPanel,
-  FilterPanel,
+  FilterPanel, FilterPanelConditionCapableRef,
   FilterPanelRef,
 } from '../filter';
 import type * as React from 'react';
 import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import {
+  Key,
   RefAttributes,
   useCallback,
   useImperativeHandle,
@@ -43,7 +44,7 @@ import { useLocale } from '../locale';
  * Ref interface for exposing View component imperative methods to parent components.
  * Enables external control of view state including table size reset and row selection clearing.
  */
-export interface ViewRef extends ViewTableRef {
+export interface ViewRef extends ViewTableRef ,FilterPanelConditionCapableRef {
   /**
    * Updates the table size (small, middle, large).
    * @param size - The new table size to set.
@@ -103,8 +104,7 @@ export type FilterMode = 'none' | 'normal' | 'editable';
  * ```
  */
 export interface ViewProps<RecordType>
-  extends
-    PrimaryKeyClickHandlerCapable<RecordType>,
+  extends PrimaryKeyClickHandlerCapable<RecordType>,
     ViewTableSettingCapable,
     RefAttributes<ViewRef> {
   /** Field definitions describing each column's metadata (label, type, sorter, etc.) */
@@ -160,7 +160,7 @@ export interface ViewProps<RecordType>
   /** Current filter condition (controlled mode) */
   externalCondition?: Condition;
   /** Callback to update condition (controlled mode) */
-  externalUpdateCondition?: (condition: Condition) => void;
+  externalUpdateCondition?: (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => void;
 
   /** Optional action column configuration for row-level operations */
   actionColumn?: ViewTableActionColumn<RecordType>;
@@ -205,21 +205,21 @@ export interface ViewProps<RecordType>
  * @returns A Space container with filter panel (optional), data table, and pagination.
  */
 export function View<RecordType>({
-  ref,
-  fields,
-  availableFilters,
-  dataSource,
-  actionColumn,
-  showFilter,
-  filterMode,
-  pagination,
-  enableRowSelection,
-  viewTableSetting,
-  onClickPrimaryKey,
-  onSelectedDataChange,
-  loading,
-  ...viewState
-}: ViewProps<RecordType>) {
+                                   ref,
+                                   fields,
+                                   availableFilters,
+                                   dataSource,
+                                   actionColumn,
+                                   showFilter,
+                                   filterMode,
+                                   pagination,
+                                   enableRowSelection,
+                                   viewTableSetting,
+                                   onClickPrimaryKey,
+                                   onSelectedDataChange,
+                                   loading,
+                                   ...viewState
+                                 }: ViewProps<RecordType>) {
   /**
    * Initialize view state using useViewState hook.
    * Handles all internal state management for filters, columns, pagination, sorting.
@@ -247,10 +247,11 @@ export function View<RecordType>({
   /**
    * Handles search/filter condition changes from the filter panel.
    * Updates internal condition state and triggers onChange callback.
-   * @param condition - The composed filter condition from filter panel.
+   * @param finalCondition - The composed filter condition from filter panel.
+   * @param activeFilterValues -
    */
-  const handleSearch = (condition: Condition) => {
-    setCondition(condition);
+  const handleSearch = (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => {
+    setCondition(finalCondition, activeFilterValues);
   };
 
   /**
@@ -350,6 +351,7 @@ export function View<RecordType>({
     clearSelectedRowKeys: clearSelectedRowKeysFn,
     updateTableSize: setTableSize,
     reset: resetFn,
+    getCondition:()=> editableFilterPanelRef.current?.getCondition(),
   }));
 
   // useEffect(() => {

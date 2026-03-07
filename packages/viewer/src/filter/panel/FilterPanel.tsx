@@ -30,7 +30,19 @@ export interface ActiveFilter extends Omit<
   onRemove?: () => void;
 }
 
-export interface FilterPanelRef {
+
+export interface FilterPanelConditionCapableRef {
+  /**
+   * Retrieves the current filter condition composed from all active filters in the panel.
+   * Returns a Condition object that can be used for data queries, exports, or other operations
+   * that require the current filter state.
+   * @returns The composed Condition object representing all active filter values.
+   */
+  getCondition(): Condition | undefined;
+}
+
+
+export interface FilterPanelRef extends FilterPanelConditionCapableRef{
   /**
    * Triggers the search action using the current filter values.
    * Typically calls the `onSearch` callback with the composed filter condition.
@@ -42,6 +54,7 @@ export interface FilterPanelRef {
    * Typically clears the filters and triggers any associated reset logic.
    */
   reset(): void;
+
 }
 
 export interface FilterPanelProps extends RefAttributes<FilterPanelRef> {
@@ -50,7 +63,7 @@ export interface FilterPanelProps extends RefAttributes<FilterPanelRef> {
   actionsCol?: ColProps;
   filters: ActiveFilter[];
   actions?: React.ReactNode;
-  onSearch?: (condition: Condition) => void;
+  onSearch?: (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => void;
   resetButton?: boolean | Omit<ButtonProps, 'onClick'>;
   searchButton?: Omit<ButtonProps, 'onClick'>;
 }
@@ -87,19 +100,30 @@ export function FilterPanel(props: FilterPanelProps) {
 
   const { locale } = useLocale();
 
-  const latestCondition = () => {
-    const conditions = Array.from(filterRefs.values())
-      .map(ref => ref?.getValue()?.condition)
-      .filter(Boolean);
-    return and(...conditions);
-  };
+  const getCondition = ()=>{
+    const conditions:Condition[] = [];
+    const activeFilterValues = new Map<Key, Condition>();
+    for (const entry of filterRefs.entries()) {
+      const key = entry[0];
+      const condition = entry[1].getValue()?.condition;
+      if (condition) {
+        conditions.push(condition);
+        activeFilterValues.set(key, condition);
+      }
+    }
+    const finalCondition = and(...conditions);
+    return {
+      finalCondition,
+      activeFilterValues
+    }
+  }
 
   const handleSearch = () => {
     if (!onSearch) {
       return;
     }
-    const finalCondition = latestCondition();
-    onSearch(finalCondition);
+    const {finalCondition,activeFilterValues} = getCondition()
+    onSearch(finalCondition, activeFilterValues);
   };
   const handleReset = () => {
     for (const filterRef of filterRefs.values()) {
@@ -109,12 +133,25 @@ export function FilterPanel(props: FilterPanelProps) {
   useImperativeHandle<FilterPanelRef, FilterPanelRef>(ref, () => ({
     search: handleSearch,
     reset: handleReset,
+    getCondition(): Condition {
+      const {finalCondition} = getCondition()
+      return  finalCondition;
+    }
   }));
+  const handleEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
   const showResetButton = resetButton !== false;
   const resetButtonProps = typeof resetButton === 'object' ? resetButton : {};
   return (
     <>
-      <Row style={{ maxHeight: '128px', overflowY: 'auto' }} {...row} >
+      <Row
+        style={{ maxHeight: '128px', overflowY: 'auto' }}
+        onKeyDown={handleEnter}
+        {...row}
+      >
         {filters.map(filter => {
           return (
             <Col {...col} key={filter.key}>

@@ -1,56 +1,40 @@
-import { useState, useEffect, useCallback } from 'react';
-import { fetcherRegistrar } from '@ahoo-wang/fetcher';
+import { aggregateId, } from '@ahoo-wang/fetcher-wow';
 import { viewerDefinitionQueryClientFactory } from '../client';
 import { ViewDefinition } from '../../';
+import {  useSingleQuery } from '@ahoo-wang/fetcher-react';
 
+/**
+ * useViewerDefinition Hook 返回结果类型
+ */
 export interface UseViewerDefinitionResult {
   viewerDefinition: ViewDefinition | undefined;
   loading: boolean;
   error: Error | undefined;
-  refetch: () => void;
 }
 
+const snapshotQueryClient =
+viewerDefinitionQueryClientFactory.createSnapshotQueryClient();
+
+/**
+ * 获取视图定义的 Hook
+ * 
+ * 为什么使用 useSingleQuery 而不是 useEffect:
+ * 
+ * 1. **避免重复渲染**: useEffect 在组件挂载和依赖变化时会执行，
+ *    可能导致多次不必要的查询和数据更新
+ * 
+ * 2. **内置状态管理**: useSingleQuery 自动管理 loading、error、data 状态，
+ *    减少手动 setState 的样板代码
+ * 
+ * 3. **缓存机制**: useSingleQuery 内置查询缓存，相同查询不会重复发起请求
+ */
 export function useViewerDefinition(
   viewerDefinitionId: string,
 ): UseViewerDefinitionResult {
-  const [definition, setDefinition] = useState<ViewDefinition | undefined>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | undefined>();
-  const [refreshKey, setRefreshKey] = useState(0);
+  const {result: definition, loading, error} = useSingleQuery<ViewDefinition>({
+    initialQuery: {condition: aggregateId(viewerDefinitionId)},
+    execute: (query) => snapshotQueryClient.singleState(query)
+  })
 
-  const refetch = useCallback(() => {
-    setRefreshKey(k => k + 1);
-    setLoading(true);
-    setError(undefined);
-  }, []);
-
-  useEffect(() => {
-    const abortController = new AbortController();
-    const fetcher = fetcherRegistrar.default;
-    const snapshotQueryClient =
-      viewerDefinitionQueryClientFactory.createSnapshotQueryClient({
-        fetcher,
-      });
-
-    snapshotQueryClient
-      .getStateById(viewerDefinitionId, {}, abortController)
-      .then(result => {
-        if (!abortController.signal.aborted) {
-          setDefinition(result);
-          setLoading(false);
-        }
-      })
-      .catch(err => {
-        if (!abortController.signal.aborted) {
-          setError(err as Error);
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      abortController.abort();
-    };
-  }, [viewerDefinitionId, refreshKey]);
-
-  return { viewerDefinition: definition, loading, error, refetch };
+  return {viewerDefinition: definition, loading, error};
 }

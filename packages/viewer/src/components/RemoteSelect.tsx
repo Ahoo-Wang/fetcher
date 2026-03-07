@@ -17,19 +17,42 @@ import {
   useDebouncedExecutePromise,
 } from '@ahoo-wang/fetcher-react';
 import { StyleCapable } from '../types';
-import { RefAttributes } from 'react';
+import { RefAttributes, useMemo } from 'react';
 import { BaseOptionType, DefaultOptionType } from 'antd/lib/select';
 
+/**
+ * Props for the RemoteSelect component.
+ *
+ * @template ValueType - The type of the value(s) selected in the Select
+ * @template OptionType - The type of option objects, defaults to antd's DefaultOptionType
+ */
 export interface RemoteSelectProps<
   ValueType = any,
   OptionType extends BaseOptionType | DefaultOptionType = DefaultOptionType,
 >
-  extends
-    Omit<SelectProps<ValueType, OptionType>, 'loading' | 'onSearch'>,
+  extends Omit<SelectProps<ValueType, OptionType>, 'loading' | 'onSearch'>,
     RefAttributes<RefSelectProps>,
     StyleCapable {
+  /** Debounce options for controlling the search delay */
   debounce?: UseDebouncedCallbackOptions;
+  /**
+   * Callback function to fetch options from remote API.
+   * Called with the current search string when user types.
+   *
+   * @param search - The current search input value
+   * @returns Promise resolving to array of options
+   * @throws Error when the remote API request fails
+   */
   search: (search: string) => Promise<OptionType[]>;
+  /** Initial options displayed before any search is performed */
+  options?: OptionType[];
+  /** Custom key field for deduplication, defaults to 'value' */
+  uniqueKey?: string;
+  /**
+   * Additional options that are always appended to the options list.
+   * These appear after the remote search results or initial options.
+   */
+  additionalOptions?: OptionType[];
 }
 
 const DEFAULT_DEBOUNCE = {
@@ -37,10 +60,59 @@ const DEFAULT_DEBOUNCE = {
   leading: false,
   trailing: true,
 };
+const DEFAULT_INITIAL_OPTIONS: any[] = [];
+const DEFAULT_ADDITIONAL_OPTIONS: any[] = [];
 
 /**
- * A Select component that loads options from a remote API.
- * Supports automatic fetching, loading states, and error handling.
+ * Returns a new array with duplicate items removed based on the key returned by keySelector.
+ *
+ * @param array - The array to deduplicate
+ * @param keySelector - Function to extract the key for each item
+ * @returns New array with unique items
+ */
+function uniqueBy<T, K>(array: T[], keySelector: (item: T) => K): T[] {
+  const seen = new Set<K>();
+  return array.filter((item) => {
+    const key = keySelector(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * A Select component with built-in remote search functionality.
+ * Supports debounced search, loading states, and combining remote results with static options.
+ *
+ * @example
+ * ```tsx
+ * import { RemoteSelect } from '@ahoo-wang/fetcher-viewer';
+ *
+ * // Basic usage with remote search
+ * const UserSelect = () => (
+ *   <RemoteSelect
+ *     search={async (keyword) => {
+ *       const response = await fetch(`/api/users?q=${keyword}`);
+ *       return response.json();
+ *     }}
+ *     placeholder="Search users..."
+ *   />
+ * );
+ *
+ * // With initial options and additional options
+ * const StatusSelect = () => (
+ *   <RemoteSelect
+ *     search={async (keyword) => fetchOptions(keyword)}
+ *     options={[{ label: 'Pending', value: 'pending' }]}
+ *     additionalOptions={[{ label: 'Unknown', value: 'unknown' }]}
+ *   />
+ * );
+ * ```
+ *
+ * @template ValueType - The type of value(s) selected
+ * @template OptionType - The option object type
+ * @param props - Component props extending antd SelectProps
+ * @returns A Select component with remote search capability
  */
 export function RemoteSelect<
   ValueType = any,
@@ -49,7 +121,9 @@ export function RemoteSelect<
   const {
     debounce = DEFAULT_DEBOUNCE,
     search,
-    options,
+    options = DEFAULT_INITIAL_OPTIONS,
+    uniqueKey = 'value',
+    additionalOptions = DEFAULT_ADDITIONAL_OPTIONS,
     ...selectProps
   } = props;
   const { loading, result, run } = useDebouncedExecutePromise<OptionType[]>({
@@ -63,6 +137,10 @@ export function RemoteSelect<
       return search(value);
     });
   };
+  const mergedOptions = useMemo(() => {
+    const baseOptions = [...(result ?? options), ...additionalOptions];
+    return uniqueBy(baseOptions, (opt) => opt[uniqueKey]);
+  }, [result, options, additionalOptions, uniqueKey]);
   return (
     <Select<ValueType, OptionType>
       showSearch={{
@@ -87,7 +165,7 @@ export function RemoteSelect<
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
         )
       }
-      options={loading ? [] : (result ?? options)}
+      options={loading ? [] : mergedOptions}
       {...selectProps}
     />
   );

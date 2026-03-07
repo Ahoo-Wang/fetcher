@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { FetcherViewer } from '../FetcherViewer';
+import { FetcherViewer, FetcherViewerRef } from '../FetcherViewer';
 import type { PaginationProps } from 'antd';
+import { Button, Space } from 'antd';
+import { useRef } from 'react';
 import {
   fetcher,
   FetchExchange,
@@ -30,8 +32,7 @@ class TestFetcherRequestInterceptor implements RequestInterceptor {
       [CONTENT_TYPE]: 'application/json',
       [X_WAREHOUSE_ID]: 'mydao-SH',
       [COSEC_APP_ID]: 'pms',
-      Authorization:
-        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkN0MzJ2YTAwZmgwUnMiLCJzdWIiOiIxWkUiLCJpYXQiOjE3NzI2MTQzMjEsImV4cCI6MTc3Mjg3MzUyMSwicm9sZXMiOlsiM1F2Il0sImF0dHJpYnV0ZXMiOnsiaXNPd25lciI6ImZhbHNlIiwiYXBwSWQiOiJwbXMiLCJkZXBhcnRtZW50cyI6W10sImF1dGhlbnRpY2F0ZUlkIjoiMFZCd3RBeDMwMGZoMTQ0In0sInRlbmFudElkIjoibXlkYW8ifQ.gOz-0Xy_JobWgyiMUpcT06gQ3Qcf59m5qGNxuRfTLCk',
+      Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkQ0UWpFSzAwUkY0bEkiLCJzdWIiOiIzaEsiLCJpYXQiOjE3NzI3ODI1MDUsImV4cCI6MTc3MzA0MTcwNSwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkNtcnVOcjAwZmg0OHAifSwidGVuYW50SWQiOiJteWRhbyJ9.cGsJkdTYLgfhBSyRjqKyDHaTW5yBV-USfrx_i9czvAw'
     };
 
     exchange.request.url = exchange.request.url.replace('{tenantId}', 'mydao');
@@ -102,9 +103,6 @@ export const Basic: Story = {
     defaultViewId: '',
     pagination: {} as PaginationProps,
     enableRowSelection: true,
-    onClickPrimaryKey: (id) => {
-      console.log('Primary key clicked:', id);
-    }
   },
 };
 
@@ -150,4 +148,50 @@ export const LargePageSize: Story = {
     pagination: { defaultPageSize: 50 } as PaginationProps,
     enableRowSelection: false,
   },
+};
+
+const FetcherViewerWithRefMethodsWrapper = (args: any) => {
+  const viewerRef = useRef<FetcherViewerRef>(null);
+
+  const handleClearSelection = () => {
+    console.log('Clearing selected rows...');
+    viewerRef.current?.clearSelectedRowKeys();
+  };
+
+  const handleRefresh = () => {
+    console.log('Refreshing data...');
+    viewerRef.current?.refreshData();
+  };
+
+  const handleGetCondition = () => {
+    console.log('Getting current condition...');
+    const condition = viewerRef.current?.getCondition();
+    console.log('Current condition:', condition);
+    alert(`Current condition: ${JSON.stringify(condition)}`);
+  };
+
+  return (
+    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+      <Space>
+        <Button type="primary" onClick={handleRefresh}>
+          Refresh Data
+        </Button>
+        <Button onClick={handleClearSelection}>Clear Selection</Button>
+        <Button onClick={handleGetCondition}>Get Condition</Button>
+      </Space>
+      <FetcherViewer ref={viewerRef} {...args} />
+    </Space>
+  );
+};
+
+export const WithRefMethods: Story = {
+  args: {
+    viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
+    tenantId: 'mydao',
+    defaultViewId: '',
+    pagination: {} as PaginationProps,
+    enableRowSelection: true,
+  },
+  render: args => <FetcherViewerWithRefMethodsWrapper {...args} />,
 };
