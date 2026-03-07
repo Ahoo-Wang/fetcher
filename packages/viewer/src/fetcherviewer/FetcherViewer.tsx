@@ -6,7 +6,9 @@ import {
   ViewState,
   Viewer,
   useRefreshDataEventBus,
-  TopbarActionsCapable, ViewerRef, FilterPanelConditionCapableRef,
+  TopbarActionsCapable,
+  ViewerRef,
+  FilterPanelConditionCapableRef,
 } from '../';
 import {
   useViewerDefinition,
@@ -20,14 +22,15 @@ import {
   RefAttributes,
   useCallback,
   useImperativeHandle,
-  useMemo, useRef,
+  useMemo,
+  useRef,
 } from 'react';
 import { CommandResult, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
 import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
-export interface FetcherViewerRef extends FilterPanelConditionCapableRef{
+export interface FetcherViewerRef extends FilterPanelConditionCapableRef {
   refreshData: () => void;
   clearSelectedRowKeys: () => void;
 }
@@ -111,7 +114,6 @@ export function FetcherViewer<RecordType = any>({
   });
 
   const viewerRef = useRef<ViewerRef | null>(null);
-
 
   const handleLoadData = useCallback(
     (

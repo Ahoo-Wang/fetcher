@@ -153,7 +153,6 @@ export function Viewer<RecordType = any>({
 
   const handleSwitchView = (view: ViewState) => {
     switchView(view);
-    onLoadData?.(view.condition, 1, view.pageSize, view.sorter);
     onSwitchView?.(view);
   };
 
