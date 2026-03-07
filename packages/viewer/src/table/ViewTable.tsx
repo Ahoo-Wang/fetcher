@@ -176,6 +176,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
                 onClick: (record: RecordType) => {
                   onClickPrimaryKey?.(value, record);
                 },
+                copyable: true,
                 ...columnDefinition.attributes,
               }}
             />

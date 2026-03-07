@@ -19,10 +19,16 @@ import {
 import {
   RefAttributes,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
 } from 'react';
-import { CommandResult, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import {
+  all,
+  CommandResult,
+  Condition,
+  FieldSort,
+} from '@ahoo-wang/fetcher-wow';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
 import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
@@ -81,6 +87,8 @@ export function FetcherViewer<RecordType = any>({
   const [localDefaultViewId, setLocalDefaultViewId] = useKeyStorage<
     string | undefined
   >(localDefaultViewIdStorage);
+
+  
 
   const {
     viewerDefinition,

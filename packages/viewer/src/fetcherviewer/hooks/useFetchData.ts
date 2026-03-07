@@ -8,7 +8,7 @@ import {
   PagedList,
 } from '@ahoo-wang/fetcher-wow';
 import { FetcherError } from '@ahoo-wang/fetcher';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 export interface UseFetchDataOptions {
   viewerDefinition: ViewDefinition | undefined;
@@ -34,40 +34,37 @@ export function useFetchData<RecordType>(
       autoExecute: true,
     });
 
-  useEffect(() => {
-    if (defaultView && viewerDefinition) {
+  const setQueryFn = useCallback(
+    (
+      condition: Condition,
+      index: number,
+      size: number,
+      sorter?: FieldSort[],
+    ) => {
       setQuery({
-        condition: defaultView?.condition
-          ? defaultView.internalCondition
-            ? and(defaultView.internalCondition, defaultView.condition)
-            : all()
-          : all(),
+        condition: defaultView?.internalCondition
+          ? and(defaultView.internalCondition, condition)
+          : condition,
         pagination: {
-          index: 1,
-          size: defaultView.pageSize,
+          index: index,
+          size: size,
         },
-        sort: defaultView?.sorter,
+        sort: sorter,
       });
-    }
-  }, [viewerDefinition, defaultView, setQuery]);
+    },
+    [defaultView, setQuery],
+  );
 
-  const setQueryFn = (
-    condition: Condition,
-    index: number,
-    size: number,
-    sorter?: FieldSort[],
-  ) => {
-    setQuery({
-      condition: defaultView?.internalCondition
-        ? and(defaultView.internalCondition, condition)
-        : condition,
-      pagination: {
-        index: index,
-        size: size,
-      },
-      sort: sorter,
-    });
-  };
+  useEffect(() => {
+    if (defaultView) {
+      setQueryFn(
+        defaultView?.condition || all(),
+        1,
+        defaultView?.pageSize || 10,
+        defaultView?.sorter,
+      );
+    }
+  }, [defaultView, setQueryFn]);
 
   return {
     dataSource: result,

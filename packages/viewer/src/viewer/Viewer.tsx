@@ -17,7 +17,7 @@ import {
   ViewRef,
   ViewTableActionColumn,
 } from '../';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import type * as React from 'react';
 
@@ -147,7 +147,6 @@ export function Viewer<RecordType = any>({
 
   const handleSwitchView = (view: ViewState) => {
     switchView(view);
-    onLoadData?.(view.condition, 1, view.pageSize, view.sorter);
     onSwitchView?.(view);
   };
 
