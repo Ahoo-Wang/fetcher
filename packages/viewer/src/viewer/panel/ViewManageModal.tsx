@@ -71,6 +71,7 @@ export function ViewManageModal(props: ViewManageModalProps) {
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
         {views.map(view => (
           <ViewManageItem
+            key={view.id}
             editing={isEditing(view)}
             onCancel={handleCancelEdit}
             onDelete={handleDeleteView}
