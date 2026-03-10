@@ -150,7 +150,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
       // Sorting configuration
       sorter: columnDefinition?.sorter,
       // Initial sort order
-      sortOrder: col.sortOrder,
+      defaultSortOrder: col.sortOrder,
       // Column width specification
       width: col.width,
       // Hidden columns are excluded from display
