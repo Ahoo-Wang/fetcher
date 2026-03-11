@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 
 import { ViewManageItem } from '../ViewManageItem';
 import { ViewState } from '../../types';
-import { Operator } from '@ahoo-wang/fetcher-wow';
+import { and, Operator } from '@ahoo-wang/fetcher-wow';
 import { useState } from 'react';
 
 const meta: Meta<typeof ViewManageItem> = {
@@ -29,6 +29,8 @@ export default meta;
 type Story = StoryObj<typeof ViewManageItem>;
 
 const sampleView: ViewState = {
+  condition: and(),
+  sorter: [],
   id: '1',
   name: 'My View',
   definitionId: 'def-1',
@@ -41,16 +43,11 @@ const sampleView: ViewState = {
       name: 'id',
       fixed: false,
       hidden: true,
+      key: '1',
     },
   ],
   tableSize: 'middle',
-  pageSize: 20,
-  sort: 0,
-  pagedQuery: {
-    condition: {
-      operator: Operator.ALL,
-    },
-  },
+  pageSize: 20
 };
 
 const systemView: ViewState = {
