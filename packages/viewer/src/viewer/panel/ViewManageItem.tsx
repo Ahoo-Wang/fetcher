@@ -1,5 +1,5 @@
 import { ViewState } from '../types';
-import { Button, Flex, Input, Popconfirm, Space, Tag } from 'antd';
+import { Button, Flex, Form, Input, Popconfirm, Space, Tag } from 'antd';
 import { DeleteOutlined, DragOutlined, EditOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { useLocale } from '../../';
@@ -35,12 +35,19 @@ export function ViewManageItem(props: ViewManageItemProps) {
     <>
       {editing ? (
         <Flex
-          align="center"
+          align="baseline"
           justify="space-between"
           gap={12}
           style={{ width: '100%' }}
         >
-          <Input value={viewName} onChange={e => setViewName(e.target.value)} />
+          <Form.Item
+            required={false}
+            validateStatus={viewName.trim() === '' ? 'error' : ''}
+            help={viewName.trim() === '' ? '请输入视图名称' : ''}
+            style={{ marginBottom: 0, flex: 1 }}
+          >
+            <Input value={viewName} onChange={e => setViewName(e.target.value)} />
+          </Form.Item>
           <Space orientation="horizontal">
             <Button type="default" size="small" onClick={handleCancel}>
               {locale.viewPanel?.cancelButton || '取消'}
