@@ -56,7 +56,7 @@ export function useFetchData<RecordType>(
   );
 
   useEffect(() => {
-    if (defaultView) {
+    if (defaultView && viewerDefinition) {
       setQueryFn(
         defaultView?.condition || all(),
         1,
@@ -64,7 +64,7 @@ export function useFetchData<RecordType>(
         defaultView?.sorter,
       );
     }
-  }, [defaultView, setQueryFn]);
+  }, [defaultView, viewerDefinition, setQueryFn]);
 
   return {
     dataSource: result,
