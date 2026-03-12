@@ -16,7 +16,6 @@ const CONTENT_TYPE = 'Content-Type';
 const X_WAREHOUSE_ID = 'X-Warehouse-Id';
 const COSEC_APP_ID = 'cosec-app-id';
 
-
 class TestFetcherRequestInterceptor implements RequestInterceptor {
   name = 'RequestInterceptor';
   order = URL_RESOLVE_INTERCEPTOR_ORDER - 1;
@@ -32,7 +31,8 @@ class TestFetcherRequestInterceptor implements RequestInterceptor {
       [CONTENT_TYPE]: 'application/json',
       [X_WAREHOUSE_ID]: 'mydao-SH',
       [COSEC_APP_ID]: 'pms',
-      Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkRLVE8xZTAwUkYwM20iLCJzdWIiOiIzaEgiLCJpYXQiOjE3NzMwMTk1NjAsImV4cCI6MTc3MzI3ODc2MCwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkN5Z0JUNzAwUkYwR2QifSwidGVuYW50SWQiOiJteWRhbyJ9.3i5eFUed9DUcae7z2Xz0gE_Dvgie-eN04xGjnSNkYLA'
+      Authorization:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkRXd0hMVDAwUkYxS0giLCJzdWIiOiIzaEgiLCJpYXQiOjE3NzMyMDM3NjIsImV4cCI6MTc3MzQ2Mjk2MiwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkRXd0hMNDAwUkYxS0MifSwidGVuYW50SWQiOiJteWRhbyJ9.UCvDyyIpZ_EbL0ZyjewlgEGoc_LjWuEw2t1TXnE0B10',
     };
 
     exchange.request.url = exchange.request.url.replace('{tenantId}', 'mydao');

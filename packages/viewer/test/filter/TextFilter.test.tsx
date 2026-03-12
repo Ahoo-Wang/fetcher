@@ -13,7 +13,7 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { TextFilter } from '../../src';
+import { TextFilter, TextOnOperatorChangeValueConverter } from '../../src';
 import { FilterProps } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
@@ -209,6 +209,98 @@ describe('TextFilter', () => {
         value: { defaultValue: [] },
       });
       expect(() => render(<TextFilter {...props} />)).not.toThrow();
+    });
+  });
+
+  describe('Value Converter', () => {
+    it('keeps array value when switching to IN operator', () => {
+      const result = TextOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.IN,
+        ['value1', 'value2'],
+      );
+      expect(result).toEqual(['value1', 'value2']);
+    });
+
+    it('converts string to array when switching to IN operator', () => {
+      const result = TextOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.IN,
+        'single-value',
+      );
+      expect(result).toEqual(['single-value']);
+    });
+
+    it('converts empty string to empty array for IN operator', () => {
+      const result = TextOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.IN,
+        '   ',
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('returns first item when switching to EQ operator', () => {
+      const result = TextOnOperatorChangeValueConverter(
+        Operator.IN,
+        Operator.EQ,
+        ['first', 'second'],
+      );
+      expect(result).toBe('first');
+    });
+
+    it('returns original value when switching between single value operators', () => {
+      const result = TextOnOperatorChangeValueConverter(
+        Operator.CONTAINS,
+        Operator.ENDS_WITH,
+        'same',
+      );
+      expect(result).toBe('same');
+    });
+
+    it('keeps array value when switching from IN to NOT_IN operator', () => {
+      const result = TextOnOperatorChangeValueConverter(
+        Operator.IN,
+        Operator.NOT_IN,
+        ['value1'],
+      );
+      expect(result).toEqual(['value1']);
+    });
+
+    it('converts string to array when switching to NOT_IN operator', () => {
+      const result = TextOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.NOT_IN,
+        'value1',
+      );
+      expect(result).toEqual(['value1']);
+    });
+
+    it('converts array to single value when switching to NE operator', () => {
+      const result = TextOnOperatorChangeValueConverter(
+        Operator.IN,
+        Operator.NE,
+        ['first', 'second'],
+      );
+      expect(result).toBe('first');
+    });
+
+    it('handles undefined value', () => {
+      const result = TextOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.IN,
+        undefined,
+      );
+      expect(result).toBeUndefined();
+    });
+
+    it('handles null value', () => {
+      const result = TextOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.IN,
+        null as any,
+      );
+      expect(result).toBeNull();
     });
   });
 });
