@@ -14,7 +14,10 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { NumberFilter } from '../../src/filter/NumberFilter';
+import {
+  NumberFilter,
+  NumberOnOperatorChangeValueConverter,
+} from '../../src/filter/NumberFilter';
 import { FilterProps, FilterRef } from '../../src/filter/types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
@@ -417,6 +420,125 @@ describe('NumberFilter', () => {
         value: { defaultValue: [undefined, undefined] },
       });
       expect(() => render(<NumberFilter {...props} />)).not.toThrow();
+    });
+  });
+
+  describe('Value Converter', () => {
+    it('keeps array value when switching to BETWEEN', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.BETWEEN,
+        [10, 20],
+      );
+      expect(result).toEqual([10, 20]);
+    });
+
+    it('wraps value into range when switching to BETWEEN', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.BETWEEN,
+        5,
+      );
+      expect(result).toEqual([5, undefined]);
+    });
+
+    it('keeps array value when switching to IN operator', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.IN,
+        [1, 2],
+      );
+      expect(result).toEqual([1, 2]);
+    });
+
+    it('converts number to array when switching to IN operator', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.IN,
+        3,
+      );
+      expect(result).toEqual([3]);
+    });
+
+    it('keeps array value when switching to NOT_IN operator', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.NOT_IN,
+        [6, 7],
+      );
+      expect(result).toEqual([6, 7]);
+    });
+
+    it('converts number to array when switching to NOT_IN operator', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.NOT_IN,
+        4,
+      );
+      expect(result).toEqual([4]);
+    });
+
+    it('returns first item when switching to EQ operator', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.IN,
+        Operator.EQ,
+        [7, 8],
+      );
+      expect(result).toBe(7);
+    });
+
+    it('returns first item when switching from BETWEEN to EQ operator', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.BETWEEN,
+        Operator.EQ,
+        [11, 22],
+      );
+      expect(result).toBe(11);
+    });
+
+    it('keeps array value when switching from BETWEEN to IN operator', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.BETWEEN,
+        Operator.IN,
+        [13, 27],
+      );
+      expect(result).toEqual([13, 27]);
+    });
+
+    it('returns original value for single-value operators', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.GT,
+        Operator.LT,
+        9,
+      );
+      expect(result).toBe(9);
+    });
+
+    it('handles undefined value', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.IN,
+        undefined,
+      );
+      expect(result).toBeUndefined();
+    });
+
+    it('handles null value', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.EQ,
+        Operator.IN,
+        null as any,
+      );
+      expect(result).toBeNull();
+    });
+
+    it('keeps array value when switching between multi-value operators', () => {
+      const result = NumberOnOperatorChangeValueConverter(
+        Operator.IN,
+        Operator.NOT_IN,
+        [4, 5],
+      );
+      expect(result).toEqual([4, 5]);
     });
   });
 });

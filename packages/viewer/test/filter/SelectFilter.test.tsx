@@ -13,7 +13,7 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { SelectFilter } from '../../src';
+import { SelectFilter, SelectOnOperatorChangeValueConverter } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 // 测试辅助函数
@@ -207,6 +207,53 @@ describe('SelectFilter', () => {
         options: undefined as any,
       });
       expect(() => render(<SelectFilter {...props} />)).not.toThrow();
+    });
+  });
+
+  describe('Value Converter', () => {
+    it('keeps array value when switching operators', () => {
+      const result = SelectOnOperatorChangeValueConverter(
+        Operator.IN,
+        Operator.NOT_IN,
+        ['option1', 'option2'],
+      );
+      expect(result).toEqual(['option1', 'option2']);
+    });
+
+    it('wraps single value into array', () => {
+      const result = SelectOnOperatorChangeValueConverter(
+        Operator.IN,
+        Operator.NOT_IN,
+        'option1',
+      );
+      expect(result).toEqual(['option1']);
+    });
+
+    it('wraps number value into array', () => {
+      const result = SelectOnOperatorChangeValueConverter(
+        Operator.NOT_IN,
+        Operator.IN,
+        42,
+      );
+      expect(result).toEqual([42]);
+    });
+
+    it('handles undefined value', () => {
+      const result = SelectOnOperatorChangeValueConverter(
+        Operator.IN,
+        Operator.NOT_IN,
+        undefined,
+      );
+      expect(result).toBeUndefined();
+    });
+
+    it('handles null value', () => {
+      const result = SelectOnOperatorChangeValueConverter(
+        Operator.IN,
+        Operator.NOT_IN,
+        null as any,
+      );
+      expect(result).toBeNull();
     });
   });
 });

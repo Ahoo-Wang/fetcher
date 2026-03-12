@@ -16,10 +16,44 @@ import { InputNumber } from 'antd';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { NumberTagValueItemSerializer, TagInput } from '../components';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
-import { UseFilterStateReturn } from './useFilterState';
+import {
+  OnOperatorChangeValueConverter,
+  UseFilterStateReturn,
+} from './useFilterState';
 import { NumberRange } from '../components';
 
 export const NUMBER_FILTER = 'number';
+
+export const NumberOnOperatorChangeValueConverter: OnOperatorChangeValueConverter =
+  (_beforeOperator, afterOperator, value) => {
+    if (value === undefined || value === null) {
+      return value;
+    }
+
+    const isArrayValue = Array.isArray(value);
+    const isBetweenOperator = afterOperator === Operator.BETWEEN;
+    const isMultiValueOperator =
+      afterOperator === Operator.IN || afterOperator === Operator.NOT_IN;
+
+    if (isBetweenOperator) {
+      if (isArrayValue) {
+        return [value[0], value[1]];
+      }
+      return [value, undefined];
+    }
+
+    if (isMultiValueOperator) {
+      if (isArrayValue) {
+        return value;
+      }
+      return [value];
+    }
+
+    if (isArrayValue) {
+      return value[0];
+    }
+    return value;
+  };
 
 export function NumberFilter(props: FilterProps) {
   const assemblyFilterProps: AssemblyFilterProps = {
@@ -44,6 +78,7 @@ export function NumberFilter(props: FilterProps) {
       }
       return value != undefined;
     },
+    onOperatorChangeValueConverter: NumberOnOperatorChangeValueConverter,
     valueInputRender: (filterState: UseFilterStateReturn) => {
       switch (filterState.operator) {
         case Operator.IN:
