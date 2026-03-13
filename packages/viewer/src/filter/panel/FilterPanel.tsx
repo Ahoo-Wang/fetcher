@@ -139,10 +139,7 @@ export function FilterPanel(props: FilterPanelProps) {
     },
   }));
   const handleEnter = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.isComposing || (e.nativeEvent as any)?.isComposing) {
-      return;
-    }
-    if (e.isComposing || (e.nativeEvent as any)?.isComposing) {
+    if ((e.nativeEvent as KeyboardEvent)?.isComposing) {
       return;
     }
     if (e.key === 'Enter') {
