@@ -20,6 +20,7 @@ import {
 import { RefAttributes, useCallback, useImperativeHandle, useRef, useState } from 'react';
 import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import type * as React from 'react';
+import { FullscreenProvider } from '@ahoo-wang/fetcher-react';
 
 const { Header, Sider, Content } = Layout;
 
@@ -188,29 +189,30 @@ export function Viewer<RecordType = any>({
   })
 
   return (
-    <ConfigProvider
-      getPopupContainer={() => viewerRef.current || document.body}
-    >
-      <Layout ref={viewerRef}>
-        {showViewPanel && (
-          <Sider className={styles.userViews} width={220}>
-            <ViewPanel
-              name={definition.name}
-              views={views}
-              activeView={activeView}
-              countUrl={definition.countUrl}
-              onSwitchView={handleSwitchView}
-              onShowViewPanelChange={handleShowViewPanelChange}
-              onGetRecordCount={onGetRecordCount}
-              onCreateView={handleCreateView}
-              onUpdateView={handleUpdateView}
-              onDeleteView={handleDeleteView}
-            />
-          </Sider>
-        )}
-        <Layout className={styles.container}>
-          <Content>
-            <Space
+    <FullscreenProvider>
+      <ConfigProvider
+        getPopupContainer={() => viewerRef.current || document.body}
+      >
+        <Layout ref={viewerRef}>
+          {showViewPanel && (
+            <Sider className={styles.userViews} width={220}>
+              <ViewPanel
+                name={definition.name}
+                views={views}
+                activeView={activeView}
+                countUrl={definition.countUrl}
+                onSwitchView={handleSwitchView}
+                onShowViewPanelChange={handleShowViewPanelChange}
+                onGetRecordCount={onGetRecordCount}
+                onCreateView={handleCreateView}
+                onUpdateView={handleUpdateView}
+                onDeleteView={handleDeleteView}
+              />
+            </Sider>
+          )}
+          <Layout className={styles.container}>
+            <Content>
+              <Space
               orientation="vertical"
               style={{ display: 'flex' }}
               size="small"
@@ -235,7 +237,6 @@ export function Viewer<RecordType = any>({
                   onCreateView={handleCreateView}
                   onUpdateView={handleUpdateView}
                   onDeleteView={handleDeleteView}
-                  fullscreenTarget={viewerRef}
                 />
               </Header>
               <View<RecordType>
@@ -280,6 +281,7 @@ export function Viewer<RecordType = any>({
           </Content>
         </Layout>
       </Layout>
-    </ConfigProvider>
+      </ConfigProvider>
+    </FullscreenProvider>
   );
 }

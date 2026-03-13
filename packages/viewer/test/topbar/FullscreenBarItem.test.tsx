@@ -12,32 +12,30 @@
  */
 
 import '@testing-library/jest-dom';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { RefObject } from 'react';
 import { FullscreenBarItem } from '../../src/topbar/FullscreenBarItem';
 
 vi.mock('@ahoo-wang/fetcher-react', () => ({
-  useFullscreen: vi.fn(),
+  useFullscreenContext: vi.fn(),
 }));
 
-import { useFullscreen } from '@ahoo-wang/fetcher-react';
+import { useFullscreenContext } from '@ahoo-wang/fetcher-react';
 
-const mockUseFullscreen = vi.mocked(useFullscreen);
+const mockUseFullscreenContext = vi.mocked(useFullscreenContext);
 
 describe('FullscreenBarItem', () => {
   let mockToggle: () => Promise<void>;
-  let mockTargetRef: RefObject<HTMLElement>;
 
   beforeEach(() => {
     mockToggle = vi.fn().mockResolvedValue(undefined);
-    mockTargetRef = { current: document.createElement('div') };
 
-    mockUseFullscreen.mockReturnValue({
+    mockUseFullscreenContext.mockReturnValue({
       isFullscreen: false,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
   });
 
@@ -50,85 +48,42 @@ describe('FullscreenBarItem', () => {
     expect(container.querySelector('div')).toBeInTheDocument();
   });
 
-  it('should render with target prop', () => {
-    const { container } = render(<FullscreenBarItem target={mockTargetRef} />);
-    expect(container.querySelector('div')).toBeInTheDocument();
-  });
-
   it('should call toggle when clicked', async () => {
-    const { container } = render(<FullscreenBarItem target={mockTargetRef} />);
-    
+    const { container } = render(<FullscreenBarItem />);
+
     fireEvent.click(container.querySelector('div')!);
-    
+
     expect(mockToggle).toHaveBeenCalledTimes(1);
-  });
-
-  it('should pass target to useFullscreen hook', () => {
-    render(<FullscreenBarItem target={mockTargetRef} />);
-    
-    expect(mockUseFullscreen).toHaveBeenCalledWith({
-      target: mockTargetRef,
-      onChange: undefined,
-    });
-  });
-
-  it('should pass onChange callback to useFullscreen hook', () => {
-    const onChange = vi.fn();
-    
-    render(<FullscreenBarItem onChange={onChange} />);
-    
-    expect(mockUseFullscreen).toHaveBeenCalledWith({
-      target: undefined,
-      onChange,
-    });
-  });
-
-  it('should handle onChange callback when fullscreen state changes', () => {
-    const onChange = vi.fn();
-    
-    render(<FullscreenBarItem target={mockTargetRef} onChange={onChange} />);
-    
-    expect(mockUseFullscreen).toHaveBeenCalledWith({
-      target: mockTargetRef,
-      onChange,
-    });
   });
 
   it('should render with custom className', () => {
     const { container } = render(
       <FullscreenBarItem className="custom-fullscreen-class" />,
     );
-    
+
     expect(container.querySelector('div')).toHaveClass('custom-fullscreen-class');
   });
 
   it('should render with custom style', () => {
     const style = { marginRight: '8px' };
-    
+
     const { container } = render(
       <FullscreenBarItem style={style} />,
     );
-    
+
     expect(container.querySelector('div')).toHaveStyle(style);
   });
 
-  it('should handle undefined target gracefully', () => {
-    render(<FullscreenBarItem target={undefined} />);
-    
-    expect(mockUseFullscreen).toHaveBeenCalledWith({
-      target: undefined,
-      onChange: undefined,
+  it('should use context value correctly', () => {
+    mockUseFullscreenContext.mockReturnValue({
+      isFullscreen: true,
+      toggle: mockToggle,
+      enter: vi.fn(),
+      exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
-  });
 
-  it('should handle null target ref gracefully', () => {
-    const nullRef = { current: null };
-    
-    render(<FullscreenBarItem target={nullRef} />);
-    
-    expect(mockUseFullscreen).toHaveBeenCalledWith({
-      target: nullRef,
-      onChange: undefined,
-    });
+    const { container } = render(<FullscreenBarItem />);
+    expect(container.querySelector('div')).toBeInTheDocument();
   });
 });
