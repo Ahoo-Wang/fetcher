@@ -142,6 +142,9 @@ export function FilterPanel(props: FilterPanelProps) {
     if (e.isComposing || (e.nativeEvent as any)?.isComposing) {
       return;
     }
+    if (e.isComposing || (e.nativeEvent as any)?.isComposing) {
+      return;
+    }
     if (e.key === 'Enter') {
       handleSearch();
     }
