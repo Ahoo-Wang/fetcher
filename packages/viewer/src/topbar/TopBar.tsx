@@ -59,7 +59,6 @@ export interface TopBarProps<
   onUpdateView: (view: ViewState, onSuccess?: () => void) => void;
   onDeleteView: (view: ViewState, onSuccess?: () => void) => void;
 
-  fullscreenTarget?: React.RefObject<HTMLElement | null>;
 }
 
 function renderMenuItem<RecordType>(
@@ -117,7 +116,6 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     onTableSizeChange,
     onCreateView,
     onUpdateView,
-    fullscreenTarget,
   } = props;
 
   const [saveViewModalType, setSaveViewModalType] = useState<
@@ -252,9 +250,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             onChange={onTableSizeChange}
           />
           <ShareLinkBarItem />
-          {fullscreenTarget && (
-            <FullscreenBarItem target={fullscreenTarget} />
-          )}
+          <FullscreenBarItem />
           <Divider orientation="vertical" />
           <AutoRefreshBarItem />
           {batchActions?.enabled && (
