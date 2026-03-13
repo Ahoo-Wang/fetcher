@@ -39,7 +39,7 @@ export interface UseFullscreenReturn {
   /**
    * Get the current target element. Returns the element from the ref, or document.documentElement if no ref is provided.
    */
-  getTarget: () => HTMLElement | null;
+  getTarget: () => HTMLElement;
   /**
    * Toggle fullscreen mode on/off
    */
