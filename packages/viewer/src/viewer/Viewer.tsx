@@ -231,6 +231,7 @@ export function Viewer<RecordType = any>({
                 onCreateView={handleCreateView}
                 onUpdateView={handleUpdateView}
                 onDeleteView={handleDeleteView}
+                fullscreenTarget={viewerRef}
               />
             </Header>
             <View<RecordType>

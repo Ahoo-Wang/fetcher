@@ -25,10 +25,6 @@ export interface FullScreenProps extends Omit<
    */
   target?: RefObject<HTMLElement | null>;
   /**
-   * Callback when fullscreen state changes
-   */
-  onChange?: (isFullscreen: boolean) => void;
-  /**
    * Custom icon for entering fullscreen
    */
   enterIcon?: ReactNode;
@@ -45,22 +41,20 @@ export interface FullScreenProps extends Omit<
 export function Fullscreen(props: FullScreenProps) {
   const {
     target,
-    onChange,
     enterIcon = <FullscreenOutlined />,
     exitIcon = <FullscreenExitOutlined />,
     ...buttonProps
   } = props;
 
-  const { isFullscreen, toggle } = useFullscreen({
+  const { fullscreen, toggle } = useFullscreen({
     target,
-    onChange,
   });
 
   return (
     <Button
       {...buttonProps}
-      icon={isFullscreen ? exitIcon : enterIcon}
-      onClick={toggle}
+      icon={fullscreen ? exitIcon : enterIcon}
+      onClick={() => toggle()}
     />
   );
 }
