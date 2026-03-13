@@ -63,6 +63,53 @@ describe('useFullscreen hook', () => {
       expect(result.current.isFullscreen).toBe(false);
     });
 
+    it('should have getTarget function', () => {
+      const { result } = renderHook(() => useFullscreen());
+
+      expect(result.current.getTarget).toBeDefined();
+      expect(typeof result.current.getTarget).toBe('function');
+    });
+
+    it('should return documentElement when no target provided', () => {
+      const { result } = renderHook(() => useFullscreen());
+
+      expect(result.current.getTarget()).toBe(document.documentElement);
+    });
+
+    it('should return target element when target ref provided', () => {
+      const { result } = renderHook(() =>
+        useFullscreen({ target: mockTargetRef }),
+      );
+
+      expect(result.current.getTarget()).toBe(mockElement);
+    });
+
+    it('should return documentElement when target ref current is null', () => {
+      const nullRef = { current: null };
+      const { result } = renderHook(() => useFullscreen({ target: nullRef }));
+
+      expect(result.current.getTarget()).toBe(document.documentElement);
+    });
+
+    it('should return updated target after ref changes', () => {
+      const { result, rerender } = renderHook(
+        ({ target }) => useFullscreen({ target }),
+        { initialProps: { target: mockTargetRef } },
+      );
+
+      expect(result.current.getTarget()).toBe(mockElement);
+
+      const newElement = document.createElement('div');
+      document.body.appendChild(newElement);
+      const newRef = { current: newElement };
+
+      rerender({ target: newRef });
+
+      expect(result.current.getTarget()).toBe(newElement);
+
+      document.body.removeChild(newElement);
+    });
+
     it('should add fullscreen change listener on mount', () => {
       renderHook(() => useFullscreen());
 

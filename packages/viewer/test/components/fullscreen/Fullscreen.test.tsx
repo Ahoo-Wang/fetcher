@@ -40,6 +40,7 @@ describe('Fullscreen', () => {
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
   });
 
@@ -73,6 +74,7 @@ describe('Fullscreen', () => {
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen />);
@@ -88,6 +90,7 @@ describe('Fullscreen', () => {
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen />);
@@ -107,6 +110,7 @@ describe('Fullscreen', () => {
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen enterIcon={customEnterIcon} />);
@@ -121,6 +125,7 @@ describe('Fullscreen', () => {
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen exitIcon={customExitIcon} />);
@@ -207,6 +212,7 @@ describe('Fullscreen', () => {
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(
@@ -241,6 +247,7 @@ describe('Fullscreen', () => {
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     const { rerender } = render(<Fullscreen />);
@@ -259,6 +266,7 @@ describe('Fullscreen', () => {
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     rerender(<Fullscreen />);
@@ -308,6 +316,7 @@ describe('Fullscreen', () => {
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen enterIcon={undefined} />);
@@ -322,6 +331,7 @@ describe('Fullscreen', () => {
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen exitIcon={undefined} />);
