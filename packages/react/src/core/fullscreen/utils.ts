@@ -24,6 +24,10 @@ export function getFullscreenElement(): HTMLElement | null {
   );
 }
 
+export function isFullscreen(): boolean {
+  return !!getFullscreenElement();
+}
+
 /**
  * Request fullscreen for a given element.
  * @param element The element to make fullscreen.

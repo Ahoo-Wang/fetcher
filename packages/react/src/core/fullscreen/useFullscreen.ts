@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useState, useCallback, useEffect, RefObject } from 'react';
+import { useState, useCallback, useEffect, useRef, RefObject } from 'react';
 import {
   getFullscreenElement,
   enterFullscreen,
@@ -25,29 +25,27 @@ export interface UseFullscreenOptions {
    * Target element to make fullscreen. If not provided, uses the document root element.
    */
   target?: RefObject<HTMLElement | null>;
-  /**
-   * Callback when fullscreen state changes
-   */
-  onChange?: (isFullscreen: boolean) => void;
 }
 
 export interface UseFullscreenReturn {
   /**
    * Whether the target element is currently in fullscreen mode
    */
-  isFullscreen: boolean;
+  fullscreen: boolean;
   /**
-   * Get the current target element. Returns the element from the ref, or document.documentElement if no ref is provided.
+   * Get the current target element. Returns the element from dynamicTargetRef, ref, or document.documentElement.
    */
   getTarget: () => HTMLElement;
   /**
    * Toggle fullscreen mode on/off
+   * @param target - Optional target element. Uses getTarget() if not provided.
    */
-  toggle: () => Promise<void>;
+  toggle: (target?: HTMLElement | null) => Promise<void>;
   /**
    * Enter fullscreen mode
+   * @param target - Optional target element. Uses getTarget() if not provided.
    */
-  enter: () => Promise<void>;
+  enter: (target?: HTMLElement | null) => Promise<void>;
   /**
    * Exit fullscreen mode
    */
@@ -61,23 +59,20 @@ export interface UseFullscreenReturn {
 export function useFullscreen(
   options: UseFullscreenOptions = {},
 ): UseFullscreenReturn {
-  const { target: targetRef, onChange } = options;
+  const { target: targetRef } = options;
+
+  const dynamicTargetRef = useRef<HTMLElement>(null);
 
   const getTarget = useCallback(() => {
-    return targetRef?.current || document.documentElement;
+    return dynamicTargetRef.current ?? targetRef?.current ?? document.documentElement;
   }, [targetRef]);
 
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const handleFullscreenChange = useCallback(() => {
-    const fullscreenElement = getFullscreenElement();
-    const newIsFullscreen =
-      fullscreenElement === getTarget();
-    if (newIsFullscreen !== isFullscreen) {
-      setIsFullscreen(newIsFullscreen);
-      onChange?.(newIsFullscreen);
-    }
-  }, [getTarget, onChange, isFullscreen]);
+    const fullscreen = getFullscreenElement() === getTarget();
+    setFullscreen(fullscreen);
+  }, [getTarget, setFullscreen]);
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -87,24 +82,28 @@ export function useFullscreen(
     };
   }, [handleFullscreenChange]);
 
-  const enterFullscreenFn = useCallback(async () => {
-    await enterFullscreen(getTarget());
-  }, [getTarget]);
+  const enterFullscreenFn = useCallback(async (target?: HTMLElement | null) => {
+    if (target !== undefined) {
+      dynamicTargetRef.current = target;
+    }
+    const element = getTarget();
+    await enterFullscreen(element);
+  }, [dynamicTargetRef, getTarget]);
 
   const exitFullscreenFn = useCallback(async () => {
     await exitFullscreen();
   }, []);
 
-  const toggleFullscreenFn = useCallback(async () => {
-    if (isFullscreen) {
+  const toggleFullscreenFn = useCallback(async (target?: HTMLElement | null) => {
+    if (fullscreen) {
       await exitFullscreenFn();
     } else {
-      await enterFullscreenFn();
+      await enterFullscreenFn(target);
     }
-  }, [isFullscreen, enterFullscreenFn, exitFullscreenFn]);
+  }, [fullscreen, enterFullscreenFn, exitFullscreenFn]);
 
   return {
-    isFullscreen: isFullscreen,
+    fullscreen: fullscreen,
     getTarget,
     toggle: toggleFullscreenFn,
     enter: enterFullscreenFn,
