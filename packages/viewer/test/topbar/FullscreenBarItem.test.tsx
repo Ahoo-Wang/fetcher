@@ -31,7 +31,7 @@ describe('FullscreenBarItem', () => {
     mockToggle = vi.fn().mockResolvedValue(undefined);
 
     mockUseFullscreenContext.mockReturnValue({
-      isFullscreen: false,
+      fullscreen: false,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
@@ -76,7 +76,7 @@ describe('FullscreenBarItem', () => {
 
   it('should use context value correctly', () => {
     mockUseFullscreenContext.mockReturnValue({
-      isFullscreen: true,
+      fullscreen: true,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
