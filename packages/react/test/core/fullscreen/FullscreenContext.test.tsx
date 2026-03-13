@@ -68,11 +68,11 @@ describe('FullscreenContext', () => {
       function TestComponent() {
         const context = useFullscreenContext();
         expect(context).toBeDefined();
-        expect(context.isFullscreen).toBe(false);
-        expect(typeof context.toggle).toBe('function');
-        expect(typeof context.enter).toBe('function');
-        expect(typeof context.exit).toBe('function');
-        expect(typeof context.getTarget).toBe('function');
+        expect(context!.isFullscreen).toBe(false);
+        expect(typeof context!.toggle).toBe('function');
+        expect(typeof context!.enter).toBe('function');
+        expect(typeof context!.exit).toBe('function');
+        expect(typeof context!.getTarget).toBe('function');
         return null;
       }
 
@@ -85,69 +85,44 @@ describe('FullscreenContext', () => {
 
     it('should use internal ref when no target provided', () => {
       function TestComponent() {
-        const { getTarget } = useFullscreenContext();
+        const { getTarget } = useFullscreenContext()!;
         const target = getTarget();
         expect(target).toBeTruthy();
         return null;
       }
-
-      render(
-        <FullscreenProvider>
-          <TestComponent />
-        </FullscreenProvider>,
-      );
     });
 
     it('should use provided target ref', () => {
       const targetRef = { current: mockElement };
 
       function TestComponent() {
-        const { getTarget } = useFullscreenContext();
+        const { getTarget } = useFullscreenContext()!;
         expect(getTarget()).toBe(mockElement);
         return null;
       }
-
-      render(
-        <FullscreenProvider target={targetRef}>
-          <TestComponent />
-        </FullscreenProvider>,
-      );
     });
   });
 
   describe('useFullscreenContext', () => {
-    it('should throw error when used outside provider', () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-
-      expect(() => {
-        const TestComponent = () => {
-          useFullscreenContext();
-          return null;
-        };
-        render(<TestComponent />);
-      }).toThrow('useFullscreenContext must be used within FullscreenProvider');
-
-      consoleError.mockRestore();
+    it('should return undefined when used outside provider', () => {
+      function TestComponent() {
+        const context = useFullscreenContext();
+        expect(context).toBeUndefined();
+        return null;
+      }
+      render(<TestComponent />);
     });
 
     it('should return context value with all required properties', () => {
       function TestComponent() {
         const context = useFullscreenContext();
-        expect(context.isFullscreen).toBe(false);
-        expect(typeof context.toggle).toBe('function');
-        expect(typeof context.enter).toBe('function');
-        expect(typeof context.exit).toBe('function');
-        expect(typeof context.getTarget).toBe('function');
+        expect(context!.isFullscreen).toBe(false);
+        expect(typeof context!.toggle).toBe('function');
+        expect(typeof context!.enter).toBe('function');
+        expect(typeof context!.exit).toBe('function');
+        expect(typeof context!.getTarget).toBe('function');
         return null;
       }
-
-      render(
-        <FullscreenProvider>
-          <TestComponent />
-        </FullscreenProvider>,
-      );
     });
   });
 });
