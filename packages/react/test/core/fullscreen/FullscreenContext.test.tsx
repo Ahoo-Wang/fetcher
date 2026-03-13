@@ -68,7 +68,7 @@ describe('FullscreenContext', () => {
       function TestComponent() {
         const context = useFullscreenContext();
         expect(context).toBeDefined();
-        expect(context!.isFullscreen).toBe(false);
+        expect(context!.fullscreen).toBe(false);
         expect(typeof context!.toggle).toBe('function');
         expect(typeof context!.enter).toBe('function');
         expect(typeof context!.exit).toBe('function');
@@ -116,7 +116,7 @@ describe('FullscreenContext', () => {
     it('should return context value with all required properties', () => {
       function TestComponent() {
         const context = useFullscreenContext();
-        expect(context!.isFullscreen).toBe(false);
+        expect(context!.fullscreen).toBe(false);
         expect(typeof context!.toggle).toBe('function');
         expect(typeof context!.enter).toBe('function');
         expect(typeof context!.exit).toBe('function');

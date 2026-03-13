@@ -60,7 +60,7 @@ describe('useFullscreen hook', () => {
     it('should initialize with isFullscreen false', () => {
       const { result } = renderHook(() => useFullscreen());
 
-      expect(result.current.isFullscreen).toBe(false);
+      expect(result.current.fullscreen).toBe(false);
     });
 
     it('should have getTarget function', () => {
@@ -130,15 +130,14 @@ describe('useFullscreen hook', () => {
     it('should handle undefined options gracefully', () => {
       const { result } = renderHook(() => useFullscreen(undefined));
 
-      expect(result.current.isFullscreen).toBe(false);
+      expect(result.current.fullscreen).toBe(false);
     });
   });
 
   describe('fullscreen state tracking', () => {
     it('should update isFullscreen when target element becomes fullscreen', () => {
-      const onChange = vi.fn();
       const { result } = renderHook(() =>
-        useFullscreen({ target: mockTargetRef, onChange }),
+        useFullscreen({ target: mockTargetRef }),
       );
 
       // Simulate fullscreen change
@@ -148,13 +147,11 @@ describe('useFullscreen hook', () => {
         callback();
       });
 
-      expect(result.current.isFullscreen).toBe(true);
-      expect(onChange).toHaveBeenCalledWith(true);
+      expect(result.current.fullscreen).toBe(true);
     });
 
     it('should update isFullscreen when document element becomes fullscreen (no target)', () => {
-      const onChange = vi.fn();
-      const { result } = renderHook(() => useFullscreen({ onChange }));
+      const { result } = renderHook(() => useFullscreen({}));
 
       (getFullscreenElement as any).mockReturnValue(document.documentElement);
       act(() => {
@@ -162,14 +159,12 @@ describe('useFullscreen hook', () => {
         callback();
       });
 
-      expect(result.current.isFullscreen).toBe(true);
-      expect(onChange).toHaveBeenCalledWith(true);
+      expect(result.current.fullscreen).toBe(true);
     });
 
     it('should update isFullscreen to false when exiting fullscreen', () => {
-      const onChange = vi.fn();
       const { result } = renderHook(() =>
-        useFullscreen({ target: mockTargetRef, onChange }),
+        useFullscreen({ target: mockTargetRef }),
       );
 
       // Enter fullscreen first
@@ -188,24 +183,9 @@ describe('useFullscreen hook', () => {
         callback();
       });
 
-      expect(result.current.isFullscreen).toBe(false);
-      expect(onChange).toHaveBeenCalledTimes(2);
-      expect(onChange).toHaveBeenLastCalledWith(false);
+      expect(result.current.fullscreen).toBe(false);
     });
 
-    it('should not call onChange when state does not change', () => {
-      const onChange = vi.fn();
-      renderHook(() => useFullscreen({ target: mockTargetRef, onChange }));
-
-      // Same state
-      act(() => {
-        const callback = (addFullscreenChangeListener as any).mock.calls[0][0];
-        callback();
-        callback();
-      });
-
-      expect(onChange).toHaveBeenCalledTimes(0);
-    });
   });
 
   describe('enter function', () => {
@@ -395,24 +375,6 @@ describe('useFullscreen hook', () => {
 
       document.body.removeChild(newElement);
     });
-
-    it('should update functions when onChange changes', () => {
-      const onChange1 = vi.fn();
-      const onChange2 = vi.fn();
-
-      const { result, rerender } = renderHook(
-        ({ onChange }) => useFullscreen({ onChange }),
-        { initialProps: { onChange: onChange1 } },
-      );
-
-      const initialCallback = (addFullscreenChangeListener as any).mock
-        .calls[0][0];
-
-      rerender({ onChange: onChange2 });
-
-      const newCallback = (addFullscreenChangeListener as any).mock.calls[1][0];
-      expect(newCallback).not.toBe(initialCallback);
-    });
   });
 
   describe('edge cases and error handling', () => {
@@ -429,41 +391,6 @@ describe('useFullscreen hook', () => {
       });
 
       expect(enterFullscreen).toHaveBeenCalledWith(document.documentElement);
-    });
-
-    it('should handle onChange callback throwing error', () => {
-      const onChange = vi.fn().mockImplementation(() => {
-        throw new Error('Callback error');
-      });
-
-      renderHook(() => useFullscreen({ target: mockTargetRef, onChange }));
-
-      (getFullscreenElement as any).mockReturnValue(mockElement);
-
-      expect(() => {
-        act(() => {
-          const callback = (addFullscreenChangeListener as any).mock
-            .calls[0][0];
-          callback();
-        });
-      }).toThrow('Callback error');
-    });
-
-    it('should handle multiple fullscreen change events', () => {
-      const onChange = vi.fn();
-      renderHook(() => useFullscreen({ target: mockTargetRef, onChange }));
-
-      (getFullscreenElement as any).mockReturnValue(mockElement);
-
-      act(() => {
-        const callback = (addFullscreenChangeListener as any).mock.calls[0][0];
-        callback();
-        callback();
-        callback();
-      });
-
-      expect(onChange).toHaveBeenCalledTimes(3);
-      expect(onChange).toHaveBeenCalledWith(true);
     });
 
     it('should handle listener cleanup on re-render with changed target', () => {
@@ -489,14 +416,14 @@ describe('useFullscreen hook', () => {
     it('should handle undefined target ref', () => {
       const { result } = renderHook(() => useFullscreen({ target: undefined }));
 
-      expect(result.current.isFullscreen).toBe(false);
+      expect(result.current.fullscreen).toBe(false);
     });
 
     it('should handle target ref with null current', () => {
       const nullRef = { current: null };
       const { result } = renderHook(() => useFullscreen({ target: nullRef }));
 
-      expect(result.current.isFullscreen).toBe(false);
+      expect(result.current.fullscreen).toBe(false);
     });
   });
 
