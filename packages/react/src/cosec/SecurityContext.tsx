@@ -29,7 +29,7 @@ import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
  *
  * Used internally by the SecurityContext to type the context value.
  */
-export type SecurityContext = UseSecurityReturn;
+export type SecurityContextValue = UseSecurityReturn;
 
 /**
  * React context for managing authentication state across the component tree.
@@ -40,7 +40,7 @@ export type SecurityContext = UseSecurityReturn;
  * The context value is undefined by default, requiring components to be wrapped by
  * SecurityProvider to access authentication functionality.
  */
-export const SecurityContext = createContext<SecurityContext | undefined>(
+export const SecurityContext = createContext<SecurityContextValue | undefined>(
   undefined,
 );
 
@@ -145,7 +145,7 @@ export function SecurityProvider({
  * }
  * ```
  */
-export function useSecurityContext(): SecurityContext {
+export function useSecurityContext(): SecurityContextValue {
   const context = useContext(SecurityContext);
   if (!context) {
     throw new Error(
