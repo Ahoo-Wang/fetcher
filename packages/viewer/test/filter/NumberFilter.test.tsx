@@ -23,9 +23,9 @@ import { Operator } from '@ahoo-wang/fetcher-wow';
 
 // 测试辅助函数
 const createMockProps = (
-  overrides: Partial<FilterProps<number | (number | undefined)[]>> = {},
-): FilterProps<number | (number | undefined)[]> => {
-  const defaultProps: FilterProps<number | (number | undefined)[]> = {
+  overrides: Partial<FilterProps> = {},
+): FilterProps => {
+  const defaultProps: FilterProps = {
     field: {
       name: 'testField',
       label: 'Test Field',
@@ -43,9 +43,7 @@ const createMockProps = (
   return { ...defaultProps, ...overrides };
 };
 
-const renderWithRef = (
-  props: Partial<FilterProps<number | (number | undefined)[]>> = {},
-) => {
+const renderWithRef = (props: Partial<FilterProps> = {}) => {
   const ref = React.createRef<FilterRef>();
   const finalProps = createMockProps(props);
 
