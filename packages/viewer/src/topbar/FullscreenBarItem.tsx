@@ -18,7 +18,7 @@ export function FullscreenBarItem(props: FullscreenBarItemProps) {
       <div className={className} style={style} onClick={toggle}>
         <BarItem
           icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-          active={false}
+          active={isFullscreen}
         />
       </div>
     </Tooltip>

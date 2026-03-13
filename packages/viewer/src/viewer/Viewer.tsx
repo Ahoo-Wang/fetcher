@@ -50,6 +50,7 @@ export interface ViewerProps<RecordType>
   // callbacks
   onLoadData?: ViewChangeAction;
   onSwitchView?: (view: ViewState) => void;
+  fullscreenTarget?: React.RefObject<HTMLElement | null>;
 }
 
 /**
@@ -111,7 +112,7 @@ export function Viewer<RecordType = any>({
   const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
 
   const viewRef = useRef<ViewRef | null>(null);
-  const viewerRef = useRef<HTMLDivElement | null>(null);
+  const viewerRef = useRef<HTMLElement | null>(null);
 
   const handleCreateView = (view: ViewState, onSuccess?: () => void) => {
     onCreateView?.(view, (newView: ViewState) => {
