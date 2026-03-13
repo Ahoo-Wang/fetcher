@@ -24,6 +24,27 @@ import { NumberRange } from '../components';
 
 export const NUMBER_FILTER = 'number';
 
+const ensureBetweenValue = (value: unknown, isArrayValue: boolean) => {
+  if (isArrayValue) {
+    return [(value as number[])[0], (value as number[])[1]];
+  }
+  return [value as number, undefined] as const;
+};
+
+const ensureMultiValue = (value: unknown, isArrayValue: boolean) => {
+  if (isArrayValue) {
+    return value as number[];
+  }
+  return [value as number];
+};
+
+const ensureSingleValue = (value: unknown, isArrayValue: boolean) => {
+  if (isArrayValue) {
+    return (value as number[])[0];
+  }
+  return value as number;
+};
+
 export const NumberOnOperatorChangeValueConverter: OnOperatorChangeValueConverter =
   (_beforeOperator, afterOperator, value) => {
     if (value === undefined || value === null) {
@@ -31,28 +52,15 @@ export const NumberOnOperatorChangeValueConverter: OnOperatorChangeValueConverte
     }
 
     const isArrayValue = Array.isArray(value);
-    const isBetweenOperator = afterOperator === Operator.BETWEEN;
-    const isMultiValueOperator =
-      afterOperator === Operator.IN || afterOperator === Operator.NOT_IN;
-
-    if (isBetweenOperator) {
-      if (isArrayValue) {
-        return [value[0], value[1]];
-      }
-      return [value, undefined];
+    if (afterOperator === Operator.BETWEEN) {
+      return ensureBetweenValue(value, isArrayValue);
     }
 
-    if (isMultiValueOperator) {
-      if (isArrayValue) {
-        return value;
-      }
-      return [value];
+    if (afterOperator === Operator.IN || afterOperator === Operator.NOT_IN) {
+      return ensureMultiValue(value, isArrayValue);
     }
 
-    if (isArrayValue) {
-      return value[0];
-    }
-    return value;
+    return ensureSingleValue(value, isArrayValue);
   };
 
 export function NumberFilter(props: FilterProps) {

@@ -13,15 +13,18 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { TextFilter, TextOnOperatorChangeValueConverter } from '../../src';
-import { FilterProps } from '../../src';
+import {
+  FilterProps,
+  TextFilter,
+  TextOnOperatorChangeValueConverter,
+} from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 // 测试辅助函数
 const createMockProps = (
-  overrides: Partial<FilterProps<string | string[]>> = {},
-): FilterProps<string | string[]> => {
-  const defaultProps: FilterProps<string | string[]> = {
+  overrides: Partial<FilterProps> = {},
+): FilterProps => {
+  const defaultProps: FilterProps = {
     field: {
       name: 'testField',
       label: 'Test Field',
