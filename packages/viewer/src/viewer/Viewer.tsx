@@ -1,4 +1,4 @@
-import { Layout, PaginationProps, Space, ConfigProvider } from 'antd';
+import { Layout, PaginationProps, Space } from 'antd';
 import {
   ViewState,
   ViewDefinition,
