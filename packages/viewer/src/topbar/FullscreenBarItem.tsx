@@ -9,7 +9,11 @@ export interface FullscreenBarItemProps extends TopBarItemProps {
 
 export function FullscreenBarItem(props: FullscreenBarItemProps) {
   const { style, className } = props;
-  const { isFullscreen, toggle } = useFullscreenContext();
+  const fullscreen = useFullscreenContext();
+  if (!fullscreen) {
+    return null;
+  }
+  const { isFullscreen, toggle } = fullscreen;
   return (
     <Tooltip placement="top" title="全屏">
       <div className={className} style={style} onClick={toggle}>
