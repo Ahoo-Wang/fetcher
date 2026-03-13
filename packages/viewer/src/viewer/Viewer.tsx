@@ -20,7 +20,6 @@ import {
 import { RefAttributes, useCallback, useImperativeHandle, useRef, useState } from 'react';
 import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import type * as React from 'react';
-import { FullscreenProvider } from '@ahoo-wang/fetcher-react';
 
 const { Header, Sider, Content } = Layout;
 
@@ -29,8 +28,7 @@ export interface ViewerRef extends FilterPanelConditionCapableRef {
 }
 
 export interface ViewerProps<RecordType>
-  extends
-    ViewTableSettingCapable,
+  extends ViewTableSettingCapable,
     GetRecordCountActionCapable,
     ViewMutationActionsCapable,
     RefAttributes<ViewerRef>,
@@ -63,8 +61,8 @@ export interface ViewerProps<RecordType>
  * @constructor
  */
 export function Viewer<RecordType = any>({
-  ...props
-}: ViewerProps<RecordType>) {
+                                           ...props
+                                         }: ViewerProps<RecordType>) {
   const {
     ref,
     defaultViews,
@@ -179,109 +177,103 @@ export function Viewer<RecordType = any>({
     [onLoadData],
   );
 
-  useImperativeHandle(ref, ()=> {
+  useImperativeHandle(ref, () => {
     return {
-      clearSelectedRowKeys: ()=>{
-        viewRef.current?.clearSelectedRowKeys()
+      clearSelectedRowKeys: () => {
+        viewRef.current?.clearSelectedRowKeys();
       },
-      getCondition: ()=> viewRef.current?.getCondition()
-    }
-  })
+      getCondition: () => viewRef.current?.getCondition(),
+    };
+  });
 
   return (
-    <FullscreenProvider>
-      <ConfigProvider
-        getPopupContainer={() => viewerRef.current || document.body}
-      >
-        <Layout ref={viewerRef}>
-          {showViewPanel && (
-            <Sider className={styles.userViews} width={220}>
-              <ViewPanel
-                name={definition.name}
-                views={views}
+    <Layout ref={viewerRef}>
+      {showViewPanel && (
+        <Sider className={styles.userViews} width={220}>
+          <ViewPanel
+            name={definition.name}
+            views={views}
+            activeView={activeView}
+            countUrl={definition.countUrl}
+            onSwitchView={handleSwitchView}
+            onShowViewPanelChange={handleShowViewPanelChange}
+            onGetRecordCount={onGetRecordCount}
+            onCreateView={handleCreateView}
+            onUpdateView={handleUpdateView}
+            onDeleteView={handleDeleteView}
+          />
+        </Sider>
+      )}
+      <Layout className={styles.container}>
+        <Content>
+          <Space
+            orientation="vertical"
+            style={{ display: 'flex' }}
+            size="small"
+          >
+            <Header className={styles.topBar}>
+              <TopBar<RecordType>
+                tableSelectedItems={tableSelectedData}
+                title={definition.name}
                 activeView={activeView}
-                countUrl={definition.countUrl}
-                onSwitchView={handleSwitchView}
-                onShowViewPanelChange={handleShowViewPanelChange}
-                onGetRecordCount={onGetRecordCount}
+                views={views}
+                defaultTableSize={activeView.tableSize}
+                primaryAction={otherProps.primaryAction}
+                secondaryActions={otherProps.secondaryActions}
+                batchActions={otherProps.batchActions}
+                viewChanged={viewChanged}
+                onReset={handleReset}
+                showViewPanel={showViewPanel}
+                showFilter={showFilter}
+                onShowFilterChange={setShowFilter}
+                onShowViewPanelChange={setShowViewPanel}
+                onTableSizeChange={setTableSize}
                 onCreateView={handleCreateView}
                 onUpdateView={handleUpdateView}
                 onDeleteView={handleDeleteView}
               />
-            </Sider>
-          )}
-          <Layout className={styles.container}>
-            <Content>
-              <Space
-              orientation="vertical"
-              style={{ display: 'flex' }}
-              size="small"
-            >
-              <Header className={styles.topBar}>
-                <TopBar<RecordType>
-                  tableSelectedItems={tableSelectedData}
-                  title={definition.name}
-                  activeView={activeView}
-                  views={views}
-                  defaultTableSize={activeView.tableSize}
-                  primaryAction={otherProps.primaryAction}
-                  secondaryActions={otherProps.secondaryActions}
-                  batchActions={otherProps.batchActions}
-                  viewChanged={viewChanged}
-                  onReset={handleReset}
-                  showViewPanel={showViewPanel}
-                  showFilter={showFilter}
-                  onShowFilterChange={setShowFilter}
-                  onShowViewPanelChange={setShowViewPanel}
-                  onTableSizeChange={setTableSize}
-                  onCreateView={handleCreateView}
-                  onUpdateView={handleUpdateView}
-                  onDeleteView={handleDeleteView}
-                />
-              </Header>
-              <View<RecordType>
-                ref={viewRef}
-                key={activeView.id}
-                fields={definition.fields}
-                availableFilters={definition.availableFilters}
-                dataSource={otherProps.dataSource}
-                enableRowSelection={otherProps.enableRowSelection ?? true}
-                loading={otherProps.loading}
-                filterMode={'editable'}
-                pagination={otherProps.pagination}
-                showFilter={showFilter}
-                viewTableSetting={otherProps.viewTableSetting}
-                actionColumn={otherProps.actionColumn}
-                onClickPrimaryKey={otherProps.onClickPrimaryKey}
-                onSelectedDataChange={setTableSelectedData}
-                defaultActiveFilters={activeFilters}
-                externalActiveFilters={activeFilters}
-                externalUpdateActiveFilters={setActiveFilters}
-                defaultColumns={columns}
-                externalColumns={columns}
-                externalUpdateColumns={setColumns}
-                defaultPage={page}
-                externalPage={page}
-                externalUpdatePage={setPage}
-                defaultPageSize={pageSize}
-                externalPageSize={pageSize}
-                externalUpdatePageSize={setPageSize}
-                defaultTableSize={tableSize}
-                externalTableSize={tableSize}
-                externalUpdateTableSize={setTableSize}
-                defaultCondition={condition}
-                externalCondition={condition}
-                externalUpdateCondition={setCondition}
-                defaultSorter={sorter}
-                externalSorter={sorter}
-                externalUpdateSorter={setSorter}
-                onChange={handleChange}
-              />
-            </Space>
-          </Content>
-        </Layout>
+            </Header>
+            <View<RecordType>
+              ref={viewRef}
+              key={activeView.id}
+              fields={definition.fields}
+              availableFilters={definition.availableFilters}
+              dataSource={otherProps.dataSource}
+              enableRowSelection={otherProps.enableRowSelection ?? true}
+              loading={otherProps.loading}
+              filterMode={'editable'}
+              pagination={otherProps.pagination}
+              showFilter={showFilter}
+              viewTableSetting={otherProps.viewTableSetting}
+              actionColumn={otherProps.actionColumn}
+              onClickPrimaryKey={otherProps.onClickPrimaryKey}
+              onSelectedDataChange={setTableSelectedData}
+              defaultActiveFilters={activeFilters}
+              externalActiveFilters={activeFilters}
+              externalUpdateActiveFilters={setActiveFilters}
+              defaultColumns={columns}
+              externalColumns={columns}
+              externalUpdateColumns={setColumns}
+              defaultPage={page}
+              externalPage={page}
+              externalUpdatePage={setPage}
+              defaultPageSize={pageSize}
+              externalPageSize={pageSize}
+              externalUpdatePageSize={setPageSize}
+              defaultTableSize={tableSize}
+              externalTableSize={tableSize}
+              externalUpdateTableSize={setTableSize}
+              defaultCondition={condition}
+              externalCondition={condition}
+              externalUpdateCondition={setCondition}
+              defaultSorter={sorter}
+              externalSorter={sorter}
+              externalUpdateSorter={setSorter}
+              onChange={handleChange}
+            />
+          </Space>
+        </Content>
       </Layout>
-      </ConfigProvider>
-    </FullscreenProvider>
+    </Layout>
   );
 }
