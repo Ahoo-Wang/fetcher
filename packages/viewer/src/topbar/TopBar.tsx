@@ -31,6 +31,7 @@ import {
   RefreshDataBarItem,
   ColumnHeightBarItem,
   ShareLinkBarItem,
+  FullscreenBarItem,
 } from './';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 
@@ -57,6 +58,8 @@ export interface TopBarProps<
   onCreateView: (view: ViewState, onSuccess?: () => void) => void;
   onUpdateView: (view: ViewState, onSuccess?: () => void) => void;
   onDeleteView: (view: ViewState, onSuccess?: () => void) => void;
+
+  fullscreenTarget?: React.RefObject<HTMLElement | null>;
 }
 
 function renderMenuItem<RecordType>(
@@ -114,6 +117,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     onTableSizeChange,
     onCreateView,
     onUpdateView,
+    fullscreenTarget,
   } = props;
 
   const [saveViewModalType, setSaveViewModalType] = useState<
@@ -248,6 +252,9 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             onChange={onTableSizeChange}
           />
           <ShareLinkBarItem />
+          {fullscreenTarget && (
+            <FullscreenBarItem target={fullscreenTarget} />
+          )}
           <Divider orientation="vertical" />
           <AutoRefreshBarItem />
           {batchActions?.enabled && (

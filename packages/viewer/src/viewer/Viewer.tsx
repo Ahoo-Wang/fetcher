@@ -111,6 +111,7 @@ export function Viewer<RecordType = any>({
   const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
 
   const viewRef = useRef<ViewRef | null>(null);
+  const viewerRef = useRef<HTMLDivElement | null>(null);
 
   const handleCreateView = (view: ViewState, onSuccess?: () => void) => {
     onCreateView?.(view, (newView: ViewState) => {
@@ -186,7 +187,7 @@ export function Viewer<RecordType = any>({
   })
 
   return (
-    <Layout>
+    <Layout ref={viewerRef}>
       {showViewPanel && (
         <Sider className={styles.userViews} width={220}>
           <ViewPanel
@@ -230,6 +231,7 @@ export function Viewer<RecordType = any>({
                 onCreateView={handleCreateView}
                 onUpdateView={handleUpdateView}
                 onDeleteView={handleDeleteView}
+                fullscreenTarget={viewerRef}
               />
             </Header>
             <View<RecordType>
