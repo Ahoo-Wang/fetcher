@@ -12,11 +12,7 @@
  */
 
 import { createContext, ReactNode, useContext, useRef } from 'react';
-import {
-  useFullscreen,
-  UseFullscreenOptions,
-  UseFullscreenReturn,
-} from './useFullscreen';
+import { useFullscreen, UseFullscreenOptions, UseFullscreenReturn } from './useFullscreen';
 
 export type FullscreenContextValue = UseFullscreenReturn;
 
@@ -40,12 +36,6 @@ export function FullscreenProvider(props: FullscreenProviderProps) {
   );
 }
 
-export function useFullscreenContext(): FullscreenContextValue {
-  const context = useContext(FullscreenContext);
-  if (!context) {
-    throw new Error(
-      'useFullscreenContext must be used within FullscreenProvider',
-    );
-  }
-  return context;
+export function useFullscreenContext(): FullscreenContextValue | undefined {
+  return useContext(FullscreenContext);
 }
