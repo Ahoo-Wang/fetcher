@@ -1,10 +1,11 @@
 import { BarItem } from './BarItem';
 import { Tooltip } from 'antd';
-import { useFullscreenContext, UseFullscreenOptions } from '@ahoo-wang/fetcher-react';
+import { useFullscreenContext } from '@ahoo-wang/fetcher-react';
 import { TopBarItemProps } from './types';
 import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons';
 
-export interface FullscreenBarItemProps extends UseFullscreenOptions, TopBarItemProps {
+export interface FullscreenBarItemProps extends TopBarItemProps {
+  target?: HTMLElement;
 }
 
 export function FullscreenBarItem(props: FullscreenBarItemProps) {
@@ -16,9 +17,11 @@ export function FullscreenBarItem(props: FullscreenBarItemProps) {
   const { fullscreen, toggle } = fullscreenState;
   return (
     <Tooltip placement="top" title="全屏">
-      <div className={className} style={style} onClick={() => toggle(target?.current)}>
+      <div className={className} style={style} onClick={() => toggle(target)}>
         <BarItem
-          icon={fullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+          icon={
+            fullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />
+          }
           active={fullscreen}
         />
       </div>

@@ -10,6 +10,7 @@ import {
   URL_RESOLVE_INTERCEPTOR_ORDER,
   UrlBuilder,
 } from '@ahoo-wang/fetcher';
+import { FullscreenProvider } from '@ahoo-wang/fetcher-react';
 
 const ACCEPT = 'Accept';
 const CONTENT_TYPE = 'Content-Type';
@@ -32,7 +33,7 @@ class TestFetcherRequestInterceptor implements RequestInterceptor {
       [X_WAREHOUSE_ID]: 'mydao-SH',
       [COSEC_APP_ID]: 'pms',
       Authorization:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkRXd0hMVDAwUkYxS0giLCJzdWIiOiIzaEgiLCJpYXQiOjE3NzMyMDM3NjIsImV4cCI6MTc3MzQ2Mjk2MiwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkRXd0hMNDAwUkYxS0MifSwidGVuYW50SWQiOiJteWRhbyJ9.UCvDyyIpZ_EbL0ZyjewlgEGoc_LjWuEw2t1TXnE0B10',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkR2U3hVUTAwQkY2UEEiLCJzdWIiOiIzaEsiLCJpYXQiOjE3NzM1NjYxODIsImV4cCI6MTc3MzgyNTM4MiwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkNtcnVOcjAwZmg0OHAifSwidGVuYW50SWQiOiJteWRhbyJ9.EqBGPTYuRSoXrZDi-CAi_nFz3TEhtXhGnmHbCYs5uu0',
     };
 
     exchange.request.url = exchange.request.url.replace('{tenantId}', 'mydao');
@@ -95,6 +96,18 @@ const meta: Meta<typeof FetcherViewer> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+export const WithRefMethods: Story = {
+  args: {
+    viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
+    tenantId: 'mydao',
+    defaultViewId: '',
+    pagination: {} as PaginationProps,
+    enableRowSelection: true,
+  },
+  render: args => <FetcherViewerWithRefMethodsWrapper {...args} />,
+};
+
 export const Basic: Story = {
   args: {
     viewerDefinitionId: 'sku-cost',
@@ -150,6 +163,77 @@ export const LargePageSize: Story = {
   },
 };
 
+/**
+ * 全屏示例：使用默认的 document.documentElement（整个页面全屏）
+ */
+export const FullscreenDefault: Story = {
+  args: {
+    viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
+    tenantId: 'mydao',
+    defaultViewId: '',
+    pagination: {} as PaginationProps,
+    enableRowSelection: true,
+  },
+  render: args => (
+    <FullscreenProvider>
+      <FetcherViewer {...args} />
+    </FullscreenProvider>
+  ),
+};
+
+/**
+ * 全屏示例：不从外部获取自动挂载内部视图容器
+ */
+export const FullscreenInternalRef: Story = {
+  args: {
+    viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
+    tenantId: 'mydao',
+    defaultViewId: '',
+    pagination: {} as PaginationProps,
+    enableRowSelection: true,
+    getFullScreenTarget: false,
+  },
+  render: args => (
+    <FullscreenProvider>
+      <div style={{ color: 'red' }}>
+        默认自动挂载内部viewRef容器全屏后不可见
+      </div>
+      <FetcherViewer {...args} />
+    </FullscreenProvider>
+  ),
+};
+
+/**
+ * 全屏示例：使用 RefObject 获取容器元素
+ * 通过 useRef 创建 ref 并传递给组件
+ */
+export const FullscreenWithRef: Story = {
+  args: {
+    viewerDefinitionId: 'sku-cost',
+    ownerId: '1ZE',
+    tenantId: 'mydao',
+    defaultViewId: '',
+    pagination: {} as PaginationProps,
+    enableRowSelection: true,
+  },
+  render: args => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    return (
+      <FullscreenProvider>
+        <div
+          ref={containerRef}
+          style={{ padding: '16px', background: '#f5f5f5' }}
+        >
+          <div style={{ color: 'red' }}>外部容器（RefObject）- 全屏后可见</div>
+          <FetcherViewer {...args} getFullScreenTarget={containerRef} />
+        </div>
+      </FullscreenProvider>
+    );
+  },
+};
+
 const FetcherViewerWithRefMethodsWrapper = (args: any) => {
   const viewerRef = useRef<FetcherViewerRef>(null);
 
@@ -179,19 +263,9 @@ const FetcherViewerWithRefMethodsWrapper = (args: any) => {
         <Button onClick={handleClearSelection}>Clear Selection</Button>
         <Button onClick={handleGetCondition}>Get Condition</Button>
       </Space>
-      <FetcherViewer ref={viewerRef} {...args} />
+      <FullscreenProvider>
+        <FetcherViewer ref={viewerRef} {...args} />
+      </FullscreenProvider>
     </Space>
   );
-};
-
-export const WithRefMethods: Story = {
-  args: {
-    viewerDefinitionId: 'sku-cost',
-    ownerId: '1ZE',
-    tenantId: 'mydao',
-    defaultViewId: '',
-    pagination: {} as PaginationProps,
-    enableRowSelection: true,
-  },
-  render: args => <FetcherViewerWithRefMethodsWrapper {...args} />,
 };

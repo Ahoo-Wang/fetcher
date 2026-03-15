@@ -11,8 +11,13 @@
  * limitations under the License.
  */
 
-import { createContext, ReactNode, useContext, useRef } from 'react';
-import { useFullscreen, UseFullscreenOptions, UseFullscreenReturn } from './useFullscreen';
+import { createContext, ReactNode, useContext } from 'react';
+import {
+  useFullscreen,
+  UseFullscreenOptions,
+  UseFullscreenReturn,
+} from './useFullscreen';
+import React from 'react';
 
 export type FullscreenContextValue = UseFullscreenReturn;
 
@@ -26,12 +31,10 @@ export interface FullscreenProviderProps extends UseFullscreenOptions {
 
 export function FullscreenProvider(props: FullscreenProviderProps) {
   const { children, target: targetProp, ...options } = props;
-  const containerRef = useRef<HTMLDivElement>(null);
-  const target = targetProp ?? containerRef;
-  const fullscreen = useFullscreen({ target, ...options });
+  const fullscreen = useFullscreen({ target: targetProp, ...options });
   return (
     <FullscreenContext.Provider value={fullscreen}>
-      <div ref={targetProp ? undefined : containerRef}>{children}</div>
+      <React.Fragment>{children}</React.Fragment>
     </FullscreenContext.Provider>
   );
 }
