@@ -24,7 +24,7 @@ catalog:
   eslint-plugin-react-hooks: ^7.0.1
   globals: ^17.4.0
   immer: ^11.1.4
-  jsdom: ^28.1.0
+  jsdom: ^29.0.0
   msw: ^2.12.10
   nanoid: ^5.1.6
   playwright: ^1.58.2
