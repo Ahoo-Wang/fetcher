@@ -7,21 +7,13 @@ import {
   ViewType,
 } from '../';
 import styles from './TopBar.module.css';
-import {
-  Button,
-  Divider,
-  Dropdown,
-  Flex,
-  MenuProps,
-  Space,
-  Modal,
-} from 'antd';
+import { Button, Divider, Dropdown, Flex, MenuProps, Space, Modal } from 'antd';
 import {
   DownOutlined,
   ExclamationCircleOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import React, { RefObject, useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import type { ItemType } from 'antd/es/menu/interface';
 import {
   AutoRefreshBarItem,
@@ -58,7 +50,7 @@ export interface TopBarProps<
   onCreateView: (view: ViewState, onSuccess?: () => void) => void;
   onUpdateView: (view: ViewState, onSuccess?: () => void) => void;
   onDeleteView: (view: ViewState, onSuccess?: () => void) => void;
-  fullscreenTarget?: RefObject<HTMLElement | null>;
+  fullscreenTarget?: HTMLElement | (() => HTMLElement);
 }
 
 function renderMenuItem<RecordType>(
@@ -197,6 +189,11 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     onShowViewPanelChange?.(true);
   }, [onShowViewPanelChange]);
 
+  const resolvedFullscreenTarget =
+    typeof fullscreenTarget === 'function'
+      ? fullscreenTarget()
+      : fullscreenTarget;
+
   return (
     <>
       <Flex align="center" justify="space-between">
@@ -251,7 +248,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             onChange={onTableSizeChange}
           />
           <ShareLinkBarItem />
-          <FullscreenBarItem target={fullscreenTarget} />
+          <FullscreenBarItem target={resolvedFullscreenTarget} />
           <Divider orientation="vertical" />
           <AutoRefreshBarItem />
           {batchActions?.enabled && (

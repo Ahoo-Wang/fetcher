@@ -6,6 +6,7 @@ import {
   Condition,
   FieldSort,
   PagedList,
+  PagedQuery,
 } from '@ahoo-wang/fetcher-wow';
 import { FetcherError } from '@ahoo-wang/fetcher';
 import { useCallback, useEffect } from 'react';
@@ -21,6 +22,7 @@ export interface UseFetchDataReturn<RecordType> {
   setQuery?: ViewChangeAction;
   error: FetcherError | undefined;
   reload: () => Promise<void>;
+  getQuery: () => PagedQuery | undefined;
 }
 
 export function useFetchData<RecordType>(
@@ -28,7 +30,7 @@ export function useFetchData<RecordType>(
 ): UseFetchDataReturn<RecordType> {
   const { viewerDefinition, defaultView } = options;
 
-  const { result, loading, error, setQuery, execute } =
+  const { result, loading, error, setQuery, execute, getQuery } =
     useFetcherPagedQuery<RecordType>({
       url: viewerDefinition?.dataUrl || '',
       autoExecute: true,
@@ -70,6 +72,7 @@ export function useFetchData<RecordType>(
     dataSource: result,
     loading,
     setQuery: setQueryFn,
+    getQuery,
     error,
     reload: execute,
   };

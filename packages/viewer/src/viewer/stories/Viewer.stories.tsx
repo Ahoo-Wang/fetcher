@@ -26,6 +26,8 @@ import { PagedList } from '@ahoo-wang/fetcher-wow';
 import { Condition } from '@ahoo-wang/fetcher-wow';
 import type { SorterResult } from 'antd/es/table/interface';
 import type { PaginationProps } from 'antd';
+import { FullscreenProvider } from '@ahoo-wang/fetcher-react';
+import { useRef } from 'react';
 
 interface User {
   id: number;
@@ -256,6 +258,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const ViewerWrapper = (args: any) => {
+  const ref = useRef(null);
   const handleLoadData = (
     condition: Condition,
     index: number,
@@ -293,6 +296,7 @@ const ViewerWrapper = (args: any) => {
   return (
     <Viewer<User>
       {...args}
+      fullscreenTarget={ref}
       onLoadData={handleLoadData}
       onSwitchView={handleViewChange}
       onCreateView={handleCreateView}
@@ -388,7 +392,7 @@ export const WithActionColumn: Story = {
     batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
     actionColumn: {
       title: 'Actions',
-      actions: (record) => ({
+      actions: record => ({
         primaryAction: {
           data: { value: 'Edit', record, index: 0 },
           attributes: { onClick: () => console.log('Edit', record) },
@@ -422,7 +426,7 @@ export const WithPrimaryAction: Story = {
     batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
     primaryAction: {
       title: 'Create User',
-      onClick: (items) => console.log('Create user'),
+      onClick: items => console.log('Create user'),
     },
   },
   render: args => <ViewerWrapper {...args} />,
@@ -440,16 +444,16 @@ export const WithSecondaryActions: Story = {
     batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
     primaryAction: {
       title: 'Create User',
-      onClick: (items) => console.log('Create user'),
+      onClick: items => console.log('Create user'),
     },
     secondaryActions: [
       {
         title: 'Export',
-        onClick: (items) => console.log('Export', items),
+        onClick: items => console.log('Export', items),
       },
       {
         title: 'Import',
-        onClick: (items) => console.log('Import'),
+        onClick: items => console.log('Import'),
       },
     ],
   },
@@ -514,23 +518,23 @@ export const WithAllActions: Story = {
         {
           title: 'Delete',
           attributes: { danger: true },
-          onClick: (items) => console.log('Delete', items),
+          onClick: items => console.log('Delete', items),
         },
       ],
     },
     primaryAction: {
       title: 'Create',
-      onClick: (items) => console.log('Create'),
+      onClick: items => console.log('Create'),
     },
     secondaryActions: [
       {
         title: 'Export',
-        onClick: (items) => console.log('Export', items),
+        onClick: items => console.log('Export', items),
       },
     ],
     actionColumn: {
       title: 'Actions',
-      actions: (record) => ({
+      actions: record => ({
         primaryAction: {
           data: { value: 'Edit', record, index: 0 },
           attributes: { onClick: () => console.log('Edit', record) },
