@@ -8,7 +8,6 @@ import {
   useRefreshDataEventBus,
   TopbarActionsCapable,
   ViewerRef,
-  FilterPanelConditionCapableRef,
 } from '../';
 import {
   useViewerDefinition,
@@ -20,19 +19,26 @@ import {
 } from './';
 import {
   RefAttributes,
+  RefObject,
   useCallback,
   useImperativeHandle,
   useMemo,
   useRef,
 } from 'react';
-import { CommandResult, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import {
+  CommandResult,
+  Condition,
+  FieldSort,
+  PagedQuery,
+} from '@ahoo-wang/fetcher-wow';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
 import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
-export interface FetcherViewerRef extends FilterPanelConditionCapableRef {
+export interface FetcherViewerRef {
   refreshData: () => void;
   clearSelectedRowKeys: () => void;
+  getCondition: () => PagedQuery | undefined;
 }
 
 export interface FetcherViewerProps<RecordType>
@@ -55,6 +61,15 @@ export interface FetcherViewerProps<RecordType>
   enableRowSelection?: boolean;
 
   onSwitchView?: (view: ViewState) => void;
+
+  /**
+   * 全屏目标元素
+   * - undefined: 使用 document.documentElement（默认，整个页面全屏）
+   * - HTMLElement: 使用指定的元素进行全屏
+   * - RefObject<HTMLElement>: 使用 ref 引用的元素进行全屏
+   * - false: 不向外获取内容，自动挂载在内部视图容器（使用 viewRef）
+   */
+  getFullScreenTarget?: HTMLElement | RefObject<HTMLElement | null> | false;
 }
 
 const viewCommandClient = new ViewCommandClient();
@@ -77,6 +92,7 @@ export function FetcherViewer<RecordType = any>({
     primaryAction,
     secondaryActions,
     batchActions,
+    getFullScreenTarget,
   } = props;
   const localDefaultViewIdStorage = new KeyStorage<string | undefined>({
     key: 'fetcher-viewer-local-default-view-id',
@@ -108,6 +124,7 @@ export function FetcherViewer<RecordType = any>({
     loading: fetchLoading,
     setQuery,
     reload,
+    getQuery,
   } = useFetchData<RecordType>({
     viewerDefinition,
     defaultView,
@@ -211,7 +228,7 @@ export function FetcherViewer<RecordType = any>({
       viewerRef.current?.clearSelectedRowKeys();
     },
     getCondition: () => {
-      return viewerRef.current?.getCondition();
+      return getQuery();
     },
   }));
 
@@ -276,6 +293,7 @@ export function FetcherViewer<RecordType = any>({
         onCreateView={handleCreateView}
         onUpdateView={handleUpdateView}
         onDeleteView={handleDeleteView}
+        getFullscreenTarget={getFullScreenTarget}
       />
     );
   }

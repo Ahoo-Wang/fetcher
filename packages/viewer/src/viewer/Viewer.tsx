@@ -1,4 +1,5 @@
 import { Layout, PaginationProps, Space } from 'antd';
+import type { RefObject } from 'react';
 import {
   ViewState,
   ViewDefinition,
@@ -15,9 +16,17 @@ import {
   ViewChangeAction,
   View,
   ViewRef,
-  ViewTableActionColumn, FilterPanelConditionCapableRef,
+  ViewTableActionColumn,
+  FilterPanelConditionCapableRef,
 } from '../';
-import { RefAttributes, useCallback, useImperativeHandle, useRef, useState } from 'react';
+import {
+  RefAttributes,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import type * as React from 'react';
 
@@ -28,7 +37,8 @@ export interface ViewerRef extends FilterPanelConditionCapableRef {
 }
 
 export interface ViewerProps<RecordType>
-  extends ViewTableSettingCapable,
+  extends
+    ViewTableSettingCapable,
     GetRecordCountActionCapable,
     ViewMutationActionsCapable,
     RefAttributes<ViewerRef>,
@@ -49,7 +59,14 @@ export interface ViewerProps<RecordType>
   // callbacks
   onLoadData?: ViewChangeAction;
   onSwitchView?: (view: ViewState) => void;
-  fullscreenTarget?: React.RefObject<HTMLElement | null>;
+  /**
+   * 全屏目标元素
+   * - undefined: 使用 document.documentElement（默认，整个页面全屏）
+   * - HTMLElement: 使用指定的元素进行全屏
+   * - RefObject<HTMLElement>: 使用 ref 引用的元素进行全屏
+   * - false: 不向外获取内容，自动挂载在内部视图容器（使用 viewRef）
+   */
+  getFullscreenTarget?: HTMLElement | RefObject<HTMLElement | null> | false;
 }
 
 /**
@@ -61,13 +78,14 @@ export interface ViewerProps<RecordType>
  * @constructor
  */
 export function Viewer<RecordType = any>({
-                                           ...props
-                                         }: ViewerProps<RecordType>) {
+  ...props
+}: ViewerProps<RecordType>) {
   const {
     ref,
     defaultViews,
     defaultView,
     definition,
+    getFullscreenTarget,
     onLoadData,
     onGetRecordCount,
     onCreateView,
@@ -177,6 +195,30 @@ export function Viewer<RecordType = any>({
     [onLoadData],
   );
 
+  /**
+   * 处理全屏目标元素的逻辑
+   * - undefined: 默认使用 document.documentElement（整个页面全屏）
+   * - false: 不向外获取内容，使用内部视图容器（返回函数，在组件挂载后使用 viewerRef）
+   * - HTMLElement: 直接使用指定的元素
+   * - RefObject<HTMLElement>: 从 ref.current 获取元素
+   */
+  const internalFullScreenTarget = useMemo(() => {
+    if (getFullscreenTarget === undefined) {
+      return document.documentElement;
+    }
+
+    if (getFullscreenTarget === false) {
+      return () => viewerRef.current || document.documentElement;
+    }
+
+    // 处理 RefObject 类型
+    if ('current' in getFullscreenTarget) {
+      return () => getFullscreenTarget.current || document.documentElement;
+    }
+
+    return getFullscreenTarget;
+  }, [getFullscreenTarget]);
+
   useImperativeHandle(ref, () => {
     return {
       clearSelectedRowKeys: () => {
@@ -231,7 +273,7 @@ export function Viewer<RecordType = any>({
                 onCreateView={handleCreateView}
                 onUpdateView={handleUpdateView}
                 onDeleteView={handleDeleteView}
-                fullscreenTarget={viewerRef}
+                fullscreenTarget={internalFullScreenTarget}
               />
             </Header>
             <View<RecordType>
