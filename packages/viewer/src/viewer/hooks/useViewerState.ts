@@ -5,13 +5,6 @@ import { deepEqual, ActiveFilter, useActiveViewState } from '../../';
 import { all, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import { SortOrder } from 'antd/es/table/interface';
 
-export type SearchDataConverter<R> = (
-  condition: Condition,
-  page: number,
-  pageSize: number,
-  sorter?: FieldSort[],
-) => R;
-
 export interface UseViewerStateOptions {
   views: ViewState[];
   defaultView: ViewState;
@@ -152,7 +145,6 @@ export function useViewerState({
         return {
           ...activeFilter,
           value: null,
-          operator: null,
         };
       }
 
