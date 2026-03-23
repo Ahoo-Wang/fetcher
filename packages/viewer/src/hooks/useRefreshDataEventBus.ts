@@ -49,9 +49,9 @@ export function useRefreshDataEventBus(
       ...handler,
       name: `${finalSubscriberId}:${handler.name}`,
       order: handler.order,
-      handle: async (event: RefreshDataEvent) => {
+      handle: (event: RefreshDataEvent) => {
         if (event.subscriberId === finalSubscriberId) {
-          await handler.handle(event);
+          return handler.handle(event);
         }
       },
     };
@@ -60,7 +60,6 @@ export function useRefreshDataEventBus(
 
   useEffect(() => {
     return () => {
-      console.log(bus.handlers);
       bus.handlers
         .filter(h => h.name.startsWith(`${targetSubscriberId}:`))
         .forEach(handler => {
