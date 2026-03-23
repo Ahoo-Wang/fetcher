@@ -14,6 +14,7 @@ export interface AutoRefreshItem {
 export interface AutoRefreshBarItemProps {
   items?: AutoRefreshItem[];
   viewId: string;
+  viewerDefinitionId: string;
 }
 
 const DefaultAutoRefreshItems = [
@@ -50,6 +51,7 @@ const localAutoRefreshViewIdStorage = new KeyStorage<
 export function AutoRefreshBarItem({
   items = DefaultAutoRefreshItems,
   viewId,
+  viewerDefinitionId,
 }: AutoRefreshBarItemProps) {
   const [localAutoRefreshViewId, setLocalAutoRefreshViewId] = useKeyStorage<
     Record<string, AutoRefreshItem>
@@ -62,7 +64,7 @@ export function AutoRefreshBarItem({
 
   const intervalIdRef = useRef<number | null>(null);
 
-  const { publish } = useRefreshDataEventBus();
+  const { publish } = useRefreshDataEventBus(viewerDefinitionId);
   const { locale } = useLocale();
 
   const handleMenuClick: MenuProps['onClick'] = menuInfo => {

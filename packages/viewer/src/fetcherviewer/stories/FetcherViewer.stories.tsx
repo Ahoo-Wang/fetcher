@@ -32,7 +32,7 @@ class TestFetcherRequestInterceptor implements RequestInterceptor {
       [X_WAREHOUSE_ID]: 'mydao-SH',
       [COSEC_APP_ID]: 'pms',
       Authorization:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkVId1JBbDAwVTIwZVciLCJzdWIiOiIzaEgiLCJpYXQiOjE3NzM4OTgyODcsImV4cCI6MTc3NDE1NzQ4NywiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkVId1JBTjAwVTIwZVIifSwidGVuYW50SWQiOiJteWRhbyJ9._h04Hbnbj-nYwd1Gw0Ss5LJobtth8vsWMaBcQIOL5lA',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkVlSnkwbDAwVTIwdzgiLCJzdWIiOiIzaEsiLCJpYXQiOjE3NzQyMjg5NzUsImV4cCI6MTc3NDQ4ODE3NSwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkNtcnVOcjAwZmg0OHAifSwidGVuYW50SWQiOiJteWRhbyJ9.0Gu7MUsMAPca3_FStyd2RXoPSGqfcUIzkCWSggEgSSo',
     };
 
     exchange.request.url = exchange.request.url.replace('{tenantId}', 'mydao');
@@ -97,7 +97,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Basic: Story = {
   args: {
-    viewerDefinitionId: 'sku-cost',
+    viewerDefinitionId: 'supplier-info',
     ownerId: '1ZE',
     tenantId: 'mydao',
     defaultViewId: '',
@@ -119,7 +119,7 @@ export const Basic: Story = {
 
 export const WithRowSelection: Story = {
   args: {
-    viewerDefinitionId: 'sku-cost',
+    viewerDefinitionId: 'supplier-info',
     ownerId: '1ZE',
     tenantId: 'mydao',
     defaultViewId: '',

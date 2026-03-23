@@ -210,10 +210,10 @@ export function FetcherViewer<RecordType = any>({
     [],
   );
 
-  const { publish, subscribe } = useRefreshDataEventBus();
+  const { publish, subscribe } = useRefreshDataEventBus(viewerDefinitionId);
 
   useImperativeHandle<FetcherViewerRef, FetcherViewerRef>(ref, () => ({
-    refreshData: publish,
+    refreshData: () => publish(viewerDefinitionId),
     // 现有组件在refreshData事件触发时，视图中的数据未与已选中行的数据保持一致
     // 暴露 clearSelectedRowKeys 方法让外部使用者手动清除选中行
     clearSelectedRowKeys: () => {
@@ -226,12 +226,15 @@ export function FetcherViewer<RecordType = any>({
     getViewerDefinition: () => viewerDefinition,
   }));
 
-  subscribe({
-    name: 'Viewer-Refresh-Data',
-    handle: async () => {
-      await reload();
+  subscribe(
+    {
+      name: 'Viewer-Refresh-Data',
+      handle: async () => {
+        await reload();
+      },
     },
-  });
+    viewerDefinitionId,
+  );
 
   if (definitionLoading || viewsLoading) {
     return (

@@ -32,6 +32,8 @@ export interface TopBarProps<
 > extends TopbarActionsCapable<RecordType> {
   title: string;
 
+  viewerDefinitionId: string;
+
   activeView: ViewState;
   views: ViewState[];
 
@@ -93,6 +95,7 @@ const saveMethodItems: MenuProps['items'] = [
 export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   const {
     title,
+    viewerDefinitionId,
     activeView,
     primaryAction,
     secondaryActions,
@@ -237,7 +240,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             defaultShowFilter={showFilter}
             onChange={onShowFilterChange}
           />
-          <RefreshDataBarItem />
+          <RefreshDataBarItem viewerDefinitionId={viewerDefinitionId} />
           <ColumnHeightBarItem
             defaultTableSize={defaultTableSize}
             onChange={onTableSizeChange}
@@ -245,7 +248,10 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
           <ShareLinkBarItem />
           <FullscreenBarItem target={fullscreenTarget} />
           <Divider orientation="vertical" />
-          <AutoRefreshBarItem viewId={activeView.id} />
+          <AutoRefreshBarItem
+            viewId={activeView.id}
+            viewerDefinitionId={viewerDefinitionId}
+          />
           {batchActions?.enabled && (
             <>
               <Divider orientation="vertical" />

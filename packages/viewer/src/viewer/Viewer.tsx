@@ -215,6 +215,7 @@ export function Viewer<RecordType = any>({
           >
             <Header className={styles.topBar}>
               <TopBar<RecordType>
+                viewerDefinitionId={definition.id}
                 tableSelectedItems={tableSelectedData}
                 title={definition.name}
                 activeView={activeView}

@@ -13,7 +13,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
-import { Tooltip } from 'antd';
+import '@testing-library/jest-dom';
 import { RefreshDataBarItem } from '../../src/topbar/RefreshDataBarItem';
 
 const mockPublish = vi.fn().mockResolvedValue(undefined);
@@ -23,6 +23,8 @@ vi.mock('../../src/hooks/useRefreshDataEventBus', () => ({
     publish: mockPublish,
   })),
 }));
+
+const TEST_VIEWER_DEFINITION_ID = 'test-viewer-definition-id';
 
 describe('RefreshDataBarItem', () => {
   beforeEach(() => {
@@ -49,19 +51,40 @@ describe('RefreshDataBarItem', () => {
       );
       expect(container.firstChild).toHaveStyle(style);
     });
+
+    it('should render with viewerDefinitionId', () => {
+      const { container } = render(
+        <RefreshDataBarItem viewerDefinitionId={TEST_VIEWER_DEFINITION_ID} />,
+      );
+      expect(container.firstChild).toBeInTheDocument();
+    });
   });
 
   describe('click behavior', () => {
     it('should call publish when clicked', () => {
-      const { container } = render(<RefreshDataBarItem />);
+      const { container } = render(
+        <RefreshDataBarItem viewerDefinitionId={TEST_VIEWER_DEFINITION_ID} />,
+      );
 
       fireEvent.click(container.firstChild as HTMLElement);
 
       expect(mockPublish).toHaveBeenCalledTimes(1);
     });
 
+    it('should call publish with viewerDefinitionId when clicked', () => {
+      const { container } = render(
+        <RefreshDataBarItem viewerDefinitionId="my-viewer-def" />,
+      );
+
+      fireEvent.click(container.firstChild as HTMLElement);
+
+      expect(mockPublish).toHaveBeenCalledWith('my-viewer-def');
+    });
+
     it('should call publish multiple times when clicked multiple times', () => {
-      const { container } = render(<RefreshDataBarItem />);
+      const { container } = render(
+        <RefreshDataBarItem viewerDefinitionId={TEST_VIEWER_DEFINITION_ID} />,
+      );
 
       fireEvent.click(container.firstChild as HTMLElement);
       fireEvent.click(container.firstChild as HTMLElement);
@@ -85,6 +108,14 @@ describe('RefreshDataBarItem', () => {
       );
 
       expect(container.firstChild).toHaveClass('test-class');
+    });
+
+    it('should accept viewerDefinitionId prop', () => {
+      const { container } = render(
+        <RefreshDataBarItem viewerDefinitionId="viewer-def-123" />,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
     });
   });
 
