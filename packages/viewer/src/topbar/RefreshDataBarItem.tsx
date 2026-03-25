@@ -4,15 +4,17 @@ import { ReloadOutlined } from '@ant-design/icons';
 import { useRefreshDataEventBus } from '../';
 import { Tooltip } from 'antd';
 
-export interface RefreshDataBarItemProps extends TopBarItemProps {}
+export interface RefreshDataBarItemProps extends TopBarItemProps {
+  viewerDefinitionId?: string;
+}
 
 export function RefreshDataBarItem(props: RefreshDataBarItemProps) {
-  const { style, className } = props;
+  const { style, className, viewerDefinitionId } = props;
 
-  const { publish } = useRefreshDataEventBus();
+  const { publish } = useRefreshDataEventBus(viewerDefinitionId);
 
   const handleClick = async () => {
-    await publish();
+    await publish(viewerDefinitionId);
   };
 
   return (

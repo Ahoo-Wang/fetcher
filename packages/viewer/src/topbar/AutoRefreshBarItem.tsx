@@ -1,7 +1,9 @@
 import { Button, Dropdown, MenuProps } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocale, useRefreshDataEventBus } from '../';
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 
 export interface AutoRefreshItem {
   label: string;
@@ -11,6 +13,8 @@ export interface AutoRefreshItem {
 
 export interface AutoRefreshBarItemProps {
   items?: AutoRefreshItem[];
+  viewId: string;
+  viewerDefinitionId: string;
 }
 
 const DefaultAutoRefreshItems = [
@@ -37,23 +41,39 @@ const NeverRefreshItem: AutoRefreshItem = {
   refreshInterval: 0,
 };
 
+const localAutoRefreshViewIdStorage = new KeyStorage<
+  Record<string, AutoRefreshItem>
+>({
+  key: 'view:refresh',
+  defaultValue: undefined,
+});
+
 export function AutoRefreshBarItem({
   items = DefaultAutoRefreshItems,
+  viewId,
+  viewerDefinitionId,
 }: AutoRefreshBarItemProps) {
+  const [localAutoRefreshViewId, setLocalAutoRefreshViewId] = useKeyStorage<
+    Record<string, AutoRefreshItem>
+  >(localAutoRefreshViewIdStorage);
+
   const finalItems = [...items, NeverRefreshItem];
 
-  const [selectedItem, setSelectedItem] =
-    useState<AutoRefreshItem>(NeverRefreshItem);
+  const selectedItem: AutoRefreshItem =
+    localAutoRefreshViewId?.[viewId] ?? NeverRefreshItem;
 
   const intervalIdRef = useRef<number | null>(null);
 
-  const { publish } = useRefreshDataEventBus();
+  const { publish } = useRefreshDataEventBus(viewerDefinitionId);
   const { locale } = useLocale();
 
   const handleMenuClick: MenuProps['onClick'] = menuInfo => {
     const item = finalItems.find(i => i.key === menuInfo.key);
     if (item) {
-      setSelectedItem(item);
+      setLocalAutoRefreshViewId({
+        ...localAutoRefreshViewId,
+        [viewId]: item,
+      });
     }
   };
 

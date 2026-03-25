@@ -460,6 +460,28 @@ describe('DateTimeFilter', () => {
       expect(() => render(<DateTimeFilter {...props} />)).not.toThrow();
     });
 
+    it('renders with numeric defaultValue for date picker', () => {
+      const props = createMockProps({
+        operator: { defaultValue: Operator.GT },
+        value: { defaultValue: dayjs().valueOf() },
+      });
+      expect(() => render(<DateTimeFilter {...props} />)).not.toThrow();
+    });
+
+    it('renders with numeric range defaultValue for BETWEEN', () => {
+      const props = createMockProps({
+        operator: { defaultValue: Operator.BETWEEN },
+        value: {
+          defaultValue: [
+            dayjs().subtract(1, 'day').valueOf(),
+            dayjs().valueOf(),
+          ],
+          placeholder: 'range',
+        },
+      });
+      expect(() => render(<DateTimeFilter {...props} />)).not.toThrow();
+    });
+
     it('handles null value gracefully', () => {
       const props = createMockProps({
         value: { defaultValue: null },

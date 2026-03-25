@@ -29,6 +29,20 @@ vi.mock('../../src/locale/useLocale', () => ({
   })),
 }));
 
+vi.mock('@ahoo-wang/fetcher-react', () => ({
+  useFullscreenContext: vi.fn(() => ({
+    isFullscreen: false,
+    toggle: vi.fn().mockResolvedValue(undefined),
+    enter: vi.fn().mockResolvedValue(undefined),
+    exit: vi.fn().mockResolvedValue(undefined),
+    getTarget: vi.fn().mockReturnValue(document.documentElement),
+  })),
+  useKeyStorage: vi.fn(() => [
+    undefined,
+    vi.fn(),
+  ]),
+}));
+
 vi.mock('../../src/viewer/panel/SaveViewModal', () => ({
   SaveViewModal: () => null,
 }));
@@ -67,6 +81,7 @@ describe('TopBar', () => {
     pageSize: 10,
     condition: {},
     internalCondition: {},
+    sorter: [],
   };
 
   const defaultViews: ViewState[] = [defaultActiveView];

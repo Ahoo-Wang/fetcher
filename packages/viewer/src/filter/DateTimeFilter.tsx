@@ -21,7 +21,7 @@ import {
 } from './useFilterState';
 import { DatePicker, InputNumber } from 'antd';
 import { Optional } from '../types';
-import { Dayjs, isDayjs } from 'dayjs';
+import dayjs, { Dayjs, isDayjs } from 'dayjs';
 import { ExtendedOperator, SelectOperator } from './operator';
 
 export const DATE_TIME_FILTER_NAME = 'datetime';
@@ -101,26 +101,82 @@ export const TimestampConditionValueParser: ConditionValueParser = (
   return undefined;
 };
 
+export const TimestampConditionValueToDayjs = (
+  operator: Operator,
+  value?: Optional<number | Dayjs | Dayjs[]>,
+) => {
+  if (!value) {
+    return undefined;
+  }
+
+  if (operator === Operator.BETWEEN) {
+    if (!Array.isArray(value) || value.length !== 2) {
+      return undefined;
+    }
+    const [start, end] = value;
+    return [dayjs(start), dayjs(end)];
+  }
+
+  if (operator && DateTimeNumberValueOperators.has(operator)) {
+    return value;
+  }
+
+  if (operator === Operator.BEFORE_TODAY) {
+    if (isDayjs(value)) {
+      return value;
+    }
+    return dayjs(value as number, TIME_FORMAT);
+  }
+
+  if (isDayjs(value)) {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return dayjs(value);
+  }
+
+  if (Array.isArray(value) && value.every(isDayjs)) {
+    return value;
+  }
+
+  return undefined;
+};
+
 export function DateTimeFilter(props: FilterProps) {
+  const supportedOperators: SelectOperator[] = [
+    Operator.GT,
+    Operator.LT,
+    Operator.GTE,
+    Operator.LTE,
+    Operator.BETWEEN,
+    Operator.TODAY,
+    Operator.BEFORE_TODAY,
+    Operator.TOMORROW,
+    Operator.THIS_WEEK,
+    Operator.NEXT_WEEK,
+    Operator.LAST_WEEK,
+    Operator.THIS_MONTH,
+    Operator.LAST_MONTH,
+    Operator.RECENT_DAYS,
+    Operator.EARLIER_DAYS,
+  ];
+
+  let initialOperator = props.operator?.defaultValue;
+
+  if (!initialOperator || !supportedOperators.includes(initialOperator)) {
+    initialOperator = supportedOperators[0];
+  }
+
   const assemblyConditionFilterProps: AssemblyFilterProps = {
     ...props,
-    supportedOperators: [
-      Operator.GT,
-      Operator.LT,
-      Operator.GTE,
-      Operator.LTE,
-      Operator.BETWEEN,
-      Operator.TODAY,
-      Operator.BEFORE_TODAY,
-      Operator.TOMORROW,
-      Operator.THIS_WEEK,
-      Operator.NEXT_WEEK,
-      Operator.LAST_WEEK,
-      Operator.THIS_MONTH,
-      Operator.LAST_MONTH,
-      Operator.RECENT_DAYS,
-      Operator.EARLIER_DAYS,
-    ],
+    value: {
+      defaultValue: TimestampConditionValueToDayjs(
+        initialOperator as Operator,
+        props.value?.defaultValue,
+      ),
+    },
+    supportedOperators,
     onOperatorChangeValueConverter: DateTimeOnOperatorChangeValueConverter,
     conditionValueParser: TimestampConditionValueParser,
     valueInputRender: (filterState: UseFilterStateReturn) => {
@@ -133,6 +189,7 @@ export function DateTimeFilter(props: FilterProps) {
               value={filterState.value}
               onChange={filterState.setValue}
               {...rangResetProps}
+              defaultValue={filterState.value}
             />
           );
         }
@@ -163,6 +220,7 @@ export function DateTimeFilter(props: FilterProps) {
               value={filterState.value}
               onChange={filterState.setValue}
               {...props.value}
+              defaultValue={filterState.value}
             />
           );
         }
@@ -174,6 +232,7 @@ export function DateTimeFilter(props: FilterProps) {
               showNow={false}
               onChange={filterState.setValue}
               {...props.value}
+              defaultValue={filterState.value}
             />
           );
         }

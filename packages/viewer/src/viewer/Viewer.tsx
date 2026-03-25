@@ -25,11 +25,11 @@ const { Header, Sider, Content } = Layout;
 
 export interface ViewerRef extends FilterPanelConditionCapableRef {
   clearSelectedRowKeys: () => void;
+  getActiveView: () => ViewState;
 }
 
 export interface ViewerProps<RecordType>
-  extends
-    ViewTableSettingCapable,
+  extends ViewTableSettingCapable,
     GetRecordCountActionCapable,
     ViewMutationActionsCapable,
     RefAttributes<ViewerRef>,
@@ -50,6 +50,7 @@ export interface ViewerProps<RecordType>
   // callbacks
   onLoadData?: ViewChangeAction;
   onSwitchView?: (view: ViewState) => void;
+  fullscreenTarget?: React.RefObject<HTMLElement | null>;
 }
 
 /**
@@ -61,8 +62,8 @@ export interface ViewerProps<RecordType>
  * @constructor
  */
 export function Viewer<RecordType = any>({
-  ...props
-}: ViewerProps<RecordType>) {
+                                           ...props
+                                         }: ViewerProps<RecordType>) {
   const {
     ref,
     defaultViews,
@@ -111,6 +112,7 @@ export function Viewer<RecordType = any>({
   const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
 
   const viewRef = useRef<ViewRef | null>(null);
+  const viewerRef = useRef<HTMLElement | null>(null);
 
   const handleCreateView = (view: ViewState, onSuccess?: () => void) => {
     onCreateView?.(view, (newView: ViewState) => {
@@ -176,17 +178,18 @@ export function Viewer<RecordType = any>({
     [onLoadData],
   );
 
-  useImperativeHandle(ref, ()=> {
+  useImperativeHandle(ref, () => {
     return {
-      clearSelectedRowKeys: ()=>{
-        viewRef.current?.clearSelectedRowKeys()
+      clearSelectedRowKeys: () => {
+        viewRef.current?.clearSelectedRowKeys();
       },
-      getCondition: ()=> viewRef.current?.getCondition()
-    }
-  })
+      getCondition: () => viewRef.current?.getCondition(),
+      getActiveView: () => activeView,
+    };
+  });
 
   return (
-    <Layout>
+    <Layout ref={viewerRef}>
       {showViewPanel && (
         <Sider className={styles.userViews} width={220}>
           <ViewPanel
@@ -212,6 +215,7 @@ export function Viewer<RecordType = any>({
           >
             <Header className={styles.topBar}>
               <TopBar<RecordType>
+                viewerDefinitionId={definition.id}
                 tableSelectedItems={tableSelectedData}
                 title={definition.name}
                 activeView={activeView}
@@ -230,6 +234,7 @@ export function Viewer<RecordType = any>({
                 onCreateView={handleCreateView}
                 onUpdateView={handleUpdateView}
                 onDeleteView={handleDeleteView}
+                fullscreenTarget={viewerRef}
               />
             </Header>
             <View<RecordType>

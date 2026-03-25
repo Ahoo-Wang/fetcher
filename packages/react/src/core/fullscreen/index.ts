@@ -12,4 +12,5 @@
  */
 
 export * from './useFullscreen';
+export * from './FullscreenContext';
 export * from './utils';

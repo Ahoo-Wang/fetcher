@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-viewer",
-  "version": "3.12.21",
+  "version": "3.13.13",
   "description": "A comprehensive React component library for API documentation viewing and data filtering, built on top of Ant Design and the Fetcher ecosystem. Provides reusable UI components for building rich data-driven applications with advanced filtering capabilities and remote data selection.",
   "keywords": [
     "react",
@@ -77,7 +77,7 @@
     "eslint-plugin-react-hooks": "catalog:",
     "globals": "catalog:",
     "jsdom": "catalog:",
-    "less": "^4.5.1",
+    "less": "^4.6.3",
     "prettier": "catalog:",
     "react-compiler-runtime": "catalog:",
     "typescript": "catalog:",

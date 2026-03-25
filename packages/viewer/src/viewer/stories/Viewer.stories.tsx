@@ -18,12 +18,13 @@ import {
   ViewDefinition,
   ViewColumn,
   FieldDefinition,
+  ViewSource,
+  ViewType,
 } from '../types';
-import { ViewType, ViewSource } from '../types';
+
 import { AvailableFilterGroup } from '../../filter';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { PagedList } from '@ahoo-wang/fetcher-wow';
-import { Condition } from '@ahoo-wang/fetcher-wow';
+import { Condition, PagedList } from '@ahoo-wang/fetcher-wow';
 import type { SorterResult } from 'antd/es/table/interface';
 import type { PaginationProps } from 'antd';
 
@@ -104,13 +105,22 @@ const availableFilters: AvailableFilterGroup[] = [
   {
     label: 'Status',
     filters: [
-      { field: { name: 'status', label: 'Status' }, component: 'select' },
-      { field: { name: 'role', label: 'Role' }, component: 'select' },
+      {
+        field: { name: 'status', label: 'Status' },
+        component: 'select',
+        key: 'status',
+      },
+      {
+        field: { name: 'role', label: 'Role' },
+        component: 'select',
+        key: 'role',
+      },
     ],
   },
 ];
 
 const defaultView: ViewState = {
+  sorter: [],
   id: 'default-view',
   name: 'Default View',
   definitionId: 'user-view',
@@ -140,6 +150,7 @@ const views: ViewState[] = [
     pageSize: 20,
     condition: {} as Condition,
     internalCondition: {} as Condition,
+    sorter: [],
   },
   {
     id: 'all-users',
@@ -154,6 +165,7 @@ const views: ViewState[] = [
     pageSize: 20,
     condition: {} as Condition,
     internalCondition: {} as Condition,
+    sorter: [],
   },
 ];
 
@@ -388,7 +400,7 @@ export const WithActionColumn: Story = {
     batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
     actionColumn: {
       title: 'Actions',
-      actions: (record) => ({
+      actions: record => ({
         primaryAction: {
           data: { value: 'Edit', record, index: 0 },
           attributes: { onClick: () => console.log('Edit', record) },
@@ -422,7 +434,7 @@ export const WithPrimaryAction: Story = {
     batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
     primaryAction: {
       title: 'Create User',
-      onClick: (items) => console.log('Create user'),
+      onClick: items => console.log('Create user'),
     },
   },
   render: args => <ViewerWrapper {...args} />,
@@ -440,16 +452,16 @@ export const WithSecondaryActions: Story = {
     batchActions: { enabled: false, title: 'Batch Actions', actions: [] },
     primaryAction: {
       title: 'Create User',
-      onClick: (items) => console.log('Create user'),
+      onClick: items => console.log('Create user'),
     },
     secondaryActions: [
       {
         title: 'Export',
-        onClick: (items) => console.log('Export', items),
+        onClick: items => console.log('Export', items),
       },
       {
         title: 'Import',
-        onClick: (items) => console.log('Import'),
+        onClick: items => console.log('Import'),
       },
     ],
   },
@@ -514,23 +526,23 @@ export const WithAllActions: Story = {
         {
           title: 'Delete',
           attributes: { danger: true },
-          onClick: (items) => console.log('Delete', items),
+          onClick: items => console.log('Delete', items),
         },
       ],
     },
     primaryAction: {
       title: 'Create',
-      onClick: (items) => console.log('Create'),
+      onClick: items => console.log('Create'),
     },
     secondaryActions: [
       {
         title: 'Export',
-        onClick: (items) => console.log('Export', items),
+        onClick: items => console.log('Export', items),
       },
     ],
     actionColumn: {
       title: 'Actions',
-      actions: (record) => ({
+      actions: record => ({
         primaryAction: {
           data: { value: 'Edit', record, index: 0 },
           attributes: { onClick: () => console.log('Edit', record) },

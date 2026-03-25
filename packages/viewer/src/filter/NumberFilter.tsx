@@ -16,10 +16,52 @@ import { InputNumber } from 'antd';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { NumberTagValueItemSerializer, TagInput } from '../components';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
-import { UseFilterStateReturn } from './useFilterState';
+import {
+  OnOperatorChangeValueConverter,
+  UseFilterStateReturn,
+} from './useFilterState';
 import { NumberRange } from '../components';
 
 export const NUMBER_FILTER = 'number';
+
+const ensureBetweenValue = (value: unknown, isArrayValue: boolean) => {
+  if (isArrayValue) {
+    return [(value as number[])[0], (value as number[])[1]];
+  }
+  return [value as number, undefined] as const;
+};
+
+const ensureMultiValue = (value: unknown, isArrayValue: boolean) => {
+  if (isArrayValue) {
+    return value as number[];
+  }
+  return [value as number];
+};
+
+const ensureSingleValue = (value: unknown, isArrayValue: boolean) => {
+  if (isArrayValue) {
+    return (value as number[])[0];
+  }
+  return value as number;
+};
+
+export const NumberOnOperatorChangeValueConverter: OnOperatorChangeValueConverter =
+  (_beforeOperator, afterOperator, value) => {
+    if (value === undefined || value === null) {
+      return value;
+    }
+
+    const isArrayValue = Array.isArray(value);
+    if (afterOperator === Operator.BETWEEN) {
+      return ensureBetweenValue(value, isArrayValue);
+    }
+
+    if (afterOperator === Operator.IN || afterOperator === Operator.NOT_IN) {
+      return ensureMultiValue(value, isArrayValue);
+    }
+
+    return ensureSingleValue(value, isArrayValue);
+  };
 
 export function NumberFilter(props: FilterProps) {
   const assemblyFilterProps: AssemblyFilterProps = {
@@ -44,6 +86,7 @@ export function NumberFilter(props: FilterProps) {
       }
       return value != undefined;
     },
+    onOperatorChangeValueConverter: NumberOnOperatorChangeValueConverter,
     valueInputRender: (filterState: UseFilterStateReturn) => {
       switch (filterState.operator) {
         case Operator.IN:

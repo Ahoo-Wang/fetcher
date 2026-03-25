@@ -27,7 +27,7 @@ import { useFullscreen } from '@ahoo-wang/fetcher-react';
 const mockUseFullscreen = vi.mocked(useFullscreen);
 
 describe('Fullscreen', () => {
-  let mockToggle: () => Promise<void>;
+  let mockToggle: any;
   let mockTargetRef: RefObject<HTMLElement>;
 
   beforeEach(() => {
@@ -36,10 +36,11 @@ describe('Fullscreen', () => {
 
     // Default mock implementation
     mockUseFullscreen.mockReturnValue({
-      isFullscreen: false,
+      fullscreen: false,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
   });
 
@@ -69,10 +70,11 @@ describe('Fullscreen', () => {
 
   it('displays enter icon when not in fullscreen', () => {
     mockUseFullscreen.mockReturnValue({
-      isFullscreen: false,
+      fullscreen: false,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen />);
@@ -84,10 +86,11 @@ describe('Fullscreen', () => {
 
   it('displays exit icon when in fullscreen', () => {
     mockUseFullscreen.mockReturnValue({
-      isFullscreen: true,
+      fullscreen: true,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen />);
@@ -103,10 +106,11 @@ describe('Fullscreen', () => {
     const customEnterIcon = <span data-testid="custom-enter">Enter</span>;
 
     mockUseFullscreen.mockReturnValue({
-      isFullscreen: false,
+      fullscreen: false,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen enterIcon={customEnterIcon} />);
@@ -117,10 +121,11 @@ describe('Fullscreen', () => {
     const customExitIcon = <span data-testid="custom-exit">Exit</span>;
 
     mockUseFullscreen.mockReturnValue({
-      isFullscreen: true,
+      fullscreen: true,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen exitIcon={customExitIcon} />);
@@ -136,14 +141,11 @@ describe('Fullscreen', () => {
     expect(mockToggle).toHaveBeenCalledTimes(1);
   });
 
-  it('passes target and onChange to useFullscreen hook', () => {
-    const onChange = vi.fn();
-
-    render(<Fullscreen target={mockTargetRef} onChange={onChange} />);
+  it('passes target to useFullscreen hook', () => {
+    render(<Fullscreen target={mockTargetRef} />);
 
     expect(mockUseFullscreen).toHaveBeenCalledWith({
       target: mockTargetRef,
-      onChange,
     });
   });
 
@@ -152,7 +154,6 @@ describe('Fullscreen', () => {
 
     expect(mockUseFullscreen).toHaveBeenCalledWith({
       target: undefined,
-      onChange: undefined,
     });
   });
 
@@ -163,56 +164,39 @@ describe('Fullscreen', () => {
 
     expect(mockUseFullscreen).toHaveBeenCalledWith({
       target: nullRef,
-      onChange: undefined,
-    });
-  });
-
-  it('passes onChange callback correctly', () => {
-    const onChange = vi.fn();
-
-    render(<Fullscreen onChange={onChange} />);
-
-    expect(mockUseFullscreen).toHaveBeenCalledWith({
-      target: undefined,
-      onChange,
     });
   });
 
   it('does not pass excluded props to Button', () => {
     render(
       <Fullscreen
-        icon={<span />}
-        onClick={() => {}}
-        onChange={() => {}}
+        enterIcon={<span />}
         target={mockTargetRef}
-      />,
+      />
     );
 
     const button = screen.getByRole('button');
 
     // These props should not be passed to Button
-    expect(button).not.toHaveAttribute('icon');
-    expect(button).not.toHaveAttribute('onClick');
-    expect(button).not.toHaveAttribute('onChange');
+    expect(button).not.toHaveAttribute('enterIcon');
     expect(button).not.toHaveAttribute('target');
   });
 
   it('handles multiple prop combinations', () => {
-    const onChange = vi.fn();
     const customEnterIcon = <span>Custom Enter</span>;
     const customExitIcon = <span>Custom Exit</span>;
 
     mockUseFullscreen.mockReturnValue({
-      isFullscreen: false,
+      fullscreen: false,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(
       <Fullscreen
         target={mockTargetRef}
-        onChange={onChange}
         enterIcon={customEnterIcon}
         exitIcon={customExitIcon}
         type="primary"
@@ -230,17 +214,17 @@ describe('Fullscreen', () => {
 
     expect(mockUseFullscreen).toHaveBeenCalledWith({
       target: mockTargetRef,
-      onChange,
     });
   });
 
   it('maintains button functionality with various states', async () => {
     // Test with fullscreen true
     mockUseFullscreen.mockReturnValue({
-      isFullscreen: true,
+      fullscreen: true,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     const { rerender } = render(<Fullscreen />);
@@ -255,10 +239,11 @@ describe('Fullscreen', () => {
 
     // Test with fullscreen false
     mockUseFullscreen.mockReturnValue({
-      isFullscreen: false,
+      fullscreen: false,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     rerender(<Fullscreen />);
@@ -304,10 +289,11 @@ describe('Fullscreen', () => {
   // Edge cases and error conditions
   it('handles undefined enterIcon gracefully', () => {
     mockUseFullscreen.mockReturnValue({
-      isFullscreen: false,
+      fullscreen: false,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen enterIcon={undefined} />);
@@ -318,10 +304,11 @@ describe('Fullscreen', () => {
 
   it('handles undefined exitIcon gracefully', () => {
     mockUseFullscreen.mockReturnValue({
-      isFullscreen: true,
+      fullscreen: true,
       toggle: mockToggle,
       enter: vi.fn(),
       exit: vi.fn(),
+      getTarget: vi.fn().mockReturnValue(document.documentElement),
     });
 
     render(<Fullscreen exitIcon={undefined} />);
@@ -330,15 +317,6 @@ describe('Fullscreen', () => {
     expect(
       button.querySelector('.anticon-fullscreen-exit'),
     ).toBeInTheDocument();
-  });
-
-  it('handles null onChange callback', () => {
-    render(<Fullscreen onChange={null as any} />);
-
-    expect(mockUseFullscreen).toHaveBeenCalledWith({
-      target: undefined,
-      onChange: null,
-    });
   });
 
   it('renders with minimal props', () => {

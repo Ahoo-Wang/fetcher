@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { FetcherViewer, FetcherViewerRef } from '../FetcherViewer';
 import type { PaginationProps } from 'antd';
-import { Button, Space } from 'antd';
+import { Button, Space, Typography } from 'antd';
 import { useRef } from 'react';
 import {
   fetcher,
@@ -15,7 +15,6 @@ const ACCEPT = 'Accept';
 const CONTENT_TYPE = 'Content-Type';
 const X_WAREHOUSE_ID = 'X-Warehouse-Id';
 const COSEC_APP_ID = 'cosec-app-id';
-
 
 class TestFetcherRequestInterceptor implements RequestInterceptor {
   name = 'RequestInterceptor';
@@ -32,7 +31,8 @@ class TestFetcherRequestInterceptor implements RequestInterceptor {
       [CONTENT_TYPE]: 'application/json',
       [X_WAREHOUSE_ID]: 'mydao-SH',
       [COSEC_APP_ID]: 'pms',
-      Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkQ0UWpFSzAwUkY0bEkiLCJzdWIiOiIzaEsiLCJpYXQiOjE3NzI3ODI1MDUsImV4cCI6MTc3MzA0MTcwNSwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkNtcnVOcjAwZmg0OHAifSwidGVuYW50SWQiOiJteWRhbyJ9.cGsJkdTYLgfhBSyRjqKyDHaTW5yBV-USfrx_i9czvAw'
+      Authorization:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkVlSnkwbDAwVTIwdzgiLCJzdWIiOiIzaEsiLCJpYXQiOjE3NzQyMjg5NzUsImV4cCI6MTc3NDQ4ODE3NSwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkNtcnVOcjAwZmg0OHAifSwidGVuYW50SWQiOiJteWRhbyJ9.0Gu7MUsMAPca3_FStyd2RXoPSGqfcUIzkCWSggEgSSo',
     };
 
     exchange.request.url = exchange.request.url.replace('{tenantId}', 'mydao');
@@ -97,18 +97,29 @@ type Story = StoryObj<typeof meta>;
 
 export const Basic: Story = {
   args: {
-    viewerDefinitionId: 'sku-cost',
+    viewerDefinitionId: 'supplier-info',
     ownerId: '1ZE',
     tenantId: 'mydao',
     defaultViewId: '',
     pagination: {} as PaginationProps,
     enableRowSelection: true,
+    viewTableSetting: { title: 'table settings' },
+    actionColumn: {
+      title: 'Actions',
+      dataIndex: 's',
+      actions: record => ({
+        primaryAction: () => <Typography.Link>Primary Action</Typography.Link>,
+        secondaryActions: () => [
+          <Typography.Link>Secondary Action</Typography.Link>,
+        ],
+      }),
+    },
   },
 };
 
 export const WithRowSelection: Story = {
   args: {
-    viewerDefinitionId: 'sku-cost',
+    viewerDefinitionId: 'supplier-info',
     ownerId: '1ZE',
     tenantId: 'mydao',
     defaultViewId: '',
@@ -163,11 +174,25 @@ const FetcherViewerWithRefMethodsWrapper = (args: any) => {
     viewerRef.current?.refreshData();
   };
 
-  const handleGetCondition = () => {
+  const handleGetPageQuery = () => {
     console.log('Getting current condition...');
-    const condition = viewerRef.current?.getCondition();
-    console.log('Current condition:', condition);
-    alert(`Current condition: ${JSON.stringify(condition)}`);
+    const pageQuery = viewerRef.current?.getPageQuery();
+    console.log('Current page query:', pageQuery);
+    alert(`Current page query: ${JSON.stringify(pageQuery)}`);
+  };
+
+  const handleGetActiveView = () => {
+    console.log('Getting active view...');
+    const activeView = viewerRef.current?.getActiveView();
+    console.log('Active view:', activeView);
+    alert(`Active view: ${JSON.stringify(activeView)}`);
+  };
+
+  const handleGetViewerDefinition = () => {
+    console.log('Getting viewer definition...');
+    const viewerDefinition = viewerRef.current?.getViewerDefinition();
+    console.log('Viewer definition:', viewerDefinition);
+    alert(`Viewer definition: ${JSON.stringify(viewerDefinition)}`);
   };
 
   return (
@@ -177,7 +202,11 @@ const FetcherViewerWithRefMethodsWrapper = (args: any) => {
           Refresh Data
         </Button>
         <Button onClick={handleClearSelection}>Clear Selection</Button>
-        <Button onClick={handleGetCondition}>Get Condition</Button>
+        <Button onClick={handleGetPageQuery}>Get Page Query</Button>
+        <Button onClick={handleGetActiveView}>Get Active View</Button>
+        <Button onClick={handleGetViewerDefinition}>
+          Get Viewer Definition
+        </Button>
       </Space>
       <FetcherViewer ref={viewerRef} {...args} />
     </Space>
@@ -192,6 +221,17 @@ export const WithRefMethods: Story = {
     defaultViewId: '',
     pagination: {} as PaginationProps,
     enableRowSelection: true,
+    viewTableSetting: { title: 'table settings' },
+    actionColumn: {
+      title: 'Actions',
+      dataIndex: 's',
+      actions: record => ({
+        primaryAction: () => <Typography.Link>Primary Action</Typography.Link>,
+        secondaryActions: () => [
+          <Typography.Link>Secondary Action</Typography.Link>,
+        ],
+      }),
+    },
   },
   render: args => <FetcherViewerWithRefMethodsWrapper {...args} />,
 };

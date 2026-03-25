@@ -16,9 +16,38 @@ import { Input } from 'antd';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
-import { UseFilterStateReturn } from './useFilterState';
+import {
+  OnOperatorChangeValueConverter,
+  UseFilterStateReturn,
+} from './useFilterState';
 
 export const TEXT_FILTER = 'text';
+
+export const TextOnOperatorChangeValueConverter: OnOperatorChangeValueConverter =
+  (_beforeOperator, afterOperator, value) => {
+    if (value === undefined || value === null) {
+      return value;
+    }
+    const isArrayValue = Array.isArray(value);
+    const isMultiValueOperator =
+      afterOperator === Operator.IN || afterOperator === Operator.NOT_IN;
+
+    if (isMultiValueOperator) {
+      if (isArrayValue) {
+        return value;
+      }
+      const trimmedValue = value.trim();
+      if (!trimmedValue) {
+        return [];
+      }
+      return [trimmedValue];
+    }
+
+    if (isArrayValue) {
+      return value[0];
+    }
+    return value;
+  };
 
 export function TextFilter(props: FilterProps) {
   const assemblyFilterProps: AssemblyFilterProps = {
@@ -32,6 +61,7 @@ export function TextFilter(props: FilterProps) {
       Operator.IN,
       Operator.NOT_IN,
     ],
+    onOperatorChangeValueConverter: TextOnOperatorChangeValueConverter,
     valueInputRender: (filterState: UseFilterStateReturn) => {
       switch (filterState.operator) {
         case Operator.IN:

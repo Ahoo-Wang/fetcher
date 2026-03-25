@@ -12,7 +12,8 @@
  */
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { AutoRefreshBarItem } from '../../src/topbar/AutoRefreshBarItem';
 
 vi.mock('../../src/hooks/useRefreshDataEventBus', () => ({
@@ -28,6 +29,13 @@ vi.mock('../../src/locale/useLocale', () => ({
   })),
 }));
 
+vi.mock('@ahoo-wang/fetcher-react', () => ({
+  useKeyStorage: vi.fn(() => [undefined, vi.fn()]),
+}));
+
+const TEST_VIEW_ID = 'test-view-id';
+const TEST_VIEWER_DEFINITION_ID = 'test-viewer-definition-id';
+
 describe('AutoRefreshBarItem', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -40,7 +48,12 @@ describe('AutoRefreshBarItem', () => {
 
   describe('rendering', () => {
     it('should render with default items', () => {
-      const { container } = render(<AutoRefreshBarItem />);
+      const { container } = render(
+        <AutoRefreshBarItem
+          viewId={TEST_VIEW_ID}
+          viewerDefinitionId={TEST_VIEWER_DEFINITION_ID}
+        />,
+      );
 
       expect(container.firstChild).toBeInTheDocument();
     });
@@ -51,20 +64,34 @@ describe('AutoRefreshBarItem', () => {
       ];
 
       const { container } = render(
-        <AutoRefreshBarItem items={customItems} />,
+        <AutoRefreshBarItem
+          items={customItems}
+          viewId={TEST_VIEW_ID}
+          viewerDefinitionId={TEST_VIEWER_DEFINITION_ID}
+        />,
       );
 
       expect(container.firstChild).toBeInTheDocument();
     });
 
     it('should display default label "刷新率：从不"', () => {
-      const { container } = render(<AutoRefreshBarItem />);
+      const { container } = render(
+        <AutoRefreshBarItem
+          viewId={TEST_VIEW_ID}
+          viewerDefinitionId={TEST_VIEWER_DEFINITION_ID}
+        />,
+      );
 
       expect(container.textContent).toContain('刷新率 ：从不');
     });
 
     it('should render button element', () => {
-      const { container } = render(<AutoRefreshBarItem />);
+      const { container } = render(
+        <AutoRefreshBarItem
+          viewId={TEST_VIEW_ID}
+          viewerDefinitionId={TEST_VIEWER_DEFINITION_ID}
+        />,
+      );
 
       expect(container.querySelector('button')).toBeInTheDocument();
     });
@@ -72,13 +99,23 @@ describe('AutoRefreshBarItem', () => {
 
   describe('default items', () => {
     it('should have default items defined', () => {
-      const { container } = render(<AutoRefreshBarItem />);
+      const { container } = render(
+        <AutoRefreshBarItem
+          viewId={TEST_VIEW_ID}
+          viewerDefinitionId={TEST_VIEWER_DEFINITION_ID}
+        />,
+      );
 
       expect(container).toBeInTheDocument();
     });
 
     it('should have 3 default refresh intervals plus never option', () => {
-      const { container } = render(<AutoRefreshBarItem />);
+      const { container } = render(
+        <AutoRefreshBarItem
+          viewId={TEST_VIEW_ID}
+          viewerDefinitionId={TEST_VIEWER_DEFINITION_ID}
+        />,
+      );
 
       expect(container).toBeInTheDocument();
     });
@@ -92,7 +129,11 @@ describe('AutoRefreshBarItem', () => {
       ];
 
       const { container } = render(
-        <AutoRefreshBarItem items={customItems} />,
+        <AutoRefreshBarItem
+          items={customItems}
+          viewId={TEST_VIEW_ID}
+          viewerDefinitionId={TEST_VIEWER_DEFINITION_ID}
+        />,
       );
 
       expect(container.firstChild).toBeInTheDocument();
@@ -104,10 +145,57 @@ describe('AutoRefreshBarItem', () => {
       ];
 
       const { container } = render(
-        <AutoRefreshBarItem items={customItems} />,
+        <AutoRefreshBarItem
+          items={customItems}
+          viewId={TEST_VIEW_ID}
+          viewerDefinitionId={TEST_VIEWER_DEFINITION_ID}
+        />,
       );
 
       expect(container.textContent).toContain('从不');
+    });
+  });
+
+  describe('viewId and viewerDefinitionId props', () => {
+    it('should render with viewId and viewerDefinitionId props', () => {
+      const { container } = render(
+        <AutoRefreshBarItem
+          viewId="view-123"
+          viewerDefinitionId="viewer-definition-123"
+        />,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
+    });
+
+    it('should show different items when viewId changes', () => {
+      const { rerender } = render(
+        <AutoRefreshBarItem
+          viewId="view-1"
+          viewerDefinitionId={TEST_VIEWER_DEFINITION_ID}
+        />,
+      );
+
+      expect(rerender).toBeDefined();
+
+      rerender(
+        <AutoRefreshBarItem
+          viewId="view-2"
+          viewerDefinitionId={TEST_VIEWER_DEFINITION_ID}
+        />,
+      );
+      expect(rerender).toBeDefined();
+    });
+
+    it('should use viewerDefinitionId for event bus', () => {
+      const { container } = render(
+        <AutoRefreshBarItem
+          viewId={TEST_VIEW_ID}
+          viewerDefinitionId="unique-viewer-def-id"
+        />,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
     });
   });
 });

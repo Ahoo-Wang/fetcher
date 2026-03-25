@@ -2,6 +2,8 @@ export * from './AutoRefreshBarItem'
 export * from './BarItem';
 export * from './ColumnHeightBarItem'
 export * from './FilterBarItem'
+export * from './FullscreenBarItem';
+export * from './FullscreenBarItem'
 export * from './Point'
 export * from './RefreshDataBarItem'
 export * from './ShareLinkBarItem'

@@ -4,11 +4,11 @@ import {
   ViewTableSettingCapable,
   ViewTableActionColumn,
   ViewState,
+  ViewDefinition,
   Viewer,
   useRefreshDataEventBus,
   TopbarActionsCapable,
   ViewerRef,
-  FilterPanelConditionCapableRef,
 } from '../';
 import {
   useViewerDefinition,
@@ -25,14 +25,22 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { CommandResult, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import {
+  CommandResult,
+  Condition,
+  FieldSort,
+  PagedQuery,
+} from '@ahoo-wang/fetcher-wow';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
 import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
-export interface FetcherViewerRef extends FilterPanelConditionCapableRef {
+export interface FetcherViewerRef {
   refreshData: () => void;
   clearSelectedRowKeys: () => void;
+  getPageQuery: () => PagedQuery | undefined;
+  getActiveView: () => ViewState | undefined;
+  getViewerDefinition: () => ViewDefinition | undefined;
 }
 
 export interface FetcherViewerProps<RecordType>
@@ -108,6 +116,7 @@ export function FetcherViewer<RecordType = any>({
     loading: fetchLoading,
     setQuery,
     reload,
+    getPageQuery,
   } = useFetchData<RecordType>({
     viewerDefinition,
     defaultView,
@@ -201,26 +210,31 @@ export function FetcherViewer<RecordType = any>({
     [],
   );
 
-  const { publish, subscribe } = useRefreshDataEventBus();
+  const { publish, subscribe } = useRefreshDataEventBus(viewerDefinitionId);
 
   useImperativeHandle<FetcherViewerRef, FetcherViewerRef>(ref, () => ({
-    refreshData: publish,
+    refreshData: () => publish(viewerDefinitionId),
     // 现有组件在refreshData事件触发时，视图中的数据未与已选中行的数据保持一致
     // 暴露 clearSelectedRowKeys 方法让外部使用者手动清除选中行
     clearSelectedRowKeys: () => {
       viewerRef.current?.clearSelectedRowKeys();
     },
-    getCondition: () => {
-      return viewerRef.current?.getCondition();
-    },
+    getPageQuery: () => getPageQuery(),
+    // 暴露 getActiveView 方法让外部使用者可获取当前激活视图
+    getActiveView: () => viewerRef.current?.getActiveView(),
+    // 暴露 getViewerDefinition 方法让外部使用者可获取当前视图定义
+    getViewerDefinition: () => viewerDefinition,
   }));
 
-  subscribe({
-    name: 'Viewer-Refresh-Data',
-    handle: async () => {
-      await reload();
+  subscribe(
+    {
+      name: 'Viewer-Refresh-Data',
+      handle: async () => {
+        await reload();
+      },
     },
-  });
+    viewerDefinitionId,
+  );
 
   if (definitionLoading || viewsLoading) {
     return (

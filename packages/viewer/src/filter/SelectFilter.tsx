@@ -14,13 +14,17 @@
 import { FilterProps, FilterValueProps } from './types';
 import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
-import { UseFilterStateReturn } from './useFilterState';
+import {
+  OnOperatorChangeValueConverter,
+  UseFilterStateReturn,
+} from './useFilterState';
 import { Select, SelectProps } from 'antd';
 
 export const SELECT_FILTER = 'select';
 
 export interface SelectFilterValueProps
-  extends FilterValueProps,
+  extends
+    FilterValueProps,
     Omit<
       SelectProps,
       | 'defaultValue'
@@ -31,10 +35,19 @@ export interface SelectFilterValueProps
       | 'placeholder'
     > {}
 
+export const SelectOnOperatorChangeValueConverter: OnOperatorChangeValueConverter =
+  (_beforeOperator, _afterOperator, value) => {
+    if (value === undefined || value === null) {
+      return value;
+    }
+    return Array.isArray(value) ? value : [value];
+  };
+
 export function SelectFilter(props: FilterProps<SelectFilterValueProps>) {
   const assemblyFilterProps: AssemblyFilterProps = {
     ...props,
     supportedOperators: [Operator.IN, Operator.NOT_IN],
+    onOperatorChangeValueConverter: SelectOnOperatorChangeValueConverter,
     valueInputRender: (filterState: UseFilterStateReturn) => {
       return (
         <Select

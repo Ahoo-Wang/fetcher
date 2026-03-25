@@ -7,21 +7,13 @@ import {
   ViewType,
 } from '../';
 import styles from './TopBar.module.css';
-import {
-  Button,
-  Divider,
-  Dropdown,
-  Flex,
-  MenuProps,
-  Space,
-  Modal,
-} from 'antd';
+import { Button, Divider, Dropdown, Flex, MenuProps, Space, Modal } from 'antd';
 import {
   DownOutlined,
   ExclamationCircleOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import React, { useCallback, useState } from 'react';
+import React, { RefObject, useCallback, useState } from 'react';
 import type { ItemType } from 'antd/es/menu/interface';
 import {
   AutoRefreshBarItem,
@@ -31,6 +23,7 @@ import {
   RefreshDataBarItem,
   ColumnHeightBarItem,
   ShareLinkBarItem,
+  FullscreenBarItem,
 } from './';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
 
@@ -38,6 +31,8 @@ export interface TopBarProps<
   RecordType,
 > extends TopbarActionsCapable<RecordType> {
   title: string;
+
+  viewerDefinitionId: string;
 
   activeView: ViewState;
   views: ViewState[];
@@ -57,6 +52,7 @@ export interface TopBarProps<
   onCreateView: (view: ViewState, onSuccess?: () => void) => void;
   onUpdateView: (view: ViewState, onSuccess?: () => void) => void;
   onDeleteView: (view: ViewState, onSuccess?: () => void) => void;
+  fullscreenTarget?: RefObject<HTMLElement | null>;
 }
 
 function renderMenuItem<RecordType>(
@@ -99,6 +95,7 @@ const saveMethodItems: MenuProps['items'] = [
 export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
   const {
     title,
+    viewerDefinitionId,
     activeView,
     primaryAction,
     secondaryActions,
@@ -114,6 +111,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     onTableSizeChange,
     onCreateView,
     onUpdateView,
+    fullscreenTarget,
   } = props;
 
   const [saveViewModalType, setSaveViewModalType] = useState<
@@ -242,14 +240,18 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             defaultShowFilter={showFilter}
             onChange={onShowFilterChange}
           />
-          <RefreshDataBarItem />
+          <RefreshDataBarItem viewerDefinitionId={viewerDefinitionId} />
           <ColumnHeightBarItem
             defaultTableSize={defaultTableSize}
             onChange={onTableSizeChange}
           />
           <ShareLinkBarItem />
+          <FullscreenBarItem target={fullscreenTarget} />
           <Divider orientation="vertical" />
-          <AutoRefreshBarItem />
+          <AutoRefreshBarItem
+            viewId={activeView.id}
+            viewerDefinitionId={viewerDefinitionId}
+          />
           {batchActions?.enabled && (
             <>
               <Divider orientation="vertical" />

@@ -50,6 +50,7 @@ describe('useViewerState', () => {
     pageSize: 10,
     condition: {},
     internalCondition: {},
+    sorter: [],
     ...overrides,
   });
 

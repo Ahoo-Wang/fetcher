@@ -128,6 +128,7 @@ describe('FetcherViewer', () => {
       setQuery: vi.fn(),
       reload: vi.fn().mockResolvedValue(undefined),
       error: undefined,
+      getPageQuery: vi.fn(),
     });
   });
 
@@ -204,13 +205,26 @@ describe('FetcherViewer', () => {
       expect(ref.current).toHaveProperty('clearSelectedRowKeys');
     });
 
-    it('should expose getCondition method via ref', () => {
+    it('should expose getPageQuery method via ref', () => {
+      const mockGetPageQuery = vi.fn(() => ({ page: 1, size: 10 }));
+      
+      const mockUseFetchData = useFetchData as ReturnType<typeof vi.fn>;
+      mockUseFetchData.mockReturnValue({
+        dataSource: mockDataSource as any,
+        loading: false,
+        setQuery: vi.fn(),
+        reload: vi.fn().mockResolvedValue(undefined),
+        error: undefined,
+        getPageQuery: mockGetPageQuery,
+      });
+
       const ref = { current: null as FetcherViewerRef | null };
 
       render(<FetcherViewer<User> ref={ref} {...defaultProps} />);
 
-      expect(ref.current).toHaveProperty('getCondition');
-      expect(typeof ref.current?.getCondition).toBe('function');
+      expect(ref.current).toHaveProperty('getPageQuery');
+      expect(typeof ref.current?.getPageQuery).toBe('function');
+      expect(ref.current?.getPageQuery()).toEqual({ page: 1, size: 10 });
     });
   });
 
