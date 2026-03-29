@@ -32,7 +32,7 @@ class TestFetcherRequestInterceptor implements RequestInterceptor {
       [X_WAREHOUSE_ID]: 'mydao-SH',
       [COSEC_APP_ID]: 'pms',
       Authorization:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkVlSnkwbDAwVTIwdzgiLCJzdWIiOiIzaEsiLCJpYXQiOjE3NzQyMjg5NzUsImV4cCI6MTc3NDQ4ODE3NSwiYXR0cmlidXRlcyI6eyJpc093bmVyIjoiZmFsc2UiLCJhcHBJZCI6InBtcyIsImRlcGFydG1lbnRzIjpbXSwiYXV0aGVudGljYXRlSWQiOiIwVkNtcnVOcjAwZmg0OHAifSwidGVuYW50SWQiOiJteWRhbyJ9.0Gu7MUsMAPca3_FStyd2RXoPSGqfcUIzkCWSggEgSSo',
+        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwVkZHUnEybDAwQ24zcTgiLCJzdWIiOiIxWkUiLCJpYXQiOjE3NzQ3OTIzNTEsImV4cCI6MTc3NTA1MTU1MSwicm9sZXMiOlsiM1F2Il0sImF0dHJpYnV0ZXMiOnsiaXNPd25lciI6ImZhbHNlIiwiYXBwSWQiOiJwbXMiLCJkZXBhcnRtZW50cyI6W10sImF1dGhlbnRpY2F0ZUlkIjoiMFZCd3RBeDMwMGZoMTQ0In0sInRlbmFudElkIjoibXlkYW8ifQ.Mnv7F2X26zLJVgprat1mD7pJLhgxDEORVEVyEhpxX2g',
     };
 
     exchange.request.url = exchange.request.url.replace('{tenantId}', 'mydao');
@@ -113,6 +113,16 @@ export const Basic: Story = {
           <Typography.Link>Secondary Action</Typography.Link>,
         ],
       }),
+    },
+    enhanceDataSource: (dataSource: any[]) => {
+      const enhancedDataSource = dataSource.map(record => ({
+        ...record,
+        state: {
+          ...record.state,
+          id: record.state.id + '-test',
+        },
+      }));
+      return Promise.resolve(enhancedDataSource);
     },
   },
 };

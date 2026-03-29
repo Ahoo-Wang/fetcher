@@ -21,14 +21,17 @@ import {
 import {
   RefAttributes,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import {
   CommandResult,
   Condition,
   FieldSort,
+  PagedList,
   PagedQuery,
 } from '@ahoo-wang/fetcher-wow';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
@@ -62,6 +65,9 @@ export interface FetcherViewerProps<RecordType>
   onClickPrimaryKey?: (id: any, record: RecordType) => void;
   enableRowSelection?: boolean;
 
+  enhanceDataSource?: (
+    data: RecordType[],
+  ) => RecordType[] | Promise<RecordType[]>;
   onSwitchView?: (view: ViewState) => void;
 }
 
@@ -80,6 +86,7 @@ export function FetcherViewer<RecordType = any>({
     actionColumn,
     onClickPrimaryKey,
     enableRowSelection,
+    enhanceDataSource,
     onSwitchView,
     viewTableSetting,
     primaryAction,
@@ -121,6 +128,26 @@ export function FetcherViewer<RecordType = any>({
     viewerDefinition,
     defaultView,
   });
+
+  const [enhancedDataSource, setEnhancedDataSource] = useState<
+    PagedList<RecordType>
+  >({
+    list: [],
+    total: 0,
+  });
+
+  useEffect(() => {
+    const asyncFn = async () => {
+      const result =
+        (await enhanceDataSource?.(dataSource?.list || [])) || dataSource?.list;
+
+      setEnhancedDataSource({
+        list: result || [],
+        total: dataSource?.total || 0,
+      });
+    };
+    asyncFn();
+  }, [dataSource, enhanceDataSource, setEnhancedDataSource]);
 
   const viewerRef = useRef<ViewerRef | null>(null);
 
@@ -275,7 +302,7 @@ export function FetcherViewer<RecordType = any>({
         defaultView={defaultView}
         definition={viewerDefinition}
         loading={fetchLoading}
-        dataSource={dataSource || { list: [], total: 0 }}
+        dataSource={enhancedDataSource}
         pagination={pagination}
         actionColumn={actionColumn}
         onClickPrimaryKey={onClickPrimaryKey}
