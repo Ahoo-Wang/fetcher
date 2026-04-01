@@ -246,6 +246,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             onChange={onTableSizeChange}
           />
           <ShareLinkBarItem />
+          <FullscreenBarItem target={fullscreenTarget} />
           <Divider orientation="vertical" />
           <AutoRefreshBarItem
             viewId={activeView.id}
@@ -289,7 +290,6 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             </>
           )}
           <Divider orientation="vertical" />
-          <FullscreenBarItem target={fullscreenTarget} />
         </Flex>
       </Flex>
       {contextHolder}

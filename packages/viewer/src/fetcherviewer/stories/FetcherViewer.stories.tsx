@@ -10,6 +10,7 @@ import {
   URL_RESOLVE_INTERCEPTOR_ORDER,
   UrlBuilder,
 } from '@ahoo-wang/fetcher';
+import { FullscreenProvider } from '@ahoo-wang/fetcher-react';
 
 const ACCEPT = 'Accept';
 const CONTENT_TYPE = 'Content-Type';
@@ -173,6 +174,7 @@ export const LargePageSize: Story = {
 
 const FetcherViewerWithRefMethodsWrapper = (args: any) => {
   const viewerRef = useRef<FetcherViewerRef>(null);
+  const documentRef = useRef(document.documentElement);
 
   const handleClearSelection = () => {
     console.log('Clearing selected rows...');
@@ -218,7 +220,9 @@ const FetcherViewerWithRefMethodsWrapper = (args: any) => {
           Get Viewer Definition
         </Button>
       </Space>
-      <FetcherViewer ref={viewerRef} {...args} />
+      <FullscreenProvider target={documentRef}>
+        <FetcherViewer ref={viewerRef} {...args} />
+      </FullscreenProvider>
     </Space>
   );
 };

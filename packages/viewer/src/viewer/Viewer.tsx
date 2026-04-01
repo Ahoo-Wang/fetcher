@@ -15,9 +15,16 @@ import {
   ViewChangeAction,
   View,
   ViewRef,
-  ViewTableActionColumn, FilterPanelConditionCapableRef,
+  ViewTableActionColumn,
+  FilterPanelConditionCapableRef,
 } from '../';
-import { RefAttributes, useCallback, useImperativeHandle, useRef, useState } from 'react';
+import {
+  RefAttributes,
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import type * as React from 'react';
 
@@ -29,7 +36,8 @@ export interface ViewerRef extends FilterPanelConditionCapableRef {
 }
 
 export interface ViewerProps<RecordType>
-  extends ViewTableSettingCapable,
+  extends
+    ViewTableSettingCapable,
     GetRecordCountActionCapable,
     ViewMutationActionsCapable,
     RefAttributes<ViewerRef>,
@@ -62,8 +70,8 @@ export interface ViewerProps<RecordType>
  * @constructor
  */
 export function Viewer<RecordType = any>({
-                                           ...props
-                                         }: ViewerProps<RecordType>) {
+  ...props
+}: ViewerProps<RecordType>) {
   const {
     ref,
     defaultViews,
@@ -75,6 +83,7 @@ export function Viewer<RecordType = any>({
     onUpdateView,
     onDeleteView,
     onSwitchView,
+    fullscreenTarget,
     ...otherProps
   } = props;
 
@@ -234,7 +243,7 @@ export function Viewer<RecordType = any>({
                 onCreateView={handleCreateView}
                 onUpdateView={handleUpdateView}
                 onDeleteView={handleDeleteView}
-                fullscreenTarget={viewerRef}
+                fullscreenTarget={fullscreenTarget}
               />
             </Header>
             <View<RecordType>
