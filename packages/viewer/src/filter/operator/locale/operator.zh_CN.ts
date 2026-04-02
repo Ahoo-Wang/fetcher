@@ -56,6 +56,6 @@ export const OPERATOR_zh_CN: SelectOperatorLocale = {
   RECENT_DAYS: '最近几天',
   EARLIER_DAYS: '几天前',
   RAW: '原始查询',
-
+  MATCH: '匹配',
   UNDEFINED: '未设置',
 };
