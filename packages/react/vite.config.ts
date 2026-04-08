@@ -23,7 +23,7 @@ export default defineConfig({
       name: 'FetcherReact',
       fileName: format => `index.${format}.js`,
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: [
         'react',
         'react-dom',
@@ -40,6 +40,7 @@ export default defineConfig({
         '@ahoo-wang/fetcher-cosec',
       ],
       output: {
+        keepNames: true,
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
@@ -57,9 +58,6 @@ export default defineConfig({
         },
       },
     },
-  },
-  esbuild: {
-    keepNames: true,
   },
   plugins: [
     dts({
