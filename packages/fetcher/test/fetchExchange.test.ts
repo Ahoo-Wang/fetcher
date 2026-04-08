@@ -12,11 +12,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import type {
+  FetchRequest} from '../src';
 import {
   ExchangeError,
   Fetcher,
   FetchExchange,
-  FetchRequest,
   NamedFetcher,
   ResultExtractors,
 } from '../src';

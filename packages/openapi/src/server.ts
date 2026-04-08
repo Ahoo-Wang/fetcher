@@ -15,7 +15,7 @@
  * Server configuration type definitions for OpenAPI Specification
  */
 
-import { Extensible } from './extensions';
+import type { Extensible } from './extensions';
 
 /**
  * Server variable for URL template substitution

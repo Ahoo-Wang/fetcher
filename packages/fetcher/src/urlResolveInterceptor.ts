@@ -15,7 +15,7 @@ import {
   BUILT_IN_INTERCEPTOR_ORDER_STEP,
   type RequestInterceptor,
 } from './interceptor';
-import { FetchExchange } from './fetchExchange';
+import type { FetchExchange } from './fetchExchange';
 import { FETCH_INTERCEPTOR_ORDER } from './fetchInterceptor';
 
 /**

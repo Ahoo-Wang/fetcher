@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { NamedCapable, RemoveReadonlyFields } from '../src';
+import type { NamedCapable, RemoveReadonlyFields } from '../src';
 
 describe('types.ts', () => {
   it('should define NamedCapable interface', () => {

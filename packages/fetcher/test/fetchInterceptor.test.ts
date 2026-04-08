@@ -12,10 +12,11 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import type {
+  Fetcher} from '../src';
 import {
   FETCH_INTERCEPTOR_NAME,
   FETCH_INTERCEPTOR_ORDER,
-  Fetcher,
   FetchExchange,
   FetchInterceptor,
 } from '../src';

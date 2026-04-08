@@ -17,14 +17,14 @@
  * @see [OpenAPI Specification](https://github.com/OAI/OpenAPI-Specification)
  */
 
-import { Info } from './info';
-import { Server } from './server';
-import { Paths } from './paths';
-import { Components } from './components';
-import { SecurityRequirement } from './security';
-import { Tag } from './tags';
-import { ExternalDocumentation } from './base-types';
-import { Extensible } from './extensions';
+import type { Info } from './info';
+import type { Server } from './server';
+import type { Paths } from './paths';
+import type { Components } from './components';
+import type { SecurityRequirement } from './security';
+import type { Tag } from './tags';
+import type { ExternalDocumentation } from './base-types';
+import type { Extensible } from './extensions';
 
 /**
  * Root document object for the OpenAPI specification

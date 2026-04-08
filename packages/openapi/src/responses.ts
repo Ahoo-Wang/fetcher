@@ -15,12 +15,12 @@
  * Response and callback type definitions for OpenAPI Specification
  */
 
-import { Reference } from './reference';
-import { MediaType } from './parameters';
-import { Server } from './server';
-import { PathItem } from './paths';
-import { Header } from './base-types';
-import { Extensible } from './extensions';
+import type { Reference } from './reference';
+import type { MediaType } from './parameters';
+import type { Server } from './server';
+import type { PathItem } from './paths';
+import type { Header } from './base-types';
+import type { Extensible } from './extensions';
 
 /**
  * The Link object represents a possible design-time link for a response

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { EventHandler, EventType } from './types';
+import type { EventHandler, EventType } from './types';
 
 /**
  * Interface for typed event buses that handle events of a specific type

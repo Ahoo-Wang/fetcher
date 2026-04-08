@@ -1,7 +1,7 @@
 import { UrlResolveInterceptor } from './urlResolveInterceptor';
 import { RequestBodyInterceptor } from './requestBodyInterceptor';
 import { FetchInterceptor } from './fetchInterceptor';
-import { FetchExchange } from './fetchExchange';
+import type { FetchExchange } from './fetchExchange';
 import { ExchangeError } from './fetcherError';
 import { InterceptorRegistry } from './interceptor';
 import { ValidateStatusInterceptor } from './validateStatusInterceptor';

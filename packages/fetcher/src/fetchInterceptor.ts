@@ -16,7 +16,7 @@ import {
   type RequestInterceptor,
 } from './interceptor';
 import { timeoutFetch } from './timeout';
-import { FetchExchange } from './fetchExchange';
+import type { FetchExchange } from './fetchExchange';
 
 /**
  * The name of the FetchInterceptor.

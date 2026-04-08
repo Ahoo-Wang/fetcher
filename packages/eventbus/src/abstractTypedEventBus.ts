@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { TypedEventBus } from './typedEventBus';
-import { EventHandler, EventType } from './types';
+import type { TypedEventBus } from './typedEventBus';
+import type { EventHandler, EventType } from './types';
 
 export abstract class AbstractTypedEventBus<EVENT>
   implements TypedEventBus<EVENT>

@@ -12,8 +12,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { JsonServerSentEventStream, ServerSentEventStream } from '../src';
-import { ExchangeError, FetchExchange, FetchRequest } from '@ahoo-wang/fetcher';
+import type { JsonServerSentEventStream, ServerSentEventStream } from '../src';
+import type { FetchRequest } from '@ahoo-wang/fetcher';
+import { ExchangeError, FetchExchange } from '@ahoo-wang/fetcher';
 import {
   EventStreamResultExtractor,
   JsonEventStreamResultExtractor,

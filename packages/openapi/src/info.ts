@@ -15,7 +15,7 @@
  * API metadata type definitions for OpenAPI Specification
  */
 
-import { Extensible } from './extensions';
+import type { Extensible } from './extensions';
 
 /**
  * Contact information for the exposed API

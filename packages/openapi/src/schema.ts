@@ -15,9 +15,9 @@
  * Schema type definitions for OpenAPI Specification
  */
 
-import { ExternalDocumentation, SchemaType } from './base-types';
-import { Reference } from './reference';
-import { Extensible } from './extensions';
+import type { ExternalDocumentation, SchemaType } from './base-types';
+import type { Reference } from './reference';
+import type { Extensible } from './extensions';
 
 /**
  * Adds support for polymorphism using discriminator

@@ -15,16 +15,16 @@
  * Component type definitions for OpenAPI Specification
  */
 
-import { Reference } from './reference';
-import { Schema } from './schema';
-import { Response } from './responses';
-import { Parameter } from './parameters';
-import { RequestBody } from './parameters';
-import { SecurityScheme } from './security';
-import { Link } from './responses';
-import { Callback } from './responses';
-import { Example, Header } from './base-types';
-import { Extensible } from './extensions';
+import type { Reference } from './reference';
+import type { Schema } from './schema';
+import type { Response } from './responses';
+import type { Parameter } from './parameters';
+import type { RequestBody } from './parameters';
+import type { SecurityScheme } from './security';
+import type { Link } from './responses';
+import type { Callback } from './responses';
+import type { Example, Header } from './base-types';
+import type { Extensible } from './extensions';
 
 /**
  * Holds a set of reusable objects for different aspects of the OAS

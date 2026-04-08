@@ -12,8 +12,9 @@
  */
 
 import { describe, expect, it, beforeAll, afterAll, afterEach } from 'vitest';
+import type {
+  FetchRequest} from '../src';
 import {
-  FetchRequest,
   FetchTimeoutError,
   resolveTimeout,
   timeoutFetch,

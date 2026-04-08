@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { EventHandler, EventType } from './types';
+import type { EventHandler, EventType } from './types';
 import { AbstractTypedEventBus } from './abstractTypedEventBus';
 
 /**

@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { ExternalDocumentation } from './base-types';
-import { Extensible } from './extensions';
+import type { ExternalDocumentation } from './base-types';
+import type { Extensible } from './extensions';
 
 /**
  * Adds metadata to a single tag that is used by the Operation Object

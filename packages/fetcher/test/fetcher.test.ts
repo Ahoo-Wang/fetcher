@@ -12,11 +12,12 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import type {
+  FetchRequest} from '../src';
 import {
   DEFAULT_OPTIONS,
   Fetcher,
   FetcherError,
-  FetchRequest,
   HttpMethod,
 } from '../src';
 

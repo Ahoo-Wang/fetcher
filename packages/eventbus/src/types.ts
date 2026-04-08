@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { type NamedCapable, OrderedCapable } from '@ahoo-wang/fetcher';
+import type { OrderedCapable } from '@ahoo-wang/fetcher';
+import { type NamedCapable } from '@ahoo-wang/fetcher';
 
 export type EventType = string;
 

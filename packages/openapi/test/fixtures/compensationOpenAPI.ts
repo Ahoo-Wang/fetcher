@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { OpenAPI } from '../../src';
+import type { OpenAPI } from '../../src';
 
 export const compensationOpenAPI: OpenAPI = {
   openapi: '3.1.0',

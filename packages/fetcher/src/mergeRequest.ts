@@ -14,7 +14,8 @@
 import { type FetchRequestInit } from './fetchRequest';
 import { type UrlParams } from './urlBuilder';
 import { mergeRecords } from './utils';
-import { DEFAULT_REQUEST_OPTIONS, RequestOptions } from './fetcher';
+import type { RequestOptions } from './fetcher';
+import { DEFAULT_REQUEST_OPTIONS } from './fetcher';
 
 /**
  * Merges two FetcherRequest objects into one.

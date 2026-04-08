@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Fetcher } from './fetcher';
+import type { Fetcher } from './fetcher';
 
 /**
  * Default fetcher name used when no name is specified

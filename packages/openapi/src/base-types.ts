@@ -15,10 +15,10 @@
  * Basic type definitions for OpenAPI Specification
  */
 
-import { Schema } from './schema';
-import { Reference } from './reference';
-import { MediaType } from './parameters';
-import { Extensible } from './extensions';
+import type { Schema } from './schema';
+import type { Reference } from './reference';
+import type { MediaType } from './parameters';
+import type { Extensible } from './extensions';
 
 /**
  * HTTP methods as defined in the OpenAPI specification

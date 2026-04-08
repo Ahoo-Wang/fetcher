@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { FetchExchange, ResultExtractor } from '@ahoo-wang/fetcher';
-import { ServerSentEventStream } from './eventStreamConverter';
-import { JsonServerSentEventStream } from './jsonServerSentEventTransformStream';
+import type { FetchExchange, ResultExtractor } from '@ahoo-wang/fetcher';
+import type { ServerSentEventStream } from './eventStreamConverter';
+import type { JsonServerSentEventStream } from './jsonServerSentEventTransformStream';
 
 /**
  * ServerSentEventStream result extractor for Fetcher HTTP client.

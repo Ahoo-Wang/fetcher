@@ -12,7 +12,7 @@
  */
 
 import { type ServerSentEvent } from './serverSentEventTransformStream';
-import { ServerSentEventStream } from './eventStreamConverter';
+import type { ServerSentEventStream } from './eventStreamConverter';
 
 /**
  * A function type that determines whether a Server-Sent Event should terminate the stream.

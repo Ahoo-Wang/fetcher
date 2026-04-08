@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Fetcher } from './fetcher';
+import type { Fetcher } from './fetcher';
 
 /**
  * Creates a new type by making specified properties of an existing type optional.

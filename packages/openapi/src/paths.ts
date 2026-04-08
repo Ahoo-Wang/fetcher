@@ -15,15 +15,15 @@
  * Path and operation type definitions for OpenAPI Specification
  */
 
-import { Reference } from './reference';
-import { Server } from './server';
-import { Parameter } from './parameters';
-import { RequestBody } from './parameters';
-import { Responses } from './responses';
-import { Callback } from './responses';
-import { SecurityRequirement } from './security';
-import { ExternalDocumentation } from './base-types';
-import { Extensible } from './extensions';
+import type { Reference } from './reference';
+import type { Server } from './server';
+import type { Parameter } from './parameters';
+import type { RequestBody } from './parameters';
+import type { Responses } from './responses';
+import type { Callback } from './responses';
+import type { SecurityRequirement } from './security';
+import type { ExternalDocumentation } from './base-types';
+import type { Extensible } from './extensions';
 
 /**
  * Describes a single API operation on a path

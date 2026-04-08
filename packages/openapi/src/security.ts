@@ -15,8 +15,8 @@
  * Security scheme type definitions for OpenAPI Specification
  */
 
-import { ParameterLocation } from './base-types';
-import { Extensible } from './extensions';
+import type { ParameterLocation } from './base-types';
+import type { Extensible } from './extensions';
 
 /**
  * Configuration details for a supported OAuth Flow

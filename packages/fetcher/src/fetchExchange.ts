@@ -11,11 +11,12 @@
  * limitations under the License.
  */
 
-import { Fetcher } from './fetcher';
+import type { Fetcher } from './fetcher';
 import type { FetchRequest, RequestHeaders } from './fetchRequest';
 import { type UrlParams } from './urlBuilder';
 import { type RequiredBy } from './types';
-import { ResultExtractor, ResultExtractors } from './resultExtractor';
+import type { ResultExtractor} from './resultExtractor';
+import { ResultExtractors } from './resultExtractor';
 import { mergeRecordToMap } from './utils';
 import { ExchangeError } from './fetcherError';
 

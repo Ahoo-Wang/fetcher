@@ -15,10 +15,10 @@
  * Parameter and request body type definitions for OpenAPI Specification
  */
 
-import { Example, Header, ParameterLocation } from './base-types';
-import { Reference } from './reference';
-import { Schema } from './schema';
-import { Extensible } from './extensions';
+import type { Example, Header, ParameterLocation } from './base-types';
+import type { Reference } from './reference';
+import type { Schema } from './schema';
+import type { Extensible } from './extensions';
 
 /**
  * Describes a single operation parameter

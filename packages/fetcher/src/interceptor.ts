@@ -13,7 +13,7 @@
 
 import { type NamedCapable } from './types';
 import { type OrderedCapable, toSorted } from './orderedCapable';
-import { FetchExchange } from './fetchExchange';
+import type { FetchExchange } from './fetchExchange';
 
 export const DEFAULT_INTERCEPTOR_ORDER_STEP = 1000;
 

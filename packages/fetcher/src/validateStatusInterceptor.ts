@@ -12,7 +12,7 @@
  */
 
 import { type ResponseInterceptor } from './interceptor';
-import { FetchExchange } from './fetchExchange';
+import type { FetchExchange } from './fetchExchange';
 import { ExchangeError } from './fetcherError';
 
 /**

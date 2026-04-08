@@ -13,20 +13,23 @@
 
 import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, type TimeoutCapable } from './timeout';
-import { AttributesCapable, FetchExchange } from './fetchExchange';
-import {
+import type { AttributesCapable} from './fetchExchange';
+import { FetchExchange } from './fetchExchange';
+import type {
   BaseURLCapable,
-  CONTENT_TYPE_HEADER,
-  ContentTypeValues,
   FetchRequest,
   FetchRequestInit,
   RequestHeaders,
-  RequestHeadersCapable,
+  RequestHeadersCapable} from './fetchRequest';
+import {
+  CONTENT_TYPE_HEADER,
+  ContentTypeValues
 } from './fetchRequest';
 import { HttpMethod } from './fetchRequest';
 import { InterceptorManager } from './interceptorManager';
-import { UrlTemplateStyle } from './urlTemplateResolver';
-import { ResultExtractorCapable, ResultExtractors } from './resultExtractor';
+import type { UrlTemplateStyle } from './urlTemplateResolver';
+import type { ResultExtractorCapable} from './resultExtractor';
+import { ResultExtractors } from './resultExtractor';
 import { mergeRequestOptions } from './mergeRequest';
 
 /**

@@ -13,10 +13,11 @@
 
 import { combineURLs } from './urls';
 import type { BaseURLCapable, FetchRequest } from './fetchRequest';
+import type {
+  UrlTemplateStyle} from './urlTemplateResolver';
 import {
   getUrlTemplateResolver,
-  type UrlTemplateResolver,
-  UrlTemplateStyle,
+  type UrlTemplateResolver
 } from './urlTemplateResolver';
 
 /**

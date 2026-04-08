@@ -12,7 +12,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { EventBus, TypeEventBusSupplier } from '../src';
+import type { TypeEventBusSupplier } from '../src';
+import { EventBus } from '../src';
 import { SerialTypedEventBus } from '../src';
 
 describe('EventBus', () => {
