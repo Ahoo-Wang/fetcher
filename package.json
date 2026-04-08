@@ -35,7 +35,7 @@
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
   },
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@10.33.0",
   "devDependencies": {
     "@babel/plugin-proposal-decorators": "^7.29.0",
     "@chromatic-com/storybook": "^5.1.1",
