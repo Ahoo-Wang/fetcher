@@ -32,6 +32,7 @@ describe('BroadcastChannelMessenger', () => {
       close = vi.fn();
       onmessage = null;
       constructor(public name: string) {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         lastInstance = this;
       }
     }

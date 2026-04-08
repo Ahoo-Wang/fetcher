@@ -12,7 +12,8 @@
  */
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
+import type { Fetcher} from '@ahoo-wang/fetcher';
+import { FetchExchange } from '@ahoo-wang/fetcher';
 import {
   ForbiddenErrorInterceptor,
   FORBIDDEN_ERROR_INTERCEPTOR_NAME,

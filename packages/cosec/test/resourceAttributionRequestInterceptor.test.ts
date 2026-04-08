@@ -18,9 +18,9 @@ import {
   RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER,
   type ResourceAttributionOptions,
 } from '../src';
-import { FetchExchange, UrlParams } from '@ahoo-wang/fetcher';
-import { TokenStorage } from '../src';
-import { JwtCompositeToken } from '../src';
+import type { FetchExchange, UrlParams } from '@ahoo-wang/fetcher';
+import type { TokenStorage } from '../src';
+import type { JwtCompositeToken } from '../src';
 
 describe('ResourceAttributionRequestInterceptor', () => {
   let mockTokenStorage: TokenStorage;

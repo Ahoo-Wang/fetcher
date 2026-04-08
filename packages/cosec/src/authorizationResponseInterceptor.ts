@@ -12,8 +12,9 @@
  */
 
 import { ResponseCodes } from './types';
-import { FetchExchange, type ResponseInterceptor } from '@ahoo-wang/fetcher';
-import { AuthorizationInterceptorOptions } from './authorizationRequestInterceptor';
+import type { FetchExchange} from '@ahoo-wang/fetcher';
+import { type ResponseInterceptor } from '@ahoo-wang/fetcher';
+import type { AuthorizationInterceptorOptions } from './authorizationRequestInterceptor';
 
 /**
  * The name of the AuthorizationResponseInterceptor.

@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
+import type { Fetcher} from '@ahoo-wang/fetcher';
+import { ResultExtractors } from '@ahoo-wang/fetcher';
 import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from './cosecRequestInterceptor';
 
 /**

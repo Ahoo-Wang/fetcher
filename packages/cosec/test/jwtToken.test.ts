@@ -4,7 +4,7 @@ import {
   JwtCompositeToken,
   jwtCompositeTokenSerializer,
 } from '../src';
-import { JwtPayload } from '../src';
+import type { JwtPayload } from '../src';
 
 // Example JWT tokens for testing
 // Payload: {"sub":"1234567890","name":"John Doe","iat":1516239022}

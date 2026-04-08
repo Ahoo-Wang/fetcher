@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { ErrorInterceptor, FetchExchange } from '@ahoo-wang/fetcher';
+import type { ErrorInterceptor, FetchExchange } from '@ahoo-wang/fetcher';
 import { ResponseCodes } from './types';
 
 /**

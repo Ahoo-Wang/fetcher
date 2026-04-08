@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Fetcher } from '@ahoo-wang/fetcher';
-import { CoSecConfigurer, TokenRefresher } from '../src';
+import type { TokenRefresher } from '../src';
+import { CoSecConfigurer } from '../src';
 
 describe('CoSecConfigurer', () => {
   let fetcher: Fetcher;

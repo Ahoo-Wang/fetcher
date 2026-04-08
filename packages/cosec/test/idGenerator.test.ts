@@ -12,7 +12,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { idGenerator, IdGenerator, NanoIdGenerator } from '../src';
+import type { IdGenerator} from '../src';
+import { idGenerator, NanoIdGenerator } from '../src';
 
 describe('idGenerator.ts', () => {
   describe('NanoIdGenerator', () => {

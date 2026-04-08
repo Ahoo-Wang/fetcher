@@ -11,16 +11,18 @@
  * limitations under the License.
  */
 
-import {
-  DEFAULT_INTERCEPTOR_ORDER_STEP,
+import type {
   FetchExchange,
-  RequestInterceptor,
+  RequestInterceptor} from '@ahoo-wang/fetcher';
+import {
+  DEFAULT_INTERCEPTOR_ORDER_STEP
 } from '@ahoo-wang/fetcher';
 import {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
   IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
 } from './cosecRequestInterceptor';
-import { CoSecHeaders, JwtTokenManagerCapable } from './types';
+import type { JwtTokenManagerCapable } from './types';
+import { CoSecHeaders } from './types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AuthorizationInterceptorOptions

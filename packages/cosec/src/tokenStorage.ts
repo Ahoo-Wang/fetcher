@@ -12,9 +12,10 @@
  */
 
 import { JwtCompositeToken, JwtCompositeTokenSerializer } from './jwtToken';
-import { CompositeToken } from './tokenRefresher';
-import { CoSecJwtPayload, EarlyPeriodCapable } from './jwts';
-import { KeyStorage, KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
+import type { CompositeToken } from './tokenRefresher';
+import type { CoSecJwtPayload, EarlyPeriodCapable } from './jwts';
+import type { KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,

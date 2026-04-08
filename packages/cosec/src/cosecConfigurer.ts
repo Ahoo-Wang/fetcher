@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Fetcher, FetcherConfigurer, FetchExchange } from '@ahoo-wang/fetcher';
+import type { Fetcher, FetcherConfigurer, FetchExchange } from '@ahoo-wang/fetcher';
 import { AuthorizationRequestInterceptor } from './authorizationRequestInterceptor';
 import { AuthorizationResponseInterceptor } from './authorizationResponseInterceptor';
 import { CoSecRequestInterceptor } from './cosecRequestInterceptor';
@@ -19,11 +19,12 @@ import { DeviceIdStorage } from './deviceIdStorage';
 import { ForbiddenErrorInterceptor } from './forbiddenErrorInterceptor';
 import { JwtTokenManager } from './jwtTokenManager';
 import { ResourceAttributionRequestInterceptor } from './resourceAttributionRequestInterceptor';
-import { TokenRefresher } from './tokenRefresher';
+import type { TokenRefresher } from './tokenRefresher';
 import { TokenStorage } from './tokenStorage';
 import { UnauthorizedErrorInterceptor } from './unauthorizedErrorInterceptor';
-import { AppIdCapable, DeviceIdStorageCapable } from './types';
-import { NoneSpaceIdProvider, SpaceIdProvider } from './spaceIdProvider';
+import type { AppIdCapable, DeviceIdStorageCapable } from './types';
+import type { SpaceIdProvider } from './spaceIdProvider';
+import { NoneSpaceIdProvider } from './spaceIdProvider';
 
 /**
  * Configuration interface for CoSec security features.

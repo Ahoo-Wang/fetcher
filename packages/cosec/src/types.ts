@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { DeviceIdStorage } from './deviceIdStorage';
-import { JwtTokenManager } from './jwtTokenManager';
+import type { DeviceIdStorage } from './deviceIdStorage';
+import type { JwtTokenManager } from './jwtTokenManager';
 
 /**
  * CoSec HTTP headers enumeration.

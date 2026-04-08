@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JwtTokenManager, RefreshTokenError } from '../src';
 import { TokenStorage } from '../src';
-import { TokenRefresher, CompositeToken } from '../src';
+import type { TokenRefresher, CompositeToken } from '../src';
 import { JwtCompositeToken } from '../src';
 
 describe('JwtTokenManager', () => {

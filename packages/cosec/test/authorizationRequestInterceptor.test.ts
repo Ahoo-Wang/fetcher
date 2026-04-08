@@ -18,7 +18,7 @@ import {
   AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER,
 } from '../src';
 import { CoSecHeaders, IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from '../src';
-import { FetchExchange } from '@ahoo-wang/fetcher';
+import type { FetchExchange } from '@ahoo-wang/fetcher';
 
 // Mock token class
 class MockToken {

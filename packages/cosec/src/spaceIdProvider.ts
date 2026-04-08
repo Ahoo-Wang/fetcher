@@ -11,16 +11,17 @@
  * limitations under the License.
  */
 
+import type {
+  KeyStorageOptions} from '@ahoo-wang/fetcher-storage';
 import {
   KeyStorage,
-  KeyStorageOptions,
   typedIdentitySerializer,
 } from '@ahoo-wang/fetcher-storage';
 import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
-import { FetchExchange } from '@ahoo-wang/fetcher';
+import type { FetchExchange } from '@ahoo-wang/fetcher';
 
 /**
  * Represents a space identifier for resource scoping within a tenant.

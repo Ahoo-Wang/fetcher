@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { TokenStorage } from './tokenStorage';
-import { TokenRefresher } from './tokenRefresher';
-import { JwtCompositeToken, RefreshTokenStatusCapable } from './jwtToken';
+import type { TokenStorage } from './tokenStorage';
+import type { TokenRefresher } from './tokenRefresher';
+import type { JwtCompositeToken, RefreshTokenStatusCapable } from './jwtToken';
 import { FetcherError } from '@ahoo-wang/fetcher';
 
 export class RefreshTokenError extends FetcherError {

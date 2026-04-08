@@ -12,8 +12,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import type {
+  AuthorizeResult} from '../src';
 import {
-  AuthorizeResult,
   AuthorizeResults,
   CoSecHeaders,
   ResponseCodes,

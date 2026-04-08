@@ -11,15 +11,18 @@
  * limitations under the License.
  */
 
+import type {
+  FetchExchange} from '@ahoo-wang/fetcher';
 import {
   DEFAULT_INTERCEPTOR_ORDER_STEP,
-  FetchExchange,
   type RequestInterceptor,
 } from '@ahoo-wang/fetcher';
-import { AppIdCapable, CoSecHeaders, DeviceIdStorageCapable } from './types';
+import type { AppIdCapable, DeviceIdStorageCapable } from './types';
+import { CoSecHeaders } from './types';
 import { idGenerator } from './idGenerator';
-import { NoneSpaceIdProvider, SpaceIdProvider } from './spaceIdProvider';
-import { DeviceIdStorage } from './deviceIdStorage';
+import type { SpaceIdProvider } from './spaceIdProvider';
+import { NoneSpaceIdProvider } from './spaceIdProvider';
+import type { DeviceIdStorage } from './deviceIdStorage';
 
 /**
  * Configuration options for CoSecRequestInterceptor.

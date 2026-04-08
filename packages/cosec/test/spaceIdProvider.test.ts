@@ -12,16 +12,18 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type {
+  SpaceIdProvider,
+  SpacedResourcePredicate,
+  SpaceIdProviderOptions} from '../src';
 import {
   NoneSpaceIdProvider,
   SpaceIdStorage,
   DEFAULT_COSEC_SPACE_ID_KEY,
-  SpaceIdProvider,
-  DefaultSpaceIdProvider,
-  SpacedResourcePredicate,
-  SpaceIdProviderOptions,
+  DefaultSpaceIdProvider
 } from '../src';
-import { FetchExchange, Fetcher, FetchRequest } from '@ahoo-wang/fetcher';
+import type { Fetcher, FetchRequest } from '@ahoo-wang/fetcher';
+import { FetchExchange } from '@ahoo-wang/fetcher';
 
 const mockStorage = {
   getItem: vi.fn(),
@@ -674,7 +676,7 @@ describe('DefaultSpaceIdProvider', () => {
       const result = testProvider.resolveSpaceId(exchange);
 
       expect(result).toBe(numericSpaceId);
-      expect(result).not.toBe(12345678901234567890);
+      expect(result).not.toBe(12345678901234567890n);
     });
 
     it('should handle storage returning undefined explicitly', () => {

@@ -19,10 +19,11 @@ import {
   RefreshTokenError,
 } from '../src';
 import { ResponseCodes, type CoSecOptions } from '../src';
-import { FetchExchange, type Fetcher } from '@ahoo-wang/fetcher';
+import type { FetchExchange} from '@ahoo-wang/fetcher';
+import { type Fetcher } from '@ahoo-wang/fetcher';
 import { JwtTokenManager } from '../src';
-import { TokenStorage } from '../src';
-import { TokenRefresher } from '../src';
+import type { TokenStorage } from '../src';
+import type { TokenRefresher } from '../src';
 
 describe('AuthorizationResponseInterceptor', () => {
   let mockFetcher: Fetcher;

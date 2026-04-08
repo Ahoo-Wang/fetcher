@@ -12,7 +12,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { parseJwtPayload, CoSecJwtPayload } from '../src';
+import type { CoSecJwtPayload } from '../src';
+import { parseJwtPayload } from '../src';
 import { isTokenExpired } from '../src';
 
 describe('jwts', () => {

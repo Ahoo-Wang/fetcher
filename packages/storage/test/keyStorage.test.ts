@@ -12,7 +12,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { KeyStorage, KeyStorageOptions } from '../src';
+import type { KeyStorageOptions } from '../src';
+import { KeyStorage } from '../src';
 import { JsonSerializer } from '../src';
 import { nameGenerator } from '@ahoo-wang/fetcher-eventbus';
 

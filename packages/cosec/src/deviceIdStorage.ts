@@ -12,7 +12,8 @@
  */
 
 import { idGenerator } from './idGenerator';
-import { KeyStorage, KeyStorageOptions, typedIdentitySerializer } from '@ahoo-wang/fetcher-storage';
+import type { KeyStorageOptions} from '@ahoo-wang/fetcher-storage';
+import { KeyStorage, typedIdentitySerializer } from '@ahoo-wang/fetcher-storage';
 import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,

@@ -11,12 +11,13 @@
  * limitations under the License.
  */
 
-import {
-  DEFAULT_INTERCEPTOR_ORDER_STEP,
+import type {
   FetchExchange,
-  RequestInterceptor, URL_RESOLVE_INTERCEPTOR_ORDER,
+  RequestInterceptor} from '@ahoo-wang/fetcher';
+import {
+  DEFAULT_INTERCEPTOR_ORDER_STEP, URL_RESOLVE_INTERCEPTOR_ORDER,
 } from '@ahoo-wang/fetcher';
-import { TokenStorage } from './tokenStorage';
+import type { TokenStorage } from './tokenStorage';
 
 const TENANT_ID_PATH_KEY = 'tenantId';
 const OWNER_ID_PATH_KEY = 'ownerId';

@@ -11,12 +11,14 @@
  * limitations under the License.
  */
 
-import { jsonSerializer, Serializer } from './serializer';
-import {
+import type { Serializer } from './serializer';
+import { jsonSerializer } from './serializer';
+import type {
   EventHandler,
+  TypedEventBus} from '@ahoo-wang/fetcher-eventbus';
+import {
   nameGenerator,
-  SerialTypedEventBus,
-  TypedEventBus,
+  SerialTypedEventBus
 } from '@ahoo-wang/fetcher-eventbus';
 import { getStorage } from './env';
 
