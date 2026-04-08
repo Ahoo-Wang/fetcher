@@ -13,7 +13,8 @@
 
 import { defineConfig } from 'vite';
 import dts from 'unplugin-dts/vite';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
+import babel from '@rolldown/plugin-babel'
 
 export default defineConfig({
   build: {
@@ -64,10 +65,9 @@ export default defineConfig({
       outDirs: 'dist',
       tsconfigPath: './tsconfig.json',
     }),
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler']],
-      },
+    react(),
+    babel({
+      presets: [reactCompilerPreset()],
     }),
   ],
 });

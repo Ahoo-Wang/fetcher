@@ -61,6 +61,7 @@
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
+    "@rolldown/plugin-babel": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "babel-plugin-react-compiler": "catalog:",

@@ -13,7 +13,8 @@
 
 import { defineConfig } from 'vite';
 import dts from 'unplugin-dts/vite';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
+import babel from '@rolldown/plugin-babel'
 
 export default defineConfig({
   build: {
@@ -61,29 +62,21 @@ export default defineConfig({
           '@ahoo-wang/fetcher-react': 'FetcherReact',
           '@ahoo-wang/fetcher-openapi': 'FetcherOpenAPI',
         },
+        keepNames: true
       },
     },
-  },
-  esbuild: {
-    keepNames: true,
-    legalComments: 'none',
   },
   plugins: [
     dts({
       outDirs: 'dist',
       tsconfigPath: './tsconfig.json',
     }),
-    react({
-      include: /\.(jsx|tsx)$/,
-      babel: {
-        parserOpts: {
-          plugins: ['decorators-legacy'],
-        },
-        plugins: [
-          ['babel-plugin-react-compiler'],
-          ['@babel/plugin-proposal-decorators', { legacy: true }],
-        ],
-      },
-    }),
+    react(),
+    babel({
+      plugins: [
+        ["@babel/plugin-proposal-decorators", { version: "legacy" }],
+      ],
+      presets: [reactCompilerPreset()],
+    })
   ],
 });
