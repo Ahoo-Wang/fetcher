@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useSecurityContext } from './SecurityContext';
 
 /**

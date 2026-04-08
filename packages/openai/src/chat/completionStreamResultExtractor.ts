@@ -11,14 +11,14 @@
  * limitations under the License.
  */
 
-import { FetchExchange, ResultExtractor } from '@ahoo-wang/fetcher';
+import type { FetchExchange, ResultExtractor } from '@ahoo-wang/fetcher';
 import '@ahoo-wang/fetcher-eventstream';
-import {
+import type {
   JsonServerSentEventStream,
   ServerSentEvent,
   TerminateDetector,
 } from '@ahoo-wang/fetcher-eventstream';
-import { ChatResponse } from './types';
+import type { ChatResponse } from './types';
 
 /**
  * A termination detector for OpenAI chat completion streams.

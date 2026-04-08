@@ -12,7 +12,7 @@
  */
 
 import { useCallback } from 'react';
-import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import type { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { useKeyStorage } from './useKeyStorage';
 import { produce } from 'immer';
 

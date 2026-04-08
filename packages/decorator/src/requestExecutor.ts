@@ -10,9 +10,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { FunctionMetadata } from './functionMetadata';
+import type { FunctionMetadata } from './functionMetadata';
 import { EndpointReturnType } from './endpointReturnTypeCapable';
-import { ExecuteLifeCycle } from './executeLifeCycle';
+import type { ExecuteLifeCycle } from './executeLifeCycle';
 
 export const DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__';
 export const DECORATOR_METADATA_ATTRIBUTE_KEY = '__decorator_metadata__';

@@ -1,5 +1,5 @@
 import { channelRegistry } from './channel';
-import { ChannelType, Message } from './';
+import type { ChannelType, Message } from './';
 import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,

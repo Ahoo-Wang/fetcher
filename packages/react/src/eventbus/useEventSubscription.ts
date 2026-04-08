@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useCallback } from 'react';
-import { EventHandler, TypedEventBus } from '@ahoo-wang/fetcher-eventbus';
+import type { EventHandler, TypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
 /**
  * Options for the useEventSubscription hook.

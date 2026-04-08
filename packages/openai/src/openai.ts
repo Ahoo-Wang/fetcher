@@ -12,7 +12,8 @@
  */
 
 import { ChatClient } from './chat';
-import { BaseURLCapable, Fetcher } from '@ahoo-wang/fetcher';
+import type { BaseURLCapable} from '@ahoo-wang/fetcher';
+import { Fetcher } from '@ahoo-wang/fetcher';
 
 /**
  * Configuration options for the OpenAI client.

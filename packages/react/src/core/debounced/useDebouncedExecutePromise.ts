@@ -11,17 +11,19 @@
  * limitations under the License.
  */
 
-import {
-  useExecutePromise,
+import type {
   UseExecutePromiseOptions,
-  UseExecutePromiseReturn,
-} from '../useExecutePromise';
+  UseExecutePromiseReturn} from '../useExecutePromise';
 import {
-  useDebouncedCallback,
+  useExecutePromise
+} from '../useExecutePromise';
+import type {
   UseDebouncedCallbackOptions,
-  UseDebouncedCallbackReturn,
+  UseDebouncedCallbackReturn} from './useDebouncedCallback';
+import {
+  useDebouncedCallback
 } from './useDebouncedCallback';
-import { FetcherError } from '@ahoo-wang/fetcher';
+import type { FetcherError } from '@ahoo-wang/fetcher';
 import { useMemo } from 'react';
 
 /**

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { DependencyList } from 'react';
+import type { DependencyList } from 'react';
 
 export interface DepsCapable {
   deps?: DependencyList;

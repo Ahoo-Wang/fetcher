@@ -11,9 +11,10 @@
  * limitations under the License.
  */
 
-import { RouteGuardProps } from './RouteGuard';
-import { ReactNode, useCallback, useEffect } from 'react';
-import { JwtTokenManager } from '@ahoo-wang/fetcher-cosec';
+import type { RouteGuardProps } from './RouteGuard';
+import type { ReactNode} from 'react';
+import { useCallback, useEffect } from 'react';
+import type { JwtTokenManager } from '@ahoo-wang/fetcher-cosec';
 import { useSecurityContext } from './SecurityContext';
 
 export interface RefreshableRouteGuardProps extends Omit<RouteGuardProps, 'onUnauthorized'> {

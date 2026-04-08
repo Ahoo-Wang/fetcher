@@ -13,13 +13,14 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMounted } from './useMounted';
-import {
-  usePromiseState,
+import type {
   PromiseState,
-  UsePromiseStateOptions,
+  UsePromiseStateOptions} from './usePromiseState';
+import {
+  usePromiseState
 } from './usePromiseState';
 import { useRequestId } from './useRequestId';
-import { FetcherError } from '@ahoo-wang/fetcher';
+import type { FetcherError } from '@ahoo-wang/fetcher';
 import { useLatest } from './useLatest';
 
 /**

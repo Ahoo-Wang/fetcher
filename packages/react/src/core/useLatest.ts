@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { RefObject, useRef } from 'react';
+import type { RefObject} from 'react';
+import { useRef } from 'react';
 
 /**
  * A React hook that returns a ref containing the latest value, useful for accessing the current value in async callbacks.

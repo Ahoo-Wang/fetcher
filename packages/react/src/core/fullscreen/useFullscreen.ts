@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { useState, useCallback, useEffect, useRef, RefObject } from 'react';
+import type { RefObject } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   getFullscreenElement,
   enterFullscreen,

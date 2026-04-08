@@ -12,22 +12,24 @@
  */
 
 import { useCallback } from 'react';
+import type {
+  UseExecutePromiseReturn,
+  UseExecutePromiseOptions} from '../core';
 import {
   useExecutePromise,
-  UseExecutePromiseReturn,
-  UseExecutePromiseOptions,
   useLatest,
 } from '../core';
-import { FetcherError } from '@ahoo-wang/fetcher';
-import {
-  collectMethods,
-  methodNameToHookName,
+import type { FetcherError } from '@ahoo-wang/fetcher';
+import type {
   CreateApiHooksOptions,
   HookName,
   ApiMethod,
   FunctionParameters,
   FunctionReturnType,
-  OnBeforeExecuteCallback,
+  OnBeforeExecuteCallback} from './apiHooks';
+import {
+  collectMethods,
+  methodNameToHookName
 } from './apiHooks';
 
 /**

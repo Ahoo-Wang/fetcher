@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { Key, useCallback, useEffect, useMemo, useRef } from 'react';
+import type { Key} from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 /**
  * Return type of useRefs hook, providing Map-like interface for managing refs.

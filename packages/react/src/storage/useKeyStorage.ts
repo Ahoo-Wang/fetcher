@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useSyncExternalStore } from 'react';
-import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import type { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { nameGenerator } from '@ahoo-wang/fetcher-eventbus';
 
 export function useKeyStorage<T>(

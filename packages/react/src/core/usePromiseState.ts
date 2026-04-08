@@ -14,7 +14,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMounted } from './useMounted';
 import { useLatest } from './useLatest';
-import { FetcherError } from '@ahoo-wang/fetcher';
+import type { FetcherError } from '@ahoo-wang/fetcher';
 
 /**
  * Enumeration of possible promise execution states

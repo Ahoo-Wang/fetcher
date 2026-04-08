@@ -11,22 +11,23 @@
  * limitations under the License.
  */
 
-import {
-  type AttributesCapable,
+import type {
   Fetcher,
   FetcherCapable,
+  UrlParamsCapable} from '@ahoo-wang/fetcher';
+import {
+  type AttributesCapable,
   type RequestHeaders,
   type RequestHeadersCapable,
   type ResultExtractorCapable,
-  type TimeoutCapable,
-  UrlParamsCapable,
+  type TimeoutCapable
 } from '@ahoo-wang/fetcher';
 import { ENDPOINT_METADATA_KEY } from './endpointDecorator';
 import { RequestExecutor } from './requestExecutor';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator';
 import 'reflect-metadata';
 import { FunctionMetadata } from './functionMetadata';
-import { EndpointReturnTypeCapable } from './endpointReturnTypeCapable';
+import type { EndpointReturnTypeCapable } from './endpointReturnTypeCapable';
 
 /**
  * Metadata for class-level API configuration.

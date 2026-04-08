@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { FetchExchange } from '@ahoo-wang/fetcher';
+import type { FetchExchange } from '@ahoo-wang/fetcher';
 
 /**
  * Lifecycle hooks for decorator-based API execution.

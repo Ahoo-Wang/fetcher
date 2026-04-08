@@ -40,7 +40,13 @@ export default tseslint.config(
       '@typescript-eslint/no-empty-object-type': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       // '@typescript-eslint/no-unused-vars': 'off',
-      "react-compiler/react-compiler": "warn"
+      "react-compiler/react-compiler": "warn",
+      "@typescript-eslint/consistent-type-imports": [
+        "error",
+        {
+          "prefer": "type-imports"
+        }
+      ]
     },
   },
 );

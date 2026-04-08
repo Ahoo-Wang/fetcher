@@ -11,17 +11,19 @@
  * limitations under the License.
  */
 
-import {
-  useExecutePromise,
-  useLatest,
+import type {
   UseExecutePromiseReturn,
   UseExecutePromiseOptions,
-  PromiseSupplier, QueryOptions, isValidateQuery,
+  PromiseSupplier, QueryOptions} from './index';
+import {
+  useExecutePromise,
+  useLatest, isValidateQuery,
 } from './index';
 import { useCallback, useMemo } from 'react';
-import { AttributesCapable, FetcherError } from '@ahoo-wang/fetcher';
-import { useQueryState, UseQueryStateReturn } from './useQueryState';
-import { AutoExecuteCapable } from '../types';
+import type { AttributesCapable, FetcherError } from '@ahoo-wang/fetcher';
+import type { UseQueryStateReturn } from './useQueryState';
+import { useQueryState } from './useQueryState';
+import type { AutoExecuteCapable } from '../types';
 
 /**
  * Configuration options for the useQuery hook

@@ -1,7 +1,8 @@
 import { getParameterName } from './reflection';
 import 'reflect-metadata';
 import { type PathCapable } from './endpointDecorator';
-import { type FetchRequestInit, RequestBodyType } from '@ahoo-wang/fetcher';
+import type { RequestBodyType } from '@ahoo-wang/fetcher';
+import { type FetchRequestInit } from '@ahoo-wang/fetcher';
 
 /**
  * Parameter types for decorator parameters.

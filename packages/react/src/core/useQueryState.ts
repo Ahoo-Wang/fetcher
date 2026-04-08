@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { AutoExecuteCapable } from '../types';
+import type { AutoExecuteCapable } from '../types';
 
 export interface QueryOptions<Q> {
   /** The initial query parameters to be stored and managed */

@@ -1,4 +1,4 @@
-import { Message } from '../';
+import type { Message } from '../';
 
 export interface NotificationChannel<Payload = any> {
   send(message: Message<Payload>): Promise<void> | void;

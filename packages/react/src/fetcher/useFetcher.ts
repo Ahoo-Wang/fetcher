@@ -11,19 +11,21 @@
  * limitations under the License.
  */
 
-import {
-  fetcherRegistrar,
+import type {
   FetcherCapable,
   FetchExchange,
   FetchRequest,
-  getFetcher,
   RequestOptions,
-  FetcherError,
-} from '@ahoo-wang/fetcher';
+  FetcherError} from '@ahoo-wang/fetcher';
 import {
-  useExecutePromise,
+  fetcherRegistrar,
+  getFetcher
+} from '@ahoo-wang/fetcher';
+import type {
   UseExecutePromiseOptions,
-  UseExecutePromiseReturn,
+  UseExecutePromiseReturn} from '../core';
+import {
+  useExecutePromise
 } from '../core';
 import { useCallback, useState, useMemo } from 'react';
 import { useLatest } from '../core';

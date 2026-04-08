@@ -13,7 +13,7 @@
 
 import { useCallback } from 'react';
 import { useKeyStorage } from '../storage';
-import {
+import type {
   TokenStorage,
   CompositeToken,
   CoSecJwtPayload,

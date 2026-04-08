@@ -11,25 +11,27 @@
  * limitations under the License.
  */
 
+import type {
+  Fetcher,
+  FetchRequestInit,
+  NamedCapable,
+  ResultExtractor} from '@ahoo-wang/fetcher';
 import {
   combineURLs,
-  Fetcher,
   type FetchExchangeInit,
-  FetchRequestInit,
   getFetcher,
   JsonResultExtractor,
   mergeRecordToMap,
   mergeRequest,
-  NamedCapable,
   type RequestHeaders,
-  ResultExtractor,
   type UrlParams,
 } from '@ahoo-wang/fetcher';
-import { ApiMetadata } from './apiDecorator';
-import { EndpointMetadata } from './endpointDecorator';
-import {
+import type { ApiMetadata } from './apiDecorator';
+import type { EndpointMetadata } from './endpointDecorator';
+import type {
   ParameterMetadata,
-  ParameterRequest,
+  ParameterRequest} from './parameterDecorator';
+import {
   ParameterType,
 } from './parameterDecorator';
 import { EndpointReturnType } from './endpointReturnTypeCapable';

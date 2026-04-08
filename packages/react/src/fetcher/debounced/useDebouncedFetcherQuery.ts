@@ -11,17 +11,19 @@
  * limitations under the License.
  */
 
-import { FetcherError } from '@ahoo-wang/fetcher';
-import {
+import type { FetcherError } from '@ahoo-wang/fetcher';
+import type {
   DebounceCapable,
-  useDebouncedCallback,
-  UseDebouncedCallbackReturn,
+  UseDebouncedCallbackReturn} from '../../core';
+import {
+  useDebouncedCallback
 } from '../../core';
 import { useCallback, useEffect, useMemo } from 'react';
-import {
-  useFetcherQuery,
+import type {
   UseFetcherQueryOptions,
-  UseFetcherQueryReturn,
+  UseFetcherQueryReturn} from '../index';
+import {
+  useFetcherQuery
 } from '../index';
 
 /**

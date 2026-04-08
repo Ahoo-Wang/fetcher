@@ -1,6 +1,7 @@
-import { NotificationChannel, BROWSER_NOTIFICATION_TYPE } from './';
+import type { NotificationChannel} from './';
+import { BROWSER_NOTIFICATION_TYPE } from './';
 import browserNotification from './browserNotification';
-import { ChannelType } from '../';
+import type { ChannelType } from '../';
 
 class NotificationChannelRegistry {
   private readonly registry: Map<ChannelType, NotificationChannel> = new Map();
