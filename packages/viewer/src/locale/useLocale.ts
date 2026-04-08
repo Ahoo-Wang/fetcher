@@ -1,4 +1,4 @@
-import { Locale } from './Locale';
+import type { Locale } from './Locale';
 import zh_CN from './zh_CN';
 import { useCallback, useState } from 'react';
 

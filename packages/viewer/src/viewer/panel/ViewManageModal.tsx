@@ -1,5 +1,5 @@
 import { Modal, Space } from 'antd';
-import { ViewState, ViewType } from '../types';
+import type { ViewState, ViewType } from '../types';
 import { useCallback, useState } from 'react';
 import { ViewManageItem } from './ViewManageItem';
 

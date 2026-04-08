@@ -1,6 +1,7 @@
+import type {
+  EventHandler} from '@ahoo-wang/fetcher-eventbus';
 import {
   BroadcastTypedEventBus,
-  EventHandler,
   SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
 import { useEffect, useId } from 'react';

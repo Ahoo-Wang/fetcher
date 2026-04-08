@@ -11,10 +11,11 @@
  * limitations under the License.
  */
 
-import { CellProps } from './types';
-import { Space, TagProps } from 'antd';
+import type { CellProps } from './types';
+import type { TagProps } from 'antd';
+import { Space } from 'antd';
 import { TagCell } from './TagCell';
-import { SpaceProps } from 'antd/es/space';
+import type { SpaceProps } from 'antd/es/space';
 
 /**
  * Constant representing the type identifier for tags cells.

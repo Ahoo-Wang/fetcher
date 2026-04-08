@@ -12,8 +12,8 @@
  */
 
 import { TypedComponentRegistry } from '../../registry';
-import { CellType } from './TypedCell';
-import { CellProps } from './types';
+import type { CellType } from './TypedCell';
+import type { CellProps } from './types';
 import { ACTION_CELL_TYPE, ActionCell } from './ActionCell';
 import { ACTIONS_CELL_TYPE, ActionsCell } from './ActionsCell';
 import { TEXT_CELL_TYPE, TextCell } from './TextCell';

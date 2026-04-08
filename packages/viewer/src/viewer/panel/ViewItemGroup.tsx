@@ -1,4 +1,4 @@
-import { ViewState, GetRecordCountActionCapable } from '../';
+import type { ViewState, GetRecordCountActionCapable } from '../';
 import { Flex } from 'antd';
 import { ViewItem } from './';
 

@@ -13,7 +13,7 @@
 
 import { Checkbox, Flex } from 'antd';
 import { DragOutlined } from '@ant-design/icons';
-import { FieldDefinition } from '../../viewer';
+import type { FieldDefinition } from '../../viewer';
 
 /**
  * Table Field Item Component

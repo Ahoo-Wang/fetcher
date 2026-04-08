@@ -11,12 +11,13 @@
  * limitations under the License.
  */
 
-import { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
-import { ConditionCapable, ConditionOptions } from '@ahoo-wang/fetcher-wow';
-import { SelectProps } from 'antd/es/select';
-import React, { RefAttributes } from 'react';
-import { StyleCapable } from '../types';
-import { SelectOperator, SelectOperatorLocale } from './operator';
+import type { AttributesCapable, NamedCapable } from '@ahoo-wang/fetcher';
+import type { ConditionCapable, ConditionOptions } from '@ahoo-wang/fetcher-wow';
+import type { SelectProps } from 'antd/es/select';
+import type { RefAttributes } from 'react';
+import type React from 'react';
+import type { StyleCapable } from '../types';
+import type { SelectOperator, SelectOperatorLocale } from './operator';
 
 /**
  * @see {@link Schema}

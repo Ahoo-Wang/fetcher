@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import dayjs, { Dayjs } from 'dayjs';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 
 export function parseDayjs(value: string | number | Date | Dayjs): Dayjs {
   if (dayjs.isDayjs(value)) {

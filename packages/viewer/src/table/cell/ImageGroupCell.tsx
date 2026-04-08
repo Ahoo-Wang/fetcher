@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { CellProps } from './types';
+import type { CellProps } from './types';
 import { Empty, Image, Badge } from 'antd';
-import { PreviewGroupProps } from 'antd/es/image/PreviewGroup';
+import type { PreviewGroupProps } from 'antd/es/image/PreviewGroup';
 
 /**
  * Constant representing the type identifier for image group cells.

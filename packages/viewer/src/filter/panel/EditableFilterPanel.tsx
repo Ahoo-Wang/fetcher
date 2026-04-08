@@ -11,11 +11,13 @@
  * limitations under the License.
  */
 
-import React, { useState, Key } from 'react';
+import type { Key } from 'react';
+import React, { useState } from 'react';
 import { Button } from 'antd';
-import { AvailableFilterGroup, AvailableFilter } from './AvailableFilterSelect';
+import type { AvailableFilterGroup, AvailableFilter } from './AvailableFilterSelect';
 import { AvailableFilterSelectModal } from './AvailableFilterSelectModal';
-import { ActiveFilter, FilterPanelProps, FilterPanel } from './FilterPanel';
+import type { ActiveFilter, FilterPanelProps} from './FilterPanel';
+import { FilterPanel } from './FilterPanel';
 import { useLocale } from '../../locale';
 import { PlusOutlined } from '@ant-design/icons';
 

@@ -13,7 +13,7 @@
 
 import { cellRegistry } from './cellRegistry';
 import React from 'react';
-import { CellData } from './types';
+import type { CellData } from './types';
 
 /**
  * Represents the type identifier for different cell components.

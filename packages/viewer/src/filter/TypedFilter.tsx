@@ -12,10 +12,10 @@
  */
 
 import React, { useMemo } from 'react';
-import { FilterProps } from './types';
+import type { FilterProps } from './types';
 import { filterRegistry } from './filterRegistry';
 import { FallbackFilter } from './FallbackFilter';
-import { TypeCapable } from '../registry';
+import type { TypeCapable } from '../registry';
 
 export type FilterType = string;
 

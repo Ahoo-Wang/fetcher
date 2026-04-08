@@ -1,4 +1,5 @@
-import { Button, Dropdown, MenuProps } from 'antd';
+import type { MenuProps } from 'antd';
+import { Button, Dropdown } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import { useEffect, useRef } from 'react';
 import { useLocale, useRefreshDataEventBus } from '../';

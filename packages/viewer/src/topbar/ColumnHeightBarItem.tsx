@@ -1,8 +1,9 @@
-import { TopBarItemProps } from './types';
+import type { TopBarItemProps } from './types';
 import { BarItem } from './BarItem';
-import { Dropdown, MenuProps, Tooltip } from 'antd';
+import type { MenuProps} from 'antd';
+import { Dropdown, Tooltip } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
+import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useEffect, useState } from 'react';
 import { useLocale } from '../locale';
 

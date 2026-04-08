@@ -11,15 +11,16 @@
  * limitations under the License.
  */
 
-import { FilterProps } from './types';
+import type { FilterProps } from './types';
 import { Input } from 'antd';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
-import {
+import type {
   OnOperatorChangeValueConverter,
   UseFilterStateReturn,
 } from './useFilterState';
-import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
+import type { AssemblyFilterProps } from './AssemblyFilter';
+import { AssemblyFilter } from './AssemblyFilter';
 
 export const ID_FILTER = 'id';
 

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { FunctionComponent } from 'react';
+import type { FunctionComponent } from 'react';
 
 /**
  * Interface for objects that have a type property.

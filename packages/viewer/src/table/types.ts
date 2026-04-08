@@ -1,4 +1,4 @@
-import { ActionsData } from './cell';
+import type { ActionsData } from './cell';
 
 /**
  * Configuration for a cell in a table column.

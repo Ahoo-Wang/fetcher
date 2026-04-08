@@ -11,16 +11,19 @@
  * limitations under the License.
  */
 
-import {
+import type {
   Condition,
-  ConditionOptions,
+  ConditionOptions} from '@ahoo-wang/fetcher-wow';
+import {
   EMPTY_VALUE_OPERATORS,
   Operator,
 } from '@ahoo-wang/fetcher-wow';
-import { RefAttributes, useImperativeHandle, useState } from 'react';
-import { FilterRef, FilterValue } from './types';
-import { Optional } from '../types';
-import { ExtendedOperator, SelectOperator } from './operator';
+import type { RefAttributes} from 'react';
+import { useImperativeHandle, useState } from 'react';
+import type { FilterRef, FilterValue } from './types';
+import type { Optional } from '../types';
+import type { SelectOperator } from './operator';
+import { ExtendedOperator } from './operator';
 import { isValidBetweenValue } from './utils';
 
 export type OnOperatorChangeValueConverter = (

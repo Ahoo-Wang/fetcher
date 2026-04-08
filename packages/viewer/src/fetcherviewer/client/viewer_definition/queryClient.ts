@@ -1,7 +1,8 @@
-import { QueryClientFactory, QueryClientOptions, ResourceAttributionPathSpec } from "@ahoo-wang/fetcher-wow";
-import { ViewerDefinitionAggregatedFields } from "./types";
+import type { QueryClientOptions} from "@ahoo-wang/fetcher-wow";
+import { QueryClientFactory, ResourceAttributionPathSpec } from "@ahoo-wang/fetcher-wow";
+import type { ViewerDefinitionAggregatedFields } from "./types";
 import { VIEWER_BOUNDED_CONTEXT_ALIAS } from "../boundedContext";
-import { ViewDefinition } from '../../../viewer';
+import type { ViewDefinition } from '../../../viewer';
 
 const DEFAULT_QUERY_CLIENT_OPTIONS: QueryClientOptions = {
     contextAlias: VIEWER_BOUNDED_CONTEXT_ALIAS,

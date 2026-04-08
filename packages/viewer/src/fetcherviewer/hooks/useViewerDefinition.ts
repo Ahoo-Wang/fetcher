@@ -1,6 +1,6 @@
 import { aggregateId, } from '@ahoo-wang/fetcher-wow';
 import { viewerDefinitionQueryClientFactory } from '../client';
-import { ViewDefinition } from '../../';
+import type { ViewDefinition } from '../../';
 import {  useSingleQuery } from '@ahoo-wang/fetcher-react';
 
 /**

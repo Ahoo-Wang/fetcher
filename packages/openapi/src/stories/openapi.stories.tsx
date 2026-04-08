@@ -12,7 +12,7 @@ import {
   Alert,
   Table,
 } from 'antd';
-import { OpenAPI } from '../openAPI';
+import type { OpenAPI } from '../openAPI';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;

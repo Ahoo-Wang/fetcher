@@ -1,4 +1,4 @@
-import { GetRecordCountActionCapable, ViewState } from '../';
+import type { GetRecordCountActionCapable, ViewState } from '../';
 import { Flex, Tag } from 'antd';
 import styles from './ViewPanel.module.less';
 import { useEffect, useState } from 'react';

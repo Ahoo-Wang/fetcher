@@ -11,14 +11,17 @@
  * limitations under the License.
  */
 
-import { Select, SelectProps, RefSelectProps, Flex, Empty, Spin } from 'antd';
+import type { SelectProps, RefSelectProps} from 'antd';
+import { Select, Flex, Empty, Spin } from 'antd';
+import type {
+  UseDebouncedCallbackOptions} from '@ahoo-wang/fetcher-react';
 import {
-  UseDebouncedCallbackOptions,
   useDebouncedExecutePromise,
 } from '@ahoo-wang/fetcher-react';
-import { StyleCapable } from '../types';
-import { RefAttributes, useMemo } from 'react';
-import { BaseOptionType, DefaultOptionType } from 'antd/lib/select';
+import type { StyleCapable } from '../types';
+import type { RefAttributes} from 'react';
+import { useMemo } from 'react';
+import type { BaseOptionType, DefaultOptionType } from 'antd/lib/select';
 
 /**
  * Props for the RemoteSelect component.

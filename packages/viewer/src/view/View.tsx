@@ -11,33 +11,38 @@
  * limitations under the License.
  */
 
-import { Pagination, PaginationProps, Space } from 'antd';
+import type { PaginationProps} from 'antd';
+import { Pagination, Space } from 'antd';
 import styles from '../viewer/Viewer.module.css';
-import {
+import type {
   ActiveFilter,
-  AvailableFilterGroup,
+  AvailableFilterGroup, FilterPanelConditionCapableRef,
+  FilterPanelRef} from '../filter';
+import {
   EditableFilterPanel,
-  FilterPanel, FilterPanelConditionCapableRef,
-  FilterPanelRef,
+  FilterPanel
 } from '../filter';
 import type * as React from 'react';
-import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
-import {
+import type { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
+import type {
   Key,
-  RefAttributes,
+  RefAttributes} from 'react';
+import {
   useCallback,
   useImperativeHandle,
   useRef,
 } from 'react';
-import { FieldDefinition, ViewColumn } from '../viewer';
-import { ViewTable, ViewTableActionColumn, ViewTableRef } from '../table';
-import {
+import type { FieldDefinition, ViewColumn } from '../viewer';
+import type { ViewTableActionColumn, ViewTableRef } from '../table';
+import { ViewTable } from '../table';
+import type {
   PrimaryKeyClickHandlerCapable,
   ViewTableSettingCapable,
 } from '../types';
-import { SorterResult } from 'antd/es/table/interface';
-import { useViewState, ViewChangeAction } from './';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
+import type { SorterResult } from 'antd/es/table/interface';
+import type { ViewChangeAction } from './';
+import { useViewState } from './';
+import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useLocale } from '../locale';
 
 /**

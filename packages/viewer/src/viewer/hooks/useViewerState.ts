@@ -1,9 +1,12 @@
-import { ViewColumn, ViewDefinition, ViewState } from '../types';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { Key, useEffect, useRef, useState } from 'react';
-import { deepEqual, ActiveFilter, useActiveViewState } from '../../';
-import { all, Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
-import { SortOrder } from 'antd/es/table/interface';
+import type { ViewColumn, ViewDefinition, ViewState } from '../types';
+import type { SizeType } from 'antd/es/config-provider/SizeContext';
+import type { Key} from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { ActiveFilter} from '../../';
+import { deepEqual, useActiveViewState } from '../../';
+import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import { all } from '@ahoo-wang/fetcher-wow';
+import type { SortOrder } from 'antd/es/table/interface';
 
 export interface UseViewerStateOptions {
   views: ViewState[];

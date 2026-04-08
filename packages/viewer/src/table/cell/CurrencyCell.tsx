@@ -11,10 +11,11 @@
  * limitations under the License.
  */
 
-import { CellProps } from './types';
+import type { CellProps } from './types';
 import { Typography } from 'antd';
-import { TextProps } from 'antd/es/typography/Text';
-import { formatCurrency, CurrencyFormatOptions } from './currencyFormatter';
+import type { TextProps } from 'antd/es/typography/Text';
+import type { CurrencyFormatOptions } from './currencyFormatter';
+import { formatCurrency } from './currencyFormatter';
 
 const { Text } = Typography;
 

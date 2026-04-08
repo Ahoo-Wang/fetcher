@@ -11,8 +11,9 @@
  * limitations under the License.
  */
 
-import { Tag, TagProps } from 'antd';
-import { CellProps } from './types';
+import type { TagProps } from 'antd';
+import { Tag } from 'antd';
+import type { CellProps } from './types';
 
 
 /**

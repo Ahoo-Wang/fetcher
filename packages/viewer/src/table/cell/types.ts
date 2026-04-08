@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import { AttributesCapable } from '../../types';
+import type React from 'react';
+import type { AttributesCapable } from '../../types';
 
 /**
  * Represents the data structure for a single table cell.

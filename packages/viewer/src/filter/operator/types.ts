@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Operator } from '@ahoo-wang/fetcher-wow';
+import type { Operator } from '@ahoo-wang/fetcher-wow';
 
 export enum ExtendedOperator {
   UNDEFINED = 'UNDEFINED',

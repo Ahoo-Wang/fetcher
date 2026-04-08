@@ -1,19 +1,22 @@
-import {
+import type {
   TopBarActionItem,
   TopbarActionsCapable,
   SaveViewMethod,
   ViewState,
-  SaveViewModal,
-  ViewType,
+  ViewType} from '../';
+import {
+  SaveViewModal
 } from '../';
 import styles from './TopBar.module.css';
-import { Button, Divider, Dropdown, Flex, MenuProps, Space, Modal } from 'antd';
+import type { MenuProps} from 'antd';
+import { Button, Divider, Dropdown, Flex, Space, Modal } from 'antd';
 import {
   DownOutlined,
   ExclamationCircleOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import React, { RefObject, useCallback, useState } from 'react';
+import type { RefObject} from 'react';
+import React, { useCallback, useState } from 'react';
 import type { ItemType } from 'antd/es/menu/interface';
 import {
   AutoRefreshBarItem,
@@ -25,7 +28,7 @@ import {
   ShareLinkBarItem,
   FullscreenBarItem,
 } from './';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
+import type { SizeType } from 'antd/es/config-provider/SizeContext';
 
 export interface TopBarProps<
   RecordType,

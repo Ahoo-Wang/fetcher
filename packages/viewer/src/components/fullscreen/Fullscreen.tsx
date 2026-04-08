@@ -11,9 +11,10 @@
  * limitations under the License.
  */
 
-import { Button, ButtonProps } from 'antd';
+import type { ButtonProps } from 'antd';
+import { Button } from 'antd';
 import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
-import { RefObject, ReactNode } from 'react';
+import type { RefObject, ReactNode } from 'react';
 import { useFullscreen } from '@ahoo-wang/fetcher-react';
 
 export interface FullScreenProps extends Omit<

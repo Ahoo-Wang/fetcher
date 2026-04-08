@@ -39,6 +39,12 @@ export default tseslint.config(
       // 可以为集成测试设置特定规则
       '@typescript-eslint/no-empty-object-type': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
+      "@typescript-eslint/consistent-type-imports": [
+        "error",
+        {
+          "prefer": "type-imports"
+        }
+      ]
     },
   },
   storybook.configs['flat/recommended'],

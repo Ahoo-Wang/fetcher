@@ -11,18 +11,21 @@
  * limitations under the License.
  */
 
-import { FilterProps } from './types';
-import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
+import type { FilterProps } from './types';
+import type { AssemblyFilterProps } from './AssemblyFilter';
+import { AssemblyFilter } from './AssemblyFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
-import {
+import type {
   ConditionValueParser,
   OnOperatorChangeValueConverter,
   UseFilterStateReturn,
 } from './useFilterState';
 import { DatePicker, InputNumber } from 'antd';
-import { Optional } from '../types';
-import dayjs, { Dayjs, isDayjs } from 'dayjs';
-import { ExtendedOperator, SelectOperator } from './operator';
+import type { Optional } from '../types';
+import type { Dayjs} from 'dayjs';
+import dayjs, { isDayjs } from 'dayjs';
+import type { SelectOperator } from './operator';
+import { ExtendedOperator } from './operator';
 
 export const DATE_TIME_FILTER_NAME = 'datetime';
 const TIME_FORMAT = 'HH:mm:ss';

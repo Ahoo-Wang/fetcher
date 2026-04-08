@@ -1,4 +1,4 @@
-import {
+import type {
   TypeCapable,
   ActiveFilter,
   AvailableFilterGroup,
@@ -6,11 +6,11 @@ import {
   AttributesCapable,
   KeyCapable,
 } from '../';
-import { SortOrder } from 'antd/es/table/interface';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
-import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
-import React from 'react';
-import { NamedCapable } from '@ahoo-wang/fetcher';
+import type { SortOrder } from 'antd/es/table/interface';
+import type { SizeType } from 'antd/es/config-provider/SizeContext';
+import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import type React from 'react';
+import type { NamedCapable } from '@ahoo-wang/fetcher';
 
 export interface ViewDefinition {
   id: string;

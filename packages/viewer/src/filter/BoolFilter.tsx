@@ -11,11 +11,13 @@
  * limitations under the License.
  */
 
-import { FilterProps } from './types';
-import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
+import type { FilterProps } from './types';
+import type { AssemblyFilterProps } from './AssemblyFilter';
+import { AssemblyFilter } from './AssemblyFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { ExtendedOperator } from './operator';
-import { ConditionValueParser, TrueValidateValue } from './useFilterState';
+import type { ConditionValueParser} from './useFilterState';
+import { TrueValidateValue } from './useFilterState';
 
 export const BOOL_FILTER = 'bool';
 

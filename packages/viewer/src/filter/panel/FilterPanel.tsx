@@ -11,15 +11,18 @@
  * limitations under the License.
  */
 
-import React, { Key, RefAttributes, useImperativeHandle } from 'react';
-import { TypedFilterProps } from '../TypedFilter';
-import { FilterRef } from '../types';
-import { and, Condition } from '@ahoo-wang/fetcher-wow';
-import { Button, Col, Row, Space, ColProps, ButtonProps } from 'antd';
+import type { Key, RefAttributes} from 'react';
+import React, { useImperativeHandle } from 'react';
+import type { TypedFilterProps } from '../TypedFilter';
+import type { FilterRef } from '../types';
+import type { Condition } from '@ahoo-wang/fetcher-wow';
+import { and } from '@ahoo-wang/fetcher-wow';
+import type { ColProps, ButtonProps } from 'antd';
+import { Button, Col, Row, Space } from 'antd';
 import { ClearOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRefs } from '@ahoo-wang/fetcher-react';
 import { RemovableTypedFilter } from './RemovableTypedFilter';
-import { RowProps } from 'antd/es/grid/row';
+import type { RowProps } from 'antd/es/grid/row';
 import { useLocale } from '../../locale';
 
 export interface ActiveFilter extends Omit<

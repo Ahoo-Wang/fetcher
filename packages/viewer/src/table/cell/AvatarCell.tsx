@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { CellProps } from './types';
+import type { CellProps } from './types';
 import { Avatar } from 'antd';
-import { AvatarProps } from 'antd/es/avatar';
+import type { AvatarProps } from 'antd/es/avatar';
 import { isValidImageSrc } from './utils';
 
 /**

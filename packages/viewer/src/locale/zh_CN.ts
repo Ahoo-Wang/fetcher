@@ -1,4 +1,4 @@
-import { Locale } from './Locale';
+import type { Locale } from './Locale';
 
 const localeValues: Locale = {
   personalView: '个人视图',

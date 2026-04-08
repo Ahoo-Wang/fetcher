@@ -1,4 +1,4 @@
-import { ViewState } from '../types';
+import type { ViewState } from '../types';
 import { Button, Flex, Form, Input, Popconfirm, Space, Tag } from 'antd';
 import { DeleteOutlined, DragOutlined, EditOutlined } from '@ant-design/icons';
 import { useState } from 'react';

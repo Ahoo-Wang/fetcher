@@ -11,10 +11,10 @@
  * limitations under the License.
  */
 
-import { CellProps } from './types';
+import type { CellProps } from './types';
 import { Typography } from 'antd';
-import { TextProps } from 'antd/es/typography/Text';
-import { Dayjs } from 'dayjs';
+import type { TextProps } from 'antd/es/typography/Text';
+import type { Dayjs } from 'dayjs';
 import { parseDayjs } from './utils';
 
 const { Text } = Typography;

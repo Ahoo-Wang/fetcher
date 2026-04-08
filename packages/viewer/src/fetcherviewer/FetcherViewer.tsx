@@ -1,25 +1,28 @@
 import { Spin } from 'antd';
-import { PaginationProps } from 'antd';
-import {
+import type { PaginationProps } from 'antd';
+import type {
   ViewTableSettingCapable,
   ViewTableActionColumn,
   ViewState,
   ViewDefinition,
-  Viewer,
-  useRefreshDataEventBus,
   TopbarActionsCapable,
-  ViewerRef,
+  ViewerRef} from '../';
+import {
+  Viewer,
+  useRefreshDataEventBus
 } from '../';
+import type {
+  CreateView,
+  EditView} from './';
 import {
   useViewerDefinition,
   useViewerViews,
   useFetchData,
-  CreateView,
-  EditView,
   ViewCommandClient,
 } from './';
+import type {
+  RefAttributes} from 'react';
 import {
-  RefAttributes,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -27,7 +30,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
+import type {
   CommandResult,
   Condition,
   FieldSort,

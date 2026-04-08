@@ -13,8 +13,8 @@
 
 import { Alert } from 'antd';
 import React, { useImperativeHandle } from 'react';
-import { TypedFilterProps } from './TypedFilter';
-import { FilterValue } from './types';
+import type { TypedFilterProps } from './TypedFilter';
+import type { FilterValue } from './types';
 
 export function FallbackFilter({ type, ref }: TypedFilterProps) {
   useImperativeHandle(ref, () => ({

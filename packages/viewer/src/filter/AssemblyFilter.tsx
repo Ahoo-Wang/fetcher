@@ -11,21 +11,22 @@
  * limitations under the License.
  */
 
-import { FilterProps, FilterValueProps } from './types';
+import type { FilterProps, FilterValueProps } from './types';
 import { OPERATOR_zh_CN } from './operator';
-import {
+import type {
   ConditionValueParser,
   FilterValueConverter,
   OnOperatorChangeValueConverter,
-  useFilterState,
   UseFilterStateReturn,
-  ValidateValue,
+  ValidateValue} from './useFilterState';
+import {
+  useFilterState
 } from './useFilterState';
 import { Select, Space, Typography, theme } from 'antd';
 
 const { useToken } = theme;
-import { ReactNode } from 'react';
-import { SelectOperator } from './operator';
+import type { ReactNode } from 'react';
+import type { SelectOperator } from './operator';
 
 export type ValueInputRender = (
   filterState: UseFilterStateReturn,

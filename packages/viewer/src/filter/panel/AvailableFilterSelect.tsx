@@ -11,24 +11,25 @@
  * limitations under the License.
  */
 
-import { FilterField, FilterOperatorProps, FilterValueProps } from '../types';
-import { FilterType } from '../TypedFilter';
+import type { FilterField, FilterOperatorProps, FilterValueProps } from '../types';
+import type { FilterType } from '../TypedFilter';
 import { Checkbox, Col, Divider, Row } from 'antd';
-import { StyleCapable } from '../../types';
+import type { StyleCapable } from '../../types';
 
 import styles from './AvailableFilterSelect.module.css';
 
-import {
+import type {
   Key,
-  RefAttributes,
+  RefAttributes} from 'react';
+import {
   useEffect,
   useImperativeHandle,
   useMemo,
   useState,
 } from 'react';
-import { ActiveFilter } from './FilterPanel';
-import { AttributesCapable } from '@ahoo-wang/fetcher';
-import { ConditionOptions } from '@ahoo-wang/fetcher-wow';
+import type { ActiveFilter } from './FilterPanel';
+import type { AttributesCapable } from '@ahoo-wang/fetcher';
+import type { ConditionOptions } from '@ahoo-wang/fetcher-wow';
 
 export interface AvailableFilter extends AttributesCapable {
   key: Key;

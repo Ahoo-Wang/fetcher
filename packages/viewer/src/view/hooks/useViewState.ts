@@ -11,12 +11,14 @@
  * limitations under the License.
  */
 
-import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
-import { Key, useState } from 'react';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
-import {
+import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import type { Key} from 'react';
+import { useState } from 'react';
+import type { SizeType } from 'antd/es/config-provider/SizeContext';
+import type {
   ActiveFilter,
-  ViewColumn,
+  ViewColumn} from '../../index';
+import {
   DEFAULT_CONDITION,
   useActiveViewState,
 } from '../../index';

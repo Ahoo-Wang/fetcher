@@ -1,5 +1,6 @@
-import { CellProps } from './types';
-import { Button, ButtonProps } from 'antd';
+import type { CellProps } from './types';
+import type { ButtonProps } from 'antd';
+import { Button } from 'antd';
 
 /**
  * Constant representing the type identifier for action cells.

@@ -1,14 +1,17 @@
-import { Collapse, CollapseProps, Flex, Space } from 'antd';
-import { BarItem, GetRecordCountActionCapable, useLocale } from '../../';
+import type { CollapseProps} from 'antd';
+import { Collapse, Flex, Space } from 'antd';
+import type { GetRecordCountActionCapable} from '../../';
+import { BarItem, useLocale } from '../../';
 import {
   MenuFoldOutlined,
   PlusOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { ViewState, ViewType } from '../';
+import type { ViewState, ViewType } from '../';
 
 import styles from './ViewPanel.module.less';
-import { useMemo, useState, MouseEvent } from 'react';
+import type { MouseEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { ViewManageModal, SaveViewModal, ViewItemGroup } from './';
 import type * as React from 'react';
 

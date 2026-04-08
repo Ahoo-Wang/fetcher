@@ -11,12 +11,13 @@
  * limitations under the License.
  */
 
-import { FilterProps } from './types';
+import type { FilterProps } from './types';
 import { Input } from 'antd';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { TagInput } from '../components';
-import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
-import {
+import type { AssemblyFilterProps } from './AssemblyFilter';
+import { AssemblyFilter } from './AssemblyFilter';
+import type {
   OnOperatorChangeValueConverter,
   UseFilterStateReturn,
 } from './useFilterState';

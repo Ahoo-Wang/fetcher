@@ -1,31 +1,35 @@
-import { Layout, PaginationProps, Space } from 'antd';
-import {
+import type { PaginationProps} from 'antd';
+import { Layout, Space } from 'antd';
+import type {
   ViewState,
   ViewDefinition,
-  ViewPanel,
-  useViewerState,
   ViewMutationActionsCapable,
   TopbarActionsCapable,
-  GetRecordCountActionCapable,
+  GetRecordCountActionCapable} from './';
+import {
+  ViewPanel,
+  useViewerState
 } from './';
 import styles from './Viewer.module.css';
-import {
-  TopBar,
+import type {
   ViewTableSettingCapable,
   ViewChangeAction,
-  View,
   ViewRef,
   ViewTableActionColumn,
-  FilterPanelConditionCapableRef,
-} from '../';
+  FilterPanelConditionCapableRef} from '../';
 import {
-  RefAttributes,
+  TopBar,
+  View
+} from '../';
+import type {
+  RefAttributes} from 'react';
+import {
   useCallback,
   useImperativeHandle,
   useRef,
   useState,
 } from 'react';
-import { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
+import type { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import type * as React from 'react';
 
 const { Header, Sider, Content } = Layout;

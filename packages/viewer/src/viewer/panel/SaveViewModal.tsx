@@ -1,5 +1,5 @@
 import { Modal, Form, Radio, Input } from 'antd';
-import { ViewState, ViewType } from '../types';
+import type { ViewState, ViewType } from '../types';
 import { useEffect, useRef } from 'react';
 import type { FormInstance } from 'antd/es/form/hooks/useForm';
 import { useLocale } from '../../locale';

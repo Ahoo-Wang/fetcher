@@ -1,4 +1,4 @@
-import { TopBarItemProps } from './types';
+import type { TopBarItemProps } from './types';
 import { BarItem } from './BarItem';
 import { ReloadOutlined } from '@ant-design/icons';
 import { useRefreshDataEventBus } from '../';

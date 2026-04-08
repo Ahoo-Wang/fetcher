@@ -11,9 +11,10 @@
  * limitations under the License.
  */
 
-import { RefSelectProps, Select, SelectProps } from 'antd';
-import { RefObject } from 'react';
-import { Optional } from '../types';
+import type { RefSelectProps, SelectProps } from 'antd';
+import { Select } from 'antd';
+import type { RefObject } from 'react';
+import type { Optional } from '../types';
 
 export interface TagValueItemSerializer<ValueItemType = string> {
   serialize(value: ValueItemType[]): string[];

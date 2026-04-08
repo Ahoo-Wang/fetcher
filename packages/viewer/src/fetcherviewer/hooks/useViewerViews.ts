@@ -1,5 +1,5 @@
 import { ViewAggregatedFields } from '../client';
-import { ViewState } from '../../';
+import type { ViewState } from '../../';
 import {
   and,
   eq,

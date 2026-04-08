@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { TypedFilter, TypedFilterProps } from '../TypedFilter';
+import type { TypedFilterProps } from '../TypedFilter';
+import { TypedFilter } from '../TypedFilter';
 import { MinusOutlined } from '@ant-design/icons';
 import { Button, Space } from 'antd';
 import React, { useState } from 'react';

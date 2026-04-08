@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { CellProps } from './types';
+import type { CellProps } from './types';
 import { Typography } from 'antd';
-import { TextProps } from 'antd/es/typography/Text';
+import type { TextProps } from 'antd/es/typography/Text';
 
 const { Text } = Typography;
 

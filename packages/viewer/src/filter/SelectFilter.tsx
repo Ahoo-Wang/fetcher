@@ -11,14 +11,16 @@
  * limitations under the License.
  */
 
-import { FilterProps, FilterValueProps } from './types';
-import { AssemblyFilter, AssemblyFilterProps } from './AssemblyFilter';
+import type { FilterProps, FilterValueProps } from './types';
+import type { AssemblyFilterProps } from './AssemblyFilter';
+import { AssemblyFilter } from './AssemblyFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
-import {
+import type {
   OnOperatorChangeValueConverter,
   UseFilterStateReturn,
 } from './useFilterState';
-import { Select, SelectProps } from 'antd';
+import type { SelectProps } from 'antd';
+import { Select } from 'antd';
 
 export const SELECT_FILTER = 'select';
 

@@ -11,11 +11,11 @@
  * limitations under the License.
  */
 
-import { FilterProps } from './types';
+import type { FilterProps } from './types';
 import { TEXT_FILTER, TextFilter } from './TextFilter';
 import { ID_FILTER, IdFilter } from './IdFilter';
 import { NUMBER_FILTER, NumberFilter } from './NumberFilter';
-import { FilterType } from './TypedFilter';
+import type { FilterType } from './TypedFilter';
 import { SELECT_FILTER, SelectFilter } from './SelectFilter';
 import { BOOL_FILTER, BoolFilter } from './BoolFilter';
 import { DATE_TIME_FILTER_NAME, DateTimeFilter } from './DateTimeFilter';

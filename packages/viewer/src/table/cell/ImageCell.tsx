@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { CellProps } from './types';
+import type { CellProps } from './types';
 import { Empty, Image } from 'antd';
-import { ImageProps } from 'antd/es/image';
+import type { ImageProps } from 'antd/es/image';
 
 /**
  * Constant representing the type identifier for image cells.

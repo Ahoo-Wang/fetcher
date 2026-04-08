@@ -1,5 +1,5 @@
 import { BarItem } from './BarItem';
-import { TopBarItemProps } from './types';
+import type { TopBarItemProps } from './types';
 import { LinkOutlined } from '@ant-design/icons';
 import { message, Tooltip } from 'antd';
 

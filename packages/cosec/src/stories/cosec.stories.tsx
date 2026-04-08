@@ -26,7 +26,7 @@ import { TokenStorage } from '../tokenStorage';
 import { DeviceIdStorage } from '../deviceIdStorage';
 import { JwtTokenManager } from '../jwtTokenManager';
 import { JwtCompositeToken } from '../jwtToken';
-import { CompositeToken, TokenRefresher } from '../tokenRefresher';
+import type { CompositeToken, TokenRefresher } from '../tokenRefresher';
 import { Fetcher } from '@ahoo-wang/fetcher';
 
 const { Title, Text, Paragraph } = Typography;

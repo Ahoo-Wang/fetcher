@@ -11,12 +11,14 @@
  * limitations under the License.
  */
 
-import { Modal, ModalProps } from 'antd';
-import {
+import type { ModalProps } from 'antd';
+import { Modal } from 'antd';
+import type {
   AvailableFilter,
-  AvailableFilterSelect,
   AvailableFilterSelectProps,
-  AvailableFilterSelectRef,
+  AvailableFilterSelectRef} from './AvailableFilterSelect';
+import {
+  AvailableFilterSelect
 } from './AvailableFilterSelect';
 import React, { useRef } from 'react';
 

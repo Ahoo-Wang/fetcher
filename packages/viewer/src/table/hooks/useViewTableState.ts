@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { Key, useState } from 'react';
+import type { Key} from 'react';
+import { useState } from 'react';
 
 /**
  * Return type from the useViewTableState hook containing managed state and control functions.

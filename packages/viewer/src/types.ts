@@ -11,9 +11,10 @@
  * limitations under the License.
  */
 
-import React, { Key } from 'react';
-import { ButtonProps } from 'antd';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
+import type { Key } from 'react';
+import type React from 'react';
+import type { ButtonProps } from 'antd';
+import type { SizeType } from 'antd/es/config-provider/SizeContext';
 
 export type Optional<T = any> = T | undefined;
 

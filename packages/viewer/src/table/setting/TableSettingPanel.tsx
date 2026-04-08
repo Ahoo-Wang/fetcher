@@ -11,17 +11,18 @@
  * limitations under the License.
  */
 
+import type {
+  RefAttributes} from 'react';
 import React, {
   useState,
   useCallback,
   useEffect,
-  RefAttributes,
   useImperativeHandle,
 } from 'react';
 import { TableFieldItem } from './TableFieldItem';
 import styles from './TableSettingPanel.module.css';
 import { Space } from 'antd';
-import { ViewColumn, FieldDefinition } from '../../viewer';
+import type { ViewColumn, FieldDefinition } from '../../viewer';
 
 export interface TableSettingPanelRef {
   reset(): void;

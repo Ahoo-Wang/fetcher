@@ -1,6 +1,6 @@
-import { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
-import { ActiveFilter, ViewColumn, ViewSource } from '../../../';
-import { SizeType } from 'antd/es/config-provider/SizeContext';
+import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import type { ActiveFilter, ViewColumn, ViewSource } from '../../../';
+import type { SizeType } from 'antd/es/config-provider/SizeContext';
 
 /**
  * 创建视图

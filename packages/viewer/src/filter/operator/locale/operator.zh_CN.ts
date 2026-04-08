@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { SelectOperatorLocale } from '../types';
+import type { SelectOperatorLocale } from '../types';
 
 export const OPERATOR_zh_CN: SelectOperatorLocale = {
   AND: '与',

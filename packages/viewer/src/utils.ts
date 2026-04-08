@@ -1,4 +1,4 @@
-import { TableRecordType } from './types';
+import type { TableRecordType } from './types';
 
 /**
  * Performs a deep equality comparison between two values.

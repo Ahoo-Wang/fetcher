@@ -11,29 +11,31 @@
  * limitations under the License.
  */
 
-import { Table, Popover, TableProps } from 'antd';
+import { Table, Popover } from 'antd';
+import type {
+  ViewTableActionColumn} from './';
 import {
   ActionsCell,
   TextCell,
   typedCellRender,
-  ViewTableActionColumn,
   TableSettingPanel,
   useViewTableState,
 } from './';
 import { SettingOutlined } from '@ant-design/icons';
 import styles from './ViewTable.module.css';
 
-import type { TableColumnsType } from 'antd';
+import type { TableColumnsType , TableProps } from 'antd';
 import type { SorterResult } from 'antd/es/table/interface';
-import { RefAttributes, useImperativeHandle } from 'react';
-import {
+import type { RefAttributes} from 'react';
+import { useImperativeHandle } from 'react';
+import type {
   AttributesCapable,
   PrimaryKeyClickHandlerCapable,
   TableSizeCapable,
   ViewTableSetting,
   ViewTableSettingCapable,
 } from '../types';
-import { FieldDefinition, ViewColumn } from '../viewer';
+import type { FieldDefinition, ViewColumn } from '../viewer';
 import { mapToTableRecord } from '../utils';
 import { PrimaryKeyCell } from './cell/PrimaryKeyCell';
 /**
