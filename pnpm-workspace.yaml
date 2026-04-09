@@ -4,7 +4,7 @@ packages:
 
 catalog:
   '@ant-design/icons': ^6.0.0
-  "@babel/plugin-proposal-decorators": "7.29.0"
+  "@babel/plugin-proposal-decorators": ^7.29.0
   '@eslint/js': ^9.39.4
   '@rolldown/plugin-babel': ^0.2.2
   '@testing-library/jest-dom': ^6.9.1
