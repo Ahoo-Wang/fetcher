@@ -134,12 +134,14 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   const { selectedRowKeys, setSelectedRowKeys, reset, clearSelectedRowKeys } =
     useViewTableState();
 
+  const fieldMap = new Map(fields.map(f => [f.name, f]));
+
   /**
    * Builds table columns from field definitions and column configurations.
    * Each column is mapped to its definition for rendering and behavior.
    */
   const tableColumns: TableColumnsType<RecordType> = columns.map(col => {
-    const columnDefinition = fields.find(f => f.name === col.name);
+    const columnDefinition = fieldMap.get(col.name);
     return {
       // Unique key for React reconciliation
       key: col.key,
