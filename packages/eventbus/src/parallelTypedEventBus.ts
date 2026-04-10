@@ -58,8 +58,9 @@ export class ParallelTypedEventBus<EVENT> extends AbstractTypedEventBus<EVENT> {
     });
     await Promise.all(promises);
     if (onceHandlers.length > 0) {
+      const onceHandlerNames = new Set(onceHandlers.map(h => h.name));
       this.eventHandlers = this.eventHandlers.filter(
-        item => !onceHandlers.includes(item),
+        item => !onceHandlerNames.has(item.name),
       );
     }
   }

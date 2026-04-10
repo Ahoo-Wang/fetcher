@@ -27,7 +27,7 @@ import styles from './ViewTable.module.css';
 import type { TableColumnsType , TableProps } from 'antd';
 import type { SorterResult } from 'antd/es/table/interface';
 import type { RefAttributes} from 'react';
-import { useImperativeHandle } from 'react';
+import { useImperativeHandle, useMemo } from 'react';
 import type {
   AttributesCapable,
   PrimaryKeyClickHandlerCapable,
@@ -138,130 +138,110 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
    * Builds table columns from field definitions and column configurations.
    * Each column is mapped to its definition for rendering and behavior.
    */
-  const tableColumns: TableColumnsType<RecordType> = columns.map(col => {
-    const columnDefinition = fields.find(f => f.name === col.name);
-    return {
-      // Unique key for React reconciliation
-      key: col.key,
-      // Display title from field definition
-      title: columnDefinition?.label || 'UNKNOWN',
-      // Support nested data paths (e.g., 'user.address.city')
-      dataIndex: col.name.split('.'),
-      // Fixed column positioning
-      fixed: columnDefinition?.primaryKey ? 'start' : col?.fixed ? 'start' : '',
-      // Sorting configuration
-      sorter: columnDefinition?.sorter,
-      // Initial sort order
-      defaultSortOrder: col.sortOrder,
-      // Column width specification
-      width: col.width,
-      // Hidden columns are excluded from display
-      hidden: col.hidden,
-      /**
-       * Custom cell renderer based on field type.
-       * Handles primary key actions, custom renders, and type-based defaults.
-       */
-      render: (value: any, record: RecordType, index: number) => {
-        // Use custom render function if defined in field definition
-        if (columnDefinition?.render) {
-          return columnDefinition.render(value, record, index);
-        }
+  const tableColumns: TableColumnsType<RecordType> = useMemo(() => {
+    const cols: TableColumnsType<RecordType> = columns.map(col => {
+      const columnDefinition = fields.find(f => f.name === col.name);
+      return {
+        key: col.key,
+        title: columnDefinition?.label || 'UNKNOWN',
+        dataIndex: col.name.split('.'),
+        fixed: columnDefinition?.primaryKey ? 'start' : col?.fixed ? 'start' : '',
+        sorter: columnDefinition?.sorter,
+        defaultSortOrder: col.sortOrder,
+        width: col.width,
+        hidden: col.hidden,
+        render: (value: any, record: RecordType, index: number) => {
+          if (columnDefinition?.render) {
+            return columnDefinition.render(value, record, index);
+          }
 
-        // Primary key cells show as clickable action links
-        if (columnDefinition?.primaryKey) {
-          return (
-            <PrimaryKeyCell
-              data={{ value, record, index }}
-              attributes={{
-                onClick: (record: RecordType) => {
-                  onClickPrimaryKey?.(value, record);
-                },
-                copyable: true,
-                ...columnDefinition.attributes,
-              }}
-            />
-          );
-        }
+          if (columnDefinition?.primaryKey) {
+            return (
+              <PrimaryKeyCell
+                data={{ value, record, index }}
+                attributes={{
+                  onClick: (record: RecordType) => {
+                    onClickPrimaryKey?.(value, record);
+                  },
+                  copyable: true,
+                  ...columnDefinition.attributes,
+                }}
+              />
+            );
+          }
 
-        // Render cell based on field type (text, number, date, image, etc.)
-        const cellRender = typedCellRender(
-          columnDefinition?.type || 'text',
-          columnDefinition?.attributes || {},
-        );
-
-        if (cellRender) {
-          return cellRender(value, record, index);
-        } else {
-          // Fallback to text cell for unknown types
-          return <TextCell data={{ value: String(value), record, index }} />;
-        }
-      },
-      // Merge additional attributes from field definition
-      ...(columnDefinition?.attributes || {}),
-    };
-  });
-
-  /**
-   * Adds action column if configured.
-   * The action column provides row-level operations like edit, delete, view.
-   */
-  if (actionColumn) {
-    // Determine which field to use as the dataIndex for the action column
-    // Priority: explicit dataIndex > primary key column > fallback to 'id'
-    const dataIndex =
-      actionColumn.dataIndex || fields.find(x => x.primaryKey)?.name || 'id';
-
-    tableColumns.push({
-      key: 'action',
-      /**
-       * Action column title.
-       * If configurable is true, wraps title with settings popover.
-       */
-      title: () => {
-        if (viewTableSetting) {
-          // Create the settings panel component
-          const settingPanel = (
-            <TableSettingPanel
-              fields={fields}
-              initialColumns={columns}
-              onChange={onColumnsChange}
-            />
+          const cellRender = typedCellRender(
+            columnDefinition?.type || 'text',
+            columnDefinition?.attributes || {},
           );
 
-          return (
-            <div className={styles.configurableColumnHeader}>
-              <span>{actionColumn.title}</span>
-              <Popover
-                content={settingPanel}
-                title={viewTableSetting.title || 'Setting'}
-                placement="bottomRight"
-                trigger="click"
-              >
-                <SettingOutlined />
-              </Popover>
-            </div>
-          );
-        }
-        return actionColumn.title;
-      },
-      dataIndex: dataIndex,
-      fixed: 'end',
-      width: '200px',
-      /**
-       * Renders action buttons for each row.
-       * Uses ActionsCell for consistent action button styling.
-       */
-      render: (_, record) => {
-        const actionsData = props.actionColumn!.actions(record);
-        const data = {
-          value: actionsData,
-          record: record,
-          index: columns.length + 1, // Use next available index
-        };
-        return <ActionsCell data={data} />;
-      },
+          if (cellRender) {
+            return cellRender(value, record, index);
+          } else {
+            return <TextCell data={{ value: String(value), record, index }} />;
+          }
+        },
+        ...(columnDefinition?.attributes || {}),
+      };
     });
-  }
+
+    if (actionColumn) {
+      const dataIndex =
+        actionColumn.dataIndex || fields.find(x => x.primaryKey)?.name || 'id';
+
+      cols.push({
+        key: 'action',
+        title: () => {
+          if (viewTableSetting) {
+            const settingPanel = (
+              <TableSettingPanel
+                fields={fields}
+                initialColumns={columns}
+                onChange={onColumnsChange}
+              />
+            );
+
+            return (
+              <div className={styles.configurableColumnHeader}>
+                <span>{actionColumn.title}</span>
+                <Popover
+                  content={settingPanel}
+                  title={viewTableSetting.title || 'Setting'}
+                  placement="bottomRight"
+                  trigger="click"
+                >
+                  <SettingOutlined />
+                </Popover>
+              </div>
+            );
+          }
+          return actionColumn.title;
+        },
+        dataIndex: dataIndex,
+        fixed: 'end',
+        width: '200px',
+        render: (_, record) => {
+          const actionsData = props.actionColumn!.actions(record);
+          const data = {
+            value: actionsData,
+            record: record,
+            index: columns.length + 1,
+          };
+          return <ActionsCell data={data} />;
+        },
+      });
+    }
+
+    return cols;
+  }, [
+    columns,
+    fields,
+    actionColumn,
+    viewTableSetting,
+    onColumnsChange,
+    onClickPrimaryKey,
+    props.actionColumn,
+  ]);
 
   /**
    * Row selection configuration.

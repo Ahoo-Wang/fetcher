@@ -24,7 +24,7 @@ class BrowserNotificationChannel implements NotificationChannel<BrowserNotificat
 
       const notification = new Notification(message.title, message.payload);
       if (message.onClick) {
-        notification.addEventListener('click', message.onClick);
+        notification.addEventListener('click', message.onClick, { once: true });
       }
     } catch (e) {
       console.error('send notification failed.', e);

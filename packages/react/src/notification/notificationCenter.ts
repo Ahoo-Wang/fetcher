@@ -13,6 +13,10 @@ export interface NotificationCenterEvent {
   message: Message;
 }
 
+const beforeUnloadHandler = () => {
+  notificationCenter.destroy();
+};
+
 export class NotificationCenter {
   public readonly eventBus: BroadcastTypedEventBus<NotificationCenterEvent>;
 
@@ -60,6 +64,4 @@ export class NotificationCenter {
 
 export const notificationCenter = new NotificationCenter();
 
-window.addEventListener('beforeunload', () => {
-  notificationCenter.destroy();
-});
+window.addEventListener('beforeunload', beforeUnloadHandler);

@@ -131,7 +131,7 @@ export function useQueryState<Q>(
       queryRef.current = query;
       executeWrapper();
     },
-    [queryRef, executeWrapper],
+    [executeWrapper],
   );
 
   useEffect(() => {

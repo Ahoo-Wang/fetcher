@@ -58,8 +58,9 @@ export class SerialTypedEventBus<EVENT> extends AbstractTypedEventBus<EVENT> {
       }
     }
     if (onceHandlers.length > 0) {
+      const onceHandlerNames = new Set(onceHandlers.map(h => h.name));
       this.eventHandlers = toSorted(
-        this.eventHandlers.filter(item => !onceHandlers.includes(item)),
+        this.eventHandlers.filter(item => !onceHandlerNames.has(item.name)),
       );
     }
   }

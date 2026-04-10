@@ -113,7 +113,7 @@ describe('BrowserNotificationChannel', () => {
 
       await BrowserNotificationChannel.send(message);
 
-      expect(mockNotificationWithClick.addEventListener).toHaveBeenCalledWith('click', onClick);
+      expect(mockNotificationWithClick.addEventListener).toHaveBeenCalledWith('click', onClick, { once: true });
     });
 
     it('should handle errors gracefully', async () => {

@@ -37,6 +37,7 @@ export class StorageMessenger implements CrossTabMessenger {
   private readonly ttl: number;
   private readonly cleanupInterval: number;
   private cleanupTimer?: number;
+  private pendingTimeouts = new Map<string, number>();
   private readonly storageEventHandler = (event: StorageEvent) => {
     if (
       event.storageArea !== this.storage ||
@@ -80,8 +81,11 @@ export class StorageMessenger implements CrossTabMessenger {
       timestamp: Date.now(),
     };
     this.storage.setItem(key, JSON.stringify(storageMessage));
-    // Delay removal to ensure all listeners have processed the event
-    setTimeout(() => this.storage.removeItem(key), this.ttl);
+    const timeoutId = window.setTimeout(() => {
+      this.storage.removeItem(key);
+      this.pendingTimeouts.delete(key);
+    }, this.ttl);
+    this.pendingTimeouts.set(key, timeoutId);
   }
 
   /**
@@ -124,6 +128,10 @@ export class StorageMessenger implements CrossTabMessenger {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
     }
+    for (const timeoutId of this.pendingTimeouts.values()) {
+      clearTimeout(timeoutId);
+    }
+    this.pendingTimeouts.clear();
     window.removeEventListener('storage', this.storageEventHandler);
   }
 }
