@@ -1,0 +1,44 @@
+{
+  "expectations": [
+    {
+      "text": "Uses TextFilter component from @ahoo-wang/fetcher-viewer",
+      "passed": true,
+      "evidence": "The output uses ActiveFilter type and FilterPanel with type: 'text' for username filter"
+    },
+    {
+      "text": "Uses NumberFilter component from @ahoo-wang/fetcher-viewer",
+      "passed": true,
+      "evidence": "The output uses FilterPanel with type: 'number' for age filter"
+    },
+    {
+      "text": "Uses SelectFilter component from @ahoo-wang/fetcher-viewer",
+      "passed": true,
+      "evidence": "The output uses FilterPanel with type: 'select' for status filter with options for 'active' and 'inactive'"
+    },
+    {
+      "text": "Uses useFilterState hook to manage filter state",
+      "passed": true,
+      "evidence": "Lines 12, 21, 30 use useFilterState hook for username, age, and status filter states with proper onChange handlers"
+    },
+    {
+      "text": "FilterPanel renders with all three filter types",
+      "passed": true,
+      "evidence": "FilterPanel component at lines 104-111 renders filters array containing text, number, and select filter types"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "output_chars": 2933
+  },
+  "claims": [],
+  "user_notes_summary": {},
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "All assertions pass. The without_skill version also correctly uses FilterPanel and filter components. Both versions work correctly."
+  }
+}

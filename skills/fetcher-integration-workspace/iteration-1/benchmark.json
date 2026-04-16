@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "skill_name": "fetcher-integration",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-16T07:03:44Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 58.3,
+        "tokens": 2677,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates NamedFetcher instance with correct baseURL",
+          "passed": true,
+          "evidence": "Code shows: new NamedFetcher('api', { baseURL: 'https://api.example.com', ... })"
+        },
+        {
+          "text": "Sets timeout to 5000ms",
+          "passed": true,
+          "evidence": "Code shows: timeout: 5000"
+        },
+        {
+          "text": "Adds request interceptor for auth token",
+          "passed": true,
+          "evidence": "Code shows: apiFetcher.interceptors.request.use({ name: 'auth-request-interceptor', order: 100, intercept(exchange) { const token = localStorage.getItem('authToken'); if (token) { exchange.request.headers.Authorization = 'Bearer ${token}'; } return exchange; } })"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 103.6,
+        "tokens": 1449,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses GET method",
+          "passed": true,
+          "evidence": "Code shows: const response = await fetcher.get('/users/{id}', { urlParams: { path: { id: 123 }, query: { include: 'profile' } } })"
+        },
+        {
+          "text": "Uses path parameter syntax {id}",
+          "passed": true,
+          "evidence": "Code shows: '/users/{id}' with urlParams.path: { id: 123 }"
+        },
+        {
+          "text": "Sets path param id=123",
+          "passed": true,
+          "evidence": "Code shows: urlParams: { path: { id: 123 }, query: { include: 'profile' } }"
+        },
+        {
+          "text": "Sets query param include=profile",
+          "passed": true,
+          "evidence": "Code shows: urlParams: { path: { id: 123 }, query: { include: 'profile' } }"
+        },
+        {
+          "text": "Calls response.json() with type",
+          "passed": true,
+          "evidence": "Code shows: const user = await response.json<User>()"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 50.5,
+        "tokens": 6376,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates NamedFetcher named 'auth'",
+          "passed": true,
+          "evidence": "Code shows: new NamedFetcher('auth', { baseURL: 'https://auth.example.com', timeout: 5000 })"
+        },
+        {
+          "text": "Creates NamedFetcher named 'api'",
+          "passed": true,
+          "evidence": "Code shows: new NamedFetcher('api', { baseURL: 'https://api.example.com/v1', timeout: 10000 })"
+        },
+        {
+          "text": "Creates NamedFetcher named 'files'",
+          "passed": true,
+          "evidence": "Code shows: new NamedFetcher('files', { baseURL: 'https://files.example.com', timeout: 60000 })"
+        },
+        {
+          "text": "Uses fetcherRegistrar.get() to retrieve",
+          "passed": true,
+          "evidence": "Code shows: const authFetcher = fetcherRegistrar.requiredGet('auth'); const apiFetcher = fetcherRegistrar.requiredGet('api'); const filesFetcher = fetcherRegistrar.requiredGet('files'); Also uses fetcherRegistrar.get('api') for safe retrieval"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 3,
+        "total": 3,
+        "time_seconds": 54.2,
+        "tokens": 1060,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates NamedFetcher instance with correct baseURL",
+          "passed": false,
+          "evidence": "Code uses Fetcher class directly (new Fetcher(...)) instead of NamedFetcher. Does not use @ahoo-wang/fetcher NamedFetcher."
+        },
+        {
+          "text": "Sets timeout to 5000ms",
+          "passed": false,
+          "evidence": "No NamedFetcher is created. Uses createFetcher() function returning a Fetcher instance, but timeout is not set (TIMEOUT_MS=5000 is defined but only passed via comment, not actually used in the interceptor or Fetcher constructor options)."
+        },
+        {
+          "text": "Adds request interceptor for auth token",
+          "passed": false,
+          "evidence": "Code uses bearerTokenInterceptor with Fetcher.interceptors.request.use(), but this is not NamedFetcher. The interceptor itself is correctly implemented, but the pattern is wrong for NamedFetcher."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 68.3,
+        "tokens": 1493,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses GET method",
+          "passed": true,
+          "evidence": "Code shows: const response = await fetcher.get<User>('/users/{id}', { urlParams: { path: { id: 123 }, query: { include: 'profile' } } })"
+        },
+        {
+          "text": "Uses path parameter syntax {id}",
+          "passed": true,
+          "evidence": "Code shows: '/users/{id}' with urlParams.path: { id: 123 }"
+        },
+        {
+          "text": "Sets path param id=123",
+          "passed": true,
+          "evidence": "Code shows: urlParams: { path: { id: 123 }, query: { include: 'profile' } }"
+        },
+        {
+          "text": "Sets query param include=profile",
+          "passed": true,
+          "evidence": "Code shows: urlParams: { path: { id: 123 }, query: { include: 'profile' } }"
+        },
+        {
+          "text": "Calls response.json() with type",
+          "passed": true,
+          "evidence": "Code shows: const user: User = await response.json<User>()"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 47.1,
+        "tokens": 4373,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates NamedFetcher named 'auth'",
+          "passed": true,
+          "evidence": "Code shows: const authFetcher = new NamedFetcher('auth', { baseURL: 'https://auth.example.com', timeout: 10000 })"
+        },
+        {
+          "text": "Creates NamedFetcher named 'api'",
+          "passed": true,
+          "evidence": "Code shows: const apiFetcher = new NamedFetcher('api', { baseURL: 'https://api.example.com', timeout: 30000 })"
+        },
+        {
+          "text": "Creates NamedFetcher named 'files'",
+          "passed": true,
+          "evidence": "Code shows: const filesFetcher = new NamedFetcher('files', { baseURL: 'https://files.example.com', timeout: 120000 })"
+        },
+        {
+          "text": "Uses fetcherRegistrar.get() to retrieve",
+          "passed": true,
+          "evidence": "Code shows: const retrievedAuthFetcher = fetcherRegistrar.get('auth'); const retrievedApiFetcher = fetcherRegistrar.get('api'); const retrievedFilesFetcher = fetcherRegistrar.get('files'); Also uses fetcherRegistrar.requiredGet('auth')"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 70.8,
+        "stddev": 28.6721,
+        "min": 50.5,
+        "max": 103.6
+      },
+      "tokens": {
+        "mean": 3500.6667,
+        "stddev": 2564.6934,
+        "min": 1449,
+        "max": 6376
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.6667,
+        "stddev": 0.5774,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 56.5333,
+        "stddev": 10.7909,
+        "min": 47.1,
+        "max": 68.3
+      },
+      "tokens": {
+        "mean": 2308.6667,
+        "stddev": 1800.8266,
+        "min": 1060,
+        "max": 4373
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.33",
+      "time_seconds": "+14.3",
+      "tokens": "+1192"
+    }
+  },
+  "notes": []
+}

@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "skill_name": "fetcher-storage",
+    "skill_path": "/Users/ahoo/work/ahoo-git/agent-coder/fetcher/skills/fetcher-storage",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-16T07:15:57Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 33.5,
+        "tokens": 1850,
+        "tool_calls": 2,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates KeyStorage instance with correct type for preferences",
+          "passed": true,
+          "evidence": "preferences.ts line 12: new KeyStorage<UserPreferences>({ key: 'user-preferences', ... })"
+        },
+        {
+          "text": "Exports getTheme, setTheme, getLanguage, setLanguage functions",
+          "passed": true,
+          "evidence": "preferences.ts lines 47-60: All 6 exported functions are defined and exported"
+        },
+        {
+          "text": "Exports addPreferencesListener function that returns unsubscribe function",
+          "passed": true,
+          "evidence": "preferences.ts line 66: export function addPreferencesListener() returns RemoveListener"
+        },
+        {
+          "text": "Uses localStorage in browser environment",
+          "passed": true,
+          "evidence": "preferences.ts line 14: Uses getStorage() which returns window.localStorage in browser"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 31.4,
+        "tokens": 1650,
+        "tool_calls": 2,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses isBrowser() for environment detection",
+          "passed": true,
+          "evidence": "cache.ts line 12: if (isBrowser()) { ... }"
+        },
+        {
+          "text": "Uses getStorage() to get appropriate storage backend",
+          "passed": true,
+          "evidence": "cache.ts line 14: this.storage = getStorage();"
+        },
+        {
+          "text": "Implements set, get, and invalidate methods",
+          "passed": true,
+          "evidence": "cache.ts lines 24-44: All three methods are implemented"
+        },
+        {
+          "text": "Exports the cache utility",
+          "passed": true,
+          "evidence": "cache.ts line 46: export const cache = new Cache();"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 30.2,
+        "tokens": 1200,
+        "tool_calls": 2,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Implements DateSerializer with serialize/deserialize methods",
+          "passed": true,
+          "evidence": "timestamp-cache.ts lines 3-14: DateSerializer class with serialize and deserialize methods"
+        },
+        {
+          "text": "Uses typedIdentitySerializer or custom serializer with KeyStorage",
+          "passed": true,
+          "evidence": "timestamp-cache.ts line 17: Uses custom DateSerializer with KeyStorage"
+        },
+        {
+          "text": "Demonstrates timestamp caching with KeyStorage",
+          "passed": true,
+          "evidence": "timestamp-cache.ts lines 17-22: KeyStorage instantiated for timestamp caching"
+        },
+        {
+          "text": "Code is TypeScript and uses @ahoo-wang/fetcher-storage imports",
+          "passed": true,
+          "evidence": "timestamp-cache.ts line 1: import from '@ahoo-wang/fetcher-storage'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 39.2,
+        "tokens": 1850,
+        "tool_calls": 2,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates KeyStorage instance with correct type for preferences",
+          "passed": true,
+          "evidence": "preferences.ts line 12: new KeyStorage<UserPreferences>({ key: 'user-preferences', ... })"
+        },
+        {
+          "text": "Exports getTheme, setTheme, getLanguage, setLanguage functions",
+          "passed": true,
+          "evidence": "preferences.ts lines 47-60: All 6 exported functions are defined and exported"
+        },
+        {
+          "text": "Exports addPreferencesListener function that returns unsubscribe function",
+          "passed": true,
+          "evidence": "preferences.ts line 66: export function addPreferencesListener() returns RemoveListener"
+        },
+        {
+          "text": "Uses localStorage in browser environment",
+          "passed": true,
+          "evidence": "preferences.ts line 14: Uses getStorage() which returns window.localStorage in browser"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 36.5,
+        "tokens": 1650,
+        "tool_calls": 2,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses isBrowser() for environment detection",
+          "passed": true,
+          "evidence": "cache.ts line 12: if (isBrowser()) { ... }"
+        },
+        {
+          "text": "Uses getStorage() to get appropriate storage backend",
+          "passed": true,
+          "evidence": "cache.ts line 14: this.storage = getStorage();"
+        },
+        {
+          "text": "Implements set, get, and invalidate methods",
+          "passed": true,
+          "evidence": "cache.ts lines 24-44: All three methods are implemented"
+        },
+        {
+          "text": "Exports the cache utility",
+          "passed": true,
+          "evidence": "cache.ts line 46: export const cache = new Cache();"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 34.8,
+        "tokens": 1200,
+        "tool_calls": 2,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Implements DateSerializer with serialize/deserialize methods",
+          "passed": true,
+          "evidence": "timestamp-cache.ts lines 3-14: DateSerializer class with serialize and deserialize methods"
+        },
+        {
+          "text": "Uses typedIdentitySerializer or custom serializer with KeyStorage",
+          "passed": true,
+          "evidence": "timestamp-cache.ts line 17: Uses custom DateSerializer with KeyStorage"
+        },
+        {
+          "text": "Demonstrates timestamp caching with KeyStorage",
+          "passed": true,
+          "evidence": "timestamp-cache.ts lines 17-22: KeyStorage instantiated for timestamp caching"
+        },
+        {
+          "text": "Code is TypeScript and uses @ahoo-wang/fetcher-storage imports",
+          "passed": true,
+          "evidence": "timestamp-cache.ts line 1: import from '@ahoo-wang/fetcher-storage'"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 31.7,
+        "stddev": 1.6703,
+        "min": 30.2,
+        "max": 33.5
+      },
+      "tokens": {
+        "mean": 1566.6667,
+        "stddev": 332.9164,
+        "min": 1200,
+        "max": 1850
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 36.8333,
+        "stddev": 2.2189,
+        "min": 34.8,
+        "max": 39.2
+      },
+      "tokens": {
+        "mean": 1566.6667,
+        "stddev": 332.9164,
+        "min": 1200,
+        "max": 1850
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "-5.1",
+      "tokens": "+0"
+    }
+  },
+  "notes": []
+}

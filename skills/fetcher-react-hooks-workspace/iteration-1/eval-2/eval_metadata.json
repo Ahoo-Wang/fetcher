@@ -1,0 +1,11 @@
+{
+  "eval_id": 2,
+  "prompt": "I need to display a paginated list of products in my React app. Each page should show 10 products, and users should be able to navigate between pages. How do I use useFetcherPagedQuery for this with the Wow CQRS integration?",
+  "expected_output": "A product list component using useFetcherPagedQuery with pagination controls, loading states, and proper query structure for Wow queries",
+  "expectations": [
+    "Uses useFetcherPagedQuery hook from @ahoo-wang/fetcher-react",
+    "Pagination with index and size configured",
+    "setPagination or similar method to change page",
+    "Handles loading and result states for paginated data"
+  ]
+}

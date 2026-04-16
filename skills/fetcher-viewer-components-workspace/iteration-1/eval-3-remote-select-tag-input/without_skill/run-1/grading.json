@@ -1,0 +1,49 @@
+{
+  "expectations": [
+    {
+      "text": "Uses RemoteSelect component with search function",
+      "passed": false,
+      "evidence": "Output file is UserTableColumns.tsx which is for data table columns, not RemoteSelect/TagInput components. The file does not contain RemoteSelect usage."
+    },
+    {
+      "text": "Search function fetches from /api/users/search",
+      "passed": false,
+      "evidence": "Output file is UserTableColumns.tsx which is for data table columns, not RemoteSelect/TagInput components. No /api/users/search endpoint is referenced."
+    },
+    {
+      "text": "RemoteSelect has debounce configured with 300ms delay",
+      "passed": false,
+      "evidence": "Output file is UserTableColumns.tsx which is for data table columns. No RemoteSelect or debounce configuration exists."
+    },
+    {
+      "text": "Uses TagInput component for tag input",
+      "passed": false,
+      "evidence": "Output file is UserTableColumns.tsx which is for data table columns. No TagInput usage exists in this file."
+    },
+    {
+      "text": "TagInput uses string serialization for tag values",
+      "passed": false,
+      "evidence": "Output file is UserTableColumns.tsx which is for data table columns. No TagInput or string serialization exists."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 5,
+    "total": 5,
+    "pass_rate": 0.0
+  },
+  "execution_metrics": {
+    "output_chars": 2169
+  },
+  "claims": [],
+  "user_notes_summary": {},
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "All assertions",
+        "reason": "The without_skill version produced UserTableColumns.tsx which is for eval-2 (data table columns), not the expected RemoteSelect and TagInput components for eval-3. This appears to be a task mix-up or incorrect file generation."
+      }
+    ],
+    "overall": "Wrong output file produced. The subagent generated UserTableColumns.tsx instead of RemoteSelect and TagInput components."
+  }
+}

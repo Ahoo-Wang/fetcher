@@ -1,0 +1,11 @@
+{
+  "eval_id": 0,
+  "eval_name": "openai-streaming-token-by-token",
+  "prompt": "I need to stream OpenAI chat completions token by token in my TypeScript app. Show me how to set up streaming with the fetcher eventstream package and process each token as it arrives.",
+  "assertions": [
+    "Uses OpenAI client with stream: true option",
+    "Uses for await loop to process streaming chunks",
+    "Extracts delta content from chat completion chunks",
+    "Processes tokens in real-time (no buffering entire response)"
+  ]
+}

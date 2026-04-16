@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "Protected API with CoSecInterceptor",
+  "prompt": "Create a protected API service that uses CoSecInterceptor to add authentication to all requests. Show how the interceptor automatically attaches Bearer tokens and handles 401 responses with token refresh.",
+  "assertions": [
+    "CoSecRequestInterceptor is added to fetcher",
+    "AuthorizationRequestInterceptor adds Bearer token to requests",
+    "AuthorizationResponseInterceptor handles 401 and retries with new token",
+    "Interceptor chain handles token refresh flow correctly",
+    "Proper error handling for refresh failures"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "data-table-columns",
+  "prompt": "Create a data table columns definition for a user list with the following columns: name (TextCell with ellipsis), status (TagCell with blue color), account balance (CurrencyCell in USD format), created date (DateTimeCell with YYYY-MM-DD format), and an Edit action (ActionCell). The table should use Ant Design Table component.",
+  "assertions": [
+    "Uses TextCell with ellipsis attribute for name column",
+    "Uses TagCell with color attribute for status column",
+    "Uses CurrencyCell with USD format for balance column",
+    "Uses DateTimeCell with YYYY-MM-DD format for date column",
+    "Uses ActionCell with onClick handler for Edit action",
+    "Columns array is properly structured for Ant Design Table"
+  ]
+}

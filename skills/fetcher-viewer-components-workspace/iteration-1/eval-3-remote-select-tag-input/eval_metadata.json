@@ -1,0 +1,12 @@
+{
+  "eval_id": 3,
+  "eval_name": "remote-select-tag-input",
+  "prompt": "Create a RemoteSelect component for searching users with a 300ms debounce. The component should fetch from /api/users/search endpoint and display results. Also create a TagInput component for entering multiple tags with string serialization.",
+  "assertions": [
+    "Uses RemoteSelect component with search function",
+    "Search function fetches from /api/users/search",
+    "RemoteSelect has debounce configured with 300ms delay",
+    "Uses TagInput component for tag input",
+    "TagInput uses string serialization for tag values"
+  ]
+}

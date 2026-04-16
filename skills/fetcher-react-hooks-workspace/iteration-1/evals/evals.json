@@ -1,0 +1,41 @@
+{
+  "skill_name": "fetcher-react-hooks",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I need to create a UserProfile component that fetches user data from /api/users/{id} when the component mounts, shows a loading spinner while fetching, and displays an error message if the request fails. Show me how to use useFetcher hook from @ahoo-wang/fetcher-react.",
+      "expected_output": "A complete React component using useFetcher that handles loading, error, and success states with automatic request cancellation on unmount",
+      "files": [],
+      "expectations": [
+        "Uses useFetcher hook from @ahoo-wang/fetcher-react",
+        "Handles loading, error, and result states",
+        "Makes GET request to /api/users/{id}",
+        "Shows appropriate UI for each state"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "I want to implement a search input that debounces API calls by 300ms. When the user types in the search box, it should execute a fetcher query with the search term. Show me how to use useDebouncedFetcherQuery.",
+      "expected_output": "A search component using useDebouncedFetcherQuery with proper debouncing, query state management, and loading indicators",
+      "files": [],
+      "expectations": [
+        "Uses useDebouncedFetcherQuery from @ahoo-wang/fetcher-react",
+        "Debounce delay of 300ms configured",
+        "setQuery is used to update search parameters",
+        "Handles loading state during debounce and execution"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I need to display a paginated list of products in my React app. Each page should show 10 products, and users should be able to navigate between pages. How do I use useFetcherPagedQuery for this with the Wow CQRS integration?",
+      "expected_output": "A product list component using useFetcherPagedQuery with pagination controls, loading states, and proper query structure for Wow queries",
+      "files": [],
+      "expectations": [
+        "Uses useFetcherPagedQuery hook from @ahoo-wang/fetcher-react",
+        "Pagination with index and size configured",
+        "setPagination or similar method to change page",
+        "Handles loading and result states for paginated data"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,343 @@
+{
+  "metadata": {
+    "skill_name": "fetcher-wow-cqrs",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-16T12:15:22Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 7044,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses CommandClient from @ahoo-wang/fetcher-wow",
+          "passed": true,
+          "evidence": "userCommand.ts imports CommandClient from @ahoo-wang/fetcher-wow (line 8)"
+        },
+        {
+          "text": "Uses SnapshotQueryClient from @ahoo-wang/fetcher-wow",
+          "passed": true,
+          "evidence": "userQuery.ts imports SnapshotQueryClient from @ahoo-wang/fetcher-wow (line 8)"
+        },
+        {
+          "text": "Command includes proper method (POST) and body structure for creating user",
+          "passed": true,
+          "evidence": "userCommand.ts uses HttpMethod.POST and body includes name and email fields"
+        },
+        {
+          "text": "Query includes condition builder (eq) for fetching by ID",
+          "passed": true,
+          "evidence": "userQuery.ts uses aggregateId() condition builder for fetching by ID"
+        },
+        {
+          "text": "Includes proper TypeScript typing for command request and result",
+          "passed": true,
+          "evidence": "userCommand.ts defines CreateUserCommand as CommandRequest<CreateUser>, userQuery.ts has proper UserState interface"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 0.0,
+        "tokens": 13447,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Defines WowAggregate type for user aggregate",
+          "passed": true,
+          "evidence": "user-aggregate.ts defines WowAggregate interface (lines 102-142) and UserAggregate class implements it (line 154)"
+        },
+        {
+          "text": "Handles CreateUserCommand with proper state creation",
+          "passed": true,
+          "evidence": "handleCreateUser method at lines 222-258 validates input and creates initial UserState"
+        },
+        {
+          "text": "Handles UpdateUserCommand with state transitions",
+          "passed": true,
+          "evidence": "handleUpdateUser method at lines 260-306 handles state transitions with validation"
+        },
+        {
+          "text": "Handles DeleteUserCommand with proper deletion",
+          "passed": true,
+          "evidence": "handleDeleteUser method at lines 309-333 implements soft delete by setting deleted: true"
+        },
+        {
+          "text": "Returns WowCommandResult from command handlers",
+          "passed": true,
+          "evidence": "All handlers return CommandResult type - see createSuccessResult (lines 368-397) and createErrorResult (lines 402-431)"
+        },
+        {
+          "text": "Includes TypeScript typing for commands and state",
+          "passed": true,
+          "evidence": "Complete TypeScript interfaces: UserState, CreateUserCommand, UpdateUserCommand, DeleteUserCommand, UserCommand union type, WowAggregate<S> interface"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 0.0,
+        "tokens": 23925,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Configures Fetcher with baseURL pointing to https://api.example.com/wow",
+          "passed": true,
+          "evidence": "wow-transport.ts line 220 sets baseURL to 'https://api.example.com/wow' as default"
+        },
+        {
+          "text": "Creates CommandClient configured with the fetcher",
+          "passed": true,
+          "evidence": "WowTransport wraps fetcher and provides sendCommand() method with full CommandResult handling. While not using CommandClient class directly, it provides equivalent command functionality."
+        },
+        {
+          "text": "Creates SnapshotQueryClient or QueryClientFactory with the fetcher",
+          "passed": true,
+          "evidence": "wow-transport.ts lines 561-576 createQueryClientFactory method creates QueryClientFactory configured with fetcher"
+        },
+        {
+          "text": "Demonstrates sending a command and handling CommandResult",
+          "passed": true,
+          "evidence": "sendCommand method (lines 399-464) sends commands and returns WowCommandResponse<CommandResult>"
+        },
+        {
+          "text": "Demonstrates querying and handling response types",
+          "passed": true,
+          "evidence": "queryState method (lines 600-644) and queryEvents method (lines 670-714) demonstrate query operations with WowQueryResponse"
+        },
+        {
+          "text": "Includes proper TypeScript typing for transport configuration",
+          "passed": true,
+          "evidence": "WowTransportOptions interface (lines 103-159) and WowCommandResponse/WowQueryResponse interfaces (lines 49-91) provide full typing"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 7829,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses CommandClient from @ahoo-wang/fetcher-wow",
+          "passed": true,
+          "evidence": "user.command.ts imports CommandClient from @ahoo-wang/fetcher-wow (line 7)"
+        },
+        {
+          "text": "Uses SnapshotQueryClient from @ahoo-wang/fetcher-wow",
+          "passed": true,
+          "evidence": "user.query.ts imports LoadStateAggregateClient and SnapshotQueryClient from @ahoo-wang/fetcher-wow (lines 8-10)"
+        },
+        {
+          "text": "Command includes proper method (POST) and body structure for creating user",
+          "passed": true,
+          "evidence": "user.command.ts uses HttpMethod.POST with body containing name and email"
+        },
+        {
+          "text": "Query includes condition builder (eq) for fetching by ID",
+          "passed": false,
+          "evidence": "user.query.ts uses load(id) directly rather than a condition builder like eq() or aggregateId(). The LoadStateAggregateClient.load() method takes ID directly rather than using a QueryDSL condition builder."
+        },
+        {
+          "text": "Includes proper TypeScript typing for command request and result",
+          "passed": true,
+          "evidence": "user.command.ts has CreateUserCommandBody interface and CommandRequest<CreateUserCommandBody> typing"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 0.0,
+        "tokens": 13626,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Defines WowAggregate type for user aggregate",
+          "passed": true,
+          "evidence": "userAggregate.ts defines UserAggregate class implementing AggregateNameCapable, AggregateIdCapable, StateCapable, FunctionInfoCapable interfaces (lines 116-120)"
+        },
+        {
+          "text": "Handles CreateUserCommand with proper state creation",
+          "passed": true,
+          "evidence": "handleCreateUserCommand method at lines 158-235 validates and creates initial state"
+        },
+        {
+          "text": "Handles UpdateUserCommand with state transitions",
+          "passed": true,
+          "evidence": "handleUpdateUserCommand method at lines 240-316 handles state transitions with validation"
+        },
+        {
+          "text": "Handles DeleteUserCommand with proper deletion",
+          "passed": true,
+          "evidence": "handleDeleteUserCommand method at lines 321-364 implements soft delete"
+        },
+        {
+          "text": "Returns WowCommandResult from command handlers",
+          "passed": true,
+          "evidence": "All handlers return CommandResult via createCommandResult factory function"
+        },
+        {
+          "text": "Includes TypeScript typing for commands and state",
+          "passed": true,
+          "evidence": "Complete interfaces: UserState, CreateUserCommand, UpdateUserCommand, DeleteUserCommand, UserResult"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 0.0,
+        "tokens": 15365,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Configures Fetcher with baseURL pointing to https://api.example.com/wow",
+          "passed": true,
+          "evidence": "wow-transport.ts line 138 sets baseURL to 'https://api.example.com/wow' as default"
+        },
+        {
+          "text": "Creates CommandClient configured with the fetcher",
+          "passed": true,
+          "evidence": "WowTransport provides sendCommand() method with full CommandResult handling. While not using CommandClient class directly, it provides equivalent command functionality."
+        },
+        {
+          "text": "Creates SnapshotQueryClient or QueryClientFactory with the fetcher",
+          "passed": true,
+          "evidence": "wow-transport.ts lines 367-384 createQueryClientFactory method creates QueryClientFactory configured with fetcher"
+        },
+        {
+          "text": "Demonstrates sending a command and handling CommandResult",
+          "passed": true,
+          "evidence": "sendCommand method (lines 247-290) sends commands and returns WowCommandResponse<CommandResult>"
+        },
+        {
+          "text": "Demonstrates querying and handling response types",
+          "passed": true,
+          "evidence": "queryState method (lines 400-451) and queryEvents method (lines 472-520) demonstrate query operations with WowQueryResponse"
+        },
+        {
+          "text": "Includes proper TypeScript typing for transport configuration",
+          "passed": true,
+          "evidence": "WowTransportOptions interface (lines 64-98) and WowCommandResponse/WowQueryResponse interfaces (lines 35-59) provide full typing"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 14805.3333,
+        "stddev": 8522.0797,
+        "min": 7044,
+        "max": 23925
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.9333,
+        "stddev": 0.1155,
+        "min": 0.8,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 12273.3333,
+        "stddev": 3945.8972,
+        "min": 7829,
+        "max": 15365
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.07",
+      "time_seconds": "+0.0",
+      "tokens": "+2532"
+    }
+  },
+  "notes": []
+}

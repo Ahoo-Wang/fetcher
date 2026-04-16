@@ -1,0 +1,7 @@
+{
+  "total_tokens": 12000,
+  "duration_ms": 25000,
+  "total_duration_seconds": 25.0,
+  "executor_duration_seconds": 25.0,
+  "grader_duration_seconds": 10.0
+}

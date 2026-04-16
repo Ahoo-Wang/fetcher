@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "Multi-space authentication",
+  "prompt": "Implement a multi-space authentication scenario where different API endpoints require different space IDs. Show how to configure SpaceIdProvider and CompositeToken for this scenario.",
+  "assertions": [
+    "SpaceIdProvider is configured to resolve space ID from requests",
+    "Separate token storage per tenant/space is implemented",
+    "CoSec-Space-Id header is properly set on requests",
+    "Multi-tenant fetcher registry or factory pattern is used",
+    "Per-space token management handles signIn/signOut"
+  ]
+}

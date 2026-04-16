@@ -1,0 +1,11 @@
+{
+  "eval_id": 2,
+  "eval_name": "ecommerce-cqrs-generation",
+  "prompt": "Generate a type-safe TypeScript API client from this OpenAPI spec at ./evals/files/ecommerce.yaml. This is a CQRS-style API with bounded context 'ecommerce.cart'. Generate the client into src/generated/ecommerce directory using the Wow CQRS pattern support. Include command clients for operations like add_cart_item and query clients for snapshot_state and event queries.",
+  "assertions": [
+    "CartCommandClient is generated with addCartItem method",
+    "QueryClientFactory is generated for snapshot queries",
+    "Event query client is generated for event.list_query operations",
+    "Generated code uses Wow CQRS patterns correctly"
+  ]
+}

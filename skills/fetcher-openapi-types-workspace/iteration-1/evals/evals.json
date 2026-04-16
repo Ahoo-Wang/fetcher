@@ -1,0 +1,23 @@
+{
+  "skill_name": "fetcher-openapi-types",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I have an OpenAPI 3.0 document and need TypeScript types to validate its structure. Show me how to define the root OpenAPI object with info, paths, and components using @ahoo-wang/fetcher-openapi types.",
+      "expected_output": "TypeScript code importing OpenAPI, Info, Paths, Components types and using them to define a valid OpenAPI 3.0 document structure",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Help me create a TypeScript definition for a polymorphic schema using discriminator with oneOf in OpenAPI. I need to model Admin and User types that inherit from a base type.",
+      "expected_output": "TypeScript code using Schema and Discriminator types from @ahoo-wang/fetcher-openapi with oneOf and discriminator mapping",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I need to define API operation parameters including path params, query params, and request bodies. Show me how to type a POST /users endpoint with required body and response types.",
+      "expected_output": "TypeScript code using Operation, RequestBody, Parameter, and Response types from @ahoo-wang/fetcher-openapi",
+      "files": []
+    }
+  ]
+}

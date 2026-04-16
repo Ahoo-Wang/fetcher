@@ -1,0 +1,72 @@
+{
+  "expectations": [
+    {
+      "text": "Uses eventStream() or jsonEventStream() method from fetcher-eventstream",
+      "passed": false,
+      "evidence": "Manual TextDecoder and ReadableStream parsing - no fetcher-eventstream usage"
+    },
+    {
+      "text": "Implements TerminateDetector for [DONE] signal",
+      "passed": false,
+      "evidence": "Basic string check 'data === [DONE]' without TerminateDetector type"
+    },
+    {
+      "text": "Correctly parses SSE event fields (data, event, id, retry)",
+      "passed": false,
+      "evidence": "Only parses 'data: ' prefix, ignores event, id, retry fields"
+    },
+    {
+      "text": "Properly terminates/cleans up stream when [DONE] is received",
+      "passed": true,
+      "evidence": "Basic termination with return statement when [DONE] received"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 2,
+      "Write": 2,
+      "Glob": 0,
+      "Grep": 0,
+      "Bash": 0,
+      "Edit": 0
+    },
+    "total_tool_calls": 4,
+    "total_steps": 2,
+    "errors_encountered": 0,
+    "output_chars": 1150,
+    "transcript_chars": 420
+  },
+  "timing": {
+    "executor_duration_seconds": 16.8,
+    "grader_duration_seconds": 4.0,
+    "total_duration_seconds": 20.8
+  },
+  "claims": [
+    {
+      "claim": "Manual SSE parsing without specialized tooling",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Code uses basic TextDecoder and manual line parsing"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": ["Lacks proper SSE field parsing"],
+    "workarounds": ["Fell back to manual parsing without TypeDetector"]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Uses eventStream() or jsonEventStream() method",
+        "reason": "Without skill, no access to proper fetcher-eventstream API"
+      }
+    ],
+    "overall": "Baseline lacks proper SSE parsing - only handles basic [DONE] detection."
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "eval_id": 0,
+  "eval_name": "user-preferences-storage",
+  "prompt": "Create a TypeScript module that stores user preferences (theme: 'light'|'dark', language: string, notifications: boolean) in localStorage using the @ahoo-wang/fetcher-storage package. Include functions to get, set, and remove preferences, plus a change listener that logs preference changes.",
+  "assertions": [
+    {
+      "text": "Creates KeyStorage instance with correct type for preferences",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Exports getTheme, setTheme, getLanguage, setLanguage functions",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Exports addPreferencesListener function that returns unsubscribe function",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Uses localStorage in browser environment",
+      "passed": false,
+      "evidence": ""
+    }
+  ]
+}

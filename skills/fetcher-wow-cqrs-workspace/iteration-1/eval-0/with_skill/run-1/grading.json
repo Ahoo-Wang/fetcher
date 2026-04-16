@@ -1,0 +1,54 @@
+{
+  "expectations": [
+    {
+      "text": "Uses CommandClient from @ahoo-wang/fetcher-wow",
+      "passed": true,
+      "evidence": "userCommand.ts imports CommandClient from @ahoo-wang/fetcher-wow (line 8)"
+    },
+    {
+      "text": "Uses SnapshotQueryClient from @ahoo-wang/fetcher-wow",
+      "passed": true,
+      "evidence": "userQuery.ts imports SnapshotQueryClient from @ahoo-wang/fetcher-wow (line 8)"
+    },
+    {
+      "text": "Command includes proper method (POST) and body structure for creating user",
+      "passed": true,
+      "evidence": "userCommand.ts uses HttpMethod.POST and body includes name and email fields"
+    },
+    {
+      "text": "Query includes condition builder (eq) for fetching by ID",
+      "passed": true,
+      "evidence": "userQuery.ts uses aggregateId() condition builder for fetching by ID"
+    },
+    {
+      "text": "Includes proper TypeScript typing for command request and result",
+      "passed": true,
+      "evidence": "userCommand.ts defines CreateUserCommand as CommandRequest<CreateUser>, userQuery.ts has proper UserState interface"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 0,
+    "errors_encountered": 0,
+    "output_chars": 7044,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 0,
+    "grader_duration_seconds": 0,
+    "total_duration_seconds": 0
+  },
+  "claims": [],
+  "user_notes_summary": {},
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "No suggestions, evals look solid"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "tool_calls": {
+    "Read": 2,
+    "Write": 2,
+    "Glob": 0,
+    "Grep": 0,
+    "Bash": 0,
+    "Edit": 0
+  },
+  "total_tool_calls": 4,
+  "total_steps": 2,
+  "files_created": ["sse-baseline.ts", "transcript.md", "metrics.json"],
+  "errors_encountered": 0,
+  "output_chars": 1150,
+  "transcript_chars": 420
+}

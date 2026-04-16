@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "streaming-chat-completion",
+  "prompt": "Create a streaming chat completion example using @ahoo-wang/fetcher-openai with GPT-4. The script should stream responses in real-time and display each chunk of content as it arrives. Use the eventstream package integration for streaming support. Set up the client and stream a message asking for a short poem about coding.",
+  "assertions": [
+    "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+    "Uses stream: true option in chat.completions() call",
+    "Uses for-await-of loop to iterate over streaming chunks",
+    "Displays content from each chunk's choices[0].delta.content in real-time",
+    "Checks for finish_reason to detect stream completion"
+  ]
+}

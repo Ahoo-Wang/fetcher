@@ -1,0 +1,323 @@
+{
+  "metadata": {
+    "skill_name": "fetcher-openai-client",
+    "skill_path": "/Users/ahoo/work/ahoo-git/agent-coder/fetcher/skills/fetcher-openai-client",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-16T12:13:47Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 3.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+          "passed": false,
+          "evidence": "Skill did not trigger - claude -p mode does not execute tools"
+        },
+        {
+          "text": "Initializes OpenAI client with baseURL and apiKey constructor parameters",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        },
+        {
+          "text": "Calls chat.completions() method with model and messages",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        },
+        {
+          "text": "Logs the assistant's response to console",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0,
+        "passed": 0,
+        "failed": 5,
+        "total": 5,
+        "time_seconds": 3.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        },
+        {
+          "text": "Uses stream: true option in chat.completions() call",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        },
+        {
+          "text": "Uses for-await-of loop to iterate over streaming chunks",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        },
+        {
+          "text": "Displays content from each chunk's choices[0].delta.content in real-time",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        },
+        {
+          "text": "Checks for finish_reason to detect stream completion",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0,
+        "passed": 0,
+        "failed": 6,
+        "total": 6,
+        "time_seconds": 3.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        },
+        {
+          "text": "Defines a tools array with a function tool of type 'function'",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        },
+        {
+          "text": "Tool has name 'get_weather' and location parameter with description",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        },
+        {
+          "text": "Sends chat.completions() with tools and tool_choice options",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        },
+        {
+          "text": "Checks response.choices[0].message.tool_calls to detect tool call",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        },
+        {
+          "text": "Extracts and prints function name and parsed arguments from tool_calls[0]",
+          "passed": false,
+          "evidence": "Skill did not trigger"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 3.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+          "passed": false,
+          "evidence": "claude -p mode does not execute tools"
+        },
+        {
+          "text": "Initializes OpenAI client with baseURL and apiKey constructor parameters",
+          "passed": false,
+          "evidence": "No execution occurred"
+        },
+        {
+          "text": "Calls chat.completions() method with model and messages",
+          "passed": false,
+          "evidence": "No execution occurred"
+        },
+        {
+          "text": "Logs the assistant's response to console",
+          "passed": false,
+          "evidence": "No execution occurred"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0,
+        "passed": 0,
+        "failed": 5,
+        "total": 5,
+        "time_seconds": 3.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+          "passed": false,
+          "evidence": "claude -p mode does not execute tools"
+        },
+        {
+          "text": "Uses stream: true option in chat.completions() call",
+          "passed": false,
+          "evidence": "No execution occurred"
+        },
+        {
+          "text": "Uses for-await-of loop to iterate over streaming chunks",
+          "passed": false,
+          "evidence": "No execution occurred"
+        },
+        {
+          "text": "Displays content from each chunk's choices[0].delta.content in real-time",
+          "passed": false,
+          "evidence": "No execution occurred"
+        },
+        {
+          "text": "Checks for finish_reason to detect stream completion",
+          "passed": false,
+          "evidence": "No execution occurred"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0,
+        "passed": 0,
+        "failed": 6,
+        "total": 6,
+        "time_seconds": 3.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+          "passed": false,
+          "evidence": "claude -p mode does not execute tools"
+        },
+        {
+          "text": "Defines a tools array with a function tool of type 'function'",
+          "passed": false,
+          "evidence": "No execution occurred"
+        },
+        {
+          "text": "Tool has name 'get_weather' and location parameter with description",
+          "passed": false,
+          "evidence": "No execution occurred"
+        },
+        {
+          "text": "Sends chat.completions() with tools and tool_choice options",
+          "passed": false,
+          "evidence": "No execution occurred"
+        },
+        {
+          "text": "Checks response.choices[0].message.tool_calls to detect tool call",
+          "passed": false,
+          "evidence": "No execution occurred"
+        },
+        {
+          "text": "Extracts and prints function name and parsed arguments from tool_calls[0]",
+          "passed": false,
+          "evidence": "No execution occurred"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      },
+      "time_seconds": {
+        "mean": 3.0,
+        "stddev": 0.0,
+        "min": 3.0,
+        "max": 3.0
+      },
+      "tokens": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      },
+      "time_seconds": {
+        "mean": 3.0,
+        "stddev": 0.0,
+        "min": 3.0,
+        "max": 3.0
+      },
+      "tokens": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "+0.0",
+      "tokens": "+0"
+    }
+  },
+  "notes": []
+}

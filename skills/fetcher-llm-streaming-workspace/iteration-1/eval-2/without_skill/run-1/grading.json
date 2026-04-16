@@ -1,0 +1,67 @@
+{
+  "expectations": [
+    {
+      "text": "Uses streaming LLM client with event stream processing",
+      "passed": true,
+      "evidence": "OpenAI chat.completions.create with stream: true"
+    },
+    {
+      "text": "Updates UI incrementally as tokens arrive (not after full response)",
+      "passed": false,
+      "evidence": "No setState inside stream loop - response only shown after complete"
+    },
+    {
+      "text": "Tracks and displays progress (chunk count or similar)",
+      "passed": false,
+      "evidence": "No chunk counting or progress tracking implemented"
+    },
+    {
+      "text": "Accumulates and displays the full response as it builds",
+      "passed": false,
+      "evidence": "Response only added to messages after full stream completes"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 2,
+      "Write": 2,
+      "Glob": 0,
+      "Grep": 0,
+      "Bash": 0,
+      "Edit": 0
+    },
+    "total_tool_calls": 4,
+    "total_steps": 2,
+    "errors_encountered": 0,
+    "output_chars": 1380,
+    "transcript_chars": 390
+  },
+  "claims": [
+    {
+      "claim": "Basic streaming without real-time UI updates",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Stream completes before any UI update"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": ["No real-time updates", "No progress tracking"],
+    "workarounds": ["Buffered entire response before display"]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Updates UI incrementally as tokens arrive",
+        "reason": "Baseline only shows response after stream completes - no real-time updates"
+      }
+    ],
+    "overall": "Baseline lacks real-time UI patterns from skill."
+  }
+}

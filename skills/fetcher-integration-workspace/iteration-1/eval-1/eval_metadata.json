@@ -1,0 +1,32 @@
+{
+  "eval_id": 1,
+  "eval_name": "path-query-params",
+  "prompt": "I need to make a GET request to /users/{id} with path param id=123 and query param include=profile, then get the JSON response",
+  "assertions": [
+    {
+      "text": "Uses GET method",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Uses path parameter syntax {id}",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Sets path param id=123",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Sets query param include=profile",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Calls response.json() with type",
+      "passed": false,
+      "evidence": ""
+    }
+  ]
+}

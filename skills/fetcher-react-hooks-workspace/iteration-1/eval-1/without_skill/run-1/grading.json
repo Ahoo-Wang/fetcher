@@ -1,0 +1,59 @@
+{
+  "expectations": [
+    {
+      "text": "Uses useDebouncedFetcherQuery from @ahoo-wang/fetcher-react",
+      "passed": false,
+      "evidence": "The component implements debouncing manually using useRef and setTimeout instead of using useDebouncedFetcherQuery"
+    },
+    {
+      "text": "Debounce delay of 300ms configured",
+      "passed": true,
+      "evidence": "debounceDelay prop defaults to 300ms and is used in setTimeout"
+    },
+    {
+      "text": "setQuery is used to update search parameters",
+      "passed": false,
+      "evidence": "No setQuery function exists; the component uses local state (setKeyword) instead"
+    },
+    {
+      "text": "Handles loading state during debounce and execution",
+      "passed": true,
+      "evidence": "Component manages isPending and loading states manually with useState"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Write": 1
+    },
+    "total_tool_calls": 1,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 2891
+  },
+  "timing": {
+    "executor_duration_seconds": 27.1,
+    "grader_duration_seconds": 2.0,
+    "total_duration_seconds": 29.1
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": ["Manual debounce implementation instead of using the skill's useDebouncedFetcherQuery"]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Uses useDebouncedFetcherQuery from @ahoo-wang/fetcher-react",
+        "reason": "Baseline doesn't use the fetcher-react library at all, implementing debounce logic from scratch"
+      }
+    ],
+    "overall": "Baseline correctly demonstrates manual implementation vs. the skill's hook"
+  }
+}

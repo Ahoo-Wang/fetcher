@@ -1,0 +1,23 @@
+{
+  "skill_name": "fetcher-storage",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a TypeScript module that stores user preferences (theme: 'light'|'dark', language: string, notifications: boolean) in localStorage using the @ahoo-wang/fetcher-storage package. Include functions to get, set, and remove preferences, plus a change listener that logs preference changes.",
+      "expected_output": "A TypeScript module with typed KeyStorage for user preferences, with getTheme(), setTheme(), getLanguage(), setLanguage() etc, and an exported addPreferencesListener() function",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Build a session cache utility using @ahoo-wang/fetcher-storage that stores API response data. It should use InMemoryStorage for Node.js environments and localStorage for browsers, with automatic environment detection. Include methods: set(key, data, ttl?), get(key), invalidate(key).",
+      "expected_output": "A cross-environment cache utility with environment detection, typed storage interface, and TTL support",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Implement a typed key-value store for storing JSON-serializable data using @ahoo-wang/fetcher-storage. Create a custom DateSerializer that serializes Date objects to/from ISO strings, and demonstrate it with a KeyStorage for caching last-modified timestamps.",
+      "expected_output": "A DateSerializer implementation and KeyStorage usage for timestamp caching with proper serialization",
+      "files": []
+    }
+  ]
+}

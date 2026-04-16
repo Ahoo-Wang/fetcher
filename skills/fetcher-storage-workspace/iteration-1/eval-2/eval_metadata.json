@@ -1,0 +1,27 @@
+{
+  "eval_id": 2,
+  "eval_name": "custom-serializer-timestamp-cache",
+  "prompt": "Implement a typed key-value store for storing JSON-serializable data using @ahoo-wang/fetcher-storage. Create a custom DateSerializer that serializes Date objects to/from ISO strings, and demonstrate it with a KeyStorage for caching last-modified timestamps.",
+  "assertions": [
+    {
+      "text": "Implements DateSerializer with serialize/deserialize methods",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Uses typedIdentitySerializer or custom serializer with KeyStorage",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Demonstrates timestamp caching with KeyStorage",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Code is TypeScript and uses @ahoo-wang/fetcher-storage imports",
+      "passed": false,
+      "evidence": ""
+    }
+  ]
+}

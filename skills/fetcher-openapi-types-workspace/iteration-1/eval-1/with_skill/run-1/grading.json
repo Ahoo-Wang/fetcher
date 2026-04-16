@@ -1,0 +1,63 @@
+{
+  "expectations": [
+    {
+      "text": "Uses `Schema` type from @ahoo-wang/fetcher-openapi",
+      "passed": true,
+      "evidence": "Line 1: import type { Schema, Discriminator } from '@ahoo-wang/fetcher-openapi'; Lines 4, 15, 38: const ...Schema = { ... }"
+    },
+    {
+      "text": "Uses `Discriminator` type from @ahoo-wang/fetcher-openapi",
+      "passed": true,
+      "evidence": "Line 1: import type { Schema, Discriminator } from '@ahoo-wang/fetcher-openapi'; export type { ..., Discriminator };"
+    },
+    {
+      "text": "Uses `oneOf` array to define multiple possible types",
+      "passed": true,
+      "evidence": "Lines 39-42: oneOf: [ { $ref: ... }, { $ref: ... } ],"
+    },
+    {
+      "text": "Includes discriminator mapping with propertyName field",
+      "passed": true,
+      "evidence": "Lines 43-49: discriminator: { propertyName: 'type', mapping: { admin: ..., user: ... } }"
+    },
+    {
+      "text": "Defines separate Admin and User schemas with different properties",
+      "passed": true,
+      "evidence": "Lines 4-12 define userSchema with id, name, email. Lines 15-24 define adminSchema with id, name, email, permissions."
+    },
+    {
+      "text": "Uses $ref syntax for referencing schemas in the oneOf array",
+      "passed": true,
+      "evidence": "Lines 40-41: { $ref: '#/components/schemas/Admin' }, { $ref: '#/components/schemas/User' }"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 1800,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 0,
+    "grader_duration_seconds": 0,
+    "total_duration_seconds": 0
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "No suggestions, evals look solid"
+  }
+}

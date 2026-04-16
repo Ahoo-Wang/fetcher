@@ -1,0 +1,23 @@
+{
+  "skill_name": "fetcher-integration",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Set up a Fetcher instance with baseURL https://api.example.com, timeout 5000ms, and a request interceptor that adds a Bearer token from localStorage",
+      "expected_output": "NamedFetcher setup with interceptor code",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I need to make a GET request to /users/{id} with path param id=123 and query param include=profile, then get the JSON response",
+      "expected_output": "Fetcher GET request with path and query parameters",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Create multiple named fetchers for different services (auth, api, files) and show how to retrieve them from the registry",
+      "expected_output": "Multiple NamedFetcher instances with registry pattern",
+      "files": []
+    }
+  ]
+}

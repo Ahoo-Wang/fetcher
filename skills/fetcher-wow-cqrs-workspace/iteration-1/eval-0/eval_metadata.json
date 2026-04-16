@@ -1,0 +1,12 @@
+{
+  "eval_id": 0,
+  "eval_name": "user-command-query-pair",
+  "prompt": "Create a WowCommand and WowQuery pair for a user management domain. The command should create a new user with name and email. The query should fetch user by ID. Use @ahoo-wang/fetcher-wow package.",
+  "assertions": [
+    "Uses CommandClient from @ahoo-wang/fetcher-wow",
+    "Uses SnapshotQueryClient from @ahoo-wang/fetcher-wow",
+    "Command includes proper method (POST) and body structure for creating user",
+    "Query includes condition builder (eq) for fetching by ID",
+    "Includes proper TypeScript typing for command request and result"
+  ]
+}

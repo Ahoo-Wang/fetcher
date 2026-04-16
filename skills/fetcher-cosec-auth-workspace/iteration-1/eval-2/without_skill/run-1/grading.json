@@ -1,0 +1,72 @@
+{
+  "expectations": [
+    {
+      "text": "SpaceIdProvider is configured to resolve space ID from requests",
+      "passed": false,
+      "evidence": "No SpaceIdProvider interface used - manual X-Space-Id header instead"
+    },
+    {
+      "text": "Separate token storage per tenant/space is implemented",
+      "passed": true,
+      "evidence": "tokenStorages Map stores separate TokenData per spaceId"
+    },
+    {
+      "text": "CoSec-Space-Id header is properly set on requests",
+      "passed": false,
+      "evidence": "Uses custom X-Space-Id header instead of CoSec-Space-Id header"
+    },
+    {
+      "text": "Multi-tenant fetcher registry or factory pattern is used",
+      "passed": true,
+      "evidence": "SpaceAwareFetcherFactory creates and caches separate Fetcher per space"
+    },
+    {
+      "text": "Per-space token management handles signIn/signOut",
+      "passed": true,
+      "evidence": "setToken/clearToken functions manage tokens per space"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Write": 1
+    },
+    "total_tool_calls": 1,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 2000,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 25.0,
+    "grader_duration_seconds": 10.0,
+    "total_duration_seconds": 35.0
+  },
+  "claims": [
+    {
+      "claim": "Basic multi-space token storage exists",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Map-based storage manages separate tokens per space"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": ["Manual X-Space-Id header instead of CoSec-Space-Id"]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "CoSec-Space-Id header",
+        "reason": "Should use CoSec framework's SpaceIdProvider instead of manual header"
+      }
+    ],
+    "overall": "Basic multi-space support but not using CoSec framework properly"
+  }
+}

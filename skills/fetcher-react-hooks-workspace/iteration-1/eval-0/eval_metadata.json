@@ -1,0 +1,11 @@
+{
+  "eval_id": 0,
+  "prompt": "I need to create a UserProfile component that fetches user data from /api/users/{id} when the component mounts, shows a loading spinner while fetching, and displays an error message if the request fails. Show me how to use useFetcher hook from @ahoo-wang/fetcher-react.",
+  "expected_output": "A complete React component using useFetcher that handles loading, error, and success states with automatic request cancellation on unmount",
+  "expectations": [
+    "Uses useFetcher hook from @ahoo-wang/fetcher-react",
+    "Handles loading, error, and result states",
+    "Makes GET request to /api/users/{id}",
+    "Shows appropriate UI for each state"
+  ]
+}

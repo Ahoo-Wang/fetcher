@@ -1,0 +1,63 @@
+{
+  "expectations": [
+    {
+      "text": "Uses `Schema` type from @ahoo-wang/fetcher-openapi",
+      "passed": true,
+      "evidence": "Line 1: import type { Schema, Discriminator } from '@ahoo-wang/fetcher-openapi'; Line 4: const polymorphicSchema: Schema = { ... }"
+    },
+    {
+      "text": "Uses `Discriminator` type from @ahoo-wang/fetcher-openapi",
+      "passed": true,
+      "evidence": "Line 1: import type { Schema, Discriminator } from '@ahoo-wang/fetcher-openapi';"
+    },
+    {
+      "text": "Uses `oneOf` array to define multiple possible types",
+      "passed": true,
+      "evidence": "Lines 5-8: oneOf: [ { $ref: ... }, { $ref: ... } ],"
+    },
+    {
+      "text": "Includes discriminator mapping with propertyName field",
+      "passed": true,
+      "evidence": "Lines 9-15: discriminator: { propertyName: 'type', mapping: { admin: ..., user: ... } }"
+    },
+    {
+      "text": "Defines separate Admin and User schemas with different properties",
+      "passed": false,
+      "evidence": "No separate Admin or User schemas defined - only the polymorphicSchema is present"
+    },
+    {
+      "text": "Uses $ref syntax for referencing schemas in the oneOf array",
+      "passed": true,
+      "evidence": "Lines 6-7: { $ref: '#/components/schemas/Admin' }, { $ref: '#/components/schemas/User' }"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.833
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 600,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 0,
+    "grader_duration_seconds": 0,
+    "total_duration_seconds": 0
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Without_skill is missing the separate Admin/User schema definitions"
+  }
+}

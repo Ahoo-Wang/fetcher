@@ -1,0 +1,73 @@
+{
+  "expectations": [
+    {
+      "text": "Uses `Operation` type from @ahoo-wang/fetcher-openapi",
+      "passed": true,
+      "evidence": "Line 1: import type { Operation, ... } from '@ahoo-wang/fetcher-openapi'; Line 57: const createUserOperation: Operation = { ... }"
+    },
+    {
+      "text": "Uses `Parameter` type for defining parameters",
+      "passed": true,
+      "evidence": "Line 1: import type { ..., Parameter, ... } from '@ahoo-wang/fetcher-openapi'; Lines 4-10 define userIdParam: Parameter, Lines 13-18 define searchParam: Parameter"
+    },
+    {
+      "text": "Uses `RequestBody` type with required field set to true",
+      "passed": true,
+      "evidence": "Line 1: import type { ..., RequestBody, ... } from '@ahoo-wang/fetcher-openapi'; Line 21-36: const createUserRequestBody: RequestBody = { required: true, ... }"
+    },
+    {
+      "text": "Uses `Response` type for defining responses by status code",
+      "passed": true,
+      "evidence": "Line 1: import type { ..., Response, ... } from '@ahoo-wang/fetcher-openapi'; Lines 39-54: const createdResponse: Response = { ... }"
+    },
+    {
+      "text": "Uses `MediaType` type for content-type schemas",
+      "passed": true,
+      "evidence": "Line 1: import type { ..., MediaType, ... } from '@ahoo-wang/fetcher-openapi'; Line 34: } as MediaType;"
+    },
+    {
+      "text": "Uses HTTPMethod type or string literal 'post' for the method",
+      "passed": false,
+      "evidence": "The operation uses operationId but does not explicitly set a method. OpenAPI operations don't have a direct 'method' field - methods are keys in the path object (get:, post:, etc.)"
+    },
+    {
+      "text": "Includes both path and query parameters with correct 'in' field values",
+      "passed": true,
+      "evidence": "Lines 4-10: userIdParam with in: 'path'; Lines 13-18: searchParam with in: 'query'; Line 61: parameters: [userIdParam, searchParam]"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 1,
+    "total": 7,
+    "pass_rate": 0.857
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 2200,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 0,
+    "grader_duration_seconds": 0,
+    "total_duration_seconds": 0
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Uses HTTPMethod type or string literal 'post' for the method",
+        "reason": "OpenAPI operations don't have a direct 'method' field - methods are keys in the path object. This assertion may be incorrectly worded."
+      }
+    ],
+    "overall": "Most assertions pass. One assertion about HTTPMethod may need refinement."
+  }
+}

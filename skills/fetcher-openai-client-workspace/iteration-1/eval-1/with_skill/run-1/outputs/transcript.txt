@@ -1,0 +1,10 @@
+# Eval 1 - with_skill transcript
+
+## Prompt
+Create a streaming chat completion example using @ahoo-wang/fetcher-openai with GPT-4.
+
+## Execution
+Claude was invoked with the skill but did not trigger the skill loading mechanism.
+
+## Output
+No transcript available - skill did not trigger for this prompt.

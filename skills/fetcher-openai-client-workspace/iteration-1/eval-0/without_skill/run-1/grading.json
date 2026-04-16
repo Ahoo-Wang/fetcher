@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+      "passed": false,
+      "evidence": "claude -p mode does not execute tools"
+    },
+    {
+      "text": "Initializes OpenAI client with baseURL and apiKey constructor parameters",
+      "passed": false,
+      "evidence": "No execution occurred"
+    },
+    {
+      "text": "Calls chat.completions() method with model and messages",
+      "passed": false,
+      "evidence": "No execution occurred"
+    },
+    {
+      "text": "Logs the assistant's response to console",
+      "passed": false,
+      "evidence": "No execution occurred"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0,
+    "output_chars": 0,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "total_duration_seconds": 3.0
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Baseline - no skill available"
+  }
+}

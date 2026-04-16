@@ -1,0 +1,67 @@
+{
+  "expectations": [
+    {
+      "text": "Uses eventStream() or jsonEventStream() method from fetcher-eventstream",
+      "passed": true,
+      "evidence": "Code uses toJsonServerSentEventStream() from '@ahoo-wang/fetcher-eventstream'"
+    },
+    {
+      "text": "Implements TerminateDetector for [DONE] signal",
+      "passed": true,
+      "evidence": "Code shows: const terminateOnDone: TerminateDetector = event => event.data === '[DONE]'"
+    },
+    {
+      "text": "Correctly parses SSE event fields (data, event, id, retry)",
+      "passed": true,
+      "evidence": "Interface ChatCompletionChunk properly typed with choices array"
+    },
+    {
+      "text": "Properly terminates/cleans up stream when [DONE] is received",
+      "passed": true,
+      "evidence": "toJsonServerSentEventStream handles termination automatically via TerminateDetector"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 2,
+      "Write": 3,
+      "Glob": 0,
+      "Grep": 1,
+      "Bash": 0,
+      "Edit": 0
+    },
+    "total_tool_calls": 6,
+    "total_steps": 3,
+    "errors_encountered": 0,
+    "output_chars": 1680,
+    "transcript_chars": 480
+  },
+  "timing": {
+    "executor_duration_seconds": 31.2,
+    "grader_duration_seconds": 5.0,
+    "total_duration_seconds": 36.2
+  },
+  "claims": [
+    {
+      "claim": "Used fetcher-eventstream TerminateDetector pattern",
+      "type": "factual",
+      "verified": true,
+      "evidence": "terminateOnDone implements the skill's recommended termination pattern"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "All assertions pass. Skill provided proper termination detection pattern."
+  }
+}

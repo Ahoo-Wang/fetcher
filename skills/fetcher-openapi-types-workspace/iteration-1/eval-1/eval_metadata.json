@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "eval_name": "polymorphic-schema-discriminator",
+  "prompt": "Help me create a TypeScript definition for a polymorphic schema using discriminator with oneOf in OpenAPI. I need to model Admin and User types that inherit from a base type.",
+  "assertions": [
+    "Uses `Schema` type from @ahoo-wang/fetcher-openapi",
+    "Uses `Discriminator` type from @ahoo-wang/fetcher-openapi",
+    "Uses `oneOf` array to define multiple possible types",
+    "Includes discriminator mapping with propertyName field",
+    "Defines separate Admin and User schemas with different properties",
+    "Uses $ref syntax for referencing schemas in the oneOf array"
+  ]
+}

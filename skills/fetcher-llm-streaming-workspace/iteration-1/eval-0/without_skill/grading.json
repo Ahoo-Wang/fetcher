@@ -1,0 +1,67 @@
+{
+  "expectations": [
+    {
+      "text": "Uses OpenAI client with stream: true option",
+      "passed": true,
+      "evidence": "Code shows: stream: await openai.chat.completions.create({ ..., stream: true })"
+    },
+    {
+      "text": "Uses for await loop to process streaming chunks",
+      "passed": true,
+      "evidence": "Code shows: for await (const chunk of stream)"
+    },
+    {
+      "text": "Extracts delta content from chat completion chunks",
+      "passed": true,
+      "evidence": "Code shows: const content = chunk.choices[0]?.delta?.content || ''"
+    },
+    {
+      "text": "Processes tokens in real-time (no buffering entire response)",
+      "passed": false,
+      "evidence": "process.stdout.write is used but basic implementation lacks proper real-time streaming patterns from skill"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 2,
+      "Write": 2,
+      "Glob": 0,
+      "Grep": 0,
+      "Bash": 0,
+      "Edit": 0
+    },
+    "total_tool_calls": 4,
+    "total_steps": 2,
+    "errors_encountered": 0,
+    "output_chars": 920,
+    "transcript_chars": 380
+  },
+  "timing": {
+    "executor_duration_seconds": 18.2,
+    "grader_duration_seconds": 4.0,
+    "total_duration_seconds": 22.2
+  },
+  "claims": [
+    {
+      "claim": "Used standard openai package",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Import OpenAI from 'openai' found in code"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": ["Did not use fetcher-eventstream package"]
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Basic implementation passes core streaming but lacks skill-specific patterns."
+  }
+}

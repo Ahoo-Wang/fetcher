@@ -1,0 +1,44 @@
+{
+  "expectations": [
+    {
+      "text": "Uses TextFilter component from @ahoo-wang/fetcher-viewer",
+      "passed": true,
+      "evidence": "Line 19 imports TextFilter from @ahoo-wang/fetcher-viewer, and it's used in the filters array with type: 'text'"
+    },
+    {
+      "text": "Uses NumberFilter component from @ahoo-wang/fetcher-viewer",
+      "passed": true,
+      "evidence": "Line 20 imports NumberFilter from @ahoo-wang/fetcher-viewer, and it's used in the filters array with type: 'number'"
+    },
+    {
+      "text": "Uses SelectFilter component from @ahoo-wang/fetcher-viewer",
+      "passed": true,
+      "evidence": "Line 21 imports SelectFilter from @ahoo-wang/fetcher-viewer, and it's used in the filters array with type: 'select' with options for 'active' and 'inactive'"
+    },
+    {
+      "text": "Uses useFilterState hook to manage filter state",
+      "passed": true,
+      "evidence": "Lines 29, 35, 41 use useFilterState hook for username, age, and status filter states"
+    },
+    {
+      "text": "FilterPanel renders with all three filter types",
+      "passed": true,
+      "evidence": "FilterPanel component at lines 94-102 renders filters array containing text, number, and select filter types"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "output_chars": 2549
+  },
+  "claims": [],
+  "user_notes_summary": {},
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "All assertions pass. The with_skill version correctly uses FilterPanel, TextFilter, NumberFilter, SelectFilter, and useFilterState."
+  }
+}

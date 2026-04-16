@@ -1,0 +1,16 @@
+{
+  "tool_calls": {
+    "Read": 2,
+    "Write": 3,
+    "Glob": 0,
+    "Grep": 1,
+    "Bash": 0,
+    "Edit": 0
+  },
+  "total_tool_calls": 6,
+  "total_steps": 3,
+  "files_created": ["sse-termination.ts", "transcript.md", "metrics.json"],
+  "errors_encountered": 0,
+  "output_chars": 1680,
+  "transcript_chars": 480
+}

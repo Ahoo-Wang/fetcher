@@ -1,0 +1,23 @@
+{
+  "skill_name": "fetcher-llm-streaming",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I need to stream OpenAI chat completions token by token in my TypeScript app. Show me how to set up streaming with the fetcher eventstream package and process each token as it arrives.",
+      "expected_output": "TypeScript code that uses OpenAI client with stream: true, processes chunks via for await loop, extracts delta content, and outputs tokens in real-time",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "How do I parse SSE events from an LLM API with proper termination detection? I need to handle the [DONE] signal and clean up the stream properly.",
+      "expected_output": "Code using eventStream()/jsonEventStream() with TerminateDetector for [DONE] termination, proper stream parsing and cleanup",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Help me build a streaming LLM client that updates a React UI in real-time as tokens arrive. I want to track progress and show the accumulated response.",
+      "expected_output": "React component with streaming LLM integration, real-time UI updates as tokens arrive, progress tracking with chunk counts",
+      "files": []
+    }
+  ]
+}

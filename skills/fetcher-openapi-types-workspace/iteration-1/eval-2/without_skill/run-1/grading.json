@@ -1,0 +1,68 @@
+{
+  "expectations": [
+    {
+      "text": "Uses `Operation` type from @ahoo-wang/fetcher-openapi",
+      "passed": true,
+      "evidence": "Line 1: import type { Operation, ... } from '@ahoo-wang/fetcher-openapi'; Line 3: const createUserOperation: Operation = { ... }"
+    },
+    {
+      "text": "Uses `Parameter` type for defining parameters",
+      "passed": false,
+      "evidence": "No Parameter type imported or defined. The operation has no parameters field."
+    },
+    {
+      "text": "Uses `RequestBody` type with required field set to true",
+      "passed": true,
+      "evidence": "Line 7-14: requestBody: { required: true, ... }"
+    },
+    {
+      "text": "Uses `Response` type for defining responses by status code",
+      "passed": false,
+      "evidence": "Response type is imported but not used. responses: { '201': { description: 'User created' } } uses inline object, not Response type."
+    },
+    {
+      "text": "Uses `MediaType` type for content-type schemas",
+      "passed": false,
+      "evidence": "MediaType type is not imported. schema: { type: 'object' } is used inline without MediaType wrapper."
+    },
+    {
+      "text": "Uses HTTPMethod type or string literal 'post' for the method",
+      "passed": false,
+      "evidence": "No HTTP method specified - OpenAPI methods are keys in path objects, not on Operation objects directly."
+    },
+    {
+      "text": "Includes both path and query parameters with correct 'in' field values",
+      "passed": false,
+      "evidence": "No parameters defined in the operation."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 5,
+    "total": 7,
+    "pass_rate": 0.286
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 500,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 0,
+    "grader_duration_seconds": 0,
+    "total_duration_seconds": 0
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Without_skill has significantly fewer types and definitions - skill adds clear value here"
+  }
+}

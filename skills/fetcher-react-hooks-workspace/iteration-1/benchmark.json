@@ -1,0 +1,299 @@
+{
+  "metadata": {
+    "skill_name": "fetcher-react-hooks",
+    "skill_path": "/Users/ahoo/work/ahoo-git/agent-coder/fetcher/skills/fetcher-react-hooks",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-16T12:04:20Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 20.5,
+        "tokens": 1856,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses useFetcher hook from @ahoo-wang/fetcher-react",
+          "passed": true,
+          "evidence": "The component imports useFetcher from '@ahoo-wang/fetcher-react' on line 3"
+        },
+        {
+          "text": "Handles loading, error, and result states",
+          "passed": true,
+          "evidence": "The component destructures { loading, result, error } from useFetcher and renders appropriate UI for each state"
+        },
+        {
+          "text": "Makes GET request to /api/users/{id}",
+          "passed": true,
+          "evidence": "execute() is called with { url: `/api/users/${userId}`, method: 'GET' }"
+        },
+        {
+          "text": "Shows appropriate UI for each state",
+          "passed": true,
+          "evidence": "Component has conditional rendering for loading (spinner text), error (error message + retry button), and result (user data display) states"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 21.8,
+        "tokens": 2048,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses useDebouncedFetcherQuery from @ahoo-wang/fetcher-react",
+          "passed": true,
+          "evidence": "The component imports useDebouncedFetcherQuery from '@ahoo-wang/fetcher-react'"
+        },
+        {
+          "text": "Debounce delay of 300ms configured",
+          "passed": true,
+          "evidence": "debounce: { delay: 300 } is passed in the hook options"
+        },
+        {
+          "text": "setQuery is used to update search parameters",
+          "passed": true,
+          "evidence": "setQuery({ keyword: newKeyword }) is called in handleKeywordChange"
+        },
+        {
+          "text": "Handles loading state during debounce and execution",
+          "passed": true,
+          "evidence": "Component checks both loading and isPending() for loading states, shows appropriate UI"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 23.5,
+        "tokens": 2476,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses useFetcherPagedQuery hook from @ahoo-wang/fetcher-react",
+          "passed": true,
+          "evidence": "The component imports and uses useFetcherPagedQuery from '@ahoo-wang/fetcher-react'"
+        },
+        {
+          "text": "Pagination with index and size configured",
+          "passed": true,
+          "evidence": "initialQuery.pagination is set to { index: 1, size: pageSize }"
+        },
+        {
+          "text": "setPagination or similar method to change page",
+          "passed": true,
+          "evidence": "setPagination is destructured from the hook and called in handlePageChange"
+        },
+        {
+          "text": "Handles loading and result states for paginated data",
+          "passed": true,
+          "evidence": "Component checks loading state and destructures { data: products, pagination } from result"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 26.2,
+        "tokens": 2134,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses useFetcher hook from @ahoo-wang/fetcher-react",
+          "passed": false,
+          "evidence": "The component uses manual fetch with useState and useEffect instead of useFetcher hook from @ahoo-wang/fetcher-react"
+        },
+        {
+          "text": "Handles loading, error, and result states",
+          "passed": true,
+          "evidence": "The component manually manages loading, error, and user state with useState"
+        },
+        {
+          "text": "Makes GET request to /api/users/{id}",
+          "passed": true,
+          "evidence": "fetch(`/api/users/${userId}`) is called with proper AbortController signal"
+        },
+        {
+          "text": "Shows appropriate UI for each state",
+          "passed": true,
+          "evidence": "Component has conditional rendering for loading, error, and data states with retry capability"
+        }
+      ],
+      "notes": [
+        "Manual fetch implementation instead of using @ahoo-wang/fetcher-react hooks"
+      ]
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 2,
+        "failed": 2,
+        "total": 4,
+        "time_seconds": 29.1,
+        "tokens": 2891,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses useDebouncedFetcherQuery from @ahoo-wang/fetcher-react",
+          "passed": false,
+          "evidence": "The component implements debouncing manually using useRef and setTimeout instead of using useDebouncedFetcherQuery"
+        },
+        {
+          "text": "Debounce delay of 300ms configured",
+          "passed": true,
+          "evidence": "debounceDelay prop defaults to 300ms and is used in setTimeout"
+        },
+        {
+          "text": "setQuery is used to update search parameters",
+          "passed": false,
+          "evidence": "No setQuery function exists; the component uses local state (setKeyword) instead"
+        },
+        {
+          "text": "Handles loading state during debounce and execution",
+          "passed": true,
+          "evidence": "Component manages isPending and loading states manually with useState"
+        }
+      ],
+      "notes": [
+        "Manual debounce implementation instead of using the skill's useDebouncedFetcherQuery"
+      ]
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 2,
+        "failed": 2,
+        "total": 4,
+        "time_seconds": 31.8,
+        "tokens": 2654,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses useFetcherPagedQuery hook from @ahoo-wang/fetcher-react",
+          "passed": false,
+          "evidence": "The component uses manual useState and useEffect for data fetching instead of useFetcherPagedQuery"
+        },
+        {
+          "text": "Pagination with index and size configured",
+          "passed": true,
+          "evidence": "Manual pagination implementation with pageSize and currentPage state"
+        },
+        {
+          "text": "setPagination or similar method to change page",
+          "passed": false,
+          "evidence": "No setPagination function exists; the component uses setCurrentPage directly"
+        },
+        {
+          "text": "Handles loading and result states for paginated data",
+          "passed": true,
+          "evidence": "Component manually manages loading state with useState and handles product rendering"
+        }
+      ],
+      "notes": [
+        "Manual pagination implementation instead of using useFetcherPagedQuery"
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 21.9333,
+        "stddev": 1.5044,
+        "min": 20.5,
+        "max": 23.5
+      },
+      "tokens": {
+        "mean": 2126.6667,
+        "stddev": 317.3978,
+        "min": 1856,
+        "max": 2476
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.5833,
+        "stddev": 0.1443,
+        "min": 0.5,
+        "max": 0.75
+      },
+      "time_seconds": {
+        "mean": 29.0333,
+        "stddev": 2.8006,
+        "min": 26.2,
+        "max": 31.8
+      },
+      "tokens": {
+        "mean": 2559.6667,
+        "stddev": 387.2161,
+        "min": 2134,
+        "max": 2891
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.42",
+      "time_seconds": "-7.1",
+      "tokens": "-433"
+    }
+  },
+  "notes": []
+}

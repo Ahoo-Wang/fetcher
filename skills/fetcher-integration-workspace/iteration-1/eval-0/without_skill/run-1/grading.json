@@ -1,0 +1,47 @@
+{
+  "expectations": [
+    {
+      "text": "Creates NamedFetcher instance with correct baseURL",
+      "passed": false,
+      "evidence": "Code uses Fetcher class directly (new Fetcher(...)) instead of NamedFetcher. Does not use @ahoo-wang/fetcher NamedFetcher."
+    },
+    {
+      "text": "Sets timeout to 5000ms",
+      "passed": false,
+      "evidence": "No NamedFetcher is created. Uses createFetcher() function returning a Fetcher instance, but timeout is not set (TIMEOUT_MS=5000 is defined but only passed via comment, not actually used in the interceptor or Fetcher constructor options)."
+    },
+    {
+      "text": "Adds request interceptor for auth token",
+      "passed": false,
+      "evidence": "Code uses bearerTokenInterceptor with Fetcher.interceptors.request.use(), but this is not NamedFetcher. The interceptor itself is correctly implemented, but the pattern is wrong for NamedFetcher."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 3,
+    "total": 3,
+    "pass_rate": 0.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 0,
+    "total_steps": 0,
+    "errors_encountered": 0,
+    "output_chars": 1060,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "total_tokens": 30682,
+    "duration_ms": 54162,
+    "total_duration_seconds": 54.2
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "No suggestions, evals look solid"
+  }
+}

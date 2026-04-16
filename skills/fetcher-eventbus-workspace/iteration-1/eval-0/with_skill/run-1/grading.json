@@ -1,0 +1,76 @@
+{
+  "expectations": [
+    {
+      "text": "Uses SerialTypedEventBus from @ahoo-wang/fetcher-eventbus",
+      "passed": true,
+      "evidence": "Code imports: import { SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';"
+    },
+    {
+      "text": "Has ordered handlers with 'order' property (first logs action, second updates analytics)",
+      "passed": true,
+      "evidence": "Logger handler has order: 1, Analytics handler has order: 2"
+    },
+    {
+      "text": "Demonstrates on() method to register handlers",
+      "passed": true,
+      "evidence": "Code shows: eventBus.on({ name: 'logger', order: 1, handle: ... })"
+    },
+    {
+      "text": "Demonstrates emit() method to trigger events",
+      "passed": true,
+      "evidence": "Code shows: await eventBus.emit({ type: 'login', ... })"
+    },
+    {
+      "text": "Demonstrates off() method to remove handlers",
+      "passed": true,
+      "evidence": "Code shows: eventBus.off('logger');"
+    },
+    {
+      "text": "Includes TypeScript type definitions for events",
+      "passed": true,
+      "evidence": "Code defines BaseEvent, LoginEvent, LogoutEvent, AuthEvent interfaces"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {"Read": 2, "Write": 1, "Bash": 0},
+    "total_tool_calls": 3,
+    "total_steps": 5,
+    "errors_encountered": 0,
+    "output_chars": 1850,
+    "transcript_chars": 4200
+  },
+  "timing": {
+    "executor_duration_seconds": 28.5,
+    "grader_duration_seconds": 2.0,
+    "total_duration_seconds": 30.5
+  },
+  "claims": [
+    {
+      "claim": "SerialTypedEventBus is imported from @ahoo-wang/fetcher-eventbus",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Import statement present in code"
+    },
+    {
+      "claim": "Handlers execute in order due to order property",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Logger (order: 1) before Analytics (order: 2)"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "No suggestions, evals look solid"
+  }
+}

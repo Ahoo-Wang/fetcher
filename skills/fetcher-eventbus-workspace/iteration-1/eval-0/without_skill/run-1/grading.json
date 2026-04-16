@@ -1,0 +1,75 @@
+{
+  "expectations": [
+    {
+      "text": "Uses SerialTypedEventBus from @ahoo-wang/fetcher-eventbus",
+      "passed": false,
+      "evidence": "Code uses a custom EventBus class, not the @ahoo-wang/fetcher-eventbus package"
+    },
+    {
+      "text": "Has ordered handlers with 'order' property (first logs action, second updates analytics)",
+      "passed": true,
+      "evidence": "Custom EventBus has order property on handlers"
+    },
+    {
+      "text": "Demonstrates on() method to register handlers",
+      "passed": true,
+      "evidence": "Code shows: bus.on('login', { name: 'logger', order: 1, ... })"
+    },
+    {
+      "text": "Demonstrates emit() method to trigger events",
+      "passed": true,
+      "evidence": "Code shows: bus.emit('login', { ... })"
+    },
+    {
+      "text": "Demonstrates off() method to remove handlers",
+      "passed": true,
+      "evidence": "Code shows: bus.off('login', 'logger')"
+    },
+    {
+      "text": "Includes TypeScript type definitions for events",
+      "passed": true,
+      "evidence": "Code defines LoginEvent interface"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.83
+  },
+  "execution_metrics": {
+    "tool_calls": {"Read": 1, "Write": 1, "Bash": 0},
+    "total_tool_calls": 2,
+    "total_steps": 4,
+    "errors_encountered": 0,
+    "output_chars": 1200,
+    "transcript_chars": 3100
+  },
+  "timing": {
+    "executor_duration_seconds": 31.2,
+    "grader_duration_seconds": 2.0,
+    "total_duration_seconds": 33.2
+  },
+  "claims": [
+    {
+      "claim": "Custom EventBus implementation used instead of package",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Class defined locally, no import from @ahoo-wang/fetcher-eventbus"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Uses SerialTypedEventBus from @ahoo-wang/fetcher-eventbus",
+        "reason": "Baseline correctly fails this assertion - without the skill, the model doesn't use the package"
+      }
+    ],
+    "overall": "Baseline shows partial compliance but misses the package import"
+  }
+}

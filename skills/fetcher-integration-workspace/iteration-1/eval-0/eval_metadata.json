@@ -1,0 +1,22 @@
+{
+  "eval_id": 0,
+  "eval_name": "named-fetcher-setup",
+  "prompt": "Set up a Fetcher instance with baseURL https://api.example.com, timeout 5000ms, and a request interceptor that adds a Bearer token from localStorage",
+  "assertions": [
+    {
+      "text": "Creates NamedFetcher instance with correct baseURL",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Sets timeout to 5000ms",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Adds request interceptor for auth token",
+      "passed": false,
+      "evidence": ""
+    }
+  ]
+}

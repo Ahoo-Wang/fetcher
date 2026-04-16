@@ -1,0 +1,47 @@
+{
+  "expectations": [
+    {
+      "text": "Creates NamedFetcher instance with correct baseURL",
+      "passed": true,
+      "evidence": "Code shows: new NamedFetcher('api', { baseURL: 'https://api.example.com', ... })"
+    },
+    {
+      "text": "Sets timeout to 5000ms",
+      "passed": true,
+      "evidence": "Code shows: timeout: 5000"
+    },
+    {
+      "text": "Adds request interceptor for auth token",
+      "passed": true,
+      "evidence": "Code shows: apiFetcher.interceptors.request.use({ name: 'auth-request-interceptor', order: 100, intercept(exchange) { const token = localStorage.getItem('authToken'); if (token) { exchange.request.headers.Authorization = 'Bearer ${token}'; } return exchange; } })"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 0,
+    "total_steps": 0,
+    "errors_encountered": 0,
+    "output_chars": 2677,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "total_tokens": 37084,
+    "duration_ms": 58349,
+    "total_duration_seconds": 58.3
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "No suggestions, evals look solid"
+  }
+}

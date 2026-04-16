@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "skill_name": "fetcher-openapi-generator",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-16T12:05:37Z",
+    "evals_run": [
+      1,
+      2,
+      3
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 1.2,
+        "tokens": 3500,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Generated TypeScript types are properly defined",
+          "passed": true,
+          "evidence": "types.ts contains Pet and PetInput interfaces with proper TypeScript typing including id, name, species, age fields"
+        },
+        {
+          "text": "API client class is generated for pets endpoints",
+          "passed": true,
+          "evidence": "PetsApiClient generated with 4 methods: createPet, deletePet, getPet, listPets covering all /pets endpoints"
+        },
+        {
+          "text": "Generated code compiles without errors",
+          "passed": true,
+          "evidence": "Generator completed successfully with all source files optimized"
+        },
+        {
+          "text": "Output directory structure follows the standard pattern",
+          "passed": true,
+          "evidence": "Output has types.ts, PetsApiClient.ts, and index.ts in expected structure"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 1.2,
+        "tokens": 2800,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "CartCommandClient is generated with addCartItem method",
+          "passed": false,
+          "evidence": "Generated CartApiClient with 'item' method instead of CartCommandClient with 'addCartItem' method. The generator did not recognize the Wow CQRS pattern despite the skill providing guidance."
+        },
+        {
+          "text": "QueryClientFactory is generated for snapshot queries",
+          "passed": false,
+          "evidence": "No QueryClientFactory generated - only CartApiClient with 'single' method. The bounded context 'ecommerce.cart' was resolved but no command/query client separation was created."
+        },
+        {
+          "text": "Event query client is generated for event.list_query operations",
+          "passed": false,
+          "evidence": "No event.list_query operation exists in the ecommerce.yaml spec, so no event query client was generated"
+        },
+        {
+          "text": "Generated code uses Wow CQRS patterns correctly",
+          "passed": false,
+          "evidence": "Generated standard API client (CartApiClient) instead of CQRS command/query clients. The generator resolved 0 bounded context aggregates despite skill guidance."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 1.2,
+        "tokens": 3200,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Users aggregate command and query clients are generated",
+          "passed": false,
+          "evidence": "UsersApiClient generated for user_service.users tag, but no separate CommandClient or QueryClientFactory. The generator resolved 0 bounded context aggregates despite skill guidance for Wow CQRS patterns."
+        },
+        {
+          "text": "Tenant-based resource attribution is properly configured",
+          "passed": false,
+          "evidence": "No ResourceAttributionPathSpec.TENANT configured. The spec has /tenant/{tenantId}/users path but generated client doesn't use tenant-aware resource attribution."
+        },
+        {
+          "text": ".delete_aggregate operation generates delete method",
+          "passed": true,
+          "evidence": "UsersApiClient has 'aggregate' method that maps to user_service.users.default_delete_aggregate operation"
+        },
+        {
+          "text": ".fetcherrc.json configuration file is created with appropriate settings",
+          "passed": false,
+          "evidence": "No .fetcherrc.json config file was created in the output directory"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 1.2,
+        "tokens": 3500,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Generated TypeScript types are properly defined",
+          "passed": true,
+          "evidence": "types.ts contains Pet and PetInput interfaces with proper TypeScript typing including id, name, species, age fields"
+        },
+        {
+          "text": "API client class is generated for pets endpoints",
+          "passed": true,
+          "evidence": "PetsApiClient generated with 4 methods: createPet, deletePet, getPet, listPets covering all /pets endpoints"
+        },
+        {
+          "text": "Generated code compiles without errors",
+          "passed": true,
+          "evidence": "Generator completed successfully with all source files optimized"
+        },
+        {
+          "text": "Output directory structure follows the standard pattern",
+          "passed": true,
+          "evidence": "Output has types.ts, PetsApiClient.ts, and index.ts in expected structure"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 1.2,
+        "tokens": 2800,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "CartCommandClient is generated with addCartItem method",
+          "passed": false,
+          "evidence": "Generated CartApiClient with 'item' method instead of CartCommandClient with 'addCartItem' method"
+        },
+        {
+          "text": "QueryClientFactory is generated for snapshot queries",
+          "passed": false,
+          "evidence": "No QueryClientFactory generated - only CartApiClient with 'single' method"
+        },
+        {
+          "text": "Event query client is generated for event.list_query operations",
+          "passed": false,
+          "evidence": "No event.list_query operation exists in the ecommerce.yaml spec"
+        },
+        {
+          "text": "Generated code uses Wow CQRS patterns correctly",
+          "passed": false,
+          "evidence": "Generated standard API client (CartApiClient) instead of CQRS command/query clients. The generator resolved 0 bounded context aggregates."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 1.2,
+        "tokens": 3200,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Users aggregate command and query clients are generated",
+          "passed": false,
+          "evidence": "UsersApiClient generated for user_service.users tag, but no separate CommandClient or QueryClientFactory. The generator resolved 0 bounded context aggregates."
+        },
+        {
+          "text": "Tenant-based resource attribution is properly configured",
+          "passed": false,
+          "evidence": "No ResourceAttributionPathSpec.TENANT configured. The spec has /tenant/{tenantId}/users path but generated client doesn't use tenant-aware resource attribution."
+        },
+        {
+          "text": ".delete_aggregate operation generates delete method",
+          "passed": true,
+          "evidence": "UsersApiClient has 'aggregate' method that maps to user_service.users.default_delete_aggregate operation"
+        },
+        {
+          "text": ".fetcherrc.json configuration file is created with appropriate settings",
+          "passed": false,
+          "evidence": "No .fetcherrc.json config file was created in the output directory"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.4167,
+        "stddev": 0.5204,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 1.2,
+        "stddev": 0.0,
+        "min": 1.2,
+        "max": 1.2
+      },
+      "tokens": {
+        "mean": 3166.6667,
+        "stddev": 351.1885,
+        "min": 2800,
+        "max": 3500
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.4167,
+        "stddev": 0.5204,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 1.2,
+        "stddev": 0.0,
+        "min": 1.2,
+        "max": 1.2
+      },
+      "tokens": {
+        "mean": 3166.6667,
+        "stddev": 351.1885,
+        "min": 2800,
+        "max": 3500
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "+0.0",
+      "tokens": "+0"
+    }
+  },
+  "notes": []
+}

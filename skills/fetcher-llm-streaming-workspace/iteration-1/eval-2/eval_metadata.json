@@ -1,0 +1,11 @@
+{
+  "eval_id": 2,
+  "eval_name": "react-streaming-ui-real-time",
+  "prompt": "Help me build a streaming LLM client that updates a React UI in real-time as tokens arrive. I want to track progress and show the accumulated response.",
+  "assertions": [
+    "Uses streaming LLM client with event stream processing",
+    "Updates UI incrementally as tokens arrive (not after full response)",
+    "Tracks and displays progress (chunk count or similar)",
+    "Accumulates and displays the full response as it builds"
+  ]
+}

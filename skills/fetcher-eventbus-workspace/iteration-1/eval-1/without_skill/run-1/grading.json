@@ -1,0 +1,70 @@
+{
+  "expectations": [
+    {
+      "text": "Uses BroadcastChannelMessenger from @ahoo-wang/fetcher-eventbus",
+      "passed": false,
+      "evidence": "Code uses native BroadcastChannel API directly, not the @ahoo-wang/fetcher-eventbus package"
+    },
+    {
+      "text": "Demonstrates creating a BroadcastChannelMessenger instance",
+      "passed": false,
+      "evidence": "Uses native BroadcastChannel instead"
+    },
+    {
+      "text": "Shows postMessage or broadcast to send events to other tabs",
+      "passed": true,
+      "evidence": "Code shows: this.channel.postMessage(message)"
+    },
+    {
+      "text": "Shows onmessage handler to receive events from other tabs",
+      "passed": true,
+      "evidence": "Code shows: this.channel.onmessage handler"
+    },
+    {
+      "text": "Demonstrates close() method to clean up",
+      "passed": true,
+      "evidence": "Code shows: this.channel.close()"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  },
+  "execution_metrics": {
+    "tool_calls": {"Read": 1, "Write": 1, "Bash": 0},
+    "total_tool_calls": 2,
+    "total_steps": 3,
+    "errors_encountered": 0,
+    "output_chars": 1100,
+    "transcript_chars": 2900
+  },
+  "timing": {
+    "executor_duration_seconds": 29.8,
+    "grader_duration_seconds": 1.5,
+    "total_duration_seconds": 31.3
+  },
+  "claims": [
+    {
+      "claim": "Native BroadcastChannel used instead of package",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Custom class wraps native API"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Uses BroadcastChannelMessenger from @ahoo-wang/fetcher-eventbus",
+        "reason": "Baseline correctly fails - without the skill, model uses native BroadcastChannel API"
+      }
+    ],
+    "overall": "Baseline uses native API which doesn't meet the package requirement"
+  }
+}

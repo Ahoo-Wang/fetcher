@@ -1,0 +1,13 @@
+{
+  "eval_id": 0,
+  "eval_name": "serial-eventbus-login-flow",
+  "prompt": "Create a SerialTypedEventBus for a login flow with ordered handlers: first handler logs user action, second handler updates analytics. Include type definitions for the events and show how to use on(), emit(), and off() methods.",
+  "assertions": [
+    "Uses SerialTypedEventBus from @ahoo-wang/fetcher-eventbus",
+    "Has ordered handlers with 'order' property (first logs action, second updates analytics)",
+    "Demonstrates on() method to register handlers",
+    "Demonstrates emit() method to trigger events",
+    "Demonstrates off() method to remove handlers",
+    "Includes TypeScript type definitions for events"
+  ]
+}

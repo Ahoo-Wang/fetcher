@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "CartCommandClient is generated with addCartItem method",
+      "passed": false,
+      "evidence": "Generated CartApiClient with 'item' method instead of CartCommandClient with 'addCartItem' method. The generator did not recognize the Wow CQRS pattern despite the skill providing guidance."
+    },
+    {
+      "text": "QueryClientFactory is generated for snapshot queries",
+      "passed": false,
+      "evidence": "No QueryClientFactory generated - only CartApiClient with 'single' method. The bounded context 'ecommerce.cart' was resolved but no command/query client separation was created."
+    },
+    {
+      "text": "Event query client is generated for event.list_query operations",
+      "passed": false,
+      "evidence": "No event.list_query operation exists in the ecommerce.yaml spec, so no event query client was generated"
+    },
+    {
+      "text": "Generated code uses Wow CQRS patterns correctly",
+      "passed": false,
+      "evidence": "Generated standard API client (CartApiClient) instead of CQRS command/query clients. The generator resolved 0 bounded context aggregates despite skill guidance."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Bash": 1
+    },
+    "total_tool_calls": 1,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 2800,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 1.2,
+    "grader_duration_seconds": 0.0,
+    "total_duration_seconds": 1.2
+  }
+}

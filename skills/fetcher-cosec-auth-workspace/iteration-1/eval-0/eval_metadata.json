@@ -1,0 +1,12 @@
+{
+  "eval_id": 0,
+  "eval_name": "CoSec token refresh setup",
+  "prompt": "Set up CoSec authentication for a Fetcher instance with automatic token refresh. Configure SpaceIdProvider with space ID, CompositeToken for JWT storage in localStorage, and CoSecHeaders for auth headers. Show token refresh flow.",
+  "assertions": [
+    "CoSecConfigurer is used with proper configuration",
+    "TokenRefresher is properly configured with refresh function",
+    "JwtTokenManager or TokenStorage is configured for token persistence",
+    "SpaceIdProvider is configured for multi-tenant support",
+    "Headers (CoSec-App-Id, CoSec-Device-Id, Authorization) are added to requests"
+  ]
+}

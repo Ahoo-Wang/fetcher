@@ -1,0 +1,67 @@
+{
+  "expectations": [
+    {
+      "text": "Uses OpenAI client with stream: true option",
+      "passed": true,
+      "evidence": "Code shows: stream: await openai.chat.completions({ ..., stream: true })"
+    },
+    {
+      "text": "Uses for await loop to process streaming chunks",
+      "passed": true,
+      "evidence": "Code shows: for await (const chunk of stream)"
+    },
+    {
+      "text": "Extracts delta content from chat completion chunks",
+      "passed": true,
+      "evidence": "Code shows: const content = chunk.choices[0]?.delta?.content || ''"
+    },
+    {
+      "text": "Processes tokens in real-time (no buffering entire response)",
+      "passed": true,
+      "evidence": "Code shows process.stdout.write(content) inside for await loop - real-time output"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 2,
+      "Write": 3,
+      "Glob": 0,
+      "Grep": 1,
+      "Bash": 0,
+      "Edit": 0
+    },
+    "total_tool_calls": 6,
+    "total_steps": 3,
+    "errors_encountered": 0,
+    "output_chars": 1850,
+    "transcript_chars": 520
+  },
+  "timing": {
+    "executor_duration_seconds": 28.5,
+    "grader_duration_seconds": 5.0,
+    "total_duration_seconds": 33.5
+  },
+  "claims": [
+    {
+      "claim": "Used fetcher-eventstream package",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Import '@ahoo-wang/fetcher-eventstream' found in code"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "All assertions pass. Skill provided comprehensive streaming patterns."
+  }
+}

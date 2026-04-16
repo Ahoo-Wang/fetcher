@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "Generated TypeScript types are properly defined",
+      "passed": true,
+      "evidence": "types.ts contains Pet and PetInput interfaces with proper TypeScript typing including id, name, species, age fields"
+    },
+    {
+      "text": "API client class is generated for pets endpoints",
+      "passed": true,
+      "evidence": "PetsApiClient generated with 4 methods: createPet, deletePet, getPet, listPets covering all /pets endpoints"
+    },
+    {
+      "text": "Generated code compiles without errors",
+      "passed": true,
+      "evidence": "Generator completed successfully with all source files optimized"
+    },
+    {
+      "text": "Output directory structure follows the standard pattern",
+      "passed": true,
+      "evidence": "Output has types.ts, PetsApiClient.ts, and index.ts in expected structure"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Bash": 1
+    },
+    "total_tool_calls": 1,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 3500,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 1.2,
+    "grader_duration_seconds": 0.0,
+    "total_duration_seconds": 1.2
+  }
+}

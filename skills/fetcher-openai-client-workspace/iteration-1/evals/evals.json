@@ -1,0 +1,44 @@
+{
+  "skill_name": "fetcher-openai-client",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a simple Node.js/TypeScript script that uses the @ahoo-wang/fetcher-openai package to send a chat completion request to GPT-3.5-turbo. The script should import OpenAI, create a client with baseURL and apiKey, send a message 'Hello, how are you today?' and log the assistant's response. Use the packages/fetcher-openai directory for the package source.",
+      "expected_output": "A working TypeScript/Node.js script that initializes the OpenAI client and makes a chat completion request",
+      "files": [],
+      "assertions": [
+        "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+        "Initializes OpenAI client with baseURL and apiKey constructor parameters",
+        "Calls chat.completions() method with model and messages",
+        "Logs the assistant's response to console"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Create a streaming chat completion example using @ahoo-wang/fetcher-openai with GPT-4. The script should stream responses in real-time and display each chunk of content as it arrives. Use the eventstream package integration for streaming support. Set up the client and stream a message asking for a short poem about coding.",
+      "expected_output": "A TypeScript script that uses streaming to receive chat completion chunks and prints them in real-time",
+      "files": [],
+      "assertions": [
+        "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+        "Uses stream: true option in chat.completions() call",
+        "Uses for-await-of loop to iterate over streaming chunks",
+        "Displays content from each chunk's choices[0].delta.content in real-time",
+        "Checks for finish_reason to detect stream completion"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Create a script that uses function calling with the OpenAI client. Define a get_weather function tool with location parameter, send a user message asking 'What's the weather in San Francisco?', and handle the tool call by extracting the function name and arguments. Print out which tool was called and the parsed arguments.",
+      "expected_output": "A TypeScript script that demonstrates tool/function calling with the OpenAI client, including tool definition, request sending, and response handling",
+      "files": [],
+      "assertions": [
+        "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+        "Defines a tools array with a function tool of type 'function'",
+        "Tool has name 'get_weather' and location parameter with description",
+        "Sends chat.completions() with tools and tool_choice options",
+        "Checks response.choices[0].message.tool_calls to detect tool call",
+        "Extracts and prints function name and parsed arguments from tool_calls[0]"
+      ]
+    }
+  ]
+}

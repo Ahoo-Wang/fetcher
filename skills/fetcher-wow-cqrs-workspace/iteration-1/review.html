@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "fetcher-wow-cqrs", "runs": [{"id": "eval-0-with_skill", "prompt": "Create a WowCommand and WowQuery pair for a user management domain. The command should create a new user with name and email. The query should fetch user by ID. Use @ahoo-wang/fetcher-wow package.", "eval_id": 0, "outputs": [{"name": "index.ts", "type": "text", "content": "/*\n * User Management - WowCommand & WowQuery\n *\n * This module provides command and query clients for user management\n * using the Wow CQRS/DDD framework.\n */\n\n// Command exports\nexport {\n  UserCommandClient,\n  UserCommandEndpoints,\n  createUserCommand,\n  type CreateUser,\n  type CreateUserCommand,\n} from './userCommand';\n\n// Query exports\nexport {\n  UserQueryClient,\n  UserQueryClientFactory,\n  UserFields,\n  getUserByIdQuery,\n  type UserState,\n  type UserField,\n  type GetUserByIdQuery,\n} from './userQuery';\n"}, {"name": "userCommand.ts", "type": "text", "content": "/*\n * WowCommand for User Management\n * Creates a new user with name and email\n */\n\nimport { Fetcher } from '@ahoo-wang/fetcher';\nimport {\n  CommandClient,\n  CommandRequest,\n  CommandResult,\n  HttpMethod,\n  CommandHttpHeaders,\n  CommandStage,\n} from '@ahoo-wang/fetcher-wow';\n\n/**\n * Command body for creating a new user\n */\nexport interface CreateUser {\n  /**\n   * User's full name\n   */\n  name: string;\n  /**\n   * User's email address\n   */\n  email: string;\n}\n\n/**\n * Command endpoints for user management\n */\nexport const UserCommandEndpoints = {\n  /**\n   * Endpoint for creating a new user\n   */\n  createUser: 'create_user',\n} as const;\n\n/**\n * Type alias for CreateUser command request\n */\nexport type CreateUserCommand = CommandRequest<CreateUser>;\n\n/**\n * Factory function to create a CreateUserCommand\n */\nexport function createUserCommand(\n  name: string,\n  email: string,\n  options?: {\n    ownerId?: string;\n    aggregateId?: string;\n    aggregateVersion?: number;\n    waitStage?: CommandStage;\n  },\n): CreateUserCommand {\n  const headers: Record<string, string> = {\n    [CommandHttpHeaders.WAIT_STAGE]: options?.waitStage ?? CommandStage.PROCESSED,\n  };\n\n  if (options?.ownerId) {\n    headers[CommandHttpHeaders.OWNER_ID] = options.ownerId;\n  }\n\n  if (options?.aggregateId) {\n    headers[CommandHttpHeaders.AGGREGATE_ID] = options.aggregateId;\n  }\n\n  if (options?.aggregateVersion !== undefined) {\n    headers[CommandHttpHeaders.AGGREGATE_VERSION] = String(options.aggregateVersion);\n  }\n\n  return {\n    path: UserCommandEndpoints.createUser,\n    method: HttpMethod.POST,\n    headers,\n    body: {\n      name,\n      email,\n    },\n  };\n}\n\n/**\n * User Command Client\n *\n * Sends commands to modify user aggregate state.\n *\n * @example\n * ```typescript\n * import { Fetcher } from '@ahoo-wang/fetcher';\n * import { UserCommandClient, createUserCommand } from './userCommand';\n *\n * const fetcher = new Fetcher({ baseURL: 'http://localhost:8080/' });\n * const userCommandClient = new UserCommandClient({\n *   fetcher,\n *   basePath: 'owner/{ownerId}/user',\n * });\n *\n * // Create a new user\n * const command = createUserCommand('John Doe', 'john@example.com');\n * const result = await userCommandClient.send(command);\n * console.log('User created:', result.aggregateId);\n * ```\n */\nexport class UserCommandClient extends CommandClient<CreateUser> {\n  constructor(options?: { fetcher: Fetcher; basePath?: string }) {\n    super(options ? { fetcher: options.fetcher, basePath: options.basePath } : undefined);\n  }\n\n  /**\n   * Send a create user command\n   *\n   * @param command - The create user command request\n   * @param attributes - Optional shared attributes for interceptors\n   * @returns Promise resolving to command result\n   */\n  async createUser(\n    command: CreateUserCommand,\n    attributes?: Record<string, any>,\n  ): Promise<CommandResult> {\n    return this.send(command, attributes);\n  }\n}\n"}, {"name": "userQuery.ts", "type": "text", "content": "/*\n * WowQuery for User Management\n * Fetches user by ID\n */\n\nimport { Fetcher } from '@ahoo-wang/fetcher';\nimport {\n  SnapshotQueryClient,\n  QueryClientFactory,\n  ResourceAttributionPathSpec,\n} from '@ahoo-wang/fetcher-wow';\nimport { aggregateId } from '@ahoo-wang/fetcher-wow';\nimport { singleQuery, type SingleQuery } from '@ahoo-wang/fetcher-wow';\n\n/**\n * User state interface representing the aggregate state\n */\nexport interface UserState {\n  /**\n   * User's unique identifier\n   */\n  id: string;\n  /**\n   * User's full name\n   */\n  name: string;\n  /**\n   * User's email address\n   */\n  email: string;\n  /**\n   * Timestamp when the user was created\n   */\n  createdAt: number;\n  /**\n   * Timestamp when the user was last updated\n   */\n  updatedAt: number;\n}\n\n/**\n * User fields for query projection\n */\nexport const UserFields = {\n  ID: 'id',\n  NAME: 'name',\n  EMAIL: 'email',\n  CREATED_AT: 'createdAt',\n  UPDATED_AT: 'updatedAt',\n} as const;\n\nexport type UserField = (typeof UserFields)[keyof typeof UserFields];\n\n/**\n * User Query Client\n *\n * Queries user aggregate snapshots.\n *\n * @example\n * ```typescript\n * import { Fetcher } from '@ahoo-wang/fetcher';\n * import { UserQueryClient, aggregateId } from './userQuery';\n *\n * const fetcher = new Fetcher({ baseURL: 'http://localhost:8080/' });\n * const userQueryClient = new UserQueryClient({\n *   fetcher,\n *   basePath: 'owner/{ownerId}/user',\n * });\n *\n * // Get user by ID\n * const user = await userQueryClient.getStateById('user-123');\n * console.log('User:', user.name, user.email);\n * ```\n */\nexport class UserQueryClient extends SnapshotQueryClient<UserState> {\n  constructor(options?: { fetcher: Fetcher; basePath?: string }) {\n    super(options ? { fetcher: options.fetcher, basePath: options.basePath } : undefined);\n  }\n\n  /**\n   * Get user by ID\n   *\n   * @param id - The user's unique identifier\n   * @param attributes - Optional shared attributes for interceptors\n   * @returns Promise resolving to user state\n   */\n  async getById(\n    id: string,\n    attributes?: Record<string, any>,\n  ): Promise<UserState> {\n    return super.getStateById(id, attributes);\n  }\n}\n\n/**\n * Factory for creating user query clients with shared configuration\n *\n * @example\n * ```typescript\n * import { Fetcher } from '@ahoo-wang/fetcher';\n * import { UserQueryClientFactory } from './userQuery';\n *\n * const fetcher = new Fetcher({ baseURL: 'http://localhost:8080/' });\n * const factory = new UserQueryClientFactory({\n *   fetcher,\n *   contextAlias: 'example',\n *   aggregateName: 'user',\n *   resourceAttribution: ResourceAttributionPathSpec.OWNER,\n * });\n *\n * const userQueryClient = factory.createSnapshotQueryClient();\n * const user = await userQueryClient.getStateById('user-123');\n * ```\n */\nexport class UserQueryClientFactory extends QueryClientFactory<UserState> {\n  constructor(options: {\n    fetcher: Fetcher;\n    contextAlias?: string;\n    aggregateName?: string;\n    resourceAttribution?: ResourceAttributionPathSpec;\n  }) {\n    super({\n      fetcher: options.fetcher,\n      contextAlias: options.contextAlias,\n      aggregateName: options.aggregateName ?? 'user',\n      resourceAttribution: options.resourceAttribution,\n    });\n  }\n}\n\n/**\n * Query options for fetching user by ID\n */\nexport interface GetUserByIdQuery {\n  /**\n   * The user's unique identifier\n   */\n  id: string;\n  /**\n   * Optional fields to include in the response\n   */\n  fields?: UserField[];\n}\n\n/**\n * Create a single query for fetching user by ID\n *\n * @param options - Query options\n * @returns SingleQuery for fetching user\n *\n * @example\n * ```typescript\n * import { UserQueryClient, getUserByIdQuery } from './userQuery';\n *\n * const query = getUserByIdQuery({ id: 'user-123', fields: ['name', 'email'] });\n * const user = await userQueryClient.singleState(query);\n * ```\n */\nexport function getUserByIdQuery(options: GetUserByIdQuery): SingleQuery<UserField> {\n  return singleQuery<UserField>({\n    condition: aggregateId(options.id),\n    fields: options.fields as UserField[],\n  });\n}\n"}], "grading": {"expectations": [{"text": "Uses CommandClient from @ahoo-wang/fetcher-wow", "passed": true, "evidence": "userCommand.ts imports CommandClient from @ahoo-wang/fetcher-wow (line 8)"}, {"text": "Uses SnapshotQueryClient from @ahoo-wang/fetcher-wow", "passed": true, "evidence": "userQuery.ts imports SnapshotQueryClient from @ahoo-wang/fetcher-wow (line 8)"}, {"text": "Command includes proper method (POST) and body structure for creating user", "passed": true, "evidence": "userCommand.ts uses HttpMethod.POST and body includes name and email fields"}, {"text": "Query includes condition builder (eq) for fetching by ID", "passed": true, "evidence": "userQuery.ts uses aggregateId() condition builder for fetching by ID"}, {"text": "Includes proper TypeScript typing for command request and result", "passed": true, "evidence": "userCommand.ts defines CreateUserCommand as CommandRequest<CreateUser>, userQuery.ts has proper UserState interface"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 7044, "transcript_chars": 0}, "timing": {"executor_duration_seconds": 0, "grader_duration_seconds": 0, "total_duration_seconds": 0}, "claims": [], "user_notes_summary": {}, "eval_feedback": {"suggestions": [], "overall": "No suggestions, evals look solid"}}}, {"id": "eval-0-without_skill", "prompt": "Create a WowCommand and WowQuery pair for a user management domain. The command should create a new user with name and email. The query should fetch user by ID. Use @ahoo-wang/fetcher-wow package.", "eval_id": 0, "outputs": [{"name": "user.command.ts", "type": "text", "content": "/**\n * WowCommand for User Management\n *\n * This module defines the CreateUser command using the @ahoo-wang/fetcher-wow package.\n */\n\nimport { CommandClient, CommandRequest, CommandResult } from '@ahoo-wang/fetcher-wow';\nimport { HttpMethod } from '@ahoo-wang/fetcher';\n\n/**\n * Command body for creating a new user\n */\nexport interface CreateUserCommandBody {\n  /**\n   * User's full name\n   */\n  name: string;\n  /**\n   * User's email address\n   */\n  email: string;\n}\n\n/**\n * CreateUser command endpoint paths\n */\nconst CreateUserEndpointPaths = {\n  /**\n   * Command endpoint for creating a user\n   */\n  CREATE_USER: 'user/commands/create',\n} as const;\n\n/**\n * WowCommand client for User management operations\n *\n * This class provides command operations for the User aggregate using the Wow CQRS pattern.\n *\n * @example\n * ```typescript\n * // Create a command client for user management\n * const userCommandClient = new UserCommand({\n *   fetcher: 'wow',\n *   basePath: 'owner/{ownerId}/user'\n * });\n *\n * // Create a new user\n * const createUserRequest: CommandRequest<CreateUserCommandBody> = {\n *   method: HttpMethod.POST,\n *   body: {\n *     name: 'John Doe',\n *     email: 'john@example.com'\n *   }\n * };\n *\n * const result = await userCommandClient.createUser(createUserRequest);\n * console.log('User created:', result);\n * ```\n */\nexport class UserCommand extends CommandClient<CreateUserCommandBody> {\n  /**\n   * Creates a new user\n   *\n   * @param commandRequest - The command request containing user creation data\n   * @param attributes - Optional shared attributes for interceptors\n   * @returns Promise resolving to the command result\n   */\n  async createUser(\n    commandRequest: CommandRequest<CreateUserCommandBody>,\n    attributes?: Record<string, any>,\n  ): Promise<CommandResult> {\n    return this.send(\n      {\n        ...commandRequest,\n        method: HttpMethod.POST,\n      },\n      attributes,\n    );\n  }\n}\n\n/**\n * Factory function to create a UserCommand client instance\n *\n * @param basePath - Base path for the API endpoints\n * @param fetcherName - Optional fetcher name to use\n * @returns A new UserCommand instance\n *\n * @example\n * ```typescript\n * const userCommand = createUserCommand(\n *   'owner/{ownerId}/user',\n *   'wow'\n * );\n *\n * const result = await userCommand.createUser({\n *   method: HttpMethod.POST,\n *   body: {\n *     name: 'John Doe',\n *     email: 'john@example.com'\n *   }\n * });\n * ```\n */\nexport function createUserCommand(\n  basePath: string,\n  fetcherName?: string,\n): UserCommand {\n  return new UserCommand({\n    basePath,\n    fetcher: fetcherName,\n  });\n}\n"}, {"name": "user.query.ts", "type": "text", "content": "/**\n * WowQuery for User Management\n *\n * This module defines the GetUserById query using the @ahoo-wang/fetcher-wow package.\n */\n\nimport {\n  LoadStateAggregateClient,\n  SnapshotQueryClient,\n} from '@ahoo-wang/fetcher-wow';\nimport type { ApiMetadata } from '@ahoo-wang/fetcher-decorator';\n\n/**\n * User aggregate state interface\n */\nexport interface UserState {\n  /**\n   * User's unique identifier\n   */\n  id: string;\n  /**\n   * User's full name\n   */\n  name: string;\n  /**\n   * User's email address\n   */\n  email: string;\n  /**\n   * User creation timestamp\n   */\n  createdAt: number;\n  /**\n   * User last update timestamp\n   */\n  updatedAt: number;\n}\n\n/**\n * UserQuery endpoint paths\n */\nconst UserQueryEndpointPaths = {\n  /**\n   * Query endpoint path for loading user state by ID\n   */\n  LOAD_STATE: '{id}/state',\n} as const;\n\n/**\n * WowQuery client for fetching User aggregates by ID\n *\n * This class provides query operations for the User aggregate using the Wow CQRS pattern.\n *\n * @example\n * ```typescript\n * // Using LoadStateAggregateClient\n * const userQuery = new UserQuery({\n *   fetcher: 'wow',\n *   basePath: 'owner/{ownerId}/user'\n * });\n *\n * // Fetch user by ID\n * const user = await userQuery.getUserById('user-123');\n * console.log('User:', user);\n *\n * // Fetch user at specific version\n * const userAtVersion = await userQuery.getUserVersion('user-123', 5);\n * ```\n */\nexport class UserQuery extends LoadStateAggregateClient<UserState> {\n  /**\n   * Get user by ID\n   *\n   * @param id - User's unique identifier\n   * @param attributes - Optional shared attributes for interceptors\n   * @param abortController - Optional AbortController for cancellation\n   * @returns Promise resolving to the user state\n   */\n  async getUserById(\n    id: string,\n    attributes?: Record<string, any>,\n    abortController?: AbortController,\n  ): Promise<UserState> {\n    return this.load(id, attributes, abortController);\n  }\n\n  /**\n   * Get user at a specific version (optimistic concurrency)\n   *\n   * @param id - User's unique identifier\n   * @param version - Specific version to fetch\n   * @param attributes - Optional shared attributes for interceptors\n   * @param abortController - Optional AbortController for cancellation\n   * @returns Promise resolving to the user state at specified version\n   */\n  async getUserVersion(\n    id: string,\n    version: number,\n    attributes?: Record<string, any>,\n    abortController?: AbortController,\n  ): Promise<UserState> {\n    return this.loadVersioned(id, version, attributes, abortController);\n  }\n\n  /**\n   * Get user state at a specific point in time (time-travel query)\n   *\n   * @param id - User's unique identifier\n   * @param createTime - Timestamp to query the state at\n   * @param attributes - Optional shared attributes for interceptors\n   * @param abortController - Optional AbortController for cancellation\n   * @returns Promise resolving to the user state at the specified time\n   */\n  async getUserAtTime(\n    id: string,\n    createTime: number,\n    attributes?: Record<string, any>,\n    abortController?: AbortController,\n  ): Promise<UserState> {\n    return this.loadTimeBased(id, createTime, attributes, abortController);\n  }\n}\n\n/**\n * Alternative WowQuery using SnapshotQueryClient for more complex queries\n *\n * @example\n * ```typescript\n * // Using SnapshotQueryClient for richer query capabilities\n * const userSnapshotQuery = new UserSnapshotQuery({\n *   fetcher: 'wow',\n *   basePath: 'owner/{ownerId}/user'\n * });\n *\n * // Get user state by ID via snapshot query\n * const user = await userSnapshotQuery.getStateById('user-123');\n * console.log('User from snapshot:', user);\n * ```\n */\nexport class UserSnapshotQuery extends SnapshotQueryClient<UserState> {\n  /**\n   * Get user state by ID using snapshot query\n   *\n   * @param id - User's unique identifier\n   * @param attributes - Optional shared attributes for interceptors\n   * @param abortController - Optional AbortController for cancellation\n   * @returns Promise resolving to the user state\n   */\n  async getStateById(\n    id: string,\n    attributes?: Record<string, any>,\n    abortController?: AbortController,\n  ): Promise<UserState> {\n    return this.getStateById(id, attributes, abortController);\n  }\n}\n\n/**\n * Factory function to create a UserQuery client instance\n *\n * @param options - API metadata options\n * @returns A new UserQuery instance\n *\n * @example\n * ```typescript\n * const userQuery = createUserQuery({\n *   fetcher: 'wow',\n *   basePath: 'owner/{ownerId}/user'\n * });\n *\n * const user = await userQuery.getUserById('user-123');\n * ```\n */\nexport function createUserQuery(options: ApiMetadata): UserQuery {\n  return new UserQuery(options);\n}\n\n/**\n * Factory function to create a UserSnapshotQuery client instance\n *\n * @param options - API metadata options\n * @returns A new UserSnapshotQuery instance\n *\n * @example\n * ```typescript\n * const userSnapshotQuery = createUserSnapshotQuery({\n *   fetcher: 'wow',\n *   basePath: 'owner/{ownerId}/user'\n * });\n *\n * const user = await userSnapshotQuery.getStateById('user-123');\n * ```\n */\nexport function createUserSnapshotQuery(\n  options: ApiMetadata,\n): UserSnapshotQuery {\n  return new UserSnapshotQuery(options);\n}\n"}], "grading": {"expectations": [{"text": "Uses CommandClient from @ahoo-wang/fetcher-wow", "passed": true, "evidence": "user.command.ts imports CommandClient from @ahoo-wang/fetcher-wow (line 7)"}, {"text": "Uses SnapshotQueryClient from @ahoo-wang/fetcher-wow", "passed": true, "evidence": "user.query.ts imports LoadStateAggregateClient and SnapshotQueryClient from @ahoo-wang/fetcher-wow (lines 8-10)"}, {"text": "Command includes proper method (POST) and body structure for creating user", "passed": true, "evidence": "user.command.ts uses HttpMethod.POST with body containing name and email"}, {"text": "Query includes condition builder (eq) for fetching by ID", "passed": false, "evidence": "user.query.ts uses load(id) directly rather than a condition builder like eq() or aggregateId(). The LoadStateAggregateClient.load() method takes ID directly rather than using a QueryDSL condition builder."}, {"text": "Includes proper TypeScript typing for command request and result", "passed": true, "evidence": "user.command.ts has CreateUserCommandBody interface and CommandRequest<CreateUserCommandBody> typing"}], "summary": {"passed": 4, "failed": 1, "total": 5, "pass_rate": 0.8}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 7829, "transcript_chars": 0}, "timing": {"executor_duration_seconds": 0, "grader_duration_seconds": 0, "total_duration_seconds": 0}, "claims": [], "user_notes_summary": {}, "eval_feedback": {"suggestions": [{"assertion": "Query includes condition builder (eq) for fetching by ID", "reason": "The without_skill version uses LoadStateAggregateClient.load(id) which bypasses the QueryDSL condition builder. While functionally correct, it doesn't demonstrate use of the condition builders like eq() or aggregateId()."}], "overall": "The skill version demonstrates proper use of condition builders (aggregateId) while the without_skill version uses a simpler but less sophisticated approach."}}}, {"id": "eval-1-with_skill", "prompt": "Build a complete user aggregate with WowAggregate type that handles CreateUserCommand, UpdateUserCommand, and DeleteUserCommand. Include state management and proper command handling returning WowCommandResult.", "eval_id": 1, "outputs": [{"name": "user-aggregate.ts", "type": "text", "content": "/*\n * Wow CQRS/DDD User Aggregate Implementation\n *\n * This module provides a complete user aggregate implementation with:\n * - WowAggregate type composition\n * - CreateUserCommand, UpdateUserCommand, DeleteUserCommand handling\n * - State management with proper transitions\n * - CommandResult return types\n */\n\nimport type {\n  AggregateId,\n  AggregateNameCapable,\n  CommandId,\n  CommandResult,\n  CommandStage,\n  ErrorInfo,\n  FunctionInfo,\n  NamedBoundedContext,\n  SignalTimeCapable,\n  TenantId,\n} from '@ahoo-wang/fetcher-wow';\nimport { CommandStage } from '@ahoo-wang/fetcher-wow';\n\n// ============================================================================\n// Type Definitions\n// ============================================================================\n\n/**\n * User role enumeration\n */\nexport type UserRole = 'admin' | 'user' | 'moderator';\n\n/**\n * User state interface representing the aggregate state\n */\nexport interface UserState {\n  id: string;\n  name: string;\n  email: string;\n  role: UserRole;\n  displayName?: string;\n  bio?: string;\n  avatarUrl?: string;\n  createdAt: number;\n  updatedAt: number;\n  deleted: boolean;\n}\n\n/**\n * Base command interface with common properties\n */\ninterface BaseCommand {\n  commandId: string;\n  aggregateId: string;\n  tenantId: string;\n  operator: string;\n}\n\n/**\n * CreateUser command - creates a new user aggregate\n */\nexport interface CreateUserCommand extends BaseCommand {\n  commandType: 'CreateUser';\n  name: string;\n  email: string;\n  role: UserRole;\n  displayName?: string;\n}\n\n/**\n * UpdateUserCommand - updates an existing user aggregate\n */\nexport interface UpdateUserCommand extends BaseCommand {\n  commandType: 'UpdateUser';\n  name?: string;\n  email?: string;\n  role?: UserRole;\n  displayName?: string;\n  bio?: string;\n  avatarUrl?: string;\n}\n\n/**\n * DeleteUserCommand - soft deletes a user aggregate\n */\nexport interface DeleteUserCommand extends BaseCommand {\n  commandType: 'DeleteUser';\n}\n\n/**\n * Union type of all user commands\n */\nexport type UserCommand = CreateUserCommand | UpdateUserCommand | DeleteUserCommand;\n\n/**\n * WowAggregate type - composes the necessary interfaces for an aggregate\n *\n * This type represents the complete shape of an aggregate in the Wow framework,\n * combining identity, state management, versioning, and audit fields.\n */\nexport interface WowAggregate<S = any>\n  extends AggregateId,\n    AggregateNameCapable,\n    TenantId,\n    WowAggregateVersioning,\n    WowAggregateTiming,\n    WowAggregateOperators,\n    WowAggregateState<S> {}\n\n/**\n * Aggregate versioning capabilities\n */\nexport interface WowAggregateVersioning {\n  version: number;\n  aggregateVersion?: number;\n}\n\n/**\n * Aggregate timing capabilities\n */\nexport interface WowAggregateTiming {\n  createTime: number;\n  eventTime: number;\n  firstEventTime: number;\n  snapshotTime: number;\n}\n\n/**\n * Aggregate operator tracking\n */\nexport interface WowAggregateOperators {\n  operator: string;\n  firstOperator: string;\n}\n\n/**\n * Aggregate state capability\n */\nexport interface WowAggregateState<S = any> {\n  state: S;\n}\n\n// ============================================================================\n// User Aggregate Implementation\n// ============================================================================\n\n/**\n * UserAggregate - Aggregate root for user entities\n *\n * Handles CreateUser, UpdateUser, and DeleteUser commands\n * and maintains the UserState through command processing.\n */\nexport class UserAggregate implements WowAggregate<UserState> {\n  // AggregateId properties\n  tenantId: string;\n  contextName: string;\n  aggregateName: string;\n  aggregateId: string;\n\n  // State\n  state: UserState;\n\n  // Versioning\n  version: number = 0;\n  aggregateVersion?: number;\n\n  // Timing\n  createTime: number;\n  eventTime: number;\n  firstEventTime: number;\n  snapshotTime: number;\n\n  // Operators\n  operator: string;\n  firstOperator: string;\n\n  constructor(params: {\n    tenantId: string;\n    contextName?: string;\n    aggregateName?: string;\n    aggregateId?: string;\n    operator?: string;\n  }) {\n    this.tenantId = params.tenantId;\n    this.contextName = params.contextName ?? 'user-context';\n    this.aggregateName = params.aggregateName ?? 'User';\n    this.aggregateId = params.aggregateId ?? crypto.randomUUID();\n    this.operator = params.operator ?? 'system';\n    this.firstOperator = this.operator;\n\n    const now = Date.now();\n    this.createTime = now;\n    this.eventTime = now;\n    this.firstEventTime = now;\n    this.snapshotTime = now;\n\n    // Initialize empty state\n    this.state = this.createEmptyState();\n  }\n\n  /**\n   * Creates an empty initial state\n   */\n  private createEmptyState(): UserState {\n    return {\n      id: this.aggregateId,\n      name: '',\n      email: '',\n      role: 'user',\n      displayName: undefined,\n      bio: undefined,\n      avatarUrl: undefined,\n      createdAt: this.createTime,\n      updatedAt: this.createTime,\n      deleted: false,\n    };\n  }\n\n  /**\n   * Handle CreateUserCommand - initializes a new user\n   */\n  handleCreateUser(command: CreateUserCommand): CommandResult {\n    // Validation\n    if (!command.name || command.name.length < 2) {\n      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Name must be at least 2 characters');\n    }\n    if (!command.email || !this.isValidEmail(command.email)) {\n      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Valid email is required');\n    }\n    if (!['admin', 'user', 'moderator'].includes(command.role)) {\n      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Invalid role');\n    }\n\n    // Apply state changes\n    this.state = {\n      ...this.state,\n      id: this.aggregateId,\n      name: command.name,\n      email: command.email,\n      role: command.role,\n      displayName: command.displayName,\n      createdAt: this.eventTime,\n      updatedAt: this.eventTime,\n      deleted: false,\n    };\n\n    this.operator = command.operator;\n    this.version++;\n    this.eventTime = Date.now();\n\n    return this.createSuccessResult(command, CommandStage.PROCESSED, {\n      id: this.state.id,\n      name: this.state.name,\n      email: this.state.email,\n      role: this.state.role,\n    });\n  }\n\n  /**\n   * Handle UpdateUserCommand - updates existing user state\n   */\n  handleUpdateUser(command: UpdateUserCommand): CommandResult {\n    // Cannot update a deleted user\n    if (this.state.deleted) {\n      return this.createErrorResult(command, 'INVALID_STATE', 'Cannot update a deleted user');\n    }\n\n    // Validate email if provided\n    if (command.email && !this.isValidEmail(command.email)) {\n      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Invalid email format');\n    }\n\n    // Validate name if provided\n    if (command.name && command.name.length < 2) {\n      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Name must be at least 2 characters');\n    }\n\n    // Validate role if provided\n    if (command.role && !['admin', 'user', 'moderator'].includes(command.role)) {\n      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Invalid role');\n    }\n\n    // Apply state changes\n    this.state = {\n      ...this.state,\n      name: command.name ?? this.state.name,\n      email: command.email ?? this.state.email,\n      role: command.role ?? this.state.role,\n      displayName: command.displayName ?? this.state.displayName,\n      bio: command.bio ?? this.state.bio,\n      avatarUrl: command.avatarUrl ?? this.state.avatarUrl,\n      updatedAt: Date.now(),\n    };\n\n    this.operator = command.operator;\n    this.version++;\n    this.eventTime = Date.now();\n\n    return this.createSuccessResult(command, CommandStage.PROCESSED, {\n      id: this.state.id,\n      name: this.state.name,\n      email: this.state.email,\n      role: this.state.role,\n      updatedAt: this.state.updatedAt,\n    });\n  }\n\n  /**\n   * Handle DeleteUserCommand - soft deletes the user\n   */\n  handleDeleteUser(command: DeleteUserCommand): CommandResult {\n    // Cannot delete an already deleted user\n    if (this.state.deleted) {\n      return this.createErrorResult(command, 'INVALID_STATE', 'User is already deleted');\n    }\n\n    // Apply soft delete\n    this.state = {\n      ...this.state,\n      deleted: true,\n      updatedAt: Date.now(),\n    };\n\n    this.operator = command.operator;\n    this.version++;\n    this.eventTime = Date.now();\n\n    return this.createSuccessResult(command, CommandStage.PROCESSED, {\n      id: this.state.id,\n      deleted: true,\n    });\n  }\n\n  /**\n   * Dispatch command to appropriate handler based on command type\n   */\n  dispatch(command: UserCommand): CommandResult {\n    switch (command.commandType) {\n      case 'CreateUser':\n        return this.handleCreateUser(command);\n      case 'UpdateUser':\n        return this.handleUpdateUser(command);\n      case 'DeleteUser':\n        return this.handleDeleteUser(command);\n      default:\n        return this.createErrorResult(\n          command as CreateUserCommand,\n          'UNKNOWN_COMMAND',\n          `Unknown command type: ${(command as any).commandType}`\n        );\n    }\n  }\n\n  /**\n   * Check if the aggregate is in a valid state for the given command\n   */\n  canHandle(command: UserCommand): boolean {\n    if (this.tenantId !== command.tenantId) {\n      return false;\n    }\n    return true;\n  }\n\n  /**\n   * Create a success result\n   */\n  private createSuccessResult(\n    command: BaseCommand,\n    stage: CommandStage,\n    result: Record<string, any>\n  ): CommandResult {\n    const functionInfo: FunctionInfo = {\n      contextName: this.contextName,\n      name: command.commandType,\n      functionKind: 'COMMAND',\n      processorName: 'UserAggregate',\n    };\n\n    return {\n      id: crypto.randomUUID(),\n      waitCommandId: command.commandId,\n      commandId: command.commandId,\n      requestId: crypto.randomUUID(),\n      aggregateId: this.aggregateId,\n      tenantId: this.tenantId,\n      contextName: this.contextName,\n      aggregateName: this.aggregateName,\n      stage,\n      errorCode: 'Ok',\n      errorMsg: '',\n      function: functionInfo,\n      signalTime: Date.now(),\n      aggregateVersion: this.version,\n      result,\n    };\n  }\n\n  /**\n   * Create an error result\n   */\n  private createErrorResult(\n    command: BaseCommand,\n    errorCode: string,\n    errorMsg: string\n  ): CommandResult {\n    const functionInfo: FunctionInfo = {\n      contextName: this.contextName,\n      name: command.commandType,\n      functionKind: 'COMMAND',\n      processorName: 'UserAggregate',\n    };\n\n    return {\n      id: crypto.randomUUID(),\n      waitCommandId: command.commandId,\n      commandId: command.commandId,\n      requestId: crypto.randomUUID(),\n      aggregateId: this.aggregateId,\n      tenantId: this.tenantId,\n      contextName: this.contextName,\n      aggregateName: this.aggregateName,\n      stage: CommandStage.SENT,\n      errorCode,\n      errorMsg,\n      function: functionInfo,\n      signalTime: Date.now(),\n      aggregateVersion: this.version,\n      result: {},\n    };\n  }\n\n  /**\n   * Validate email format\n   */\n  private isValidEmail(email: string): boolean {\n    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n    return emailRegex.test(email);\n  }\n}\n\n// ============================================================================\n// Command Builder\n// ============================================================================\n\n/**\n * UserCommandBuilder - Factory for creating typed user commands\n */\nexport class UserCommandBuilder {\n  private tenantId: string;\n  private operator: string;\n\n  constructor(tenantId: string, operator: string = 'system') {\n    this.tenantId = tenantId;\n    this.operator = operator;\n  }\n\n  /**\n   * Build a CreateUserCommand\n   */\n  buildCreateUserCommand(params: {\n    aggregateId?: string;\n    name: string;\n    email: string;\n    role: UserRole;\n    displayName?: string;\n  }): CreateUserCommand {\n    return {\n      commandType: 'CreateUser',\n      commandId: crypto.randomUUID(),\n      aggregateId: params.aggregateId ?? crypto.randomUUID(),\n      tenantId: this.tenantId,\n      operator: this.operator,\n      name: params.name,\n      email: params.email,\n      role: params.role,\n      displayName: params.displayName,\n    };\n  }\n\n  /**\n   * Build an UpdateUserCommand\n   */\n  buildUpdateUserCommand(params: {\n    aggregateId: string;\n    name?: string;\n    email?: string;\n    role?: UserRole;\n    displayName?: string;\n    bio?: string;\n    avatarUrl?: string;\n  }): UpdateUserCommand {\n    return {\n      commandType: 'UpdateUser',\n      commandId: crypto.randomUUID(),\n      aggregateId: params.aggregateId,\n      tenantId: this.tenantId,\n      operator: this.operator,\n      name: params.name,\n      email: params.email,\n      role: params.role,\n      displayName: params.displayName,\n      bio: params.bio,\n      avatarUrl: params.avatarUrl,\n    };\n  }\n\n  /**\n   * Build a DeleteUserCommand\n   */\n  buildDeleteUserCommand(aggregateId: string): DeleteUserCommand {\n    return {\n      commandType: 'DeleteUser',\n      commandId: crypto.randomUUID(),\n      aggregateId,\n      tenantId: this.tenantId,\n      operator: this.operator,\n    };\n  }\n}\n\n// ============================================================================\n// Exports\n// ============================================================================\n\nexport {\n  type UserState,\n  type CreateUserCommand,\n  type UpdateUserCommand,\n  type DeleteUserCommand,\n  type UserCommand,\n  type WowAggregate,\n  UserAggregate,\n  UserCommandBuilder,\n};\n"}], "grading": {"expectations": [{"text": "Defines WowAggregate type for user aggregate", "passed": true, "evidence": "user-aggregate.ts defines WowAggregate interface (lines 102-142) and UserAggregate class implements it (line 154)"}, {"text": "Handles CreateUserCommand with proper state creation", "passed": true, "evidence": "handleCreateUser method at lines 222-258 validates input and creates initial UserState"}, {"text": "Handles UpdateUserCommand with state transitions", "passed": true, "evidence": "handleUpdateUser method at lines 260-306 handles state transitions with validation"}, {"text": "Handles DeleteUserCommand with proper deletion", "passed": true, "evidence": "handleDeleteUser method at lines 309-333 implements soft delete by setting deleted: true"}, {"text": "Returns WowCommandResult from command handlers", "passed": true, "evidence": "All handlers return CommandResult type - see createSuccessResult (lines 368-397) and createErrorResult (lines 402-431)"}, {"text": "Includes TypeScript typing for commands and state", "passed": true, "evidence": "Complete TypeScript interfaces: UserState, CreateUserCommand, UpdateUserCommand, DeleteUserCommand, UserCommand union type, WowAggregate<S> interface"}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 13447, "transcript_chars": 0}, "timing": {"executor_duration_seconds": 0, "grader_duration_seconds": 0, "total_duration_seconds": 0}, "claims": [], "user_notes_summary": {}, "eval_feedback": {"suggestions": [], "overall": "No suggestions, evals look solid. Comprehensive implementation with proper DDD patterns."}}}, {"id": "eval-1-without_skill", "prompt": "Build a complete user aggregate with WowAggregate type that handles CreateUserCommand, UpdateUserCommand, and DeleteUserCommand. Include state management and proper command handling returning WowCommandResult.", "eval_id": 1, "outputs": [{"name": "index.ts", "type": "text", "content": "/*\n * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *      http://www.apache.org/licenses/LICENSE-2.0\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\n// User State\nexport type { UserState } from './userAggregate';\n\n// Commands\nexport type {\n  CreateUserCommand,\n  UpdateUserCommand,\n  DeleteUserCommand,\n} from './userAggregate';\n\n// Result\nexport type { UserResult } from './userAggregate';\n\n// Aggregate\nexport {\n  UserAggregate,\n  createUserAggregate,\n  restoreUserAggregate,\n} from './userAggregate';\n"}, {"name": "userAggregate.ts", "type": "text", "content": "/*\n * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *      http://www.apache.org/licenses/LICENSE-2.0\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\nimport type {\n  AggregateId,\n  AggregateIdCapable,\n  AggregateNameCapable,\n  CommandResult,\n  ErrorInfo,\n  FunctionInfo,\n  FunctionInfoCapable,\n  Identifier,\n  NamedBoundedContext,\n  StateCapable,\n  TenantId,\n  Version,\n} from '@ahoo-wang/fetcher-wow';\nimport {\n  CommandStage,\n  ErrorCodes,\n} from '@ahoo-wang/fetcher-wow';\n\n/**\n * User aggregate state interface\n */\nexport interface UserState extends Version, TenantId {\n  id: string;\n  username: string;\n  email: string;\n  passwordHash: string;\n  createdAt: number;\n  updatedAt: number;\n  deleted: boolean;\n}\n\n/**\n * CreateUserCommand - Command to create a new user\n */\nexport interface CreateUserCommand extends TenantId {\n  username: string;\n  email: string;\n  password: string;\n}\n\n/**\n * UpdateUserCommand - Command to update an existing user\n */\nexport interface UpdateUserCommand extends AggregateId {\n  username?: string;\n  email?: string;\n  password?: string;\n}\n\n/**\n * DeleteUserCommand - Command to delete a user\n */\nexport interface DeleteUserCommand extends AggregateId {}\n\n/**\n * User aggregate result interface\n */\nexport interface UserResult {\n  userId?: string;\n  username?: string;\n  email?: string;\n  createdAt?: number;\n}\n\n/**\n * WowCommandResult factory function\n */\nfunction createCommandResult(\n  id: string,\n  boundedContext: string,\n  aggregateName: string,\n  aggregateId: AggregateId & TenantId,\n  commandId: string,\n  requestId: string,\n  stage: CommandStage,\n  result: Record<string, any>,\n  aggregateVersion?: number,\n  errorInfo: ErrorInfo = { errorCode: ErrorCodes.SUCCEEDED, errorMsg: ErrorCodes.SUCCEEDED_MESSAGE },\n  functionInfo?: FunctionInfo\n): CommandResult {\n  return {\n    id,\n    boundedContext,\n    aggregateName,\n    aggregateId: aggregateId.aggregateId,\n    aggregateVersion,\n    commandId,\n    requestId,\n    stage,\n    result,\n    tenantId: aggregateId.tenantId,\n    errorCode: errorInfo.errorCode,\n    errorMsg: errorInfo.errorMsg,\n    bindingErrors: errorInfo.bindingErrors,\n    function: functionInfo,\n  } as CommandResult;\n}\n\n/**\n * User aggregate class implementing WowAggregate pattern\n */\nexport class UserAggregate implements\n  AggregateNameCapable,\n  AggregateIdCapable,\n  StateCapable<UserState>,\n  FunctionInfoCapable {\n\n  readonly aggregateName: string = 'User';\n  readonly boundedContext: string = 'user-service';\n  state!: UserState;\n  function!: FunctionInfo;\n\n  private version: number = 0;\n\n  constructor(\n    private readonly aggregateId: AggregateId & TenantId,\n    initialState?: UserState\n  ) {\n    if (initialState) {\n      this.state = initialState;\n      this.version = initialState.version ?? 0;\n    } else {\n      this.state = this.createInitialState();\n    }\n  }\n\n  private createInitialState(): UserState {\n    return {\n      id: this.aggregateId.aggregateId.id,\n      version: 0,\n      tenantId: this.aggregateId.tenantId,\n      username: '',\n      email: '',\n      passwordHash: '',\n      createdAt: 0,\n      updatedAt: 0,\n      deleted: false,\n    };\n  }\n\n  /**\n   * Handle CreateUserCommand\n   */\n  handleCreateUserCommand(\n    command: CreateUserCommand,\n    commandId: string,\n    requestId: string\n  ): CommandResult {\n    const now = Date.now();\n\n    // Validate command\n    const validationError = this.validateCreateCommand(command);\n    if (validationError) {\n      return createCommandResult(\n        this.aggregateId.aggregateId.id,\n        this.boundedContext,\n        this.aggregateName,\n        this.aggregateId,\n        commandId,\n        requestId,\n        CommandStage.PROCESSED,\n        {},\n        this.version,\n        validationError,\n        this.function\n      );\n    }\n\n    // Check if user already exists (non-deleted)\n    if (this.state.username || this.state.email) {\n      return createCommandResult(\n        this.aggregateId.aggregateId.id,\n        this.boundedContext,\n        this.aggregateName,\n        this.aggregateId,\n        commandId,\n        requestId,\n        CommandStage.PROCESSED,\n        {},\n        this.version,\n        {\n          errorCode: ErrorCodes.ILLEGAL_STATE,\n          errorMsg: 'User already exists',\n        },\n        this.function\n      );\n    }\n\n    // Apply state changes\n    this.state = {\n      ...this.state,\n      username: command.username,\n      email: command.email,\n      passwordHash: this.hashPassword(command.password),\n      createdAt: now,\n      updatedAt: now,\n      deleted: false,\n    };\n    this.version++;\n\n    const result: UserResult = {\n      userId: this.state.id,\n      username: this.state.username,\n      email: this.state.email,\n      createdAt: this.state.createdAt,\n    };\n\n    return createCommandResult(\n      this.aggregateId.aggregateId.id,\n      this.boundedContext,\n      this.aggregateName,\n      this.aggregateId,\n      commandId,\n      requestId,\n      CommandStage.PROCESSED,\n      result,\n      this.version,\n      undefined,\n      this.function\n    );\n  }\n\n  /**\n   * Handle UpdateUserCommand\n   */\n  handleUpdateUserCommand(\n    command: UpdateUserCommand,\n    commandId: string,\n    requestId: string\n  ): CommandResult {\n    // Validate aggregate is not deleted\n    if (this.state.deleted) {\n      return createCommandResult(\n        this.aggregateId.aggregateId.id,\n        this.boundedContext,\n        this.aggregateName,\n        this.aggregateId,\n        commandId,\n        requestId,\n        CommandStage.PROCESSED,\n        {},\n        this.version,\n        {\n          errorCode: ErrorCodes.ILLEGAL_ACCESS_DELETED_AGGREGATE,\n          errorMsg: 'Cannot update deleted user',\n        },\n        this.function\n      );\n    }\n\n    // Validate command\n    const validationError = this.validateUpdateCommand(command);\n    if (validationError) {\n      return createCommandResult(\n        this.aggregateId.aggregateId.id,\n        this.boundedContext,\n        this.aggregateName,\n        this.aggregateId,\n        commandId,\n        requestId,\n        CommandStage.PROCESSED,\n        {},\n        this.version,\n        validationError,\n        this.function\n      );\n    }\n\n    // Apply state changes\n    const now = Date.now();\n    if (command.username !== undefined) {\n      this.state.username = command.username;\n    }\n    if (command.email !== undefined) {\n      this.state.email = command.email;\n    }\n    if (command.password !== undefined) {\n      this.state.passwordHash = this.hashPassword(command.password);\n    }\n    this.state.updatedAt = now;\n    this.version++;\n\n    const result: UserResult = {\n      userId: this.state.id,\n      username: this.state.username,\n      email: this.state.email,\n    };\n\n    return createCommandResult(\n      this.aggregateId.aggregateId.id,\n      this.boundedContext,\n      this.aggregateName,\n      this.aggregateId,\n      commandId,\n      requestId,\n      CommandStage.PROCESSED,\n      result,\n      this.version,\n      undefined,\n      this.function\n    );\n  }\n\n  /**\n   * Handle DeleteUserCommand\n   */\n  handleDeleteUserCommand(\n    command: DeleteUserCommand,\n    commandId: string,\n    requestId: string\n  ): CommandResult {\n    // Validate aggregate is not already deleted\n    if (this.state.deleted) {\n      return createCommandResult(\n        this.aggregateId.aggregateId.id,\n        this.boundedContext,\n        this.aggregateName,\n        this.aggregateId,\n        commandId,\n        requestId,\n        CommandStage.PROCESSED,\n        {},\n        this.version,\n        {\n          errorCode: ErrorCodes.ILLEGAL_STATE,\n          errorMsg: 'User already deleted',\n        },\n        this.function\n      );\n    }\n\n    // Soft delete\n    this.state.deleted = true;\n    this.state.updatedAt = Date.now();\n    this.version++;\n\n    return createCommandResult(\n      this.aggregateId.aggregateId.id,\n      this.boundedContext,\n      this.aggregateName,\n      this.aggregateId,\n      commandId,\n      requestId,\n      CommandStage.PROCESSED,\n      { userId: this.state.id, deleted: true },\n      this.version,\n      undefined,\n      this.function\n    );\n  }\n\n  /**\n   * Dispatch command to appropriate handler\n   */\n  dispatch(command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand, commandId: string, requestId: string): CommandResult {\n    if (this.isCreateUserCommand(command)) {\n      return this.handleCreateUserCommand(command, commandId, requestId);\n    }\n    if (this.isUpdateUserCommand(command)) {\n      return this.handleUpdateUserCommand(command, commandId, requestId);\n    }\n    if (this.isDeleteUserCommand(command)) {\n      return this.handleDeleteUserCommand(command, commandId, requestId);\n    }\n    return createCommandResult(\n      this.aggregateId.aggregateId.id,\n      this.boundedContext,\n      this.aggregateName,\n      this.aggregateId,\n      commandId,\n      requestId,\n      CommandStage.PROCESSED,\n      {},\n      this.version,\n      {\n        errorCode: ErrorCodes.BAD_REQUEST,\n        errorMsg: 'Unknown command type',\n      },\n      this.function\n    );\n  }\n\n  private isCreateUserCommand(command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand): command is CreateUserCommand {\n    return 'username' in command && 'email' in command && 'password' in command && !('aggregateId' in command);\n  }\n\n  private isUpdateUserCommand(command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand): command is UpdateUserCommand {\n    return 'aggregateId' in command && !('deleted' in command);\n  }\n\n  private isDeleteUserCommand(command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand): command is DeleteUserCommand {\n    return 'aggregateId' in command && 'deleted' in command;\n  }\n\n  private validateCreateCommand(command: CreateUserCommand): ErrorInfo | undefined {\n    if (!command.username || command.username.trim().length === 0) {\n      return {\n        errorCode: ErrorCodes.COMMAND_VALIDATION,\n        errorMsg: 'Username is required',\n      };\n    }\n    if (command.username.length < 3 || command.username.length > 50) {\n      return {\n        errorCode: ErrorCodes.COMMAND_VALIDATION,\n        errorMsg: 'Username must be between 3 and 50 characters',\n      };\n    }\n    if (!command.email || command.email.trim().length === 0) {\n      return {\n        errorCode: ErrorCodes.COMMAND_VALIDATION,\n        errorMsg: 'Email is required',\n      };\n    }\n    if (!this.isValidEmail(command.email)) {\n      return {\n        errorCode: ErrorCodes.COMMAND_VALIDATION,\n        errorMsg: 'Invalid email format',\n      };\n    }\n    if (!command.password || command.password.length < 8) {\n      return {\n        errorCode: ErrorCodes.COMMAND_VALIDATION,\n        errorMsg: 'Password must be at least 8 characters',\n      };\n    }\n    return undefined;\n  }\n\n  private validateUpdateCommand(command: UpdateUserCommand): ErrorInfo | undefined {\n    if (command.username !== undefined) {\n      if (command.username.trim().length === 0) {\n        return {\n          errorCode: ErrorCodes.COMMAND_VALIDATION,\n          errorMsg: 'Username cannot be empty',\n        };\n      }\n      if (command.username.length < 3 || command.username.length > 50) {\n        return {\n          errorCode: ErrorCodes.COMMAND_VALIDATION,\n          errorMsg: 'Username must be between 3 and 50 characters',\n        };\n      }\n    }\n    if (command.email !== undefined) {\n      if (!this.isValidEmail(command.email)) {\n        return {\n          errorCode: ErrorCodes.COMMAND_VALIDATION,\n          errorMsg: 'Invalid email format',\n        };\n      }\n    }\n    if (command.password !== undefined && command.password.length < 8) {\n      return {\n        errorCode: ErrorCodes.COMMAND_VALIDATION,\n        errorMsg: 'Password must be at least 8 characters',\n      };\n    }\n    return undefined;\n  }\n\n  private isValidEmail(email: string): boolean {\n    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n    return emailRegex.test(email);\n  }\n\n  private hashPassword(password: string): string {\n    // In production, use a proper hashing algorithm like bcrypt\n    // This is a placeholder implementation\n    let hash = 0;\n    for (let i = 0; i < password.length; i++) {\n      const char = password.charCodeAt(i);\n      hash = ((hash << 5) - hash) + char;\n      hash = hash & hash;\n    }\n    return `hash_${Math.abs(hash).toString(16)}`;\n  }\n\n  get aggregateIdValue(): AggregateId {\n    return this.aggregateId.aggregateId;\n  }\n\n  get versionValue(): number {\n    return this.version;\n  }\n}\n\n/**\n * User aggregate factory for creating new user aggregates\n */\nexport function createUserAggregate(tenantId: string, userId?: string): UserAggregate {\n  const id = userId || crypto.randomUUID();\n  return new UserAggregate({\n    tenantId,\n    aggregateId: {\n      id,\n      aggregateName: 'User',\n      boundedContext: 'user-service',\n    },\n  });\n}\n\n/**\n * Restore user aggregate from state\n */\nexport function restoreUserAggregate(state: UserState): UserAggregate {\n  const aggregate = new UserAggregate({\n    tenantId: state.tenantId,\n    aggregateId: {\n      id: state.id,\n      aggregateName: 'User',\n      boundedContext: 'user-service',\n    },\n  }, state);\n  return aggregate;\n}\n"}], "grading": {"expectations": [{"text": "Defines WowAggregate type for user aggregate", "passed": true, "evidence": "userAggregate.ts defines UserAggregate class implementing AggregateNameCapable, AggregateIdCapable, StateCapable, FunctionInfoCapable interfaces (lines 116-120)"}, {"text": "Handles CreateUserCommand with proper state creation", "passed": true, "evidence": "handleCreateUserCommand method at lines 158-235 validates and creates initial state"}, {"text": "Handles UpdateUserCommand with state transitions", "passed": true, "evidence": "handleUpdateUserCommand method at lines 240-316 handles state transitions with validation"}, {"text": "Handles DeleteUserCommand with proper deletion", "passed": true, "evidence": "handleDeleteUserCommand method at lines 321-364 implements soft delete"}, {"text": "Returns WowCommandResult from command handlers", "passed": true, "evidence": "All handlers return CommandResult via createCommandResult factory function"}, {"text": "Includes TypeScript typing for commands and state", "passed": true, "evidence": "Complete interfaces: UserState, CreateUserCommand, UpdateUserCommand, DeleteUserCommand, UserResult"}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 13626, "transcript_chars": 0}, "timing": {"executor_duration_seconds": 0, "grader_duration_seconds": 0, "total_duration_seconds": 0}, "claims": [], "user_notes_summary": {}, "eval_feedback": {"suggestions": [], "overall": "No suggestions, evals look solid. Both with_skill and without_skill produced comprehensive implementations."}}}, {"id": "eval-2-with_skill", "prompt": "Create a fetcher-based WowTransport that sends commands and queries to a Wow CQRS backend at https://api.example.com/wow. Show how to configure the transport with baseURL and handle the response types.", "eval_id": 2, "outputs": [{"name": "wow-transport-examples.ts", "type": "text", "content": "/*\n * WowTransport Usage Examples\n *\n * This file demonstrates comprehensive usage patterns for the WowTransport class,\n * including command sending, query operations, streaming, and type handling.\n * All examples assume a backend at https://api.example.com/wow\n */\n\nimport {\n  WowTransport,\n  createWowTransport,\n  type WowCommandResponse,\n  type WowQueryResponse,\n  type WowTransportOptions,\n  CommandStage,\n} from './wow-transport';\nimport type {\n  CommandResult,\n  AggregateId,\n  AggregateNameCapable,\n  ErrorInfo,\n} from '@ahoo-wang/fetcher-wow';\n\n// =============================================================================\n// Domain Type Definitions\n// =============================================================================\n\n/**\n * Example: Shopping Cart Command Types\n *\n * Commands represent intent to change state. Each command should be\n * a simple data object with the necessary payload for the aggregate\n * to process the command.\n */\ninterface AddCartItemCommand {\n  productId: string;\n  quantity: number;\n  price: number;\n}\n\ninterface RemoveCartItemCommand {\n  productId: string;\n}\n\ninterface UpdateCartItemQuantityCommand {\n  productId: string;\n  newQuantity: number;\n}\n\ninterface CheckoutCommand {\n  paymentMethod: string;\n  shippingAddress: string;\n  couponCode?: string;\n}\n\ninterface ClearCartCommand {}\n\n/**\n * Example: Shopping Cart State Type\n *\n * Represents the read model for a shopping cart aggregate.\n * This is the state that gets snapshotted and queried.\n */\ninterface CartState {\n  id: string;\n  items: CartItem[];\n  totalAmount: number;\n  status: 'ACTIVE' | 'CHECKED_OUT' | 'ABANDONED';\n  createdAt: number;\n  updatedAt: number;\n  checkedOutAt?: number;\n}\n\ninterface CartItem {\n  productId: string;\n  productName: string;\n  quantity: number;\n  price: number;\n  subtotal: number;\n}\n\n/**\n * Example: Domain Events\n *\n * Events are emitted by aggregates when processing commands.\n * They represent facts that have happened and are immutable.\n */\ninterface CartItemAddedEvent {\n  eventType: 'CartItemAdded';\n  cartId: string;\n  productId: string;\n  quantity: number;\n  price: number;\n  timestamp: number;\n}\n\ninterface CartItemRemovedEvent {\n  eventType: 'CartItemRemoved';\n  cartId: string;\n  productId: string;\n  timestamp: number;\n}\n\ninterface CartCheckedOutEvent {\n  eventType: 'CartCheckedOut';\n  cartId: string;\n  orderId: string;\n  paymentMethod: string;\n  shippingAddress: string;\n  totalAmount: number;\n  timestamp: number;\n}\n\ninterface CartClearedEvent {\n  eventType: 'CartCleared';\n  cartId: string;\n  timestamp: number;\n}\n\ntype CartDomainEvent =\n  | CartItemAddedEvent\n  | CartItemRemovedEvent\n  | CartCheckedOutEvent\n  | CartClearedEvent;\n\n// =============================================================================\n// Example 1: Basic Transport Creation\n// =============================================================================\n\n/**\n * Demonstrates different ways to create a WowTransport instance.\n */\nfunction example1_BasicCreation(): void {\n  // Option 1: Using constructor with all options\n  const transport1 = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n    tenantId: 'tenant-123',\n    ownerId: 'owner-456',\n    spaceId: 'space-789',\n    timeout: 30000,\n    defaultWaitStage: CommandStage.SNAPSHOT,\n    defaultWaitTimeout: 15000,\n  });\n\n  // Option 2: Using constructor with minimal options\n  const transport2 = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  // Option 3: Using factory function\n  const transport3 = createWowTransport({\n    baseURL: 'https://api.example.com/wow',\n    tenantId: 'tenant-123',\n  });\n\n  // Option 4: Using default configuration\n  const transport4 = new WowTransport();\n\n  console.log('Created transports with base URLs:', [\n    transport1.getBaseURL(),\n    transport2.getBaseURL(),\n    transport3.getBaseURL(),\n    transport4.getBaseURL(),\n  ]);\n}\n\n// =============================================================================\n// Example 2: Sending a Simple Command\n// =============================================================================\n\n/**\n * Demonstrates sending a basic command to add an item to a cart.\n */\nasync function example2_SendSimpleCommand(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n    tenantId: 'shop-tenant',\n  });\n\n  // Send a command to add an item to the cart\n  // The aggregate ID will be generated by the backend if not specified\n  const result = await transport.sendCommand<AddCartItemCommand>(\n    'AddCartItem', // Command name - maps to aggregate command handler\n    {\n      productId: 'product-123',\n      quantity: 2,\n      price: 29.99,\n    },\n  );\n\n  // Handle the response\n  if (result.success) {\n    // Access the command result data\n    const commandResult: CommandResult = result.data;\n    console.log('Command ID:', commandResult.commandId);\n    console.log('Request ID:', commandResult.requestId);\n    console.log('Aggregate ID:', commandResult.aggregateId);\n    console.log('New Aggregate Version:', commandResult.aggregateVersion);\n    console.log('Command Stage:', commandResult.stage);\n\n    // Access command result if any\n    if (commandResult.result) {\n      console.log('Command Result:', commandResult.result);\n    }\n\n    // Check for command-level errors\n    if ((commandResult as any).error) {\n      console.error('Command error:', (commandResult as any).error);\n    }\n  } else {\n    // Handle failure\n    console.error(`Error ${result.error?.code}: ${result.error?.message}`);\n    if (result.error?.details) {\n      console.error('Details:', result.error.details);\n    }\n  }\n}\n\n// =============================================================================\n// Example 3: Sending a Command with Aggregate Targeting\n// =============================================================================\n\n/**\n * Demonstrates targeting a specific aggregate instance with a command.\n * This is necessary when you want to act on an existing aggregate.\n */\nasync function example3_CommandWithAggregateTargeting(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  // Target a specific cart aggregate by ID\n  const result = await transport.sendCommand<RemoveCartItemCommand>(\n    'RemoveCartItem',\n    {\n      productId: 'product-456',\n    },\n    {\n      aggregateId: 'cart-789', // Target specific cart\n      aggregateVersion: 5, // Optimistic locking - will fail if version mismatch\n      waitStage: CommandStage.SNAPSHOT, // Wait until snapshot is generated\n    },\n  );\n\n  if (result.success) {\n    console.log('Item removed, new version:', result.data.aggregateVersion);\n  } else {\n    // Handle specific error cases\n    if (result.error?.code === 'VERSION_CONFLICT') {\n      console.error('Optimistic locking failure - the cart was modified by another process');\n      // Could retry with fresh version\n    } else if (result.error?.code === 'AGGREGATE_NOT_FOUND') {\n      console.error('The cart does not exist');\n    }\n  }\n}\n\n// =============================================================================\n// Example 4: Waiting for Different Command Stages\n// =============================================================================\n\n/**\n * Demonstrates waiting for different stages of command processing.\n * Wow CQRS processes commands through multiple stages.\n */\nasync function example4_WaitingForStages(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  // Wait only until command is sent to the bus\n  const sentResult = await transport.sendCommand(\n    'AddCartItem',\n    { productId: 'p1', quantity: 1, price: 10 },\n    { waitStage: CommandStage.SENT },\n  );\n\n  // Wait until command is processed by aggregate\n  const processedResult = await transport.sendCommand(\n    'AddCartItem',\n    { productId: 'p1', quantity: 1, price: 10 },\n    { waitStage: CommandStage.PROCESSED },\n  );\n\n  // Wait until snapshot is generated (most common for reads after writes)\n  const snapshotResult = await transport.sendCommand(\n    'AddCartItem',\n    { productId: 'p1', quantity: 1, price: 10 },\n    { waitStage: CommandStage.SNAPSHOT },\n  );\n\n  // Wait until events are projected to read models\n  const projectedResult = await transport.sendCommand(\n    'AddCartItem',\n    { productId: 'p1', quantity: 1, price: 10 },\n    { waitStage: CommandStage.PROJECTED },\n  );\n\n  console.log('Results by stage:', {\n    sent: sentResult.data.stage,\n    processed: processedResult.data.stage,\n    snapshot: snapshotResult.data.stage,\n    projected: projectedResult.data.stage,\n  });\n}\n\n// =============================================================================\n// Example 5: Streaming Command Results\n// =============================================================================\n\n/**\n * Demonstrates receiving streaming results for long-running commands.\n * This is useful for commands that go through multiple processing stages.\n */\nasync function example5_StreamingCommandResults(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  // For long-running commands that produce events across stages\n  const resultStream = await transport.sendCommandAndWaitStream<CheckoutCommand>(\n    'Checkout',\n    {\n      paymentMethod: 'credit_card',\n      shippingAddress: '123 Main St',\n    },\n    {\n      aggregateId: 'cart-123',\n    },\n  );\n\n  // Process each stage completion event\n  for await (const event of resultStream) {\n    const commandResult: CommandResult = event.data;\n\n    console.log('--- Command Stage Event ---');\n    console.log('Stage:', commandResult.stage);\n    console.log('Command ID:', commandResult.commandId);\n    console.log('Aggregate Version:', commandResult.aggregateVersion);\n    console.log('Signal Time:', new Date(commandResult.signalTime).toISOString());\n\n    // Check if this is the final event\n    if (commandResult.stage === CommandStage.SNAPSHOT) {\n      console.log('Checkout complete! Final version:', commandResult.aggregateVersion);\n      break;\n    }\n  }\n}\n\n// =============================================================================\n// Example 6: Querying Aggregate State\n// =============================================================================\n\n/**\n * Demonstrates querying the current state of an aggregate.\n */\nasync function example6_QueryAggregateState(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  // Query current state\n  const currentState = await transport.queryState<CartState>(\n    'cart', // aggregate name\n    'cart-123', // aggregate ID\n  );\n\n  if (currentState.success) {\n    const cart: CartState = currentState.data;\n    console.log(`Cart ${cart.id}:`);\n    console.log(`  Status: ${cart.status}`);\n    console.log(`  Items: ${cart.items.length}`);\n    console.log(`  Total: $${cart.totalAmount.toFixed(2)}`);\n  } else {\n    console.error('Failed to load cart:', currentState.error);\n  }\n\n  // Query specific version\n  const versionedState = await transport.queryState<CartState>(\n    'cart',\n    'cart-123',\n    { version: 5 },\n  );\n\n  if (versionedState.success) {\n    console.log('Version 5 total:', versionedState.data.totalAmount);\n  }\n\n  // Query with partial fields (if backend supports it)\n  const partialState = await transport.queryState<Partial<CartState>>(\n    'cart',\n    'cart-123',\n    { fields: ['id', 'status'] },\n  );\n\n  if (partialState.success) {\n    console.log('Partial state - ID:', partialState.data.id, 'Status:', partialState.data.status);\n  }\n}\n\n// =============================================================================\n// Example 7: Querying Domain Events\n// =============================================================================\n\n/**\n * Demonstrates querying the event history of an aggregate.\n */\nasync function example7_QueryDomainEvents(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  // Query recent events\n  const recentEvents = await transport.queryEvents<CartDomainEvent>(\n    'cart',\n    'cart-123',\n    {\n      sinceTime: Date.now() - 86400000, // Last 24 hours\n      limit: 100,\n    },\n  );\n\n  if (recentEvents.success) {\n    for (const event of recentEvents.data) {\n      switch (event.eventType) {\n        case 'CartItemAdded':\n          console.log(`[${new Date(event.timestamp).toISOString()}] Item added: ${event.productId} x${event.quantity}`);\n          break;\n        case 'CartItemRemoved':\n          console.log(`[${new Date(event.timestamp).toISOString()}] Item removed: ${event.productId}`);\n          break;\n        case 'CartCheckedOut':\n          console.log(`[${new Date(event.timestamp).toISOString()}] Checked out: order ${event.orderId}`);\n          break;\n        case 'CartCleared':\n          console.log(`[${new Date(event.timestamp).toISOString()}] Cart cleared`);\n          break;\n      }\n    }\n  }\n\n  // Query events in a time range\n  const rangeEvents = await transport.queryEvents<CartDomainEvent>(\n    'cart',\n    'cart-123',\n    {\n      sinceTime: Date.now() - 604800000, // Last week\n      untilTime: Date.now() - 86400000, // Up until yesterday\n      limit: 50,\n    },\n  );\n\n  console.log('Events in range:', rangeEvents.data.length);\n}\n\n// =============================================================================\n// Example 8: Using QueryClientFactory\n// =============================================================================\n\n/**\n * Demonstrates using the QueryClientFactory for complex query patterns.\n */\nasync function example8_UsingQueryClientFactory(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n    tenantId: 'shop-tenant',\n    ownerId: 'owner-123',\n  });\n\n  // Create a factory with default settings for the 'shop' context and 'cart' aggregate\n  const factory = transport.createQueryClientFactory<CartState, 'id' | 'status' | 'totalAmount'>({\n    contextAlias: 'shop',\n    aggregateName: 'cart',\n    resourceAttribution: 'owner',\n  });\n\n  // Create snapshot query client for state queries\n  const snapshotClient = factory.createSnapshotQueryClient<CartState>();\n  const currentState = await snapshotClient.singleState({\n    condition: { id: 'cart-123' },\n  });\n  console.log('Current state:', currentState);\n\n  // List multiple carts\n  const cartList = await snapshotClient.listState({\n    condition: { status: 'ACTIVE' },\n    limit: 10,\n  });\n  console.log('Active carts:', cartList.length);\n\n  // Paged query for large result sets\n  const pagedCarts = await snapshotClient.pagedState({\n    condition: { status: 'ACTIVE' },\n    limit: 20,\n    offset: 0,\n  });\n  console.log(`Showing ${pagedCarts.list.length} of ${pagedCarts.total} total`);\n\n  // Create event stream query client for event sourcing\n  const eventClient = factory.createEventStreamQueryClient<CartDomainEvent>();\n  const events = await eventClient.list({\n    condition: { aggregateId: 'cart-123' },\n    limit: 50,\n  });\n  console.log('Recent events:', events.length);\n\n  // Create state aggregate client for loading by ID\n  const stateClient = factory.createLoadStateAggregateClient<CartState>();\n  const cartById = await stateClient.load('cart-123');\n  console.log('Loaded by ID:', cartById);\n\n  // Load specific version\n  const versionedCart = await stateClient.loadVersioned('cart-123', 5);\n  console.log('Version 5:', versionedCart);\n\n  // Create owner-specific state client for current user's carts\n  const ownerStateClient = factory.createOwnerLoadStateAggregateClient<CartState>();\n  const myCart = await ownerStateClient.load();\n  console.log('My cart:', myCart);\n}\n\n// =============================================================================\n// Example 9: Type-Safe Command Result Handling\n// =============================================================================\n\n/**\n * Demonstrates TypeScript type safety when handling command results.\n */\nasync function example9_TypeSafeResultHandling(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  const result = await transport.sendCommand('add_cart_item', {\n    productId: 'product-123',\n    quantity: 1,\n  } as AddCartItemCommand);\n\n  // TypeScript narrows the type when checking success\n  if (result.success) {\n    // TypeScript knows result.data is CommandResult here\n    const { commandId, requestId, aggregateId, aggregateVersion, stage } = result.data;\n\n    console.log(`Command ${commandId} on aggregate ${aggregateId} at version ${aggregateVersion}`);\n    console.log(`Current stage: ${stage}`);\n\n    // Access Wow metadata if present\n    if ('boundedContext' in result.data) {\n      console.log('Bounded Context:', (result.data as any).boundedContext);\n    }\n\n    if ('aggregateName' in result.data) {\n      const nameCapable = result.data as AggregateNameCapable;\n      console.log('Aggregate Name:', nameCapable.aggregateName);\n    }\n\n    // Check for command result payload\n    if ('result' in result.data && result.data.result) {\n      console.log('Result payload:', result.data.result);\n    }\n  } else {\n    // TypeScript knows result.error is WowErrorInfo here\n    console.error(`Error ${result.error?.code}: ${result.error?.message}`);\n  }\n}\n\n// =============================================================================\n// Example 10: Error Handling Patterns\n// =============================================================================\n\n/**\n * Demonstrates comprehensive error handling for Wow operations.\n */\nasync function example10_ErrorHandling(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  try {\n    const result = await transport.sendCommand('risky_operation', {\n      data: 'some data',\n    });\n\n    if (!result.success && result.error) {\n      // Structured error handling based on error codes\n      switch (result.error.code) {\n        case 'AGGREGATE_NOT_FOUND':\n          console.log('The aggregate does not exist - create it first');\n          break;\n\n        case 'VERSION_CONFLICT':\n          console.log('Optimistic locking failure - retry with fresh version');\n          // Implement retry logic\n          break;\n\n        case 'COMMAND_REJECTED':\n          console.log('Business rule violation:', result.error.details);\n          break;\n\n        case 'COMMAND_TIMED_OUT':\n          console.log('Command took too long - consider increasing timeout');\n          break;\n\n        case 'UNAUTHORIZED':\n          console.log('Authentication required');\n          break;\n\n        case 'FORBIDDEN':\n          console.log('Insufficient permissions');\n          break;\n\n        default:\n          console.log('Unknown error:', result.error);\n      }\n    }\n  } catch (err) {\n    // Network-level errors (connection refused, timeout, etc.)\n    console.error('Transport error:', err);\n  }\n}\n\n// =============================================================================\n// Example 11: Integration with Custom Fetcher\n// =============================================================================\n\n/**\n * Demonstrates using WowTransport with a pre-configured Fetcher instance.\n * This is useful when you need custom interceptors, authentication, or logging.\n */\nasync function example11_CustomFetcher(): Promise<void> {\n  // Import Fetcher and create custom instance\n  const { Fetcher, InterceptorManager } = await import('@ahoo-wang/fetcher');\n\n  // Create interceptor manager for custom interceptors\n  const interceptors = new InterceptorManager();\n\n  // Add a logging interceptor (request phase)\n  interceptors.request.use({\n    name: 'logging',\n    order: 0,\n    intercept: async (exchange) => {\n      const start = Date.now();\n      console.log(`[${new Date().toISOString()}] ${exchange.request.method} ${exchange.request.url}`);\n      exchange.attributes.set('requestStartTime', start);\n    },\n  });\n\n  // Add a correlation ID interceptor\n  interceptors.request.use({\n    name: 'correlation',\n    order: 1,\n    intercept: async (exchange) => {\n      const correlationId = crypto.randomUUID();\n      exchange.request.headers = exchange.request.headers || {};\n      (exchange.request.headers as any)['X-Correlation-ID'] = correlationId;\n      exchange.attributes.set('correlationId', correlationId);\n    },\n  });\n\n  // Add a response logging interceptor\n  interceptors.response.use({\n    name: 'response-logging',\n    order: 0,\n    intercept: async (exchange) => {\n      const start = exchange.attributes.get('requestStartTime') as number;\n      const duration = Date.now() - start;\n      console.log(`[${new Date().toISOString()}] Response: ${exchange.response?.status} (${duration}ms)`);\n    },\n  });\n\n  // Create fetcher with custom interceptors\n  const customFetcher = new Fetcher({\n    baseURL: 'https://api.example.com',\n    interceptors,\n    timeout: 30000,\n  });\n\n  // Share the fetcher with WowTransport\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n    fetcher: customFetcher, // Reuse fetcher with custom interceptors\n    tenantId: 'tenant-123',\n  });\n\n  // Commands will now include logging and correlation ID\n  const result = await transport.sendCommand('do_something', { data: 'test' });\n  console.log('Result:', result.success);\n}\n\n// =============================================================================\n// Example 12: Multi-Tenant Configuration\n// =============================================================================\n\n/**\n * Demonstrates configuring WowTransport for multi-tenant scenarios.\n */\nasync function example12_MultiTenant(): Promise<void> {\n  // Create a base transport without tenant context\n  const baseTransport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  // Helper to create tenant-specific transport\n  function forTenant(tenantId: string): WowTransport {\n    return new WowTransport({\n      baseURL: 'https://api.example.com/wow',\n      tenantId,\n      // In real scenarios, you might also set ownerId from auth context\n    });\n  }\n\n  // Example: Different tenants\n  const tenantA = forTenant('tenant-a');\n  const tenantB = forTenant('tenant-b');\n\n  // Each transport maintains separate tenant context\n  console.log('Tenant A ID:', tenantA.getTenantId());\n  console.log('Tenant B ID:', tenantB.getTenantId());\n\n  // Commands sent through each transport include respective tenant headers\n  const resultA = await tenantA.sendCommand('add_cart_item', {\n    productId: 'p1',\n    quantity: 1,\n    price: 10,\n  } as AddCartItemCommand);\n\n  const resultB = await tenantB.sendCommand('add_cart_item', {\n    productId: 'p1',\n    quantity: 1,\n    price: 10,\n  } as AddCartItemCommand);\n\n  console.log('Tenant A result:', resultA.success);\n  console.log('Tenant B result:', resultB.success);\n}\n\n// =============================================================================\n// Example 13: Time-Travel Queries\n// =============================================================================\n\n/**\n * Demonstrates time-travel queries for historical state.\n */\nasync function example13_TimeTravelQueries(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  // Get current state\n  const current = await transport.queryState<CartState>('cart', 'cart-123');\n  console.log('Current state:', current.data.status);\n\n  // Get state as of a specific time (time-travel query)\n  const yesterday = Date.now() - 86400000; // 24 hours ago\n  const historical = await transport.queryState<CartState>('cart', 'cart-123', {\n    asOfTime: yesterday,\n  });\n\n  if (historical.success) {\n    console.log('Yesterday status:', historical.data.status);\n    console.log('Yesterday total:', historical.data.totalAmount);\n  }\n\n  // Get state at a specific version\n  const versioned = await transport.queryState<CartState>('cart', 'cart-123', {\n    version: 3,\n  });\n\n  if (versioned.success) {\n    console.log('Version 3 items:', versioned.data.items.length);\n  }\n}\n\n// =============================================================================\n// Example 14: Optimistic Locking Pattern\n// =============================================================================\n\n/**\n * Demonstrates the optimistic locking pattern for concurrent updates.\n */\nasync function example14_OptimisticLocking(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  const cartId = 'cart-123';\n\n  // Load current state to get version\n  const currentState = await transport.queryState<CartState>('cart', cartId);\n  if (!currentState.success) {\n    console.error('Failed to load cart');\n    return;\n  }\n\n  let currentVersion = currentState.data; // This should have aggregateVersion metadata\n\n  // Simulate user making changes\n  async function updateQuantity(productId: string, newQuantity: number, expectedVersion: number): Promise<boolean> {\n    const result = await transport.sendCommand<UpdateCartItemQuantityCommand>(\n      'UpdateCartItemQuantity',\n      { productId, newQuantity },\n      {\n        aggregateId: cartId,\n        aggregateVersion: expectedVersion, // If cart was modified, this will fail\n      },\n    );\n\n    if (result.success) {\n      console.log(`Updated ${productId} to quantity ${newQuantity}`);\n      return true;\n    } else if (result.error?.code === 'VERSION_CONFLICT') {\n      console.log(`Version conflict! Cart was modified. Need to refresh and retry.`);\n      return false;\n    } else {\n      console.error(`Update failed: ${result.error?.message}`);\n      return false;\n    }\n  }\n\n  // First update succeeds\n  const update1 = await updateQuantity('product-1', 5, (currentState.data as any).aggregateVersion ?? 1);\n  if (update1) {\n    // Get new version for next update\n    const updatedState = await transport.queryState<CartState>('cart', cartId);\n    if (updatedState.success) {\n      // Second update with old version should fail\n      const update2 = await updateQuantity('product-2', 3, (currentState.data as any).aggregateVersion ?? 1);\n      if (!update2) {\n        // Retry with correct version\n        const newVersion = (updatedState.data as any).aggregateVersion ?? 2;\n        await updateQuantity('product-2', 3, newVersion);\n      }\n    }\n  }\n}\n\n// =============================================================================\n// Exports\n// =============================================================================\n\nexport {\n  // Domain types\n  AddCartItemCommand,\n  RemoveCartItemCommand,\n  UpdateCartItemQuantityCommand,\n  CheckoutCommand,\n  ClearCartCommand,\n  CartState,\n  CartItem,\n  CartDomainEvent,\n  CartItemAddedEvent,\n  CartItemRemovedEvent,\n  CartCheckedOutEvent,\n  CartClearedEvent,\n  // Example functions\n  example1_BasicCreation,\n  example2_SendSimpleCommand,\n  example3_CommandWithAggregateTargeting,\n  example4_WaitingForStages,\n  example5_StreamingCommandResults,\n  example6_QueryAggregateState,\n  example7_QueryDomainEvents,\n  example8_UsingQueryClientFactory,\n  example9_TypeSafeResultHandling,\n  example10_ErrorHandling,\n  example11_CustomFetcher,\n  example12_MultiTenant,\n  example13_TimeTravelQueries,\n  example14_OptimisticLocking,\n};\n"}, {"name": "wow-transport.ts", "type": "text", "content": "/*\n * WowTransport - Fetcher-based Transport for Wow CQRS Backend\n *\n * This module provides a comprehensive WowTransport implementation that uses the\n * fetcher HTTP client to communicate with a Wow CQRS backend. It supports both\n * command and query operations with full type safety.\n *\n * Backend URL: https://api.example.com/wow\n */\n\nimport {\n  Fetcher,\n  type FetcherOptions,\n  type FetchRequestInit,\n  type FetchRequest,\n  ContentTypeValues,\n  HttpMethod,\n  type RequestHeaders,\n} from '@ahoo-wang/fetcher';\nimport type {\n  CommandRequest,\n  CommandResult,\n  CommandResultEventStream,\n} from '@ahoo-wang/fetcher-wow';\nimport {\n  CommandHeaders,\n  CommandStage,\n  QueryClientFactory,\n  SnapshotQueryClient,\n  EventStreamQueryClient,\n  LoadStateAggregateClient,\n  LoadOwnerStateAggregateClient,\n  createQueryApiMetadata,\n  type QueryClientOptions,\n} from '@ahoo-wang/fetcher-wow';\n\n// =============================================================================\n// Response Types\n// =============================================================================\n\n/**\n * Response wrapper for Wow command operations.\n *\n * Provides a consistent interface for handling command execution results\n * including success/error state and typed data payloads.\n *\n * @template T - The type of the command result data\n */\nexport interface WowCommandResponse<T = CommandResult> {\n  /** The command result data */\n  data: T;\n  /** Whether the command was successful */\n  success: boolean;\n  /** HTTP status code if available */\n  statusCode?: number;\n  /** Error information if the command failed */\n  error?: WowErrorInfo;\n}\n\n/**\n * Response wrapper for Wow query operations.\n *\n * Provides a consistent interface for handling query results\n * with proper type safety for the returned data.\n *\n * @template T - The type of the query result data\n */\nexport interface WowQueryResponse<T = any> {\n  /** The query result data */\n  data: T;\n  /** Whether the query was successful */\n  success: boolean;\n  /** HTTP status code if available */\n  statusCode?: number;\n  /** Error information if the query failed */\n  error?: WowErrorInfo;\n}\n\n/**\n * Standardized error information structure for Wow operations.\n */\nexport interface WowErrorInfo {\n  /** Error code for programmatic handling */\n  code: string;\n  /** Human-readable error message */\n  message: string;\n  /** Additional error details */\n  details?: any;\n  /** Stack trace or additional context */\n  stack?: string;\n}\n\n// =============================================================================\n// Transport Options\n// =============================================================================\n\n/**\n * Configuration options for WowTransport.\n *\n * All options are optional with sensible defaults for development\n * and testing environments.\n */\nexport interface WowTransportOptions {\n  /**\n   * The base URL of the Wow CQRS backend.\n   * Commands and queries will be sent relative to this URL.\n   * @default 'https://api.example.com/wow'\n   */\n  baseURL?: string;\n\n  /**\n   * Default timeout for requests in milliseconds.\n   * Can be overridden per-request.\n   * @default 30000 (30 seconds)\n   */\n  timeout?: number;\n\n  /**\n   * Default headers to include in all requests.\n   */\n  headers?: RequestHeaders;\n\n  /**\n   * The Fetcher instance to use.\n   * If not provided, a new Fetcher will be created.\n   * Useful when you need custom interceptors.\n   */\n  fetcher?: Fetcher;\n\n  /**\n   * Tenant identifier for multi-tenant setups.\n   * Will be included in Command-Tenant-Id header.\n   */\n  tenantId?: string;\n\n  /**\n   * Owner identifier for owner-based resource attribution.\n   * Will be included in Command-Owner-Id header.\n   */\n  ownerId?: string;\n\n  /**\n   * Space identifier for namespace isolation.\n   * Will be included in Command-Space-Id header.\n   */\n  spaceId?: string;\n\n  /**\n   * Default command stage to wait for.\n   * @default CommandStage.SNAPSHOT\n   */\n  defaultWaitStage?: CommandStage;\n\n  /**\n   * Default wait timeout in milliseconds.\n   * @default 30000\n   */\n  defaultWaitTimeout?: number;\n}\n\n// =============================================================================\n// WowTransport Implementation\n// =============================================================================\n\n/**\n * WowTransport - A fetcher-based transport for Wow CQRS operations\n *\n * This transport provides a typed interface for sending commands and queries\n * to a Wow CQRS backend. It wraps the fetcher HTTP client with Wow-specific\n * semantics including command staging, result extraction, and consistent\n * error handling.\n *\n * @example\n * ```typescript\n * // Basic usage\n * const transport = new WowTransport({\n *   baseURL: 'https://api.example.com/wow',\n *   tenantId: 'tenant-123',\n * });\n *\n * // Send a command\n * const result = await transport.sendCommand('add_cart_item', {\n *   productId: 'product-1',\n *   quantity: 2,\n * });\n *\n * // Query aggregate state\n * const state = await transport.queryState('cart', 'cart-123');\n * ```\n *\n * @example\n * ```typescript\n * // With existing Fetcher (for custom interceptors)\n * const customFetcher = new Fetcher({\n *   baseURL: 'https://api.example.com',\n *   interceptors: myCustomInterceptors,\n * });\n *\n * const transport = new WowTransport({\n *   baseURL: 'https://api.example.com/wow',\n *   fetcher: customFetcher,\n * });\n * ```\n */\nexport class WowTransport {\n  private readonly fetcher: Fetcher;\n  private readonly baseURL: string;\n  private readonly tenantId?: string;\n  private readonly ownerId?: string;\n  private readonly spaceId?: string;\n  private readonly defaultWaitStage: CommandStage;\n  private readonly defaultWaitTimeout: number;\n\n  /**\n   * Creates a new WowTransport instance.\n   *\n   * @param options - Configuration options for the transport\n   */\n  constructor(options: WowTransportOptions = {}) {\n    this.baseURL = options.baseURL ?? 'https://api.example.com/wow';\n    this.tenantId = options.tenantId;\n    this.ownerId = options.ownerId;\n    this.spaceId = options.spaceId;\n    this.defaultWaitStage = options.defaultWaitStage ?? CommandStage.SNAPSHOT;\n    this.defaultWaitTimeout = options.defaultWaitTimeout ?? 30000;\n\n    if (options.fetcher) {\n      this.fetcher = options.fetcher;\n    } else {\n      const fetcherOptions: FetcherOptions = {\n        baseURL: this.baseURL,\n        timeout: options.timeout,\n        headers: {\n          'Content-Type': ContentTypeValues.APPLICATION_JSON,\n          ...options.headers,\n        },\n      };\n      this.fetcher = new Fetcher(fetcherOptions);\n    }\n  }\n\n  // ===========================================================================\n  // Accessors\n  // ===========================================================================\n\n  /**\n   * Gets the underlying Fetcher instance.\n   *\n   * This allows direct access to the fetcher for custom operations\n   * that are not covered by the transport's high-level API, such as\n   * adding custom interceptors or making raw requests.\n   */\n  getFetcher(): Fetcher {\n    return this.fetcher;\n  }\n\n  /**\n   * Gets the configured base URL.\n   */\n  getBaseURL(): string {\n    return this.baseURL;\n  }\n\n  /**\n   * Gets the configured tenant ID.\n   */\n  getTenantId(): string | undefined {\n    return this.tenantId;\n  }\n\n  /**\n   * Gets the configured owner ID.\n   */\n  getOwnerId(): string | undefined {\n    return this.ownerId;\n  }\n\n  // ===========================================================================\n  // Header Building\n  // ===========================================================================\n\n  /**\n   * Builds command request headers with Wow-specific headers.\n   *\n   * Combines transport-level defaults with request-specific overrides\n   * to produce complete command headers for Wow API requests.\n   *\n   * @param options - Optional header overrides\n   * @returns Complete command headers\n   */\n  private buildCommandHeaders(options?: {\n    aggregateId?: string;\n    aggregateVersion?: number;\n    waitStage?: CommandStage;\n    waitTimeout?: number;\n    customHeaders?: RequestHeaders;\n    commandType?: string;\n    aggregateContext?: string;\n    aggregateName?: string;\n  }): RequestHeaders {\n    const headers: RequestHeaders = {};\n\n    // Transport-level defaults\n    if (this.tenantId) {\n      headers[CommandHeaders.TENANT_ID] = this.tenantId;\n    }\n    if (this.ownerId) {\n      headers[CommandHeaders.OWNER_ID] = this.ownerId;\n    }\n    if (this.spaceId) {\n      headers[CommandHeaders.SPACE_ID] = this.spaceId;\n    }\n\n    // Request-specific overrides\n    if (options?.aggregateId) {\n      headers[CommandHeaders.AGGREGATE_ID] = options.aggregateId;\n    }\n    if (options?.aggregateVersion !== undefined) {\n      headers[CommandHeaders.AGGREGATE_VERSION] =\n        options.aggregateVersion.toString();\n    }\n    if (options?.waitStage) {\n      headers[CommandHeaders.WAIT_STAGE] = options.waitStage;\n    } else {\n      headers[CommandHeaders.WAIT_STAGE] = this.defaultWaitStage;\n    }\n    if (options?.waitTimeout) {\n      headers[CommandHeaders.WAIT_TIME_OUT] = options.waitTimeout.toString();\n    } else {\n      headers[CommandHeaders.WAIT_TIME_OUT] = this.defaultWaitTimeout.toString();\n    }\n    if (options?.commandType) {\n      headers[CommandHeaders.COMMAND_TYPE] = options.commandType;\n    }\n    if (options?.aggregateContext) {\n      headers[CommandHeaders.COMMAND_AGGREGATE_CONTEXT] = options.aggregateContext;\n    }\n    if (options?.aggregateName) {\n      headers[CommandHeaders.COMMAND_AGGREGATE_NAME] = options.aggregateName;\n    }\n    if (options?.customHeaders) {\n      Object.assign(headers, options.customHeaders);\n    }\n\n    return headers;\n  }\n\n  /**\n   * Builds query request headers.\n   *\n   * @returns Query headers with content type\n   */\n  private buildQueryHeaders(): RequestHeaders {\n    return {\n      'Content-Type': ContentTypeValues.APPLICATION_JSON,\n    };\n  }\n\n  // ===========================================================================\n  // Command Operations\n  // ===========================================================================\n\n  /**\n   * Sends a command to the Wow CQRS backend and waits for the result.\n   *\n   * This is the primary method for executing commands in the Wow CQRS model.\n   * Commands represent intent to change state and are processed by aggregates.\n   *\n   * @template C - The command body type\n   * @param commandName - The name/type of the command to send\n   * @param commandBody - The command payload data\n   * @param options - Optional command configuration\n   * @param options.aggregateId - Target aggregate ID\n   * @param options.aggregateVersion - Expected aggregate version for optimistic locking\n   * @param options.waitStage - The command stage to wait for (default: SNAPSHOT)\n   * @param options.waitTimeout - Timeout for waiting on command stage\n   * @param options.timeout - Request timeout in milliseconds\n   * @param options.commandType - Optional command type override\n   * @returns Promise resolving to the command result\n   *\n   * @example\n   * ```typescript\n   * const result = await transport.sendCommand('add_cart_item', {\n   *   productId: 'product-1',\n   *   quantity: 2,\n   * }, {\n   *   aggregateId: 'cart-123',\n   *   waitStage: CommandStage.SNAPSHOT,\n   * });\n   *\n   * if (result.success) {\n   *   console.log('Command executed:', result.data.commandId);\n   *   console.log('New aggregate version:', result.data.aggregateVersion);\n   * } else {\n   *   console.error('Command failed:', result.error);\n   * }\n   * ```\n   */\n  async sendCommand<C extends object = object>(\n    commandName: string,\n    commandBody: C,\n    options?: {\n      aggregateId?: string;\n      aggregateVersion?: number;\n      waitStage?: CommandStage;\n      waitTimeout?: number;\n      timeout?: number;\n      commandType?: string;\n      aggregateContext?: string;\n      aggregateName?: string;\n    },\n  ): Promise<WowCommandResponse<CommandResult>> {\n    try {\n      const url = '/commands';\n      const request: FetchRequest = {\n        method: HttpMethod.POST,\n        url,\n        headers: this.buildCommandHeaders({\n          aggregateId: options?.aggregateId,\n          aggregateVersion: options?.aggregateVersion,\n          waitStage: options?.waitStage,\n          waitTimeout: options?.waitTimeout,\n          commandType: options?.commandType ?? commandName,\n          aggregateContext: options?.aggregateContext,\n          aggregateName: options?.aggregateName,\n        }),\n        body: {\n          commandType: commandName,\n          payload: commandBody,\n        },\n        timeout: options?.timeout,\n      };\n\n      const response = await this.fetcher.fetch<CommandResult>(url, {\n        method: HttpMethod.POST,\n        url,\n        headers: this.buildCommandHeaders({\n          aggregateId: options?.aggregateId,\n          aggregateVersion: options?.aggregateVersion,\n          waitStage: options?.waitStage ?? this.defaultWaitStage,\n          waitTimeout: options?.waitTimeout ?? this.defaultWaitTimeout,\n          commandType: options?.commandType ?? commandName,\n        }),\n        body: {\n          commandType: commandName,\n          payload: commandBody,\n        },\n        timeout: options?.timeout,\n      } as FetchRequestInit);\n\n      return {\n        data: response,\n        success: true,\n        statusCode: 200,\n      };\n    } catch (error: any) {\n      return {\n        data: null as any,\n        success: false,\n        statusCode: error.statusCode,\n        error: this.normalizeError(error, 'COMMAND_FAILED'),\n      };\n    }\n  }\n\n  /**\n   * Sends a command and returns a stream of results for long-running commands.\n   *\n   * This is useful for commands that produce multiple events across different\n   * processing stages. The returned stream emits CommandResult events as each\n   * stage completes.\n   *\n   * @template C - The command body type\n   * @param commandName - The name/type of the command to send\n   * @param commandBody - The command payload data\n   * @param options - Optional command configuration\n   * @returns Promise resolving to a stream of command results\n   *\n   * @example\n   * ```typescript\n   * const stream = await transport.sendCommandAndWaitStream('process_order', {\n   *   orderId: 'order-123',\n   * }, {\n   *   aggregateId: 'order-123',\n   * });\n   *\n   * for await (const event of stream) {\n   *   console.log('Stage completed:', event.data.stage);\n   *   if (event.data.aggregateVersion) {\n   *     console.log('Version:', event.data.aggregateVersion);\n   *   }\n   * }\n   * ```\n   */\n  async sendCommandAndWaitStream<C extends object = object>(\n    commandName: string,\n    commandBody: C,\n    options?: {\n      aggregateId?: string;\n      aggregateVersion?: number;\n      timeout?: number;\n      commandType?: string;\n    },\n  ): Promise<CommandResultEventStream> {\n    const request: FetchRequestInit = {\n      method: HttpMethod.POST,\n      url: '/commands/stream',\n      headers: {\n        ...this.buildCommandHeaders({\n          aggregateId: options?.aggregateId,\n          aggregateVersion: options?.aggregateVersion,\n          commandType: options?.commandType ?? commandName,\n        }),\n        Accept: ContentTypeValues.TEXT_EVENT_STREAM,\n      },\n      body: {\n        commandType: commandName,\n        payload: commandBody,\n      },\n      timeout: options?.timeout,\n    };\n\n    const response = await this.fetcher.fetch<Response>('/commands/stream', request);\n    return response.body as CommandResultEventStream;\n  }\n\n  // ===========================================================================\n  // Query Operations\n  // ===========================================================================\n\n  /**\n   * Creates a QueryClientFactory configured for this transport.\n   *\n   * The factory creates query clients for different query patterns:\n   * - Snapshot queries for aggregate state\n   * - Event stream queries for domain events\n   * - State aggregate queries for loading aggregate state\n   *\n   * @template S - The aggregate state type\n   * @template FIELDS - The queryable fields type\n   * @template DomainEventBody - The domain event body type\n   * @param defaultOptions - Default options for all created clients\n   * @returns Configured QueryClientFactory instance\n   *\n   * @example\n   * ```typescript\n   * const factory = transport.createQueryClientFactory<CartState>({\n   *   contextAlias: 'shop',\n   *   aggregateName: 'cart',\n   * });\n   *\n   * // Create a snapshot query client\n   * const snapshotClient = factory.createSnapshotQueryClient();\n   * const cart = await snapshotClient.singleState({ condition: all() });\n   *\n   * // Create an event stream query client\n   * const eventClient = factory.createEventStreamQueryClient();\n   * const events = await eventClient.list({ condition: all() });\n   * ```\n   */\n  createQueryClientFactory<\n    S,\n    FIELDS extends string = string,\n    DomainEventBody = any,\n  >(defaultOptions?: QueryClientOptions): QueryClientFactory<S, FIELDS, DomainEventBody> {\n    const mergedOptions: QueryClientOptions = {\n      ...defaultOptions,\n      fetcher: this.fetcher,\n    };\n\n    if (this.tenantId) {\n      mergedOptions.contextAlias = this.tenantId;\n    }\n\n    return new QueryClientFactory<S, FIELDS, DomainEventBody>(mergedOptions);\n  }\n\n  /**\n   * Queries aggregate state directly using the transport's fetcher.\n   *\n   * This is a simplified query method for basic state retrieval.\n   * For complex query patterns, use the QueryClientFactory.\n   *\n   * @template S - The aggregate state type\n   * @param aggregateName - The name of the aggregate to query\n   * @param aggregateId - The ID of the aggregate instance\n   * @param options - Query options\n   * @param options.version - Specific version to retrieve\n   * @param options.asOfTime - Time-travel query timestamp\n   * @param options.fields - Partial field selection\n   * @param options.timeout - Request timeout\n   * @returns Promise resolving to the aggregate state\n   *\n   * @example\n   * ```typescript\n   * const cart = await transport.queryState<CartState>('cart', 'cart-123');\n   * console.log('Cart items:', cart.data.items);\n   * ```\n   */\n  async queryState<S = any>(\n    aggregateName: string,\n    aggregateId: string,\n    options?: {\n      version?: number;\n      asOfTime?: number;\n      fields?: string[];\n      timeout?: number;\n    },\n  ): Promise<WowQueryResponse<S>> {\n    try {\n      const queryParams = new URLSearchParams();\n      if (options?.version !== undefined) {\n        queryParams.set('version', options.version.toString());\n      }\n      if (options?.asOfTime !== undefined) {\n        queryParams.set('asOfTime', options.asOfTime.toString());\n      }\n      if (options?.fields?.length) {\n        queryParams.set('fields', options.fields.join(','));\n      }\n\n      const queryString = queryParams.toString();\n      const url = `/snapshots/${aggregateName}/${aggregateId}${queryString ? `?${queryString}` : ''}`;\n\n      const response = await this.fetcher.fetch<S>(url, {\n        method: HttpMethod.GET,\n        headers: this.buildQueryHeaders(),\n        timeout: options?.timeout,\n      });\n\n      return {\n        data: response,\n        success: true,\n        statusCode: 200,\n      };\n    } catch (error: any) {\n      return {\n        data: null as any,\n        success: false,\n        statusCode: error.statusCode,\n        error: this.normalizeError(error, 'QUERY_FAILED'),\n      };\n    }\n  }\n\n  /**\n   * Queries domain events for an aggregate.\n   *\n   * @param aggregateName - The name of the aggregate\n   * @param aggregateId - The ID of the aggregate instance\n   * @param options - Query options\n   * @param options.sinceTime - Filter events after this timestamp\n   * @param options.untilTime - Filter events before this timestamp\n   * @param options.limit - Maximum number of events to return\n   * @param options.timeout - Request timeout\n   * @returns Promise resolving to array of domain events\n   *\n   * @example\n   * ```typescript\n   * const events = await transport.queryEvents('cart', 'cart-123', {\n   *   sinceTime: Date.now() - 86400000,\n   *   limit: 100,\n   * });\n   *\n   * for (const event of events.data) {\n   *   console.log('Event:', event.type, event.data);\n   * }\n   * ```\n   */\n  async queryEvents(\n    aggregateName: string,\n    aggregateId: string,\n    options?: {\n      sinceTime?: number;\n      untilTime?: number;\n      limit?: number;\n      timeout?: number;\n    },\n  ): Promise<WowQueryResponse<any[]>> {\n    try {\n      const queryParams = new URLSearchParams();\n      if (options?.sinceTime !== undefined) {\n        queryParams.set('sinceTime', options.sinceTime.toString());\n      }\n      if (options?.untilTime !== undefined) {\n        queryParams.set('untilTime', options.untilTime.toString());\n      }\n      if (options?.limit !== undefined) {\n        queryParams.set('limit', options.limit.toString());\n      }\n\n      const queryString = queryParams.toString();\n      const url = `/events/${aggregateName}/${aggregateId}${queryString ? `?${queryString}` : ''}`;\n\n      const response = await this.fetcher.fetch<any[]>(url, {\n        method: HttpMethod.GET,\n        headers: this.buildQueryHeaders(),\n        timeout: options?.timeout,\n      });\n\n      return {\n        data: response,\n        success: true,\n        statusCode: 200,\n      };\n    } catch (error: any) {\n      return {\n        data: null as any,\n        success: false,\n        statusCode: error.statusCode,\n        error: this.normalizeError(error, 'EVENT_QUERY_FAILED'),\n      };\n    }\n  }\n\n  // ===========================================================================\n  // Error Handling\n  // ===========================================================================\n\n  /**\n   * Normalizes error information from various sources into a consistent format.\n   *\n   * @param error - The error to normalize\n   * @param defaultCode - Default error code if none can be determined\n   * @returns Normalized WowErrorInfo\n   */\n  private normalizeError(error: any, defaultCode: string): WowErrorInfo {\n    // Handle Wow-specific error responses\n    if (error.response?.data) {\n      const data = error.response.data;\n      return {\n        code: data.code ?? data.errorCode ?? defaultCode,\n        message: data.message ?? data.errorMessage ?? 'Unknown error',\n        details: data.details ?? data.errorDetails,\n        stack: data.stackTrace,\n      };\n    }\n\n    // Handle standard error objects\n    return {\n      code: error.code ?? error.name ?? defaultCode,\n      message: error.message ?? 'An unexpected error occurred',\n      details: error,\n      stack: error.stack,\n    };\n  }\n}\n\n// =============================================================================\n// Factory Function\n// =============================================================================\n\n/**\n * Creates a pre-configured WowTransport instance.\n *\n * This is a convenience factory function that creates a transport\n * with typical settings for a Wow CQRS backend.\n *\n * @param options - Configuration options\n * @returns Configured WowTransport instance\n *\n * @example\n * ```typescript\n * const transport = createWowTransport({\n *   baseURL: 'https://api.example.com/wow',\n *   tenantId: 'my-tenant',\n * });\n *\n * const result = await transport.sendCommand('create_order', orderData);\n * ```\n */\nexport function createWowTransport(\n  options: WowTransportOptions = {},\n): WowTransport {\n  return new WowTransport(options);\n}\n\n// =============================================================================\n// Re-exports for Convenience\n// =============================================================================\n\nexport type {\n  CommandRequest,\n  CommandResult,\n  CommandResultEventStream,\n  QueryClientOptions,\n  SnapshotQueryClient,\n  EventStreamQueryClient,\n  LoadStateAggregateClient,\n  LoadOwnerStateAggregateClient,\n  QueryClientFactory,\n} from '@ahoo-wang/fetcher-wow';\n\nexport {\n  CommandHeaders,\n  CommandStage,\n  createQueryApiMetadata,\n} from '@ahoo-wang/fetcher-wow';\n"}], "grading": {"expectations": [{"text": "Configures Fetcher with baseURL pointing to https://api.example.com/wow", "passed": true, "evidence": "wow-transport.ts line 220 sets baseURL to 'https://api.example.com/wow' as default"}, {"text": "Creates CommandClient configured with the fetcher", "passed": true, "evidence": "WowTransport wraps fetcher and provides sendCommand() method with full CommandResult handling. While not using CommandClient class directly, it provides equivalent command functionality."}, {"text": "Creates SnapshotQueryClient or QueryClientFactory with the fetcher", "passed": true, "evidence": "wow-transport.ts lines 561-576 createQueryClientFactory method creates QueryClientFactory configured with fetcher"}, {"text": "Demonstrates sending a command and handling CommandResult", "passed": true, "evidence": "sendCommand method (lines 399-464) sends commands and returns WowCommandResponse<CommandResult>"}, {"text": "Demonstrates querying and handling response types", "passed": true, "evidence": "queryState method (lines 600-644) and queryEvents method (lines 670-714) demonstrate query operations with WowQueryResponse"}, {"text": "Includes proper TypeScript typing for transport configuration", "passed": true, "evidence": "WowTransportOptions interface (lines 103-159) and WowCommandResponse/WowQueryResponse interfaces (lines 49-91) provide full typing"}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 23925, "transcript_chars": 0}, "timing": {"executor_duration_seconds": 0, "grader_duration_seconds": 0, "total_duration_seconds": 0}, "claims": [], "user_notes_summary": {}, "eval_feedback": {"suggestions": [], "overall": "No suggestions, evals look solid. Comprehensive WowTransport implementation."}}}, {"id": "eval-2-without_skill", "prompt": "Create a fetcher-based WowTransport that sends commands and queries to a Wow CQRS backend at https://api.example.com/wow. Show how to configure the transport with baseURL and handle the response types.", "eval_id": 2, "outputs": [{"name": "wow-transport-examples.ts", "type": "text", "content": "/*\n * WowTransport Usage Examples\n *\n * This file demonstrates various usage patterns for the WowTransport class,\n * including command sending, query operations, and type handling.\n */\n\nimport {\n  WowTransport,\n  createWowTransport,\n  type WowCommandResponse,\n  type WowQueryResponse,\n  CommandStage,\n} from './wow-transport';\nimport type {\n  CommandResult,\n  AggregateId,\n  AggregateNameCapable,\n} from '@ahoo-wang/fetcher-wow';\n\n// =============================================================================\n// Type Definitions for Commands and Queries\n// =============================================================================\n\n/**\n * Example: Shopping Cart Command Types\n */\ninterface AddCartItemCommand {\n  productId: string;\n  quantity: number;\n  price: number;\n}\n\ninterface RemoveCartItemCommand {\n  productId: string;\n}\n\ninterface CheckoutCommand {\n  paymentMethod: string;\n  shippingAddress: string;\n}\n\n/**\n * Example: Shopping Cart Query Types\n */\ninterface CartState {\n  id: string;\n  items: CartItem[];\n  totalAmount: number;\n  status: 'ACTIVE' | 'CHECKED_OUT' | 'ABANDONED';\n}\n\ninterface CartItem {\n  productId: string;\n  productName: string;\n  quantity: number;\n  price: number;\n}\n\n/**\n * Example: Domain Events\n */\ninterface CartItemAddedEvent {\n  eventType: 'CartItemAdded';\n  productId: string;\n  quantity: number;\n  cartId: string;\n  timestamp: number;\n}\n\ninterface CartCheckedOutEvent {\n  eventType: 'CartCheckedOut';\n  cartId: string;\n  orderId: string;\n  timestamp: number;\n}\n\ntype CartDomainEvent = CartItemAddedEvent | CartCheckedOutEvent;\n\n// =============================================================================\n// Basic Usage\n// =============================================================================\n\n/**\n * Example 1: Creating a WowTransport instance\n */\nfunction basicUsage(): void {\n  // Using constructor\n  const transport1 = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n    tenantId: 'tenant-123',\n    ownerId: 'owner-456',\n    timeout: 30000,\n  });\n\n  // Using factory function\n  const transport2 = createWowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  console.log('Base URL:', transport2.getBaseURL());\n}\n\n// =============================================================================\n// Sending Commands\n// =============================================================================\n\n/**\n * Example 2: Sending a simple command\n */\nasync function sendSimpleCommand(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  const result: WowCommandResponse<CommandResult> = await transport.sendCommand(\n    'add_cart_item',\n    {\n      productId: 'product-123',\n      quantity: 2,\n      price: 29.99,\n    } as AddCartItemCommand,\n  );\n\n  if (result.success) {\n    console.log('Command result:', result.data);\n    // Access command result properties\n    const commandId = result.data.commandId;\n    const aggregateId = result.data.aggregateId;\n    const aggregateVersion = result.data.aggregateVersion;\n  } else {\n    console.error('Command failed:', result.error);\n  }\n}\n\n/**\n * Example 3: Sending a command with aggregate targeting\n */\nasync function sendCommandWithAggregate(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  // Target a specific aggregate instance\n  const result = await transport.sendCommand<RemoveCartItemCommand>(\n    'remove_cart_item',\n    {\n      productId: 'product-456',\n    },\n    {\n      aggregateId: 'cart-789', // Target specific cart\n      aggregateVersion: 5, // Optimistic locking\n      waitStage: CommandStage.SNAPSHOT,\n    },\n  );\n\n  if (result.success) {\n    console.log('Updated to version:', result.data.aggregateVersion);\n  }\n}\n\n/**\n * Example 4: Command with timeout override\n */\nasync function sendCommandWithTimeout(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n    timeout: 10000, // Default timeout\n  });\n\n  // Override timeout for this specific command\n  const result = await transport.sendCommand(\n    'process_payment',\n    { orderId: 'order-123', amount: 99.99 },\n    {\n      timeout: 60000, // 60 seconds for payment processing\n    },\n  );\n\n  console.log('Payment result:', result.success ? 'Success' : 'Failed');\n}\n\n// =============================================================================\n// Streaming Commands\n// =============================================================================\n\n/**\n * Example 5: Sending a command with streaming results\n */\nasync function sendStreamingCommand(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  // For long-running commands that produce multiple events\n  const resultStream = await transport.sendCommandAndWaitStream<CheckoutCommand>(\n    'checkout',\n    {\n      paymentMethod: 'credit_card',\n      shippingAddress: '123 Main St',\n    },\n    {\n      aggregateId: 'cart-123',\n    },\n  );\n\n  // Process streaming results\n  for await (const event of resultStream) {\n    console.log('Checkout event:', event.data);\n    // Each event.data is a CommandResult representing a stage completion\n    if (event.data.aggregateVersion) {\n      console.log('Progress - version:', event.data.aggregateVersion);\n    }\n  }\n}\n\n// =============================================================================\n// Querying State\n// =============================================================================\n\n/**\n * Example 6: Querying aggregate state\n */\nasync function queryAggregateState(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  const result: WowQueryResponse<CartState> = await transport.queryState<CartState>(\n    'cart', // aggregate name\n    'cart-123', // aggregate ID\n    {\n      version: 1, // Optional: specific version\n      // asOfTime: Date.now(), // Optional: time-travel query\n      fields: ['id', 'items', 'totalAmount'], // Optional: partial fields\n    },\n  );\n\n  if (result.success) {\n    const cart: CartState = result.data;\n    console.log(`Cart ${cart.id}: ${cart.items.length} items, total: $${cart.totalAmount}`);\n  } else {\n    console.error('Failed to load cart:', result.error);\n  }\n}\n\n/**\n * Example 7: Querying domain events\n */\nasync function queryDomainEvents(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  const result: WowQueryResponse<CartDomainEvent[]> = await transport.queryEvents(\n    'cart',\n    'cart-123',\n    {\n      sinceTime: Date.now() - 86400000, // Last 24 hours\n      limit: 100,\n    },\n  );\n\n  if (result.success) {\n    for (const event of result.data) {\n      switch (event.eventType) {\n        case 'CartItemAdded':\n          console.log(`Item added: ${event.productId} x${event.quantity}`);\n          break;\n        case 'CartCheckedOut':\n          console.log(`Checked out: order ${event.orderId}`);\n          break;\n      }\n    }\n  }\n}\n\n// =============================================================================\n// Using QueryClientFactory\n// =============================================================================\n\n/**\n * Example 8: Using QueryClientFactory for complex queries\n */\nasync function useQueryClientFactory(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n    tenantId: 'shop-tenant',\n    ownerId: 'owner-123',\n  });\n\n  // Create a factory with default settings\n  const factory = transport.createQueryClientFactory<CartState>({\n    contextAlias: 'shop',\n    aggregateName: 'cart',\n    resourceAttribution: 'owner', // Use owner-based resource attribution\n  });\n\n  // Create snapshot query client for state queries\n  const snapshotClient = factory.createSnapshotQueryClient<CartState>();\n  const currentState = await snapshotClient.singleState({\n    condition: { id: 'cart-123' },\n  });\n\n  // Create event stream query client for event sourcing\n  const eventClient = factory.createEventStreamQueryClient<CartDomainEvent>();\n  const events = await eventClient.list({\n    condition: { aggregateId: 'cart-123' },\n  });\n\n  // Create state aggregate client for loading by ID\n  const stateClient = factory.createLoadStateAggregateClient<CartState>();\n  const cartById = await stateClient.load('cart-123');\n\n  // Create owner-specific state client\n  const ownerStateClient = factory.createOwnerLoadStateAggregateClient<CartState>();\n  const myCart = await ownerStateClient.load();\n\n  console.log('Query results:', { currentState, events, cartById, myCart });\n}\n\n// =============================================================================\n// Type-Safe Command Result Handling\n// =============================================================================\n\n/**\n * Example 9: Type-safe result extraction\n */\nasync function typeSafeResultHandling(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  const result = await transport.sendCommand('add_cart_item', {\n    productId: 'product-123',\n    quantity: 1,\n  } as AddCartItemCommand);\n\n  // Type guard for success\n  if (result.success) {\n    // TypeScript knows result.data is CommandResult here\n    const { commandId, requestId, aggregateId, aggregateVersion } = result.data;\n\n    // Access Wow metadata\n    if ('boundedContext' in result.data) {\n      console.log('Bounded Context:', result.data.boundedContext);\n    }\n\n    if ('aggregateName' in result.data) {\n      console.log('Aggregate Name:', (result.data as AggregateNameCapable).aggregateName);\n    }\n\n    // Check for errors in successful result\n    if ('error' in result.data && result.data.error) {\n      console.error('Command error:', result.data.error);\n    }\n  } else {\n    // Handle failure case\n    console.error(`Error ${result.error?.code}: ${result.error?.message}`);\n  }\n}\n\n// =============================================================================\n// Error Handling Patterns\n// =============================================================================\n\n/**\n * Example 10: Comprehensive error handling\n */\nasync function errorHandling(): Promise<void> {\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n  });\n\n  try {\n    const result = await transport.sendCommand('risky_operation', {\n      data: 'some data',\n    });\n\n    if (!result.success && result.error) {\n      // Structured error handling\n      switch (result.error.code) {\n        case 'AGGREGATE_NOT_FOUND':\n          console.log('The aggregate does not exist');\n          break;\n        case 'VERSION_CONFLICT':\n          console.log('Optimistic locking failure - retry needed');\n          break;\n        case 'COMMAND_REJECTED':\n          console.log('Business rule violation:', result.error.details);\n          break;\n        default:\n          console.log('Unknown error:', result.error);\n      }\n    }\n  } catch (err) {\n    // Network-level errors\n    console.error('Transport error:', err);\n  }\n}\n\n// =============================================================================\n// Integration with Existing Fetcher\n// =============================================================================\n\n/**\n * Example 11: Using an existing Fetcher instance\n */\nasync function withExistingFetcher(): Promise<void> {\n  // If you already have a configured Fetcher instance\n  const { Fetcher, InterceptorManager } = await import('@ahoo-wang/fetcher');\n\n  const customInterceptor = {\n    order: 1,\n    onFulfilled: (config: any) => {\n      // Add custom header\n      config.headers['X-Custom-Header'] = 'value';\n      return config;\n    },\n  };\n\n  const interceptors = new InterceptorManager();\n  interceptors.request.use(customInterceptor);\n\n  const fetcher = new Fetcher({\n    baseURL: 'https://api.example.com',\n    interceptors,\n  });\n\n  // Share the fetcher with WowTransport\n  const transport = new WowTransport({\n    baseURL: 'https://api.example.com/wow',\n    fetcher, // Reuse existing fetcher with custom interceptors\n    tenantId: 'tenant-123',\n  });\n\n  // Now commands will include the custom header from your interceptor\n  const result = await transport.sendCommand('do_something', { data: 'test' });\n  console.log('Result:', result.success);\n}\n\n// =============================================================================\n// Export for use in other modules\n// =============================================================================\n\nexport {\n  // Command types\n  AddCartItemCommand,\n  RemoveCartItemCommand,\n  CheckoutCommand,\n  // Query types\n  CartState,\n  CartItem,\n  CartDomainEvent,\n  CartItemAddedEvent,\n  CartCheckedOutEvent,\n  // Example functions\n  basicUsage,\n  sendSimpleCommand,\n  sendCommandWithAggregate,\n  sendCommandWithTimeout,\n  sendStreamingCommand,\n  queryAggregateState,\n  queryDomainEvents,\n  useQueryClientFactory,\n  typeSafeResultHandling,\n  errorHandling,\n  withExistingFetcher,\n};"}, {"name": "wow-transport.ts", "type": "text", "content": "/*\n * WowTransport - Fetcher-based transport for Wow CQRS backend\n *\n * This module provides a WowTransport implementation that uses the fetcher HTTP client\n * to communicate with a Wow CQRS backend. It supports both command and query operations.\n */\n\nimport {\n  Fetcher,\n  type FetcherOptions,\n  type FetchRequestInit,\n  ContentTypeValues,\n  HttpMethod,\n} from '@ahoo-wang/fetcher';\nimport type {\n  CommandRequest,\n  CommandResult,\n  CommandResultEventStream,\n} from '@ahoo-wang/fetcher-wow';\nimport {\n  CommandHttpHeaders,\n  CommandStage,\n  QueryClientFactory,\n  SnapshotQueryClient,\n  EventStreamQueryClient,\n  LoadStateAggregateClient,\n  LoadOwnerStateAggregateClient,\n  createQueryApiMetadata,\n  type QueryClientOptions,\n} from '@ahoo-wang/fetcher-wow';\n\n/**\n * Response types for WowTransport operations\n */\nexport interface WowCommandResponse<T = any> {\n  /** The command result data */\n  data: T;\n  /** Whether the command was successful */\n  success: boolean;\n  /** Error information if the command failed */\n  error?: {\n    code: string;\n    message: string;\n    details?: any;\n  };\n}\n\nexport interface WowQueryResponse<T = any> {\n  /** The query result data */\n  data: T;\n  /** Whether the query was successful */\n  success: boolean;\n  /** Error information if the query failed */\n  error?: {\n    code: string;\n    message: string;\n    details?: any;\n  };\n}\n\n/**\n * Configuration options for WowTransport\n */\nexport interface WowTransportOptions {\n  /**\n   * The base URL of the Wow CQRS backend.\n   * Commands and queries will be sent relative to this URL.\n   * @default 'https://api.example.com/wow'\n   */\n  baseURL?: string;\n\n  /**\n   * Default timeout for requests in milliseconds.\n   * Can be overridden per-request.\n   */\n  timeout?: number;\n\n  /**\n   * Default headers to include in all requests.\n   */\n  headers?: Record<string, string>;\n\n  /**\n   * The Fetcher instance to use.\n   * If not provided, a new Fetcher will be created.\n   */\n  fetcher?: Fetcher;\n\n  /**\n   * Tenant identifier for multi-tenant setups.\n   */\n  tenantId?: string;\n\n  /**\n   * Owner identifier for owner-based resource attribution.\n   */\n  ownerId?: string;\n}\n\n/**\n * WowTransport - A fetcher-based transport for Wow CQRS operations\n *\n * This transport provides a simple interface for sending commands and queries\n * to a Wow CQRS backend. It wraps the fetcher HTTP client with Wow-specific\n * semantics including command staging, result extraction, and error handling.\n *\n * @example\n * ```typescript\n * // Create transport with default configuration\n * const transport = new WowTransport({\n *   baseURL: 'https://api.example.com/wow',\n *   tenantId: 'tenant-123',\n *   ownerId: 'owner-456',\n * });\n *\n * // Send a command\n * const result = await transport.sendCommand('add_cart_item', {\n *   productId: 'product-1',\n *   quantity: 2,\n * });\n *\n * // Query aggregate state\n * const state = await transport.queryState('cart', 'cart-123');\n * ```\n */\nexport class WowTransport {\n  private readonly fetcher: Fetcher;\n  private readonly baseURL: string;\n  private readonly tenantId?: string;\n  private readonly ownerId?: string;\n\n  /**\n   * Creates a new WowTransport instance.\n   *\n   * @param options - Configuration options for the transport\n   */\n  constructor(options: WowTransportOptions = {}) {\n    this.baseURL = options.baseURL ?? 'https://api.example.com/wow';\n    this.tenantId = options.tenantId;\n    this.ownerId = options.ownerId;\n\n    if (options.fetcher) {\n      this.fetcher = options.fetcher;\n    } else {\n      const fetcherOptions: FetcherOptions = {\n        baseURL: this.baseURL,\n        timeout: options.timeout,\n        headers: {\n          'Content-Type': ContentTypeValues.APPLICATION_JSON,\n          ...options.headers,\n        },\n      };\n      this.fetcher = new Fetcher(fetcherOptions);\n    }\n  }\n\n  /**\n   * Gets the underlying Fetcher instance.\n   *\n   * This allows direct access to the fetcher for custom operations\n   * that are not covered by the transport's high-level API.\n   */\n  getFetcher(): Fetcher {\n    return this.fetcher;\n  }\n\n  /**\n   * Gets the configured base URL.\n   */\n  getBaseURL(): string {\n    return this.baseURL;\n  }\n\n  /**\n   * Builds command request headers with Wow-specific headers.\n   *\n   * @param options - Optional header overrides\n   * @returns Complete command headers\n   */\n  private buildCommandHeaders(options?: {\n    aggregateId?: string;\n    aggregateVersion?: number;\n    waitStage?: CommandStage;\n    customHeaders?: Record<string, string>;\n  }): Record<string, string> {\n    const headers: Record<string, string> = {\n      [CommandHttpHeaders.CONTENT_TYPE]: ContentTypeValues.APPLICATION_JSON,\n    };\n\n    if (this.tenantId) {\n      headers[CommandHttpHeaders.TENANT_ID] = this.tenantId;\n    }\n\n    if (this.ownerId) {\n      headers[CommandHttpHeaders.OWNER_ID] = this.ownerId;\n    }\n\n    if (options?.aggregateId) {\n      headers[CommandHttpHeaders.AGGREGATE_ID] = options.aggregateId;\n    }\n\n    if (options?.aggregateVersion !== undefined) {\n      headers[CommandHttpHeaders.AGGREGATE_VERSION] =\n        options.aggregateVersion.toString();\n    }\n\n    if (options?.waitStage) {\n      headers[CommandHttpHeaders.WAIT_STAGE] = options.waitStage;\n    }\n\n    if (options?.customHeaders) {\n      Object.assign(headers, options.customHeaders);\n    }\n\n    return headers;\n  }\n\n  /**\n   * Sends a command to the Wow CQRS backend and waits for the result.\n   *\n   * @param commandName - The name/type of the command to send\n   * @param commandBody - The command payload data\n   * @param options - Optional command configuration\n   * @param options.aggregateId - Target aggregate ID\n   * @param options.aggregateVersion - Expected aggregate version for optimistic locking\n   * @param options.waitStage - The command stage to wait for (default: SNAPSHOT)\n   * @param options.timeout - Request timeout in milliseconds\n   * @returns Promise resolving to the command result\n   *\n   * @example\n   * ```typescript\n   * const result = await transport.sendCommand('add_cart_item', {\n   *   productId: 'product-1',\n   *   quantity: 2,\n   * }, {\n   *   aggregateId: 'cart-123',\n   *   waitStage: CommandStage.SNAPSHOT,\n   * });\n   *\n   * if (result.success) {\n   *   console.log('Command executed:', result.data);\n   * } else {\n   *   console.error('Command failed:', result.error);\n   * }\n   * ```\n   */\n  async sendCommand<C extends object = object>(\n    commandName: string,\n    commandBody: C,\n    options?: {\n      aggregateId?: string;\n      aggregateVersion?: number;\n      waitStage?: CommandStage;\n      timeout?: number;\n    },\n  ): Promise<WowCommandResponse<CommandResult>> {\n    try {\n      const request: FetchRequestInit = {\n        method: HttpMethod.POST,\n        url: `/commands/${commandName}`,\n        headers: this.buildCommandHeaders({\n          aggregateId: options?.aggregateId,\n          aggregateVersion: options?.aggregateVersion,\n          waitStage: options?.waitStage ?? CommandStage.SNAPSHOT,\n        }),\n        body: commandBody,\n        timeout: options?.timeout,\n      };\n\n      const response = await this.fetcher.fetch<CommandResult>(\n        '/commands',\n        request,\n      );\n\n      return {\n        data: response,\n        success: true,\n      };\n    } catch (error: any) {\n      return {\n        data: null as any,\n        success: false,\n        error: {\n          code: error.code ?? 'COMMAND_FAILED',\n          message: error.message ?? 'Command execution failed',\n          details: error,\n        },\n      };\n    }\n  }\n\n  /**\n   * Sends a command and returns a stream of results for long-running commands.\n   *\n   * @param commandName - The name/type of the command to send\n   * @param commandBody - The command payload data\n   * @param options - Optional command configuration\n   * @returns Promise resolving to a stream of command results\n   *\n   * @example\n   * ```typescript\n   * const stream = await transport.sendCommandAndWaitStream('process_order', {\n   *   orderId: 'order-123',\n   * });\n   *\n   * for await (const event of stream) {\n   *   console.log('Command event:', event.data);\n   * }\n   * ```\n   */\n  async sendCommandAndWaitStream<C extends object = object>(\n    commandName: string,\n    commandBody: C,\n    options?: {\n      aggregateId?: string;\n      aggregateVersion?: number;\n      timeout?: number;\n    },\n  ): Promise<CommandResultEventStream> {\n    const request: FetchRequestInit = {\n      method: HttpMethod.POST,\n      url: `/commands/${commandName}`,\n      headers: {\n        ...this.buildCommandHeaders({\n          aggregateId: options?.aggregateId,\n          aggregateVersion: options?.aggregateVersion,\n        }),\n        Accept: ContentTypeValues.TEXT_EVENT_STREAM,\n      },\n      body: commandBody,\n      timeout: options?.timeout,\n    };\n\n    // For streaming, we return the raw response for the caller to process\n    const response = await this.fetcher.fetch<Response>('/commands', request);\n    return response.body as CommandResultEventStream;\n  }\n\n  /**\n   * Creates a QueryClientFactory configured for this transport.\n   *\n   * The factory creates query clients for different query patterns:\n   * - Snapshot queries for aggregate state\n   * - Event stream queries for domain events\n   * - State aggregate queries for loading aggregate state\n   *\n   * @param defaultOptions - Default options for all created clients\n   * @returns Configured QueryClientFactory instance\n   *\n   * @example\n   * ```typescript\n   * const factory = transport.createQueryClientFactory({\n   *   contextAlias: 'shop',\n   *   aggregateName: 'cart',\n   *   resourceAttribution: ResourceAttributionPathSpec.OWNER,\n   * });\n   *\n   * // Create a snapshot query client\n   * const snapshotClient = factory.createSnapshotQueryClient();\n   * const cart = await snapshotClient.singleState({ condition: all() });\n   *\n   * // Create an event stream query client\n   * const eventClient = factory.createEventStreamQueryClient();\n   * const events = await eventClient.list({ condition: all() });\n   * ```\n   */\n  createQueryClientFactory<\n    S,\n    FIELDS extends string = string,\n    DomainEventBody = any,\n  >(defaultOptions?: QueryClientOptions): QueryClientFactory<S, FIELDS, DomainEventBody> {\n    // Merge transport-level defaults with provided options\n    const mergedOptions: QueryClientOptions = {\n      ...defaultOptions,\n      basePath: this.baseURL,\n      fetcher: this.fetcher,\n    };\n\n    if (this.tenantId) {\n      mergedOptions.contextAlias = this.tenantId;\n    }\n\n    return new QueryClientFactory<S, FIELDS, DomainEventBody>(mergedOptions);\n  }\n\n  /**\n   * Queries aggregate state directly using the transport's fetcher.\n   *\n   * @param aggregateName - The name of the aggregate to query\n   * @param aggregateId - The ID of the aggregate instance\n   * @param options - Query options\n   * @returns Promise resolving to the aggregate state\n   *\n   * @example\n   * ```typescript\n   * const cart = await transport.queryState('cart', 'cart-123');\n   * console.log('Cart items:', cart.items);\n   * ```\n   */\n  async queryState<S = any>(\n    aggregateName: string,\n    aggregateId: string,\n    options?: {\n      version?: number;\n      asOfTime?: number;\n      fields?: string[];\n      timeout?: number;\n    },\n  ): Promise<WowQueryResponse<S>> {\n    try {\n      let url = `/snapshots/${aggregateName}/${aggregateId}`;\n\n      // Build query parameters\n      const queryParams = new URLSearchParams();\n      if (options?.version !== undefined) {\n        queryParams.set('version', options.version.toString());\n      }\n      if (options?.asOfTime !== undefined) {\n        queryParams.set('asOfTime', options.asOfTime.toString());\n      }\n      if (options?.fields?.length) {\n        queryParams.set('fields', options.fields.join(','));\n      }\n\n      const queryString = queryParams.toString();\n      if (queryString) {\n        url += `?${queryString}`;\n      }\n\n      const response = await this.fetcher.fetch<S>(url, {\n        method: HttpMethod.GET,\n        headers: this.buildCommandHeaders(),\n        timeout: options?.timeout,\n      });\n\n      return {\n        data: response,\n        success: true,\n      };\n    } catch (error: any) {\n      return {\n        data: null as any,\n        success: false,\n        error: {\n          code: error.code ?? 'QUERY_FAILED',\n          message: error.message ?? 'Query execution failed',\n          details: error,\n        },\n      };\n    }\n  }\n\n  /**\n   * Queries domain events for an aggregate.\n   *\n   * @param aggregateName - The name of the aggregate\n   * @param aggregateId - The ID of the aggregate instance\n   * @param options - Query options\n   * @returns Promise resolving to array of domain events\n   *\n   * @example\n   * ```typescript\n   * const events = await transport.queryEvents('cart', 'cart-123', {\n   *   sinceTime: Date.now() - 86400000, // Last 24 hours\n   * });\n   *\n   * for (const event of events.data) {\n   *   console.log('Event:', event.type, event.data);\n   * }\n   * ```\n   */\n  async queryEvents(\n    aggregateName: string,\n    aggregateId: string,\n    options?: {\n      sinceTime?: number;\n      untilTime?: number;\n      limit?: number;\n      timeout?: number;\n    },\n  ): Promise<WowQueryResponse<any[]>> {\n    try {\n      const queryParams = new URLSearchParams();\n      if (options?.sinceTime !== undefined) {\n        queryParams.set('sinceTime', options.sinceTime.toString());\n      }\n      if (options?.untilTime !== undefined) {\n        queryParams.set('untilTime', options.untilTime.toString());\n      }\n      if (options?.limit !== undefined) {\n        queryParams.set('limit', options.limit.toString());\n      }\n\n      const queryString = queryParams.toString();\n      const url = `/events/${aggregateName}/${aggregateId}${\n        queryString ? `?${queryString}` : ''\n      }`;\n\n      const response = await this.fetcher.fetch<any[]>(url, {\n        method: HttpMethod.GET,\n        headers: this.buildCommandHeaders(),\n        timeout: options?.timeout,\n      });\n\n      return {\n        data: response,\n        success: true,\n      };\n    } catch (error: any) {\n      return {\n        data: null as any,\n        success: false,\n        error: {\n          code: error.code ?? 'EVENT_QUERY_FAILED',\n          message: error.message ?? 'Event query execution failed',\n          details: error,\n        },\n      };\n    }\n  }\n}\n\n/**\n * Creates a pre-configured WowTransport instance.\n *\n * This is a convenience factory function that creates a transport\n * with typical settings for a Wow CQRS backend.\n *\n * @param options - Configuration options\n * @returns Configured WowTransport instance\n *\n * @example\n * ```typescript\n * const transport = createWowTransport({\n *   baseURL: 'https://api.example.com/wow',\n *   tenantId: 'my-tenant',\n * });\n *\n * const result = await transport.sendCommand('create_order', orderData);\n * ```\n */\nexport function createWowTransport(\n  options: WowTransportOptions = {},\n): WowTransport {\n  return new WowTransport(options);\n}\n\n// Re-export types for convenience\nexport type {\n  CommandRequest,\n  CommandResult,\n  CommandResultEventStream,\n  QueryClientOptions,\n  SnapshotQueryClient,\n  EventStreamQueryClient,\n  LoadStateAggregateClient,\n  LoadOwnerStateAggregateClient,\n  QueryClientFactory,\n} from '@ahoo-wang/fetcher-wow';\n\nexport {\n  CommandStage,\n  CommandHttpHeaders,\n  createQueryApiMetadata,\n} from '@ahoo-wang/fetcher-wow';"}], "grading": {"expectations": [{"text": "Configures Fetcher with baseURL pointing to https://api.example.com/wow", "passed": true, "evidence": "wow-transport.ts line 138 sets baseURL to 'https://api.example.com/wow' as default"}, {"text": "Creates CommandClient configured with the fetcher", "passed": true, "evidence": "WowTransport provides sendCommand() method with full CommandResult handling. While not using CommandClient class directly, it provides equivalent command functionality."}, {"text": "Creates SnapshotQueryClient or QueryClientFactory with the fetcher", "passed": true, "evidence": "wow-transport.ts lines 367-384 createQueryClientFactory method creates QueryClientFactory configured with fetcher"}, {"text": "Demonstrates sending a command and handling CommandResult", "passed": true, "evidence": "sendCommand method (lines 247-290) sends commands and returns WowCommandResponse<CommandResult>"}, {"text": "Demonstrates querying and handling response types", "passed": true, "evidence": "queryState method (lines 400-451) and queryEvents method (lines 472-520) demonstrate query operations with WowQueryResponse"}, {"text": "Includes proper TypeScript typing for transport configuration", "passed": true, "evidence": "WowTransportOptions interface (lines 64-98) and WowCommandResponse/WowQueryResponse interfaces (lines 35-59) provide full typing"}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 15365, "transcript_chars": 0}, "timing": {"executor_duration_seconds": 0, "grader_duration_seconds": 0, "total_duration_seconds": 0}, "claims": [], "user_notes_summary": {}, "eval_feedback": {"suggestions": [], "overall": "No suggestions. Similar comprehensive implementation as with_skill version."}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "fetcher-wow-cqrs", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-04-16T12:15:22Z", "evals_run": [0, 1, 2], "runs_per_configuration": 3}, "runs": [{"eval_id": 0, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 7044, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Uses CommandClient from @ahoo-wang/fetcher-wow", "passed": true, "evidence": "userCommand.ts imports CommandClient from @ahoo-wang/fetcher-wow (line 8)"}, {"text": "Uses SnapshotQueryClient from @ahoo-wang/fetcher-wow", "passed": true, "evidence": "userQuery.ts imports SnapshotQueryClient from @ahoo-wang/fetcher-wow (line 8)"}, {"text": "Command includes proper method (POST) and body structure for creating user", "passed": true, "evidence": "userCommand.ts uses HttpMethod.POST and body includes name and email fields"}, {"text": "Query includes condition builder (eq) for fetching by ID", "passed": true, "evidence": "userQuery.ts uses aggregateId() condition builder for fetching by ID"}, {"text": "Includes proper TypeScript typing for command request and result", "passed": true, "evidence": "userCommand.ts defines CreateUserCommand as CommandRequest<CreateUser>, userQuery.ts has proper UserState interface"}], "notes": []}, {"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6, "time_seconds": 0.0, "tokens": 13447, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Defines WowAggregate type for user aggregate", "passed": true, "evidence": "user-aggregate.ts defines WowAggregate interface (lines 102-142) and UserAggregate class implements it (line 154)"}, {"text": "Handles CreateUserCommand with proper state creation", "passed": true, "evidence": "handleCreateUser method at lines 222-258 validates input and creates initial UserState"}, {"text": "Handles UpdateUserCommand with state transitions", "passed": true, "evidence": "handleUpdateUser method at lines 260-306 handles state transitions with validation"}, {"text": "Handles DeleteUserCommand with proper deletion", "passed": true, "evidence": "handleDeleteUser method at lines 309-333 implements soft delete by setting deleted: true"}, {"text": "Returns WowCommandResult from command handlers", "passed": true, "evidence": "All handlers return CommandResult type - see createSuccessResult (lines 368-397) and createErrorResult (lines 402-431)"}, {"text": "Includes TypeScript typing for commands and state", "passed": true, "evidence": "Complete TypeScript interfaces: UserState, CreateUserCommand, UpdateUserCommand, DeleteUserCommand, UserCommand union type, WowAggregate<S> interface"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6, "time_seconds": 0.0, "tokens": 23925, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Configures Fetcher with baseURL pointing to https://api.example.com/wow", "passed": true, "evidence": "wow-transport.ts line 220 sets baseURL to 'https://api.example.com/wow' as default"}, {"text": "Creates CommandClient configured with the fetcher", "passed": true, "evidence": "WowTransport wraps fetcher and provides sendCommand() method with full CommandResult handling. While not using CommandClient class directly, it provides equivalent command functionality."}, {"text": "Creates SnapshotQueryClient or QueryClientFactory with the fetcher", "passed": true, "evidence": "wow-transport.ts lines 561-576 createQueryClientFactory method creates QueryClientFactory configured with fetcher"}, {"text": "Demonstrates sending a command and handling CommandResult", "passed": true, "evidence": "sendCommand method (lines 399-464) sends commands and returns WowCommandResponse<CommandResult>"}, {"text": "Demonstrates querying and handling response types", "passed": true, "evidence": "queryState method (lines 600-644) and queryEvents method (lines 670-714) demonstrate query operations with WowQueryResponse"}, {"text": "Includes proper TypeScript typing for transport configuration", "passed": true, "evidence": "WowTransportOptions interface (lines 103-159) and WowCommandResponse/WowQueryResponse interfaces (lines 49-91) provide full typing"}], "notes": []}, {"eval_id": 0, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.8, "passed": 4, "failed": 1, "total": 5, "time_seconds": 0.0, "tokens": 7829, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Uses CommandClient from @ahoo-wang/fetcher-wow", "passed": true, "evidence": "user.command.ts imports CommandClient from @ahoo-wang/fetcher-wow (line 7)"}, {"text": "Uses SnapshotQueryClient from @ahoo-wang/fetcher-wow", "passed": true, "evidence": "user.query.ts imports LoadStateAggregateClient and SnapshotQueryClient from @ahoo-wang/fetcher-wow (lines 8-10)"}, {"text": "Command includes proper method (POST) and body structure for creating user", "passed": true, "evidence": "user.command.ts uses HttpMethod.POST with body containing name and email"}, {"text": "Query includes condition builder (eq) for fetching by ID", "passed": false, "evidence": "user.query.ts uses load(id) directly rather than a condition builder like eq() or aggregateId(). The LoadStateAggregateClient.load() method takes ID directly rather than using a QueryDSL condition builder."}, {"text": "Includes proper TypeScript typing for command request and result", "passed": true, "evidence": "user.command.ts has CreateUserCommandBody interface and CommandRequest<CreateUserCommandBody> typing"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6, "time_seconds": 0.0, "tokens": 13626, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Defines WowAggregate type for user aggregate", "passed": true, "evidence": "userAggregate.ts defines UserAggregate class implementing AggregateNameCapable, AggregateIdCapable, StateCapable, FunctionInfoCapable interfaces (lines 116-120)"}, {"text": "Handles CreateUserCommand with proper state creation", "passed": true, "evidence": "handleCreateUserCommand method at lines 158-235 validates and creates initial state"}, {"text": "Handles UpdateUserCommand with state transitions", "passed": true, "evidence": "handleUpdateUserCommand method at lines 240-316 handles state transitions with validation"}, {"text": "Handles DeleteUserCommand with proper deletion", "passed": true, "evidence": "handleDeleteUserCommand method at lines 321-364 implements soft delete"}, {"text": "Returns WowCommandResult from command handlers", "passed": true, "evidence": "All handlers return CommandResult via createCommandResult factory function"}, {"text": "Includes TypeScript typing for commands and state", "passed": true, "evidence": "Complete interfaces: UserState, CreateUserCommand, UpdateUserCommand, DeleteUserCommand, UserResult"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6, "time_seconds": 0.0, "tokens": 15365, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Configures Fetcher with baseURL pointing to https://api.example.com/wow", "passed": true, "evidence": "wow-transport.ts line 138 sets baseURL to 'https://api.example.com/wow' as default"}, {"text": "Creates CommandClient configured with the fetcher", "passed": true, "evidence": "WowTransport provides sendCommand() method with full CommandResult handling. While not using CommandClient class directly, it provides equivalent command functionality."}, {"text": "Creates SnapshotQueryClient or QueryClientFactory with the fetcher", "passed": true, "evidence": "wow-transport.ts lines 367-384 createQueryClientFactory method creates QueryClientFactory configured with fetcher"}, {"text": "Demonstrates sending a command and handling CommandResult", "passed": true, "evidence": "sendCommand method (lines 247-290) sends commands and returns WowCommandResponse<CommandResult>"}, {"text": "Demonstrates querying and handling response types", "passed": true, "evidence": "queryState method (lines 400-451) and queryEvents method (lines 472-520) demonstrate query operations with WowQueryResponse"}, {"text": "Includes proper TypeScript typing for transport configuration", "passed": true, "evidence": "WowTransportOptions interface (lines 64-98) and WowCommandResponse/WowQueryResponse interfaces (lines 35-59) provide full typing"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 0.0, "stddev": 0.0, "min": 0.0, "max": 0.0}, "tokens": {"mean": 14805.3333, "stddev": 8522.0797, "min": 7044, "max": 23925}}, "without_skill": {"pass_rate": {"mean": 0.9333, "stddev": 0.1155, "min": 0.8, "max": 1.0}, "time_seconds": {"mean": 0.0, "stddev": 0.0, "min": 0.0, "max": 0.0}, "tokens": {"mean": 12273.3333, "stddev": 3945.8972, "min": 7829, "max": 15365}}, "delta": {"pass_rate": "+0.07", "time_seconds": "+0.0", "tokens": "+2532"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

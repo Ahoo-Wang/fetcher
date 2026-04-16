@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "broadcast-channel-messenger",
+  "prompt": "Implement cross-tab communication using BroadcastChannelMessenger to sync user preferences across browser tabs. Create the messenger, show how to broadcast events to other tabs, and handle incoming events.",
+  "assertions": [
+    "Uses BroadcastChannelMessenger from @ahoo-wang/fetcher-eventbus",
+    "Demonstrates creating a BroadcastChannelMessenger instance",
+    "Shows postMessage or broadcast to send events to other tabs",
+    "Shows onmessage handler to receive events from other tabs",
+    "Demonstrates close() method to clean up"
+  ]
+}

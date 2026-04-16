@@ -1,0 +1,67 @@
+{
+  "expectations": [
+    {
+      "text": "SpaceIdProvider is configured to resolve space ID from requests",
+      "passed": true,
+      "evidence": "SpaceIdProvider with resolveSpaceId function is configured and returns spaceId"
+    },
+    {
+      "text": "Separate token storage per tenant/space is implemented",
+      "passed": true,
+      "evidence": "SpaceTokenStorageFactory creates and manages separate TokenStorage per spaceId"
+    },
+    {
+      "text": "CoSec-Space-Id header is properly set on requests",
+      "passed": true,
+      "evidence": "CoSecConfigurer with spaceIdProvider handles CoSec-Space-Id header via CoSecRequestInterceptor"
+    },
+    {
+      "text": "Multi-tenant fetcher registry or factory pattern is used",
+      "passed": true,
+      "evidence": "MultiSpaceFetcherRegistry class manages separate Fetcher instances per space"
+    },
+    {
+      "text": "Per-space token management handles signIn/signOut",
+      "passed": true,
+      "evidence": "signIn() and signOut() methods manage tokens for each space independently"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Write": 1
+    },
+    "total_tool_calls": 1,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 4200,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 40.0,
+    "grader_duration_seconds": 10.0,
+    "total_duration_seconds": 50.0
+  },
+  "claims": [
+    {
+      "claim": "Space-specific token refreshers are factory-created",
+      "type": "factual",
+      "verified": true,
+      "evidence": "SpaceTokenRefresherFactory.createRefresher(spaceId) returns space-specific TokenRefresher"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "All assertions pass. Multi-space authentication is properly implemented using CoSec framework."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "expectations": [
+    {
+      "text": "Defines WowAggregate type for user aggregate",
+      "passed": true,
+      "evidence": "userAggregate.ts defines UserAggregate class implementing AggregateNameCapable, AggregateIdCapable, StateCapable, FunctionInfoCapable interfaces (lines 116-120)"
+    },
+    {
+      "text": "Handles CreateUserCommand with proper state creation",
+      "passed": true,
+      "evidence": "handleCreateUserCommand method at lines 158-235 validates and creates initial state"
+    },
+    {
+      "text": "Handles UpdateUserCommand with state transitions",
+      "passed": true,
+      "evidence": "handleUpdateUserCommand method at lines 240-316 handles state transitions with validation"
+    },
+    {
+      "text": "Handles DeleteUserCommand with proper deletion",
+      "passed": true,
+      "evidence": "handleDeleteUserCommand method at lines 321-364 implements soft delete"
+    },
+    {
+      "text": "Returns WowCommandResult from command handlers",
+      "passed": true,
+      "evidence": "All handlers return CommandResult via createCommandResult factory function"
+    },
+    {
+      "text": "Includes TypeScript typing for commands and state",
+      "passed": true,
+      "evidence": "Complete interfaces: UserState, CreateUserCommand, UpdateUserCommand, DeleteUserCommand, UserResult"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 0,
+    "errors_encountered": 0,
+    "output_chars": 13626,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 0,
+    "grader_duration_seconds": 0,
+    "total_duration_seconds": 0
+  },
+  "claims": [],
+  "user_notes_summary": {},
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "No suggestions, evals look solid. Both with_skill and without_skill produced comprehensive implementations."
+  }
+}

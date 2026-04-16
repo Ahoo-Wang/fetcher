@@ -1,0 +1,10 @@
+# Eval 1 - without_skill transcript
+
+## Prompt
+Create a streaming chat completion example using @ahoo-wang/fetcher-openai with GPT-4.
+
+## Execution
+Claude was invoked without the skill.
+
+## Output
+No transcript available - claude -p mode does not execute tools.

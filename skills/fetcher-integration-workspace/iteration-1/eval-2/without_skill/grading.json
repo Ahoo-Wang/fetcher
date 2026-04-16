@@ -1,0 +1,52 @@
+{
+  "expectations": [
+    {
+      "text": "Creates NamedFetcher named 'auth'",
+      "passed": true,
+      "evidence": "Code shows: const authFetcher = new NamedFetcher('auth', { baseURL: 'https://auth.example.com', timeout: 10000 })"
+    },
+    {
+      "text": "Creates NamedFetcher named 'api'",
+      "passed": true,
+      "evidence": "Code shows: const apiFetcher = new NamedFetcher('api', { baseURL: 'https://api.example.com', timeout: 30000 })"
+    },
+    {
+      "text": "Creates NamedFetcher named 'files'",
+      "passed": true,
+      "evidence": "Code shows: const filesFetcher = new NamedFetcher('files', { baseURL: 'https://files.example.com', timeout: 120000 })"
+    },
+    {
+      "text": "Uses fetcherRegistrar.get() to retrieve",
+      "passed": true,
+      "evidence": "Code shows: const retrievedAuthFetcher = fetcherRegistrar.get('auth'); const retrievedApiFetcher = fetcherRegistrar.get('api'); const retrievedFilesFetcher = fetcherRegistrar.get('files'); Also uses fetcherRegistrar.requiredGet('auth')"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 0,
+    "total_steps": 0,
+    "errors_encountered": 0,
+    "output_chars": 4373,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "total_tokens": 30151,
+    "duration_ms": 47087,
+    "total_duration_seconds": 47.1
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "No suggestions, evals look solid"
+  }
+}

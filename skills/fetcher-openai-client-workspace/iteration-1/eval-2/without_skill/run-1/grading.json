@@ -1,0 +1,60 @@
+{
+  "expectations": [
+    {
+      "text": "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+      "passed": false,
+      "evidence": "claude -p mode does not execute tools"
+    },
+    {
+      "text": "Defines a tools array with a function tool of type 'function'",
+      "passed": false,
+      "evidence": "No execution occurred"
+    },
+    {
+      "text": "Tool has name 'get_weather' and location parameter with description",
+      "passed": false,
+      "evidence": "No execution occurred"
+    },
+    {
+      "text": "Sends chat.completions() with tools and tool_choice options",
+      "passed": false,
+      "evidence": "No execution occurred"
+    },
+    {
+      "text": "Checks response.choices[0].message.tool_calls to detect tool call",
+      "passed": false,
+      "evidence": "No execution occurred"
+    },
+    {
+      "text": "Extracts and prints function name and parsed arguments from tool_calls[0]",
+      "passed": false,
+      "evidence": "No execution occurred"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 6,
+    "total": 6,
+    "pass_rate": 0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0,
+    "output_chars": 0,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "total_duration_seconds": 3.0
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Baseline - no skill available"
+  }
+}

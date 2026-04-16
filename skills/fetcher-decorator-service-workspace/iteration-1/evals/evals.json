@@ -1,0 +1,23 @@
+{
+  "skill_name": "fetcher-decorator-service",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a UserService class with @api() decorator that has baseURL https://api.example.com. Include a getUser(@path() id: number) method using @get() that returns Promise<User>, and a createUser(@body() user: User) method using @post(). Use NamedFetcher to register the fetcher.",
+      "expected_output": "TypeScript file with UserService class using @ahoo-wang/fetcher-decorator package with proper decorators and types",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Build a PostService with @api('/posts') for CRUD operations: list posts with @get('') returning Post[], get single post with @get('/{postId}'), create with @post(''), update with @put('/{postId}'), and delete with @del('/{postId}'). Use @path() for path parameters and @query() for filtering.",
+      "expected_output": "Complete CRUD service with all HTTP methods and proper parameter decorators",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Create a service that extends BaseUserService using service inheritance pattern. BaseUserService has a @get('/status') method. Child service TypicodeUserService should add @get('/posts') with @path('userId') and @query() for filtering. Both should use the same NamedFetcher.",
+      "expected_output": "Service inheritance implementation with parent/child services sharing a fetcher",
+      "files": []
+    }
+  ]
+}

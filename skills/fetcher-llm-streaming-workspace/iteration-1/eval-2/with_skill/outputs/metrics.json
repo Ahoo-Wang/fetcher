@@ -1,0 +1,16 @@
+{
+  "tool_calls": {
+    "Read": 2,
+    "Write": 3,
+    "Glob": 0,
+    "Grep": 1,
+    "Bash": 0,
+    "Edit": 0
+  },
+  "total_tool_calls": 6,
+  "total_steps": 4,
+  "files_created": ["StreamingLLMChat.tsx", "transcript.md", "metrics.json"],
+  "errors_encountered": 0,
+  "output_chars": 2450,
+  "transcript_chars": 580
+}

@@ -1,0 +1,353 @@
+{
+  "metadata": {
+    "skill_name": "fetcher-openapi-types",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-16T07:06:54Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0,
+        "tokens": 1200,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses `OpenAPI` type from @ahoo-wang/fetcher-openapi to type the root object",
+          "passed": true,
+          "evidence": "Line 1: import type { OpenAPI, ... } from '@ahoo-wang/fetcher-openapi'; Line 4: const doc: OpenAPI = { ... }"
+        },
+        {
+          "text": "Uses `Info` type from @ahoo-wang/fetcher-openapi for API metadata (title, version)",
+          "passed": true,
+          "evidence": "Line 1: import type { ..., Info, ... } from '@ahoo-wang/fetcher-openapi'; Line 18: } as Info;"
+        },
+        {
+          "text": "Uses `Paths` type for the paths field",
+          "passed": true,
+          "evidence": "Line 1: import type { ..., Paths, ... } from '@ahoo-wang/fetcher-openapi'; Line 31: paths: {} as Paths,"
+        },
+        {
+          "text": "Uses `Components` type for the components field",
+          "passed": true,
+          "evidence": "Line 1: import type { ..., Components } from '@ahoo-wang/fetcher-openapi'; Line 37: } as Components,"
+        },
+        {
+          "text": "The OpenAPI version string is set to '3.0.1' or '3.0.0'",
+          "passed": true,
+          "evidence": "Line 5: openapi: '3.0.1',"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 0,
+        "tokens": 1800,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses `Schema` type from @ahoo-wang/fetcher-openapi",
+          "passed": true,
+          "evidence": "Line 1: import type { Schema, Discriminator } from '@ahoo-wang/fetcher-openapi'; Lines 4, 15, 38: const ...Schema = { ... }"
+        },
+        {
+          "text": "Uses `Discriminator` type from @ahoo-wang/fetcher-openapi",
+          "passed": true,
+          "evidence": "Line 1: import type { Schema, Discriminator } from '@ahoo-wang/fetcher-openapi'; export type { ..., Discriminator };"
+        },
+        {
+          "text": "Uses `oneOf` array to define multiple possible types",
+          "passed": true,
+          "evidence": "Lines 39-42: oneOf: [ { $ref: ... }, { $ref: ... } ],"
+        },
+        {
+          "text": "Includes discriminator mapping with propertyName field",
+          "passed": true,
+          "evidence": "Lines 43-49: discriminator: { propertyName: 'type', mapping: { admin: ..., user: ... } }"
+        },
+        {
+          "text": "Defines separate Admin and User schemas with different properties",
+          "passed": true,
+          "evidence": "Lines 4-12 define userSchema with id, name, email. Lines 15-24 define adminSchema with id, name, email, permissions."
+        },
+        {
+          "text": "Uses $ref syntax for referencing schemas in the oneOf array",
+          "passed": true,
+          "evidence": "Lines 40-41: { $ref: '#/components/schemas/Admin' }, { $ref: '#/components/schemas/User' }"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.857,
+        "passed": 6,
+        "failed": 1,
+        "total": 7,
+        "time_seconds": 0,
+        "tokens": 2200,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses `Operation` type from @ahoo-wang/fetcher-openapi",
+          "passed": true,
+          "evidence": "Line 1: import type { Operation, ... } from '@ahoo-wang/fetcher-openapi'; Line 57: const createUserOperation: Operation = { ... }"
+        },
+        {
+          "text": "Uses `Parameter` type for defining parameters",
+          "passed": true,
+          "evidence": "Line 1: import type { ..., Parameter, ... } from '@ahoo-wang/fetcher-openapi'; Lines 4-10 define userIdParam: Parameter, Lines 13-18 define searchParam: Parameter"
+        },
+        {
+          "text": "Uses `RequestBody` type with required field set to true",
+          "passed": true,
+          "evidence": "Line 1: import type { ..., RequestBody, ... } from '@ahoo-wang/fetcher-openapi'; Line 21-36: const createUserRequestBody: RequestBody = { required: true, ... }"
+        },
+        {
+          "text": "Uses `Response` type for defining responses by status code",
+          "passed": true,
+          "evidence": "Line 1: import type { ..., Response, ... } from '@ahoo-wang/fetcher-openapi'; Lines 39-54: const createdResponse: Response = { ... }"
+        },
+        {
+          "text": "Uses `MediaType` type for content-type schemas",
+          "passed": true,
+          "evidence": "Line 1: import type { ..., MediaType, ... } from '@ahoo-wang/fetcher-openapi'; Line 34: } as MediaType;"
+        },
+        {
+          "text": "Uses HTTPMethod type or string literal 'post' for the method",
+          "passed": false,
+          "evidence": "The operation uses operationId but does not explicitly set a method. OpenAPI operations don't have a direct 'method' field - methods are keys in the path object (get:, post:, etc.)"
+        },
+        {
+          "text": "Includes both path and query parameters with correct 'in' field values",
+          "passed": true,
+          "evidence": "Lines 4-10: userIdParam with in: 'path'; Lines 13-18: searchParam with in: 'query'; Line 61: parameters: [userIdParam, searchParam]"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0,
+        "tokens": 400,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses `OpenAPI` type from @ahoo-wang/fetcher-openapi to type the root object",
+          "passed": true,
+          "evidence": "Line 1: import type { OpenAPI, ... } from '@ahoo-wang/fetcher-openapi'; Line 4: const doc: OpenAPI = { ... }"
+        },
+        {
+          "text": "Uses `Info` type from @ahoo-wang/fetcher-openapi for API metadata (title, version)",
+          "passed": true,
+          "evidence": "Line 1: import type { ..., Info, ... } from '@ahoo-wang/fetcher-openapi'; Line 9: } as Info;"
+        },
+        {
+          "text": "Uses `Paths` type for the paths field",
+          "passed": true,
+          "evidence": "Line 1: import type { ..., Paths, ... } from '@ahoo-wang/fetcher-openapi'; Line 10: paths: {} as Paths,"
+        },
+        {
+          "text": "Uses `Components` type for the components field",
+          "passed": true,
+          "evidence": "Line 1: import type { ..., Components } from '@ahoo-wang/fetcher-openapi'; Line 11: components: {} as Components,"
+        },
+        {
+          "text": "The OpenAPI version string is set to '3.0.1' or '3.0.0'",
+          "passed": true,
+          "evidence": "Line 5: openapi: '3.0.1',"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.833,
+        "passed": 5,
+        "failed": 1,
+        "total": 6,
+        "time_seconds": 0,
+        "tokens": 600,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses `Schema` type from @ahoo-wang/fetcher-openapi",
+          "passed": true,
+          "evidence": "Line 1: import type { Schema, Discriminator } from '@ahoo-wang/fetcher-openapi'; Line 4: const polymorphicSchema: Schema = { ... }"
+        },
+        {
+          "text": "Uses `Discriminator` type from @ahoo-wang/fetcher-openapi",
+          "passed": true,
+          "evidence": "Line 1: import type { Schema, Discriminator } from '@ahoo-wang/fetcher-openapi';"
+        },
+        {
+          "text": "Uses `oneOf` array to define multiple possible types",
+          "passed": true,
+          "evidence": "Lines 5-8: oneOf: [ { $ref: ... }, { $ref: ... } ],"
+        },
+        {
+          "text": "Includes discriminator mapping with propertyName field",
+          "passed": true,
+          "evidence": "Lines 9-15: discriminator: { propertyName: 'type', mapping: { admin: ..., user: ... } }"
+        },
+        {
+          "text": "Defines separate Admin and User schemas with different properties",
+          "passed": false,
+          "evidence": "No separate Admin or User schemas defined - only the polymorphicSchema is present"
+        },
+        {
+          "text": "Uses $ref syntax for referencing schemas in the oneOf array",
+          "passed": true,
+          "evidence": "Lines 6-7: { $ref: '#/components/schemas/Admin' }, { $ref: '#/components/schemas/User' }"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.286,
+        "passed": 2,
+        "failed": 5,
+        "total": 7,
+        "time_seconds": 0,
+        "tokens": 500,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses `Operation` type from @ahoo-wang/fetcher-openapi",
+          "passed": true,
+          "evidence": "Line 1: import type { Operation, ... } from '@ahoo-wang/fetcher-openapi'; Line 3: const createUserOperation: Operation = { ... }"
+        },
+        {
+          "text": "Uses `Parameter` type for defining parameters",
+          "passed": false,
+          "evidence": "No Parameter type imported or defined. The operation has no parameters field."
+        },
+        {
+          "text": "Uses `RequestBody` type with required field set to true",
+          "passed": true,
+          "evidence": "Line 7-14: requestBody: { required: true, ... }"
+        },
+        {
+          "text": "Uses `Response` type for defining responses by status code",
+          "passed": false,
+          "evidence": "Response type is imported but not used. responses: { '201': { description: 'User created' } } uses inline object, not Response type."
+        },
+        {
+          "text": "Uses `MediaType` type for content-type schemas",
+          "passed": false,
+          "evidence": "MediaType type is not imported. schema: { type: 'object' } is used inline without MediaType wrapper."
+        },
+        {
+          "text": "Uses HTTPMethod type or string literal 'post' for the method",
+          "passed": false,
+          "evidence": "No HTTP method specified - OpenAPI methods are keys in path objects, not on Operation objects directly."
+        },
+        {
+          "text": "Includes both path and query parameters with correct 'in' field values",
+          "passed": false,
+          "evidence": "No parameters defined in the operation."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.9523,
+        "stddev": 0.0826,
+        "min": 0.857,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      },
+      "tokens": {
+        "mean": 1733.3333,
+        "stddev": 503.3223,
+        "min": 1200,
+        "max": 2200
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.7063,
+        "stddev": 0.3735,
+        "min": 0.286,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      },
+      "tokens": {
+        "mean": 500.0,
+        "stddev": 100.0,
+        "min": 400,
+        "max": 600
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.25",
+      "time_seconds": "+0.0",
+      "tokens": "+1233"
+    }
+  },
+  "notes": []
+}

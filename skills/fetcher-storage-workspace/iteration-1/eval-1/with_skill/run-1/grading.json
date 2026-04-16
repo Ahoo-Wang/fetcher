@@ -1,0 +1,57 @@
+{
+  "expectations": [
+    {
+      "text": "Uses isBrowser() for environment detection",
+      "passed": true,
+      "evidence": "cache.ts line 12: if (isBrowser()) { ... }"
+    },
+    {
+      "text": "Uses getStorage() to get appropriate storage backend",
+      "passed": true,
+      "evidence": "cache.ts line 14: this.storage = getStorage();"
+    },
+    {
+      "text": "Implements set, get, and invalidate methods",
+      "passed": true,
+      "evidence": "cache.ts lines 24-44: All three methods are implemented"
+    },
+    {
+      "text": "Exports the cache utility",
+      "passed": true,
+      "evidence": "cache.ts line 46: export const cache = new Cache();"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 1,
+      "Write": 1,
+      "Bash": 0
+    },
+    "total_tool_calls": 2,
+    "total_steps": 3,
+    "errors_encountered": 0,
+    "output_chars": 1650,
+    "transcript_chars": 4100
+  },
+  "timing": {
+    "executor_duration_seconds": 26.4,
+    "grader_duration_seconds": 5.0,
+    "total_duration_seconds": 31.4
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "All assertions pass. Skill correctly guided environment detection and storage backend selection."
+  }
+}

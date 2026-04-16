@@ -1,0 +1,67 @@
+{
+  "expectations": [
+    {
+      "text": "CoSecRequestInterceptor is added to fetcher",
+      "passed": true,
+      "evidence": "CoSecConfigurer.applyTo(fetcher) adds CoSecRequestInterceptor which adds CoSec headers"
+    },
+    {
+      "text": "AuthorizationRequestInterceptor adds Bearer token to requests",
+      "passed": true,
+      "evidence": "AuthorizationRequestInterceptor with tokenManager is explicitly added to fetcher.interceptors.request"
+    },
+    {
+      "text": "AuthorizationResponseInterceptor handles 401 and retries with new token",
+      "passed": true,
+      "evidence": "AuthorizationResponseInterceptor with tokenManager is added to handle 401 responses"
+    },
+    {
+      "text": "Interceptor chain handles token refresh flow correctly",
+      "passed": true,
+      "evidence": "Token refresh flow is handled by JwtTokenManager with TokenRefresher"
+    },
+    {
+      "text": "Proper error handling for refresh failures",
+      "passed": true,
+      "evidence": "onUnauthorized callback handles session expiration and redirects to login"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Write": 1
+    },
+    "total_tool_calls": 1,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 3500,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 35.0,
+    "grader_duration_seconds": 10.0,
+    "total_duration_seconds": 45.0
+  },
+  "claims": [
+    {
+      "claim": "ProtectedApiService class wraps authenticated fetcher",
+      "type": "factual",
+      "verified": true,
+      "evidence": "ProtectedApiService class with getUserProfile, getOrders, createOrder methods"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "All assertions pass. Implementation correctly uses CoSec interceptors and proper token refresh."
+  }
+}

@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: E-commerce API
+  version: 1.0.0
+paths:
+  /owner/{ownerId}/cart:
+    get:
+      operationId: ecommerce.cart.snapshot_state.single
+      tags:
+        - ecommerce.cart
+      summary: Get cart state
+      parameters:
+        - name: ownerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartState'
+    delete:
+      operationId: ecommerce.cart.default_delete_aggregate
+      tags:
+        - ecommerce.cart
+      summary: Delete cart
+      parameters:
+        - name: ownerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Cart deleted
+  /owner/{ownerId}/cart/items:
+    post:
+      operationId: ecommerce.cart.add_cart_item
+      tags:
+        - ecommerce.cart
+      summary: Add item to cart
+      parameters:
+        - name: ownerId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemCommand'
+      responses:
+        '200':
+          description: Item added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResult'
+components:
+  schemas:
+    CartState:
+      type: object
+      properties:
+        ownerId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        total:
+          type: number
+    CartItem:
+      type: object
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: number
+    AddCartItemCommand:
+      type: object
+      required:
+        - productId
+        - quantity
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+    CommandResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        aggregateId:
+          type: string

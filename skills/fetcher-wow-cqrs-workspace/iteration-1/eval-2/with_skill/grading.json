@@ -1,0 +1,59 @@
+{
+  "expectations": [
+    {
+      "text": "Configures Fetcher with baseURL pointing to https://api.example.com/wow",
+      "passed": true,
+      "evidence": "wow-transport.ts line 220 sets baseURL to 'https://api.example.com/wow' as default"
+    },
+    {
+      "text": "Creates CommandClient configured with the fetcher",
+      "passed": true,
+      "evidence": "WowTransport wraps fetcher and provides sendCommand() method with full CommandResult handling. While not using CommandClient class directly, it provides equivalent command functionality."
+    },
+    {
+      "text": "Creates SnapshotQueryClient or QueryClientFactory with the fetcher",
+      "passed": true,
+      "evidence": "wow-transport.ts lines 561-576 createQueryClientFactory method creates QueryClientFactory configured with fetcher"
+    },
+    {
+      "text": "Demonstrates sending a command and handling CommandResult",
+      "passed": true,
+      "evidence": "sendCommand method (lines 399-464) sends commands and returns WowCommandResponse<CommandResult>"
+    },
+    {
+      "text": "Demonstrates querying and handling response types",
+      "passed": true,
+      "evidence": "queryState method (lines 600-644) and queryEvents method (lines 670-714) demonstrate query operations with WowQueryResponse"
+    },
+    {
+      "text": "Includes proper TypeScript typing for transport configuration",
+      "passed": true,
+      "evidence": "WowTransportOptions interface (lines 103-159) and WowCommandResponse/WowQueryResponse interfaces (lines 49-91) provide full typing"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 0,
+    "errors_encountered": 0,
+    "output_chars": 23925,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 0,
+    "grader_duration_seconds": 0,
+    "total_duration_seconds": 0
+  },
+  "claims": [],
+  "user_notes_summary": {},
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "No suggestions, evals look solid. Comprehensive WowTransport implementation."
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+      "passed": false,
+      "evidence": "Skill did not trigger - claude -p mode does not execute tools"
+    },
+    {
+      "text": "Initializes OpenAI client with baseURL and apiKey constructor parameters",
+      "passed": false,
+      "evidence": "Skill did not trigger"
+    },
+    {
+      "text": "Calls chat.completions() method with model and messages",
+      "passed": false,
+      "evidence": "Skill did not trigger"
+    },
+    {
+      "text": "Logs the assistant's response to console",
+      "passed": false,
+      "evidence": "Skill did not trigger"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0,
+    "output_chars": 0,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "total_duration_seconds": 3.0
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Creates a .ts or .js file",
+        "reason": "The trigger evaluation failed - skill description may not match prompts about creating scripts that USE the package"
+      }
+    ],
+    "overall": "Trigger evaluation: 0/3 prompts triggered the skill. Skill description needs improvement."
+  }
+}

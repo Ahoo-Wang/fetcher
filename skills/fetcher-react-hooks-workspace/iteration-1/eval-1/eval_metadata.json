@@ -1,0 +1,11 @@
+{
+  "eval_id": 1,
+  "prompt": "I want to implement a search input that debounces API calls by 300ms. When the user types in the search box, it should execute a fetcher query with the search term. Show me how to use useDebouncedFetcherQuery.",
+  "expected_output": "A search component using useDebouncedFetcherQuery with proper debouncing, query state management, and loading indicators",
+  "expectations": [
+    "Uses useDebouncedFetcherQuery from @ahoo-wang/fetcher-react",
+    "Debounce delay of 300ms configured",
+    "setQuery is used to update search parameters",
+    "Handles loading state during debounce and execution"
+  ]
+}

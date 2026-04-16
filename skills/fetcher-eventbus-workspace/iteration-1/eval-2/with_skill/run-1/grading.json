@@ -1,0 +1,76 @@
+{
+  "expectations": [
+    {
+      "text": "Uses ParallelTypedEventBus from @ahoo-wang/fetcher-eventbus",
+      "passed": true,
+      "evidence": "Code imports: import { ParallelTypedEventBus } from '@ahoo-wang/fetcher-eventbus';"
+    },
+    {
+      "text": "Has multiple handlers that execute concurrently (in parallel)",
+      "passed": true,
+      "evidence": "All three handlers (ui-updater, storage-persister, notification-sender) registered and emit uses await on Promise.all"
+    },
+    {
+      "text": "Handler for updating UI is included",
+      "passed": true,
+      "evidence": "Handler 'ui-updater' logs: '[UI] Updating order display:'"
+    },
+    {
+      "text": "Handler for persisting to storage is included",
+      "passed": true,
+      "evidence": "Handler 'storage-persister' logs: '[Storage] Persisting order:'"
+    },
+    {
+      "text": "Handler for sending notifications is included",
+      "passed": true,
+      "evidence": "Handler 'notification-sender' logs: '[Notification] Sending for order:'"
+    },
+    {
+      "text": "Demonstrates try-catch error handling in at least one handler",
+      "passed": true,
+      "evidence": "storage-persister has try-catch with re-throw; notification-sender has try-catch without re-throw"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {"Read": 2, "Write": 1, "Bash": 0},
+    "total_tool_calls": 3,
+    "total_steps": 5,
+    "errors_encountered": 0,
+    "output_chars": 2100,
+    "transcript_chars": 4500
+  },
+  "timing": {
+    "executor_duration_seconds": 32.1,
+    "grader_duration_seconds": 2.0,
+    "total_duration_seconds": 34.1
+  },
+  "claims": [
+    {
+      "claim": "ParallelTypedEventBus used with proper parallel execution",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Package imported and used correctly"
+    },
+    {
+      "claim": "Error handling demonstrated with try-catch in handlers",
+      "type": "factual",
+      "verified": true,
+      "evidence": "storage-persister wraps operation in try-catch"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "No suggestions, evals look solid"
+  }
+}

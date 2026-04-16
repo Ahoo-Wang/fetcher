@@ -1,0 +1,11 @@
+{
+  "eval_id": 3,
+  "eval_name": "user-service-multitenant-generation",
+  "prompt": "Generate a type-safe TypeScript API client from this OpenAPI spec at ./evals/files/user-service.yaml. This is a multi-tenant API with bounded context 'user_service' and users aggregate. Generate into src/generated/user-service directory. Also create a .fetcherrc.json config file that enables verbose output and custom type mappings for this generation.",
+  "assertions": [
+    "Users aggregate command and query clients are generated",
+    "Tenant-based resource attribution is properly configured",
+    ".delete_aggregate operation generates delete method",
+    ".fetcherrc.json configuration file is created with appropriate settings"
+  ]
+}

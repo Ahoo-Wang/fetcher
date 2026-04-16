@@ -1,0 +1,12 @@
+{
+  "eval_id": 0,
+  "eval_name": "openapi-root-object-types",
+  "prompt": "I have an OpenAPI 3.0 document and need TypeScript types to validate its structure. Show me how to define the root OpenAPI object with info, paths, and components using @ahoo-wang/fetcher-openapi types.",
+  "assertions": [
+    "Uses `OpenAPI` type from @ahoo-wang/fetcher-openapi to type the root object",
+    "Uses `Info` type from @ahoo-wang/fetcher-openapi for API metadata (title, version)",
+    "Uses `Paths` type for the paths field",
+    "Uses `Components` type for the components field",
+    "The OpenAPI version string is set to '3.0.1' or '3.0.0'"
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "expectations": [
+    {
+      "text": "Uses ParallelTypedEventBus from @ahoo-wang/fetcher-eventbus",
+      "passed": false,
+      "evidence": "Code uses a custom ParallelEventBus class, not the @ahoo-wang/fetcher-eventbus package"
+    },
+    {
+      "text": "Has multiple handlers that execute concurrently (in parallel)",
+      "passed": true,
+      "evidence": "Custom ParallelEventBus.emit() uses Promise.all to run handlers concurrently"
+    },
+    {
+      "text": "Handler for updating UI is included",
+      "passed": true,
+      "evidence": "Handler 'ui-updater' present"
+    },
+    {
+      "text": "Handler for persisting to storage is included",
+      "passed": true,
+      "evidence": "Handler 'storage-persister' present"
+    },
+    {
+      "text": "Handler for sending notifications is included",
+      "passed": true,
+      "evidence": "Handler 'notification-sender' present"
+    },
+    {
+      "text": "Demonstrates try-catch error handling in at least one handler",
+      "passed": true,
+      "evidence": "emit() wraps each handler in try-catch"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.83
+  },
+  "execution_metrics": {
+    "tool_calls": {"Read": 1, "Write": 1, "Bash": 0},
+    "total_tool_calls": 2,
+    "total_steps": 3,
+    "errors_encountered": 0,
+    "output_chars": 1350,
+    "transcript_chars": 3200
+  },
+  "timing": {
+    "executor_duration_seconds": 35.6,
+    "grader_duration_seconds": 2.0,
+    "total_duration_seconds": 37.6
+  },
+  "claims": [
+    {
+      "claim": "Custom parallel event bus implementation used instead of package",
+      "type": "factual",
+      "verified": true,
+      "evidence": "No import from @ahoo-wang/fetcher-eventbus"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Uses ParallelTypedEventBus from @ahoo-wang/fetcher-eventbus",
+        "reason": "Baseline correctly fails - without the skill, model creates custom implementation"
+      }
+    ],
+    "overall": "Baseline shows good parallel execution but misses the package"
+  }
+}

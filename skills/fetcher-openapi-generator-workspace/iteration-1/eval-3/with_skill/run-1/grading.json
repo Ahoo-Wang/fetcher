@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "Users aggregate command and query clients are generated",
+      "passed": false,
+      "evidence": "UsersApiClient generated for user_service.users tag, but no separate CommandClient or QueryClientFactory. The generator resolved 0 bounded context aggregates despite skill guidance for Wow CQRS patterns."
+    },
+    {
+      "text": "Tenant-based resource attribution is properly configured",
+      "passed": false,
+      "evidence": "No ResourceAttributionPathSpec.TENANT configured. The spec has /tenant/{tenantId}/users path but generated client doesn't use tenant-aware resource attribution."
+    },
+    {
+      "text": ".delete_aggregate operation generates delete method",
+      "passed": true,
+      "evidence": "UsersApiClient has 'aggregate' method that maps to user_service.users.default_delete_aggregate operation"
+    },
+    {
+      "text": ".fetcherrc.json configuration file is created with appropriate settings",
+      "passed": false,
+      "evidence": "No .fetcherrc.json config file was created in the output directory"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Bash": 1
+    },
+    "total_tool_calls": 1,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 3200,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 1.2,
+    "grader_duration_seconds": 0.0,
+    "total_duration_seconds": 1.2
+  }
+}

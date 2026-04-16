@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "parallel-eventbus-order-updates",
+  "prompt": "Create a ParallelTypedEventBus for handling order update events concurrently. Set up multiple handlers that run in parallel when an order is placed - one for updating UI, one for persisting to storage, one for sending notifications. Show error handling with try-catch in handlers.",
+  "assertions": [
+    "Uses ParallelTypedEventBus from @ahoo-wang/fetcher-eventbus",
+    "Has multiple handlers that execute concurrently (in parallel)",
+    "Handler for updating UI is included",
+    "Handler for persisting to storage is included",
+    "Handler for sending notifications is included",
+    "Demonstrates try-catch error handling in at least one handler"
+  ]
+}

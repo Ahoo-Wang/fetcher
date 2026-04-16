@@ -1,0 +1,11 @@
+{
+  "eval_id": 0,
+  "eval_name": "basic-chat-completion",
+  "prompt": "Create a simple Node.js/TypeScript script that uses the @ahoo-wang/fetcher-openai package to send a chat completion request to GPT-3.5-turbo. The script should import OpenAI, create a client with baseURL and apiKey, send a message 'Hello, how are you today?' and log the assistant's response. Use the packages/fetcher-openai directory for the package source.",
+  "assertions": [
+    "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+    "Initializes OpenAI client with baseURL and apiKey constructor parameters",
+    "Calls chat.completions() method with model and messages",
+    "Logs the assistant's response to console"
+  ]
+}

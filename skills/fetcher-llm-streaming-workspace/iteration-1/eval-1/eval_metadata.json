@@ -1,0 +1,11 @@
+{
+  "eval_id": 1,
+  "eval_name": "sse-termination-detection",
+  "prompt": "How do I parse SSE events from an LLM API with proper termination detection? I need to handle the [DONE] signal and clean up the stream properly.",
+  "assertions": [
+    "Uses eventStream() or jsonEventStream() method from fetcher-eventstream",
+    "Implements TerminateDetector for [DONE] signal",
+    "Correctly parses SSE event fields (data, event, id, retry)",
+    "Properly terminates/cleans up stream when [DONE] is received"
+  ]
+}

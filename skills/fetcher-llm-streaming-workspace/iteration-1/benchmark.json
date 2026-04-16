@@ -1,0 +1,302 @@
+{
+  "metadata": {
+    "skill_name": "fetcher-llm-streaming",
+    "skill_path": "/Users/ahoo/work/ahoo-git/agent-coder/fetcher/skills/fetcher-llm-streaming",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-16T07:11:51Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 33.5,
+        "tokens": 1850,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses OpenAI client with stream: true option",
+          "passed": true,
+          "evidence": "Code shows: stream: await openai.chat.completions({ ..., stream: true })"
+        },
+        {
+          "text": "Uses for await loop to process streaming chunks",
+          "passed": true,
+          "evidence": "Code shows: for await (const chunk of stream)"
+        },
+        {
+          "text": "Extracts delta content from chat completion chunks",
+          "passed": true,
+          "evidence": "Code shows: const content = chunk.choices[0]?.delta?.content || ''"
+        },
+        {
+          "text": "Processes tokens in real-time (no buffering entire response)",
+          "passed": true,
+          "evidence": "Code shows process.stdout.write(content) inside for await loop - real-time output"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 36.2,
+        "tokens": 1680,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses eventStream() or jsonEventStream() method from fetcher-eventstream",
+          "passed": true,
+          "evidence": "Code uses toJsonServerSentEventStream() from '@ahoo-wang/fetcher-eventstream'"
+        },
+        {
+          "text": "Implements TerminateDetector for [DONE] signal",
+          "passed": true,
+          "evidence": "Code shows: const terminateOnDone: TerminateDetector = event => event.data === '[DONE]'"
+        },
+        {
+          "text": "Correctly parses SSE event fields (data, event, id, retry)",
+          "passed": true,
+          "evidence": "Interface ChatCompletionChunk properly typed with choices array"
+        },
+        {
+          "text": "Properly terminates/cleans up stream when [DONE] is received",
+          "passed": true,
+          "evidence": "toJsonServerSentEventStream handles termination automatically via TerminateDetector"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 43.5,
+        "tokens": 2450,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses streaming LLM client with event stream processing",
+          "passed": true,
+          "evidence": "OpenAI client with stream: true and for await loop processing"
+        },
+        {
+          "text": "Updates UI incrementally as tokens arrive (not after full response)",
+          "passed": true,
+          "evidence": "setCurrentResponse(fullResponse) called inside for await loop - real-time updates"
+        },
+        {
+          "text": "Tracks and displays progress (chunk count or similar)",
+          "passed": true,
+          "evidence": "setChunkCount(chunks) incremented per token, displayed in UI: '({chunkCount} chunks)'"
+        },
+        {
+          "text": "Accumulates and displays the full response as it builds",
+          "passed": true,
+          "evidence": "fullResponse string accumulated and displayed via currentResponse state"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 22.2,
+        "tokens": 920,
+        "tool_calls": 4,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses OpenAI client with stream: true option",
+          "passed": true,
+          "evidence": "Code shows: stream: await openai.chat.completions.create({ ..., stream: true })"
+        },
+        {
+          "text": "Uses for await loop to process streaming chunks",
+          "passed": true,
+          "evidence": "Code shows: for await (const chunk of stream)"
+        },
+        {
+          "text": "Extracts delta content from chat completion chunks",
+          "passed": true,
+          "evidence": "Code shows: const content = chunk.choices[0]?.delta?.content || ''"
+        },
+        {
+          "text": "Processes tokens in real-time (no buffering entire response)",
+          "passed": false,
+          "evidence": "process.stdout.write is used but basic implementation lacks proper real-time streaming patterns from skill"
+        }
+      ],
+      "notes": [
+        "Did not use fetcher-eventstream package"
+      ]
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 20.8,
+        "tokens": 1150,
+        "tool_calls": 4,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses eventStream() or jsonEventStream() method from fetcher-eventstream",
+          "passed": false,
+          "evidence": "Manual TextDecoder and ReadableStream parsing - no fetcher-eventstream usage"
+        },
+        {
+          "text": "Implements TerminateDetector for [DONE] signal",
+          "passed": false,
+          "evidence": "Basic string check 'data === [DONE]' without TerminateDetector type"
+        },
+        {
+          "text": "Correctly parses SSE event fields (data, event, id, retry)",
+          "passed": false,
+          "evidence": "Only parses 'data: ' prefix, ignores event, id, retry fields"
+        },
+        {
+          "text": "Properly terminates/cleans up stream when [DONE] is received",
+          "passed": true,
+          "evidence": "Basic termination with return statement when [DONE] received"
+        }
+      ],
+      "notes": [
+        "Lacks proper SSE field parsing",
+        "Fell back to manual parsing without TypeDetector"
+      ]
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 22.4,
+        "tokens": 5800,
+        "tool_calls": 4,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses streaming LLM client with event stream processing",
+          "passed": true,
+          "evidence": "OpenAI chat.completions.create with stream: true"
+        },
+        {
+          "text": "Updates UI incrementally as tokens arrive (not after full response)",
+          "passed": false,
+          "evidence": "No setState inside stream loop - response only shown after complete"
+        },
+        {
+          "text": "Tracks and displays progress (chunk count or similar)",
+          "passed": false,
+          "evidence": "No chunk counting or progress tracking implemented"
+        },
+        {
+          "text": "Accumulates and displays the full response as it builds",
+          "passed": false,
+          "evidence": "Response only added to messages after full stream completes"
+        }
+      ],
+      "notes": [
+        "No real-time updates",
+        "No progress tracking",
+        "Buffered entire response before display"
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 37.7333,
+        "stddev": 5.1733,
+        "min": 33.5,
+        "max": 43.5
+      },
+      "tokens": {
+        "mean": 1993.3333,
+        "stddev": 404.5162,
+        "min": 1680,
+        "max": 2450
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.4167,
+        "stddev": 0.2887,
+        "min": 0.25,
+        "max": 0.75
+      },
+      "time_seconds": {
+        "mean": 21.8,
+        "stddev": 0.8718,
+        "min": 20.8,
+        "max": 22.4
+      },
+      "tokens": {
+        "mean": 2623.3333,
+        "stddev": 2753.4766,
+        "min": 920,
+        "max": 5800
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.58",
+      "time_seconds": "+15.9",
+      "tokens": "-630"
+    }
+  },
+  "notes": []
+}

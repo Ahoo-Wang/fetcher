@@ -1,0 +1,14 @@
+{
+  "eval_id": 2,
+  "eval_name": "operation-parameters-requestbody",
+  "prompt": "I need to define API operation parameters including path params, query params, and request bodies. Show me how to type a POST /users endpoint with required body and response types.",
+  "assertions": [
+    "Uses `Operation` type from @ahoo-wang/fetcher-openapi",
+    "Uses `Parameter` type for defining parameters",
+    "Uses `RequestBody` type with required field set to true",
+    "Uses `Response` type for defining responses by status code",
+    "Uses `MediaType` type for content-type schemas",
+    "Uses HTTPMethod type or string literal 'post' for the method",
+    "Includes both path and query parameters with correct 'in' field values"
+  ]
+}

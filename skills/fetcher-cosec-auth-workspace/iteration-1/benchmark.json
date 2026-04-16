@@ -1,0 +1,329 @@
+{
+  "metadata": {
+    "skill_name": "fetcher-cosec-auth",
+    "skill_path": "/Users/ahoo/work/ahoo-git/agent-coder/fetcher/skills/fetcher-cosec-auth",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-16T12:01:47Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 40.0,
+        "tokens": 3200,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "CoSecConfigurer is used with proper configuration",
+          "passed": true,
+          "evidence": "Implementation uses CoSecConfigurer with appId, tokenStorage, deviceIdStorage, and tokenRefresher"
+        },
+        {
+          "text": "TokenRefresher is properly configured with refresh function",
+          "passed": true,
+          "evidence": "tokenRefresher object has refresh method that exchanges refreshToken for new accessToken/refreshToken"
+        },
+        {
+          "text": "JwtTokenManager or TokenStorage is configured for token persistence",
+          "passed": true,
+          "evidence": "TokenStorage is instantiated and passed to CoSecConfigurer for JWT token persistence in localStorage"
+        },
+        {
+          "text": "SpaceIdProvider is configured for multi-tenant support",
+          "passed": true,
+          "evidence": "DefaultSpaceIdProvider is configured with spacedResourcePredicate and spaceIdStorage"
+        },
+        {
+          "text": "Headers (CoSec-App-Id, CoSec-Device-Id, Authorization) are added to requests",
+          "passed": true,
+          "evidence": "CoSecConfigurer.applyTo(fetcher) adds all CoSec headers via CoSecRequestInterceptor and AuthorizationRequestInterceptor"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 45.0,
+        "tokens": 3500,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "CoSecRequestInterceptor is added to fetcher",
+          "passed": true,
+          "evidence": "CoSecConfigurer.applyTo(fetcher) adds CoSecRequestInterceptor which adds CoSec headers"
+        },
+        {
+          "text": "AuthorizationRequestInterceptor adds Bearer token to requests",
+          "passed": true,
+          "evidence": "AuthorizationRequestInterceptor with tokenManager is explicitly added to fetcher.interceptors.request"
+        },
+        {
+          "text": "AuthorizationResponseInterceptor handles 401 and retries with new token",
+          "passed": true,
+          "evidence": "AuthorizationResponseInterceptor with tokenManager is added to handle 401 responses"
+        },
+        {
+          "text": "Interceptor chain handles token refresh flow correctly",
+          "passed": true,
+          "evidence": "Token refresh flow is handled by JwtTokenManager with TokenRefresher"
+        },
+        {
+          "text": "Proper error handling for refresh failures",
+          "passed": true,
+          "evidence": "onUnauthorized callback handles session expiration and redirects to login"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 50.0,
+        "tokens": 4200,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "SpaceIdProvider is configured to resolve space ID from requests",
+          "passed": true,
+          "evidence": "SpaceIdProvider with resolveSpaceId function is configured and returns spaceId"
+        },
+        {
+          "text": "Separate token storage per tenant/space is implemented",
+          "passed": true,
+          "evidence": "SpaceTokenStorageFactory creates and manages separate TokenStorage per spaceId"
+        },
+        {
+          "text": "CoSec-Space-Id header is properly set on requests",
+          "passed": true,
+          "evidence": "CoSecConfigurer with spaceIdProvider handles CoSec-Space-Id header via CoSecRequestInterceptor"
+        },
+        {
+          "text": "Multi-tenant fetcher registry or factory pattern is used",
+          "passed": true,
+          "evidence": "MultiSpaceFetcherRegistry class manages separate Fetcher instances per space"
+        },
+        {
+          "text": "Per-space token management handles signIn/signOut",
+          "passed": true,
+          "evidence": "signIn() and signOut() methods manage tokens for each space independently"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.2,
+        "passed": 1,
+        "failed": 4,
+        "total": 5,
+        "time_seconds": 35.0,
+        "tokens": 1800,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "CoSecConfigurer is used with proper configuration",
+          "passed": false,
+          "evidence": "Implementation does not use CoSecConfigurer - uses manual interceptor approach instead"
+        },
+        {
+          "text": "TokenRefresher is properly configured with refresh function",
+          "passed": true,
+          "evidence": "refreshToken function is defined and used for manual token refresh"
+        },
+        {
+          "text": "JwtTokenManager or TokenStorage is configured for token persistence",
+          "passed": false,
+          "evidence": "Uses basic object storage instead of TokenStorage from @ahoo-wang/fetcher-cosec"
+        },
+        {
+          "text": "SpaceIdProvider is configured for multi-tenant support",
+          "passed": false,
+          "evidence": "No SpaceIdProvider configuration present in baseline implementation"
+        },
+        {
+          "text": "Headers (CoSec-App-Id, CoSec-Device-Id, Authorization) are added to requests",
+          "passed": false,
+          "evidence": "Only Authorization header is added; CoSec headers (CoSec-App-Id, CoSec-Device-Id) are missing"
+        }
+      ],
+      "notes": [
+        "No automatic 401 handling or retry mechanism"
+      ]
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.2,
+        "passed": 1,
+        "failed": 4,
+        "total": 5,
+        "time_seconds": 35.0,
+        "tokens": 2100,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "CoSecRequestInterceptor is added to fetcher",
+          "passed": false,
+          "evidence": "No CoSecRequestInterceptor used - manual auth interceptor instead"
+        },
+        {
+          "text": "AuthorizationRequestInterceptor adds Bearer token to requests",
+          "passed": true,
+          "evidence": "Manual authInterceptor adds Authorization header with Bearer token"
+        },
+        {
+          "text": "AuthorizationResponseInterceptor handles 401 and retries with new token",
+          "passed": false,
+          "evidence": "responseInterceptor has basic 401 handling but no automatic retry with new token"
+        },
+        {
+          "text": "Interceptor chain handles token refresh flow correctly",
+          "passed": false,
+          "evidence": "Manual token refresh has no retry mechanism and doesn't integrate with interceptor chain"
+        },
+        {
+          "text": "Proper error handling for refresh failures",
+          "passed": false,
+          "evidence": "No proper error handling for refresh failures - just logs error"
+        }
+      ],
+      "notes": [
+        "No automatic retry with new token - just logs"
+      ]
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 3,
+        "failed": 2,
+        "total": 5,
+        "time_seconds": 35.0,
+        "tokens": 2000,
+        "tool_calls": 1,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "SpaceIdProvider is configured to resolve space ID from requests",
+          "passed": false,
+          "evidence": "No SpaceIdProvider interface used - manual X-Space-Id header instead"
+        },
+        {
+          "text": "Separate token storage per tenant/space is implemented",
+          "passed": true,
+          "evidence": "tokenStorages Map stores separate TokenData per spaceId"
+        },
+        {
+          "text": "CoSec-Space-Id header is properly set on requests",
+          "passed": false,
+          "evidence": "Uses custom X-Space-Id header instead of CoSec-Space-Id header"
+        },
+        {
+          "text": "Multi-tenant fetcher registry or factory pattern is used",
+          "passed": true,
+          "evidence": "SpaceAwareFetcherFactory creates and caches separate Fetcher per space"
+        },
+        {
+          "text": "Per-space token management handles signIn/signOut",
+          "passed": true,
+          "evidence": "setToken/clearToken functions manage tokens per space"
+        }
+      ],
+      "notes": [
+        "Manual X-Space-Id header instead of CoSec-Space-Id"
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 45.0,
+        "stddev": 5.0,
+        "min": 40.0,
+        "max": 50.0
+      },
+      "tokens": {
+        "mean": 3633.3333,
+        "stddev": 513.1601,
+        "min": 3200,
+        "max": 4200
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.3333,
+        "stddev": 0.2309,
+        "min": 0.2,
+        "max": 0.6
+      },
+      "time_seconds": {
+        "mean": 35.0,
+        "stddev": 0.0,
+        "min": 35.0,
+        "max": 35.0
+      },
+      "tokens": {
+        "mean": 1966.6667,
+        "stddev": 152.7525,
+        "min": 1800,
+        "max": 2100
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.67",
+      "time_seconds": "+10.0",
+      "tokens": "+1667"
+    }
+  },
+  "notes": []
+}

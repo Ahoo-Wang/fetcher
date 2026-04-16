@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "eval_name": "user-aggregate-commands",
+  "prompt": "Build a complete user aggregate with WowAggregate type that handles CreateUserCommand, UpdateUserCommand, and DeleteUserCommand. Include state management and proper command handling returning WowCommandResult.",
+  "assertions": [
+    "Defines WowAggregate type for user aggregate",
+    "Handles CreateUserCommand with proper state creation",
+    "Handles UpdateUserCommand with state transitions",
+    "Handles DeleteUserCommand with proper deletion",
+    "Returns WowCommandResult from command handlers",
+    "Includes TypeScript typing for commands and state"
+  ]
+}

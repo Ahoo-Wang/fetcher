@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "wow-transport-fetcher",
+  "prompt": "Create a fetcher-based WowTransport that sends commands and queries to a Wow CQRS backend at https://api.example.com/wow. Show how to configure the transport with baseURL and handle the response types.",
+  "assertions": [
+    "Configures Fetcher with baseURL pointing to https://api.example.com/wow",
+    "Creates CommandClient configured with the fetcher",
+    "Creates SnapshotQueryClient or QueryClientFactory with the fetcher",
+    "Demonstrates sending a command and handling CommandResult",
+    "Demonstrates querying and handling response types",
+    "Includes proper TypeScript typing for transport configuration"
+  ]
+}

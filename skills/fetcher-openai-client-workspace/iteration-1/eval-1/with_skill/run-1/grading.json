@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
+      "passed": false,
+      "evidence": "Skill did not trigger"
+    },
+    {
+      "text": "Uses stream: true option in chat.completions() call",
+      "passed": false,
+      "evidence": "Skill did not trigger"
+    },
+    {
+      "text": "Uses for-await-of loop to iterate over streaming chunks",
+      "passed": false,
+      "evidence": "Skill did not trigger"
+    },
+    {
+      "text": "Displays content from each chunk's choices[0].delta.content in real-time",
+      "passed": false,
+      "evidence": "Skill did not trigger"
+    },
+    {
+      "text": "Checks for finish_reason to detect stream completion",
+      "passed": false,
+      "evidence": "Skill did not trigger"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 5,
+    "total": 5,
+    "pass_rate": 0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0,
+    "output_chars": 0,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "total_duration_seconds": 3.0
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Trigger evaluation: 0/3 prompts triggered the skill"
+  }
+}

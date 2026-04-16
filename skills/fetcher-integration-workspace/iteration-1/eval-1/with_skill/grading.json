@@ -1,0 +1,57 @@
+{
+  "expectations": [
+    {
+      "text": "Uses GET method",
+      "passed": true,
+      "evidence": "Code shows: const response = await fetcher.get('/users/{id}', { urlParams: { path: { id: 123 }, query: { include: 'profile' } } })"
+    },
+    {
+      "text": "Uses path parameter syntax {id}",
+      "passed": true,
+      "evidence": "Code shows: '/users/{id}' with urlParams.path: { id: 123 }"
+    },
+    {
+      "text": "Sets path param id=123",
+      "passed": true,
+      "evidence": "Code shows: urlParams: { path: { id: 123 }, query: { include: 'profile' } }"
+    },
+    {
+      "text": "Sets query param include=profile",
+      "passed": true,
+      "evidence": "Code shows: urlParams: { path: { id: 123 }, query: { include: 'profile' } }"
+    },
+    {
+      "text": "Calls response.json() with type",
+      "passed": true,
+      "evidence": "Code shows: const user = await response.json<User>()"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 0,
+    "total_steps": 0,
+    "errors_encountered": 0,
+    "output_chars": 1449,
+    "transcript_chars": 0
+  },
+  "timing": {
+    "total_tokens": 40306,
+    "duration_ms": 103603,
+    "total_duration_seconds": 103.6
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "No suggestions, evals look solid"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "eval_id": 1,
+  "eval_name": "petstore-basic-generation",
+  "prompt": "Generate a type-safe TypeScript API client from this OpenAPI spec at ./evals/files/petstore.yaml. Use the fetcher-generator CLI tool to generate the client code into a src/generated/petstore directory. The generated code should include proper TypeScript types and an API client class for the pets endpoints.",
+  "assertions": [
+    "Generated TypeScript types are properly defined",
+    "API client class is generated for pets endpoints",
+    "Generated code compiles without errors",
+    "Output directory structure follows the standard pattern"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "skill_name": "fetcher-eventbus",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a SerialTypedEventBus for a login flow with ordered handlers: first handler logs user action, second handler updates analytics. Include type definitions for the events and show how to use on(), emit(), and off() methods.",
+      "expected_output": "TypeScript code showing SerialTypedEventBus with ordered handler execution for login events",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Implement cross-tab communication using BroadcastChannelMessenger to sync user preferences across browser tabs. Create the messenger, show how to broadcast events to other tabs, and handle incoming events.",
+      "expected_output": "Cross-tab messenger implementation using BroadcastChannelMessenger from @ahoo-wang/fetcher-eventbus",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Create a ParallelTypedEventBus for handling order update events concurrently. Set up multiple handlers that run in parallel when an order is placed - one for updating UI, one for persisting to storage, one for sending notifications. Show error handling with try-catch in handlers.",
+      "expected_output": "ParallelTypedEventBus with concurrent handlers and error handling for order events",
+      "files": []
+    }
+  ]
+}

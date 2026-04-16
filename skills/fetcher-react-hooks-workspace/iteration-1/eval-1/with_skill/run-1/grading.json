@@ -1,0 +1,54 @@
+{
+  "expectations": [
+    {
+      "text": "Uses useDebouncedFetcherQuery from @ahoo-wang/fetcher-react",
+      "passed": true,
+      "evidence": "The component imports useDebouncedFetcherQuery from '@ahoo-wang/fetcher-react'"
+    },
+    {
+      "text": "Debounce delay of 300ms configured",
+      "passed": true,
+      "evidence": "debounce: { delay: 300 } is passed in the hook options"
+    },
+    {
+      "text": "setQuery is used to update search parameters",
+      "passed": true,
+      "evidence": "setQuery({ keyword: newKeyword }) is called in handleKeywordChange"
+    },
+    {
+      "text": "Handles loading state during debounce and execution",
+      "passed": true,
+      "evidence": "Component checks both loading and isPending() for loading states, shows appropriate UI"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Write": 1
+    },
+    "total_tool_calls": 1,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 2048
+  },
+  "timing": {
+    "executor_duration_seconds": 19.8,
+    "grader_duration_seconds": 2.0,
+    "total_duration_seconds": 21.8
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "No suggestions, evals look solid"
+  }
+}

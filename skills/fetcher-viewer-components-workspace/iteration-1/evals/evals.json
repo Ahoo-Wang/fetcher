@@ -1,0 +1,45 @@
+{
+  "skill_name": "fetcher-viewer-components",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a FilterPanel component with a text filter for 'username' (using contains operator), a number filter for 'age' (using gt operator), and a select filter for 'status' with options for 'active' and 'inactive'. Use the FilterPanel, useFilterState hook, TextFilter, NumberFilter, and SelectFilter from @ahoo-wang/fetcher-viewer.",
+      "expected_output": "A React component with a dynamic FilterPanel that allows adding, removing, and updating three filters: text (username contains), number (age >), and select (status equals). The filters should be managed via useFilterState hook.",
+      "files": [],
+      "expectations": [
+        "Uses TextFilter component from @ahoo-wang/fetcher-viewer",
+        "Uses NumberFilter component from @ahoo-wang/fetcher-viewer",
+        "Uses SelectFilter component from @ahoo-wang/fetcher-viewer",
+        "Uses useFilterState hook to manage filter state",
+        "FilterPanel renders with all three filter types"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Create a data table columns definition for a user list with the following columns: name (TextCell with ellipsis), status (TagCell with blue color), account balance (CurrencyCell in USD format), created date (DateTimeCell with YYYY-MM-DD format), and an Edit action (ActionCell). The table should use Ant Design Table component.",
+      "expected_output": "A columns configuration array for Ant Design Table using fetcher-viewer cell components to render each column type appropriately.",
+      "files": [],
+      "expectations": [
+        "Uses TextCell with ellipsis attribute for name column",
+        "Uses TagCell with color attribute for status column",
+        "Uses CurrencyCell with USD format for balance column",
+        "Uses DateTimeCell with YYYY-MM-DD format for date column",
+        "Uses ActionCell with onClick handler for Edit action",
+        "Columns array is properly structured for Ant Design Table"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a RemoteSelect component for searching users with a 300ms debounce. The component should fetch from /api/users/search endpoint and display results. Also create a TagInput component for entering multiple tags with string serialization.",
+      "expected_output": "Two form components: RemoteSelect for debounced user search and TagInput for multi-tag string input.",
+      "files": [],
+      "expectations": [
+        "Uses RemoteSelect component with search function",
+        "Search function fetches from /api/users/search",
+        "RemoteSelect has debounce configured with 300ms delay",
+        "Uses TagInput component for tag input",
+        "TagInput uses string serialization for tag values"
+      ]
+    }
+  ]
+}

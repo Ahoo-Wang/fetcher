@@ -1,0 +1,10 @@
+# Eval 2 - with_skill transcript
+
+## Prompt
+Create a script that uses function calling with the OpenAI client. Define a get_weather function tool.
+
+## Execution
+Claude was invoked with the skill but did not trigger the skill loading mechanism.
+
+## Output
+No transcript available - skill did not trigger for this prompt.

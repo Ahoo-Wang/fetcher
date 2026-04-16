@@ -1,0 +1,27 @@
+{
+  "eval_id": 2,
+  "eval_name": "multiple-named-fetchers",
+  "prompt": "Create multiple named fetchers for different services (auth, api, files) and show how to retrieve them from the registry",
+  "assertions": [
+    {
+      "text": "Creates NamedFetcher named 'auth'",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Creates NamedFetcher named 'api'",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Creates NamedFetcher named 'files'",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Uses fetcherRegistrar.get() to retrieve",
+      "passed": false,
+      "evidence": ""
+    }
+  ]
+}

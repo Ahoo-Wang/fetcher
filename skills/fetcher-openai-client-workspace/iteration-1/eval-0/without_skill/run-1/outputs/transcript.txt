@@ -1,0 +1,10 @@
+# Eval 0 - without_skill transcript
+
+## Prompt
+Create a simple Node.js/TypeScript script that uses the @ahoo-wang/fetcher-openai package to send a chat completion request to GPT-3.5-turbo.
+
+## Execution
+Claude was invoked without the skill.
+
+## Output
+No transcript available - claude -p mode does not execute tools.

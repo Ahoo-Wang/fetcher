@@ -1,0 +1,23 @@
+{
+  "skill_name": "fetcher-wow-cqrs",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a WowCommand and WowQuery pair for a user management domain. The command should create a new user with name and email. The query should fetch user by ID. Use @ahoo-wang/fetcher-wow package.",
+      "expected_output": "WowCommand and WowQuery implementations for user aggregate with proper typing",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Build a complete user aggregate with WowAggregate type that handles CreateUserCommand, UpdateUserCommand, and DeleteUserCommand. Include state management and proper command handling returning WowCommandResult.",
+      "expected_output": "User aggregate with multiple commands and state transitions",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Create a fetcher-based WowTransport that sends commands and queries to a Wow CQRS backend at https://api.example.com/wow. Show how to configure the transport with baseURL and handle the response types.",
+      "expected_output": "WowTransport configuration with Fetcher for sending commands/queries",
+      "files": []
+    }
+  ]
+}

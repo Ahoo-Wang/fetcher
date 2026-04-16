@@ -1,0 +1,27 @@
+{
+  "eval_id": 1,
+  "eval_name": "cross-environment-cache",
+  "prompt": "Build a session cache utility using @ahoo-wang/fetcher-storage that stores API response data. It should use InMemoryStorage for Node.js environments and localStorage for browsers, with automatic environment detection. Include methods: set(key, data, ttl?), get(key), invalidate(key).",
+  "assertions": [
+    {
+      "text": "Uses isBrowser() for environment detection",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Uses getStorage() to get appropriate storage backend",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Implements set, get, and invalidate methods",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Exports the cache utility",
+      "passed": false,
+      "evidence": ""
+    }
+  ]
+}

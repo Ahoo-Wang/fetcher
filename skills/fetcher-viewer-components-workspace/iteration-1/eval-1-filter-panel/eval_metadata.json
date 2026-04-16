@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "filter-panel",
+  "prompt": "Create a FilterPanel component with a text filter for 'username' (using contains operator), a number filter for 'age' (using gt operator), and a select filter for 'status' with options for 'active' and 'inactive'. Use the FilterPanel, useFilterState hook, TextFilter, NumberFilter, and SelectFilter from @ahoo-wang/fetcher-viewer.",
+  "assertions": [
+    "Uses TextFilter component from @ahoo-wang/fetcher-viewer",
+    "Uses NumberFilter component from @ahoo-wang/fetcher-viewer",
+    "Uses SelectFilter component from @ahoo-wang/fetcher-viewer",
+    "Uses useFilterState hook to manage filter state",
+    "FilterPanel renders with all three filter types"
+  ]
+}

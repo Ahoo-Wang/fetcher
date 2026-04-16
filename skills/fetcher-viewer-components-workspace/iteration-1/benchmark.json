@@ -1,0 +1,333 @@
+{
+  "metadata": {
+    "skill_name": "fetcher-viewer-components",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-16T12:04:18Z",
+    "evals_run": [
+      1,
+      2,
+      3
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 2549,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses TextFilter component from @ahoo-wang/fetcher-viewer",
+          "passed": true,
+          "evidence": "Line 19 imports TextFilter from @ahoo-wang/fetcher-viewer, and it's used in the filters array with type: 'text'"
+        },
+        {
+          "text": "Uses NumberFilter component from @ahoo-wang/fetcher-viewer",
+          "passed": true,
+          "evidence": "Line 20 imports NumberFilter from @ahoo-wang/fetcher-viewer, and it's used in the filters array with type: 'number'"
+        },
+        {
+          "text": "Uses SelectFilter component from @ahoo-wang/fetcher-viewer",
+          "passed": true,
+          "evidence": "Line 21 imports SelectFilter from @ahoo-wang/fetcher-viewer, and it's used in the filters array with type: 'select' with options for 'active' and 'inactive'"
+        },
+        {
+          "text": "Uses useFilterState hook to manage filter state",
+          "passed": true,
+          "evidence": "Lines 29, 35, 41 use useFilterState hook for username, age, and status filter states"
+        },
+        {
+          "text": "FilterPanel renders with all three filter types",
+          "passed": true,
+          "evidence": "FilterPanel component at lines 94-102 renders filters array containing text, number, and select filter types"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 6,
+        "total": 6,
+        "time_seconds": 0.0,
+        "tokens": 13,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses TextCell with ellipsis attribute for name column",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        },
+        {
+          "text": "Uses TagCell with color attribute for status column",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        },
+        {
+          "text": "Uses CurrencyCell with USD format for balance column",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        },
+        {
+          "text": "Uses DateTimeCell with YYYY-MM-DD format for date column",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        },
+        {
+          "text": "Uses ActionCell with onClick handler for Edit action",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        },
+        {
+          "text": "Columns array is properly structured for Ant Design Table",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 8890,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses RemoteSelect component with search function",
+          "passed": true,
+          "evidence": "Line 101 uses RemoteSelect component, and line 74 defines searchUsers async function passed to the search prop"
+        },
+        {
+          "text": "Search function fetches from /api/users/search",
+          "passed": true,
+          "evidence": "Line 75: `const response = await fetch('/api/users/search?q=${encodeURIComponent(keyword)}');`"
+        },
+        {
+          "text": "RemoteSelect has debounce configured with 300ms delay",
+          "passed": true,
+          "evidence": "Lines 110-114: `debounce={{ delay: 300, leading: false, trailing: true }}`"
+        },
+        {
+          "text": "Uses TagInput component for tag input",
+          "passed": true,
+          "evidence": "Line 175 uses TagInput component imported from @ahoo-wang/fetcher-viewer"
+        },
+        {
+          "text": "TagInput uses string serialization for tag values",
+          "passed": true,
+          "evidence": "Line 183: `serializer={StringTagValueItemSerializer}`"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 2933,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses TextFilter component from @ahoo-wang/fetcher-viewer",
+          "passed": true,
+          "evidence": "The output uses ActiveFilter type and FilterPanel with type: 'text' for username filter"
+        },
+        {
+          "text": "Uses NumberFilter component from @ahoo-wang/fetcher-viewer",
+          "passed": true,
+          "evidence": "The output uses FilterPanel with type: 'number' for age filter"
+        },
+        {
+          "text": "Uses SelectFilter component from @ahoo-wang/fetcher-viewer",
+          "passed": true,
+          "evidence": "The output uses FilterPanel with type: 'select' for status filter with options for 'active' and 'inactive'"
+        },
+        {
+          "text": "Uses useFilterState hook to manage filter state",
+          "passed": true,
+          "evidence": "Lines 12, 21, 30 use useFilterState hook for username, age, and status filter states with proper onChange handlers"
+        },
+        {
+          "text": "FilterPanel renders with all three filter types",
+          "passed": true,
+          "evidence": "FilterPanel component at lines 104-111 renders filters array containing text, number, and select filter types"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 6,
+        "total": 6,
+        "time_seconds": 0.0,
+        "tokens": 13,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses TextCell with ellipsis attribute for name column",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        },
+        {
+          "text": "Uses TagCell with color attribute for status column",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        },
+        {
+          "text": "Uses CurrencyCell with USD format for balance column",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        },
+        {
+          "text": "Uses DateTimeCell with YYYY-MM-DD format for date column",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        },
+        {
+          "text": "Uses ActionCell with onClick handler for Edit action",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        },
+        {
+          "text": "Columns array is properly structured for Ant Design Table",
+          "passed": false,
+          "evidence": "No output file created - only placeholder.txt exists in outputs directory"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 5,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 2169,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses RemoteSelect component with search function",
+          "passed": false,
+          "evidence": "Output file is UserTableColumns.tsx which is for data table columns, not RemoteSelect/TagInput components. The file does not contain RemoteSelect usage."
+        },
+        {
+          "text": "Search function fetches from /api/users/search",
+          "passed": false,
+          "evidence": "Output file is UserTableColumns.tsx which is for data table columns, not RemoteSelect/TagInput components. No /api/users/search endpoint is referenced."
+        },
+        {
+          "text": "RemoteSelect has debounce configured with 300ms delay",
+          "passed": false,
+          "evidence": "Output file is UserTableColumns.tsx which is for data table columns. No RemoteSelect or debounce configuration exists."
+        },
+        {
+          "text": "Uses TagInput component for tag input",
+          "passed": false,
+          "evidence": "Output file is UserTableColumns.tsx which is for data table columns. No TagInput usage exists in this file."
+        },
+        {
+          "text": "TagInput uses string serialization for tag values",
+          "passed": false,
+          "evidence": "Output file is UserTableColumns.tsx which is for data table columns. No TagInput or string serialization exists."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.6667,
+        "stddev": 0.5774,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 3817.3333,
+        "stddev": 4572.3937,
+        "min": 13,
+        "max": 8890
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.3333,
+        "stddev": 0.5774,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 1705.0,
+        "stddev": 1514.2893,
+        "min": 13,
+        "max": 2933
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.33",
+      "time_seconds": "+0.0",
+      "tokens": "+2112"
+    }
+  },
+  "notes": []
+}
