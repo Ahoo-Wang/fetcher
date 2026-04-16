@@ -283,41 +283,16 @@ try {
 
 ## 📚 API 参考
 
-### 模块导入
+### Response 原型扩展
 
-要使用事件流功能，您需要导入模块以执行其副作用：
+导入此模块会通过以下属性对全局 `Response.prototype` 进行补丁：
 
-```typescript
-import '@ahoo-wang/fetcher-eventstream';
-```
-
-此导入会自动扩展全局 `Response` 接口以处理服务器发送事件流：
-
-- `eventStream()` - 将带有 `text/event-stream` 内容类型的响应转换为 `ServerSentEventStream`
-- `jsonEventStream<DATA>()` - 将带有 `text/event-stream` 内容类型的响应转换为 `JsonServerSentEventStream<DATA>`
-- `isEventStream` getter - 检查响应是否具有 `text/event-stream` 内容类型
-- `requiredEventStream()` - 获取 `ServerSentEventStream`，如果不可用则抛出错误
-- `requiredJsonEventStream<DATA>()` - 获取 `JsonServerSentEventStream<DATA>`，如果不可用则抛出错误
-
-这是 JavaScript/TypeScript 中常见的模式，用于在不修改原始类型定义的情况下扩展现有类型的功能。
-
-在集成测试和实际应用中，此导入对于处理事件流至关重要。例如：
-
-```typescript
-import { Fetcher } from '@ahoo-wang/fetcher';
-import '@ahoo-wang/fetcher-eventstream';
-
-const fetcher = new Fetcher({
-  baseURL: 'https://api.example.com',
-});
-
-// Response 对象将自动具有 eventStream() 和 jsonEventStream() 方法
-const response = await fetcher.get('/events');
-// 处理事件流
-for await (const event of response.requiredEventStream()) {
-  console.log('收到事件:', event);
-}
-```
+- `contentType` - Content-Type 头部的值
+- `isEventStream` - 布尔值 getter，如果 Content-Type 是 `text/event-stream` 则为 true
+- `eventStream()` - 如果可用则返回 `ServerSentEventStream`，否则返回 undefined
+- `requiredEventStream()` - 返回 `ServerSentEventStream`，如果不可用则抛出错误
+- `jsonEventStream<DATA>()` - 如果可用则返回 `JsonServerSentEventStream<DATA>`
+- `requiredJsonEventStream<DATA>()` - 返回 `JsonServerSentEventStream<DATA>`，如果不可用则抛出错误
 
 ### toJsonServerSentEventStream
 

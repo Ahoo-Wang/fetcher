@@ -166,10 +166,10 @@ import { NumberRange } from '@ahoo-wang/fetcher-viewer';
 
 #### FilterPanel
 
-具有动态过滤器管理的综合过滤面板。
+具有动态过滤器管理的综合过滤面板。面板使用在 `filterRegistry` 中注册的 `TypedFilter` 组件根据类型字符串渲染过滤器。
 
 ```tsx
-import { FilterPanel, useFilterState } from '@ahoo-wang/fetcher-viewer';
+import { FilterPanel, useFilterState, filterRegistry } from '@ahoo-wang/fetcher-viewer';
 
 function MyFilterComponent() {
   const { filters, addFilter, removeFilter, updateFilter } = useFilterState();
@@ -177,17 +177,36 @@ function MyFilterComponent() {
   return (
     <FilterPanel
       filters={filters}
-      availableFilters={[
-        { name: 'name', label: '名称', type: 'text' },
-        { name: 'age', label: '年龄', type: 'number' },
-        { name: 'status', label: '状态', type: 'select' },
-      ]}
       onAddFilter={addFilter}
       onRemoveFilter={removeFilter}
       onUpdateFilter={updateFilter}
     />
   );
 }
+```
+
+**过滤器解析工作原理：**
+
+`filterRegistry` 将过滤器类型字符串映射到对应的 `TypedFilter` 组件：
+
+- `'id'` - IdFilter
+- `'text'` - TextFilter
+- `'number'` - NumberFilter
+- `'select'` - SelectFilter
+- `'bool'` - BoolFilter
+- `'dateTime'` - DateTimeFilter
+
+当遇到未知类型的过滤器时，将渲染 `FallbackFilter` 并显示警告提示。
+
+#### FallbackFilter
+
+当过滤器类型未在 `filterRegistry` 中注册时渲染。它显示一个警告提示，表示不支持该过滤器类型。
+
+```tsx
+import { FallbackFilter } from '@ahoo-wang/fetcher-viewer';
+
+// FallbackFilter 会自动为未知过滤器类型显示
+// 例如，当使用 type: 'customType' 的过滤器但没有注册处理器时
 ```
 
 #### useFilterState Hook
@@ -217,7 +236,8 @@ const {
 - **NumberFilter**: 数字输入，支持比较操作符
 - **SelectFilter**: 下拉选择过滤器
 - **IdFilter**: 基于 ID 的过滤器
-- **AssemblyFilter**: 组合多个条件的复合过滤器
+- **BoolFilter**: 布尔过滤器，支持 true/false 操作符
+- **DateTimeFilter**: 日期/时间过滤器，支持日期特定的操作符
 
 #### 自定义过滤器
 
@@ -243,6 +263,218 @@ function CustomFilter({ field, onChange, value }: FilterProps) {
     </div>
   );
 }
+```
+
+### Cell 组件
+
+库提供了多种单元格组件，用于在表格中渲染不同数据类型。所有单元格组件都接受包含 `data`（包含 `value`、`record` 和 `index`）和可选 `attributes` 的 `CellProps` 结构。
+
+#### TextCell
+
+渲染纯文本，可选省略号截断。
+
+```tsx
+import { TextCell, TEXT_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<TextCell
+  data={{ value: 'Hello', record: { id: 1 }, index: 0 }}
+  attributes={{ ellipsis: true }}
+/>
+```
+
+#### TagCell
+
+渲染具有可自定义颜色的单个标签。
+
+```tsx
+import { TagCell, TAG_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<TagCell
+  data={{ value: 'urgent', record: { id: 1 }, index: 0 }}
+  attributes={{ color: 'red' }}
+/>
+```
+
+#### TagsCell
+
+渲染具有可自定义颜色的多个标签。
+
+```tsx
+import { TagsCell, TAGS_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<TagsCell
+  data={{ value: ['urgent', 'high'], record: { id: 1 }, index: 0 }}
+  attributes={{ color: 'blue' }}
+/>
+```
+
+#### ActionCell
+
+渲染可点击的操作按钮。`onClick` 处理器接收完整记录。
+
+```tsx
+import { ActionCell, ACTION_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<ActionCell
+  data={{
+    value: 'Edit',
+    record: { id: 1, name: 'Item' },
+    index: 0
+  }}
+  attributes={{
+    onClick: (record) => console.log('Edit:', record),
+    danger: true
+  }}
+/>
+```
+
+#### ActionsCell
+
+渲染多个操作，包含一个主要操作和一个用于次要操作的下拉菜单。
+
+```tsx
+import { ActionsCell, ACTIONS_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<ActionsCell
+  data={{
+    value: {
+      primaryAction: {
+        data: { value: 'Edit', record: item, index: 0 },
+        attributes: { onClick: () => editItem(item.id) }
+      },
+      moreActionTitle: '更多',
+      secondaryActions: [
+        {
+          data: { value: 'Delete', record: item, index: 0 },
+          attributes: { onClick: () => deleteItem(item.id), danger: true }
+        }
+      ]
+    },
+    record: item,
+    index: 0
+  }}
+  attributes={{
+    onClick: (actionKey, record) => console.log(actionKey, record)
+  }}
+/>
+```
+
+#### AvatarCell
+
+渲染头像图片或姓名首字母后备。
+
+```tsx
+import { AvatarCell, AVATAR_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+// 带图片 URL
+<AvatarCell
+  data={{
+    value: 'https://example.com/avatar.jpg',
+    record: { id: 1, name: 'John' },
+    index: 0
+  }}
+  attributes={{ size: 40 }}
+/>
+
+// 带首字母后备
+<AvatarCell
+  data={{
+    value: 'John Doe',
+    record: { id: 1, name: 'John Doe' },
+    index: 0
+  }}
+  attributes={{ size: 40, style: { backgroundColor: '#1890ff' } }}
+/>
+```
+
+#### CurrencyCell
+
+渲染格式化货币值。
+
+```tsx
+import { CurrencyCell, CURRENCY_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<CurrencyCell
+  data={{
+    value: 1234.56,
+    record: { id: 1, amount: 1234.56 },
+    index: 0
+  }}
+  attributes={{
+    format: { currency: 'USD', locale: 'en-US', decimals: 2 },
+    style: { fontWeight: 'bold' }
+  }}
+/>
+```
+
+#### DateTimeCell
+
+渲染具有可自定义格式的格式化日期时间值。
+
+```tsx
+import { DateTimeCell, DATETIME_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<DateTimeCell
+  data={{
+    value: '2024-01-15T10:30:00Z',
+    record: { id: 1, createdAt: '2024-01-15T10:30:00Z' },
+    index: 0
+  }}
+  attributes={{
+    format: 'YYYY-MM-DD HH:mm:ss'
+  }}
+/>
+```
+
+#### ImageCell
+
+渲染带预览支持的图片。
+
+```tsx
+import { ImageCell, IMAGE_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<ImageCell
+  data={{
+    value: 'https://example.com/image.jpg',
+    record: { id: 1, image: 'https://example.com/image.jpg' },
+    index: 0
+  }}
+  attributes={{ width: 80, height: 80, preview: true }}
+/>
+```
+
+#### ImageGroupCell
+
+渲染图片组，带徽章计数和预览支持。
+
+```tsx
+import { ImageGroupCell, IMAGE_GROUP_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<ImageGroupCell
+  data={{
+    value: ['https://example.com/1.jpg', 'https://example.com/2.jpg'],
+    record: { id: 1, images: ['https://example.com/1.jpg', 'https://example.com/2.jpg'] },
+    index: 0
+  }}
+  attributes={{ width: 80, height: 80, preview: true }}
+/>
+```
+
+#### LinkCell
+
+渲染可点击链接，支持邮箱自动检测。
+
+```tsx
+import { LinkCell, LINK_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<LinkCell
+  data={{
+    value: 'Visit Website',
+    record: { id: 1, url: 'https://example.com' },
+    index: 0
+  }}
+  attributes={{ href: 'https://example.com', target: '_blank' }}
+/>
 ```
 
 ## 🎨 主题和样式
@@ -333,7 +565,6 @@ function DataTable() {
     <div>
       <FilterPanel
         filters={filters}
-        availableFilters={FILTER_CONFIG}
         onAddFilter={addFilter}
         onRemoveFilter={removeFilter}
         onUpdateFilter={updateFilter}

@@ -15,7 +15,7 @@ APIs.
 ## 🌟 Features
 
 - **📡 Event Stream Conversion**: Converts `text/event-stream` responses to async generators of `ServerSentEvent` objects
-- **🔌 Interceptor Integration**: Automatically adds `eventStream()` and `jsonEventStream()` methods to responses with
+- **🔌 Side-Effect Module Import**: Automatically adds `eventStream()` and `jsonEventStream()` methods to the global `Response.prototype` for responses with
   `text/event-stream` content
   type
 - **📋 SSE Parsing**: Parses Server-Sent Events according to the specification, including data, event, id, and retry
@@ -312,43 +312,16 @@ try {
 
 ## 📚 API Reference
 
-### Module Import
+### Response Prototype Extension
 
-To use the event stream functionality, you need to import the module for its side effects:
+Importing this module patches the global `Response.prototype` with the following properties:
 
-```typescript
-import '@ahoo-wang/fetcher-eventstream';
-```
-
-This import automatically extends the global `Response` interface with methods for handling Server-Sent Events streams:
-
-- `eventStream()` - Converts a Response with `text/event-stream` content type to a `ServerSentEventStream`
-- `jsonEventStream<DATA>()` - Converts a Response with `text/event-stream` content type to a
-  `JsonServerSentEventStream<DATA>`
-- `isEventStream` getter - Checks if the Response has a `text/event-stream` content type
-- `requiredEventStream()` - Gets a `ServerSentEventStream`, throwing an error if not available
-- `requiredJsonEventStream<DATA>()` - Gets a `JsonServerSentEventStream<DATA>`, throwing an error if not available
-
-This is a common pattern in JavaScript/TypeScript for extending existing types with additional functionality without
-modifying the original type definitions.
-
-In integration tests and real applications, this import is essential for working with event streams. For example:
-
-```typescript
-import { Fetcher } from '@ahoo-wang/fetcher';
-import '@ahoo-wang/fetcher-eventstream';
-
-const fetcher = new Fetcher({
-  baseURL: 'https://api.example.com',
-});
-
-// Response objects will automatically have eventStream() and jsonEventStream() methods
-const response = await fetcher.get('/events');
-// Handle event stream
-for await (const event of response.requiredEventStream()) {
-  console.log('Received event:', event);
-}
-```
+- `contentType` - The Content-Type header value
+- `isEventStream` - Boolean getter, true if Content-Type is `text/event-stream`
+- `eventStream()` - Returns `ServerSentEventStream` if available, undefined otherwise
+- `requiredEventStream()` - Returns `ServerSentEventStream` or throws if not available
+- `jsonEventStream<DATA>()` - Returns `JsonServerSentEventStream<DATA>` if available
+- `requiredJsonEventStream<DATA>()` - Returns `JsonServerSentEventStream<DATA>` or throws if not available
 
 ### toJsonServerSentEventStream
 

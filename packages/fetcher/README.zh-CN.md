@@ -174,11 +174,10 @@ Fetcher 中的拦截器系统遵循中间件模式，允许您在 HTTP 请求生
 
 Fetcher 自带几个内置拦截器，它们会自动注册：
 
-1. **UrlResolveInterceptor**：解析带路径和查询参数的 URL（顺序：Number.MIN_SAFE_INTEGER + 1000）
-2. **RequestBodyInterceptor**：将对象体转换为 JSON 字符串（顺序：Number.MIN_SAFE_INTEGER + 2000）
-3. **FetchInterceptor**：执行实际的 HTTP 请求（顺序：Number.MAX_SAFE_INTEGER - 1000）
-4. **ValidateStatusInterceptor**：验证 HTTP 状态码并在状态码无效时抛出错误（响应拦截器，顺序：Number.MAX_SAFE_INTEGER -
-   1000）
+1. **UrlResolveInterceptor**：解析带路径和查询参数的 URL（顺序：`Number.MAX_SAFE_INTEGER - 11000`）
+2. **RequestBodyInterceptor**：将对象体转换为 JSON 字符串（顺序：`Number.MIN_SAFE_INTEGER + 10000`）
+3. **FetchInterceptor**：执行实际的 HTTP 请求（顺序：`Number.MAX_SAFE_INTEGER - 10000`）
+4. **ValidateStatusInterceptor**：验证 HTTP 状态码并在状态码无效时抛出错误（响应拦截器，顺序：`Number.MAX_SAFE_INTEGER - 10000`）
 
 ### 使用拦截器
 
@@ -311,6 +310,7 @@ new Fetcher(options ? : FetcherOptions);
 - `patch(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PATCH 请求
 - `head(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - HEAD 请求
 - `options(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - OPTIONS 请求
+- `trace(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - TRACE 请求
 - `request(request: FetchRequest): Promise<FetchExchange>` - 通过 Fetcher 的内部工作流处理 HTTP 请求
 
 ### FetcherRequest 接口

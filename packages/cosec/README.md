@@ -21,9 +21,8 @@ This package provides seamless integration between the Fetcher HTTP client and t
 - **📱 Device Management**: Persistent device ID management with localStorage and fallback support
 - **🔄 Token Refresh**: Intelligent token refresh based on 401 responses with retry logic
 - **🌈 Request Attribution**: Unique request ID generation for comprehensive API tracking
-- **💾 Secure Token Storage**: Encrypted JWT token storage with configurable backends
-- **🛡️ Enterprise Security**: Multi-tenant support, rate limiting, and security monitoring
-- **⚡ Performance Optimized**: Minimal overhead with connection pooling and caching
+- **💾 Token Storage**: JWT token storage with localStorage backend
+- **🛡️ Enterprise Security**: CoSec authentication framework integration with space/tenant attribution
 - **🛠️ TypeScript First**: Complete type definitions with strict type safety
 - **🔌 Pluggable Architecture**: Modular design for easy integration and customization
 - **⚙️ Simplified Configuration**: One-line setup with `CoSecConfigurer` for minimal configuration overhead

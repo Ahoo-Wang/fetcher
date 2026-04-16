@@ -841,11 +841,11 @@ class SessionManager {
 ### Cross-Tab Application State
 
 ```typescript
+import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import {
-  KeyStorage,
   BroadcastTypedEventBus,
   SerialTypedEventBus,
-} from '@ahoo-wang/fetcher-storage';
+} from '@ahoo-wang/fetcher-eventbus';
 
 interface AppState {
   theme: 'light' | 'dark';

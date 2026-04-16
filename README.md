@@ -83,7 +83,7 @@ Power your real-time applications with Server-Sent Events support, specially des
 APIs:
 
 - **📡 Event Stream Conversion**: Converts `text/event-stream` responses to async generators of `ServerSentEvent` objects
-- **🔌 Interceptor Integration**: Automatically adds `eventStream()` and `jsonEventStream()` methods to responses with
+- **🔌 Side-Effect Module Import**: Automatically adds `eventStream()` and `jsonEventStream()` methods to the global `Response.prototype` for responses with
   `text/event-stream` content
   type
 - **📋 SSE Parsing**: Parses Server-Sent Events according to the specification, including data, event, id, and retry
@@ -293,10 +293,9 @@ fetcher.interceptors.response.use({
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
-import { EventStreamInterceptor } from '@ahoo-wang/fetcher-eventstream';
+import '@ahoo-wang/fetcher-eventstream';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-fetcher.interceptors.response.use(new EventStreamInterceptor());
 
 // Stream real-time events (generic SSE)
 const response = await fetcher.get('/events');

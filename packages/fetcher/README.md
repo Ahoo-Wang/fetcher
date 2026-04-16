@@ -185,11 +185,11 @@ responses, and errors at different stages of the HTTP request lifecycle.
 
 Fetcher comes with several built-in interceptors that are automatically registered:
 
-1. **UrlResolveInterceptor**: Resolves URLs with path and query parameters (order: Number.MIN_SAFE_INTEGER + 1000)
-2. **RequestBodyInterceptor**: Converts object bodies to JSON strings (order: Number.MIN_SAFE_INTEGER + 2000)
-3. **FetchInterceptor**: Executes the actual HTTP request (order: Number.MAX_SAFE_INTEGER - 1000)
+1. **UrlResolveInterceptor**: Resolves URLs with path and query parameters (order: `Number.MAX_SAFE_INTEGER - 11000`)
+2. **RequestBodyInterceptor**: Converts object bodies to JSON strings (order: `Number.MIN_SAFE_INTEGER + 10000`)
+3. **FetchInterceptor**: Executes the actual HTTP request (order: `Number.MAX_SAFE_INTEGER - 10000`)
 4. **ValidateStatusInterceptor**: Validates HTTP status codes and throws errors for invalid statuses (response
-   interceptor, order: Number.MAX_SAFE_INTEGER - 1000)
+   interceptor, order: `Number.MAX_SAFE_INTEGER - 10000`)
 
 ### Using Interceptors
 
@@ -820,6 +820,7 @@ new Fetcher(options ? : FetcherOptions);
 - `patch(url: string, request?: Omit<FetcherRequest, 'method'>): Promise<Response>` - PATCH request
 - `head(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - HEAD request
 - `options(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - OPTIONS request
+- `trace(url: string, request?: Omit<FetcherRequest, 'method' | 'body'>): Promise<Response>` - TRACE request
 - `request(request: FetchRequest): Promise<FetchExchange>` - Process an HTTP request through the Fetcher's internal
   workflow
 

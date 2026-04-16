@@ -281,10 +281,9 @@ fetcher.interceptors.response.use({
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
-import { EventStreamInterceptor } from '@ahoo-wang/fetcher-eventstream';
+import '@ahoo-wang/fetcher-eventstream';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-fetcher.interceptors.response.use(new EventStreamInterceptor());
 
 // 流式实时事件 (通用 SSE)
 const response = await fetcher.get('/events');

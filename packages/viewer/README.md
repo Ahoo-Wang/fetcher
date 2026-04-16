@@ -166,10 +166,10 @@ import { NumberRange } from '@ahoo-wang/fetcher-viewer';
 
 #### FilterPanel
 
-A comprehensive filter panel with dynamic filter management.
+A comprehensive filter panel with dynamic filter management. The panel uses `TypedFilter` components registered in the `filterRegistry` to render filters based on their type string.
 
 ```tsx
-import { FilterPanel, useFilterState } from '@ahoo-wang/fetcher-viewer';
+import { FilterPanel, useFilterState, filterRegistry } from '@ahoo-wang/fetcher-viewer';
 
 function MyFilterComponent() {
   const { filters, addFilter, removeFilter, updateFilter } = useFilterState();
@@ -177,17 +177,36 @@ function MyFilterComponent() {
   return (
     <FilterPanel
       filters={filters}
-      availableFilters={[
-        { name: 'name', label: 'Name', type: 'text' },
-        { name: 'age', label: 'Age', type: 'number' },
-        { name: 'status', label: 'Status', type: 'select' },
-      ]}
       onAddFilter={addFilter}
       onRemoveFilter={removeFilter}
       onUpdateFilter={updateFilter}
     />
   );
 }
+```
+
+**How Filter Resolution Works:**
+
+The `filterRegistry` maps filter type strings to their corresponding `TypedFilter` components:
+
+- `'id'` - IdFilter
+- `'text'` - TextFilter
+- `'number'` - NumberFilter
+- `'select'` - SelectFilter
+- `'bool'` - BoolFilter
+- `'dateTime'` - DateTimeFilter
+
+When a filter with an unknown type is encountered, `FallbackFilter` is rendered instead, displaying a warning message.
+
+#### FallbackFilter
+
+Rendered when a filter type is not registered in the `filterRegistry`. It displays a warning alert indicating the unsupported filter type.
+
+```tsx
+import { FallbackFilter } from '@ahoo-wang/fetcher-viewer';
+
+// FallbackFilter automatically displays for unknown filter types
+// e.g., when a filter with type: 'customType' is used but no handler is registered
 ```
 
 #### useFilterState Hook
@@ -217,7 +236,8 @@ The library provides several built-in filter types:
 - **NumberFilter**: Number input with comparison operators
 - **SelectFilter**: Dropdown selection filter
 - **IdFilter**: ID-based filter
-- **AssemblyFilter**: Composite filter combining multiple conditions
+- **BoolFilter**: Boolean filter with true/false operators
+- **DateTimeFilter**: Date/time filter with date-specific operators
 
 #### Custom Filters
 
@@ -243,6 +263,218 @@ function CustomFilter({ field, onChange, value }: FilterProps) {
     </div>
   );
 }
+```
+
+### Cell Components
+
+The library provides various cell components for rendering different data types in tables. All cell components accept a `CellProps` structure with `data` (containing `value`, `record`, and `index`) and optional `attributes`.
+
+#### TextCell
+
+Renders plain text with optional ellipsis truncation.
+
+```tsx
+import { TextCell, TEXT_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<TextCell
+  data={{ value: 'Hello', record: { id: 1 }, index: 0 }}
+  attributes={{ ellipsis: true }}
+/>
+```
+
+#### TagCell
+
+Renders a single tag with customizable color.
+
+```tsx
+import { TagCell, TAG_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<TagCell
+  data={{ value: 'urgent', record: { id: 1 }, index: 0 }}
+  attributes={{ color: 'red' }}
+/>
+```
+
+#### TagsCell
+
+Renders multiple tags with customizable color.
+
+```tsx
+import { TagsCell, TAGS_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<TagsCell
+  data={{ value: ['urgent', 'high'], record: { id: 1 }, index: 0 }}
+  attributes={{ color: 'blue' }}
+/>
+```
+
+#### ActionCell
+
+Renders a clickable action button. The `onClick` handler receives the full record.
+
+```tsx
+import { ActionCell, ACTION_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<ActionCell
+  data={{
+    value: 'Edit',
+    record: { id: 1, name: 'Item' },
+    index: 0
+  }}
+  attributes={{
+    onClick: (record) => console.log('Edit:', record),
+    danger: true
+  }}
+/>
+```
+
+#### ActionsCell
+
+Renders multiple actions with a primary action and a dropdown menu for secondary actions.
+
+```tsx
+import { ActionsCell, ACTIONS_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<ActionsCell
+  data={{
+    value: {
+      primaryAction: {
+        data: { value: 'Edit', record: item, index: 0 },
+        attributes: { onClick: () => editItem(item.id) }
+      },
+      moreActionTitle: 'More',
+      secondaryActions: [
+        {
+          data: { value: 'Delete', record: item, index: 0 },
+          attributes: { onClick: () => deleteItem(item.id), danger: true }
+        }
+      ]
+    },
+    record: item,
+    index: 0
+  }}
+  attributes={{
+    onClick: (actionKey, record) => console.log(actionKey, record)
+  }}
+/>
+```
+
+#### AvatarCell
+
+Renders an avatar image or initials fallback.
+
+```tsx
+import { AvatarCell, AVATAR_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+// With image URL
+<AvatarCell
+  data={{
+    value: 'https://example.com/avatar.jpg',
+    record: { id: 1, name: 'John' },
+    index: 0
+  }}
+  attributes={{ size: 40 }}
+/>
+
+// With initials fallback
+<AvatarCell
+  data={{
+    value: 'John Doe',
+    record: { id: 1, name: 'John Doe' },
+    index: 0
+  }}
+  attributes={{ size: 40, style: { backgroundColor: '#1890ff' } }}
+/>
+```
+
+#### CurrencyCell
+
+Renders formatted currency values.
+
+```tsx
+import { CurrencyCell, CURRENCY_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<CurrencyCell
+  data={{
+    value: 1234.56,
+    record: { id: 1, amount: 1234.56 },
+    index: 0
+  }}
+  attributes={{
+    format: { currency: 'USD', locale: 'en-US', decimals: 2 },
+    style: { fontWeight: 'bold' }
+  }}
+/>
+```
+
+#### DateTimeCell
+
+Renders formatted datetime values with customizable format.
+
+```tsx
+import { DateTimeCell, DATETIME_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<DateTimeCell
+  data={{
+    value: '2024-01-15T10:30:00Z',
+    record: { id: 1, createdAt: '2024-01-15T10:30:00Z' },
+    index: 0
+  }}
+  attributes={{
+    format: 'YYYY-MM-DD HH:mm:ss'
+  }}
+/>
+```
+
+#### ImageCell
+
+Renders an image with preview support.
+
+```tsx
+import { ImageCell, IMAGE_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<ImageCell
+  data={{
+    value: 'https://example.com/image.jpg',
+    record: { id: 1, image: 'https://example.com/image.jpg' },
+    index: 0
+  }}
+  attributes={{ width: 80, height: 80, preview: true }}
+/>
+```
+
+#### ImageGroupCell
+
+Renders a group of images with badge count and preview support.
+
+```tsx
+import { ImageGroupCell, IMAGE_GROUP_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<ImageGroupCell
+  data={{
+    value: ['https://example.com/1.jpg', 'https://example.com/2.jpg'],
+    record: { id: 1, images: ['https://example.com/1.jpg', 'https://example.com/2.jpg'] },
+    index: 0
+  }}
+  attributes={{ width: 80, height: 80, preview: true }}
+/>
+```
+
+#### LinkCell
+
+Renders a clickable link with email auto-detection.
+
+```tsx
+import { LinkCell, LINK_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+
+<LinkCell
+  data={{
+    value: 'Visit Website',
+    record: { id: 1, url: 'https://example.com' },
+    index: 0
+  }}
+  attributes={{ href: 'https://example.com', target: '_blank' }}
+/>
 ```
 
 ## 🎨 Theming & Styling
@@ -333,7 +565,6 @@ function DataTable() {
     <div>
       <FilterPanel
         filters={filters}
-        availableFilters={FILTER_CONFIG}
         onAddFilter={addFilter}
         onRemoveFilter={removeFilter}
         onUpdateFilter={updateFilter}

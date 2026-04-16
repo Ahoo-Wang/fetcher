@@ -298,9 +298,14 @@ interface ChatRequest {
   // Response format
   response_format?: object; // Response format specification
 
-  // Function calling (beta)
-  tools?: any[]; // Available tools/functions
-  tool_choice?: any; // Tool selection strategy
+  // Function/Tool calling
+  // tools should be an array of tool objects: { type: "function", function: { name: string, description?: string, parameters?: object } }[]
+  // Note: The type definition uses string[] but OpenAI expects tool objects
+  tools?: string[];
+  // tool_choice supports: "auto", "none", or { type: "function", function: { name: string } }
+  tool_choice?: { [key: string]: any };
+  // Non-standard parameter (not part of OpenAI API) - likely for internal tracking
+  seen?: number;
 
   // Other OpenAI parameters
   [key: string]: any;
@@ -313,10 +318,11 @@ Represents a single message in the conversation.
 
 ```typescript
 interface Message {
-  role: 'system' | 'user' | 'assistant' | 'function';
-  content: string;
-  name?: string; // For function messages
-  function_call?: any; // For function call results
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content?: string;
+  name?: string; // For tool messages
+  tool_call_id?: string; // ID of the tool call (for tool role messages)
+  tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; // For assistant messages with tool calls
 }
 ```
 
@@ -669,7 +675,7 @@ const openai = new OpenAI({
 openai.fetcher = customFetcher;
 ```
 
-### Function Calling (Beta)
+### Function/Tool Calling
 
 ```typescript
 import { OpenAI } from '@ahoo-wang/fetcher-openai';
@@ -679,39 +685,42 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-// Define available functions
-const functions = [
+// Define available tools (use 'function' type for OpenAI compatibility)
+const tools = [
   {
-    name: 'get_weather',
-    description: 'Get the current weather for a location',
-    parameters: {
-      type: 'object',
-      properties: {
-        location: {
-          type: 'string',
-          description: 'The city and state, e.g. San Francisco, CA',
+    type: 'function',
+    function: {
+      name: 'get_weather',
+      description: 'Get the current weather for a location',
+      parameters: {
+        type: 'object',
+        properties: {
+          location: {
+            type: 'string',
+            description: 'The city and state, e.g. San Francisco, CA',
+          },
         },
+        required: ['location'],
       },
-      required: ['location'],
     },
   },
 ];
 
-// Make a request with function calling
+// Make a request with tool calling
 const response = await openai.chat.completions({
   model: 'gpt-4',
   messages: [
     { role: 'user', content: "What's the weather like in San Francisco?" },
   ],
-  functions: functions,
-  function_call: 'auto', // Let the model decide when to call functions
+  tools: tools,
+  tool_choice: 'auto', // Let the model decide when to call tools
 });
 
-// Handle function calls
-if (response.choices[0].message.function_call) {
-  const functionCall = response.choices[0].message.function_call;
-  console.log('Function called:', functionCall.name);
-  console.log('Arguments:', JSON.parse(functionCall.arguments));
+// Handle tool calls
+if (response.choices[0].message.tool_calls) {
+  const toolCall = response.choices[0].message.tool_calls[0];
+  console.log('Tool called:', toolCall.function.name);
+  console.log('Arguments:', JSON.parse(toolCall.function.arguments));
 }
 ```
 

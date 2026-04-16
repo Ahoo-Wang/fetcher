@@ -297,8 +297,13 @@ interface ChatRequest {
   response_format?: object; // 响应格式规范
 
   // 函数调用（测试版）
-  tools?: any[]; // 可用工具/函数
-  tool_choice?: any; // 工具选择策略
+  // tools 应该是工具对象数组: { type: "function", function: { name: string, description?: string, parameters?: object } }[]
+  // 注意: 类型定义使用 string[] 但 OpenAI 期望工具对象
+  tools?: string[];
+  // tool_choice 支持: "auto", "none", 或 { type: "function", function: { name: string } }
+  tool_choice?: { [key: string]: any };
+  // 非标准参数（不属于 OpenAI API）- 可能用于内部跟踪
+  seen?: number;
 
   // 其他 OpenAI 参数
   [key: string]: any;
