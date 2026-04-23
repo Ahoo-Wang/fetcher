@@ -547,20 +547,31 @@ describe('TagCell Component', () => {
         role: `Role ${i % 10}`,
       }));
 
-      largeDataset.forEach((user, index) => {
-        const props: TagCellProps<typeof user> = {
-          data: {
-            value: user.role,
-            record: user,
-            index,
-          },
-          attributes: {},
-        };
+      const { rerender } = render(
+        <TagCell
+          data={{
+            value: largeDataset[0].role,
+            record: largeDataset[0],
+            index: 0,
+          }}
+          attributes={{}}
+        />,
+      );
 
-        const { rerender } = render(<TagCell {...props} />);
-        expect(screen.getByText(user.role)).toBeInTheDocument();
-        cleanup();
-      });
+      // Simulate rapid updates as would happen with large datasets
+      for (let i = 1; i < largeDataset.length; i++) {
+        rerender(
+          <TagCell
+            data={{
+              value: largeDataset[i].role,
+              record: largeDataset[i],
+              index: i,
+            }}
+            attributes={{}}
+          />,
+        );
+        expect(screen.getByText(largeDataset[i].role)).toBeInTheDocument();
+      }
     });
   });
 

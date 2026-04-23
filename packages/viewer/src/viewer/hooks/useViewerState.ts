@@ -1,12 +1,33 @@
 import type { ViewColumn, ViewDefinition, ViewState } from '../types';
 import type { SizeType } from 'antd/es/config-provider/SizeContext';
-import type { Key} from 'react';
+import type { Key } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import type { ActiveFilter} from '../../';
+import type { ActiveFilter } from '../../';
 import { deepEqual, useActiveViewState } from '../../';
 import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import { all } from '@ahoo-wang/fetcher-wow';
 import type { SortOrder } from 'antd/es/table/interface';
+
+/**
+ * Merges fields from definition that are not present in columns.
+ * New fields are added with default visibility (hidden: false).
+ */
+const mergeMissingFields = (
+  columns: ViewColumn[],
+  definitionFields: ViewDefinition['fields'],
+): ViewColumn[] => [
+  ...columns,
+  ...definitionFields
+    .filter(field => columns.every(col => col.name !== field.name))
+    .map(field => ({
+      name: field.name,
+      key: field.name,
+      fixed: false,
+      hidden: false,
+      width: '180px',
+      sortOrder: undefined,
+    })),
+];
 
 export interface UseViewerStateOptions {
   views: ViewState[];
@@ -30,7 +51,10 @@ export interface UseViewerStateReturn {
   setActiveFilters: (filters: ActiveFilter[]) => void;
 
   condition: Condition;
-  setCondition: (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => void;
+  setCondition: (
+    finalCondition: Condition,
+    activeFilterValues: Map<Key, Condition>,
+  ) => void;
   page: number;
   setPage: (page: number) => void;
   pageSize: number;
@@ -48,13 +72,23 @@ export interface UseViewerStateReturn {
 }
 
 export function useViewerState({
-                                 defaultShowFilter = true,
-                                 defaultShowViewPanel = true,
-                                 ...options
-                               }: UseViewerStateOptions): UseViewerStateReturn {
-  const originalView = useRef<ViewState>(options.defaultView);
+  defaultShowFilter = true,
+  defaultShowViewPanel = true,
+  ...options
+}: UseViewerStateOptions): UseViewerStateReturn {
+  const mergedMissingFieldsView: ViewState = {
+    ...options.defaultView,
+    columns: mergeMissingFields(
+      options.defaultView.columns,
+      options.definition.fields,
+    ),
+  };
+
+  const originalView = useRef<ViewState>(mergedMissingFieldsView);
   const [views, setViews] = useState<ViewState[]>(options.views);
-  const [activeView, setActiveView] = useState<ViewState>(options.defaultView);
+  const [activeView, setActiveView] = useState<ViewState>(
+    mergedMissingFieldsView,
+  );
   const [showFilter, setShowFilter] = useState(defaultShowFilter);
   const [showViewPanel, setShowViewPanel] = useState(defaultShowViewPanel);
 
@@ -97,11 +131,16 @@ export function useViewerState({
   };
 
   const onSwitchViewFn = (view: ViewState) => {
-    originalView.current = view;
-    setActiveView(view);
+    const mergedView: ViewState = {
+      ...view,
+      columns: mergeMissingFields(view.columns, options.definition.fields),
+    };
+
+    originalView.current = mergedView;
+    setActiveView(mergedView);
     setPage(1);
     setPageSize(view.pageSize);
-    setColumns(view.columns);
+    setColumns(mergedView.columns);
     setCondition(view.condition || all());
     setActiveFilters(view.filters);
     setTableSize(view.tableSize);
@@ -140,11 +179,14 @@ export function useViewerState({
     });
   };
 
-  const setConditionFn = (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => {
+  const setConditionFn = (
+    finalCondition: Condition,
+    activeFilterValues: Map<Key, Condition>,
+  ) => {
     setCondition(finalCondition);
     const newActiveFilters = activeFilters.map(activeFilter => {
       const activeFilterValue = activeFilterValues.get(activeFilter.key);
-      if (!activeFilterValue){
+      if (!activeFilterValue) {
         return {
           ...activeFilter,
           value: null,
@@ -172,12 +214,12 @@ export function useViewerState({
       const temp = sorter.find(it => it.field == column.name);
       return temp
         ? {
-          ...column,
-          sortOrder: (temp.direction === 'ASC'
-            ? 'ascend'
-            : 'descend') as SortOrder,
-        }
-        : { ...column, sortOrder: null };
+            ...column,
+            sortOrder: (temp.direction === 'ASC'
+              ? 'ascend'
+              : 'descend') as SortOrder,
+          }
+        : { ...column, sortOrder: undefined };
     });
     setColumns(newColumns);
     const newView: ViewState = {
