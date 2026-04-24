@@ -1,6 +1,7 @@
 export * from './AutoRefreshBarItem'
 export * from './BarItem';
 export * from './ColumnHeightBarItem'
+export * from './DataMonitorBarItem';
 export * from './FilterBarItem'
 export * from './FullscreenBarItem';
 export * from './FullscreenBarItem'

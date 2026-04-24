@@ -19,12 +19,15 @@ import type {
   FilterPanelConditionCapableRef} from '../';
 import {
   TopBar,
-  View
+  View,
+  DataMonitorBarItem,
 } from '../';
+import { dataMonitorService } from '@ahoo-wang/fetcher-react';
 import type {
   RefAttributes} from 'react';
 import {
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -201,6 +204,10 @@ export function Viewer<RecordType = any>({
     };
   });
 
+  useEffect(() => {
+    dataMonitorService.initialize();
+  }, []);
+
   return (
     <Layout ref={viewerRef}>
       {showViewPanel && (
@@ -248,6 +255,16 @@ export function Viewer<RecordType = any>({
                 onUpdateView={handleUpdateView}
                 onDeleteView={handleDeleteView}
                 fullscreenTarget={fullscreenTarget}
+                dataMonitorProps={{
+                  viewId: activeView.id,
+                  countUrl: definition.countUrl,
+                  viewName: activeView.name,
+                  condition,
+                  notification: {
+                    title: `视图[${activeView.name}]的数据已发生变化，请查看`,
+                    navigationUrl: window.location.pathname,
+                  },
+                }}
               />
             </Header>
             <View<RecordType>

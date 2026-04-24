@@ -18,3 +18,4 @@ export * from './storage';
 export * from './fetcher';
 export * from './wow';
 export * from './eventbus';
+export * from './dataMonitor';

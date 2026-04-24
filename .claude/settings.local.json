@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm tsc:*)",
+      "Bash(pnpm test:unit -- --run packages/react/test/dataMonitor/)",
+      "Bash(git ls-tree:*)",
+      "Bash(pnpm test:unit -- --run packages/viewer/test/topbar/DataMonitorBarItem.test.tsx)",
+      "Bash(pnpm vitest:*)",
+      "Bash(pnpm --filter @ahoo-wang/fetcher-viewer test -- --run packages/viewer/test/topbar/DataMonitorBarItem.test.tsx)"
+    ]
+  }
+}

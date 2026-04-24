@@ -57,7 +57,7 @@
   >
     <div>
       <BarItem
-        icon={isEnabled ? <BellFilled /> : <BellOutlined />}
+        icon={<BellOutlined />}
         active={isEnabled}
         {...rest}
       />

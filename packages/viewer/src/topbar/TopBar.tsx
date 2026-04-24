@@ -21,6 +21,7 @@ import type { ItemType } from 'antd/es/menu/interface';
 import {
   AutoRefreshBarItem,
   BarItem,
+  DataMonitorBarItem,
   Point,
   FilterBarItem,
   RefreshDataBarItem,
@@ -29,6 +30,8 @@ import {
   FullscreenBarItem,
 } from './';
 import type { SizeType } from 'antd/es/config-provider/SizeContext';
+import type { Condition } from '@ahoo-wang/fetcher-wow';
+import type { DataMonitorNotificationConfig } from '@ahoo-wang/fetcher-react';
 
 export interface TopBarProps<
   RecordType,
@@ -56,6 +59,13 @@ export interface TopBarProps<
   onUpdateView: (view: ViewState, onSuccess?: () => void) => void;
   onDeleteView: (view: ViewState, onSuccess?: () => void) => void;
   fullscreenTarget?: RefObject<HTMLElement | null>;
+  dataMonitorProps?: {
+    viewId: string;
+    countUrl: string;
+    viewName: string;
+    condition: Condition;
+    notification: DataMonitorNotificationConfig;
+  };
 }
 
 function renderMenuItem<RecordType>(
@@ -115,6 +125,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
     onCreateView,
     onUpdateView,
     fullscreenTarget,
+    dataMonitorProps,
   } = props;
 
   const [saveViewModalType, setSaveViewModalType] = useState<
@@ -249,7 +260,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             onChange={onTableSizeChange}
           />
           <ShareLinkBarItem />
-          <FullscreenBarItem target={fullscreenTarget} />
+          {dataMonitorProps && <DataMonitorBarItem {...dataMonitorProps} />}
           <Divider orientation="vertical" />
           <AutoRefreshBarItem
             viewId={activeView.id}
@@ -293,6 +304,7 @@ export function TopBar<RecordType>(props: TopBarProps<RecordType>) {
             </>
           )}
           <Divider orientation="vertical" />
+          <FullscreenBarItem target={fullscreenTarget} />
         </Flex>
       </Flex>
       {contextHolder}
