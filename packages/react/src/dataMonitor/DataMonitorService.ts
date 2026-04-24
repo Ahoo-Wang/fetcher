@@ -1,7 +1,7 @@
 // packages/react/src/dataMonitor/DataMonitorService.ts
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import type { Condition } from '@ahoo-wang/fetcher-wow';
-import { fetcher } from '@ahoo-wang/fetcher';
+import { fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 import { notificationCenter } from '../notification/notificationCenter';
 import { dataMonitorEventBus } from './useDataMonitorEventBus';
 
@@ -46,7 +46,7 @@ export class DataMonitorService {
           config.countUrl,
           config.viewName,
           config.condition,
-          config.notification || { title: '' }
+          config.notification || { title: '' },
         );
       }
     }
@@ -58,7 +58,7 @@ export class DataMonitorService {
     viewName: string,
     condition: Condition,
     notification: DataMonitorNotificationConfig,
-    interval: number = 30000
+    interval: number = 30000,
   ): void {
     // 如果已存在，先禁用以清理旧的 interval
     if (this.monitoredViews.has(viewId)) {
@@ -76,12 +76,11 @@ export class DataMonitorService {
     };
     this.monitoredViews.set(viewId, monitoredView);
 
-    this.fetchAndCheck(viewId);
+    this.fetchAndCheck(viewId).then();
 
-    const intervalId = window.setInterval(() => {
-      this.fetchAndCheck(viewId);
+    monitoredView.intervalId = window.setInterval(() => {
+      this.fetchAndCheck(viewId).then();
     }, interval);
-    monitoredView.intervalId = intervalId;
 
     this.saveToStorage();
   }
@@ -105,7 +104,10 @@ export class DataMonitorService {
     }
   }
 
-  updateNotification(viewId: string, notification: DataMonitorNotificationConfig): void {
+  updateNotification(
+    viewId: string,
+    notification: DataMonitorNotificationConfig,
+  ): void {
     const monitored = this.monitoredViews.get(viewId);
     if (monitored) {
       monitored.notification = notification;
@@ -123,7 +125,10 @@ export class DataMonitorService {
     if (!monitored) return;
 
     try {
-      const currentTotal = await this.fetchCount(monitored.countUrl, monitored.condition);
+      const currentTotal = await this.fetchCount(
+        monitored.countUrl,
+        monitored.condition,
+      );
       // 再次检查，因为可能在 fetch 过程中被 disable
       const currentMonitored = this.monitoredViews.get(viewId);
       if (!currentMonitored) return;
@@ -150,16 +155,21 @@ export class DataMonitorService {
   }
 
   private async fetchCount(url: string, condition: Condition): Promise<number> {
-    const response = await fetcher.post<number>(url, {
-      body: condition as Record<string, any>,
-    });
-    return response;
+    return await fetcher.post<number>(
+      url,
+      {
+        body: condition as Record<string, any>,
+      },
+      {
+        resultExtractor: ResultExtractors.Json,
+      },
+    );
   }
 
   private notify(
     viewId: string,
     notification: DataMonitorNotificationConfig,
-    currentTotal: number
+    currentTotal: number,
   ): void {
     const message = {
       title: notification.title,

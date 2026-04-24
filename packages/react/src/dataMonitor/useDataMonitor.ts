@@ -36,6 +36,11 @@ export function useDataMonitor(
     viewIdRef.current = viewId;
   }, [viewId]);
 
+  // 监听 viewId 变化，同步 isEnabled 状态
+  useEffect(() => {
+    setIsEnabled(dataMonitorService.isEnabled(viewId));
+  }, [viewId]);
+
   // 监听 condition 变化
   useEffect(() => {
     if (dataMonitorService.isEnabled(viewId)) {

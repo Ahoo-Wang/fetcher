@@ -23,7 +23,7 @@ vi.mock('../../src/dataMonitor/useDataMonitorEventBus', () => ({
   dataMonitorEventBus: dataMonitorEventBusMock,
 }));
 
-// Mock KeyStorage - must be a class that can be instantiated
+// Mock KeyStorage
 vi.mock('@ahoo-wang/fetcher-storage', () => {
   return {
     KeyStorage: class MockKeyStorage {
@@ -35,12 +35,19 @@ vi.mock('@ahoo-wang/fetcher-storage', () => {
   };
 });
 
-// Mock fetcher
-vi.mock('@ahoo-wang/fetcher', () => ({
-  fetcher: {
-    post: vi.fn().mockResolvedValue(0),
-  },
-}));
+// Mock fetcher - the mock post function is hoisted so it's accessible in tests
+const fetcherPostMock = vi.hoisted(() => vi.fn(() => Promise.resolve(0)));
+
+vi.mock('@ahoo-wang/fetcher', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ahoo-wang/fetcher')>();
+  return {
+    ...actual,
+    fetcher: {
+      ...actual.fetcher,
+      post: fetcherPostMock,
+    },
+  };
+});
 
 // Mock fetcher-wow
 vi.mock('@ahoo-wang/fetcher-wow', () => ({
@@ -50,6 +57,14 @@ vi.mock('@ahoo-wang/fetcher-wow', () => ({
 import { DataMonitorService } from '../../src/dataMonitor/DataMonitorService';
 import { fetcher } from '@ahoo-wang/fetcher';
 
+// Helper to set up sequential mock responses
+const setupFetchResponses = (...values: number[]) => {
+  let i = 0;
+  fetcherPostMock.mockImplementation(() => {
+    return Promise.resolve(values[i++] ?? 0);
+  });
+};
+
 describe('DataMonitorService', () => {
   let service: DataMonitorService;
 
@@ -57,6 +72,8 @@ describe('DataMonitorService', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     storageData = {};
+    // Default: return 0 (simulates ResultExtractors.Json)
+    setupFetchResponses(0);
     service = new DataMonitorService();
   });
 
@@ -69,20 +86,25 @@ describe('DataMonitorService', () => {
       service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
 
       expect(service.isEnabled('view-1')).toBe(true);
-      // Should fetch count immediately
-      expect(fetcher.post).toHaveBeenCalledWith('/api/count', { body: {} });
+      expect(fetcher.post).toHaveBeenCalledWith(
+        '/api/count',
+        { body: {} },
+        expect.objectContaining({ resultExtractor: expect.any(Function) }),
+      );
     });
 
     it('should replace existing monitoring when enabling same viewId', () => {
       service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
       expect(service.isEnabled('view-1')).toBe(true);
 
-      // Re-enable with new params
       service.enable('view-1', '/api/count/v2', 'Updated View', { status: 'active' }, { title: 'Updated' });
 
       expect(service.isEnabled('view-1')).toBe(true);
-      // Should fetch with new URL and condition
-      expect(fetcher.post).toHaveBeenLastCalledWith('/api/count/v2', { body: { status: 'active' } });
+      expect(fetcher.post).toHaveBeenLastCalledWith(
+        '/api/count/v2',
+        { body: { status: 'active' } },
+        expect.objectContaining({ resultExtractor: expect.any(Function) }),
+      );
     });
 
     it('should use custom interval when provided', () => {
@@ -102,7 +124,6 @@ describe('DataMonitorService', () => {
     it('should persist enabled state to storage', () => {
       service.enable('view-1', '/api/count', 'Test View', { status: 'active' }, { title: 'Test', navigationUrl: '/test' });
 
-      // Storage should contain the view config
       const savedView = storageData['view-1'];
       expect(savedView).toBeDefined();
       expect(savedView.enabled).toBe(true);
@@ -130,7 +151,6 @@ describe('DataMonitorService', () => {
 
       service.disable('view-1');
 
-      // View should be removed from storage
       expect(storageData['view-1']).toBeUndefined();
     });
 
@@ -160,7 +180,6 @@ describe('DataMonitorService', () => {
 
   describe('initialize', () => {
     it('should restore enabled views from storage', () => {
-      // Manually set storage to simulate previously enabled views
       storageData = {
         'saved-view': {
           enabled: true,
@@ -174,10 +193,14 @@ describe('DataMonitorService', () => {
       service.initialize();
 
       expect(service.isEnabled('saved-view')).toBe(true);
-      expect(fetcher.post).toHaveBeenCalledWith('/api/saved/count', { body: {} });
+      expect(fetcher.post).toHaveBeenCalledWith(
+        '/api/saved/count',
+        { body: {} },
+        expect.objectContaining({ resultExtractor: expect.any(Function) }),
+      );
     });
 
-    it('should skip disabled views', () => {
+    it('should skip disabled views in storage', () => {
       storageData = {
         'disabled-view': {
           enabled: false,
@@ -199,24 +222,17 @@ describe('DataMonitorService', () => {
         service.initialize();
       }).not.toThrow();
 
-      // No views should be enabled
       expect(fetcher.post).not.toHaveBeenCalled();
     });
 
     it('should handle null storage gracefully', () => {
-      // Store original and set storage to null to trigger fallback
-      const originalStorage = storageData;
       storageData = null as any;
 
       expect(() => {
         service.initialize();
       }).not.toThrow();
 
-      // No views should be enabled
       expect(fetcher.post).not.toHaveBeenCalled();
-
-      // Restore
-      storageData = originalStorage;
     });
 
     it('should handle storage with missing notification field', () => {
@@ -270,20 +286,14 @@ describe('DataMonitorService', () => {
 
   describe('fetchAndCheck (via enable + interval advancement)', () => {
     it('should notify and emit event when total changes', async () => {
-      // First call returns 0, second call returns 10
-      (fetcher.post as any)
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(10);
+      setupFetchResponses(0, 10);
 
       service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test Notification', navigationUrl: '/test' });
 
-      // Advance to trigger interval
       await vi.advanceTimersByTimeAsync(30000);
 
-      // Should have called fetcher.post twice (initial + interval)
       expect(fetcher.post).toHaveBeenCalledTimes(2);
 
-      // Should have emitted event
       expect(dataMonitorEventBusMock.emit).toHaveBeenCalledWith({
         type: 'DATA_CHANGED',
         viewId: 'view-1',
@@ -292,7 +302,6 @@ describe('DataMonitorService', () => {
         currentTotal: 10,
       });
 
-      // Should have sent notification
       expect(notificationCenterMock.publish).toHaveBeenCalledWith(
         'browser',
         expect.objectContaining({
@@ -305,63 +314,81 @@ describe('DataMonitorService', () => {
     });
 
     it('should not notify when total is unchanged', async () => {
-      // Both calls return same value
-      (fetcher.post as any)
-        .mockResolvedValueOnce(5)
-        .mockResolvedValueOnce(5);
+      setupFetchResponses(5, 5);
 
       service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
 
       await vi.advanceTimersByTimeAsync(30000);
 
-      // Should have fetched twice
       expect(fetcher.post).toHaveBeenCalledTimes(2);
 
-      // Should NOT have emitted event or notified
       expect(dataMonitorEventBusMock.emit).not.toHaveBeenCalled();
       expect(notificationCenterMock.publish).not.toHaveBeenCalled();
     });
 
     it('should not notify on first fetch (previousTotal is null)', async () => {
-      (fetcher.post as any).mockResolvedValueOnce(42);
-
       service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
 
-      // First fetch doesn't emit - previousTotal was null
       expect(dataMonitorEventBusMock.emit).not.toHaveBeenCalled();
       expect(notificationCenterMock.publish).not.toHaveBeenCalled();
     });
 
-    it('should include onClick with navigationUrl in notification', async () => {
-      (fetcher.post as any)
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(10);
+    it('should handle fetch errors gracefully without crashing', async () => {
+      fetcherPostMock.mockImplementationOnce(() => Promise.reject(new Error('Network error')));
 
-      const navigationUrl = '/test-navigate';
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test', navigationUrl });
+      expect(() => {
+        service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      }).not.toThrow();
+
+      await vi.advanceTimersByTimeAsync(30000);
+
+      expect(service.isEnabled('view-1')).toBe(true);
+      expect(notificationCenterMock.publish).not.toHaveBeenCalled();
+    });
+
+    it('should not notify if view is disabled during fetch', async () => {
+      let resolveFetch!: (value: number) => void;
+      const fetchPromise = new Promise<number>((resolve) => {
+        resolveFetch = resolve;
+      });
+      fetcherPostMock.mockImplementationOnce(() => fetchPromise);
+
+      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+
+      service.disable('view-1');
+
+      resolveFetch(42);
+
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(notificationCenterMock.publish).not.toHaveBeenCalled();
+    });
+
+    it('should include onClick with navigationUrl in notification', async () => {
+      setupFetchResponses(0, 10);
+
+      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test', navigationUrl: '/test' });
 
       await vi.advanceTimersByTimeAsync(30000);
 
       expect(notificationCenterMock.publish).toHaveBeenCalledWith(
         'browser',
         expect.objectContaining({
+          title: 'Test',
           onClick: expect.any(Function),
         }),
       );
-
-      const publishedMessage = notificationCenterMock.publish.mock.calls[0][1];
-      expect(publishedMessage.onClick).toBeInstanceOf(Function);
     });
 
     it('should navigate to navigationUrl when notification onClick is called', async () => {
-      (fetcher.post as any)
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(10);
+      setupFetchResponses(0, 10);
 
-      // Mock window.location.href
       const originalLocation = window.location;
-      delete (window as any).location;
-      window.location = { ...originalLocation, href: '' };
+      Object.defineProperty(window, 'location', {
+        value: { href: '' },
+        writable: true,
+        configurable: true,
+      });
 
       service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test', navigationUrl: '/navigate-here' });
 
@@ -372,18 +399,22 @@ describe('DataMonitorService', () => {
 
       expect(window.location.href).toBe('/navigate-here');
 
-      // Restore
-      window.location = originalLocation;
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+        configurable: true,
+      });
     });
 
     it('should not navigate when navigationUrl is not set', async () => {
-      (fetcher.post as any)
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(10);
+      setupFetchResponses(0, 10);
 
       const originalLocation = window.location;
-      delete (window as any).location;
-      window.location = { ...originalLocation, href: '' };
+      Object.defineProperty(window, 'location', {
+        value: { href: '' },
+        writable: true,
+        configurable: true,
+      });
 
       service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
 
@@ -394,61 +425,11 @@ describe('DataMonitorService', () => {
 
       expect(window.location.href).toBe('');
 
-      // Restore
-      window.location = originalLocation;
-    });
-
-    it('should include notification without navigationUrl', async () => {
-      (fetcher.post as any)
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(10);
-
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
-
-      await vi.advanceTimersByTimeAsync(30000);
-
-      expect(notificationCenterMock.publish).toHaveBeenCalledWith(
-        'browser',
-        expect.objectContaining({
-          title: 'Test',
-        }),
-      );
-    });
-
-    it('should handle fetch errors gracefully without crashing', async () => {
-      (fetcher.post as any).mockRejectedValueOnce(new Error('Network error'));
-
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
-
-      await vi.advanceTimersByTimeAsync(30000);
-
-      // Should not crash, should still be enabled
-      expect(service.isEnabled('view-1')).toBe(true);
-      // No notification should be sent
-      expect(notificationCenterMock.publish).not.toHaveBeenCalled();
-    });
-
-    it('should not notify if view is disabled during fetch', async () => {
-      // Make fetch slow
-      let resolveFetch: (value: number) => void;
-      const fetchPromise = new Promise<number>((resolve) => {
-        resolveFetch = resolve;
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+        configurable: true,
       });
-      (fetcher.post as any).mockReturnValueOnce(fetchPromise);
-
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
-
-      // Disable while fetch is in flight
-      service.disable('view-1');
-
-      // Resolve the fetch
-      resolveFetch!(42);
-
-      // Wait for microtasks
-      await vi.advanceTimersByTimeAsync(0);
-
-      // Should not notify since view was disabled
-      expect(notificationCenterMock.publish).not.toHaveBeenCalled();
     });
   });
 
@@ -517,8 +498,16 @@ describe('DataMonitorService', () => {
       service.enable('view-1', '/api/v1/count', 'View 1', { type: 'a' }, { title: 'Test 1' });
       service.enable('view-2', '/api/v2/count', 'View 2', { type: 'b' }, { title: 'Test 2' });
 
-      expect(fetcher.post).toHaveBeenCalledWith('/api/v1/count', { body: { type: 'a' } });
-      expect(fetcher.post).toHaveBeenCalledWith('/api/v2/count', { body: { type: 'b' } });
+      expect(fetcher.post).toHaveBeenCalledWith(
+        '/api/v1/count',
+        { body: { type: 'a' } },
+        expect.objectContaining({ resultExtractor: expect.any(Function) }),
+      );
+      expect(fetcher.post).toHaveBeenCalledWith(
+        '/api/v2/count',
+        { body: { type: 'b' } },
+        expect.objectContaining({ resultExtractor: expect.any(Function) }),
+      );
     });
   });
 });
