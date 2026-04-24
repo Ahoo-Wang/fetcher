@@ -132,7 +132,7 @@ export class DataMonitorService {
 
       if (previousTotal !== null && previousTotal !== currentTotal) {
         currentMonitored.total = currentTotal;
-        this.notify(viewId, currentMonitored.notification, currentTotal, previousTotal);
+        this.notify(viewId, currentMonitored.notification, currentTotal);
 
         await dataMonitorEventBus.emit({
           type: 'DATA_CHANGED',
@@ -159,8 +159,7 @@ export class DataMonitorService {
   private notify(
     viewId: string,
     notification: DataMonitorNotificationConfig,
-    currentTotal: number,
-    previousTotal: number | null
+    currentTotal: number
   ): void {
     const message = {
       title: notification.title,

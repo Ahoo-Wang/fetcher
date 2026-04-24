@@ -1,5 +1,5 @@
 // packages/react/src/dataMonitor/useDataMonitor.ts
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Condition } from '@ahoo-wang/fetcher-wow';
 import {
   dataMonitorService,
@@ -29,6 +29,12 @@ export function useDataMonitor(
   const [isEnabled, setIsEnabled] = useState(() =>
     dataMonitorService.isEnabled(viewId)
   );
+  const viewIdRef = useRef(viewId);
+
+  // 保持 ref 与最新 viewId 同步
+  useEffect(() => {
+    viewIdRef.current = viewId;
+  }, [viewId]);
 
   // 监听 condition 变化
   useEffect(() => {
@@ -44,14 +50,15 @@ export function useDataMonitor(
     }
   }, [viewId, notification]);
 
-  // 组件卸载时清理
+  // 组件卸载时清理（仅在组件真正卸载时执行，viewId 变化不会触发）
   useEffect(() => {
     return () => {
-      if (dataMonitorService.isEnabled(viewId)) {
-        dataMonitorService.disable(viewId);
+      const currentViewId = viewIdRef.current;
+      if (dataMonitorService.isEnabled(currentViewId)) {
+        dataMonitorService.disable(currentViewId);
       }
     };
-  }, [viewId]);
+  }, []);
 
   const enable = () => {
     dataMonitorService.enable(

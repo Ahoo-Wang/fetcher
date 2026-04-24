@@ -6,7 +6,11 @@
       "Bash(git ls-tree:*)",
       "Bash(pnpm test:unit -- --run packages/viewer/test/topbar/DataMonitorBarItem.test.tsx)",
       "Bash(pnpm vitest:*)",
-      "Bash(pnpm --filter @ahoo-wang/fetcher-viewer test -- --run packages/viewer/test/topbar/DataMonitorBarItem.test.tsx)"
+      "Bash(pnpm --filter @ahoo-wang/fetcher-viewer test -- --run packages/viewer/test/topbar/DataMonitorBarItem.test.tsx)",
+      "Bash(ls packages/react/vitest.config* packages/viewer/vitest.config*)",
+      "Bash(ls vitest.config*)",
+      "Bash(node -e \"console.log\\(JSON.parse\\(require\\('fs'\\).readFileSync\\('package.json','utf8'\\)\\).scripts.test\\)\")",
+      "Bash(pnpm lint:*)"
     ]
   }
 }

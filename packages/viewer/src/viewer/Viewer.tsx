@@ -1,30 +1,24 @@
-import type { PaginationProps} from 'antd';
+import type { PaginationProps } from 'antd';
 import { Layout, Space } from 'antd';
 import type {
   ViewState,
   ViewDefinition,
   ViewMutationActionsCapable,
   TopbarActionsCapable,
-  GetRecordCountActionCapable} from './';
-import {
-  ViewPanel,
-  useViewerState
+  GetRecordCountActionCapable,
 } from './';
+import { ViewPanel, useViewerState } from './';
 import styles from './Viewer.module.css';
 import type {
   ViewTableSettingCapable,
   ViewChangeAction,
   ViewRef,
   ViewTableActionColumn,
-  FilterPanelConditionCapableRef} from '../';
-import {
-  TopBar,
-  View,
-  DataMonitorBarItem,
+  FilterPanelConditionCapableRef,
 } from '../';
+import { TopBar, View } from '../';
 import { dataMonitorService } from '@ahoo-wang/fetcher-react';
-import type {
-  RefAttributes} from 'react';
+import type { RefAttributes } from 'react';
 import {
   useCallback,
   useEffect,

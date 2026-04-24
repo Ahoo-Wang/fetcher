@@ -48,7 +48,6 @@ interface MonitoredView {
   notification: DataMonitorNotificationConfig;  // 通知配置
   total: number | null;
   intervalId: number | null;
-  lastCheckTime: number;
 }
 
 // 全局 Service 状态
@@ -66,11 +65,10 @@ const monitoredViews: Map<string, MonitoredView>; // key = viewId
 │  │  key = viewId (全局唯一)                            │   │
 │  │                                                      │   │
 │  │  + enable(viewId, countUrl, viewName, condition,   │   │
-│  │            notification)                             │   │
+│  │            notification, interval?)                  │   │
 │  │  + disable(viewId)                                  │   │
 │  │  + updateCondition(viewId, condition)               │   │
 │  │  + updateNotification(viewId, notification)        │   │
-│  │  + checkAll() → compare totals → notify            │   │
 │  │  + isEnabled(viewId): boolean                      │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                            ↑                                 │
@@ -109,7 +107,6 @@ const monitoredViews: Map<string, MonitoredView>; // key = viewId
 ```typescript
 // packages/react/src/dataMonitor/DataMonitorService.ts
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
-import { all } from '@ahoo-wang/fetcher-wow';
 import type { Condition } from '@ahoo-wang/fetcher-wow';
 
 export interface DataMonitorNotificationConfig {
@@ -129,9 +126,8 @@ class DataMonitorService {
     const stored = this.storage.get() || {};
     for (const [viewId, config] of Object.entries(stored)) {
       if (config.enabled) {
-        // 恢复监控：启动轮询
-        // 注意：恢复时使用 all() 作为初始 condition，后续 view 切换时会更新
-        this.enable(viewId, config.countUrl, config.viewName, all(), config.notification || { title: '' });
+        // 恢复监控：使用存储的 condition 恢复，视图切换时会自动同步
+        this.enable(viewId, config.countUrl, config.viewName, config.condition, config.notification || { title: '' });
       }
     }
   }
@@ -144,26 +140,28 @@ class DataMonitorService {
     notification: DataMonitorNotificationConfig,
     interval: number = 30000
   ): void {
-    // 1. 保存到内存（包含 notification 配置）
-    // 2. 立即调用 countUrl 获取初始 total
-    // 3. 启动 setInterval 轮询
-    // 4. 保存到 KeyStorage
+    // 1. 如果已存在，先清除旧监控（清理 interval）
+    // 2. 保存到内存（包含 notification 配置）
+    // 3. 立即调用 countUrl 获取初始 total
+    // 4. 启动 setInterval 轮询
+    // 5. 保存到 KeyStorage
   }
 
-  // 更新监控的 condition（当 view 的过滤条件变化时调用）
+  // 更新监控的 condition（过滤条件变化时调用，会持久化）
   updateCondition(viewId: string, condition: Condition): void {
     const monitored = this.monitoredViews.get(viewId);
     if (monitored) {
       monitored.condition = condition;
+      this.saveToStorage();
     }
   }
 
-  // 更新监控的通知配置
+  // 更新监控的通知配置（会持久化）
   updateNotification(viewId: string, notification: DataMonitorNotificationConfig): void {
     const monitored = this.monitoredViews.get(viewId);
     if (monitored) {
       monitored.notification = notification;
-      this.saveToStorage();  // 持久化更新
+      this.saveToStorage();
     }
   }
 
@@ -175,9 +173,7 @@ class DataMonitorService {
 
   isEnabled(viewId: string): boolean { ... }
 
-  getEnabledViews(): Array<{ viewId: string; countUrl: string; viewName: string; notification: DataMonitorNotificationConfig }> { ... }
-
-  private async checkAll(): void { ... }
+  private async fetchAndCheck(viewId: string): Promise<void> { ... }
 
   private async fetchCount(url: string, condition: Condition): Promise<number> { ... }
 
@@ -266,18 +262,20 @@ export interface DataChangedEvent {
   currentTotal: number;
 }
 
-export interface DataMonitorEventBusReturn {
+export interface UseDataMonitorEventBusReturn {
   subscribe: (handler: EventHandler<DataChangedEvent>) => boolean;
-  unsubscribe: (handler: EventHandler<DataChangedEvent>) => boolean;
+  unsubscribe: (handlerName: string) => boolean;
 }
 
-export function useDataMonitorEventBus(): DataMonitorEventBusReturn { ... }
+export function useDataMonitorEventBus(): UseDataMonitorEventBusReturn { ... }
 ```
 
 ### 3.4 DataMonitorBarItem
 
 ```typescript
 // packages/viewer/src/topbar/DataMonitorBarItem.tsx
+import { BellOutlined } from '@ant-design/icons';
+import { Tooltip, Popconfirm } from 'antd';
 import type { Condition } from '@ahoo-wang/fetcher-wow';
 import type { DataMonitorNotificationConfig } from '@ahoo-wang/fetcher-react';
 
@@ -287,10 +285,11 @@ export interface DataMonitorBarItemProps extends TopBarItemProps {
   viewName: string;
   condition: Condition;  // 当前 view 的 condition
   notification: DataMonitorNotificationConfig;  // 通知配置
+  interval?: number;    // 可选，轮询间隔，默认 30000ms
 }
 
 export function DataMonitorBarItem(props: DataMonitorBarItemProps) {
-  const { viewId, countUrl, viewName, condition, notification, ...rest } = props;
+  const { viewId, countUrl, viewName, condition, notification, interval, ...rest } = props;
 
   const { isEnabled, toggle } = useDataMonitor({
     viewId,
@@ -298,17 +297,26 @@ export function DataMonitorBarItem(props: DataMonitorBarItemProps) {
     viewName,
     condition,
     notification,
+    interval,
   });
 
   return (
     <Tooltip placement="top" title={isEnabled ? '关闭数据监控' : '开启数据监控'}>
-      <div onClick={toggle}>
-        <BarItem
-          icon={isEnabled ? <BellFilled /> : <BellOutlined />}
-          active={isEnabled}
-          {...rest}
-        />
-      </div>
+      <Popconfirm
+        title={isEnabled ? '确认关闭数据监控？' : '确认开启数据监控？'}
+        description={isEnabled ? '关闭后将不再接收数据变化通知' : '开启后将定期检测数据变化并通知'}
+        onConfirm={toggle}
+        okText="确认"
+        cancelText="取消"
+      >
+        <div>
+          <BarItem
+            icon={<BellOutlined />}
+            active={isEnabled}
+            {...rest}
+          />
+        </div>
+      </Popconfirm>
     </Tooltip>
   );
 }
@@ -427,11 +435,14 @@ dataMonitorService.updateCondition(viewId, newCondition)
 ### 5.1 DataMonitorBarItem
 
 - **位置**：TopBar 右侧，与 AutoRefreshBarItem 相邻
-- **图标**：
-  - 开启：`BellFilled` 或 `BellOutlined` + 高亮颜色
-  - 关闭：`BellOutlined` + 普通颜色
+- **图标**：`BellOutlined`
+  - 开启：高亮颜色（通过 `BarItem active` 属性）
+  - 关闭：普通颜色
 - **Tooltip**：开启时显示"关闭数据监控"，关闭时显示"开启数据监控"
-- **点击**：切换开启/关闭状态
+- **点击**：弹出 Popconfirm 确认框
+  - 开启前：title="确认开启数据监控？" description="开启后将定期检测数据变化并通知"
+  - 关闭前：title="确认关闭数据监控？" description="关闭后将不再接收数据变化通知"
+  - 点"确认"执行 toggle，点"取消"无操作
 
 ### 5.2 与 AutoRefreshBarItem 对比
 
@@ -448,33 +459,34 @@ dataMonitorService.updateCondition(viewId, newCondition)
 
 ### 6.1 Viewer 集成
 
+TopBar 通过 `dataMonitorProps` prop 接收数据监控配置，在内部渲染 `DataMonitorBarItem`：
+
 ```typescript
 // packages/viewer/src/viewer/Viewer.tsx
 
 // 1. 导入
-import { DataMonitorBarItem } from '../topbar';
 import { dataMonitorService } from '@ahoo-wang/fetcher-react';
 
-// 2. 在 TopBar 中添加（传递 condition 和 notification）
-<TopBar<RecordType>
-  // ... 其他 props
-  // 在 AutoRefreshBarItem 后添加
-  <DataMonitorBarItem
-    viewId={activeView.id}
-    countUrl={definition.countUrl}
-    viewName={activeView.name}
-    condition={condition}  // 当前视图的过滤条件
-    notification={{
-      title: `视图[${activeView.name}]的数据已发生变化，请查看`,
-      navigationUrl: '/current-page-path'  // 可配置跳转路径
-    }}
-  />
-/>
-
-// 3. 在 useEffect 中初始化恢复监控
+// 2. 在 useEffect 中初始化恢复监控
 useEffect(() => {
   dataMonitorService.initialize();
 }, []);
+
+// 3. 通过 dataMonitorProps 向 TopBar 传递监控配置
+// TopBar 内部会根据 dataMonitorProps 是否为 null/undefined 来决定是否渲染 DataMonitorBarItem
+<TopBar<RecordType>
+  // ... 其他 props
+  dataMonitorProps={{
+    viewId: activeView.id,
+    countUrl: definition.countUrl,
+    viewName: activeView.name,
+    condition: condition,  // 当前视图的过滤条件
+    notification: {
+      title: `视图[${activeView.name}]的数据已发生变化，请查看`,
+      navigationUrl: window.location.pathname  // 当前页面路径
+    }
+  }}
+/>
 ```
 
 ### 6.2 通知点击处理
@@ -495,13 +507,18 @@ packages/react/src/
 │   ├── index.ts                          # 导出
 │   ├── DataMonitorService.ts             # 全局单例服务
 │   ├── useDataMonitor.ts                 # Hook
-│   └── useDataMonitorEventBus.ts         # 事件总线
+│   ├── useDataMonitorEventBus.ts         # 事件总线
+│   └── stories/
+│       ├── useDataMonitor.stories.tsx    # useDataMonitor story
+│       └── useDataMonitorEventBus.stories.tsx # useDataMonitorEventBus story
 └── notification/
     └── ... (已有)
 
 packages/viewer/src/
 └── topbar/
     ├── DataMonitorBarItem.tsx            # TopBar UI 组件
+    ├── stories/
+    │   └── DataMonitorBarItem.stories.tsx  # DataMonitorBarItem story
     └── index.ts                          # 导出更新
 ```
 
@@ -509,7 +526,8 @@ packages/viewer/src/
 
 ## 8. 后续扩展点
 
-- [ ] 支持自定义轮询间隔（通过 DataMonitorBarItem 下拉菜单）
+- [x] 支持自定义轮询间隔（通过 `interval` 参数，默认 30000ms，已实现）
+- [ ] 组件下拉菜单快速选择间隔
 - [ ] 支持选择通知渠道（应用内/浏览器）
 - [ ] 在 ViewPanel 中展示所有视图的监控状态列表
 - [ ] 支持批量开启/关闭多个视图的监控
@@ -519,7 +537,7 @@ packages/viewer/src/
 ## 9. 确认事项
 
 - [x] 监控 total 数量变化
-- [x] 轮询模式，固定 30s 间隔
+- [x] 轮询模式，默认 30s 间隔，支持自定义
 - [x] 新增 DataMonitorBarItem（Bell 图标）
 - [x] 核心逻辑放在 `packages/react` 中
 - [x] 保存 countUrl
@@ -531,5 +549,9 @@ packages/viewer/src/
 - [x] 通知标题由外部传入（DataMonitorNotificationConfig.title）
 - [x] 点击通知后跳转到配置的 navigationUrl
 - [x] 支持 condition 参数，监控特定条件下的数据
-- [x] condition 变化时自动同步到监控服务
+- [x] condition 变化时自动同步到监控服务（通过 useEffect）
 - [x] notification 配置可序列化，刷新后仍有效
+- [x] Popconfirm 二次确认（开启/关闭都需要确认）
+- [x] 支持自定义轮询间隔（通过 `interval` 参数，默认 30000ms）
+- [x] 监控是全局性的，视图切换不停止监控
+- [x] 组件卸载时自动清理当前视图的监控
