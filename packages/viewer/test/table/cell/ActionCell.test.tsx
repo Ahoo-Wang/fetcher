@@ -124,4 +124,17 @@ describe('ActionCell', () => {
 
     expect(mockClickHandler).toHaveBeenCalledWith(complexRecord);
   });
+
+  it('onClick 回调应接收完整 record', async () => {
+    const mockRecord = { id: 1, name: 'Test' };
+    const onClick = vi.fn();
+    render(
+      <ActionCell
+        data={{ value: 'Edit', record: mockRecord, index: 0 }}
+        attributes={{ onClick }}
+      />
+    );
+    fireEvent.click(screen.getByRole('button'));
+    expect(onClick).toHaveBeenCalledWith(mockRecord);
+  });
 });

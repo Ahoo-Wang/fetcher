@@ -140,7 +140,7 @@ describe('TextCell', () => {
     expect(screen.getByText('123')).toBeInTheDocument();
   });
 
-  it('should handle boolean true value (renders nothing)', () => {
+  it('should handle boolean true value', () => {
     const props = {
       data: {
         value: true as any,
@@ -150,12 +150,11 @@ describe('TextCell', () => {
       attributes: {},
     };
 
-    const { container } = render(<TextCell {...props} />);
-    const textElement = container.querySelector('.ant-typography');
-    expect(textElement?.textContent).toBe('');
+    render(<TextCell {...props} />);
+    expect(screen.getByText('true')).toBeInTheDocument();
   });
 
-  it('should handle boolean false value (renders nothing)', () => {
+  it('should handle boolean false value', () => {
     const props = {
       data: {
         value: false as any,
@@ -165,9 +164,8 @@ describe('TextCell', () => {
       attributes: {},
     };
 
-    const { container } = render(<TextCell {...props} />);
-    const textElement = container.querySelector('.ant-typography');
-    expect(textElement?.textContent).toBe('-');
+    render(<TextCell {...props} />);
+    expect(screen.getByText('false')).toBeInTheDocument();
   });
 
   it('should handle null value (renders empty)', () => {
@@ -202,7 +200,7 @@ describe('TextCell', () => {
     expect(textElement?.textContent).toBe('-');
   });
 
-  it('should handle object value (throws error)', () => {
+  it('should handle object value (renders stringified)', () => {
     const obj = { key: 'value' };
     const props = {
       data: {
@@ -213,12 +211,11 @@ describe('TextCell', () => {
       attributes: {},
     };
 
-    expect(() => render(<TextCell {...props} />)).toThrow(
-      'Objects are not valid as a React child',
-    );
+    render(<TextCell {...props} />);
+    expect(screen.getByText('[object Object]')).toBeInTheDocument();
   });
 
-  it('should handle array value (renders concatenated)', () => {
+  it('should handle array value (renders stringified)', () => {
     const arr = ['a', 'b', 'c'];
     const props = {
       data: {
@@ -229,9 +226,8 @@ describe('TextCell', () => {
       attributes: {},
     };
 
-    const { container } = render(<TextCell {...props} />);
-    const textElement = container.querySelector('.ant-typography');
-    expect(textElement?.textContent).toBe('abc');
+    render(<TextCell {...props} />);
+    expect(screen.getByText('a,b,c')).toBeInTheDocument();
   });
 
   it('should render with different record types', () => {

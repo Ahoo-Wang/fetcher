@@ -462,4 +462,62 @@ describe('LinkCell', () => {
     expect(linkElement).toHaveAttribute('href', 'mailto:user@example.com');
     expect(linkElement).toHaveAttribute('target', '_self');
   });
+
+  describe('LinkCell isSafeUrl 安全过滤', () => {
+    it.each([
+      ['javascript:alert(1)', '#'],
+      ['javascript:void(0)', '#'],
+      ['JAVASCRIPT:alert(1)', '#'],
+      ['data:text/html,<script>alert(1)</script>', '#'],
+      ['DATA:text/html,<script>alert(1)</script>', '#'],
+      ['vbscript:msgbox(1)', '#'],
+      ['VBSCRIPT:msgbox(1)', '#'],
+      ['', '#'],
+    ])('危险 URL "%s" 应退回到 "#"', (input, expected) => {
+      const { container } = render(
+        <LinkCell
+          data={{ value: 'Click', record: {}, index: 0 }}
+          attributes={{ href: input }}
+        />
+      );
+      expect(container.querySelector('a')).toHaveAttribute('href', expected);
+    });
+  });
+
+  describe('LinkCell 安全属性', () => {
+    it('非邮箱链接自动添加 target="_blank" 时应包含 rel="noopener noreferrer"', () => {
+      const { container } = render(
+        <LinkCell
+          data={{ value: 'https://example.com', record: {}, index: 0 }}
+          attributes={{}}
+        />
+      );
+      const link = container.querySelector('a');
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    });
+
+    it('用户显式设置 rel 时应保留用户的值', () => {
+      const { container } = render(
+        <LinkCell
+          data={{ value: 'https://example.com', record: {}, index: 0 }}
+          attributes={{ rel: 'nofollow' }}
+        />
+      );
+      const link = container.querySelector('a');
+      expect(link).toHaveAttribute('rel', 'nofollow');
+    });
+
+    it('用户显式设置 target 时不自动添加 rel', () => {
+      const { container } = render(
+        <LinkCell
+          data={{ value: 'https://example.com', record: {}, index: 0 }}
+          attributes={{ target: '_self' }}
+        />
+      );
+      const link = container.querySelector('a');
+      expect(link).toHaveAttribute('target', '_self');
+      expect(link).not.toHaveAttribute('rel');
+    });
+  });
 });

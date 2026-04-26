@@ -233,4 +233,24 @@ describe('ActionsCell', () => {
     expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();
     expect(screen.queryByText('More')).toBeNull();
   });
+
+  it('应正确渲染 primaryAction 和 secondaryActions', () => {
+    const mockRecord = { id: 1, name: 'Test' };
+    const { container } = render(
+      <ActionsCell
+        data={{
+          value: {
+            primaryAction: {
+              data: { value: 'Edit', record: mockRecord, index: 0 },
+              attributes: {},
+            },
+            secondaryActions: [],
+          },
+          record: mockRecord,
+          index: 0,
+        }}
+      />
+    );
+    expect(screen.getByText('Edit')).toBeInTheDocument();
+  });
 });

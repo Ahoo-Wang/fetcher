@@ -151,12 +151,21 @@ export function DateTimeCell<RecordType = any>(
   if (!data.value) {
     return <Text {...textProps}>-</Text>;
   }
-  const date = parseDayjs(data.value);
-  if (!date.isValid()) {
-    return <Text {...textProps}>-</Text>;
+
+  let displayValue: string = '-';
+
+  try {
+    const date = parseDayjs(data.value);
+    if (date.isValid()) {
+      if (typeof format === 'function') {
+        displayValue = format(date);
+      } else {
+        displayValue = date.format(format);
+      }
+    }
+  } catch {
+    // If parsing fails, keep the default '-' display value
   }
-  if (typeof format === 'function') {
-    return <Text {...textProps}>{format(date)}</Text>;
-  }
-  return <Text {...textProps}>{date.format(format)}</Text>;
+
+  return <Text {...textProps}>{displayValue}</Text>;
 }

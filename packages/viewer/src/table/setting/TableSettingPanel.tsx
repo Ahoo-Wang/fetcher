@@ -21,6 +21,7 @@ import React, {
 } from 'react';
 import { TableFieldItem } from './TableFieldItem';
 import styles from './TableSettingPanel.module.css';
+import { t } from './tableLocale';
 import { Space } from 'antd';
 import type { ViewColumn, FieldDefinition } from '../../viewer';
 
@@ -220,6 +221,13 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     onChange?.(newColumns);
   };
 
+  const handleColumnKeyDown = (e: React.KeyboardEvent, columnIndex: number) => {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      handleVisibilityChange(columnIndex, !localColumns[columnIndex]?.hidden);
+    }
+  };
+
   /**
    * Renders a draggable column item for fixed or visible columns.
    * These items can be reordered via drag-and-drop and have visibility toggles.
@@ -244,10 +252,14 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
         className={`${styles.item} ${dragState?.index === column.index ? styles.dragging : ''}`}
         key={columnDefinition.name}
         draggable={!columnDefinition.primaryKey} // Primary key columns cannot be reordered
+        role="listitem"
+        tabIndex={0}
+        aria-label={columnDefinition.label}
         onDragStart={e => handleDragStart(e, group, column.index)}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
         onDrop={e => handleDrop(e, group, column.index)}
+        onKeyDown={(e) => handleColumnKeyDown(e, column.index)}
       >
         <TableFieldItem
           columnDefinition={columnDefinition}
@@ -276,7 +288,13 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     }
 
     return (
-      <div className={styles.item} key={columnDefinition.name}>
+      <div
+        className={styles.item}
+        key={columnDefinition.name}
+        role="listitem"
+        tabIndex={0}
+        aria-label={columnDefinition.label}
+      >
         <TableFieldItem
           columnDefinition={columnDefinition}
           fixed={column.fixed || false}
@@ -302,13 +320,13 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
       style={{ display: 'flex' }}
       className={className}
     >
-      <div className={styles.groupTitle}>已显示字段</div>
+      <div className={styles.groupTitle}>{t('visibleFields')}</div>
       {fixedColumns.map(column => renderDraggableItem(column, 'fixed'))}
       <div className={styles.tips}>
-        请将需要锁定的字段拖至上方（最多支持3列）
+        {t('fixedTip')}
       </div>
       {visibleColumns.map(column => renderDraggableItem(column, 'visible'))}
-      <div className={styles.groupTitle}>未显示字段</div>
+      <div className={styles.groupTitle}>{t('hiddenFields')}</div>
       {hiddenColumns.map(column => renderStaticItem(column))}
     </Space>
   );

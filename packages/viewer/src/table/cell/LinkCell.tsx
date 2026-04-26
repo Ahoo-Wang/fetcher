@@ -18,6 +18,20 @@ import type { LinkProps } from 'antd/es/typography/Link';
 const { Link } = Typography;
 
 /**
+ * Determines whether a given URL is considered safe.
+ * @param url The URL to be checked.
+ */
+function isSafeUrl(url: string): boolean {
+  if (!url) return false;
+  const trimmed = String(url).trim().toLowerCase();
+  // 阻止危险协议
+  if (trimmed.startsWith('javascript:')) return false;
+  if (trimmed.startsWith('data:')) return false;
+  if (trimmed.startsWith('vbscript:')) return false;
+  return true;
+}
+
+/**
  * Constant representing the type identifier for link cells.
  *
  * This constant is used to register and identify link cell components
@@ -126,19 +140,29 @@ const EMAIL_PREFIX = 'mailto:';
  * ```
  */
 export function LinkCell<RecordType = any>(props: LinkCellProps<RecordType>) {
-  const isEmail = props.data.value && EMAIL_REGEX.test(props.data.value);
-  const href =
-    props.attributes?.href ??
-    (isEmail ? `${EMAIL_PREFIX}${props.data.value}` : props.data.value);
+  const { data, attributes = {} } = props;
+
+  const isEmail = data.value && EMAIL_REGEX.test(data.value);
+  let href =
+    attributes?.href ?? (isEmail ? `${EMAIL_PREFIX}${data.value}` : data.value);
+
+  if (!isSafeUrl(href)) {
+    href = '#';
+  }
+
   const linkProps = isEmail
-    ? props.attributes
+    ? attributes
     : {
-        ...props.attributes,
-        ...(props.attributes?.target === undefined ? { target: '_blank' } : {}),
+        ...attributes,
+        ...(attributes?.target === undefined ? { target: '_blank' } : {}),
+        // Security: prevent tabnabbing when target="_blank" is auto-added
+        ...(attributes?.rel === undefined && attributes?.target === undefined
+          ? { rel: 'noopener noreferrer' }
+          : {}),
       };
   return (
-    <Link href={href} {...linkProps}>
-      {props.attributes?.children ?? props.data.value}
+    <Link {...linkProps} href={href}>
+      {attributes?.children ?? data.value}
     </Link>
   );
 }

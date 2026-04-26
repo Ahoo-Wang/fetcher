@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import type { Key} from 'react';
-import { useState } from 'react';
+import type { Key } from 'react';
+import { useState, useCallback } from 'react';
 
 /**
  * Return type from the useViewTableState hook containing managed state and control functions.
@@ -57,18 +57,18 @@ export function useViewTableState(): ViewTableStateReturn {
    * Clears all selected row keys.
    * Used after batch operations or when the selection should be discarded.
    */
-  const clearSelectedRowKeysFn = () => {
+  const clearSelectedRowKeysFn = useCallback(() => {
     setSelectedRowKeys([]);
-  };
+  }, []);
 
   /**
    * Resets the table state to default values.
    * This includes table size and clears row selections.
    * Typically used when switching views or resetting user preferences.
    */
-  const resetFn = () => {
-    clearSelectedRowKeysFn();
-  };
+  const resetFn = useCallback(() => {
+    setSelectedRowKeys([]);
+  }, []);
 
   return {
     selectedRowKeys,

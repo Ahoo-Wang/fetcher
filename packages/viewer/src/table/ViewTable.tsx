@@ -12,8 +12,7 @@
  */
 
 import { Table, Popover } from 'antd';
-import type {
-  ViewTableActionColumn} from './';
+import type { ViewTableActionColumn } from './';
 import {
   ActionsCell,
   TextCell,
@@ -24,10 +23,10 @@ import {
 import { SettingOutlined } from '@ant-design/icons';
 import styles from './ViewTable.module.css';
 
-import type { TableColumnsType , TableProps } from 'antd';
+import type { TableColumnsType, TableProps } from 'antd';
 import type { SorterResult } from 'antd/es/table/interface';
-import type { RefAttributes} from 'react';
-import { useImperativeHandle } from 'react';
+import type { RefAttributes } from 'react';
+import { useImperativeHandle, useMemo, useCallback } from 'react';
 import type {
   AttributesCapable,
   PrimaryKeyClickHandlerCapable,
@@ -37,7 +36,7 @@ import type {
 } from '../types';
 import type { FieldDefinition, ViewColumn } from '../viewer';
 import { mapToTableRecord } from '../utils';
-import { PrimaryKeyCell } from './cell/PrimaryKeyCell';
+import { PrimaryKeyCell } from './cell';
 /**
  * Ref interface for exposing ViewTable imperative methods to parent components.
  * Enables external control of table state without prop drilling.
@@ -56,7 +55,8 @@ export interface ViewTableRef {
  * @template Attributes - Additional props to pass to the underlying Antd Table.
  */
 export interface ViewTableProps<RecordType = any>
-  extends AttributesCapable<Omit<TableProps<RecordType>, 'columns' | 'dataSource'>>,
+  extends
+    AttributesCapable<Omit<TableProps<RecordType>, 'columns' | 'dataSource'>>,
     PrimaryKeyClickHandlerCapable<RecordType>,
     ViewTableSettingCapable,
     TableSizeCapable,
@@ -134,136 +134,155 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   const { selectedRowKeys, setSelectedRowKeys, reset, clearSelectedRowKeys } =
     useViewTableState();
 
-  const fieldMap = new Map(fields.map(f => [f.name, f]));
+  const fieldMap = useMemo(
+    () => new Map(fields.map(f => [f.name, f])),
+    [fields],
+  );
 
   /**
    * Builds table columns from field definitions and column configurations.
    * Each column is mapped to its definition for rendering and behavior.
    */
-  const tableColumns: TableColumnsType<RecordType> = columns.map(col => {
-    const columnDefinition = fieldMap.get(col.name);
-    return {
-      // Unique key for React reconciliation
-      key: col.key,
-      // Display title from field definition
-      title: columnDefinition?.label || 'UNKNOWN',
-      // Support nested data paths (e.g., 'user.address.city')
-      dataIndex: col.name.split('.'),
-      // Fixed column positioning
-      fixed: columnDefinition?.primaryKey ? 'start' : col?.fixed ? 'start' : '',
-      // Sorting configuration
-      sorter: columnDefinition?.sorter,
-      // Initial sort order
-      defaultSortOrder: col.sortOrder,
-      // Column width specification
-      width: col.width,
-      // Hidden columns are excluded from display
-      hidden: col.hidden,
-      /**
-       * Custom cell renderer based on field type.
-       * Handles primary key actions, custom renders, and type-based defaults.
-       */
-      render: (value: any, record: RecordType, index: number) => {
-        // Use custom render function if defined in field definition
-        if (columnDefinition?.render) {
-          return columnDefinition.render(value, record, index);
-        }
+  const tableColumns: TableColumnsType<RecordType> = useMemo(() => {
+    const cols = columns.map(col => {
+      const columnDefinition = fieldMap.get(col.name);
+      return {
+        // Unique key for React reconciliation
+        key: col.key,
+        // Display title from field definition
+        title: columnDefinition?.label || 'UNKNOWN',
+        // Support nested data paths (e.g., 'user.address.city')
+        dataIndex: col.name.split('.'),
+        // Fixed column positioning
+        fixed: columnDefinition?.primaryKey
+          ? 'start'
+          : col?.fixed
+            ? 'start'
+            : '',
+        // Sorting configuration
+        sorter: columnDefinition?.sorter,
+        // Initial sort order
+        defaultSortOrder: col.sortOrder,
+        // Column width specification
+        width: col.width,
+        // Hidden columns are excluded from display
+        hidden: col.hidden,
+        /**
+         * Custom cell renderer based on field type.
+         * Handles primary key actions, custom renders, and type-based defaults.
+         */
+        render: (value: any, record: RecordType, index: number) => {
+          // Use custom render function if defined in field definition
+          if (columnDefinition?.render) {
+            return columnDefinition.render(value, record, index);
+          }
 
-        // Primary key cells show as clickable action links
-        if (columnDefinition?.primaryKey) {
-          return (
-            <PrimaryKeyCell
-              data={{ value, record, index }}
-              attributes={{
-                onClick: (record: RecordType) => {
-                  onClickPrimaryKey?.(value, record);
-                },
-                copyable: true,
-                ...columnDefinition.attributes,
-              }}
-            />
-          );
-        }
+          // Primary key cells show as clickable action links
+          if (columnDefinition?.primaryKey) {
+            return (
+              <PrimaryKeyCell
+                data={{ value, record, index }}
+                attributes={{
+                  onClick: (record: RecordType) => {
+                    onClickPrimaryKey?.(value, record);
+                  },
+                  copyable: true,
+                  ...columnDefinition.attributes,
+                }}
+              />
+            );
+          }
 
-        // Render cell based on field type (text, number, date, image, etc.)
-        const cellRender = typedCellRender(
-          columnDefinition?.type || 'text',
-          columnDefinition?.attributes || {},
-        );
-
-        if (cellRender) {
-          return cellRender(value, record, index);
-        } else {
-          // Fallback to text cell for unknown types
-          return <TextCell data={{ value: String(value), record, index }} />;
-        }
-      },
-      // Merge additional attributes from field definition
-      ...(columnDefinition?.attributes || {}),
-    };
-  });
-
-  /**
-   * Adds action column if configured.
-   * The action column provides row-level operations like edit, delete, view.
-   */
-  if (actionColumn) {
-    // Determine which field to use as the dataIndex for the action column
-    // Priority: explicit dataIndex > primary key column > fallback to 'id'
-    const dataIndex =
-      actionColumn.dataIndex || fields.find(x => x.primaryKey)?.name || 'id';
-
-    tableColumns.push({
-      key: 'action',
-      /**
-       * Action column title.
-       * If configurable is true, wraps title with settings popover.
-       */
-      title: () => {
-        if (viewTableSetting) {
-          // Create the settings panel component
-          const settingPanel = (
-            <TableSettingPanel
-              fields={fields}
-              initialColumns={columns}
-              onChange={onColumnsChange}
-            />
+          // Render cell based on field type (text, number, date, image, etc.)
+          const cellRender = typedCellRender(
+            columnDefinition?.type || 'text',
+            columnDefinition?.attributes || {},
           );
 
-          return (
-            <div className={styles.configurableColumnHeader}>
-              <span>{actionColumn.title}</span>
-              <Popover
-                content={settingPanel}
-                title={viewTableSetting.title || 'Setting'}
-                placement="bottomRight"
-                trigger="click"
-              >
-                <SettingOutlined />
-              </Popover>
-            </div>
-          );
-        }
-        return actionColumn.title;
-      },
-      dataIndex: dataIndex,
-      fixed: 'end',
-      width: '200px',
-      /**
-       * Renders action buttons for each row.
-       * Uses ActionsCell for consistent action button styling.
-       */
-      render: (_, record) => {
-        const actionsData = props.actionColumn!.actions(record);
-        const data = {
-          value: actionsData,
-          record: record,
-          index: columns.length + 1, // Use next available index
-        };
-        return <ActionsCell data={data} />;
-      },
+          if (cellRender) {
+            return cellRender(value, record, index);
+          } else {
+            // Fallback to text cell for unknown types
+            return <TextCell data={{ value: String(value), record, index }} />;
+          }
+        },
+        // Merge additional attributes from field definition
+        ...(columnDefinition?.attributes || {}),
+      };
     });
-  }
+
+    /**
+     * Adds action column if configured.
+     * The action column provides row-level operations like edit, delete, view.
+     */
+    if (actionColumn) {
+      // Determine which field to use as the dataIndex for the action column
+      // Priority: explicit dataIndex > primary key column > fallback to 'id'
+      const dataIndex =
+        actionColumn.dataIndex || fields.find(x => x.primaryKey)?.name || 'id';
+
+      cols.push({
+        key: 'action',
+        /**
+         * Action column title.
+         * If configurable is true, wraps title with settings popover.
+         */
+        title: () => {
+          if (viewTableSetting) {
+            // Create the settings panel component
+            const settingPanel = (
+              <TableSettingPanel
+                fields={fields}
+                initialColumns={columns}
+                onChange={onColumnsChange}
+              />
+            );
+
+            return (
+              <div className={styles.configurableColumnHeader}>
+                <span>{actionColumn.title}</span>
+                <Popover
+                  content={settingPanel}
+                  title={viewTableSetting.title || 'Setting'}
+                  placement="bottomRight"
+                  trigger="click"
+                >
+                  <SettingOutlined />
+                </Popover>
+              </div>
+            );
+          }
+          return actionColumn.title;
+        },
+        dataIndex: dataIndex,
+        fixed: 'end',
+        width: '200px',
+        /**
+         * Renders action buttons for each row.
+         * Uses ActionsCell for consistent action button styling.
+         */
+        render: (_: any, record: RecordType) => {
+          const actionsData = actionColumn!.actions(record);
+          const data = {
+            value: actionsData,
+            record: record,
+            index: columns.length + 1, // Use next available index
+          };
+          return <ActionsCell data={data} />;
+        },
+      });
+    }
+
+    return cols;
+  }, [
+    columns,
+    actionColumn,
+    fields,
+    onColumnsChange,
+    viewTableSetting,
+    fieldMap,
+    onClickPrimaryKey,
+  ]);
 
   /**
    * Row selection configuration.
@@ -272,17 +291,17 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   const rowSelection: TableProps<RecordType>['rowSelection'] =
     enableRowSelection
       ? {
-        selectedRowKeys,
-        fixed: true, // Keep selection column fixed during horizontal scroll
-        /**
-         * Handles row selection changes.
-         * Updates local state and notifies parent component.
-         */
-        onChange: (keys, selectedRows) => {
-          setSelectedRowKeys(keys);
-          onSelectChange?.(selectedRows); // Notify parent component of selection changes
-        },
-      }
+          selectedRowKeys,
+          fixed: true, // Keep selection column fixed during horizontal scroll
+          /**
+           * Handles row selection changes.
+           * Updates local state and notifies parent component.
+           */
+          onChange: (keys, selectedRows) => {
+            setSelectedRowKeys(keys);
+            onSelectChange?.(selectedRows); // Notify parent component of selection changes
+          },
+        }
       : undefined;
 
   /**
@@ -293,6 +312,23 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
     clearSelectedRowKeys: clearSelectedRowKeys,
     reset: reset,
   }));
+
+  /**
+   * Handles table change events.
+   * Specifically processes sort events and triggers callback.
+   */
+  const handleTableChange = useCallback(
+    (_pagination: any, _filters: any, sorter: any, extra: any) => {
+      if (extra.action === 'sort' && onSortChanged) {
+        if (Array.isArray(sorter)) {
+          onSortChanged(sorter);
+        } else {
+          onSortChanged([sorter]);
+        }
+      }
+    },
+    [onSortChanged],
+  );
 
   /**
    * Renders the configured Antd Table.
@@ -307,19 +343,7 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
       {...attributes}
       scroll={{ x: 'max-content' }}
       size={tableSize || 'middle'}
-      /**
-       * Handles table change events.
-       * Specifically processes sort events and triggers callback.
-       */
-      onChange={(_pagination, _filters, sorter, extra) => {
-        if (extra.action === 'sort' && onSortChanged) {
-          if (Array.isArray(sorter)) {
-            onSortChanged(sorter);
-          } else {
-            onSortChanged([sorter]);
-          }
-        }
-      }}
+      onChange={handleTableChange}
     />
   );
 }

@@ -285,7 +285,7 @@ describe('typedCellRender', () => {
       />,
     );
     const textElement = container.querySelector('.ant-typography');
-    expect(textElement?.textContent).toBe('abc');
+    expect(textElement?.textContent).toBe('a,b,c');
   });
 
   it('should handle edge case: empty string type', () => {
