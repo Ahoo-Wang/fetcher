@@ -10,7 +10,9 @@
       "Bash(ls packages/react/vitest.config* packages/viewer/vitest.config*)",
       "Bash(ls vitest.config*)",
       "Bash(node -e \"console.log\\(JSON.parse\\(require\\('fs'\\).readFileSync\\('package.json','utf8'\\)\\).scripts.test\\)\")",
-      "Bash(pnpm lint:*)"
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm test:unit packages/react/test/dataMonitor/ --run)",
+      "Bash(pnpm --filter @ahoo-wang/fetcher-react test --run)"
     ]
   }
 }

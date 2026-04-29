@@ -101,6 +101,8 @@ export class DataMonitorService {
     if (monitored) {
       monitored.condition = condition;
       this.saveToStorage();
+      // 立即用新条件获取数据，避免因条件变化导致数量不一致而误发通知
+      this.fetchAndCheck(viewId).then();
     }
   }
 
