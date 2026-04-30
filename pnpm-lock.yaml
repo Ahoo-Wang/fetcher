@@ -9,9 +9,15 @@ catalogs:
     '@ant-design/icons':
       specifier: ^6.0.0
       version: 6.1.1
+    '@babel/plugin-proposal-class-properties':
+      specifier: ^7.18.6
+      version: 7.18.6
     '@babel/plugin-proposal-decorators':
       specifier: ^7.29.0
       version: 7.29.0
+    '@babel/plugin-transform-class-static-block':
+      specifier: ^7.28.6
+      version: 7.28.6
     '@eslint/js':
       specifier: ^9.39.4
       version: 9.39.4
@@ -47,10 +53,13 @@ catalogs:
       version: 4.1.4
     antd:
       specifier: ^6.3.7
-      version: 6.3.5
+      version: 6.3.7
     babel-plugin-react-compiler:
       specifier: ^1.0.0
       version: 1.0.0
+    babel-plugin-transform-typescript-metadata:
+      specifier: ^0.3.2
+      version: 0.3.2
     commander:
       specifier: ^14.0.3
       version: 14.0.3
@@ -68,7 +77,7 @@ catalogs:
       version: 7.0.1
     globals:
       specifier: ^17.5.0
-      version: 17.4.0
+      version: 17.5.0
     immer:
       specifier: ^11.1.4
       version: 11.1.4
@@ -101,22 +110,22 @@ catalogs:
       version: 27.0.2
     typescript:
       specifier: ^6.0.3
-      version: 6.0.2
+      version: 6.0.3
     typescript-eslint:
       specifier: ^8.59.1
-      version: 8.58.1
+      version: 8.59.1
     unplugin-dts:
       specifier: 1.0.0-beta.6
       version: 1.0.0-beta.6
     vite:
       specifier: ^8.0.10
-      version: 8.0.8
+      version: 8.0.10
     vite-bundle-analyzer:
       specifier: ^1.3.8
-      version: 1.3.7
+      version: 1.3.8
     vitest:
       specifier: ^4.1.5
-      version: 4.1.4
+      version: 4.1.5
     yaml:
       specifier: ^2.8.3
       version: 2.8.3
@@ -828,9 +837,15 @@ importers:
         specifier: 'catalog:'
         version: 19.2.5(react@19.2.5)
     devDependencies:
+      '@babel/plugin-proposal-class-properties':
+        specifier: 'catalog:'
+        version: 7.18.6(@babel/core@7.29.0)
       '@babel/plugin-proposal-decorators':
         specifier: 'catalog:'
         version: 7.29.0(@babel/core@7.29.0)
+      '@babel/plugin-transform-class-static-block':
+        specifier: 'catalog:'
+        version: 7.28.6(@babel/core@7.29.0)
       '@eslint/js':
         specifier: 'catalog:'
         version: 9.39.4
@@ -861,6 +876,9 @@ importers:
       babel-plugin-react-compiler:
         specifier: 'catalog:'
         version: 1.0.0
+      babel-plugin-transform-typescript-metadata:
+        specifier: 'catalog:'
+        version: 0.3.2(@babel/core@7.29.0)(@babel/traverse@7.29.0)
       eslint:
         specifier: 'catalog:'
         version: 9.39.4
@@ -1175,6 +1193,13 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
+  '@babel/plugin-proposal-class-properties@7.18.6':
+    resolution: {integrity: sha512-cumfXOF0+nzZrrN8Rf0t7M+tF6sZc7vhQwYQck9q1/5w2OExlD+b4v4RpMJFaV1Z7WcDRgO6FqvxqxGlwo+RHQ==}
+    engines: {node: '>=6.9.0'}
+    deprecated: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-class-properties instead.
+    peerDependencies:
+      '@babel/core': ^7.0.0-0
+
   '@babel/plugin-proposal-decorators@7.29.0':
     resolution: {integrity: sha512-CVBVv3VY/XRMxRYq5dwr2DS7/MvqPm23cOCjbwNnVrfOqcWlnefua1uUs0sjdKOGjvPUG633o07uWzJq4oI6dA==}
     engines: {node: '>=6.9.0'}
@@ -1193,6 +1218,12 @@ packages:
     engines: {node: '>=6.9.0'}
     peerDependencies:
       '@babel/core': ^7.0.0-0
+
+  '@babel/plugin-transform-class-static-block@7.28.6':
+    resolution: {integrity: sha512-rfQ++ghVwTWTqQ7w8qyDxL1XGihjBss4CmTgGRCTAC9RIbhVpyp4fOeZtta0Lbf+dTNIVJer6ych2ibHwkZqsQ==}
+    engines: {node: '>=6.9.0'}
+    peerDependencies:
+      '@babel/core': ^7.12.0
 
   '@babel/runtime@7.28.6':
     resolution: {integrity: sha512-05WQkdpL9COIMz4LjTxGpPNCdlpyimKppYNoJ5Di5EUObifl8t4tuLuUBBZEpoLYOmfvIWrsp9fCl0HoPRVTdA==}
@@ -2822,6 +2853,15 @@ packages:
 
   babel-plugin-react-compiler@1.0.0:
     resolution: {integrity: sha512-Ixm8tFfoKKIPYdCCKYTsqv+Fd4IJ0DQqMyEimo+pxUOMUR9cVPlwTrFt9Avu+3cb6Zp3mAzl+t1MrG2fxxKsxw==}
+
+  babel-plugin-transform-typescript-metadata@0.3.2:
+    resolution: {integrity: sha512-mWEvCQTgXQf48yDqgN7CH50waTyYBeP2Lpqx4nNWab9sxEpdXVeKgfj1qYI2/TgUPQtNFZ85i3PemRtnXVYYJg==}
+    peerDependencies:
+      '@babel/core': ^7
+      '@babel/traverse': ^7
+    peerDependenciesMeta:
+      '@babel/traverse':
+        optional: true
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -4816,6 +4856,14 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.0
 
+  '@babel/plugin-proposal-class-properties@7.18.6(@babel/core@7.29.0)':
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/helper-create-class-features-plugin': 7.28.6(@babel/core@7.29.0)
+      '@babel/helper-plugin-utils': 7.28.6
+    transitivePeerDependencies:
+      - supports-color
+
   '@babel/plugin-proposal-decorators@7.29.0(@babel/core@7.29.0)':
     dependencies:
       '@babel/core': 7.29.0
@@ -4837,6 +4885,14 @@ snapshots:
     dependencies:
       '@babel/core': 7.29.0
       '@babel/helper-plugin-utils': 7.28.6
+
+  '@babel/plugin-transform-class-static-block@7.28.6(@babel/core@7.29.0)':
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/helper-create-class-features-plugin': 7.28.6(@babel/core@7.29.0)
+      '@babel/helper-plugin-utils': 7.28.6
+    transitivePeerDependencies:
+      - supports-color
 
   '@babel/runtime@7.28.6': {}
 
@@ -6606,6 +6662,13 @@ snapshots:
   babel-plugin-react-compiler@1.0.0:
     dependencies:
       '@babel/types': 7.28.5
+
+  babel-plugin-transform-typescript-metadata@0.3.2(@babel/core@7.29.0)(@babel/traverse@7.29.0):
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/helper-plugin-utils': 7.28.6
+    optionalDependencies:
+      '@babel/traverse': 7.29.0
 
   balanced-match@1.0.2: {}
 
