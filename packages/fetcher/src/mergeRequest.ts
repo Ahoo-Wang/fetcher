@@ -117,6 +117,9 @@ export function mergeRequestOptions(
   first?: RequestOptions,
   second?: RequestOptions,
 ): RequestOptions {
+  // When `second` fully specifies both resultExtractor and attributes,
+  // it constitutes a complete override — no merge with `first` is needed.
+  // Note: this means `first.attributes` is discarded, not merged.
   if (second && second.resultExtractor && second.attributes) {
     return second;
   }

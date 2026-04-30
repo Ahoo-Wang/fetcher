@@ -15,7 +15,7 @@ import type { Fetcher } from './fetcher';
 import type { FetchRequest, RequestHeaders } from './fetchRequest';
 import { type UrlParams } from './urlBuilder';
 import { type RequiredBy } from './types';
-import type { ResultExtractor} from './resultExtractor';
+import type { ResultExtractor } from './resultExtractor';
 import { ResultExtractors } from './resultExtractor';
 import { mergeRecordToMap } from './utils';
 import { ExchangeError } from './fetcherError';
@@ -102,9 +102,10 @@ export interface FetchExchangeInit extends AttributesCapable {
  * };
  * ```
  */
-export class FetchExchange
-  implements RequiredBy<FetchExchangeInit, 'attributes'>
-{
+export class FetchExchange implements RequiredBy<
+  FetchExchangeInit,
+  'attributes'
+> {
   /**
    * The Fetcher instance that initiated this exchange.
    */
@@ -266,6 +267,10 @@ export class FetchExchange
   /**
    * Extracts the result by applying the result extractor to the exchange.
    * The result is cached after the first computation to avoid repeated computations.
+   *
+   * **Caching behavior:** If the result extractor returns a rejected promise,
+   * that rejected promise is cached and all subsequent calls will await the
+   * same rejection. Callers that need to retry should create a new exchange.
    *
    * @returns The extracted result
    */

@@ -43,15 +43,16 @@ export class FetcherError extends Error {
    */
   constructor(
     errorMsg?: string,
-    public readonly cause?: Error | any,
+    public readonly cause?: Error | unknown,
   ) {
+    const causeMessage = cause instanceof Error ? cause.message : undefined;
     const errorMessage =
-      errorMsg || cause?.message || 'An error occurred in the fetcher';
+      errorMsg || causeMessage || 'An error occurred in the fetcher';
     super(errorMessage);
     this.name = 'FetcherError';
 
     // Copy stack trace from cause if available
-    if (cause?.stack) {
+    if (cause instanceof Error && cause.stack) {
       this.stack = cause.stack;
     }
 

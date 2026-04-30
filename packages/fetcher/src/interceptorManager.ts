@@ -4,7 +4,10 @@ import { FetchInterceptor } from './fetchInterceptor';
 import type { FetchExchange } from './fetchExchange';
 import { ExchangeError } from './fetcherError';
 import { InterceptorRegistry } from './interceptor';
-import { ValidateStatusInterceptor } from './validateStatusInterceptor';
+import {
+  ValidateStatusInterceptor,
+  type ValidateStatus,
+} from './validateStatusInterceptor';
 
 /**
  * Collection of interceptor managers for the Fetcher client.
@@ -52,9 +55,9 @@ export class InterceptorManager {
    * @remarks
    * Request interceptors are executed in ascending order of their order values, with smaller
    * values having higher priority. The default interceptors are:
-   * 1. UrlResolveInterceptor (order: Number.MIN_SAFE_INTEGER) - Resolves the final URL
-   * 2. RequestBodyInterceptor (order: 0) - Converts object bodies to JSON
-   * 3. FetchInterceptor (order: Number.MAX_SAFE_INTEGER) - Executes the actual HTTP request
+   * 1. RequestBodyInterceptor (order: Number.MIN_SAFE_INTEGER + BUILT_IN_INTERCEPTOR_ORDER_STEP) - Converts object bodies to JSON
+   * 2. UrlResolveInterceptor (order: near Number.MAX_SAFE_INTEGER) - Resolves the final URL
+   * 3. FetchInterceptor (order: Number.MAX_SAFE_INTEGER - BUILT_IN_INTERCEPTOR_ORDER_STEP) - Executes the actual HTTP request
    */
   readonly request: InterceptorRegistry = new InterceptorRegistry([
     new RequestBodyInterceptor(),
@@ -74,10 +77,17 @@ export class InterceptorManager {
    *
    * By default, the response interceptor registry has one built-in interceptor registered:
    * 1. ValidateStatusInterceptor - Validates HTTP status codes and throws HttpStatusValidationError for invalid statuses
+   *
+   * @param validateStatus - Optional custom status validation function.
+   *   Defaults to accepting 2xx status codes.
    */
-  readonly response: InterceptorRegistry = new InterceptorRegistry([
-    new ValidateStatusInterceptor(),
-  ]);
+  constructor(validateStatus?: ValidateStatus) {
+    this.response = new InterceptorRegistry([
+      new ValidateStatusInterceptor(validateStatus),
+    ]);
+  }
+
+  readonly response: InterceptorRegistry;
 
   /**
    * Manager for error-handling phase interceptors.

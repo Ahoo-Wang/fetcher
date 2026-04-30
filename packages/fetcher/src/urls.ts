@@ -52,6 +52,6 @@ export function combineURLs(baseURL: string, relativeURL: string) {
   }
   // If relative URL exists, combine base URL and relative URL, otherwise return base URL
   return relativeURL
-    ? baseURL.replace(/\/?\/$/, '') + '/' + relativeURL.replace(/^\/+/, '')
+    ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
     : baseURL;
 }

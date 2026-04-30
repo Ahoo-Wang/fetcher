@@ -13,24 +13,23 @@
 
 import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder';
 import { resolveTimeout, type TimeoutCapable } from './timeout';
-import type { AttributesCapable} from './fetchExchange';
+import type { AttributesCapable } from './fetchExchange';
 import { FetchExchange } from './fetchExchange';
 import type {
   BaseURLCapable,
   FetchRequest,
   FetchRequestInit,
   RequestHeaders,
-  RequestHeadersCapable} from './fetchRequest';
-import {
-  CONTENT_TYPE_HEADER,
-  ContentTypeValues
+  RequestHeadersCapable,
 } from './fetchRequest';
+import { CONTENT_TYPE_HEADER, ContentTypeValues } from './fetchRequest';
 import { HttpMethod } from './fetchRequest';
 import { InterceptorManager } from './interceptorManager';
 import type { UrlTemplateStyle } from './urlTemplateResolver';
-import type { ResultExtractorCapable} from './resultExtractor';
+import type { ResultExtractorCapable } from './resultExtractor';
 import { ResultExtractors } from './resultExtractor';
 import { mergeRequestOptions } from './mergeRequest';
+import type { ValidateStatus } from './validateStatusInterceptor';
 
 /**
  * Configuration options for the Fetcher client.
@@ -50,9 +49,7 @@ import { mergeRequestOptions } from './mergeRequest';
  * ```
  */
 export interface FetcherOptions
-  extends BaseURLCapable,
-    RequestHeadersCapable,
-    TimeoutCapable {
+  extends BaseURLCapable, RequestHeadersCapable, TimeoutCapable {
   /**
    * The style of URL template to use for URL parameter interpolation.
    * @default UrlTemplateStyle.Path
@@ -64,6 +61,22 @@ export interface FetcherOptions
    * @default new InterceptorManager()
    */
   interceptors?: InterceptorManager;
+
+  /**
+   * Optional function to validate HTTP response status codes.
+   * If provided, it will be passed to the default ValidateStatusInterceptor.
+   * Has no effect if a custom InterceptorManager is provided via `interceptors`.
+   *
+   * @default status >= 200 && status < 300
+   *
+   * @example
+   * // Accept all status codes
+   * validateStatus: () => true
+   *
+   * // Only accept 200
+   * validateStatus: (status) => status === 200
+   */
+  validateStatus?: ValidateStatus;
 }
 
 const DEFAULT_HEADERS: RequestHeaders = {
@@ -79,8 +92,7 @@ export const DEFAULT_OPTIONS: FetcherOptions = {
  * Options for individual requests.
  */
 export interface RequestOptions
-  extends AttributesCapable,
-    ResultExtractorCapable {}
+  extends AttributesCapable, ResultExtractorCapable {}
 
 export const DEFAULT_REQUEST_OPTIONS: RequestOptions = {
   resultExtractor: ResultExtractors.Exchange,
@@ -133,7 +145,8 @@ export class Fetcher
     this.urlBuilder = new UrlBuilder(options.baseURL, options.urlTemplateStyle);
     this.headers = options.headers ?? DEFAULT_HEADERS;
     this.timeout = options.timeout;
-    this.interceptors = options.interceptors ?? new InterceptorManager();
+    this.interceptors =
+      options.interceptors ?? new InterceptorManager(options.validateStatus);
   }
 
   /**

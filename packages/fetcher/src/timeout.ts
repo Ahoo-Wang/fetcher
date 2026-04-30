@@ -143,10 +143,13 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
 
   // Timer resource management
   let timerId: ReturnType<typeof setTimeout> | null = null;
+  let aborted = false;
   // Create timeout Promise that rejects after specified time
   const timeoutPromise = new Promise<Response>((_, reject) => {
     timerId = setTimeout(() => {
-      // Clean up timer resources and handle timeout error
+      // If fetch already completed, skip unnecessary work
+      if (aborted) return;
+      aborted = true;
       if (timerId) {
         clearTimeout(timerId);
       }
@@ -160,7 +163,8 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
     // Race between fetch request and timeout Promise
     return await Promise.race([fetch(url, requestInit), timeoutPromise]);
   } finally {
-    // Clean up timer resources
+    // Mark as aborted and clean up timer resources
+    aborted = true;
     if (timerId) {
       clearTimeout(timerId);
     }

@@ -63,7 +63,9 @@
     "react-dom": "catalog:"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-class-properties": "catalog:",
     "@babel/plugin-proposal-decorators": "catalog:",
+    "@babel/plugin-transform-class-static-block": "catalog:",
     "@eslint/js": "catalog:",
     "@rolldown/plugin-babel": "catalog:",
     "@testing-library/jest-dom": "catalog:",
@@ -74,6 +76,7 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
+    "babel-plugin-transform-typescript-metadata": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-react-compiler": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",

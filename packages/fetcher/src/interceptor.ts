@@ -17,7 +17,8 @@ import type { FetchExchange } from './fetchExchange';
 
 export const DEFAULT_INTERCEPTOR_ORDER_STEP = 1000;
 
-export const BUILT_IN_INTERCEPTOR_ORDER_STEP = DEFAULT_INTERCEPTOR_ORDER_STEP * 10;
+export const BUILT_IN_INTERCEPTOR_ORDER_STEP =
+  DEFAULT_INTERCEPTOR_ORDER_STEP * 10;
 
 /**
  * Interface for HTTP interceptors in the fetcher pipeline.
@@ -50,10 +51,17 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
   readonly name: string;
 
   /**
-   * Interceptor method that modifies the request or response.
+   * Execution order of this interceptor within the interceptor chain.
    *
-   * @param exchange - The current exchange object, which contains the request and response.
-   * @returns A promise that resolves to the modified exchange object.
+   * Interceptors are executed in ascending order by this value. Lower values
+   * indicate higher priority (executed first). Built-in interceptors use
+   * strategically spaced order values to allow custom interceptors to be
+   * inserted between them.
+   *
+   * @remarks
+   * - Default step between built-in interceptors is {@link BUILT_IN_INTERCEPTOR_ORDER_STEP}
+   * - Custom interceptors should pick order values based on where they need
+   *   to execute relative to built-in interceptors
    */
   readonly order: number;
 
@@ -68,6 +76,10 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
    * @remarks
    * Interceptors should modify the exchange object directly rather than returning it.
    * They can also throw errors or transform errors into responses.
+   *
+   * **Error handling:** If this method throws, subsequent interceptors in the same
+   * registry will NOT be executed. The error will propagate to the InterceptorManager
+   * which may then invoke error-phase interceptors.
    */
   intercept(exchange: FetchExchange): void | Promise<void>;
 }
@@ -96,8 +108,7 @@ export interface Interceptor extends NamedCapable, OrderedCapable {
  * };
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface RequestInterceptor extends Interceptor {
-}
+export interface RequestInterceptor extends Interceptor {}
 
 /**
  * Interface for response interceptors.
@@ -121,8 +132,7 @@ export interface RequestInterceptor extends Interceptor {
  * };
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ResponseInterceptor extends Interceptor {
-}
+export interface ResponseInterceptor extends Interceptor {}
 
 /**
  * Interface for error interceptors.
@@ -151,8 +161,7 @@ export interface ResponseInterceptor extends Interceptor {
  * };
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ErrorInterceptor extends Interceptor {
-}
+export interface ErrorInterceptor extends Interceptor {}
 
 /**
  * Registry for a collection of interceptors of the same type.

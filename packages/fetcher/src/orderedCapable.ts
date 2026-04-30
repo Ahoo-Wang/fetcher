@@ -55,15 +55,17 @@ export function sortOrder<T extends OrderedCapable>(a: T, b: T): number {
 }
 
 /**
- * Sorts an array of elements that implement the OrderedCapable interface
+ * Sorts an array of elements that implement the OrderedCapable interface.
  *
  * This function creates and returns a new sorted array without modifying the
- * original array. It supports an optional filter function to select elements
- * that should participate in sorting.
+ * original array. When a filter function is provided, elements are first
+ * filtered and then sorted (not sorted-then-filtered).
  *
  * @template T - Array element type that must implement the OrderedCapable interface
  * @param array - The array to be sorted
- * @param filter - Optional filter function to select elements that should be sorted
+ * @param filter - Optional filter predicate. Elements that pass the filter
+ *   are included in the result and then sorted by `order`. If omitted, all
+ *   elements are sorted.
  * @returns A new array sorted in ascending order by the order property
  *
  * @example
@@ -77,7 +79,7 @@ export function sortOrder<T extends OrderedCapable>(a: T, b: T): number {
  * const sortedItems = toSorted(items);
  * // Result: [{ order: 1 }, { order: 5 }, { order: 10 }]
  *
- * // Using filter function
+ * // Using filter function (filter-then-sort)
  * const filteredAndSorted = toSorted(items, item => item.order > 3);
  * // Result: [{ order: 5 }, { order: 10 }]
  * ```

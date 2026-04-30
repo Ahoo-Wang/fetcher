@@ -11,7 +11,10 @@
  * limitations under the License.
  */
 
-import { type ResponseInterceptor } from './interceptor';
+import {
+  BUILT_IN_INTERCEPTOR_ORDER_STEP,
+  type ResponseInterceptor,
+} from './interceptor';
 import type { FetchExchange } from './fetchExchange';
 import { ExchangeError } from './fetcherError';
 
@@ -56,7 +59,7 @@ export class HttpStatusValidationError extends ExchangeError {
  * });
  * ```
  */
-type ValidateStatus = (status: number) => boolean;
+export type ValidateStatus = (status: number) => boolean;
 
 const DEFAULT_VALIDATE_STATUS: ValidateStatus = (status: number) =>
   status >= 200 && status < 300;
@@ -71,7 +74,8 @@ export const VALIDATE_STATUS_INTERCEPTOR_NAME = 'ValidateStatusInterceptor';
  * Set to Number.MAX_SAFE_INTEGER - 1000 to ensure it runs latest among response interceptors,
  * but still allows other interceptors to run after it if needed.
  */
-export const VALIDATE_STATUS_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - 1000;
+export const VALIDATE_STATUS_INTERCEPTOR_ORDER =
+  Number.MAX_SAFE_INTEGER - BUILT_IN_INTERCEPTOR_ORDER_STEP;
 
 /**
  * Attribute key used to skip status validation for a specific request.
