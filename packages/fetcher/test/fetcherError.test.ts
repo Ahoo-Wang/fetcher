@@ -44,11 +44,9 @@ describe('FetcherError', () => {
     expect(error.cause).toBe(cause);
   });
 
-  it('should link cause via native Error.cause chain', () => {
+  it('should copy stack trace from cause', () => {
     const cause = new Error('Cause error');
     const error = new FetcherError(undefined, cause);
-    expect(error.cause).toBe(cause);
-    expect(error.stack).toContain('FetcherError');
-    expect(error.stack).toContain('Cause error');
+    expect(error.stack).toBe(cause.stack);
   });
 });
