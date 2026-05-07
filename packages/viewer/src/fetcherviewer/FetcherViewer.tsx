@@ -37,6 +37,7 @@ import type {
   PagedList,
   PagedQuery,
 } from '@ahoo-wang/fetcher-wow';
+import type { UrlParams } from '@ahoo-wang/fetcher';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
 import { useKeyStorage } from '@ahoo-wang/fetcher-react';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
@@ -196,9 +197,15 @@ export function FetcherViewer<RecordType = any>({
       const command: CreateView = {
         ...view,
       };
+
+      const requestOptions = view.type === 'SHARED'
+        ? { urlParams: { path: { ownerId: '(shared)' } as UrlParams['path'] } }
+        : {};
+
       viewCommandClient
         .createView(view.type, {
           body: command,
+          ...requestOptions,
         })
         .then((result: CommandResult) => {
           const newView = {
