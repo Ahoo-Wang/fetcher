@@ -133,9 +133,9 @@ export class FetchExchange implements RequiredBy<
 
   /**
    * Cached result of the extracted result to avoid repeated computations.
-   * Undefined when not yet computed, null when computation failed.
    */
   private cachedExtractedResult?: any | Promise<any>;
+  private hasCachedResult = false;
   /**
    * Shared attributes for passing data between interceptors.
    *
@@ -224,6 +224,7 @@ export class FetchExchange implements RequiredBy<
   set response(response: Response | undefined) {
     this._response = response;
     this.cachedExtractedResult = undefined;
+    this.hasCachedResult = false;
   }
 
   /**
@@ -275,9 +276,10 @@ export class FetchExchange implements RequiredBy<
    * @returns The extracted result
    */
   async extractResult<R>(): Promise<R> {
-    if (this.cachedExtractedResult !== undefined) {
+    if (this.hasCachedResult) {
       return await this.cachedExtractedResult;
     }
+    this.hasCachedResult = true;
     this.cachedExtractedResult = this.resultExtractor(this);
     return await this.cachedExtractedResult;
   }
