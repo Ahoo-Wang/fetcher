@@ -30,15 +30,15 @@ export default tseslint.config(
       globals: globals.browser,
     },
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
     },
   }, // 为 integration-test 添加特定配置
   {
     files: ['integration-test/**/*.{ts,tsx}', '**/*.stories.tsx'],
     rules: {
       // 可以为集成测试设置特定规则
-      '@typescript-eslint/no-empty-object-type': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-empty-object-type': 'warn',
+      '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/consistent-type-imports': [
         'error',
         {
