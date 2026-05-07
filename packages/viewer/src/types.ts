@@ -37,11 +37,11 @@ export interface PrimaryKeyClickHandlerCapable<RecordType = any> {
 }
 
 export interface ViewTableSetting {
-  title?: string
+  title?: string;
 }
 
 export interface ViewTableSettingCapable {
-  viewTableSetting?: false | ViewTableSetting
+  viewTableSetting?: false | ViewTableSetting;
 }
 
 export interface TableSizeCapable {
@@ -67,6 +67,4 @@ export interface ActionItem<RecordType> extends AttributesCapable<
   render?: (records: RecordType[]) => React.ReactNode;
 }
 
-
-export type SaveViewMethod = 'Update' | 'SaveAs'
-
+export type SaveViewMethod = 'Update' | 'SaveAs';

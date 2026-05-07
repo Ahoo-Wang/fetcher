@@ -220,7 +220,10 @@ describe('View', () => {
       const onSelectedDataChange = vi.fn();
 
       const { container } = render(
-        <View<User> {...defaultProps} onSelectedDataChange={onSelectedDataChange} />,
+        <View<User>
+          {...defaultProps}
+          onSelectedDataChange={onSelectedDataChange}
+        />,
       );
 
       expect(container.firstChild).toBeInTheDocument();

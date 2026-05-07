@@ -10,7 +10,10 @@ interface SearchInputProps {
   debounceDelay?: number;
 }
 
-export function SearchInput({ onResults, debounceDelay = 300 }: SearchInputProps) {
+export function SearchInput({
+  onResults,
+  debounceDelay = 300,
+}: SearchInputProps) {
   const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -19,42 +22,49 @@ export function SearchInput({ onResults, debounceDelay = 300 }: SearchInputProps
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const executeSearch = useCallback(async (searchKeyword: string) => {
-    // Cancel any pending request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    if (!searchKeyword.trim()) {
-      setResults([]);
-      return;
-    }
-
-    setLoading(true);
-    setIsPending(true);
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    try {
-      const response = await fetch(`/api/search?keyword=${encodeURIComponent(searchKeyword)}`, {
-        signal: controller.signal,
-      });
-
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-      const data = await response.json();
-      setResults(data);
-      if (onResults) onResults(data);
-    } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
-        console.error('Search failed:', err);
+  const executeSearch = useCallback(
+    async (searchKeyword: string) => {
+      // Cancel any pending request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-    } finally {
-      setLoading(false);
-      setIsPending(false);
-    }
-  }, [onResults]);
+
+      if (!searchKeyword.trim()) {
+        setResults([]);
+        return;
+      }
+
+      setLoading(true);
+      setIsPending(true);
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      try {
+        const response = await fetch(
+          `/api/search?keyword=${encodeURIComponent(searchKeyword)}`,
+          {
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok)
+          throw new Error(`HTTP error! status: ${response.status}`);
+
+        const data = await response.json();
+        setResults(data);
+        if (onResults) onResults(data);
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Search failed:', err);
+        }
+      } finally {
+        setLoading(false);
+        setIsPending(false);
+      }
+    },
+    [onResults],
+  );
 
   const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newKeyword = e.target.value;
@@ -120,9 +130,7 @@ export function SearchInput({ onResults, debounceDelay = 300 }: SearchInputProps
       </div>
       {loading && <div className="search-loading">Searching...</div>}
       {results.length > 0 && (
-        <div className="search-results">
-          Found {results.length} results
-        </div>
+        <div className="search-results">Found {results.length} results</div>
       )}
     </div>
   );

@@ -11,7 +11,10 @@
  * limitations under the License.
  */
 
-import type { CrossTabMessenger, CrossTabMessageHandler } from './crossTabMessenger';
+import type {
+  CrossTabMessenger,
+  CrossTabMessageHandler,
+} from './crossTabMessenger';
 
 export interface StorageMessengerOptions {
   channelName: string;

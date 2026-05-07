@@ -14,11 +14,10 @@
 import type {
   UseExecutePromiseReturn,
   UseExecutePromiseOptions,
-  PromiseSupplier, QueryOptions} from './index';
-import {
-  useExecutePromise,
-  useLatest, isValidateQuery,
+  PromiseSupplier,
+  QueryOptions,
 } from './index';
+import { useExecutePromise, useLatest, isValidateQuery } from './index';
 import { useCallback, useMemo } from 'react';
 import type { AttributesCapable, FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryStateReturn } from './useQueryState';
@@ -32,11 +31,11 @@ import type { AutoExecuteCapable } from '../types';
  * @template E - The type of the error value
  */
 export interface UseQueryOptions<Q, R, E = FetcherError>
-  extends UseExecutePromiseOptions<R, E>,
+  extends
+    UseExecutePromiseOptions<R, E>,
     QueryOptions<Q>,
     AttributesCapable,
     AutoExecuteCapable {
-
   /** Function to execute the query with given parameters and optional attributes */
   execute: (
     query: Q,
@@ -51,15 +50,11 @@ export interface UseQueryOptions<Q, R, E = FetcherError>
  * @template R - The type of the result value
  * @template E - The type of the error value
  */
-export interface UseQueryReturn<
-  Q,
-  R,
-  E = FetcherError,
-> extends UseExecutePromiseReturn<R, E>, UseQueryStateReturn<Q> {
+export interface UseQueryReturn<Q, R, E = FetcherError>
+  extends UseExecutePromiseReturn<R, E>, UseQueryStateReturn<Q> {
   /** Function to execute the query with current parameters */
   execute: () => Promise<void>;
 }
-
 
 /**
  * A React hook for managing query-based asynchronous operations

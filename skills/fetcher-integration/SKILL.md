@@ -2,13 +2,13 @@
 name: fetcher-integration
 description: Integrate the Fetcher HTTP client library into your projects. Covers NamedFetcher setup, all HTTP methods, path/query parameters, interceptors, timeout configuration, and the named fetcher registry pattern.
 trigger:
-  - "integrate fetcher"
-  - "fetcher http client"
-  - "path parameters"
-  - "query parameters"
-  - "interceptors"
-  - "timeout"
-  - "named fetcher"
+  - 'integrate fetcher'
+  - 'fetcher http client'
+  - 'path parameters'
+  - 'query parameters'
+  - 'interceptors'
+  - 'timeout'
+  - 'named fetcher'
 ---
 
 # Fetcher Integration Skill
@@ -297,11 +297,13 @@ fetcher.interceptors.response.use({
 ### Interceptor Order Reference
 
 Built-in interceptors use these order ranges:
+
 - `Number.MAX_SAFE_INTEGER - 11000`: UrlResolveInterceptor (resolves URL params)
 - `Number.MIN_SAFE_INTEGER + 10000`: RequestBodyInterceptor (converts body to JSON)
 - `Number.MAX_SAFE_INTEGER - 10000`: ValidateStatusInterceptor (validates HTTP status)
 
 Lower values execute first. Custom interceptors typically use orders like:
+
 - `1-10`: High priority (request ID, timing)
 - `50-100`: Medium priority (auth)
 - `1000+`: Low priority (after built-in interceptors)
@@ -406,7 +408,9 @@ apiFetcher.interceptors.request.use({
   name: 'request-logger',
   order: 5,
   intercept(exchange) {
-    console.log(`[${new Date().toISOString()}] ${exchange.request.method} ${exchange.request.url}`);
+    console.log(
+      `[${new Date().toISOString()}] ${exchange.request.method} ${exchange.request.url}`,
+    );
     return exchange;
   },
 });
@@ -416,7 +420,9 @@ apiFetcher.interceptors.response.use({
   name: 'response-logger',
   order: 5,
   intercept(exchange) {
-    console.log(`[${new Date().toISOString()}] Response: ${exchange.response?.status}`);
+    console.log(
+      `[${new Date().toISOString()}] Response: ${exchange.response?.status}`,
+    );
     return exchange;
   },
 });
@@ -475,27 +481,27 @@ export const userService = {
 
 ### Constructor Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `baseURL` | `string` | `''` | Base URL for all requests |
-| `timeout` | `number` | `0` (no timeout) | Request timeout in milliseconds |
-| `headers` | `Record<string, string>` | `{}` | Default request headers |
-| `urlTemplateStyle` | `UrlTemplateStyle` | `UriTemplate` | Path param style (`UriTemplate` or `Express`) |
+| Option             | Type                     | Default          | Description                                   |
+| ------------------ | ------------------------ | ---------------- | --------------------------------------------- |
+| `baseURL`          | `string`                 | `''`             | Base URL for all requests                     |
+| `timeout`          | `number`                 | `0` (no timeout) | Request timeout in milliseconds               |
+| `headers`          | `Record<string, string>` | `{}`             | Default request headers                       |
+| `urlTemplateStyle` | `UrlTemplateStyle`       | `UriTemplate`    | Path param style (`UriTemplate` or `Express`) |
 
 ### HTTP Methods
 
 All methods accept `url: string` and optional `FetcherRequest` config.
 
-| Method | Body Type | Description |
-|--------|-----------|-------------|
-| `get` | none | GET request |
-| `post` | `body` | POST request |
-| `put` | `body` | PUT request |
-| `delete` | none | DELETE request |
-| `patch` | `body` | PATCH request |
-| `head` | none | HEAD request |
-| `options` | none | OPTIONS request |
-| `trace` | none | TRACE request |
+| Method    | Body Type | Description     |
+| --------- | --------- | --------------- |
+| `get`     | none      | GET request     |
+| `post`    | `body`    | POST request    |
+| `put`     | `body`    | PUT request     |
+| `delete`  | none      | DELETE request  |
+| `patch`   | `body`    | PATCH request   |
+| `head`    | none      | HEAD request    |
+| `options` | none      | OPTIONS request |
+| `trace`   | none      | TRACE request   |
 
 ### UrlParams Structure
 

@@ -12,13 +12,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import type {
-  Fetcher,
-  Interceptor} from '../src';
-import {
-  FetchExchange,
-  InterceptorRegistry,
-} from '../src';
+import type { Fetcher, Interceptor } from '../src';
+import { FetchExchange, InterceptorRegistry } from '../src';
 
 describe('Interceptor', () => {
   it('should define Interceptor interface', () => {

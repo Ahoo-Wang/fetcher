@@ -15,7 +15,8 @@ import type {
   Fetcher,
   FetchRequestInit,
   NamedCapable,
-  ResultExtractor} from '@ahoo-wang/fetcher';
+  ResultExtractor,
+} from '@ahoo-wang/fetcher';
 import {
   combineURLs,
   type FetchExchangeInit,
@@ -28,12 +29,8 @@ import {
 } from '@ahoo-wang/fetcher';
 import type { ApiMetadata } from './apiDecorator';
 import type { EndpointMetadata } from './endpointDecorator';
-import type {
-  ParameterMetadata,
-  ParameterRequest} from './parameterDecorator';
-import {
-  ParameterType,
-} from './parameterDecorator';
+import type { ParameterMetadata, ParameterRequest } from './parameterDecorator';
+import { ParameterType } from './parameterDecorator';
 import { EndpointReturnType } from './endpointReturnTypeCapable';
 
 /**

@@ -22,17 +22,21 @@ export interface PrimaryKeyCellProps<RecordType = any> extends CellProps<
   string,
   RecordType,
   Omit<LinkProps, 'onClick'> & {
-  onClick?: (record: RecordType) => void;
-}
-> {
-}
+    onClick?: (record: RecordType) => void;
+  }
+> {}
 
-export function PrimaryKeyCell<RecordType>(props: PrimaryKeyCellProps<RecordType>) {
-  const {
-    data,
-    attributes,
-  } = props;
+export function PrimaryKeyCell<RecordType>(
+  props: PrimaryKeyCellProps<RecordType>,
+) {
+  const { data, attributes } = props;
   return (
-    <Link copyable={true} {...attributes} onClick={() => attributes?.onClick?.(data.record)}>{data.value}</Link>
+    <Link
+      copyable={true}
+      {...attributes}
+      onClick={() => attributes?.onClick?.(data.record)}
+    >
+      {data.value}
+    </Link>
   );
 }

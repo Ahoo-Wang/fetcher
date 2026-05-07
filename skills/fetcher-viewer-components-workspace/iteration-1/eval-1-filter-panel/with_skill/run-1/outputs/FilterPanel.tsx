@@ -94,7 +94,7 @@ export function ExampleFilterPanel() {
   return (
     <FilterPanel
       filters={filters}
-      onSearch={(finalCondition) => {
+      onSearch={finalCondition => {
         setCondition(finalCondition);
       }}
       searchButton={{ children: 'Search' }}

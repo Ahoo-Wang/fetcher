@@ -1,8 +1,5 @@
 import React, { useCallback, useRef } from 'react';
-import {
-  FilterPanel,
-  useFilterState,
-} from '@ahoo-wang/fetcher-viewer';
+import { FilterPanel, useFilterState } from '@ahoo-wang/fetcher-viewer';
 import type { ActiveFilter, FilterPanelRef } from '@ahoo-wang/fetcher-viewer';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
@@ -13,7 +10,7 @@ function UserFilterPanel() {
     field: 'username',
     operator: Operator.CONTAINS,
     value: '',
-    onChange: (filterValue) => {
+    onChange: filterValue => {
       console.log('username filter changed:', filterValue);
     },
   });
@@ -22,7 +19,7 @@ function UserFilterPanel() {
     field: 'age',
     operator: Operator.GT,
     value: undefined,
-    onChange: (filterValue) => {
+    onChange: filterValue => {
       console.log('age filter changed:', filterValue);
     },
   });
@@ -31,7 +28,7 @@ function UserFilterPanel() {
     field: 'status',
     operator: Operator.IN,
     value: [],
-    onChange: (filterValue) => {
+    onChange: filterValue => {
       console.log('status filter changed:', filterValue);
     },
   });
@@ -43,7 +40,7 @@ function UserFilterPanel() {
       field: { name: 'username', label: 'Username' },
       operator: usernameFilterState.operator,
       value: usernameFilterState.value,
-      onChange: (value) => {
+      onChange: value => {
         if (value) {
           usernameFilterState.setOperator(value.operator);
           usernameFilterState.setValue(value.value);
@@ -59,7 +56,7 @@ function UserFilterPanel() {
       field: { name: 'age', label: 'Age' },
       operator: ageFilterState.operator,
       value: ageFilterState.value,
-      onChange: (value) => {
+      onChange: value => {
         if (value) {
           ageFilterState.setOperator(value.operator);
           ageFilterState.setValue(value.value);
@@ -80,7 +77,7 @@ function UserFilterPanel() {
           { label: 'Inactive', value: 'inactive' },
         ],
       },
-      onChange: (value) => {
+      onChange: value => {
         if (value) {
           statusFilterState.setOperator(value.operator);
           statusFilterState.setValue(value.value);
@@ -97,7 +94,7 @@ function UserFilterPanel() {
       console.log('Search triggered with condition:', condition);
       console.log('Active filter values:', activeFilterValues);
     },
-    []
+    [],
   );
 
   return (

@@ -6,22 +6,17 @@ import type {
   ViewState,
   ViewDefinition,
   TopbarActionsCapable,
-  ViewerRef} from '../';
-import {
-  Viewer,
-  useRefreshDataEventBus
+  ViewerRef,
 } from '../';
-import type {
-  CreateView,
-  EditView} from './';
+import { Viewer, useRefreshDataEventBus } from '../';
+import type { CreateView, EditView } from './';
 import {
   useViewerDefinition,
   useViewerViews,
   useFetchData,
   ViewCommandClient,
 } from './';
-import type {
-  RefAttributes} from 'react';
+import type { RefAttributes } from 'react';
 import {
   useCallback,
   useEffect,
@@ -111,11 +106,11 @@ export function FetcherViewer<RecordType = any>({
     error: definitionError,
   } = useViewerDefinition(viewerDefinitionId);
 
-  const { views, loading: viewsLoading, execute: loadViews } = useViewerViews(
-    viewerDefinitionId,
-    tenantId,
-    ownerId,
-  );
+  const {
+    views,
+    loading: viewsLoading,
+    execute: loadViews,
+  } = useViewerViews(viewerDefinitionId, tenantId, ownerId);
 
   const defaultView = useMemo(
     () => getDefaultView(views, localDefaultViewId, defaultViewId),
@@ -198,9 +193,12 @@ export function FetcherViewer<RecordType = any>({
         ...view,
       };
 
-      const requestOptions = view.type === 'SHARED'
-        ? { urlParams: { path: { ownerId: '(shared)' } as UrlParams['path'] } }
-        : {};
+      const requestOptions =
+        view.type === 'SHARED'
+          ? {
+              urlParams: { path: { ownerId: '(shared)' } as UrlParams['path'] },
+            }
+          : {};
 
       viewCommandClient
         .createView(view.type, {
@@ -213,7 +211,7 @@ export function FetcherViewer<RecordType = any>({
             id: result.aggregateId,
           };
           onSuccess?.(newView);
-          loadViews()
+          loadViews();
         });
     },
     [loadViews],
@@ -229,7 +227,7 @@ export function FetcherViewer<RecordType = any>({
           body: command,
         })
         .then(() => {
-          loadViews()
+          loadViews();
           onSuccess?.(view);
         });
     },
@@ -243,7 +241,7 @@ export function FetcherViewer<RecordType = any>({
           body: {},
         })
         .then(() => {
-          loadViews()
+          loadViews();
           onSuccess?.(view);
         });
     },

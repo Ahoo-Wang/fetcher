@@ -13,8 +13,8 @@
 
 import { defineConfig } from 'vite';
 import dts from 'unplugin-dts/vite';
-import react, { reactCompilerPreset } from '@vitejs/plugin-react'
-import babel from '@rolldown/plugin-babel'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 
 export default defineConfig({
   build: {

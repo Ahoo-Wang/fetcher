@@ -74,6 +74,7 @@ fetcher (core HTTP client, no internal deps)
 ### Package Build Config
 
 All packages use Vite for building with `unplugin-dts` for type declarations. Each package outputs:
+
 - ESM: `dist/index.es.js`
 - UMD: `dist/index.umd.js`
 - Types: `dist/index.d.ts`
@@ -96,6 +97,7 @@ Packages with React (viewer, react) also use `@vitejs/plugin-react` with React C
 ### Core (`packages/fetcher`)
 
 The foundation HTTP client. Key concepts:
+
 - **Fetcher**: Main client class wrapping native Fetch with baseURL, timeout, and interceptors
 - **NamedFetcher**: Named registry pattern for managing multiple fetcher instances
 - **FetcherRegistrar**: Registry for named fetchers, used by decorator and other packages
@@ -105,6 +107,7 @@ The foundation HTTP client. Key concepts:
 ### Decorator (`packages/decorator`)
 
 Uses `reflect-metadata` to create declarative API service classes:
+
 - `@api(basePath, options)` - class-level decorator for service definition
 - `@get/@post/@put/@delete/@patch` - method decorators for HTTP verbs
 - `@path/@query/@header/@body` - parameter decorators for argument binding
@@ -117,6 +120,7 @@ Uses `reflect-metadata` to create declarative API service classes:
 ### Generator (`packages/generator`)
 
 CLI tool (`fetcher-generator`) that reads OpenAPI 3.x specs (JSON/YAML/URL) and generates:
+
 - TypeScript interfaces/enums from schemas
 - Decorator-based API client classes
 - Wow CQRS-specific clients (command/event-stream)
@@ -125,6 +129,7 @@ CLI tool (`fetcher-generator`) that reads OpenAPI 3.x specs (JSON/YAML/URL) and 
 ### Viewer (`packages/viewer`)
 
 React + Ant Design component library for API documentation viewing:
+
 - Filter panel components, table components with cell renderers
 - Uses React Compiler (`babel-plugin-react-compiler`)
 - Less for styling (Ant Design integration)

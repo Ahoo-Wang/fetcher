@@ -20,27 +20,49 @@ import { DateTimeCell } from '../../../src/table/cell/DateTimeCell';
 describe('Cell 边界情况', () => {
   describe('TextCell', () => {
     it('value 为 0 时应显示 "0"', () => {
-      render(<TextCell data={{ value: 0 as any, record: {}, index: 0 }} attributes={{}} />);
+      render(
+        <TextCell
+          data={{ value: 0 as any, record: {}, index: 0 }}
+          attributes={{}}
+        />,
+      );
       expect(screen.getByText('0')).toBeInTheDocument();
     });
 
     it('value 为 false 时应显示 "false"', () => {
-      render(<TextCell data={{ value: false as any, record: {}, index: 0 }} attributes={{}} />);
+      render(
+        <TextCell
+          data={{ value: false as any, record: {}, index: 0 }}
+          attributes={{}}
+        />,
+      );
       expect(screen.getByText('false')).toBeInTheDocument();
     });
 
     it('value 为空字符串时应显示 "-"', () => {
-      render(<TextCell data={{ value: '', record: {}, index: 0 }} attributes={{}} />);
+      render(
+        <TextCell data={{ value: '', record: {}, index: 0 }} attributes={{}} />,
+      );
       expect(screen.getByText('-')).toBeInTheDocument();
     });
 
     it('value 为 null 时应显示 "-"', () => {
-      render(<TextCell data={{ value: null as any, record: {}, index: 0 }} attributes={{}} />);
+      render(
+        <TextCell
+          data={{ value: null as any, record: {}, index: 0 }}
+          attributes={{}}
+        />,
+      );
       expect(screen.getByText('-')).toBeInTheDocument();
     });
 
     it('value 为 undefined 时应显示 "-"', () => {
-      render(<TextCell data={{ value: undefined as any, record: {}, index: 0 }} attributes={{}} />);
+      render(
+        <TextCell
+          data={{ value: undefined as any, record: {}, index: 0 }}
+          attributes={{}}
+        />,
+      );
       expect(screen.getByText('-')).toBeInTheDocument();
     });
   });
@@ -48,7 +70,10 @@ describe('Cell 边界情况', () => {
   describe('DateTimeCell', () => {
     it('解析无效日期时应显示 "-" 而不是崩溃', () => {
       const { container } = render(
-        <DateTimeCell data={{ value: 'not-a-date', record: {}, index: 0 }} attributes={{}} />
+        <DateTimeCell
+          data={{ value: 'not-a-date', record: {}, index: 0 }}
+          attributes={{}}
+        />,
       );
       expect(container.querySelector('.ant-typography')?.textContent).toBe('-');
     });

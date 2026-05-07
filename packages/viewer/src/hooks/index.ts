@@ -1,2 +1,2 @@
 export * from './useRefreshDataEventBus';
-export * from './useActiveViewState'
+export * from './useActiveViewState';

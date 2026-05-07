@@ -20,9 +20,7 @@ import type { TypeCapable } from '../registry';
 export type FilterType = string;
 
 export interface TypedFilterProps
-  extends FilterProps,
-    TypeCapable<FilterType> {
-}
+  extends FilterProps, TypeCapable<FilterType> {}
 
 const DEFAULT_VALUE_STYLE: React.CSSProperties = {
   flex: 'auto',

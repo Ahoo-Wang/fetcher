@@ -12,8 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type {
-  Fetcher} from '../src';
+import type { Fetcher } from '../src';
 import {
   FetchExchange,
   HttpStatusValidationError,
@@ -113,11 +112,11 @@ describe('ValidateStatusInterceptor', () => {
       expect.fail('Should have thrown HttpStatusValidationError');
     } catch (error) {
       expect(error).toBeInstanceOf(HttpStatusValidationError);
-       
+
       expect(error.message).toBe(
         'Request failed with status code 404 for https://api.example.com/test',
       );
-       
+
       expect(error.exchange).toBe(exchange);
     }
   });

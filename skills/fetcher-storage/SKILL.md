@@ -10,6 +10,7 @@ Cross-environment storage library with key-based storage, automatic environment 
 ## Trigger Conditions
 
 This skill activates when the user:
+
 - Wants localStorage, sessionStorage, or in-memory storage
 - Asks about cross-environment storage (browser vs Node.js)
 - Mentions storage events, serialization, or caching
@@ -32,6 +33,7 @@ if (isBrowser()) {
 ### `getStorage(): Storage`
 
 Returns the appropriate storage implementation:
+
 - Browser: `window.localStorage` (with availability check)
 - Non-browser: `InMemoryStorage` instance
 
@@ -56,12 +58,12 @@ const userStorage = new KeyStorage<{ name: string; age: number }>({
 
 ### Options
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `key` | `string` | Storage key (required) |
-| `serializer` | `Serializer<string, T>` | Custom serializer (default: JsonSerializer) |
-| `storage` | `Storage` | Custom storage backend (default: getStorage()) |
-| `eventBus` | `TypedEventBus<StorageEvent<T>>` | Custom event bus for notifications |
+| Option       | Type                             | Description                                    |
+| ------------ | -------------------------------- | ---------------------------------------------- |
+| `key`        | `string`                         | Storage key (required)                         |
+| `serializer` | `Serializer<string, T>`          | Custom serializer (default: JsonSerializer)    |
+| `storage`    | `Storage`                        | Custom storage backend (default: getStorage()) |
+| `eventBus`   | `TypedEventBus<StorageEvent<T>>` | Custom event bus for notifications             |
 
 ### Methods
 
@@ -142,7 +144,10 @@ const storage = new KeyStorage<string>({
 Type-safe identity serializer for primitive values.
 
 ```typescript
-import { KeyStorage, typedIdentitySerializer } from '@ahoo-wang/fetcher-storage';
+import {
+  KeyStorage,
+  typedIdentitySerializer,
+} from '@ahoo-wang/fetcher-storage';
 
 const stringStorage = new KeyStorage<string>({
   key: 'string',
@@ -177,6 +182,7 @@ removeListener();
 ```
 
 The event object contains:
+
 - `newValue`: The new stored value
 - `oldValue`: The previous stored value
 

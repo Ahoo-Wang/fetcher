@@ -26,7 +26,8 @@ export const REQUEST_BODY_INTERCEPTOR_NAME = 'RequestBodyInterceptor';
 /**
  * The order of the RequestBodyInterceptor.
  */
-export const REQUEST_BODY_INTERCEPTOR_ORDER = Number.MIN_SAFE_INTEGER + BUILT_IN_INTERCEPTOR_ORDER_STEP;
+export const REQUEST_BODY_INTERCEPTOR_ORDER =
+  Number.MIN_SAFE_INTEGER + BUILT_IN_INTERCEPTOR_ORDER_STEP;
 
 /**
  * Interceptor responsible for converting plain objects to JSON strings for HTTP request bodies.

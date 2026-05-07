@@ -68,7 +68,10 @@ vi.mock('../src/jwtToken', () => ({
     }
   },
   JwtCompositeTokenSerializer: class JwtCompositeTokenSerializer {
-    serialize = vi.fn((value: { token: { accessToken: string; refreshToken: string } }) => JSON.stringify(value.token));
+    serialize = vi.fn(
+      (value: { token: { accessToken: string; refreshToken: string } }) =>
+        JSON.stringify(value.token),
+    );
     deserialize = vi.fn((value: string) => {
       const token = JSON.parse(value);
       return {

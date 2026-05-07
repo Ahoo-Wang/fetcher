@@ -69,8 +69,11 @@ export const TAGS_CELL_TYPE: string = 'tags';
  * };
  * ```
  */
-export interface TagsCellProps<RecordType = any>
-  extends CellProps<string[], RecordType, Record<string, TagProps>> {
+export interface TagsCellProps<RecordType = any> extends CellProps<
+  string[],
+  RecordType,
+  Record<string, TagProps>
+> {
   space?: SpaceProps;
 }
 

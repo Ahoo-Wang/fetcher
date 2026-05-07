@@ -59,4 +59,3 @@ jobs:
 
       - name: Generate Local File
         run: fetcher-generator generate -i ./packages/generator/test/demo.spec.json
-

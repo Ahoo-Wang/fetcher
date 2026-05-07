@@ -13,12 +13,10 @@
 
 import type { Serializer } from './serializer';
 import { jsonSerializer } from './serializer';
-import type {
-  EventHandler,
-  TypedEventBus} from '@ahoo-wang/fetcher-eventbus';
+import type { EventHandler, TypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 import {
   nameGenerator,
-  SerialTypedEventBus
+  SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
 import { getStorage } from './env';
 
@@ -79,8 +77,9 @@ export interface KeyStorageOptions<Deserialized> {
  * Provides caching and automatic cache invalidation when the storage value changes
  * @template Deserialized The type of the value being stored
  */
-export class KeyStorage<Deserialized>
-  implements StorageListenable<Deserialized> {
+export class KeyStorage<
+  Deserialized,
+> implements StorageListenable<Deserialized> {
   private readonly key: string;
   private readonly serializer: Serializer<string, Deserialized>;
   private readonly storage: Storage;

@@ -368,7 +368,9 @@ export class WowTransport {
     S,
     FIELDS extends string = string,
     DomainEventBody = any,
-  >(defaultOptions?: QueryClientOptions): QueryClientFactory<S, FIELDS, DomainEventBody> {
+  >(
+    defaultOptions?: QueryClientOptions,
+  ): QueryClientFactory<S, FIELDS, DomainEventBody> {
     // Merge transport-level defaults with provided options
     const mergedOptions: QueryClientOptions = {
       ...defaultOptions,

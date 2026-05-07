@@ -73,7 +73,10 @@ await bus.emit('hello'); // Both execute in parallel
 Broadcasts events to **other browser tabs** using a delegate bus. Works locally and cross-tab.
 
 ```typescript
-import { BroadcastTypedEventBus, SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
+import {
+  BroadcastTypedEventBus,
+  SerialTypedEventBus,
+} from '@ahoo-wang/fetcher-eventbus';
 
 const delegate = new SerialTypedEventBus<string>('shared-events');
 const bus = new BroadcastTypedEventBus({ delegate });
@@ -117,8 +120,8 @@ import { StorageMessenger } from '@ahoo-wang/fetcher-eventbus';
 
 const messenger = new StorageMessenger({
   channelName: 'my-channel',
-  ttl: 5000,              // Messages expire after 5 seconds
-  cleanupInterval: 1000,  // Clean expired messages every 1 second
+  ttl: 5000, // Messages expire after 5 seconds
+  cleanupInterval: 1000, // Clean expired messages every 1 second
 });
 
 messenger.onmessage = message => {
@@ -149,10 +152,10 @@ if (messenger) {
 
 ```typescript
 interface EventHandler<EVENT> {
-  name: string;           // Unique identifier
-  order: number;          // Execution priority (lower = earlier)
+  name: string; // Unique identifier
+  order: number; // Execution priority (lower = earlier)
   handle: (event: EVENT) => void | Promise<void>;
-  once?: boolean;         // If true, auto-removes after first execution
+  once?: boolean; // If true, auto-removes after first execution
 }
 ```
 
@@ -213,12 +216,12 @@ bus.on({
 
 ### API Reference
 
-| Method | Description |
-|--------|-------------|
-| `on(handler)` | Register an event handler |
-| `off(name)` | Remove handler by name |
-| `emit(event)` | Trigger event to all handlers |
-| `destroy()` | Clean up all handlers and resources |
+| Method        | Description                         |
+| ------------- | ----------------------------------- |
+| `on(handler)` | Register an event handler           |
+| `off(name)`   | Remove handler by name              |
+| `emit(event)` | Trigger event to all handlers       |
+| `destroy()`   | Clean up all handlers and resources |
 
 ### Browser Support
 

@@ -41,7 +41,7 @@ const tokenRefresher = {
 const spaceStorage = new SpaceIdStorage();
 const spaceIdProvider: SpaceIdProvider = new DefaultSpaceIdProvider({
   spacedResourcePredicate: {
-    test: (exchange) => exchange.request.url.includes('/spaces/'),
+    test: exchange => exchange.request.url.includes('/spaces/'),
   },
   spaceIdStorage: spaceStorage,
 });
@@ -64,11 +64,11 @@ const configurer = new CoSecConfigurer({
   spaceIdProvider: spaceIdProvider,
 
   // Error handlers
-  onUnauthorized: (exchange) => {
+  onUnauthorized: exchange => {
     console.log('Authentication failed for:', exchange.request.url);
     window.location.href = '/login?reason=session_expired';
   },
-  onForbidden: (exchange) => {
+  onForbidden: exchange => {
     console.log('Access forbidden for:', exchange.request.url);
     alert('You do not have permission to access this resource');
   },

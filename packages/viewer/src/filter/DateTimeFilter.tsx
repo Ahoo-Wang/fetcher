@@ -22,7 +22,7 @@ import type {
 } from './useFilterState';
 import { DatePicker, InputNumber } from 'antd';
 import type { Optional } from '../types';
-import type { Dayjs} from 'dayjs';
+import type { Dayjs } from 'dayjs';
 import dayjs, { isDayjs } from 'dayjs';
 import type { SelectOperator } from './operator';
 import { ExtendedOperator } from './operator';
@@ -185,7 +185,7 @@ export function DateTimeFilter(props: FilterProps) {
     valueInputRender: (filterState: UseFilterStateReturn) => {
       switch (filterState.operator) {
         case Operator.BETWEEN: {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           const { placeholder, ...rangResetProps } = props.value || {};
           return (
             <DatePicker.RangePicker

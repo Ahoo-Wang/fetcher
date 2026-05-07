@@ -121,9 +121,10 @@ const DEFAULT_EVENT_TYPE = 'message';
  * This transformer handles the parsing of Server-Sent Events (SSE) according to the W3C specification.
  * It processes incoming text chunks and converts them into structured ServerSentEvent objects.
  */
-export class ServerSentEventTransformer
-  implements Transformer<string, ServerSentEvent>
-{
+export class ServerSentEventTransformer implements Transformer<
+  string,
+  ServerSentEvent
+> {
   // Initialize currentEventState with default values in a closure
   private currentEventState: EventState = {
     event: DEFAULT_EVENT_TYPE,

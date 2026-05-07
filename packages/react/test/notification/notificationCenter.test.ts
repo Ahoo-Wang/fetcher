@@ -12,7 +12,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NotificationCenter, notificationCenter } from '../../src/notification/notificationCenter';
+import {
+  NotificationCenter,
+  notificationCenter,
+} from '../../src/notification/notificationCenter';
 import { Message } from '../../src/notification';
 import * as channelModule from '../../src/notification/channel';
 

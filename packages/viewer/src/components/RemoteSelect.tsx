@@ -11,15 +11,12 @@
  * limitations under the License.
  */
 
-import type { SelectProps, RefSelectProps} from 'antd';
+import type { SelectProps, RefSelectProps } from 'antd';
 import { Select, Flex, Empty, Spin } from 'antd';
-import type {
-  UseDebouncedCallbackOptions} from '@ahoo-wang/fetcher-react';
-import {
-  useDebouncedExecutePromise,
-} from '@ahoo-wang/fetcher-react';
+import type { UseDebouncedCallbackOptions } from '@ahoo-wang/fetcher-react';
+import { useDebouncedExecutePromise } from '@ahoo-wang/fetcher-react';
 import type { StyleCapable } from '../types';
-import type { RefAttributes} from 'react';
+import type { RefAttributes } from 'react';
 import { useMemo } from 'react';
 import type { BaseOptionType, DefaultOptionType } from 'antd/lib/select';
 
@@ -33,7 +30,8 @@ export interface RemoteSelectProps<
   ValueType = any,
   OptionType extends BaseOptionType | DefaultOptionType = DefaultOptionType,
 >
-  extends Omit<SelectProps<ValueType, OptionType>, 'loading' | 'onSearch'>,
+  extends
+    Omit<SelectProps<ValueType, OptionType>, 'loading' | 'onSearch'>,
     RefAttributes<RefSelectProps>,
     StyleCapable {
   /** Debounce options for controlling the search delay */
@@ -75,7 +73,7 @@ const DEFAULT_ADDITIONAL_OPTIONS: any[] = [];
  */
 function uniqueBy<T, K>(array: T[], keySelector: (item: T) => K): T[] {
   const seen = new Set<K>();
-  return array.filter((item) => {
+  return array.filter(item => {
     const key = keySelector(item);
     if (seen.has(key)) return false;
     seen.add(key);
@@ -142,7 +140,7 @@ export function RemoteSelect<
   };
   const mergedOptions = useMemo(() => {
     const baseOptions = [...(result ?? options), ...additionalOptions];
-    return uniqueBy(baseOptions, (opt) => opt[uniqueKey]);
+    return uniqueBy(baseOptions, opt => opt[uniqueKey]);
   }, [result, options, additionalOptions, uniqueKey]);
   return (
     <Select<ValueType, OptionType>

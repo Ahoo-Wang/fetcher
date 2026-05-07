@@ -97,8 +97,11 @@ export interface CellData<ValueType = any, RecordType = any> {
  * };
  * ```
  */
-export interface CellProps<ValueType = any, RecordType = any, Attributes = any>
-  extends AttributesCapable<Attributes> {
+export interface CellProps<
+  ValueType = any,
+  RecordType = any,
+  Attributes = any,
+> extends AttributesCapable<Attributes> {
   data: CellData<ValueType, RecordType>;
 }
 

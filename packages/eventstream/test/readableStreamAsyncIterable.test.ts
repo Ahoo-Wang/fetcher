@@ -95,7 +95,6 @@ describe('ReadableStreamAsyncIterable', () => {
     const iterable = new ReadableStreamAsyncIterable(stream);
 
     await expect(async () => {
-       
       for await (const value of iterable) {
         // This should not be reached
       }
@@ -203,7 +202,7 @@ describe('ReadableStreamAsyncIterable', () => {
     const iterable = new ReadableStreamAsyncIterable(stream);
 
     // Consume the stream to unlock it
-     
+
     for await (const value of iterable) {
       // Just consume the value
     }
@@ -228,7 +227,7 @@ describe('ReadableStreamAsyncIterable', () => {
     const iterable = new ReadableStreamAsyncIterable(stream);
 
     // Consume the stream to unlock it
-     
+
     for await (const value of iterable) {
       // Just consume the value
     }

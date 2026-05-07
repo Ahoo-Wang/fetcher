@@ -1,4 +1,9 @@
-import { KeyStorage, getStorage, TypedEventBus, StorageEvent } from '@ahoo-wang/fetcher-storage';
+import {
+  KeyStorage,
+  getStorage,
+  TypedEventBus,
+  StorageEvent,
+} from '@ahoo-wang/fetcher-storage';
 
 export interface UserPreferences {
   theme: 'light' | 'dark';
@@ -24,7 +29,11 @@ class PreferencesStorage {
   }
 
   setTheme(theme: 'light' | 'dark'): void {
-    const current = this.storage.get() ?? { theme: 'light', language: 'en', notifications: true };
+    const current = this.storage.get() ?? {
+      theme: 'light',
+      language: 'en',
+      notifications: true,
+    };
     this.storage.set({ ...current, theme });
   }
 
@@ -34,7 +43,11 @@ class PreferencesStorage {
   }
 
   setLanguage(language: string): void {
-    const current = this.storage.get() ?? { theme: 'light', language: 'en', notifications: true };
+    const current = this.storage.get() ?? {
+      theme: 'light',
+      language: 'en',
+      notifications: true,
+    };
     this.storage.set({ ...current, language });
   }
 
@@ -44,11 +57,17 @@ class PreferencesStorage {
   }
 
   setNotifications(notifications: boolean): void {
-    const current = this.storage.get() ?? { theme: 'light', language: 'en', notifications: true };
+    const current = this.storage.get() ?? {
+      theme: 'light',
+      language: 'en',
+      notifications: true,
+    };
     this.storage.set({ ...current, notifications });
   }
 
-  addPreferencesListener(handler: (event: StorageEvent<UserPreferences>) => void): RemoveListener {
+  addPreferencesListener(
+    handler: (event: StorageEvent<UserPreferences>) => void,
+  ): RemoveListener {
     return this.storage.addListener(handler);
   }
 }
@@ -79,6 +98,8 @@ export function setNotifications(notifications: boolean): void {
   preferencesStorage.setNotifications(notifications);
 }
 
-export function addPreferencesListener(handler: (event: StorageEvent<UserPreferences>) => void): RemoveListener {
+export function addPreferencesListener(
+  handler: (event: StorageEvent<UserPreferences>) => void,
+): RemoveListener {
   return preferencesStorage.addPreferencesListener(handler);
 }

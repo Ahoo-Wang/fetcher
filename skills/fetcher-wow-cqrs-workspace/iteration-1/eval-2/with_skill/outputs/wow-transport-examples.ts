@@ -247,7 +247,9 @@ async function example3_CommandWithAggregateTargeting(): Promise<void> {
   } else {
     // Handle specific error cases
     if (result.error?.code === 'VERSION_CONFLICT') {
-      console.error('Optimistic locking failure - the cart was modified by another process');
+      console.error(
+        'Optimistic locking failure - the cart was modified by another process',
+      );
       // Could retry with fresh version
     } else if (result.error?.code === 'AGGREGATE_NOT_FOUND') {
       console.error('The cart does not exist');
@@ -318,16 +320,17 @@ async function example5_StreamingCommandResults(): Promise<void> {
   });
 
   // For long-running commands that produce events across stages
-  const resultStream = await transport.sendCommandAndWaitStream<CheckoutCommand>(
-    'Checkout',
-    {
-      paymentMethod: 'credit_card',
-      shippingAddress: '123 Main St',
-    },
-    {
-      aggregateId: 'cart-123',
-    },
-  );
+  const resultStream =
+    await transport.sendCommandAndWaitStream<CheckoutCommand>(
+      'Checkout',
+      {
+        paymentMethod: 'credit_card',
+        shippingAddress: '123 Main St',
+      },
+      {
+        aggregateId: 'cart-123',
+      },
+    );
 
   // Process each stage completion event
   for await (const event of resultStream) {
@@ -337,11 +340,17 @@ async function example5_StreamingCommandResults(): Promise<void> {
     console.log('Stage:', commandResult.stage);
     console.log('Command ID:', commandResult.commandId);
     console.log('Aggregate Version:', commandResult.aggregateVersion);
-    console.log('Signal Time:', new Date(commandResult.signalTime).toISOString());
+    console.log(
+      'Signal Time:',
+      new Date(commandResult.signalTime).toISOString(),
+    );
 
     // Check if this is the final event
     if (commandResult.stage === CommandStage.SNAPSHOT) {
-      console.log('Checkout complete! Final version:', commandResult.aggregateVersion);
+      console.log(
+        'Checkout complete! Final version:',
+        commandResult.aggregateVersion,
+      );
       break;
     }
   }
@@ -394,7 +403,12 @@ async function example6_QueryAggregateState(): Promise<void> {
   );
 
   if (partialState.success) {
-    console.log('Partial state - ID:', partialState.data.id, 'Status:', partialState.data.status);
+    console.log(
+      'Partial state - ID:',
+      partialState.data.id,
+      'Status:',
+      partialState.data.status,
+    );
   }
 }
 
@@ -424,16 +438,24 @@ async function example7_QueryDomainEvents(): Promise<void> {
     for (const event of recentEvents.data) {
       switch (event.eventType) {
         case 'CartItemAdded':
-          console.log(`[${new Date(event.timestamp).toISOString()}] Item added: ${event.productId} x${event.quantity}`);
+          console.log(
+            `[${new Date(event.timestamp).toISOString()}] Item added: ${event.productId} x${event.quantity}`,
+          );
           break;
         case 'CartItemRemoved':
-          console.log(`[${new Date(event.timestamp).toISOString()}] Item removed: ${event.productId}`);
+          console.log(
+            `[${new Date(event.timestamp).toISOString()}] Item removed: ${event.productId}`,
+          );
           break;
         case 'CartCheckedOut':
-          console.log(`[${new Date(event.timestamp).toISOString()}] Checked out: order ${event.orderId}`);
+          console.log(
+            `[${new Date(event.timestamp).toISOString()}] Checked out: order ${event.orderId}`,
+          );
           break;
         case 'CartCleared':
-          console.log(`[${new Date(event.timestamp).toISOString()}] Cart cleared`);
+          console.log(
+            `[${new Date(event.timestamp).toISOString()}] Cart cleared`,
+          );
           break;
       }
     }
@@ -468,7 +490,10 @@ async function example8_UsingQueryClientFactory(): Promise<void> {
   });
 
   // Create a factory with default settings for the 'shop' context and 'cart' aggregate
-  const factory = transport.createQueryClientFactory<CartState, 'id' | 'status' | 'totalAmount'>({
+  const factory = transport.createQueryClientFactory<
+    CartState,
+    'id' | 'status' | 'totalAmount'
+  >({
     contextAlias: 'shop',
     aggregateName: 'cart',
     resourceAttribution: 'owner',
@@ -514,7 +539,8 @@ async function example8_UsingQueryClientFactory(): Promise<void> {
   console.log('Version 5:', versionedCart);
 
   // Create owner-specific state client for current user's carts
-  const ownerStateClient = factory.createOwnerLoadStateAggregateClient<CartState>();
+  const ownerStateClient =
+    factory.createOwnerLoadStateAggregateClient<CartState>();
   const myCart = await ownerStateClient.load();
   console.log('My cart:', myCart);
 }
@@ -539,9 +565,12 @@ async function example9_TypeSafeResultHandling(): Promise<void> {
   // TypeScript narrows the type when checking success
   if (result.success) {
     // TypeScript knows result.data is CommandResult here
-    const { commandId, requestId, aggregateId, aggregateVersion, stage } = result.data;
+    const { commandId, requestId, aggregateId, aggregateVersion, stage } =
+      result.data;
 
-    console.log(`Command ${commandId} on aggregate ${aggregateId} at version ${aggregateVersion}`);
+    console.log(
+      `Command ${commandId} on aggregate ${aggregateId} at version ${aggregateVersion}`,
+    );
     console.log(`Current stage: ${stage}`);
 
     // Access Wow metadata if present
@@ -638,9 +667,11 @@ async function example11_CustomFetcher(): Promise<void> {
   interceptors.request.use({
     name: 'logging',
     order: 0,
-    intercept: async (exchange) => {
+    intercept: async exchange => {
       const start = Date.now();
-      console.log(`[${new Date().toISOString()}] ${exchange.request.method} ${exchange.request.url}`);
+      console.log(
+        `[${new Date().toISOString()}] ${exchange.request.method} ${exchange.request.url}`,
+      );
       exchange.attributes.set('requestStartTime', start);
     },
   });
@@ -649,7 +680,7 @@ async function example11_CustomFetcher(): Promise<void> {
   interceptors.request.use({
     name: 'correlation',
     order: 1,
-    intercept: async (exchange) => {
+    intercept: async exchange => {
       const correlationId = crypto.randomUUID();
       exchange.request.headers = exchange.request.headers || {};
       (exchange.request.headers as any)['X-Correlation-ID'] = correlationId;
@@ -661,10 +692,12 @@ async function example11_CustomFetcher(): Promise<void> {
   interceptors.response.use({
     name: 'response-logging',
     order: 0,
-    intercept: async (exchange) => {
+    intercept: async exchange => {
       const start = exchange.attributes.get('requestStartTime') as number;
       const duration = Date.now() - start;
-      console.log(`[${new Date().toISOString()}] Response: ${exchange.response?.status} (${duration}ms)`);
+      console.log(
+        `[${new Date().toISOString()}] Response: ${exchange.response?.status} (${duration}ms)`,
+      );
     },
   });
 
@@ -795,7 +828,11 @@ async function example14_OptimisticLocking(): Promise<void> {
   let currentVersion = currentState.data; // This should have aggregateVersion metadata
 
   // Simulate user making changes
-  async function updateQuantity(productId: string, newQuantity: number, expectedVersion: number): Promise<boolean> {
+  async function updateQuantity(
+    productId: string,
+    newQuantity: number,
+    expectedVersion: number,
+  ): Promise<boolean> {
     const result = await transport.sendCommand<UpdateCartItemQuantityCommand>(
       'UpdateCartItemQuantity',
       { productId, newQuantity },
@@ -809,7 +846,9 @@ async function example14_OptimisticLocking(): Promise<void> {
       console.log(`Updated ${productId} to quantity ${newQuantity}`);
       return true;
     } else if (result.error?.code === 'VERSION_CONFLICT') {
-      console.log(`Version conflict! Cart was modified. Need to refresh and retry.`);
+      console.log(
+        `Version conflict! Cart was modified. Need to refresh and retry.`,
+      );
       return false;
     } else {
       console.error(`Update failed: ${result.error?.message}`);
@@ -818,13 +857,21 @@ async function example14_OptimisticLocking(): Promise<void> {
   }
 
   // First update succeeds
-  const update1 = await updateQuantity('product-1', 5, (currentState.data as any).aggregateVersion ?? 1);
+  const update1 = await updateQuantity(
+    'product-1',
+    5,
+    (currentState.data as any).aggregateVersion ?? 1,
+  );
   if (update1) {
     // Get new version for next update
     const updatedState = await transport.queryState<CartState>('cart', cartId);
     if (updatedState.success) {
       // Second update with old version should fail
-      const update2 = await updateQuantity('product-2', 3, (currentState.data as any).aggregateVersion ?? 1);
+      const update2 = await updateQuantity(
+        'product-2',
+        3,
+        (currentState.data as any).aggregateVersion ?? 1,
+      );
       if (!update2) {
         // Retry with correct version
         const newVersion = (updatedState.data as any).aggregateVersion ?? 2;

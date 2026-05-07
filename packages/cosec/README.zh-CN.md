@@ -191,9 +191,7 @@ const response = await fetcher.get('/protected-endpoint');
 
 ```typescript
 interface CoSecOptions
-  extends AppIdCapable,
-    DeviceIdStorageCapable,
-    JwtTokenManagerCapable {
+  extends AppIdCapable, DeviceIdStorageCapable, JwtTokenManagerCapable {
   // 继承自能力接口
 }
 ```
@@ -460,9 +458,7 @@ interface JwtToken {
 
 ```typescript
 interface CoSecOptions
-  extends AppIdCapable,
-    DeviceIdStorageCapable,
-    JwtTokenManagerCapable {}
+  extends AppIdCapable, DeviceIdStorageCapable, JwtTokenManagerCapable {}
 
 interface AppIdCapable {
   readonly appId: string;

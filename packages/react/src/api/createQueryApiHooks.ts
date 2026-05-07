@@ -12,18 +12,16 @@
  */
 
 import { useCallback } from 'react';
-import type { UseQueryReturn, UseQueryOptions} from '../core';
+import type { UseQueryReturn, UseQueryOptions } from '../core';
 import { useQuery, useLatest } from '../core';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { CreateQueryApiHooksOptions } from './createExecuteApiHooks';
 import type {
   HookName,
   QueryMethod,
-  OnBeforeExecuteCallback} from './apiHooks';
-import {
-  collectMethods,
-  methodNameToHookName
+  OnBeforeExecuteCallback,
 } from './apiHooks';
+import { collectMethods, methodNameToHookName } from './apiHooks';
 
 /**
  * Options for useApiMethodQuery hook.

@@ -38,7 +38,7 @@
     "pass_rate": 1.0
   },
   "execution_metrics": {
-    "tool_calls": {"Read": 2, "Write": 1, "Bash": 0},
+    "tool_calls": { "Read": 2, "Write": 1, "Bash": 0 },
     "total_tool_calls": 3,
     "total_steps": 5,
     "errors_encountered": 0,

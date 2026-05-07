@@ -126,13 +126,11 @@ export const DEFAULT_CALENDAR_FORMATS: CalendarFormats = {
  * };
  * ```
  */
-export interface CalendarTimeProps<RecordType = any>
-  extends CellProps<
-    string | number | Date | Dayjs,
-    RecordType,
-    TextProps & { formats?: CalendarFormats }
-  > {
-}
+export interface CalendarTimeProps<RecordType = any> extends CellProps<
+  string | number | Date | Dayjs,
+  RecordType,
+  TextProps & { formats?: CalendarFormats }
+> {}
 
 /**
  * Renders a calendar time cell using Ant Design's Typography.Text component with dayjs calendar formatting.
@@ -215,5 +213,5 @@ export function CalendarTimeCell<RecordType = any>(
   const format = (dayjs: Dayjs) => {
     return dayjs.calendar(null, formats);
   };
-  return (<DateTimeCell data={data} attributes={{ format, ...textProps }} />);
+  return <DateTimeCell data={data} attributes={{ format, ...textProps }} />;
 }

@@ -39,10 +39,12 @@ const openai = new OpenAI({
 | `apiKey` | `string` | Yes | Your OpenAI API key for authentication |
 
 **Custom base URL examples:**
+
 ```typescript
 // Azure OpenAI
 const openai = new OpenAI({
-  baseURL: 'https://your-resource.openai.azure.com/openai/deployments/your-deployment',
+  baseURL:
+    'https://your-resource.openai.azure.com/openai/deployments/your-deployment',
   apiKey: 'your-azure-api-key',
 });
 
@@ -92,12 +94,13 @@ console.log(response.choices[0].message.content);
 | `stop` | `string \| string[]` | None | Stop sequences |
 
 **Message structure:**
+
 ```typescript
 interface Message {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content?: string;
-  name?: string;           // For tool messages
-  tool_call_id?: string;  // ID of the tool call (for tool role)
+  name?: string; // For tool messages
+  tool_call_id?: string; // ID of the tool call (for tool role)
   tool_calls?: Array<{
     id: string;
     type: 'function';
@@ -109,6 +112,7 @@ interface Message {
 ### 3. Streaming vs Non-Streaming Responses
 
 **Non-streaming (default):**
+
 ```typescript
 const response = await openai.chat.completions({
   model: 'gpt-3.5-turbo',
@@ -120,6 +124,7 @@ console.log(response.choices[0].message.content);
 ```
 
 **Streaming:**
+
 ```typescript
 const stream = await openai.chat.completions({
   model: 'gpt-3.5-turbo',
@@ -140,10 +145,12 @@ for await (const chunk of stream) {
 ```
 
 **Return types:**
+
 - `stream: false` or `undefined` -> `Promise<ChatResponse>`
 - `stream: true` -> `Promise<JsonServerSentEventStream<ChatResponse>>`
 
 **Streaming with progress tracking:**
+
 ```typescript
 let chunksReceived = 0;
 let totalContent = '';
@@ -154,7 +161,9 @@ for await (const chunk of stream) {
   totalContent += content;
 
   if (chunksReceived % 5 === 0) {
-    console.log(`Received ${chunksReceived} chunks, ${totalContent.length} chars`);
+    console.log(
+      `Received ${chunksReceived} chunks, ${totalContent.length} chars`,
+    );
   }
 
   if (chunk.choices[0]?.finish_reason) {
@@ -207,6 +216,7 @@ if (response.choices[0].message.tool_calls) {
 ```
 
 **Tool choice options:**
+
 - `'auto'` - Let the model decide
 - `'none'` - Do not use any tools
 - `{ type: 'function', function: { name: 'function_name' } }` - Force specific function
@@ -247,6 +257,7 @@ const response = await chatService.complete({
 ```
 
 **Alternative: Direct OpenAI usage with decorator-style patterns:**
+
 ```typescript
 // Create a conversation manager class
 class ChatConversation {
@@ -270,7 +281,10 @@ class ChatConversation {
     });
 
     const assistantMessage = response.choices[0].message;
-    this.messages.push({ role: 'assistant', content: assistantMessage.content });
+    this.messages.push({
+      role: 'assistant',
+      content: assistantMessage.content,
+    });
 
     return assistantMessage;
   }
@@ -312,6 +326,7 @@ try {
 ```
 
 **Streaming error handling:**
+
 ```typescript
 try {
   const stream = await openai.chat.completions({
@@ -333,6 +348,7 @@ try {
 ## Advanced Configuration
 
 **Custom Fetcher with interceptors:**
+
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
 
@@ -361,6 +377,7 @@ openai.fetcher = customFetcher;
 ```
 
 **Retry logic:**
+
 ```typescript
 openai.fetcher.defaults.retry = {
   attempts: 3,
@@ -373,10 +390,15 @@ openai.fetcher.defaults.retry = {
 
 ```typescript
 import { OpenAI } from '@ahoo-wang/fetcher-openai';
-import type { ChatRequest, ChatResponse, Message } from '@ahoo-wang/fetcher-openai';
+import type {
+  ChatRequest,
+  ChatResponse,
+  Message,
+} from '@ahoo-wang/fetcher-openai';
 ```
 
 ## Reference Files
 
 For more examples, see:
+
 - `/Users/ahoo/work/ahoo-git/agent-coder/fetcher/packages/openai/README.md` - Full API documentation

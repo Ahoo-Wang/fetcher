@@ -10,6 +10,7 @@ Skill for working with the Wow framework's CQRS (Command Query Responsibility Se
 ## Trigger Conditions
 
 This skill activates when:
+
 - User mentions **Wow**, **CQRS**, **DDD**, **commands**, or **queries**
 - User wants **aggregate**, **command client**, or **query client**
 - User asks about **domain-driven design patterns**
@@ -20,6 +21,7 @@ This skill activates when:
 ### Wow Framework Architecture
 
 The Wow framework implements CQRS + Event Sourcing + DDD:
+
 - **Commands** - Write operations that modify aggregate state
 - **Queries** - Read operations that retrieve snapshot or event data
 - **Aggregates** - Domain entities that maintain state and enforce invariants
@@ -40,14 +42,47 @@ import {
   EventStreamQueryClient,
   QueryClientFactory,
   // Condition builders
-  and, or, eq, ne, gt, lt, gte, lte,
-  contains, isIn, notIn, between, allIn,
-  startsWith, endsWith, match, elemMatch,
-  isNull, notNull, isTrue, isFalse, exists,
-  today, beforeToday, tomorrow, thisWeek, nextWeek, lastWeek,
-  thisMonth, lastMonth, recentDays, earlierDays,
-  active, all, deleted,
-  id, ids, aggregateId, aggregateIds, tenantId, ownerId,
+  and,
+  or,
+  eq,
+  ne,
+  gt,
+  lt,
+  gte,
+  lte,
+  contains,
+  isIn,
+  notIn,
+  between,
+  allIn,
+  startsWith,
+  endsWith,
+  match,
+  elemMatch,
+  isNull,
+  notNull,
+  isTrue,
+  isFalse,
+  exists,
+  today,
+  beforeToday,
+  tomorrow,
+  thisWeek,
+  nextWeek,
+  lastWeek,
+  thisMonth,
+  lastMonth,
+  recentDays,
+  earlierDays,
+  active,
+  all,
+  deleted,
+  id,
+  ids,
+  aggregateId,
+  aggregateIds,
+  tenantId,
+  ownerId,
 } from '@ahoo-wang/fetcher-wow';
 ```
 
@@ -62,7 +97,13 @@ Sends commands to modify aggregate state.
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
 import '@ahoo-wang/fetcher-eventstream';
-import { CommandClient, CommandRequest, HttpMethod, CommandHttpHeaders, CommandStage } from '@ahoo-wang/fetcher-wow';
+import {
+  CommandClient,
+  CommandRequest,
+  HttpMethod,
+  CommandHttpHeaders,
+  CommandStage,
+} from '@ahoo-wang/fetcher-wow';
 
 const fetcher = new Fetcher({
   baseURL: 'http://localhost:8080/',
@@ -105,6 +146,7 @@ console.log(result); // CommandResult
 ```
 
 **CommandStage options:**
+
 - `CommandStage.EVENT` - Wait for event to be persisted
 - `CommandStage.SNAPSHOT` - Wait for snapshot to be updated
 
@@ -133,7 +175,13 @@ Queries materialized snapshots (current state of aggregates).
 ### Setup
 
 ```typescript
-import { SnapshotQueryClient, all, ListQuery, PagedQuery, SingleQuery } from '@ahoo-wang/fetcher-wow';
+import {
+  SnapshotQueryClient,
+  all,
+  ListQuery,
+  PagedQuery,
+  SingleQuery,
+} from '@ahoo-wang/fetcher-wow';
 
 const snapshotClient = new SnapshotQueryClient<CartState>({
   fetcher,
@@ -252,7 +300,12 @@ Queries domain event streams (event history).
 ### Setup
 
 ```typescript
-import { EventStreamQueryClient, all, ListQuery, PagedQuery } from '@ahoo-wang/fetcher-wow';
+import {
+  EventStreamQueryClient,
+  all,
+  ListQuery,
+  PagedQuery,
+} from '@ahoo-wang/fetcher-wow';
 
 const eventClient = new EventStreamQueryClient({
   fetcher,
@@ -316,17 +369,47 @@ Build complex query conditions using the condition builder.
 
 ```typescript
 import {
-  and, or, nor,
-  eq, ne, gt, lt, gte, lte,
-  contains, startsWith, endsWith, match,
-  isIn, notIn, allIn, elemMatch,
-  isNull, notNull, isTrue, isFalse, exists,
-  today, beforeToday, tomorrow,
-  thisWeek, nextWeek, lastWeek,
-  thisMonth, lastMonth,
-  recentDays, earlierDays,
-  active, all, deleted,
-  id, ids, aggregateId, aggregateIds, tenantId, ownerId,
+  and,
+  or,
+  nor,
+  eq,
+  ne,
+  gt,
+  lt,
+  gte,
+  lte,
+  contains,
+  startsWith,
+  endsWith,
+  match,
+  isIn,
+  notIn,
+  allIn,
+  elemMatch,
+  isNull,
+  notNull,
+  isTrue,
+  isFalse,
+  exists,
+  today,
+  beforeToday,
+  tomorrow,
+  thisWeek,
+  nextWeek,
+  lastWeek,
+  thisMonth,
+  lastMonth,
+  recentDays,
+  earlierDays,
+  active,
+  all,
+  deleted,
+  id,
+  ids,
+  aggregateId,
+  aggregateIds,
+  tenantId,
+  ownerId,
   raw,
 } from '@ahoo-wang/fetcher-wow';
 ```
@@ -334,75 +417,75 @@ import {
 ### Comparison Operators
 
 ```typescript
-eq('status', 'active')       // Equal
-ne('status', 'inactive')    // Not equal
-gt('age', 18)               // Greater than
-lt('score', 100)            // Less than
-gte('rating', 4.0)         // Greater than or equal
-lte('price', 100)          // Less than or equal
-between('salary', 50000, 100000)  // Between two values
+eq('status', 'active'); // Equal
+ne('status', 'inactive'); // Not equal
+gt('age', 18); // Greater than
+lt('score', 100); // Less than
+gte('rating', 4.0); // Greater than or equal
+lte('price', 100); // Less than or equal
+between('salary', 50000, 100000); // Between two values
 ```
 
 ### String Operators
 
 ```typescript
-contains('email', '@company.com')  // Contains substring
-startsWith('username', 'j')       // Starts with prefix
-endsWith('domain', '.com')         // Ends with suffix
-match('description', 'keywords')  // Full-text search
+contains('email', '@company.com'); // Contains substring
+startsWith('username', 'j'); // Starts with prefix
+endsWith('domain', '.com'); // Ends with suffix
+match('description', 'keywords'); // Full-text search
 ```
 
 ### Collection Operators
 
 ```typescript
-isIn('status', 'active', 'pending', 'review')  // In list
-notIn('role', 'guest', 'banned')              // Not in list
-allIn('tags', 'react', 'typescript')          // Contains all values
-elemMatch('items', eq('quantity', 0))         // Array element matches
+isIn('status', 'active', 'pending', 'review'); // In list
+notIn('role', 'guest', 'banned'); // Not in list
+allIn('tags', 'react', 'typescript'); // Contains all values
+elemMatch('items', eq('quantity', 0)); // Array element matches
 ```
 
 ### Null/Boolean Operators
 
 ```typescript
-isNull('deletedAt')     // Is null
-notNull('email')        // Is not null
-isTrue('isActive')      // Is true
-isFalse('isDeleted')    // Is false
-exists('phoneNumber')   // Field exists
+isNull('deletedAt'); // Is null
+notNull('email'); // Is not null
+isTrue('isActive'); // Is true
+isFalse('isDeleted'); // Is false
+exists('phoneNumber'); // Field exists
 ```
 
 ### Date Operators
 
 ```typescript
-today('createdAt')             // Is today
-beforeToday('lastLogin', 7)   // Within last N days
-tomorrow('scheduledDate')     // Is tomorrow
-thisWeek('updatedAt')         // Within this week
-nextWeek('startDate')         // Within next week
-lastWeek('endDate')           // Within last week
-thisMonth('createdDate')      // Within this month
-lastMonth('expirationDate')   // Within last month
-recentDays('createdAt', 5)    // Last N days (including today)
-earlierDays('createdAt', 3)   // More than N days ago
+today('createdAt'); // Is today
+beforeToday('lastLogin', 7); // Within last N days
+tomorrow('scheduledDate'); // Is tomorrow
+thisWeek('updatedAt'); // Within this week
+nextWeek('startDate'); // Within next week
+lastWeek('endDate'); // Within last week
+thisMonth('createdDate'); // Within this month
+lastMonth('expirationDate'); // Within last month
+recentDays('createdAt', 5); // Last N days (including today)
+earlierDays('createdAt', 3); // More than N days ago
 ```
 
 ### ID Operators
 
 ```typescript
-id('abc-123')                    // By ID
-ids('abc-123', 'def-456')        // By multiple IDs
-aggregateId('agg-789')           // By aggregate ID
-aggregateIds('agg-1', 'agg-2')  // By multiple aggregate IDs
-tenantId('tenant-abc')           // By tenant ID
-ownerId('owner-123')             // By owner ID
+id('abc-123'); // By ID
+ids('abc-123', 'def-456'); // By multiple IDs
+aggregateId('agg-789'); // By aggregate ID
+aggregateIds('agg-1', 'agg-2'); // By multiple aggregate IDs
+tenantId('tenant-abc'); // By tenant ID
+ownerId('owner-123'); // By owner ID
 ```
 
 ### State Operators
 
 ```typescript
-active()   // Not deleted
-deleted()  // Is deleted
-all()      // All (no filter)
+active(); // Not deleted
+deleted(); // Is deleted
+all(); // All (no filter)
 ```
 
 ### Logical Operators
@@ -415,14 +498,14 @@ and(
     isIn('department', 'engineering', 'marketing'),
   ),
   between('salary', 50000, 100000),
-)
+);
 ```
 
 ### Special Operators
 
 ```typescript
 // Raw condition for advanced queries
-raw({ $text: { $search: 'keywords' } })
+raw({ $text: { $search: 'keywords' } });
 ```
 
 ---
@@ -434,7 +517,10 @@ Factory for creating pre-configured typed query clients.
 ### Setup
 
 ```typescript
-import { QueryClientFactory, ResourceAttributionPathSpec } from '@ahoo-wang/fetcher-wow';
+import {
+  QueryClientFactory,
+  ResourceAttributionPathSpec,
+} from '@ahoo-wang/fetcher-wow';
 
 const factory = new QueryClientFactory({
   contextAlias: 'example',
@@ -494,8 +580,8 @@ const events = await eventClient.list({ condition: all() });
 const stream = await commandClient.sendAndWaitStream('add_cart_item', command);
 
 for await (const event of stream) {
-  console.log(event.stage);  // CommandStage
-  console.log(event.data);   // Result data
+  console.log(event.stage); // CommandStage
+  console.log(event.data); // Result data
   if (event.type === 'complete') break;
 }
 ```
@@ -531,7 +617,10 @@ When using `@ahoo-wang/fetcher-generator`, clients are auto-generated:
 ### Command Client
 
 ```typescript
-import { cartCommandClient, CartCommandEndpointPaths } from './generated/example/cart/commandClient';
+import {
+  cartCommandClient,
+  CartCommandEndpointPaths,
+} from './generated/example/cart/commandClient';
 
 // Using auto-generated client
 await cartCommandClient.addCartItem({

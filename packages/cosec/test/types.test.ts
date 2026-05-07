@@ -12,13 +12,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type {
-  AuthorizeResult} from '../src';
-import {
-  AuthorizeResults,
-  CoSecHeaders,
-  ResponseCodes,
-} from '../src';
+import type { AuthorizeResult } from '../src';
+import { AuthorizeResults, CoSecHeaders, ResponseCodes } from '../src';
 
 describe('types.ts', () => {
   describe('CoSecHeaders', () => {

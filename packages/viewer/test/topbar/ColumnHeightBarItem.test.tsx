@@ -77,7 +77,10 @@ describe('ColumnHeightBarItem', () => {
   describe('style and className', () => {
     it('should accept className prop', () => {
       const { container } = render(
-        <ColumnHeightBarItem defaultTableSize="middle" className="custom-class" />,
+        <ColumnHeightBarItem
+          defaultTableSize="middle"
+          className="custom-class"
+        />,
       );
 
       expect(container.firstChild).toBeInTheDocument();
@@ -89,7 +92,9 @@ describe('ColumnHeightBarItem', () => {
       const { container } = render(
         <ColumnHeightBarItem defaultTableSize="middle" />,
       );
-      expect(container.querySelector('[data-testid="tooltip"]')).toBeInTheDocument();
+      expect(
+        container.querySelector('[data-testid="tooltip"]'),
+      ).toBeInTheDocument();
     });
   });
 });

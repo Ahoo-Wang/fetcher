@@ -53,18 +53,19 @@ import { Typography, Card, Space, List, Alert, Divider, Button } from 'antd';
 
 // 发送浏览器通知
 await notificationCenter.publish('browser', {
-  title: '提示',
-  payload: {
-    body: '这是一条通知消息',
-    icon: '/icon.png',
-    tag: 'msg-1'
-  }
+title: '提示',
+payload: {
+body: '这是一条通知消息',
+icon: '/icon.png',
+tag: 'msg-1'
+}
 });`}</pre>
-    </Card>
+
+</Card>
 
     <Card>
       <Typography.Title level={4}>🔌 API 参考</Typography.Title>
-      
+
       <Typography.Title level={5}>notificationCenter.publish(type, message)</Typography.Title>
       <Typography.Paragraph>发布通知事件到事件总线，触发对应渠道发送通知</Typography.Paragraph>
       <List
@@ -111,25 +112,27 @@ await notificationCenter.publish('browser', {
         overflow: 'auto',
         fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
         fontSize: '13px'
-      }}>{`import { 
-  notificationCenter, 
-  BROWSER_NOTIFICATION_TYPE 
+      }}>{`import {
+
+notificationCenter,
+BROWSER_NOTIFICATION_TYPE
 } from '@ahoo-wang/fetcher-react';
 
 // 发送浏览器通知
 await notificationCenter.publish(BROWSER_NOTIFICATION_TYPE, {
-  title: '新消息',
-  payload: {
-    body: '您有新的未读消息',
-    icon: '/favicon.ico',
-    tag: 'message-123',
-    requireInteraction: true
-  },
-  onClick: () => {
-    console.log('通知被点击');
-  }
+title: '新消息',
+payload: {
+body: '您有新的未读消息',
+icon: '/favicon.ico',
+tag: 'message-123',
+requireInteraction: true
+},
+onClick: () => {
+console.log('通知被点击');
+}
 });`}</pre>
-    </Card>
+
+</Card>
 
     <Card>
       <Typography.Title level={4}>🔧 扩展自定义渠道</Typography.Title>
@@ -144,21 +147,22 @@ await notificationCenter.publish(BROWSER_NOTIFICATION_TYPE, {
         overflow: 'auto',
         fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
         fontSize: '13px'
-      }}>{`import { 
-  channelRegistry, 
-  NotificationChannel,
-  Message 
+      }}>{`import {
+
+channelRegistry,
+NotificationChannel,
+Message
 } from '@ahoo-wang/fetcher-react';
 
 // 定义自定义渠道
 class SlackChannel implements NotificationChannel {
-  async send(message: Message): Promise<void> {
-    // 调用 Slack Webhook 发送通知
-    await fetch('https://slack.com/webhook', {
-      method: 'POST',
-      body: JSON.stringify({ text: message.title })
-    });
-  }
+async send(message: Message): Promise<void> {
+// 调用 Slack Webhook 发送通知
+await fetch('https://slack.com/webhook', {
+method: 'POST',
+body: JSON.stringify({ text: message.title })
+});
+}
 }
 
 // 注册渠道
@@ -166,14 +170,15 @@ channelRegistry.register('slack', new SlackChannel());
 
 // 使用自定义渠道
 await notificationCenter.publish('slack', {
-  title: '系统告警',
-  payload: { level: 'warning' }
+title: '系统告警',
+payload: { level: 'warning' }
 });`}</pre>
-    </Card>
+
+</Card>
 
     <Card>
       <Typography.Title level={4}>📱 渠道注册表 API</Typography.Title>
-      
+
       <Typography.Title level={5}>channelRegistry.register(type, channel)</Typography.Title>
       <List
         size="small"
@@ -226,7 +231,7 @@ await notificationCenter.publish('slack', {
       <Typography.Paragraph>
         React Hook，用于在组件中发送通知或订阅通知事件，自动管理订阅生命周期
       </Typography.Paragraph>
-      
+
       <Typography.Title level={5}>基本用法</Typography.Title>
       <pre style={{
         background: '#f6f8fa',
@@ -239,16 +244,16 @@ await notificationCenter.publish('slack', {
       }}>{`import { useNotificationCenter } from '@ahoo-wang/fetcher-react';
 
 function MyComponent() {
-  const { send } = useNotificationCenter();
+const { send } = useNotificationCenter();
 
-  const handleNotify = async () => {
-    await send('browser', {
-      title: '提示',
-      payload: { body: '消息内容' }
-    });
-  };
+const handleNotify = async () => {
+await send('browser', {
+title: '提示',
+payload: { body: '消息内容' }
+});
+};
 
-  return <button onClick={handleNotify}>发送通知</button>;
+return <button onClick={handleNotify}>发送通知</button>;
 }`}</pre>
 
       <Typography.Title level={5}>监听通知事件</Typography.Title>
@@ -263,20 +268,20 @@ function MyComponent() {
       }}>{`import { useNotificationCenter } from '@ahoo-wang/fetcher-react';
 
 function NotificationLogger() {
-  const { subscribe, unsubscribe } = useNotificationCenter({
-    channelType: 'browser',
-    onNotification: (event) => {
-      console.log('收到通知:', event.message.title);
-    }
-  });
+const { subscribe, unsubscribe } = useNotificationCenter({
+channelType: 'browser',
+onNotification: (event) => {
+console.log('收到通知:', event.message.title);
+}
+});
 
-  // 组件挂载时自动订阅，卸载时自动取消
-  useEffect(() => {
-    subscribe();
-    return () => unsubscribe();
-  }, []);
+// 组件挂载时自动订阅，卸载时自动取消
+useEffect(() => {
+subscribe();
+return () => unsubscribe();
+}, []);
 
-  return <div>监听通知中...</div>;
+return <div>监听通知中...</div>;
 }`}</pre>
 
       <Typography.Title level={5}>API</Typography.Title>

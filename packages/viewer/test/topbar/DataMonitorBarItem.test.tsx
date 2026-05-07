@@ -125,7 +125,9 @@ describe('DataMonitorBarItem', () => {
     it('should render with Tooltip', () => {
       const { container } = render(<DataMonitorBarItem {...defaultProps} />);
 
-      const tooltipElement = container.querySelector('.ant-tooltip-open') || container.querySelector('[class*="tooltip"]');
+      const tooltipElement =
+        container.querySelector('.ant-tooltip-open') ||
+        container.querySelector('[class*="tooltip"]');
       expect(tooltipElement || container.firstChild).toBeInTheDocument();
     });
   });

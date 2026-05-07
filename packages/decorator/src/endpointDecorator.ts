@@ -19,9 +19,7 @@ export interface PathCapable {
  * These settings will override any corresponding class-level settings from ApiMetadata.
  */
 export interface EndpointMetadata
-  extends ApiMetadata,
-    ResultExtractorCapable,
-    PathCapable {
+  extends ApiMetadata, ResultExtractorCapable, PathCapable {
   /**
    * HTTP method for the endpoint.
    *

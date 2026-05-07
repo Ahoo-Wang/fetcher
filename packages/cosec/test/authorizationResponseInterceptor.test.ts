@@ -19,7 +19,7 @@ import {
   RefreshTokenError,
 } from '../src';
 import { ResponseCodes, type CoSecOptions } from '../src';
-import type { FetchExchange} from '@ahoo-wang/fetcher';
+import type { FetchExchange } from '@ahoo-wang/fetcher';
 import { type Fetcher } from '@ahoo-wang/fetcher';
 import { JwtTokenManager } from '../src';
 import type { TokenStorage } from '../src';

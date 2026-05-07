@@ -41,8 +41,10 @@ export type TerminateDetector = (event: ServerSentEvent) => boolean;
  *
  * @template DATA - The expected type of the parsed JSON data
  */
-export interface JsonServerSentEvent<DATA>
-  extends Omit<ServerSentEvent, 'data'> {
+export interface JsonServerSentEvent<DATA> extends Omit<
+  ServerSentEvent,
+  'data'
+> {
   /** The parsed JSON data from the event */
   data: DATA;
 }
@@ -56,9 +58,10 @@ export interface JsonServerSentEvent<DATA>
  *
  * @template DATA - The expected type of the parsed JSON data in each event
  */
-export class JsonServerSentEventTransform<DATA>
-  implements Transformer<ServerSentEvent, JsonServerSentEvent<DATA>>
-{
+export class JsonServerSentEventTransform<DATA> implements Transformer<
+  ServerSentEvent,
+  JsonServerSentEvent<DATA>
+> {
   /**
    * Creates a new JsonServerSentEventTransform instance.
    *

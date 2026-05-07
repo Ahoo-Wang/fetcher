@@ -11,8 +11,7 @@
  * limitations under the License.
  */
 
-import type {
-  FetchExchange} from '@ahoo-wang/fetcher';
+import type { FetchExchange } from '@ahoo-wang/fetcher';
 import {
   DEFAULT_INTERCEPTOR_ORDER_STEP,
   type RequestInterceptor,

@@ -1,4 +1,8 @@
-import { isBrowser, getStorage, InMemoryStorage } from '@ahoo-wang/fetcher-storage';
+import {
+  isBrowser,
+  getStorage,
+  InMemoryStorage,
+} from '@ahoo-wang/fetcher-storage';
 
 interface CacheEntry<T> {
   data: T;

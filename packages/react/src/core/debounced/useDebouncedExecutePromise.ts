@@ -13,16 +13,14 @@
 
 import type {
   UseExecutePromiseOptions,
-  UseExecutePromiseReturn} from '../useExecutePromise';
-import {
-  useExecutePromise
+  UseExecutePromiseReturn,
 } from '../useExecutePromise';
+import { useExecutePromise } from '../useExecutePromise';
 import type {
   UseDebouncedCallbackOptions,
-  UseDebouncedCallbackReturn} from './useDebouncedCallback';
-import {
-  useDebouncedCallback
+  UseDebouncedCallbackReturn,
 } from './useDebouncedCallback';
+import { useDebouncedCallback } from './useDebouncedCallback';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import { useMemo } from 'react';
 
@@ -49,8 +47,7 @@ export interface DebounceCapable {
  * @template E - The type of the error (defaults to unknown)
  */
 export interface UseDebouncedExecutePromiseOptions<R, E = unknown>
-  extends UseExecutePromiseOptions<R, E>,
-    DebounceCapable {}
+  extends UseExecutePromiseOptions<R, E>, DebounceCapable {}
 
 /**
  * Return type for the useDebouncedExecutePromise hook.
@@ -61,7 +58,8 @@ export interface UseDebouncedExecutePromiseOptions<R, E = unknown>
  * @template E - The type of the error (defaults to unknown)
  */
 export interface UseDebouncedExecutePromiseReturn<R, E = unknown>
-  extends Omit<UseExecutePromiseReturn<R, E>, 'execute'>,
+  extends
+    Omit<UseExecutePromiseReturn<R, E>, 'execute'>,
     UseDebouncedCallbackReturn<UseExecutePromiseReturn<R, E>['execute']> {}
 
 /**

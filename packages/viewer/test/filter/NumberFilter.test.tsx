@@ -22,9 +22,7 @@ import { FilterProps, FilterRef } from '../../src/filter/types';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 
 // 测试辅助函数
-const createMockProps = (
-  overrides: Partial<FilterProps> = {},
-): FilterProps => {
+const createMockProps = (overrides: Partial<FilterProps> = {}): FilterProps => {
   const defaultProps: FilterProps = {
     field: {
       name: 'testField',

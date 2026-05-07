@@ -1,6 +1,6 @@
 /**
  * - key: Pet
- * - schema: 
+ * - schema:
  * ```json
  * {
  *   "type": "object",
@@ -22,15 +22,15 @@
  * ```
  */
 export interface Pet {
-    id: string;
-    name: string;
-    species: string;
-    age: number;
+  id: string;
+  name: string;
+  species: string;
+  age: number;
 }
 
 /**
  * - key: PetInput
- * - schema: 
+ * - schema:
  * ```json
  * {
  *   "type": "object",
@@ -53,7 +53,7 @@ export interface Pet {
  * ```
  */
 export interface PetInput {
-    name: string;
-    species: string;
-    age: number;
+  name: string;
+  species: string;
+  age: number;
 }

@@ -12,7 +12,7 @@
  */
 
 import { ResponseCodes } from './types';
-import type { FetchExchange} from '@ahoo-wang/fetcher';
+import type { FetchExchange } from '@ahoo-wang/fetcher';
 import { type ResponseInterceptor } from '@ahoo-wang/fetcher';
 import type { AuthorizationInterceptorOptions } from './authorizationRequestInterceptor';
 
