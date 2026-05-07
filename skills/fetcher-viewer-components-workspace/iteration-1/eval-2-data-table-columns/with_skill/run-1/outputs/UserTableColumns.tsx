@@ -1,5 +1,11 @@
 import type { TableColumnsType } from 'antd';
-import { TextCell, TagCell, CurrencyCell, DateTimeCell, ActionCell } from '@ahoo-wang/fetcher-viewer/table/cell';
+import {
+  TextCell,
+  TagCell,
+  CurrencyCell,
+  DateTimeCell,
+  ActionCell,
+} from '@ahoo-wang/fetcher-viewer/table/cell';
 
 export interface User {
   id: number;
@@ -36,10 +42,7 @@ export const userTableColumns: TableColumnsType<User> = [
     title: 'Status',
     dataIndex: 'status',
     render: (value: string, record: User, index: number) => (
-      <TagCell
-        data={{ value, record, index }}
-        attributes={{ color: 'blue' }}
-      />
+      <TagCell data={{ value, record, index }} attributes={{ color: 'blue' }} />
     ),
   },
   {

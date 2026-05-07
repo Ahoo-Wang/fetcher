@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { OrderedCapable} from '../src';
+import type { OrderedCapable } from '../src';
 import { toSorted } from '../src';
 
 describe('orderedCapable.ts', () => {

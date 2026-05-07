@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { RefObject} from 'react';
+import type { RefObject } from 'react';
 import { useRef } from 'react';
 
 /**

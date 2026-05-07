@@ -16,10 +16,9 @@ import { Modal } from 'antd';
 import type {
   AvailableFilter,
   AvailableFilterSelectProps,
-  AvailableFilterSelectRef} from './AvailableFilterSelect';
-import {
-  AvailableFilterSelect
+  AvailableFilterSelectRef,
 } from './AvailableFilterSelect';
+import { AvailableFilterSelect } from './AvailableFilterSelect';
 import React, { useRef } from 'react';
 
 export interface AvailableFiltersModalProps extends Omit<ModalProps, 'onOk'> {

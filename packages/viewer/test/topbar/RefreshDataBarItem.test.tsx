@@ -46,9 +46,7 @@ describe('RefreshDataBarItem', () => {
 
     it('should render with custom style', () => {
       const style = { marginTop: '10px' };
-      const { container } = render(
-        <RefreshDataBarItem style={style} />,
-      );
+      const { container } = render(<RefreshDataBarItem style={style} />);
       expect(container.firstChild).toHaveStyle(style);
     });
 
@@ -122,7 +120,9 @@ describe('RefreshDataBarItem', () => {
   describe('Tooltip', () => {
     it('should render with Tooltip', () => {
       const { container } = render(<RefreshDataBarItem />);
-      const tooltip = container.querySelector('.ant-tooltip-open') || container.querySelector('[class*="tooltip"]');
+      const tooltip =
+        container.querySelector('.ant-tooltip-open') ||
+        container.querySelector('[class*="tooltip"]');
       expect(tooltip || container.firstChild).toBeInTheDocument();
     });
   });

@@ -12,14 +12,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import type {
-  FetchRequest} from '../src';
-import {
-  DEFAULT_OPTIONS,
-  Fetcher,
-  FetcherError,
-  HttpMethod,
-} from '../src';
+import type { FetchRequest } from '../src';
+import { DEFAULT_OPTIONS, Fetcher, FetcherError, HttpMethod } from '../src';
 
 describe('Fetcher', () => {
   it('should create Fetcher with default options', () => {

@@ -68,7 +68,10 @@ class MultiSpaceFetcherRegistry {
   private tokenStorageFactory = new SpaceTokenStorageFactory();
   private tokenRefresherFactory = new SpaceTokenRefresherFactory();
 
-  getFetcher(spaceId: string, baseURL: string = 'https://api.example.com'): Fetcher {
+  getFetcher(
+    spaceId: string,
+    baseURL: string = 'https://api.example.com',
+  ): Fetcher {
     if (this.fetchers.has(spaceId)) {
       return this.fetchers.get(spaceId)!;
     }
@@ -79,7 +82,7 @@ class MultiSpaceFetcherRegistry {
 
     // Configure SpaceIdProvider
     const spaceIdProvider: SpaceIdProvider = {
-      resolveSpaceId: (exchange) => {
+      resolveSpaceId: exchange => {
         // Extract from header
         return exchange.request.headers['X-Current-Space'] || spaceId;
       },

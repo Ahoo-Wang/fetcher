@@ -11,14 +11,8 @@
  * limitations under the License.
  */
 
-import type {
-  CoSecJwtPayload,
-  EarlyPeriodCapable,
-  JwtPayload} from './jwts';
-import {
-  isTokenExpired,
-  parseJwtPayload,
-} from './jwts';
+import type { CoSecJwtPayload, EarlyPeriodCapable, JwtPayload } from './jwts';
+import { isTokenExpired, parseJwtPayload } from './jwts';
 import type { CompositeToken } from './tokenRefresher';
 import type { Serializer } from '@ahoo-wang/fetcher-storage';
 
@@ -167,7 +161,8 @@ export interface RefreshTokenStatusCapable {
  * ```
  */
 export class JwtCompositeToken
-  implements EarlyPeriodCapable, RefreshTokenStatusCapable {
+  implements EarlyPeriodCapable, RefreshTokenStatusCapable
+{
   /**
    * The access JWT token instance.
    */
@@ -238,14 +233,14 @@ export class JwtCompositeToken
  * ```
  */
 export class JwtCompositeTokenSerializer
-  implements Serializer<string, JwtCompositeToken>, EarlyPeriodCapable {
+  implements Serializer<string, JwtCompositeToken>, EarlyPeriodCapable
+{
   /**
    * Creates a new JwtCompositeTokenSerializer instance.
    *
    * @param earlyPeriod The early expiration period in milliseconds to use for deserialized tokens (default: 0)
    */
-  constructor(public readonly earlyPeriod: number = 0) {
-  }
+  constructor(public readonly earlyPeriod: number = 0) {}
 
   /**
    * Deserializes a JSON string to a JwtCompositeToken.

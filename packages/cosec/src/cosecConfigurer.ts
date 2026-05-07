@@ -11,7 +11,11 @@
  * limitations under the License.
  */
 
-import type { Fetcher, FetcherConfigurer, FetchExchange } from '@ahoo-wang/fetcher';
+import type {
+  Fetcher,
+  FetcherConfigurer,
+  FetchExchange,
+} from '@ahoo-wang/fetcher';
 import { AuthorizationRequestInterceptor } from './authorizationRequestInterceptor';
 import { AuthorizationResponseInterceptor } from './authorizationResponseInterceptor';
 import { CoSecRequestInterceptor } from './cosecRequestInterceptor';

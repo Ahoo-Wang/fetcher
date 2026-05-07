@@ -11,12 +11,8 @@
  * limitations under the License.
  */
 
-import type {
-  FetchExchange,
-  RequestInterceptor} from '@ahoo-wang/fetcher';
-import {
-  DEFAULT_INTERCEPTOR_ORDER_STEP
-} from '@ahoo-wang/fetcher';
+import type { FetchExchange, RequestInterceptor } from '@ahoo-wang/fetcher';
+import { DEFAULT_INTERCEPTOR_ORDER_STEP } from '@ahoo-wang/fetcher';
 import {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
   IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
@@ -25,9 +21,7 @@ import type { JwtTokenManagerCapable } from './types';
 import { CoSecHeaders } from './types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface AuthorizationInterceptorOptions
-  extends JwtTokenManagerCapable {
-}
+export interface AuthorizationInterceptorOptions extends JwtTokenManagerCapable {}
 
 export const AUTHORIZATION_REQUEST_INTERCEPTOR_NAME =
   'AuthorizationRequestInterceptor';
@@ -53,8 +47,7 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
    *
    * @param options - Configuration options containing the token manager
    */
-  constructor(private readonly options: AuthorizationInterceptorOptions) {
-  }
+  constructor(private readonly options: AuthorizationInterceptorOptions) {}
 
   /**
    * Intercepts the request exchange to add authorization headers.

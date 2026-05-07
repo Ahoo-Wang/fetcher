@@ -66,7 +66,8 @@ export const Default: Story = {
     views: sampleViews,
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) =>
+      console.log('View changed to:', view.name),
   },
 };
 
@@ -76,7 +77,8 @@ export const OnlyPersonalViews: Story = {
     views: sampleViews.filter(v => v.type === 'PERSONAL'),
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) =>
+      console.log('View changed to:', view.name),
   },
 };
 
@@ -86,7 +88,8 @@ export const OnlyPublicViews: Story = {
     views: sampleViews.filter(v => v.type === 'SHARED'),
     activeView: sampleViews[2],
     countUrl: '/api/count',
-    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) =>
+      console.log('View changed to:', view.name),
   },
 };
 
@@ -95,6 +98,7 @@ export const SingleView: Story = {
     views: [sampleViews[0]],
     activeView: sampleViews[0],
     countUrl: '/api/count',
-    onSwitchView: (view: ViewState) => console.log('View changed to:', view.name),
+    onSwitchView: (view: ViewState) =>
+      console.log('View changed to:', view.name),
   },
 };

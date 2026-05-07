@@ -46,7 +46,10 @@ export function ViewManageItem(props: ViewManageItemProps) {
             help={viewName.trim() === '' ? '请输入视图名称' : ''}
             style={{ marginBottom: 0, flex: 1 }}
           >
-            <Input value={viewName} onChange={e => setViewName(e.target.value)} />
+            <Input
+              value={viewName}
+              onChange={e => setViewName(e.target.value)}
+            />
           </Form.Item>
           <Space orientation="horizontal">
             <Button type="default" size="small" onClick={handleCancel}>

@@ -9,8 +9,8 @@ const localeValues: Locale = {
     viewType: {
       name: '视图类型',
       personal: '个人',
-      shared: '共享'
-    }
+      shared: '共享',
+    },
   },
 
   filterPanel: {
@@ -21,22 +21,22 @@ const localeValues: Locale = {
   topBar: {
     tableSize: {
       middle: '标准',
-      small: '紧凑'
+      small: '紧凑',
     },
     autoRefresh: {
-      title: '自动刷新'
-    }
+      title: '自动刷新',
+    },
   },
 
-  selectedCountLabel: "已选择 %@ 条数据",
+  selectedCountLabel: '已选择 %@ 条数据',
   createViewMethod: {
     create: '创建视图',
-    saveAs: '另存为新视图'
+    saveAs: '另存为新视图',
   },
   viewPanel: {
     saveButton: '保存',
     cancelButton: '取消',
-  }
+  },
 };
 
 export default localeValues;

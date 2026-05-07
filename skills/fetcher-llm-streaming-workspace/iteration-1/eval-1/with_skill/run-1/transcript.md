@@ -1,9 +1,11 @@
 # Transcript: Eval 1 with_skill - SSE Termination Detection
 
 ## Task
+
 Parse SSE events from an LLM API with proper termination detection.
 
 ## Prompt
+
 "How do I parse SSE events from an LLM API with proper termination detection? I need to handle the [DONE] signal and clean up the stream properly."
 
 ## Execution Steps
@@ -15,6 +17,7 @@ Parse SSE events from an LLM API with proper termination detection.
 5. Proper stream cleanup with break on finish_reason
 
 ## Key Patterns Used
+
 - `requiredEventStream()` for SSE stream extraction
 - `TerminateDetector` type for clean termination
 - OpenAI-style `event.data === '[DONE]'` check

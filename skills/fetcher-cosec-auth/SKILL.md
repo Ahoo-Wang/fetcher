@@ -12,6 +12,7 @@ This skill helps developers implement enterprise authentication using the CoSec 
 ## Trigger Conditions
 
 This skill activates when users mention:
+
 - CoSec, authentication, token refresh
 - JWT, device ID, multi-tenant support
 - 401/403 error handling
@@ -47,7 +48,7 @@ const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 const configurer = new CoSecConfigurer({
   appId: 'your-app-id',
   tokenRefresher: {
-    refresh: async (token) => {
+    refresh: async token => {
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
         body: JSON.stringify({ refreshToken: token.refreshToken }),
@@ -55,10 +56,10 @@ const configurer = new CoSecConfigurer({
       return response.json();
     },
   },
-  onUnauthorized: (exchange) => {
+  onUnauthorized: exchange => {
     window.location.href = '/login';
   },
-  onForbidden: (exchange) => {
+  onForbidden: exchange => {
     alert('Access denied');
   },
 });
@@ -68,27 +69,30 @@ configurer.applyTo(fetcher);
 
 ### Configuration Options
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `appId` | `string` | **Required.** Application identifier for CoSec headers |
-| `tokenStorage` | `TokenStorage` | Custom token storage (defaults to localStorage) |
-| `deviceIdStorage` | `DeviceIdStorage` | Custom device ID storage |
-| `tokenRefresher` | `TokenRefresher` | Enables JWT auth interceptors when provided |
-| `spaceIdProvider` | `SpaceIdProvider` | Enables multi-tenant support |
-| `onUnauthorized` | `(exchange) => void` | Custom 401 error handler |
-| `onForbidden` | `(exchange) => void` | Custom 403 error handler |
+| Option            | Type                 | Description                                            |
+| ----------------- | -------------------- | ------------------------------------------------------ |
+| `appId`           | `string`             | **Required.** Application identifier for CoSec headers |
+| `tokenStorage`    | `TokenStorage`       | Custom token storage (defaults to localStorage)        |
+| `deviceIdStorage` | `DeviceIdStorage`    | Custom device ID storage                               |
+| `tokenRefresher`  | `TokenRefresher`     | Enables JWT auth interceptors when provided            |
+| `spaceIdProvider` | `SpaceIdProvider`    | Enables multi-tenant support                           |
+| `onUnauthorized`  | `(exchange) => void` | Custom 401 error handler                               |
+| `onForbidden`     | `(exchange) => void` | Custom 403 error handler                               |
 
 ### Conditional Interceptor Registration
 
 **Always added:**
+
 - `CoSecRequestInterceptor` - Adds CoSec headers (appId, deviceId, requestId)
 - `ResourceAttributionRequestInterceptor` - Adds tenant/owner path parameters
 
 **Only when `tokenRefresher` is provided:**
+
 - `AuthorizationRequestInterceptor` - Adds Bearer token authentication
 - `AuthorizationResponseInterceptor` - Handles token refresh on 401
 
 **Only when handlers are provided:**
+
 - `UnauthorizedErrorInterceptor` - Handles 401 errors
 - `ForbiddenErrorInterceptor` - Handles 403 errors
 
@@ -248,6 +252,7 @@ const newId = deviceStorage.generateDeviceId();
 ```
 
 **Headers Added:**
+
 - `CoSec-Device-Id: <device-id>`
 
 ---
@@ -267,9 +272,11 @@ fetcher.interceptors.request.use(
 ```
 
 **Headers Added:**
+
 - `Authorization: Bearer <access-token>`
 
 **Behavior:**
+
 1. Checks if Authorization header is already present (skips if so)
 2. Refreshes token if needed and refreshable
 3. Adds Bearer token to request
@@ -291,6 +298,7 @@ fetcher.interceptors.response.use(
 ```
 
 **Behavior:**
+
 1. Detects 401 responses
 2. Attempts token refresh using configured TokenRefresher
 3. Retries original request with new token
@@ -355,13 +363,16 @@ const spaceIdProvider: SpaceIdProvider = {
 Combines predicate-based filtering with persistent storage.
 
 ```typescript
-import { DefaultSpaceIdProvider, SpaceIdStorage } from '@ahoo-wang/fetcher-cosec';
+import {
+  DefaultSpaceIdProvider,
+  SpaceIdStorage,
+} from '@ahoo-wang/fetcher-cosec';
 
 const spaceStorage = new SpaceIdStorage();
 
 const spaceIdProvider = new DefaultSpaceIdProvider({
   spacedResourcePredicate: {
-    test: (exchange) => exchange.request.url.includes('/spaces/'),
+    test: exchange => exchange.request.url.includes('/spaces/'),
   },
   spaceIdStorage: spaceStorage,
 });
@@ -392,7 +403,7 @@ import { UnauthorizedErrorInterceptor } from '@ahoo-wang/fetcher-cosec';
 
 fetcher.interceptors.error.use(
   new UnauthorizedErrorInterceptor({
-    onUnauthorized: (exchange) => {
+    onUnauthorized: exchange => {
       console.log('Authentication failed for:', exchange.request.url);
       tokenStorage.signOut();
       window.location.href = '/login';
@@ -402,6 +413,7 @@ fetcher.interceptors.error.use(
 ```
 
 **Triggers on:**
+
 - HTTP 401 responses
 - `RefreshTokenError` exceptions (refresh token invalid/expired)
 
@@ -414,7 +426,7 @@ import { ForbiddenErrorInterceptor } from '@ahoo-wang/fetcher-cosec';
 
 fetcher.interceptors.error.use(
   new ForbiddenErrorInterceptor({
-    onForbidden: (exchange) => {
+    onForbidden: exchange => {
       console.log('Access forbidden for:', exchange.request.url);
       alert('You do not have permission to access this resource');
     },
@@ -423,6 +435,7 @@ fetcher.interceptors.error.use(
 ```
 
 **Triggers on:**
+
 - HTTP 403 responses
 
 ---
@@ -445,7 +458,7 @@ class TenantRegistry {
       tokenStorage: new TokenStorage(`tenant-${tenantId}`),
       deviceIdStorage: new DeviceIdStorage(`tenant-${tenantId}`),
       tokenRefresher: {
-        refresh: async (token) => {
+        refresh: async token => {
           const response = await fetch(`${config.baseURL}/auth/refresh`, {
             method: 'POST',
             headers: {
@@ -480,13 +493,13 @@ class TenantRegistry {
 
 ## Headers Summary
 
-| Header | Description | Added By |
-|--------|-------------|----------|
-| `CoSec-App-Id` | Application identifier | `CoSecRequestInterceptor` |
-| `CoSec-Device-Id` | Device identifier | `CoSecRequestInterceptor` |
-| `CoSec-Request-Id` | Unique request ID | `CoSecRequestInterceptor` |
-| `CoSec-Space-Id` | Space/tenant identifier | `CoSecRequestInterceptor` (when configured) |
-| `Authorization` | Bearer token | `AuthorizationRequestInterceptor` |
+| Header             | Description             | Added By                                    |
+| ------------------ | ----------------------- | ------------------------------------------- |
+| `CoSec-App-Id`     | Application identifier  | `CoSecRequestInterceptor`                   |
+| `CoSec-Device-Id`  | Device identifier       | `CoSecRequestInterceptor`                   |
+| `CoSec-Request-Id` | Unique request ID       | `CoSecRequestInterceptor`                   |
+| `CoSec-Space-Id`   | Space/tenant identifier | `CoSecRequestInterceptor` (when configured) |
+| `Authorization`    | Bearer token            | `AuthorizationRequestInterceptor`           |
 
 ---
 
@@ -507,7 +520,7 @@ new CoSecConfigurer({
 
   // Token refresh
   tokenRefresher: {
-    refresh: async (token) => {
+    refresh: async token => {
       const res = await fetch('/api/auth/refresh', {
         method: 'POST',
         body: JSON.stringify({ refreshToken: token.refreshToken }),
@@ -518,10 +531,10 @@ new CoSecConfigurer({
   },
 
   // Error handlers
-  onUnauthorized: (exchange) => {
+  onUnauthorized: exchange => {
     window.location.href = '/login?reason=session_expired';
   },
-  onForbidden: (exchange) => {
+  onForbidden: exchange => {
     alert('Access denied');
   },
 }).applyTo(fetcher);
@@ -539,19 +552,19 @@ const data = await fetcher.get('/api/protected-resource');
 
 ## Key Classes and Exports
 
-| Class | Purpose |
-|-------|---------|
-| `CoSecConfigurer` | Simplified configuration for all CoSec features |
-| `AuthorizationRequestInterceptor` | Adds Bearer token to requests |
-| `AuthorizationResponseInterceptor` | Handles 401 and retries with fresh token |
-| `CoSecRequestInterceptor` | Adds CoSec headers (appId, deviceId, requestId) |
-| `ResourceAttributionRequestInterceptor` | Adds tenant/owner path parameters |
-| `UnauthorizedErrorInterceptor` | Custom 401 error handling |
-| `ForbiddenErrorInterceptor` | Custom 403 error handling |
-| `JwtTokenManager` | Token lifecycle management |
-| `TokenStorage` | JWT token persistence |
-| `DeviceIdStorage` | Device ID persistence and generation |
-| `SpaceIdProvider` | Multi-tenant space resolution |
+| Class                                   | Purpose                                         |
+| --------------------------------------- | ----------------------------------------------- |
+| `CoSecConfigurer`                       | Simplified configuration for all CoSec features |
+| `AuthorizationRequestInterceptor`       | Adds Bearer token to requests                   |
+| `AuthorizationResponseInterceptor`      | Handles 401 and retries with fresh token        |
+| `CoSecRequestInterceptor`               | Adds CoSec headers (appId, deviceId, requestId) |
+| `ResourceAttributionRequestInterceptor` | Adds tenant/owner path parameters               |
+| `UnauthorizedErrorInterceptor`          | Custom 401 error handling                       |
+| `ForbiddenErrorInterceptor`             | Custom 403 error handling                       |
+| `JwtTokenManager`                       | Token lifecycle management                      |
+| `TokenStorage`                          | JWT token persistence                           |
+| `DeviceIdStorage`                       | Device ID persistence and generation            |
+| `SpaceIdProvider`                       | Multi-tenant space resolution                   |
 
 ---
 

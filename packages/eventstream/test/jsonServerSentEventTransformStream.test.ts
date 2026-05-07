@@ -12,8 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type {
-  ServerSentEvent} from '../src';
+import type { ServerSentEvent } from '../src';
 import {
   JsonServerSentEventTransformStream,
   toJsonServerSentEventStream,

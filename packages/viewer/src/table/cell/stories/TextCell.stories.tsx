@@ -71,7 +71,10 @@ export const Basic: Story = {
           dataIndex: 'name',
           key: 'name',
           render: (value, record, index) => (
-            <TextCell data={{ value, record, index }} attributes={{ copyable: true }} />
+            <TextCell
+              data={{ value, record, index }}
+              attributes={{ copyable: true }}
+            />
           ),
         },
         {

@@ -15,12 +15,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type {
   SpaceIdProvider,
   SpacedResourcePredicate,
-  SpaceIdProviderOptions} from '../src';
+  SpaceIdProviderOptions,
+} from '../src';
 import {
   NoneSpaceIdProvider,
   SpaceIdStorage,
   DEFAULT_COSEC_SPACE_ID_KEY,
-  DefaultSpaceIdProvider
+  DefaultSpaceIdProvider,
 } from '../src';
 import type { Fetcher, FetchRequest } from '@ahoo-wang/fetcher';
 import { FetchExchange } from '@ahoo-wang/fetcher';

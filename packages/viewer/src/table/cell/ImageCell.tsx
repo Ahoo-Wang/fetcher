@@ -67,9 +67,11 @@ export const IMAGE_CELL_TYPE: string = 'image';
  * };
  * ```
  */
-export interface ImageCellProps<RecordType = any>
-  extends CellProps<string, RecordType, ImageProps> {
-}
+export interface ImageCellProps<RecordType = any> extends CellProps<
+  string,
+  RecordType,
+  ImageProps
+> {}
 
 /**
  * Renders an image cell using Ant Design's Image component.

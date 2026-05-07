@@ -6,8 +6,8 @@
 
 ## Summary
 
-| Metric | With Skill | Without Skill | Delta |
-|--------|------------|---------------|-------|
-| Pass Rate | 95% ± 8% | 71% ± 37% | +0.25 |
-| Time | 0.0s ± 0.0s | 0.0s ± 0.0s | +0.0s |
-| Tokens | 1733 ± 503 | 500 ± 100 | +1233 |
+| Metric    | With Skill  | Without Skill | Delta |
+| --------- | ----------- | ------------- | ----- |
+| Pass Rate | 95% ± 8%    | 71% ± 37%     | +0.25 |
+| Time      | 0.0s ± 0.0s | 0.0s ± 0.0s   | +0.0s |
+| Tokens    | 1733 ± 503  | 500 ± 100     | +1233 |

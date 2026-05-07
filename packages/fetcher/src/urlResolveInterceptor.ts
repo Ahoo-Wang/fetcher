@@ -26,7 +26,8 @@ export const URL_RESOLVE_INTERCEPTOR_NAME = 'UrlResolveInterceptor';
 /**
  * The order of the UrlResolveInterceptor.
  */
-export const URL_RESOLVE_INTERCEPTOR_ORDER = FETCH_INTERCEPTOR_ORDER - BUILT_IN_INTERCEPTOR_ORDER_STEP;
+export const URL_RESOLVE_INTERCEPTOR_ORDER =
+  FETCH_INTERCEPTOR_ORDER - BUILT_IN_INTERCEPTOR_ORDER_STEP;
 
 /**
  * Interceptor responsible for resolving the final URL for a request.

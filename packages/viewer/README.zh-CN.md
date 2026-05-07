@@ -169,7 +169,11 @@ import { NumberRange } from '@ahoo-wang/fetcher-viewer';
 具有动态过滤器管理的综合过滤面板。面板使用在 `filterRegistry` 中注册的 `TypedFilter` 组件根据类型字符串渲染过滤器。
 
 ```tsx
-import { FilterPanel, useFilterState, filterRegistry } from '@ahoo-wang/fetcher-viewer';
+import {
+  FilterPanel,
+  useFilterState,
+  filterRegistry,
+} from '@ahoo-wang/fetcher-viewer';
 
 function MyFilterComponent() {
   const { filters, addFilter, removeFilter, updateFilter } = useFilterState();
@@ -279,7 +283,7 @@ import { TextCell, TEXT_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
 <TextCell
   data={{ value: 'Hello', record: { id: 1 }, index: 0 }}
   attributes={{ ellipsis: true }}
-/>
+/>;
 ```
 
 #### TagCell
@@ -292,7 +296,7 @@ import { TagCell, TAG_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
 <TagCell
   data={{ value: 'urgent', record: { id: 1 }, index: 0 }}
   attributes={{ color: 'red' }}
-/>
+/>;
 ```
 
 #### TagsCell
@@ -305,7 +309,7 @@ import { TagsCell, TAGS_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
 <TagsCell
   data={{ value: ['urgent', 'high'], record: { id: 1 }, index: 0 }}
   attributes={{ color: 'blue' }}
-/>
+/>;
 ```
 
 #### ActionCell
@@ -319,13 +323,13 @@ import { ActionCell, ACTION_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
   data={{
     value: 'Edit',
     record: { id: 1, name: 'Item' },
-    index: 0
+    index: 0,
   }}
   attributes={{
-    onClick: (record) => console.log('Edit:', record),
-    danger: true
+    onClick: record => console.log('Edit:', record),
+    danger: true,
   }}
-/>
+/>;
 ```
 
 #### ActionsCell
@@ -340,23 +344,23 @@ import { ActionsCell, ACTIONS_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
     value: {
       primaryAction: {
         data: { value: 'Edit', record: item, index: 0 },
-        attributes: { onClick: () => editItem(item.id) }
+        attributes: { onClick: () => editItem(item.id) },
       },
       moreActionTitle: '更多',
       secondaryActions: [
         {
           data: { value: 'Delete', record: item, index: 0 },
-          attributes: { onClick: () => deleteItem(item.id), danger: true }
-        }
-      ]
+          attributes: { onClick: () => deleteItem(item.id), danger: true },
+        },
+      ],
     },
     record: item,
-    index: 0
+    index: 0,
   }}
   attributes={{
-    onClick: (actionKey, record) => console.log(actionKey, record)
+    onClick: (actionKey, record) => console.log(actionKey, record),
   }}
-/>
+/>;
 ```
 
 #### AvatarCell
@@ -398,13 +402,13 @@ import { CurrencyCell, CURRENCY_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
   data={{
     value: 1234.56,
     record: { id: 1, amount: 1234.56 },
-    index: 0
+    index: 0,
   }}
   attributes={{
     format: { currency: 'USD', locale: 'en-US', decimals: 2 },
-    style: { fontWeight: 'bold' }
+    style: { fontWeight: 'bold' },
   }}
-/>
+/>;
 ```
 
 #### DateTimeCell
@@ -418,12 +422,12 @@ import { DateTimeCell, DATETIME_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
   data={{
     value: '2024-01-15T10:30:00Z',
     record: { id: 1, createdAt: '2024-01-15T10:30:00Z' },
-    index: 0
+    index: 0,
   }}
   attributes={{
-    format: 'YYYY-MM-DD HH:mm:ss'
+    format: 'YYYY-MM-DD HH:mm:ss',
   }}
-/>
+/>;
 ```
 
 #### ImageCell
@@ -437,10 +441,10 @@ import { ImageCell, IMAGE_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
   data={{
     value: 'https://example.com/image.jpg',
     record: { id: 1, image: 'https://example.com/image.jpg' },
-    index: 0
+    index: 0,
   }}
   attributes={{ width: 80, height: 80, preview: true }}
-/>
+/>;
 ```
 
 #### ImageGroupCell
@@ -448,16 +452,22 @@ import { ImageCell, IMAGE_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
 渲染图片组，带徽章计数和预览支持。
 
 ```tsx
-import { ImageGroupCell, IMAGE_GROUP_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+import {
+  ImageGroupCell,
+  IMAGE_GROUP_CELL_TYPE,
+} from '@ahoo-wang/fetcher-viewer';
 
 <ImageGroupCell
   data={{
     value: ['https://example.com/1.jpg', 'https://example.com/2.jpg'],
-    record: { id: 1, images: ['https://example.com/1.jpg', 'https://example.com/2.jpg'] },
-    index: 0
+    record: {
+      id: 1,
+      images: ['https://example.com/1.jpg', 'https://example.com/2.jpg'],
+    },
+    index: 0,
   }}
   attributes={{ width: 80, height: 80, preview: true }}
-/>
+/>;
 ```
 
 #### LinkCell
@@ -471,10 +481,10 @@ import { LinkCell, LINK_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
   data={{
     value: 'Visit Website',
     record: { id: 1, url: 'https://example.com' },
-    index: 0
+    index: 0,
   }}
   attributes={{ href: 'https://example.com', target: '_blank' }}
-/>
+/>;
 ```
 
 ## 🎨 主题和样式

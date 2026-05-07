@@ -11,8 +11,7 @@
  * limitations under the License.
  */
 
-import type {
-  KeyStorageOptions} from '@ahoo-wang/fetcher-storage';
+import type { KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
 import {
   KeyStorage,
   typedIdentitySerializer,

@@ -1,4 +1,9 @@
-import type { Operation, Parameter, RequestBody, Response } from '@ahoo-wang/fetcher-openapi';
+import type {
+  Operation,
+  Parameter,
+  RequestBody,
+  Response,
+} from '@ahoo-wang/fetcher-openapi';
 
 const createUserOperation: Operation = {
   operationId: 'createUser',

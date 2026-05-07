@@ -37,10 +37,7 @@ vi.mock('@ahoo-wang/fetcher-react', () => ({
     exit: vi.fn().mockResolvedValue(undefined),
     getTarget: vi.fn().mockReturnValue(document.documentElement),
   })),
-  useKeyStorage: vi.fn(() => [
-    undefined,
-    vi.fn(),
-  ]),
+  useKeyStorage: vi.fn(() => [undefined, vi.fn()]),
 }));
 
 vi.mock('../../src/viewer/panel/SaveViewModal', () => ({
@@ -128,7 +125,9 @@ describe('TopBar', () => {
     it('should render ColumnHeightBarItem', () => {
       const { container } = render(<TopBar<RecordType> {...requiredProps} />);
 
-      expect(container.querySelector('.anticon-column-height')).toBeInTheDocument();
+      expect(
+        container.querySelector('.anticon-column-height'),
+      ).toBeInTheDocument();
     });
 
     it('should render ShareLinkBarItem', () => {
@@ -182,7 +181,9 @@ describe('TopBar', () => {
         <TopBar<RecordType> {...requiredProps} showViewPanel={false} />,
       );
 
-      expect(container.querySelector('.anticon-menu-unfold')).toBeInTheDocument();
+      expect(
+        container.querySelector('.anticon-menu-unfold'),
+      ).toBeInTheDocument();
     });
 
     it('should not render unfold button when showViewPanel is true', () => {
@@ -190,7 +191,9 @@ describe('TopBar', () => {
         <TopBar<RecordType> {...requiredProps} showViewPanel={true} />,
       );
 
-      expect(container.querySelector('.anticon-menu-unfold')).not.toBeInTheDocument();
+      expect(
+        container.querySelector('.anticon-menu-unfold'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -199,7 +202,11 @@ describe('TopBar', () => {
       const onReset = vi.fn();
 
       const { container } = render(
-        <TopBar<RecordType> {...requiredProps} viewChanged={true} onReset={onReset} />,
+        <TopBar<RecordType>
+          {...requiredProps}
+          viewChanged={true}
+          onReset={onReset}
+        />,
       );
 
       const resetButton = Array.from(container.querySelectorAll('button')).find(

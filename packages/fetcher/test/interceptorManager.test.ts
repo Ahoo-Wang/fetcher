@@ -12,14 +12,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import type {
-  Fetcher,
-  Interceptor} from '../src';
-import {
-  ExchangeError,
-  FetchExchange,
-  InterceptorManager,
-} from '../src';
+import type { Fetcher, Interceptor } from '../src';
+import { ExchangeError, FetchExchange, InterceptorManager } from '../src';
 
 describe('InterceptorManager', () => {
   const mockFetcher = {} as Fetcher;

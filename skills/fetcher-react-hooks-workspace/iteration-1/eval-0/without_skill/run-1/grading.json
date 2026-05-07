@@ -45,7 +45,9 @@
   "user_notes_summary": {
     "uncertainties": [],
     "needs_review": [],
-    "workarounds": ["Manual fetch implementation instead of using @ahoo-wang/fetcher-react hooks"]
+    "workarounds": [
+      "Manual fetch implementation instead of using @ahoo-wang/fetcher-react hooks"
+    ]
   },
   "eval_feedback": {
     "suggestions": [

@@ -47,7 +47,7 @@ const sampleView: ViewState = {
     },
   ],
   tableSize: 'middle',
-  pageSize: 20
+  pageSize: 20,
 };
 
 const systemView: ViewState = {

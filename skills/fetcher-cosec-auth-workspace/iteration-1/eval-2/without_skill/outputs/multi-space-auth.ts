@@ -29,7 +29,10 @@ function clearToken(spaceId: string): void {
 class SpaceAwareFetcherFactory {
   private fetchers = new Map<string, Fetcher>();
 
-  getFetcher(spaceId: string, baseURL: string = 'https://api.example.com'): Fetcher {
+  getFetcher(
+    spaceId: string,
+    baseURL: string = 'https://api.example.com',
+  ): Fetcher {
     if (this.fetchers.has(spaceId)) {
       return this.fetchers.get(spaceId)!;
     }
@@ -43,7 +46,7 @@ class SpaceAwareFetcherFactory {
             if (token?.accessToken) {
               config.headers = {
                 ...config.headers,
-                'Authorization': `Bearer ${token.accessToken}`,
+                Authorization: `Bearer ${token.accessToken}`,
                 'X-Space-Id': spaceId,
               };
             }

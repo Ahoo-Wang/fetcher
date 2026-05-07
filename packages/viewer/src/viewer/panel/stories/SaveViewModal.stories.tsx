@@ -27,25 +27,42 @@ const meta: Meta<typeof SaveViewModal> = {
   },
 };
 
-const ModalWrapper = (args: any)=> {
+const ModalWrapper = (args: any) => {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<'Create' | 'SaveAs'>('Create');
 
   const onCancel = () => {
     setOpen(false);
-  }
+  };
 
   return (
     <>
-      <Button onClick={() => { setOpen(true); setMode('Create'); }}>Open Create Modal</Button>
-      <Button onClick={() => { setOpen(true); setMode('SaveAs'); }}>Open SaveAs Modal</Button>
+      <Button
+        onClick={() => {
+          setOpen(true);
+          setMode('Create');
+        }}
+      >
+        Open Create Modal
+      </Button>
+      <Button
+        onClick={() => {
+          setOpen(true);
+          setMode('SaveAs');
+        }}
+      >
+        Open SaveAs Modal
+      </Button>
 
-      <SaveViewModal mode={mode} open={open} onSaveView={args.onSaveView} onCancel={onCancel} />
+      <SaveViewModal
+        mode={mode}
+        open={open}
+        onSaveView={args.onSaveView}
+        onCancel={onCancel}
+      />
     </>
-  )
-
-
-}
+  );
+};
 
 export default meta;
 
@@ -58,6 +75,5 @@ export const CreateMode: Story = {
     onSaveView: (name, type) => console.log('Save view:', name, type),
     onCancel: () => console.log('Cancel'),
   },
-  render: (args) => <ModalWrapper {...args} />,
+  render: args => <ModalWrapper {...args} />,
 };
-

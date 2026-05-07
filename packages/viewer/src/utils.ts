@@ -95,7 +95,7 @@ export function mapToTableRecord<RecordType = any>(
 function format(str: string, ...args: any[]): string {
   let argIndex = 0;
   // 正则匹配%@，依次替换为args中的参数（参数不足时替换为空字符串）
-  return str.replace(/%@/g, () => args[argIndex++] ?? "");
+  return str.replace(/%@/g, () => args[argIndex++] ?? '');
 }
 
 // 扩展 String 原型（可选，让用法更贴近 string.format）

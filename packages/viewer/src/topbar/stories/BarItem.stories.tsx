@@ -2,7 +2,6 @@ import { Meta, StoryObj } from '@storybook/react-vite';
 import { BarItem } from '../BarItem';
 import { StarOutlined } from '@ant-design/icons';
 
-
 const meta: Meta<typeof BarItem> = {
   title: 'Viewer/TopBar/BarItem',
   component: BarItem,

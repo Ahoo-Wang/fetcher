@@ -168,12 +168,7 @@ describe('Fullscreen', () => {
   });
 
   it('does not pass excluded props to Button', () => {
-    render(
-      <Fullscreen
-        enterIcon={<span />}
-        target={mockTargetRef}
-      />
-    );
+    render(<Fullscreen enterIcon={<span />} target={mockTargetRef} />);
 
     const button = screen.getByRole('button');
 

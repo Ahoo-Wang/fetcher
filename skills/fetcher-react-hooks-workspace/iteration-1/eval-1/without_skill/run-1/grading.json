@@ -45,7 +45,9 @@
   "user_notes_summary": {
     "uncertainties": [],
     "needs_review": [],
-    "workarounds": ["Manual debounce implementation instead of using the skill's useDebouncedFetcherQuery"]
+    "workarounds": [
+      "Manual debounce implementation instead of using the skill's useDebouncedFetcherQuery"
+    ]
   },
   "eval_feedback": {
     "suggestions": [

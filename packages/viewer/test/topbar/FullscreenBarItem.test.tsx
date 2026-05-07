@@ -61,15 +61,15 @@ describe('FullscreenBarItem', () => {
       <FullscreenBarItem className="custom-fullscreen-class" />,
     );
 
-    expect(container.querySelector('div')).toHaveClass('custom-fullscreen-class');
+    expect(container.querySelector('div')).toHaveClass(
+      'custom-fullscreen-class',
+    );
   });
 
   it('should render with custom style', () => {
     const style = { marginRight: '8px' };
 
-    const { container } = render(
-      <FullscreenBarItem style={style} />,
-    );
+    const { container } = render(<FullscreenBarItem style={style} />);
 
     expect(container.querySelector('div')).toHaveStyle(style);
   });

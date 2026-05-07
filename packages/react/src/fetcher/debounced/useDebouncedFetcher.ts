@@ -14,12 +14,8 @@
 import type { UseFetcherOptions, UseFetcherReturn } from '../useFetcher';
 import { useFetcher } from '../useFetcher';
 import type { FetcherError } from '@ahoo-wang/fetcher';
-import type {
-  DebounceCapable,
-  UseDebouncedCallbackReturn} from '../../core';
-import {
-  useDebouncedCallback
-} from '../../core';
+import type { DebounceCapable, UseDebouncedCallbackReturn } from '../../core';
+import { useDebouncedCallback } from '../../core';
 import { useMemo } from 'react';
 
 /**
@@ -31,8 +27,7 @@ import { useMemo } from 'react';
  * @template E - The type of the error (defaults to FetcherError)
  */
 export interface UseDebouncedFetcherOptions<R, E = FetcherError>
-  extends UseFetcherOptions<R, E>,
-    DebounceCapable {}
+  extends UseFetcherOptions<R, E>, DebounceCapable {}
 
 /**
  * Return type of the useDebouncedFetcher hook.
@@ -43,7 +38,8 @@ export interface UseDebouncedFetcherOptions<R, E = FetcherError>
  * @template E - The type of the error (defaults to FetcherError)
  */
 export interface UseDebouncedFetcherReturn<R, E = FetcherError>
-  extends Omit<UseFetcherReturn<R, E>, 'execute'>,
+  extends
+    Omit<UseFetcherReturn<R, E>, 'execute'>,
     UseDebouncedCallbackReturn<UseFetcherReturn<R, E>['execute']> {}
 
 /**

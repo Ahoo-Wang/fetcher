@@ -24,12 +24,10 @@ export const tableLocale = {
   },
 } as const;
 
-type LocaleKey = keyof typeof tableLocale['en-US'];
+type LocaleKey = keyof (typeof tableLocale)['en-US'];
 
 export function t(key: LocaleKey, locale = 'zh-CN'): string {
   return (
-    (tableLocale as any)[locale]?.[key] ??
-    tableLocale['zh-CN'][key] ??
-    key
+    (tableLocale as any)[locale]?.[key] ?? tableLocale['zh-CN'][key] ?? key
   );
 }

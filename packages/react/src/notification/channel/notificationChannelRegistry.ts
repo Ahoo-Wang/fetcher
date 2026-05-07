@@ -1,4 +1,4 @@
-import type { NotificationChannel} from './';
+import type { NotificationChannel } from './';
 import { BROWSER_NOTIFICATION_TYPE } from './';
 import browserNotification from './browserNotification';
 import type { ChannelType } from '../';

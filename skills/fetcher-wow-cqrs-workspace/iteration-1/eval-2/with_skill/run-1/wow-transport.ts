@@ -327,13 +327,15 @@ export class WowTransport {
     if (options?.waitTimeout) {
       headers[CommandHeaders.WAIT_TIME_OUT] = options.waitTimeout.toString();
     } else {
-      headers[CommandHeaders.WAIT_TIME_OUT] = this.defaultWaitTimeout.toString();
+      headers[CommandHeaders.WAIT_TIME_OUT] =
+        this.defaultWaitTimeout.toString();
     }
     if (options?.commandType) {
       headers[CommandHeaders.COMMAND_TYPE] = options.commandType;
     }
     if (options?.aggregateContext) {
-      headers[CommandHeaders.COMMAND_AGGREGATE_CONTEXT] = options.aggregateContext;
+      headers[CommandHeaders.COMMAND_AGGREGATE_CONTEXT] =
+        options.aggregateContext;
     }
     if (options?.aggregateName) {
       headers[CommandHeaders.COMMAND_AGGREGATE_NAME] = options.aggregateName;
@@ -520,7 +522,10 @@ export class WowTransport {
       timeout: options?.timeout,
     };
 
-    const response = await this.fetcher.fetch<Response>('/commands/stream', request);
+    const response = await this.fetcher.fetch<Response>(
+      '/commands/stream',
+      request,
+    );
     return response.body as CommandResultEventStream;
   }
 
@@ -562,7 +567,9 @@ export class WowTransport {
     S,
     FIELDS extends string = string,
     DomainEventBody = any,
-  >(defaultOptions?: QueryClientOptions): QueryClientFactory<S, FIELDS, DomainEventBody> {
+  >(
+    defaultOptions?: QueryClientOptions,
+  ): QueryClientFactory<S, FIELDS, DomainEventBody> {
     const mergedOptions: QueryClientOptions = {
       ...defaultOptions,
       fetcher: this.fetcher,

@@ -193,16 +193,17 @@ async function sendStreamingCommand(): Promise<void> {
   });
 
   // For long-running commands that produce multiple events
-  const resultStream = await transport.sendCommandAndWaitStream<CheckoutCommand>(
-    'checkout',
-    {
-      paymentMethod: 'credit_card',
-      shippingAddress: '123 Main St',
-    },
-    {
-      aggregateId: 'cart-123',
-    },
-  );
+  const resultStream =
+    await transport.sendCommandAndWaitStream<CheckoutCommand>(
+      'checkout',
+      {
+        paymentMethod: 'credit_card',
+        shippingAddress: '123 Main St',
+      },
+      {
+        aggregateId: 'cart-123',
+      },
+    );
 
   // Process streaming results
   for await (const event of resultStream) {
@@ -226,19 +227,22 @@ async function queryAggregateState(): Promise<void> {
     baseURL: 'https://api.example.com/wow',
   });
 
-  const result: WowQueryResponse<CartState> = await transport.queryState<CartState>(
-    'cart', // aggregate name
-    'cart-123', // aggregate ID
-    {
-      version: 1, // Optional: specific version
-      // asOfTime: Date.now(), // Optional: time-travel query
-      fields: ['id', 'items', 'totalAmount'], // Optional: partial fields
-    },
-  );
+  const result: WowQueryResponse<CartState> =
+    await transport.queryState<CartState>(
+      'cart', // aggregate name
+      'cart-123', // aggregate ID
+      {
+        version: 1, // Optional: specific version
+        // asOfTime: Date.now(), // Optional: time-travel query
+        fields: ['id', 'items', 'totalAmount'], // Optional: partial fields
+      },
+    );
 
   if (result.success) {
     const cart: CartState = result.data;
-    console.log(`Cart ${cart.id}: ${cart.items.length} items, total: $${cart.totalAmount}`);
+    console.log(
+      `Cart ${cart.id}: ${cart.items.length} items, total: $${cart.totalAmount}`,
+    );
   } else {
     console.error('Failed to load cart:', result.error);
   }
@@ -252,14 +256,11 @@ async function queryDomainEvents(): Promise<void> {
     baseURL: 'https://api.example.com/wow',
   });
 
-  const result: WowQueryResponse<CartDomainEvent[]> = await transport.queryEvents(
-    'cart',
-    'cart-123',
-    {
+  const result: WowQueryResponse<CartDomainEvent[]> =
+    await transport.queryEvents('cart', 'cart-123', {
       sinceTime: Date.now() - 86400000, // Last 24 hours
       limit: 100,
-    },
-  );
+    });
 
   if (result.success) {
     for (const event of result.data) {
@@ -313,7 +314,8 @@ async function useQueryClientFactory(): Promise<void> {
   const cartById = await stateClient.load('cart-123');
 
   // Create owner-specific state client
-  const ownerStateClient = factory.createOwnerLoadStateAggregateClient<CartState>();
+  const ownerStateClient =
+    factory.createOwnerLoadStateAggregateClient<CartState>();
   const myCart = await ownerStateClient.load();
 
   console.log('Query results:', { currentState, events, cartById, myCart });
@@ -347,7 +349,10 @@ async function typeSafeResultHandling(): Promise<void> {
     }
 
     if ('aggregateName' in result.data) {
-      console.log('Aggregate Name:', (result.data as AggregateNameCapable).aggregateName);
+      console.log(
+        'Aggregate Name:',
+        (result.data as AggregateNameCapable).aggregateName,
+      );
     }
 
     // Check for errors in successful result

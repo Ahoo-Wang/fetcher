@@ -249,7 +249,7 @@ describe('ActionsCell', () => {
           record: mockRecord,
           index: 0,
         }}
-      />
+      />,
     );
     expect(screen.getByText('Edit')).toBeInTheDocument();
   });

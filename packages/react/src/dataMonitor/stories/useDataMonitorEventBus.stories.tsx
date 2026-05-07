@@ -13,8 +13,23 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import React, { useState, useCallback } from 'react';
-import { useDataMonitorEventBus, dataMonitorEventBus, DataChangedEvent } from '../useDataMonitorEventBus';
-import { Card, Button, Space, Typography, List, Tag, Badge, Descriptions, Input, Form } from 'antd';
+import {
+  useDataMonitorEventBus,
+  dataMonitorEventBus,
+  DataChangedEvent,
+} from '../useDataMonitorEventBus';
+import {
+  Card,
+  Button,
+  Space,
+  Typography,
+  List,
+  Tag,
+  Badge,
+  Descriptions,
+  Input,
+  Form,
+} from 'antd';
 
 const { Text } = Typography;
 
@@ -48,7 +63,12 @@ function EventBusSubscriber({ handlerName }: EventBusSubscriberProps) {
     <Card
       title="Event Bus Subscriber"
       style={{ width: 500 }}
-      extra={<Badge status={isSubscribed ? 'success' : 'default'} text={isSubscribed ? 'Subscribed' : 'Not Subscribed'} />}
+      extra={
+        <Badge
+          status={isSubscribed ? 'success' : 'default'}
+          text={isSubscribed ? 'Subscribed' : 'Not Subscribed'}
+        />
+      }
     >
       <Space direction="vertical" style={{ width: '100%' }}>
         <div>
@@ -57,7 +77,11 @@ function EventBusSubscriber({ handlerName }: EventBusSubscriberProps) {
         </div>
 
         <Space>
-          <Button type="primary" onClick={handleSubscribe} disabled={isSubscribed}>
+          <Button
+            type="primary"
+            onClick={handleSubscribe}
+            disabled={isSubscribed}
+          >
             Subscribe
           </Button>
           <Button onClick={handleUnsubscribe} disabled={!isSubscribed}>
@@ -72,7 +96,7 @@ function EventBusSubscriber({ handlerName }: EventBusSubscriberProps) {
             bordered
             dataSource={events.slice(0, 5)}
             style={{ maxHeight: 200, overflow: 'auto', marginTop: 8 }}
-            renderItem={(event) => (
+            renderItem={event => (
               <List.Item key={`${event.viewId}-${event.currentTotal}`}>
                 <Space direction="vertical" size="small">
                   <Space>
@@ -98,12 +122,18 @@ interface EventEmitterProps {
   defaultViewName?: string;
 }
 
-function EventEmitter({ defaultViewId = 'storybook-view', defaultViewName = 'Storybook View' }: EventEmitterProps) {
+function EventEmitter({
+  defaultViewId = 'storybook-view',
+  defaultViewName = 'Storybook View',
+}: EventEmitterProps) {
   const [form] = Form.useForm();
   const [isEmitting, setIsEmitting] = useState(false);
   const [lastEmitted, setLastEmitted] = useState<DataChangedEvent | null>(null);
 
-  const handleEmit = async (values: { previousTotal: number; currentTotal: number }) => {
+  const handleEmit = async (values: {
+    previousTotal: number;
+    currentTotal: number;
+  }) => {
     setIsEmitting(true);
     const event: DataChangedEvent = {
       type: 'DATA_CHANGED',
@@ -152,8 +182,12 @@ function EventEmitter({ defaultViewId = 'storybook-view', defaultViewName = 'Sto
         <div style={{ marginTop: 16 }}>
           <Text type="secondary">Last emitted:</Text>
           <Descriptions size="small" column={1} style={{ marginTop: 8 }}>
-            <Descriptions.Item label="View ID">{lastEmitted.viewId}</Descriptions.Item>
-            <Descriptions.Item label="View Name">{lastEmitted.viewName}</Descriptions.Item>
+            <Descriptions.Item label="View ID">
+              {lastEmitted.viewId}
+            </Descriptions.Item>
+            <Descriptions.Item label="View Name">
+              {lastEmitted.viewName}
+            </Descriptions.Item>
             <Descriptions.Item label="Change">
               {lastEmitted.previousTotal} → {lastEmitted.currentTotal}
             </Descriptions.Item>
@@ -187,7 +221,10 @@ function SubscriberWithEmitter() {
     setIsSubscribed(false);
   };
 
-  const handleEmit = async (values: { previousTotal: number; currentTotal: number }) => {
+  const handleEmit = async (values: {
+    previousTotal: number;
+    currentTotal: number;
+  }) => {
     const event: DataChangedEvent = {
       type: 'DATA_CHANGED',
       viewId: 'storybook-view',
@@ -203,11 +240,20 @@ function SubscriberWithEmitter() {
       <Card
         title="Event Bus Subscriber"
         style={{ width: 450 }}
-        extra={<Badge status={isSubscribed ? 'success' : 'default'} text={isSubscribed ? 'Subscribed' : 'Not Subscribed'} />}
+        extra={
+          <Badge
+            status={isSubscribed ? 'success' : 'default'}
+            text={isSubscribed ? 'Subscribed' : 'Not Subscribed'}
+          />
+        }
       >
         <Space direction="vertical" style={{ width: '100%' }}>
           <Space>
-            <Button type="primary" onClick={handleSubscribe} disabled={isSubscribed}>
+            <Button
+              type="primary"
+              onClick={handleSubscribe}
+              disabled={isSubscribed}
+            >
               Subscribe
             </Button>
             <Button onClick={handleUnsubscribe} disabled={!isSubscribed}>
@@ -222,7 +268,7 @@ function SubscriberWithEmitter() {
               bordered
               dataSource={events.slice(0, 5)}
               style={{ maxHeight: 200, overflow: 'auto', marginTop: 8 }}
-              renderItem={(event) => (
+              renderItem={event => (
                 <List.Item key={`${event.viewId}-${event.currentTotal}`}>
                   <Space direction="vertical" size="small">
                     <Space>
@@ -241,7 +287,10 @@ function SubscriberWithEmitter() {
         </Space>
       </Card>
 
-      <EventEmitter defaultViewId="storybook-view" defaultViewName="Storybook View" />
+      <EventEmitter
+        defaultViewId="storybook-view"
+        defaultViewName="Storybook View"
+      />
     </Space>
   );
 }

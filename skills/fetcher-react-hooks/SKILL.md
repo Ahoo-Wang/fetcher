@@ -53,6 +53,7 @@ const { loading, result, execute, setQuery, getQuery } = useFetcherQuery({
 ```
 
 **Key features:**
+
 - Automatic AbortController for request cancellation
 - Race condition protection
 - Loading, error, and result states
@@ -67,12 +68,13 @@ const { loading, result, execute, setQuery, getQuery } = useFetcherQuery({
 Manages async operations with automatic state handling and race condition protection.
 
 ```tsx
-const { loading, result, error, execute, reset, abort } = useExecutePromise<string>({
-  onAbort: () => console.log('Operation aborted'),
-});
+const { loading, result, error, execute, reset, abort } =
+  useExecutePromise<string>({
+    onAbort: () => console.log('Operation aborted'),
+  });
 
 // Using a promise supplier
-execute(async (abortController) => {
+execute(async abortController => {
   const response = await fetch('/api/data', { signal: abortController.signal });
   return response.json();
 });
@@ -86,7 +88,8 @@ execute(fetch('/api/data').then(res => res.json()));
 Provides state management for promises without execution logic.
 
 ```tsx
-const { status, loading, result, error, setSuccess, setError, setIdle } = usePromiseState<string>();
+const { status, loading, result, error, setSuccess, setError, setIdle } =
+  usePromiseState<string>();
 
 // Manual state transitions
 setSuccess('Data loaded');
@@ -156,7 +159,7 @@ function MyComponent() {
     bus: eventBus,
     handler: {
       name: 'myEvent',
-      handle: (event) => console.log('Received:', event),
+      handle: event => console.log('Received:', event),
     },
   });
 
@@ -177,7 +180,7 @@ List queries with conditions, projections, sorting, and limits.
 ```tsx
 const { result, loading, error, execute, setCondition } = useListQuery({
   initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
-  execute: async (listQuery) => fetchListData(listQuery),
+  execute: async listQuery => fetchListData(listQuery),
   autoExecute: true,
 });
 ```
@@ -194,7 +197,7 @@ const { result, loading, execute, setPagination } = usePagedQuery({
     projection: {},
     sort: [],
   },
-  execute: async (pagedQuery) => fetchPagedData(pagedQuery),
+  execute: async pagedQuery => fetchPagedData(pagedQuery),
 });
 ```
 
@@ -205,7 +208,7 @@ Fetch a single item by condition.
 ```tsx
 const { result, loading, execute, setCondition } = useSingleQuery({
   initialQuery: { condition: {}, projection: {}, sort: [] },
-  execute: async (query) => fetchSingleData(query),
+  execute: async query => fetchSingleData(query),
 });
 ```
 
@@ -216,7 +219,7 @@ Count records matching a condition.
 ```tsx
 const { result, loading, execute, setCondition } = useCountQuery({
   initialQuery: {},
-  execute: async (condition) => fetchCount(condition),
+  execute: async condition => fetchCount(condition),
 });
 ```
 
@@ -227,7 +230,7 @@ List queries returning a `ReadableStream` for server-sent events.
 ```tsx
 const { result, loading, execute } = useListStreamQuery({
   initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
-  execute: async (listQuery) => fetchStream(listQuery),
+  execute: async listQuery => fetchStream(listQuery),
 });
 
 // Read the stream
@@ -290,10 +293,12 @@ Generate query hooks with automatic query state management.
 const apiHooks = createQueryApiHooks({ api: new UserApi() });
 
 function UserList() {
-  const { loading, result, execute, setQuery, getQuery } = apiHooks.useGetUsers({
-    initialQuery: { page: 1, limit: 10 },
-    autoExecute: true,
-  });
+  const { loading, result, execute, setQuery, getQuery } = apiHooks.useGetUsers(
+    {
+      initialQuery: { page: 1, limit: 10 },
+      autoExecute: true,
+    },
+  );
 }
 ```
 
@@ -339,17 +344,23 @@ function UserProfile() {
 Hook for managing authentication with CoSec tokens.
 
 ```tsx
-const { currentUser, authenticated, signIn, signOut } = useSecurity(tokenStorage, {
-  onSignIn: () => navigate('/dashboard'),
-  onSignOut: () => navigate('/login'),
-});
+const { currentUser, authenticated, signIn, signOut } = useSecurity(
+  tokenStorage,
+  {
+    onSignIn: () => navigate('/dashboard'),
+    onSignOut: () => navigate('/login'),
+  },
+);
 
 // Direct token
 signIn(compositeToken);
 
 // Or async function
 signIn(async () => {
-  const response = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
+  const response = await fetch('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials),
+  });
   return response.json();
 });
 ```
@@ -395,7 +406,10 @@ await notificationCenter.publish('browser', {
 The `browser` channel uses the Web Notification API.
 
 ```tsx
-import { notificationCenter, browserNotificationChannel } from '@ahoo-wang/fetcher-react';
+import {
+  notificationCenter,
+  browserNotificationChannel,
+} from '@ahoo-wang/fetcher-react';
 import { channelRegistry } from '@ahoo-wang/fetcher-react/notification/channel';
 
 // Register the browser channel

@@ -27,7 +27,8 @@ export const FETCH_INTERCEPTOR_NAME = 'FetchInterceptor';
  * The order of the FetchInterceptor.
  * Set to Number.MAX_SAFE_INTEGER - 1000 to ensure it runs latest among request interceptors.
  */
-export const FETCH_INTERCEPTOR_ORDER = Number.MAX_SAFE_INTEGER - BUILT_IN_INTERCEPTOR_ORDER_STEP;
+export const FETCH_INTERCEPTOR_ORDER =
+  Number.MAX_SAFE_INTEGER - BUILT_IN_INTERCEPTOR_ORDER_STEP;
 
 /**
  * Interceptor implementation responsible for executing actual HTTP requests.

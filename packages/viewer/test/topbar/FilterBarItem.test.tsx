@@ -18,17 +18,13 @@ import { FilterBarItem } from '../../src/topbar/FilterBarItem';
 describe('FilterBarItem', () => {
   describe('rendering', () => {
     it('should render with defaultShowFilter false', () => {
-      const { container } = render(
-        <FilterBarItem defaultShowFilter={false} />,
-      );
+      const { container } = render(<FilterBarItem defaultShowFilter={false} />);
 
       expect(container.querySelector('div')).toBeInTheDocument();
     });
 
     it('should render with defaultShowFilter true', () => {
-      const { container } = render(
-        <FilterBarItem defaultShowFilter={true} />,
-      );
+      const { container } = render(<FilterBarItem defaultShowFilter={true} />);
 
       expect(container.querySelector('div')).toBeInTheDocument();
     });
@@ -64,9 +60,7 @@ describe('FilterBarItem', () => {
 
   describe('defaultShowFilter prop update', () => {
     it('should update state when defaultShowFilter changes', () => {
-      const { rerender } = render(
-        <FilterBarItem defaultShowFilter={false} />,
-      );
+      const { rerender } = render(<FilterBarItem defaultShowFilter={false} />);
 
       rerender(<FilterBarItem defaultShowFilter={true} />);
 

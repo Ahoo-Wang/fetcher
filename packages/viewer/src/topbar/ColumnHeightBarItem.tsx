@@ -1,6 +1,6 @@
 import type { TopBarItemProps } from './types';
 import { BarItem } from './BarItem';
-import type { MenuProps} from 'antd';
+import type { MenuProps } from 'antd';
 import { Dropdown, Tooltip } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
 import type { SizeType } from 'antd/es/config-provider/SizeContext';

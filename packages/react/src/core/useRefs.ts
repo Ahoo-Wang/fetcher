@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { Key} from 'react';
+import type { Key } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 /**

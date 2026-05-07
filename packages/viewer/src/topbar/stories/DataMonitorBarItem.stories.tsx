@@ -69,7 +69,7 @@ export const Enabled: Story = {
   args: {
     ...Default.args,
   },
-  render: (args) => {
+  render: args => {
     return <DataMonitorBarItem {...args} />;
   },
 };
@@ -175,7 +175,8 @@ export const WithNotificationDemo: Story = {
   parameters: {
     docs: {
       description: {
-        story: '演示模式：点击开关时会弹出 Popconfirm 确认框，确认后才激活监控。点击按钮可模拟数据变化，触发浏览器通知。',
+        story:
+          '演示模式：点击开关时会弹出 Popconfirm 确认框，确认后才激活监控。点击按钮可模拟数据变化，触发浏览器通知。',
       },
     },
   },

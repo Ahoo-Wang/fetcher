@@ -1,6 +1,6 @@
 /**
  * - key: CartState
- * - schema: 
+ * - schema:
  * ```json
  * {
  *   "type": "object",
@@ -22,14 +22,14 @@
  * ```
  */
 export interface CartState {
-    ownerId: string;
-    items: CartItem[];
-    total: number;
+  ownerId: string;
+  items: CartItem[];
+  total: number;
 }
 
 /**
  * - key: CartItem
- * - schema: 
+ * - schema:
  * ```json
  * {
  *   "type": "object",
@@ -48,14 +48,14 @@ export interface CartState {
  * ```
  */
 export interface CartItem {
-    productId: string;
-    quantity: number;
-    price: number;
+  productId: string;
+  quantity: number;
+  price: number;
 }
 
 /**
  * - key: AddCartItemCommand
- * - schema: 
+ * - schema:
  * ```json
  * {
  *   "type": "object",
@@ -75,13 +75,13 @@ export interface CartItem {
  * ```
  */
 export interface AddCartItemCommand {
-    productId: string;
-    quantity: number;
+  productId: string;
+  quantity: number;
 }
 
 /**
  * - key: CommandResult
- * - schema: 
+ * - schema:
  * ```json
  * {
  *   "type": "object",
@@ -97,6 +97,6 @@ export interface AddCartItemCommand {
  * ```
  */
 export interface CommandResult {
-    success: boolean;
-    aggregateId: string;
+  success: boolean;
+  aggregateId: string;
 }

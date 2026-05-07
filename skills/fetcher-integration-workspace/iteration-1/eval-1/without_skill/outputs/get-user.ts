@@ -33,10 +33,10 @@ async function getUser(): Promise<User> {
 
 // Execute the request
 getUser()
-  .then((user) => {
+  .then(user => {
     console.log('User retrieved:', user);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('Failed to get user:', error);
   });
 

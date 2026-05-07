@@ -16,17 +16,14 @@ import type {
   FetchExchange,
   FetchRequest,
   RequestOptions,
-  FetcherError} from '@ahoo-wang/fetcher';
-import {
-  fetcherRegistrar,
-  getFetcher
+  FetcherError,
 } from '@ahoo-wang/fetcher';
+import { fetcherRegistrar, getFetcher } from '@ahoo-wang/fetcher';
 import type {
   UseExecutePromiseOptions,
-  UseExecutePromiseReturn} from '../core';
-import {
-  useExecutePromise
+  UseExecutePromiseReturn,
 } from '../core';
+import { useExecutePromise } from '../core';
 import { useCallback, useState, useMemo } from 'react';
 import { useLatest } from '../core';
 
@@ -38,9 +35,7 @@ import { useLatest } from '../core';
  * @template E - The type of error that may be thrown (defaults to FetcherError)
  */
 export interface UseFetcherOptions<R, E = FetcherError>
-  extends RequestOptions,
-    FetcherCapable,
-    UseExecutePromiseOptions<R, E> {}
+  extends RequestOptions, FetcherCapable, UseExecutePromiseOptions<R, E> {}
 
 /**
  * Return type of the useFetcher hook.
@@ -49,8 +44,10 @@ export interface UseFetcherOptions<R, E = FetcherError>
  * @template R - The type of the expected result from the fetch operation
  * @template E - The type of error that may be thrown (defaults to FetcherError)
  */
-export interface UseFetcherReturn<R, E = FetcherError>
-  extends Omit<UseExecutePromiseReturn<R, E>, 'execute'> {
+export interface UseFetcherReturn<R, E = FetcherError> extends Omit<
+  UseExecutePromiseReturn<R, E>,
+  'execute'
+> {
   /**
    * The FetchExchange object representing the current or most recent fetch operation.
    * Contains request/response details, timing information, and extracted data.

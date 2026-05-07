@@ -1,6 +1,6 @@
 /**
  * - key: UserState
- * - schema: 
+ * - schema:
  * ```json
  * {
  *   "type": "object",
@@ -30,16 +30,16 @@
  * ```
  */
 export interface UserState {
-    id: string;
-    tenantId: string;
-    email: string;
-    name: string;
-    status: `active` | `inactive` | `suspended`;
+  id: string;
+  tenantId: string;
+  email: string;
+  name: string;
+  status: `active` | `inactive` | `suspended`;
 }
 
 /**
  * - key: CreateUserCommand
- * - schema: 
+ * - schema:
  * ```json
  * {
  *   "type": "object",
@@ -59,13 +59,13 @@ export interface UserState {
  * ```
  */
 export interface CreateUserCommand {
-    email: string;
-    name: string;
+  email: string;
+  name: string;
 }
 
 /**
  * - key: UpdateUserCommand
- * - schema: 
+ * - schema:
  * ```json
  * {
  *   "type": "object",
@@ -84,7 +84,7 @@ export interface CreateUserCommand {
  * ```
  */
 export interface UpdateUserCommand {
-    email: string;
-    name: string;
-    status: string;
+  email: string;
+  name: string;
+  status: string;
 }

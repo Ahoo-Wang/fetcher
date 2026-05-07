@@ -10,6 +10,7 @@ Skill for working with the Fetcher Viewer UI components - a React component libr
 ## Trigger Conditions
 
 This skill activates when:
+
 - User mentions **table**, **filter**, or **data display** components
 - User mentions **Ant Design**, **data viewer**, **FilterPanel**, or cell renderers
 - User asks about **React components for data tables**
@@ -70,6 +71,7 @@ import { zh_CN, en_US } from '@ahoo-wang/fetcher-viewer/locale';
 ### Architecture
 
 The viewer package provides:
+
 - **Filter System**: Dynamic filter panel with registry-based type resolution
 - **Data Components**: RemoteSelect, TagInput, NumberRange for data entry
 - **Cell Components**: Type-safe table cell renderers for various data types
@@ -83,7 +85,11 @@ The viewer package provides:
 Dynamic filter panel that renders filters based on type strings registered in `filterRegistry`.
 
 ```tsx
-import { FilterPanel, useFilterState, filterRegistry } from '@ahoo-wang/fetcher-viewer';
+import {
+  FilterPanel,
+  useFilterState,
+  filterRegistry,
+} from '@ahoo-wang/fetcher-viewer';
 
 function MyFilterComponent() {
   const { filters, addFilter, removeFilter, updateFilter } = useFilterState();
@@ -105,13 +111,13 @@ Maps filter type strings to their corresponding `TypedFilter` components.
 
 **Built-in type mappings:**
 
-| Type String | Component |
-|-------------|-----------|
-| `'id'` | IdFilter |
-| `'text'` | TextFilter |
-| `'number'` | NumberFilter |
-| `'select'` | SelectFilter |
-| `'bool'` | BoolFilter |
+| Type String  | Component      |
+| ------------ | -------------- |
+| `'id'`       | IdFilter       |
+| `'text'`     | TextFilter     |
+| `'number'`   | NumberFilter   |
+| `'select'`   | SelectFilter   |
+| `'bool'`     | BoolFilter     |
 | `'dateTime'` | DateTimeFilter |
 
 **Unknown types render `FallbackFilter`** which displays a warning alert.
@@ -128,8 +134,8 @@ import { TextFilter } from '@ahoo-wang/fetcher-viewer';
 <TextFilter
   field={{ name: 'username', label: 'Username' }}
   value={{ field: 'username', operator: 'contains', value: 'john' }}
-  onChange={(filter) => console.log(filter)}
-/>
+  onChange={filter => console.log(filter)}
+/>;
 ```
 
 **Operators:** `eq`, `ne`, `contains`, `startsWith`, `endsWith`, `match`
@@ -144,8 +150,8 @@ import { NumberFilter } from '@ahoo-wang/fetcher-viewer';
 <NumberFilter
   field={{ name: 'age', label: 'Age' }}
   value={{ field: 'age', operator: 'gt', value: 18 }}
-  onChange={(filter) => console.log(filter)}
-/>
+  onChange={filter => console.log(filter)}
+/>;
 ```
 
 **Operators:** `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `between`
@@ -164,8 +170,8 @@ import { SelectFilter } from '@ahoo-wang/fetcher-viewer';
     { label: 'Active', value: 'active' },
     { label: 'Inactive', value: 'inactive' },
   ]}
-  onChange={(filter) => console.log(filter)}
-/>
+  onChange={filter => console.log(filter)}
+/>;
 ```
 
 **Operators:** `eq`, `ne`, `in`, `notIn`
@@ -180,12 +186,12 @@ import { IdFilter } from '@ahoo-wang/fetcher-viewer';
 <IdFilter
   field={{ name: 'userId', label: 'User' }}
   value={{ field: 'userId', operator: 'eq', value: 'user-123' }}
-  onSearch={async (query) => {
+  onSearch={async query => {
     const response = await fetch(`/api/users/search?q=${query}`);
     return response.json();
   }}
-  onChange={(filter) => console.log(filter)}
-/>
+  onChange={filter => console.log(filter)}
+/>;
 ```
 
 **Operators:** `eq`, `ne`, `in`, `notIn`
@@ -200,8 +206,8 @@ import { BoolFilter } from '@ahoo-wang/fetcher-viewer';
 <BoolFilter
   field={{ name: 'isActive', label: 'Active' }}
   value={{ field: 'isActive', operator: 'eq', value: true }}
-  onChange={(filter) => console.log(filter)}
-/>
+  onChange={filter => console.log(filter)}
+/>;
 ```
 
 **Operators:** `isTrue`, `isFalse`
@@ -216,8 +222,8 @@ import { DateTimeFilter } from '@ahoo-wang/fetcher-viewer';
 <DateTimeFilter
   field={{ name: 'createdAt', label: 'Created At' }}
   value={{ field: 'createdAt', operator: 'eq', value: '2024-01-15T10:30:00Z' }}
-  onChange={(filter) => console.log(filter)}
-/>
+  onChange={filter => console.log(filter)}
+/>;
 ```
 
 **Operators:** `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `between`
@@ -230,14 +236,14 @@ State management hook for filter operations.
 import { useFilterState } from '@ahoo-wang/fetcher-viewer';
 
 const {
-  filters,        // Filter[] - Current filters array
-  addFilter,      // (filter: Filter) => void - Add new filter
-  removeFilter,   // (index: number) => void - Remove filter
-  updateFilter,   // (index: number, filter: Filter) => void - Update filter
-  clearFilters,   // () => void - Clear all filters
+  filters, // Filter[] - Current filters array
+  addFilter, // (filter: Filter) => void - Add new filter
+  removeFilter, // (index: number) => void - Remove filter
+  updateFilter, // (index: number, filter: Filter) => void - Update filter
+  clearFilters, // () => void - Clear all filters
   getFilterValue, // (field: string) => any - Get filter value by field
-  setFilterValue,  // (field: string, value: any) => void - Set filter value
-  resetFilters,   // () => void - Reset to initial state
+  setFilterValue, // (field: string, value: any) => void - Set filter value
+  resetFilters, // () => void - Reset to initial state
 } = useFilterState(initialFilters);
 ```
 
@@ -282,7 +288,7 @@ function CustomFilter({ field, onChange, value }: FilterProps) {
       <label>{field.label}</label>
       <input
         value={value?.value || ''}
-        onChange={(e) =>
+        onChange={e =>
           onChange?.({
             field: field.name,
             operator: 'eq',
@@ -314,7 +320,7 @@ import { TextCell, TEXT_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
 <TextCell
   data={{ value: 'Hello World', record: { id: 1 }, index: 0 }}
   attributes={{ ellipsis: true }}
-/>
+/>;
 ```
 
 ### TagCell
@@ -327,7 +333,7 @@ import { TagCell, TAG_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
 <TagCell
   data={{ value: 'urgent', record: { id: 1 }, index: 0 }}
   attributes={{ color: 'red' }}
-/>
+/>;
 ```
 
 ### TagsCell
@@ -340,7 +346,7 @@ import { TagsCell, TAGS_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
 <TagsCell
   data={{ value: ['urgent', 'high', 'review'], record: { id: 1 }, index: 0 }}
   attributes={{ color: 'blue' }}
-/>
+/>;
 ```
 
 ### CurrencyCell
@@ -354,9 +360,9 @@ import { CurrencyCell, CURRENCY_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
   data={{ value: 1234.56, record: { id: 1 }, index: 0 }}
   attributes={{
     format: { currency: 'USD', locale: 'en-US', decimals: 2 },
-    style: { fontWeight: 'bold' }
+    style: { fontWeight: 'bold' },
   }}
-/>
+/>;
 ```
 
 ### DateTimeCell
@@ -369,7 +375,7 @@ import { DateTimeCell, DATETIME_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
 <DateTimeCell
   data={{ value: '2024-01-15T10:30:00Z', record: { id: 1 }, index: 0 }}
   attributes={{ format: 'YYYY-MM-DD HH:mm:ss' }}
-/>
+/>;
 ```
 
 ### ImageCell
@@ -382,7 +388,7 @@ import { ImageCell, IMAGE_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
 <ImageCell
   data={{ value: 'https://example.com/image.jpg', record: { id: 1 }, index: 0 }}
   attributes={{ width: 80, height: 80, preview: true }}
-/>
+/>;
 ```
 
 ### ImageGroupCell
@@ -390,16 +396,23 @@ import { ImageCell, IMAGE_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
 Renders a group of images with badge count and preview support.
 
 ```tsx
-import { ImageGroupCell, IMAGE_GROUP_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
+import {
+  ImageGroupCell,
+  IMAGE_GROUP_CELL_TYPE,
+} from '@ahoo-wang/fetcher-viewer';
 
 <ImageGroupCell
   data={{
-    value: ['https://example.com/1.jpg', 'https://example.com/2.jpg', 'https://example.com/3.jpg'],
+    value: [
+      'https://example.com/1.jpg',
+      'https://example.com/2.jpg',
+      'https://example.com/3.jpg',
+    ],
     record: { id: 1 },
-    index: 0
+    index: 0,
   }}
   attributes={{ width: 80, height: 80, preview: true }}
-/>
+/>;
 ```
 
 ### AvatarCell
@@ -432,7 +445,7 @@ import { LinkCell, LINK_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
 <LinkCell
   data={{ value: 'Visit Website', record: { id: 1 }, index: 0 }}
   attributes={{ href: 'https://example.com', target: '_blank' }}
-/>
+/>;
 ```
 
 ### ActionCell
@@ -446,13 +459,13 @@ import { ActionCell, ACTION_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
   data={{
     value: 'Edit',
     record: { id: 1, name: 'Item' },
-    index: 0
+    index: 0,
   }}
   attributes={{
-    onClick: (record) => console.log('Edit:', record),
-    danger: true
+    onClick: record => console.log('Edit:', record),
+    danger: true,
   }}
-/>
+/>;
 ```
 
 ### ActionsCell
@@ -467,24 +480,24 @@ import { ActionsCell, ACTIONS_CELL_TYPE } from '@ahoo-wang/fetcher-viewer';
     value: {
       primaryAction: {
         data: { value: 'Edit', record: item, index: 0 },
-        attributes: { onClick: () => editItem(item.id) }
+        attributes: { onClick: () => editItem(item.id) },
       },
       moreActionTitle: 'More',
       secondaryActions: [
         {
           data: { value: 'Delete', record: item, index: 0 },
-          attributes: { onClick: () => deleteItem(item.id), danger: true }
+          attributes: { onClick: () => deleteItem(item.id), danger: true },
         },
         {
           data: { value: 'Duplicate', record: item, index: 0 },
-          attributes: { onClick: () => duplicateItem(item.id) }
-        }
-      ]
+          attributes: { onClick: () => duplicateItem(item.id) },
+        },
+      ],
     },
     record: item,
-    index: 0
+    index: 0,
   }}
-/>
+/>;
 ```
 
 ---
@@ -505,11 +518,12 @@ import { RemoteSelect } from '@ahoo-wang/fetcher-viewer';
   }}
   debounce={{ delay: 300 }}
   placeholder="Search for items..."
-  onChange={(value) => console.log(value)}
-/>
+  onChange={value => console.log(value)}
+/>;
 ```
 
 **Props:**
+
 - `search: (query: string) => Promise<RemoteSelectOption[]>` - Search function
 - `debounce?: UseDebouncedCallbackOptions` - Debounce configuration
 - Supports all Ant Design Select props
@@ -536,6 +550,7 @@ import { TagInput, StringTagValueItemSerializer, NumberTagValueItemSerializer } 
 ```
 
 **Props:**
+
 - `value?: ValueItemType[]` - Current tag values
 - `serializer?: TagValueItemSerializer` - Value serializer
 - `onChange?: (value: ValueItemType[]) => void` - Change handler
@@ -553,11 +568,12 @@ import { NumberRange } from '@ahoo-wang/fetcher-viewer';
   max={1000}
   precision={2}
   placeholder={['Min', 'Max']}
-  onChange={(range) => console.log(range)}
-/>
+  onChange={range => console.log(range)}
+/>;
 ```
 
 **Props:**
+
 - `value?: number | NumberRangeValue` - Current range value
 - `min?: number` - Minimum allowed value
 - `max?: number` - Maximum allowed value
@@ -588,7 +604,7 @@ import { zh_CN } from '@ahoo-wang/fetcher-viewer/locale';
   onAddFilter={addFilter}
   onRemoveFilter={removeFilter}
   onUpdateFilter={updateFilter}
-/>
+/>;
 ```
 
 ---
@@ -651,7 +667,10 @@ const COLUMNS = [
     title: 'Name',
     dataIndex: 'name',
     render: (value, record, index) => (
-      <TextCell data={{ value, record, index }} attributes={{ ellipsis: true }} />
+      <TextCell
+        data={{ value, record, index }}
+        attributes={{ ellipsis: true }}
+      />
     ),
   },
   {
@@ -678,7 +697,10 @@ const COLUMNS = [
     title: 'Created',
     dataIndex: 'createdAt',
     render: (value, record, index) => (
-      <DateTimeCell data={{ value, record, index }} attributes={{ format: 'YYYY-MM-DD' }} />
+      <DateTimeCell
+        data={{ value, record, index }}
+        attributes={{ format: 'YYYY-MM-DD' }}
+      />
     ),
   },
   {
@@ -700,7 +722,7 @@ function DataTable() {
 
   useEffect(() => {
     const query = buildQueryFromFilters(filters);
-    execute({ path: `/api/data?${query}` }).then((res) => setData(res.data));
+    execute({ path: `/api/data?${query}` }).then(res => setData(res.data));
   }, [filters]);
 
   return (

@@ -67,8 +67,11 @@ export const IMAGE_GROUP_CELL_TYPE: string = 'image-group';
  * };
  * ```
  */
-export interface ImageGroupCellProps<RecordType = any>
-  extends CellProps<string[], RecordType, PreviewGroupProps> {}
+export interface ImageGroupCellProps<RecordType = any> extends CellProps<
+  string[],
+  RecordType,
+  PreviewGroupProps
+> {}
 
 /**
  * Renders an image group cell using Ant Design's Image.PreviewGroup component.

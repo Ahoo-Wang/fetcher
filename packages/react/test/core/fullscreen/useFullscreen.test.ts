@@ -28,7 +28,8 @@ import {
   enterFullscreen,
   exitFullscreen,
   addFullscreenChangeListener,
-  removeFullscreenChangeListener, useFullscreen,
+  removeFullscreenChangeListener,
+  useFullscreen,
 } from '../../../src';
 
 describe('useFullscreen hook', () => {
@@ -185,7 +186,6 @@ describe('useFullscreen hook', () => {
 
       expect(result.current.fullscreen).toBe(false);
     });
-
   });
 
   describe('enter function', () => {

@@ -12,9 +12,16 @@
  */
 
 declare const globalThis: {
-  BroadcastChannel?: new (name: string) => { postMessage: (data: unknown) => void; close: () => void; onmessage: ((event: { data: unknown }) => void) | null };
+  BroadcastChannel?: new (name: string) => {
+    postMessage: (data: unknown) => void;
+    close: () => void;
+    onmessage: ((event: { data: unknown }) => void) | null;
+  };
   window?: Record<string, unknown>;
-  StorageEvent?: new (type: string, eventInitDict?: StorageEventInit) => StorageEvent;
+  StorageEvent?: new (
+    type: string,
+    eventInitDict?: StorageEventInit,
+  ) => StorageEvent;
   localStorage?: Record<string, unknown>;
   sessionStorage?: Record<string, unknown>;
 };
@@ -54,7 +61,8 @@ describe('CrossTabMessenger utilities', () => {
     it('should return false when BroadcastChannel.prototype.postMessage is not available', () => {
       const MockBroadcastChannel = function () {};
       MockBroadcastChannel.prototype = {};
-      (globalThis as Record<string, unknown>).BroadcastChannel = MockBroadcastChannel;
+      (globalThis as Record<string, unknown>).BroadcastChannel =
+        MockBroadcastChannel;
       expect(isBroadcastChannelSupported()).toBe(false);
     });
   });
@@ -77,7 +85,9 @@ describe('CrossTabMessenger utilities', () => {
     });
 
     it('should return true when all StorageEvent requirements are met', () => {
-      (globalThis as Record<string, unknown>).window = { addEventListener: vi.fn() };
+      (globalThis as Record<string, unknown>).window = {
+        addEventListener: vi.fn(),
+      };
       (globalThis as Record<string, unknown>).StorageEvent = function () {};
       (globalThis as Record<string, unknown>).localStorage = {};
       expect(isStorageEventSupported()).toBe(true);
@@ -89,7 +99,9 @@ describe('CrossTabMessenger utilities', () => {
     });
 
     it('should return false when StorageEvent is not available', () => {
-      (globalThis as Record<string, unknown>).window = { addEventListener: vi.fn() };
+      (globalThis as Record<string, unknown>).window = {
+        addEventListener: vi.fn(),
+      };
       delete (globalThis as Record<string, unknown>).StorageEvent;
       (globalThis as Record<string, unknown>).localStorage = {};
       expect(isStorageEventSupported()).toBe(false);
@@ -103,7 +115,9 @@ describe('CrossTabMessenger utilities', () => {
     });
 
     it('should return false when neither localStorage nor sessionStorage is available', () => {
-      (globalThis as Record<string, unknown>).window = { addEventListener: vi.fn() };
+      (globalThis as Record<string, unknown>).window = {
+        addEventListener: vi.fn(),
+      };
       (globalThis as Record<string, unknown>).StorageEvent = function () {};
       delete (globalThis as Record<string, unknown>).localStorage;
       delete (globalThis as Record<string, unknown>).sessionStorage;
@@ -111,7 +125,9 @@ describe('CrossTabMessenger utilities', () => {
     });
 
     it('should return true when sessionStorage is available but localStorage is not', () => {
-      (globalThis as Record<string, unknown>).window = { addEventListener: vi.fn() };
+      (globalThis as Record<string, unknown>).window = {
+        addEventListener: vi.fn(),
+      };
       (globalThis as Record<string, unknown>).StorageEvent = function () {};
       delete (globalThis as Record<string, unknown>).localStorage;
       (globalThis as Record<string, unknown>).sessionStorage = {};

@@ -1,9 +1,11 @@
 # Transcript: Eval 2 with_skill - React Streaming UI
 
 ## Task
+
 Build a streaming LLM client that updates a React UI in real-time.
 
 ## Prompt
+
 "Help me build a streaming LLM client that updates a React UI in real-time as tokens arrive. I want to track progress and show the accumulated response."
 
 ## Execution Steps
@@ -16,6 +18,7 @@ Build a streaming LLM client that updates a React UI in real-time.
 6. Accumulated response displayed as it builds
 
 ## Key Patterns Used
+
 - Token-by-token UI updates: `setCurrentResponse(fullResponse)` inside for await loop
 - Progress tracking: `chunks` counter with logging every 5 chunks
 - Streaming state management with React hooks
