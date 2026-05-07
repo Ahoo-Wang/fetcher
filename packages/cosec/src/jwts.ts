@@ -107,14 +107,10 @@ export function parseJwtPayload<T extends JwtPayload>(token: string): T | null {
       '=',
     );
 
-    const jsonPayload = decodeURIComponent(
-      atob(paddedBase64)
-        .split('')
-        .map(function (c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join(''),
+    const binaryBytes = Uint8Array.from(atob(paddedBase64), c =>
+      c.charCodeAt(0),
     );
+    const jsonPayload = new TextDecoder('utf-8').decode(binaryBytes);
     return JSON.parse(jsonPayload) as T;
   } catch (error) {
     // Avoid exposing sensitive information in error logs
