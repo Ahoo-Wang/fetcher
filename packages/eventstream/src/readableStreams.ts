@@ -48,6 +48,7 @@ declare global {
  * ```
  */
 export const isReadableStreamAsyncIterableSupported =
+  typeof ReadableStream !== 'undefined' &&
   typeof ReadableStream.prototype[Symbol.asyncIterator] === 'function';
 
 // Add [Symbol.asyncIterator] to ReadableStream if not already implemented
