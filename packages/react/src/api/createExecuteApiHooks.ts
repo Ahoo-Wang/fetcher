@@ -37,14 +37,6 @@ export interface CreateExecuteApiHooksOptions<
 > extends CreateApiHooksOptions<API> {}
 
 /**
- * Configuration options for createQueryApiHooks.
- * @template API - The API object type containing query methods.
- */
-export interface CreateQueryApiHooksOptions<
-  API extends Record<string, any>,
-> extends CreateApiHooksOptions<API> {}
-
-/**
  * Options for useApiMethodExecute hook.
  * @template TArgs - The parameter types of the API method.
  * @template TData - The return type of the API method (resolved).
