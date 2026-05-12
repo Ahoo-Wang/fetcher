@@ -17,6 +17,7 @@ export const zh: DefaultTheme.Config = {
         items: [
           { text: '测试', link: '/zh/testing/' },
           { text: '贡献指南', link: '/zh/guide/contributing' },
+          { text: 'Storybook', link: '/storybook/' },
         ],
       },
     ],
