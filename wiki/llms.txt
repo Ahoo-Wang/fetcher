@@ -1,0 +1,56 @@
+# Fetcher
+
+> A modular HTTP client ecosystem built on the native Fetch API with interceptor-powered middleware and native LLM streaming support. Published as an npm monorepo under `@ahoo-wang/*`.
+
+## Onboarding
+
+- [Contributor Guide](/onboarding/contributor) — For new contributors: language foundations, architecture, getting productive
+- [Staff Engineer Guide](/onboarding/staff-engineer) — Architectural deep dive, design tradeoffs, decision log
+- [Executive Guide](/onboarding/executive) — Capability map, risk assessment, technology investment thesis
+- [Product Manager Guide](/onboarding/product-manager) — Feature map, user journeys, competitive landscape
+
+## Getting Started
+
+- [Introduction](/guide/) — Overview of the Fetcher ecosystem, package graph, key features
+- [Quick Start](/guide/quick-start) — Installation, basic usage, interceptors, decorators, LLM streaming
+- [Configuration](/guide/configuration) — FetcherOptions, NamedFetcher, FetcherRegistrar, environment configs
+- [Contributing](/guide/contributing) — Development setup, testing, code style, PR process
+
+## Architecture
+
+- [Overview](/architecture/) — System architecture, package dependency graph, design principles
+- [Fetcher Core](/architecture/fetcher-core) — Fetcher class, NamedFetcher, request lifecycle, error handling
+- [Interceptor System](/architecture/interceptors) — InterceptorManager, request/response/error chain, custom interceptors
+- [EventStream & SSE](/architecture/eventstream) — Side-effect module, SSE protocol, LLM streaming
+- [URL Builder](/architecture/url-builder) — Path parameters, query parameters, base URL resolution
+
+## Packages
+
+- [Overview](/packages/) — All 12 packages with descriptions and dependencies
+- [@ahoo-wang/fetcher](/packages/fetcher) — Core HTTP client
+- [@ahoo-wang/fetcher-decorator](/packages/decorator) — TypeScript decorators for API services
+- [@ahoo-wang/fetcher-eventbus](/packages/eventbus) — Event bus (serial, parallel, broadcast)
+- [@ahoo-wang/fetcher-eventstream](/packages/eventstream) — SSE/streaming side-effect module
+- [@ahoo-wang/fetcher-openai](/packages/openai) — OpenAI API client integration
+- [@ahoo-wang/fetcher-openapi](/packages/openapi) — OpenAPI 3.x TypeScript types
+- [@ahoo-wang/fetcher-generator](/packages/generator) — CLI code generator from OpenAPI specs
+- [@ahoo-wang/fetcher-react](/packages/react) — React hooks for data fetching
+- [@ahoo-wang/fetcher-storage](/packages/storage) — Cross-environment storage abstraction
+- [@ahoo-wang/fetcher-cosec](/packages/cosec) — CoSec authentication integration
+- [@ahoo-wang/fetcher-wow](/packages/wow) — Wow DDD/CQRS framework integration
+- [@ahoo-wang/fetcher-viewer](/packages/viewer) — React + Ant Design component library
+
+## API Reference
+
+- [Overview](/api/) — API surface summary and navigation
+- [Fetcher Client](/api/fetcher-client) — Fetcher class, FetcherOptions, RequestConfig, error types
+- [Decorators](/api/decorators) — @api, @get, @post, @put, @delete, @path, @query, @body
+- [React Hooks](/api/react-hooks) — useFetcher, useQuery, usePromise
+- [Type Definitions](/api/type-definitions) — Key TypeScript interfaces across packages
+
+## Testing
+
+- [Overview](/testing/) — Testing strategy, tools (Vitest, MSW, Playwright)
+- [Unit Testing](/testing/unit-testing) — Vitest setup, MSW mocking, testing patterns
+- [Integration Testing](/testing/integration-testing) — Real API testing, setup, environment
+- [Browser Testing](/testing/browser-testing) — Playwright, jsdom, component testing, Storybook
