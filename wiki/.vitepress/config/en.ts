@@ -17,7 +17,7 @@ export const en: DefaultTheme.Config = {
         items: [
           { text: 'Testing', link: '/testing/' },
           { text: 'Contributing', link: '/guide/contributing' },
-          { text: 'Storybook', link: '/storybook/' },
+          { text: 'Storybook', link: '/storybook/', target: '_blank' },
         ],
       },
     ],
