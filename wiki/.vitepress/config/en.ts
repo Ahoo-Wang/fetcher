@@ -13,7 +13,7 @@ export const en: DefaultTheme.Config = {
       { text: 'API', link: '/api/' },
       { text: 'Onboarding', link: '/onboarding/' },
       {
-        text: 'v3.16',
+        text: 'More',
         items: [
           { text: 'Testing', link: '/testing/' },
           { text: 'Contributing', link: '/guide/contributing' },

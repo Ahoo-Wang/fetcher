@@ -13,7 +13,7 @@ export const zh: DefaultTheme.Config = {
       { text: 'API', link: '/zh/api/' },
       { text: '入门指南', link: '/zh/onboarding/' },
       {
-        text: 'v3.16',
+        text: '更多',
         items: [
           { text: '测试', link: '/zh/testing/' },
           { text: '贡献指南', link: '/zh/guide/contributing' },
