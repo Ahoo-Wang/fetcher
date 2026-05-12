@@ -1,6 +1,7 @@
 packages:
   - packages/*
   - integration-test
+  - wiki
 
 catalog:
   '@ant-design/icons': ^6.0.0

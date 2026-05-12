@@ -1,0 +1,14 @@
+# Fetcher
+
+> A modular HTTP client ecosystem built on the native Fetch API with interceptor-powered middleware and native LLM streaming support. Published as an npm monorepo under `@ahoo-wang/*`.
+
+## Documentation
+
+- [Fetcher Wiki](./wiki/) — Complete documentation site
+- [Wiki llms.txt](./wiki/llms.txt) — Full documentation index
+- [Wiki llms-full.txt](./wiki/llms-full.txt) — All documentation content inlined
+
+## Quick Reference
+
+- [CLAUDE.md](./CLAUDE.md) — AI assistant project instructions
+- [AGENTS.md](./AGENTS.md) — Coding agent project instructions
