@@ -7,6 +7,10 @@ export default defineConfig({
   description: 'Modern HTTP Client Ecosystem with Native LLM Streaming Support',
   lastUpdated: true,
   cleanUrls: true,
+  srcExclude: ['AGENTS.md', 'CLAUDE.md'],
+  sitemap: {
+    hostname: 'https://fetcher.ahoo.me',
+  },
   ignoreDeadLinks: [
     /localhost/,
   ],
