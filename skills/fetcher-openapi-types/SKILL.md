@@ -1,6 +1,8 @@
 ---
 name: fetcher-openapi-types
-description: Use TypeScript types for OpenAPI 3.0+ specifications. Use when users want OpenAPI types, mentions fetcher-openapi package, or needs type definitions for OpenAPI specs.
+description: >
+  TypeScript type definitions for OpenAPI 3.0+ specifications with zero runtime dependencies. Covers OpenAPI, Info, Server, Paths, Operations, Schema (allOf/oneOf/anyOf, discriminator), Components (schemas, responses, parameters, securitySchemes, headers, links, callbacks, examples), Security, Tags, Extensions, IsReference utility type, and MediaType. Used by @ahoo-wang/fetcher-generator and @ahoo-wang/fetcher-viewer.
+  Use for: OpenAPI types, JSON Schema, OpenAPI 3.1, $ref, discriminator, Extensible, components, paths, operations, type definitions, zero dependencies, OpenAPI specification types.
 ---
 
 # fetcher-openapi-types
@@ -13,6 +15,8 @@ Skill for the `@ahoo-wang/fetcher-openapi` package — a pure type-only library 
 - **Size:** ~2KB (zero runtime overhead)
 - **Type:** TypeScript types only (no runtime JavaScript)
 - **OpenAPI Support:** 3.0+
+- **Consumed by:** `@ahoo-wang/fetcher-generator` (code generation), `@ahoo-wang/fetcher-viewer` (API documentation UI)
+- **Imports:** Single entry point — `import type { ... } from '@ahoo-wang/fetcher-openapi'`
 
 ## When to Use This Skill
 
@@ -26,30 +30,39 @@ Use this skill when the user:
 
 ---
 
-## Core Types
+## All Exported Types
 
-### OpenAPI Document Structure
+### Document Structure
 
-| Type         | Description                                                            |
-| ------------ | ---------------------------------------------------------------------- |
-| `OpenAPI`    | Root OpenAPI document object                                           |
-| `Info`       | API metadata (title, version, description)                             |
-| `Contact`    | Contact information for the API                                        |
-| `License`    | License information                                                    |
-| `Server`     | Server configuration with variables                                    |
-| `Paths`      | Collection of API paths and their operations                           |
-| `Components` | Reusable components (schemas, parameters, responses, security schemes) |
-| `Tag`        | API grouping and documentation tags                                    |
+| Type                   | Description                                                            |
+| ---------------------- | ---------------------------------------------------------------------- |
+| `OpenAPI`              | Root OpenAPI document object                                           |
+| `Info`                 | API metadata (title, version, description, termsOfService, contact, license) |
+| `Contact`              | Contact information (name, url, email)                                 |
+| `License`              | License information (name, url)                                        |
+| `Server`               | Server configuration with URL template variables                       |
+| `ServerVariable`       | Variable substitution for server URLs (enum, default, description)     |
+| `Paths`                | Map of API paths to PathItem objects                                   |
+| `PathItem`             | Operations available on a single path (get, post, put, delete, etc.)   |
+| `Components`           | Reusable components (schemas, responses, parameters, and more)         |
+| `ComponentTypeMap`     | Maps component type names to their interfaces                          |
+| `Tag`                  | API grouping and documentation tags                                    |
+| `ExternalDocumentation`| External docs link (url, description)                                  |
 
 ```typescript
-import type { OpenAPI, Components } from '@ahoo-wang/fetcher-openapi';
+import type { OpenAPI, Server, ServerVariable, Components } from '@ahoo-wang/fetcher-openapi';
 
 const doc: OpenAPI = {
   openapi: '3.0.1',
-  info: {
-    title: 'My API',
-    version: '1.0.0',
-  },
+  info: { title: 'My API', version: '1.0.0' },
+  servers: [
+    {
+      url: 'https://{env}.example.com/v1',
+      variables: {
+        env: { default: 'api', enum: ['api', 'staging'] } as ServerVariable,
+      },
+    },
+  ],
   paths: {},
   components: {} as Components,
 };
@@ -62,21 +75,22 @@ const doc: OpenAPI = {
 | Type            | Description                                    |
 | --------------- | ---------------------------------------------- |
 | `Schema`        | JSON Schema-based data structure definitions   |
-| `Discriminator` | Polymorphism support with discriminator fields |
+| `SchemaType`    | `'string' \| 'number' \| 'integer' \| 'boolean' \| 'array' \| 'object' \| 'null'` |
+| `Discriminator` | Polymorphism support with propertyName + mapping |
 | `XML`           | XML serialization configuration                |
-| `Reference`     | JSON Reference ($ref) for reusable components  |
 
-**Schema properties include:**
+**Schema property categories:**
 
-- `type` — Primitive types: `string`, `number`, `boolean`, `integer`, `array`, `object`
-- `format` — Formats: `date-time`, `email`, `uuid`, etc.
-- `properties` — Object property definitions
-- `items` — Array item schema
-- `required` — Required property names
-- `enum` — Enumeration values
-- `minimum`, `maximum`, `minLength`, `maxLength` — Constraints
-- `oneOf`, `allOf`, `anyOf` — Composition
-- `$ref` — Reference to another schema
+- **General:** `title`, `description`, `type`, `format`, `nullable`, `readOnly`, `writeOnly`, `deprecated`, `example`, `const`, `default`, `$schema`
+- **Numeric:** `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`
+- **String:** `minLength`, `maxLength`, `pattern`
+- **Array:** `items` (Schema | Reference), `minItems`, `maxItems`, `uniqueItems`
+- **Object:** `properties`, `required`, `minProperties`, `maxProperties`, `additionalProperties`
+- **Composition:** `allOf`, `anyOf`, `oneOf`, `not` (each: Array<Schema | Reference>)
+- **Enumeration:** `enum` (any[])
+- **Polymorphism:** `discriminator` (Discriminator)
+- **XML:** `xml` (XML)
+- **Docs:** `externalDocs` (ExternalDocumentation)
 
 ```typescript
 import type { Schema, Discriminator } from '@ahoo-wang/fetcher-openapi';
@@ -115,26 +129,17 @@ const polymorphicSchema: Schema = {
 | Type          | Description                                         |
 | ------------- | --------------------------------------------------- |
 | `Operation`   | Single API operation (GET, POST, PUT, DELETE, etc.) |
+| `PathItem`    | Operations and parameters for a single path         |
 | `RequestBody` | Request body definition with content types          |
-| `MediaType`   | Content type definitions with schemas               |
-| `Encoding`    | Serialization rules for request/response bodies     |
+| `MediaType`   | Content type definition: `schema`, `example`, `examples`, `encoding` |
+| `Encoding`    | Serialization rules: `contentType`, `headers`, `style`, `explode`, `allowReserved` |
+| `Callback`    | Map of callback expressions to PathItem objects     |
 
-**Operation properties include:**
-
-- `operationId` — Unique operation identifier
-- `summary`, `description` — Documentation
-- `parameters` — Query, path, header, cookie parameters
-- `requestBody` — Request body content
-- `responses` — Response definitions by status code
-- `tags` — Grouping tags
-- `security` — Security requirements
-- `deprecated` — Deprecation flag
+**Operation properties:** `tags`, `summary`, `description`, `externalDocs`, `operationId`, `parameters`, `requestBody`, `responses` (required), `callbacks`, `deprecated`, `security`, `servers`
 
 ```typescript
 import type {
-  Operation,
-  RequestBody,
-  MediaType,
+  Operation, RequestBody, MediaType, Encoding,
 } from '@ahoo-wang/fetcher-openapi';
 
 const createUserOp: Operation = {
@@ -150,15 +155,10 @@ const createUserOp: Operation = {
     },
   },
   responses: {
-    '201': {
-      description: 'User created',
-      content: {
-        'application/json': {
-          schema: { $ref: '#/components/schemas/User' },
-        },
-      },
-    },
+    '201': { description: 'User created' },
   },
+  deprecated: false,
+  security: [{ bearerAuth: [] }],
 };
 ```
 
@@ -169,15 +169,10 @@ const createUserOp: Operation = {
 | Type                | Description                                                      |
 | ------------------- | ---------------------------------------------------------------- |
 | `Parameter`         | Operation parameter (query, path, header, cookie)                |
-| `ParameterLocation` | Parameter locations: `'query'`, `'header'`, `'path'`, `'cookie'` |
+| `ParameterLocation` | `'query' \| 'header' \| 'path' \| 'cookie'`                     |
+| `Header`            | Follows Parameter structure: `schema`, `example`, `examples`, `content` |
 
-**Parameter properties include:**
-
-- `name` — Parameter name
-- `in` — Location: query, header, path, cookie
-- `required` — Whether the parameter is required
-- `schema` — Parameter schema definition
-- `description` — Documentation
+**Parameter properties:** `name` (required), `in` (required), `description`, `required`, `deprecated`, `allowEmptyValue`, `style`, `explode`, `allowReserved`, `schema`, `example`, `examples`, `content`
 
 ```typescript
 import type { Parameter, ParameterLocation } from '@ahoo-wang/fetcher-openapi';
@@ -189,32 +184,37 @@ const userIdParam: Parameter = {
   schema: { type: 'integer', minimum: 1 },
   description: 'The user ID',
 };
-
-const searchParam: Parameter = {
-  name: 'search',
-  in: 'query' as ParameterLocation,
-  schema: { type: 'string', minLength: 1 },
-};
 ```
 
 ---
 
 ### Response Types
 
-| Type        | Description                           |
-| ----------- | ------------------------------------- |
-| `Response`  | Response definition with status codes |
-| `MediaType` | Content type with schema              |
+| Type        | Description                                        |
+| ----------- | -------------------------------------------------- |
+| `Response`  | Response definition: `description`, `headers`, `content`, `links` |
+| `Responses` | Map of HTTP status codes to Response objects        |
+| `Link`      | Design-time link: `operationRef`, `operationId`, `parameters`, `requestBody`, `server` |
+| `Example`   | Example object: `summary`, `description`, `value`, `externalValue` |
 
 ```typescript
-import type { Response } from '@ahoo-wang/fetcher-openapi';
+import type { Response, Link } from '@ahoo-wang/fetcher-openapi';
 
 const errorResponse: Response = {
   description: 'Error response',
+  headers: {
+    'X-Request-Id': { description: 'Request ID', schema: { type: 'string' } },
+  },
   content: {
     'application/json': {
       schema: { $ref: '#/components/schemas/Error' },
     },
+  },
+  links: {
+    GetOrder: {
+      operationId: 'getOrder',
+      parameters: { orderId: '$response.body#/id' },
+    } as Link,
   },
 };
 ```
@@ -225,20 +225,14 @@ const errorResponse: Response = {
 
 | Type                  | Description                                                       |
 | --------------------- | ----------------------------------------------------------------- |
-| `SecurityScheme`      | Authentication scheme definitions (API key, Bearer, OAuth2, etc.) |
-| `SecurityRequirement` | Required security schemes for operations                          |
-
-**Security scheme types include:**
-
-- `apiKey` — API key authentication
-- `http` — HTTP authentication (Bearer, Basic)
-- `oauth2` — OAuth 2.0 flows
-- `openIdConnect` — OpenID Connect
+| `SecurityScheme`      | Auth scheme: `apiKey`, `http`, `oauth2`, `openIdConnect`          |
+| `SecurityRequirement` | Map of scheme names to required scopes                            |
+| `OAuthFlows`          | OAuth flow configs: implicit, password, clientCredentials, authorizationCode |
+| `OAuthFlow`           | Single OAuth flow: authorizationUrl, tokenUrl, refreshUrl, scopes |
 
 ```typescript
 import type {
-  SecurityScheme,
-  SecurityRequirement,
+  SecurityScheme, SecurityRequirement,
 } from '@ahoo-wang/fetcher-openapi';
 
 const bearerScheme: SecurityScheme = {
@@ -247,33 +241,58 @@ const bearerScheme: SecurityScheme = {
   bearerFormat: 'JWT',
 };
 
-const apiKeyScheme: SecurityScheme = {
-  type: 'apiKey',
-  in: 'header',
-  name: 'X-API-Key',
-};
-
 const securityReq: SecurityRequirement = {
   bearerAuth: [],
-  apiKeyAuth: ['write:users'],
 };
 ```
 
 ---
 
-## Extension Types
+### Components
 
-### Extensible
+| Property           | Type                                  |
+| ------------------ | ------------------------------------- |
+| `schemas`          | `Record<string, Schema>`              |
+| `responses`        | `Record<string, Response>`            |
+| `parameters`       | `Record<string, Parameter>`           |
+| `examples`         | `Record<string, Example \| Reference>` |
+| `requestBodies`    | `Record<string, RequestBody>`         |
+| `headers`          | `Record<string, Header \| Reference>` |
+| `securitySchemes`  | `Record<string, SecurityScheme>`      |
+| `links`            | `Record<string, Link>`                |
+| `callbacks`        | `Record<string, Callback>`            |
 
-All OpenAPI objects support custom extensions via `x-*` properties.
+---
+
+### Reference & Utility Types
+
+| Type            | Description                                                      |
+| --------------- | ---------------------------------------------------------------- |
+| `Reference`     | JSON Reference with `$ref: string`                               |
+| `IsReference<T>`| Utility type: `T extends { $ref: string } ? T : never`          |
+| `HTTPMethod`    | `'get' \| 'put' \| 'post' \| 'delete' \| 'options' \| 'head' \| 'patch' \| 'trace'` |
 
 ```typescript
-import type { Extensible } from '@ahoo-wang/fetcher-openapi';
+import type { Reference, IsReference, HTTPMethod, SchemaType } from '@ahoo-wang/fetcher-openapi';
+
+// Distinguish $ref from inline definitions
+type ResolvedOrRef<T> = T | Reference;
+function isRef<T>(obj: T | Reference): obj is Reference {
+  return '$ref' in obj;
+}
+
+const method: HTTPMethod = 'trace';
+const primitive: SchemaType = 'null';
 ```
 
-### CommonExtensions
+---
 
-Predefined extension types for common metadata:
+### Extension Types
+
+| Type                  | Description                                                    |
+| --------------------- | -------------------------------------------------------------- |
+| `Extensible`          | `[extension: \`x-${string}\`]: any` — base for all OpenAPI objects |
+| `CommonExtensions`    | Predefined extensions: `x-internal`, `x-deprecated`, `x-tags`, `x-examples`, `x-order`, `x-group` |
 
 ```typescript
 import type { Operation, CommonExtensions } from '@ahoo-wang/fetcher-openapi';
@@ -281,6 +300,7 @@ import type { Operation, CommonExtensions } from '@ahoo-wang/fetcher-openapi';
 const operationWithExtensions: Operation & CommonExtensions = {
   summary: 'Get user profile',
   operationId: 'getUserProfile',
+  responses: { '200': { description: 'OK' } },
   'x-internal': false,
   'x-deprecated': {
     message: 'Use getUser instead',
@@ -290,99 +310,7 @@ const operationWithExtensions: Operation & CommonExtensions = {
   },
   'x-tags': ['users', 'profile'],
   'x-order': 1,
-  responses: { '200': { description: 'OK' } },
 };
-```
-
----
-
-## Type Utilities
-
-| Type                | Description                                                              |
-| ------------------- | ------------------------------------------------------------------------ |
-| `HTTPMethod`        | `'get'`, `'post'`, `'put'`, `'delete'`, `'patch'`, `'options'`, `'head'` |
-| `ParameterLocation` | `'query'`, `'header'`, `'path'`, `'cookie'`                              |
-| `SchemaType`        | JSON Schema primitive types                                              |
-
-```typescript
-import type {
-  HTTPMethod,
-  ParameterLocation,
-  SchemaType,
-} from '@ahoo-wang/fetcher-openapi';
-
-const method: HTTPMethod = 'post';
-const location: ParameterLocation = 'query';
-const schemaType: SchemaType = 'string';
-```
-
----
-
-## Modular Imports
-
-Import only the types you need for better tree-shaking:
-
-```typescript
-// From main entry
-import type { OpenAPI, Schema, Operation } from '@ahoo-wang/fetcher-openapi';
-
-// From specific modules
-import type { OpenAPI } from '@ahoo-wang/fetcher-openapi/openapi';
-import type { Schema } from '@ahoo-wang/fetcher-openapi/schema';
-import type { Operation } from '@ahoo-wang/fetcher-openapi/paths';
-import type { Parameter } from '@ahoo-wang/fetcher-openapi/parameter';
-import type { Response } from '@ahoo-wang/fetcher-openapi/response';
-import type { SecurityScheme } from '@ahoo-wang/fetcher-openapi/security';
-```
-
----
-
-## Integration with fetcher-generator
-
-The `@ahoo-wang/fetcher-openapi` types work seamlessly with `@ahoo-wang/fetcher-generator`:
-
-1. **Generated clients** use these types internally for type-safe operation definitions
-2. **Custom OpenAPI manipulation** — validate or transform OpenAPI documents before code generation
-3. **Schema validation** — ensure custom schemas conform to OpenAPI spec
-4. **Documentation tools** — build documentation generators with full type safety
-
-```typescript
-import type { OpenAPI, Schema, Operation } from '@ahoo-wang/fetcher-openapi';
-
-// Validate OpenAPI document structure
-function validateOpenAPI(doc: unknown): doc is OpenAPI {
-  const api = doc as OpenAPI;
-  return (
-    typeof api === 'object' &&
-    api !== null &&
-    'openapi' in api &&
-    typeof api.openapi === 'string' &&
-    api.openapi.startsWith('3.')
-  );
-}
-
-// Check if schema is polymorphic
-function isPolymorphic(schema: Schema): boolean {
-  return !!(
-    schema.oneOf ||
-    schema.allOf ||
-    schema.anyOf ||
-    schema.discriminator
-  );
-}
-
-// Extract all operationIds from an OpenAPI document
-function getOperationIds(doc: OpenAPI): string[] {
-  const ids: string[] = [];
-  for (const path of Object.values(doc.paths)) {
-    for (const operation of Object.values(path)) {
-      if ('operationId' in operation && operation.operationId) {
-        ids.push(operation.operationId);
-      }
-    }
-  }
-  return ids;
-}
 ```
 
 ---
@@ -395,30 +323,26 @@ function getOperationIds(doc: OpenAPI): string[] {
 npm install @ahoo-wang/fetcher-openapi
 ```
 
-**Import everything:**
+**All types from single entry point:**
 
 ```typescript
 import type {
-  OpenAPI,
-  Schema,
-  Operation,
-  Parameter,
-  Response,
-  Components,
-  SecurityScheme,
-  SecurityRequirement,
-  Discriminator,
-  RequestBody,
-  MediaType,
-  HTTPMethod,
-  ParameterLocation,
+  OpenAPI, Info, Contact, License, Server, ServerVariable,
+  Paths, PathItem, Operation, RequestBody, MediaType, Encoding,
+  Parameter, ParameterLocation, Header, Response, Responses,
+  Link, Example, Callback,
+  Schema, SchemaType, Discriminator, XML,
+  Components, ComponentTypeMap,
+  SecurityScheme, SecurityRequirement, OAuthFlows, OAuthFlow,
+  Tag, ExternalDocumentation, Reference, IsReference,
+  HTTPMethod, Extensible, CommonExtensions,
 } from '@ahoo-wang/fetcher-openapi';
 ```
 
 **Key characteristics:**
 
-- Pure type definitions — no runtime JavaScript
-- Zero bundle size impact when using TypeScript
-- Framework agnostic
-- Modular imports for tree-shaking
-- Full OpenAPI 3.0+ support including extensions
+- Pure type definitions — no runtime JavaScript, zero bundle size
+- Single entry point import (`@ahoo-wang/fetcher-openapi`)
+- All types extend `Extensible` for `x-*` extension support
+- Framework agnostic — works with any TypeScript project
+- Full OpenAPI 3.0+ support including discriminator, callbacks, links

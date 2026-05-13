@@ -1,15 +1,20 @@
 ---
 name: fetcher-decorator-service
-description: Create clean, declarative API services using Fetcher decorators. Use this skill whenever you need to build an API service layer with @api(), @get(), @post(), @put(), @delete(), @patch(), @path(), @query(), @body(), @header(), or @request() decorators. This skill is for users who want to define HTTP endpoints using TypeScript decorators, implement CRUD services, configure timeouts per method/class, use result extractors (JSON, EventStream, etc.), add lifecycle hooks, or work with service inheritance patterns. Trigger whenever the user mentions creating API services with decorators, declarative API definitions, or building HTTP client layers for Fetcher.
+description: >
+  Create clean, declarative API services using Fetcher TypeScript decorators. Covers @api() class decorator, @get/@post/@put/@delete/@patch/@endpoint method decorators, @path/@query/@header/@body/@request/@attribute parameter decorators, EndpointReturnType control, AbortSignal auto-detection, result extractors, lifecycle hooks (ExecuteLifeCycle), and service inheritance. Requires reflect-metadata peer dependency. Trigger for: API service, decorators, declarative HTTP, CRUD service, @api, @get, @post, @body, @query, endpoint decorator, result extractor, lifecycle hooks, service class.
 ---
 
 # Fetcher Decorator Service Skill
 
-This skill helps you create clean, declarative API services using the `@ahoo-wang/fetcher-decorator` package.
+Create clean, declarative API services using `@ahoo-wang/fetcher-decorator`.
 
-## Overview
+## Prerequisites
 
-Fetcher decorator services let you define HTTP endpoints using TypeScript decorators, turning method signatures into API calls automatically. You write the interface, and the implementation is generated for you.
+`reflect-metadata` is a required peer dependency. Import it once at your application entry point:
+
+```typescript
+import 'reflect-metadata';
+```
 
 ## Installation
 
@@ -21,13 +26,11 @@ pnpm add @ahoo-wang/fetcher-decorator
 
 ### 1. Service Definition with `@api()`
 
-The `@api()` decorator marks a class as an API service and sets its base configuration.
-
 ```typescript
+import 'reflect-metadata';
 import { api } from '@ahoo-wang/fetcher-decorator';
 import { NamedFetcher } from '@ahoo-wang/fetcher';
 
-// Register a named fetcher first
 const userFetcher = new NamedFetcher('user', {
   baseURL: 'https://api.example.com',
 });
@@ -40,153 +43,161 @@ export class UserService {
 
 **@api() options:**
 
-- `basePath` (string) - Base path for all endpoints in the class
-- `fetcher` (string) - Name of the registered fetcher to use
+- `basePath` (string) - Base path for all endpoints
+- `fetcher` (string | Fetcher) - Name or instance of the fetcher to use
 - `timeout` (number) - Default timeout for all requests (ms)
-- `headers` (Record<string, string>) - Default headers for all requests
+- `headers` (RequestHeaders) - Default headers for all requests
+- `attributes` (Record<string, any>) - Default attributes (accessible by interceptors)
 - `resultExtractor` - Default result extractor for all methods
+- `returnType` (EndpointReturnType) - Default return type (RESULT or EXCHANGE)
+- `urlParams` (UrlParams) - Default URL path and query parameters
 
 ### 2. HTTP Method Decorators
 
 ```typescript
-@get(path, options)   // GET request
-@post(path, options)  // POST request
-@put(path, options)   // PUT request
-@patch(path, options) // PATCH request
-@del(path, options)   // DELETE request
-@head(path, options)  // HEAD request
-@options(path, options) // OPTIONS request
+@get(path, options)      // GET request
+@post(path, options)     // POST request
+@put(path, options)      // PUT request
+@patch(path, options)    // PATCH request
+@del(path, options)      // DELETE request
+@head(path, options)     // HEAD request
+@options(path, options)  // OPTIONS request
+@endpoint(HttpMethod.TRACE, '/path', options) // Generic: any HTTP method
 ```
 
-**Method decorator options:**
+**Method decorator options** (same as @api() plus `path`):
 
+- `path` (string) - Endpoint path
 - `timeout` (number) - Per-method timeout override (ms)
-- `headers` (Record<string, string>) - Method-specific headers
-- `fetcher` (string) - Override the fetcher for this method
+- `headers` (RequestHeaders) - Method-specific headers
+- `fetcher` (string | Fetcher) - Override the fetcher for this method
 - `resultExtractor` - Override result extractor for this method
+- `returnType` (EndpointReturnType) - Override return type for this method
+- `attributes` (Record<string, any>) - Method-specific attributes
+- `urlParams` (UrlParams) - Method-specific URL parameters
 
 ### 3. Parameter Decorators
 
-#### `@path(name?)` - URL path parameters
-
-Path parameters are extracted from the URL template (e.g., `/{id}`).
+All parameter decorators (`@path`, `@query`, `@header`, `@attribute`) support **object expansion**: pass a plain object and its keys are expanded into individual parameters. `@attribute` also supports `Map` objects.
 
 ```typescript
 @get('/{userId}/posts')
 getUserPosts(@path('userId') userId: string): Promise<Post[]> {
-  throw autoGeneratedError(userId);
+  throw autoGeneratedError();
 }
-
-// Name is auto-extracted if not provided
+// Auto-extract name if omitted:
 @get('/{userId}')
-getUser(@path() userId: string): Promise<User> {
-  throw autoGeneratedError(userId);
-}
-```
+getUser(@path() userId: string): Promise<User> { throw autoGeneratedError(); }
+// Object expansion:
+@get('/users/{id}/posts/{postId}')
+getUserPost(@path() params: { id: string; postId: string }): Promise<Post> { throw autoGeneratedError(); }
 
-#### `@query(name?)` - Query string parameters
-
-```typescript
 @get('/posts')
-filterPosts(
-  @query('userId') userId?: string,
-  @query('completed') completed?: boolean,
-): Promise<Post[]> {
-  throw autoGeneratedError(userId, completed);
+filterPosts(@query('userId') userId?: string, @query('completed') completed?: boolean): Promise<Post[]> {
+  throw autoGeneratedError();
 }
-
-// Auto-extract name from parameter
+// Object expansion:
 @get('/posts')
-getPosts(@query() limit?: number): Promise<Post[]> {
-  throw autoGeneratedError(limit);
-}
-```
+searchPosts(@query() filters: { limit: number; offset: number }): Promise<Post[]> { throw autoGeneratedError(); }
 
-#### `@body()` - Request body
-
-```typescript
 @post('/users')
-createUser(@body() user: User): Promise<User> {
-  throw autoGeneratedError(user);
-}
-```
+createUser(@body() user: User): Promise<User> { throw autoGeneratedError(); }
 
-#### `@header(name?)` - HTTP headers
-
-```typescript
 @post('/users')
-createUser(
-  @body() user: User,
-  @header('X-Request-ID') requestId?: string,
-): Promise<User> {
-  throw autoGeneratedError(user, requestId);
-}
-```
+createUser(@body() user: User, @header('X-Request-ID') requestId?: string): Promise<User> { throw autoGeneratedError(); }
+// Object expansion:
+@get('/data')
+getData(@header() headers: { 'X-API-Key': string; 'X-Version': string }): Promise<Data> { throw autoGeneratedError(); }
 
-#### `@request()` - Full request configuration
+@get('/users/{id}')
+getUser(@path('id') id: string, @attribute('traceId') traceId: string): Promise<User> { throw autoGeneratedError(); }
+// Object/Map expansion:
+@get('/users/{id}')
+getUser(@path('id') id: string, @attribute() attrs: Map<string, any>): Promise<User> { throw autoGeneratedError(); }
 
-Pass a complete `ParameterRequest` object to customize the entire request:
-
-```typescript
 @post('/batch')
-batchOperation(@request() request: ParameterRequest): Promise<Response> {
-  throw autoGeneratedError(request);
-}
+batchOperation(@request() request: ParameterRequest): Promise<Response> { throw autoGeneratedError(); }
 ```
 
-### 4. Timeout Configuration
+### 4. AbortSignal / AbortController Auto-Detection
 
-Timeouts can be set at class level (default) or per-method (override):
+If a method argument is an `AbortSignal` or `AbortController`, it is automatically used for request cancellation -- no decorator needed:
 
 ```typescript
-@api('/users', { fetcher: myFetcher, timeout: 10000 }) // Class default: 10s
+@get('/{id}')
+getUser(@path() id: string, signal: AbortSignal): Promise<User> {
+  throw autoGeneratedError();
+}
+
+// Usage:
+const controller = new AbortController();
+const user = await userService.getUser('123', controller.signal);
+// controller.abort() to cancel
+```
+
+### 5. EndpointReturnType
+
+Controls what decorated methods return. Set via `@api()` or method decorator options.
+
+```typescript
+import { EndpointReturnType } from '@ahoo-wang/fetcher-decorator';
+
+// RESULT (default): returns the extracted result (e.g., parsed JSON)
+// EXCHANGE: returns the full FetchExchange object
+@api('/users', { fetcher: myFetcher, returnType: EndpointReturnType.EXCHANGE })
 export class UserService {
-  @get('/{id}', { timeout: 5000 }) // Method override: 5s
-  getUser(@path() id: number): Promise<User> {
-    throw autoGeneratedError(id);
+  @get('/{id}')
+  getUser(@path() id: string): Promise<FetchExchange> {
+    throw autoGeneratedError();
+  }
+
+  @get('/{id}', { returnType: EndpointReturnType.RESULT })
+  getUserResult(@path() id: string): Promise<User> {
+    throw autoGeneratedError();
   }
 }
 ```
 
-### 5. Result Extractors
+### 6. Result Extractors
 
-Result extractors process the response from the server. Available extractors from `@ahoo-wang/fetcher`:
+Core extractors from `@ahoo-wang/fetcher`:
 
-| Extractor                          | Returns               | Use Case                     |
-| ---------------------------------- | --------------------- | ---------------------------- |
-| `ResultExtractors.Json`            | Parsed JSON (default) | REST APIs returning JSON     |
-| `ResultExtractors.Response`        | `Response` object     | When you need status/headers |
-| `ResultExtractors.Exchange`        | `FetchExchange`       | Full request/response access |
-| `ResultExtractors.Text`            | Plain text            | Text responses               |
-| `ResultExtractors.EventStream`     | Server-Sent Events    | SSE streaming endpoints      |
-| `ResultExtractors.JsonEventStream` | JSON SSE              | LLM streaming APIs           |
+| Extractor                       | Returns         | Use Case                     |
+| ------------------------------- | --------------- | ---------------------------- |
+| `ResultExtractors.Json`         | Parsed JSON     | REST APIs (default)          |
+| `ResultExtractors.Response`     | `Response`      | Need status/headers          |
+| `ResultExtractors.Exchange`     | `FetchExchange` | Full request/response access |
+| `ResultExtractors.Text`         | Plain text      | Text responses               |
+| `ResultExtractors.Blob`         | `Blob`          | Binary data                  |
+| `ResultExtractors.ArrayBuffer`  | `ArrayBuffer`   | Raw binary data              |
+| `ResultExtractors.Bytes`        | `Uint8Array`    | Byte arrays                  |
+
+Event stream extractors from `@ahoo-wang/fetcher-eventstream`:
+
+| Extractor                        | Returns                   | Use Case             |
+| -------------------------------- | ------------------------- | -------------------- |
+| `EventStreamResultExtractor`     | `ServerSentEventStream`   | SSE streaming        |
+| `JsonEventStreamResultExtractor` | `JsonServerSentEventStream` | LLM streaming APIs |
 
 ```typescript
 import { ResultExtractors } from '@ahoo-wang/fetcher';
+import { EventStreamResultExtractor, JsonEventStreamResultExtractor } from '@ahoo-wang/fetcher-eventstream';
 
 @api('/users', { fetcher: myFetcher })
 export class UserService {
-  // Default: returns parsed JSON
-  @get('/{id}')
-  getUser(@path() id: number): Promise<User> {
-    throw autoGeneratedError(id);
-  }
-
-  // Returns raw Response object
   @get('/{id}', { resultExtractor: ResultExtractors.Response })
   getUserResponse(@path() id: number): Promise<Response> {
-    throw autoGeneratedError(id);
+    throw autoGeneratedError();
   }
 
-  // Returns full FetchExchange (request + response)
-  @get('/{id}', { resultExtractor: ResultExtractors.Exchange })
-  getUserExchange(@path() id: number): Promise<FetchExchange> {
-    throw autoGeneratedError(id);
+  @get('/{id}/stream', { resultExtractor: EventStreamResultExtractor })
+  getUserStream(@path() id: string): Promise<ServerSentEventStream> {
+    throw autoGeneratedError();
   }
 }
 ```
 
-### 6. Lifecycle Hooks
+### 7. Lifecycle Hooks
 
 Implement `ExecuteLifeCycle` to hook into request execution:
 
@@ -198,16 +209,14 @@ import type { FetchExchange } from '@ahoo-wang/fetcher';
 export class UserService implements ExecuteLifeCycle {
   @get('/{id}')
   getUser(@path() id: number): Promise<User> {
-    throw autoGeneratedError(id);
+    throw autoGeneratedError();
   }
 
   beforeExecute(exchange: FetchExchange): void | Promise<void> {
-    // Called before interceptors process the request
     exchange.request.headers.set('X-Custom-Header', 'value');
   }
 
   afterExecute(exchange: FetchExchange): void | Promise<void> {
-    // Called after interceptors process the response
     if (exchange.response?.status === 401) {
       // Handle unauthorized
     }
@@ -224,9 +233,9 @@ export class UserService implements ExecuteLifeCycle {
 5. `afterExecute` hook called
 6. Result extracted and returned
 
-### 7. Service Inheritance
+### 8. Service Inheritance
 
-Child services inherit endpoints from parent services and can add more:
+Child services inherit endpoints from parent services:
 
 ```typescript
 @api('/users', { fetcher: myFetcher })
@@ -238,19 +247,17 @@ export class BaseUserService {
 }
 
 @api('/users/{userId}', { fetcher: myFetcher })
-export class TypicodeUserService extends BaseUserService {
+export class UserPostService extends BaseUserService {
   @get('/posts')
   getPosts(@path('userId') userId: string): Promise<Post[]> {
-    throw autoGeneratedError(userId);
+    throw autoGeneratedError();
   }
 }
 ```
 
 Note: Use the same fetcher in parent and child for inherited methods to work correctly.
 
-### 8. Fetcher Resolution Priority
-
-When a method is called, the fetcher is resolved in this order:
+### 9. Fetcher Resolution Priority
 
 1. **Service instance `fetcher` property** (highest priority)
 2. **Endpoint-level fetcher** (from method decorator)
@@ -264,7 +271,7 @@ const customFetcher = new Fetcher({ baseURL: 'https://custom.com' });
 class UserService {
   @get('/{id}', { fetcher: 'endpoint-level' })
   getUser(@path() id: number): Promise<User> {
-    throw autoGeneratedError(id);
+    throw autoGeneratedError();
   }
 }
 
@@ -272,84 +279,15 @@ const service = new UserService();
 service.fetcher = customFetcher; // This takes priority
 ```
 
-## Complete Example: CRUD Service
-
-```typescript
-import {
-  api,
-  autoGeneratedError,
-  get,
-  post,
-  put,
-  patch,
-  del,
-  path,
-  query,
-  body,
-} from '@ahoo-wang/fetcher-decorator';
-import { NamedFetcher } from '@ahoo-wang/fetcher';
-import type { Post } from './types';
-
-const typicodeFetcher = new NamedFetcher('jsonplaceholder', {
-  baseURL: 'https://jsonplaceholder.typicode.com',
-});
-
-@api('/posts', { fetcher: typicodeFetcher })
-export class PostService {
-  @get('')
-  getPosts(): Promise<Post[]> {
-    throw autoGeneratedError();
-  }
-
-  @get('/{postId}')
-  getPost(@path('postId') postId: string): Promise<Post> {
-    throw autoGeneratedError(postId);
-  }
-
-  @post('')
-  createPost(@body() post: Post): Promise<Post> {
-    throw autoGeneratedError(post);
-  }
-
-  @put('/{postId}')
-  updatePost(
-    @path('postId') postId: string,
-    @body() post: Post,
-  ): Promise<Post> {
-    throw autoGeneratedError(postId, post);
-  }
-
-  @patch('/{postId}')
-  patchPost(
-    @path('postId') postId: string,
-    @body() post: Partial<Post>,
-  ): Promise<Post> {
-    throw autoGeneratedError(postId, post);
-  }
-
-  @del('/{postId}')
-  deletePost(@path('postId') postId: string): Promise<object> {
-    throw autoGeneratedError(postId);
-  }
-
-  @get('')
-  filterPosts(@query('userId') userId?: string): Promise<Post[]> {
-    throw autoGeneratedError(userId);
-  }
-}
-
-export const postService = new PostService();
-```
-
 ## Auto-Generated Error Pattern
 
-The `throw autoGeneratedError()` in method bodies is a placeholder. The decorator system replaces these at runtime with the actual HTTP call implementation. Never put real logic in these methods.
+The `throw autoGeneratedError()` in method bodies is a placeholder. The decorator system replaces these at runtime with the actual HTTP call implementation. Never put real logic in these methods. Arguments passed to `autoGeneratedError(...)` are accepted but **ignored** -- they exist only to prevent ESLint `no-unused-vars` errors.
 
 ```typescript
-// CORRECT - placeholder for code generation
+// CORRECT - placeholder for auto-generation
 @get('/{id}')
 getUser(@path() id: number): Promise<User> {
-  throw autoGeneratedError(id);
+  throw autoGeneratedError(id); // `id` is ignored, but prevents lint error
 }
 
 // WRONG - real logic will be overwritten
@@ -359,40 +297,53 @@ getUser(@path() id: number): Promise<User> {
 }
 ```
 
+## Complete Example: CRUD Service
+
+```typescript
+import 'reflect-metadata';
+import { api, autoGeneratedError, get, post, put, patch, del, path, query, body } from '@ahoo-wang/fetcher-decorator';
+import { NamedFetcher } from '@ahoo-wang/fetcher';
+
+const fetcher = new NamedFetcher('api', { baseURL: 'https://jsonplaceholder.typicode.com' });
+
+@api('/posts', { fetcher })
+export class PostService {
+  @get('')
+  getPosts(): Promise<Post[]> { throw autoGeneratedError(); }
+
+  @get('/{postId}')
+  getPost(@path('postId') postId: string): Promise<Post> { throw autoGeneratedError(); }
+
+  @post('')
+  createPost(@body() post: Post): Promise<Post> { throw autoGeneratedError(); }
+
+  @put('/{postId}')
+  updatePost(@path('postId') postId: string, @body() post: Post): Promise<Post> { throw autoGeneratedError(); }
+
+  @patch('/{postId}')
+  patchPost(@path('postId') postId: string, @body() post: Partial<Post>): Promise<Post> { throw autoGeneratedError(); }
+
+  @del('/{postId}')
+  deletePost(@path('postId') postId: string): Promise<object> { throw autoGeneratedError(); }
+
+  @get('')
+  filterPosts(@query('userId') userId?: string): Promise<Post[]> { throw autoGeneratedError(); }
+}
+```
+
 ## Key Imports
 
 ```typescript
-// Decorators
-import {
-  api,
-  get,
-  post,
-  put,
-  patch,
-  del,
-  path,
-  query,
-  body,
-  header,
-  request,
-  autoGeneratedError,
-} from '@ahoo-wang/fetcher-decorator';
-
-// Types and utilities
-import type {
-  ExecuteLifeCycle,
-  ApiMetadata,
-  ParameterRequest,
-} from '@ahoo-wang/fetcher-decorator';
+import { api, get, post, put, patch, del, head, options, endpoint, path, query, body, header, request, attribute, autoGeneratedError, EndpointReturnType } from '@ahoo-wang/fetcher-decorator';
+import type { ExecuteLifeCycle, ApiMetadata, EndpointMetadata, ParameterRequest, ParameterMetadata } from '@ahoo-wang/fetcher-decorator';
 import { ResultExtractors } from '@ahoo-wang/fetcher';
 import type { FetchExchange } from '@ahoo-wang/fetcher';
+import { EventStreamResultExtractor, JsonEventStreamResultExtractor } from '@ahoo-wang/fetcher-eventstream';
 ```
 
-## Reference Files
+## Further Reading
 
-For more examples, see:
-
-- `/Users/ahoo/work/ahoo-git/agent-coder/fetcher/packages/decorator/README.md` - Full API documentation
-- `/Users/ahoo/work/ahoo-git/agent-coder/fetcher/integration-test/src/decorator/typicodePostService.ts` - CRUD service example
-- `/Users/ahoo/work/ahoo-git/agent-coder/fetcher/integration-test/src/decorator/typicodeUserService.ts` - Inheritance example
-- `/Users/ahoo/work/ahoo-git/agent-coder/fetcher/integration-test/src/decorator/resultExtractorService.ts` - Result extractor examples
+- [Package README](https://github.com/Ahoo-Wang/fetcher/tree/main/packages/decorator/README.md) - Full API documentation
+- [CRUD Service Example](https://github.com/Ahoo-Wang/fetcher/tree/main/integration-test/src/decorator/typicodePostService.ts) - Complete PostService
+- [Inheritance Example](https://github.com/Ahoo-Wang/fetcher/tree/main/integration-test/src/decorator/typicodeUserService.ts) - Service inheritance pattern
+- [Result Extractor Example](https://github.com/Ahoo-Wang/fetcher/tree/main/integration-test/src/decorator/resultExtractorService.ts) - Using different extractors

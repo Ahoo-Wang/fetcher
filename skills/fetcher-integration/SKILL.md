@@ -1,6 +1,8 @@
 ---
 name: fetcher-integration
-description: Integrate the Fetcher HTTP client library into your projects. Covers NamedFetcher setup, all HTTP methods, path/query parameters, interceptors, timeout configuration, and the named fetcher registry pattern.
+description: >
+  Integrate the Fetcher HTTP client library into your projects. Covers Fetcher, NamedFetcher, FetcherRegistrar, all HTTP methods, path/query parameters, interceptors (RequestInterceptor/ResponseInterceptor/ErrorInterceptor), timeout, ResultExtractors (JSON, Text, Blob, etc.), FetchExchange lifecycle, error handling (FetchTimeoutError, ExchangeError, HttpStatusValidationError), UrlBuilder templates, validateStatus, and the named fetcher registry pattern.
+  Use for: fetcher setup, HTTP client, interceptors, fetch request, url builder, error handling, timeout, base URL, named fetcher.
 trigger:
   - 'integrate fetcher'
   - 'fetcher http client'
@@ -9,144 +11,141 @@ trigger:
   - 'interceptors'
   - 'timeout'
   - 'named fetcher'
+  - 'fetch request'
+  - 'url builder'
+  - 'error handling'
+  - 'base URL'
 ---
 
 # Fetcher Integration Skill
 
-The Fetcher HTTP client provides an ultra-lightweight (3KB), Axios-like API built on the native Fetch API with powerful features including interceptors, timeout control, and path/query parameter handling.
+The Fetcher HTTP client provides an ultra-lightweight (3KB), Axios-like API built on the native Fetch API with interceptors, timeout control, and path/query parameter handling.
 
 ## Installation
 
 ```bash
 pnpm add @ahoo-wang/fetcher
-# or
-npm install @ahoo-wang/fetcher
-# or
-yarn add @ahoo-wang/fetcher
 ```
 
-## 1. Setting Up NamedFetcher with baseURL and Interceptors
+## 1. Setting Up NamedFetcher
 
-### Basic NamedFetcher Setup
+### Basic Setup
 
 ```typescript
 import { NamedFetcher } from '@ahoo-wang/fetcher';
 
-// Create a named fetcher that auto-registers itself
 export const apiFetcher = new NamedFetcher('api', {
   baseURL: 'https://api.example.com',
   timeout: 5000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 ```
 
 ### Adding Interceptors
 
+IMPORTANT: `intercept()` returns `void | Promise<void>`. Modify `exchange` directly -- do NOT return it.
+
 ```typescript
-import { NamedFetcher } from '@ahoo-wang/fetcher';
-
-export const apiFetcher = new NamedFetcher('api', {
-  baseURL: 'https://api.example.com',
-});
-
-// Request interceptor for authentication
+// Request interceptor
 apiFetcher.interceptors.request.use({
   name: 'auth-request-interceptor',
   order: 100,
   intercept(exchange) {
     exchange.request.headers.Authorization = 'Bearer ' + getAuthToken();
-    return exchange;
   },
 });
 
-// Response interceptor for logging
+// Response interceptor
 apiFetcher.interceptors.response.use({
   name: 'logging-response-interceptor',
   order: 10,
   intercept(exchange) {
     console.log('Response status:', exchange.response?.status);
-    return exchange;
   },
 });
 
-// Error interceptor for unified error handling
+// Error interceptor
 apiFetcher.interceptors.error.use({
   name: 'error-handler-interceptor',
   order: 50,
   intercept(exchange) {
-    if (exchange.error?.name === 'FetchTimeoutError') {
+    if (exchange.error instanceof FetchTimeoutError) {
       console.error('Request timeout:', exchange.error.message);
     }
-    return exchange;
   },
 });
 ```
 
-### Real-World Example (from integration tests)
+## 2. FetchExchange and Request Lifecycle
+
+Every request creates a `FetchExchange` that flows through the interceptor chain:
 
 ```typescript
-import { NamedFetcher } from '@ahoo-wang/fetcher';
-import {
-  authorizationRequestInterceptor,
-  cosecRequestInterceptor,
-  authorizationResponseInterceptor,
-  cosecResourceAttributionInterceptor,
-} from '../cosec';
-
-export const typicodeFetcher = new NamedFetcher('typicode', {
-  baseURL: 'https://jsonplaceholder.typicode.com',
-});
-
-typicodeFetcher.interceptors.request.use(cosecRequestInterceptor);
-typicodeFetcher.interceptors.request.use(authorizationRequestInterceptor);
-typicodeFetcher.interceptors.response.use(authorizationResponseInterceptor);
-typicodeFetcher.interceptors.response.use(cosecResourceAttributionInterceptor);
+interface FetchExchange {
+  fetcher: Fetcher;                // The Fetcher instance
+  request: FetchRequest;           // Current request (mutable)
+  response?: Response;             // Response after fetch (mutable)
+  error?: Error | any;             // Error if occurred (mutable)
+  attributes: Map<string, any>;    // Shared data between interceptors
+}
 ```
 
-## 2. Basic HTTP Requests
+Key FetchExchange methods:
+- `ensureRequestHeaders(): RequestHeaders` / `ensureRequestUrlParams(): Required<UrlParams>`
+- `hasError(): boolean` / `hasResponse(): boolean`
+- `requiredResponse: Response` -- getter, throws ExchangeError if no response
 
-All HTTP methods return a Promise with the native Response object.
+### InterceptorManager.exchange() Three-Phase Flow
+
+1. **Request phase** -- request interceptors (URL resolve, body serialize, fetch)
+2. **Response phase** -- response interceptors (validate status), only if request phase succeeded
+3. **Error phase** -- error interceptors run if any phase threw. Clearing `exchange.error` resolves successfully.
 
 ```typescript
-import { fetcher } from '@ahoo-wang/fetcher';
+// InterceptorRegistry methods
+registry.use(interceptor): boolean;       // add, false if name exists
+registry.eject(name: string): boolean;    // remove by name
+registry.clear(): void;                   // remove all
+```
 
-// GET request
+## 3. Basic HTTP Requests
+
+All HTTP methods return `Promise<R>` defaulting to `Promise<Response>`.
+
+```typescript
+import { fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
+
 const getResponse = await fetcher.get('/users');
-
-// POST request
-const postResponse = await fetcher.post('/users', {
-  body: { name: 'John', email: 'john@example.com' },
-});
-
-// PUT request
-const putResponse = await fetcher.put('/users/123', {
-  body: { name: 'Jane', email: 'jane@example.com' },
-});
-
-// DELETE request
+const postResponse = await fetcher.post('/users', { body: { name: 'John' } });
+const putResponse = await fetcher.put('/users/123', { body: { name: 'Jane' } });
 const deleteResponse = await fetcher.delete('/users/123');
-
-// PATCH request
-const patchResponse = await fetcher.patch('/users/123', {
-  body: { name: 'Updated Name' },
-});
-
-// HEAD request
+const patchResponse = await fetcher.patch('/users/123', { body: { name: 'Updated' } });
 const headResponse = await fetcher.head('/users');
-
-// OPTIONS request
 const optionsResponse = await fetcher.options('/users');
-
-// TRACE request
 const traceResponse = await fetcher.trace('/users');
 
-// Extract JSON data with type safety
+// Extract JSON with type safety
 const userData = await getResponse.json<User>();
+
+// Use ResultExtractors to get typed results directly
+const user = await fetcher.get<User>('/users/123', {}, {
+  resultExtractor: ResultExtractors.Json,
+});
 ```
 
-## 3. Path and Query Parameter Handling
+### ResultExtractors
+
+| Extractor | Returns | Description |
+|-----------|---------|-------------|
+| `Exchange` | `FetchExchange` | Full exchange (default for `request()`) |
+| `Response` | `Response` | Native Response (default for `get()`/`post()`/etc.) |
+| `Json` | `Promise<any>` | Parsed JSON body |
+| `Text` | `Promise<string>` | Response text |
+| `Blob` | `Promise<Blob>` | Response as Blob |
+| `ArrayBuffer` | `Promise<ArrayBuffer>` | Response as ArrayBuffer |
+| `Bytes` | `Promise<Uint8Array>` | Response as byte array |
+
+## 4. Path and Query Parameter Handling
 
 ### URI Template Style (Default - `{id}`)
 
@@ -171,226 +170,161 @@ const fetcher = new Fetcher({
 });
 
 const response = await fetcher.get('/users/:id', {
-  urlParams: {
-    path: { id: 123 },
-    query: { filter: 'active' },
-  },
-});
-// Result: /users/123?filter=active
-```
-
-### Query Parameters Only
-
-```typescript
-const response = await fetcher.get('/users', {
-  urlParams: {
-    query: { page: 1, limit: 10, sort: 'name' },
-  },
-});
-// Result: /users?page=1&limit=10&sort=name
-```
-
-## 4. Timeout Configuration
-
-### Per-Request Timeout
-
-```typescript
-const response = await fetcher.get('/slow-endpoint', {
-  timeout: 30000, // 30 seconds
+  urlParams: { path: { id: 123 }, query: { filter: 'active' } },
 });
 ```
 
-### Default Timeout on Fetcher Instance
+### UrlParams Structure
 
 ```typescript
-import { NamedFetcher } from '@ahoo-wang/fetcher';
+interface UrlParams {
+  path?: Record<string, any>;   // Path parameters {id} or :id (values encoded with encodeURIComponent)
+  query?: Record<string, any>;  // Query string params (values encoded via URLSearchParams)
+}
+```
 
+## 5. Timeout Configuration
+
+Default timeout is `undefined` (no timeout). Per-request timeout overrides the instance default.
+
+```typescript
+// Instance-level timeout
 const fetcher = new NamedFetcher('api', {
   baseURL: 'https://api.example.com',
-  timeout: 5000, // Default 5 second timeout
+  timeout: 5000,
+});
+
+// Per-request timeout
+const response = await fetcher.get('/slow-endpoint', { timeout: 30000 });
+```
+
+## 6. Error Hierarchy
+
+```
+FetcherError (base)
+  ├── FetchTimeoutError (has .request property)
+  └── ExchangeError (has .exchange property)
+        └── HttpStatusValidationError (status code validation failed)
+```
+
+```typescript
+import { FetcherError, ExchangeError, HttpStatusValidationError, FetchTimeoutError } from '@ahoo-wang/fetcher';
+
+try {
+  await fetcher.get('/users');
+} catch (error) {
+  if (error instanceof FetchTimeoutError) {
+    console.error('Timeout after', error.request.timeout, 'ms');
+  } else if (error instanceof HttpStatusValidationError) {
+    console.error('Status:', error.exchange.response?.status);
+  } else if (error instanceof ExchangeError) {
+    console.error('Exchange failed:', error.exchange.request.url);
+  }
+}
+```
+
+## 7. validateStatus and IGNORE_VALIDATE_STATUS
+
+```typescript
+import { Fetcher, IGNORE_VALIDATE_STATUS } from '@ahoo-wang/fetcher';
+
+// Custom status validation (default: status >= 200 && status < 300)
+const fetcher = new Fetcher({
+  validateStatus: (status) => status < 500, // accept 4xx as valid
+});
+
+// Skip validation for a specific request
+const response = await fetcher.get('/users', {}, {
+  attributes: { [IGNORE_VALIDATE_STATUS]: true },
 });
 ```
 
-### Handling Timeout Errors
+## 8. Request/Response Interceptor Examples
+
+### Token Refresh on 401
 
 ```typescript
-fetcher.interceptors.error.use({
-  name: 'timeout-handler',
-  order: 100,
-  intercept(exchange) {
-    if (exchange.error?.name === 'FetchTimeoutError') {
-      throw new Error(`Request timed out after ${exchange.request.timeout}ms`);
-    }
-    return exchange;
-  },
-});
-```
+import { timeoutFetch } from '@ahoo-wang/fetcher';
 
-## 5. Request/Response Interceptors
-
-### Request Interceptor (Authentication)
-
-```typescript
-// Add auth token to all requests
-fetcher.interceptors.request.use({
-  name: 'auth-interceptor',
-  order: 50,
-  intercept(exchange) {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      exchange.request.headers.Authorization = `Bearer ${token}`;
-    }
-    return exchange;
-  },
-});
-```
-
-### Request Interceptor (Request ID/Logging)
-
-```typescript
-// Add request ID for tracing
-fetcher.interceptors.request.use({
-  name: 'request-id-interceptor',
-  order: 10,
-  intercept(exchange) {
-    exchange.request.headers['X-Request-ID'] = crypto.randomUUID();
-    return exchange;
-  },
-});
-```
-
-### Response Interceptor (Token Refresh)
-
-```typescript
 fetcher.interceptors.response.use({
   name: 'token-refresh-interceptor',
   order: 100,
-  intercept(exchange) {
+  async intercept(exchange) {
     if (exchange.response?.status === 401) {
-      // Trigger token refresh logic
-      return refreshToken().then(newToken => {
-        exchange.request.headers.Authorization = `Bearer ${newToken}`;
-        return exchange.proceed();
-      });
+      const newToken = await refreshToken();
+      exchange.request.headers.Authorization = `Bearer ${newToken}`;
+      exchange.response = await timeoutFetch(exchange.request);
     }
-    return exchange;
   },
 });
 ```
 
-### Response Interceptor (Global Error Handler)
+### Retry Logic (Error Interceptor)
 
 ```typescript
-fetcher.interceptors.response.use({
-  name: 'global-error-handler',
-  order: Number.MAX_SAFE_INTEGER - 10000,
-  intercept(exchange) {
-    const status = exchange.response?.status;
-    if (status && status >= 400) {
-      throw new Error(`HTTP Error: ${status}`);
+fetcher.interceptors.error.use({
+  name: 'retry-interceptor',
+  order: 50,
+  async intercept(exchange) {
+    const retryCount = exchange.attributes.get('retryCount') ?? 0;
+    if (retryCount < 3) {
+      exchange.attributes.set('retryCount', retryCount + 1);
+      exchange.response = await timeoutFetch(exchange.request);
+      exchange.error = undefined; // clear error to indicate recovery
     }
-    return exchange;
   },
 });
 ```
 
 ### Interceptor Order Reference
 
-Built-in interceptors use these order ranges:
+| Order Value | Interceptor | Phase |
+|-------------|------------|-------|
+| `MIN_SAFE_INTEGER + 10000` | RequestBodyInterceptor | Request |
+| `MAX_SAFE_INTEGER - 20000` | UrlResolveInterceptor | Request |
+| `MAX_SAFE_INTEGER - 10000` | FetchInterceptor | Request |
+| `MAX_SAFE_INTEGER - 10000` | ValidateStatusInterceptor | Response |
 
-- `Number.MAX_SAFE_INTEGER - 11000`: UrlResolveInterceptor (resolves URL params)
-- `Number.MIN_SAFE_INTEGER + 10000`: RequestBodyInterceptor (converts body to JSON)
-- `Number.MAX_SAFE_INTEGER - 10000`: ValidateStatusInterceptor (validates HTTP status)
+Custom interceptors: `1-10` (high priority), `50-100` (medium), `1000+` (low).
 
-Lower values execute first. Custom interceptors typically use orders like:
-
-- `1-10`: High priority (request ID, timing)
-- `50-100`: Medium priority (auth)
-- `1000+`: Low priority (after built-in interceptors)
-
-## 6. Named Fetcher Registry Pattern
-
-### Creating Named Fetchers
+## 9. Named Fetcher Registry Pattern
 
 ```typescript
 import { NamedFetcher, fetcherRegistrar } from '@ahoo-wang/fetcher';
 
-// Create multiple named fetchers for different services
-new NamedFetcher('users', {
-  baseURL: 'https://api.example.com/users',
-  timeout: 5000,
-});
+// NamedFetcher auto-registers with fetcherRegistrar on construction
+new NamedFetcher('users', { baseURL: 'https://api.example.com/users', timeout: 5000 });
+new NamedFetcher('orders', { baseURL: 'https://api.example.com/orders', timeout: 10000 });
 
-new NamedFetcher('orders', {
-  baseURL: 'https://api.example.com/orders',
-  timeout: 10000,
-});
+// Retrieve
+const usersFetcher = fetcherRegistrar.get('users');           // Fetcher | undefined
+const ordersFetcher = fetcherRegistrar.requiredGet('orders');  // Fetcher (throws if not found)
 
-new NamedFetcher('files', {
-  baseURL: 'https://api.example.com/files',
-  timeout: 30000,
-});
-```
+// Default fetcher getter/setter
+fetcherRegistrar.default;                  // gets the 'default' named fetcher
+fetcherRegistrar.default = myFetcher;      // sets the 'default' named fetcher
+fetcherRegistrar.fetchers;                 // Map<string, Fetcher> (copy of all)
 
-### Retrieving Named Fetchers
-
-```typescript
-// Safe get - returns undefined if not found
-const usersFetcher = fetcherRegistrar.get('users');
-if (usersFetcher) {
-  const response = await usersFetcher.get('/123');
-}
-
-// Required get - throws error if not found
-const ordersFetcher = fetcherRegistrar.requiredGet('orders');
-const response = await ordersFetcher.get('/456');
-```
-
-### Using Named Fetchers
-
-```typescript
-// Get a fetcher and use it
-const fetcher = fetcherRegistrar.get('api');
-if (fetcher) {
-  // GET with path params
-  const response = await fetcher.get('/users/{id}', {
-    urlParams: { path: { id: 123 } },
-  });
-  const user = await response.json<User>();
-
-  // POST with body
-  const createResponse = await fetcher.post('/users', {
-    body: { name: 'John', email: 'john@example.com' },
-  });
-}
-```
-
-### Default Fetcher
-
-```typescript
-import { fetcher } from '@ahoo-wang/fetcher';
+// Unregister
+fetcherRegistrar.unregister('users');      // boolean
 
 // Use the pre-configured default fetcher
+import { fetcher } from '@ahoo-wang/fetcher';
 const response = await fetcher.get('/users');
-const data = await response.json<User>();
 ```
 
 ## Complete Example: API Service Setup
 
 ```typescript
 // src/services/api.ts
-import { NamedFetcher, fetcherRegistrar } from '@ahoo-wang/fetcher';
+import { NamedFetcher, FetchTimeoutError } from '@ahoo-wang/fetcher';
 
-// Create API fetcher
 export const apiFetcher = new NamedFetcher('api', {
   baseURL: 'https://api.example.com/v1',
   timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Add auth interceptor
 apiFetcher.interceptors.request.use({
   name: 'auth',
   order: 100,
@@ -399,36 +333,21 @@ apiFetcher.interceptors.request.use({
     if (token) {
       exchange.request.headers.Authorization = `Bearer ${token}`;
     }
-    return exchange;
   },
 });
 
-// Add request logging
-apiFetcher.interceptors.request.use({
-  name: 'request-logger',
-  order: 5,
+apiFetcher.interceptors.error.use({
+  name: 'error-handler',
+  order: 100,
   intercept(exchange) {
-    console.log(
-      `[${new Date().toISOString()}] ${exchange.request.method} ${exchange.request.url}`,
-    );
-    return exchange;
-  },
-});
-
-// Add response logging
-apiFetcher.interceptors.response.use({
-  name: 'response-logger',
-  order: 5,
-  intercept(exchange) {
-    console.log(
-      `[${new Date().toISOString()}] Response: ${exchange.response?.status}`,
-    );
-    return exchange;
+    if (exchange.error instanceof FetchTimeoutError) {
+      console.error('Timeout:', exchange.error.message);
+    }
   },
 });
 
 // src/services/users.ts
-import { fetcherRegistrar } from '@ahoo-wang/fetcher';
+import { fetcherRegistrar, ResultExtractors } from '@ahoo-wang/fetcher';
 
 export interface User {
   id: number;
@@ -439,40 +358,36 @@ export interface User {
 export const userService = {
   async getUser(id: number): Promise<User> {
     const fetcher = fetcherRegistrar.requiredGet('api');
-    const response = await fetcher.get(`/users/{id}`, {
+    return await fetcher.get<User>('/users/{id}', {
       urlParams: { path: { id } },
-    });
-    return response.json<User>();
+    }, { resultExtractor: ResultExtractors.Json });
   },
 
   async createUser(data: Omit<User, 'id'>): Promise<User> {
     const fetcher = fetcherRegistrar.requiredGet('api');
-    const response = await fetcher.post('/users', { body: data });
-    return response.json<User>();
+    return await fetcher.post<User>('/users', {
+      body: data,
+    }, { resultExtractor: ResultExtractors.Json });
   },
 
   async updateUser(id: number, data: Partial<User>): Promise<User> {
     const fetcher = fetcherRegistrar.requiredGet('api');
-    const response = await fetcher.patch(`/users/{id}`, {
+    return await fetcher.patch<User>('/users/{id}', {
       urlParams: { path: { id } },
       body: data,
-    });
-    return response.json<User>();
+    }, { resultExtractor: ResultExtractors.Json });
   },
 
   async deleteUser(id: number): Promise<void> {
     const fetcher = fetcherRegistrar.requiredGet('api');
-    await fetcher.delete(`/users/{id}`, {
-      urlParams: { path: { id } },
-    });
+    await fetcher.delete('/users/{id}', { urlParams: { path: { id } } });
   },
 
   async listUsers(params?: { page?: number; limit?: number }): Promise<User[]> {
     const fetcher = fetcherRegistrar.requiredGet('api');
-    const response = await fetcher.get('/users', {
+    return await fetcher.get<User[]>('/users', {
       urlParams: { query: params },
-    });
-    return response.json<User[]>();
+    }, { resultExtractor: ResultExtractors.Json });
   },
 };
 ```
@@ -481,33 +396,20 @@ export const userService = {
 
 ### Constructor Options
 
-| Option             | Type                     | Default          | Description                                   |
-| ------------------ | ------------------------ | ---------------- | --------------------------------------------- |
-| `baseURL`          | `string`                 | `''`             | Base URL for all requests                     |
-| `timeout`          | `number`                 | `0` (no timeout) | Request timeout in milliseconds               |
-| `headers`          | `Record<string, string>` | `{}`             | Default request headers                       |
-| `urlTemplateStyle` | `UrlTemplateStyle`       | `UriTemplate`    | Path param style (`UriTemplate` or `Express`) |
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `baseURL` | `string` | `''` | Base URL for all requests |
+| `timeout` | `number` | `undefined` | Timeout in ms (undefined = no timeout) |
+| `headers` | `Record<string, string>` | `{Content-Type: application/json}` | Default headers |
+| `urlTemplateStyle` | `UrlTemplateStyle` | `UriTemplate` | Path param style |
+| `validateStatus` | `(status: number) => boolean` | `status >= 200 && status < 300` | Status validation |
+| `interceptors` | `InterceptorManager` | new InterceptorManager() | Custom interceptor manager |
 
 ### HTTP Methods
 
-All methods accept `url: string` and optional `FetcherRequest` config.
+All methods: `fetcher.get<R>(url, requestInit?, requestOptions?): Promise<R>`
 
-| Method    | Body Type | Description     |
-| --------- | --------- | --------------- |
-| `get`     | none      | GET request     |
-| `post`    | `body`    | POST request    |
-| `put`     | `body`    | PUT request     |
-| `delete`  | none      | DELETE request  |
-| `patch`   | `body`    | PATCH request   |
-| `head`    | none      | HEAD request    |
-| `options` | none      | OPTIONS request |
-| `trace`   | none      | TRACE request   |
-
-### UrlParams Structure
-
-```typescript
-{
-  path?: Record<string, string | number>;  // Path parameters {id} or :id
-  query?: Record<string, string | number | boolean>;  // Query string params
-}
-```
+| Method | Description |
+|--------|-------------|
+| `get` / `head` / `options` / `trace` | No body in requestInit |
+| `post` / `put` / `patch` / `delete` | Body allowed in requestInit |

@@ -1,71 +1,80 @@
 ---
 name: fetcher-react-hooks
-description: Use React hooks for data fetching with Fetcher. Use when users want React hooks, mention useFetcher, useQuery, usePromise, or React integration with Fetcher.
+description: >
+  React hooks for data fetching with Fetcher. Covers the layered hook architecture (usePromiseState -> useExecutePromise -> useFetcher/useQuery -> useFetcherQuery), PromiseStatus state machine, useFetcher, useQuery, useFetcherQuery, usePromise, useKeyStorage, useImmerKeyStorage, useEventSubscription, useMounted, useLatest, useForceUpdate, useFullscreen, useRefs, createQueryApiHooks, and data monitor hooks.
+  Use for: React hooks, useFetcher, useQuery, usePromise, data fetching, loading state, promise state, AbortController, abort, race condition, reactive storage, event subscription.
 ---
 
 # fetcher-react-hooks Skill
 
 ## Trigger Conditions
 
-- User wants React hooks for data fetching
-- User mentions `useFetcher`, `useQuery`, `usePromise`
+- User wants React hooks for data fetching or state management
+- User mentions `useFetcher`, `useQuery`, `usePromise`, `useExecutePromise`
 - User asks about React integration with Fetcher
-- User wants to build data-driven React components with HTTP requests
-- User asks about promise state management in React
-- User wants Wow CQRS query hooks for React
+- User mentions `useMounted`, `useLatest`, `useForceUpdate`, `useFullscreen`, `useRefs`
+- User asks about `PromiseStatus`, promise state management, or AbortController in React
+- User wants Wow CQRS query hooks or data monitor hooks for React
+- User wants debounced hooks for rate-limiting operations
 
 ## Capabilities
 
-This skill provides guidance on using the `@ahoo-wang/fetcher-react` package, which offers React hooks for data fetching, promise state management, storage, events, and authentication with CoSec integration.
+This skill provides guidance on using `@ahoo-wang/fetcher-react`, which offers React hooks for data fetching, promise state management, storage, events, and authentication.
 
 ---
 
-## Core Hooks
+## Hook Architecture (Layered Design)
 
-### useFetcher and useFetcherQuery
+```
+usePromiseState          (raw state machine: PromiseStatus transitions)
+  └─> useExecutePromise  (adds execute/abort with AbortController, unmount safety)
+        ├─> useFetcher         (HTTP-specific: wraps Fetcher with FetchExchange)
+        │     └─> useFetcherQuery  (POST query with setQuery/getQuery)
+        └─> useQuery           (generic query with custom execute function)
+              ├─> useListQuery / usePagedQuery / useSingleQuery / useCountQuery / useListStreamQuery
+              └─> useFetcherListQuery / useFetcherPagedQuery / ... (Fetcher-based variants)
+```
 
-`useFetcher` provides complete HTTP fetching capabilities with automatic state management, race condition protection, and AbortController support.
+---
 
-```tsx
-import { useFetcher } from '@ahoo-wang/fetcher-react';
+## PromiseStatus State Machine
 
-function UserProfile({ userId }: { userId: string }) {
-  const { loading, result, error, execute, abort } = useFetcher({
-    onAbort: () => console.log('Fetch was aborted'),
-  });
-
-  const fetchUser = () => {
-    execute({ url: `/api/users/${userId}`, method: 'GET' });
-  };
-
-  // Multiple calls automatically cancel previous requests
+```typescript
+enum PromiseStatus {
+  IDLE = 'idle',
+  LOADING = 'loading',
+  SUCCESS = 'success',
+  ERROR = 'error',
 }
 ```
 
-`useFetcherQuery` provides query-based fetching with `setQuery`/`getQuery` for parameter management:
-
-```tsx
-const { loading, result, execute, setQuery, getQuery } = useFetcherQuery({
-  url: '/api/search',
-  initialQuery: { keyword: '', limit: 10 },
-  autoExecute: true,
-});
-```
-
-**Key features:**
-
-- Automatic AbortController for request cancellation
-- Race condition protection
-- Loading, error, and result states
-- `autoExecute` option for mount-time execution
+All promise hooks share this state: `status`, `loading` (boolean), `result`, `error`.
 
 ---
 
-## Promise Management
+## Core State Hooks
+
+### usePromiseState
+
+Raw state management for promises without execution logic. Provides `setLoading`, `setSuccess`, `setError`, `setIdle` transitions with unmount-safe checks.
+
+```tsx
+const { status, loading, result, error, setLoading, setSuccess, setError, setIdle } =
+  usePromiseState<string>();
+
+setLoading();           // status = LOADING, error cleared
+setSuccess('data');     // status = SUCCESS, result set (async, calls onSuccess)
+setError(new Error());  // status = ERROR, error set (async, calls onError)
+setIdle();              // status = IDLE, all cleared
+```
 
 ### useExecutePromise
 
-Manages async operations with automatic state handling and race condition protection.
+Manages async operations with race condition protection, AbortController, and unmount safety. Accepts a `PromiseSupplier<R>`:
+
+```typescript
+type PromiseSupplier<R> = (abortController: AbortController) => Promise<R>;
+```
 
 ```tsx
 const { loading, result, error, execute, reset, abort } =
@@ -73,28 +82,179 @@ const { loading, result, error, execute, reset, abort } =
     onAbort: () => console.log('Operation aborted'),
   });
 
-// Using a promise supplier
-execute(async abortController => {
-  const response = await fetch('/api/data', { signal: abortController.signal });
-  return response.json();
-});
+// CORRECT: pass a PromiseSupplier (receives AbortController)
+execute((abortController) =>
+  fetch('/api/data', { signal: abortController.signal }).then(res => res.json())
+);
 
-// Using a direct promise
-execute(fetch('/api/data').then(res => res.json()));
+// New calls auto-cancel previous requests; state updates skip if unmounted
+abort();  // manual cancel
+reset();  // reset to IDLE
 ```
 
-### usePromiseState
+**Key: `execute` only accepts `PromiseSupplier<R>`, NOT raw promises.**
 
-Provides state management for promises without execution logic.
+---
+
+## HTTP Fetch Hooks
+
+### useFetcher
+
+HTTP-specific hook wrapping Fetcher with `FetchExchange` support.
 
 ```tsx
-const { status, loading, result, error, setSuccess, setError, setIdle } =
-  usePromiseState<string>();
+import { useFetcher } from '@ahoo-wang/fetcher-react';
 
-// Manual state transitions
-setSuccess('Data loaded');
-setError(new Error('Failed'));
-setIdle();
+function UserProfile({ userId }: { userId: string }) {
+  const { loading, result, error, exchange, execute, abort } = useFetcher<User>({
+    resultExtractor: ResultExtractors.Json,
+  });
+
+  const fetchUser = () => {
+    execute({ url: `/api/users/${userId}`, method: 'GET' });
+  };
+  // exchange contains request/response details
+}
+```
+
+### useFetcherQuery
+
+POST-based query hook with `setQuery`/`getQuery` management. `execute()` takes no argument -- it uses the current query from `getQuery()`.
+
+```tsx
+const { loading, result, execute, setQuery, getQuery } = useFetcherQuery<SearchQuery, SearchResult>({
+  url: '/api/search',
+  initialQuery: { keyword: '', limit: 10 },
+  autoExecute: true,
+});
+
+setQuery({ keyword: 'hello', limit: 10 }); // auto-executes if autoExecute
+execute();  // manual re-execute with current query
+```
+
+**Key: `useFetcherQuery.execute()` has no parameters. Use `setQuery` to update, `execute` to re-run.**
+
+---
+
+## Generic Query Hooks
+
+### useQuery
+
+Generic query hook with custom `execute` function. Wraps `useExecutePromise` + `useQueryState`.
+
+```tsx
+const { loading, result, execute, setQuery } = useQuery<UserQuery, User>({
+  initialQuery: { id: '1' },
+  execute: async (query, attributes, abortController) => {
+    const res = await fetch(`/api/users/${query.id}`, {
+      signal: abortController.signal,
+    });
+    return res.json();
+  },
+  autoExecute: true,
+});
+```
+
+### useQueryState
+
+Standalone query state management (getQuery/setQuery) with optional autoExecute.
+
+```tsx
+const { getQuery, setQuery } = useQueryState<UserQuery>({
+  initialQuery: { id: '1' },
+  autoExecute: true,
+  execute: async (query) => { /* ... */ },
+});
+```
+
+---
+
+## Wow Query Hooks
+
+Wow-specific query hooks from `@ahoo-wang/fetcher-react`. These wrap `useQuery` with typed Wow query structures (ListQuery, PagedQuery, etc.) and require a custom `execute` function.
+
+### useListQuery
+
+```tsx
+const { result, loading, execute, setQuery } = useListQuery<User, 'id' | 'name'>({
+  initialQuery: { condition: all(), projection: {}, sort: [], limit: 10 },
+  execute: async listQuery => fetchListData(listQuery),
+  autoExecute: true,
+});
+```
+
+### usePagedQuery / useSingleQuery / useCountQuery / useListStreamQuery
+
+Same pattern, typed for paged results, single items, counts, and streams respectively.
+
+### Fetcher-based Variants
+
+These use `useFetcherQuery` internally (POST-based) and take a `url` option instead of a custom `execute`:
+
+- `useFetcherListQuery` - POST list query via Fetcher
+- `useFetcherPagedQuery` - POST paged query via Fetcher
+- `useFetcherSingleQuery` - POST single query via Fetcher
+- `useFetcherCountQuery` - POST count query via Fetcher
+- `useFetcherListStreamQuery` - POST stream query via Fetcher
+
+```tsx
+const { result, loading, execute, setQuery } = useFetcherListQuery<User, keyof User>({
+  url: '/api/users/list',
+  initialQuery: listQuery({ condition: all(), sort: [desc('createdAt')], limit: 10 }),
+  autoExecute: true,
+});
+```
+
+---
+
+## Utility Hooks
+
+### useMounted
+
+Returns a function that checks if the component is still mounted. Used internally by all promise hooks for safe state updates.
+
+```tsx
+const isMounted = useMounted();
+useEffect(() => {
+  someAsyncOp().then(() => {
+    if (isMounted()) setState(result); // safe update
+  });
+}, []);
+```
+
+### useLatest
+
+Returns a ref that always holds the latest value. Useful in async callbacks.
+
+```tsx
+const latestCount = useLatest(count);
+// latestCount.current always reflects the latest count
+```
+
+### useForceUpdate
+
+Force a component re-render.
+
+```tsx
+const forceUpdate = useForceUpdate();
+```
+
+### useRefs
+
+Map-like interface for managing multiple refs by key.
+
+```tsx
+const refs = useRefs<HTMLDivElement>();
+<div ref={refs.register('myDiv')} />;
+const el = refs.get('myDiv');
+```
+
+### useFullscreen
+
+Fullscreen toggle hook with `enter`, `exit`, `toggle`, and `fullscreen` state.
+
+```tsx
+const { fullscreen, toggle, enter, exit } = useFullscreen({ target: containerRef });
 ```
 
 ---
@@ -103,43 +263,20 @@ setIdle();
 
 ### useKeyStorage
 
-Reactive state management for `KeyStorage` instances with automatic subscription to storage changes.
+Reactive state for `KeyStorage` with automatic subscription.
 
 ```tsx
-import { KeyStorage } from '@ahoo-wang/fetcher-storage';
-import { useKeyStorage } from '@ahoo-wang/fetcher-react';
-
-const themeStorage = new KeyStorage<string>({ key: 'theme' });
-
-// Without default value
 const [theme, setTheme, clearTheme] = useKeyStorage(themeStorage);
-
-// With default value (guaranteed non-null)
-const [theme, setTheme, clearTheme] = useKeyStorage(themeStorage, 'light');
+const [theme, setTheme, clearTheme] = useKeyStorage(themeStorage, 'light'); // with default
 ```
 
 ### useImmerKeyStorage
 
-Immer-powered immutable state updates for complex objects.
+Immer-powered immutable updates for complex objects.
 
 ```tsx
-const prefsStorage = new KeyStorage<{
-  theme: string;
-  volume: number;
-  notifications: boolean;
-}>({ key: 'prefs' });
-
-const [prefs, updatePrefs, resetPrefs] = useImmerKeyStorage(prefsStorage, {
-  theme: 'light',
-  volume: 50,
-  notifications: true,
-});
-
-// Intuitive "mutable" updates
-updatePrefs(draft => {
-  draft.volume = Math.min(100, draft.volume + 10);
-  draft.theme = 'dark';
-});
+const [prefs, updatePrefs, resetPrefs] = useImmerKeyStorage(prefsStorage, defaultPrefs);
+updatePrefs(draft => { draft.volume = 80; });
 ```
 
 ---
@@ -148,109 +285,43 @@ updatePrefs(draft => {
 
 ### useEventSubscription
 
-React interface for subscribing to typed event buses with automatic lifecycle management.
+Subscribe to typed event buses with automatic lifecycle management.
 
 ```tsx
-import { useEventSubscription } from '@ahoo-wang/fetcher-react';
-import { eventBus } from './eventBus';
-
-function MyComponent() {
-  const { subscribe, unsubscribe } = useEventSubscription({
-    bus: eventBus,
-    handler: {
-      name: 'myEvent',
-      handle: event => console.log('Received:', event),
-    },
-  });
-
-  // Automatically subscribes on mount, unsubscribes on unmount
-}
+useEventSubscription({
+  bus: eventBus,
+  handler: { name: 'myEvent', handle: event => console.log(event) },
+});
+// auto-subscribes on mount, unsubscribes on unmount
 ```
 
 ---
 
-## Wow Query Hooks
+## Data Monitor Hooks
 
-For use with `@ahoo-wang/fetcher-wow` package for CQRS patterns.
+### useDataMonitor
 
-### useListQuery
-
-List queries with conditions, projections, sorting, and limits.
+Monitors data changes via periodic count queries with notification support.
 
 ```tsx
-const { result, loading, error, execute, setCondition } = useListQuery({
-  initialQuery: { condition: {}, projection: {}, sort: [], limit: 10 },
-  execute: async listQuery => fetchListData(listQuery),
-  autoExecute: true,
+const { isEnabled, enable, disable, toggle } = useDataMonitor({
+  viewId: 'orders',
+  countUrl: '/api/orders/count',
+  viewName: 'Orders',
+  condition: { status: 'pending' },
+  notification: { title: 'New Orders', body: 'You have new pending orders' },
+  interval: 30000,
 });
 ```
 
-### usePagedQuery
+### useDataMonitorEventBus
 
-Paged queries with pagination metadata.
-
-```tsx
-const { result, loading, execute, setPagination } = usePagedQuery({
-  initialQuery: {
-    condition: {},
-    pagination: { index: 1, size: 10 },
-    projection: {},
-    sort: [],
-  },
-  execute: async pagedQuery => fetchPagedData(pagedQuery),
-});
-```
-
-### useSingleQuery
-
-Fetch a single item by condition.
+Subscribe to `DataChangedEvent` across components.
 
 ```tsx
-const { result, loading, execute, setCondition } = useSingleQuery({
-  initialQuery: { condition: {}, projection: {}, sort: [] },
-  execute: async query => fetchSingleData(query),
-});
+const { subscribe, unsubscribe } = useDataMonitorEventBus();
+subscribe({ name: 'onDataChanged', handle: event => console.log(event) });
 ```
-
-### useCountQuery
-
-Count records matching a condition.
-
-```tsx
-const { result, loading, execute, setCondition } = useCountQuery({
-  initialQuery: {},
-  execute: async condition => fetchCount(condition),
-});
-```
-
-### useListStreamQuery
-
-List queries returning a `ReadableStream` for server-sent events.
-
-```tsx
-const { result, loading, execute } = useListStreamQuery({
-  initialQuery: { condition: {}, projection: {}, sort: [], limit: 100 },
-  execute: async listQuery => fetchStream(listQuery),
-});
-
-// Read the stream
-useEffect(() => {
-  if (result) {
-    const reader = result.getReader();
-    // process stream events...
-  }
-}, [result]);
-```
-
-### Fetcher Query Hooks
-
-Specialized hooks that integrate Fetcher with Wow queries:
-
-- `useFetcherListQuery` - List queries via Fetcher HTTP
-- `useFetcherPagedQuery` - Paged queries via Fetcher HTTP
-- `useFetcherSingleQuery` - Single item queries via Fetcher HTTP
-- `useFetcherCountQuery` - Count queries via Fetcher HTTP
-- `useFetcherListStreamQuery` - Stream queries via Fetcher HTTP
 
 ---
 
@@ -258,196 +329,59 @@ Specialized hooks that integrate Fetcher with Wow queries:
 
 ### createExecuteApiHooks
 
-Generate type-safe hooks from API objects with automatic method discovery.
+Generate `useExecutePromise`-based hooks from decorator API classes.
 
 ```tsx
-import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
-
 @api('/users')
 class UserApi {
-  @get('/{id}')
-  getUser(@path('id') id: string): Promise<User> {
-    throw autoGeneratedError(id);
-  }
-
-  @post('')
-  createUser(@body() data: { name: string }): Promise<User> {
-    throw autoGeneratedError(data);
-  }
+  @get('/{id}') getUser(@path('id') id: string): Promise<User> { throw autoGeneratedError(id); }
+  @post('') createUser(@body() data: CreateUser): Promise<User> { throw autoGeneratedError(data); }
 }
 
 const apiHooks = createExecuteApiHooks({ api: new UserApi() });
-
-// Generated hooks: useGetUser, useCreateUser
-function UserComponent() {
-  const { loading, result, execute } = apiHooks.useGetUser();
-  execute('123'); // Fully typed
-}
+// apiHooks.useGetUser() -> { loading, result, execute }
+// execute('123') - fully typed
 ```
 
 ### createQueryApiHooks
 
-Generate query hooks with automatic query state management.
+Generate query hooks with `useFetcherQuery`-based state management.
 
 ```tsx
 const apiHooks = createQueryApiHooks({ api: new UserApi() });
-
-function UserList() {
-  const { loading, result, execute, setQuery, getQuery } = apiHooks.useGetUsers(
-    {
-      initialQuery: { page: 1, limit: 10 },
-      autoExecute: true,
-    },
-  );
-}
+// apiHooks.useListUsers({ initialQuery: {...}, autoExecute: true })
 ```
 
 ---
 
 ## Security (CoSec)
 
-### SecurityProvider
+### SecurityProvider / useSecurityContext / useSecurity / RouteGuard
 
-Wrap your app to provide authentication context.
-
-```tsx
-import { SecurityProvider } from '@ahoo-wang/fetcher-react';
-
-function App() {
-  return (
-    <SecurityProvider
-      tokenStorage={tokenStorage}
-      onSignIn={() => navigate('/dashboard')}
-      onSignOut={() => navigate('/login')}
-    >
-      <MyApp />
-    </SecurityProvider>
-  );
-}
-```
-
-### useSecurityContext
-
-Access auth state from any component within `SecurityProvider`.
+Wrap app with `SecurityProvider` for auth context. Use `useSecurityContext` to access `currentUser`, `authenticated`, `signOut`. `RouteGuard` conditionally renders based on auth status.
 
 ```tsx
-import { useSecurityContext } from '@ahoo-wang/fetcher-react';
-
-function UserProfile() {
-  const { currentUser, authenticated, signOut } = useSecurityContext();
-  // ...
-}
-```
-
-### useSecurity
-
-Hook for managing authentication with CoSec tokens.
-
-```tsx
-const { currentUser, authenticated, signIn, signOut } = useSecurity(
-  tokenStorage,
-  {
-    onSignIn: () => navigate('/dashboard'),
-    onSignOut: () => navigate('/login'),
-  },
-);
-
-// Direct token
-signIn(compositeToken);
-
-// Or async function
-signIn(async () => {
-  const response = await fetch('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify(credentials),
-  });
-  return response.json();
-});
-```
-
-### RouteGuard
-
-Conditionally render content based on authentication status.
-
-```tsx
-import { RouteGuard } from '@ahoo-wang/fetcher-react';
-
-function ProtectedPage() {
-  return (
-    <RouteGuard
-      fallback={<div>Please log in</div>}
-      onUnauthorized={() => navigate('/login')}
-    >
-      <div>Protected content</div>
-    </RouteGuard>
-  );
-}
-```
-
----
-
-## Notifications
-
-### NotificationCenter
-
-Publish notifications to registered channels.
-
-```tsx
-import { notificationCenter } from '@ahoo-wang/fetcher-react';
-
-await notificationCenter.publish('browser', {
-  title: 'New Message',
-  payload: { body: 'Hello!' },
-});
-```
-
-### Browser Notification Channel
-
-The `browser` channel uses the Web Notification API.
-
-```tsx
-import {
-  notificationCenter,
-  browserNotificationChannel,
-} from '@ahoo-wang/fetcher-react';
-import { channelRegistry } from '@ahoo-wang/fetcher-react/notification/channel';
-
-// Register the browser channel
-channelRegistry.register('browser', browserNotificationChannel);
-
-// Request permission and send
-if (Notification.permission === 'granted') {
-  await notificationCenter.publish('browser', {
-    title: 'Alert',
-    payload: { body: 'Something happened' },
-  });
-}
+import { SecurityProvider, useSecurityContext, RouteGuard } from '@ahoo-wang/fetcher-react';
 ```
 
 ---
 
 ## Debounced Hooks
 
-For rate-limiting operations:
+Rate-limiting variants of core hooks:
 
 - `useDebouncedCallback` - Debounce any callback
 - `useDebouncedExecutePromise` - Debounce promise execution
 - `useDebouncedQuery` - Debounce query execution
 - `useDebouncedFetcher` - Debounce HTTP fetches
-- `useDebouncedFetcherQuery` - Debounce fetcher queries with params
+- `useDebouncedFetcherQuery` - Debounce fetcher queries
 
 ```tsx
 const { loading, result, run, cancel, isPending } = useDebouncedFetcherQuery({
   url: '/api/search',
   initialQuery: { keyword: '' },
   debounce: { delay: 300 },
-  autoExecute: false,
 });
-
-setQuery({ keyword: 'search term' }); // Triggers debounced execution
-run(); // Manual execution
-cancel(); // Cancel pending
-isPending(); // Check if debounce timer is active
 ```
 
 ---
@@ -456,33 +390,46 @@ isPending(); // Check if debounce timer is active
 
 ```tsx
 import {
-  // Core
+  // State machine
+  PromiseStatus,
+  usePromiseState,
+  // Execution
+  useExecutePromise,
+  // HTTP fetch
   useFetcher,
   useFetcherQuery,
-  useExecutePromise,
-  usePromiseState,
+  // Generic query
   useQuery,
   useQueryState,
+  // Utility
+  useMounted,
+  useLatest,
+  useForceUpdate,
+  useRefs,
+  useFullscreen,
   // Storage
   useKeyStorage,
   useImmerKeyStorage,
   // Events
   useEventSubscription,
-  // Wow Queries
+  // Wow queries (require custom execute function)
   useListQuery,
   usePagedQuery,
   useSingleQuery,
   useCountQuery,
   useListStreamQuery,
-  // Fetcher Queries
+  // Wow fetcher queries (POST-based, take url option)
   useFetcherListQuery,
   useFetcherPagedQuery,
   useFetcherSingleQuery,
   useFetcherCountQuery,
   useFetcherListStreamQuery,
-  // API Generation
+  // API generation
   createExecuteApiHooks,
   createQueryApiHooks,
+  // Data monitor
+  useDataMonitor,
+  useDataMonitorEventBus,
   // Security
   SecurityProvider,
   useSecurity,
