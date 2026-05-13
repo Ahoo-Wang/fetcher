@@ -1,243 +1,186 @@
 ---
 name: fetcher-openapi-generator
-description: Generate type-safe API clients from OpenAPI 3.0+ specifications. Use when users want to generate API clients, mention OpenAPI, code generation, fetcher-generator CLI, or generating TypeScript types.
+description: >
+  Generate type-safe API clients from OpenAPI 3.0+ specifications using @ahoo-wang/fetcher-generator. Covers CLI usage (fetcher-generator), CodeGenerator programmatic API, code generation pipeline (parseOpenAPI, AggregateResolver, ModelGenerator, ClientGenerator), GeneratorConfiguration, Wow CQRS client generation (CommandClient, SnapshotQueryClient, StreamCommandClient), model generation, barrel exports, and post-processing.
+  Use for: OpenAPI, code generation, fetcher-generator CLI, type-safe clients, generate API, OpenAPI spec, YAML, ts-morph, aggregate resolver, CQRS code generation.
 ---
 
 # fetcher-openapi-generator
 
-TypeScript code generator that produces type-safe API clients from OpenAPI 3.0+ specifications, with specialized support for the Wow CQRS/DDD framework.
+TypeScript code generator producing type-safe API clients from OpenAPI 3.0+ specs via `@ahoo-wang/fetcher-generator`, with specialized Wow CQRS/DDD framework support.
 
 ## Trigger Conditions
 
-Activate this skill when the user:
+Activate when the user:
 
 - Wants to generate API clients from an OpenAPI specification
-- Mentions OpenAPI, code generation, or the CLI tool `fetcher-generator`
+- Mentions OpenAPI, code generation, `fetcher-generator` CLI
 - Asks about generating TypeScript types or client code
-- Wants to set up API clients for a new service
+- Needs Wow CQRS client generation (commands, queries, events)
+
+## Installation
+
+```bash
+pnpm add -D @ahoo-wang/fetcher-generator
+```
 
 ## CLI Usage
 
 ```bash
-fetcher-generator generate [options]
+# Basic usage
+npx fetcher-generator generate -i ./openapi.yaml -o ./src/generated
+
+# With config file
+npx fetcher-generator generate -i ./openapi.yaml -o ./src/generated -c ./fetcher-generator.config.json
+
+# From URL
+npx fetcher-generator generate -i https://api.example.com/openapi.json -o ./src/generated
+
+# With TypeScript config
+npx fetcher-generator generate -i ./openapi.yaml -o ./src/generated -t ./tsconfig.json
 ```
 
-### Required Options
+### CLI Options
 
-- `-i, --input <path>` - OpenAPI specification file path or URL (required)
-  - Local files: `./openapi-spec.json`, `/path/to/spec.yaml`
-  - Remote URLs: `https://api.example.com/openapi.json`
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-i, --input <file>` | OpenAPI spec file (JSON/YAML) or HTTP/HTTPS URL | **required** |
+| `-o, --output <path>` | Output directory path | `src/generated` |
+| `-c, --config <file>` | Configuration file path | `./fetcher-generator.config.json` |
+| `-t, --ts-config-file-path <file>` | TypeScript config file path | — |
+| `-v, --version` | Display version | — |
 
-### Optional Options
+## Programmatic API (CodeGenerator)
 
-- `-o, --output <path>` - Output directory (default: `src/generated`)
-- `-c, --config <file>` - Configuration file path
-- `-h, --help` - Display help information
-- `-v, --version` - Display version number
+```typescript
+import { CodeGenerator } from '@ahoo-wang/fetcher-generator';
 
-### Examples
-
-```bash
-# Generate from local JSON file
-fetcher-generator generate -i ./api-spec.json -o ./src/generated
-
-# Generate from YAML specification
-fetcher-generator generate -i ./api-spec.yaml -o ./src/generated
-
-# Generate from remote URL (HTTPS)
-fetcher-generator generate -i https://api.example.com/openapi.json -o ./src/generated
-
-# Generate from local HTTP server
-fetcher-generator generate -i http://localhost:8080/api-spec.yaml -o ./src/generated
+const generator = new CodeGenerator({
+  inputPath: './openapi.yaml',
+  outputDir: './src/generated',
+  tsConfigFilePath: './tsconfig.json',
+});
+await generator.generate();
 ```
+
+### Key Exports
+
+`CodeGenerator`, `DEFAULT_CONFIG_PATH` (`./fetcher-generator.config.json`)
+
+## Code Generation Pipeline
+
+```
+parseOpenAPI(inputPath) → AggregateResolver(openAPI).resolve()
+  → ModelGenerator.generate() → ClientGenerator.generate()
+    → Index Generator → Optimize (formatText, organizeImports, fixMissingImports)
+```
+
+1. **parseOpenAPI** - Parse JSON/YAML spec (local file or URL)
+2. **AggregateResolver** - Identifies aggregates from tags (`{context}.{aggregate}` pattern), extracts commands, state, events, fields
+3. **ModelGenerator** - Generates TypeScript types/enums from schemas (skips `wow.*` schemas and aggregated types)
+4. **ClientGenerator** - Generates QueryClient, CommandClient, StreamCommandClient, ApiClient per aggregate
+5. **Index Generator** - Creates `index.ts` barrel exports at every directory level
+6. **Post-processing** - `formatText()`, `organizeImports()`, `fixMissingImports()` on all files
 
 ## Generated Output Structure
 
 ```
 output/
+├── index.ts                        # Root barrel exports
 ├── {bounded-context}/
-│   ├── index.ts                   # Auto-generated module exports
-│   ├── boundedContext.ts          # Bounded context alias constant
-│   ├── types.ts                   # Shared types for the bounded context
-│   ├── {Tag}ApiClient.ts          # API client per OpenAPI tag
+│   ├── index.ts                    # Context barrel exports
+│   ├── boundedContext.ts           # Context alias constant (e.g., EXAMPLE_BOUNDED_CONTEXT_ALIAS)
+│   ├── types.ts                    # Shared types for this context path
+│   ├── {Tag}ApiClient.ts           # API client per non-CQRS tag
 │   └── {aggregate}/
-│       ├── index.ts               # Aggregate module exports
-│       ├── types.ts               # Aggregate types, models, enums
-│       ├── queryClient.ts         # Query client factory
-│       └── commandClient.ts       # Command client (regular + streaming)
-├── index.ts                       # Root exports all bounded contexts
-└── tsconfig.json                  # TypeScript configuration
+│       ├── index.ts
+│       ├── commandClient.ts        # CommandClient + StreamCommandClient + CommandEndpointPaths
+│       └── queryClient.ts          # QueryClientFactory + DomainEventType + DomainEventTypeMapTitle
+├── {other-schema-path}/
+│   ├── types.ts                    # Types for schemas in other dot-separated paths
+│   └── ...
 ```
 
-## Generated Client Classes
+Model files use `types.ts` named by schema path prefix (e.g., schema key `ai.AiMessage.Assistant` maps to `ai/types.ts` with type `AiMessageAssistant`).
+
+## Configuration (fetcher-generator.config.json)
+
+```json
+{
+  "apiClients": {
+    "TagName": {
+      "ignorePathParameters": ["tenantId", "ownerId"]
+    }
+  }
+}
+```
+
+- `apiClients` - Map of tag name to API client configuration
+- `ignorePathParameters` - Path parameters to exclude from generated methods (default: `['tenantId', 'ownerId']`)
+
+## Wow CQRS Pattern Support
+
+### Aggregate Identification
+
+Tags following `{contextAlias}.{aggregateName}` pattern identify aggregates (e.g., `example.cart`).
+
+### Operation Patterns
+
+- **Commands**: Operation IDs matching `{context}.{aggregate}.{command}` with `$ref: #/components/responses/wow.CommandOk`
+- **State Snapshots**: Operation IDs ending with `.snapshot_state.single`
+- **Events**: Operation IDs ending with `.event.list_query`
+- **Fields**: Operation IDs ending with `.snapshot.count`
+
+### API Client Tag Exclusion
+
+Tags named `wow`, `Actuator`, or matching aggregate names are excluded from API client generation.
 
 ### Command Clients
 
-Generated for each aggregate (tag pattern: `{context}.{aggregate}`).
-
 ```typescript
-@api()
-export class CartCommandClient<
-  R = CommandResult,
-> implements ApiMetadataCapable {
-  constructor(public readonly apiMetadata: ApiMetadata) {}
-
-  @put('/owner/{ownerId}/cart/add_cart_item')
-  addCartItem(
-    @request() commandRequest: CommandRequest<AddCartItemCommand>,
-    @attribute() attributes?: Record<string, any>,
-  ): Promise<R> {
+// Regular command client
+export class CartCommandClient<R = CommandResult> implements ApiMetadataCapable {
+  constructor(public readonly apiMetadata: ApiMetadata = DEFAULT_COMMAND_CLIENT_OPTIONS) {}
+  @put(CartCommandEndpointPaths.ADD_CART_ITEM)
+  addCartItem(@request() commandRequest: CommandRequest<AddCartItemCommand>, @attribute() attributes?: Record<string, any>): Promise<R> {
     throw autoGeneratedError(commandRequest, attributes);
   }
 }
-
-// Streaming variant for event-driven architecture
-@api('', {
-  headers: { Accept: ContentTypeValues.TEXT_EVENT_STREAM },
-  resultExtractor: JsonEventStreamResultExtractor,
-})
+// Stream variant (extends CommandClient<CommandResultEventStream>)
 export class CartStreamCommandClient extends CartCommandClient<CommandResultEventStream> {}
 ```
 
+Command types use `CommandBody<T>` wrapper. `CommandEndpointPaths` enum maps command names to paths.
+
 ### Query Clients
 
-Generated as a factory for state and event queries.
-
 ```typescript
-export const cartQueryClientFactory = new QueryClientFactory<
-  CartState,
-  CartAggregatedFields | string,
-  CartDomainEventType
->({
-  contextAlias: 'example',
+export const cartQueryClientFactory = new QueryClientFactory<CartState, CartAggregatedFields | string, CartDomainEventType>({
+  contextAlias: EXAMPLE_BOUNDED_CONTEXT_ALIAS,
   aggregateName: 'cart',
   resourceAttribution: ResourceAttributionPathSpec.OWNER,
 });
 ```
 
+Resource attribution inferred from command paths: `ResourceAttributionPathSpec.OWNER` (`/owner/{ownerId}`), `ResourceAttributionPathSpec.TENANT` (`/tenant/{tenantId}`), or `NONE`.
+
 ### API Clients
 
-Generated for custom endpoints based on OpenAPI tags (non-CQRS endpoints).
-
-```typescript
-@api()
-export class CartApiClient implements ApiMetadataCapable {
-  @get('/cart/me')
-  me(): Promise<CartData> {
-    throw autoGeneratedError();
-  }
-}
-```
-
-## Wow CQRS Pattern Support
-
-The generator recognizes these operation patterns in OpenAPI specs:
-
-### Aggregate Identification
-
-- Aggregates identified by operation tags: `{context}.{aggregate}`
-
-### Operation Patterns
-
-- **Commands**: POST/PUT/PATCH/DELETE methods returning `CommandResult`
-- **Queries**: GET methods for state or events
-- **State Snapshots**: Operation IDs ending with `.snapshot_state.single`
-- **Event Queries**: Operation IDs ending with `.event.list_query`
-
-### Generated Patterns
-
-- `default_delete_aggregate` - Delete aggregate endpoint
-- `default_recover_aggregate` - Recover deleted aggregate
-
-### Resource Attribution
-
-- `ResourceAttributionPathSpec.OWNER` - Path includes `{ownerId}`
-- `ResourceAttributionPathSpec.TENANT` - Path includes `{tenantId}`
-
-## Index File Auto-Generation
-
-The generator automatically creates `index.ts` files at every level:
-
-- Root index exports all bounded contexts
-- Bounded context index exports aggregates and API clients
-- Aggregate index exports all aggregate files
-
-Example imports:
-
-```typescript
-import * as example from './generated/example';
-import { cart, CartApiClient } from './generated/example';
-import { CartState } from './generated/example/cart';
-```
-
-## Configuration Options
-
-Create a `.fetcherrc.json` file for advanced options:
-
-```json
-{
-  "generator": {
-    "targetFramework": "wow",
-    "outputFormat": "typescript",
-    "basePath": "api/v1",
-    "generateIndexFiles": true,
-    "verbose": true,
-    "typeMappings": {
-      "string": "string",
-      "integer": "number",
-      "boolean": "boolean",
-      "number": "number"
-    },
-    "schemaTransformers": [
-      {
-        "pattern": "^wow\\.",
-        "transform": "removePrefix"
-      }
-    ]
-  }
-}
-```
+Generated for non-CQRS endpoints. Parameters `tenantId`/`ownerId` are ignored by default.
 
 ## Integration with Fetcher
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
-import { all } from '@ahoo-wang/fetcher-wow';
 import { cartQueryClientFactory } from './generated/example/cart/queryClient';
 import { CartCommandClient } from './generated/example/cart/commandClient';
-import { CartApiClient } from './generated/example/CartApiClient';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-
-// Query client
-const snapshotClient = cartQueryClientFactory.createSnapshotQueryClient({
-  fetcher,
-});
-const cartState = await snapshotClient.singleState({ condition: all() });
-
-// Command client
-const commandClient = new CartCommandClient({ fetcher });
-const result = await commandClient.addCartItem(
-  { command: { productId: 'p1', quantity: 2 } },
-  { ownerId: 'user1' },
-);
-
-// API client
-const apiClient = new CartApiClient({ fetcher });
-const cartData = await apiClient.me();
-```
-
-## Installation
-
-```bash
-npm install -g @ahoo-wang/fetcher-generator
-# or
-pnpm add -g @ahoo-wang/fetcher-generator
-# or
-yarn global add @ahoo-wang/fetcher-generator
+const snapshotClient = cartQueryClientFactory.createSnapshotQueryClient({ fetcher });
+const commandClient = new CartCommandClient();
 ```
 
 ## Package Reference
 
-- NPM: [@ahoo-wang/fetcher-generator](https://www.npmjs.com/package/@ahoo-wang/fetcher-generator)
-- Generator package: `packages/generator/`
+- [Package Source](https://github.com/Ahoo-Wang/fetcher/tree/main/packages/generator/) - Source code and README
+- Key types: `GeneratorOptions`, `GeneratorConfiguration`, `ApiClientConfiguration`, `GenerateContextInit`, `Logger`
