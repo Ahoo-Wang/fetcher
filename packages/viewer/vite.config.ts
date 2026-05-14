@@ -13,8 +13,9 @@
 
 import { defineConfig } from 'vite';
 import dts from 'unplugin-dts/vite';
-import react, { reactCompilerPreset } from '@vitejs/plugin-react';
-import babel from '@rolldown/plugin-babel';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
+import babel from '@rolldown/plugin-babel'
+import { libInjectCss } from 'vite-plugin-lib-inject-css'
 
 export default defineConfig({
   build: {
@@ -67,6 +68,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    libInjectCss(),
     dts({
       outDirs: 'dist',
       tsconfigPath: './tsconfig.json',

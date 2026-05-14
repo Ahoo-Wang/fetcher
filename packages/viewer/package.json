@@ -94,6 +94,7 @@
     "unplugin-dts": "catalog:",
     "vite": "catalog:",
     "vite-bundle-analyzer": "catalog:",
+    "vite-plugin-lib-inject-css": "^2.2.2",
     "vitest": "catalog:"
   }
 }
