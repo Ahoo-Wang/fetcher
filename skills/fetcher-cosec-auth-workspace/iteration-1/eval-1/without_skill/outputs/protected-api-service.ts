@@ -21,7 +21,7 @@ const authInterceptor = {
         ...request,
         headers: {
           ...request.headers,
-          'Authorization': `Bearer ${currentToken.accessToken}`,
+          Authorization: `Bearer ${currentToken.accessToken}`,
         },
       };
     }

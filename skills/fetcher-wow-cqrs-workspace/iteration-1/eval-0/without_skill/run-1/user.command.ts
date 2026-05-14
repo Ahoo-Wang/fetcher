@@ -4,7 +4,11 @@
  * This module defines the CreateUser command using the @ahoo-wang/fetcher-wow package.
  */
 
-import { CommandClient, CommandRequest, CommandResult } from '@ahoo-wang/fetcher-wow';
+import {
+  CommandClient,
+  CommandRequest,
+  CommandResult,
+} from '@ahoo-wang/fetcher-wow';
 import { HttpMethod } from '@ahoo-wang/fetcher';
 
 /**

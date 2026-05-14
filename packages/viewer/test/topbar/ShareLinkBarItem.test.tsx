@@ -63,9 +63,7 @@ describe('ShareLinkBarItem', () => {
 
     it('should render with custom style', () => {
       const style = { marginTop: '10px' };
-      const { container } = render(
-        <ShareLinkBarItem style={style} />,
-      );
+      const { container } = render(<ShareLinkBarItem style={style} />);
       const target = container.querySelector('[style]');
       expect(target).toHaveStyle(style);
     });
@@ -75,7 +73,9 @@ describe('ShareLinkBarItem', () => {
     it('should call navigator.clipboard.writeText when clicked', async () => {
       const { container } = render(<ShareLinkBarItem />);
 
-      const clickTarget = container.querySelector('[data-testid="tooltip"] > div') || container.querySelector('[data-testid="tooltip"]');
+      const clickTarget =
+        container.querySelector('[data-testid="tooltip"] > div') ||
+        container.querySelector('[data-testid="tooltip"]');
       fireEvent.click(clickTarget as HTMLElement);
 
       await waitFor(() => {
@@ -92,7 +92,9 @@ describe('ShareLinkBarItem', () => {
 
       const { container } = render(<ShareLinkBarItem />);
 
-      const clickTarget = container.querySelector('[data-testid="tooltip"] > div') || container.querySelector('[data-testid="tooltip"]');
+      const clickTarget =
+        container.querySelector('[data-testid="tooltip"] > div') ||
+        container.querySelector('[data-testid="tooltip"]');
       fireEvent.click(clickTarget as HTMLElement);
 
       await waitFor(() => {
@@ -104,17 +106,13 @@ describe('ShareLinkBarItem', () => {
   describe('props', () => {
     it('should accept style prop', () => {
       const style = { padding: '8px' };
-      const { container } = render(
-        <ShareLinkBarItem style={style} />,
-      );
+      const { container } = render(<ShareLinkBarItem style={style} />);
       const target = container.querySelector('[style]');
       expect(target).toBeInTheDocument();
     });
 
     it('should accept className prop', () => {
-      const { container } = render(
-        <ShareLinkBarItem className="test-class" />,
-      );
+      const { container } = render(<ShareLinkBarItem className="test-class" />);
       expect(container.querySelector('.test-class')).toBeInTheDocument();
     });
   });
@@ -122,7 +120,9 @@ describe('ShareLinkBarItem', () => {
   describe('Tooltip', () => {
     it('should render with Tooltip', () => {
       const { container } = render(<ShareLinkBarItem />);
-      expect(container.querySelector('[data-testid="tooltip"]')).toBeInTheDocument();
+      expect(
+        container.querySelector('[data-testid="tooltip"]'),
+      ).toBeInTheDocument();
     });
   });
 });

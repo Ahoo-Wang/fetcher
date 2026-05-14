@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useDataMonitorEventBus, dataMonitorEventBus } from '../../src/dataMonitor/useDataMonitorEventBus';
+import {
+  useDataMonitorEventBus,
+  dataMonitorEventBus,
+} from '../../src/dataMonitor/useDataMonitorEventBus';
 
 describe('useDataMonitorEventBus', () => {
   it('should return subscribe and unsubscribe functions', () => {

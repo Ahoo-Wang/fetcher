@@ -12,18 +12,24 @@
  */
 
 import { useCallback } from 'react';
-import type { UseQueryReturn, UseQueryOptions} from '../core';
+import type { UseQueryReturn, UseQueryOptions } from '../core';
 import { useQuery, useLatest } from '../core';
 import type { FetcherError } from '@ahoo-wang/fetcher';
-import type { CreateQueryApiHooksOptions } from './createExecuteApiHooks';
 import type {
+  CreateApiHooksOptions,
   HookName,
   QueryMethod,
-  OnBeforeExecuteCallback} from './apiHooks';
-import {
-  collectMethods,
-  methodNameToHookName
+  OnBeforeExecuteCallback,
 } from './apiHooks';
+import { collectMethods, methodNameToHookName } from './apiHooks';
+
+/**
+ * Configuration options for createQueryApiHooks.
+ * @template API - The API object type containing query methods.
+ */
+export interface CreateQueryApiHooksOptions<
+  API extends Record<string, any>,
+> extends CreateApiHooksOptions<API> {}
 
 /**
  * Options for useApiMethodQuery hook.
@@ -96,7 +102,7 @@ function createQueryHookForMethod<E>(
         }
         return method(query, attributes, abortController);
       },
-      [onBeforeExecuteRef],
+      [method, onBeforeExecuteRef],
     );
 
     const queryOptions: UseQueryOptions<any, any, any> = {

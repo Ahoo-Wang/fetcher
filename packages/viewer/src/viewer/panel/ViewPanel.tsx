@@ -1,6 +1,6 @@
-import type { CollapseProps} from 'antd';
+import type { CollapseProps } from 'antd';
 import { Collapse, Flex, Space } from 'antd';
-import type { GetRecordCountActionCapable} from '../../';
+import type { GetRecordCountActionCapable } from '../../';
 import { BarItem, useLocale } from '../../';
 import {
   MenuFoldOutlined,
@@ -81,7 +81,6 @@ export function ViewPanel(props: ViewPanelProps) {
     setSaveViewModalType('Create');
     setSaveViewModalOpened(true);
   };
-
 
   const handleCreateViewConfirmed = (name: string, type: ViewType) => {
     onCreateView?.(

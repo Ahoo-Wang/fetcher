@@ -14,12 +14,8 @@
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryOptions, UseQueryReturn } from '../index';
 import { useQuery } from '../index';
-import type {
-  DebounceCapable,
-  UseDebouncedCallbackReturn} from '../index';
-import {
-  useDebouncedCallback
-} from '../index';
+import type { DebounceCapable, UseDebouncedCallbackReturn } from '../index';
+import { useDebouncedCallback } from '../index';
 import { useCallback, useEffect, useMemo } from 'react';
 
 /**
@@ -29,8 +25,7 @@ import { useCallback, useEffect, useMemo } from 'react';
  * @template E - The type of the error value (defaults to FetcherError)
  */
 export interface UseDebouncedQueryOptions<Q, R, E = FetcherError>
-  extends UseQueryOptions<Q, R, E>, DebounceCapable {
-}
+  extends UseQueryOptions<Q, R, E>, DebounceCapable {}
 
 /**
  * Return type of the useDebouncedQuery hook
@@ -39,9 +34,9 @@ export interface UseDebouncedQueryOptions<Q, R, E = FetcherError>
  * @template E - The type of the error value (defaults to FetcherError)
  */
 export interface UseDebouncedQueryReturn<Q, R, E = FetcherError>
-  extends Omit<UseQueryReturn<Q, R, E>, 'execute'>,
-    UseDebouncedCallbackReturn<UseQueryReturn<Q, R, E>['execute']> {
-}
+  extends
+    Omit<UseQueryReturn<Q, R, E>, 'execute'>,
+    UseDebouncedCallbackReturn<UseQueryReturn<Q, R, E>['execute']> {}
 
 /**
  * A React hook for managing debounced query execution with automatic state management
@@ -164,12 +159,15 @@ export function useDebouncedQuery<Q, R, E = FetcherError>(
     execute,
     options.debounce,
   );
-  const setQueryFn = useCallback((query: Q) => {
-    setQuery(query);
-    if (originalAutoExecute) {
-      run();
-    }
-  }, [setQuery, run, originalAutoExecute]);
+  const setQueryFn = useCallback(
+    (query: Q) => {
+      setQuery(query);
+      if (originalAutoExecute) {
+        run();
+      }
+    },
+    [setQuery, run, originalAutoExecute],
+  );
   useEffect(() => {
     if (originalAutoExecute) {
       run();

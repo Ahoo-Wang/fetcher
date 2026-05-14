@@ -94,7 +94,9 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
     );
   }
 
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const lastArgsRef = useRef<Parameters<T> | null>(null);
   const lastInvokeTimeRef = useRef<number | null>(null);
 
@@ -108,18 +110,24 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
     }
   }, []);
 
-  const shouldInvoke = useCallback((time: number) => {
-    if (!lastInvokeTimeRef.current) {
-      return true;
-    }
-    const timeSinceLastInvoke = time - lastInvokeTimeRef.current;
-    return timeSinceLastInvoke >= latestOptions.current.delay;
-  }, [latestOptions]);
+  const shouldInvoke = useCallback(
+    (time: number) => {
+      if (!lastInvokeTimeRef.current) {
+        return true;
+      }
+      const timeSinceLastInvoke = time - lastInvokeTimeRef.current;
+      return timeSinceLastInvoke >= latestOptions.current.delay;
+    },
+    [latestOptions],
+  );
 
-  const invokeCallback = useCallback((time: number, args: Parameters<T>) => {
-    lastInvokeTimeRef.current = time;
-    latestCallback.current(...args);
-  }, [latestCallback]);
+  const invokeCallback = useCallback(
+    (time: number, args: Parameters<T>) => {
+      lastInvokeTimeRef.current = time;
+      latestCallback.current(...args);
+    },
+    [latestCallback],
+  );
 
   const scheduleTrailing = useCallback(() => {
     timeoutRef.current = setTimeout(() => {
@@ -151,7 +159,13 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
         scheduleTrailing();
       }
     },
-    [latestOptions, cleanTimeout, shouldInvoke, invokeCallback, scheduleTrailing],
+    [
+      latestOptions,
+      cleanTimeout,
+      shouldInvoke,
+      invokeCallback,
+      scheduleTrailing,
+    ],
   );
   const cancel = useCallback(() => {
     cleanTimeout();

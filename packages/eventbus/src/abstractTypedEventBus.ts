@@ -14,9 +14,9 @@
 import type { TypedEventBus } from './typedEventBus';
 import type { EventHandler, EventType } from './types';
 
-export abstract class AbstractTypedEventBus<EVENT>
-  implements TypedEventBus<EVENT>
-{
+export abstract class AbstractTypedEventBus<
+  EVENT,
+> implements TypedEventBus<EVENT> {
   protected eventHandlers: EventHandler<EVENT>[] = [];
   abstract type: EventType;
 

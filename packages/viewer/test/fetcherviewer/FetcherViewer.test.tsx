@@ -13,7 +13,10 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
-import { FetcherViewer, FetcherViewerRef } from '../../src/fetcherviewer/FetcherViewer';
+import {
+  FetcherViewer,
+  FetcherViewerRef,
+} from '../../src/fetcherviewer/FetcherViewer';
 import type { PaginationProps } from 'antd';
 
 vi.mock('../../src/fetcherviewer/hooks/useViewerDefinition', () => ({
@@ -36,10 +39,7 @@ vi.mock('../../src/hooks/useRefreshDataEventBus', () => ({
 }));
 
 vi.mock('@ahoo-wang/fetcher-react', () => ({
-  useKeyStorage: vi.fn(() => [
-    undefined,
-    vi.fn(),
-  ]),
+  useKeyStorage: vi.fn(() => [undefined, vi.fn()]),
 }));
 
 vi.mock('../../src/viewer/Viewer', () => ({
@@ -207,7 +207,7 @@ describe('FetcherViewer', () => {
 
     it('should expose getPageQuery method via ref', () => {
       const mockGetPageQuery = vi.fn(() => ({ page: 1, size: 10 }));
-      
+
       const mockUseFetchData = useFetchData as ReturnType<typeof vi.fn>;
       mockUseFetchData.mockReturnValue({
         dataSource: mockDataSource as any,
@@ -227,5 +227,4 @@ describe('FetcherViewer', () => {
       expect(ref.current?.getPageQuery()).toEqual({ page: 1, size: 10 });
     });
   });
-
 });

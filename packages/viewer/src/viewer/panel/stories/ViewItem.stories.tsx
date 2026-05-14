@@ -41,8 +41,8 @@ const sampleView: ViewState = {
   pagedQuery: {
     condition: {
       operator: Operator.ALL,
-    }
-  }
+    },
+  },
 };
 
 const systemView: ViewState = {

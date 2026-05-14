@@ -12,13 +12,8 @@
  */
 
 import { describe, expect, it, beforeAll, afterAll, afterEach } from 'vitest';
-import type {
-  FetchRequest} from '../src';
-import {
-  FetchTimeoutError,
-  resolveTimeout,
-  timeoutFetch,
-} from '../src';
+import type { FetchRequest } from '../src';
+import { FetchTimeoutError, resolveTimeout, timeoutFetch } from '../src';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse, delay } from 'msw';
 

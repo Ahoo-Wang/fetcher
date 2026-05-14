@@ -21,7 +21,7 @@ const fetcher = new Fetcher({
         if (tokenStorage.accessToken) {
           config.headers = {
             ...config.headers,
-            'Authorization': `Bearer ${tokenStorage.accessToken}`,
+            Authorization: `Bearer ${tokenStorage.accessToken}`,
           };
         }
         return config;

@@ -14,7 +14,8 @@ export function UserProfile({ userId }: UserProfileProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [abortController, setAbortController] =
+    useState<AbortController | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,9 +58,11 @@ export function UserProfile({ userId }: UserProfileProps) {
     return (
       <div className="user-profile-error">
         <span>Error loading user: {error.message}</span>
-        <button onClick={() => {
-          if (abortController) abortController.abort();
-        }}>
+        <button
+          onClick={() => {
+            if (abortController) abortController.abort();
+          }}
+        >
           Retry
         </button>
       </div>

@@ -14,7 +14,16 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
 import { useDataMonitor } from '../useDataMonitor';
-import { Card, Button, Space, Typography, Badge, Switch, Input, Form } from 'antd';
+import {
+  Card,
+  Button,
+  Space,
+  Typography,
+  Badge,
+  Switch,
+  Input,
+  Form,
+} from 'antd';
 
 const { Text } = Typography;
 
@@ -54,7 +63,10 @@ function DataMonitorDemo({
       title="Data Monitor Demo"
       style={{ width: 450 }}
       extra={
-        <Badge status={isEnabled ? 'success' : 'default'} text={isEnabled ? 'Enabled' : 'Disabled'} />
+        <Badge
+          status={isEnabled ? 'success' : 'default'}
+          text={isEnabled ? 'Enabled' : 'Disabled'}
+        />
       }
     >
       <Space direction="vertical" style={{ width: '100%' }}>
@@ -87,7 +99,8 @@ function DataMonitorDemo({
 
         <div style={{ marginTop: 8 }}>
           <Text type="secondary">
-            Current State: {isEnabled ? 'Monitoring active' : 'Monitoring paused'}
+            Current State:{' '}
+            {isEnabled ? 'Monitoring active' : 'Monitoring paused'}
           </Text>
         </div>
       </Space>

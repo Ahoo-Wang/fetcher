@@ -11,7 +11,10 @@
  * limitations under the License.
  */
 
-import type { CrossTabMessenger, CrossTabMessageHandler } from './crossTabMessenger';
+import type {
+  CrossTabMessenger,
+  CrossTabMessageHandler,
+} from './crossTabMessenger';
 
 export interface StorageMessengerOptions {
   channelName: string;
@@ -55,6 +58,11 @@ export class StorageMessenger implements CrossTabMessenger {
   };
 
   constructor(options: StorageMessengerOptions) {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      throw new Error(
+        'StorageMessenger requires a browser environment with window and localStorage support.',
+      );
+    }
     this.channelName = options.channelName;
     this.storage = options.storage ?? localStorage;
     this.messageKeyPrefix = `_storage_msg_${this.channelName}`;

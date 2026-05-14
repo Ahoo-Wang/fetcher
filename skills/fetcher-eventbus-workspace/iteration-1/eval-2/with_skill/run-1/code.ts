@@ -17,7 +17,7 @@ const eventBus = new ParallelTypedEventBus<OrderEvent>('order-events');
 eventBus.on({
   name: 'ui-updater',
   order: 1,
-  handle: async (event) => {
+  handle: async event => {
     console.log('[UI] Updating order display:', event.orderId, event.status);
     // Update the UI with order status
   },
@@ -27,7 +27,7 @@ eventBus.on({
 eventBus.on({
   name: 'storage-persister',
   order: 2,
-  handle: async (event) => {
+  handle: async event => {
     try {
       console.log('[Storage] Persisting order:', event.orderId);
       await saveToStorage(event);
@@ -42,7 +42,7 @@ eventBus.on({
 eventBus.on({
   name: 'notification-sender',
   order: 3,
-  handle: async (event) => {
+  handle: async event => {
     try {
       console.log('[Notification] Sending for order:', event.orderId);
       await sendNotification(event);
@@ -67,12 +67,12 @@ await eventBus.emit({
 // Helper functions
 async function saveToStorage(event: OrderUpdateEvent): Promise<void> {
   // Simulate async storage operation
-  return new Promise((resolve) => setTimeout(resolve, 100));
+  return new Promise(resolve => setTimeout(resolve, 100));
 }
 
 async function sendNotification(event: OrderUpdateEvent): Promise<void> {
   // Simulate async notification sending
-  return new Promise((resolve) => setTimeout(resolve, 100));
+  return new Promise(resolve => setTimeout(resolve, 100));
 }
 
 // Clean up

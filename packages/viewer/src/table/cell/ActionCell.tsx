@@ -51,10 +51,9 @@ export interface ActionCellProps<RecordType = any> extends CellProps<
   string,
   RecordType,
   Omit<ButtonProps, 'onClick'> & {
-  onClick?: (record: RecordType) => void;
-}
-> {
-}
+    onClick?: (record: RecordType) => void;
+  }
+> {}
 
 export function isActionCellProps(obj: any): obj is ActionCellProps {
   return (

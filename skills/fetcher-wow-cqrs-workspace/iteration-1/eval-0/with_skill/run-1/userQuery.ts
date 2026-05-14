@@ -74,7 +74,11 @@ export type UserField = (typeof UserFields)[keyof typeof UserFields];
  */
 export class UserQueryClient extends SnapshotQueryClient<UserState> {
   constructor(options?: { fetcher: Fetcher; basePath?: string }) {
-    super(options ? { fetcher: options.fetcher, basePath: options.basePath } : undefined);
+    super(
+      options
+        ? { fetcher: options.fetcher, basePath: options.basePath }
+        : undefined,
+    );
   }
 
   /**
@@ -156,7 +160,9 @@ export interface GetUserByIdQuery {
  * const user = await userQueryClient.singleState(query);
  * ```
  */
-export function getUserByIdQuery(options: GetUserByIdQuery): SingleQuery<UserField> {
+export function getUserByIdQuery(
+  options: GetUserByIdQuery,
+): SingleQuery<UserField> {
   return singleQuery<UserField>({
     condition: aggregateId(options.id),
     fields: options.fields as UserField[],

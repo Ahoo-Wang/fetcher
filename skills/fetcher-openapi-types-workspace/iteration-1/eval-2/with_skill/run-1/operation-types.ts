@@ -1,4 +1,11 @@
-import type { Operation, Parameter, RequestBody, Response, MediaType, ParameterLocation } from '@ahoo-wang/fetcher-openapi';
+import type {
+  Operation,
+  Parameter,
+  RequestBody,
+  Response,
+  MediaType,
+  ParameterLocation,
+} from '@ahoo-wang/fetcher-openapi';
 
 // Path parameter
 const userIdParam: Parameter = {
@@ -68,4 +75,11 @@ const createUserOperation: Operation = {
   },
 };
 
-export type { Operation, Parameter, RequestBody, Response, MediaType, ParameterLocation };
+export type {
+  Operation,
+  Parameter,
+  RequestBody,
+  Response,
+  MediaType,
+  ParameterLocation,
+};

@@ -1,4 +1,3 @@
-
 export interface Locale {
   personalView?: string;
   sharedView?: string;
@@ -31,10 +30,10 @@ export interface Locale {
   createViewMethod?: {
     create?: string;
     saveAs?: string;
-  }
+  };
 
   viewPanel?: {
     saveButton?: string;
     cancelButton?: string;
-  }
+  };
 }

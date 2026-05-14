@@ -12,8 +12,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import type {
-  Fetcher} from '../src';
+import type { Fetcher } from '../src';
 import {
   FetchExchange,
   URL_RESOLVE_INTERCEPTOR_NAME,

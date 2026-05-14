@@ -74,6 +74,7 @@ fetcher (core HTTP client, no internal deps)
 ### Package Build Config
 
 All packages use Vite for building with `unplugin-dts` for type declarations. Each package outputs:
+
 - ESM: `dist/index.es.js`
 - UMD: `dist/index.umd.js`
 - Types: `dist/index.d.ts`
@@ -86,13 +87,17 @@ Packages with React (viewer, react) also use `@vitejs/plugin-react` with React C
 - **Browser tests**: `@vitest/browser` with Playwright (viewer package)
 - **Integration tests**: Separate `integration-test` workspace with real API calls
 - **MSW**: Used for HTTP mocking in unit tests (fetcher package)
+- **Vitest globals**: `globals: true` — use `describe`, `it`, `expect`, `vi` without imports
+- **Viewer tests**: Run in `jsdom` environment with `test/setup.ts`
 - Test files follow `*.test.ts` / `*.test.tsx` naming convention alongside source files
+- ESLint ignores `**/**.test.ts` files — test files are not linted
 
 ## Architecture
 
 ### Core (`packages/fetcher`)
 
 The foundation HTTP client. Key concepts:
+
 - **Fetcher**: Main client class wrapping native Fetch with baseURL, timeout, and interceptors
 - **NamedFetcher**: Named registry pattern for managing multiple fetcher instances
 - **FetcherRegistrar**: Registry for named fetchers, used by decorator and other packages
@@ -102,6 +107,7 @@ The foundation HTTP client. Key concepts:
 ### Decorator (`packages/decorator`)
 
 Uses `reflect-metadata` to create declarative API service classes:
+
 - `@api(basePath, options)` - class-level decorator for service definition
 - `@get/@post/@put/@delete/@patch` - method decorators for HTTP verbs
 - `@path/@query/@header/@body` - parameter decorators for argument binding
@@ -114,6 +120,7 @@ Uses `reflect-metadata` to create declarative API service classes:
 ### Generator (`packages/generator`)
 
 CLI tool (`fetcher-generator`) that reads OpenAPI 3.x specs (JSON/YAML/URL) and generates:
+
 - TypeScript interfaces/enums from schemas
 - Decorator-based API client classes
 - Wow CQRS-specific clients (command/event-stream)
@@ -122,6 +129,7 @@ CLI tool (`fetcher-generator`) that reads OpenAPI 3.x specs (JSON/YAML/URL) and 
 ### Viewer (`packages/viewer`)
 
 React + Ant Design component library for API documentation viewing:
+
 - Filter panel components, table components with cell renderers
 - Uses React Compiler (`babel-plugin-react-compiler`)
 - Less for styling (Ant Design integration)
@@ -129,8 +137,11 @@ React + Ant Design component library for API documentation viewing:
 ## Code Style
 
 - **TypeScript strict mode** enabled across all packages
+- **Root tsconfig** enables `experimentalDecorators` and `emitDecoratorMetadata` (supports decorator package)
 - **Prettier** config: single quotes, trailing commas, semicolons, 80 char width, no arrow parens
 - **ESLint**: `@typescript-eslint/no-explicit-any` is OFF
+- **ESLint**: `@typescript-eslint/consistent-type-imports` with `prefer: "type-imports"` enforced for integration-test and story files
 - **ES modules**: `"type": "module"` throughout
 - All source files have Apache 2.0 license headers
 - Chinese READMEs (`README.zh-CN.md`) maintained alongside English ones
+- Each package has an `analyze` script (`vite-bundle-analyzer`) for bundle size inspection

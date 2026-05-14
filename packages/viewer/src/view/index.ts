@@ -1,2 +1,2 @@
-export * from './View'
-export * from './hooks'
+export * from './View';
+export * from './hooks';

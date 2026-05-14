@@ -351,8 +351,8 @@ export function body() {
  */
 export interface ParameterRequest<
   BODY extends RequestBodyType = RequestBodyType,
-> extends FetchRequestInit<BODY>,
-    PathCapable {}
+>
+  extends FetchRequestInit<BODY>, PathCapable {}
 
 /**
  * Request parameter decorator.

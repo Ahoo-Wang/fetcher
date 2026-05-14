@@ -14,13 +14,14 @@
 import type {
   Fetcher,
   FetcherCapable,
-  UrlParamsCapable} from '@ahoo-wang/fetcher';
+  UrlParamsCapable,
+} from '@ahoo-wang/fetcher';
 import {
   type AttributesCapable,
   type RequestHeaders,
   type RequestHeadersCapable,
   type ResultExtractorCapable,
-  type TimeoutCapable
+  type TimeoutCapable,
 } from '@ahoo-wang/fetcher';
 import { ENDPOINT_METADATA_KEY } from './endpointDecorator';
 import { RequestExecutor } from './requestExecutor';
@@ -37,7 +38,8 @@ import type { EndpointReturnTypeCapable } from './endpointReturnTypeCapable';
  * at the method level.
  */
 export interface ApiMetadata
-  extends TimeoutCapable,
+  extends
+    TimeoutCapable,
     RequestHeadersCapable,
     ResultExtractorCapable,
     FetcherCapable,

@@ -322,7 +322,11 @@ interface Message {
   content?: string;
   name?: string; // For tool messages
   tool_call_id?: string; // ID of the tool call (for tool role messages)
-  tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; // For assistant messages with tool calls
+  tool_calls?: Array<{
+    id: string;
+    type: 'function';
+    function: { name: string; arguments: string };
+  }>; // For assistant messages with tool calls
 }
 ```
 

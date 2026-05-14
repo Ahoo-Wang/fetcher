@@ -12,24 +12,28 @@
  */
 
 import type { RouteGuardProps } from './RouteGuard';
-import type { ReactNode} from 'react';
+import type { ReactNode } from 'react';
 import { useCallback, useEffect } from 'react';
 import type { JwtTokenManager } from '@ahoo-wang/fetcher-cosec';
 import { useSecurityContext } from './SecurityContext';
 
-export interface RefreshableRouteGuardProps extends Omit<RouteGuardProps, 'onUnauthorized'> {
+export interface RefreshableRouteGuardProps extends Omit<
+  RouteGuardProps,
+  'onUnauthorized'
+> {
   refreshing?: ReactNode;
   tokenManager: JwtTokenManager;
 }
 
 export function RefreshableRouteGuard({
-                                        children,
-                                        fallback,
-                                        refreshing,
-                                        tokenManager,
-                                      }: RefreshableRouteGuardProps) {
+  children,
+  fallback,
+  refreshing,
+  tokenManager,
+}: RefreshableRouteGuardProps) {
   const { authenticated } = useSecurityContext();
-  const refreshable = tokenManager.isRefreshNeeded && tokenManager.isRefreshable;
+  const refreshable =
+    tokenManager.isRefreshNeeded && tokenManager.isRefreshable;
   const refreshToken = useCallback(async () => {
     if (refreshable) {
       try {
@@ -53,5 +57,4 @@ export function RefreshableRouteGuard({
   }
   const refreshingNode = refreshing ?? <p>Refreshing...</p>;
   return <>{refreshingNode}</>;
-
 }

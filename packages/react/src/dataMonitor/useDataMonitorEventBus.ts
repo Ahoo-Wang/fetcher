@@ -20,7 +20,9 @@ export interface UseDataMonitorEventBusReturn {
   unsubscribe: (handlerName: string) => boolean;
 }
 
-const delegate = new SerialTypedEventBus<DataChangedEvent>(DataMonitorEventType);
+const delegate = new SerialTypedEventBus<DataChangedEvent>(
+  DataMonitorEventType,
+);
 const bus = new BroadcastTypedEventBus<DataChangedEvent>({ delegate });
 
 export function useDataMonitorEventBus(): UseDataMonitorEventBusReturn {

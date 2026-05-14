@@ -111,7 +111,9 @@ export type RequestBodyType = BodyInit | Record<string, any> | string | null;
  */
 export interface FetchRequestInit<
   BODY extends RequestBodyType = RequestBodyType,
-> extends TimeoutCapable,
+>
+  extends
+    TimeoutCapable,
     RequestHeadersCapable,
     UrlParamsCapable,
     Omit<RequestInit, 'body' | 'headers'> {
@@ -171,8 +173,9 @@ export interface FetchRequestInit<
  * Extends FetchRequestInit with a required URL property.
  * Represents a complete request configuration ready to be executed.
  */
-export interface FetchRequest<BODY extends RequestBodyType = RequestBodyType>
-  extends FetchRequestInit<BODY> {
+export interface FetchRequest<
+  BODY extends RequestBodyType = RequestBodyType,
+> extends FetchRequestInit<BODY> {
   /**
    * The URL for this request
    */

@@ -20,7 +20,6 @@ vi.mock('../../src/core/useExecutePromise', () => ({
   useExecutePromise: vi.fn(),
 }));
 
-
 import { useExecutePromise } from '../../src/core/useExecutePromise';
 
 describe('useQuery', () => {
@@ -102,9 +101,9 @@ describe('useQuery', () => {
     expect(result.current.getQuery()).toEqual(newQuery);
     expect(mockExecute).toHaveBeenCalledTimes(0);
 
-    act(()=>{
+    act(() => {
       result.current.execute();
-    })
+    });
     expect(mockExecute).toHaveBeenCalledTimes(1);
   });
 

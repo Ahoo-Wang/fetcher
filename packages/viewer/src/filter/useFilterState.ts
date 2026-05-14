@@ -11,14 +11,9 @@
  * limitations under the License.
  */
 
-import type {
-  Condition,
-  ConditionOptions} from '@ahoo-wang/fetcher-wow';
-import {
-  EMPTY_VALUE_OPERATORS,
-  Operator,
-} from '@ahoo-wang/fetcher-wow';
-import type { RefAttributes} from 'react';
+import type { Condition, ConditionOptions } from '@ahoo-wang/fetcher-wow';
+import { EMPTY_VALUE_OPERATORS, Operator } from '@ahoo-wang/fetcher-wow';
+import type { RefAttributes } from 'react';
 import { useImperativeHandle, useState } from 'react';
 import type { FilterRef, FilterValue } from './types';
 import type { Optional } from '../types';

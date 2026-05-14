@@ -1,11 +1,6 @@
 import { ViewAggregatedFields } from '../client';
 import type { ViewState } from '../../';
-import {
-  and,
-  eq,
-  isIn,
-  listQuery,
-} from '@ahoo-wang/fetcher-wow';
+import { and, eq, isIn, listQuery } from '@ahoo-wang/fetcher-wow';
 import { useFetcherListQuery } from '@ahoo-wang/fetcher-react';
 
 export interface UseViewerViewsResult {
@@ -24,7 +19,7 @@ export function useViewerViews(
     loading,
     result: views,
     error,
-    execute
+    execute,
   } = useFetcherListQuery<ViewState>({
     url: '/viewer/view/snapshot/list/state',
     initialQuery: listQuery({

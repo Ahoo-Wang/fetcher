@@ -14,5 +14,9 @@
       "Bash(pnpm test:unit packages/react/test/dataMonitor/ --run)",
       "Bash(pnpm --filter @ahoo-wang/fetcher-react test --run)"
     ]
+  },
+  "sandbox": {
+    "enabled": false,
+    "autoAllowBashIfSandboxed": false
   }
 }

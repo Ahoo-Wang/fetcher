@@ -12,9 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type {
-  Fetcher,
-  FetchRequest} from '../src';
+import type { Fetcher, FetchRequest } from '../src';
 import {
   CONTENT_TYPE_HEADER,
   ContentTypeValues,

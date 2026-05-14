@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-eventstream",
-  "version": "3.15.9",
+  "version": "3.16.4",
   "description": "Server-Sent Events (SSE) support for Fetcher HTTP client with native LLM streaming API support. Enables real-time data streaming and token-by-token LLM response handling.",
   "keywords": [
     "fetch",
@@ -25,6 +25,9 @@
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
   },
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "main": "./dist/index.umd.js",
   "module": "./dist/index.es.js",
   "types": "./dist/index.d.ts",

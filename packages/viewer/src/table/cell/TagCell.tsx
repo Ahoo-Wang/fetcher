@@ -15,7 +15,6 @@ import type { TagProps } from 'antd';
 import { Tag } from 'antd';
 import type { CellProps } from './types';
 
-
 /**
  * Constant representing the type identifier for tag cells.
  *
@@ -61,9 +60,11 @@ export const TAG_CELL_TYPE: string = 'tag';
  * };
  * ```
  */
-export interface TagCellProps<RecordType = any>
-  extends CellProps<string, RecordType, TagProps> {
-}
+export interface TagCellProps<RecordType = any> extends CellProps<
+  string,
+  RecordType,
+  TagProps
+> {}
 
 /**
  * Renders a tag cell using Ant Design's Tag component.

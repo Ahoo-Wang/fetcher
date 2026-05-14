@@ -14,20 +14,13 @@ interface SearchInputProps {
 export function SearchInput({ onResults }: SearchInputProps) {
   const [keyword, setKeyword] = useState('');
 
-  const {
-    loading,
-    result,
-    run,
-    cancel,
-    isPending,
-    setQuery,
-    getQuery,
-  } = useDebouncedFetcherQuery<{ keyword: string }, SearchResult[]>({
-    url: '/api/search',
-    initialQuery: { keyword: '' },
-    debounce: { delay: 300 },
-    autoExecute: false,
-  });
+  const { loading, result, run, cancel, isPending, setQuery, getQuery } =
+    useDebouncedFetcherQuery<{ keyword: string }, SearchResult[]>({
+      url: '/api/search',
+      initialQuery: { keyword: '' },
+      debounce: { delay: 300 },
+      autoExecute: false,
+    });
 
   const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newKeyword = e.target.value;
@@ -69,9 +62,7 @@ export function SearchInput({ onResults }: SearchInputProps) {
       </div>
       {loading && <div className="search-loading">Searching...</div>}
       {result && (
-        <div className="search-results">
-          Found {result.length} results
-        </div>
+        <div className="search-results">Found {result.length} results</div>
       )}
     </div>
   );

@@ -11,22 +11,19 @@
  * limitations under the License.
  */
 
-import type { FilterField, FilterOperatorProps, FilterValueProps } from '../types';
+import type {
+  FilterField,
+  FilterOperatorProps,
+  FilterValueProps,
+} from '../types';
 import type { FilterType } from '../TypedFilter';
 import { Checkbox, Col, Divider, Row } from 'antd';
 import type { StyleCapable } from '../../types';
 
 import styles from './AvailableFilterSelect.module.css';
 
-import type {
-  Key,
-  RefAttributes} from 'react';
-import {
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useState,
-} from 'react';
+import type { Key, RefAttributes } from 'react';
+import { useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import type { ActiveFilter } from './FilterPanel';
 import type { AttributesCapable } from '@ahoo-wang/fetcher';
 import type { ConditionOptions } from '@ahoo-wang/fetcher-wow';
@@ -83,9 +80,7 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
     if (checked) {
       setSelectedFilters([...selectedFilters, filter.key]);
     } else {
-      setSelectedFilters(
-        selectedFilters.filter(name => name !== filter.key),
-      );
+      setSelectedFilters(selectedFilters.filter(name => name !== filter.key));
     }
   };
 
@@ -106,8 +101,7 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
                     handleCheck(filter, e.target.checked);
                   }}
                   disabled={activeFilters.some(
-                    activeFilter =>
-                      activeFilter.key === filter.key,
+                    activeFilter => activeFilter.key === filter.key,
                   )}
                 >
                   {filter.field.label}

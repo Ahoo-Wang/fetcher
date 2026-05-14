@@ -18,7 +18,7 @@ import {
 
 // Define the token refresher
 const tokenRefresher: TokenRefresher = {
-  refresh: async (token) => {
+  refresh: async token => {
     const response = await fetch('/api/auth/refresh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -49,7 +49,7 @@ new CoSecConfigurer({
   appId: 'protected-api-app',
   tokenStorage: tokenStorage,
   tokenRefresher: tokenRefresher,
-  onUnauthorized: (exchange) => {
+  onUnauthorized: exchange => {
     console.log('Session expired, redirecting to login');
     tokenStorage.signOut();
     window.location.href = '/login';
@@ -58,11 +58,11 @@ new CoSecConfigurer({
 
 // Alternatively, add interceptors individually:
 fetcher.interceptors.request.use(
-  new AuthorizationRequestInterceptor({ tokenManager })
+  new AuthorizationRequestInterceptor({ tokenManager }),
 );
 
 fetcher.interceptors.response.use(
-  new AuthorizationResponseInterceptor({ tokenManager })
+  new AuthorizationResponseInterceptor({ tokenManager }),
 );
 
 // All requests now include:

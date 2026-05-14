@@ -32,7 +32,7 @@ const eventBus = new SerialTypedEventBus<AuthEvent>('auth-events');
 eventBus.on({
   name: 'logger',
   order: 1,
-  handle: (event) => {
+  handle: event => {
     console.log('[Logger] Auth event:', event.type, event.payload);
   },
 });
@@ -41,7 +41,7 @@ eventBus.on({
 eventBus.on({
   name: 'analytics',
   order: 2,
-  handle: (event) => {
+  handle: event => {
     console.log('[Analytics] Tracking:', event.type);
     // Analytics integration here
   },
