@@ -13,7 +13,8 @@
 
 import type {
   ApiMetadataCapable,
-  ExecuteLifeCycle} from '@ahoo-wang/fetcher-decorator';
+  ExecuteLifeCycle,
+} from '@ahoo-wang/fetcher-decorator';
 import {
   api,
   type ApiMetadata,

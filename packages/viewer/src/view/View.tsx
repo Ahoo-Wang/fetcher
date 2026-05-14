@@ -11,27 +11,20 @@
  * limitations under the License.
  */
 
-import type { PaginationProps} from 'antd';
+import type { PaginationProps } from 'antd';
 import { Pagination, Space } from 'antd';
 import styles from '../viewer/Viewer.module.css';
 import type {
   ActiveFilter,
-  AvailableFilterGroup, FilterPanelConditionCapableRef,
-  FilterPanelRef} from '../filter';
-import {
-  EditableFilterPanel,
-  FilterPanel
+  AvailableFilterGroup,
+  FilterPanelConditionCapableRef,
+  FilterPanelRef,
 } from '../filter';
+import { EditableFilterPanel, FilterPanel } from '../filter';
 import type * as React from 'react';
 import type { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
-import type {
-  Key,
-  RefAttributes} from 'react';
-import {
-  useCallback,
-  useImperativeHandle,
-  useRef,
-} from 'react';
+import type { Key, RefAttributes } from 'react';
+import { useCallback, useImperativeHandle, useRef } from 'react';
 import type { FieldDefinition, ViewColumn } from '../viewer';
 import type { ViewTableActionColumn, ViewTableRef } from '../table';
 import { ViewTable } from '../table';
@@ -49,7 +42,7 @@ import { useLocale } from '../locale';
  * Ref interface for exposing View component imperative methods to parent components.
  * Enables external control of view state including table size reset and row selection clearing.
  */
-export interface ViewRef extends ViewTableRef ,FilterPanelConditionCapableRef {
+export interface ViewRef extends ViewTableRef, FilterPanelConditionCapableRef {
   /**
    * Updates the table size (small, middle, large).
    * @param size - The new table size to set.
@@ -109,7 +102,8 @@ export type FilterMode = 'none' | 'normal' | 'editable';
  * ```
  */
 export interface ViewProps<RecordType>
-  extends PrimaryKeyClickHandlerCapable<RecordType>,
+  extends
+    PrimaryKeyClickHandlerCapable<RecordType>,
     ViewTableSettingCapable,
     RefAttributes<ViewRef> {
   /** Field definitions describing each column's metadata (label, type, sorter, etc.) */
@@ -165,7 +159,10 @@ export interface ViewProps<RecordType>
   /** Current filter condition (controlled mode) */
   externalCondition?: Condition;
   /** Callback to update condition (controlled mode) */
-  externalUpdateCondition?: (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => void;
+  externalUpdateCondition?: (
+    finalCondition: Condition,
+    activeFilterValues: Map<Key, Condition>,
+  ) => void;
 
   /** Optional action column configuration for row-level operations */
   actionColumn?: ViewTableActionColumn<RecordType>;
@@ -210,21 +207,21 @@ export interface ViewProps<RecordType>
  * @returns A Space container with filter panel (optional), data table, and pagination.
  */
 export function View<RecordType>({
-                                   ref,
-                                   fields,
-                                   availableFilters,
-                                   dataSource,
-                                   actionColumn,
-                                   showFilter,
-                                   filterMode,
-                                   pagination,
-                                   enableRowSelection,
-                                   viewTableSetting,
-                                   onClickPrimaryKey,
-                                   onSelectedDataChange,
-                                   loading,
-                                   ...viewState
-                                 }: ViewProps<RecordType>) {
+  ref,
+  fields,
+  availableFilters,
+  dataSource,
+  actionColumn,
+  showFilter,
+  filterMode,
+  pagination,
+  enableRowSelection,
+  viewTableSetting,
+  onClickPrimaryKey,
+  onSelectedDataChange,
+  loading,
+  ...viewState
+}: ViewProps<RecordType>) {
   /**
    * Initialize view state using useViewState hook.
    * Handles all internal state management for filters, columns, pagination, sorting.
@@ -255,7 +252,10 @@ export function View<RecordType>({
    * @param finalCondition - The composed filter condition from filter panel.
    * @param activeFilterValues -
    */
-  const handleSearch = (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => {
+  const handleSearch = (
+    finalCondition: Condition,
+    activeFilterValues: Map<Key, Condition>,
+  ) => {
     setCondition(finalCondition, activeFilterValues);
   };
 
@@ -356,7 +356,7 @@ export function View<RecordType>({
     clearSelectedRowKeys: clearSelectedRowKeysFn,
     updateTableSize: setTableSize,
     reset: resetFn,
-    getCondition:()=> editableFilterPanelRef.current?.getCondition(),
+    getCondition: () => editableFilterPanelRef.current?.getCondition(),
   }));
 
   // useEffect(() => {

@@ -16,7 +16,7 @@ import type { AssemblyFilterProps } from './AssemblyFilter';
 import { AssemblyFilter } from './AssemblyFilter';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { ExtendedOperator } from './operator';
-import type { ConditionValueParser} from './useFilterState';
+import type { ConditionValueParser } from './useFilterState';
 import { TrueValidateValue } from './useFilterState';
 
 export const BOOL_FILTER = 'bool';

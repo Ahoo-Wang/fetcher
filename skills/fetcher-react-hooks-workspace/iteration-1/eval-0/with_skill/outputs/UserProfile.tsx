@@ -42,7 +42,11 @@ export function UserProfile({ userId }: UserProfileProps) {
     return (
       <div className="user-profile-error">
         <span>Error loading user: {error.message}</span>
-        <button onClick={() => execute({ url: `/api/users/${userId}`, method: 'GET' })}>
+        <button
+          onClick={() =>
+            execute({ url: `/api/users/${userId}`, method: 'GET' })
+          }
+        >
           Retry
         </button>
       </div>

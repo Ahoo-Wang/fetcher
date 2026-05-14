@@ -61,9 +61,11 @@ export const TEXT_CELL_TYPE: string = 'text';
  * };
  * ```
  */
-export interface TextCellProps<RecordType = any>
-  extends CellProps<string, RecordType, TextProps> {
-}
+export interface TextCellProps<RecordType = any> extends CellProps<
+  string,
+  RecordType,
+  TextProps
+> {}
 
 /**
  * Renders a text cell using Ant Design's Typography.Text component.
@@ -118,8 +120,15 @@ export interface TextCellProps<RecordType = any>
  * ```
  */
 export function TextCell<RecordType = any>(props: TextCellProps<RecordType>) {
-  const displayValue = (props.data.value === null || props.data.value === undefined || props.data.value === '')
-    ? '-'
-    : String(props.data.value);
-  return <Text {...props.attributes}>{props.attributes?.children ?? displayValue}</Text>;
+  const displayValue =
+    props.data.value === null ||
+    props.data.value === undefined ||
+    props.data.value === ''
+      ? '-'
+      : String(props.data.value);
+  return (
+    <Text {...props.attributes}>
+      {props.attributes?.children ?? displayValue}
+    </Text>
+  );
 }

@@ -11,8 +11,7 @@
  * limitations under the License.
  */
 
-import type {
-  RefAttributes} from 'react';
+import type { RefAttributes } from 'react';
 import React, {
   useState,
   useCallback,
@@ -259,7 +258,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
         onDrop={e => handleDrop(e, group, column.index)}
-        onKeyDown={(e) => handleColumnKeyDown(e, column.index)}
+        onKeyDown={e => handleColumnKeyDown(e, column.index)}
       >
         <TableFieldItem
           columnDefinition={columnDefinition}
@@ -322,9 +321,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     >
       <div className={styles.groupTitle}>{t('visibleFields')}</div>
       {fixedColumns.map(column => renderDraggableItem(column, 'fixed'))}
-      <div className={styles.tips}>
-        {t('fixedTip')}
-      </div>
+      <div className={styles.tips}>{t('fixedTip')}</div>
       {visibleColumns.map(column => renderDraggableItem(column, 'visible'))}
       <div className={styles.groupTitle}>{t('hiddenFields')}</div>
       {hiddenColumns.map(column => renderStaticItem(column))}

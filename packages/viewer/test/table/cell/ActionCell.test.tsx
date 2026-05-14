@@ -132,7 +132,7 @@ describe('ActionCell', () => {
       <ActionCell
         data={{ value: 'Edit', record: mockRecord, index: 0 }}
         attributes={{ onClick }}
-      />
+      />,
     );
     fireEvent.click(screen.getByRole('button'));
     expect(onClick).toHaveBeenCalledWith(mockRecord);

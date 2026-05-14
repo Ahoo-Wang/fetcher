@@ -63,7 +63,7 @@ export default defineConfig({
           '@ahoo-wang/fetcher-react': 'FetcherReact',
           '@ahoo-wang/fetcher-openapi': 'FetcherOpenAPI',
         },
-        keepNames: true
+        keepNames: true,
       },
     },
   },
@@ -78,10 +78,10 @@ export default defineConfig({
       plugins: [
         'babel-plugin-transform-typescript-metadata',
         '@babel/plugin-transform-class-static-block',
-        ["@babel/plugin-proposal-decorators", { version: "legacy" }],
-        ["@babel/plugin-proposal-class-properties", { loose: true }],
+        ['@babel/plugin-proposal-decorators', { version: 'legacy' }],
+        ['@babel/plugin-proposal-class-properties', { loose: true }],
       ],
       presets: [reactCompilerPreset()],
-    })
+    }),
   ],
 });

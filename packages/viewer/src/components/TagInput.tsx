@@ -44,11 +44,10 @@ export const NumberTagValueItemSerializer: TagValueItemSerializer<number> = {
  * Props for the TagInput component.
  * Extends SelectProps from Antd, excluding 'mode', 'open', and 'suffixIcon' as they are fixed.
  */
-export interface TagInputProps<ValueItemType = string>
-  extends Omit<
-    SelectProps,
-    'mode' | 'open' | 'suffixIcon' | 'onChange' | 'value'
-  > {
+export interface TagInputProps<ValueItemType = string> extends Omit<
+  SelectProps,
+  'mode' | 'open' | 'suffixIcon' | 'onChange' | 'value'
+> {
   ref?: RefObject<RefSelectProps>;
   serializer?: TagValueItemSerializer<ValueItemType>;
   onChange?: (value: ValueItemType[]) => void;

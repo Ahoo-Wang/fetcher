@@ -1,9 +1,11 @@
 # Transcript: Eval 1 without_skill - SSE Termination Detection (Baseline)
 
 ## Task
+
 Parse SSE events from an LLM API with proper termination detection WITHOUT using the skill.
 
 ## Prompt
+
 "How do I parse SSE events from an LLM API with proper termination detection? I need to handle the [DONE] signal and clean up the stream properly."
 
 ## Execution Steps
@@ -14,6 +16,7 @@ Parse SSE events from an LLM API with proper termination detection WITHOUT using
 4. Simple [DONE] check without specialized tooling
 
 ## Observations
+
 - Did not use fetcher-eventstream package
 - Manual SSE parsing without proper types
 - Basic termination detection without TerminateDetector pattern

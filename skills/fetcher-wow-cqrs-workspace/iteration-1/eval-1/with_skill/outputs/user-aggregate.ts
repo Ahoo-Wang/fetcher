@@ -91,7 +91,10 @@ export interface DeleteUserCommand extends BaseCommand {
 /**
  * Union type of all user commands
  */
-export type UserCommand = CreateUserCommand | UpdateUserCommand | DeleteUserCommand;
+export type UserCommand =
+  | CreateUserCommand
+  | UpdateUserCommand
+  | DeleteUserCommand;
 
 /**
  * WowAggregate type - composes the necessary interfaces for an aggregate
@@ -100,7 +103,8 @@ export type UserCommand = CreateUserCommand | UpdateUserCommand | DeleteUserComm
  * combining identity, state management, versioning, and audit fields.
  */
 export interface WowAggregate<S = any>
-  extends AggregateId,
+  extends
+    AggregateId,
     AggregateNameCapable,
     TenantId,
     WowAggregateVersioning,
@@ -223,13 +227,25 @@ export class UserAggregate implements WowAggregate<UserState> {
   handleCreateUser(command: CreateUserCommand): CommandResult {
     // Validation
     if (!command.name || command.name.length < 2) {
-      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Name must be at least 2 characters');
+      return this.createErrorResult(
+        command,
+        'VALIDATION_ERROR',
+        'Name must be at least 2 characters',
+      );
     }
     if (!command.email || !this.isValidEmail(command.email)) {
-      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Valid email is required');
+      return this.createErrorResult(
+        command,
+        'VALIDATION_ERROR',
+        'Valid email is required',
+      );
     }
     if (!['admin', 'user', 'moderator'].includes(command.role)) {
-      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Invalid role');
+      return this.createErrorResult(
+        command,
+        'VALIDATION_ERROR',
+        'Invalid role',
+      );
     }
 
     // Apply state changes
@@ -263,22 +279,41 @@ export class UserAggregate implements WowAggregate<UserState> {
   handleUpdateUser(command: UpdateUserCommand): CommandResult {
     // Cannot update a deleted user
     if (this.state.deleted) {
-      return this.createErrorResult(command, 'INVALID_STATE', 'Cannot update a deleted user');
+      return this.createErrorResult(
+        command,
+        'INVALID_STATE',
+        'Cannot update a deleted user',
+      );
     }
 
     // Validate email if provided
     if (command.email && !this.isValidEmail(command.email)) {
-      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Invalid email format');
+      return this.createErrorResult(
+        command,
+        'VALIDATION_ERROR',
+        'Invalid email format',
+      );
     }
 
     // Validate name if provided
     if (command.name && command.name.length < 2) {
-      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Name must be at least 2 characters');
+      return this.createErrorResult(
+        command,
+        'VALIDATION_ERROR',
+        'Name must be at least 2 characters',
+      );
     }
 
     // Validate role if provided
-    if (command.role && !['admin', 'user', 'moderator'].includes(command.role)) {
-      return this.createErrorResult(command, 'VALIDATION_ERROR', 'Invalid role');
+    if (
+      command.role &&
+      !['admin', 'user', 'moderator'].includes(command.role)
+    ) {
+      return this.createErrorResult(
+        command,
+        'VALIDATION_ERROR',
+        'Invalid role',
+      );
     }
 
     // Apply state changes
@@ -312,7 +347,11 @@ export class UserAggregate implements WowAggregate<UserState> {
   handleDeleteUser(command: DeleteUserCommand): CommandResult {
     // Cannot delete an already deleted user
     if (this.state.deleted) {
-      return this.createErrorResult(command, 'INVALID_STATE', 'User is already deleted');
+      return this.createErrorResult(
+        command,
+        'INVALID_STATE',
+        'User is already deleted',
+      );
     }
 
     // Apply soft delete
@@ -347,7 +386,7 @@ export class UserAggregate implements WowAggregate<UserState> {
         return this.createErrorResult(
           command as CreateUserCommand,
           'UNKNOWN_COMMAND',
-          `Unknown command type: ${(command as any).commandType}`
+          `Unknown command type: ${(command as any).commandType}`,
         );
     }
   }
@@ -368,7 +407,7 @@ export class UserAggregate implements WowAggregate<UserState> {
   private createSuccessResult(
     command: BaseCommand,
     stage: CommandStage,
-    result: Record<string, any>
+    result: Record<string, any>,
   ): CommandResult {
     const functionInfo: FunctionInfo = {
       contextName: this.contextName,
@@ -402,7 +441,7 @@ export class UserAggregate implements WowAggregate<UserState> {
   private createErrorResult(
     command: BaseCommand,
     errorCode: string,
-    errorMsg: string
+    errorMsg: string,
   ): CommandResult {
     const functionInfo: FunctionInfo = {
       contextName: this.contextName,

@@ -1,1 +1,1 @@
-export * from './useViewTableState'
+export * from './useViewTableState';

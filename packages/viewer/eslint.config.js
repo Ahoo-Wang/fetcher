@@ -29,7 +29,7 @@ export default tseslint.config(
   },
   {
     files: ['**/*.{ts,tsx}'],
-    plugins: { 'react-hooks': reactHooks , 'react-compiler': reactCompiler},
+    plugins: { 'react-hooks': reactHooks, 'react-compiler': reactCompiler },
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
       ecmaVersion: 2020,
@@ -37,16 +37,16 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs['recommended-latest'].rules,
-      '@typescript-eslint/no-empty-object-type': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
-      // '@typescript-eslint/no-unused-vars': 'off',
-      "react-compiler/react-compiler": "warn",
-      "@typescript-eslint/consistent-type-imports": [
-        "error",
+      '@typescript-eslint/no-empty-object-type': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': 'warn',
+      'react-compiler/react-compiler': 'warn',
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
         {
-          "prefer": "type-imports"
-        }
-      ]
+          prefer: 'type-imports',
+        },
+      ],
     },
   },
 );

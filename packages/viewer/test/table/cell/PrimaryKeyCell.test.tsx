@@ -22,7 +22,7 @@ describe('PrimaryKeyCell', () => {
       <PrimaryKeyCell
         data={{ value: '12345', record: { id: '12345' }, index: 0 }}
         attributes={{}}
-      />
+      />,
     );
     expect(screen.getByText('12345')).toBeInTheDocument();
   });
@@ -34,7 +34,7 @@ describe('PrimaryKeyCell', () => {
       <PrimaryKeyCell
         data={{ value: '1', record: mockRecord, index: 0 }}
         attributes={{ onClick }}
-      />
+      />,
     );
     fireEvent.click(container.querySelector('a')!);
     expect(onClick).toHaveBeenCalledWith(mockRecord);

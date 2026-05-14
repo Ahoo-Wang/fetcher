@@ -20,12 +20,8 @@ import {
 import { CoSecHeaders } from '../src';
 import type { FetchExchange } from '@ahoo-wang/fetcher';
 import { DeviceIdStorage } from '../src';
-import type {
-  SpaceIdProvider} from '../src/spaceIdProvider';
-import {
-  NoneSpaceIdProvider,
-  SpaceIdStorage,
-} from '../src/spaceIdProvider';
+import type { SpaceIdProvider } from '../src/spaceIdProvider';
+import { NoneSpaceIdProvider, SpaceIdStorage } from '../src/spaceIdProvider';
 import { idGenerator } from '../src/idGenerator';
 
 const mockStorage = {

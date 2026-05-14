@@ -27,7 +27,10 @@ const defaultValue = {
 };
 
 function ImmerStorageDemo() {
-  const [data, updateData, clearData] = useImmerKeyStorage(storage, defaultValue);
+  const [data, updateData, clearData] = useImmerKeyStorage(
+    storage,
+    defaultValue,
+  );
 
   const handleIncrement = () => {
     updateData(draft => {

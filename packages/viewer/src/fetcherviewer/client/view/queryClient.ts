@@ -1,20 +1,27 @@
-import type { QueryClientOptions} from "@ahoo-wang/fetcher-wow";
-import { QueryClientFactory, ResourceAttributionPathSpec } from "@ahoo-wang/fetcher-wow";
-import type { ViewAggregatedFields, ViewCreated, ViewEdited } from "./types";
-import { VIEWER_BOUNDED_CONTEXT_ALIAS } from "../boundedContext";
+import type { QueryClientOptions } from '@ahoo-wang/fetcher-wow';
+import {
+  QueryClientFactory,
+  ResourceAttributionPathSpec,
+} from '@ahoo-wang/fetcher-wow';
+import type { ViewAggregatedFields, ViewCreated, ViewEdited } from './types';
+import { VIEWER_BOUNDED_CONTEXT_ALIAS } from '../boundedContext';
 import type { ViewState } from '../../../viewer';
 
 const DEFAULT_QUERY_CLIENT_OPTIONS: QueryClientOptions = {
-    contextAlias: VIEWER_BOUNDED_CONTEXT_ALIAS,
-    aggregateName: 'view',
-    resourceAttribution: ResourceAttributionPathSpec.TENANT,
+  contextAlias: VIEWER_BOUNDED_CONTEXT_ALIAS,
+  aggregateName: 'view',
+  resourceAttribution: ResourceAttributionPathSpec.TENANT,
 };
 
 export enum ViewDomainEventTypeMapTitle {
-    view_created = '视图已创建',
-    view_edited = '视图已修改'
+  view_created = '视图已创建',
+  view_edited = '视图已修改',
 }
 
 export type ViewDomainEventType = ViewCreated | ViewEdited;
 
-export const viewQueryClientFactory = new QueryClientFactory<ViewState, ViewAggregatedFields | string, ViewDomainEventType>(DEFAULT_QUERY_CLIENT_OPTIONS);
+export const viewQueryClientFactory = new QueryClientFactory<
+  ViewState,
+  ViewAggregatedFields | string,
+  ViewDomainEventType
+>(DEFAULT_QUERY_CLIENT_OPTIONS);

@@ -22,61 +22,67 @@ export function StreamingLLMChat() {
   const [chunkCount, setChunkCount] = useState(0);
   const [currentResponse, setCurrentResponse] = useState('');
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isStreaming) return;
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!input.trim() || isStreaming) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setIsStreaming(true);
-    setChunkCount(0);
-    setCurrentResponse('');
+      const userMessage: ChatMessage = { role: 'user', content: input };
+      setMessages(prev => [...prev, userMessage]);
+      setInput('');
+      setIsStreaming(true);
+      setChunkCount(0);
+      setCurrentResponse('');
 
-    try {
-      const stream = await openai.chat.completions({
-        model: 'gpt-3.5-turbo',
-        messages: [...messages, userMessage].map(m => ({
-          role: m.role,
-          content: m.content,
-        })),
-        stream: true,
-      });
+      try {
+        const stream = await openai.chat.completions({
+          model: 'gpt-3.5-turbo',
+          messages: [...messages, userMessage].map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+          stream: true,
+        });
 
-      let fullResponse = '';
-      let chunks = 0;
+        let fullResponse = '';
+        let chunks = 0;
 
-      // Real-time token processing with UI updates
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-          chunks++;
-          fullResponse += content;
-          setCurrentResponse(fullResponse); // Real-time UI update
-          setChunkCount(chunks);
+        // Real-time token processing with UI updates
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content || '';
+          if (content) {
+            chunks++;
+            fullResponse += content;
+            setCurrentResponse(fullResponse); // Real-time UI update
+            setChunkCount(chunks);
 
-          // Log progress every 5 chunks
-          if (chunks % 5 === 0) {
-            console.log(`Received ${chunks} chunks`);
+            // Log progress every 5 chunks
+            if (chunks % 5 === 0) {
+              console.log(`Received ${chunks} chunks`);
+            }
+          }
+
+          // Check for completion
+          if (chunk.choices[0]?.finish_reason) {
+            console.log(`Finished: ${chunk.choices[0].finish_reason}`);
+            break;
           }
         }
 
-        // Check for completion
-        if (chunk.choices[0]?.finish_reason) {
-          console.log(`Finished: ${chunk.choices[0].finish_reason}`);
-          break;
-        }
+        // Add complete assistant message
+        setMessages(prev => [
+          ...prev,
+          { role: 'assistant', content: fullResponse },
+        ]);
+      } catch (error) {
+        console.error('Streaming error:', error);
+      } finally {
+        setIsStreaming(false);
+        setCurrentResponse('');
       }
-
-      // Add complete assistant message
-      setMessages(prev => [...prev, { role: 'assistant', content: fullResponse }]);
-    } catch (error) {
-      console.error('Streaming error:', error);
-    } finally {
-      setIsStreaming(false);
-      setCurrentResponse('');
-    }
-  }, [input, messages, isStreaming]);
+    },
+    [input, messages, isStreaming],
+  );
 
   return (
     <div className="streaming-chat">

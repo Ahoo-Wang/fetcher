@@ -12,10 +12,22 @@
  */
 
 declare const globalThis: {
-  BroadcastChannel?: new (name: string) => { postMessage: (data: unknown) => void; close: () => void; onmessage: ((event: { data: unknown }) => void) | null };
+  BroadcastChannel?: new (name: string) => {
+    postMessage: (data: unknown) => void;
+    close: () => void;
+    onmessage: ((event: { data: unknown }) => void) | null;
+  };
 };
 
-import { describe, it, expect, vi, beforeEach, afterEach, MockInstance } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  MockInstance,
+} from 'vitest';
 import { BroadcastChannelMessenger } from '../../src';
 
 describe('BroadcastChannelMessenger', () => {
@@ -38,11 +50,13 @@ describe('BroadcastChannelMessenger', () => {
     }
 
     BroadcastChannelMock = MockBroadcastChannel;
-    (globalThis as Record<string, unknown>).BroadcastChannel = BroadcastChannelMock;
+    (globalThis as Record<string, unknown>).BroadcastChannel =
+      BroadcastChannelMock;
   });
 
   afterEach(() => {
-    (globalThis as Record<string, unknown>).BroadcastChannel = originalBroadcastChannel;
+    (globalThis as Record<string, unknown>).BroadcastChannel =
+      originalBroadcastChannel;
     lastInstance = null;
   });
 

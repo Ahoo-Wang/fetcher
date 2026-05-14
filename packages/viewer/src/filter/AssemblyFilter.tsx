@@ -18,10 +18,9 @@ import type {
   FilterValueConverter,
   OnOperatorChangeValueConverter,
   UseFilterStateReturn,
-  ValidateValue} from './useFilterState';
-import {
-  useFilterState
+  ValidateValue,
 } from './useFilterState';
+import { useFilterState } from './useFilterState';
 import { Select, Space, Typography, theme } from 'antd';
 
 const { useToken } = theme;
@@ -78,15 +77,15 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
     value: supportedOperator,
     label: operatorLocale[supportedOperator],
   }));
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { locale: _locale, supportedOperators: _supportedOperators, ...operatorProps } = props.operator ?? {};
+   
+  const {
+    locale: _locale,
+    supportedOperators: _supportedOperators,
+    ...operatorProps
+  } = props.operator ?? {};
   const { token } = useToken();
   return (
-    <Space.Compact
-      block
-      style={{ ...props.style }}
-      className={props.className}
-    >
+    <Space.Compact block style={{ ...props.style }} className={props.className}>
       <Typography
         style={{
           minWidth: 140,

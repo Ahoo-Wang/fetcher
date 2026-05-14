@@ -11,9 +11,12 @@
  * limitations under the License.
  */
 
-import type { ReactNode} from 'react';
+import type { ReactNode } from 'react';
 import { createContext, useContext, useRef } from 'react';
-import type { UseFullscreenOptions, UseFullscreenReturn } from './useFullscreen';
+import type {
+  UseFullscreenOptions,
+  UseFullscreenReturn,
+} from './useFullscreen';
 import { useFullscreen } from './useFullscreen';
 
 export type FullscreenContextValue = UseFullscreenReturn;

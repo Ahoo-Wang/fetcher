@@ -13,12 +13,8 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMounted } from './useMounted';
-import type {
-  PromiseState,
-  UsePromiseStateOptions} from './usePromiseState';
-import {
-  usePromiseState
-} from './usePromiseState';
+import type { PromiseState, UsePromiseStateOptions } from './usePromiseState';
+import { usePromiseState } from './usePromiseState';
 import { useRequestId } from './useRequestId';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import { useLatest } from './useLatest';
@@ -28,8 +24,10 @@ import { useLatest } from './useLatest';
  * @template R - The type of the resolved value from the promise.
  * @template E - The type of the error value, defaults to unknown.
  */
-export interface UseExecutePromiseOptions<R, E = FetcherError>
-  extends UsePromiseStateOptions<R, E> {
+export interface UseExecutePromiseOptions<
+  R,
+  E = FetcherError,
+> extends UsePromiseStateOptions<R, E> {
   /**
    * Whether to propagate errors thrown by the promise.
    * If true, the execute function will throw errors.
@@ -60,8 +58,10 @@ export type PromiseSupplier<R> = (
  * @template R - The type of the result value.
  * @template E - The type of the error value, defaults to FetcherError.
  */
-export interface UseExecutePromiseReturn<R, E = FetcherError>
-  extends PromiseState<R, E> {
+export interface UseExecutePromiseReturn<
+  R,
+  E = FetcherError,
+> extends PromiseState<R, E> {
   /**
    * Function to execute a promise supplier with automatic abort support.
    * Automatically cancels any previous ongoing request before starting a new one.

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { Key, RefAttributes} from 'react';
+import type { Key, RefAttributes } from 'react';
 import React, { useImperativeHandle } from 'react';
 import type { TypedFilterProps } from '../TypedFilter';
 import type { FilterRef } from '../types';

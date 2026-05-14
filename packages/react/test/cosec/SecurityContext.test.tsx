@@ -14,10 +14,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
 import React from 'react';
-import {
-  SecurityProvider,
-  useSecurityContext,
-} from '../../src';
+import { SecurityProvider, useSecurityContext } from '../../src';
 import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
 import { InMemoryStorage } from '@ahoo-wang/fetcher-storage';
 import { ANONYMOUS_USER } from '../../src';
@@ -207,7 +204,6 @@ describe('SecurityContext', () => {
       );
     });
 
-
     it('should provide reactive updates through context', async () => {
       let renderCount = 0;
 
@@ -375,8 +371,7 @@ describe('SecurityContext', () => {
   describe('type safety', () => {
     it('should maintain type safety for context value', () => {
       function TypeSafeComponent() {
-        const { authenticated, signIn, signOut } =
-          useSecurityContext();
+        const { authenticated, signIn, signOut } = useSecurityContext();
 
         // TypeScript should enforce these types
         const auth: boolean = authenticated;

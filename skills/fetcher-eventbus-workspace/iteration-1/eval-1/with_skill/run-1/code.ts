@@ -4,7 +4,7 @@ import { BroadcastChannelMessenger } from '@ahoo-wang/fetcher-eventbus';
 const messenger = new BroadcastChannelMessenger('user-preferences');
 
 // Handle incoming messages from other tabs
-messenger.onmessage = (message) => {
+messenger.onmessage = message => {
   console.log('[Cross-Tab] Received preference update:', message);
   // Apply the preference update to the current tab
 };

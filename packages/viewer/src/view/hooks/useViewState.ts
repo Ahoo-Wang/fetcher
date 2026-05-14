@@ -12,16 +12,11 @@
  */
 
 import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
-import type { Key} from 'react';
+import type { Key } from 'react';
 import { useState } from 'react';
 import type { SizeType } from 'antd/es/config-provider/SizeContext';
-import type {
-  ActiveFilter,
-  ViewColumn} from '../../index';
-import {
-  DEFAULT_CONDITION,
-  useActiveViewState,
-} from '../../index';
+import type { ActiveFilter, ViewColumn } from '../../index';
+import { DEFAULT_CONDITION, useActiveViewState } from '../../index';
 
 /**
  * Callback type for view state changes.
@@ -98,7 +93,10 @@ export interface UseViewStateOptions {
   /** Current filter condition (controlled mode) */
   externalCondition?: Condition;
   /** Callback to update condition (controlled mode) */
-  externalUpdateCondition?: (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => void;
+  externalUpdateCondition?: (
+    finalCondition: Condition,
+    activeFilterValues: Map<Key, Condition>,
+  ) => void;
   /** Default sort configuration (uncontrolled mode) */
   defaultSorter?: FieldSort[];
   /** Current sort configuration (controlled mode) */
@@ -144,7 +142,10 @@ export interface UseViewStateReturn {
   /** Current filter condition */
   condition: Condition;
   /** Function to update condition */
-  setCondition: (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => void;
+  setCondition: (
+    finalCondition: Condition,
+    activeFilterValues: Map<Key, Condition>,
+  ) => void;
   /** Current sort configuration */
   sorter: FieldSort[];
   /** Function to update sorter */
@@ -210,10 +211,10 @@ const DEFAULT_PAGE_SIZE = 10;
  * ```
  */
 export function useViewState({
-                               defaultPage = DEFAULT_PAGE,
-                               defaultPageSize = DEFAULT_PAGE_SIZE,
-                               ...options
-                             }: UseViewStateOptions): UseViewStateReturn {
+  defaultPage = DEFAULT_PAGE,
+  defaultPageSize = DEFAULT_PAGE_SIZE,
+  ...options
+}: UseViewStateOptions): UseViewStateReturn {
   /**
    * Extract controlled mode options.
    * These override internal state when provided.
@@ -328,7 +329,10 @@ export function useViewState({
    * @param finalCondition - New filter condition.
    * @param activeFilterValues - Map of active filter keys to their updated conditions.
    */
-  const setConditionFn = (finalCondition: Condition, activeFilterValues: Map<Key, Condition>) => {
+  const setConditionFn = (
+    finalCondition: Condition,
+    activeFilterValues: Map<Key, Condition>,
+  ) => {
     setCondition(finalCondition, activeFilterValues);
     setPage(1);
     onChange?.(finalCondition, 1, pageSize, sorter);

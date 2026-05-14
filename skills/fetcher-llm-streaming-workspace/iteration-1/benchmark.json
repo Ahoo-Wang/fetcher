@@ -5,11 +5,7 @@
     "executor_model": "<model-name>",
     "analyzer_model": "<model-name>",
     "timestamp": "2026-04-16T07:11:51Z",
-    "evals_run": [
-      0,
-      1,
-      2
-    ],
+    "evals_run": [0, 1, 2],
     "runs_per_configuration": 3
   },
   "runs": [
@@ -163,9 +159,7 @@
           "evidence": "process.stdout.write is used but basic implementation lacks proper real-time streaming patterns from skill"
         }
       ],
-      "notes": [
-        "Did not use fetcher-eventstream package"
-      ]
+      "notes": ["Did not use fetcher-eventstream package"]
     },
     {
       "eval_id": 1,

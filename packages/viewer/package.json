@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-viewer",
-  "version": "3.15.10",
+  "version": "3.16.4",
   "description": "A comprehensive React component library for API documentation viewing and data filtering, built on top of Ant Design and the Fetcher ecosystem. Provides reusable UI components for building rich data-driven applications with advanced filtering capabilities and remote data selection.",
   "keywords": [
     "react",
@@ -26,6 +26,9 @@
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
   },
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "main": "./dist/index.umd.js",
   "module": "./dist/index.es.js",
   "types": "./dist/index.d.ts",
@@ -39,6 +42,7 @@
   "files": [
     "dist"
   ],
+  "sideEffects": false,
   "scripts": {
     "build": "vite build",
     "test:ui": "vitest --ui",

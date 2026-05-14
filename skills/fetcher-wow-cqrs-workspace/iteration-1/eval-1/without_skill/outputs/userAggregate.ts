@@ -25,10 +25,7 @@ import type {
   TenantId,
   Version,
 } from '@ahoo-wang/fetcher-wow';
-import {
-  CommandStage,
-  ErrorCodes,
-} from '@ahoo-wang/fetcher-wow';
+import { CommandStage, ErrorCodes } from '@ahoo-wang/fetcher-wow';
 
 /**
  * User aggregate state interface
@@ -89,8 +86,11 @@ function createCommandResult(
   stage: CommandStage,
   result: Record<string, any>,
   aggregateVersion?: number,
-  errorInfo: ErrorInfo = { errorCode: ErrorCodes.SUCCEEDED, errorMsg: ErrorCodes.SUCCEEDED_MESSAGE },
-  functionInfo?: FunctionInfo
+  errorInfo: ErrorInfo = {
+    errorCode: ErrorCodes.SUCCEEDED,
+    errorMsg: ErrorCodes.SUCCEEDED_MESSAGE,
+  },
+  functionInfo?: FunctionInfo,
 ): CommandResult {
   return {
     id,
@@ -113,12 +113,13 @@ function createCommandResult(
 /**
  * User aggregate class implementing WowAggregate pattern
  */
-export class UserAggregate implements
-  AggregateNameCapable,
-  AggregateIdCapable,
-  StateCapable<UserState>,
-  FunctionInfoCapable {
-
+export class UserAggregate
+  implements
+    AggregateNameCapable,
+    AggregateIdCapable,
+    StateCapable<UserState>,
+    FunctionInfoCapable
+{
   readonly aggregateName: string = 'User';
   readonly boundedContext: string = 'user-service';
   state!: UserState;
@@ -128,7 +129,7 @@ export class UserAggregate implements
 
   constructor(
     private readonly aggregateId: AggregateId & TenantId,
-    initialState?: UserState
+    initialState?: UserState,
   ) {
     if (initialState) {
       this.state = initialState;
@@ -158,7 +159,7 @@ export class UserAggregate implements
   handleCreateUserCommand(
     command: CreateUserCommand,
     commandId: string,
-    requestId: string
+    requestId: string,
   ): CommandResult {
     const now = Date.now();
 
@@ -176,7 +177,7 @@ export class UserAggregate implements
         {},
         this.version,
         validationError,
-        this.function
+        this.function,
       );
     }
 
@@ -196,7 +197,7 @@ export class UserAggregate implements
           errorCode: ErrorCodes.ILLEGAL_STATE,
           errorMsg: 'User already exists',
         },
-        this.function
+        this.function,
       );
     }
 
@@ -230,7 +231,7 @@ export class UserAggregate implements
       result,
       this.version,
       undefined,
-      this.function
+      this.function,
     );
   }
 
@@ -240,7 +241,7 @@ export class UserAggregate implements
   handleUpdateUserCommand(
     command: UpdateUserCommand,
     commandId: string,
-    requestId: string
+    requestId: string,
   ): CommandResult {
     // Validate aggregate is not deleted
     if (this.state.deleted) {
@@ -258,7 +259,7 @@ export class UserAggregate implements
           errorCode: ErrorCodes.ILLEGAL_ACCESS_DELETED_AGGREGATE,
           errorMsg: 'Cannot update deleted user',
         },
-        this.function
+        this.function,
       );
     }
 
@@ -276,7 +277,7 @@ export class UserAggregate implements
         {},
         this.version,
         validationError,
-        this.function
+        this.function,
       );
     }
 
@@ -311,7 +312,7 @@ export class UserAggregate implements
       result,
       this.version,
       undefined,
-      this.function
+      this.function,
     );
   }
 
@@ -321,7 +322,7 @@ export class UserAggregate implements
   handleDeleteUserCommand(
     command: DeleteUserCommand,
     commandId: string,
-    requestId: string
+    requestId: string,
   ): CommandResult {
     // Validate aggregate is not already deleted
     if (this.state.deleted) {
@@ -339,7 +340,7 @@ export class UserAggregate implements
           errorCode: ErrorCodes.ILLEGAL_STATE,
           errorMsg: 'User already deleted',
         },
-        this.function
+        this.function,
       );
     }
 
@@ -359,14 +360,18 @@ export class UserAggregate implements
       { userId: this.state.id, deleted: true },
       this.version,
       undefined,
-      this.function
+      this.function,
     );
   }
 
   /**
    * Dispatch command to appropriate handler
    */
-  dispatch(command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand, commandId: string, requestId: string): CommandResult {
+  dispatch(
+    command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand,
+    commandId: string,
+    requestId: string,
+  ): CommandResult {
     if (this.isCreateUserCommand(command)) {
       return this.handleCreateUserCommand(command, commandId, requestId);
     }
@@ -390,23 +395,36 @@ export class UserAggregate implements
         errorCode: ErrorCodes.BAD_REQUEST,
         errorMsg: 'Unknown command type',
       },
-      this.function
+      this.function,
     );
   }
 
-  private isCreateUserCommand(command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand): command is CreateUserCommand {
-    return 'username' in command && 'email' in command && 'password' in command && !('aggregateId' in command);
+  private isCreateUserCommand(
+    command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand,
+  ): command is CreateUserCommand {
+    return (
+      'username' in command &&
+      'email' in command &&
+      'password' in command &&
+      !('aggregateId' in command)
+    );
   }
 
-  private isUpdateUserCommand(command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand): command is UpdateUserCommand {
+  private isUpdateUserCommand(
+    command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand,
+  ): command is UpdateUserCommand {
     return 'aggregateId' in command && !('deleted' in command);
   }
 
-  private isDeleteUserCommand(command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand): command is DeleteUserCommand {
+  private isDeleteUserCommand(
+    command: CreateUserCommand | UpdateUserCommand | DeleteUserCommand,
+  ): command is DeleteUserCommand {
     return 'aggregateId' in command && 'deleted' in command;
   }
 
-  private validateCreateCommand(command: CreateUserCommand): ErrorInfo | undefined {
+  private validateCreateCommand(
+    command: CreateUserCommand,
+  ): ErrorInfo | undefined {
     if (!command.username || command.username.trim().length === 0) {
       return {
         errorCode: ErrorCodes.COMMAND_VALIDATION,
@@ -440,7 +458,9 @@ export class UserAggregate implements
     return undefined;
   }
 
-  private validateUpdateCommand(command: UpdateUserCommand): ErrorInfo | undefined {
+  private validateUpdateCommand(
+    command: UpdateUserCommand,
+  ): ErrorInfo | undefined {
     if (command.username !== undefined) {
       if (command.username.trim().length === 0) {
         return {
@@ -483,7 +503,7 @@ export class UserAggregate implements
     let hash = 0;
     for (let i = 0; i < password.length; i++) {
       const char = password.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
     return `hash_${Math.abs(hash).toString(16)}`;
@@ -501,7 +521,10 @@ export class UserAggregate implements
 /**
  * User aggregate factory for creating new user aggregates
  */
-export function createUserAggregate(tenantId: string, userId?: string): UserAggregate {
+export function createUserAggregate(
+  tenantId: string,
+  userId?: string,
+): UserAggregate {
   const id = userId || crypto.randomUUID();
   return new UserAggregate({
     tenantId,
@@ -517,13 +540,16 @@ export function createUserAggregate(tenantId: string, userId?: string): UserAggr
  * Restore user aggregate from state
  */
 export function restoreUserAggregate(state: UserState): UserAggregate {
-  const aggregate = new UserAggregate({
-    tenantId: state.tenantId,
-    aggregateId: {
-      id: state.id,
-      aggregateName: 'User',
-      boundedContext: 'user-service',
+  const aggregate = new UserAggregate(
+    {
+      tenantId: state.tenantId,
+      aggregateId: {
+        id: state.id,
+        aggregateName: 'User',
+        boundedContext: 'user-service',
+      },
     },
-  }, state);
+    state,
+  );
   return aggregate;
 }

@@ -46,7 +46,7 @@ describe('useDataMonitor', () => {
       defaultOptions.viewName,
       defaultOptions.condition,
       defaultOptions.notification,
-      undefined
+      undefined,
     );
   });
 
@@ -59,7 +59,9 @@ describe('useDataMonitor', () => {
       result.current.disable();
     });
 
-    expect(dataMonitorService.disable).toHaveBeenCalledWith(defaultOptions.viewId);
+    expect(dataMonitorService.disable).toHaveBeenCalledWith(
+      defaultOptions.viewId,
+    );
   });
 
   it('should toggle between enable and disable', () => {

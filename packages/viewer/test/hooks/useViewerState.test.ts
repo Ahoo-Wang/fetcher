@@ -40,11 +40,13 @@ describe('useViewerState', () => {
     type: 'PERSONAL',
     source: 'CUSTOM',
     isDefault: true,
-    filters: [{
-      type: 'test',
-      key: 'test',
-      field: { name: 'test',label: 'test' },
-    }],
+    filters: [
+      {
+        type: 'test',
+        key: 'test',
+        field: { name: 'test', label: 'test' },
+      },
+    ],
     columns: defaultColumns,
     tableSize: 'middle' as SizeType,
     pageSize: 10,

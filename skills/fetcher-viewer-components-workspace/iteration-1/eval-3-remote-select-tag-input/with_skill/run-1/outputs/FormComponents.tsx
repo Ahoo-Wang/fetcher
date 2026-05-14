@@ -15,10 +15,7 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Card, Typography, Space, Divider } from 'antd';
 import { RemoteSelect } from '../../RemoteSelect';
-import {
-  TagInput,
-  StringTagValueItemSerializer,
-} from '../../TagInput';
+import { TagInput, StringTagValueItemSerializer } from '../../TagInput';
 
 /**
  * RemoteSelect component for searching users with debounced search.
@@ -72,7 +69,9 @@ export interface UserOption {
  * Fetches users from the search endpoint
  */
 const searchUsers = async (keyword: string): Promise<UserOption[]> => {
-  const response = await fetch(`/api/users/search?q=${encodeURIComponent(keyword)}`);
+  const response = await fetch(
+    `/api/users/search?q=${encodeURIComponent(keyword)}`,
+  );
 
   if (!response.ok) {
     throw new Error('Failed to search users');
@@ -205,8 +204,8 @@ export const RemoteSelectStory: StoryObj = {
           <div>
             <Text strong>User Search (300ms debounce)</Text>
             <Paragraph type="secondary">
-              Type to search for users. Results are fetched from /api/users/search
-              with a 300ms debounce to reduce server load.
+              Type to search for users. Results are fetched from
+              /api/users/search with a 300ms debounce to reduce server load.
             </Paragraph>
           </div>
 
@@ -242,8 +241,8 @@ export const TagInputStory: StoryObj = {
           <div>
             <Text strong>Tag Input (String Serialization)</Text>
             <Paragraph type="secondary">
-              Enter multiple tags separated by comma, semicolon, or space.
-              Tags are serialized as strings.
+              Enter multiple tags separated by comma, semicolon, or space. Tags
+              are serialized as strings.
             </Paragraph>
           </div>
 
@@ -280,11 +279,7 @@ export interface FormComponentsDemoProps {
 }
 
 export function FormComponentsDemo(props: FormComponentsDemoProps) {
-  const {
-    initialUsers = [],
-    initialTags = [],
-    onChange,
-  } = props;
+  const { initialUsers = [], initialTags = [], onChange } = props;
 
   const [users, setUsers] = useState<UserOption[]>(initialUsers);
   const [tags, setTags] = useState<string[]>(initialTags);

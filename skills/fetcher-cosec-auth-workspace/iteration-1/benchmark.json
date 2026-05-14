@@ -5,11 +5,7 @@
     "executor_model": "<model-name>",
     "analyzer_model": "<model-name>",
     "timestamp": "2026-04-16T12:01:47Z",
-    "evals_run": [
-      0,
-      1,
-      2
-    ],
+    "evals_run": [0, 1, 2],
     "runs_per_configuration": 3
   },
   "runs": [
@@ -183,9 +179,7 @@
           "evidence": "Only Authorization header is added; CoSec headers (CoSec-App-Id, CoSec-Device-Id) are missing"
         }
       ],
-      "notes": [
-        "No automatic 401 handling or retry mechanism"
-      ]
+      "notes": ["No automatic 401 handling or retry mechanism"]
     },
     {
       "eval_id": 1,
@@ -228,9 +222,7 @@
           "evidence": "No proper error handling for refresh failures - just logs error"
         }
       ],
-      "notes": [
-        "No automatic retry with new token - just logs"
-      ]
+      "notes": ["No automatic retry with new token - just logs"]
     },
     {
       "eval_id": 2,
@@ -273,9 +265,7 @@
           "evidence": "setToken/clearToken functions manage tokens per space"
         }
       ],
-      "notes": [
-        "Manual X-Space-Id header instead of CoSec-Space-Id"
-      ]
+      "notes": ["Manual X-Space-Id header instead of CoSec-Space-Id"]
     }
   ],
   "run_summary": {

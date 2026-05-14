@@ -37,9 +37,9 @@ describe('NotificationChannelRegistry', () => {
 
     it('should throw error when registering duplicate channel', () => {
       channelRegistry.register(TEST_CHANNEL_TYPE, mockChannel);
-      expect(() => channelRegistry.register(TEST_CHANNEL_TYPE, mockChannel)).toThrow(
-        `Channel for type ${TEST_CHANNEL_TYPE} already registered.`,
-      );
+      expect(() =>
+        channelRegistry.register(TEST_CHANNEL_TYPE, mockChannel),
+      ).toThrow(`Channel for type ${TEST_CHANNEL_TYPE} already registered.`);
       channelRegistry.unregister(TEST_CHANNEL_TYPE);
     });
   });
@@ -110,7 +110,8 @@ describe('NotificationChannelRegistry', () => {
 
   describe('browser channel', () => {
     it('should export browser notification type', async () => {
-      const { BROWSER_NOTIFICATION_TYPE } = await import('../../src/notification/channel');
+      const { BROWSER_NOTIFICATION_TYPE } =
+        await import('../../src/notification/channel');
       expect(BROWSER_NOTIFICATION_TYPE).toBe('browser');
     });
   });

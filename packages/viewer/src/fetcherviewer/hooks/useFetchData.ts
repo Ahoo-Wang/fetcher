@@ -4,11 +4,9 @@ import type {
   Condition,
   FieldSort,
   PagedList,
-  PagedQuery} from '@ahoo-wang/fetcher-wow';
-import {
-  all,
-  and
+  PagedQuery,
 } from '@ahoo-wang/fetcher-wow';
+import { all, and } from '@ahoo-wang/fetcher-wow';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import { useCallback, useEffect } from 'react';
 

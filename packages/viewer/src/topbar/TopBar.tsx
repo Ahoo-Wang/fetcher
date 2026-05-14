@@ -3,19 +3,18 @@ import type {
   TopbarActionsCapable,
   SaveViewMethod,
   ViewState,
-  ViewType} from '../';
-import {
-  SaveViewModal
+  ViewType,
 } from '../';
+import { SaveViewModal } from '../';
 import styles from './TopBar.module.css';
-import type { MenuProps} from 'antd';
+import type { MenuProps } from 'antd';
 import { Button, Divider, Dropdown, Flex, Space, Modal } from 'antd';
 import {
   DownOutlined,
   ExclamationCircleOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import type { RefObject} from 'react';
+import type { RefObject } from 'react';
 import React, { useCallback, useState } from 'react';
 import type { ItemType } from 'antd/es/menu/interface';
 import {

@@ -27,9 +27,9 @@ async function getUser(): Promise<User> {
 
 // Execute and log result
 getUser()
-  .then((user) => {
+  .then(user => {
     console.log('User:', user);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('Error:', error);
   });

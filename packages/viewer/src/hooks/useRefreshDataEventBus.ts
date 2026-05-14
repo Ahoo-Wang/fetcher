@@ -1,5 +1,4 @@
-import type {
-  EventHandler} from '@ahoo-wang/fetcher-eventbus';
+import type { EventHandler } from '@ahoo-wang/fetcher-eventbus';
 import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,

@@ -478,7 +478,7 @@ describe('LinkCell', () => {
         <LinkCell
           data={{ value: 'Click', record: {}, index: 0 }}
           attributes={{ href: input }}
-        />
+        />,
       );
       expect(container.querySelector('a')).toHaveAttribute('href', expected);
     });
@@ -490,7 +490,7 @@ describe('LinkCell', () => {
         <LinkCell
           data={{ value: 'https://example.com', record: {}, index: 0 }}
           attributes={{}}
-        />
+        />,
       );
       const link = container.querySelector('a');
       expect(link).toHaveAttribute('target', '_blank');
@@ -502,7 +502,7 @@ describe('LinkCell', () => {
         <LinkCell
           data={{ value: 'https://example.com', record: {}, index: 0 }}
           attributes={{ rel: 'nofollow' }}
-        />
+        />,
       );
       const link = container.querySelector('a');
       expect(link).toHaveAttribute('rel', 'nofollow');
@@ -513,7 +513,7 @@ describe('LinkCell', () => {
         <LinkCell
           data={{ value: 'https://example.com', record: {}, index: 0 }}
           attributes={{ target: '_self' }}
-        />
+        />,
       );
       const link = container.querySelector('a');
       expect(link).toHaveAttribute('target', '_self');

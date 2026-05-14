@@ -13,7 +13,7 @@
 
 import type { UseFetcherOptions, UseFetcherReturn } from './index';
 import { useFetcher } from './index';
-import type { FetcherError, FetchRequest} from '@ahoo-wang/fetcher';
+import type { FetcherError, FetchRequest } from '@ahoo-wang/fetcher';
 import { JsonResultExtractor } from '@ahoo-wang/fetcher';
 import type { QueryOptions, UseQueryStateReturn } from '../core';
 import { isValidateQuery, useLatest, useQueryState } from '../core';

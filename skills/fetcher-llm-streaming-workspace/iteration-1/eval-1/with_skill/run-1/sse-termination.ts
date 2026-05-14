@@ -2,7 +2,10 @@
 // Demonstrates proper stream cleanup with TerminateDetector
 
 import '@ahoo-wang/fetcher-eventstream';
-import { toJsonServerSentEventStream, type TerminateDetector } from '@ahoo-wang/fetcher-eventstream';
+import {
+  toJsonServerSentEventStream,
+  type TerminateDetector,
+} from '@ahoo-wang/fetcher-eventstream';
 
 interface ChatCompletionChunk {
   choices: Array<{

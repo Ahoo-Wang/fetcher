@@ -36,38 +36,41 @@ export function ProductList({ pageSize = 10 }: ProductListProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchProducts = useCallback(async (page: number) => {
-    setLoading(true);
-    setError(null);
+  const fetchProducts = useCallback(
+    async (page: number) => {
+      setLoading(true);
+      setError(null);
 
-    const query: ListQuery = {
-      condition: {},
-      pagination: {
-        index: page,
-        size: pageSize,
-      },
-      projection: {},
-      sort: [],
-    };
+      const query: ListQuery = {
+        condition: {},
+        pagination: {
+          index: page,
+          size: pageSize,
+        },
+        projection: {},
+        sort: [],
+      };
 
-    try {
-      const response = await fetch('/api/products/paged', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(query),
-      });
+      try {
+        const response = await fetch('/api/products/paged', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(query),
+        });
 
-      if (!response.ok) throw new Error('Failed to fetch products');
+        if (!response.ok) throw new Error('Failed to fetch products');
 
-      const result: PagedResult<Product> = await response.json();
-      setProducts(result.data);
-      setTotal(result.pagination.total);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-    } finally {
-      setLoading(false);
-    }
-  }, [pageSize]);
+        const result: PagedResult<Product> = await response.json();
+        setProducts(result.data);
+        setTotal(result.pagination.total);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Unknown error'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [pageSize],
+  );
 
   useEffect(() => {
     fetchProducts(currentPage);

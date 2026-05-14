@@ -1,4 +1,3 @@
-
 /**
  * - key: viewer.viewer_definition.ViewerDefinitionAggregatedFields
  * - schema:

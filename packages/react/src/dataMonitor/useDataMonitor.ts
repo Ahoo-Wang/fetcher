@@ -23,11 +23,12 @@ export interface UseDataMonitorReturn {
 }
 
 export function useDataMonitor(
-  options: UseDataMonitorOptions
+  options: UseDataMonitorOptions,
 ): UseDataMonitorReturn {
-  const { viewId, countUrl, viewName, condition, notification, interval } = options;
+  const { viewId, countUrl, viewName, condition, notification, interval } =
+    options;
   const [isEnabled, setIsEnabled] = useState(() =>
-    dataMonitorService.isEnabled(viewId)
+    dataMonitorService.isEnabled(viewId),
   );
   const viewIdRef = useRef(viewId);
 
@@ -72,7 +73,7 @@ export function useDataMonitor(
       viewName,
       condition,
       notification,
-      interval
+      interval,
     );
     setIsEnabled(true);
   };

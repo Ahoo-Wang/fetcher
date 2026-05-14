@@ -56,7 +56,8 @@ export function createUserCommand(
   },
 ): CreateUserCommand {
   const headers: Record<string, string> = {
-    [CommandHttpHeaders.WAIT_STAGE]: options?.waitStage ?? CommandStage.PROCESSED,
+    [CommandHttpHeaders.WAIT_STAGE]:
+      options?.waitStage ?? CommandStage.PROCESSED,
   };
 
   if (options?.ownerId) {
@@ -68,7 +69,9 @@ export function createUserCommand(
   }
 
   if (options?.aggregateVersion !== undefined) {
-    headers[CommandHttpHeaders.AGGREGATE_VERSION] = String(options.aggregateVersion);
+    headers[CommandHttpHeaders.AGGREGATE_VERSION] = String(
+      options.aggregateVersion,
+    );
   }
 
   return {
@@ -106,7 +109,11 @@ export function createUserCommand(
  */
 export class UserCommandClient extends CommandClient<CreateUser> {
   constructor(options?: { fetcher: Fetcher; basePath?: string }) {
-    super(options ? { fetcher: options.fetcher, basePath: options.basePath } : undefined);
+    super(
+      options
+        ? { fetcher: options.fetcher, basePath: options.basePath }
+        : undefined,
+    );
   }
 
   /**

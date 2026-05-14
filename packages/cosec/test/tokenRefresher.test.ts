@@ -12,17 +12,16 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import type { Fetcher} from '@ahoo-wang/fetcher';
+import type { Fetcher } from '@ahoo-wang/fetcher';
 import { ResultExtractors } from '@ahoo-wang/fetcher';
 import type {
   AccessToken,
   CompositeToken,
   RefreshToken,
   TokenRefresher,
-  CoSecTokenRefresherOptions} from '../src';
-import {
-  CoSecTokenRefresher
+  CoSecTokenRefresherOptions,
 } from '../src';
+import { CoSecTokenRefresher } from '../src';
 import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from '../src';
 
 describe('tokenRefresher.ts', () => {

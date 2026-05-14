@@ -18,7 +18,11 @@ import { produce } from 'immer';
 
 export function useImmerKeyStorage<T>(
   keyStorage: KeyStorage<T>,
-): [T | null, (updater: (draft: T | null) => T | null | void) => void, () => void];
+): [
+  T | null,
+  (updater: (draft: T | null) => T | null | void) => void,
+  () => void,
+];
 
 export function useImmerKeyStorage<T>(
   keyStorage: KeyStorage<T>,
@@ -124,7 +128,7 @@ export function useImmerKeyStorage<T>(
   keyStorage: KeyStorage<T>,
   defaultValue?: T,
 ): [
-    T | null,
+  T | null,
   (updater: (draft: T | null) => T | null | void) => void,
   () => void,
 ] {

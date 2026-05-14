@@ -17,33 +17,28 @@ interface ProductListProps {
 export function ProductList({ pageSize = 10 }: ProductListProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
-  const {
-    result,
-    loading,
-    error,
-    execute,
-    setPagination,
-  } = useFetcherPagedQuery<Product>({
-    initialQuery: {
-      condition: {},           // Empty condition - get all products
-      pagination: {
-        index: 1,
-        size: pageSize,
+  const { result, loading, error, execute, setPagination } =
+    useFetcherPagedQuery<Product>({
+      initialQuery: {
+        condition: {}, // Empty condition - get all products
+        pagination: {
+          index: 1,
+          size: pageSize,
+        },
+        projection: {}, // No field projection
+        sort: [], // No sorting
       },
-      projection: {},          // No field projection
-      sort: [],                // No sorting
-    },
-    execute: async (pagedQuery: ListQuery) => {
-      // This would be your actual API call using Fetcher
-      const response = await fetch('/api/products/paged', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pagedQuery),
-      });
-      if (!response.ok) throw new Error('Failed to fetch products');
-      return response.json() as Promise<PagedResult<Product>>;
-    },
-  });
+      execute: async (pagedQuery: ListQuery) => {
+        // This would be your actual API call using Fetcher
+        const response = await fetch('/api/products/paged', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pagedQuery),
+        });
+        if (!response.ok) throw new Error('Failed to fetch products');
+        return response.json() as Promise<PagedResult<Product>>;
+      },
+    });
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -55,7 +50,9 @@ export function ProductList({ pageSize = 10 }: ProductListProps) {
   };
 
   const { data: products = [], pagination } = result || {};
-  const totalPages = pagination ? Math.ceil(pagination.total / pagination.size) : 0;
+  const totalPages = pagination
+    ? Math.ceil(pagination.total / pagination.size)
+    : 0;
 
   if (loading && !result) {
     return <div className="product-list-loading">Loading products...</div>;

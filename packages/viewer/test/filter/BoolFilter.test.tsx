@@ -97,7 +97,8 @@ describe('BoolFilter', () => {
       });
       render(<BoolFilter {...props} />);
 
-      const mockProps = (globalThis as Record<string, any>).mockAssemblyFilterProps;
+      const mockProps = (globalThis as Record<string, any>)
+        .mockAssemblyFilterProps;
       expect(mockProps).toBeDefined();
       expect(mockProps.field).toEqual(props.field);
       expect(mockProps.label).toEqual(props.label);
@@ -109,7 +110,8 @@ describe('BoolFilter', () => {
       const props = createMockProps();
       render(<BoolFilter {...props} />);
 
-      const mockProps = (globalThis as Record<string, any>).mockAssemblyFilterProps;
+      const mockProps = (globalThis as Record<string, any>)
+        .mockAssemblyFilterProps;
       expect(mockProps.supportedOperators).toEqual([
         ExtendedOperator.UNDEFINED,
         Operator.TRUE,
@@ -121,7 +123,8 @@ describe('BoolFilter', () => {
       const props = createMockProps();
       render(<BoolFilter {...props} />);
 
-      const mockProps = (globalThis as Record<string, any>).mockAssemblyFilterProps;
+      const mockProps = (globalThis as Record<string, any>)
+        .mockAssemblyFilterProps;
       // TrueValidateValue always returns true
       expect(typeof mockProps.validate).toBe('function');
       expect(mockProps.validate(Operator.TRUE, undefined)).toBe(true);

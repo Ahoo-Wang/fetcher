@@ -28,7 +28,9 @@ vi.mock('@ahoo-wang/fetcher-storage', () => {
   return {
     KeyStorage: class MockKeyStorage {
       get = vi.fn().mockImplementation(() => storageData);
-      set = vi.fn().mockImplementation((data) => { storageData = data; });
+      set = vi.fn().mockImplementation(data => {
+        storageData = data;
+      });
       remove = vi.fn();
       addListener = vi.fn();
     },
@@ -38,7 +40,7 @@ vi.mock('@ahoo-wang/fetcher-storage', () => {
 // Mock fetcher - the mock post function is hoisted so it's accessible in tests
 const fetcherPostMock = vi.hoisted(() => vi.fn(() => Promise.resolve(0)));
 
-vi.mock('@ahoo-wang/fetcher', async (importOriginal) => {
+vi.mock('@ahoo-wang/fetcher', async importOriginal => {
   const actual = await importOriginal<typeof import('@ahoo-wang/fetcher')>();
   return {
     ...actual,
@@ -83,7 +85,13 @@ describe('DataMonitorService', () => {
 
   describe('enable', () => {
     it('should start monitoring a view and save to storage', () => {
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+      );
 
       expect(service.isEnabled('view-1')).toBe(true);
       expect(fetcher.post).toHaveBeenCalledWith(
@@ -94,10 +102,22 @@ describe('DataMonitorService', () => {
     });
 
     it('should replace existing monitoring when enabling same viewId', () => {
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+      );
       expect(service.isEnabled('view-1')).toBe(true);
 
-      service.enable('view-1', '/api/count/v2', 'Updated View', { status: 'active' }, { title: 'Updated' });
+      service.enable(
+        'view-1',
+        '/api/count/v2',
+        'Updated View',
+        { status: 'active' },
+        { title: 'Updated' },
+      );
 
       expect(service.isEnabled('view-1')).toBe(true);
       expect(fetcher.post).toHaveBeenLastCalledWith(
@@ -109,20 +129,39 @@ describe('DataMonitorService', () => {
 
     it('should use custom interval when provided', () => {
       const setIntervalSpy = vi.spyOn(window, 'setInterval');
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' }, 10000);
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+        10000,
+      );
 
       expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 10000);
     });
 
     it('should use default 30000ms interval when not provided', () => {
       const setIntervalSpy = vi.spyOn(window, 'setInterval');
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+      );
 
       expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 30000);
     });
 
     it('should persist enabled state to storage', () => {
-      service.enable('view-1', '/api/count', 'Test View', { status: 'active' }, { title: 'Test', navigationUrl: '/test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        { status: 'active' },
+        { title: 'Test', navigationUrl: '/test' },
+      );
 
       const savedView = storageData['view-1'];
       expect(savedView).toBeDefined();
@@ -130,7 +169,10 @@ describe('DataMonitorService', () => {
       expect(savedView.countUrl).toBe('/api/count');
       expect(savedView.viewName).toBe('Test View');
       expect(savedView.condition).toEqual({ status: 'active' });
-      expect(savedView.notification).toEqual({ title: 'Test', navigationUrl: '/test' });
+      expect(savedView.notification).toEqual({
+        title: 'Test',
+        navigationUrl: '/test',
+      });
     });
   });
 
@@ -138,7 +180,13 @@ describe('DataMonitorService', () => {
     it('should stop monitoring and clear interval', () => {
       const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
 
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+      );
       service.disable('view-1');
 
       expect(service.isEnabled('view-1')).toBe(false);
@@ -146,7 +194,13 @@ describe('DataMonitorService', () => {
     });
 
     it('should update storage after disable', () => {
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+      );
       expect(storageData['view-1']).toBeDefined();
 
       service.disable('view-1');
@@ -167,12 +221,24 @@ describe('DataMonitorService', () => {
     });
 
     it('should return true after enable', () => {
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+      );
       expect(service.isEnabled('view-1')).toBe(true);
     });
 
     it('should return false after disable', () => {
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+      );
       service.disable('view-1');
       expect(service.isEnabled('view-1')).toBe(false);
     });
@@ -288,7 +354,13 @@ describe('DataMonitorService', () => {
     it('should notify and emit event when total changes', async () => {
       setupFetchResponses(0, 10);
 
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test Notification', navigationUrl: '/test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test Notification', navigationUrl: '/test' },
+      );
 
       await vi.advanceTimersByTimeAsync(30000);
 
@@ -316,7 +388,13 @@ describe('DataMonitorService', () => {
     it('should not notify when total is unchanged', async () => {
       setupFetchResponses(5, 5);
 
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+      );
 
       await vi.advanceTimersByTimeAsync(30000);
 
@@ -327,17 +405,31 @@ describe('DataMonitorService', () => {
     });
 
     it('should not notify on first fetch (previousTotal is null)', async () => {
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+      );
 
       expect(dataMonitorEventBusMock.emit).not.toHaveBeenCalled();
       expect(notificationCenterMock.publish).not.toHaveBeenCalled();
     });
 
     it('should handle fetch errors gracefully without crashing', async () => {
-      fetcherPostMock.mockImplementationOnce(() => Promise.reject(new Error('Network error')));
+      fetcherPostMock.mockImplementationOnce(() =>
+        Promise.reject(new Error('Network error')),
+      );
 
       expect(() => {
-        service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+        service.enable(
+          'view-1',
+          '/api/count',
+          'Test View',
+          {},
+          { title: 'Test' },
+        );
       }).not.toThrow();
 
       await vi.advanceTimersByTimeAsync(30000);
@@ -348,12 +440,18 @@ describe('DataMonitorService', () => {
 
     it('should not notify if view is disabled during fetch', async () => {
       let resolveFetch!: (value: number) => void;
-      const fetchPromise = new Promise<number>((resolve) => {
+      const fetchPromise = new Promise<number>(resolve => {
         resolveFetch = resolve;
       });
       fetcherPostMock.mockImplementationOnce(() => fetchPromise);
 
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+      );
 
       service.disable('view-1');
 
@@ -367,7 +465,13 @@ describe('DataMonitorService', () => {
     it('should include onClick with navigationUrl in notification', async () => {
       setupFetchResponses(0, 10);
 
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test', navigationUrl: '/test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test', navigationUrl: '/test' },
+      );
 
       await vi.advanceTimersByTimeAsync(30000);
 
@@ -390,7 +494,13 @@ describe('DataMonitorService', () => {
         configurable: true,
       });
 
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test', navigationUrl: '/navigate-here' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test', navigationUrl: '/navigate-here' },
+      );
 
       await vi.advanceTimersByTimeAsync(30000);
 
@@ -416,7 +526,13 @@ describe('DataMonitorService', () => {
         configurable: true,
       });
 
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Test' },
+      );
 
       await vi.advanceTimersByTimeAsync(30000);
 
@@ -435,11 +551,20 @@ describe('DataMonitorService', () => {
 
   describe('updateCondition', () => {
     it('should update condition for enabled view and persist to storage', () => {
-      service.enable('view-1', '/api/count', 'Test View', { status: 'old' }, { title: 'Test' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        { status: 'old' },
+        { title: 'Test' },
+      );
 
       service.updateCondition('view-1', { status: 'new', priority: 'high' });
 
-      expect(storageData['view-1']?.condition).toEqual({ status: 'new', priority: 'high' });
+      expect(storageData['view-1']?.condition).toEqual({
+        status: 'new',
+        priority: 'high',
+      });
     });
 
     it('should not throw when updating condition for non-existent view', () => {
@@ -457,11 +582,23 @@ describe('DataMonitorService', () => {
 
   describe('updateNotification', () => {
     it('should update notification for enabled view and persist to storage', () => {
-      service.enable('view-1', '/api/count', 'Test View', {}, { title: 'Old Title' });
+      service.enable(
+        'view-1',
+        '/api/count',
+        'Test View',
+        {},
+        { title: 'Old Title' },
+      );
 
-      service.updateNotification('view-1', { title: 'New Title', navigationUrl: '/new-url' });
+      service.updateNotification('view-1', {
+        title: 'New Title',
+        navigationUrl: '/new-url',
+      });
 
-      expect(storageData['view-1']?.notification).toEqual({ title: 'New Title', navigationUrl: '/new-url' });
+      expect(storageData['view-1']?.notification).toEqual({
+        title: 'New Title',
+        navigationUrl: '/new-url',
+      });
     });
 
     it('should not throw when updating notification for non-existent view', () => {
@@ -479,9 +616,27 @@ describe('DataMonitorService', () => {
 
   describe('multiple views', () => {
     it('should manage multiple views independently', () => {
-      service.enable('view-1', '/api/v1/count', 'View 1', {}, { title: 'Test 1' });
-      service.enable('view-2', '/api/v2/count', 'View 2', {}, { title: 'Test 2' });
-      service.enable('view-3', '/api/v3/count', 'View 3', {}, { title: 'Test 3' });
+      service.enable(
+        'view-1',
+        '/api/v1/count',
+        'View 1',
+        {},
+        { title: 'Test 1' },
+      );
+      service.enable(
+        'view-2',
+        '/api/v2/count',
+        'View 2',
+        {},
+        { title: 'Test 2' },
+      );
+      service.enable(
+        'view-3',
+        '/api/v3/count',
+        'View 3',
+        {},
+        { title: 'Test 3' },
+      );
 
       expect(service.isEnabled('view-1')).toBe(true);
       expect(service.isEnabled('view-2')).toBe(true);
@@ -495,8 +650,20 @@ describe('DataMonitorService', () => {
     });
 
     it('should fetch each view with its own URL and condition', () => {
-      service.enable('view-1', '/api/v1/count', 'View 1', { type: 'a' }, { title: 'Test 1' });
-      service.enable('view-2', '/api/v2/count', 'View 2', { type: 'b' }, { title: 'Test 2' });
+      service.enable(
+        'view-1',
+        '/api/v1/count',
+        'View 1',
+        { type: 'a' },
+        { title: 'Test 1' },
+      );
+      service.enable(
+        'view-2',
+        '/api/v2/count',
+        'View 2',
+        { type: 'b' },
+        { title: 'Test 2' },
+      );
 
       expect(fetcher.post).toHaveBeenCalledWith(
         '/api/v1/count',

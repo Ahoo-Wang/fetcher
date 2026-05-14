@@ -60,8 +60,10 @@ export interface PromiseStateCallbacks<R, E = unknown> {
  * };
  * ```
  */
-export interface UsePromiseStateOptions<R, E = FetcherError>
-  extends PromiseStateCallbacks<R, E> {
+export interface UsePromiseStateOptions<
+  R,
+  E = FetcherError,
+> extends PromiseStateCallbacks<R, E> {
   /** Initial status, defaults to IDLE */
   initialStatus?: PromiseStatus;
 }
@@ -70,8 +72,10 @@ export interface UsePromiseStateOptions<R, E = FetcherError>
  * Return type for usePromiseState hook
  * @template R - The type of result
  */
-export interface UsePromiseStateReturn<R, E = FetcherError>
-  extends PromiseState<R, E> {
+export interface UsePromiseStateReturn<
+  R,
+  E = FetcherError,
+> extends PromiseState<R, E> {
   /** Set status to LOADING */
   setLoading: () => void;
   /** Set status to SUCCESS with result */

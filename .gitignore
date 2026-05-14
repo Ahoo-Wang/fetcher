@@ -98,6 +98,7 @@ typings/
 # Gatsby files
 .cache/
 public/
+!wiki/public/
 
 # vuepress build output
 .vuepress/dist

@@ -3,7 +3,7 @@ import type { MenuProps } from 'antd';
 import { Button } from 'antd';
 import { Dropdown, Space } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
-import type { ActionCellProps} from './ActionCell';
+import type { ActionCellProps } from './ActionCell';
 import { ActionCell, isActionCellProps } from './ActionCell';
 import type * as React from 'react';
 

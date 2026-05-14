@@ -81,13 +81,13 @@ export class InterceptorManager {
    * @param validateStatus - Optional custom status validation function.
    *   Defaults to accepting 2xx status codes.
    */
+  readonly response: InterceptorRegistry;
+
   constructor(validateStatus?: ValidateStatus) {
     this.response = new InterceptorRegistry([
       new ValidateStatusInterceptor(validateStatus),
     ]);
   }
-
-  readonly response: InterceptorRegistry;
 
   /**
    * Manager for error-handling phase interceptors.

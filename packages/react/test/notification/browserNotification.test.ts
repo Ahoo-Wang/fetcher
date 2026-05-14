@@ -26,7 +26,9 @@ describe('BrowserNotificationChannel', () => {
 
   beforeEach(() => {
     mockNotificationClass = vi.fn(() => mockNotificationInstance);
-    mockNotificationClass.requestPermission = vi.fn().mockResolvedValue('granted');
+    mockNotificationClass.requestPermission = vi
+      .fn()
+      .mockResolvedValue('granted');
     mockNotificationClass.permission = 'granted';
     vi.stubGlobal('Notification', mockNotificationClass);
   });
@@ -113,7 +115,11 @@ describe('BrowserNotificationChannel', () => {
 
       await BrowserNotificationChannel.send(message);
 
-      expect(mockNotificationWithClick.addEventListener).toHaveBeenCalledWith('click', onClick, { once: true });
+      expect(mockNotificationWithClick.addEventListener).toHaveBeenCalledWith(
+        'click',
+        onClick,
+        { once: true },
+      );
     });
 
     it('should handle errors gracefully', async () => {
@@ -127,7 +133,9 @@ describe('BrowserNotificationChannel', () => {
         payload: { body: 'Test Body' },
       };
 
-      await expect(BrowserNotificationChannel.send(message)).resolves.not.toThrow();
+      await expect(
+        BrowserNotificationChannel.send(message),
+      ).resolves.not.toThrow();
     });
 
     it('should do nothing when Notification API is not supported', async () => {

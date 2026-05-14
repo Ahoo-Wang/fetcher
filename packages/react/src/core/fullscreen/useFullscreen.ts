@@ -65,7 +65,9 @@ export function useFullscreen(
   const dynamicTargetRef = useRef<HTMLElement>(null);
 
   const getTarget = useCallback(() => {
-    return dynamicTargetRef.current ?? targetRef?.current ?? document.documentElement;
+    return (
+      dynamicTargetRef.current ?? targetRef?.current ?? document.documentElement
+    );
   }, [targetRef]);
 
   const [fullscreen, setFullscreen] = useState(false);
@@ -83,25 +85,31 @@ export function useFullscreen(
     };
   }, [handleFullscreenChange]);
 
-  const enterFullscreenFn = useCallback(async (target?: HTMLElement | null) => {
-    if (target !== undefined) {
-      dynamicTargetRef.current = target;
-    }
-    const element = getTarget();
-    await enterFullscreen(element);
-  }, [dynamicTargetRef, getTarget]);
+  const enterFullscreenFn = useCallback(
+    async (target?: HTMLElement | null) => {
+      if (target !== undefined) {
+        dynamicTargetRef.current = target;
+      }
+      const element = getTarget();
+      await enterFullscreen(element);
+    },
+    [dynamicTargetRef, getTarget],
+  );
 
   const exitFullscreenFn = useCallback(async () => {
     await exitFullscreen();
   }, []);
 
-  const toggleFullscreenFn = useCallback(async (target?: HTMLElement | null) => {
-    if (fullscreen) {
-      await exitFullscreenFn();
-    } else {
-      await enterFullscreenFn(target);
-    }
-  }, [fullscreen, enterFullscreenFn, exitFullscreenFn]);
+  const toggleFullscreenFn = useCallback(
+    async (target?: HTMLElement | null) => {
+      if (fullscreen) {
+        await exitFullscreenFn();
+      } else {
+        await enterFullscreenFn(target);
+      }
+    },
+    [fullscreen, enterFullscreenFn, exitFullscreenFn],
+  );
 
   return {
     fullscreen: fullscreen,

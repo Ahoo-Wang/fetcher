@@ -45,7 +45,9 @@
   "user_notes_summary": {
     "uncertainties": [],
     "needs_review": [],
-    "workarounds": ["Manual pagination implementation instead of using useFetcherPagedQuery"]
+    "workarounds": [
+      "Manual pagination implementation instead of using useFetcherPagedQuery"
+    ]
   },
   "eval_feedback": {
     "suggestions": [
