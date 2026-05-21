@@ -38,19 +38,20 @@ describe('safeTerminate', () => {
     expect(() => safeTerminate(controller as any)).toThrow(RangeError);
   });
 
-  it('should return false for cross-realm TypeError (toString check)', () => {
-    // Simulate a TypeError from another realm: same prototype, different constructor
-    const crossRealmError = Object.create(TypeError.prototype);
-    crossRealmError.message = 'stream closed';
+  it('should return false for cross-realm TypeError (instanceof fails, toString matches)', () => {
+    // Construct an object that instanceof TypeError returns false for,
+    // but Object.prototype.toString returns '[object TypeError]'
+    // This simulates a TypeError from another realm
+    const crossRealmLike = { [Symbol.toStringTag]: 'TypeError', message: 'stream closed' };
     const controller = {
       terminate: vi.fn(() => {
-        throw crossRealmError;
+        throw crossRealmLike;
       }),
     };
     expect(safeTerminate(controller as any)).toBe(false);
   });
 
-  it('should re-throw plain objects with name TypeError', () => {
+  it('should re-throw plain objects with name TypeError but wrong toStringTag', () => {
     const fakeError = { name: 'TypeError', message: 'stream closed' };
     const controller = {
       terminate: vi.fn(() => {
@@ -86,18 +87,17 @@ describe('safeEnqueue', () => {
     expect(() => safeEnqueue(controller as any, 'chunk')).toThrow(RangeError);
   });
 
-  it('should return false for cross-realm TypeError (toString check)', () => {
-    const crossRealmError = Object.create(TypeError.prototype);
-    crossRealmError.message = 'stream closed';
+  it('should return false for cross-realm TypeError (instanceof fails, toString matches)', () => {
+    const crossRealmLike = { [Symbol.toStringTag]: 'TypeError', message: 'stream closed' };
     const controller = {
       enqueue: vi.fn(() => {
-        throw crossRealmError;
+        throw crossRealmLike;
       }),
     };
     expect(safeEnqueue(controller as any, 'chunk')).toBe(false);
   });
 
-  it('should re-throw plain objects with name TypeError', () => {
+  it('should re-throw plain objects with name TypeError but wrong toStringTag', () => {
     const fakeError = { name: 'TypeError', message: 'stream closed' };
     const controller = {
       enqueue: vi.fn(() => {
@@ -136,18 +136,17 @@ describe('safeError', () => {
     );
   });
 
-  it('should return false for cross-realm TypeError (toString check)', () => {
-    const crossRealmError = Object.create(TypeError.prototype);
-    crossRealmError.message = 'stream closed';
+  it('should return false for cross-realm TypeError (instanceof fails, toString matches)', () => {
+    const crossRealmLike = { [Symbol.toStringTag]: 'TypeError', message: 'stream closed' };
     const controller = {
       error: vi.fn(() => {
-        throw crossRealmError;
+        throw crossRealmLike;
       }),
     };
     expect(safeError(controller as any, new Error('x'))).toBe(false);
   });
 
-  it('should re-throw plain objects with name TypeError', () => {
+  it('should re-throw plain objects with name TypeError but wrong toStringTag', () => {
     const fakeError = { name: 'TypeError', message: 'stream closed' };
     const controller = {
       error: vi.fn(() => {
