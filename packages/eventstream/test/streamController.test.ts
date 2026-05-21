@@ -58,7 +58,13 @@ describe('safeTerminate', () => {
         throw fakeError;
       }),
     };
-    expect(() => safeTerminate(controller as any)).toThrow(fakeError);
+    let caught: any;
+    try {
+      safeTerminate(controller as any);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBe(fakeError);
   });
 });
 
@@ -104,7 +110,13 @@ describe('safeEnqueue', () => {
         throw fakeError;
       }),
     };
-    expect(() => safeEnqueue(controller as any, 'chunk')).toThrow(fakeError);
+    let caught: any;
+    try {
+      safeEnqueue(controller as any, 'chunk');
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBe(fakeError);
   });
 });
 
@@ -153,6 +165,12 @@ describe('safeError', () => {
         throw fakeError;
       }),
     };
-    expect(() => safeError(controller as any, new Error('x'))).toThrow(fakeError);
+    let caught: any;
+    try {
+      safeError(controller as any, new Error('x'));
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBe(fakeError);
   });
 });
