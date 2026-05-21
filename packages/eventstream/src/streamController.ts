@@ -35,8 +35,9 @@ export type StreamController<T> =
  *
  * Uses both `instanceof TypeError` and `Object.prototype.toString` checks
  * to handle cross-realm TypeErrors (e.g. from iframes or worker threads)
- * where `instanceof` alone would fail. The toString check ensures only true
- * TypeError objects are suppressed, not arbitrary values with a `name` property.
+ * where `instanceof` alone would fail. The toString check matches values
+ * with the internal TypeError class tag, which covers cross-realm TypeErrors
+ * while rejecting plain objects that merely have a `name` property.
  *
  * @param action - The controller operation to attempt
  * @returns true if the action succeeded, false if a TypeError was caught
