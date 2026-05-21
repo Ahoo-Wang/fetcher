@@ -88,9 +88,10 @@ export class JsonServerSentEventTransform<DATA> implements Transformer<
    * as JSON and enqueued as a JsonServerSentEvent.
    *
    * All controller operations use safe wrappers (safeTerminate, safeEnqueue,
-   * safeError) that suppress TypeError from already-closed streams. Non-TypeError
-   * errors (e.g. JSON parse failures, terminateDetector throwing) are caught,
-   * the stream is errored via safeError, and subsequent chunks are dropped.
+   * safeError) that suppress TypeError from already-closed streams as normal
+   * control flow. Any error thrown during detection or parsing (including
+   * TypeError from detector/parse logic) is caught, the stream is errored
+   * via safeError, and subsequent chunks are dropped.
    *
    * @param chunk - The ServerSentEvent to transform
    * @param controller - The TransformStream controller for managing the stream
