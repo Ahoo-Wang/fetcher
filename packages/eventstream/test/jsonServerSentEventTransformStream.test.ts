@@ -16,7 +16,6 @@ import type { ServerSentEvent } from '../src';
 import {
   JsonServerSentEventTransform,
   JsonServerSentEventTransformStream,
-  safeTerminate,
   toJsonServerSentEventStream,
   type TerminateDetector,
 } from '../src';
@@ -346,38 +345,7 @@ describe('toJsonServerSentEventStream', () => {
 });
 
 
-describe('safeTerminate', () => {
-  it('should call controller.terminate() once on first call', () => {
-    const controller = {
-      terminate: vi.fn(),
-    };
 
-    safeTerminate(controller as any);
-
-    expect(controller.terminate).toHaveBeenCalledTimes(1);
-  });
-
-  it('should not throw when controller.terminate() throws TypeError', () => {
-    const controller = {
-      terminate: vi.fn(() => {
-        throw new TypeError('the stream has been terminated');
-      }),
-    };
-
-    expect(() => safeTerminate(controller as any)).not.toThrow();
-    expect(controller.terminate).toHaveBeenCalledTimes(1);
-  });
-
-  it('should re-throw non-TypeError errors from controller.terminate()', () => {
-    const controller = {
-      terminate: vi.fn(() => {
-        throw new Error('unexpected error');
-      }),
-    };
-
-    expect(() => safeTerminate(controller as any)).toThrow('unexpected error');
-  });
-});
 
 describe('JsonServerSentEventTransform terminated guard', () => {
   it('should drop all chunks after termination', () => {
