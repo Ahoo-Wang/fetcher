@@ -12,7 +12,14 @@
       "Bash(node -e \"console.log\\(JSON.parse\\(require\\('fs'\\).readFileSync\\('package.json','utf8'\\)\\).scripts.test\\)\")",
       "Bash(pnpm lint:*)",
       "Bash(pnpm test:unit packages/react/test/dataMonitor/ --run)",
-      "Bash(pnpm --filter @ahoo-wang/fetcher-react test --run)"
+      "Bash(pnpm --filter @ahoo-wang/fetcher-react test --run)",
+      "Skill(code-review:code-review)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(gh pr *)",
+      "Bash(git reset *)",
+      "Bash(bun --version)",
+      "Bash(bunx vitest *)"
     ]
   },
   "sandbox": {
