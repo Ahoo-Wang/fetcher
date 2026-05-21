@@ -21,17 +21,19 @@
  * which this function suppresses.
  *
  * @param controller - The TransformStream controller to terminate
+ * @returns true if termination succeeded, false if the stream was already closed
  */
 export function safeTerminate<T>(
   controller: TransformStreamDefaultController<T>,
-): void {
+): boolean {
   try {
     controller.terminate();
+    return true;
   } catch (error) {
-    // Ignore TypeError from terminating an already-terminated stream
     if (!(error instanceof TypeError)) {
       throw error;
     }
+    return false;
   }
 }
 
@@ -45,18 +47,20 @@ export function safeTerminate<T>(
  *
  * @param controller - The TransformStream controller to enqueue to
  * @param chunk - The chunk to enqueue
+ * @returns true if the chunk was enqueued, false if the stream was already closed
  */
 export function safeEnqueue<T>(
   controller: TransformStreamDefaultController<T>,
   chunk: T,
-): void {
+): boolean {
   try {
     controller.enqueue(chunk);
+    return true;
   } catch (error) {
-    // Ignore TypeError from enqueuing to an already-closed stream
     if (!(error instanceof TypeError)) {
       throw error;
     }
+    return false;
   }
 }
 
@@ -71,17 +75,19 @@ export function safeEnqueue<T>(
  *
  * @param controller - The TransformStream controller to error
  * @param reason - The error reason to pass to the controller
+ * @returns true if the error was set, false if the stream was already closed
  */
 export function safeError<T>(
   controller: TransformStreamDefaultController<T>,
   reason: any,
-): void {
+): boolean {
   try {
     controller.error(reason);
+    return true;
   } catch (error) {
-    // Ignore TypeError from erroring an already-closed stream
     if (!(error instanceof TypeError)) {
       throw error;
     }
+    return false;
   }
 }
