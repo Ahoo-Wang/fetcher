@@ -13,7 +13,7 @@
 
 import { type ServerSentEvent } from './serverSentEventTransformStream';
 import type { ServerSentEventStream } from './eventStreamConverter';
-import { safeError, safeTerminate } from './transformStreamControllers';
+import { safeError, safeTerminate } from './transformStreamController';
 
 /**
  * A function type that determines whether a Server-Sent Event should terminate the stream.
