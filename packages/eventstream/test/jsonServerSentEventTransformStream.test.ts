@@ -11,10 +11,12 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { ServerSentEvent } from '../src';
 import {
+  JsonServerSentEventTransform,
   JsonServerSentEventTransformStream,
+  safeTerminate,
   toJsonServerSentEventStream,
   type TerminateDetector,
 } from '../src';
@@ -340,5 +342,165 @@ describe('toJsonServerSentEventStream', () => {
     // Verify the function accepts the terminate detector parameter
     expect(typeof jsonStream).toBe('object');
     expect(jsonStream).toHaveProperty('getReader');
+  });
+});
+
+
+describe('safeTerminate', () => {
+  it('should call controller.terminate() once on first call', () => {
+    const controller = {
+      terminate: vi.fn(),
+    };
+
+    safeTerminate(controller as any);
+
+    expect(controller.terminate).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not throw when controller.terminate() throws TypeError', () => {
+    const controller = {
+      terminate: vi.fn(() => {
+        throw new TypeError('the stream has been terminated');
+      }),
+    };
+
+    expect(() => safeTerminate(controller as any)).not.toThrow();
+    expect(controller.terminate).toHaveBeenCalledTimes(1);
+  });
+
+  it('should re-throw non-TypeError errors from controller.terminate()', () => {
+    const controller = {
+      terminate: vi.fn(() => {
+        throw new Error('unexpected error');
+      }),
+    };
+
+    expect(() => safeTerminate(controller as any)).toThrow('unexpected error');
+  });
+});
+
+describe('JsonServerSentEventTransform terminated guard', () => {
+  it('should drop all chunks after termination', () => {
+    const terminateDetector: TerminateDetector = (event) =>
+      event.event === 'terminate';
+
+    const transformer = new JsonServerSentEventTransform<any>(terminateDetector);
+    const controller = {
+      enqueue: vi.fn(),
+      error: vi.fn(),
+      terminate: vi.fn(),
+    };
+
+    // Normal event
+    transformer.transform(
+      { data: '{"msg":"before"}', event: 'message' },
+      controller as any,
+    );
+    expect(controller.enqueue).toHaveBeenCalledTimes(1);
+
+    // Terminate event
+    transformer.transform(
+      { data: '{"msg":"end"}', event: 'terminate' },
+      controller as any,
+    );
+    expect(controller.terminate).toHaveBeenCalledTimes(1);
+    expect(controller.enqueue).toHaveBeenCalledTimes(1);
+
+    // After termination: normal chunk is silently dropped
+    transformer.transform(
+      { data: '{"msg":"after"}', event: 'message' },
+      controller as any,
+    );
+    // enqueue/terminate/error not called again
+    expect(controller.enqueue).toHaveBeenCalledTimes(1);
+    expect(controller.terminate).toHaveBeenCalledTimes(1);
+    expect(controller.error).not.toHaveBeenCalled();
+  });
+
+  it('should drop chunks after error', () => {
+    const transformer = new JsonServerSentEventTransform<any>();
+    const controller = {
+      enqueue: vi.fn(() => {
+        throw new TypeError('stream closed');
+      }),
+      error: vi.fn(),
+      terminate: vi.fn(),
+    };
+
+    // First chunk: enqueue throws → goes to catch → controller.error → terminated
+    transformer.transform(
+      { data: '{"msg":"boom"}', event: 'message' },
+      controller as any,
+    );
+    expect(controller.error).toHaveBeenCalledTimes(1);
+
+    // Second chunk: silently dropped because terminated=true
+    transformer.transform(
+      { data: '{"msg":"after"}', event: 'message' },
+      controller as any,
+    );
+    expect(controller.error).toHaveBeenCalledTimes(1);
+    expect(controller.enqueue).toHaveBeenCalledTimes(1); // only the failed call
+  });
+
+  it('should not throw when controller.error also fails on already-closed stream', () => {
+    const transformer = new JsonServerSentEventTransform<any>();
+    let errorCallCount = 0;
+    const controller = {
+      enqueue: vi.fn(() => {
+        throw new TypeError('enqueue on closed stream');
+      }),
+      error: vi.fn(() => {
+        errorCallCount++;
+        if (errorCallCount > 1) {
+          throw new TypeError('error on closed stream');
+        }
+      }),
+      terminate: vi.fn(),
+    };
+
+    // First error: controller.error succeeds
+    transformer.transform(
+      { data: '{"msg":"first"}', event: 'message' },
+      controller as any,
+    );
+    expect(controller.error).toHaveBeenCalledTimes(1);
+
+    // After terminated: chunks are dropped, controller.error is never called again
+    expect(() => {
+      transformer.transform(
+        { data: '{"msg":"second"}', event: 'message' },
+        controller as any,
+      );
+    }).not.toThrow();
+    expect(controller.error).toHaveBeenCalledTimes(1);
+  });
+
+  it('should handle terminateDetector that throws', () => {
+    const terminateDetector: TerminateDetector = () => {
+      throw new Error('detector broken');
+    };
+
+    const transformer = new JsonServerSentEventTransform<any>(terminateDetector);
+    const controller = {
+      enqueue: vi.fn(),
+      error: vi.fn(),
+      terminate: vi.fn(),
+    };
+
+    // Detector throws → catch → controller.error → terminated
+    transformer.transform(
+      { data: '{"msg":"test"}', event: 'message' },
+      controller as any,
+    );
+    expect(controller.error).toHaveBeenCalledTimes(1);
+
+    // Subsequent chunks are dropped
+    transformer.transform(
+      { data: '{"msg":"after"}', event: 'message' },
+      controller as any,
+    );
+    expect(controller.error).toHaveBeenCalledTimes(1);
+    expect(controller.enqueue).not.toHaveBeenCalled();
   });
 });

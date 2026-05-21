@@ -50,6 +50,28 @@ export interface JsonServerSentEvent<DATA> extends Omit<
 }
 
 /**
+ * Safely terminates a TransformStream controller, ignoring the TypeError
+ * that occurs if the stream has already been terminated.
+ *
+ * After controller.terminate() is called, upstream may still push chunks
+ * before the backpressure/error signal propagates, causing transform() to be
+ * invoked again. A second call to controller.terminate() throws TypeError,
+ * which this function suppresses.
+ *
+ * @param controller - The TransformStream controller to terminate
+ */
+export function safeTerminate<T>(controller: TransformStreamDefaultController<T>): void {
+  try {
+    controller.terminate();
+  } catch (error) {
+    // Ignore TypeError from terminating an already-terminated stream
+    if (!(error instanceof TypeError)) {
+      throw error;
+    }
+  }
+}
+
+/**
  * A TransformStream transformer that converts ServerSentEvent to JsonServerSentEvent with optional termination detection.
  *
  * This transformer parses the JSON data from ServerSentEvent chunks and optionally terminates
@@ -63,6 +85,12 @@ export class JsonServerSentEventTransform<DATA> implements Transformer<
   JsonServerSentEvent<DATA>
 > {
   /**
+   * Guard flag to prevent any controller operations after the stream has been
+   * terminated or errored. Once set, all subsequent chunks are silently dropped.
+   */
+  private terminated = false;
+
+  /**
    * Creates a new JsonServerSentEventTransform instance.
    *
    * @param terminateDetector - Optional function to detect when the stream should be terminated.
@@ -74,32 +102,32 @@ export class JsonServerSentEventTransform<DATA> implements Transformer<
   /**
    * Transforms a ServerSentEvent chunk into a JsonServerSentEvent.
    *
-   * This method first checks if the event should terminate the stream using the terminateDetector.
-   * If termination is required, the controller is terminated. Otherwise, the event data is parsed
+   * This method first checks if the stream has already been terminated. If so,
+   * the chunk is silently dropped. Otherwise, it checks if the event should
+   * terminate the stream using the terminateDetector. If termination is required,
+   * the controller is safely terminated. Otherwise, the event data is parsed
    * as JSON and enqueued as a JsonServerSentEvent.
    *
-   * If the terminateDetector throws an exception, the stream is terminated with an error to prevent
-   * corrupted state.
+   * If any error occurs (terminateDetector throws, JSON parsing fails, or
+   * controller operations fail on an already-closed stream), the stream is
+   * terminated and subsequent chunks are dropped.
    *
    * @param chunk - The ServerSentEvent to transform
    * @param controller - The TransformStream controller for managing the stream
-   * @throws {SyntaxError} If the event data is not valid JSON
-   * @throws {Error} If the terminateDetector throws an exception
-   *
-   * @example
-   * ```typescript
-   * const transformer = new JsonServerSentEventTransform<MyData>();
-   * // This will be called automatically by the TransformStream
-   * ```
    */
   transform(
     chunk: ServerSentEvent,
     controller: TransformStreamDefaultController<JsonServerSentEvent<DATA>>,
   ) {
+    if (this.terminated) {
+      return;
+    }
+
     try {
       // Check if this is a terminate event
       if (this.terminateDetector?.(chunk)) {
-        controller.terminate();
+        this.terminated = true;
+        safeTerminate(controller);
         return;
       }
 
@@ -111,9 +139,12 @@ export class JsonServerSentEventTransform<DATA> implements Transformer<
         retry: chunk.retry,
       });
     } catch (error) {
-      // If terminate detector throws or JSON parsing fails, terminate the stream to prevent corrupted state
-      controller.error(error);
-      return;
+      this.terminated = true;
+      try {
+        controller.error(error);
+      } catch {
+        // Stream already closed — nothing more to do
+      }
     }
   }
 }
