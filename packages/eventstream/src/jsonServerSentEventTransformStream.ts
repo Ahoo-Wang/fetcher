@@ -13,6 +13,7 @@
 
 import { type ServerSentEvent } from './serverSentEventTransformStream';
 import type { ServerSentEventStream } from './eventStreamConverter';
+import { safeError, safeTerminate } from './transformStreamController';
 
 /**
  * A function type that determines whether a Server-Sent Event should terminate the stream.
@@ -47,28 +48,6 @@ export interface JsonServerSentEvent<DATA> extends Omit<
 > {
   /** The parsed JSON data from the event */
   data: DATA;
-}
-
-/**
- * Safely terminates a TransformStream controller, ignoring the TypeError
- * that occurs if the stream has already been terminated.
- *
- * After controller.terminate() is called, upstream may still push chunks
- * before the backpressure/error signal propagates, causing transform() to be
- * invoked again. A second call to controller.terminate() throws TypeError,
- * which this function suppresses.
- *
- * @param controller - The TransformStream controller to terminate
- */
-export function safeTerminate<T>(controller: TransformStreamDefaultController<T>): void {
-  try {
-    controller.terminate();
-  } catch (error) {
-    // Ignore TypeError from terminating an already-terminated stream
-    if (!(error instanceof TypeError)) {
-      throw error;
-    }
-  }
 }
 
 /**
@@ -140,11 +119,7 @@ export class JsonServerSentEventTransform<DATA> implements Transformer<
       });
     } catch (error) {
       this.terminated = true;
-      try {
-        controller.error(error);
-      } catch {
-        // Stream already closed — nothing more to do
-      }
+      safeError(controller, error);
     }
   }
 }
