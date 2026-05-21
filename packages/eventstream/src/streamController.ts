@@ -33,6 +33,10 @@ export type StreamController<T> =
  * the stream is already closed or errored. This helper catches that TypeError
  * and returns false, while re-throwing any non-TypeError exceptions.
  *
+ * Uses both `instanceof TypeError` and `error.name === 'TypeError'` checks
+ * to handle cross-realm TypeErrors (e.g. from iframes or worker threads)
+ * where `instanceof` alone would fail.
+ *
  * @param action - The controller operation to attempt
  * @returns true if the action succeeded, false if a TypeError was caught
  */
@@ -41,10 +45,10 @@ function suppressTypeError(action: () => void): boolean {
     action();
     return true;
   } catch (error) {
-    if (!(error instanceof TypeError)) {
-      throw error;
+    if (error instanceof TypeError || (error as any)?.name === 'TypeError') {
+      return false;
     }
-    return false;
+    throw error;
   }
 }
 
