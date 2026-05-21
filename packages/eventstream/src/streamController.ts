@@ -26,6 +26,29 @@ export type StreamController<T> =
   | TransformStreamDefaultController<T>;
 
 /**
+ * Executes an action and suppresses TypeError, returning a boolean indicating success.
+ *
+ * This is the shared implementation for all safe* controller functions.
+ * Stream controller methods (terminate, enqueue, error) throw TypeError when
+ * the stream is already closed or errored. This helper catches that TypeError
+ * and returns false, while re-throwing any non-TypeError exceptions.
+ *
+ * @param action - The controller operation to attempt
+ * @returns true if the action succeeded, false if a TypeError was caught
+ */
+function suppressTypeError(action: () => void): boolean {
+  try {
+    action();
+    return true;
+  } catch (error) {
+    if (!(error instanceof TypeError)) {
+      throw error;
+    }
+    return false;
+  }
+}
+
+/**
  * Safely terminates a TransformStream controller, ignoring the TypeError
  * that occurs if the stream has already been terminated.
  *
@@ -40,15 +63,7 @@ export type StreamController<T> =
 export function safeTerminate<T>(
   controller: TransformStreamDefaultController<T>,
 ): boolean {
-  try {
-    controller.terminate();
-    return true;
-  } catch (error) {
-    if (!(error instanceof TypeError)) {
-      throw error;
-    }
-    return false;
-  }
+  return suppressTypeError(() => controller.terminate());
 }
 
 /**
@@ -67,15 +82,7 @@ export function safeEnqueue<T>(
   controller: StreamController<T>,
   chunk: T,
 ): boolean {
-  try {
-    controller.enqueue(chunk);
-    return true;
-  } catch (error) {
-    if (!(error instanceof TypeError)) {
-      throw error;
-    }
-    return false;
-  }
+  return suppressTypeError(() => controller.enqueue(chunk));
 }
 
 /**
@@ -95,13 +102,5 @@ export function safeError<T>(
   controller: StreamController<T>,
   reason: any,
 ): boolean {
-  try {
-    controller.error(reason);
-    return true;
-  } catch (error) {
-    if (!(error instanceof TypeError)) {
-      throw error;
-    }
-    return false;
-  }
+  return suppressTypeError(() => controller.error(reason));
 }
