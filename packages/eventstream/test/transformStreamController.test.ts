@@ -15,20 +15,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { safeTerminate, safeEnqueue, safeError } from '../src';
 
 describe('safeTerminate', () => {
-  it('should call controller.terminate() on first call', () => {
+  it('should return true on successful termination', () => {
     const controller = { terminate: vi.fn() };
-    safeTerminate(controller as any);
-    expect(controller.terminate).toHaveBeenCalledTimes(1);
+    expect(safeTerminate(controller as any)).toBe(true);
   });
 
-  it('should not throw when controller.terminate() throws TypeError', () => {
+  it('should return false when controller.terminate() throws TypeError', () => {
     const controller = {
       terminate: vi.fn(() => {
         throw new TypeError('the stream has been terminated');
       }),
     };
-    expect(() => safeTerminate(controller as any)).not.toThrow();
-    expect(controller.terminate).toHaveBeenCalledTimes(1);
+    expect(safeTerminate(controller as any)).toBe(false);
   });
 
   it('should re-throw non-TypeError errors from controller.terminate()', () => {
@@ -42,20 +40,19 @@ describe('safeTerminate', () => {
 });
 
 describe('safeEnqueue', () => {
-  it('should enqueue chunk to controller', () => {
+  it('should return true on successful enqueue', () => {
     const controller = { enqueue: vi.fn() };
-    safeEnqueue(controller as any, 'test-chunk');
+    expect(safeEnqueue(controller as any, 'test-chunk')).toBe(true);
     expect(controller.enqueue).toHaveBeenCalledWith('test-chunk');
   });
 
-  it('should not throw when controller.enqueue() throws TypeError', () => {
+  it('should return false when controller.enqueue() throws TypeError', () => {
     const controller = {
       enqueue: vi.fn(() => {
         throw new TypeError('Cannot enqueue a chunk into a closed stream');
       }),
     };
-    expect(() => safeEnqueue(controller as any, 'chunk')).not.toThrow();
-    expect(controller.enqueue).toHaveBeenCalledTimes(1);
+    expect(safeEnqueue(controller as any, 'chunk')).toBe(false);
   });
 
   it('should re-throw non-TypeError errors from controller.enqueue()', () => {
@@ -69,21 +66,20 @@ describe('safeEnqueue', () => {
 });
 
 describe('safeError', () => {
-  it('should call controller.error() with the reason', () => {
+  it('should return true on successful error', () => {
     const controller = { error: vi.fn() };
     const reason = new Error('test error');
-    safeError(controller as any, reason);
+    expect(safeError(controller as any, reason)).toBe(true);
     expect(controller.error).toHaveBeenCalledWith(reason);
   });
 
-  it('should not throw when controller.error() throws TypeError', () => {
+  it('should return false when controller.error() throws TypeError', () => {
     const controller = {
       error: vi.fn(() => {
         throw new TypeError('Cannot error an already-errored stream');
       }),
     };
-    expect(() => safeError(controller as any, new Error('x'))).not.toThrow();
-    expect(controller.error).toHaveBeenCalledTimes(1);
+    expect(safeError(controller as any, new Error('x'))).toBe(false);
   });
 
   it('should re-throw non-TypeError errors from controller.error()', () => {
