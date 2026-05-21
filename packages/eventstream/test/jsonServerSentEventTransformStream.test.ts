@@ -385,19 +385,17 @@ describe('JsonServerSentEventTransform terminated guard', () => {
     expect(controller.error).not.toHaveBeenCalled();
   });
 
-  it('should drop chunks after error', () => {
+  it('should drop chunks after JSON parse error', () => {
     const transformer = new JsonServerSentEventTransform<any>();
     const controller = {
-      enqueue: vi.fn(() => {
-        throw new TypeError('stream closed');
-      }),
+      enqueue: vi.fn(),
       error: vi.fn(),
       terminate: vi.fn(),
     };
 
-    // First chunk: enqueue throws → goes to catch → controller.error → terminated
+    // Invalid JSON triggers catch → safeError → terminated
     transformer.transform(
-      { data: '{"msg":"boom"}', event: 'message' },
+      { data: '{invalid json}', event: 'message' },
       controller as any,
     );
     expect(controller.error).toHaveBeenCalledTimes(1);
@@ -408,39 +406,64 @@ describe('JsonServerSentEventTransform terminated guard', () => {
       controller as any,
     );
     expect(controller.error).toHaveBeenCalledTimes(1);
-    expect(controller.enqueue).toHaveBeenCalledTimes(1); // only the failed call
+    expect(controller.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('should not throw when enqueue fails on already-closed stream', () => {
+    const transformer = new JsonServerSentEventTransform<any>();
+    const controller = {
+      enqueue: vi.fn(() => {
+        throw new TypeError('stream closed');
+      }),
+      error: vi.fn(),
+      terminate: vi.fn(),
+    };
+
+    // safeEnqueue suppresses the TypeError — no error propagation, no terminated flag
+    expect(() => {
+      transformer.transform(
+        { data: '{"msg":"test"}', event: 'message' },
+        controller as any,
+      );
+    }).not.toThrow();
+    expect(controller.error).not.toHaveBeenCalled();
+    expect(controller.enqueue).toHaveBeenCalledTimes(1);
+
+    // Stream is NOT terminated (safeEnqueue handled it), next chunk still processes
+    // But enqueue keeps failing with TypeError, so safeEnqueue keeps suppressing
+    transformer.transform(
+      { data: '{"msg":"after"}', event: 'message' },
+      controller as any,
+    );
+    expect(controller.enqueue).toHaveBeenCalledTimes(2);
+    expect(controller.error).not.toHaveBeenCalled();
   });
 
   it('should not throw when controller.error also fails on already-closed stream', () => {
     const transformer = new JsonServerSentEventTransform<any>();
-    let errorCallCount = 0;
     const controller = {
-      enqueue: vi.fn(() => {
-        throw new TypeError('enqueue on closed stream');
-      }),
+      enqueue: vi.fn(),
       error: vi.fn(() => {
-        errorCallCount++;
-        if (errorCallCount > 1) {
-          throw new TypeError('error on closed stream');
-        }
+        throw new TypeError('error on closed stream');
       }),
       terminate: vi.fn(),
     };
 
-    // First error: controller.error succeeds
-    transformer.transform(
-      { data: '{"msg":"first"}', event: 'message' },
-      controller as any,
-    );
-    expect(controller.error).toHaveBeenCalledTimes(1);
-
-    // After terminated: chunks are dropped, controller.error is never called again
+    // Invalid JSON → catch → safeError → TypeError suppressed by safeError
     expect(() => {
       transformer.transform(
-        { data: '{"msg":"second"}', event: 'message' },
+        { data: '{invalid}', event: 'message' },
         controller as any,
       );
     }).not.toThrow();
+    // safeError was called (and its TypeError was suppressed)
+    expect(controller.error).toHaveBeenCalledTimes(1);
+
+    // After terminated: chunks are dropped, controller.error is never called again
+    transformer.transform(
+      { data: '{"msg":"after"}', event: 'message' },
+      controller as any,
+    );
     expect(controller.error).toHaveBeenCalledTimes(1);
   });
 

@@ -13,7 +13,7 @@
 
 import { type ServerSentEvent } from './serverSentEventTransformStream';
 import type { ServerSentEventStream } from './eventStreamConverter';
-import { safeError, safeTerminate } from './transformStreamController';
+import { safeEnqueue, safeError, safeTerminate } from './transformStreamController';
 
 /**
  * A function type that determines whether a Server-Sent Event should terminate the stream.
@@ -111,7 +111,7 @@ export class JsonServerSentEventTransform<DATA> implements Transformer<
       }
 
       const json = JSON.parse(chunk.data) as DATA;
-      controller.enqueue({
+      safeEnqueue(controller, {
         data: json,
         event: chunk.event,
         id: chunk.id,
