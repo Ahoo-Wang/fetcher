@@ -12,6 +12,20 @@
  */
 
 /**
+ * Union type representing a stream controller that supports safe operations.
+ *
+ * Both ReadableStreamDefaultController and TransformStreamDefaultController
+ * share the `enqueue()` and `error()` methods. TransformStreamDefaultController
+ * additionally provides `terminate()`. This union type allows the safe
+ * utility functions to work with either controller kind.
+ *
+ * @template T - The type of chunks the controller handles
+ */
+export type StreamController<T> =
+  | ReadableStreamDefaultController<T>
+  | TransformStreamDefaultController<T>;
+
+/**
  * Safely terminates a TransformStream controller, ignoring the TypeError
  * that occurs if the stream has already been terminated.
  *
@@ -38,19 +52,19 @@ export function safeTerminate<T>(
 }
 
 /**
- * Safely enqueues a chunk to a TransformStream controller, ignoring the
- * TypeError that occurs if the stream has already been closed or errored.
+ * Safely enqueues a chunk to a stream controller, ignoring the TypeError
+ * that occurs if the stream has already been closed or errored.
  *
  * After a stream is terminated or errored, upstream may still push chunks
  * before the signal propagates. Calling controller.enqueue() on a closed
  * stream throws TypeError, which this function suppresses.
  *
- * @param controller - The TransformStream controller to enqueue to
+ * @param controller - The stream controller to enqueue to
  * @param chunk - The chunk to enqueue
  * @returns true if the chunk was enqueued, false if the stream was already closed
  */
 export function safeEnqueue<T>(
-  controller: TransformStreamDefaultController<T>,
+  controller: StreamController<T>,
   chunk: T,
 ): boolean {
   try {
@@ -65,7 +79,7 @@ export function safeEnqueue<T>(
 }
 
 /**
- * Safely errors a TransformStream controller, ignoring the TypeError
+ * Safely errors a stream controller, ignoring the TypeError
  * that occurs if the stream has already been closed or errored.
  *
  * After a stream is terminated or errored, subsequent error signals may
@@ -73,12 +87,12 @@ export function safeEnqueue<T>(
  * on an already-closed stream throws TypeError, which this function
  * suppresses. Non-TypeError exceptions are re-thrown.
  *
- * @param controller - The TransformStream controller to error
+ * @param controller - The stream controller to error
  * @param reason - The error reason to pass to the controller
  * @returns true if the error was set, false if the stream was already closed
  */
 export function safeError<T>(
-  controller: TransformStreamDefaultController<T>,
+  controller: StreamController<T>,
   reason: any,
 ): boolean {
   try {
