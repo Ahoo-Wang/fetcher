@@ -38,6 +38,8 @@ export interface ServerSentEvent {
  * in the W3C Server-Sent Events specification. These constants help ensure
  * consistent field name usage throughout the parsing logic.
  */
+import { safeEnqueue, safeError } from './streamController';
+
 export class ServerSentEventFields {
   /** The field name for event ID */
   static readonly ID = 'id';
@@ -166,7 +168,7 @@ export class ServerSentEventTransformer implements Transformer<
       if (chunk.trim() === '') {
         // If there is accumulated event data, send event
         if (currentEvent.data.length > 0) {
-          controller.enqueue({
+          safeEnqueue(controller, {
             event: currentEvent.event || DEFAULT_EVENT_TYPE,
             data: currentEvent.data.join('\n'),
             id: currentEvent.id || '',
@@ -215,7 +217,7 @@ export class ServerSentEventTransformer implements Transformer<
       const enhancedError = new Error(
         `Failed to process chunk: "${chunk}". ${error instanceof Error ? error.message : String(error)}`,
       );
-      controller.error(enhancedError);
+      safeError(controller, enhancedError);
       // Reset state
       this.resetEventState();
     }
@@ -231,7 +233,7 @@ export class ServerSentEventTransformer implements Transformer<
     try {
       // Send the last event (if any)
       if (currentEvent.data.length > 0) {
-        controller.enqueue({
+        safeEnqueue(controller, {
           event: currentEvent.event || DEFAULT_EVENT_TYPE,
           data: currentEvent.data.join('\n'),
           id: currentEvent.id || '',
@@ -242,7 +244,7 @@ export class ServerSentEventTransformer implements Transformer<
       const enhancedError = new Error(
         `Failed to flush remaining data. ${error instanceof Error ? error.message : String(error)}`,
       );
-      controller.error(enhancedError);
+      safeError(controller, enhancedError);
     } finally {
       // Reset state
       this.resetEventState();

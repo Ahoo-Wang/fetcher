@@ -38,6 +38,8 @@
  * // Buffer: ""
  * ```
  */
+import { safeEnqueue, safeError } from './streamController';
+
 export class TextLineTransformer implements Transformer<string, string> {
   private buffer = '';
 
@@ -57,10 +59,10 @@ export class TextLineTransformer implements Transformer<string, string> {
       this.buffer = lines.pop() || '';
 
       for (const line of lines) {
-        controller.enqueue(line);
+        safeEnqueue(controller, line);
       }
     } catch (error) {
-      controller.error(error);
+      safeError(controller, error);
     }
   }
 
@@ -73,10 +75,10 @@ export class TextLineTransformer implements Transformer<string, string> {
     try {
       // Only send when buffer is not empty, avoid sending meaningless empty lines
       if (this.buffer) {
-        controller.enqueue(this.buffer);
+        safeEnqueue(controller, this.buffer);
       }
     } catch (error) {
-      controller.error(error);
+      safeError(controller, error);
     }
   }
 }
