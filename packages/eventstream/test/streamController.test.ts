@@ -37,6 +37,16 @@ describe('safeTerminate', () => {
     };
     expect(() => safeTerminate(controller as any)).toThrow(RangeError);
   });
+
+  it('should return false for cross-realm TypeError (name check)', () => {
+    const crossRealmError = { name: 'TypeError', message: 'stream closed' };
+    const controller = {
+      terminate: vi.fn(() => {
+        throw crossRealmError;
+      }),
+    };
+    expect(safeTerminate(controller as any)).toBe(false);
+  });
 });
 
 describe('safeEnqueue', () => {
@@ -62,6 +72,16 @@ describe('safeEnqueue', () => {
       }),
     };
     expect(() => safeEnqueue(controller as any, 'chunk')).toThrow(RangeError);
+  });
+
+  it('should return false for cross-realm TypeError (name check)', () => {
+    const crossRealmError = { name: 'TypeError', message: 'stream closed' };
+    const controller = {
+      enqueue: vi.fn(() => {
+        throw crossRealmError;
+      }),
+    };
+    expect(safeEnqueue(controller as any, 'chunk')).toBe(false);
   });
 });
 
@@ -91,5 +111,15 @@ describe('safeError', () => {
     expect(() => safeError(controller as any, new Error('x'))).toThrow(
       RangeError,
     );
+  });
+
+  it('should return false for cross-realm TypeError (name check)', () => {
+    const crossRealmError = { name: 'TypeError', message: 'stream closed' };
+    const controller = {
+      error: vi.fn(() => {
+        throw crossRealmError;
+      }),
+    };
+    expect(safeError(controller as any, new Error('x'))).toBe(false);
   });
 });
