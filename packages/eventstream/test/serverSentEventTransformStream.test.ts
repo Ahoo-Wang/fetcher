@@ -576,6 +576,50 @@ describe('serverSentEventTransformStream.ts', () => {
       );
     });
 
+    it('should preserve valid id when subsequent id contains NULL', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // First: valid id
+      transformer.transform('id:valid-1', controller);
+      // Then: invalid id with NULL (should be ignored, not clear previous)
+      transformer.transform('id:bad\0id', controller);
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      // The valid id should be preserved
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'valid-1',
+        }),
+      );
+    });
+
+    it('should preserve valid retry when subsequent retry is invalid', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // First: valid retry
+      transformer.transform('retry:5000', controller);
+      // Then: invalid retry (should be ignored, not clear previous)
+      transformer.transform('retry:abc', controller);
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      // The valid retry should be preserved
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          retry: 5000,
+        }),
+      );
+    });
+
     it('should handle empty data array in flush', async () => {
       const transformer = new ServerSentEventTransformer();
       const controller = {
