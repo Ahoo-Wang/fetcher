@@ -27,9 +27,9 @@ export type TransformerPhase = 'transform' | 'flush';
  * 1. **Termination guard** — Once `terminated` is set (via `terminate()` or an
  *    unhandled error), all subsequent chunks are silently dropped in `transform()`.
  *
- * 2. **Safe controller operations** — `enqueue()` and `error()` delegate to
- *    `safeEnqueue` / `safeError` which suppress TypeError from already-closed
- *    streams. `terminate()` delegates to `safeTerminate`.
+ * 2. **Safe controller operations** — `enqueue()` delegates to
+ *    `safeEnqueue` which suppresses TypeError from already-closed streams.
+ *    `terminate()` delegates to `safeTerminate`.
  *
  * 3. **Error boundary** — Unhandled errors in `onTransform()` / `onFlush()`
  *    are caught, the transformer is terminated, and the error is forwarded
@@ -51,20 +51,21 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
   /**
    * Transforms an input chunk. Drops immediately if terminated.
    * Delegates to `onTransform()` with error protection.
+   * Supports both synchronous and asynchronous `onTransform()` implementations.
    */
-  transform(
+  async transform(
     chunk: I,
     controller: TransformStreamDefaultController<O>,
-  ): void {
+  ): Promise<void> {
     if (this.terminated) {
       return;
     }
 
     try {
-      this.onTransform(chunk, controller);
+      await this.onTransform(chunk, controller);
     } catch (error) {
       this.terminated = true;
-      this.onError(error, 'transform');
+      this.safeOnError(error, 'transform');
       safeError(controller, error);
     }
   }
@@ -73,15 +74,28 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
    * Called when the stream ends. Always invokes `onFlush()` for cleanup,
    * even if already terminated. Errors in `onFlush()` are caught and
    * forwarded via `safeError()`.
+   * Supports both synchronous and asynchronous `onFlush()` implementations.
    */
-  flush(controller: TransformStreamDefaultController<O>): void {
+  async flush(controller: TransformStreamDefaultController<O>): Promise<void> {
     try {
-      this.onFlush(controller);
+      await this.onFlush(controller);
     } catch (error) {
-      this.onError(error, 'flush');
+      this.safeOnError(error, 'flush');
       safeError(controller, error);
     } finally {
       this.terminated = true;
+    }
+  }
+
+  /**
+   * Safely invokes `onError()`, catching any exception to prevent
+   * cleanup logic from breaking the error boundary guarantee.
+   */
+  private safeOnError(error: unknown, phase: TransformerPhase): void {
+    try {
+      this.onError(error, phase);
+    } catch {
+      // onError must not break the error boundary
     }
   }
 
@@ -120,6 +134,7 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
   /**
    * Transform an input chunk into output chunk(s).
    * Use `this.enqueue(controller, chunk)` instead of `controller.enqueue()`.
+   * May return a Promise for asynchronous processing.
    *
    * @param chunk - The input chunk to transform
    * @param controller - The stream controller (use `this.enqueue()` for output)
@@ -127,15 +142,18 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
   protected abstract onTransform(
     chunk: I,
     controller: TransformStreamDefaultController<O>,
-  ): void;
+  ): void | Promise<void>;
 
   /**
    * Called when the stream is ending. Override to flush remaining state.
+   * May return a Promise for asynchronous processing.
    * Default implementation does nothing.
    *
    * @param controller
    */
-  protected onFlush(controller: TransformStreamDefaultController<O>): void {
+  protected onFlush(
+    controller: TransformStreamDefaultController<O>,
+  ): void | Promise<void> {
     // Default: nothing to flush
   }
 }
