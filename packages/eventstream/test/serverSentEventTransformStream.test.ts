@@ -555,13 +555,8 @@ describe('serverSentEventTransformStream.ts', () => {
 
       transformer.transform(chunk, controller);
 
-      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
-      // The error should be converted to an Error object with enhanced message
-      const errorCall = (controller.error as any).mock.calls[0][0];
-      expect(errorCall).toBeInstanceOf(Error);
-      expect(errorCall.message).toBe(
-        'Failed to process chunk: "[object Object]". Test error string',
-      );
+      // SafeTransformer passes the original error through safeError
+      expect(controller.error).toHaveBeenCalledWith('Test error string');
     });
 
     it('should handle undefined event in flush', async () => {
@@ -589,28 +584,18 @@ describe('serverSentEventTransformStream.ts', () => {
     it('should handle non-Error object in flush error', async () => {
       const transformer = new ServerSentEventTransformer();
       const controller = {
-        enqueue: vi.fn(),
+        enqueue: vi.fn(() => {
+          throw 'Test error string';
+        }),
         error: vi.fn(),
       } as any;
 
-      // Mock controller.enqueue to throw a non-Error object
-      controller.enqueue.mockImplementationOnce(() => {
-        throw 'Test error string';
-      });
-
-      // Send data
+      // Accumulate data, then flush triggers enqueue which throws
       transformer.transform('data:test data', controller);
-
-      // Flush should handle the error
       transformer.flush(controller);
 
-      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
-      // The error should be converted to an Error object with enhanced message
-      const errorCall = (controller.error as any).mock.calls[0][0];
-      expect(errorCall).toBeInstanceOf(Error);
-      expect(errorCall.message).toBe(
-        'Failed to flush remaining data. Test error string',
-      );
+      // SafeTransformer catches the error and forwards via safeError
+      expect(controller.error).toHaveBeenCalledWith('Test error string');
     });
   });
 });
