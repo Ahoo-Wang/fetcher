@@ -128,8 +128,7 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
    * @param error - The error that was caught
    * @param phase - The lifecycle phase where the error occurred
    */
-  protected onError(_error: unknown, _phase: TransformerPhase): void {
-    // Default: nothing to clean up
+  protected onError(error: unknown, phase: TransformerPhase): void {
   }
 
   /**
