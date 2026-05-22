@@ -43,9 +43,10 @@ export type TransformerPhase = 'transform' | 'flush';
  */
 export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
   /**
-   * Guard flag preventing any controller operations after the stream has been
-   * terminated or errored. Once set, all subsequent chunks are silently dropped.
+   * Guard flag indicating the stream has been terminated or errored.
+   * Once set, subsequent chunks are silently dropped in `transform()`.
    */
+
   protected terminated = false;
 
   /**
