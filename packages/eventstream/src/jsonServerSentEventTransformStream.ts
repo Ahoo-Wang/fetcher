@@ -13,32 +13,18 @@
 
 import { type ServerSentEvent } from './serverSentEventTransformStream';
 import type { ServerSentEventStream } from './eventStreamConverter';
-import { safeEnqueue, safeError, safeTerminate } from './streamController';
+import { SafeTransformer } from './safeTransformer';
 
 /**
  * A function type that determines whether a Server-Sent Event should terminate the stream.
  *
- * This detector function is called for each incoming ServerSentEvent. If it returns true,
- * the stream transformation will be terminated, preventing further events from being processed.
- *
  * @param event - The ServerSentEvent to evaluate for termination
  * @returns true if the stream should be terminated, false otherwise
- *
- * @example
- * ```typescript
- * const terminateOnDone: TerminateDetector = (event) => {
- *   return event.event === 'done' || event.data === '[DONE]';
- * };
- * ```
  */
 export type TerminateDetector = (event: ServerSentEvent) => boolean;
 
 /**
  * Represents a Server-Sent Event with parsed JSON data.
- *
- * This interface extends the base ServerSentEvent but replaces the string 'data' field
- * with a parsed JSON object of the specified generic type. This allows for type-safe
- * access to the event payload.
  *
  * @template DATA - The expected type of the parsed JSON data
  */
@@ -51,87 +37,44 @@ export interface JsonServerSentEvent<DATA> extends Omit<
 }
 
 /**
- * A TransformStream transformer that converts ServerSentEvent to JsonServerSentEvent with optional termination detection.
+ * A TransformStream transformer that converts ServerSentEvent to
+ * JsonServerSentEvent with optional termination detection.
  *
- * This transformer parses the JSON data from ServerSentEvent chunks and optionally terminates
- * the stream when a termination condition is met. It's designed to work within a TransformStream
- * to convert raw server-sent events into typed JSON events.
+ * Inherits termination guard and safe controller operations from SafeTransformer.
  *
  * @template DATA - The expected type of the parsed JSON data in each event
  */
-export class JsonServerSentEventTransform<DATA> implements Transformer<
+export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
   ServerSentEvent,
   JsonServerSentEvent<DATA>
 > {
-  /**
-   * Guard flag to prevent any controller operations after the stream has been
-   * terminated or errored. Once set, all subsequent chunks are silently dropped.
-   */
-  private terminated = false;
+  constructor(private readonly terminateDetector?: TerminateDetector) {
+    super();
+  }
 
-  /**
-   * Creates a new JsonServerSentEventTransform instance.
-   *
-   * @param terminateDetector - Optional function to detect when the stream should be terminated.
-   *                           If provided, this function is called for each event and can terminate
-   *                           the stream by returning true.
-   */
-  constructor(private readonly terminateDetector?: TerminateDetector) {}
-
-  /**
-   * Transforms a ServerSentEvent chunk into a JsonServerSentEvent.
-   *
-   * This method first checks if the stream has already been terminated. If so,
-   * the chunk is silently dropped. Otherwise, it checks if the event should
-   * terminate the stream using the terminateDetector. If termination is required,
-   * the controller is safely terminated. Otherwise, the event data is parsed
-   * as JSON and enqueued as a JsonServerSentEvent.
-   *
-   * All controller operations use safe wrappers (safeTerminate, safeEnqueue,
-   * safeError) that suppress TypeError from already-closed streams as normal
-   * control flow. Any error thrown during detection or parsing (including
-   * TypeError from detector/parse logic) is caught, the stream is errored
-   * via safeError, and subsequent chunks are dropped.
-   *
-   * @param chunk - The ServerSentEvent to transform
-   * @param controller - The TransformStream controller for managing the stream
-   */
-  transform(
+  protected onTransform(
     chunk: ServerSentEvent,
     controller: TransformStreamDefaultController<JsonServerSentEvent<DATA>>,
-  ) {
-    if (this.terminated) {
+  ): void {
+    // Check if this is a terminate event
+    if (this.terminateDetector?.(chunk)) {
+      this.terminate(controller);
       return;
     }
 
-    try {
-      // Check if this is a terminate event
-      if (this.terminateDetector?.(chunk)) {
-        this.terminated = true;
-        safeTerminate(controller);
-        return;
-      }
-
-      const json = JSON.parse(chunk.data) as DATA;
-      safeEnqueue(controller, {
-        data: json,
-        event: chunk.event,
-        id: chunk.id,
-        retry: chunk.retry,
-      });
-    } catch (error) {
-      this.terminated = true;
-      safeError(controller, error);
-    }
+    const json = JSON.parse(chunk.data) as DATA;
+    this.enqueue(controller, {
+      data: json,
+      event: chunk.event,
+      id: chunk.id,
+      retry: chunk.retry,
+    });
   }
 }
 
 /**
- * A TransformStream that converts ServerSentEvent streams to JsonServerSentEvent streams with optional termination detection.
- *
- * This class extends TransformStream to provide a convenient way to transform streams of ServerSentEvent
- * objects into streams of JsonServerSentEvent objects. It supports optional termination detection to
- * automatically end the stream when certain conditions are met.
+ * A TransformStream that converts ServerSentEvent streams to
+ * JsonServerSentEvent streams with optional termination detection.
  *
  * @template DATA - The expected type of the parsed JSON data in each event
  */
@@ -139,33 +82,13 @@ export class JsonServerSentEventTransformStream<DATA> extends TransformStream<
   ServerSentEvent,
   JsonServerSentEvent<DATA>
 > {
-  /**
-   * Creates a new JsonServerSentEventTransformStream instance.
-   *
-   * @param terminateDetector - Optional function to detect when the stream should be terminated.
-   *                           When provided, the stream will automatically terminate when this
-   *                           function returns true for any event.
-   *
-   * @example
-   * ```typescript
-   * // Create a stream that terminates on 'done' events
-   * const terminateOnDone: TerminateDetector = (event) => event.event === 'done';
-   * const transformStream = new JsonServerSentEventTransformStream<MyData>(terminateOnDone);
-   *
-   * // Create a stream without termination detection
-   * const basicStream = new JsonServerSentEventTransformStream<MyData>();
-   * ```
-   */
   constructor(terminateDetector?: TerminateDetector) {
-    super(new JsonServerSentEventTransform(terminateDetector));
+    super(new JsonServerSentEventTransform<DATA>(terminateDetector));
   }
 }
 
 /**
  * A ReadableStream of JsonServerSentEvent objects.
- *
- * This type represents a stream that yields parsed JSON server-sent events.
- * Each chunk in the stream contains the event metadata along with parsed JSON data.
  *
  * @template DATA - The expected type of the parsed JSON data in each event
  */
@@ -176,34 +99,10 @@ export type JsonServerSentEventStream<DATA> = ReadableStream<
 /**
  * Converts a ServerSentEventStream to a JsonServerSentEventStream with optional termination detection.
  *
- * This function takes a stream of raw server-sent events and transforms it into a stream of
- * parsed JSON events. It optionally accepts a termination detector to automatically end the
- * stream when certain conditions are met.
- *
  * @template DATA - The expected type of the parsed JSON data in each event
  * @param serverSentEventStream - The input stream of ServerSentEvent objects to transform
  * @param terminateDetector - Optional function to detect when the stream should be terminated
  * @returns A ReadableStream that yields JsonServerSentEvent objects with parsed JSON data
- * @throws {SyntaxError} If any event data is not valid JSON (thrown during stream consumption)
- *
- * @example
- * ```typescript
- * // Basic usage without termination detection
- * const jsonStream = toJsonServerSentEventStream<MyData>(serverSentEventStream);
- *
- * // With termination detection
- * const terminateOnDone: TerminateDetector = (event) => event.data === '[DONE]';
- * const terminatingStream = toJsonServerSentEventStream<MyData>(
- *   serverSentEventStream,
- *   terminateOnDone
- * );
- *
- * // Consume the stream
- * for await (const event of jsonStream) {
- *   console.log('Received:', event.data);
- *   console.log('Event type:', event.event);
- * }
- * ```
  */
 export function toJsonServerSentEventStream<DATA>(
   serverSentEventStream: ServerSentEventStream,

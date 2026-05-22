@@ -68,4 +68,5 @@ export * from './serverSentEventTransformStream';
 export * from './textLineTransformStream';
 export * from './readableStreamAsyncIterable';
 export * from './readableStreams';
+export * from './safeTransformer';
 export * from './streamController';
