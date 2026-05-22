@@ -80,6 +80,7 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
     try {
       await this.onFlush(controller);
     } catch (error) {
+      this.terminated = true;
       this.safeOnError(error, 'flush');
       safeError(controller, error);
     } finally {
@@ -127,7 +128,7 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
    * @param error - The error that was caught
    * @param phase - The lifecycle phase where the error occurred
    */
-  protected onError(error: unknown, phase: TransformerPhase): void {
+  protected onError(_error: unknown, _phase: TransformerPhase): void {
     // Default: nothing to clean up
   }
 
