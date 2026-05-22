@@ -97,6 +97,10 @@ export class ServerSentEventTransformer extends SafeTransformer<
     this.currentEventState.data = [];
   }
 
+  protected override onError(error: unknown): void {
+    this.resetEventState();
+  }
+
   protected onTransform(
     chunk: string,
     controller: TransformStreamDefaultController<ServerSentEvent>,
