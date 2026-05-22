@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { SafeTransformer } from './safeTransformer';
+import { SafeTransformer, type TransformerPhase } from './safeTransformer';
 
 /**
  * Represents a message sent in an event stream.
@@ -97,7 +97,7 @@ export class ServerSentEventTransformer extends SafeTransformer<
     this.currentEventState.data = [];
   }
 
-  protected override onError(error: unknown): void {
+  protected override onError(error: unknown, phase: TransformerPhase): void {
     this.resetEventState();
   }
 
