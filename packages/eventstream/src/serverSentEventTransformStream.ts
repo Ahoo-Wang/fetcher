@@ -52,12 +52,18 @@ function processFieldInternal(
       currentEvent.data.push(value);
       break;
     case ServerSentEventFields.ID:
-      currentEvent.id = value;
+      // Per W3C SSE spec: "If the field value does not contain U+0000 NULL,
+      // then set the last event ID buffer to the field value.
+      // Otherwise, ignore the field."
+      if (!value.includes('\0')) {
+        currentEvent.id = value;
+      }
       break;
     case ServerSentEventFields.RETRY: {
-      const retryValue = parseInt(value, 10);
-      if (!isNaN(retryValue)) {
-        currentEvent.retry = retryValue;
+      // Per W3C SSE spec: "If the field value consists of only ASCII digits,
+      // then interpret the field value as an integer in base ten."
+      if (/^\d+$/.test(value)) {
+        currentEvent.retry = parseInt(value, 10);
       }
       break;
     }
@@ -144,8 +150,6 @@ export class ServerSentEventTransformer extends SafeTransformer<
       }
     }
 
-    field = field.trim();
-    value = value.trim();
 
     processFieldInternal(field, value, currentEvent);
   }

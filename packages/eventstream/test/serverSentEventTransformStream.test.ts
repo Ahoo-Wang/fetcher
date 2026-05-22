@@ -469,7 +469,7 @@ describe('serverSentEventTransformStream.ts', () => {
         error: vi.fn(),
       } as any;
 
-      // Send field with whitespace
+      // Per W3C SSE spec, field names are NOT trimmed, so "  event  " is an unknown field
       transformer.transform('  event  :test', controller);
 
       // Send data
@@ -480,7 +480,7 @@ describe('serverSentEventTransformStream.ts', () => {
 
       expect(controller.enqueue).toHaveBeenCalledWith(
         expect.objectContaining({
-          event: 'test',
+          event: 'message',
           data: 'test data',
         }),
       );
@@ -493,7 +493,7 @@ describe('serverSentEventTransformStream.ts', () => {
         error: vi.fn(),
       } as any;
 
-      // Send field with whitespace in value
+      // Per W3C SSE spec, only a single leading space after colon is stripped, no trailing trim
       transformer.transform('data:  test data  ', controller);
 
       // Send empty line to trigger event
@@ -501,7 +501,77 @@ describe('serverSentEventTransformStream.ts', () => {
 
       expect(controller.enqueue).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: 'test data',
+          data: ' test data  ',
+        }),
+      );
+    });
+
+    it('should ignore id field with NULL character per SSE spec', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send id with NULL character (should be ignored per W3C spec)
+      transformer.transform('id:bad\0id', controller);
+      // Send data to trigger event
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      // id should not be set because it contains NULL
+      const event = (controller.enqueue as any).mock.calls[0][0];
+      expect(event.id).toBe('');
+    });
+
+    it('should accept valid id without NULL character', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      transformer.transform('id:valid-123', controller);
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'valid-123',
+        }),
+      );
+    });
+
+    it('should reject retry value with non-digit characters per SSE spec', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // "5000abc" should be rejected per spec (must consist of only ASCII digits)
+      transformer.transform('retry:5000abc', controller);
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      const event = (controller.enqueue as any).mock.calls[0][0];
+      expect(event.retry).toBeUndefined();
+    });
+
+    it('should accept retry value with only ASCII digits', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      transformer.transform('retry:5000', controller);
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          retry: 5000,
         }),
       );
     });
