@@ -59,6 +59,7 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
       this.onTransform(chunk, controller);
     } catch (error) {
       this.terminated = true;
+      this.onError(error);
       safeError(controller, error);
     }
   }
@@ -72,8 +73,9 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
     try {
       this.onFlush(controller);
     } catch (error) {
-      this.terminated = true;
       safeError(controller, error);
+    } finally {
+      this.terminated = true;
     }
   }
 
@@ -98,6 +100,17 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
   }
 
   /**
+   * Called when an error occurs during `onTransform()`. Subclasses can
+   * override to clean up internal state (e.g. reset buffers).
+   * The stream is already marked as terminated when this is called.
+   *
+   * @param error - The error that was caught
+   */
+  protected onError(error: unknown): void {
+    // Default: nothing to clean up
+  }
+
+  /**
    * Transform an input chunk into output chunk(s).
    * Use `this.enqueue(controller, chunk)` instead of `controller.enqueue()`.
    *
@@ -113,9 +126,9 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
    * Called when the stream is ending. Override to flush remaining state.
    * Default implementation does nothing.
    *
-   * @param _controller
+   * @param controller
    */
-  protected onFlush(_controller: TransformStreamDefaultController<O>): void {
+  protected onFlush(controller: TransformStreamDefaultController<O>): void {
     // Default: nothing to flush
   }
 }
