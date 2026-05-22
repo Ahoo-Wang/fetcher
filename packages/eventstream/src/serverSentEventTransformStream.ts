@@ -97,7 +97,7 @@ export class ServerSentEventTransformer extends SafeTransformer<
     this.currentEventState.data = [];
   }
 
-  protected override onError(error: unknown, phase: TransformerPhase): void {
+  protected override onError(_error: unknown, _phase: TransformerPhase): void {
     this.resetEventState();
   }
 
