@@ -14,6 +14,11 @@
 import { safeEnqueue, safeError, safeTerminate } from './streamController';
 
 /**
+ * Identifies the lifecycle phase where an error occurred.
+ */
+export type TransformerPhase = 'transform' | 'flush';
+
+/**
  * Abstract base class for TransformStream transformers with built-in error safety
  * and termination guard.
  *
@@ -59,7 +64,7 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
       this.onTransform(chunk, controller);
     } catch (error) {
       this.terminated = true;
-      this.onError(error);
+      this.onError(error, 'transform');
       safeError(controller, error);
     }
   }
@@ -73,6 +78,7 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
     try {
       this.onFlush(controller);
     } catch (error) {
+      this.onError(error, 'flush');
       safeError(controller, error);
     } finally {
       this.terminated = true;
@@ -100,13 +106,14 @@ export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
   }
 
   /**
-   * Called when an error occurs during `onTransform()`. Subclasses can
-   * override to clean up internal state (e.g. reset buffers).
+   * Called when an error occurs during `onTransform()` or `onFlush()`.
+   * Subclasses can override to clean up internal state (e.g. reset buffers).
    * The stream is already marked as terminated when this is called.
    *
    * @param error - The error that was caught
+   * @param phase - The lifecycle phase where the error occurred
    */
-  protected onError(error: unknown): void {
+  protected onError(error: unknown, phase: TransformerPhase): void {
     // Default: nothing to clean up
   }
 
