@@ -104,7 +104,6 @@ import {
   SelectFilter,
   IdFilter,
   BoolFilter,
-  DateTimeFilter,
   FallbackFilter,
   TypedFilter,
   // Cell components
@@ -151,8 +150,6 @@ import {
   type ActiveFilter,
   type AvailableFilterGroup,
 } from '@ahoo-wang/fetcher-viewer';
-
-import { zh_CN } from '@ahoo-wang/fetcher-viewer/locale';
 ```
 
 ---
@@ -455,14 +452,14 @@ interface ActiveFilter {
 
 Maps filter type strings to components. Register custom filters with `filterRegistry.register(type, Component)`.
 
-| Type Constant           | Value        | Component      |
-| ----------------------- | ------------ | -------------- |
-| `ID_FILTER`             | `'id'`       | IdFilter       |
-| `TEXT_FILTER`           | `'text'`     | TextFilter     |
-| `NUMBER_FILTER`         | `'number'`   | NumberFilter   |
-| `SELECT_FILTER`         | `'select'`   | SelectFilter   |
-| `BOOL_FILTER`           | `'bool'`     | BoolFilter     |
-| `DATE_TIME_FILTER_NAME` | `'datetime'` | DateTimeFilter |
+| Type Constant   | Value        | Component                              |
+| --------------- | ------------ | -------------------------------------- |
+| `ID_FILTER`     | `'id'`       | IdFilter                               |
+| `TEXT_FILTER`   | `'text'`     | TextFilter                             |
+| `NUMBER_FILTER` | `'number'`   | NumberFilter                           |
+| `SELECT_FILTER` | `'select'`   | SelectFilter                           |
+| `BOOL_FILTER`   | `'bool'`     | BoolFilter                             |
+| literal         | `'datetime'` | DateTimeFilter (registered internally) |
 
 Unknown types render `FallbackFilter` (warning alert).
 
@@ -497,8 +494,8 @@ const { operator, value, setOperator, setValue, reset } = useFilterState({
 // BoolFilter - operators: isTrue, isFalse
 <BoolFilter field={{ name: 'isActive', label: 'Active' }} />
 
-// DateTimeFilter - operators: eq, ne, gt, gte, lt, lte, between
-<DateTimeFilter field={{ name: 'createdAt', label: 'Created At' }} />
+// Registered date/time filter - operators: eq, ne, gt, gte, lt, lte, between
+<TypedFilter type="datetime" field={{ name: 'createdAt', label: 'Created At' }} />
 ```
 
 ---
@@ -615,8 +612,20 @@ Number range input with min/max validation.
 ## Locale Support
 
 ```tsx
-import { zh_CN } from '@ahoo-wang/fetcher-viewer/locale';
-// zh_CN provides Chinese labels for filter panel, view panel, etc.
+import { useLocale } from '@ahoo-wang/fetcher-viewer';
+
+function SearchButtonLabel() {
+  const { locale, setLocale } = useLocale();
+  return (
+    <button
+      onClick={() =>
+        setLocale({ filterPanel: { searchButtonTitle: 'Search' } })
+      }
+    >
+      {locale.filterPanel?.searchButtonTitle}
+    </button>
+  );
+}
 ```
 
 ---
