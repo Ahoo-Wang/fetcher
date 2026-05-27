@@ -405,9 +405,13 @@ fetcher.interceptors.response.use(
 ```typescript
 import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from '@ahoo-wang/fetcher-cosec';
 
-fetcher.get('/api/public-data', {
-  attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]]),
-});
+fetcher.get(
+  '/api/public-data',
+  {},
+  {
+    attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]]),
+  },
+);
 ```
 
 ---

@@ -493,8 +493,5 @@ import {
   useSecurity,
   useSecurityContext,
   RouteGuard,
-  // Notifications
-  notificationCenter,
-  browserNotificationChannel,
 } from '@ahoo-wang/fetcher-react';
 ```

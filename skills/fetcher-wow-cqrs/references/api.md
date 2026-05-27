@@ -59,6 +59,7 @@ The Wow framework implements CQRS + Event Sourcing + DDD:
 
 ```typescript
 import '@ahoo-wang/fetcher-eventstream'; // Required side-effect import for SSE
+import { HttpMethod } from '@ahoo-wang/fetcher';
 import {
   // Command
   CommandClient,
@@ -166,7 +167,7 @@ const commandClient = new CommandClient<AddCartItem>({
 
 ### send(commandRequest, attributes?)
 
-Sends a command and waits for a `CommandResult`. The first argument specifies the command path and request configuration.
+Sends a command and waits for a `CommandResult`. The `CommandRequest` carries the command path and request configuration.
 
 ```typescript
 interface AddCartItem {
@@ -174,7 +175,8 @@ interface AddCartItem {
   quantity: number;
 }
 
-const result: CommandResult = await commandClient.send('add_cart_item', {
+const result: CommandResult = await commandClient.send({
+  path: 'add_cart_item',
   method: HttpMethod.POST,
   headers: {
     [CommandHeaders.WAIT_STAGE]: CommandStage.SNAPSHOT,
@@ -191,7 +193,8 @@ const result: CommandResult = await commandClient.send('add_cart_item', {
 Sends a command and receives results as a `Promise<CommandResultEventStream>` (a `ReadableStream<JsonServerSentEvent<CommandResult>>`).
 
 ```typescript
-const stream = await commandClient.sendAndWaitStream('add_cart_item', {
+const stream = await commandClient.sendAndWaitStream({
+  path: 'add_cart_item',
   method: HttpMethod.POST,
   headers: { Accept: ContentTypeValues.TEXT_EVENT_STREAM },
   body: { productId: 'product-123', quantity: 2 },
@@ -550,8 +553,16 @@ interface Pagination {
 When using `@ahoo-wang/fetcher-generator`, clients are auto-generated:
 
 ```typescript
-import { cartCommandClient } from './generated/example/cart/commandClient';
+import { Fetcher, HttpMethod } from '@ahoo-wang/fetcher';
+import {
+  CartCommandClient,
+  CartStreamCommandClient,
+} from './generated/example/cart/commandClient';
 import { cartQueryClientFactory } from './generated/example/cart/queryClient';
+
+const fetcher = new Fetcher({ baseURL: 'http://localhost:8080/' });
+const cartCommandClient = new CartCommandClient({ fetcher });
+const cartStreamCommandClient = new CartStreamCommandClient({ fetcher });
 
 // Send command using generated client
 await cartCommandClient.addCartItem({
@@ -559,8 +570,8 @@ await cartCommandClient.addCartItem({
   body: { productId: 'prod-1', quantity: 1 },
 });
 
-// Streaming version (same client, different method)
-const stream = await cartCommandClient.addCartItemAndWaitStream({
+// Streaming version (stream client, same generated method)
+const stream = await cartStreamCommandClient.addCartItem({
   method: HttpMethod.POST,
   body: { productId: 'prod-1', quantity: 1 },
 });
@@ -576,14 +587,13 @@ const stateClient = cartQueryClientFactory.createLoadStateAggregateClient();
 ## Example: Complete Cart Flow
 
 ```typescript
-import { Fetcher } from '@ahoo-wang/fetcher';
+import { Fetcher, HttpMethod } from '@ahoo-wang/fetcher';
 import '@ahoo-wang/fetcher-eventstream';
 import {
   CommandClient,
   SnapshotQueryClient,
   CommandHeaders,
   CommandStage,
-  HttpMethod,
   aggregateId,
   all,
 } from '@ahoo-wang/fetcher-wow';
@@ -601,7 +611,8 @@ const snapshotClient = new SnapshotQueryClient({
 });
 
 // Send command
-const result = await commandClient.send('add_cart_item', {
+const result = await commandClient.send({
+  path: 'add_cart_item',
   method: HttpMethod.POST,
   headers: { [CommandHeaders.WAIT_STAGE]: CommandStage.SNAPSHOT },
   body: { productId: 'prod-123', quantity: 2 },
