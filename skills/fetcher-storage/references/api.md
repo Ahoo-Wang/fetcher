@@ -124,7 +124,10 @@ storage.destroy(); // prevent memory leaks
 KeyStorage integrates with EventBus via `BroadcastTypedEventBus` for cross-tab sync. Events propagate via `BroadcastChannel` API with automatic fallback to `StorageEvent` when BroadcastChannel is unavailable.
 
 ```typescript
-import { BroadcastTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
+import {
+  BroadcastTypedEventBus,
+  SerialTypedEventBus,
+} from '@ahoo-wang/fetcher-eventbus';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
 const broadcastBus = new BroadcastTypedEventBus<StorageEvent<string>>({
