@@ -229,7 +229,7 @@ export class UserService implements ExecuteLifeCycle {
   }
 
   beforeExecute(exchange: FetchExchange): void | Promise<void> {
-    exchange.request.headers.set('X-Custom-Header', 'value');
+    exchange.ensureRequestHeaders()['X-Custom-Header'] = 'value';
   }
 
   afterExecute(exchange: FetchExchange): void | Promise<void> {

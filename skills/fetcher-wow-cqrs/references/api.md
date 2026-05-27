@@ -59,7 +59,7 @@ The Wow framework implements CQRS + Event Sourcing + DDD:
 
 ```typescript
 import '@ahoo-wang/fetcher-eventstream'; // Required side-effect import for SSE
-import { HttpMethod } from '@ahoo-wang/fetcher';
+import { ContentTypeValues, HttpMethod } from '@ahoo-wang/fetcher';
 import {
   // Command
   CommandClient,
