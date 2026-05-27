@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher Storage'
+  short_description: 'Cross-environment typed storage'
+  default_prompt: 'Use $fetcher-storage to persist typed values across browser and memory storage.'

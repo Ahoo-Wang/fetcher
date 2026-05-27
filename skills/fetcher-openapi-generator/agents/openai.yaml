@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher OpenAPI Generator'
+  short_description: 'Generate Fetcher OpenAPI clients'
+  default_prompt: 'Use $fetcher-openapi-generator to generate a typed Fetcher client from an OpenAPI spec.'

@@ -1,187 +1,38 @@
 ---
 name: fetcher-llm-streaming
 description: >
-  Implement LLM streaming with Server-Sent Events (SSE) using @ahoo-wang/fetcher-eventstream. Covers Response.prototype extensions (eventStream, jsonEventStream, isEventStream, contentType), SSE stream processing pipeline, JsonServerSentEventStream with TerminateDetector, EventStreamResultExtractor and JsonEventStreamResultExtractor, EventStreamConvertError, and async iterable streaming. Side-effect import patches Response.prototype.
-  Use for: SSE, streaming, LLM, eventStream, jsonEventStream, Server-Sent Events, OpenAI streaming, real-time tokens, event stream, ReadableStream, TerminateDetector.
+  Use when consuming Server-Sent Events, LLM token streams, OpenAI-style streaming chat responses, Fetcher eventstream helpers, response prototype extensions, stream termination detection, result extractors, or ReadableStream async iteration.
 ---
 
 # fetcher-llm-streaming
 
-Implement streaming features for LLM APIs using Fetcher's eventstream package.
+## Use This Skill When
 
-## Trigger Conditions
+- The task involves SSE, EventSource-style data, streaming responses, or token-by-token UI updates.
+- The task mentions `eventStream`, `jsonEventStream`, `textEventStream`, or `ReadableStreamAsyncIterable`.
+- The task needs OpenAI-style completion chunks or DONE termination handling.
+- The task needs a decorator result extractor for streaming endpoints.
 
-This skill activates when the user:
+## Workflow
 
-- Wants SSE/streaming support
-- Mentions LLM, OpenAI, streaming, eventStream, or jsonEventStream
-- Asks about real-time data or token streaming
+1. Import `@ahoo-wang/fetcher-eventstream` for side-effect prototype helpers when using `Response` extensions.
+2. Use standalone conversion functions when prototype mutation is undesirable.
+3. Handle stream conversion errors explicitly with `EventStreamConvertError`.
+4. Detect termination with the package helper instead of ad hoc string checks.
+5. Load `references/api.md` for pipeline details, OpenAI streaming examples, and UI update patterns.
 
-## Side-Effect Import Pattern
+## Key Practices
 
-The eventstream package uses a side-effect import to extend `Response.prototype`. All patches are idempotent -- guarded by `hasOwnProperty` checks so repeated imports are safe.
+- Keep parsing, termination detection, and UI state updates as separate steps.
+- Use async iteration over streams to avoid buffering full responses in memory.
+- When pairing with decorators, configure result extractors at the endpoint boundary.
 
-```typescript
-import '@ahoo-wang/fetcher-eventstream';
-```
+## References
 
-This also polyfills `ReadableStream.prototype[Symbol.asyncIterator]` when not natively supported, enabling `for await...of` on any ReadableStream.
+- `references/api.md`: Detailed package API, examples, and edge-case guidance. Load it only when the task needs prototype extensions, standalone stream functions, SSE structures, termination handling, OpenAI streaming examples, and React UI update snippets.
 
-## Response Prototype Extensions
+## Related Skills
 
-After the side-effect import, Response objects gain these members:
-
-| Member                               | Kind     | Returns                                        | Description                                     |
-| ------------------------------------ | -------- | ---------------------------------------------- | ----------------------------------------------- |
-| `contentType`                        | getter   | `string \| null`                               | Content-Type header value                       |
-| `isEventStream`                      | getter   | `boolean`                                      | True if Content-Type is `text/event-stream`     |
-| `eventStream()`                      | method   | `ServerSentEventStream \| null`                | Converts to SSE stream (null if wrong type)     |
-| `requiredEventStream()`              | method   | `ServerSentEventStream`                        | Same, throws `EventStreamConvertError` on fail  |
-| `jsonEventStream<DATA>(terminate?)`  | method   | `JsonServerSentEventStream<DATA> \| null`      | Typed JSON stream with optional termination     |
-| `requiredJsonEventStream<DATA>(t?)`  | method   | `JsonServerSentEventStream<DATA>`              | Same, throws `EventStreamConvertError` on fail  |
-
-## EventStreamConvertError
-
-Thrown by `requiredEventStream()` and `requiredJsonEventStream()` when the response is not a valid event stream. Extends `FetcherError` and carries the original `Response` object.
-
-```typescript
-import { EventStreamConvertError } from '@ahoo-wang/fetcher-eventstream';
-
-try {
-  response.requiredEventStream();
-} catch (error) {
-  if (error instanceof EventStreamConvertError) {
-    console.error('Status:', error.response.status);
-  }
-}
-```
-
-## SSE Stream Processing Pipeline
-
-The internal pipeline transforms raw bytes into typed events:
-
-```
-Response.body (Uint8Array)
-  -> TextDecoderStream          (bytes -> UTF-8 string)
-  -> TextLineTransformStream    (string -> individual lines)
-  -> ServerSentEventTransformStream  (lines -> ServerSentEvent)
-  -> JsonServerSentEventTransformStream (ServerSentEvent -> JsonServerSentEvent<DATA>)
-```
-
-## ServerSentEvent Structure
-
-```typescript
-interface ServerSentEvent {
-  data: string;    // Event data (required)
-  event: string;   // Event type (default: 'message')
-  id?: string;     // Event ID for tracking
-  retry?: number;  // Reconnection timeout in ms
-}
-```
-
-`JsonServerSentEvent<DATA>` has the same shape but with `data: DATA` (parsed JSON).
-
-## Standalone Functions (No Prototype Needed)
-
-```typescript
-import {
-  toServerSentEventStream,
-  toJsonServerSentEventStream,
-} from '@ahoo-wang/fetcher-eventstream';
-
-// Direct conversion without Response.prototype methods
-const sseStream = toServerSentEventStream(response);
-const jsonStream = toJsonServerSentEventStream<ChatResponse>(sseStream, terminateOnDone);
-```
-
-## Termination Detection
-
-```typescript
-import { type TerminateDetector } from '@ahoo-wang/fetcher-eventstream';
-
-// OpenAI-style: data is '[DONE]' literal
-const terminateOnDone: TerminateDetector = event => event.data === '[DONE]';
-
-// Event-based: event type signals end
-const terminateOnEvent: TerminateDetector = event => event.event === 'done';
-```
-
-## OpenAI Client Streaming
-
-The OpenAI `ChatClient.completions()` returns `JsonServerSentEventStream<ChatResponse>` when `stream: true`. Each iteration yields a `JsonServerSentEvent<ChatResponse>` -- access parsed data via `event.data`, **not** directly on the iterator variable.
-
-```typescript
-import { OpenAI } from '@ahoo-wang/fetcher-openai';
-
-const openai = new OpenAI({
-  baseURL: 'https://api.openai.com/v1',
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-
-const stream = await openai.chat.completions({
-  model: 'gpt-3.5-turbo',
-  messages: [{ role: 'user', content: 'Hello!' }],
-  stream: true,
-});
-
-// event is JsonServerSentEvent<ChatResponse> -- use event.data for the payload
-for await (const event of stream) {
-  const content = event.data.choices[0]?.delta?.content || '';
-  if (content) {
-    process.stdout.write(content);
-  }
-}
-```
-
-## Token-by-Token UI Updates
-
-```typescript
-let fullResponse = '';
-
-for await (const event of stream) {
-  const content = event.data.choices[0]?.delta?.content || '';
-  fullResponse += content;
-  updateUI(fullResponse);
-}
-```
-
-## Result Extractors (for Decorator Pattern)
-
-Use the standalone extractors exported from `@ahoo-wang/fetcher-eventstream`. They are **not** on `ResultExtractors` from `@ahoo-wang/fetcher`.
-
-```typescript
-import {
-  EventStreamResultExtractor,
-  JsonEventStreamResultExtractor,
-} from '@ahoo-wang/fetcher-eventstream';
-
-@api('/chat', {
-  fetcher: 'llm',
-  resultExtractor: JsonEventStreamResultExtractor,
-})
-export class LlmClient {
-  @post('/completions')
-  streamChat(@body() body: ChatRequest): Promise<JsonServerSentEventStream<ChatResponse>> {
-    throw autoGeneratedError(body);
-  }
-}
-```
-
-- `EventStreamResultExtractor` -- calls `requiredEventStream()`, yields `ServerSentEventStream`
-- `JsonEventStreamResultExtractor` -- calls `requiredJsonEventStream()`, yields `JsonServerSentEventStream<any>`
-
-## ReadableStreamAsyncIterable
-
-Internal wrapper enabling `for await...of` on ReadableStream. Polyfilled automatically on import when the runtime lacks native `ReadableStream.prototype[Symbol.asyncIterator]`.
-
-## Installation
-
-```bash
-pnpm add @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-openai
-```
-
-## Related Packages
-
-- `@ahoo-wang/fetcher-eventstream` -- SSE stream processing, Response prototype extensions
-- `@ahoo-wang/fetcher-openai` -- Type-safe OpenAI client with streaming support
-- `@ahoo-wang/fetcher-decorator` -- Declarative API decorators (use extractors above)
+- $fetcher-openai-client: Use for higher-level OpenAI chat client setup.
+- $fetcher-decorator-service: Use when the streaming endpoint is declared with decorators.
+- $fetcher-react-hooks: Use when streaming data drives React state.
