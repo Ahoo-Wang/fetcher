@@ -23,6 +23,7 @@ import type {
 import { EditableFilterPanel, FilterPanel } from '../filter';
 import type * as React from 'react';
 import type { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
+import type { FilterState } from '../filter/types';
 import type { Key, RefAttributes } from 'react';
 import { useCallback, useImperativeHandle, useRef } from 'react';
 import type { FieldDefinition, ViewColumn } from '../viewer';
@@ -162,6 +163,7 @@ export interface ViewProps<RecordType>
   externalUpdateCondition?: (
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
   ) => void;
 
   /** Optional action column configuration for row-level operations */
@@ -251,12 +253,14 @@ export function View<RecordType>({
    * Updates internal condition state and triggers onChange callback.
    * @param finalCondition - The composed filter condition from filter panel.
    * @param activeFilterValues -
+   * @param filterStates -
    */
   const handleSearch = (
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
   ) => {
-    setCondition(finalCondition, activeFilterValues);
+    setCondition(finalCondition, activeFilterValues, filterStates);
   };
 
   /**

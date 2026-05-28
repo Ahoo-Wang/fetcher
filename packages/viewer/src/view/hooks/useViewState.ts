@@ -13,6 +13,7 @@
 
 import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import type { Key } from 'react';
+import type { FilterState } from '../../filter/types';
 import { useState } from 'react';
 import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import type { ActiveFilter, ViewColumn } from '../../index';
@@ -96,6 +97,7 @@ export interface UseViewStateOptions {
   externalUpdateCondition?: (
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
   ) => void;
   /** Default sort configuration (uncontrolled mode) */
   defaultSorter?: FieldSort[];
@@ -145,6 +147,7 @@ export interface UseViewStateReturn {
   setCondition: (
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
   ) => void;
   /** Current sort configuration */
   sorter: FieldSort[];
@@ -328,12 +331,14 @@ export function useViewState({
    * Typically called when user applies a new filter.
    * @param finalCondition - New filter condition.
    * @param activeFilterValues - Map of active filter keys to their updated conditions.
+   * @param filterStates - Map of active filter keys to their current operator/value states.
    */
   const setConditionFn = (
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
   ) => {
-    setCondition(finalCondition, activeFilterValues);
+    setCondition(finalCondition, activeFilterValues, filterStates);
     setPage(1);
     onChange?.(finalCondition, 1, pageSize, sorter);
   };

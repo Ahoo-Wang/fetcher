@@ -19,7 +19,7 @@ import type {
 import type { SelectProps } from 'antd/es/select';
 import type { RefAttributes } from 'react';
 import type React from 'react';
-import type { StyleCapable } from '../types';
+import type { Optional, StyleCapable } from '../types';
 import type { SelectOperator, SelectOperatorLocale } from './operator';
 
 /**
@@ -34,7 +34,14 @@ export interface FilterField extends NamedCapable {
 export interface FilterRef {
   getValue(): FilterValue | undefined;
 
+  getState(): FilterState;
+
   reset(): void;
+}
+
+export interface FilterState {
+  operator: SelectOperator;
+  value: Optional;
 }
 
 export interface FilterLabelProps extends StyleCapable {}
