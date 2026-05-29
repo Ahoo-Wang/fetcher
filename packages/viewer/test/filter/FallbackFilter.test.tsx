@@ -18,6 +18,7 @@ import { FallbackFilter } from '../../src';
 import { FilterRef, FilterValue } from '../../src';
 import { TypedFilterProps } from '../../src';
 import { Operator } from '@ahoo-wang/fetcher-wow';
+import { ExtendedOperator } from '../../src/filter/operator';
 
 // 测试辅助函数
 const createMockProps = (type: string): TypedFilterProps => ({
@@ -146,6 +147,56 @@ describe('FallbackFilter', () => {
         />,
       );
       expect(ref.current?.getValue()).toBeUndefined();
+    });
+
+    it('exposes getState method via ref', () => {
+      const ref = React.createRef<FilterRef | null>();
+      const props = createMockProps('test');
+
+      render(
+        <FallbackFilter ref={ref as React.RefObject<FilterRef>} {...props} />,
+      );
+
+      expect(ref.current).toHaveProperty('getState');
+      expect(typeof ref.current?.getState).toBe('function');
+    });
+
+    it('getState method returns UNDEFINED operator and undefined value', () => {
+      const ref = React.createRef<FilterRef | null>();
+      const props = createMockProps('any-type');
+
+      render(
+        <FallbackFilter ref={ref as React.RefObject<FilterRef>} {...props} />,
+      );
+
+      const state = ref.current?.getState();
+      expect(state).toEqual({
+        operator: ExtendedOperator.UNDEFINED,
+        value: undefined,
+      });
+    });
+
+    it('exposes reset method via ref', () => {
+      const ref = React.createRef<FilterRef | null>();
+      const props = createMockProps('test');
+
+      render(
+        <FallbackFilter ref={ref as React.RefObject<FilterRef>} {...props} />,
+      );
+
+      expect(ref.current).toHaveProperty('reset');
+      expect(typeof ref.current?.reset).toBe('function');
+    });
+
+    it('reset method does not throw', () => {
+      const ref = React.createRef<FilterRef | null>();
+      const props = createMockProps('test');
+
+      render(
+        <FallbackFilter ref={ref as React.RefObject<FilterRef>} {...props} />,
+      );
+
+      expect(() => ref.current?.reset()).not.toThrow();
     });
   });
 
