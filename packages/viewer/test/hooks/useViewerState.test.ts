@@ -17,6 +17,7 @@ import { useViewerState } from '../../src/viewer/hooks';
 import { ViewState, ViewDefinition, ViewColumn } from '../../src/viewer/types';
 import { Operator, SortDirection, all } from '@ahoo-wang/fetcher-wow';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
+import type { FilterState } from '../../src/filter/types';
 
 describe('useViewerState', () => {
   const defaultColumns: ViewColumn[] = [
@@ -141,10 +142,129 @@ describe('useViewerState', () => {
         value: '1',
       };
       act(() => {
-        result.current.setCondition(condition, new Map([['test', condition]]));
+        result.current.setCondition(condition, new Map([['test', condition]]), new Map());
       });
 
       expect(result.current.viewChanged).toBe(true);
+    });
+  });
+
+  describe('setCondition', () => {
+    it('should preserve operator when value is empty (partial filter save)', () => {
+      const view = createViewState({
+        filters: [
+          {
+            type: 'test',
+            key: 'test',
+            field: { name: 'test', label: 'test' },
+            operator: { defaultValue: Operator.EQ },
+          },
+        ],
+      });
+
+      const { result } = renderHook(() =>
+        useViewerState({
+          views: [view],
+          defaultView: view,
+          definition: viewDefinition,
+        }),
+      );
+
+      // Partial filter: operator changed to GTE but value is empty
+      const newOperator = Operator.GTE;
+      const filterState: FilterState = {
+        operator: newOperator,
+        value: undefined,
+      };
+
+      act(() => {
+        result.current.setCondition(
+          all(),
+          new Map(), // activeFilterValues is empty (validation fails for empty value)
+          new Map([['test', filterState]]), // filterStates has the operator
+        );
+      });
+
+      // Verify operator is preserved with value: null
+      const savedFilter = result.current.activeView.filters[0];
+      expect(savedFilter.operator?.defaultValue).toBe(newOperator);
+      expect(savedFilter.value).toBe(null);
+    });
+
+    it('should save full filter when both operator and value are provided', () => {
+      const view = createViewState({
+        filters: [
+          {
+            type: 'test',
+            key: 'test',
+            field: { name: 'test', label: 'test' },
+            operator: { defaultValue: Operator.EQ },
+          },
+        ],
+      });
+
+      const { result } = renderHook(() =>
+        useViewerState({
+          views: [view],
+          defaultView: view,
+          definition: viewDefinition,
+        }),
+      );
+
+      const newCondition = {
+        field: 'test',
+        operator: Operator.CONTAINS,
+        value: 'search term',
+      };
+      const filterState: FilterState = {
+        operator: Operator.CONTAINS,
+        value: 'search term',
+      };
+
+      act(() => {
+        result.current.setCondition(
+          all(),
+          new Map([['test', newCondition]]),
+          new Map([['test', filterState]]),
+        );
+      });
+
+      const savedFilter = result.current.activeView.filters[0];
+      expect(savedFilter.operator?.defaultValue).toBe(Operator.CONTAINS);
+      expect(savedFilter.value).toEqual({ defaultValue: 'search term' });
+    });
+
+    it('should reset value to null when no filterState exists', () => {
+      const view = createViewState({
+        filters: [
+          {
+            type: 'test',
+            key: 'test',
+            field: { name: 'test', label: 'test' },
+            operator: { defaultValue: Operator.EQ },
+            value: { defaultValue: 'old value' },
+          },
+        ],
+      });
+
+      const { result } = renderHook(() =>
+        useViewerState({
+          views: [view],
+          defaultView: view,
+          definition: viewDefinition,
+        }),
+      );
+
+      act(() => {
+        result.current.setCondition(
+          all(),
+          new Map(), // no activeFilterValues
+          new Map(), // no filterStates
+        );
+      });
+
+      const savedFilter = result.current.activeView.filters[0];
+      expect(savedFilter.value).toBe(null);
     });
   });
 

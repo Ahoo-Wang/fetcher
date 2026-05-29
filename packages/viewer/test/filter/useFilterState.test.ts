@@ -20,9 +20,9 @@ import { Operator } from '@ahoo-wang/fetcher-wow';
 
 // 测试辅助函数
 const createMockOptions = (
-  overrides: Partial<UseFilterStateOptions<string>> = {},
-): UseFilterStateOptions<string> => {
-  const defaultOptions: UseFilterStateOptions<string> = {
+  overrides: Partial<UseFilterStateOptions> = {},
+): UseFilterStateOptions => {
+  const defaultOptions: UseFilterStateOptions = {
     field: 'testField',
     operator: Operator.EQ,
     value: 'test value',
@@ -383,6 +383,123 @@ describe('useFilterState', () => {
 
       expect(ref.current).toHaveProperty('getValue');
       expect(typeof ref.current?.getValue).toBe('function');
+    });
+
+    it('exposes getState method via ref', () => {
+      const ref = React.createRef<FilterRef>();
+      const options = createMockOptions({
+        operator: Operator.EQ,
+        value: 'test value',
+        ref,
+      });
+
+      renderHook(() => useFilterState(options));
+
+      expect(ref.current).toHaveProperty('getState');
+      expect(typeof ref.current?.getState).toBe('function');
+    });
+
+    it('getState returns current operator and value', () => {
+      const ref = React.createRef<FilterRef>();
+      const options = createMockOptions({
+        operator: Operator.EQ,
+        value: 'test value',
+        ref,
+      });
+
+      renderHook(() => useFilterState(options));
+
+      const state = ref.current?.getState();
+      expect(state).toEqual({
+        operator: Operator.EQ,
+        value: 'test value',
+      });
+    });
+
+    it('getState reflects operator changes', () => {
+      const ref = React.createRef<FilterRef>();
+      const options = createMockOptions({
+        operator: Operator.EQ,
+        value: 'test value',
+        ref,
+      });
+
+      const { result } = renderHook(() => useFilterState(options));
+
+      act(() => {
+        result.current.setOperator(Operator.CONTAINS);
+      });
+
+      const state = ref.current?.getState();
+      expect(state?.operator).toBe(Operator.CONTAINS);
+      expect(state?.value).toBe('test value');
+    });
+
+    it('getState reflects value changes', () => {
+      const ref = React.createRef<FilterRef>();
+      const options = createMockOptions({
+        operator: Operator.EQ,
+        value: 'test value',
+        ref,
+      });
+
+      const { result } = renderHook(() => useFilterState(options));
+
+      act(() => {
+        result.current.setValue('new value');
+      });
+
+      const state = ref.current?.getState();
+      expect(state?.operator).toBe(Operator.EQ);
+      expect(state?.value).toBe('new value');
+    });
+
+    it('getState returns state regardless of validation status', () => {
+      const ref = React.createRef<FilterRef>();
+      const validate = vi.fn(() => false);
+      const options = createMockOptions({
+        operator: Operator.EQ,
+        value: 'test value',
+        ref,
+        validate,
+      });
+
+      renderHook(() => useFilterState(options));
+
+      // getValue returns undefined due to validation failure
+      expect(ref.current?.getValue()).toBeUndefined();
+
+      // getState still returns current state
+      const state = ref.current?.getState();
+      expect(state).toEqual({
+        operator: Operator.EQ,
+        value: 'test value',
+      });
+    });
+
+    it('getState returns operator even when value is empty (partial filter)', () => {
+      const ref = React.createRef<FilterRef>();
+      const options = createMockOptions({
+        operator: Operator.EQ,
+        value: undefined,
+        ref,
+      });
+
+      const { result } = renderHook(() => useFilterState(options));
+
+      act(() => {
+        result.current.setOperator(Operator.GTE);
+      });
+
+      // getValue returns undefined because validation fails for empty value
+      expect(ref.current?.getValue()).toBeUndefined();
+
+      // getState returns the operator (partial filter save support)
+      const state = ref.current?.getState();
+      expect(state).toEqual({
+        operator: Operator.GTE,
+        value: undefined,
+      });
     });
 
     it('getValue returns FilterValue when validation passes', () => {

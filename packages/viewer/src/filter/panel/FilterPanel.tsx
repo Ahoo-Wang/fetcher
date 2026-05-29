@@ -16,6 +16,7 @@ import React, { useImperativeHandle } from 'react';
 import type { TypedFilterProps } from '../TypedFilter';
 import type { FilterRef } from '../types';
 import type { Condition } from '@ahoo-wang/fetcher-wow';
+import type { FilterState } from '../types';
 import { and } from '@ahoo-wang/fetcher-wow';
 import type { ColProps, ButtonProps } from 'antd';
 import { Button, Col, Row, Space } from 'antd';
@@ -66,6 +67,7 @@ export interface FilterPanelProps extends RefAttributes<FilterPanelRef> {
   onSearch?: (
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
   ) => void;
   resetButton?: boolean | Omit<ButtonProps, 'onClick'>;
   searchButton?: Omit<ButtonProps, 'onClick'>;
@@ -105,9 +107,12 @@ export function FilterPanel(props: FilterPanelProps) {
 
   const getCondition = () => {
     const conditions: Condition[] = [];
+    const filterStates = new Map<Key, FilterState>();
     const activeFilterValues = new Map<Key, Condition>();
     for (const entry of filterRefs.entries()) {
       const key = entry[0];
+      const filterState = entry[1].getState();
+      filterStates.set(key, filterState);
       const condition = entry[1].getValue()?.condition;
       if (condition) {
         conditions.push(condition);
@@ -118,6 +123,7 @@ export function FilterPanel(props: FilterPanelProps) {
     return {
       finalCondition,
       activeFilterValues,
+      filterStates,
     };
   };
 
@@ -125,8 +131,8 @@ export function FilterPanel(props: FilterPanelProps) {
     if (!onSearch) {
       return;
     }
-    const { finalCondition, activeFilterValues } = getCondition();
-    onSearch(finalCondition, activeFilterValues);
+    const { finalCondition, activeFilterValues, filterStates } = getCondition();
+    onSearch(finalCondition, activeFilterValues, filterStates);
   };
   const handleReset = () => {
     for (const filterRef of filterRefs.values()) {
