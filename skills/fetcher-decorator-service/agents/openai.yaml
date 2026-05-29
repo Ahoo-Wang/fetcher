@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher Decorator Service'
+  short_description: 'Declarative Fetcher API services'
+  default_prompt: 'Use $fetcher-decorator-service to create a typed decorator-based API service.'

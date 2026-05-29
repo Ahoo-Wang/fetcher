@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher React Hooks'
+  short_description: 'React data hooks for Fetcher'
+  default_prompt: 'Use $fetcher-react-hooks to build React data-fetching hooks around Fetcher.'

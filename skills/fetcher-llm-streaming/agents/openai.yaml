@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher LLM Streaming'
+  short_description: 'SSE and LLM streaming with Fetcher'
+  default_prompt: 'Use $fetcher-llm-streaming to process an SSE or LLM streaming response.'

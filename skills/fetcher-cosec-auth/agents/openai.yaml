@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher CoSec Auth'
+  short_description: 'CoSec auth setup for Fetcher'
+  default_prompt: 'Use $fetcher-cosec-auth to wire CoSec JWT authentication into my Fetcher client.'

@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher Eventbus'
+  short_description: 'Typed event buses for Fetcher'
+  default_prompt: 'Use $fetcher-eventbus to design a typed event bus or cross-tab messenger.'

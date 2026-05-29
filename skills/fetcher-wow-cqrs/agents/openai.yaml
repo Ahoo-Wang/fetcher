@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher Wow CQRS'
+  short_description: 'Wow CQRS clients with Fetcher'
+  default_prompt: 'Use $fetcher-wow-cqrs to create typed Wow command and query clients.'

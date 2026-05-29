@@ -14,12 +14,19 @@
 import { Alert } from 'antd';
 import React, { useImperativeHandle } from 'react';
 import type { TypedFilterProps } from './TypedFilter';
-import type { FilterValue } from './types';
+import type { FilterState, FilterValue } from './types';
+import { ExtendedOperator } from './operator';
 
 export function FallbackFilter({ type, ref }: TypedFilterProps) {
   useImperativeHandle(ref, () => ({
     getValue(): FilterValue | undefined {
       return undefined;
+    },
+    getState(): FilterState {
+      return {
+        operator: ExtendedOperator.UNDEFINED,
+        value: undefined,
+      };
     },
     reset(): void {
       // No-op for fallback filter

@@ -15,7 +15,7 @@ import type { Condition, ConditionOptions } from '@ahoo-wang/fetcher-wow';
 import { EMPTY_VALUE_OPERATORS, Operator } from '@ahoo-wang/fetcher-wow';
 import type { RefAttributes } from 'react';
 import { useImperativeHandle, useState } from 'react';
-import type { FilterRef, FilterValue } from './types';
+import type { FilterRef, FilterState, FilterValue } from './types';
 import type { Optional } from '../types';
 import type { SelectOperator } from './operator';
 import { ExtendedOperator } from './operator';
@@ -154,6 +154,9 @@ export function useFilterState(
   useImperativeHandle<FilterRef, FilterRef>(options.ref, () => ({
     getValue(): FilterValue | undefined {
       return resolveFilterValue(operator, value);
+    },
+    getState(): FilterState {
+      return { operator, value };
     },
     reset: resetFn,
   }));

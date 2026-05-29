@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher Viewer Components'
+  short_description: 'Ant Design data viewers for Fetcher'
+  default_prompt: 'Use $fetcher-viewer-components to build a Fetcher Viewer data table with filters.'

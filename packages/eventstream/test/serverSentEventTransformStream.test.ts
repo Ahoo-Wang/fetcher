@@ -469,7 +469,7 @@ describe('serverSentEventTransformStream.ts', () => {
         error: vi.fn(),
       } as any;
 
-      // Send field with whitespace
+      // Per W3C SSE spec, field names are NOT trimmed, so "  event  " is an unknown field
       transformer.transform('  event  :test', controller);
 
       // Send data
@@ -480,7 +480,7 @@ describe('serverSentEventTransformStream.ts', () => {
 
       expect(controller.enqueue).toHaveBeenCalledWith(
         expect.objectContaining({
-          event: 'test',
+          event: 'message',
           data: 'test data',
         }),
       );
@@ -493,7 +493,7 @@ describe('serverSentEventTransformStream.ts', () => {
         error: vi.fn(),
       } as any;
 
-      // Send field with whitespace in value
+      // Per W3C SSE spec, only a single leading space after colon is stripped, no trailing trim
       transformer.transform('data:  test data  ', controller);
 
       // Send empty line to trigger event
@@ -501,7 +501,121 @@ describe('serverSentEventTransformStream.ts', () => {
 
       expect(controller.enqueue).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: 'test data',
+          data: ' test data  ',
+        }),
+      );
+    });
+
+    it('should ignore id field with NULL character per SSE spec', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // Send id with NULL character (should be ignored per W3C spec)
+      transformer.transform('id:bad\0id', controller);
+      // Send data to trigger event
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      // id should not be set because it contains NULL
+      const event = (controller.enqueue as any).mock.calls[0][0];
+      expect(event.id).toBe('');
+    });
+
+    it('should accept valid id without NULL character', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      transformer.transform('id:valid-123', controller);
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'valid-123',
+        }),
+      );
+    });
+
+    it('should reject retry value with non-digit characters per SSE spec', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // "5000abc" should be rejected per spec (must consist of only ASCII digits)
+      transformer.transform('retry:5000abc', controller);
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      const event = (controller.enqueue as any).mock.calls[0][0];
+      expect(event.retry).toBeUndefined();
+    });
+
+    it('should accept retry value with only ASCII digits', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      transformer.transform('retry:5000', controller);
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          retry: 5000,
+        }),
+      );
+    });
+
+    it('should preserve valid id when subsequent id contains NULL', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // First: valid id
+      transformer.transform('id:valid-1', controller);
+      // Then: invalid id with NULL (should be ignored, not clear previous)
+      transformer.transform('id:bad\0id', controller);
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      // The valid id should be preserved
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'valid-1',
+        }),
+      );
+    });
+
+    it('should preserve valid retry when subsequent retry is invalid', async () => {
+      const transformer = new ServerSentEventTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      // First: valid retry
+      transformer.transform('retry:5000', controller);
+      // Then: invalid retry (should be ignored, not clear previous)
+      transformer.transform('retry:abc', controller);
+      transformer.transform('data:test', controller);
+      transformer.transform('', controller);
+
+      // The valid retry should be preserved
+      expect(controller.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          retry: 5000,
         }),
       );
     });
@@ -555,13 +669,8 @@ describe('serverSentEventTransformStream.ts', () => {
 
       transformer.transform(chunk, controller);
 
-      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
-      // The error should be converted to an Error object with enhanced message
-      const errorCall = (controller.error as any).mock.calls[0][0];
-      expect(errorCall).toBeInstanceOf(Error);
-      expect(errorCall.message).toBe(
-        'Failed to process chunk: "[object Object]". Test error string',
-      );
+      // SafeTransformer passes the original error through safeError
+      expect(controller.error).toHaveBeenCalledWith('Test error string');
     });
 
     it('should handle undefined event in flush', async () => {
@@ -589,28 +698,18 @@ describe('serverSentEventTransformStream.ts', () => {
     it('should handle non-Error object in flush error', async () => {
       const transformer = new ServerSentEventTransformer();
       const controller = {
-        enqueue: vi.fn(),
+        enqueue: vi.fn(() => {
+          throw 'Test error string';
+        }),
         error: vi.fn(),
       } as any;
 
-      // Mock controller.enqueue to throw a non-Error object
-      controller.enqueue.mockImplementationOnce(() => {
-        throw 'Test error string';
-      });
-
-      // Send data
+      // Accumulate data, then flush triggers enqueue which throws
       transformer.transform('data:test data', controller);
-
-      // Flush should handle the error
       transformer.flush(controller);
 
-      expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
-      // The error should be converted to an Error object with enhanced message
-      const errorCall = (controller.error as any).mock.calls[0][0];
-      expect(errorCall).toBeInstanceOf(Error);
-      expect(errorCall.message).toBe(
-        'Failed to flush remaining data. Test error string',
-      );
+      // SafeTransformer catches the error and forwards via safeError
+      expect(controller.error).toHaveBeenCalledWith('Test error string');
     });
   });
 });

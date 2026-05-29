@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ActiveFilter } from '../../';
 import { deepEqual, useActiveViewState } from '../../';
 import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
+import type { FilterState } from '../../filter/types';
 import { all } from '@ahoo-wang/fetcher-wow';
 import type { SortOrder } from 'antd/es/table/interface';
 
@@ -54,6 +55,7 @@ export interface UseViewerStateReturn {
   setCondition: (
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
   ) => void;
   page: number;
   setPage: (page: number) => void;
@@ -182,17 +184,32 @@ export function useViewerState({
   const setConditionFn = (
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
   ) => {
     setCondition(finalCondition);
     const newActiveFilters = activeFilters.map(activeFilter => {
       const activeFilterValue = activeFilterValues.get(activeFilter.key);
+      const activeFilterState = filterStates.get(activeFilter.key);     
+       
       if (!activeFilterValue) {
+
+        if(activeFilterState?.operator) {
+          return {
+            ...activeFilter,
+            operator: { 
+              ...activeFilter.operator,
+              defaultValue: activeFilterState.operator
+             },
+            value: null,
+          };
+        }
+
         return {
           ...activeFilter,
           value: null,
         };
       }
-
+      
       return {
         ...activeFilter,
         value: { defaultValue: activeFilterValue.value },
