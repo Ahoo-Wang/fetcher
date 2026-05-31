@@ -19,6 +19,11 @@ import {
 } from '../../src/fetcherviewer/FetcherViewer';
 import type { PaginationProps } from 'antd';
 
+const refreshDataEventBusMock = vi.hoisted(() => ({
+  publish: vi.fn(),
+  subscribe: vi.fn(),
+}));
+
 vi.mock('../../src/fetcherviewer/hooks/useViewerDefinition', () => ({
   useViewerDefinition: vi.fn(),
 }));
@@ -33,8 +38,8 @@ vi.mock('../../src/fetcherviewer/hooks/useFetchData', () => ({
 
 vi.mock('../../src/hooks/useRefreshDataEventBus', () => ({
   useRefreshDataEventBus: vi.fn(() => ({
-    publish: vi.fn().mockResolvedValue(undefined),
-    subscribe: vi.fn(() => true),
+    publish: refreshDataEventBusMock.publish,
+    subscribe: refreshDataEventBusMock.subscribe,
   })),
 }));
 
@@ -58,6 +63,8 @@ interface User {
 describe('FetcherViewer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    refreshDataEventBusMock.publish.mockResolvedValue(undefined);
+    refreshDataEventBusMock.subscribe.mockReturnValue(true);
   });
 
   const defaultProps = {
@@ -185,6 +192,16 @@ describe('FetcherViewer', () => {
       const { container } = render(<FetcherViewer<User> {...defaultProps} />);
 
       expect(container.textContent).toContain('未找到视图');
+    });
+  });
+
+  describe('refresh subscription', () => {
+    it('subscribes once across rerenders for the same viewer definition', () => {
+      const { rerender } = render(<FetcherViewer<User> {...defaultProps} />);
+
+      rerender(<FetcherViewer<User> {...defaultProps} />);
+
+      expect(refreshDataEventBusMock.subscribe).toHaveBeenCalledTimes(1);
     });
   });
 

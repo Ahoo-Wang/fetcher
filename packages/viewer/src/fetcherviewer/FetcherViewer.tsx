@@ -249,6 +249,11 @@ export function FetcherViewer<RecordType = any>({
   );
 
   const { publish, subscribe } = useRefreshDataEventBus(viewerDefinitionId);
+  const reloadRef = useRef(reload);
+
+  useEffect(() => {
+    reloadRef.current = reload;
+  }, [reload]);
 
   useImperativeHandle<FetcherViewerRef, FetcherViewerRef>(ref, () => ({
     refreshData: () => publish(viewerDefinitionId),
@@ -264,15 +269,17 @@ export function FetcherViewer<RecordType = any>({
     getViewerDefinition: () => viewerDefinition,
   }));
 
-  subscribe(
-    {
-      name: 'Viewer-Refresh-Data',
-      handle: async () => {
-        await reload();
+  useEffect(() => {
+    subscribe(
+      {
+        name: 'Viewer-Refresh-Data',
+        handle: async () => {
+          await reloadRef.current();
+        },
       },
-    },
-    viewerDefinitionId,
-  );
+      viewerDefinitionId,
+    );
+  }, [subscribe, viewerDefinitionId]);
 
   if (definitionLoading || viewsLoading) {
     return (

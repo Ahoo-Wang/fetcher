@@ -3,7 +3,7 @@ import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
-import { useEffect, useId } from 'react';
+import { useCallback, useEffect, useId } from 'react';
 
 const RefreshDataEventType = 'REFRESH_DATA_EVENTS';
 
@@ -33,30 +33,30 @@ export function useRefreshDataEventBus(
 
   const targetSubscriberId = subscriberId ?? generatedId;
 
-  const publish = (_subscriberId?: string) => {
+  const publish = useCallback((_subscriberId?: string) => {
     return bus.emit({
       type: 'REFRESH',
       subscriberId: _subscriberId ?? targetSubscriberId,
     });
-  };
+  }, [targetSubscriberId]);
 
-  const subscribe = (
-    handler: EventHandler<RefreshDataEvent>,
-    _subscriberId?: string,
-  ) => {
-    const finalSubscriberId = _subscriberId ?? targetSubscriberId;
-    const wrappedHandler: EventHandler<RefreshDataEvent> = {
-      ...handler,
-      name: `${finalSubscriberId}:${handler.name}`,
-      order: handler.order,
-      handle: (event: RefreshDataEvent) => {
-        if (event.subscriberId === finalSubscriberId) {
-          return handler.handle(event);
-        }
-      },
-    };
-    return bus.on(wrappedHandler);
-  };
+  const subscribe = useCallback(
+    (handler: EventHandler<RefreshDataEvent>, _subscriberId?: string) => {
+      const finalSubscriberId = _subscriberId ?? targetSubscriberId;
+      const wrappedHandler: EventHandler<RefreshDataEvent> = {
+        ...handler,
+        name: `${finalSubscriberId}:${handler.name}`,
+        order: handler.order,
+        handle: (event: RefreshDataEvent) => {
+          if (event.subscriberId === finalSubscriberId) {
+            return handler.handle(event);
+          }
+        },
+      };
+      return bus.on(wrappedHandler);
+    },
+    [targetSubscriberId],
+  );
 
   useEffect(() => {
     return () => {
