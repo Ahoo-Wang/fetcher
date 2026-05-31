@@ -198,7 +198,7 @@ function MyFilterComponent() {
 - `'number'` - NumberFilter
 - `'select'` - SelectFilter
 - `'bool'` - BoolFilter
-- `'dateTime'` - DateTimeFilter
+- `'datetime'` - DateTimeFilter
 
 当遇到未知类型的过滤器时，将渲染 `FallbackFilter` 并显示警告提示。
 

@@ -198,7 +198,7 @@ The `filterRegistry` maps filter type strings to their corresponding `TypedFilte
 - `'number'` - NumberFilter
 - `'select'` - SelectFilter
 - `'bool'` - BoolFilter
-- `'dateTime'` - DateTimeFilter
+- `'datetime'` - DateTimeFilter
 
 When a filter with an unknown type is encountered, `FallbackFilter` is rendered instead, displaying a warning message.
 

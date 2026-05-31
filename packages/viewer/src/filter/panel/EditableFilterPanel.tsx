@@ -12,7 +12,7 @@
  */
 
 import type { Key } from 'react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from 'antd';
 import type {
   AvailableFilterGroup,
@@ -47,6 +47,10 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
   const { locale } = useLocale();
+
+  useEffect(() => {
+    setActiveFilters(filters);
+  }, [filters]);
 
   const handleAddFilter = (selectedAvailableFilters: AvailableFilter[]) => {
     if (selectedAvailableFilters.length === 0) {
