@@ -167,6 +167,18 @@ describe('FunctionMetadata', () => {
       expect(timeout).toBe(5000);
     });
 
+    it('should return endpoint timeout when it is zero', () => {
+      const functionMetadata = new FunctionMetadata(
+        'test',
+        { timeout: 5000 },
+        { timeout: 0 },
+        new Map(),
+      );
+
+      const timeout = functionMetadata.resolveTimeout();
+      expect(timeout).toBe(0);
+    });
+
     it('should return undefined when neither endpoint nor api timeout is defined', () => {
       const functionMetadata = new FunctionMetadata(
         'test',
@@ -404,6 +416,18 @@ describe('FunctionMetadata', () => {
 
       const result = functionMetadata.resolveExchangeInit([]);
       expect(result.request.timeout).toBe(5000);
+    });
+
+    it('should resolve zero timeout from endpoint metadata', () => {
+      const functionMetadata = new FunctionMetadata(
+        'test',
+        { timeout: 5000 },
+        { method: HttpMethod.GET, timeout: 0 },
+        new Map(),
+      );
+
+      const result = functionMetadata.resolveExchangeInit([]);
+      expect(result.request.timeout).toBe(0);
     });
 
     it('should resolve complete URL', () => {
