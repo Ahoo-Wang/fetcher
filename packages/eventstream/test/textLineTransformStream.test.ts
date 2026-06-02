@@ -40,10 +40,38 @@ describe('textLineTransformStream.ts', () => {
         error: vi.fn(),
       } as any;
 
-      transformer.transform('line1\nline2\n', controller);
+      await transformer.transform('line1\nline2\n', controller);
 
       expect(controller.enqueue).toHaveBeenCalledWith('line1');
       expect(controller.enqueue).toHaveBeenCalledWith('line2');
+    });
+
+    it('should strip carriage returns from CRLF lines', async () => {
+      const transformer = new TextLineTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      await transformer.transform('line1\r\nline2\r\n', controller);
+
+      expect(controller.enqueue).toHaveBeenNthCalledWith(1, 'line1');
+      expect(controller.enqueue).toHaveBeenNthCalledWith(2, 'line2');
+    });
+
+    it('should strip carriage returns when CRLF is split across chunks', async () => {
+      const transformer = new TextLineTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      await transformer.transform('line1\r', controller);
+      await transformer.transform('\nline2\r', controller);
+      await transformer.flush(controller);
+
+      expect(controller.enqueue).toHaveBeenNthCalledWith(1, 'line1');
+      expect(controller.enqueue).toHaveBeenNthCalledWith(2, 'line2');
     });
 
     it('should accumulate buffer for incomplete lines', async () => {
@@ -53,7 +81,7 @@ describe('textLineTransformStream.ts', () => {
         error: vi.fn(),
       } as any;
 
-      transformer.transform('line1\nline2', controller);
+      await transformer.transform('line1\nline2', controller);
 
       expect(controller.enqueue).toHaveBeenCalledWith('line1');
       expect(controller.enqueue).not.toHaveBeenCalledWith('line2');
@@ -66,8 +94,8 @@ describe('textLineTransformStream.ts', () => {
         error: vi.fn(),
       } as any;
 
-      transformer.transform('line1\nline2', controller);
-      transformer.flush(controller);
+      await transformer.transform('line1\nline2', controller);
+      await transformer.flush(controller);
 
       expect(controller.enqueue).toHaveBeenCalledWith('line1');
       expect(controller.enqueue).toHaveBeenCalledWith('line2');
@@ -80,7 +108,20 @@ describe('textLineTransformStream.ts', () => {
         error: vi.fn(),
       } as any;
 
-      transformer.flush(controller);
+      await transformer.flush(controller);
+
+      expect(controller.enqueue).not.toHaveBeenCalled();
+    });
+
+    it('should not flush a trailing carriage return as an empty line', async () => {
+      const transformer = new TextLineTransformer();
+      const controller = {
+        enqueue: vi.fn(),
+        error: vi.fn(),
+      } as any;
+
+      await transformer.transform('\r', controller);
+      await transformer.flush(controller);
 
       expect(controller.enqueue).not.toHaveBeenCalled();
     });
@@ -99,7 +140,7 @@ describe('textLineTransformStream.ts', () => {
         },
       } as any;
 
-      transformer.transform(chunk, controller);
+      await transformer.transform(chunk, controller);
 
       expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
     });
@@ -116,8 +157,8 @@ describe('textLineTransformStream.ts', () => {
         throw new Error('Test error');
       });
 
-      transformer.transform('test', controller);
-      transformer.flush(controller);
+      await transformer.transform('test', controller);
+      await transformer.flush(controller);
 
       expect(controller.error).toHaveBeenCalledWith(expect.any(Error));
     });
@@ -132,7 +173,7 @@ describe('textLineTransformStream.ts', () => {
       // Set buffer to empty string
       (transformer as any).buffer = '';
 
-      transformer.flush(controller);
+      await transformer.flush(controller);
 
       expect(controller.enqueue).not.toHaveBeenCalled();
     });
@@ -147,7 +188,7 @@ describe('textLineTransformStream.ts', () => {
       // Set buffer to whitespace
       (transformer as any).buffer = '   ';
 
-      transformer.flush(controller);
+      await transformer.flush(controller);
 
       expect(controller.enqueue).toHaveBeenCalledWith('   ');
     });

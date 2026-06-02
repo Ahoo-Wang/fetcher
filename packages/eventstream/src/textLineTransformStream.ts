@@ -23,6 +23,10 @@ import { SafeTransformer } from './safeTransformer';
 export class TextLineTransformer extends SafeTransformer<string, string> {
   private buffer = '';
 
+  private normalizeLine(line: string): string {
+    return line.endsWith('\r') ? line.slice(0, -1) : line;
+  }
+
   protected onTransform(
     chunk: string,
     controller: TransformStreamDefaultController<string>,
@@ -32,16 +36,17 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
     this.buffer = lines.pop() || '';
 
     for (const line of lines) {
-      this.enqueue(controller, line);
+      this.enqueue(controller, this.normalizeLine(line));
     }
   }
 
   protected onFlush(
     controller: TransformStreamDefaultController<string>,
   ): void {
-    // Only send when buffer is not empty, avoid sending meaningless empty lines
-    if (this.buffer) {
-      this.enqueue(controller, this.buffer);
+    const line = this.normalizeLine(this.buffer);
+    // Only send when normalized buffer is not empty.
+    if (line) {
+      this.enqueue(controller, line);
     }
   }
 }
