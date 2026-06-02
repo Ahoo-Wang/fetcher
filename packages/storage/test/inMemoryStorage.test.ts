@@ -84,6 +84,11 @@ describe('InMemoryStorage', () => {
       expect(keys).toContain('key1');
       expect(keys).toContain('key2');
     });
+
+    it('should return empty string keys by index', () => {
+      storage.setItem('', 'value');
+      expect(storage.key(0)).toBe('');
+    });
   });
 
   describe('removeItem', () => {

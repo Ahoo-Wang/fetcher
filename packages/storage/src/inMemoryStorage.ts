@@ -45,7 +45,7 @@ export class InMemoryStorage implements Storage {
    */
   key(index: number): string | null {
     const keys = Array.from(this.store.keys());
-    return keys[index] || null;
+    return keys[index] ?? null;
   }
 
   /**
