@@ -9784,7 +9784,7 @@ import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
 
 const tokenStorage = new TokenStorage({
   key: 'cosec-token',
-  earlyPeriod: 300000, // 5 minutes
+  earlyPeriod: 300, // 5 minutes
   eventBus: new BroadcastTypedEventBus({
     delegate: new SerialTypedEventBus('cosec-token'),
   }),
@@ -10053,7 +10053,7 @@ Parses a JWT string and provides typed payload access with expiration checking. 
 ```typescript
 import { JwtToken } from '@ahoo-wang/fetcher-cosec';
 
-const token = new JwtToken<CoSecJwtPayload>('eyJ...', 300000); // 5 min early period
+const token = new JwtToken<CoSecJwtPayload>('eyJ...', 300); // 5 min early period
 console.log(token.isExpired);     // false if not yet expired
 console.log(token.payload?.sub);  // user ID from payload
 ```
@@ -10068,7 +10068,7 @@ import { JwtCompositeToken } from '@ahoo-wang/fetcher-cosec';
 const composite = new JwtCompositeToken({
   accessToken: 'access.jwt.token',
   refreshToken: 'refresh.jwt.token',
-}, 300000);
+}, 300);
 
 console.log(composite.authenticated);    // true if access token valid
 console.log(composite.isRefreshNeeded);  // true if access token expired
@@ -14309,4 +14309,3 @@ it('should fetch data', async () => {
 - [Integration Testing](./integration-testing.md) -- Real API testing
 - [React Hooks API](../api/react-hooks.md) -- Hooks being tested
 </doc>
-

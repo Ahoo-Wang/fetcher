@@ -68,7 +68,7 @@ export interface IJwtToken<
  *
  * @example
  * ```typescript
- * const token = new JwtToken<CoSecJwtPayload>('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', 300000); // 5 min early period
+ * const token = new JwtToken<CoSecJwtPayload>('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', 300); // 5 min early period
  * console.log(token.isExpired); // false if not expired
  * console.log(token.payload?.sub); // user ID from payload
  * ```
@@ -88,8 +88,8 @@ export class JwtToken<
    * for expiration checks.
    *
    * @param token The raw JWT token string to parse
-   * @param earlyPeriod The early expiration period in milliseconds (default: 0).
-   *                   Tokens are considered expired this many milliseconds before their actual expiration time.
+   * @param earlyPeriod The early expiration period in seconds (default: 0).
+   *                   Tokens are considered expired this many seconds before their actual expiration time.
    *
    * @throws Will not throw but payload will be null if token parsing fails
    */
@@ -149,7 +149,7 @@ export interface RefreshTokenStatusCapable {
  * const compositeToken = new JwtCompositeToken({
  *   accessToken: 'access.jwt.here',
  *   refreshToken: 'refresh.jwt.here'
- * }, 300000); // 5 min early period
+ * }, 300); // 5 min early period
  *
  * if (compositeToken.authenticated) {
  *   console.log(compositeToken.currentUser?.sub);
@@ -179,7 +179,7 @@ export class JwtCompositeToken
    * Initializes both access and refresh token instances with the provided early period.
    *
    * @param token The composite token containing access and refresh token strings
-   * @param earlyPeriod The early expiration period in milliseconds (default: 0)
+   * @param earlyPeriod The early expiration period in seconds (default: 0)
    */
   constructor(
     public readonly token: CompositeToken,
@@ -225,7 +225,7 @@ export class JwtCompositeToken
  *
  * @example
  * ```typescript
- * const serializer = new JwtCompositeTokenSerializer(300000);
+ * const serializer = new JwtCompositeTokenSerializer(300);
  * const token = new JwtCompositeToken({ accessToken: '...', refreshToken: '...' });
  *
  * const serialized = serializer.serialize(token);
@@ -238,7 +238,7 @@ export class JwtCompositeTokenSerializer
   /**
    * Creates a new JwtCompositeTokenSerializer instance.
    *
-   * @param earlyPeriod The early expiration period in milliseconds to use for deserialized tokens (default: 0)
+   * @param earlyPeriod The early expiration period in seconds to use for deserialized tokens (default: 0)
    */
   constructor(public readonly earlyPeriod: number = 0) {}
 

@@ -144,6 +144,65 @@ describe('jwts', () => {
       expect(isExpired).toBe(false);
     });
 
+    it('should apply early period in seconds', () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date('2026-06-02T00:00:00.000Z'));
+        const now = Date.now() / 1000;
+
+        expect(isTokenExpired({ exp: now + 60 } as CoSecJwtPayload, 30)).toBe(
+          false,
+        );
+        expect(isTokenExpired({ exp: now + 30 } as CoSecJwtPayload, 30)).toBe(
+          true,
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should return true when current time equals exp claim', () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date('2026-06-02T00:00:00.000Z'));
+        const payload: CoSecJwtPayload = {
+          exp: Date.now() / 1000,
+        };
+
+        expect(isTokenExpired(payload)).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should read exp claim from a prototype getter', () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date('2026-06-02T00:00:00.000Z'));
+        class PayloadWithExpGetter {
+          get exp() {
+            return Date.now() / 1000;
+          }
+        }
+
+        expect(
+          isTokenExpired(new PayloadWithExpGetter() as CoSecJwtPayload),
+        ).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should return true for zero exp claim', () => {
+      expect(isTokenExpired({ exp: 0 } as CoSecJwtPayload)).toBe(true);
+    });
+
+    it('should return true for invalid exp claim', () => {
+      expect(
+        isTokenExpired({ exp: Number.NaN } as CoSecJwtPayload),
+      ).toBe(true);
+    });
+
     it('should return false for a payload without exp claim', () => {
       // Payload without exp claim
       const payloadWithoutExp: CoSecJwtPayload = {

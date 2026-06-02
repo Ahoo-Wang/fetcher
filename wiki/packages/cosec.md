@@ -208,7 +208,7 @@ Parses a JWT string and provides typed payload access with expiration checking. 
 ```typescript
 import { JwtToken } from '@ahoo-wang/fetcher-cosec';
 
-const token = new JwtToken<CoSecJwtPayload>('eyJ...', 300000); // 5 min early period
+const token = new JwtToken<CoSecJwtPayload>('eyJ...', 300); // 5 min early period
 console.log(token.isExpired);     // false if not yet expired
 console.log(token.payload?.sub);  // user ID from payload
 ```
@@ -223,7 +223,7 @@ import { JwtCompositeToken } from '@ahoo-wang/fetcher-cosec';
 const composite = new JwtCompositeToken({
   accessToken: 'access.jwt.token',
   refreshToken: 'refresh.jwt.token',
-}, 300000);
+}, 300);
 
 console.log(composite.authenticated);    // true if access token valid
 console.log(composite.isRefreshNeeded);  // true if access token expired
