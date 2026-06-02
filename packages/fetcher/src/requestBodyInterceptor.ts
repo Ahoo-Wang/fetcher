@@ -29,6 +29,8 @@ export const REQUEST_BODY_INTERCEPTOR_NAME = 'RequestBodyInterceptor';
 export const REQUEST_BODY_INTERCEPTOR_ORDER =
   Number.MIN_SAFE_INTEGER + BUILT_IN_INTERCEPTOR_ORDER_STEP;
 
+type BodyTypeConstructor = abstract new (...args: any[]) => unknown;
+
 /**
  * Interceptor responsible for converting plain objects to JSON strings for HTTP request bodies.
  *
@@ -62,6 +64,19 @@ export class RequestBodyInterceptor implements RequestInterceptor {
    */
   readonly order = REQUEST_BODY_INTERCEPTOR_ORDER;
 
+  private isInstanceOfBodyType(body: any, typeName: string): boolean {
+    const bodyType = (globalThis as Record<string, unknown>)[typeName];
+    if (typeof bodyType !== 'function') {
+      return false;
+    }
+
+    try {
+      return body instanceof (bodyType as BodyTypeConstructor);
+    } catch {
+      return false;
+    }
+  }
+
   /**
    * Checks if the provided body is of a supported complex type that doesn't require JSON serialization.
    *
@@ -72,7 +87,7 @@ export class RequestBodyInterceptor implements RequestInterceptor {
     return (
       body instanceof ArrayBuffer ||
       ArrayBuffer.isView(body) ||
-      body instanceof ReadableStream
+      this.isInstanceOfBodyType(body, 'ReadableStream')
     );
   }
 
@@ -84,10 +99,10 @@ export class RequestBodyInterceptor implements RequestInterceptor {
    */
   private isAutoAppendContentType(body: any): boolean {
     return (
-      body instanceof Blob ||
-      body instanceof File ||
-      body instanceof FormData ||
-      body instanceof URLSearchParams
+      this.isInstanceOfBodyType(body, 'Blob') ||
+      this.isInstanceOfBodyType(body, 'File') ||
+      this.isInstanceOfBodyType(body, 'FormData') ||
+      this.isInstanceOfBodyType(body, 'URLSearchParams')
     );
   }
 
