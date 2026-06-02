@@ -72,6 +72,48 @@ describe('SerialTypedEventBus', () => {
     expect(h2.handle).toHaveBeenCalledWith('event');
   });
 
+  it('should await async handlers before continuing serially', async () => {
+    vi.useFakeTimers();
+    try {
+      const bus = new SerialTypedEventBus<string>('test');
+      const calls: string[] = [];
+      const h1 = {
+        name: 'h1',
+        order: 1,
+        handle: vi.fn(async () => {
+          calls.push('h1-start');
+          await new Promise<void>(resolve => {
+            setTimeout(() => {
+              calls.push('h1-end');
+              resolve();
+            }, 10);
+          });
+        }),
+      };
+      const h2 = {
+        name: 'h2',
+        order: 2,
+        handle: vi.fn(() => {
+          calls.push('h2');
+        }),
+      };
+      bus.on(h1);
+      bus.on(h2);
+
+      const emitPromise = bus.emit('event');
+      await Promise.resolve();
+
+      expect(calls).toEqual(['h1-start']);
+
+      await vi.advanceTimersByTimeAsync(10);
+      await emitPromise;
+
+      expect(calls).toEqual(['h1-start', 'h1-end', 'h2']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('should handle once handlers', async () => {
     const bus = new SerialTypedEventBus<string>('test');
     const handler = { name: 'once', order: 1, handle: vi.fn(), once: true };
@@ -100,6 +142,31 @@ describe('SerialTypedEventBus', () => {
     );
     expect(h2.handle).toHaveBeenCalled();
     consoleWarn.mockRestore();
+  });
+
+  it('should log async handler rejections but continue', async () => {
+    const bus = new SerialTypedEventBus<string>('test');
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = new Error('async error');
+    const h1 = {
+      name: 'h1',
+      order: 1,
+      handle: vi.fn(() => Promise.reject(error)),
+    };
+    const h2 = { name: 'h2', order: 2, handle: vi.fn() };
+    bus.on(h1);
+    bus.on(h2);
+
+    try {
+      await expect(bus.emit('event')).resolves.toBeUndefined();
+      expect(consoleWarn).toHaveBeenCalledWith(
+        'Event handler error for h1:',
+        error,
+      );
+      expect(h2.handle).toHaveBeenCalledWith('event');
+    } finally {
+      consoleWarn.mockRestore();
+    }
   });
 
   it('should return sorted handlers', () => {
