@@ -24,6 +24,7 @@ import {
   JsonResultExtractor,
   mergeRecordToMap,
   mergeRequest,
+  resolveTimeout,
   type RequestHeaders,
   type UrlParams,
 } from '@ahoo-wang/fetcher';
@@ -127,7 +128,7 @@ export class FunctionMetadata implements NamedCapable {
    * @returns The timeout value in milliseconds, or undefined
    */
   resolveTimeout(): number | undefined {
-    return this.endpoint.timeout || this.api.timeout;
+    return resolveTimeout(this.endpoint.timeout, this.api.timeout);
   }
 
   /**
