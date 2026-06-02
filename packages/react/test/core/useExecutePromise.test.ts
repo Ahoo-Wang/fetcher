@@ -296,6 +296,43 @@ describe('useExecutePromise', () => {
     expect(result.current.result).toBe('second');
   });
 
+  it('should ignore stale abort errors after starting a new operation', async () => {
+    const firstProvider = vi.fn(
+      (abortController: AbortController) =>
+        new Promise<string>((_, reject) => {
+          abortController.signal.addEventListener('abort', () => {
+            setTimeout(() => {
+              const abortError = new Error('aborted');
+              abortError.name = 'AbortError';
+              reject(abortError);
+            }, 0);
+          });
+        }),
+    );
+    const secondProvider = vi.fn(() => new Promise<string>(() => {}));
+
+    const { result } = renderHook(() => useExecutePromise<string>());
+
+    await act(async () => {
+      result.current.execute(firstProvider);
+    });
+
+    expect(result.current.status).toBe(PromiseStatus.LOADING);
+
+    await act(async () => {
+      result.current.execute(secondProvider);
+    });
+
+    expect(result.current.status).toBe(PromiseStatus.LOADING);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.status).toBe(PromiseStatus.LOADING);
+    expect(result.current.loading).toBe(true);
+  });
+
   it('should handle onAbort callback errors gracefully', async () => {
     const onAbortMock = vi.fn().mockRejectedValue(new Error('onAbort error'));
     const mockProvider = vi

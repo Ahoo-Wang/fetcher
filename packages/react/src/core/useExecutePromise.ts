@@ -259,7 +259,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
         }
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') {
-          if (isMounted()) {
+          if (isMounted() && requestId.isLatest(currentRequestId)) {
             setIdle();
           }
           return;
