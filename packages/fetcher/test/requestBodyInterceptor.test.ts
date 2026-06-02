@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Fetcher, FetchRequest } from '../src';
 import {
   CONTENT_TYPE_HEADER,
@@ -24,6 +24,10 @@ import {
 
 describe('RequestBodyInterceptor', () => {
   const mockFetcher = {} as Fetcher;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it('should have correct name and order', () => {
     const interceptor = new RequestBodyInterceptor();
@@ -129,6 +133,38 @@ describe('RequestBodyInterceptor', () => {
   });
 
   it('should convert plain object to JSON string and set Content-Type header', () => {
+    const interceptor = new RequestBodyInterceptor();
+    const requestBody = { name: 'test', value: 123 };
+    const request = { url: '/test', body: requestBody };
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
+
+    interceptor.intercept(exchange);
+
+    expect(exchange.request.body).toBe('{"name":"test","value":123}');
+    expect(exchange.request.headers).toEqual({
+      'Content-Type': ContentTypeValues.APPLICATION_JSON,
+    });
+  });
+
+  it('should convert plain object when optional body globals are unavailable', () => {
+    vi.stubGlobal('File', undefined);
+
+    const interceptor = new RequestBodyInterceptor();
+    const requestBody = { name: 'test', value: 123 };
+    const request = { url: '/test', body: requestBody };
+    const exchange = new FetchExchange({ fetcher: mockFetcher, request });
+
+    interceptor.intercept(exchange);
+
+    expect(exchange.request.body).toBe('{"name":"test","value":123}');
+    expect(exchange.request.headers).toEqual({
+      'Content-Type': ContentTypeValues.APPLICATION_JSON,
+    });
+  });
+
+  it('should convert plain object when optional body globals are invalid constructors', () => {
+    vi.stubGlobal('File', () => undefined);
+
     const interceptor = new RequestBodyInterceptor();
     const requestBody = { name: 'test', value: 123 };
     const request = { url: '/test', body: requestBody };
