@@ -36,7 +36,7 @@ export abstract class AbstractTypedEventBus<
     event: EVENT,
   ): Promise<void> {
     try {
-      handler.handle(event);
+      await handler.handle(event);
     } catch (e) {
       console.warn(`Event handler error for ${handler.name}:`, e);
     }

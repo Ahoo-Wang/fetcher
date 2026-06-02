@@ -73,6 +73,38 @@ describe('ParallelTypedEventBus', () => {
     expect(h2.handle).toHaveBeenCalledWith('event');
   });
 
+  it('should wait for async handlers before resolving', async () => {
+    vi.useFakeTimers();
+    try {
+      const bus = new ParallelTypedEventBus<string>('test');
+      const handler = {
+        name: 'h1',
+        order: 1,
+        handle: vi.fn(async () => {
+          await new Promise<void>(resolve => {
+            setTimeout(resolve, 10);
+          });
+        }),
+      };
+      bus.on(handler);
+
+      let resolved = false;
+      const emitPromise = bus.emit('event').then(() => {
+        resolved = true;
+      });
+      await Promise.resolve();
+
+      expect(resolved).toBe(false);
+
+      await vi.advanceTimersByTimeAsync(10);
+      await emitPromise;
+
+      expect(resolved).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('should handle once handlers', async () => {
     const bus = new ParallelTypedEventBus<string>('test');
     const handler = { name: 'once', order: 1, handle: vi.fn(), once: true };
