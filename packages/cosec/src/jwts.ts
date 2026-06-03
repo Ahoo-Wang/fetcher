@@ -152,10 +152,14 @@ export function isTokenExpired(
   }
 
   const expAt = payload.exp;
-  if (!expAt) {
+  if (expAt == null) {
     return false;
   }
 
+  if (typeof expAt !== 'number' || !Number.isFinite(expAt)) {
+    return true;
+  }
+
   const now = Date.now() / 1000;
-  return now > expAt - earlyPeriod;
+  return now >= expAt - earlyPeriod;
 }

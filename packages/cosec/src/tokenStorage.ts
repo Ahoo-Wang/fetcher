@@ -45,7 +45,7 @@ export class TokenStorage
   implements EarlyPeriodCapable
 {
   /**
-   * The early period in milliseconds for token refresh timing.
+   * The early period in seconds for token refresh timing.
    */
   public readonly earlyPeriod: number;
 
@@ -54,7 +54,7 @@ export class TokenStorage
    * @param options - Configuration options for the token storage.
    * @param options.key - The storage key for tokens. Defaults to DEFAULT_COSEC_TOKEN_KEY.
    * @param options.eventBus - Event bus for token change notifications. Defaults to a BroadcastTypedEventBus with SerialTypedEventBus delegate.
-   * @param options.earlyPeriod - Early period for token refresh in milliseconds. Defaults to 0.
+   * @param options.earlyPeriod - Early period for token refresh in seconds. Defaults to 0.
    * @param reset - Additional options passed to KeyStorage.
    */
   constructor({

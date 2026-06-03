@@ -125,7 +125,7 @@ Parses a JWT string and provides typed payload access with expiration checking.
 import { JwtToken } from '@ahoo-wang/fetcher-cosec';
 import type { CoSecJwtPayload } from '@ahoo-wang/fetcher-cosec';
 
-const token = new JwtToken<CoSecJwtPayload>('eyJ...', 300000); // 5 min early period
+const token = new JwtToken<CoSecJwtPayload>('eyJ...', 300); // 5 min early period
 
 token.token; // raw JWT string
 token.payload; // CoSecJwtPayload | null
@@ -152,7 +152,7 @@ import { JwtCompositeToken } from '@ahoo-wang/fetcher-cosec';
 
 const composite = new JwtCompositeToken(
   { accessToken: 'eyJ...', refreshToken: 'eyJ...' },
-  300000, // earlyPeriod in ms
+  300, // earlyPeriod in seconds
 );
 
 composite.authenticated; // true if access token not expired
@@ -167,7 +167,7 @@ composite.refresh; // JwtToken<JwtPayload>
 ```typescript
 import { JwtCompositeTokenSerializer } from '@ahoo-wang/fetcher-cosec';
 
-const serializer = new JwtCompositeTokenSerializer(300000);
+const serializer = new JwtCompositeTokenSerializer(300);
 const serialized = serializer.serialize(compositeToken);
 const restored = serializer.deserialize(serialized);
 ```
