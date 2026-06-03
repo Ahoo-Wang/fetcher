@@ -22,7 +22,9 @@ import type { TableRecordType } from './types';
  * - Uses strict equality (===) for primitive comparisons.
  * - Handles null and undefined as unequal unless both are the same.
  * - For arrays, compares lengths first, then recursively compares each element.
- * - For objects, compares constructors, then keys, then recursively compares values.
+ * - For Date values, compares timestamps and treats two invalid dates as equal.
+ * - For RegExp values, compares pattern source, flags, and lastIndex.
+ * - For remaining objects, compares constructors, keys, then values.
  * - Does not handle circular references (would cause infinite recursion).
  * - Does not consider object prototypes beyond constructor comparison.
  * - Performance may be poor for very large or deeply nested structures.
@@ -39,6 +41,23 @@ export function deepEqual(left: any, right: any): boolean {
   // Note: null == undefined is true, but null === undefined is false
   if (left == null || right == null) {
     return false;
+  }
+
+  if (left instanceof Date && right instanceof Date) {
+    const leftTime = left.getTime();
+    const rightTime = right.getTime();
+    return (
+      leftTime === rightTime ||
+      (Number.isNaN(leftTime) && Number.isNaN(rightTime))
+    );
+  }
+
+  if (left instanceof RegExp && right instanceof RegExp) {
+    return (
+      left.source === right.source &&
+      left.flags === right.flags &&
+      left.lastIndex === right.lastIndex
+    );
   }
 
   // Handle array comparison

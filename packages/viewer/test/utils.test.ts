@@ -140,6 +140,43 @@ describe('deepEqual', () => {
       expect(deepEqual(/test/, {})).toBe(false);
     });
 
+    it('should compare dates by timestamp', () => {
+      expect(
+        deepEqual(
+          new Date('2026-06-02T00:00:00.000Z'),
+          new Date('2026-06-02T00:00:00.000Z'),
+        ),
+      ).toBe(true);
+      expect(
+        deepEqual(
+          new Date('2026-06-02T00:00:00.000Z'),
+          new Date('2026-06-03T00:00:00.000Z'),
+        ),
+      ).toBe(false);
+      expect(deepEqual(new Date('invalid'), new Date(Number.NaN))).toBe(true);
+      expect(
+        deepEqual(
+          new Date('invalid'),
+          new Date('2026-06-02T00:00:00.000Z'),
+        ),
+      ).toBe(false);
+    });
+
+    it('should compare regular expressions by pattern, flags, and lastIndex', () => {
+      expect(deepEqual(/test/gi, /test/gi)).toBe(true);
+      expect(deepEqual(/test/g, /test/i)).toBe(false);
+      expect(deepEqual(/test/g, /other/g)).toBe(false);
+
+      const left = /test/g;
+      const right = /test/g;
+      left.lastIndex = 1;
+      right.lastIndex = 1;
+      expect(deepEqual(left, right)).toBe(true);
+
+      right.lastIndex = 2;
+      expect(deepEqual(left, right)).toBe(false);
+    });
+
     it('should handle objects with array values', () => {
       expect(deepEqual({ items: [1, 2, 3] }, { items: [1, 2, 3] })).toBe(true);
       expect(deepEqual({ items: [1, 2, 3] }, { items: [1, 2, 4] })).toBe(false);
