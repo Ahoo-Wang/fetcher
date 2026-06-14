@@ -281,5 +281,26 @@ describe('UnauthorizedErrorInterceptor', () => {
       expect(calledExchange.response).toBe(response);
       expect(calledExchange.fetcher).toBe(mockFetcher);
     });
+
+    it('should invoke onUnauthorized at most once for the same exchange', async () => {
+      // Regression: the 401 refresh-retry path re-runs the error phase (the
+      // nested retry exchange plus the outer exchange), which used to fire
+      // onUnauthorized twice for a single request (double logout/redirect).
+      const onUnauthorized = vi.fn();
+      const interceptor = new UnauthorizedErrorInterceptor({ onUnauthorized });
+
+      const exchange = new FetchExchange({
+        fetcher: mockFetcher,
+        request: mockRequest,
+        response: new Response('Unauthorized', {
+          status: ResponseCodes.UNAUTHORIZED,
+        }),
+      });
+
+      await interceptor.intercept(exchange); // first error phase (e.g. nested retry)
+      await interceptor.intercept(exchange); // second error phase (e.g. outer exchange)
+
+      expect(onUnauthorized).toHaveBeenCalledTimes(1);
+    });
   });
 });

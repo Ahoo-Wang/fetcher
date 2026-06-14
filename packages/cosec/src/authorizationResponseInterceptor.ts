@@ -15,6 +15,7 @@ import { ResponseCodes } from './types';
 import type { FetchExchange } from '@ahoo-wang/fetcher';
 import { type ResponseInterceptor } from '@ahoo-wang/fetcher';
 import type { AuthorizationInterceptorOptions } from './authorizationRequestInterceptor';
+import { RefreshTokenError } from './jwtTokenManager';
 
 /**
  * The name of the AuthorizationResponseInterceptor.
@@ -28,6 +29,20 @@ export const AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME =
  */
 export const AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER =
   Number.MIN_SAFE_INTEGER + 1000;
+
+/**
+ * Maximum number of times a single exchange may be refreshed and retried on a
+ * 401 response. Retry re-runs the entire interceptor chain (including this
+ * interceptor), so without a bound a retried request that still returns 401
+ * would recurse refresh indefinitely.
+ */
+export const AUTHORIZATION_RESPONSE_MAX_RETRY = 1;
+
+/**
+ * Attribute key storing how many times an exchange has been refreshed and
+ * retried, used to bound the refresh-retry loop.
+ */
+const AUTHORIZATION_RETRY_COUNT_ATTRIBUTE = 'AuthorizationResponseRetryCount';
 
 /**
  * CoSecResponseInterceptor is responsible for handling unauthorized responses (401)
@@ -68,14 +83,40 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
     if (!this.options.tokenManager.isRefreshable) {
       return;
     }
+
+    // Guard against infinite refresh-retry loops: retrying re-runs the whole
+    // interceptor chain (including this interceptor), so a retried request that
+    // still returns 401 would otherwise recurse refresh until the refresh token
+    // expires or the server gives out.
+    const retryCount =
+      (exchange.attributes?.get(AUTHORIZATION_RETRY_COUNT_ATTRIBUTE) as
+        | number
+        | undefined) ?? 0;
+    if (retryCount >= AUTHORIZATION_RESPONSE_MAX_RETRY) {
+      return;
+    }
+    exchange.attributes?.set(
+      AUTHORIZATION_RETRY_COUNT_ATTRIBUTE,
+      retryCount + 1,
+    );
+
     try {
       await this.options.tokenManager.refresh();
-      // Retry the original request with the new token
-      await exchange.fetcher.interceptors.exchange(exchange);
     } catch (error) {
-      // If token refresh fails, clear stored tokens and re-throw the error
-      this.options.tokenManager.tokenStorage.remove();
+      // refresh() failed. JwtTokenManager.refresh() removes the token on a
+      // RefreshTokenError; for other refresh errors (e.g. no token present)
+      // clean up here and propagate.
+      if (!(error instanceof RefreshTokenError)) {
+        this.options.tokenManager.tokenStorage.remove();
+      }
       throw error;
     }
+
+    // Refresh succeeded — the token is valid. Retry the original request.
+    // Do NOT remove the token if the retry still fails: the endpoint may stay
+    // unauthorized despite a valid token (e.g. missing permission), and the
+    // token must be preserved for other requests. The persistent 401 flows to
+    // the downstream UnauthorizedErrorInterceptor as usual.
+    await exchange.fetcher.interceptors.exchange(exchange);
   }
 }
