@@ -28,6 +28,14 @@ export const UNAUTHORIZED_ERROR_INTERCEPTOR_NAME =
 export const UNAUTHORIZED_ERROR_INTERCEPTOR_ORDER = 0;
 
 /**
+ * Attribute key marking that `onUnauthorized` has already been invoked for an
+ * exchange. The 401 refresh-retry path re-enters the error phase (the nested
+ * retry exchange plus the outer exchange), which would otherwise fire
+ * `onUnauthorized` twice for a single request (double logout/redirect).
+ */
+const UNAUTHORIZED_HANDLED_ATTRIBUTE = 'UnauthorizedHandled';
+
+/**
  * Configuration options for the UnauthorizedErrorInterceptor.
  */
 export interface UnauthorizedErrorInterceptorOptions {
@@ -116,6 +124,12 @@ export class UnauthorizedErrorInterceptor implements ErrorInterceptor {
       exchange.response?.status === ResponseCodes.UNAUTHORIZED ||
       exchange.error instanceof RefreshTokenError
     ) {
+      // Fire at most once per exchange: the refresh-retry path re-enters the
+      // error phase and would otherwise invoke this callback a second time.
+      if (exchange.attributes.get(UNAUTHORIZED_HANDLED_ATTRIBUTE) === true) {
+        return;
+      }
+      exchange.attributes.set(UNAUTHORIZED_HANDLED_ATTRIBUTE, true);
       await this.options.onUnauthorized(exchange);
     }
   }

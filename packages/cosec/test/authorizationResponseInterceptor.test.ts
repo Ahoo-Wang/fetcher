@@ -183,4 +183,92 @@ describe('AuthorizationResponseInterceptor', () => {
     expect(mockTokenStorage.remove).toHaveBeenCalled();
     expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
   });
+
+  it('should not infinitely refresh when the retried request still returns 401', async () => {
+    // Regression: previously, a successful refresh followed by a retried request
+    // that STILL returns 401 caused the response interceptor to recurse
+    // (retry re-runs the whole chain, including this interceptor), looping
+    // refresh until the refresh token expired or the server gave out.
+    mockTokenStorage.get = vi.fn().mockReturnValue({ token: 'current-token' });
+
+    let refreshCount = 0;
+    mockTokenRefresher.refresh = vi.fn().mockImplementation(() => {
+      refreshCount++;
+      // Safety stop so the buggy implementation cannot hang the test runner.
+      if (refreshCount > 10) {
+        return Promise.reject(new Error('forced-stop'));
+      }
+      return Promise.resolve(`new-token-${refreshCount}`);
+    });
+
+    const exchange = {
+      response: {
+        status: ResponseCodes.UNAUTHORIZED,
+      } as Response,
+      fetcher: mockFetcher,
+      attributes: new Map(),
+    } as unknown as FetchExchange;
+
+    // Simulate the real interceptor chain: retrying re-runs response interceptors.
+    // The retried response is still 401.
+    mockFetcher.interceptors.exchange = vi.fn().mockImplementation(() =>
+      interceptor.intercept(exchange),
+    );
+
+    let threw = false;
+    try {
+      await interceptor.intercept(exchange);
+    } catch {
+      threw = true;
+    }
+
+    // Buggy code loops until forced-stop (refreshCount ≈ 11).
+    // Fixed code refreshes at most once for a given exchange.
+    expect(refreshCount).toBeLessThanOrEqual(1);
+  });
+
+  it('should remove the token exactly once when refresh fails (no duplicate signOut event)', async () => {
+    // Regression: JwtTokenManager.refresh() already removes the token on failure;
+    // the interceptor used to remove() again, emitting a duplicate signOut event.
+    mockTokenStorage.get = vi.fn().mockReturnValue({ token: 'current-token' });
+    mockTokenRefresher.refresh = vi.fn().mockRejectedValue(new Error('Refresh failed'));
+
+    const exchange = {
+      response: {
+        status: ResponseCodes.UNAUTHORIZED,
+      } as Response,
+      fetcher: mockFetcher,
+      attributes: new Map(),
+    } as unknown as FetchExchange;
+
+    await expect(interceptor.intercept(exchange)).rejects.toThrow(
+      RefreshTokenError,
+    );
+
+    expect(mockTokenStorage.remove).toHaveBeenCalledTimes(1);
+  });
+
+  it('should preserve the token when refresh succeeds but the retried request still fails', async () => {
+    // Regression: when refresh() succeeds the token is valid. A retry that
+    // still fails (e.g. the endpoint stays 401 despite a fresh token) must NOT
+    // sign the user out — only a refresh failure should clear the token.
+    mockTokenStorage.get = vi.fn().mockReturnValue({ token: 'current-token' });
+    mockTokenRefresher.refresh = vi.fn().mockResolvedValue('new-token');
+    mockFetcher.interceptors.exchange = vi
+      .fn()
+      .mockRejectedValue(new Error('still 401'));
+
+    const exchange = {
+      response: {
+        status: ResponseCodes.UNAUTHORIZED,
+      } as Response,
+      fetcher: mockFetcher,
+      attributes: new Map(),
+    } as unknown as FetchExchange;
+
+    await expect(interceptor.intercept(exchange)).rejects.toThrow('still 401');
+
+    // Token refreshed successfully — must not be removed.
+    expect(mockTokenStorage.remove).not.toHaveBeenCalled();
+  });
 });
