@@ -279,8 +279,15 @@ export class FetchExchange implements RequiredBy<
     if (this.hasCachedResult) {
       return await this.cachedExtractedResult;
     }
+    // Compute the result FIRST and only mark the cache as populated once the
+    // extractor has actually produced a value/promise. If the extractor throws
+    // synchronously, we must NOT set hasCachedResult — otherwise the exchange
+    // would be left in an inconsistent "cached-but-no-value" state where every
+    // subsequent call resolves to `undefined`, silently swallowing the real
+    // error. Leaving the cache unset lets the next call retry.
+    const result = this.resultExtractor(this) as Promise<R> | R;
+    this.cachedExtractedResult = result;
     this.hasCachedResult = true;
-    this.cachedExtractedResult = this.resultExtractor(this);
     return await this.cachedExtractedResult;
   }
 }

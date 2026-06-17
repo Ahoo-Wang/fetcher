@@ -146,6 +146,39 @@ describe('InterceptorManager', () => {
     await expect(manager.exchange(exchange)).rejects.toThrow(ExchangeError);
     expect(exchange.error).toBe(error);
   });
+
+  // Contested (may be intended design): when an error interceptor "recovers"
+  // by supplying a fallback Response (e.g. a retry that returned 500) and
+  // clearing the error, the current implementation returns the exchange
+  // WITHOUT running the response phase. The 500 fallback therefore bypasses
+  // ValidateStatusInterceptor and is surfaced as success. This test asserts
+  // the behavior that would be correct IF recovery should be re-validated.
+  // If it fails (RED), recovery is NOT re-validated — a semantic choice the
+  // maintainer must decide on.
+  it('should reject a recovered 500 fallback response through ValidateStatusInterceptor', async () => {
+    const manager = new InterceptorManager();
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
+
+    vi.spyOn(manager.request, 'intercept').mockRejectedValue(
+      new Error('network down'),
+    );
+
+    // Error interceptor recovers by supplying a 500 fallback response.
+    manager.error.use({
+      name: 'fallback-500',
+      order: 100,
+      intercept: (ex: FetchExchange) => {
+        ex.response = new Response('server error', { status: 500 });
+        ex.error = undefined;
+      },
+    });
+
+    // If recovery is re-validated, the 500 should be rejected.
+    await expect(manager.exchange(exchange)).rejects.toThrow();
+  });
 });
 
 describe('ExchangeError', () => {

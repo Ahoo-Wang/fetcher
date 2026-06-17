@@ -251,4 +251,26 @@ describe('FetchExchange', () => {
     const result = exchange.extractResult();
     expect(result).toBeInstanceOf(Promise);
   });
+
+  // BUG: if the resultExtractor throws SYNCHRONOUSLY, the cache flag
+  // `hasCachedResult` is set to true BEFORE the extractor runs, but the
+  // assignment to `cachedExtractedResult` never completes. The exchange is
+  // left in an inconsistent "cached-but-no-value" state, so the SECOND call
+  // returns `await undefined` → undefined, silently swallowing the error.
+  it('should propagate a synchronously throwing extractor on every call (not cache undefined)', async () => {
+    const boom = (): never => {
+      throw new Error('extractor exploded');
+    };
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+      resultExtractor: boom,
+    });
+
+    // First call must reject with the real error.
+    await expect(exchange.extractResult()).rejects.toThrow('extractor exploded');
+
+    // Second call must ALSO reject — NOT resolve to undefined (the bug).
+    await expect(exchange.extractResult()).rejects.toThrow('extractor exploded');
+  });
 });
