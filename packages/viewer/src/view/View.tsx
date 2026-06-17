@@ -38,6 +38,7 @@ import type { ViewChangeAction } from './';
 import { useViewState } from './';
 import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useLocale } from '../locale';
+import { format } from '../utils';
 
 /**
  * Ref interface for exposing View component imperative methods to parent components.
@@ -442,7 +443,7 @@ export function View<RecordType>({
           <span>
             {selectedCount
               ? locale.selectedCountLabel
-                ? locale.selectedCountLabel.format(selectedCount)
+                ? format(locale.selectedCountLabel, selectedCount)
                 : `已选择 ${selectedCount} 条数据`
               : ''}
           </span>
