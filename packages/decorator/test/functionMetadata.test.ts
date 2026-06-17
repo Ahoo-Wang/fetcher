@@ -585,4 +585,29 @@ describe('FunctionMetadata', () => {
     const result3 = functionMetadata.resolveExchangeInit([false]);
     expect(result3.request).toBeDefined();
   });
+
+  // BUG (minify): in production builds, terser/esbuild/swc rename method
+  // parameters (`userId` → `e`). The decorator's runtime reflection extracts
+  // the minified name, which does NOT match the path template `{userId}`.
+  // The resolved request carries the LITERAL `{userId}` placeholder in the
+  // URL and is sent silently — a production-only failure with no observable
+  // signal. The fix must surface this mismatch (e.g. a warning) so the
+  // failure is detectable.
+  it('should surface a warning when a path template placeholder has no matching path parameter (minified-name mismatch)', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // Simulate a minified reflection result: name is 'e', template expects
+    // {userId}.
+    const functionMetadata = new FunctionMetadata(
+      'getUser',
+      {},
+      { method: HttpMethod.GET, path: '/users/{userId}' },
+      new Map([[0, { type: ParameterType.PATH, name: 'e', index: 0 }]]),
+    );
+
+    functionMetadata.resolveExchangeInit(['123']);
+
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
 });
