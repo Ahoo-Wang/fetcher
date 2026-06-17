@@ -95,6 +95,36 @@ describe('validateInput', () => {
       expect(validateInput('http://192.168.1.1/spec.json')).toBe(false);
       expect(validateInput('http://172.16.0.1/spec.json')).toBe(false);
     });
+
+    it('should reject 0.0.0.0 ("this host")', () => {
+      expect(validateInput('http://0.0.0.0/spec.json')).toBe(false);
+    });
+
+    it('should reject the .localhost pseudo-TLD', () => {
+      expect(validateInput('http://myapp.localhost/spec.json')).toBe(false);
+    });
+
+    it('should reject IPv6 loopback and unspecified', () => {
+      expect(validateInput('http://[::1]/spec.json')).toBe(false);
+      expect(validateInput('http://[::]/spec.json')).toBe(false);
+    });
+
+    it('should reject IPv6 link-local and unique-local', () => {
+      expect(validateInput('http://[fe80::1]/spec.json')).toBe(false);
+      expect(validateInput('http://[fc00::1]/spec.json')).toBe(false);
+      expect(validateInput('http://[fd12:3456::1]/spec.json')).toBe(false);
+    });
+
+    it('should accept public IPv4 and IPv6 addresses', () => {
+      expect(validateInput('http://8.8.8.8/spec.json')).toBe(true);
+      expect(validateInput('http://[2606:4700:4700::1111]/spec.json')).toBe(
+        true,
+      );
+    });
+
+    it('should accept public hostnames', () => {
+      expect(validateInput('https://api.example.com/openapi.json')).toBe(true);
+    });
   });
 });
 

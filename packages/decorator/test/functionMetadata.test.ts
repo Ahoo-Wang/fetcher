@@ -610,4 +610,20 @@ describe('FunctionMetadata', () => {
     expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
   });
+
+  it('should also warn for Express-style :name placeholders with no match', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const functionMetadata = new FunctionMetadata(
+      'getUser',
+      {},
+      { method: HttpMethod.GET, path: '/users/:userId' },
+      new Map([[0, { type: ParameterType.PATH, name: 'e', index: 0 }]]),
+    );
+
+    functionMetadata.resolveExchangeInit(['123']);
+
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
 });

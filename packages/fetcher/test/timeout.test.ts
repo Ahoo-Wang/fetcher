@@ -194,4 +194,21 @@ describe('timeoutFetch', () => {
     expect(response.status).toBe(200);
     expect(await response.text()).toBe('ok');
   });
+
+  it('should reuse a caller-supplied, non-aborted AbortController', async () => {
+    const userController = new AbortController();
+    const request: FetchRequest = {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+      timeout: 100,
+      abortController: userController,
+    };
+
+    await timeoutFetch(request);
+
+    // The caller's controller must be reused (not replaced) so external abort
+    // still works.
+    expect(request.abortController).toBe(userController);
+    expect(userController.signal.aborted).toBe(false);
+  });
 });

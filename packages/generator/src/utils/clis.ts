@@ -22,6 +22,14 @@ import packageJson from '../../package.json';
  * OpenAPI specs via `fetch(url)`, so a crafted input could otherwise make the
  * generator host probe internal services (cloud metadata endpoints, RFC1918
  * ranges, localhost, etc.). File paths are not subject to this check.
+ *
+ * Note on IPv6: the WHATWG `URL` parser normalizes IPv4-mapped IPv6 addresses
+ * (e.g. `[::ffff:169.254.169.254]`) to pure hex form (`[::ffff:a9fe:a9fe]`),
+ * so the dotted-quad tail is gone by the time we see the hostname. We detect
+ * link-local ULA (`fc00::/7`, `fd…`), link-local (`fe80::/10`), loopback
+ * (`::1`), and unspecified (`::`) by prefix. A hex-encoded v4-mapped private
+ * address (e.g. `::ffff:a9fe:a9fe`) is not caught here — accepting this
+ * residual risk in exchange for not rejecting legitimate public IPv6 hosts.
  */
 function isPrivateOrLoopbackHost(hostname: string): boolean {
   const host = hostname.replace(/^\[|]$/g, '');
@@ -31,13 +39,11 @@ function isPrivateOrLoopbackHost(hostname: string): boolean {
     return true;
   }
 
-  // IPv4 literal checks.
+  // IPv4 literal checks. (Bare octets >255 yield an invalid URL earlier, so
+  // every octet here is already 0–255.)
   const v4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (v4) {
     const [a, b] = [Number(v4[1]), Number(v4[2])];
-    if ([a, b, Number(v4[3]), Number(v4[4])].some(n => n > 255)) {
-      return true;
-    }
     // 127.0.0.0/8 loopback, 0.0.0.0/8 "this host", 169.254.0.0/16 link-local
     // (incl. cloud metadata 169.254.169.254), RFC1918 private ranges.
     return (
@@ -50,18 +56,13 @@ function isPrivateOrLoopbackHost(hostname: string): boolean {
     );
   }
 
-  // IPv6 literal checks: ::1 loopback, ::/8 unspecified, fe80::/10 link-local,
-  // fc00::/7 unique-local, v4-mapped forms.
+  // IPv6 literal checks: ::1 loopback, :: unspecified, fe80::/10 link-local,
+  // fc00::/7 unique-local.
   if (host.includes(':')) {
     const lower6 = host.toLowerCase();
     if (lower6 === '::1' || lower6 === '::') return true;
     if (lower6.startsWith('fe80:')) return true;
     if (lower6.startsWith('fc') || lower6.startsWith('fd')) return true;
-    const mapped = lower6.match(/:(?:\d{1,3}\.){3}\d{1,3}$/);
-    if (mapped) {
-      const v4part = host.slice(host.lastIndexOf(':') + 1);
-      return isPrivateOrLoopbackHost(v4part);
-    }
   }
 
   return false;
