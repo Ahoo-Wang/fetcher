@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
+import { dequal } from 'dequal';
 import type { AutoExecuteCapable } from '../types';
 
 export interface QueryOptions<Q> {
@@ -134,8 +135,21 @@ export function useQueryState<Q>(
     [executeWrapper],
   );
 
+  // Track the last query value committed by the effect. Initialized to
+  // `undefined` (not to `query`) so the first mount run is NOT skipped —
+  // `dequal(query, undefined)` is always false, so the mount execution
+  // proceeds and then records the value. When only the reference changed
+  // (inline object literal) but the content is the same, the effect returns
+  // early and breaks the re-render → execute → setState → re-render loop.
+  const lastCommittedQueryRef = useRef<Q | undefined>(undefined);
+
   useEffect(() => {
     if (isValidateQuery(query)) {
+      // Only re-commit and re-execute when the query CONTENT actually changed.
+      if (dequal(query, lastCommittedQueryRef.current)) {
+        return;
+      }
+      lastCommittedQueryRef.current = query;
       queryRef.current = query;
     }
     executeWrapper();

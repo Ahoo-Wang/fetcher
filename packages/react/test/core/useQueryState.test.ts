@@ -563,4 +563,38 @@ describe('useQueryState', () => {
       expect(execute).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('reactive query prop', () => {
+    // BUG: the useEffect dependency array includes the `query` prop. When a
+    // caller passes the query as an inline object, each parent render yields a
+    // fresh reference → the effect re-fires every render → execute → setState
+    // → parent re-render → new inline query → infinite loop. Only an actual
+    // content change should re-execute.
+    it('should not re-execute when the query prop reference changes but content is identical', async () => {
+      const execute = vi.fn().mockResolvedValue(undefined);
+
+      // The inline `query: { id: '1' }` is a NEW reference each render.
+      const { rerender } = renderHook(() =>
+        useQueryState({
+          query: { id: '1' },
+          autoExecute: true,
+          execute,
+        }),
+      );
+
+      await vi.waitFor(() => {
+        expect(execute).toHaveBeenCalledTimes(1);
+      });
+
+      // Re-render with a fresh inline query object of identical content.
+      // Buggy code re-executes here (and would loop indefinitely in an app).
+      rerender();
+      rerender();
+      rerender();
+
+      await vi.waitFor(() => {
+        expect(execute).toHaveBeenCalledTimes(1);
+      });
+    });
+  });
 });
