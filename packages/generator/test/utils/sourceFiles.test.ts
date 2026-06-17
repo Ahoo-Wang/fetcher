@@ -117,6 +117,24 @@ describe('sourceFiles', () => {
       );
       expect(result).toBe(mockSourceFile);
     });
+
+    // BUG (path traversal): `filePath` derives from a (possibly remote /
+    // attacker-controlled) OpenAPI schema key. Without containment, a key like
+    // "../../etc/cron.d/pwn" lets `project.createSourceFile(..., { overwrite:
+    // true })` write or clobber files OUTSIDE outputDir.
+    it('should reject path traversal that escapes the output directory (.. segments)', () => {
+      const project = mockProject as any;
+      project.getSourceFile.mockReturnValue(undefined);
+      project.getSourceFile.mockClear();
+      project.createSourceFile.mockClear();
+
+      expect(() =>
+        getOrCreateSourceFile(project, '/output', '../../../etc/passwd'),
+      ).toThrow();
+
+      // Nothing must have been written outside the output directory.
+      expect(project.createSourceFile).not.toHaveBeenCalled();
+    });
   });
 
   describe('addImport', () => {

@@ -73,6 +73,29 @@ describe('validateInput', () => {
     expect(validateInput('/path/to/file')).toBe(true);
     expect(validateInput('relative/path')).toBe(true);
   });
+
+  // BUG (SSRF): validateInput only checks the URL protocol. A remote OpenAPI
+  // spec is fetched via `fetch(url)` with no network filtering, so cloud
+  // metadata endpoints, localhost, and private IP ranges all pass — the
+  // generator host can be tricked into probing internal services.
+  describe('SSRF prevention for remote inputs', () => {
+    it('should reject the AWS/cloud metadata endpoint', () => {
+      expect(
+        validateInput('http://169.254.169.254/latest/meta-data/'),
+      ).toBe(false);
+    });
+
+    it('should reject localhost and loopback', () => {
+      expect(validateInput('http://localhost:8080/spec.json')).toBe(false);
+      expect(validateInput('http://127.0.0.1/spec.json')).toBe(false);
+    });
+
+    it('should reject private IP ranges', () => {
+      expect(validateInput('http://10.0.0.1/spec.json')).toBe(false);
+      expect(validateInput('http://192.168.1.1/spec.json')).toBe(false);
+      expect(validateInput('http://172.16.0.1/spec.json')).toBe(false);
+    });
+  });
 });
 
 describe('generateAction', () => {
