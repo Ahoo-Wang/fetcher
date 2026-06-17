@@ -183,4 +183,47 @@ describe('AuthorizationResponseInterceptor', () => {
     expect(mockTokenStorage.remove).toHaveBeenCalled();
     expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
   });
+
+  // BUG: the interceptor retries a 401 by re-running the whole interceptor
+  // chain (exchange.fetcher.interceptors.exchange), which re-invokes THIS SAME
+  // interceptor. With no retry bound, a retried request that STILL returns 401
+  // recurses refresh indefinitely — hammering the refresh endpoint until the
+  // refresh token expires or the call stack overflows.
+  it('should not infinitely refresh when the retried request still returns 401', async () => {
+    mockTokenStorage.get = vi.fn().mockReturnValue({ token: 'current-token' });
+
+    let refreshCount = 0;
+    mockTokenRefresher.refresh = vi.fn().mockImplementation(() => {
+      refreshCount++;
+      // Safety stop: cap refresh attempts so a buggy implementation cannot
+      // hang the test runner. The fix bounds refresh to a single attempt per
+      // exchange.
+      if (refreshCount > 10) {
+        return Promise.reject(new Error('forced-stop'));
+      }
+      return Promise.resolve(`new-token-${refreshCount}`);
+    });
+
+    const exchange = {
+      response: {
+        status: ResponseCodes.UNAUTHORIZED,
+      } as Response,
+      fetcher: mockFetcher,
+      attributes: new Map(),
+    } as unknown as FetchExchange;
+
+    // Simulate the real chain: retrying re-runs response interceptors, and
+    // the retried response is STILL 401.
+    mockFetcher.interceptors.exchange = vi
+      .fn()
+      .mockImplementation(() => interceptor.intercept(exchange));
+
+    try {
+      await interceptor.intercept(exchange);
+    } catch {
+      // fixed code resolves or rejects once — either is fine; the count is
+      // what matters
+    }
+    expect(refreshCount).toBeLessThanOrEqual(1);
+  });
 });
