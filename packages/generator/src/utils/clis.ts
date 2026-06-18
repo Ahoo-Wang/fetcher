@@ -17,6 +17,29 @@ import { ConsoleLogger } from './logger';
 import packageJson from '../../package.json';
 
 /**
+ * IPv4 ranges the generator should refuse to fetch from (SSRF guard). Each
+ * entry is [firstOctet, predicate(secondOctet?, ...)] — loopback (127/8) and
+ * link-local/private ranges; 127.0.0.0/8 is intentionally EXCLUDED (allowed).
+ */
+const BLOCKED_IPV4_RANGES: ReadonlyArray<{
+  first: number;
+  rest?: (b: number, octets: number[]) => boolean;
+}> = [
+  { first: 0 }, // 0.0.0.0/8 "this host"
+  { first: 10 }, // RFC1918
+  { first: 169, rest: b => b === 254 }, // 169.254.0.0/16 link-local (cloud metadata)
+  { first: 172, rest: b => b >= 16 && b <= 31 }, // RFC1918
+  { first: 192, rest: b => b === 168 }, // RFC1918
+];
+
+function isBlockedIpv4(octets: number[]): boolean {
+  const [a, b] = octets;
+  return BLOCKED_IPV4_RANGES.some(
+    range => a === range.first && (!range.rest || range.rest(b, octets)),
+  );
+}
+
+/**
  * Returns true when `hostname` refers to a host the generator should refuse to
  * fetch a remote OpenAPI spec from. Used to block SSRF: a crafted `-i` input
  * could otherwise make the generator host probe sensitive internal endpoints
@@ -41,27 +64,19 @@ function isPrivateOrLoopbackHost(hostname: string): boolean {
   // every octet here is already 0–255.) 127.0.0.0/8 is loopback → allowed.
   const v4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (v4) {
-    const [a, b] = [Number(v4[1]), Number(v4[2])];
-    // 0.0.0.0/8 "this host", 169.254.0.0/16 link-local
-    // (incl. cloud metadata 169.254.169.254), RFC1918 private ranges.
-    return (
-      a === 0 ||
-      (a === 169 && b === 254) ||
-      a === 10 ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168)
-    );
+    return isBlockedIpv4(v4.slice(1, 5).map(Number));
   }
 
-  // IPv6: ::1 loopback → allowed. Block link-local fe80::/10 (covers
-  // fe80:: through febf::, i.e. first hextet fe80–febf) and ULA fc00::/7
-  // (fc… / fd…).
+  // IPv6: ::1 loopback → allowed. Block unspecified (::), link-local
+  // fe80::/10 (fe80::–febf::), and ULA fc00::/7 (fc…/fd…).
   if (host.includes(':')) {
     const lower6 = host.toLowerCase();
-    if (lower6 === '::') return true;
-    // fe80::/10: high 10 bits = 1111111010 → first hextet in fe80..febf.
-    if (/^fe[89ab][0-9a-f]:/.test(lower6)) return true;
-    if (lower6.startsWith('fc') || lower6.startsWith('fd')) return true;
+    return (
+      lower6 === '::' ||
+      /^fe[89ab][0-9a-f]:/.test(lower6) ||
+      lower6.startsWith('fc') ||
+      lower6.startsWith('fd')
+    );
   }
 
   return false;
