@@ -28,11 +28,6 @@ export default mergeConfig(
         exclude: [
           ...configDefaults.exclude,
           '**/**.stories.tsx',
-          //TODO exclude
-          'src/filter/panel/**',
-          'src/viewer/**',
-          'src/fetcherviewer/**',
-          'src/view/**',
         ],
       },
     },
