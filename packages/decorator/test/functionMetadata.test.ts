@@ -443,101 +443,55 @@ describe('FunctionMetadata', () => {
     });
   });
 
-  describe('processHttpParam', () => {
-    it('should not modify params when value is undefined', () => {
-      const functionMetadata = new FunctionMetadata(
+  // processHttpParam is a private implementation detail invoked from
+  // resolveExchangeInit for PATH/QUERY/HEADER parameters. The previous tests
+  // reached in via @ts-expect-error, locking the private signature. These now
+  // exercise the same branches through the public resolveExchangeInit entry
+  // point, asserting the observable request instead of the internal call.
+  describe('http param processing (via resolveExchangeInit)', () => {
+    function metadataWithParam(
+      param: Partial<ParameterMetadata> & { index: number },
+    ): FunctionMetadata {
+      return new FunctionMetadata(
         'test',
-        {},
-        { method: HttpMethod.GET },
-        new Map(),
+        { basePath: '' },
+        { method: HttpMethod.GET, path: '/' },
+        new Map([[param.index, { type: ParameterType.PATH, ...param }]]),
       );
+    }
 
-      const params: Record<string, any> = { existing: 'value' };
-      // @ts-expect-error - accessing private method for testing
-      functionMetadata.processHttpParam(
-        { name: 'test', index: 0 },
-        undefined,
-        params,
-      );
-
-      expect(params).toEqual({ existing: 'value' });
+    it('should not add a param when the argument is undefined', () => {
+      const fm = metadataWithParam({ name: 'id', index: 0 });
+      const { request } = fm.resolveExchangeInit([undefined]);
+      // pathParams should be empty (undefined value skipped).
+      expect(request.urlParams?.path).toEqual({});
     });
 
-    it('should expand object properties to params', () => {
-      const functionMetadata = new FunctionMetadata(
-        'test',
-        {},
-        { method: HttpMethod.GET },
-        new Map(),
-      );
-
-      const params: Record<string, any> = {};
-      // @ts-expect-error - accessing private method for testing
-      functionMetadata.processHttpParam(
-        { name: 'test', index: 0 },
-        { key1: 'value1', key2: 'value2' },
-        params,
-      );
-
-      expect(params).toEqual({ key1: 'value1', key2: 'value2' });
+    it('should expand a plain object argument into multiple path params', () => {
+      const fm = metadataWithParam({ name: 'filter', index: 0 });
+      const { request } = fm.resolveExchangeInit([{ a: 1, b: 2 }]);
+      expect(request.urlParams?.path).toEqual({ a: 1, b: 2 });
     });
 
-    it('should use param name when value is a primitive type', () => {
-      const functionMetadata = new FunctionMetadata(
-        'test',
-        {},
-        { method: HttpMethod.GET },
-        new Map(),
-      );
-
-      const params: Record<string, any> = {};
-      // @ts-expect-error - accessing private method for testing
-      functionMetadata.processHttpParam(
-        { name: 'customParam', index: 0 },
-        'testValue',
-        params,
-      );
-
-      expect(params).toEqual({ customParam: 'testValue' });
+    it('should bind a primitive argument to the declared param name', () => {
+      const fm = metadataWithParam({ name: 'userId', index: 0 });
+      const { request } = fm.resolveExchangeInit(['abc']);
+      expect(request.urlParams?.path).toEqual({ userId: 'abc' });
     });
 
-    it('should use param index when name is not available', () => {
-      const functionMetadata = new FunctionMetadata(
-        'test',
-        {},
-        { method: HttpMethod.GET },
-        new Map(),
-      );
-
-      const params: Record<string, any> = {};
-      // @ts-expect-error - accessing private method for testing
-      functionMetadata.processHttpParam(
-        { name: undefined, index: 2 },
-        42,
-        params,
-      );
-
-      expect(params).toEqual({ param2: 42 });
+    it('should fall back to param<index> when no name is resolvable', () => {
+      const fm = metadataWithParam({ name: undefined, index: 0 });
+      const { request } = fm.resolveExchangeInit([42]);
+      expect(request.urlParams?.path).toEqual({ param0: 42 });
     });
 
-    it('should handle array as object', () => {
-      const functionMetadata = new FunctionMetadata(
-        'test',
-        {},
-        { method: HttpMethod.GET },
-        new Map(),
-      );
-
-      const params: Record<string, any> = {};
-      // @ts-expect-error - accessing private method for testing
-      functionMetadata.processHttpParam(
-        { name: 'test', index: 0 },
-        ['item1', 'item2'],
-        params,
-      );
-
-      // Arrays are objects, so Object.entries will create entries for indices
-      expect(params).toEqual({ '0': 'item1', '1': 'item2' });
+    it('should expand an array argument into indexed path params', () => {
+      // Arrays are objects: Object.entries yields numeric-string keys. This
+      // documents current behavior (may warrant a future fix to use repeated
+      // query params instead).
+      const fm = metadataWithParam({ name: 'tags', index: 0 });
+      const { request } = fm.resolveExchangeInit([['x', 'y']]);
+      expect(request.urlParams?.path).toEqual({ '0': 'x', '1': 'y' });
     });
   });
 
