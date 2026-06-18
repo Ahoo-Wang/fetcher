@@ -11,7 +11,15 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  afterEach,
+  beforeEach,
+} from 'vitest';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { OpenAI } from '../src';
@@ -134,9 +142,14 @@ describe('OpenAI Test', () => {
   afterAll(() => server.close());
   afterEach(() => server.resetHandlers());
 
-  const openAI = new OpenAI({
-    baseURL: 'https://api.openai.com/v1',
-    apiKey: 'test-api-key',
+  // Fresh instance per test — the previous module-level shared instance
+  // violated isolation.
+  let openAI: OpenAI;
+  beforeEach(() => {
+    openAI = new OpenAI({
+      baseURL: 'https://api.openai.com/v1',
+      apiKey: 'test-api-key',
+    });
   });
 
   it('should stream chat completion', async () => {
@@ -182,5 +195,76 @@ describe('OpenAI Test', () => {
         'Hello there! How can I help you today?',
       );
     }
+  });
+
+  it('should inject the apiKey as a Bearer Authorization header', async () => {
+    let receivedAuth: string | null = null;
+    server.use(
+      http.post(
+        'https://api.openai.com/v1/chat/completions',
+        async ({ request }) => {
+          receivedAuth = request.headers.get('Authorization');
+          return HttpResponse.json({
+            id: 'x',
+            object: 'chat.completion',
+            created: 1,
+            model: 'gpt-3.5-turbo',
+            choices: [
+              {
+                index: 0,
+                message: { role: 'assistant', content: 'ok' },
+                finish_reason: 'stop',
+              },
+            ],
+            usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+          });
+        },
+      ),
+    );
+
+    await openAI.chat.completions({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: 'hi' }],
+    });
+
+    expect(receivedAuth).toBe('Bearer test-api-key');
+  });
+
+  it('should reject with an error on a 4xx response', async () => {
+    server.use(
+      http.post('https://api.openai.com/v1/chat/completions', () =>
+        HttpResponse.json(
+          { error: { message: 'Invalid API key', type: 'invalid_request_error' } },
+          { status: 401 },
+        ),
+      ),
+    );
+
+    await expect(
+      openAI.chat.completions({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: 'hi' }],
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('should consume a streaming response to completion including [DONE]', async () => {
+    const stream = (await openAI.chat.completions({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: 'Hello' }],
+      stream: true,
+    })) as any;
+
+    const events: any[] = [];
+    for await (const event of stream) {
+      events.push(event);
+    }
+
+    // All three content chunks arrive; the [DONE] marker terminates the stream
+    // (handled by the DoneDetector, not enqueued as data).
+    expect(events.length).toBe(3);
+    expect(events[0].data.choices[0].delta.content).toBe('Hello');
+    expect(events[1].data.choices[0].delta.content).toBe(' there!');
+    expect(events[2].data.choices[0].finish_reason).toBe('stop');
   });
 });
