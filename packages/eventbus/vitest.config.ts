@@ -19,6 +19,9 @@ export default mergeConfig(
   defineConfig({
     test: {
       globals: true,
+      clearMocks: true,
+      restoreMocks: true,
+      unstubGlobals: true,
       environment: 'jsdom',
       coverage: {
         exclude: [...configDefaults.exclude, '**/**.stories.tsx'],
