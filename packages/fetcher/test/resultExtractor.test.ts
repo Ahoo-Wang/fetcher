@@ -15,10 +15,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { FetchExchange, ResultExtractors } from '../src';
 import type { Fetcher } from '../src';
 import type { FetchRequest } from '../src';
+import { createMockFetcher, createMockRequest } from './helpers';
 
 describe('ResultExtractors', () => {
-  const mockFetcher = {} as Fetcher;
-  const mockRequest = {} as FetchRequest;
+  const mockFetcher = createMockFetcher();
+  const mockRequest = createMockRequest();
   const mockResponse = new Response(JSON.stringify({ data: 'test' }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },

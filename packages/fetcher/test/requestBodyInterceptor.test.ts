@@ -21,9 +21,10 @@ import {
   REQUEST_BODY_INTERCEPTOR_ORDER,
   RequestBodyInterceptor,
 } from '../src';
+import { createMockFetcher, createMockRequest } from './helpers';
 
 describe('RequestBodyInterceptor', () => {
-  const mockFetcher = {} as Fetcher;
+  const mockFetcher = createMockFetcher();
 
   afterEach(() => {
     vi.unstubAllGlobals();
