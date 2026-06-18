@@ -147,15 +147,13 @@ describe('InterceptorManager', () => {
     expect(exchange.error).toBe(error);
   });
 
-  // Contested (may be intended design): when an error interceptor "recovers"
-  // by supplying a fallback Response (e.g. a retry that returned 500) and
-  // clearing the error, the current implementation returns the exchange
-  // WITHOUT running the response phase. The 500 fallback therefore bypasses
-  // ValidateStatusInterceptor and is surfaced as success. This test asserts
-  // the behavior that would be correct IF recovery should be re-validated.
-  // If it fails (RED), recovery is NOT re-validated — a semantic choice the
-  // maintainer must decide on.
-  it('should reject a recovered 500 fallback response through ValidateStatusInterceptor', async () => {
+  // Documented contract: when an error interceptor recovers by supplying a
+  // fallback Response and clearing the error, the exchange is returned as-is
+  // WITHOUT re-running the response phase. A recovered response is trusted by
+  // contract — replaying the response chain would invoke earlier response
+  // interceptors a second time (corrupting already-consumed bodies, duplicating
+  // side effects), so recovery short-circuits even for a non-2xx fallback.
+  it('should return a recovered fallback response as-is (response phase not replayed)', async () => {
     const manager = new InterceptorManager();
     const exchange = new FetchExchange({
       fetcher: mockFetcher,
@@ -165,6 +163,7 @@ describe('InterceptorManager', () => {
     vi.spyOn(manager.request, 'intercept').mockRejectedValue(
       new Error('network down'),
     );
+    const responseInterceptSpy = vi.spyOn(manager.response, 'intercept');
 
     // Error interceptor recovers by supplying a 500 fallback response.
     manager.error.use({
@@ -176,8 +175,15 @@ describe('InterceptorManager', () => {
       },
     });
 
-    // If recovery is re-validated, the 500 should be rejected.
-    await expect(manager.exchange(exchange)).rejects.toThrow();
+    const result = await manager.exchange(exchange);
+
+    // Recovery short-circuits: the 500 fallback is returned as-is.
+    expect(result).toBe(exchange);
+    expect(result.response?.status).toBe(500);
+    // Document explicitly that response interceptors were NOT executed: the
+    // request phase threw before reaching response, and recovery does not
+    // replay the response phase.
+    expect(responseInterceptSpy).not.toHaveBeenCalled();
   });
 });
 

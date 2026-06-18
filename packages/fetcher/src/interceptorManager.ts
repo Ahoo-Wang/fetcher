@@ -200,19 +200,13 @@ export class InterceptorManager {
       fetchExchange.error = error;
       await this.error.intercept(fetchExchange);
 
-      // If error interceptors cleared the error (indicating it's been
-      // handled/fixed), re-run the response phase so any fallback/retry
-      // Response is validated (e.g. a 500 fallback must be rejected by
-      // ValidateStatusInterceptor, not surfaced as success). If the response
-      // phase throws, wrap and propagate — do NOT re-enter the error phase
-      // (avoids a recovery→validate→recovery infinite loop).
+      // If error interceptors cleared the error, the exchange is considered
+      // recovered and returned as-is. The response phase is NOT re-run:
+      // replaying the whole response chain would invoke earlier response
+      // interceptors a second time, which can corrupt or reject otherwise
+      // recovered responses (e.g. body-reading interceptors fail on an
+      // already-consumed body). A recovered response is trusted by contract.
       if (!fetchExchange.hasError()) {
-        try {
-          await this.response.intercept(fetchExchange);
-        } catch (responseError: any) {
-          fetchExchange.error = responseError;
-          throw new ExchangeError(fetchExchange);
-        }
         return fetchExchange;
       }
 
