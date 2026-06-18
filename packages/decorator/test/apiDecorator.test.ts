@@ -30,10 +30,6 @@ afterAll(() => {
   global.fetch = originalFetch;
 });
 
-afterAll(() => {
-  global.fetch = originalFetch;
-});
-
 // Mock class for testing decorators
 @api('/api/v1', {
   headers: { 'X-Default': 'value' },
@@ -507,18 +503,20 @@ describe('apiDecorator', () => {
   });
 
   describe('advanced metadata merging', () => {
-    it('should merge complex metadata correctly', () => {
-      const testApi: any = new TestApi();
+    // Helper: read the merged api metadata that buildRequestExecutor baked
+    // into the RequestExecutor. Previously these tests only asserted
+    // toBeInstanceOf(RequestExecutor) + a comment — verifying nothing.
+    function mergedApi(executor: RequestExecutor): ApiMetadata {
+      return (executor as any).metadata.api as ApiMetadata;
+    }
 
-      // Set complex instance metadata
+    it('should let instance apiMetadata override function apiMetadata', () => {
+      const testApi: any = new TestApi();
       testApi.apiMetadata = {
         basePath: '/instance',
         headers: { 'X-Instance': 'value' },
         timeout: 2000,
         fetcher: 'instanceFetcher',
-        resultExtractor: JsonResultExtractor,
-        attributes: { instanceAttr: 'value' },
-        urlParams: { instanceParam: 'value' },
       };
 
       const functionMetadata = new FunctionMetadata(
@@ -528,32 +526,32 @@ describe('apiDecorator', () => {
           headers: { 'X-Function': 'value' },
           timeout: 5000,
           fetcher: 'functionFetcher',
-          resultExtractor: JsonResultExtractor,
-          attributes: { functionAttr: 'value' },
-          urlParams: {},
         },
         { method: HttpMethod.GET, path: '/users' },
         new Map(),
       );
 
-      const requestExecutor = buildRequestExecutor(testApi, functionMetadata);
+      const executor = buildRequestExecutor(testApi, functionMetadata);
 
-      expect(requestExecutor).toBeInstanceOf(RequestExecutor);
-      // Instance metadata should override function metadata
+      // Instance metadata wins on conflict...
+      expect(mergedApi(executor).basePath).toBe('/instance');
+      expect(mergedApi(executor).timeout).toBe(2000);
+      expect(mergedApi(executor).fetcher).toBe('instanceFetcher');
+      // ...and fully replaces (not deep-merges) headers.
+      expect(mergedApi(executor).headers).toEqual({ 'X-Instance': 'value' });
     });
 
-    it('should handle undefined metadata fields', () => {
+    it('should keep function metadata fields when instance omits them', () => {
       const testApi: any = new TestApi();
-
-      // Set partial instance metadata
       testApi.apiMetadata = {
         basePath: '/instance',
-        // Other fields undefined
+        // timeout, headers, fetcher intentionally undefined
       };
 
       const functionMetadata = new FunctionMetadata(
         'getUsers',
         {
+          basePath: '/function',
           timeout: 5000,
           headers: { 'X-Function': 'value' },
         },
@@ -561,15 +559,17 @@ describe('apiDecorator', () => {
         new Map(),
       );
 
-      const requestExecutor = buildRequestExecutor(testApi, functionMetadata);
+      const executor = buildRequestExecutor(testApi, functionMetadata);
 
-      expect(requestExecutor).toBeInstanceOf(RequestExecutor);
-      // Should merge defined fields correctly
+      expect(mergedApi(executor).basePath).toBe('/instance');
+      // Fields only on the function side survive.
+      expect(mergedApi(executor).timeout).toBe(5000);
+      expect(mergedApi(executor).headers).toEqual({ 'X-Function': 'value' });
     });
   });
 
   describe('buildRequestExecutor', () => {
-    it('should create a new request executor when none exists', () => {
+    it('should cache the executor by method name and return the same instance', () => {
       const testApi = new TestApi();
       const functionMetadata = new FunctionMetadata(
         'getUsers',
@@ -578,33 +578,14 @@ describe('apiDecorator', () => {
         new Map(),
       );
 
-      const requestExecutor = buildRequestExecutor(testApi, functionMetadata);
+      const first = buildRequestExecutor(testApi, functionMetadata);
+      const second = buildRequestExecutor(testApi, functionMetadata);
 
-      expect(requestExecutor).toBeInstanceOf(RequestExecutor);
-      // Check that it's stored for reuse
-      const requestExecutor2 = buildRequestExecutor(testApi, functionMetadata);
-      expect(requestExecutor2).toBe(requestExecutor);
+      expect(second).toBe(first);
     });
 
-    it('should reuse existing request executor', () => {
-      const testApi = new TestApi();
-      const functionMetadata = new FunctionMetadata(
-        'getUser',
-        {},
-        { method: HttpMethod.GET, path: '/users/{id}' },
-        new Map(),
-      );
-
-      const requestExecutor1 = buildRequestExecutor(testApi, functionMetadata);
-      const requestExecutor2 = buildRequestExecutor(testApi, functionMetadata);
-
-      expect(requestExecutor1).toBeInstanceOf(RequestExecutor);
-      expect(requestExecutor1).toBe(requestExecutor2);
-    });
-
-    it('should merge api metadata correctly', () => {
+    it('should merge target apiMetadata over function apiMetadata', () => {
       const testApi: any = new TestApi();
-      // Add target api metadata
       testApi.apiMetadata = {
         basePath: '/target',
         headers: { 'X-Target': 'value' },
@@ -617,16 +598,18 @@ describe('apiDecorator', () => {
         new Map(),
       );
 
-      const requestExecutor = buildRequestExecutor(testApi, functionMetadata);
+      const executor = buildRequestExecutor(testApi, functionMetadata);
 
-      expect(requestExecutor).toBeInstanceOf(RequestExecutor);
-      // Should use target metadata where it exists, and function metadata where it doesn't
-      // In this case, target metadata should take precedence
+      // Target basePath wins; function-only timeout survives.
+      expect((executor as any).metadata.api.basePath).toBe('/target');
+      expect((executor as any).metadata.api.timeout).toBe(5000);
+      expect((executor as any).metadata.api.headers).toEqual({
+        'X-Target': 'value',
+      });
     });
 
-    it('should create new requestExecutors map when none exists', () => {
+    it('should create a requestExecutors map on the target when none exists', () => {
       const testApi: any = new TestApi();
-      // Remove any existing requestExecutors
       delete testApi.requestExecutors;
 
       const functionMetadata = new FunctionMetadata(
@@ -636,11 +619,10 @@ describe('apiDecorator', () => {
         new Map(),
       );
 
-      const requestExecutor = buildRequestExecutor(testApi, functionMetadata);
+      const executor = buildRequestExecutor(testApi, functionMetadata);
 
-      expect(requestExecutor).toBeInstanceOf(RequestExecutor);
       expect(testApi.requestExecutors).toBeInstanceOf(Map);
-      expect(testApi.requestExecutors.get('newMethod')).toBe(requestExecutor);
+      expect(testApi.requestExecutors.get('newMethod')).toBe(executor);
     });
   });
 });
