@@ -38,16 +38,22 @@ export function getModelFileName(modelInfo: ModelInfo): string {
  * `../../etc/cron.d/pwn` would let `createSourceFile` write or clobber files
  * outside the output directory.
  *
+ * `fileName` is the value actually handed to ts-morph (`combineURLs(outputDir,
+ * filePath)`), so it is what gets written. We resolve THAT path (not a second
+ * join against outputDir) and verify it stays under outputDir — otherwise the
+ * checked path and the written path can diverge for relative outputDir values.
+ *
  * @throws Error if the resolved path escapes `outputDir`
  */
 function assertWithinOutputDir(outputDir: string, fileName: string): void {
   // `combineURLs` yields a URL-style path (forward slashes); normalize to the
-  // platform filesystem path before resolving, then verify containment.
+  // platform filesystem path before resolving.
   const normalized = fileName.split('/').join(sep);
   const base = resolve(outputDir);
-  const target = isAbsolute(normalized)
-    ? resolve(normalized)
-    : resolve(base, normalized);
+  // fileName already includes the outputDir prefix (it is the write target),
+  // so resolve it directly (relative to cwd, or absolute as-is) — do NOT join
+  // base again, which would double the prefix and check the wrong location.
+  const target = resolve(normalized);
   const rel = relative(base, target);
   // An empty relative path means target === base (a directory, not a file);
   // a path starting with '..' or an absolute path escapes the base.

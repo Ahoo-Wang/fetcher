@@ -53,11 +53,14 @@ function isPrivateOrLoopbackHost(hostname: string): boolean {
     );
   }
 
-  // IPv6: ::1 loopback → allowed. Block link-local fe80::/10 and ULA fc00::/7.
+  // IPv6: ::1 loopback → allowed. Block link-local fe80::/10 (covers
+  // fe80:: through febf::, i.e. first hextet fe80–febf) and ULA fc00::/7
+  // (fc… / fd…).
   if (host.includes(':')) {
     const lower6 = host.toLowerCase();
     if (lower6 === '::') return true;
-    if (lower6.startsWith('fe80:')) return true;
+    // fe80::/10: high 10 bits = 1111111010 → first hextet in fe80..febf.
+    if (/^fe[89ab][0-9a-f]:/.test(lower6)) return true;
     if (lower6.startsWith('fc') || lower6.startsWith('fd')) return true;
   }
 

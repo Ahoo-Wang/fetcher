@@ -596,5 +596,34 @@ describe('useQueryState', () => {
         expect(execute).toHaveBeenCalledTimes(1);
       });
     });
+
+    // Regression (review P2): the content-dedup early-return must not swallow
+    // a legitimate autoExecute false→true flip when the query content is
+    // unchanged. Otherwise switching autoExecute on (with the same query) did
+    // not issue a request until the query changed.
+    it('should still execute when autoExecute flips false→true with identical query content', async () => {
+      const execute = vi.fn().mockResolvedValue(undefined);
+
+      const { rerender } = renderHook(
+        ({ autoExecute }) =>
+          useQueryState({
+            query: { id: '1' },
+            autoExecute,
+            execute,
+          }),
+        { initialProps: { autoExecute: false } },
+      );
+
+      // autoExecute=false: nothing fires.
+      await vi.waitFor(() => {
+        expect(execute).not.toHaveBeenCalled();
+      });
+
+      // Flip to true with the SAME query content → must execute once.
+      rerender({ autoExecute: true });
+      await vi.waitFor(() => {
+        expect(execute).toHaveBeenCalledTimes(1);
+      });
+    });
   });
 });

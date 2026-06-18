@@ -99,7 +99,10 @@ describe('validateInput', () => {
 
     it('should reject IPv6 unspecified, link-local and unique-local', () => {
       expect(validateInput('http://[::]/spec.json')).toBe(false);
+      // fe80::/10 covers fe80::–febf::, not just fe80::.
       expect(validateInput('http://[fe80::1]/spec.json')).toBe(false);
+      expect(validateInput('http://[fe90::1]/spec.json')).toBe(false);
+      expect(validateInput('http://[febf::1]/spec.json')).toBe(false);
       expect(validateInput('http://[fc00::1]/spec.json')).toBe(false);
       expect(validateInput('http://[fd12:3456::1]/spec.json')).toBe(false);
     });
