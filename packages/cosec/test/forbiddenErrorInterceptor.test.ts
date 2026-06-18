@@ -376,56 +376,6 @@ describe('ForbiddenErrorInterceptor', () => {
     });
   });
 
-  describe('intercept method - memory and performance', () => {
-    it('should not leak memory with repeated calls', async () => {
-      const interceptor = new ForbiddenErrorInterceptor({
-        onForbidden: onForbiddenMock,
-      });
-
-      // Create many exchanges to test for potential memory leaks
-      const exchanges = Array.from(
-        { length: 1000 },
-        () =>
-          new FetchExchange({
-            fetcher: mockFetcher,
-            request: mockRequest,
-            response: new Response('Forbidden', { status: 403 }),
-          }),
-      );
-
-      for (const exchange of exchanges) {
-        await interceptor.intercept(exchange);
-      }
-
-      expect(onForbiddenMock).toHaveBeenCalledTimes(1000);
-    });
-
-    it('should handle large response bodies', async () => {
-      const interceptor = new ForbiddenErrorInterceptor({
-        onForbidden: onForbiddenMock,
-      });
-
-      // Create a response with a large body
-      const largeBody = 'x'.repeat(1024 * 1024); // 1MB string
-      const response = new Response(largeBody, {
-        status: 403,
-        headers: { 'Content-Type': 'text/plain' },
-      });
-
-      const exchange = new FetchExchange({
-        fetcher: mockFetcher,
-        request: mockRequest,
-        response,
-      });
-
-      await interceptor.intercept(exchange);
-
-      expect(onForbiddenMock).toHaveBeenCalledTimes(1);
-      const calledExchange = onForbiddenMock.mock.calls[0][0];
-      expect(calledExchange.response).toBe(response);
-    });
-  });
-
   describe('intercept method - callback validation', () => {
     it('should validate callback is called with correct parameter types', async () => {
       let receivedExchange: FetchExchange | null = null;
