@@ -146,6 +146,45 @@ describe('InterceptorManager', () => {
     await expect(manager.exchange(exchange)).rejects.toThrow(ExchangeError);
     expect(exchange.error).toBe(error);
   });
+
+  // Documented contract: when an error interceptor recovers by supplying a
+  // fallback Response and clearing the error, the exchange is returned as-is
+  // WITHOUT re-running the response phase. A recovered response is trusted by
+  // contract — replaying the response chain would invoke earlier response
+  // interceptors a second time (corrupting already-consumed bodies, duplicating
+  // side effects), so recovery short-circuits even for a non-2xx fallback.
+  it('should return a recovered fallback response as-is (response phase not replayed)', async () => {
+    const manager = new InterceptorManager();
+    const exchange = new FetchExchange({
+      fetcher: mockFetcher,
+      request: mockRequest,
+    });
+
+    vi.spyOn(manager.request, 'intercept').mockRejectedValue(
+      new Error('network down'),
+    );
+    const responseInterceptSpy = vi.spyOn(manager.response, 'intercept');
+
+    // Error interceptor recovers by supplying a 500 fallback response.
+    manager.error.use({
+      name: 'fallback-500',
+      order: 100,
+      intercept: (ex: FetchExchange) => {
+        ex.response = new Response('server error', { status: 500 });
+        ex.error = undefined;
+      },
+    });
+
+    const result = await manager.exchange(exchange);
+
+    // Recovery short-circuits: the 500 fallback is returned as-is.
+    expect(result).toBe(exchange);
+    expect(result.response?.status).toBe(500);
+    // Document explicitly that response interceptors were NOT executed: the
+    // request phase threw before reaching response, and recovery does not
+    // replay the response phase.
+    expect(responseInterceptSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe('ExchangeError', () => {

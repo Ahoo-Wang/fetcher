@@ -136,8 +136,17 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
     return await fetch(url, requestInit);
   }
 
-  // Create AbortController for fetch request cancellation
-  const controller = request.abortController ?? new AbortController();
+  // Create AbortController for fetch request cancellation.
+  // If the caller supplied an abortController, reuse it — UNLESS it has
+  // already been aborted (e.g. by a prior timeout on the same request during
+  // a retry). Reusing an aborted controller makes the retried fetch reject
+  // immediately instead of performing the request, so a retry after a timeout
+  // could never succeed.
+  const existingController = request.abortController;
+  const controller =
+    existingController && !existingController.signal.aborted
+      ? existingController
+      : new AbortController();
   request.abortController = controller;
   requestInit.signal = controller.signal;
 
@@ -155,6 +164,12 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
       }
       const error = new FetchTimeoutError(request);
       controller.abort(error);
+      // The controller and its signal were written back onto the request
+      // above. Once aborted they are permanently unusable: a retry reusing
+      // this same request object would fail immediately. Clear them so the
+      // next call builds a fresh controller.
+      request.abortController = undefined;
+      delete requestInit.signal;
       reject(error);
     }, timeout);
   });

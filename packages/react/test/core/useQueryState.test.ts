@@ -563,4 +563,67 @@ describe('useQueryState', () => {
       expect(execute).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('reactive query prop', () => {
+    // BUG: the useEffect dependency array includes the `query` prop. When a
+    // caller passes the query as an inline object, each parent render yields a
+    // fresh reference → the effect re-fires every render → execute → setState
+    // → parent re-render → new inline query → infinite loop. Only an actual
+    // content change should re-execute.
+    it('should not re-execute when the query prop reference changes but content is identical', async () => {
+      const execute = vi.fn().mockResolvedValue(undefined);
+
+      // The inline `query: { id: '1' }` is a NEW reference each render.
+      const { rerender } = renderHook(() =>
+        useQueryState({
+          query: { id: '1' },
+          autoExecute: true,
+          execute,
+        }),
+      );
+
+      await vi.waitFor(() => {
+        expect(execute).toHaveBeenCalledTimes(1);
+      });
+
+      // Re-render with a fresh inline query object of identical content.
+      // Buggy code re-executes here (and would loop indefinitely in an app).
+      rerender();
+      rerender();
+      rerender();
+
+      await vi.waitFor(() => {
+        expect(execute).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    // Regression (review P2): the content-dedup early-return must not swallow
+    // a legitimate autoExecute false→true flip when the query content is
+    // unchanged. Otherwise switching autoExecute on (with the same query) did
+    // not issue a request until the query changed.
+    it('should still execute when autoExecute flips false→true with identical query content', async () => {
+      const execute = vi.fn().mockResolvedValue(undefined);
+
+      const { rerender } = renderHook(
+        ({ autoExecute }) =>
+          useQueryState({
+            query: { id: '1' },
+            autoExecute,
+            execute,
+          }),
+        { initialProps: { autoExecute: false } },
+      );
+
+      // autoExecute=false: nothing fires.
+      await vi.waitFor(() => {
+        expect(execute).not.toHaveBeenCalled();
+      });
+
+      // Flip to true with the SAME query content → must execute once.
+      rerender({ autoExecute: true });
+      await vi.waitFor(() => {
+        expect(execute).toHaveBeenCalledTimes(1);
+      });
+    });
+  });
 });

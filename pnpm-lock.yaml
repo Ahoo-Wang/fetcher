@@ -66,6 +66,9 @@ catalogs:
     dayjs:
       specifier: ^1.11.19
       version: 1.11.20
+    dequal:
+      specifier: ^2.0.3
+      version: 2.0.3
     eslint:
       specifier: ^9.39.4
       version: 9.39.4
@@ -675,6 +678,9 @@ importers:
       '@ahoo-wang/fetcher-wow':
         specifier: workspace:^3.0.0
         version: link:../wow
+      dequal:
+        specifier: 'catalog:'
+        version: 2.0.3
       immer:
         specifier: 'catalog:'
         version: 11.1.4

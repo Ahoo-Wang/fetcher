@@ -51,6 +51,7 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "dependencies": {
+    "dequal": "catalog:",
     "immer": "catalog:"
   },
   "peerDependencies": {

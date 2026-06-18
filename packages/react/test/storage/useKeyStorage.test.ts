@@ -232,6 +232,38 @@ describe('useKeyStorage', () => {
     });
   });
 
+  describe('snapshot reference stability', () => {
+    // BUG: useSyncExternalStore requires getSnapshot to return a referentially
+    // stable value for unchanged state. When the caller passes an inline
+    // object as the default (`useKeyStorage(ks, { theme: 'light' })`), each
+    // render creates a new object reference. The current getSnapshot returns
+    // `defaultValue ?? null`, so every call yields a fresh reference →
+    // useSyncExternalStore sees a "changed" value each render → warns
+    // "getSnapshot should be cached to avoid an infinite loop" and may loop.
+    it('should return a referentially stable snapshot for an inline object default value', () => {
+      const objectStorage = new KeyStorage<{ theme: string }>({
+        key: 'object-default',
+        storage: storage,
+      });
+
+      // A brand-new `{ theme: 'light' }` literal is created on every render,
+      // mirroring the real-world call site.
+      const { result, rerender } = renderHook(() =>
+        useKeyStorage(objectStorage, { theme: 'light' }),
+      );
+
+      const first = result.current[0];
+
+      rerender();
+      rerender();
+
+      // Unchanged logical state → same reference (Object.is).
+      expect(result.current[0]).toBe(first);
+
+      objectStorage.destroy();
+    });
+  });
+
   describe('function stability', () => {
     it('should return stable setter function reference', () => {
       const { result, rerender } = renderHook(() => useKeyStorage(keyStorage));

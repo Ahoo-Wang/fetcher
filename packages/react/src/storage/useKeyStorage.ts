@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
+import { dequal } from 'dequal';
 import type { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { nameGenerator } from '@ahoo-wang/fetcher-eventbus';
 
@@ -111,6 +112,16 @@ export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
   defaultValue?: T,
 ): [T | null, (value: T) => void, () => void] {
+  // Cache of the last snapshot returned by getSnapshot. useSyncExternalStore
+  // requires getSnapshot to return a referentially-stable value for unchanged
+  // logical state, otherwise React warns "getSnapshot should be cached to
+  // avoid an infinite loop". KeyStorage.get() returns a stable reference on
+  // cache hits, but the inline defaultValue fallback is a fresh object each
+  // render (e.g. `useKeyStorage(ks, { theme: 'light' })`). We capture the
+  // snapshot once and only replace it when the content actually changes (deep
+  // equality via dequal), so Object.is stays stable across renders.
+  const snapshotRef = useRef<T | null | undefined>(undefined);
+
   // Create subscription function for useSyncExternalStore
   // This function returns an unsubscribe function that will be called on cleanup
   const subscribe = useCallback(
@@ -125,11 +136,20 @@ export function useKeyStorage<T>(
 
   // Create snapshot function that returns current storage state
   // This function is called by useSyncExternalStore to get the current value
-  const getSnapshot = useCallback(() => {
+  const getSnapshot = useCallback((): T | null => {
     const storedValue = keyStorage.get();
-    // Return stored value if it exists, otherwise return default value or null
-    return storedValue !== null ? storedValue : (defaultValue ?? null);
-  }, [keyStorage, defaultValue]); // Recreate snapshot when dependencies change
+    const current =
+      storedValue !== null ? storedValue : (defaultValue ?? null);
+
+    // First call, or a genuine content change: adopt the new reference.
+    // dequal also handles primitives (via ===), so the cached branch below is
+    // safe for all value types.
+    if (snapshotRef.current === undefined || !dequal(current, snapshotRef.current)) {
+      snapshotRef.current = current;
+    }
+    // Return the (possibly cached, stable) reference.
+    return snapshotRef.current as T | null;
+  }, [keyStorage, defaultValue]);
 
   // Use React's useSyncExternalStore for reactive external store connection
   // This ensures proper subscription management and SSR compatibility

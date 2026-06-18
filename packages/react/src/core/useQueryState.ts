@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
+import { dequal } from 'dequal';
 import type { AutoExecuteCapable } from '../types';
 
 export interface QueryOptions<Q> {
@@ -134,8 +135,32 @@ export function useQueryState<Q>(
     [executeWrapper],
   );
 
+  // Track the last query value committed by the effect. Initialized to
+  // `undefined` (not to `query`) so the first mount run is NOT skipped —
+  // `dequal(query, undefined)` is always false, so the mount execution
+  // proceeds and then records the value.
+  const lastCommittedQueryRef = useRef<Q | undefined>(undefined);
+  // Track the executeWrapper identity seen on the previous run. The effect
+  // re-fires for two distinct reasons: (a) the `query` reference changed, or
+  // (b) `executeWrapper` changed (because `autoExecute` or `execute` changed).
+  // The dedup below must ONLY suppress case (a) — a bare inline-object
+  // reference change with identical content — so that a legitimate
+  // autoExecute false→true flip (case b) still issues a request even when the
+  // query content is unchanged.
+  const lastExecuteWrapperRef = useRef(executeWrapper);
+
   useEffect(() => {
+    const configChanged = lastExecuteWrapperRef.current !== executeWrapper;
+    lastExecuteWrapperRef.current = executeWrapper;
+
     if (isValidateQuery(query)) {
+      // Suppress only a pure query-reference change (identical content) AND
+      // not a config change — otherwise an autoExecute/execute flip would be
+      // swallowed when the query happens to be unchanged.
+      if (!configChanged && dequal(query, lastCommittedQueryRef.current)) {
+        return;
+      }
+      lastCommittedQueryRef.current = query;
       queryRef.current = query;
     }
     executeWrapper();

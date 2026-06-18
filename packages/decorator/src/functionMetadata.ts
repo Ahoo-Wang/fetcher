@@ -35,6 +35,60 @@ import { ParameterType } from './parameterDecorator';
 import { EndpointReturnType } from './endpointReturnTypeCapable';
 
 /**
+ * RFC 6570 `{name}` path-template placeholders, e.g. `{userId}` in
+ * `/users/{userId}`.
+ */
+const RFC6570_PLACEHOLDER = /\{([^}]+)\}/g;
+/**
+ * Express-style `:name` path placeholders, e.g. `:userId` in `/users/:userId`.
+ */
+const EXPRESS_PLACEHOLDER = /:([A-Za-z_$][\w$]*)/g;
+
+/**
+ * Warns when a path template contains a placeholder that has no matching key
+ * in the resolved `pathParams`.
+ *
+ * Production minifiers rename method parameters (`userId` → `e`); the runtime
+ * reflection that fills `pathParams` then yields a minified name that does not
+ * match the template placeholder, so the request goes out with the literal
+ * `{userId}` still embedded in the URL — a silent, production-only failure.
+ * This surfaces the mismatch as a console warning so it is observable. The
+ * fix for end users is to pass the name explicitly, e.g. `@path('userId')`.
+ *
+ * Advisory only; never throws or alters the request.
+ */
+function warnUnboundPathPlaceholders(
+  templatePath: string,
+  pathParams: Record<string, unknown>,
+): void {
+  if (!templatePath) return;
+
+  const placeholders = new Set<string>();
+  let match: RegExpExecArray | null;
+  RFC6570_PLACEHOLDER.lastIndex = 0;
+  while ((match = RFC6570_PLACEHOLDER.exec(templatePath)) !== null) {
+    placeholders.add(match[1]);
+  }
+  EXPRESS_PLACEHOLDER.lastIndex = 0;
+  while ((match = EXPRESS_PLACEHOLDER.exec(templatePath)) !== null) {
+    placeholders.add(match[1]);
+  }
+
+  if (placeholders.size === 0) return;
+
+  const unbound = [...placeholders].filter(name => !(name in pathParams));
+  if (unbound.length > 0) {
+    console.warn(
+      `[fetcher-decorator] Path template "${templatePath}" has placeholder(s) ` +
+        `${unbound.map(n => `{${n}}`).join(', ')} with no matching path parameter. ` +
+        `The URL will be sent with the literal placeholder unresolved. ` +
+        `This usually means the parameter name was changed by a minifier; ` +
+        `pass the name explicitly, e.g. @path('${unbound[0]}').`,
+    );
+  }
+}
+
+/**
  * Metadata container for a function with HTTP endpoint decorators.
  *
  * Encapsulates all the metadata needed to execute an HTTP request
@@ -296,6 +350,13 @@ export class FunctionMetadata implements NamedCapable {
     ) as any;
     const parameterPath = parameterRequest.path;
     mergedRequest.url = this.resolvePath(parameterPath);
+
+    // Minify safety: surface a warning when a path template placeholder has no
+    // matching path parameter (e.g. parameter renamed to a minified single
+    // letter in production builds). See warnUnboundPathPlaceholders.
+    const templatePath = parameterPath || this.endpoint.path || '';
+    warnUnboundPathPlaceholders(templatePath, pathParams);
+
     return {
       request: mergedRequest,
       attributes,

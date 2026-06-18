@@ -25,6 +25,7 @@ catalog:
   babel-plugin-transform-typescript-metadata: ^0.3.2
   commander: ^14.0.3
   dayjs: ^1.11.19
+  dequal: ^2.0.3
   eslint: ^9.39.4
   eslint-plugin-react-compiler: ^19.1.0-rc.2
   eslint-plugin-react-hooks: ^7.0.1

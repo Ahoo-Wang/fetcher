@@ -157,4 +157,58 @@ describe('timeoutFetch', () => {
       request: request,
     });
   });
+
+  // BUG: after a timeout, timeoutFetch writes the (now permanently aborted)
+  // AbortController back onto `request.abortController` and its signal onto
+  // `request` (RequestInit). A retry that reuses the SAME request object (the
+  // standard error-interceptor retry pattern) then hits an already-aborted
+  // controller/signal: in a real browser the retried fetch rejects
+  // immediately (AbortError) instead of performing the retry. Retries are
+  // impossible after any timeout.
+  it('should not pollute the request with an aborted controller after a timeout (retry must still work)', async () => {
+    const request: FetchRequest = {
+      url: 'https://api.example.com/retry',
+      method: 'GET',
+      timeout: 100,
+    };
+
+    // First attempt: slow endpoint → times out.
+    server.use(
+      http.get('https://api.example.com/retry', async () => {
+        await delay(150);
+        return HttpResponse.text('slow');
+      }),
+    );
+    await expect(timeoutFetch(request)).rejects.toThrow(FetchTimeoutError);
+
+    // Retry: replace the slow handler with a fast one for the same URL.
+    server.resetHandlers();
+    server.use(
+      http.get('https://api.example.com/retry', () =>
+        HttpResponse.text('ok'),
+      ),
+    );
+    // A retry reusing the same request object must succeed — NOT fail due to
+    // a controller/signal that was polluted by the prior timeout.
+    const response = await timeoutFetch(request);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('ok');
+  });
+
+  it('should reuse a caller-supplied, non-aborted AbortController', async () => {
+    const userController = new AbortController();
+    const request: FetchRequest = {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+      timeout: 100,
+      abortController: userController,
+    };
+
+    await timeoutFetch(request);
+
+    // The caller's controller must be reused (not replaced) so external abort
+    // still works.
+    expect(request.abortController).toBe(userController);
+    expect(userController.signal.aborted).toBe(false);
+  });
 });

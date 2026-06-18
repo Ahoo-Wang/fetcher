@@ -395,3 +395,21 @@ describe('mapToTableRecord', () => {
     expect(result[999]).toEqual({ id: 1000, name: 'User 1000', key: 999 });
   });
 });
+
+describe('format (no String.prototype pollution)', () => {
+  // BUG: the library attaches `format` to `String.prototype` as a global side
+  // effect on import. That pollutes every host that imports the library and
+  // can clash with other `String.format` polyfills. A library must expose
+  // `format` as a standalone export and must NOT mutate built-in prototypes.
+  it('should export format as a standalone function', async () => {
+    const { format } = await import('../src/utils');
+    expect(typeof format).toBe('function');
+    expect(format('Hello %@', 'world')).toBe('Hello world');
+  });
+
+  it('must NOT mutate String.prototype (no global prototype pollution)', async () => {
+    await import('../src/utils');
+    expect(typeof (String.prototype as any).format).toBe('undefined');
+    expect('anything'.format).toBeUndefined();
+  });
+});

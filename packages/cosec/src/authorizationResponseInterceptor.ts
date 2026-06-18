@@ -30,6 +30,21 @@ export const AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER =
   Number.MIN_SAFE_INTEGER + 1000;
 
 /**
+ * Maximum number of times a single exchange may be refreshed and retried on a
+ * 401 response. Retry re-runs the entire interceptor chain (including this
+ * interceptor), so without a bound a retried request that still returns 401
+ * would recurse refresh indefinitely.
+ */
+export const AUTHORIZATION_RESPONSE_MAX_RETRY = 1;
+
+/**
+ * Attribute key storing how many times an exchange has been refreshed and
+ * retried, used to bound the refresh-retry loop.
+ */
+const AUTHORIZATION_RETRY_COUNT_ATTRIBUTE =
+  'AuthorizationResponseRetryCount';
+
+/**
  * CoSecResponseInterceptor is responsible for handling unauthorized responses (401)
  * by attempting to refresh the authentication token and retrying the original request.
  *
@@ -68,6 +83,21 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
     if (!this.options.tokenManager.isRefreshable) {
       return;
     }
+
+    // Guard against infinite refresh-retry loops: retrying re-runs the whole
+    // interceptor chain (including this interceptor), so a retried request
+    // that still returns 401 would otherwise recurse refresh until the refresh
+    // token expires or the call stack overflows.
+    const attributes = exchange.attributes ?? new Map<string, unknown>();
+    const retryCount =
+      (attributes.get(AUTHORIZATION_RETRY_COUNT_ATTRIBUTE) as
+        | number
+        | undefined) ?? 0;
+    if (retryCount >= AUTHORIZATION_RESPONSE_MAX_RETRY) {
+      return;
+    }
+    attributes.set(AUTHORIZATION_RETRY_COUNT_ATTRIBUTE, retryCount + 1);
+
     try {
       await this.options.tokenManager.refresh();
       // Retry the original request with the new token
