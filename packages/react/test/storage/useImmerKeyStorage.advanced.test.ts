@@ -229,6 +229,14 @@ describe('useImmerKeyStorage — edge cases', () => {
     await waitFor(() => {
       expect(result.current[0]).toEqual({});
     });
+    act(() => {
+      result.current[1](draft => {
+        if (draft) (draft as any).newProp = 'value';
+      });
+    });
+    await waitFor(() => {
+      expect(result.current[0]).toEqual({ newProp: 'value' });
+    });
     emptyStorage.destroy();
   });
 
@@ -279,6 +287,7 @@ describe('useImmerKeyStorage — edge cases', () => {
     });
     await waitFor(() => {
       expect(result.current[0]!.data).toBe('test');
+      expect(typeof result.current[0]!.callback).toBe('function');
       expect(result.current[0]!.callback()).toBe('callback result');
     });
     act(() => {
@@ -288,6 +297,7 @@ describe('useImmerKeyStorage — edge cases', () => {
     });
     await waitFor(() => {
       expect(result.current[0]!.data).toBe('updated');
+      expect(result.current[0]!.callback()).toBe('callback result');
     });
     functionStorage.destroy();
   });
@@ -316,6 +326,7 @@ describe('useImmerKeyStorage — edge cases', () => {
     });
     await waitFor(() => {
       expect(result.current[0]!.timestamp.getTime()).toBe(now.getTime() + 1000);
+      expect(result.current[0]!.data).toBe('updated');
     });
     dateStorage.destroy();
   });
