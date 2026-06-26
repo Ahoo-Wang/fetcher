@@ -8,7 +8,7 @@ catalog:
   '@babel/plugin-proposal-class-properties': ^7.18.6
   '@babel/plugin-proposal-decorators': ^7.29.0
   '@babel/plugin-transform-class-static-block': ^7.28.6
-  '@eslint/js': ^9.39.4
+  '@eslint/js': ^10.0.1
   '@rolldown/plugin-babel': ^0.2.3
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/react': ^16.3.2
@@ -26,7 +26,7 @@ catalog:
   commander: ^14.0.3
   dayjs: ^1.11.19
   dequal: ^2.0.3
-  eslint: ^9.39.4
+  eslint: ^10.6.0
   eslint-plugin-react-compiler: ^19.1.0-rc.2
   eslint-plugin-react-hooks: ^7.0.1
   globals: ^17.6.0
