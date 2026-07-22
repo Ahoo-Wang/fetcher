@@ -86,7 +86,7 @@
     "eslint-plugin-react-hooks": "catalog:",
     "globals": "catalog:",
     "jsdom": "catalog:",
-    "less": "^4.6.4",
+    "less": "^4.6.6",
     "prettier": "catalog:",
     "react-compiler-runtime": "catalog:",
     "typescript": "catalog:",
