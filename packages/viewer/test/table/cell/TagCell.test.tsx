@@ -247,7 +247,9 @@ describe('TagCell Component', () => {
       };
 
       render(<TagCell {...props} />);
-      const closeButton = screen.getByRole('img', { hidden: true });
+      // Ant Design renders the tag close icon with role="img" (v6.3.5) or
+      // role="button" (v6.3.7+). Query by its stable accessible name instead.
+      const closeButton = screen.getByLabelText('Close');
       expect(closeButton).toBeInTheDocument();
     });
 
@@ -308,7 +310,9 @@ describe('TagCell Component', () => {
       expect(tag).toHaveClass('multi-class');
       expect(tag).toHaveAttribute('title', 'Tooltip text');
 
-      const closeButton = screen.getByRole('img', { hidden: true });
+      // Ant Design renders the tag close icon with role="img" (v6.3.5) or
+      // role="button" (v6.3.7+). Query by its stable accessible name instead.
+      const closeButton = screen.getByLabelText('Close');
       expect(closeButton).toBeInTheDocument();
     });
 
@@ -587,7 +591,9 @@ describe('TagCell Component', () => {
       };
 
       render(<TagCell {...props} />);
-      const closeButton = screen.getByRole('img', { hidden: true });
+      // Ant Design renders the tag close icon with role="img" (v6.3.5) or
+      // role="button" (v6.3.7+). Query by its stable accessible name instead.
+      const closeButton = screen.getByLabelText('Close');
       expect(closeButton).toBeInTheDocument();
       // The close button should have proper accessibility attributes
       expect(closeButton).toHaveAttribute('aria-label', 'Close');
