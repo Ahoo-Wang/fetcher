@@ -351,7 +351,36 @@ const deviceId = deviceStorage.getOrCreate();
 | `CoSecJwtPayload` | CoSec 扩展的 JWT 载荷，包含 tenantId、roles、policies |
 | `AuthorizeResults` | 授权结果常量（`ALLOW`、`EXPLICIT_DENY`、`IMPLICIT_DENY` 等） |
 | `SpaceIdProvider` | 多租户空间解析接口 |
-| `NoneSpaceIdProvider` | 空操作的空间提供者 |
+| `DefaultSpaceIdProvider` | 基于谓词和存储的空间提供者，适用于多租户应用 |
+| `NoneSpaceIdProvider` | 空操作的空间提供者（默认） |
+
+## 多租户空间解析
+
+对于多租户应用，`DefaultSpaceIdProvider` 通过谓词确定哪些请求需要空间范围控制，并从持久化存储中解析空间 ID：
+
+```typescript
+import { CoSecConfigurer, DefaultSpaceIdProvider, SpaceIdStorage } from '@ahoo-wang/fetcher-cosec';
+
+const cosecConfigurer = new CoSecConfigurer({
+  appId: 'my-app',                       // 必填
+  tokenRefresher: {                      // TokenRefresher 对象，而非裸函数
+    async refresh(compositeToken) {
+      // 发送刷新请求，返回新的 JwtCompositeToken
+      return refreshedToken;
+    },
+  },
+  spaceIdProvider: new DefaultSpaceIdProvider({
+    // 仅 /api/ 请求会被空间范围控制
+    spacedResourcePredicate: {
+      test: (exchange) => exchange.request.url.includes('/api/'),
+    },
+    // SpaceIdStorage 持久化当前租户的空间 ID
+    spaceIdStorage: new SpaceIdStorage(),
+  }),
+});
+```
+
+当谓词匹配时，`CoSecRequestInterceptor` 会自动注入 `CoSec-Space-Id` 头。
 
 ## 交叉引用
 

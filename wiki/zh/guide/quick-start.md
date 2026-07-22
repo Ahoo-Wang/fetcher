@@ -390,22 +390,18 @@ const fetcher = new Fetcher({
   },
 });
 
-// 使用 eventstream 包中的 EventStreamResultExtractor
-import { EventStreamResultExtractor } from '@ahoo-wang/fetcher-eventstream';
+// 使用 CompletionStreamResultExtractor 实现类型安全的 JSON 流式传输，自动处理 [DONE] 终止信号
+import { CompletionStreamResultExtractor } from '@ahoo-wang/fetcher-openai';
 
-const response = await fetcher.fetch('/chat/completions', {
+// resultExtractor 直接返回 JsonServerSentEventStream<ChatResponse>
+const jsonStream = await fetcher.fetch('/chat/completions', {
   method: 'POST',
   body: {
     model: 'gpt-4',
     messages: [{ role: 'user', content: 'Hello!' }],
     stream: true,
   },
-}, { resultExtractor: EventStreamResultExtractor });
-
-// 消费 JSON 事件流
-const jsonStream = response.jsonEventStream<{ choices: { delta: { content?: string } }[] }>(
-  (event) => event.data === '[DONE]'  // 遇到 [DONE] 时终止
-);
+}, { resultExtractor: CompletionStreamResultExtractor });
 
 for await (const event of jsonStream) {
   const content = event.data.choices[0]?.delta?.content;
@@ -424,6 +420,32 @@ for await (const event of jsonStream) {
 | `jsonEventStream<T>()` | `JsonServerSentEventStream<T> \| null` | 类型化的 JSON SSE 流 |
 | `requiredJsonEventStream<T>()` | `JsonServerSentEventStream<T>` | 类型化的 JSON SSE，不可用时抛出异常 |
 | `isEventStream` | `boolean` | 检查响应是否为 `text/event-stream` |
+
+## 取消请求
+
+每个请求都支持通过原生 `AbortController` 进行取消。在请求选项中传入 `abortController` 即可获得取消的手动控制：
+
+```typescript
+const controller = new AbortController();
+
+// 发起一个耗时请求
+const dataPromise = fetcher.get('/slow-endpoint', {
+  abortController: controller,
+});
+
+// 稍后取消（例如用户离开了页面，或触发了超时）
+controller.abort();
+
+try {
+  await dataPromise;
+} catch (error) {
+  console.log(error.name); // 'AbortError'
+}
+```
+
+::: tip 重试安全
+如果你提供了自定义的 `abortController` 且请求超时，Fetcher 会清除请求中的控制器并删除 `signal`——因此后续重试会自动获得新的 `AbortController`。你无需在重试之间重新创建控制器。
+:::
 
 ## 使用命名 Fetcher 注册表
 

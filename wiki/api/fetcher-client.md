@@ -30,7 +30,7 @@ Configuration interface for creating a Fetcher instance.
 | `baseURL` | `string` | `''` | Base URL prepended to all request URLs |
 | `headers` | `RequestHeaders` | `{ 'Content-Type': 'application/json' }` | Default headers for all requests |
 | `timeout` | `number` | `undefined` | Default timeout in milliseconds |
-| `urlTemplateStyle` | `UrlTemplateStyle` | `UrlTemplateStyle.Path` | Style for URL template parameter interpolation |
+| `urlTemplateStyle` | `UrlTemplateStyle` | `UrlTemplateStyle.UriTemplate` | Style for URL template parameter interpolation |
 | `interceptors` | `InterceptorManager` | `new InterceptorManager()` | Custom interceptor manager |
 | `validateStatus` | `ValidateStatus` | `status >= 200 && status < 300` | Response status validation function |
 

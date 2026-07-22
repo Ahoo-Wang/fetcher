@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-viewer build
 pnpm --filter @ahoo-wang/fetcher-viewer test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-viewer vitest run src/table/ViewTable.test.tsx
+pnpm --filter @ahoo-wang/fetcher-viewer vitest run test/ViewTable.test.tsx
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-viewer lint
@@ -25,7 +25,7 @@ pnpm --filter @ahoo-wang/fetcher-viewer clean
 
 - Vitest with `globals: true` and `@vitest/coverage-v8`
 - **jsdom environment** with `test/setup.ts`
-- Test files: `*.test.tsx` alongside source files
+- Test files: `*.test.tsx` in a `test/` directory at the package root (mirroring `src/`)
 - Run with `--coverage` flag by default
 
 ## Project Structure

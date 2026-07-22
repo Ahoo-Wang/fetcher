@@ -156,7 +156,7 @@ packages/fetcher/
     fetcherError.test.ts
 ```
 
-测试位于包根目录下的 `test/` 目录中，镜像 `src/` 目录结构。部分包（如 `viewer`）将测试放在源文件旁边。
+测试位于包根目录下的 `test/` 目录中，镜像 `src/` 目录结构。
 
 ### 结构
 

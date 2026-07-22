@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-decorator build
 pnpm --filter @ahoo-wang/fetcher-decorator test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-decorator vitest run src/apiDecorator.test.ts
+pnpm --filter @ahoo-wang/fetcher-decorator vitest run test/apiDecorator.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-decorator lint
@@ -24,7 +24,7 @@ pnpm --filter @ahoo-wang/fetcher-decorator clean
 ## Testing
 
 - Vitest with `globals: true` and `@vitest/coverage-v8`
-- Test files: `*.test.ts` alongside source files
+- Test files: `*.test.ts` in a `test/` directory at the package root (mirroring `src/`)
 - Run with `--coverage` flag by default
 
 ## Project Structure

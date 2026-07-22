@@ -554,7 +554,7 @@ The test command for any package is:
 pnpm --filter @ahoo-wang/<package-name> test
 ```
 
-Vitest globals are enabled (`describe`, `it`, `expect`, `vi` available without import). Test files follow `*.test.ts` / `*.test.tsx` naming and live alongside source files.
+Vitest globals are enabled (`describe`, `it`, `expect`, `vi` available without import). Test files follow `*.test.ts` / `*.test.tsx` naming and live in a `test/` directory at the package root (mirroring the `src/` structure).
 
 ---
 

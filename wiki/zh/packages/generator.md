@@ -159,6 +159,55 @@ autonumber
 
 来源: [packages/generator/src/aggregate/aggregateResolver.ts:52-289](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/aggregateResolver.ts#L52-L289)
 
+### OpenAPI 规范约定
+
+为使生成器正确识别 Wow 模式，你的 OpenAPI 规范必须遵循以下约定：
+
+#### operationId 后缀
+
+生成器通过 `operationId` 后缀识别操作类型：
+
+| 操作类型 | 必需后缀 | 生成的客户端 |
+|---------|---------|------------|
+| **状态快照** | `.snapshot_state.single` | `SnapshotQueryClient` |
+| **事件查询** | `.event.list_query` | `EventStreamQueryClient` |
+| **计数查询** | `.snapshot.count` | `QueryClientFactory`（字段 schema） |
+| **命令** | （无需后缀） | `CommandClient` |
+
+```yaml
+# 示例：shop.cart 聚合操作
+paths:
+  /cart/{ownerId}/snapshot_state/single:
+    get:
+      operationId: shop.cart.snapshot_state.single  # 三段式：context.aggregate.suffix
+      tags: [shop.cart]                              # 标签必须是 context.aggregate
+  /cart/{ownerId}/event/list_query:
+    get:
+      operationId: shop.cart.event.list_query
+      tags: [shop.cart]
+  /cart/{ownerId}/{aggregateId}/snapshot/count:
+    get:
+      operationId: shop.cart.snapshot.count
+      tags: [shop.cart]
+  /cart/{ownerId}/{aggregateId}/{commandName}:
+    post:
+      operationId: shop.cart.add_item               # 三段式：context.aggregate.command
+      tags: [shop.cart]
+      responses:
+        '200':
+          $ref: '#/components/responses/wow.CommandOk'  # 响应级别的 $ref，而非 schema 级别
+```
+
+#### 标签命名
+
+标签使用 `{context}.{aggregate}` 格式定义限界上下文聚合。共享同一标签的所有操作属于同一聚合，并被分组到单个客户端类中。
+
+#### 保留 Schema
+
+- `wow.` 前缀的 schema（如 `wow.CommandOk`、`wow.CommandResult`）保留给内部框架类型——生成器会特殊处理它们，不会为其生成客户端模型。
+
+来源: [packages/generator/README.md#operation-patterns](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/README.md#operation-patterns)
+
 ### 步骤 3 -- 生成模型
 
 `ModelGenerator` 遍历所有 OpenAPI 组件模式并生成 TypeScript 类型。它会过滤掉 Wow 框架内部模式（以 `wow.` 为前缀）以及聚合生成的后缀类型。

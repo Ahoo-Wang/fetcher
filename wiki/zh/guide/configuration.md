@@ -20,6 +20,23 @@ description: Fetcher 完整配置参考。涵盖 FetcherOptions、baseURL、time
 | `interceptors` | `InterceptorManager` | `new InterceptorManager(validateStatus)` | 自定义拦截器管理器（覆盖默认值） |
 | `validateStatus` | `(status: number) => boolean` | `status >= 200 && status < 300` | 响应状态验证函数 |
 
+::: warning 使用自定义 InterceptorManager 时 validateStatus 会被忽略
+如果你提供了自定义的 `interceptors` 管理器，`validateStatus` 选项**不会传递**给它——你必须通过构造函数来配置验证：
+
+```typescript
+import { InterceptorManager } from '@ahoo-wang/fetcher';
+
+// 将 validateStatus 传递给 InterceptorManager 构造函数，
+// 它会使用你的自定义函数注册一个 ValidateStatusInterceptor
+const interceptors = new InterceptorManager((status) => status < 500);
+
+const fetcher = new Fetcher({
+  interceptors,
+  // 这里的 validateStatus 会被忽略——请在上面的构造函数中配置
+});
+```
+:::
+
 ```typescript
 import { Fetcher, InterceptorManager } from '@ahoo-wang/fetcher';
 import { UrlTemplateStyle } from '@ahoo-wang/fetcher';
@@ -128,9 +145,10 @@ await fetcher.get('/protected', {
   },
 });
 
-// 为特定请求覆盖 Content-Type
+// 上传 FormData —— 切勿手动设置 Content-Type；
+// RequestBodyInterceptor 会自动检测 FormData 并移除调用方提供的
+// Content-Type，以便浏览器能设置正确的 multipart 边界。
 await fetcher.post('/upload', {
-  headers: { 'Content-Type': 'multipart/form-data' },
   body: formData,
 });
 ```

@@ -279,7 +279,7 @@ fetcher.interceptors.error.use(retryInterceptor);
 
 Handles URL composition with path parameter interpolation and query string generation. Supports two template styles:
 
-- **`UrlTemplateStyle.Path`**: Express-style `:id` parameters
+- **`UrlTemplateStyle.Express`**: Express-style `:id` parameters
 - **`UrlTemplateStyle.UriTemplate`**: RFC 6570 `{id}` parameters
 
 ```typescript
@@ -297,7 +297,7 @@ const url1 = builder.build('/users/{id}/posts/{postId}', {
 // Express style
 const expressBuilder = new UrlBuilder(
   'https://api.example.com',
-  UrlTemplateStyle.Path,
+  UrlTemplateStyle.Express,
 );
 const url2 = expressBuilder.build('/users/:id', { path: { id: 789 } });
 // => https://api.example.com/users/789

@@ -279,7 +279,7 @@ fetcher.interceptors.error.use(retryInterceptor);
 
 处理 URL 组合，包括路径参数插值和查询字符串生成。支持两种模板风格：
 
-- **`UrlTemplateStyle.Path`**：Express 风格的 `:id` 参数
+- **`UrlTemplateStyle.Express`**：Express 风格的 `:id` 参数
 - **`UrlTemplateStyle.UriTemplate`**：RFC 6570 的 `{id}` 参数
 
 ```typescript
@@ -297,7 +297,7 @@ const url1 = builder.build('/users/{id}/posts/{postId}', {
 // Express 风格
 const expressBuilder = new UrlBuilder(
   'https://api.example.com',
-  UrlTemplateStyle.Path,
+  UrlTemplateStyle.Express,
 );
 const url2 = expressBuilder.build('/users/:id', { path: { id: 789 } });
 // => https://api.example.com/users/789

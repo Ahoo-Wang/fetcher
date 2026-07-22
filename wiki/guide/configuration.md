@@ -20,6 +20,23 @@ The [`FetcherOptions`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/f
 | `interceptors` | `InterceptorManager` | `new InterceptorManager(validateStatus)` | Custom interceptor manager (overrides defaults) |
 | `validateStatus` | `(status: number) => boolean` | `status >= 200 && status < 300` | Response status validation function |
 
+::: warning validateStatus Is Ignored With a Custom InterceptorManager
+If you provide a custom `interceptors` manager, the `validateStatus` option is **not passed** to it — you must configure validation via the constructor:
+
+```typescript
+import { InterceptorManager } from '@ahoo-wang/fetcher';
+
+// Pass validateStatus to the InterceptorManager constructor,
+// which registers a ValidateStatusInterceptor with your custom function
+const interceptors = new InterceptorManager((status) => status < 500);
+
+const fetcher = new Fetcher({
+  interceptors,
+  // validateStatus here would be IGNORED — configure it above instead
+});
+```
+:::
+
 ```typescript
 import { Fetcher, InterceptorManager } from '@ahoo-wang/fetcher';
 import { UrlTemplateStyle } from '@ahoo-wang/fetcher';
@@ -128,9 +145,10 @@ await fetcher.get('/protected', {
   },
 });
 
-// Override Content-Type for a specific request
+// Upload FormData — do NOT set Content-Type manually;
+// the RequestBodyInterceptor auto-detects FormData and removes any
+// caller-supplied Content-Type so the browser can set the multipart boundary.
 await fetcher.post('/upload', {
-  headers: { 'Content-Type': 'multipart/form-data' },
   body: formData,
 });
 ```

@@ -154,7 +154,7 @@ Parameter decorators specify how method arguments map to HTTP request components
 
 3. **AbortSignal / AbortController.** If an argument is an `AbortSignal` or `AbortController` instance, it is automatically used for request cancellation -- no decorator needed.
 
-**Source:** [`packages/decorator/src/functionMetadata.ts:224`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L224)
+**Source:** [`packages/decorator/src/functionMetadata.ts:279`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L279)
 
 ### @path
 

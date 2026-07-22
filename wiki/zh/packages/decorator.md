@@ -391,7 +391,7 @@ class UserService {
 
 ## 元数据解析
 
-`FunctionMetadata` 类将 API 级别、端点级别和参数元数据合并为单一的解析配置。端点级别的值覆盖 API 级别的值，参数装饰器的值覆盖两者。([`functionMetadata.ts:43`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L43))
+`FunctionMetadata` 类将 API 级别、端点级别和参数元数据合并为单一的解析配置。端点级别的值覆盖 API 级别的值，参数装饰器的值覆盖两者。([`functionMetadata.ts:98`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L98))
 
 ```mermaid
 graph TD

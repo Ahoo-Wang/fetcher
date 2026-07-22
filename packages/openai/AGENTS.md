@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-openai build
 pnpm --filter @ahoo-wang/fetcher-openai test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-openai vitest run src/openai.test.ts
+pnpm --filter @ahoo-wang/fetcher-openai vitest run test/openai.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-openai lint
@@ -24,7 +24,7 @@ pnpm --filter @ahoo-wang/fetcher-openai clean
 ## Testing
 
 - Vitest with `globals: true` and `@vitest/coverage-v8`
-- Test files: `*.test.ts` alongside source files
+- Test files: `*.test.ts` in a `test/` directory at the package root (mirroring `src/`)
 - Run with `--coverage` flag by default
 
 ## Project Structure

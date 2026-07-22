@@ -107,7 +107,7 @@ function DataView() {
 | `ownerId` | `string` | `'(0)'` | 数据范围的所有者 ID |
 | `tenantId` | `string` | `'(0)'` | 数据范围的租户 ID |
 | `defaultViewId` | `string` | -- | 默认激活的视图 |
-| `pagination` | `false \| PaginationProps` | -- | 分页配置，设为 `false` 可禁用分页 |
+| `pagination` | `false \| PaginationProps` | （必填） | 分页配置，设为 `false` 可禁用分页 |
 | `actionColumn` | `ViewTableActionColumn` | -- | 行操作列配置 |
 | `onClickPrimaryKey` | `(id, record) => void` | -- | 主键单元格的点击处理器 |
 | `enableRowSelection` | `boolean` | `false` | 启用复选框行选择 |
@@ -119,6 +119,44 @@ function DataView() {
 | `batchActions` | action array | -- | 选中行的批量操作 |
 
 来源: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:48-71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L48-L71)
+
+### 命令式 Ref API
+
+`FetcherViewer` 通过 `ref` 暴露命令式 API，用于父组件驱动控制——刷新数据、清除选择或访问当前查询/视图状态：
+
+```tsx
+import { useRef } from 'react';
+import { FetcherViewer, type FetcherViewerRef } from '@ahoo-wang/fetcher-viewer';
+
+function DataView() {
+  const viewerRef = useRef<FetcherViewerRef>(null);
+
+  const handleRefresh = () => viewerRef.current?.refreshData();
+  const handleClearSelection = () => viewerRef.current?.clearSelectedRowKeys();
+
+  return (
+    <>
+      <button onClick={handleRefresh}>刷新</button>
+      <button onClick={handleClearSelection}>清除选择</button>
+      <FetcherViewer
+        ref={viewerRef}
+        viewerDefinitionId="order-view"
+        pagination={{ pageSize: 20 }}
+      />
+    </>
+  );
+}
+```
+
+| 方法 | 返回值 | 描述 |
+|------|--------|------|
+| `refreshData()` | `void` | 重新获取当前页数据 |
+| `clearSelectedRowKeys()` | `void` | 清除所有选中的行键 |
+| `getPageQuery()` | `PagedQuery \| undefined` | 获取当前页查询（分页 + 条件） |
+| `getActiveView()` | `ViewState \| undefined` | 获取当前活动的视图状态 |
+| `getViewerDefinition()` | `ViewDefinition \| undefined` | 获取已加载的查看器定义 |
+
+来源: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:40-46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L40-L46)
 
 ### FetcherViewer 数据流
 

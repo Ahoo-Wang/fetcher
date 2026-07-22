@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-storage build
 pnpm --filter @ahoo-wang/fetcher-storage test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-storage vitest run src/keyStorage.test.ts
+pnpm --filter @ahoo-wang/fetcher-storage vitest run test/keyStorage.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-storage lint
@@ -24,7 +24,7 @@ pnpm --filter @ahoo-wang/fetcher-storage clean
 ## Testing
 
 - Vitest with `globals: true` and `@vitest/coverage-v8`
-- Test files: `*.test.ts` alongside source files
+- Test files: `*.test.ts` in a `test/` directory at the package root (mirroring `src/`)
 - Run with `--coverage` flag by default
 
 ## Project Structure

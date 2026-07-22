@@ -159,6 +159,55 @@ autonumber
 
 Source: [packages/generator/src/aggregate/aggregateResolver.ts:52-289](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/aggregateResolver.ts#L52-L289)
 
+### OpenAPI Specification Conventions
+
+For the generator to correctly recognize Wow patterns, your OpenAPI spec must follow these conventions:
+
+#### operationId Suffixes
+
+The generator identifies operation types by their `operationId` suffix:
+
+| Operation Type | Required Suffix | Generated Client |
+|----------------|----------------|-----------------|
+| **State Snapshot** | `.snapshot_state.single` | `SnapshotQueryClient` |
+| **Event Query** | `.event.list_query` | `EventStreamQueryClient` |
+| **Count Query** | `.snapshot.count` | `QueryClientFactory` (field schema) |
+| **Command** | (no suffix required) | `CommandClient` |
+
+```yaml
+# Example: shop.cart aggregate operations
+paths:
+  /cart/{ownerId}/snapshot_state/single:
+    get:
+      operationId: shop.cart.snapshot_state.single  # 3-part: context.aggregate.suffix
+      tags: [shop.cart]                              # tag must be context.aggregate
+  /cart/{ownerId}/event/list_query:
+    get:
+      operationId: shop.cart.event.list_query
+      tags: [shop.cart]
+  /cart/{ownerId}/{aggregateId}/snapshot/count:
+    get:
+      operationId: shop.cart.snapshot.count
+      tags: [shop.cart]
+  /cart/{ownerId}/{aggregateId}/{commandName}:
+    post:
+      operationId: shop.cart.add_item               # 3-part: context.aggregate.command
+      tags: [shop.cart]
+      responses:
+        '200':
+          $ref: '#/components/responses/wow.CommandOk'  # response-level $ref, not schema-level
+```
+
+#### Tag Naming
+
+Tags must follow the `{context}.{aggregate}` format (exactly two dot-separated parts). Operations sharing a tag are grouped into the same aggregate and client class.
+
+#### Reserved Schemas
+
+- `wow.`-prefixed schemas (e.g., `wow.CommandOk`, `wow.CommandResult`) are reserved for internal framework types — the generator treats them specially and does not generate client models for them.
+
+Source: [packages/generator/README.md#operation-patterns](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/README.md#operation-patterns)
+
 ### Step 3 -- Generate Models
 
 The `ModelGenerator` iterates all OpenAPI component schemas and produces TypeScript types. It filters out Wow framework internal schemas (prefixed with `wow.`) and aggregate-generated suffix types.

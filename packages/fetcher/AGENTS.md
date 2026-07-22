@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher build
 pnpm --filter @ahoo-wang/fetcher test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher vitest run src/fetcher.test.ts
+pnpm --filter @ahoo-wang/fetcher vitest run test/fetcher.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher lint
@@ -25,7 +25,7 @@ pnpm --filter @ahoo-wang/fetcher clean
 
 - Vitest with `globals: true` and `@vitest/coverage-v8`
 - MSW (Mock Service Worker) used for HTTP mocking
-- Test files: `*.test.ts` alongside source files
+- Test files: `*.test.ts` in a `test/` directory at the package root (mirroring `src/`)
 - Run with `--coverage` flag by default
 
 ## Project Structure

@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-openapi build
 pnpm --filter @ahoo-wang/fetcher-openapi test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-openapi vitest run src/openAPI.test.ts
+pnpm --filter @ahoo-wang/fetcher-openapi vitest run test/openAPI.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-openapi lint
@@ -24,7 +24,7 @@ pnpm --filter @ahoo-wang/fetcher-openapi clean
 ## Testing
 
 - Vitest with `globals: true` and `@vitest/coverage-v8`
-- Test files: `*.test.ts` alongside source files
+- Test files: `*.test.ts` in a `test/` directory at the package root (mirroring `src/`)
 - Run with `--coverage` flag by default
 
 ## Project Structure

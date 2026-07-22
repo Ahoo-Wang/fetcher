@@ -175,11 +175,11 @@ flowchart TD
 
 ### Unit Tests
 
-Unit tests live alongside source files with a `*.test.ts` or `*.test.tsx` suffix. Vitest globals are enabled (`describe`, `it`, `expect`, `vi` available without imports):
+Unit tests live in a `test/` directory at the package root (mirroring the `src/` structure) with a `*.test.ts` or `*.test.tsx` suffix. Vitest globals are enabled (`describe`, `it`, `expect`, `vi` available without imports):
 
 ```typescript
-// Example: packages/fetcher/src/fetcher.test.ts
-import { Fetcher } from './fetcher';
+// Example: packages/fetcher/test/fetcher.test.ts
+import { Fetcher } from '../src/fetcher';
 
 describe('Fetcher', () => {
   it('should create with default options', () => {
@@ -216,7 +216,7 @@ pnpm test:unit
 pnpm --filter @ahoo-wang/fetcher test
 
 # Single test file
-pnpm --filter @ahoo-wang/fetcher vitest run src/fetcher.test.ts
+pnpm --filter @ahoo-wang/fetcher vitest run test/fetcher.test.ts
 
 # With coverage
 pnpm --filter @ahoo-wang/fetcher vitest run --coverage

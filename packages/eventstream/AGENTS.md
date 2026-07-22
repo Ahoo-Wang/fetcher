@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-eventstream build
 pnpm --filter @ahoo-wang/fetcher-eventstream test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-eventstream vitest run src/responses.test.ts
+pnpm --filter @ahoo-wang/fetcher-eventstream vitest run test/responses.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-eventstream lint
@@ -24,7 +24,7 @@ pnpm --filter @ahoo-wang/fetcher-eventstream clean
 ## Testing
 
 - Vitest with `globals: true` and `@vitest/coverage-v8`
-- Test files: `*.test.ts` alongside source files
+- Test files: `*.test.ts` in a `test/` directory at the package root (mirroring `src/`)
 - Run with `--coverage` flag by default
 
 ## Project Structure
