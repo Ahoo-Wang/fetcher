@@ -52,7 +52,7 @@ export interface FetcherOptions
   extends BaseURLCapable, RequestHeadersCapable, TimeoutCapable {
   /**
    * The style of URL template to use for URL parameter interpolation.
-   * @default UrlTemplateStyle.Path
+   * @default UrlTemplateStyle.UriTemplate
    */
   urlTemplateStyle?: UrlTemplateStyle;
 
