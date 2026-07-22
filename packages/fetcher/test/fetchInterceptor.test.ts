@@ -19,6 +19,7 @@ import {
   FetchExchange,
   FetchInterceptor,
 } from '../src';
+import { createMockFetcher, createMockRequest } from './helpers';
 
 describe('FetchInterceptor', () => {
   it('should have correct name and order', () => {
@@ -29,7 +30,7 @@ describe('FetchInterceptor', () => {
 
   it('should call timeoutFetch and set response on exchange', async () => {
     const interceptor = new FetchInterceptor();
-    const mockFetcher = {} as Fetcher;
+    const mockFetcher = createMockFetcher();
     const request = { url: 'https://api.example.com/test' };
     const exchange = new FetchExchange({ fetcher: mockFetcher, request });
 

@@ -21,9 +21,10 @@ import {
   VALIDATE_STATUS_INTERCEPTOR_ORDER,
   ValidateStatusInterceptor,
 } from '../src';
+import { createMockFetcher, createMockRequest } from './helpers';
 
 describe('ValidateStatusInterceptor', () => {
-  const mockFetcher = {} as Fetcher;
+  const mockFetcher = createMockFetcher();
 
   it('should have correct name and order', () => {
     const interceptor = new ValidateStatusInterceptor();
@@ -173,7 +174,7 @@ describe('ValidateStatusInterceptor', () => {
 
 describe('HttpStatusValidationError', () => {
   it('should create HttpStatusValidationError with correct properties', () => {
-    const mockFetcher = {} as Fetcher;
+    const mockFetcher = createMockFetcher();
     const request = { url: '/test' };
     const exchange = new FetchExchange({ fetcher: mockFetcher, request });
     const error = new HttpStatusValidationError(exchange);
