@@ -82,8 +82,8 @@ catalogs:
       specifier: ^17.6.0
       version: 17.6.0
     immer:
-      specifier: ^11.1.4
-      version: 11.1.4
+      specifier: ^11.1.15
+      version: 11.1.15
     jsdom:
       specifier: ^29.0.0
       version: 29.0.2
@@ -683,7 +683,7 @@ importers:
         version: 2.0.3
       immer:
         specifier: 'catalog:'
-        version: 11.1.4
+        version: 11.1.15
       react:
         specifier: 'catalog:'
         version: 19.2.5
@@ -4357,8 +4357,8 @@ packages:
     engines: {node: '>=0.10.0'}
     hasBin: true
 
-  immer@11.1.4:
-    resolution: {integrity: sha512-XREFCPo6ksxVzP4E0ekD5aMdf8WMwmdNaz6vuvxgI40UaEiu6q3p8X52aU6GdyvLY3XXX/8R7JOTXStz/nBbRw==}
+  immer@11.1.15:
+    resolution: {integrity: sha512-VrNANlmnWQnh5COXIIOQXM9oOJw7naGKlBT74ZOOR6lpVXc3gFEu9FJLDFcpCJ2j+NWr8TIwtWD//T6ZX6TKiQ==}
 
   import-fresh@3.3.1:
     resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
@@ -9706,7 +9706,7 @@ snapshots:
   image-size@0.5.5:
     optional: true
 
-  immer@11.1.4: {}
+  immer@11.1.15: {}
 
   import-fresh@3.3.1:
     dependencies:
