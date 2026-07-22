@@ -390,22 +390,18 @@ const fetcher = new Fetcher({
   },
 });
 
-// Use EventStreamResultExtractor from eventstream package
-import { EventStreamResultExtractor } from '@ahoo-wang/fetcher-eventstream';
+// Use JsonEventStreamResultExtractor for type-safe JSON streaming
+import { JsonEventStreamResultExtractor } from '@ahoo-wang/fetcher-eventstream';
 
-const response = await fetcher.fetch('/chat/completions', {
+// resultExtractor returns a JsonServerSentEventStream<ChatResponse> directly
+const jsonStream = await fetcher.fetch('/chat/completions', {
   method: 'POST',
   body: {
     model: 'gpt-4',
     messages: [{ role: 'user', content: 'Hello!' }],
     stream: true,
   },
-}, { resultExtractor: EventStreamResultExtractor });
-
-// Consume the JSON event stream
-const jsonStream = response.jsonEventStream<{ choices: { delta: { content?: string } }[] }>(
-  (event) => event.data === '[DONE]'  // terminate on [DONE]
-);
+}, { resultExtractor: JsonEventStreamResultExtractor });
 
 for await (const event of jsonStream) {
   const content = event.data.choices[0]?.delta?.content;
@@ -424,6 +420,32 @@ The side-effect module adds these methods to `Response.prototype`:
 | `jsonEventStream<T>()` | `JsonServerSentEventStream<T> \| null` | Typed JSON SSE stream |
 | `requiredJsonEventStream<T>()` | `JsonServerSentEventStream<T>` | Typed JSON SSE, throws if unavailable |
 | `isEventStream` | `boolean` | Check if response is `text/event-stream` |
+
+## Cancelling Requests
+
+Every request supports cancellation via the native `AbortController`. Pass an `abortController` in the request options to gain manual control over cancellation:
+
+```typescript
+const controller = new AbortController();
+
+// Start a long-running request
+const dataPromise = fetcher.get('/slow-endpoint', {
+  abortController: controller,
+});
+
+// Cancel it later (e.g., user navigated away, or a timeout fired)
+controller.abort();
+
+try {
+  await dataPromise;
+} catch (error) {
+  console.log(error.name); // 'AbortError'
+}
+```
+
+::: tip Retry Safety
+If you provide a custom `abortController` and the request times out, Fetcher clears the controller from the request and deletes the `signal` — so a subsequent retry gets a fresh `AbortController` automatically. You never need to recreate the controller between retries.
+:::
 
 ## Using the Named Fetcher Registry
 

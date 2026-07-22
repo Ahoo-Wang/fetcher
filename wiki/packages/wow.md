@@ -18,8 +18,7 @@ pnpm add @ahoo-wang/fetcher-wow
 ```mermaid
 graph TB
     subgraph sg_1 ["Command Side (Write)"]
-        CC["CommandClient<br>send commands"]
-        CSC["StreamCommandClient<br>send + SSE stream"]
+        CC["CommandClient<br>send + sendAndWaitStream"]
     end
 
     subgraph sg_2 ["Query Side (Read)"]
@@ -92,7 +91,7 @@ const result = await commandClient.send({
     quantity: 2,
   },
   headers: {
-    'Wow-Wait-Stage': 'SNAPSHOT',
+    'Command-Wait-Stage': 'SNAPSHOT',
   },
 });
 
@@ -114,13 +113,16 @@ Commands are wrapped in a `CommandRequest` that supports:
 
 | Header | Constant | Description |
 |--------|----------|-------------|
-| `Wow-Tenant-Id` | `CommandHeaders.TENANT_ID` | Tenant identifier |
-| `Wow-Owner-Id` | `CommandHeaders.OWNER_ID` | Owner identifier |
-| `Wow-Aggregate-Id` | `CommandHeaders.AGGREGATE_ID` | Aggregate instance ID |
-| `Wow-Aggregate-Version` | `CommandHeaders.AGGREGATE_VERSION` | Expected aggregate version |
-| `Wow-Wait-Stage` | `CommandHeaders.WAIT_STAGE` | Wait processing stage |
-| `Wow-Wait-Time-Out` | `CommandHeaders.WAIT_TIME_OUT` | Wait timeout duration |
-| `Wow-Request-Id` | `CommandHeaders.REQUEST_ID` | Request correlation ID |
+| `Command-Tenant-Id` | `CommandHeaders.TENANT_ID` | Tenant identifier |
+| `Command-Owner-Id` | `CommandHeaders.OWNER_ID` | Owner identifier |
+| `Command-Space-Id` | `CommandHeaders.SPACE_ID` | Space identifier |
+| `Command-Aggregate-Id` | `CommandHeaders.AGGREGATE_ID` | Aggregate instance ID |
+| `Command-Aggregate-Version` | `CommandHeaders.AGGREGATE_VERSION` | Expected aggregate version |
+| `Command-Wait-Stage` | `CommandHeaders.WAIT_STAGE` | Wait processing stage |
+| `Command-Wait-Timeout` | `CommandHeaders.WAIT_TIME_OUT` | Wait timeout duration |
+| `Command-Wait-Context` | `CommandHeaders.WAIT_CONTEXT` | Wait processing context |
+| `Command-Request-Id` | `CommandHeaders.REQUEST_ID` | Request correlation ID |
+| `Command-Local-First` | `CommandHeaders.LOCAL_FIRST` | Execute locally first |
 
 Source: [packages/wow/src/command/commandHeaders.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandHeaders.ts)
 
@@ -159,6 +161,21 @@ classDiagram
 ```
 
 Source: [packages/wow/src/command/commandResult.ts:74-110](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandResult.ts#L74-L110)
+
+### CommandStage
+
+The `CommandStage` enum defines the processing stages at which a command's wait-strategy can signal completion. It is used as the value of the `Command-Wait-Stage` header and the `CommandResult.stage` field:
+
+| Stage | Value | Completion Signal |
+|-------|-------|-------------------|
+| `SENT` | `'SENT'` | Command published to the command bus/queue |
+| `PROCESSED` | `'PROCESSED'` | Command processed by the aggregate root |
+| `SNAPSHOT` | `'SNAPSHOT'` | Snapshot generated (aggregate state materialized) |
+| `PROJECTED` | `'PROJECTED'` | Events projected to read models |
+| `EVENT_HANDLED` | `'EVENT_HANDLED'` | Events processed by event handlers |
+| `SAGA_HANDLED` | `'SAGA_HANDLED'` | Events processed by Saga processes |
+
+Source: [packages/wow/src/command/types.ts:54-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L54-L84)
 
 ### Command Flow
 
@@ -323,6 +340,54 @@ const query = pagedQuery({
   sort: [{ field: 'createdAt', order: 'DESC' }],
 });
 ```
+
+### Cursor Pagination
+
+For large datasets, cursor-based pagination is more efficient than offset-based pagination. It avoids the performance degradation of deep offset queries by using a cursor ID to track position:
+
+```typescript
+import { cursorQuery, CURSOR_ID_START } from '@ahoo-wang/fetcher-wow';
+
+// First page — start from the beginning
+const firstPage = cursorQuery({
+  query: { condition: all(), limit: 50, projection: { include: ['id', 'name'] } },
+  cursorId: CURSOR_ID_START,  // '~' — start from the beginning
+  cursorField: 'id',
+  cursorOrder: 'ASC',
+});
+
+// Subsequent pages — use the last item's cursor ID from the previous result
+const nextPage = cursorQuery({
+  query: { condition: all(), limit: 50 },
+  cursorId: lastItemId,  // cursor ID from the previous page
+  cursorField: 'id',
+  cursorOrder: 'ASC',
+});
+```
+
+### Projection
+
+Control which fields are returned by the query using `projection` — include only the fields you need to reduce payload size:
+
+```typescript
+import { projection, pagedQuery } from '@ahoo-wang/fetcher-wow';
+
+// Include only specific fields
+const query = pagedQuery({
+  condition: all(),
+  limit: 20,
+  projection: projection({ include: ['id', 'name', 'status'] }),
+});
+
+// Exclude fields
+const query2 = pagedQuery({
+  condition: all(),
+  limit: 20,
+  projection: projection({ exclude: ['internalNotes', 'metadata'] }),
+});
+```
+
+Source: [packages/wow/src/query/cursorQuery.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts), [packages/wow/src/query/projection.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/projection.ts)
 
 ## Module Structure
 

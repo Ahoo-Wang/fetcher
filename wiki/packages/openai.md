@@ -295,13 +295,61 @@ Full request body for the chat completions endpoint. ([`types.ts:14`](https://gi
 | `stop` | `string` | `null` | Stop sequences |
 | `n` | `number` | `1` | Number of completions to generate |
 | `user` | `string` | - | End-user identifier |
+| `tools` | `any[]` | - | Tool/function definitions for function calling |
+| `tool_choice` | `string \| object` | - | Control tool selection (`"auto"`, `"none"`, or specific tool) |
+| `response_format` | `object` | - | Output format constraint (e.g., `{ type: "json_object" }`) |
 
 ### Message
 
+::: tip Open Structure
+`Message` has an index signature `[property: string]: any`, so it accepts any OpenAI API field beyond `role` and `content` — including `tool_calls`, `tool_call_id`, `name`, and `function_call`.
+:::
+
 | Property | Type | Description |
 |----------|------|-------------|
-| `role` | `string` | `"system"`, `"user"`, or `"assistant"` |
+| `role` | `string` | `"system"`, `"user"`, `"assistant"`, or `"tool"` |
 | `content` | `string?` | Message text content |
+| `tool_calls` | `any[]?` | Tool call requests from the assistant |
+| `tool_call_id` | `string?` | ID linking a tool response message to its call |
+| `name` | `string?` | Name of the function/tool |
+
+### Function / Tool Calling
+
+The client supports OpenAI's function/tool calling. Since `Message` has an open index signature, you can pass tool definitions and receive tool calls without additional type friction:
+
+```typescript
+const response = await openAI.chat.completions({
+  model: 'gpt-4',
+  messages: [{ role: 'user', content: 'What is the weather in Boston?' }],
+  tools: [{
+    type: 'function',
+    function: {
+      name: 'get_weather',
+      description: 'Get current weather for a location',
+      parameters: {
+        type: 'object',
+        properties: {
+          location: { type: 'string', description: 'City name' },
+        },
+        required: ['location'],
+      },
+    },
+  }],
+  tool_choice: 'auto', // let the model decide
+});
+
+// Check if the model wants to call a tool
+const message = response.choices[0]?.message;
+if (message?.tool_calls) {
+  for (const toolCall of message.tool_calls) {
+    const args = JSON.parse(toolCall.function.arguments);
+    console.log(`Call ${toolCall.function.name}(${JSON.stringify(args)})`);
+    // Call your function, then continue the conversation:
+    // messages.push(message);                    // assistant's tool-call message
+    // messages.push({ role: 'tool', tool_call_id: toolCall.id, content: result });
+  }
+}
+```
 
 ### ChatResponse
 

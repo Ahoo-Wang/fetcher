@@ -156,7 +156,7 @@ packages/fetcher/
     fetcherError.test.ts
 ```
 
-Tests are in a `test/` directory at the package root, mirroring the `src/` structure. Some packages (like `viewer`) place tests alongside source files.
+Tests are in a `test/` directory at the package root, mirroring the `src/` structure.
 
 ### Structure
 

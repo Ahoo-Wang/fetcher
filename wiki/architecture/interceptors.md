@@ -331,6 +331,12 @@ fetcher.interceptors.response.use(loggingInterceptor);
 
 ### Custom Error Interceptor (Retry)
 
+::: warning Response Phase Is Not Re-Run After Recovery
+When an error interceptor clears `exchange.error`, the response phase is **deliberately not re-executed** (see [Fetcher Core → Error Recovery Lifecycle](./fetcher-core.md#error-recovery-lifecycle)). This means `ValidateStatusInterceptor` will **not** run on the retried response.
+
+If your retry interceptor sets `exchange.response` from a re-fetch, you **must validate the status yourself** before clearing the error — otherwise a 5xx on retry would silently pass.
+:::
+
 ```typescript
 const retryInterceptor: ErrorInterceptor = {
   name: 'RetryInterceptor',
@@ -339,8 +345,14 @@ const retryInterceptor: ErrorInterceptor = {
     const retryCount = exchange.attributes.get('retryCount') ?? 0;
     if (retryCount < 3 && isRetryable(exchange.error)) {
       exchange.attributes.set('retryCount', retryCount + 1);
+      const response = await timeoutFetch(exchange.request);
+      // Validate status BEFORE clearing the error —
+      // the response phase will NOT re-run after recovery.
+      if (!response.ok) {
+        return; // keep the original error
+      }
+      exchange.response = response;
       exchange.error = undefined; // clear error to signal handling
-      exchange.response = await timeoutFetch(exchange.request);
     }
   },
 };

@@ -798,13 +798,13 @@ pnpm test:it
 pnpm --filter @ahoo-wang/fetcher test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher vitest run src/fetcher.test.ts
+pnpm --filter @ahoo-wang/fetcher vitest run test/fetcher.test.ts
 ```
 
 Testing conventions:
 - **Vitest** is the test framework, with `@vitest/coverage-v8` for coverage.
 - Vitest globals are enabled (`describe`, `it`, `expect`, `vi` available without import).
-- Test files use `*.test.ts` or `*.test.tsx` naming and live alongside source files.
+- Test files use `*.test.ts` or `*.test.tsx` naming and live in a `test/` directory at the package root (mirroring the `src/` structure).
 - ESLint ignores test files (`**/**.test.ts`).
 - The `fetcher` package uses **MSW** (Mock Service Worker) for HTTP mocking.
 - The `viewer` package runs tests in `jsdom` environment with `test/setup.ts`.
@@ -1251,7 +1251,7 @@ pnpm test:unit
 pnpm --filter @ahoo-wang/fetcher test
 
 # Test one file
-pnpm --filter @ahoo-wang/fetcher vitest run src/fetcher.test.ts
+pnpm --filter @ahoo-wang/fetcher vitest run test/fetcher.test.ts
 
 # Lint
 pnpm lint

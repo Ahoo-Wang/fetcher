@@ -219,6 +219,37 @@ autonumber
   F-->>Caller: R
 ```
 
+### Error Recovery Lifecycle
+
+When any phase throws, the `InterceptorManager.exchange()` method catches the error, sets `exchange.error`, and runs error interceptors. If an error interceptor clears `exchange.error`, the exchange is considered **recovered** and returned as-is.
+
+::: warning Critical Contract: Response Phase Is Not Re-Run After Recovery
+After an error interceptor clears `exchange.error`, the **response phase is deliberately not re-executed**. Replaying the response chain would invoke earlier response interceptors (e.g., `ValidateStatusInterceptor`) a second time, which can corrupt or reject an otherwise-recovered response — for example, body-reading interceptors fail on an already-consumed body.
+
+This means a retry interceptor that re-fetches into `exchange.response` **bypasses `ValidateStatusInterceptor`**. A retried response with a 5xx status code would silently pass validation. If you need status validation on retried responses, your retry interceptor must validate the status itself.
+:::
+
+```mermaid
+sequenceDiagram
+autonumber
+
+  participant ReqReg as Request Registry
+  participant FetchInt as FetchInterceptor
+  participant ErrReg as Error Registry
+  participant RetryInt as Retry Interceptor
+
+  FetchInt->>FetchInt: timeoutFetch(request) throws
+  FetchInt-->>ReqReg: throws NetworkError
+  Note over ReqReg: InterceptorManager catches<br/>sets exchange.error
+  ReqReg->>ErrReg: error.intercept(exchange)
+  ErrReg->>RetryInt: intercept(exchange)
+  RetryInt->>RetryInt: isRetryable(exchange.error)?
+  RetryInt->>FetchInt: re-fetch into exchange.response
+  RetryInt->>RetryInt: exchange.error = undefined (signal recovery)
+  ErrReg-->>ReqReg: done
+  Note over ReqReg: hasError() == false<br/>return exchange as-is<br/>(response phase SKIPPED)
+```
+
 ### FetchExchange
 
 `FetchExchange` is the data object that flows through the entire interceptor chain. It carries the request, response, error, a reference to the Fetcher, shared attributes, and a result extractor.

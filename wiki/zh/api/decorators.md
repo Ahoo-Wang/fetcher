@@ -154,7 +154,7 @@ traceEndpoint(): Promise<Response> {
 
 3. **AbortSignal / AbortController。** 如果参数是 `AbortSignal` 或 `AbortController` 实例，它会自动用于请求取消 -- 无需装饰器。
 
-**源码:** [`packages/decorator/src/functionMetadata.ts:224`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L224)
+**源码:** [`packages/decorator/src/functionMetadata.ts:279`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L279)
 
 ### @path
 

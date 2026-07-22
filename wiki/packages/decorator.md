@@ -391,7 +391,7 @@ class UserService {
 
 ## Metadata Resolution
 
-The `FunctionMetadata` class merges API-level, endpoint-level, and parameter metadata into a single resolved configuration. Endpoint-level values override API-level values, and parameter decorator values override both. ([`functionMetadata.ts:43`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L43))
+The `FunctionMetadata` class merges API-level, endpoint-level, and parameter metadata into a single resolved configuration. Endpoint-level values override API-level values, and parameter decorator values override both. ([`functionMetadata.ts:98`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L98))
 
 ```mermaid
 graph TD

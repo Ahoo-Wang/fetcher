@@ -259,6 +259,67 @@ function SearchComponent() {
 
 来源: [packages/react/src/core/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/)
 
+## API Hooks 自动生成
+
+无需为每个 API 方法手动编写 `useExecutePromise` / `useQuery` 包装器，使用工厂函数即可从任何装饰器 API 服务类自动生成类型安全的 Hook。这些工厂会内省类、收集所有返回 Promise 的方法，并为每个方法创建 `useXxx` Hook——具有完整的参数和返回类型推断。
+
+| 工厂 | Hook 基类 | 适用场景 |
+|------|---------|---------|
+| `createExecuteApiHooks` | `useExecutePromise` | 变更/命令方法（POST、PUT、DELETE）——手动触发 |
+| `createQueryApiHooks` | `useQuery` | 查询方法（GET）——挂载/参数变化时自动执行 |
+
+### 创建执行 Hook（变更）
+
+```typescript
+import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
+import { UserService } from './UserService'; // 使用 @api 装饰
+
+// 自动生成 useCreateUser、useUpdateUser、useDeleteUser...
+const userExecuteHooks = createExecuteApiHooks({ api: new UserService(fetcher) });
+
+// 在组件中——参数和返回值的完整类型推断
+function CreateUserForm() {
+  const { result, loading, error, execute } = userExecuteHooks.useCreateUser();
+
+  const handleSubmit = async (data: UserDTO) => {
+    // 参数根据方法签名进行类型检查
+    await execute(data);
+  };
+
+  return <button onClick={() => handleSubmit({ name: 'Alice' })}>创建</button>;
+}
+```
+
+### 创建查询 Hook（读取）
+
+```typescript
+import { createQueryApiHooks } from '@ahoo-wang/fetcher-react';
+
+// 自动生成 useGetUser、useListUsers、useSearchUsers...
+const userQueryHooks = createQueryApiHooks({ api: new UserService(fetcher) });
+
+function UserProfile({ userId }: { userId: string }) {
+  // 挂载时和 userId 变化时自动执行
+  const { result: user, loading, error } = userQueryHooks.useGetUser({ id: userId });
+
+  if (loading) return <Spinner />;
+  if (error) return <ErrorView error={error} />;
+  return <div>{user?.name}</div>;
+}
+```
+
+### 命名约定
+
+`methodNameToHookName` 通过添加 `use` 前缀并大写首字母，将方法名转换为 Hook 名：
+
+| 方法名 | 生成的 Hook |
+|--------|------------|
+| `getUser` | `useGetUser` |
+| `createPost` | `useCreatePost` |
+| `deleteById` | `useDeleteById` |
+
+源码: [packages/react/src/api/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts)
+
 ## Wow CQRS Hooks
 
 对于使用 [Wow](./wow.md) 框架的应用程序，专用 Hook 提供了对聚合查询操作的类型化访问：
@@ -319,7 +380,7 @@ graph LR
 
 | Hook | 描述 |
 |------|------|
-| `useKeyStorage<T>` | 对 `KeyStorage<T>` 实例的响应式绑定。返回 `[value, setValue]` 元组。存储变化时自动重新渲染。 |
+| `useKeyStorage<T>` | 对 `KeyStorage<T>` 实例的响应式绑定。返回 `[value, setValue, remove]` 元组。存储变化时自动重新渲染。 |
 | `useImmerKeyStorage<T>` | 类似 `useKeyStorage`，但接受 Immer 风格的草稿变更 |
 
 来源: [packages/react/src/storage/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/)

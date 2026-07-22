@@ -798,13 +798,13 @@ pnpm test:it
 pnpm --filter @ahoo-wang/fetcher test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher vitest run src/fetcher.test.ts
+pnpm --filter @ahoo-wang/fetcher vitest run test/fetcher.test.ts
 ```
 
 测试规范：
 - **Vitest** 是测试框架，配合 `@vitest/coverage-v8` 用于覆盖率。
 - Vitest 全局变量已启用（`describe`、`it`、`expect`、`vi` 无需导入即可使用）。
-- 测试文件使用 `*.test.ts` 或 `*.test.tsx` 命名，与源文件放在同一目录。
+- 测试文件使用 `*.test.ts` 或 `*.test.tsx` 命名，位于包根目录下的 `test/` 目录中（镜像 `src/` 目录结构）。
 - ESLint 忽略测试文件（`**/**.test.ts`）。
 - `fetcher` 包使用 **MSW**（Mock Service Worker）进行 HTTP 模拟。
 - `viewer` 包在 `jsdom` 环境中运行测试，使用 `test/setup.ts`。
@@ -856,7 +856,7 @@ pnpm update-version <new-version>
 1. **Fork 并克隆**仓库。
 2. 从 `main` 分支**创建新分支**：`git checkout -b feature/your-feature`
 3. 在 `packages/` 下的相关包中**进行修改**。
-4. **编写测试**，与源文件放在同一目录（同位放置的 `*.test.ts` 文件）。
+4. **编写测试**，放在 `test/` 目录中（`*.test.ts` 文件，镜像 `src/` 结构）。
 5. **运行测试**：`pnpm --filter @ahoo-wang/<package-name> test`
 6. **运行 lint**：`pnpm lint`
 7. **构建**：`pnpm build`
@@ -1251,7 +1251,7 @@ pnpm test:unit
 pnpm --filter @ahoo-wang/fetcher test
 
 # Test one file
-pnpm --filter @ahoo-wang/fetcher vitest run src/fetcher.test.ts
+pnpm --filter @ahoo-wang/fetcher vitest run test/fetcher.test.ts
 
 # Lint
 pnpm lint

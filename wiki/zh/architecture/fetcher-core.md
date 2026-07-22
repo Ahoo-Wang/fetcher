@@ -219,6 +219,37 @@ autonumber
   F-->>Caller: R
 ```
 
+### 错误恢复生命周期
+
+当任何阶段抛出异常时，`InterceptorManager.exchange()` 方法会捕获错误、设置 `exchange.error` 并运行错误拦截器。如果错误拦截器清除了 `exchange.error`，则该交换被视为**已恢复**并原样返回。
+
+::: warning 关键契约：恢复后响应阶段不会重新执行
+当错误拦截器清除 `exchange.error` 后，**响应阶段被刻意跳过**。重放响应链会对较早的响应拦截器（如 `ValidateStatusInterceptor`）进行二次调用，这可能损坏或拒绝本已恢复的响应——例如，读取 body 的拦截器在已消费的 body 上会失败。
+
+这意味着重试拦截器在重新获取写入 `exchange.response` 时会**绕过 `ValidateStatusInterceptor`**。重试后返回 5xx 状态码的响应会静默通过验证。如果你需要对重试响应进行状态验证，重试拦截器必须自行校验状态码。
+:::
+
+```mermaid
+sequenceDiagram
+autonumber
+
+  participant ReqReg as 请求注册表
+  participant FetchInt as FetchInterceptor
+  participant ErrReg as 错误注册表
+  participant RetryInt as 重试拦截器
+
+  FetchInt->>FetchInt: timeoutFetch(request) 抛出异常
+  FetchInt-->>ReqReg: 抛出 NetworkError
+  Note over ReqReg: InterceptorManager 捕获异常<br/>设置 exchange.error
+  ReqReg->>ErrReg: error.intercept(exchange)
+  ErrReg->>RetryInt: intercept(exchange)
+  RetryInt->>RetryInt: isRetryable(exchange.error)?
+  RetryInt->>FetchInt: 重新获取写入 exchange.response
+  RetryInt->>RetryInt: exchange.error = undefined（标记恢复）
+  ErrReg-->>ReqReg: 完成
+  Note over ReqReg: hasError() == false<br/>原样返回 exchange<br/>（响应阶段被跳过）
+```
+
 ### FetchExchange
 
 `FetchExchange` 是在整个拦截器链中流转的数据对象。它携带请求、响应、错误、Fetcher 引用、共享属性和结果提取器。

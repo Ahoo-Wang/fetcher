@@ -350,7 +350,30 @@ Source: [packages/cosec/src/deviceIdStorage.ts:35-71](https://github.com/Ahoo-Wa
 | `CoSecJwtPayload` | CoSec-extended JWT payload with tenantId, roles, policies |
 | `AuthorizeResults` | Authorization result constants (`ALLOW`, `EXPLICIT_DENY`, `IMPLICIT_DENY`, etc.) |
 | `SpaceIdProvider` | Interface for multi-tenant space resolution |
-| `NoneSpaceIdProvider` | No-op space provider |
+| `DefaultSpaceIdProvider` | Predicate + storage-backed space provider for multi-tenant apps |
+| `NoneSpaceIdProvider` | No-op space provider (default) |
+
+## Multi-Tenant Space Resolution
+
+For multi-tenant applications, `DefaultSpaceIdProvider` determines which requests require space scoping (via a predicate) and resolves the space ID from persistent storage:
+
+```typescript
+import { CoSecConfigurer, DefaultSpaceIdProvider } from '@ahoo-wang/fetcher-cosec';
+
+const cosecConfigurer = new CoSecConfigurer({
+  tokenRefresher: async () => { /* ... */ },
+  spaceIdProvider: new DefaultSpaceIdProvider({
+    // Only /api/ requests get space-scoped
+    spacedResourcePredicate: {
+      test: (exchange) => exchange.request.url.includes('/api/'),
+    },
+    // SpaceIdStorage persists the current tenant's space ID
+    spaceIdStorage: new SpaceIdStorage(),
+  }),
+});
+```
+
+When the predicate matches, the `ResourceAttributionRequestInterceptor` injects the `Command-Space-Id` header automatically.
 
 ## Cross-References
 

@@ -175,11 +175,11 @@ flowchart TD
 
 ### 单元测试
 
-单元测试与源文件位于同一目录下，使用 `*.test.ts` 或 `*.test.tsx` 后缀。Vitest 全局变量已启用（`describe`、`it`、`expect`、`vi` 可直接使用，无需导入）：
+单元测试位于包根目录下的 `test/` 目录中（镜像 `src/` 结构），使用 `*.test.ts` 或 `*.test.tsx` 后缀。Vitest 全局变量已启用（`describe`、`it`、`expect`、`vi` 可直接使用，无需导入）：
 
 ```typescript
-// 示例：packages/fetcher/src/fetcher.test.ts
-import { Fetcher } from './fetcher';
+// 示例：packages/fetcher/test/fetcher.test.ts
+import { Fetcher } from '../src/fetcher';
 
 describe('Fetcher', () => {
   it('should create with default options', () => {
@@ -216,7 +216,7 @@ pnpm test:unit
 pnpm --filter @ahoo-wang/fetcher test
 
 # 单个测试文件
-pnpm --filter @ahoo-wang/fetcher vitest run src/fetcher.test.ts
+pnpm --filter @ahoo-wang/fetcher vitest run test/fetcher.test.ts
 
 # 带覆盖率
 pnpm --filter @ahoo-wang/fetcher vitest run --coverage

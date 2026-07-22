@@ -331,6 +331,12 @@ fetcher.interceptors.response.use(loggingInterceptor);
 
 ### 自定义错误拦截器（重试）
 
+::: warning 恢复后响应阶段不会重新执行
+当错误拦截器清除 `exchange.error` 后，响应阶段会被**刻意跳过**（参见 [Fetcher 核心 → 错误恢复生命周期](./fetcher-core.md#错误恢复生命周期)）。这意味着 `ValidateStatusInterceptor` **不会**在重试响应上运行。
+
+如果你的重试拦截器通过重新获取设置了 `exchange.response`，你**必须在清除错误之前自行校验状态码**——否则重试后的 5xx 响应会静默通过。
+:::
+
 ```typescript
 const retryInterceptor: ErrorInterceptor = {
   name: 'RetryInterceptor',
@@ -339,8 +345,14 @@ const retryInterceptor: ErrorInterceptor = {
     const retryCount = exchange.attributes.get('retryCount') ?? 0;
     if (retryCount < 3 && isRetryable(exchange.error)) {
       exchange.attributes.set('retryCount', retryCount + 1);
-      exchange.error = undefined; // clear error to signal handling
-      exchange.response = await timeoutFetch(exchange.request);
+      const response = await timeoutFetch(exchange.request);
+      // 在清除错误之前校验状态码——
+      // 恢复后响应阶段不会重新执行。
+      if (!response.ok) {
+        return; // 保留原始错误
+      }
+      exchange.response = response;
+      exchange.error = undefined; // 清除错误以标记已处理
     }
   },
 };

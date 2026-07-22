@@ -295,13 +295,61 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 | `stop` | `string` | `null` | 停止序列 |
 | `n` | `number` | `1` | 生成的补全数量 |
 | `user` | `string` | - | 终端用户标识符 |
+| `tools` | `any[]` | - | 函数/工具调用的工具定义 |
+| `tool_choice` | `string \| object` | - | 控制工具选择（`"auto"`、`"none"` 或指定工具） |
+| `response_format` | `object` | - | 输出格式约束（如 `{ type: "json_object" }`） |
 
 ### Message
 
+::: tip 开放结构
+`Message` 具有索引签名 `[property: string]: any`，因此它接受 `role` 和 `content` 之外的任何 OpenAI API 字段——包括 `tool_calls`、`tool_call_id`、`name` 和 `function_call`。
+:::
+
 | 属性 | 类型 | 描述 |
 |----------|------|-------------|
-| `role` | `string` | `"system"`、`"user"` 或 `"assistant"` |
+| `role` | `string` | `"system"`、`"user"`、`"assistant"` 或 `"tool"` |
 | `content` | `string?` | 消息文本内容 |
+| `tool_calls` | `any[]?` | 助手发起的工具调用请求 |
+| `tool_call_id` | `string?` | 将工具响应消息链接到其调用的 ID |
+| `name` | `string?` | 函数/工具名称 |
+
+### 函数 / 工具调用
+
+客户端支持 OpenAI 的函数/工具调用。由于 `Message` 具有开放的索引签名，你可以传递工具定义并接收工具调用，无需额外的类型摩擦：
+
+```typescript
+const response = await openAI.chat.completions({
+  model: 'gpt-4',
+  messages: [{ role: 'user', content: '波士顿的天气如何？' }],
+  tools: [{
+    type: 'function',
+    function: {
+      name: 'get_weather',
+      description: '获取指定地点的当前天气',
+      parameters: {
+        type: 'object',
+        properties: {
+          location: { type: 'string', description: '城市名称' },
+        },
+        required: ['location'],
+      },
+    },
+  }],
+  tool_choice: 'auto', // 让模型决定
+});
+
+// 检查模型是否想要调用工具
+const message = response.choices[0]?.message;
+if (message?.tool_calls) {
+  for (const toolCall of message.tool_calls) {
+    const args = JSON.parse(toolCall.function.arguments);
+    console.log(`调用 ${toolCall.function.name}(${JSON.stringify(args)})`);
+    // 调用你的函数，然后继续对话：
+    // messages.push(message);                    // 助手的工具调用消息
+    // messages.push({ role: 'tool', tool_call_id: toolCall.id, content: result });
+  }
+}
+```
 
 ### ChatResponse
 

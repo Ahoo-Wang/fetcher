@@ -554,7 +554,7 @@ UserService.getUser(123)
 pnpm --filter @ahoo-wang/<package-name> test
 ```
 
-Vitest 全局变量已启用（`describe`、`it`、`expect`、`vi` 无需导入即可使用）。测试文件遵循 `*.test.ts` / `*.test.tsx` 命名，与源文件放在同一目录。
+Vitest 全局变量已启用（`describe`、`it`、`expect`、`vi` 无需导入即可使用）。测试文件遵循 `*.test.ts` / `*.test.tsx` 命名，位于包根目录下的 `test/` 目录中（镜像 `src/` 结构）。
 
 ---
 

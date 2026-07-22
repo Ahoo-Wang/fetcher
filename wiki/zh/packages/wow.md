@@ -18,8 +18,7 @@ pnpm add @ahoo-wang/fetcher-wow
 ```mermaid
 graph TB
     subgraph sg_1 ["Command Side (Write)"]
-        CC["CommandClient<br>send commands"]
-        CSC["StreamCommandClient<br>send + SSE stream"]
+        CC["CommandClient<br>send + sendAndWaitStream"]
     end
 
     subgraph sg_2 ["Query Side (Read)"]
@@ -92,7 +91,7 @@ const result = await commandClient.send({
     quantity: 2,
   },
   headers: {
-    'Wow-Wait-Stage': 'SNAPSHOT',
+    'Command-Wait-Stage': 'SNAPSHOT',
   },
 });
 
@@ -113,14 +112,17 @@ console.log('Command ID:', result.commandId);
 ### 命令头
 
 | 请求头 | 常量 | 描述 |
-|--------|------|------|
-| `Wow-Tenant-Id` | `CommandHeaders.TENANT_ID` | 租户标识符 |
-| `Wow-Owner-Id` | `CommandHeaders.OWNER_ID` | 所有者标识符 |
-| `Wow-Aggregate-Id` | `CommandHeaders.AGGREGATE_ID` | 聚合实例 ID |
-| `Wow-Aggregate-Version` | `CommandHeaders.AGGREGATE_VERSION` | 预期聚合版本 |
-| `Wow-Wait-Stage` | `CommandHeaders.WAIT_STAGE` | 等待处理阶段 |
-| `Wow-Wait-Time-Out` | `CommandHeaders.WAIT_TIME_OUT` | 等待超时时长 |
-| `Wow-Request-Id` | `CommandHeaders.REQUEST_ID` | 请求关联 ID |
+|--------|----------|-------------|
+| `Command-Tenant-Id` | `CommandHeaders.TENANT_ID` | 租户标识符 |
+| `Command-Owner-Id` | `CommandHeaders.OWNER_ID` | 所有者标识符 |
+| `Command-Space-Id` | `CommandHeaders.SPACE_ID` | 空间标识符 |
+| `Command-Aggregate-Id` | `CommandHeaders.AGGREGATE_ID` | 聚合实例 ID |
+| `Command-Aggregate-Version` | `CommandHeaders.AGGREGATE_VERSION` | 预期聚合版本 |
+| `Command-Wait-Stage` | `CommandHeaders.WAIT_STAGE` | 等待处理阶段 |
+| `Command-Wait-Timeout` | `CommandHeaders.WAIT_TIME_OUT` | 等待超时时长 |
+| `Command-Wait-Context` | `CommandHeaders.WAIT_CONTEXT` | 等待处理上下文 |
+| `Command-Request-Id` | `CommandHeaders.REQUEST_ID` | 请求关联 ID |
+| `Command-Local-First` | `CommandHeaders.LOCAL_FIRST` | 优先本地执行 |
 
 来源: [packages/wow/src/command/commandHeaders.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandHeaders.ts)
 
@@ -159,6 +161,21 @@ classDiagram
 ```
 
 来源: [packages/wow/src/command/commandResult.ts:74-110](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandResult.ts#L74-L110)
+
+### CommandStage
+
+`CommandStage` 枚举定义了命令等待策略可以发出完成信号的处理阶段。它用作 `Command-Wait-Stage` 头的值和 `CommandResult.stage` 字段：
+
+| 阶段 | 值 | 完成信号 |
+|------|-----|---------|
+| `SENT` | `'SENT'` | 命令已发布到命令总线/队列 |
+| `PROCESSED` | `'PROCESSED'` | 命令已被聚合根处理 |
+| `SNAPSHOT` | `'SNAPSHOT'` | 已生成快照（聚合状态已物化） |
+| `PROJECTED` | `'PROJECTED'` | 事件已投射到读模型 |
+| `EVENT_HANDLED` | `'EVENT_HANDLED'` | 事件已被事件处理器处理 |
+| `SAGA_HANDLED` | `'SAGA_HANDLED'` | 事件已被 Saga 处理 |
+
+源码: [packages/wow/src/command/types.ts:54-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L54-L84)
 
 ### 命令流程
 
@@ -323,6 +340,54 @@ const query = pagedQuery({
   sort: [{ field: 'createdAt', order: 'DESC' }],
 });
 ```
+
+### 游标分页
+
+对于大型数据集，基于游标的分页比基于偏移量的分页更高效。它通过使用游标 ID 跟踪位置，避免了深偏移查询的性能退化：
+
+```typescript
+import { cursorQuery, CURSOR_ID_START } from '@ahoo-wang/fetcher-wow';
+
+// 第一页——从头开始
+const firstPage = cursorQuery({
+  query: { condition: all(), limit: 50, projection: { include: ['id', 'name'] } },
+  cursorId: CURSOR_ID_START,  // '~'——从头开始
+  cursorField: 'id',
+  cursorOrder: 'ASC',
+});
+
+// 后续页——使用前一个结果的最后一条记录的游标 ID
+const nextPage = cursorQuery({
+  query: { condition: all(), limit: 50 },
+  cursorId: lastItemId,  // 上一页的游标 ID
+  cursorField: 'id',
+  cursorOrder: 'ASC',
+});
+```
+
+### 投影
+
+使用 `projection` 控制查询返回哪些字段——只包含你需要的字段以减少载荷大小：
+
+```typescript
+import { projection, pagedQuery } from '@ahoo-wang/fetcher-wow';
+
+// 仅包含特定字段
+const query = pagedQuery({
+  condition: all(),
+  limit: 20,
+  projection: projection({ include: ['id', 'name', 'status'] }),
+});
+
+// 排除字段
+const query2 = pagedQuery({
+  condition: all(),
+  limit: 20,
+  projection: projection({ exclude: ['internalNotes', 'metadata'] }),
+});
+```
+
+源码: [packages/wow/src/query/cursorQuery.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts), [packages/wow/src/query/projection.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/projection.ts)
 
 ## 模块结构
 

@@ -30,7 +30,7 @@ new Fetcher(options?: FetcherOptions)
 | `baseURL` | `string` | `''` | 添加到所有请求 URL 前的基础 URL |
 | `headers` | `RequestHeaders` | `{ 'Content-Type': 'application/json' }` | 所有请求的默认头部 |
 | `timeout` | `number` | `undefined` | 默认超时时间（毫秒） |
-| `urlTemplateStyle` | `UrlTemplateStyle` | `UrlTemplateStyle.Path` | URL 模板参数插值的风格 |
+| `urlTemplateStyle` | `UrlTemplateStyle` | `UrlTemplateStyle.UriTemplate` | URL 模板参数插值的风格 |
 | `interceptors` | `InterceptorManager` | `new InterceptorManager()` | 自定义拦截器管理器 |
 | `validateStatus` | `ValidateStatus` | `status >= 200 && status < 300` | 响应状态验证函数 |
 

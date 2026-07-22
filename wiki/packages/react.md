@@ -259,6 +259,67 @@ For search-as-you-type scenarios, debounced variants delay execution until input
 
 Source: [packages/react/src/core/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/)
 
+## API Hooks Generation
+
+Instead of writing `useExecutePromise` / `useQuery` wrappers manually for each API method, use the factory functions to auto-generate type-safe hooks from any decorated API service class. These factories introspect the class, collect all promise-returning methods, and create a `useXxx` hook for each — with full parameter and return type inference.
+
+| Factory | Hook Base | Use Case |
+|---------|-----------|----------|
+| `createExecuteApiHooks` | `useExecutePromise` | Mutation/command methods (POST, PUT, DELETE) — manual trigger |
+| `createQueryApiHooks` | `useQuery` | Query methods (GET) — auto-execute on mount/param change |
+
+### Creating Execute Hooks (Mutations)
+
+```typescript
+import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
+import { UserService } from './UserService'; // decorated with @api
+
+// Auto-generates useCreateUser, useUpdateUser, useDeleteUser...
+const userExecuteHooks = createExecuteApiHooks({ api: new UserService(fetcher) });
+
+// In a component — full type inference for params and return
+function CreateUserForm() {
+  const { result, loading, error, execute } = userExecuteHooks.useCreateUser();
+
+  const handleSubmit = async (data: UserDTO) => {
+    // params are type-checked against the method signature
+    await execute(data);
+  };
+
+  return <button onClick={() => handleSubmit({ name: 'Alice' })}>Create</button>;
+}
+```
+
+### Creating Query Hooks (Reads)
+
+```typescript
+import { createQueryApiHooks } from '@ahoo-wang/fetcher-react';
+
+// Auto-generates useGetUser, useListUsers, useSearchUsers...
+const userQueryHooks = createQueryApiHooks({ api: new UserService(fetcher) });
+
+function UserProfile({ userId }: { userId: string }) {
+  // Auto-executes on mount and when userId changes
+  const { result: user, loading, error } = userQueryHooks.useGetUser({ id: userId });
+
+  if (loading) return <Spinner />;
+  if (error) return <ErrorView error={error} />;
+  return <div>{user?.name}</div>;
+}
+```
+
+### Naming Convention
+
+`methodNameToHookName` converts method names to hook names by prepending `use` and capitalizing:
+
+| Method Name | Generated Hook |
+|-------------|---------------|
+| `getUser` | `useGetUser` |
+| `createPost` | `useCreatePost` |
+| `deleteById` | `useDeleteById` |
+
+Source: [packages/react/src/api/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts)
+
 ## Wow CQRS Hooks
 
 For applications using the [Wow](./wow.md) framework, dedicated hooks provide typed access to aggregate query operations:
@@ -319,7 +380,7 @@ React bindings for the [Storage](./storage.md) package:
 
 | Hook | Description |
 |------|-------------|
-| `useKeyStorage<T>` | Reactive binding to a `KeyStorage<T>` instance. Returns `[value, setValue]` tuple. Auto-re-renders on storage changes. |
+| `useKeyStorage<T>` | Reactive binding to a `KeyStorage<T>` instance. Returns `[value, setValue, remove]` tuple. Auto-re-renders on storage changes. |
 | `useImmerKeyStorage<T>` | Like `useKeyStorage` but accepts Immer-style draft mutations |
 
 Source: [packages/react/src/storage/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/)

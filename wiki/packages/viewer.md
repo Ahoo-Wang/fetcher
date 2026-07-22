@@ -107,7 +107,7 @@ function DataView() {
 | `ownerId` | `string` | `'(0)'` | Owner ID for data scoping |
 | `tenantId` | `string` | `'(0)'` | Tenant ID for data scoping |
 | `defaultViewId` | `string` | -- | Default view to activate |
-| `pagination` | `false \| PaginationProps` | -- | Pagination configuration or `false` to disable |
+| `pagination` | `false \| PaginationProps` | (required) | Pagination configuration or `false` to disable |
 | `actionColumn` | `ViewTableActionColumn` | -- | Row action column configuration |
 | `onClickPrimaryKey` | `(id, record) => void` | -- | Click handler for primary key cells |
 | `enableRowSelection` | `boolean` | `false` | Enable checkbox row selection |
@@ -119,6 +119,44 @@ function DataView() {
 | `batchActions` | action array | -- | Batch actions for selected rows |
 
 Source: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:48-71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L48-L71)
+
+### Imperative Ref API
+
+`FetcherViewer` exposes an imperative API via `ref` for parent-driven control — refresh data, clear selection, or access the current query/view state:
+
+```tsx
+import { useRef } from 'react';
+import { FetcherViewer, type FetcherViewerRef } from '@ahoo-wang/fetcher-viewer';
+
+function DataView() {
+  const viewerRef = useRef<FetcherViewerRef>(null);
+
+  const handleRefresh = () => viewerRef.current?.refreshData();
+  const handleClearSelection = () => viewerRef.current?.clearSelectedRowKeys();
+
+  return (
+    <>
+      <button onClick={handleRefresh}>Refresh</button>
+      <button onClick={handleClearSelection}>Clear Selection</button>
+      <FetcherViewer
+        ref={viewerRef}
+        viewerDefinitionId="order-view"
+        pagination={{ pageSize: 20 }}
+      />
+    </>
+  );
+}
+```
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `refreshData()` | `void` | Re-fetch the current page data |
+| `clearSelectedRowKeys()` | `void` | Clear all selected row keys |
+| `getPageQuery()` | `PagedQuery \| undefined` | Get the current page query (pagination + condition) |
+| `getActiveView()` | `ViewState \| undefined` | Get the currently active view state |
+| `getViewerDefinition()` | `ViewDefinition \| undefined` | Get the loaded viewer definition |
+
+Source: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:40-46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L40-L46)
 
 ### FetcherViewer Data Flow
 
