@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-eventstream build
 pnpm --filter @ahoo-wang/fetcher-eventstream test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-eventstream vitest run src/responses.test.ts
+pnpm --filter @ahoo-wang/fetcher-eventstream vitest run test/responses.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-eventstream lint

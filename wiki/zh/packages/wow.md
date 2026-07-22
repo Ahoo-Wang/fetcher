@@ -344,14 +344,14 @@ const query = pagedQuery({
 对于大型数据集，基于游标的分页比基于偏移量的分页更高效。它通过使用游标 ID 跟踪位置，避免了深偏移查询的性能退化：
 
 ```typescript
-import { cursorQuery, CURSOR_ID_START } from '@ahoo-wang/fetcher-wow';
+import { cursorQuery, CURSOR_ID_START, SortDirection } from '@ahoo-wang/fetcher-wow';
 
 // 第一页——从头开始
 const firstPage = cursorQuery({
   query: { condition: all(), limit: 50, projection: { include: ['id', 'name'] } },
   cursorId: CURSOR_ID_START,  // '~'——从头开始
   field: 'id',
-  direction: 'ASC',
+  direction: SortDirection.ASC,
 });
 
 // 后续页——使用前一个结果的最后一条记录的游标 ID
@@ -359,7 +359,7 @@ const nextPage = cursorQuery({
   query: { condition: all(), limit: 50 },
   cursorId: lastItemId,  // 上一页的游标 ID
   field: 'id',
-  direction: 'ASC',
+  direction: SortDirection.ASC,
 });
 ```
 

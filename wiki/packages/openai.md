@@ -315,11 +315,7 @@ Full request body for the chat completions endpoint. ([`types.ts:14`](https://gi
 
 ### Function / Tool Calling
 
-The client supports OpenAI's function/tool calling. Since `ChatRequest` has an open index signature, you can pass tool definitions and receive tool calls without additional type friction:
-
-::: tip Type Note
-The exported `ChatRequest` type defines `tools?: string[]` and `tool_choice?: { [key: string]: any }` for basic typing, but the interface includes `[property: string]: any`, so the full OpenAI tool-definition objects pass through without error.
-:::
+The client supports OpenAI's function/tool calling. The exported `ChatRequest` type does not yet include full tool-definition typing (`tools` is `string[]`), so tool-calling examples require a `as any` cast or a custom type extension:
 
 ```typescript
 const response = await openAI.chat.completions({

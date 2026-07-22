@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-decorator build
 pnpm --filter @ahoo-wang/fetcher-decorator test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-decorator vitest run src/apiDecorator.test.ts
+pnpm --filter @ahoo-wang/fetcher-decorator vitest run test/apiDecorator.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-decorator lint

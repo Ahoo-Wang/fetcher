@@ -171,7 +171,7 @@ autonumber
 |---------|---------|------------|
 | **状态快照** | `.snapshot_state.single` | `SnapshotQueryClient` |
 | **事件查询** | `.event.list_query` | `EventStreamQueryClient` |
-| **计数查询** | `.snapshot.count` | `LoadStateAggregateClient` |
+| **计数查询** | `.snapshot.count` | `QueryClientFactory`（字段 schema） |
 | **命令** | （无需后缀） | `CommandClient` |
 
 ```yaml

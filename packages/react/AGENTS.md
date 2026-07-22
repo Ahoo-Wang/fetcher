@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-react build
 pnpm --filter @ahoo-wang/fetcher-react test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-react vitest run src/core/useQuery.test.ts
+pnpm --filter @ahoo-wang/fetcher-react vitest run test/useQuery.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-react lint

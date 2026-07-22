@@ -240,14 +240,14 @@ autonumber
 
   FetchInt->>FetchInt: timeoutFetch(request) throws
   FetchInt-->>ReqReg: throws NetworkError
-  Note over ReqReg: InterceptorManager catches<br/>sets exchange.error
+  Note over ReqReg: InterceptorManager catches<br>sets exchange.error
   ReqReg->>ErrReg: error.intercept(exchange)
   ErrReg->>RetryInt: intercept(exchange)
   RetryInt->>RetryInt: isRetryable(exchange.error)?
   RetryInt->>FetchInt: re-fetch into exchange.response
   RetryInt->>RetryInt: exchange.error = undefined (signal recovery)
   ErrReg-->>ReqReg: done
-  Note over ReqReg: hasError() == false<br/>return exchange as-is<br/>(response phase SKIPPED)
+  Note over ReqReg: hasError() == false<br>return exchange as-is<br>(response phase SKIPPED)
 ```
 
 ### FetchExchange

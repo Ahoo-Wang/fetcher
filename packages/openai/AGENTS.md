@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-openai build
 pnpm --filter @ahoo-wang/fetcher-openai test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-openai vitest run src/openai.test.ts
+pnpm --filter @ahoo-wang/fetcher-openai vitest run test/openai.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-openai lint

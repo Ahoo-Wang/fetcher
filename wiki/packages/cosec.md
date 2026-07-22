@@ -358,7 +358,7 @@ Source: [packages/cosec/src/deviceIdStorage.ts:35-71](https://github.com/Ahoo-Wa
 For multi-tenant applications, `DefaultSpaceIdProvider` determines which requests require space scoping (via a predicate) and resolves the space ID from persistent storage:
 
 ```typescript
-import { CoSecConfigurer, DefaultSpaceIdProvider } from '@ahoo-wang/fetcher-cosec';
+import { CoSecConfigurer, DefaultSpaceIdProvider, SpaceIdStorage } from '@ahoo-wang/fetcher-cosec';
 
 const cosecConfigurer = new CoSecConfigurer({
   appId: 'my-app',                       // required

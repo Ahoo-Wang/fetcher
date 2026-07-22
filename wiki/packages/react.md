@@ -302,8 +302,8 @@ import { createQueryApiHooks } from '@ahoo-wang/fetcher-react';
 const userQueryHooks = createQueryApiHooks({ api: new UserService({ fetcher }) });
 
 function UserProfile({ userId }: { userId: string }) {
-  // Pass query params via initialQuery — auto-executes on mount and when userId changes
-  const { result: user, loading, error } = userQueryHooks.useGetUser({ initialQuery: { id: userId } });
+  // Pass query params via query — auto-executes on mount and re-executes when userId changes
+  const { result: user, loading, error } = userQueryHooks.useGetUser({ query: { id: userId } });
 
   if (loading) return <Spinner />;
   if (error) return <ErrorView error={error} />;

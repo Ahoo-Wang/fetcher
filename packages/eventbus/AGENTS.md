@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-eventbus build
 pnpm --filter @ahoo-wang/fetcher-eventbus test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-eventbus vitest run src/eventBus.test.ts
+pnpm --filter @ahoo-wang/fetcher-eventbus vitest run test/eventBus.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-eventbus lint

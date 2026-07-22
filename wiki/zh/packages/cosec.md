@@ -359,7 +359,7 @@ const deviceId = deviceStorage.getOrCreate();
 对于多租户应用，`DefaultSpaceIdProvider` 通过谓词确定哪些请求需要空间范围控制，并从持久化存储中解析空间 ID：
 
 ```typescript
-import { CoSecConfigurer, DefaultSpaceIdProvider } from '@ahoo-wang/fetcher-cosec';
+import { CoSecConfigurer, DefaultSpaceIdProvider, SpaceIdStorage } from '@ahoo-wang/fetcher-cosec';
 
 const cosecConfigurer = new CoSecConfigurer({
   appId: 'my-app',                       // 必填

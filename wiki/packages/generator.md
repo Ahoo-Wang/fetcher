@@ -171,7 +171,7 @@ The generator identifies operation types by their `operationId` suffix:
 |----------------|----------------|-----------------|
 | **State Snapshot** | `.snapshot_state.single` | `SnapshotQueryClient` |
 | **Event Query** | `.event.list_query` | `EventStreamQueryClient` |
-| **Count Query** | `.snapshot.count` | `LoadStateAggregateClient` |
+| **Count Query** | `.snapshot.count` | `QueryClientFactory` (field schema) |
 | **Command** | (no suffix required) | `CommandClient` |
 
 ```yaml

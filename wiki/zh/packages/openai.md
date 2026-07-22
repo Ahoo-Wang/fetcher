@@ -315,7 +315,7 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 
 ### 函数 / 工具调用
 
-客户端支持 OpenAI 的函数/工具调用。由于 `Message` 具有开放的索引签名，你可以传递工具定义并接收工具调用，无需额外的类型摩擦：
+客户端支持 OpenAI 的函数/工具调用。导出的 `ChatRequest` 类型尚未包含完整的工具定义类型（`tools` 为 `string[]`），因此工具调用示例需要使用 `as any` 类型断言或自定义类型扩展：
 
 ```typescript
 const response = await openAI.chat.completions({

@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-storage build
 pnpm --filter @ahoo-wang/fetcher-storage test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-storage vitest run src/keyStorage.test.ts
+pnpm --filter @ahoo-wang/fetcher-storage vitest run test/keyStorage.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-storage lint

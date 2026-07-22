@@ -240,14 +240,14 @@ autonumber
 
   FetchInt->>FetchInt: timeoutFetch(request) 抛出异常
   FetchInt-->>ReqReg: 抛出 NetworkError
-  Note over ReqReg: InterceptorManager 捕获异常<br/>设置 exchange.error
+  Note over ReqReg: InterceptorManager 捕获异常<br>设置 exchange.error
   ReqReg->>ErrReg: error.intercept(exchange)
   ErrReg->>RetryInt: intercept(exchange)
   RetryInt->>RetryInt: isRetryable(exchange.error)?
   RetryInt->>FetchInt: 重新获取写入 exchange.response
   RetryInt->>RetryInt: exchange.error = undefined（标记恢复）
   ErrReg-->>ReqReg: 完成
-  Note over ReqReg: hasError() == false<br/>原样返回 exchange<br/>（响应阶段被跳过）
+  Note over ReqReg: hasError() == false<br>原样返回 exchange<br>（响应阶段被跳过）
 ```
 
 ### FetchExchange

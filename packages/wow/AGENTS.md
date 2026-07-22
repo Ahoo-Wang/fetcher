@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-wow build
 pnpm --filter @ahoo-wang/fetcher-wow test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-wow vitest run src/command/commandClient.test.ts
+pnpm --filter @ahoo-wang/fetcher-wow vitest run test/commandClient.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-wow lint

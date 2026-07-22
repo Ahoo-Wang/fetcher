@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-cosec build
 pnpm --filter @ahoo-wang/fetcher-cosec test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-cosec vitest run src/cosecConfigurer.test.ts
+pnpm --filter @ahoo-wang/fetcher-cosec vitest run test/cosecConfigurer.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-cosec lint

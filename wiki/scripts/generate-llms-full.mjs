@@ -161,6 +161,27 @@ function generate() {
     }
   }
 
+  // Chinese translations (zh/ mirror)
+  parts.push('## 中文翻译 (Chinese Translations)')
+  parts.push('')
+
+  for (const section of PAGE_SECTIONS) {
+    for (const pagePath of section.pages) {
+      const zhPath = `zh/${pagePath}`
+      const page = readPage(zhPath)
+      if (!page) {
+        continue
+      }
+      parts.push(`<doc title="${page.title}" path="${page.path}">`)
+      parts.push('')
+      parts.push(page.body)
+      parts.push('')
+      parts.push('</doc>')
+      parts.push('')
+      total++
+    }
+  }
+
   const output = parts.join('\n')
   writeFileSync(join(wikiDir, 'llms-full.txt'), output, 'utf8')
 

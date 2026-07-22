@@ -300,7 +300,7 @@ const userQueryHooks = createQueryApiHooks({ api: new UserService({ fetcher }) }
 
 function UserProfile({ userId }: { userId: string }) {
   // 挂载时和 userId 变化时自动执行
-  const { result: user, loading, error } = userQueryHooks.useGetUser({ initialQuery: { id: userId } });
+  const { result: user, loading, error } = userQueryHooks.useGetUser({ query: { id: userId } });
 
   if (loading) return <Spinner />;
   if (error) return <ErrorView error={error} />;

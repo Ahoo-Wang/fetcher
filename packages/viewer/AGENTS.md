@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-viewer build
 pnpm --filter @ahoo-wang/fetcher-viewer test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-viewer vitest run src/table/ViewTable.test.tsx
+pnpm --filter @ahoo-wang/fetcher-viewer vitest run test/ViewTable.test.tsx
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-viewer lint

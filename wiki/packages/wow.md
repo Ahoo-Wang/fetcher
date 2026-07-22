@@ -344,14 +344,14 @@ const query = pagedQuery({
 For large datasets, cursor-based pagination is more efficient than offset-based pagination. It avoids the performance degradation of deep offset queries by using a cursor ID to track position:
 
 ```typescript
-import { cursorQuery, CURSOR_ID_START } from '@ahoo-wang/fetcher-wow';
+import { cursorQuery, CURSOR_ID_START, SortDirection } from '@ahoo-wang/fetcher-wow';
 
 // First page — start from the beginning
 const firstPage = cursorQuery({
   query: { condition: all(), limit: 50, projection: { include: ['id', 'name'] } },
   cursorId: CURSOR_ID_START,  // '~' — start from the beginning
   field: 'id',
-  direction: 'ASC',
+  direction: SortDirection.ASC,
 });
 
 // Subsequent pages — use the last item's cursor ID from the previous result
@@ -359,7 +359,7 @@ const nextPage = cursorQuery({
   query: { condition: all(), limit: 50 },
   cursorId: lastItemId,  // cursor ID from the previous page
   field: 'id',
-  direction: 'ASC',
+  direction: SortDirection.ASC,
 });
 ```
 
