@@ -9706,7 +9706,7 @@ The client supports OpenAI's function/tool calling. The exported `ChatRequest` t
 const response = await openAI.chat.completions({
   model: 'gpt-4',
   messages: [{ role: 'user', content: 'What is the weather in Boston?' }],
-  // tools/tool_choice pass through via the index signature
+  // tools/tool_choice require 'as any' cast — ChatRequest types tools as string[]
   tools: [{
     type: 'function',
     function: {
