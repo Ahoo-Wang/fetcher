@@ -24,7 +24,7 @@ pnpm --filter @ahoo-wang/fetcher-react clean
 ## Testing
 
 - Vitest with `globals: true` and `@vitest/coverage-v8`
-- Test files: `*.test.ts` / `*.test.tsx` alongside source files
+- Test files: `*.test.ts` / `*.test.tsx` in a `test/` directory at the package root (mirroring `src/`)
 - Run with `--coverage` flag by default
 
 ## Project Structure
