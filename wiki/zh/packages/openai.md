@@ -295,8 +295,8 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 | `stop` | `string` | `null` | 停止序列 |
 | `n` | `number` | `1` | 生成的补全数量 |
 | `user` | `string` | - | 终端用户标识符 |
-| `tools` | `any[]` | - | 函数/工具调用的工具定义 |
-| `tool_choice` | `string \| object` | - | 控制工具选择（`"auto"`、`"none"` 或指定工具） |
+| `tools` | `string[]` | - | 函数/工具调用的工具定义 |
+| `tool_choice` | `{ [key: string]: any }` | - | 控制工具选择（如 `{ type: "auto" }`） |
 | `response_format` | `object` | - | 输出格式约束（如 `{ type: "json_object" }`） |
 
 ### Message
@@ -335,7 +335,7 @@ const response = await openAI.chat.completions({
       },
     },
   }],
-  tool_choice: 'auto', // 让模型决定
+  tool_choice: { type: 'auto' }, // 让模型决定
 });
 
 // 检查模型是否想要调用工具

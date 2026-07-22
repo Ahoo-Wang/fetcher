@@ -361,7 +361,13 @@ For multi-tenant applications, `DefaultSpaceIdProvider` determines which request
 import { CoSecConfigurer, DefaultSpaceIdProvider } from '@ahoo-wang/fetcher-cosec';
 
 const cosecConfigurer = new CoSecConfigurer({
-  tokenRefresher: async () => { /* ... */ },
+  appId: 'my-app',                       // required
+  tokenRefresher: {                      // TokenRefresher object, not bare function
+    async refresh(compositeToken) {
+      // Send refresh request, return new JwtCompositeToken
+      return refreshedToken;
+    },
+  },
   spaceIdProvider: new DefaultSpaceIdProvider({
     // Only /api/ requests get space-scoped
     spacedResourcePredicate: {
@@ -373,7 +379,7 @@ const cosecConfigurer = new CoSecConfigurer({
 });
 ```
 
-When the predicate matches, the `ResourceAttributionRequestInterceptor` injects the `Command-Space-Id` header automatically.
+When the predicate matches, the `CoSecRequestInterceptor` injects the `CoSec-Space-Id` header automatically.
 
 ## Cross-References
 

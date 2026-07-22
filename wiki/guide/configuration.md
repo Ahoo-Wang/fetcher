@@ -21,18 +21,18 @@ The [`FetcherOptions`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/f
 | `validateStatus` | `(status: number) => boolean` | `status >= 200 && status < 300` | Response status validation function |
 
 ::: warning validateStatus Is Ignored With a Custom InterceptorManager
-If you provide a custom `interceptors` manager, `validateStatus` has **no effect** — the default `ValidateStatusInterceptor` is not added. You must add status validation yourself:
+If you provide a custom `interceptors` manager, the `validateStatus` option is **not passed** to it — you must configure validation via the constructor:
 
 ```typescript
-import { InterceptorManager, ValidateStatusInterceptor } from '@ahoo-wang/fetcher';
+import { InterceptorManager } from '@ahoo-wang/fetcher';
 
-const interceptors = new InterceptorManager();
-// Must manually add validation when using a custom InterceptorManager
-interceptors.response.use(new ValidateStatusInterceptor((status) => status < 500));
+// Pass validateStatus to the InterceptorManager constructor,
+// which registers a ValidateStatusInterceptor with your custom function
+const interceptors = new InterceptorManager((status) => status < 500);
 
 const fetcher = new Fetcher({
   interceptors,
-  // validateStatus here would be IGNORED
+  // validateStatus here would be IGNORED — configure it above instead
 });
 ```
 :::

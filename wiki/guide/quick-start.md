@@ -390,8 +390,8 @@ const fetcher = new Fetcher({
   },
 });
 
-// Use JsonEventStreamResultExtractor for type-safe JSON streaming
-import { JsonEventStreamResultExtractor } from '@ahoo-wang/fetcher-eventstream';
+// Use CompletionStreamResultExtractor — handles [DONE] termination automatically
+import { CompletionStreamResultExtractor } from '@ahoo-wang/fetcher-openai';
 
 // resultExtractor returns a JsonServerSentEventStream<ChatResponse> directly
 const jsonStream = await fetcher.fetch('/chat/completions', {
@@ -401,7 +401,7 @@ const jsonStream = await fetcher.fetch('/chat/completions', {
     messages: [{ role: 'user', content: 'Hello!' }],
     stream: true,
   },
-}, { resultExtractor: JsonEventStreamResultExtractor });
+}, { resultExtractor: CompletionStreamResultExtractor });
 
 for await (const event of jsonStream) {
   const content = event.data.choices[0]?.delta?.content;

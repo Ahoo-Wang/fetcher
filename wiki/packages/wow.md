@@ -221,8 +221,7 @@ const items = await client.list(listQuery({
 // Paged
 const page = await client.paged(pagedQuery({
   condition: all(),
-  limit: 10,
-  offset: 0,
+  pagination: { index: 1, size: 10 },
 }));
 
 // Single by ID
@@ -335,8 +334,7 @@ import { pagedQuery, listQuery } from '@ahoo-wang/fetcher-wow';
 // Paged query with sorting
 const query = pagedQuery({
   condition: all(),
-  limit: 20,
-  offset: 0,
+  pagination: { index: 1, size: 20 },
   sort: [{ field: 'createdAt', order: 'DESC' }],
 });
 ```
@@ -352,16 +350,16 @@ import { cursorQuery, CURSOR_ID_START } from '@ahoo-wang/fetcher-wow';
 const firstPage = cursorQuery({
   query: { condition: all(), limit: 50, projection: { include: ['id', 'name'] } },
   cursorId: CURSOR_ID_START,  // '~' — start from the beginning
-  cursorField: 'id',
-  cursorOrder: 'ASC',
+  field: 'id',
+  direction: 'ASC',
 });
 
 // Subsequent pages — use the last item's cursor ID from the previous result
 const nextPage = cursorQuery({
   query: { condition: all(), limit: 50 },
   cursorId: lastItemId,  // cursor ID from the previous page
-  cursorField: 'id',
-  cursorOrder: 'ASC',
+  field: 'id',
+  direction: 'ASC',
 });
 ```
 
@@ -375,14 +373,14 @@ import { projection, pagedQuery } from '@ahoo-wang/fetcher-wow';
 // Include only specific fields
 const query = pagedQuery({
   condition: all(),
-  limit: 20,
+  pagination: { index: 1, size: 20 },
   projection: projection({ include: ['id', 'name', 'status'] }),
 });
 
 // Exclude fields
 const query2 = pagedQuery({
   condition: all(),
-  limit: 20,
+  pagination: { index: 1, size: 20 },
   projection: projection({ exclude: ['internalNotes', 'metadata'] }),
 });
 ```

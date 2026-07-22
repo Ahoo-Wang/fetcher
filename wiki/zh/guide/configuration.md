@@ -21,18 +21,18 @@ description: Fetcher 完整配置参考。涵盖 FetcherOptions、baseURL、time
 | `validateStatus` | `(status: number) => boolean` | `status >= 200 && status < 300` | 响应状态验证函数 |
 
 ::: warning 使用自定义 InterceptorManager 时 validateStatus 会被忽略
-如果你提供了自定义的 `interceptors` 管理器，`validateStatus` **不会生效**——默认的 `ValidateStatusInterceptor` 不会被添加。你必须自行添加状态验证：
+如果你提供了自定义的 `interceptors` 管理器，`validateStatus` 选项**不会传递**给它——你必须通过构造函数来配置验证：
 
 ```typescript
-import { InterceptorManager, ValidateStatusInterceptor } from '@ahoo-wang/fetcher';
+import { InterceptorManager } from '@ahoo-wang/fetcher';
 
-const interceptors = new InterceptorManager();
-// 使用自定义 InterceptorManager 时必须手动添加验证
-interceptors.response.use(new ValidateStatusInterceptor((status) => status < 500));
+// 将 validateStatus 传递给 InterceptorManager 构造函数，
+// 它会使用你的自定义函数注册一个 ValidateStatusInterceptor
+const interceptors = new InterceptorManager((status) => status < 500);
 
 const fetcher = new Fetcher({
   interceptors,
-  // 这里的 validateStatus 会被忽略
+  // 这里的 validateStatus 会被忽略——请在上面的构造函数中配置
 });
 ```
 :::

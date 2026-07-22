@@ -295,8 +295,8 @@ Full request body for the chat completions endpoint. ([`types.ts:14`](https://gi
 | `stop` | `string` | `null` | Stop sequences |
 | `n` | `number` | `1` | Number of completions to generate |
 | `user` | `string` | - | End-user identifier |
-| `tools` | `any[]` | - | Tool/function definitions for function calling |
-| `tool_choice` | `string \| object` | - | Control tool selection (`"auto"`, `"none"`, or specific tool) |
+| `tools` | `string[]` | - | Tool/function definitions for function calling |
+| `tool_choice` | `{ [key: string]: any }` | - | Control tool selection (e.g., `{ type: "auto" }`) |
 | `response_format` | `object` | - | Output format constraint (e.g., `{ type: "json_object" }`) |
 
 ### Message
@@ -315,12 +315,17 @@ Full request body for the chat completions endpoint. ([`types.ts:14`](https://gi
 
 ### Function / Tool Calling
 
-The client supports OpenAI's function/tool calling. Since `Message` has an open index signature, you can pass tool definitions and receive tool calls without additional type friction:
+The client supports OpenAI's function/tool calling. Since `ChatRequest` has an open index signature, you can pass tool definitions and receive tool calls without additional type friction:
+
+::: tip Type Note
+The exported `ChatRequest` type defines `tools?: string[]` and `tool_choice?: { [key: string]: any }` for basic typing, but the interface includes `[property: string]: any`, so the full OpenAI tool-definition objects pass through without error.
+:::
 
 ```typescript
 const response = await openAI.chat.completions({
   model: 'gpt-4',
   messages: [{ role: 'user', content: 'What is the weather in Boston?' }],
+  // tools/tool_choice pass through via the index signature
   tools: [{
     type: 'function',
     function: {
@@ -335,7 +340,7 @@ const response = await openAI.chat.completions({
       },
     },
   }],
-  tool_choice: 'auto', // let the model decide
+  tool_choice: { type: 'auto' }, // let the model decide
 });
 
 // Check if the model wants to call a tool

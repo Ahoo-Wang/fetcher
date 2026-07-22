@@ -275,7 +275,7 @@ import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
 import { UserService } from './UserService'; // 使用 @api 装饰
 
 // 自动生成 useCreateUser、useUpdateUser、useDeleteUser...
-const userExecuteHooks = createExecuteApiHooks({ api: new UserService(fetcher) });
+const userExecuteHooks = createExecuteApiHooks({ api: new UserService({ fetcher }) });
 
 // 在组件中——参数和返回值的完整类型推断
 function CreateUserForm() {
@@ -296,11 +296,11 @@ function CreateUserForm() {
 import { createQueryApiHooks } from '@ahoo-wang/fetcher-react';
 
 // 自动生成 useGetUser、useListUsers、useSearchUsers...
-const userQueryHooks = createQueryApiHooks({ api: new UserService(fetcher) });
+const userQueryHooks = createQueryApiHooks({ api: new UserService({ fetcher }) });
 
 function UserProfile({ userId }: { userId: string }) {
   // 挂载时和 userId 变化时自动执行
-  const { result: user, loading, error } = userQueryHooks.useGetUser({ id: userId });
+  const { result: user, loading, error } = userQueryHooks.useGetUser({ initialQuery: { id: userId } });
 
   if (loading) return <Spinner />;
   if (error) return <ErrorView error={error} />;

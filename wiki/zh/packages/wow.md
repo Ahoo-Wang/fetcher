@@ -221,8 +221,7 @@ const items = await client.list(listQuery({
 // Paged
 const page = await client.paged(pagedQuery({
   condition: all(),
-  limit: 10,
-  offset: 0,
+  pagination: { index: 1, size: 10 },
 }));
 
 // Single by ID
@@ -335,8 +334,7 @@ import { pagedQuery, listQuery } from '@ahoo-wang/fetcher-wow';
 // Paged query with sorting
 const query = pagedQuery({
   condition: all(),
-  limit: 20,
-  offset: 0,
+  pagination: { index: 1, size: 20 },
   sort: [{ field: 'createdAt', order: 'DESC' }],
 });
 ```
@@ -352,16 +350,16 @@ import { cursorQuery, CURSOR_ID_START } from '@ahoo-wang/fetcher-wow';
 const firstPage = cursorQuery({
   query: { condition: all(), limit: 50, projection: { include: ['id', 'name'] } },
   cursorId: CURSOR_ID_START,  // '~'——从头开始
-  cursorField: 'id',
-  cursorOrder: 'ASC',
+  field: 'id',
+  direction: 'ASC',
 });
 
 // 后续页——使用前一个结果的最后一条记录的游标 ID
 const nextPage = cursorQuery({
   query: { condition: all(), limit: 50 },
   cursorId: lastItemId,  // 上一页的游标 ID
-  cursorField: 'id',
-  cursorOrder: 'ASC',
+  field: 'id',
+  direction: 'ASC',
 });
 ```
 
@@ -375,14 +373,14 @@ import { projection, pagedQuery } from '@ahoo-wang/fetcher-wow';
 // 仅包含特定字段
 const query = pagedQuery({
   condition: all(),
-  limit: 20,
+  pagination: { index: 1, size: 20 },
   projection: projection({ include: ['id', 'name', 'status'] }),
 });
 
 // 排除字段
 const query2 = pagedQuery({
   condition: all(),
-  limit: 20,
+  pagination: { index: 1, size: 20 },
   projection: projection({ exclude: ['internalNotes', 'metadata'] }),
 });
 ```

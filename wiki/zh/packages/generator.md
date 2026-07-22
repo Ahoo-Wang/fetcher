@@ -175,29 +175,27 @@ autonumber
 | **命令** | （无需后缀） | `CommandClient` |
 
 ```yaml
-# 示例：购物车聚合操作
+# 示例：shop.cart 聚合操作
 paths:
   /cart/{ownerId}/snapshot_state/single:
     get:
-      operationId: cart.snapshot_state.single  # → SnapshotQueryClient
-      tags: [cart]
+      operationId: shop.cart.snapshot_state.single  # 三段式：context.aggregate.suffix
+      tags: [shop.cart]                              # 标签必须是 context.aggregate
   /cart/{ownerId}/event/list_query:
     get:
-      operationId: cart.event.list_query        # → EventStreamQueryClient
-      tags: [cart]
+      operationId: shop.cart.event.list_query
+      tags: [shop.cart]
   /cart/{ownerId}/{aggregateId}/snapshot/count:
     get:
-      operationId: cart.snapshot.count          # → 计数查询
-      tags: [cart]
+      operationId: shop.cart.snapshot.count
+      tags: [shop.cart]
   /cart/{ownerId}/{aggregateId}/{commandName}:
     post:
-      operationId: cart.command                 # → CommandClient
-      tags: [cart]
+      operationId: shop.cart.add_item               # 三段式：context.aggregate.command
+      tags: [shop.cart]
       responses:
         '200':
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/wow.CommandOk' }
+          $ref: '#/components/responses/wow.CommandOk'  # 响应级别的 $ref，而非 schema 级别
 ```
 
 #### 标签命名

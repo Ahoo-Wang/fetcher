@@ -274,8 +274,11 @@ Instead of writing `useExecutePromise` / `useQuery` wrappers manually for each A
 import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
 import { UserService } from './UserService'; // decorated with @api
 
+// Pass fetcher via ApiMetadata to the decorated API class constructor
+const userService = new UserService({ fetcher });
+
 // Auto-generates useCreateUser, useUpdateUser, useDeleteUser...
-const userExecuteHooks = createExecuteApiHooks({ api: new UserService(fetcher) });
+const userExecuteHooks = createExecuteApiHooks({ api: userService });
 
 // In a component — full type inference for params and return
 function CreateUserForm() {
@@ -296,11 +299,11 @@ function CreateUserForm() {
 import { createQueryApiHooks } from '@ahoo-wang/fetcher-react';
 
 // Auto-generates useGetUser, useListUsers, useSearchUsers...
-const userQueryHooks = createQueryApiHooks({ api: new UserService(fetcher) });
+const userQueryHooks = createQueryApiHooks({ api: new UserService({ fetcher }) });
 
 function UserProfile({ userId }: { userId: string }) {
-  // Auto-executes on mount and when userId changes
-  const { result: user, loading, error } = userQueryHooks.useGetUser({ id: userId });
+  // Pass query params via initialQuery — auto-executes on mount and when userId changes
+  const { result: user, loading, error } = userQueryHooks.useGetUser({ initialQuery: { id: userId } });
 
   if (loading) return <Spinner />;
   if (error) return <ErrorView error={error} />;

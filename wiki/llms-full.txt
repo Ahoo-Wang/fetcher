@@ -3757,8 +3757,8 @@ const fetcher = new Fetcher({
   },
 });
 
-// Use JsonEventStreamResultExtractor for type-safe JSON streaming
-import { JsonEventStreamResultExtractor } from '@ahoo-wang/fetcher-eventstream';
+// Use CompletionStreamResultExtractor — handles [DONE] termination automatically
+import { CompletionStreamResultExtractor } from '@ahoo-wang/fetcher-openai';
 
 // resultExtractor returns a JsonServerSentEventStream<ChatResponse> directly
 const jsonStream = await fetcher.fetch('/chat/completions', {
@@ -3768,7 +3768,7 @@ const jsonStream = await fetcher.fetch('/chat/completions', {
     messages: [{ role: 'user', content: 'Hello!' }],
     stream: true,
   },
-}, { resultExtractor: JsonEventStreamResultExtractor });
+}, { resultExtractor: CompletionStreamResultExtractor });
 
 for await (const event of jsonStream) {
   const content = event.data.choices[0]?.delta?.content;
@@ -3894,18 +3894,18 @@ The [`FetcherOptions`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/f
 | `validateStatus` | `(status: number) => boolean` | `status >= 200 && status < 300` | Response status validation function |
 
 ::: warning validateStatus Is Ignored With a Custom InterceptorManager
-If you provide a custom `interceptors` manager, `validateStatus` has **no effect** — the default `ValidateStatusInterceptor` is not added. You must add status validation yourself:
+If you provide a custom `interceptors` manager, the `validateStatus` option is **not passed** to it — you must configure validation via the constructor:
 
 ```typescript
-import { InterceptorManager, ValidateStatusInterceptor } from '@ahoo-wang/fetcher';
+import { InterceptorManager } from '@ahoo-wang/fetcher';
 
-const interceptors = new InterceptorManager();
-// Must manually add validation when using a custom InterceptorManager
-interceptors.response.use(new ValidateStatusInterceptor((status) => status < 500));
+// Pass validateStatus to the InterceptorManager constructor,
+// which registers a ValidateStatusInterceptor with your custom function
+const interceptors = new InterceptorManager((status) => status < 500);
 
 const fetcher = new Fetcher({
   interceptors,
-  // validateStatus here would be IGNORED
+  // validateStatus here would be IGNORED — configure it above instead
 });
 ```
 :::
@@ -9680,8 +9680,8 @@ Full request body for the chat completions endpoint. ([`types.ts:14`](https://gi
 | `stop` | `string` | `null` | Stop sequences |
 | `n` | `number` | `1` | Number of completions to generate |
 | `user` | `string` | - | End-user identifier |
-| `tools` | `any[]` | - | Tool/function definitions for function calling |
-| `tool_choice` | `string \| object` | - | Control tool selection (`"auto"`, `"none"`, or specific tool) |
+| `tools` | `string[]` | - | Tool/function definitions for function calling |
+| `tool_choice` | `{ [key: string]: any }` | - | Control tool selection (e.g., `{ type: "auto" }`) |
 | `response_format` | `object` | - | Output format constraint (e.g., `{ type: "json_object" }`) |
 
 ### Message
@@ -9700,12 +9700,17 @@ Full request body for the chat completions endpoint. ([`types.ts:14`](https://gi
 
 ### Function / Tool Calling
 
-The client supports OpenAI's function/tool calling. Since `Message` has an open index signature, you can pass tool definitions and receive tool calls without additional type friction:
+The client supports OpenAI's function/tool calling. Since `ChatRequest` has an open index signature, you can pass tool definitions and receive tool calls without additional type friction:
+
+::: tip Type Note
+The exported `ChatRequest` type defines `tools?: string[]` and `tool_choice?: { [key: string]: any }` for basic typing, but the interface includes `[property: string]: any`, so the full OpenAI tool-definition objects pass through without error.
+:::
 
 ```typescript
 const response = await openAI.chat.completions({
   model: 'gpt-4',
   messages: [{ role: 'user', content: 'What is the weather in Boston?' }],
+  // tools/tool_choice pass through via the index signature
   tools: [{
     type: 'function',
     function: {
@@ -9720,7 +9725,7 @@ const response = await openAI.chat.completions({
       },
     },
   }],
-  tool_choice: 'auto', // let the model decide
+  tool_choice: { type: 'auto' }, // let the model decide
 });
 
 // Check if the model wants to call a tool
@@ -10550,34 +10555,32 @@ The generator identifies operation types by their `operationId` suffix:
 | **Command** | (no suffix required) | `CommandClient` |
 
 ```yaml
-# Example: Cart aggregate operations
+# Example: shop.cart aggregate operations
 paths:
   /cart/{ownerId}/snapshot_state/single:
     get:
-      operationId: cart.snapshot_state.single  # → SnapshotQueryClient
-      tags: [cart]
+      operationId: shop.cart.snapshot_state.single  # 3-part: context.aggregate.suffix
+      tags: [shop.cart]                              # tag must be context.aggregate
   /cart/{ownerId}/event/list_query:
     get:
-      operationId: cart.event.list_query        # → EventStreamQueryClient
-      tags: [cart]
+      operationId: shop.cart.event.list_query
+      tags: [shop.cart]
   /cart/{ownerId}/{aggregateId}/snapshot/count:
     get:
-      operationId: cart.snapshot.count          # → count query
-      tags: [cart]
+      operationId: shop.cart.snapshot.count
+      tags: [shop.cart]
   /cart/{ownerId}/{aggregateId}/{commandName}:
     post:
-      operationId: cart.command                 # → CommandClient
-      tags: [cart]
+      operationId: shop.cart.add_item               # 3-part: context.aggregate.command
+      tags: [shop.cart]
       responses:
         '200':
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/wow.CommandOk' }
+          $ref: '#/components/responses/wow.CommandOk'  # response-level $ref, not schema-level
 ```
 
 #### Tag Naming
 
-Tags define bounded context aggregates using `{context}.{aggregate}` format. All operations sharing a tag belong to the same aggregate and are grouped into a single client class.
+Tags must follow the `{context}.{aggregate}` format (exactly two dot-separated parts). Operations sharing a tag are grouped into the same aggregate and client class.
 
 #### Reserved Schemas
 
@@ -11019,8 +11022,11 @@ Instead of writing `useExecutePromise` / `useQuery` wrappers manually for each A
 import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
 import { UserService } from './UserService'; // decorated with @api
 
+// Pass fetcher via ApiMetadata to the decorated API class constructor
+const userService = new UserService({ fetcher });
+
 // Auto-generates useCreateUser, useUpdateUser, useDeleteUser...
-const userExecuteHooks = createExecuteApiHooks({ api: new UserService(fetcher) });
+const userExecuteHooks = createExecuteApiHooks({ api: userService });
 
 // In a component — full type inference for params and return
 function CreateUserForm() {
@@ -11041,11 +11047,11 @@ function CreateUserForm() {
 import { createQueryApiHooks } from '@ahoo-wang/fetcher-react';
 
 // Auto-generates useGetUser, useListUsers, useSearchUsers...
-const userQueryHooks = createQueryApiHooks({ api: new UserService(fetcher) });
+const userQueryHooks = createQueryApiHooks({ api: new UserService({ fetcher }) });
 
 function UserProfile({ userId }: { userId: string }) {
-  // Auto-executes on mount and when userId changes
-  const { result: user, loading, error } = userQueryHooks.useGetUser({ id: userId });
+  // Pass query params via initialQuery — auto-executes on mount and when userId changes
+  const { result: user, loading, error } = userQueryHooks.useGetUser({ initialQuery: { id: userId } });
 
   if (loading) return <Spinner />;
   if (error) return <ErrorView error={error} />;
@@ -11836,7 +11842,13 @@ For multi-tenant applications, `DefaultSpaceIdProvider` determines which request
 import { CoSecConfigurer, DefaultSpaceIdProvider } from '@ahoo-wang/fetcher-cosec';
 
 const cosecConfigurer = new CoSecConfigurer({
-  tokenRefresher: async () => { /* ... */ },
+  appId: 'my-app',                       // required
+  tokenRefresher: {                      // TokenRefresher object, not bare function
+    async refresh(compositeToken) {
+      // Send refresh request, return new JwtCompositeToken
+      return refreshedToken;
+    },
+  },
   spaceIdProvider: new DefaultSpaceIdProvider({
     // Only /api/ requests get space-scoped
     spacedResourcePredicate: {
@@ -11848,7 +11860,7 @@ const cosecConfigurer = new CoSecConfigurer({
 });
 ```
 
-When the predicate matches, the `ResourceAttributionRequestInterceptor` injects the `Command-Space-Id` header automatically.
+When the predicate matches, the `CoSecRequestInterceptor` injects the `CoSec-Space-Id` header automatically.
 
 ## Cross-References
 
@@ -12079,8 +12091,7 @@ const items = await client.list(listQuery({
 // Paged
 const page = await client.paged(pagedQuery({
   condition: all(),
-  limit: 10,
-  offset: 0,
+  pagination: { index: 1, size: 10 },
 }));
 
 // Single by ID
@@ -12193,8 +12204,7 @@ import { pagedQuery, listQuery } from '@ahoo-wang/fetcher-wow';
 // Paged query with sorting
 const query = pagedQuery({
   condition: all(),
-  limit: 20,
-  offset: 0,
+  pagination: { index: 1, size: 20 },
   sort: [{ field: 'createdAt', order: 'DESC' }],
 });
 ```
@@ -12210,16 +12220,16 @@ import { cursorQuery, CURSOR_ID_START } from '@ahoo-wang/fetcher-wow';
 const firstPage = cursorQuery({
   query: { condition: all(), limit: 50, projection: { include: ['id', 'name'] } },
   cursorId: CURSOR_ID_START,  // '~' — start from the beginning
-  cursorField: 'id',
-  cursorOrder: 'ASC',
+  field: 'id',
+  direction: 'ASC',
 });
 
 // Subsequent pages — use the last item's cursor ID from the previous result
 const nextPage = cursorQuery({
   query: { condition: all(), limit: 50 },
   cursorId: lastItemId,  // cursor ID from the previous page
-  cursorField: 'id',
-  cursorOrder: 'ASC',
+  field: 'id',
+  direction: 'ASC',
 });
 ```
 
@@ -12233,14 +12243,14 @@ import { projection, pagedQuery } from '@ahoo-wang/fetcher-wow';
 // Include only specific fields
 const query = pagedQuery({
   condition: all(),
-  limit: 20,
+  pagination: { index: 1, size: 20 },
   projection: projection({ include: ['id', 'name', 'status'] }),
 });
 
 // Exclude fields
 const query2 = pagedQuery({
   condition: all(),
-  limit: 20,
+  pagination: { index: 1, size: 20 },
   projection: projection({ exclude: ['internalNotes', 'metadata'] }),
 });
 ```

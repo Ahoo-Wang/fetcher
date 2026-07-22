@@ -362,7 +362,13 @@ const deviceId = deviceStorage.getOrCreate();
 import { CoSecConfigurer, DefaultSpaceIdProvider } from '@ahoo-wang/fetcher-cosec';
 
 const cosecConfigurer = new CoSecConfigurer({
-  tokenRefresher: async () => { /* ... */ },
+  appId: 'my-app',                       // 必填
+  tokenRefresher: {                      // TokenRefresher 对象，而非裸函数
+    async refresh(compositeToken) {
+      // 发送刷新请求，返回新的 JwtCompositeToken
+      return refreshedToken;
+    },
+  },
   spaceIdProvider: new DefaultSpaceIdProvider({
     // 仅 /api/ 请求会被空间范围控制
     spacedResourcePredicate: {
@@ -374,7 +380,7 @@ const cosecConfigurer = new CoSecConfigurer({
 });
 ```
 
-当谓词匹配时，`ResourceAttributionRequestInterceptor` 会自动注入 `Command-Space-Id` 头。
+当谓词匹配时，`CoSecRequestInterceptor` 会自动注入 `CoSec-Space-Id` 头。
 
 ## 交叉引用
 
