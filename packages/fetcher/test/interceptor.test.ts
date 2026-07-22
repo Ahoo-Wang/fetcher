@@ -14,6 +14,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Fetcher, Interceptor } from '../src';
 import { FetchExchange, InterceptorRegistry } from '../src';
+import { createMockFetcher, createMockRequest } from './helpers';
 
 describe('Interceptor', () => {
   it('should define Interceptor interface', () => {
@@ -29,8 +30,8 @@ describe('Interceptor', () => {
 });
 
 describe('InterceptorRegistry', () => {
-  const mockFetcher = {} as Fetcher;
-  const mockRequest = { url: '/test' };
+  const mockFetcher = createMockFetcher();
+  const mockRequest = createMockRequest();
 
   it('should create InterceptorRegistry with default interceptors', () => {
     const registry = new InterceptorRegistry();

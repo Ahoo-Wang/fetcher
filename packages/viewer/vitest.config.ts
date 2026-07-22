@@ -19,17 +19,15 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'jsdom',
+      clearMocks: true,
+      restoreMocks: true,
+      unstubGlobals: true,
       globals: true,
       setupFiles: ['./test/setup.ts'],
       coverage: {
         exclude: [
           ...configDefaults.exclude,
           '**/**.stories.tsx',
-          //TODO exclude
-          'src/filter/panel/**',
-          'src/viewer/**',
-          'src/fetcherviewer/**',
-          'src/view/**',
         ],
       },
     },

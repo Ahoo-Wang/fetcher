@@ -11,11 +11,23 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from 'vitest';
+import type { Fetcher, FetchRequest } from '../src';
 
-describe('Modeling Types', () => {
-  it('should compile without errors', () => {
-    // This test ensures that the modeling types can be imported without compilation errors
-    expect(true).toBe(true);
-  });
-});
+/**
+ * Shared test fixtures for the fetcher package. Centralizes the mock objects
+ * (mockFetcher / mockRequest) that were previously copy-pasted across 7 test
+ * files. Each factory returns a fresh instance so tests stay isolated.
+ */
+
+/** A minimal Fetcher stub (no interceptor chain) for unit tests. */
+export function createMockFetcher(): Fetcher {
+  return {} as Fetcher;
+}
+
+/** A minimal FetchRequest with a typical test URL. */
+export function createMockRequest(
+  url = '/test',
+  overrides: Partial<FetchRequest> = {},
+): FetchRequest {
+  return { url, ...overrides } as FetchRequest;
+}

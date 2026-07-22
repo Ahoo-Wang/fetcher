@@ -14,10 +14,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Fetcher, Interceptor } from '../src';
 import { ExchangeError, FetchExchange, InterceptorManager } from '../src';
+import { createMockFetcher, createMockRequest } from './helpers';
 
 describe('InterceptorManager', () => {
-  const mockFetcher = {} as Fetcher;
-  const mockRequest = { url: '/test' };
+  const mockFetcher = createMockFetcher();
+  const mockRequest = createMockRequest();
 
   it('should create InterceptorManager with default registries', () => {
     const manager = new InterceptorManager();
@@ -189,8 +190,8 @@ describe('InterceptorManager', () => {
 
 describe('ExchangeError', () => {
   it('should create ExchangeError with error message from exchange', () => {
-    const mockFetcher = {} as Fetcher;
-    const mockRequest = { url: '/test' };
+    const mockFetcher = createMockFetcher();
+    const mockRequest = createMockRequest();
     const error = new Error('Original error');
     const exchange = new FetchExchange({
       fetcher: mockFetcher,
@@ -208,8 +209,8 @@ describe('ExchangeError', () => {
   });
 
   it('should create ExchangeError with response status text when no error message', () => {
-    const mockFetcher = {} as Fetcher;
-    const mockRequest = { url: '/test' };
+    const mockFetcher = createMockFetcher();
+    const mockRequest = createMockRequest();
     const response = new Response('error response', {
       status: 404,
       statusText: 'Not Found',
@@ -226,7 +227,7 @@ describe('ExchangeError', () => {
   });
 
   it('should create ExchangeError with default message when no error or response', () => {
-    const mockFetcher = {} as Fetcher;
+    const mockFetcher = createMockFetcher();
     const mockRequest = { url: 'https://api.example.com/test' };
     const exchange = new FetchExchange({
       fetcher: mockFetcher,

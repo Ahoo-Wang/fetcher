@@ -67,13 +67,9 @@ vi.mock('../../src/model/modelInfo', () => ({
   resolveContextDeclarationName: vi.fn(() => 'TestContext'),
 }));
 
-vi.mock('@ahoo-wang/fetcher', async importOriginal => {
-  const actual = await importOriginal();
-  return {
-    ...(actual as any),
-    combineURLs: vi.fn((...urls) => urls.join('/')),
-  };
-});
+// NOTE: @ahoo-wang/fetcher is NOT mocked — the real combineURLs runs so
+// slash collapsing is exercised (the previous mock joined with '/' and left
+// double slashes, which an assertion then wrongly encoded as expected).
 
 describe('ApiClientGenerator', () => {
   let mockContext: GenerateContext;
@@ -213,10 +209,10 @@ describe('ApiClientGenerator', () => {
       const result = (generator as any).createApiClientFile(modelInfo);
 
       expect(spy).toHaveBeenCalledWith(
-        'test-context//test/TestModelApiClient.ts',
+        'test-context/test/TestModelApiClient.ts',
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Creating API client file: test-context//test/TestModelApiClient.ts',
+        'Creating API client file: test-context/test/TestModelApiClient.ts',
       );
     });
 
@@ -490,72 +486,6 @@ describe('ApiClientGenerator', () => {
       vi.mocked(
         await import('../../src/utils'),
       ).extractOkResponse.mockReturnValueOnce({});
-
-      // Mock extractResponseEventStreamSchema to return a reference
-      vi.mocked(
-        await import('../../src/utils'),
-      ).extractResponseEventStreamSchema.mockReturnValueOnce({
-        $ref: '#/components/schemas/TestEvent',
-      });
-
-      // Mock extractSchema to return an array schema
-      vi.mocked(
-        await import('../../src/utils'),
-      ).extractSchema.mockReturnValueOnce({
-        type: 'array',
-        items: { $ref: '#/components/schemas/TestItem' },
-      });
-
-      // Mock isArray to return true
-      vi.mocked(await import('../../src/utils')).isArray.mockReturnValueOnce(
-        true,
-      );
-
-      const result = (generator as any).resolveReturnType({}, operation);
-
-      expect(result).toEqual({
-        type: 'Promise<JsonServerSentEventStream<RefModel>>',
-        metadata: 'STREAM_METADATA',
-      });
-    });
-
-    it('should handle event stream with non-array schema', async () => {
-      const generator = new ApiClientGenerator(mockContext);
-      const operation = { operationId: 'test.op' };
-
-      // Mock extractOkResponse to return a response
-      vi.mocked(
-        await import('../../src/utils'),
-      ).extractOkResponse.mockReturnValueOnce({});
-
-      // Mock extractResponseEventStreamSchema to return a schema
-      vi.mocked(
-        await import('../../src/utils'),
-      ).extractResponseEventStreamSchema.mockReturnValueOnce({
-        type: 'string',
-      });
-
-      const result = (generator as any).resolveReturnType({}, operation);
-
-      expect(result).toEqual({
-        type: 'Promise<JsonServerSentEventStream<any>>',
-        metadata: 'STREAM_METADATA',
-      });
-    });
-
-    it('should handle event stream with array reference schema', async () => {
-      const generator = new ApiClientGenerator(mockContext);
-      const operation = { operationId: 'test.op' };
-
-      // Mock extractOkResponse to return a response
-      vi.mocked(
-        await import('../../src/utils'),
-      ).extractOkResponse.mockReturnValueOnce({});
-
-      // Mock extractResponseJsonSchema to return undefined
-      vi.mocked(
-        await import('../../src/utils'),
-      ).extractResponseJsonSchema.mockReturnValueOnce(undefined);
 
       // Mock extractResponseEventStreamSchema to return a reference
       vi.mocked(

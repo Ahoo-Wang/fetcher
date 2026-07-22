@@ -197,48 +197,13 @@ describe('TopBar', () => {
     });
   });
 
-  describe('onReset callback', () => {
-    it('should call onReset when reset button is clicked', () => {
-      const onReset = vi.fn();
-
-      const { container } = render(
-        <TopBar<RecordType>
-          {...requiredProps}
-          viewChanged={true}
-          onReset={onReset}
-        />,
-      );
-
-      const resetButton = Array.from(container.querySelectorAll('button')).find(
-        button => button.textContent === '重置',
-      );
-
-      if (resetButton) {
-        fireEvent.click(resetButton);
-        expect(onReset).toHaveBeenCalled();
-      }
-    });
-  });
-
-  describe('onShowViewPanelChange callback', () => {
-    it('should call onShowViewPanelChange when unfold button is clicked', () => {
-      const onShowViewPanelChange = vi.fn();
-
-      const { container } = render(
-        <TopBar<RecordType>
-          {...requiredProps}
-          showViewPanel={false}
-          onShowViewPanelChange={onShowViewPanelChange}
-        />,
-      );
-
-      const unfoldButton = container.querySelector('.anticon-menu-unfold');
-      if (unfoldButton) {
-        fireEvent.click(unfoldButton.parentElement!);
-        expect(onShowViewPanelChange).toHaveBeenCalledWith(true);
-      }
-    });
-  });
+  // The onReset / onShowViewPanelChange callback tests were removed: they
+  // used `if (button) { ... }` guards that silently passed when the button
+  // was absent (which it was, under these props). Verifying the fix showed
+  // the reset/unfold buttons do not render under the test's prop
+  // combination, so these tests never tested anything. Real interaction
+  // tests that render the buttons and assert the callbacks belong in a
+  // focused follow-up with the correct prop combinations.
 
   describe('batch actions', () => {
     it('should render batch actions when enabled', () => {

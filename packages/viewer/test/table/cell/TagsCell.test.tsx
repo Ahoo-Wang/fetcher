@@ -586,7 +586,9 @@ describe('TagsCell Component', () => {
       };
 
       render(<TagsCell {...props} />);
-      const closeButton = screen.getByRole('img', { hidden: true });
+      // Ant Design renders the tag close icon with role="img" (v6.3.5) or
+      // role="button" (v6.3.7+). Query by its stable accessible name instead.
+      const closeButton = screen.getByLabelText('Close');
       expect(closeButton).toBeInTheDocument();
       expect(closeButton).toHaveAttribute('aria-label', 'Close');
     });

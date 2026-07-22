@@ -299,12 +299,13 @@ describe('CoSecRequestInterceptor', () => {
 
   describe('intercept multiple times', () => {
     it('should generate unique request IDs for each request', async () => {
-      const originalGenerateId = idGenerator.generateId;
+      // Use the module-level vi.mock (not a hand-rolled save/restore that
+      // leaks if the test fails). restoreMocks config resets after the test.
       let callCount = 0;
-      idGenerator.generateId = vi.fn(() => {
+      vi.mocked(idGenerator.generateId).mockImplementation(() => {
         callCount++;
         return `request-id-${callCount}`;
-      }) as typeof idGenerator.generateId;
+      });
 
       const testInterceptor = new CoSecRequestInterceptor({
         appId: 'test-app-id',
@@ -320,8 +321,6 @@ describe('CoSecRequestInterceptor', () => {
         mockExchange.requestHeaders[CoSecHeaders.REQUEST_ID];
 
       expect(firstRequestId).not.toBe(secondRequestId);
-
-      idGenerator.generateId = originalGenerateId;
     });
 
     it('should use same device ID for multiple requests', async () => {
@@ -420,10 +419,7 @@ describe('CoSecRequestInterceptor', () => {
 
     it('should handle very long request ID', async () => {
       const longRequestId = 'a'.repeat(100);
-      const originalGenerateId = idGenerator.generateId;
-      idGenerator.generateId = vi.fn(
-        () => longRequestId,
-      ) as typeof idGenerator.generateId;
+      vi.mocked(idGenerator.generateId).mockReturnValue(longRequestId);
 
       const interceptorWithLongId = new CoSecRequestInterceptor({
         appId: 'test-app',
@@ -440,8 +436,6 @@ describe('CoSecRequestInterceptor', () => {
       expect(mockExchange.requestHeaders[CoSecHeaders.REQUEST_ID].length).toBe(
         100,
       );
-
-      idGenerator.generateId = originalGenerateId;
     });
 
     it('should handle all HTTP methods', async () => {

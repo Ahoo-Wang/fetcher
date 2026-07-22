@@ -1,4 +1,10 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+} from 'vitest';
 import {
   HttpMethod,
   JsonResultExtractor,
@@ -13,7 +19,10 @@ import { ParameterType, type ParameterMetadata } from '../src';
 const mockFetcher = new NamedFetcher('mock-fetcher');
 
 describe('RequestExecutor', () => {
-  beforeAll(() => {
+  // Re-stub before every test: the suite-wide restoreMocks config restores
+  // spies after each test, so a one-shot beforeAll spy would leak-fail from
+  // the second test on.
+  beforeEach(() => {
     vi.spyOn(mockFetcher.interceptors, 'exchange').mockImplementation(
       async exchange => {
         // Mock the extractResult to return a mock value
@@ -21,18 +30,6 @@ describe('RequestExecutor', () => {
         return exchange;
       },
     );
-  });
-
-  afterAll(() => {
-    vi.restoreAllMocks();
-  });
-
-  afterAll(() => {
-    vi.restoreAllMocks();
-  });
-
-  afterAll(() => {
-    vi.restoreAllMocks();
   });
 
   const mockApiMetadata = {
