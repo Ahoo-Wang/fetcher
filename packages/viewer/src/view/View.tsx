@@ -300,7 +300,7 @@ export function View<RecordType>({
   const handleSortChanged = (
     sorter: SorterResult<RecordType> | SorterResult<RecordType>[],
   ) => {
-    let finalSorter: FieldSort[] = [];
+    let finalSorter: FieldSort[];
     if (Array.isArray(sorter)) {
       finalSorter = sorter
         .filter(it => it.field)

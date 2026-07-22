@@ -11,13 +11,15 @@
  * limitations under the License.
  */
 
-declare const globalThis: {
-  BroadcastChannel?: new (name: string) => {
-    postMessage: (data: unknown) => void;
-    close: () => void;
-    onmessage: ((event: { data: unknown }) => void) | null;
-  };
-};
+declare global {
+  var BroadcastChannel:
+    | (new (name: string) => {
+        postMessage: (data: unknown) => void;
+        close: () => void;
+        onmessage: ((event: { data: unknown }) => void) | null;
+      })
+    | undefined;
+}
 
 import {
   describe,

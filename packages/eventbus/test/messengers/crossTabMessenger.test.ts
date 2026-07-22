@@ -11,20 +11,21 @@
  * limitations under the License.
  */
 
-declare const globalThis: {
-  BroadcastChannel?: new (name: string) => {
-    postMessage: (data: unknown) => void;
-    close: () => void;
-    onmessage: ((event: { data: unknown }) => void) | null;
-  };
-  window?: Record<string, unknown>;
-  StorageEvent?: new (
-    type: string,
-    eventInitDict?: StorageEventInit,
-  ) => StorageEvent;
-  localStorage?: Record<string, unknown>;
-  sessionStorage?: Record<string, unknown>;
-};
+declare global {
+  var BroadcastChannel:
+    | (new (name: string) => {
+        postMessage: (data: unknown) => void;
+        close: () => void;
+        onmessage: ((event: { data: unknown }) => void) | null;
+      })
+    | undefined;
+  var window: Record<string, unknown> | undefined;
+  var StorageEvent:
+    | (new (type: string, eventInitDict?: StorageEventInit) => StorageEvent)
+    | undefined;
+  var localStorage: Record<string, unknown> | undefined;
+  var sessionStorage: Record<string, unknown> | undefined;
+}
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
