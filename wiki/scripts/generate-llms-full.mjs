@@ -21,8 +21,8 @@
  * - Orders pages by importance (Onboarding → Getting Started → Architecture → Packages → API → Testing)
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'node:fs'
-import { join, relative, dirname } from 'node:path'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
