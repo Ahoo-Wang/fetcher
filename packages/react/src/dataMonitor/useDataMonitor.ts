@@ -31,16 +31,18 @@ export function useDataMonitor(
     dataMonitorService.isEnabled(viewId),
   );
   const viewIdRef = useRef(viewId);
+  const [prevViewId, setPrevViewId] = useState(viewId);
 
   // 保持 ref 与最新 viewId 同步
   useEffect(() => {
     viewIdRef.current = viewId;
   }, [viewId]);
 
-  // 监听 viewId 变化，同步 isEnabled 状态
-  useEffect(() => {
+  // 监听 viewId 变化，同步 isEnabled 状态（在渲染阶段调整，避免在 effect 中调用 setState）
+  if (viewId !== prevViewId) {
+    setPrevViewId(viewId);
     setIsEnabled(dataMonitorService.isEnabled(viewId));
-  }, [viewId]);
+  }
 
   // 监听 condition 变化
   useEffect(() => {

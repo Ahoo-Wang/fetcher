@@ -4,7 +4,7 @@ import type { MenuProps } from 'antd';
 import { Dropdown, Tooltip } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
 import type { SizeType } from 'antd/es/config-provider/SizeContext';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocale } from '../locale';
 
 export interface ColumnHeightBarItemProps extends TopBarItemProps {
@@ -16,12 +16,16 @@ export function ColumnHeightBarItem(props: ColumnHeightBarItemProps) {
   const { className, defaultTableSize, onChange } = props;
 
   const [tableSize, setTableSize] = useState<SizeType>(defaultTableSize);
+  const [prevDefaultTableSize, setPrevDefaultTableSize] =
+    useState(defaultTableSize);
 
   const { locale } = useLocale();
 
-  useEffect(() => {
+  // 监听 defaultTableSize 变化，同步 tableSize（在渲染阶段调整，避免在 effect 中调用 setState）
+  if (defaultTableSize !== prevDefaultTableSize) {
+    setPrevDefaultTableSize(defaultTableSize);
     setTableSize(defaultTableSize);
-  }, [defaultTableSize]);
+  }
 
   const items: MenuProps['items'] = [
     {
