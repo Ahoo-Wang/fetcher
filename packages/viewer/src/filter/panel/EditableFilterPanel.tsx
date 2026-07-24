@@ -12,7 +12,7 @@
  */
 
 import type { Key } from 'react';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from 'antd';
 import type {
   AvailableFilterGroup,
@@ -44,13 +44,16 @@ export function EditableFilterPanel(props: EditableFilterPanelProps) {
     onChange,
   } = props;
   const [activeFilters, setActiveFilters] = useState(filters);
+  const [prevFilters, setPrevFilters] = useState(filters);
   const [modalOpen, setModalOpen] = useState(false);
 
   const { locale } = useLocale();
 
-  useEffect(() => {
+  // 监听 filters 变化，同步 activeFilters（在渲染阶段调整，避免在 effect 中调用 setState）
+  if (filters !== prevFilters) {
+    setPrevFilters(filters);
     setActiveFilters(filters);
-  }, [filters]);
+  }
 
   const handleAddFilter = (selectedAvailableFilters: AvailableFilter[]) => {
     if (selectedAvailableFilters.length === 0) {

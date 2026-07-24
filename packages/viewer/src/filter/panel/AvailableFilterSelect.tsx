@@ -23,7 +23,7 @@ import type { StyleCapable } from '../../types';
 import styles from './AvailableFilterSelect.module.css';
 
 import type { Key, RefAttributes } from 'react';
-import { useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import { useImperativeHandle, useMemo, useState } from 'react';
 import type { ActiveFilter } from './FilterPanel';
 import type { AttributesCapable } from '@ahoo-wang/fetcher';
 import type { ConditionOptions } from '@ahoo-wang/fetcher-wow';
@@ -62,6 +62,14 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
   const [selectedFilters, setSelectedFilters] = useState<Key[]>(
     activeFilterFieldNames,
   );
+  const [prevActiveFilterFieldNames, setPrevActiveFilterFieldNames] =
+    useState(activeFilterFieldNames);
+
+  // 监听 activeFilterFieldNames 变化，同步 selectedFilters（在渲染阶段调整，避免在 effect 中调用 setState）
+  if (activeFilterFieldNames !== prevActiveFilterFieldNames) {
+    setPrevActiveFilterFieldNames(activeFilterFieldNames);
+    setSelectedFilters(activeFilterFieldNames);
+  }
 
   useImperativeHandle(ref, () => ({
     getValue(): AvailableFilter[] {
@@ -84,9 +92,6 @@ export function AvailableFilterSelect(props: AvailableFilterSelectProps) {
     }
   };
 
-  useEffect(() => {
-    setSelectedFilters(activeFilterFieldNames);
-  }, [activeFilterFieldNames]);
   return (
     <div className={styles.filterContent}>
       {filters.map((group, index) => (

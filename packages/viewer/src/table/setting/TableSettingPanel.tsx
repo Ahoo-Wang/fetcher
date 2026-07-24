@@ -15,7 +15,6 @@ import type { RefAttributes } from 'react';
 import React, {
   useState,
   useCallback,
-  useEffect,
   useImperativeHandle,
 } from 'react';
 import { TableFieldItem } from './TableFieldItem';
@@ -75,10 +74,13 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
   const [dragState, setDragState] = useState<DragState | null>(null);
 
   const [columns, setColumns] = useState(initialColumns);
+  const [prevInitialColumns, setPrevInitialColumns] = useState(initialColumns);
 
-  useEffect(() => {
+  // 监听 initialColumns 变化，同步 columns（在渲染阶段调整，避免在 effect 中调用 setState）
+  if (initialColumns !== prevInitialColumns) {
+    setPrevInitialColumns(initialColumns);
     setColumns(initialColumns);
-  }, [initialColumns]);
+  }
 
   // Add index information to each column for easier manipulation
   // This creates a local copy with sequential indices for drag/drop operations

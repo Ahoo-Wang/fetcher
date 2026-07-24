@@ -1,5 +1,5 @@
 import type { TopBarItemProps } from './types';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { BarItem } from './BarItem';
 import { FilterOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
@@ -13,10 +13,14 @@ export function FilterBarItem(props: FilterBarItemProps) {
   const { style, className, defaultShowFilter, onChange } = props;
 
   const [active, setActive] = useState(defaultShowFilter);
+  const [prevDefaultShowFilter, setPrevDefaultShowFilter] =
+    useState(defaultShowFilter);
 
-  useEffect(() => {
+  // 监听 defaultShowFilter 变化，同步 active（在渲染阶段调整，避免在 effect 中调用 setState）
+  if (defaultShowFilter !== prevDefaultShowFilter) {
+    setPrevDefaultShowFilter(defaultShowFilter);
     setActive(defaultShowFilter);
-  }, [defaultShowFilter]);
+  }
 
   const handleClick = () => {
     setActive(!active);
