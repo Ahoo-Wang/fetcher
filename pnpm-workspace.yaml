@@ -13,7 +13,7 @@ catalog:
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/react': ^16.3.2
   '@types/node': ^24.12.2
-  '@types/react': ^19.2.14
+  '@types/react': ^19.2.17
   '@types/react-dom': ^19.2.3
   '@vitejs/plugin-react': ^6.0.4
   '@vitest/browser': ^4.1.5
@@ -28,7 +28,7 @@ catalog:
   dequal: ^2.0.3
   eslint: ^10.7.0
   eslint-plugin-react-compiler: ^19.1.0-rc.2
-  eslint-plugin-react-hooks: ^7.0.1
+  eslint-plugin-react-hooks: ^7.1.1
   globals: ^17.6.0
   immer: ^11.1.15
   jsdom: ^29.0.0
@@ -36,9 +36,9 @@ catalog:
   nanoid: ^5.1.16
   playwright: ^1.58.2
   prettier: ^3.8.3
-  react: ^19.2.5
+  react: ^19.2.8
   react-compiler-runtime: ^1.0.0
-  react-dom: ^19.2.5
+  react-dom: ^19.2.8
   react-use: ^17.6.1
   reflect-metadata: ^0.2.2
   ts-morph: ^28.0.0
