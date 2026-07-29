@@ -58,8 +58,8 @@ catalogs:
       specifier: ^1.0.0
       version: 1.0.0
     babel-plugin-transform-typescript-metadata:
-      specifier: ^0.3.2
-      version: 0.3.2
+      specifier: ^0.4.0
+      version: 0.4.0
     commander:
       specifier: ^14.0.3
       version: 14.0.3
@@ -884,7 +884,7 @@ importers:
         version: 1.0.0
       babel-plugin-transform-typescript-metadata:
         specifier: 'catalog:'
-        version: 0.3.2(@babel/core@7.29.0)(@babel/traverse@7.29.7)
+        version: 0.4.0(@babel/core@7.29.0)
       eslint:
         specifier: 'catalog:'
         version: 10.7.0
@@ -3579,14 +3579,10 @@ packages:
   babel-plugin-react-compiler@1.0.0:
     resolution: {integrity: sha512-Ixm8tFfoKKIPYdCCKYTsqv+Fd4IJ0DQqMyEimo+pxUOMUR9cVPlwTrFt9Avu+3cb6Zp3mAzl+t1MrG2fxxKsxw==}
 
-  babel-plugin-transform-typescript-metadata@0.3.2:
-    resolution: {integrity: sha512-mWEvCQTgXQf48yDqgN7CH50waTyYBeP2Lpqx4nNWab9sxEpdXVeKgfj1qYI2/TgUPQtNFZ85i3PemRtnXVYYJg==}
+  babel-plugin-transform-typescript-metadata@0.4.0:
+    resolution: {integrity: sha512-thy3pV6nMurTsjxONcv14/AyWCLY3RoftFQGJSTrhLOToYSVFCQlm2PD6KHK1UqHPKHwRPXgujfUWhrKuVctcg==}
     peerDependencies:
-      '@babel/core': ^7
-      '@babel/traverse': ^7
-    peerDependenciesMeta:
-      '@babel/traverse':
-        optional: true
+      '@babel/core': ^7.0.0 || ^8.0.0-0
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -8508,12 +8504,10 @@ snapshots:
     dependencies:
       '@babel/types': 7.28.5
 
-  babel-plugin-transform-typescript-metadata@0.3.2(@babel/core@7.29.0)(@babel/traverse@7.29.7):
+  babel-plugin-transform-typescript-metadata@0.4.0(@babel/core@7.29.0):
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/helper-plugin-utils': 7.28.6
-    optionalDependencies:
-      '@babel/traverse': 7.29.7
+      '@babel/helper-plugin-utils': 7.29.7
 
   balanced-match@1.0.2:
     optional: true

@@ -22,7 +22,7 @@ catalog:
   '@vitest/ui': ^4.1.10
   antd: ^6.3.7
   babel-plugin-react-compiler: ^1.0.0
-  babel-plugin-transform-typescript-metadata: ^0.3.2
+  babel-plugin-transform-typescript-metadata: ^0.4.0
   commander: ^14.0.3
   dayjs: ^1.11.21
   dequal: ^2.0.3
