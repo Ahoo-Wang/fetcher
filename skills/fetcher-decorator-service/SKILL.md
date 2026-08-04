@@ -1,7 +1,7 @@
 ---
 name: fetcher-decorator-service
 description: >
-  Use when creating declarative TypeScript API service classes with fetcher-decorator, including @api, HTTP method decorators, path/query/header/body/request parameters, result extractors, lifecycle hooks, inheritance, and reflect-metadata setup.
+  Use when building declarative TypeScript API service classes with fetcher-decorator (`@api`, HTTP-method and parameter decorators) instead of hand-written Fetcher calls.
 ---
 
 # fetcher-decorator-service

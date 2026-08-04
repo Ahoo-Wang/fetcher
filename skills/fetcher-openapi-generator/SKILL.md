@@ -1,7 +1,7 @@
 ---
 name: fetcher-openapi-generator
 description: >
-  Use when generating type-safe Fetcher API clients from OpenAPI 3.x specs, including fetcher-generator CLI usage, CodeGenerator API, GeneratorConfiguration, parse and generation pipeline, model generation, client generation, barrel exports, and Wow CQRS generation support.
+  Use when generating type-safe Fetcher API clients from OpenAPI 3.x specs via the `fetcher-generator` CLI or `CodeGenerator` API, including Wow CQRS client generation.
 ---
 
 # fetcher-openapi-generator

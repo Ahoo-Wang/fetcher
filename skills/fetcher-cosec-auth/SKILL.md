@@ -1,7 +1,7 @@
 ---
 name: fetcher-cosec-auth
 description: >
-  Use when implementing CoSec authentication with Fetcher, including CoSecConfigurer, JWT token lifecycle, token storage, refresh handling, device ID storage, multi-tenant space resolution, resource attribution, authorization headers, and 401 or 403 error handling.
+  Use when adding CoSec authentication to Fetcher — JWT token lifecycle, refresh, device IDs, tenant/space resolution, resource attribution, and 401/403 handling.
 ---
 
 # fetcher-cosec-auth

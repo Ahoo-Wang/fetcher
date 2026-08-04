@@ -1,7 +1,7 @@
 ---
 name: fetcher-viewer-components
 description: >
-  Use when building Fetcher Viewer React and Ant Design data table experiences, including FetcherViewer, Viewer, View, ViewTable, FilterPanel, EditableFilterPanel, view management, TopBar actions, row selection, column settings, cell renderers, and form controls.
+  Use when building Fetcher Viewer data-table UIs in React + Ant Design — `FetcherViewer`/`Viewer`/`View`, filter panels, view management, actions, and cell renderers.
 ---
 
 # fetcher-viewer-components

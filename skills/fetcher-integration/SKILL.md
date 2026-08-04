@@ -1,7 +1,7 @@
 ---
 name: fetcher-integration
 description: >
-  Use when setting up the core Fetcher HTTP client, NamedFetcher, fetcherRegistrar, HTTP methods, path and query parameters, interceptors, timeouts, result extractors, request lifecycle, status validation, or URL templates.
+  Use when setting up the core Fetcher HTTP client — `Fetcher`/`NamedFetcher`, interceptors, URL params, timeouts, result extractors, and status validation.
 ---
 
 # fetcher-integration

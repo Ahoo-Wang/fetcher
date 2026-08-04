@@ -1,7 +1,7 @@
 ---
 name: fetcher-react-hooks
 description: >
-  Use when building React data-fetching and state hooks with fetcher-react, including usePromiseState, useExecutePromise, useFetcher, useQuery, useFetcherQuery, storage hooks, event subscriptions, utility hooks, Wow query hooks, data monitor hooks, and AbortController behavior.
+  Use when building React data-fetching and state hooks with fetcher-react (`useFetcher`, `useQuery`, `useExecutePromise`, plus storage, event, and Wow query hooks) and AbortController/unmount safety.
 ---
 
 # fetcher-react-hooks
