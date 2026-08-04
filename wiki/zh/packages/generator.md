@@ -333,10 +333,10 @@ const generator = new CodeGenerator({
   inputPath: './openapi.yaml',
   outputDir: './src/generated',
   tsConfigFilePath: './tsconfig.json',
-  // `logger` 必须实现完整的 Logger 接口
-  // （info、success、error、progress、progressWithCount），
-  // 因此全局 `console` 不是合法取值。省略该字段会使用默认的 ConsoleLogger，
-  // 也可以提供自定义实现：
+  // `logger` 为必填，且必须实现完整的 Logger 接口
+  // （info、success、error、progress、progressWithCount）。
+  // 全局 `console` 不是合法取值，ConsoleLogger 也不属于公开 API，
+  // 因此必须提供自定义实现：
   logger: {
     info(message, ...params) { console.log(message, ...params); },
     success(message, ...params) { console.log('✓', message, ...params); },
