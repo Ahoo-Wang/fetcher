@@ -67,7 +67,7 @@ graph TB
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { CoSecConfigurer, CoSecTokenRefresher } from '@ahoo-wang/fetcher-cosec';
 
-const fetcher = new Fetcher({ baseUrl: 'https://api.example.com' });
+const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
 const configurer = new CoSecConfigurer({
   appId: 'my-web-app',
@@ -140,7 +140,7 @@ const users = await fetcher.get('/api/users');
 4. 使用新令牌重试原始请求
 5. 刷新失败时清除令牌
 
-来源: [packages/cosec/src/authorizationResponseInterceptor.ts:42-81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L42-L81)
+来源: [packages/cosec/src/authorizationResponseInterceptor.ts:57-111](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L57-L111)
 
 ### ResourceAttributionRequestInterceptor
 

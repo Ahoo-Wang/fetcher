@@ -333,7 +333,16 @@ const generator = new CodeGenerator({
   inputPath: './openapi.yaml',
   outputDir: './src/generated',
   tsConfigFilePath: './tsconfig.json',
-  logger: console,
+  // `logger` must implement the Logger interface (success / progress / progressWithCount),
+  // so the global `console` is not a valid value. Omit it to use the default ConsoleLogger,
+  // or provide a custom implementation:
+  logger: {
+    success(message, ...params) { console.log('✓', message, ...params); },
+    progress(message, level?, ...params) { console.log(message, ...params); },
+    progressWithCount(message, current, total, ...params) {
+      console.log(`${message} (${current}/${total})`, ...params);
+    },
+  },
 });
 
 await generator.generate();
@@ -341,15 +350,17 @@ await generator.generate();
 
 ## Key Exports
 
+The package entry (`index.ts`) publicly exports only the following; the other types listed below are internal implementation types used by the generator pipeline.
+
 | Export | Description |
 |--------|-------------|
-| `CodeGenerator` | Main orchestrator class |
-| `GeneratorOptions` | Configuration options for code generation |
-| `GenerateContext` | Context object passed through the generation pipeline |
-| `Generator` | Interface implemented by all generator stages |
-| `Logger` | Logging interface for progress reporting |
-| `GeneratorConfiguration` | Per-tag configuration for API client generation |
-| `DEFAULT_CONFIG_PATH` | Default config file path (`./fetcher-generator.config.json`) |
+| `CodeGenerator` | Main orchestrator class (public) |
+| `DEFAULT_CONFIG_PATH` | Default config file path (`./fetcher-generator.config.json`, public) |
+| `GeneratorOptions` | Configuration options (internal, `types.ts`) |
+| `GenerateContext` | Context object passed through the pipeline (internal, `generateContext.ts`) |
+| `Generator` | Interface implemented by all generator stages (internal, `generateContext.ts`) |
+| `Logger` | Logging interface for progress reporting (internal, `types.ts`) |
+| `GeneratorConfiguration` | Per-tag configuration for API client generation (internal, `types.ts`) |
 
 ## Dependencies
 
@@ -358,6 +369,7 @@ await generator.generate();
 - **[@ahoo-wang/fetcher-openapi](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi)** -- OpenAPI 3.x type definitions
 - **[@ahoo-wang/fetcher](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher)** -- URL utilities (`combineURLs`)
 - **[@ahoo-wang/fetcher-decorator](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator)** -- Decorator utilities for generated clients
+- **[@ahoo-wang/fetcher-eventstream](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream)** -- Streaming result extractors used by generated streaming clients
 - **[@ahoo-wang/fetcher-wow](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow)** -- Wow framework types for aggregate definitions
 
 ## Cross-References

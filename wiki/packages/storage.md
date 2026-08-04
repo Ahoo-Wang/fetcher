@@ -114,7 +114,7 @@ prefsStorage.destroy();
 | `serializer` | `Serializer<string, T>` | `jsonSerializer` | Serialization strategy |
 | `storage` | `Storage` | `getStorage()` | Backend storage (auto-detected) |
 | `eventBus` | `TypedEventBus<StorageEvent<T>>` | `SerialTypedEventBus` | Change notification bus |
-| `defaultValue` | `T \| null` | `null` | Default value when key is missing |
+| `defaultValue` | `T` | `null` | Default value returned by `get()` when key is missing |
 
 Source: [packages/storage/src/keyStorage.ts:80-235](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L80-L235)
 

@@ -107,7 +107,7 @@ function DataView() {
 | `ownerId` | `string` | `'(0)'` | Owner ID for data scoping |
 | `tenantId` | `string` | `'(0)'` | Tenant ID for data scoping |
 | `defaultViewId` | `string` | -- | Default view to activate |
-| `pagination` | `false \| PaginationProps` | (required) | Pagination configuration or `false` to disable |
+| `pagination` | `false \| PaginationProps` | *(required)* | Pagination configuration or `false` to disable |
 | `actionColumn` | `ViewTableActionColumn` | -- | Row action column configuration |
 | `onClickPrimaryKey` | `(id, record) => void` | -- | Click handler for primary key cells |
 | `enableRowSelection` | `boolean` | `false` | Enable checkbox row selection |
@@ -269,14 +269,14 @@ Table cells are dispatched by type using the same registry pattern as filters:
 | `text` | `TextCell` | Plain text display with ellipsis support |
 | `tag` | `TagCell` | Single Ant Design Tag |
 | `tags` | `TagsCell` | Multiple Ant Design Tags |
-| `dateTime` | `DateTimeCell` | Formatted date/time display |
-| `calendar` | `CalendarTimeCell` | Calendar-based time display |
+| `datetime` | `DateTimeCell` | Formatted date/time display |
+| `calendar-time` | `CalendarTimeCell` | Calendar-based time display |
 | `image` | `ImageCell` | Image preview with thumbnail |
-| `imageGroup` | `ImageGroupCell` | Group of image previews |
+| `image-group` | `ImageGroupCell` | Group of image previews |
 | `link` | `LinkCell` | Clickable link |
 | `currency` | `CurrencyCell` | Formatted currency display |
 | `avatar` | `AvatarCell` | User avatar display |
-| `primaryKey` | `PrimaryKeyCell` | Clickable primary key cell |
+| `primary-key` | `PrimaryKeyCell` | Clickable primary key cell |
 | `action` | `ActionCell` | Single action button |
 | `actions` | `ActionsCell` | Multiple action buttons |
 
@@ -347,7 +347,7 @@ Each view (`ViewState`) persists:
 Views are managed via [Wow](./wow.md) command operations through `ViewCommandClient`:
 - `createView` -- create a new view
 - `editView` -- update an existing view
-- `deleteAggregate` -- delete a view
+- `defaultDeleteAggregate` -- delete a view
 
 Source: [packages/viewer/src/fetcherviewer/client/view/commandClient.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/commandClient.ts)
 

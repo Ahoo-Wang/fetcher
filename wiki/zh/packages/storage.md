@@ -114,7 +114,7 @@ prefsStorage.destroy();
 | `serializer` | `Serializer<string, T>` | `jsonSerializer` | 序列化策略 |
 | `storage` | `Storage` | `getStorage()` | 后端存储（自动检测） |
 | `eventBus` | `TypedEventBus<StorageEvent<T>>` | `SerialTypedEventBus` | 变更通知总线 |
-| `defaultValue` | `T \| null` | `null` | 键缺失时的默认值 |
+| `defaultValue` | `T` | `null` | 键缺失时 `get()` 返回的默认值 |
 
 来源: [packages/storage/src/keyStorage.ts:80-235](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L80-L235)
 

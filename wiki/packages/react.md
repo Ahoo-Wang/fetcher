@@ -194,6 +194,7 @@ autonumber
 
 ```typescript
 import { useFetcher } from '@ahoo-wang/fetcher-react';
+import { ResultExtractors } from '@ahoo-wang/fetcher';
 
 function UserProfile({ userId }: { userId: string }) {
   const { loading, result, error, execute } = useFetcher<User>({
@@ -372,7 +373,7 @@ Security-related hooks for applications using [CoSec](./cosec.md) authentication
 |------------------|-------------|
 | `useSecurity` | Access current authentication state (`authenticated`, `currentUser`) |
 | `SecurityContext` | React context providing CoSec security state to child components |
-| `RouteGuard` | Guard component that redirects unauthenticated users |
+| `RouteGuard` | Conditionally renders `children` (when authenticated) or `fallback`; optional `onUnauthorized` callback for redirect wiring |
 | `RefreshableRouteGuard` | Route guard that attempts token refresh before redirecting |
 
 Source: [packages/react/src/cosec/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/)
@@ -383,8 +384,8 @@ React bindings for the [Storage](./storage.md) package:
 
 | Hook | Description |
 |------|-------------|
-| `useKeyStorage<T>` | Reactive binding to a `KeyStorage<T>` instance. Returns `[value, setValue, remove]` tuple. Auto-re-renders on storage changes. |
-| `useImmerKeyStorage<T>` | Like `useKeyStorage` but accepts Immer-style draft mutations |
+| `useKeyStorage<T>` | Reactive binding to a `KeyStorage<T>` instance. Returns a `[value, setValue, remove]` tuple. Auto-re-renders on storage changes. |
+| `useImmerKeyStorage<T>` | Like `useKeyStorage` but accepts Immer-style draft mutations. Returns `[value, updateImmer, remove]`. |
 
 Source: [packages/react/src/storage/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/)
 
@@ -428,6 +429,7 @@ Source: [packages/react/src/core/](https://github.com/Ahoo-Wang/fetcher/blob/mai
 | `useFetcherQuery` | `fetcher/` | POST-based query with Fetcher |
 | `PromiseStatus` | `core/` | Enum: `IDLE`, `LOADING`, `SUCCESS`, `ERROR` |
 | `useKeyStorage` | `storage/` | Reactive storage binding |
+| `useImmerKeyStorage` | `storage/` | Reactive storage binding with Immer-style draft updates |
 | `useEventSubscription` | `eventbus/` | Event bus subscription with auto-cleanup |
 
 ## Cross-References

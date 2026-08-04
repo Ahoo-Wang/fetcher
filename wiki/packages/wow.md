@@ -55,7 +55,6 @@ graph TB
     COND --> OP
 
     style CC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
-    style CSC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style SQC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style ESQC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style LSAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
@@ -136,7 +135,6 @@ classDiagram
         +id: string
         +waitCommandId: string
         +stage: CommandStage
-        +contextAlias: string
         +contextName: string
         +aggregateName: string
         +aggregateId: string
@@ -237,13 +235,13 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 |--------|----------|---------|-------------|
 | `count(condition)` | `/snapshot/count` | `Promise<number>` | Count matching aggregates |
 | `list(listQuery)` | `/snapshot/list` | `Promise<MaterializedSnapshot<S>[]>` | List snapshots |
-| `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<SSE>>` | List as SSE stream |
-| `listState(listQuery)` | `/snapshot/list_state` | `Promise<S[]>` | List state only |
-| `listStateStream(listQuery)` | `/snapshot/list_state` | `Promise<ReadableStream<SSE>>` | State as SSE stream |
+| `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | List as SSE stream |
+| `listState(listQuery)` | `/snapshot/list/state` | `Promise<S[]>` | List state only |
+| `listStateStream(listQuery)` | `/snapshot/list/state` | `Promise<ReadableStream<JsonServerSentEvent<S>>>` | State as SSE stream |
 | `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<S>>` | Paginated snapshots |
-| `pagedState(pagedQuery)` | `/snapshot/paged_state` | `Promise<PagedList<S>>` | Paginated state |
+| `pagedState(pagedQuery)` | `/snapshot/paged/state` | `Promise<PagedList<S>>` | Paginated state |
 | `single(singleQuery)` | `/snapshot/single` | `Promise<MaterializedSnapshot<S>>` | Single snapshot |
-| `singleState(singleQuery)` | `/snapshot/single_state` | `Promise<S>` | Single state |
+| `singleState(singleQuery)` | `/snapshot/single/state` | `Promise<S>` | Single state |
 | `getById(id)` | -- | `Promise<MaterializedSnapshot<S>>` | Get by aggregate ID |
 | `getStateById(id)` | -- | `Promise<S>` | Get state by ID |
 | `getByIds(ids)` | -- | `Promise<MaterializedSnapshot<S>[]>` | Get multiple by IDs |
@@ -287,7 +285,7 @@ Source: [packages/wow/src/query/queryClients.ts:62-214](https://github.com/Ahoo-
 The condition system supports building complex query predicates:
 
 ```typescript
-import { all, condition, aggregateId, aggregateIds } from '@ahoo-wang/fetcher-wow';
+import { all, and, isIn, between, aggregateId, aggregateIds } from '@ahoo-wang/fetcher-wow';
 
 // All records
 const allCondition = all();
@@ -298,44 +296,50 @@ const byId = aggregateId('cart-123');
 // By multiple IDs
 const byIds = aggregateIds(['cart-1', 'cart-2', 'cart-3']);
 
-// Complex conditions with operators
-const complex = condition({
-  field: 'status',
-  operator: 'IN',
-  value: ['ACTIVE', 'PENDING'],
-}).and({
-  field: 'createdAt',
-  operator: 'BETWEEN',
-  value: ['2024-01-01', '2024-12-31'],
-});
+// Complex conditions composed with logical helpers
+const complex = and(
+  isIn('status', ['ACTIVE', 'PENDING']),
+  between('createdAt', ['2024-01-01', '2024-12-31']),
+);
 ```
 
 ### Operators
 
-| Operator | Description | Example |
+| Operator | Description | Helper / Example |
 |----------|-------------|---------|
-| `EQ` | Equals | `{ field: 'name', operator: 'EQ', value: 'Alice' }` |
-| `NE` | Not equals | `{ field: 'status', operator: 'NE', value: 'DELETED' }` |
-| `IN` | In set | `{ field: 'type', operator: 'IN', value: ['A', 'B'] }` |
-| `NOT_IN` | Not in set | `{ field: 'type', operator: 'NOT_IN', value: ['C'] }` |
-| `BETWEEN` | Range | `{ field: 'age', operator: 'BETWEEN', value: [18, 65] }` |
-| `LIKE` | Pattern match | `{ field: 'name', operator: 'LIKE', value: '%john%' }` |
-| `GT` | Greater than | `{ field: 'price', operator: 'GT', value: 100 }` |
-| `LT` | Less than | `{ field: 'price', operator: 'LT', value: 50 }` |
-| `ALL` | Match all | No field/value needed |
+| `EQ` | Equals | `eq('name', 'Alice')` |
+| `NE` | Not equals | `ne('status', 'DELETED')` |
+| `GT` / `GTE` | Greater than / or equal | `gt('price', 100)`, `gte('price', 100)` |
+| `LT` / `LTE` | Less than / or equal | `lt('price', 50)`, `lte('price', 50)` |
+| `IN` | In set | `isIn('type', ['A', 'B'])` |
+| `NOT_IN` | Not in set | `notIn('type', ['C'])` |
+| `ALL_IN` | Match all of set | `allIn('tags', ['a', 'b'])` |
+| `BETWEEN` | Range | `between('age', [18, 65])` |
+| `CONTAINS` | Contains substring | `contains('name', 'john')` |
+| `STARTS_WITH` | Prefix match | `startsWith('name', 'john')` |
+| `ENDS_WITH` | Suffix match | `endsWith('name', 'son')` |
+| `MATCH` | Pattern match | `match('name', 'j*n')` |
+| `AND` / `OR` / `NOR` | Logical composition | `and(c1, c2)`, `or(c1, c2)` |
+| `ALL` | Match all records | `all()` (no field/value) |
 
 Source: [packages/wow/src/query/operator.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/operator.ts)
 
 ### Sorting and Pagination
 
 ```typescript
-import { pagedQuery, listQuery } from '@ahoo-wang/fetcher-wow';
+import { pagedQuery, listQuery, SortDirection } from '@ahoo-wang/fetcher-wow';
 
-// Paged query with sorting
+// Paged query with sorting (pagination.index starts at 1)
 const query = pagedQuery({
   condition: all(),
   pagination: { index: 1, size: 20 },
-  sort: [{ field: 'createdAt', order: 'DESC' }],
+  sort: [{ field: 'createdAt', direction: SortDirection.DESC }],
+});
+
+// List query (limit only, no pagination)
+const list = listQuery({
+  condition: all(),
+  limit: 100,
 });
 ```
 
@@ -437,11 +441,14 @@ Source: [packages/wow/src/index.ts](https://github.com/Ahoo-Wang/fetcher/blob/ma
 | `EventStreamQueryClient` | `query/event/` | Domain event stream queries |
 | `LoadStateAggregateClient` | `query/state/` | Load aggregate state by ID/version/time |
 | `LoadOwnerStateAggregateClient` | `query/state/` | Load owner's aggregate state |
-| `Condition` | `query/` | Query condition builder |
+| `Condition` | `query/` | Query condition interface |
 | `all()` | `query/` | Match all records condition |
+| `and(...)` / `or(...)` / `nor(...)` | `query/` | Logical condition composition |
+| `eq/ne/gt/lt/gte/lte(...)` | `query/` | Comparison condition helpers |
+| `isIn/notIn/allIn(...)` | `query/` | Set membership helpers |
+| `between/contains/startsWith/endsWith/match(...)` | `query/` | Range & pattern helpers |
 | `aggregateId(id)` | `query/` | Condition matching a single aggregate ID |
 | `aggregateIds(ids)` | `query/` | Condition matching multiple aggregate IDs |
-| `condition(field, operator, value)` | `query/` | Condition builder |
 | `listQuery()` | `query/` | Create a list query |
 | `pagedQuery()` | `query/` | Create a paged query |
 | `singleQuery()` | `query/` | Create a single query |

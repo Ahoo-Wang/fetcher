@@ -333,7 +333,16 @@ const generator = new CodeGenerator({
   inputPath: './openapi.yaml',
   outputDir: './src/generated',
   tsConfigFilePath: './tsconfig.json',
-  logger: console,
+  // `logger` 必须实现 Logger 接口（success / progress / progressWithCount），
+  // 因此全局 `console` 不是合法取值。省略该字段会使用默认的 ConsoleLogger，
+  // 也可以提供自定义实现：
+  logger: {
+    success(message, ...params) { console.log('✓', message, ...params); },
+    progress(message, level?, ...params) { console.log(message, ...params); },
+    progressWithCount(message, current, total, ...params) {
+      console.log(`${message} (${current}/${total})`, ...params);
+    },
+  },
 });
 
 await generator.generate();
@@ -341,15 +350,17 @@ await generator.generate();
 
 ## 主要导出
 
+包入口（`index.ts`）仅公开导出以下符号；下表其余类型为生成流水线使用的内部实现类型。
+
 | 导出 | 描述 |
 |------|------|
-| `CodeGenerator` | 主协调器类 |
-| `GeneratorOptions` | 代码生成配置选项 |
-| `GenerateContext` | 在生成流水线中传递的上下文对象 |
-| `Generator` | 所有生成器阶段实现的接口 |
-| `Logger` | 用于进度报告的日志接口 |
-| `GeneratorConfiguration` | API 客户端生成的逐标签配置 |
-| `DEFAULT_CONFIG_PATH` | 默认配置文件路径（`./fetcher-generator.config.json`） |
+| `CodeGenerator` | 主协调器类（公开） |
+| `DEFAULT_CONFIG_PATH` | 默认配置文件路径（`./fetcher-generator.config.json`，公开） |
+| `GeneratorOptions` | 代码生成配置选项（内部，`types.ts`） |
+| `GenerateContext` | 在生成流水线中传递的上下文对象（内部，`generateContext.ts`） |
+| `Generator` | 所有生成器阶段实现的接口（内部，`generateContext.ts`） |
+| `Logger` | 用于进度报告的日志接口（内部，`types.ts`） |
+| `GeneratorConfiguration` | API 客户端生成的逐标签配置（内部，`types.ts`） |
 
 ## 依赖
 
@@ -358,6 +369,7 @@ await generator.generate();
 - **[@ahoo-wang/fetcher-openapi](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi)** -- OpenAPI 3.x 类型定义
 - **[@ahoo-wang/fetcher](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher)** -- URL 工具（`combineURLs`）
 - **[@ahoo-wang/fetcher-decorator](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator)** -- 用于生成客户端的装饰器工具
+- **[@ahoo-wang/fetcher-eventstream](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream)** -- 生成的流式客户端使用的流式结果提取器
 - **[@ahoo-wang/fetcher-wow](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow)** -- Wow 框架类型，用于聚合定义
 
 ## 交叉引用

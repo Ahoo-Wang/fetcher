@@ -168,7 +168,7 @@ const data = await fetcher.get<User[]>('/users', {}, {
 | `baseURL` | `string` | `''` | 拼接在所有请求前面的基础 URL |
 | `headers` | `RequestHeaders` | `{ 'Content-Type': 'application/json' }` | 所有请求的默认请求头 |
 | `timeout` | `number` | `undefined` | 默认超时时间（毫秒） |
-| `urlTemplateStyle` | `UrlTemplateStyle` | `Path` | URL 模板语法（`Path` 为 `:id` 格式，`UriTemplate` 为 `{id}` 格式） |
+| `urlTemplateStyle` | `UrlTemplateStyle` | `UriTemplate` | URL 模板语法（`UriTemplate` 为 `{id}` 格式，`Express` 为 `:id` 格式） |
 | `interceptors` | `InterceptorManager` | 内置管道 | 自定义拦截器管理器 |
 | `validateStatus` | `ValidateStatus` | `status >= 200 && status < 300` | HTTP 状态码验证函数 |
 
@@ -279,8 +279,8 @@ fetcher.interceptors.error.use(retryInterceptor);
 
 处理 URL 组合，包括路径参数插值和查询字符串生成。支持两种模板风格：
 
+- **`UrlTemplateStyle.UriTemplate`**（默认）：RFC 6570 的 `{id}` 参数
 - **`UrlTemplateStyle.Express`**：Express 风格的 `:id` 参数
-- **`UrlTemplateStyle.UriTemplate`**：RFC 6570 的 `{id}` 参数
 
 ```typescript
 import { UrlBuilder, UrlTemplateStyle } from '@ahoo-wang/fetcher';

@@ -280,24 +280,28 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 
 ### ChatRequest
 
-Full request body for the chat completions endpoint. ([`types.ts:14`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L14))
+Common parameters for the chat completions endpoint. (Full interface: [`types.ts:14`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L14))
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `model` | `string` | - | Model ID (e.g., `gpt-3.5-turbo`, `gpt-4`) |
 | `messages` | `Message[]` | - | Conversation messages with role and content |
-| `stream` | `boolean` | `false` | Enable streaming responses |
-| `temperature` | `number` | `1` | Sampling temperature (0-2) |
-| `max_tokens` | `number` | `inf` | Maximum tokens to generate |
-| `top_p` | `number` | `1` | Nucleus sampling threshold |
-| `frequency_penalty` | `number` | `0` | Repetition penalty (-2.0 to 2.0) |
-| `presence_penalty` | `number` | `0` | Topic diversity penalty (-2.0 to 2.0) |
-| `stop` | `string` | `null` | Stop sequences |
-| `n` | `number` | `1` | Number of completions to generate |
-| `user` | `string` | - | End-user identifier |
-| `tools` | `string[]` | - | Tool/function definitions for function calling |
-| `tool_choice` | `{ [key: string]: any }` | - | Control tool selection (e.g., `{ type: "auto" }`) |
-| `response_format` | `object` | - | Output format constraint (e.g., `{ type: "json_object" }`) |
+| `model` | `string?` | - | Model ID (e.g., `gpt-3.5-turbo`, `gpt-4`) |
+| `stream` | `boolean?` | `false` | Enable streaming responses |
+| `temperature` | `number?` | `1` | Sampling temperature (0-2) |
+| `max_tokens` | `number?` | `inf` | Maximum tokens to generate |
+| `top_p` | `number?` | `1` | Nucleus sampling threshold |
+| `frequency_penalty` | `number?` | `0` | Repetition penalty (-2.0 to 2.0) |
+| `presence_penalty` | `number?` | `0` | Topic diversity penalty (-2.0 to 2.0) |
+| `logit_bias` | `null?` | `null` | Modify likelihood of specified tokens |
+| `response_format` | `object?` | - | Output format constraint (e.g., `{ type: "json_object" }`) |
+| `seen` | `number?` | - | Seed for deterministic sampling |
+| `tool_choice` | `{ [key: string]: any }?` | - | Control tool selection (e.g., `{ type: "auto" }`) |
+| `tools` | `string[]?` | - | Tool/function definitions for function calling |
+| `stop` | `string?` | `null` | Stop sequences |
+| `n` | `number?` | `1` | Number of completions to generate |
+| `user` | `string?` | - | End-user identifier |
+
+> All fields except `messages` are optional. The interface also accepts arbitrary extra properties.
 
 ### Message
 
@@ -307,7 +311,7 @@ Full request body for the chat completions endpoint. ([`types.ts:14`](https://gi
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `role` | `string` | `"system"`, `"user"`, `"assistant"`, or `"tool"` |
+| `role` | `string?` | `"system"`, `"user"`, `"assistant"`, or `"tool"` |
 | `content` | `string?` | Message text content |
 | `tool_calls` | `any[]?` | Tool call requests from the assistant |
 | `tool_call_id` | `string?` | ID linking a tool response message to its call |
