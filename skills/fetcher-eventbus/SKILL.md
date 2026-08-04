@@ -1,7 +1,7 @@
 ---
 name: fetcher-eventbus
 description: >
-  Use when implementing typed event buses, serial or parallel event execution, BroadcastChannel or storage-based cross-tab messaging, handler priority, once handlers, name generation, or event synchronization across browser contexts.
+  Use when implementing a typed event bus — serial/parallel execution, BroadcastChannel or storage cross-tab messaging, handler ordering, and once-only handlers.
 ---
 
 # fetcher-eventbus

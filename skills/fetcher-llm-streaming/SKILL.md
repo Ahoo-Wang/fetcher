@@ -1,7 +1,7 @@
 ---
 name: fetcher-llm-streaming
 description: >
-  Use when consuming Server-Sent Events, LLM token streams, OpenAI-style streaming chat responses, Fetcher eventstream helpers, response prototype extensions, stream termination detection, result extractors, or ReadableStream async iteration.
+  Use when consuming SSE/LLM token streams with fetcher-eventstream — `eventStream` helpers, response prototype extensions, DONE termination detection, and ReadableStream async iteration.
 ---
 
 # fetcher-llm-streaming

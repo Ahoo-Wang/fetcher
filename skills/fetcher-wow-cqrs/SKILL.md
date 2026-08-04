@@ -1,7 +1,7 @@
 ---
 name: fetcher-wow-cqrs
 description: >
-  Use when creating Wow DDD and CQRS clients with Fetcher, including CommandClient, SnapshotQueryClient, EventStreamQueryClient, aggregate load clients, QueryClientFactory, command stages and headers, query DSL conditions, generated clients, and pagination types.
+  Use when creating Wow DDD/CQRS clients with Fetcher — `CommandClient`, snapshot/event-stream query clients, `QueryClientFactory`, command stages, and the query DSL.
 ---
 
 # fetcher-wow-cqrs

@@ -1,7 +1,7 @@
 ---
 name: fetcher-openapi-types
 description: >
-  Use when modeling OpenAPI 3.x documents in TypeScript, including schemas, operations, parameters, responses, security schemes, components, references, extensions, media types, request bodies, and reusable utility types.
+  Use when modeling OpenAPI 3.x documents in TypeScript — schemas, operations, parameters, responses, security schemes, components, references, and extensions (the type layer, not code generation).
 ---
 
 # fetcher-openapi-types

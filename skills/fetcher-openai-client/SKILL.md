@@ -1,7 +1,7 @@
 ---
 name: fetcher-openai-client
 description: >
-  Use when calling OpenAI Chat Completions through Fetcher, configuring OpenAI or ChatClient, sending streaming or non-streaming chat completion requests, adding interceptors, using completion result extractors, or handling OpenAI client errors.
+  Use when calling OpenAI Chat Completions through Fetcher (`@ahoo-wang/fetcher-openai`) — `OpenAI`/`ChatClient` setup, streaming or non-streaming completions, interceptors, and error handling.
 ---
 
 # fetcher-openai-client
