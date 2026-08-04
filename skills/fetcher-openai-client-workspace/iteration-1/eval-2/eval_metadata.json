@@ -6,7 +6,7 @@
     "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
     "Defines a tools array with a function tool of type 'function'",
     "Tool has name 'get_weather' and location parameter with description",
-    "Sends chat.completions() with tools and tool_choice options",
+    "Sends openai.chat.completions() with tools and tool_choice options",
     "Checks response.choices[0].message.tool_calls to detect tool call",
     "Extracts and prints function name and parsed arguments from tool_calls[0]"
   ]

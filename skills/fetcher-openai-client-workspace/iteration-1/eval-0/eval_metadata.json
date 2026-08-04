@@ -5,7 +5,7 @@
   "assertions": [
     "Creates a .ts or .js file that imports OpenAI from @ahoo-wang/fetcher-openai",
     "Initializes OpenAI client with baseURL and apiKey constructor parameters",
-    "Calls chat.completions() method with model and messages",
+    "Calls openai.chat.completions() method with model and messages",
     "Logs the assistant's response to console"
   ]
 }
