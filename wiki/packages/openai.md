@@ -294,14 +294,23 @@ Common parameters for the chat completions endpoint. (Full interface: [`types.ts
 | `presence_penalty` | `number?` | `0` | Topic diversity penalty (-2.0 to 2.0) |
 | `logit_bias` | `null?` | `null` | Modify likelihood of specified tokens |
 | `response_format` | `object?` | - | Output format constraint (e.g., `{ type: "json_object" }`) |
-| `seen` | `number?` | - | Seed for deterministic sampling |
+| `seen` | `number?` | - | Seed for deterministic sampling (the OpenAI API field is `seed`; this type is named `seen`) |
 | `tool_choice` | `{ [key: string]: any }?` | - | Control tool selection (e.g., `{ type: "auto" }`) |
 | `tools` | `string[]?` | - | Tool/function definitions for function calling |
 | `stop` | `string?` | `null` | Stop sequences |
 | `n` | `number?` | `1` | Number of completions to generate |
 | `user` | `string?` | - | End-user identifier |
 
-> All fields except `messages` are optional. The interface also accepts arbitrary extra properties.
+> All fields except `messages` are optional. Note: `ChatRequest` has **no** index signature, so TypeScript excess-property checking will reject unknown keys on an object literal. (The `Message`, `ChatResponse`, `Choice`, and `Usage` types do accept extra properties.)
+
+::: warning Type fidelity caveats
+The exported `ChatRequest` type declares several fields more narrowly than the real OpenAI API requires:
+- **`tools`** is typed `string[]`, but the API expects an array of tool objects (`{ type: "function", function: { name, ... } }`). Cast or `as any` to send real tool definitions.
+- **`tool_choice`** is typed `{ [key: string]: any }`, excluding the common string values `"auto"` and `"none"`.
+- **`logit_bias`** is typed `null`, but the API accepts a `Record<string, number>` token-id → bias map.
+
+See the package README for the intended usage shapes. These are limitations of the generated type definitions, not of the HTTP client.
+:::
 
 ### Message
 

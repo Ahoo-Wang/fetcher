@@ -294,14 +294,23 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 | `presence_penalty` | `number?` | `0` | 主题多样性惩罚（-2.0 到 2.0） |
 | `logit_bias` | `null?` | `null` | 修改指定 token 出现的概率 |
 | `response_format` | `object?` | - | 输出格式约束（如 `{ type: "json_object" }`） |
-| `seen` | `number?` | - | 确定性采样的种子 |
+| `seen` | `number?` | - | 确定性采样的种子（OpenAI API 字段为 `seed`；此类型名为 `seen`） |
 | `tool_choice` | `{ [key: string]: any }?` | - | 控制工具选择（如 `{ type: "auto" }`） |
 | `tools` | `string[]?` | - | 函数/工具调用的工具定义 |
 | `stop` | `string?` | `null` | 停止序列 |
 | `n` | `number?` | `1` | 生成的补全数量 |
 | `user` | `string?` | - | 终端用户标识符 |
 
-> 除 `messages` 外所有字段均为可选。该接口还接受任意额外属性。
+> 除 `messages` 外所有字段均为可选。注意：`ChatRequest` **没有**索引签名，因此 TypeScript 的多余属性检查会拒绝对象字面量上的未知键。（`Message`、`ChatResponse`、`Choice` 和 `Usage` 类型接受额外属性。）
+
+::: warning 类型保真度说明
+导出的 `ChatRequest` 类型对部分字段的声明比真实 OpenAI API 更窄：
+- **`tools`** 类型为 `string[]`，但 API 需要工具对象数组（`{ type: "function", function: { name, ... } }`）。发送真实工具定义时需类型断言或 `as any`。
+- **`tool_choice`** 类型为 `{ [key: string]: any }`，不包含常用的字符串值 `"auto"` 和 `"none"`。
+- **`logit_bias`** 类型为 `null`，但 API 接受 `Record<string, number>`（token ID → 偏差值映射）。
+
+预期的使用形态见包 README。这些是生成类型定义的局限，而非 HTTP 客户端的限制。
+:::
 
 ### Message
 

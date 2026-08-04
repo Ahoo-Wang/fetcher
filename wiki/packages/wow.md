@@ -296,10 +296,12 @@ const byId = aggregateId('cart-123');
 // By multiple IDs
 const byIds = aggregateIds(['cart-1', 'cart-2', 'cart-3']);
 
-// Complex conditions composed with logical helpers
+// Complex conditions composed with logical helpers.
+// Set helpers take rest args: isIn(field, ...values).
+// between takes (field, start, end).
 const complex = and(
-  isIn('status', ['ACTIVE', 'PENDING']),
-  between('createdAt', ['2024-01-01', '2024-12-31']),
+  isIn('status', 'ACTIVE', 'PENDING'),
+  between('createdAt', '2024-01-01', '2024-12-31'),
 );
 ```
 
@@ -311,14 +313,14 @@ const complex = and(
 | `NE` | Not equals | `ne('status', 'DELETED')` |
 | `GT` / `GTE` | Greater than / or equal | `gt('price', 100)`, `gte('price', 100)` |
 | `LT` / `LTE` | Less than / or equal | `lt('price', 50)`, `lte('price', 50)` |
-| `IN` | In set | `isIn('type', ['A', 'B'])` |
-| `NOT_IN` | Not in set | `notIn('type', ['C'])` |
-| `ALL_IN` | Match all of set | `allIn('tags', ['a', 'b'])` |
-| `BETWEEN` | Range | `between('age', [18, 65])` |
+| `IN` | In set | `isIn('type', 'A', 'B')` (rest args) |
+| `NOT_IN` | Not in set | `notIn('type', 'C')` (rest args) |
+| `ALL_IN` | Match all of set | `allIn('tags', 'a', 'b')` (rest args) |
+| `BETWEEN` | Range | `between('age', 18, 65)` (`(field, start, end)`) |
 | `CONTAINS` | Contains substring | `contains('name', 'john')` |
 | `STARTS_WITH` | Prefix match | `startsWith('name', 'john')` |
 | `ENDS_WITH` | Suffix match | `endsWith('name', 'son')` |
-| `MATCH` | Pattern match | `match('name', 'j*n')` |
+| `MATCH` | Full-text match (backend-specific, e.g. MongoDB text / ES match) | `match('name', 'keyword')` |
 | `AND` / `OR` / `NOR` | Logical composition | `and(c1, c2)`, `or(c1, c2)` |
 | `ALL` | Match all records | `all()` (no field/value) |
 

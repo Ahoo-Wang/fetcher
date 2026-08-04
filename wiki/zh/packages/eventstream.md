@@ -188,7 +188,7 @@ interface ServerSentEvent {
 - 空行分隔事件
 - 以 `:` 开头的行是注释（被忽略）
 - 多行 `data` 字段以 `\n` 连接
-- `id` 和 `retry` 在每个事件发出后被重置为 `undefined`（不跨事件持久）
+- `id` 和 `retry` 在连接内跨事件持久：一旦设置，会延续到后续事件直到提供新值（每次派发后只重置 `event` 和 `data`）。`resetEventState()` 仅在出错或最终 flush 时清除它们。
 - `event` 字段默认为 `"message"`
 
 ## JsonServerSentEventTransformStream

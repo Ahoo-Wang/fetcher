@@ -188,7 +188,7 @@ Key parsing behaviors:
 - Empty lines delimit events
 - Lines starting with `:` are comments (ignored)
 - Multi-line `data` fields are joined with `\n`
-- `id` and `retry` are reset to `undefined` after each emitted event (they do not persist across events)
+- `id` and `retry` persist across events within a connection: once set, they carry over to subsequent events until a new value is supplied (only `event` and `data` are reset after each dispatch). `resetEventState()` clears them only on error or final flush.
 - The `event` field defaults to `"message"`
 
 ## JsonServerSentEventTransformStream

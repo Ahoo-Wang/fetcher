@@ -333,13 +333,16 @@ const generator = new CodeGenerator({
   inputPath: './openapi.yaml',
   outputDir: './src/generated',
   tsConfigFilePath: './tsconfig.json',
-  // `logger` 必须实现 Logger 接口（success / progress / progressWithCount），
+  // `logger` 必须实现完整的 Logger 接口
+  // （info、success、error、progress、progressWithCount），
   // 因此全局 `console` 不是合法取值。省略该字段会使用默认的 ConsoleLogger，
   // 也可以提供自定义实现：
   logger: {
+    info(message, ...params) { console.log(message, ...params); },
     success(message, ...params) { console.log('✓', message, ...params); },
-    progress(message, level?, ...params) { console.log(message, ...params); },
-    progressWithCount(message, current, total, ...params) {
+    error(message, ...params) { console.error(message, ...params); },
+    progress(message, level, ...params) { console.log(message, ...params); },
+    progressWithCount(current, total, message, level, ...params) {
       console.log(`${message} (${current}/${total})`, ...params);
     },
   },

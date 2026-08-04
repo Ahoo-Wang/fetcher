@@ -333,13 +333,16 @@ const generator = new CodeGenerator({
   inputPath: './openapi.yaml',
   outputDir: './src/generated',
   tsConfigFilePath: './tsconfig.json',
-  // `logger` must implement the Logger interface (success / progress / progressWithCount),
-  // so the global `console` is not a valid value. Omit it to use the default ConsoleLogger,
-  // or provide a custom implementation:
+  // `logger` must implement the full Logger interface
+  // (info, success, error, progress, progressWithCount),
+  // so the global `console` is not a valid value. Omit it to use the default
+  // ConsoleLogger, or provide a custom implementation:
   logger: {
+    info(message, ...params) { console.log(message, ...params); },
     success(message, ...params) { console.log('✓', message, ...params); },
-    progress(message, level?, ...params) { console.log(message, ...params); },
-    progressWithCount(message, current, total, ...params) {
+    error(message, ...params) { console.error(message, ...params); },
+    progress(message, level, ...params) { console.log(message, ...params); },
+    progressWithCount(current, total, message, level, ...params) {
       console.log(`${message} (${current}/${total})`, ...params);
     },
   },

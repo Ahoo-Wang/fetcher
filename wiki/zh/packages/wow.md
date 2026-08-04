@@ -296,10 +296,12 @@ const byId = aggregateId('cart-123');
 // By multiple IDs
 const byIds = aggregateIds(['cart-1', 'cart-2', 'cart-3']);
 
-// 使用逻辑辅助函数组合复杂条件
+// 使用逻辑辅助函数组合复杂条件。
+// 集合辅助函数使用剩余参数：isIn(field, ...values)。
+// between 接收 (field, start, end)。
 const complex = and(
-  isIn('status', ['ACTIVE', 'PENDING']),
-  between('createdAt', ['2024-01-01', '2024-12-31']),
+  isIn('status', 'ACTIVE', 'PENDING'),
+  between('createdAt', '2024-01-01', '2024-12-31'),
 );
 ```
 
@@ -311,14 +313,14 @@ const complex = and(
 | `NE` | 不等于 | `ne('status', 'DELETED')` |
 | `GT` / `GTE` | 大于 / 大于等于 | `gt('price', 100)`、`gte('price', 100)` |
 | `LT` / `LTE` | 小于 / 小于等于 | `lt('price', 50)`、`lte('price', 50)` |
-| `IN` | 在集合中 | `isIn('type', ['A', 'B'])` |
-| `NOT_IN` | 不在集合中 | `notIn('type', ['C'])` |
-| `ALL_IN` | 匹配集合中全部 | `allIn('tags', ['a', 'b'])` |
-| `BETWEEN` | 范围 | `between('age', [18, 65])` |
+| `IN` | 在集合中 | `isIn('type', 'A', 'B')`（剩余参数） |
+| `NOT_IN` | 不在集合中 | `notIn('type', 'C')`（剩余参数） |
+| `ALL_IN` | 匹配集合中全部 | `allIn('tags', 'a', 'b')`（剩余参数） |
+| `BETWEEN` | 范围 | `between('age', 18, 65)`（`(field, start, end)`） |
 | `CONTAINS` | 包含子串 | `contains('name', 'john')` |
 | `STARTS_WITH` | 前缀匹配 | `startsWith('name', 'john')` |
 | `ENDS_WITH` | 后缀匹配 | `endsWith('name', 'son')` |
-| `MATCH` | 模式匹配 | `match('name', 'j*n')` |
+| `MATCH` | 全文匹配（后端相关，如 MongoDB text / ES match） | `match('name', 'keyword')` |
 | `AND` / `OR` / `NOR` | 逻辑组合 | `and(c1, c2)`、`or(c1, c2)` |
 | `ALL` | 匹配全部记录 | `all()`（无需字段/值） |
 
