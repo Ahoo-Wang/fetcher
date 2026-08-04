@@ -168,7 +168,7 @@ const data = await fetcher.get<User[]>('/users', {}, {
 | `baseURL` | `string` | `''` | Base URL prepended to all requests |
 | `headers` | `RequestHeaders` | `{ 'Content-Type': 'application/json' }` | Default headers for all requests |
 | `timeout` | `number` | `undefined` | Default timeout in milliseconds |
-| `urlTemplateStyle` | `UrlTemplateStyle` | `Path` | URL template syntax (`Path` for `:id`, `UriTemplate` for `{id}`) |
+| `urlTemplateStyle` | `UrlTemplateStyle` | `UriTemplate` | URL template syntax (`UriTemplate` for `{id}`, `Express` for `:id`) |
 | `interceptors` | `InterceptorManager` | Built-in pipeline | Custom interceptor manager |
 | `validateStatus` | `ValidateStatus` | `status >= 200 && status < 300` | Status code validation function |
 
@@ -279,8 +279,8 @@ fetcher.interceptors.error.use(retryInterceptor);
 
 Handles URL composition with path parameter interpolation and query string generation. Supports two template styles:
 
+- **`UrlTemplateStyle.UriTemplate`** (default): RFC 6570 `{id}` parameters
 - **`UrlTemplateStyle.Express`**: Express-style `:id` parameters
-- **`UrlTemplateStyle.UriTemplate`**: RFC 6570 `{id}` parameters
 
 ```typescript
 import { UrlBuilder, UrlTemplateStyle } from '@ahoo-wang/fetcher';

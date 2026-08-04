@@ -79,7 +79,7 @@ Every handler implements the `EventHandler<EVENT>` interface. Handlers are uniqu
 ```typescript
 interface EventHandler<EVENT> {
   name: string;       // Unique identifier
-  order: number;      // Execution priority (lower = earlier)
+  order?: number;     // Execution priority (lower = earlier, defaults to 0)
   once?: boolean;     // Auto-remove after first execution
   handle(event: EVENT): void | Promise<void>;
 }
@@ -140,7 +140,7 @@ autonumber
 
 ## SerialTypedEventBus
 
-Executes handlers sequentially in priority order. Handlers with lower `order` values execute first. If a handler throws, subsequent handlers are not called. ([`serialTypedEventBus.ts:34`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L34))
+Executes handlers sequentially in priority order. Handlers with lower `order` values execute first. If a handler throws, the error is logged (`console.warn`) and execution continues with the remaining handlers -- one failing handler does not stop the chain. ([`serialTypedEventBus.ts:34`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L34))
 
 ```typescript
 import { SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
@@ -186,7 +186,13 @@ Executes all handlers concurrently using `Promise.all`. Useful when handlers are
 ```typescript
 import { ParallelTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
-const bus = new ParallelTypedEventBus<Notification>('notification');
+// Define a local event payload type (avoid the global DOM `Notification`)
+interface AppNotification {
+  message: string;
+  userId: string;
+}
+
+const bus = new ParallelTypedEventBus<AppNotification>('notification');
 
 bus.on({
   name: 'push-notification',

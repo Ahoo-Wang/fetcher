@@ -96,10 +96,23 @@ classDiagram
     +constructor()
   }
 
-  class TextLineTransformer {
-    -buffer: string
+  class SafeTransformer~I,O~ {
+    <<abstract>>
+    #terminated: boolean
     +transform(chunk, controller)
     +flush(controller)
+    #enqueue(controller, chunk)
+    #terminate(controller)
+    #onError(error, phase)
+    #onTransform(chunk, controller)*
+    #onFlush(controller)
+  }
+
+  class TextLineTransformer {
+    -buffer: string
+    -normalizeLine(line)
+    #onTransform(chunk, controller)
+    #onFlush(controller)
   }
 
   class ServerSentEventTransformStream {
@@ -108,8 +121,10 @@ classDiagram
 
   class ServerSentEventTransformer {
     -currentEventState: EventState
-    +transform(chunk, controller)
-    +flush(controller)
+    -resetEventState()
+    #onError(error, phase)
+    #onTransform(chunk, controller)
+    #onFlush(controller)
   }
 
   class JsonServerSentEventTransformStream~DATA~ {
@@ -118,7 +133,7 @@ classDiagram
 
   class JsonServerSentEventTransform~DATA~ {
     -terminateDetector: TerminateDetector
-    +transform(chunk, controller)
+    #onTransform(chunk, controller)
   }
 
   class ReadableStreamAsyncIterable~T~ {
@@ -135,6 +150,9 @@ classDiagram
   }
 
   JsonServerSentEvent --|> ServerSentEvent : Omit data
+  TextLineTransformer --|> SafeTransformer : extends
+  ServerSentEventTransformer --|> SafeTransformer : extends
+  JsonServerSentEventTransform --|> SafeTransformer : extends
   TextLineTransformStream *-- TextLineTransformer
   ServerSentEventTransformStream *-- ServerSentEventTransformer
   JsonServerSentEventTransformStream *-- JsonServerSentEventTransform
@@ -142,47 +160,6 @@ classDiagram
   JsonServerSentEventTransform ..> ServerSentEvent : reads
   JsonServerSentEventTransform ..> JsonServerSentEvent : writes
 ```
-
-## SafeTransformer — Error-Safe Base Class
-
-All transformers in this package extend `SafeTransformer`, an abstract base class that provides three guarantees every concrete transformer inherits:
-
-::: tip Why SafeTransformer Exists
-Raw `TransformStream` transformers must manually handle errors, termination, and the "upstream pushes after close" race. Forgetting any of these causes `TypeError` or silent data loss. `SafeTransformer` centralizes this logic so SSE transformers focus purely on parsing.
-:::
-
-| Guarantee | How it works |
-|-----------|-------------|
-| **Termination guard** | Once `terminated` is set (via `terminate()` or an unhandled error), all subsequent chunks in `transform()` are silently dropped — no `TypeError` on closed streams. |
-| **Safe controller ops** | `enqueue()` delegates to `safeEnqueue()` which suppresses `TypeError` from already-closed streams. `terminate()` delegates to `safeTerminate()`. |
-| **Error boundary** | Unhandled errors in `onTransform()` / `onFlush()` are caught, the transformer is terminated, and the error is forwarded via `safeError()`. |
-
-Subclasses implement `onTransform()` and optionally `onFlush()` instead of the raw `transform()` / `flush()` methods:
-
-```typescript
-// Simplified — see safeTransformer.ts for full implementation
-abstract class SafeTransformer<I, O> implements Transformer<I, O> {
-  protected terminated = false;
-
-  async transform(chunk: I, controller: TransformStreamDefaultController<O>) {
-    if (this.terminated) return;          // drop after termination
-    try {
-      await this.onTransform(chunk, controller);
-    } catch (error) {
-      this.terminate();                    // mark as done
-      safeError(controller, error);        // forward error safely
-    }
-  }
-
-  protected abstract onTransform(chunk: I, controller: TransformStreamDefaultController<O>): void | Promise<void>;
-  protected enqueue(controller: TransformStreamDefaultController<O>, chunk: O) { safeEnqueue(controller, chunk); }
-  protected terminate() { this.terminated = true; }
-}
-```
-
-Source: [packages/eventstream/src/safeTransformer.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts)
-
-The `streamController.ts` module provides the low-level safe operations (`safeEnqueue`, `safeTerminate`, `safeError`) that `SafeTransformer` uses, including cross-realm `TypeError` detection for environments where `error instanceof TypeError` fails across realms.
 
 ## Stream Processing Pipeline
 
@@ -214,10 +191,10 @@ Converts raw `Uint8Array` chunks to UTF-8 strings. This is a built-in browser/No
 
 ### Stage 2: TextLineTransformStream
 
-Accumulates text chunks and splits them by `\n`, emitting each complete line as a separate chunk. Partial lines at chunk boundaries are buffered until the next chunk completes them. Also normalizes `\r\n` line endings to `\r`-free lines.
+Accumulates text chunks and splits them by `\n`, emitting each complete line as a separate chunk. Partial lines at chunk boundaries are buffered until the next chunk completes them.
 
 ```typescript
-// Extends SafeTransformer — error handling is inherited, not manual.
+// [packages/eventstream/src/textLineTransformStream.ts:23-52]
 export class TextLineTransformer extends SafeTransformer<string, string> {
   private buffer = '';
 
@@ -225,17 +202,24 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
     return line.endsWith('\r') ? line.slice(0, -1) : line;
   }
 
-  protected onTransform(chunk: string, controller: TransformStreamDefaultController<string>): void {
+  protected onTransform(
+    chunk: string,
+    controller: TransformStreamDefaultController<string>,
+  ): void {
     this.buffer += chunk;
     const lines = this.buffer.split('\n');
     this.buffer = lines.pop() || '';
+
     for (const line of lines) {
       this.enqueue(controller, this.normalizeLine(line));
     }
   }
 
-  protected onFlush(controller: TransformStreamDefaultController<string>): void {
+  protected onFlush(
+    controller: TransformStreamDefaultController<string>,
+  ): void {
     const line = this.normalizeLine(this.buffer);
+    // Only send when normalized buffer is not empty.
     if (line) {
       this.enqueue(controller, line);
     }
@@ -243,7 +227,7 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
 }
 ```
 
-Source: [packages/eventstream/src/textLineTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts)
+Source: [packages/eventstream/src/textLineTransformStream.ts:23-52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L23-L52)
 
 ### Stage 3: ServerSentEventTransformStream
 
@@ -267,65 +251,90 @@ export interface ServerSentEvent {
 
 Source: [packages/eventstream/src/serverSentEventTransformStream.ts:23-32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L23-L32)
 
-The core parsing logic extends `SafeTransformer` — error handling and termination are inherited:
+The core parsing logic lives in `onTransform`, which is called by the inherited `SafeTransformer.transform()` method. Error handling (try/catch, termination, and forwarding via `safeError`) is inherited from `SafeTransformer`; on error the `onError` override below resets the event state:
 
 ```typescript
-// Extends SafeTransformer<string, ServerSentEvent>
-// onTransform replaces raw transform(); errors are caught by the base class
-export class ServerSentEventTransformer extends SafeTransformer<string, ServerSentEvent> {
-  private currentEventState: EventState = { event: 'message', id: undefined, retry: undefined, data: [] };
+// [packages/eventstream/src/serverSentEventTransformStream.ts:99-108]
+private resetEventState() {
+  this.currentEventState.event = DEFAULT_EVENT_TYPE;
+  this.currentEventState.id = undefined;
+  this.currentEventState.retry = undefined;
+  this.currentEventState.data = [];
+}
 
-  // Reset state when an error occurs (override of SafeTransformer.onError)
-  protected override onError(_error: unknown, _phase: TransformerPhase): void {
-    this.resetEventState();
-  }
-
-  protected onTransform(chunk: string, controller: TransformStreamDefaultController<ServerSentEvent>): void {
-    const currentEvent = this.currentEventState;
-
-    if (chunk.trim() === '') {
-      // Empty line — emit accumulated event
-      if (currentEvent.data.length > 0) {
-        this.enqueue(controller, {
-          event: currentEvent.event || 'message',
-          data: currentEvent.data.join('\n'),
-          id: currentEvent.id || '',
-          retry: currentEvent.retry,
-        });
-        currentEvent.event = 'message';
-        currentEvent.data = [];
-      }
-      return;
-    }
-    if (chunk.startsWith(':')) { return; } // comment line
-
-    // Parse field: value
-    const colonIndex = chunk.indexOf(':');
-    // ... field/value extraction ...
-    processFieldInternal(field, value, currentEvent);
-  }
+protected override onError(_error: unknown, _phase: TransformerPhase): void {
+  this.resetEventState();
 }
 ```
 
-Source: [packages/eventstream/src/serverSentEventTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts)
+```typescript
+// [packages/eventstream/src/serverSentEventTransformStream.ts:110-155]
+protected onTransform(
+  chunk: string,
+  controller: TransformStreamDefaultController<ServerSentEvent>,
+): void {
+  const currentEvent = this.currentEventState;
+
+  // Skip empty lines (event separator)
+  if (chunk.trim() === '') {
+    if (currentEvent.data.length > 0) {
+      this.enqueue(controller, {
+        event: currentEvent.event || DEFAULT_EVENT_TYPE,
+        data: currentEvent.data.join('\n'),
+        id: currentEvent.id || '',
+        retry: currentEvent.retry,
+      } as ServerSentEvent);
+
+      currentEvent.event = DEFAULT_EVENT_TYPE;
+      currentEvent.data = [];
+    }
+    return;
+  }
+
+  // Ignore comment lines (starting with colon)
+  if (chunk.startsWith(':')) {
+    return;
+  }
+
+  // Parse fields
+  const colonIndex = chunk.indexOf(':');
+  let field: string;
+  let value: string;
+
+  if (colonIndex === -1) {
+    field = chunk.toLowerCase();
+    value = '';
+  } else {
+    field = chunk.substring(0, colonIndex).toLowerCase();
+    value = chunk.substring(colonIndex + 1);
+    if (value.startsWith(' ')) {
+      value = value.substring(1);
+    }
+  }
+
+  processFieldInternal(field, value, currentEvent);
+}
+```
+
+Source: [packages/eventstream/src/serverSentEventTransformStream.ts:110-155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L110-L155)
 
 ### Stage 4: JsonServerSentEventTransformStream
 
 An optional fourth stage that parses each `ServerSentEvent.data` string as JSON and supports automatic stream termination.
 
 ```typescript
-// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:44-50]
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:31-37]
 export interface JsonServerSentEvent<DATA> extends Omit<ServerSentEvent, 'data'> {
   data: DATA;
 }
 ```
 
-Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:44-50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L44-L50)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:31-37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L31-L37)
 
-The transform checks a `TerminateDetector` function before parsing. Like all transformers in this package, it extends `SafeTransformer`:
+The `JsonServerSentEventTransform` class `extends SafeTransformer`, so error handling and the termination guard are inherited. The `onTransform` method checks a `TerminateDetector` function before parsing, and uses `this.terminate()` / `this.enqueue()` instead of raw controller methods:
 
 ```typescript
-// Extends SafeTransformer — termination and error handling inherited
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:47-73]
 export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
   ServerSentEvent,
   JsonServerSentEvent<DATA>
@@ -338,13 +347,14 @@ export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
     chunk: ServerSentEvent,
     controller: TransformStreamDefaultController<JsonServerSentEvent<DATA>>,
   ): void {
-    // Check terminate condition (e.g., data === '[DONE]')
+    // Check if this is a terminate event
     if (this.terminateDetector?.(chunk)) {
-      this.terminate(controller);  // safe terminate from SafeTransformer
+      this.terminate(controller);
       return;
     }
+
     const json = JSON.parse(chunk.data) as DATA;
-    this.enqueue(controller, {    // safe enqueue from SafeTransformer
+    this.enqueue(controller, {
       data: json,
       event: chunk.event,
       id: chunk.id,
@@ -354,7 +364,7 @@ export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
 }
 ```
 
-Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:47-73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47-L73)
 
 ## The toServerSentEventStream Function
 
@@ -378,7 +388,7 @@ Source: [packages/eventstream/src/eventStreamConverter.ts:127-138](https://githu
 The `toJsonServerSentEventStream()` function adds stage 4:
 
 ```typescript
-// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:200-207]
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:107-114]
 export function toJsonServerSentEventStream<DATA>(
   serverSentEventStream: ServerSentEventStream,
   terminateDetector?: TerminateDetector,
@@ -389,7 +399,7 @@ export function toJsonServerSentEventStream<DATA>(
 }
 ```
 
-Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:200-207](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L200-L207)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:107-114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107-L114)
 
 ## Async Iteration Support
 

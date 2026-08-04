@@ -79,7 +79,7 @@ graph TB
 ```typescript
 interface EventHandler<EVENT> {
   name: string;       // 唯一标识符
-  order: number;      // 执行优先级（值越小越先执行）
+  order?: number;     // 执行优先级（值越小越先执行，默认 0）
   once?: boolean;     // 首次执行后自动移除
   handle(event: EVENT): void | Promise<void>;
 }
@@ -140,7 +140,7 @@ autonumber
 
 ## SerialTypedEventBus
 
-按优先级顺序串行执行处理器。`order` 值较低的处理器优先执行。如果某个处理器抛出异常，后续处理器将不会被调用。([`serialTypedEventBus.ts:34`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L34))
+按优先级顺序串行执行处理器。`order` 值较低的处理器优先执行。如果某个处理器抛出异常，错误会被记录（`console.warn`）并继续执行剩余处理器——单个处理器失败不会中断整条链。([`serialTypedEventBus.ts:34`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L34))
 
 ```typescript
 import { SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
@@ -186,7 +186,13 @@ await bus.emit('user-123');
 ```typescript
 import { ParallelTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
-const bus = new ParallelTypedEventBus<Notification>('notification');
+// 定义本地事件负载类型（避免与全局 DOM `Notification` 冲突）
+interface AppNotification {
+  message: string;
+  userId: string;
+}
+
+const bus = new ParallelTypedEventBus<AppNotification>('notification');
 
 bus.on({
   name: 'push-notification',

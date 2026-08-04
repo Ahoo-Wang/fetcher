@@ -280,24 +280,37 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 
 ### ChatRequest
 
-聊天补全端点的完整请求体。([`types.ts:14`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L14))
+聊天补全端点的常用参数。（完整接口：[`types.ts:14`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L14)）
 
 | 属性 | 类型 | 默认值 | 描述 |
 |----------|------|---------|-------------|
-| `model` | `string` | - | 模型 ID（如 `gpt-3.5-turbo`、`gpt-4`） |
 | `messages` | `Message[]` | - | 包含角色和内容的对话消息 |
-| `stream` | `boolean` | `false` | 启用流式响应 |
-| `temperature` | `number` | `1` | 采样温度（0-2） |
-| `max_tokens` | `number` | `inf` | 最大生成 token 数 |
-| `top_p` | `number` | `1` | 核采样阈值 |
-| `frequency_penalty` | `number` | `0` | 重复惩罚（-2.0 到 2.0） |
-| `presence_penalty` | `number` | `0` | 主题多样性惩罚（-2.0 到 2.0） |
-| `stop` | `string` | `null` | 停止序列 |
-| `n` | `number` | `1` | 生成的补全数量 |
-| `user` | `string` | - | 终端用户标识符 |
-| `tools` | `string[]` | - | 函数/工具调用的工具定义 |
-| `tool_choice` | `{ [key: string]: any }` | - | 控制工具选择（如 `{ type: "auto" }`） |
-| `response_format` | `object` | - | 输出格式约束（如 `{ type: "json_object" }`） |
+| `model` | `string?` | - | 模型 ID（如 `gpt-3.5-turbo`、`gpt-4`） |
+| `stream` | `boolean?` | `false` | 启用流式响应 |
+| `temperature` | `number?` | `1` | 采样温度（0-2） |
+| `max_tokens` | `number?` | `inf` | 最大生成 token 数 |
+| `top_p` | `number?` | `1` | 核采样阈值 |
+| `frequency_penalty` | `number?` | `0` | 重复惩罚（-2.0 到 2.0） |
+| `presence_penalty` | `number?` | `0` | 主题多样性惩罚（-2.0 到 2.0） |
+| `logit_bias` | `null?` | `null` | 修改指定 token 出现的概率 |
+| `response_format` | `object?` | - | 输出格式约束（如 `{ type: "json_object" }`） |
+| `seen` | `number?` | - | 确定性采样的种子（OpenAI API 字段为 `seed`；此类型名为 `seen`） |
+| `tool_choice` | `{ [key: string]: any }?` | - | 控制工具选择（如 `{ type: "auto" }`） |
+| `tools` | `string[]?` | - | 函数/工具调用的工具定义 |
+| `stop` | `string?` | `null` | 停止序列 |
+| `n` | `number?` | `1` | 生成的补全数量 |
+| `user` | `string?` | - | 终端用户标识符 |
+
+> 除 `messages` 外所有字段均为可选。注意：`ChatRequest` **没有**索引签名，因此 TypeScript 的多余属性检查会拒绝对象字面量上的未知键。（`Message`、`ChatResponse`、`Choice` 和 `Usage` 类型接受额外属性。）
+
+::: warning 类型保真度说明
+导出的 `ChatRequest` 类型对部分字段的声明比真实 OpenAI API 更窄：
+- **`tools`** 类型为 `string[]`，但 API 需要工具对象数组（`{ type: "function", function: { name, ... } }`）。发送真实工具定义时需类型断言或 `as any`。
+- **`tool_choice`** 类型为 `{ [key: string]: any }`，不包含常用的字符串值 `"auto"` 和 `"none"`。
+- **`logit_bias`** 类型为 `null`，但 API 接受 `Record<string, number>`（token ID → 偏差值映射）。
+
+预期的使用形态见包 README。这些是生成类型定义的局限，而非 HTTP 客户端的限制。
+:::
 
 ### Message
 
@@ -307,7 +320,7 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 
 | 属性 | 类型 | 描述 |
 |----------|------|-------------|
-| `role` | `string` | `"system"`、`"user"`、`"assistant"` 或 `"tool"` |
+| `role` | `string?` | `"system"`、`"user"`、`"assistant"` 或 `"tool"` |
 | `content` | `string?` | 消息文本内容 |
 | `tool_calls` | `any[]?` | 助手发起的工具调用请求 |
 | `tool_call_id` | `string?` | 将工具响应消息链接到其调用的 ID |

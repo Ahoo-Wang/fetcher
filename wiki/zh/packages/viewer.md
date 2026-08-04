@@ -107,7 +107,7 @@ function DataView() {
 | `ownerId` | `string` | `'(0)'` | 数据范围的所有者 ID |
 | `tenantId` | `string` | `'(0)'` | 数据范围的租户 ID |
 | `defaultViewId` | `string` | -- | 默认激活的视图 |
-| `pagination` | `false \| PaginationProps` | （必填） | 分页配置，设为 `false` 可禁用分页 |
+| `pagination` | `false \| PaginationProps` | *(必填)* | 分页配置，设为 `false` 可禁用分页 |
 | `actionColumn` | `ViewTableActionColumn` | -- | 行操作列配置 |
 | `onClickPrimaryKey` | `(id, record) => void` | -- | 主键单元格的点击处理器 |
 | `enableRowSelection` | `boolean` | `false` | 启用复选框行选择 |
@@ -269,14 +269,14 @@ interface FilterProps {
 | `text` | `TextCell` | 支持省略号的纯文本显示 |
 | `tag` | `TagCell` | 单个 Ant Design 标签 |
 | `tags` | `TagsCell` | 多个 Ant Design 标签 |
-| `dateTime` | `DateTimeCell` | 格式化的日期/时间显示 |
-| `calendar` | `CalendarTimeCell` | 基于日历的时间显示 |
+| `datetime` | `DateTimeCell` | 格式化的日期/时间显示 |
+| `calendar-time` | `CalendarTimeCell` | 基于日历的时间显示 |
 | `image` | `ImageCell` | 带缩略图的图片预览 |
-| `imageGroup` | `ImageGroupCell` | 图片预览组 |
+| `image-group` | `ImageGroupCell` | 图片预览组 |
 | `link` | `LinkCell` | 可点击链接 |
 | `currency` | `CurrencyCell` | 格式化的货币显示 |
 | `avatar` | `AvatarCell` | 用户头像显示 |
-| `primaryKey` | `PrimaryKeyCell` | 可点击的主键单元格 |
+| `primary-key` | `PrimaryKeyCell` | 可点击的主键单元格 |
 | `action` | `ActionCell` | 单个操作按钮 |
 | `actions` | `ActionsCell` | 多个操作按钮 |
 
@@ -349,7 +349,7 @@ stateDiagram-v2
 
 - `createView` -- 创建新视图
 - `editView` -- 更新已有视图
-- `deleteAggregate` -- 删除视图
+- `defaultDeleteAggregate` -- 删除视图
 
 来源: [packages/viewer/src/fetcherviewer/client/view/commandClient.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/commandClient.ts)
 

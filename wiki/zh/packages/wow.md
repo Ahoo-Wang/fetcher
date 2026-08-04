@@ -55,7 +55,6 @@ graph TB
     COND --> OP
 
     style CC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
-    style CSC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style SQC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style ESQC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style LSAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
@@ -136,7 +135,6 @@ classDiagram
         +id: string
         +waitCommandId: string
         +stage: CommandStage
-        +contextAlias: string
         +contextName: string
         +aggregateName: string
         +aggregateId: string
@@ -237,13 +235,13 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 |------|------|----------|------|
 | `count(condition)` | `/snapshot/count` | `Promise<number>` | 统计匹配的聚合数量 |
 | `list(listQuery)` | `/snapshot/list` | `Promise<MaterializedSnapshot<S>[]>` | 列表查询快照 |
-| `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<SSE>>` | 以 SSE 流形式列出快照 |
-| `listState(listQuery)` | `/snapshot/list_state` | `Promise<S[]>` | 仅列出状态 |
-| `listStateStream(listQuery)` | `/snapshot/list_state` | `Promise<ReadableStream<SSE>>` | 以 SSE 流形式列出状态 |
+| `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | 以 SSE 流形式列出快照 |
+| `listState(listQuery)` | `/snapshot/list/state` | `Promise<S[]>` | 仅列出状态 |
+| `listStateStream(listQuery)` | `/snapshot/list/state` | `Promise<ReadableStream<JsonServerSentEvent<S>>>` | 以 SSE 流形式列出状态 |
 | `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<S>>` | 分页查询快照 |
-| `pagedState(pagedQuery)` | `/snapshot/paged_state` | `Promise<PagedList<S>>` | 分页查询状态 |
+| `pagedState(pagedQuery)` | `/snapshot/paged/state` | `Promise<PagedList<S>>` | 分页查询状态 |
 | `single(singleQuery)` | `/snapshot/single` | `Promise<MaterializedSnapshot<S>>` | 单个快照查询 |
-| `singleState(singleQuery)` | `/snapshot/single_state` | `Promise<S>` | 单个状态查询 |
+| `singleState(singleQuery)` | `/snapshot/single/state` | `Promise<S>` | 单个状态查询 |
 | `getById(id)` | -- | `Promise<MaterializedSnapshot<S>>` | 通过聚合 ID 获取 |
 | `getStateById(id)` | -- | `Promise<S>` | 通过 ID 获取状态 |
 | `getByIds(ids)` | -- | `Promise<MaterializedSnapshot<S>[]>` | 通过多个 ID 获取 |
@@ -287,7 +285,7 @@ const eventClient = factory.createEventStreamQueryClient();
 条件系统支持构建复杂的查询谓词：
 
 ```typescript
-import { all, condition, aggregateId, aggregateIds } from '@ahoo-wang/fetcher-wow';
+import { all, and, isIn, between, aggregateId, aggregateIds } from '@ahoo-wang/fetcher-wow';
 
 // All records
 const allCondition = all();
@@ -298,44 +296,52 @@ const byId = aggregateId('cart-123');
 // By multiple IDs
 const byIds = aggregateIds(['cart-1', 'cart-2', 'cart-3']);
 
-// Complex conditions with operators
-const complex = condition({
-  field: 'status',
-  operator: 'IN',
-  value: ['ACTIVE', 'PENDING'],
-}).and({
-  field: 'createdAt',
-  operator: 'BETWEEN',
-  value: ['2024-01-01', '2024-12-31'],
-});
+// 使用逻辑辅助函数组合复杂条件。
+// 集合辅助函数使用剩余参数：isIn(field, ...values)。
+// between 接收 (field, start, end)。
+const complex = and(
+  isIn('status', 'ACTIVE', 'PENDING'),
+  between('createdAt', '2024-01-01', '2024-12-31'),
+);
 ```
 
 ### 运算符
 
-| 运算符 | 描述 | 示例 |
+| 运算符 | 描述 | 辅助函数 / 示例 |
 |--------|------|------|
-| `EQ` | 等于 | `{ field: 'name', operator: 'EQ', value: 'Alice' }` |
-| `NE` | 不等于 | `{ field: 'status', operator: 'NE', value: 'DELETED' }` |
-| `IN` | 在集合中 | `{ field: 'type', operator: 'IN', value: ['A', 'B'] }` |
-| `NOT_IN` | 不在集合中 | `{ field: 'type', operator: 'NOT_IN', value: ['C'] }` |
-| `BETWEEN` | 范围 | `{ field: 'age', operator: 'BETWEEN', value: [18, 65] }` |
-| `LIKE` | 模式匹配 | `{ field: 'name', operator: 'LIKE', value: '%john%' }` |
-| `GT` | 大于 | `{ field: 'price', operator: 'GT', value: 100 }` |
-| `LT` | 小于 | `{ field: 'price', operator: 'LT', value: 50 }` |
-| `ALL` | 匹配全部 | 无需字段/值 |
+| `EQ` | 等于 | `eq('name', 'Alice')` |
+| `NE` | 不等于 | `ne('status', 'DELETED')` |
+| `GT` / `GTE` | 大于 / 大于等于 | `gt('price', 100)`、`gte('price', 100)` |
+| `LT` / `LTE` | 小于 / 小于等于 | `lt('price', 50)`、`lte('price', 50)` |
+| `IN` | 在集合中 | `isIn('type', 'A', 'B')`（剩余参数） |
+| `NOT_IN` | 不在集合中 | `notIn('type', 'C')`（剩余参数） |
+| `ALL_IN` | 匹配集合中全部 | `allIn('tags', 'a', 'b')`（剩余参数） |
+| `BETWEEN` | 范围 | `between('age', 18, 65)`（`(field, start, end)`） |
+| `CONTAINS` | 包含子串 | `contains('name', 'john')` |
+| `STARTS_WITH` | 前缀匹配 | `startsWith('name', 'john')` |
+| `ENDS_WITH` | 后缀匹配 | `endsWith('name', 'son')` |
+| `MATCH` | 全文匹配（后端相关，如 MongoDB text / ES match） | `match('name', 'keyword')` |
+| `AND` / `OR` / `NOR` | 逻辑组合 | `and(c1, c2)`、`or(c1, c2)` |
+| `ALL` | 匹配全部记录 | `all()`（无需字段/值） |
 
 来源: [packages/wow/src/query/operator.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/operator.ts)
 
 ### 排序和分页
 
 ```typescript
-import { pagedQuery, listQuery } from '@ahoo-wang/fetcher-wow';
+import { pagedQuery, listQuery, SortDirection } from '@ahoo-wang/fetcher-wow';
 
-// Paged query with sorting
+// 带排序的分页查询（pagination.index 从 1 开始）
 const query = pagedQuery({
   condition: all(),
   pagination: { index: 1, size: 20 },
-  sort: [{ field: 'createdAt', order: 'DESC' }],
+  sort: [{ field: 'createdAt', direction: SortDirection.DESC }],
+});
+
+// 列表查询（仅 limit，无分页）
+const list = listQuery({
+  condition: all(),
+  limit: 100,
 });
 ```
 
@@ -437,11 +443,14 @@ graph TB
 | `EventStreamQueryClient` | `query/event/` | 领域事件流查询 |
 | `LoadStateAggregateClient` | `query/state/` | 通过 ID/版本/时间加载聚合状态 |
 | `LoadOwnerStateAggregateClient` | `query/state/` | 加载所有者的聚合状态 |
-| `Condition` | `query/` | 查询条件构建器 |
+| `Condition` | `query/` | 查询条件接口 |
 | `all()` | `query/` | 匹配所有记录的条件 |
+| `and(...)` / `or(...)` / `nor(...)` | `query/` | 逻辑条件组合 |
+| `eq/ne/gt/lt/gte/lte(...)` | `query/` | 比较条件辅助函数 |
+| `isIn/notIn/allIn(...)` | `query/` | 集合成员判断辅助函数 |
+| `between/contains/startsWith/endsWith/match(...)` | `query/` | 范围与模式匹配辅助函数 |
 | `aggregateId(id)` | `query/` | 匹配单个聚合 ID 的条件 |
 | `aggregateIds(ids)` | `query/` | 匹配多个聚合 ID 的条件 |
-| `condition(field, operator, value)` | `query/` | 条件构建器 |
 | `listQuery()` | `query/` | 创建列表查询 |
 | `pagedQuery()` | `query/` | 创建分页查询 |
 | `singleQuery()` | `query/` | 创建单条查询 |

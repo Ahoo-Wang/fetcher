@@ -182,18 +182,18 @@ interface ServerSentEvent {
 
 ## ServerSentEventTransformStream
 
-A `TransformStream<string, ServerSentEvent>` that implements the SSE parsing algorithm from the W3C specification. ([`serverSentEventTransformStream.ts:277`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L277))
+A `TransformStream<string, ServerSentEvent>` that implements the SSE parsing algorithm from the W3C specification. ([`serverSentEventTransformStream.ts:180`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L180))
 
 Key parsing behaviors:
 - Empty lines delimit events
 - Lines starting with `:` are comments (ignored)
 - Multi-line `data` fields are joined with `\n`
-- `id` and `retry` persist across events within a connection
+- `id` and `retry` persist across events within a connection: once set, they carry over to subsequent events until a new value is supplied (only `event` and `data` are reset after each dispatch). `resetEventState()` clears them only on error or final flush.
 - The `event` field defaults to `"message"`
 
 ## JsonServerSentEventTransformStream
 
-Extends the SSE pipeline to parse event data as JSON, with optional termination detection. ([`jsonServerSentEventTransformStream.ts:130`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L130))
+Extends the SSE pipeline to parse event data as JSON, with optional termination detection. ([`jsonServerSentEventTransformStream.ts:81`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L81))
 
 ```typescript
 interface JsonServerSentEvent<DATA> {
@@ -206,7 +206,7 @@ interface JsonServerSentEvent<DATA> {
 
 ### TerminateDetector
 
-A function that determines when a stream should terminate. This is critical for LLM streaming, where the API sends a `[DONE]` signal. ([`jsonServerSentEventTransformStream.ts:33`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L33))
+A function that determines when a stream should terminate. This is critical for LLM streaming, where the API sends a `[DONE]` signal. ([`jsonServerSentEventTransformStream.ts:24`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L24))
 
 ```typescript
 type TerminateDetector = (event: ServerSentEvent) => boolean;

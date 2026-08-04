@@ -96,10 +96,23 @@ classDiagram
     +constructor()
   }
 
-  class TextLineTransformer {
-    -buffer: string
+  class SafeTransformer~I,O~ {
+    <<abstract>>
+    #terminated: boolean
     +transform(chunk, controller)
     +flush(controller)
+    #enqueue(controller, chunk)
+    #terminate(controller)
+    #onError(error, phase)
+    #onTransform(chunk, controller)*
+    #onFlush(controller)
+  }
+
+  class TextLineTransformer {
+    -buffer: string
+    -normalizeLine(line)
+    #onTransform(chunk, controller)
+    #onFlush(controller)
   }
 
   class ServerSentEventTransformStream {
@@ -108,8 +121,10 @@ classDiagram
 
   class ServerSentEventTransformer {
     -currentEventState: EventState
-    +transform(chunk, controller)
-    +flush(controller)
+    -resetEventState()
+    #onError(error, phase)
+    #onTransform(chunk, controller)
+    #onFlush(controller)
   }
 
   class JsonServerSentEventTransformStream~DATA~ {
@@ -118,7 +133,7 @@ classDiagram
 
   class JsonServerSentEventTransform~DATA~ {
     -terminateDetector: TerminateDetector
-    +transform(chunk, controller)
+    #onTransform(chunk, controller)
   }
 
   class ReadableStreamAsyncIterable~T~ {
@@ -135,6 +150,9 @@ classDiagram
   }
 
   JsonServerSentEvent --|> ServerSentEvent : Omit data
+  TextLineTransformer --|> SafeTransformer : extends
+  ServerSentEventTransformer --|> SafeTransformer : extends
+  JsonServerSentEventTransform --|> SafeTransformer : extends
   TextLineTransformStream *-- TextLineTransformer
   ServerSentEventTransformStream *-- ServerSentEventTransformer
   JsonServerSentEventTransformStream *-- JsonServerSentEventTransform
@@ -142,47 +160,6 @@ classDiagram
   JsonServerSentEventTransform ..> ServerSentEvent : reads
   JsonServerSentEventTransform ..> JsonServerSentEvent : writes
 ```
-
-## SafeTransformer —— 错误安全基类
-
-本包中的所有转换器都继承自 `SafeTransformer`，这是一个抽象基类，为每个具体转换器提供三大保证：
-
-::: tip 为什么需要 SafeTransformer
-原始的 `TransformStream` 转换器必须手动处理错误、终止和"上游在关闭后继续推送"的竞态。遗漏其中任何一个都会导致 `TypeError` 或静默数据丢失。`SafeTransformer` 将这些逻辑集中化，使 SSE 转换器可以专注于解析本身。
-:::
-
-| 保证 | 工作原理 |
-|------|---------|
-| **终止守卫** | 一旦 `terminated` 被设置（通过 `terminate()` 或未捕获的错误），`transform()` 中所有后续块都会被静默丢弃——不会在已关闭的流上抛出 `TypeError`。 |
-| **安全控制器操作** | `enqueue()` 委托给 `safeEnqueue()`，它会抑制来自已关闭流的 `TypeError`。`terminate()` 委托给 `safeTerminate()`。 |
-| **错误边界** | `onTransform()` / `onFlush()` 中的未捕获错误会被捕获，转换器被终止，并通过 `safeError()` 转发错误。 |
-
-子类实现 `onTransform()` 和可选的 `onFlush()`，而非原始的 `transform()` / `flush()` 方法：
-
-```typescript
-// 简化版——完整实现见 safeTransformer.ts
-abstract class SafeTransformer<I, O> implements Transformer<I, O> {
-  protected terminated = false;
-
-  async transform(chunk: I, controller: TransformStreamDefaultController<O>) {
-    if (this.terminated) return;          // 终止后丢弃
-    try {
-      await this.onTransform(chunk, controller);
-    } catch (error) {
-      this.terminate();                    // 标记完成
-      safeError(controller, error);        // 安全转发错误
-    }
-  }
-
-  protected abstract onTransform(chunk: I, controller: TransformStreamDefaultController<O>): void | Promise<void>;
-  protected enqueue(controller: TransformStreamDefaultController<O>, chunk: O) { safeEnqueue(controller, chunk); }
-  protected terminate() { this.terminated = true; }
-}
-```
-
-源码: [packages/eventstream/src/safeTransformer.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts)
-
-`streamController.ts` 模块提供了 `SafeTransformer` 使用的底层安全操作（`safeEnqueue`、`safeTerminate`、`safeError`），包括跨 realm 的 `TypeError` 检测，用于 `error instanceof TypeError` 在不同 realm 间失效的环境。
 
 ## 流处理管道
 
@@ -214,10 +191,10 @@ graph LR
 
 ### 阶段 2：TextLineTransformStream
 
-累积文本块并按 `\n` 分割，将每一行作为独立的块发出。在块边界处的不完整行会被缓冲，直到下一块到来补全。同时将 `\r\n` 行尾标准化为不含 `\r` 的行。
+累积文本块并按 `\n` 分割，将每一行作为独立的块发出。在块边界处的不完整行会被缓冲，直到下一块到来补全。
 
 ```typescript
-// 继承 SafeTransformer —— 错误处理是继承的，无需手动处理。
+// [packages/eventstream/src/textLineTransformStream.ts:23-52]
 export class TextLineTransformer extends SafeTransformer<string, string> {
   private buffer = '';
 
@@ -225,17 +202,24 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
     return line.endsWith('\r') ? line.slice(0, -1) : line;
   }
 
-  protected onTransform(chunk: string, controller: TransformStreamDefaultController<string>): void {
+  protected onTransform(
+    chunk: string,
+    controller: TransformStreamDefaultController<string>,
+  ): void {
     this.buffer += chunk;
     const lines = this.buffer.split('\n');
     this.buffer = lines.pop() || '';
+
     for (const line of lines) {
       this.enqueue(controller, this.normalizeLine(line));
     }
   }
 
-  protected onFlush(controller: TransformStreamDefaultController<string>): void {
+  protected onFlush(
+    controller: TransformStreamDefaultController<string>,
+  ): void {
     const line = this.normalizeLine(this.buffer);
+    // Only send when normalized buffer is not empty.
     if (line) {
       this.enqueue(controller, line);
     }
@@ -243,7 +227,7 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
 }
 ```
 
-源码: [packages/eventstream/src/textLineTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts)
+Source: [packages/eventstream/src/textLineTransformStream.ts:23-52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L23-L52)
 
 ### 阶段 3：ServerSentEventTransformStream
 
@@ -267,65 +251,90 @@ export interface ServerSentEvent {
 
 Source: [packages/eventstream/src/serverSentEventTransformStream.ts:23-32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L23-L32)
 
-核心解析逻辑继承 `SafeTransformer`——错误处理和终止由基类负责：
+核心解析逻辑位于 `onTransform` 方法中，由继承自 `SafeTransformer` 的 `transform()` 方法调用。错误处理（try/catch、终止以及通过 `safeError` 转发）均继承自 `SafeTransformer`；发生错误时，下方的 `onError` 重写会重置事件状态：
 
 ```typescript
-// 继承 SafeTransformer<string, ServerSentEvent>
-// onTransform 替代原始的 transform()；错误由基类捕获
-export class ServerSentEventTransformer extends SafeTransformer<string, ServerSentEvent> {
-  private currentEventState: EventState = { event: 'message', id: undefined, retry: undefined, data: [] };
+// [packages/eventstream/src/serverSentEventTransformStream.ts:99-108]
+private resetEventState() {
+  this.currentEventState.event = DEFAULT_EVENT_TYPE;
+  this.currentEventState.id = undefined;
+  this.currentEventState.retry = undefined;
+  this.currentEventState.data = [];
+}
 
-  // 发生错误时重置状态（覆盖 SafeTransformer.onError）
-  protected override onError(_error: unknown, _phase: TransformerPhase): void {
-    this.resetEventState();
-  }
-
-  protected onTransform(chunk: string, controller: TransformStreamDefaultController<ServerSentEvent>): void {
-    const currentEvent = this.currentEventState;
-
-    if (chunk.trim() === '') {
-      // 空行——发出累积的事件
-      if (currentEvent.data.length > 0) {
-        this.enqueue(controller, {
-          event: currentEvent.event || 'message',
-          data: currentEvent.data.join('\n'),
-          id: currentEvent.id || '',
-          retry: currentEvent.retry,
-        });
-        currentEvent.event = 'message';
-        currentEvent.data = [];
-      }
-      return;
-    }
-    if (chunk.startsWith(':')) { return; } // 注释行
-
-    // 解析字段: 值
-    const colonIndex = chunk.indexOf(':');
-    // ... 字段/值提取 ...
-    processFieldInternal(field, value, currentEvent);
-  }
+protected override onError(_error: unknown, _phase: TransformerPhase): void {
+  this.resetEventState();
 }
 ```
 
-源码: [packages/eventstream/src/serverSentEventTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts)
+```typescript
+// [packages/eventstream/src/serverSentEventTransformStream.ts:110-155]
+protected onTransform(
+  chunk: string,
+  controller: TransformStreamDefaultController<ServerSentEvent>,
+): void {
+  const currentEvent = this.currentEventState;
+
+  // Skip empty lines (event separator)
+  if (chunk.trim() === '') {
+    if (currentEvent.data.length > 0) {
+      this.enqueue(controller, {
+        event: currentEvent.event || DEFAULT_EVENT_TYPE,
+        data: currentEvent.data.join('\n'),
+        id: currentEvent.id || '',
+        retry: currentEvent.retry,
+      } as ServerSentEvent);
+
+      currentEvent.event = DEFAULT_EVENT_TYPE;
+      currentEvent.data = [];
+    }
+    return;
+  }
+
+  // Ignore comment lines (starting with colon)
+  if (chunk.startsWith(':')) {
+    return;
+  }
+
+  // Parse fields
+  const colonIndex = chunk.indexOf(':');
+  let field: string;
+  let value: string;
+
+  if (colonIndex === -1) {
+    field = chunk.toLowerCase();
+    value = '';
+  } else {
+    field = chunk.substring(0, colonIndex).toLowerCase();
+    value = chunk.substring(colonIndex + 1);
+    if (value.startsWith(' ')) {
+      value = value.substring(1);
+    }
+  }
+
+  processFieldInternal(field, value, currentEvent);
+}
+```
+
+Source: [packages/eventstream/src/serverSentEventTransformStream.ts:110-155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L110-L155)
 
 ### 阶段 4：JsonServerSentEventTransformStream
 
 可选的第四阶段，将每个 `ServerSentEvent.data` 字符串解析为 JSON，并支持自动终止流。
 
 ```typescript
-// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:44-50]
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:31-37]
 export interface JsonServerSentEvent<DATA> extends Omit<ServerSentEvent, 'data'> {
   data: DATA;
 }
 ```
 
-Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:44-50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L44-L50)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:31-37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L31-L37)
 
-转换器在解析前会检查 `TerminateDetector` 函数。与本包中的所有转换器一样，它继承 `SafeTransformer`：
+`JsonServerSentEventTransform` 类 `extends SafeTransformer`，因此错误处理和终止守卫都是继承的。`onTransform` 方法在解析前会检查 `TerminateDetector` 函数，并使用 `this.terminate()` / `this.enqueue()` 而非原始 controller 方法：
 
 ```typescript
-// 继承 SafeTransformer——终止和错误处理由基类继承
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:47-73]
 export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
   ServerSentEvent,
   JsonServerSentEvent<DATA>
@@ -338,13 +347,14 @@ export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
     chunk: ServerSentEvent,
     controller: TransformStreamDefaultController<JsonServerSentEvent<DATA>>,
   ): void {
-    // 检查终止条件（例如 data === '[DONE]'）
+    // Check if this is a terminate event
     if (this.terminateDetector?.(chunk)) {
-      this.terminate(controller);  // 来自 SafeTransformer 的安全终止
+      this.terminate(controller);
       return;
     }
+
     const json = JSON.parse(chunk.data) as DATA;
-    this.enqueue(controller, {    // 来自 SafeTransformer 的安全入队
+    this.enqueue(controller, {
       data: json,
       event: chunk.event,
       id: chunk.id,
@@ -354,7 +364,7 @@ export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
 }
 ```
 
-源码: [packages/eventstream/src/jsonServerSentEventTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:47-73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47-L73)
 
 ## toServerSentEventStream 函数
 
@@ -378,7 +388,7 @@ Source: [packages/eventstream/src/eventStreamConverter.ts:127-138](https://githu
 `toJsonServerSentEventStream()` 函数添加阶段 4：
 
 ```typescript
-// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:200-207]
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:107-114]
 export function toJsonServerSentEventStream<DATA>(
   serverSentEventStream: ServerSentEventStream,
   terminateDetector?: TerminateDetector,
@@ -389,7 +399,7 @@ export function toJsonServerSentEventStream<DATA>(
 }
 ```
 
-Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:200-207](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L200-L207)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:107-114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107-L114)
 
 ## 异步迭代支持
 

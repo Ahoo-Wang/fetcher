@@ -194,6 +194,7 @@ autonumber
 
 ```typescript
 import { useFetcher } from '@ahoo-wang/fetcher-react';
+import { ResultExtractors } from '@ahoo-wang/fetcher';
 
 function UserProfile({ userId }: { userId: string }) {
   const { loading, result, error, execute } = useFetcher<User>({
@@ -369,7 +370,7 @@ graph LR
 |-------------|------|
 | `useSecurity` | 访问当前认证状态（`authenticated`、`currentUser`） |
 | `SecurityContext` | 向子组件提供 CoSec 安全状态的 React Context |
-| `RouteGuard` | 路由守卫组件，重定向未认证用户 |
+| `RouteGuard` | 条件渲染守卫组件：认证时渲染 `children`，否则渲染 `fallback`；可选 `onUnauthorized` 回调用于接入重定向 |
 | `RefreshableRouteGuard` | 在重定向前尝试刷新令牌的路由守卫 |
 
 来源: [packages/react/src/cosec/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/)
@@ -380,8 +381,8 @@ graph LR
 
 | Hook | 描述 |
 |------|------|
-| `useKeyStorage<T>` | 对 `KeyStorage<T>` 实例的响应式绑定。返回 `[value, setValue, remove]` 元组。存储变化时自动重新渲染。 |
-| `useImmerKeyStorage<T>` | 类似 `useKeyStorage`，但接受 Immer 风格的草稿变更 |
+| `useKeyStorage<T>` | 对 `KeyStorage<T>` 实例的响应式绑定。返回 `[value, setValue, remove]` 三元组。存储变化时自动重新渲染。 |
+| `useImmerKeyStorage<T>` | 类似 `useKeyStorage`，但接受 Immer 风格的草稿变更。返回 `[value, updateImmer, remove]`。 |
 
 来源: [packages/react/src/storage/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/)
 
@@ -425,6 +426,7 @@ graph LR
 | `useFetcherQuery` | `fetcher/` | 通过 Fetcher 的基于 POST 的查询 |
 | `PromiseStatus` | `core/` | 枚举：`IDLE`、`LOADING`、`SUCCESS`、`ERROR` |
 | `useKeyStorage` | `storage/` | 响应式存储绑定 |
+| `useImmerKeyStorage` | `storage/` | 支持 Immer 风格草稿更新的响应式存储绑定 |
 | `useEventSubscription` | `eventbus/` | 带自动清理的事件总线订阅 |
 
 ## 交叉引用

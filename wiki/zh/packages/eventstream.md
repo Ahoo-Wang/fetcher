@@ -182,18 +182,18 @@ interface ServerSentEvent {
 
 ## ServerSentEventTransformStream
 
-一个 `TransformStream<string, ServerSentEvent>`，实现了 W3C 规范中的 SSE 解析算法。([`serverSentEventTransformStream.ts:277`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L277))
+一个 `TransformStream<string, ServerSentEvent>`，实现了 W3C 规范中的 SSE 解析算法。([`serverSentEventTransformStream.ts:180`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L180))
 
 关键解析行为：
 - 空行分隔事件
 - 以 `:` 开头的行是注释（被忽略）
 - 多行 `data` 字段以 `\n` 连接
-- `id` 和 `retry` 在同一连接内的事件之间保持持久
+- `id` 和 `retry` 在连接内跨事件持久：一旦设置，会延续到后续事件直到提供新值（每次派发后只重置 `event` 和 `data`）。`resetEventState()` 仅在出错或最终 flush 时清除它们。
 - `event` 字段默认为 `"message"`
 
 ## JsonServerSentEventTransformStream
 
-扩展 SSE 管道以将事件数据解析为 JSON，支持可选的终止检测。([`jsonServerSentEventTransformStream.ts:130`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L130))
+扩展 SSE 管道以将事件数据解析为 JSON，支持可选的终止检测。([`jsonServerSentEventTransformStream.ts:81`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L81))
 
 ```typescript
 interface JsonServerSentEvent<DATA> {
@@ -206,7 +206,7 @@ interface JsonServerSentEvent<DATA> {
 
 ### TerminateDetector
 
-一个用于确定流何时应终止的函数。这对于 LLM 流式传输至关重要，因为 API 会发送 `[DONE]` 信号。([`jsonServerSentEventTransformStream.ts:33`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L33))
+一个用于确定流何时应终止的函数。这对于 LLM 流式传输至关重要，因为 API 会发送 `[DONE]` 信号。([`jsonServerSentEventTransformStream.ts:24`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L24))
 
 ```typescript
 type TerminateDetector = (event: ServerSentEvent) => boolean;
