@@ -220,16 +220,13 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
       // Priority: explicit dataIndex > primary key column > fallback to 'id'
       const dataIndex =
         actionColumn.dataIndex || fields.find(x => x.primaryKey)?.name || 'id';
+      const isOnlySetting = actionColumn.onlySetting === true;
+      const showSetting = viewTableSetting || isOnlySetting;
 
       cols.push({
         key: 'action',
-        /**
-         * Action column title.
-         * If configurable is true, wraps title with settings popover.
-         */
         title: () => {
-          if (viewTableSetting) {
-            // Create the settings panel component
+          if (showSetting) {
             const settingPanel = (
               <TableSettingPanel
                 fields={fields}
@@ -237,13 +234,29 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
                 onChange={onColumnsChange}
               />
             );
-
+            const popoverTitle = viewTableSetting
+              ? viewTableSetting.title
+              : undefined;
+            if (isOnlySetting) {
+              return (
+                <div className={styles.onlySettingHeader}>
+                  <Popover
+                    content={settingPanel}
+                    title={popoverTitle}
+                    placement="bottomRight"
+                    trigger="click"
+                  >
+                    <SettingOutlined aria-label="Table settings" />
+                  </Popover>
+                </div>
+              );
+            }
             return (
               <div className={styles.configurableColumnHeader}>
                 <span>{actionColumn.title}</span>
                 <Popover
                   content={settingPanel}
-                  title={viewTableSetting.title || 'Setting'}
+                  title={popoverTitle}
                   placement="bottomRight"
                   trigger="click"
                 >
@@ -256,20 +269,18 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
         },
         dataIndex: dataIndex,
         fixed: 'end',
-        width: '200px',
-        /**
-         * Renders action buttons for each row.
-         * Uses ActionsCell for consistent action button styling.
-         */
-        render: (_: any, record: RecordType) => {
-          const actionsData = actionColumn!.actions(record);
-          const data = {
-            value: actionsData,
-            record: record,
-            index: columns.length + 1, // Use next available index
-          };
-          return <ActionsCell data={data} />;
-        },
+        width: isOnlySetting ? '48px' : '200px',
+        render: actionColumn.onlySetting
+          ? () => null
+          : (_: never, record: RecordType) => {
+              const actionsData = actionColumn.actions(record);
+              const data = {
+                value: actionsData,
+                record: record,
+                index: columns.length + 1,
+              };
+              return <ActionsCell data={data} />;
+            },
       });
     }
 
