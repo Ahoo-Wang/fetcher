@@ -52,8 +52,8 @@ catalogs:
       specifier: ^4.1.10
       version: 4.1.10
     antd:
-      specifier: ^6.5.3
-      version: 6.5.3
+      specifier: ^6.5.4
+      version: 6.5.4
     babel-plugin-react-compiler:
       specifier: ^1.0.0
       version: 1.0.0
@@ -169,7 +169,7 @@ importers:
         version: 4.1.10(msw@2.14.3(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.11(@types/node@24.12.2)(esbuild@0.27.7)(less@4.8.1)(yaml@2.8.3))(vitest@4.1.10)
       antd:
         specifier: 'catalog:'
-        version: 6.5.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 6.5.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       eslint-plugin-storybook:
         specifier: ^10.3.6
         version: 10.3.6(eslint@10.8.0)(storybook@10.3.6(@testing-library/dom@10.4.1)(prettier@3.8.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(typescript@6.0.3)
@@ -832,7 +832,7 @@ importers:
         version: 6.3.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       antd:
         specifier: 'catalog:'
-        version: 6.5.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 6.5.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       dayjs:
         specifier: 'catalog:'
         version: 1.11.21
@@ -3363,8 +3363,8 @@ packages:
     resolution: {integrity: sha512-Cxwpt2SfTzTtXcfOlzGEee8O+c+MmUgGrNiBcXnuWxuFJHe6a5Hz7qwhwe5OgaSYI0IJvkLqWX1ASG+cJOkEiA==}
     engines: {node: '>=10'}
 
-  antd@6.5.3:
-    resolution: {integrity: sha512-Q5r8sztf9Yk9B70bSUjnPYMCJ4A/eZM7uMoTj8UAhlSKR9aftjEuBEPcNSmRux7hB+87rxO8vN1X4HNjR97qyQ==}
+  antd@6.5.4:
+    resolution: {integrity: sha512-jchA6i0rEwHjLpgC+l6HeLHP0gL4Q4yjs6Mxqt6PlhGD5ArxCj3ZH+fKFbNquCtd6Rlzzi+emfNFpP2dGLwZzg==}
     peerDependencies:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
@@ -7975,7 +7975,7 @@ snapshots:
 
   ansi-styles@5.2.0: {}
 
-  antd@6.5.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  antd@6.5.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       '@ant-design/colors': 8.0.1
       '@ant-design/cssinjs': 2.1.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
