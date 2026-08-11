@@ -35,7 +35,7 @@
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
   },
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": ">=18.20.8"
   },
