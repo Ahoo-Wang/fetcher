@@ -35,7 +35,7 @@ catalog:
   msw: ^2.15.0
   nanoid: ^5.1.16
   playwright: ^1.62.1
-  prettier: ^3.8.3
+  prettier: ^3.9.6
   react: ^19.2.8
   react-compiler-runtime: ^1.0.0
   react-dom: ^19.2.8
