@@ -216,7 +216,7 @@ export class SpaceIdStorage extends KeyStorage<SpaceId> {
    *
    * @param options - Optional configuration options for the storage
    * @param options.key - The storage key (defaults to DEFAULT_COSEC_SPACE_ID_KEY)
-   * @param options.eventBus - Custom event bus for cross-tab communication
+   * @param options.eventBus - Custom event bus for cross-tab communication, whose channel name defaults to one derived from the storage key
    * @param options.storage - Custom storage implementation (defaults to localStorage)
    * @param options.serializer - Custom serializer (defaults to identity serializer)
    * @param options.defaultValue - Default value when no space ID is stored
@@ -238,12 +238,21 @@ export class SpaceIdStorage extends KeyStorage<SpaceId> {
    */
   constructor({
     key = DEFAULT_COSEC_SPACE_ID_KEY,
-    eventBus = new BroadcastTypedEventBus({
-      delegate: new SerialTypedEventBus(DEFAULT_COSEC_SPACE_ID_KEY),
-    }),
+    eventBus,
     ...reset
   }: SpaceIdStorageOptions = {}) {
-    super({ key, eventBus, ...reset, serializer: typedIdentitySerializer() });
+    super({
+      key,
+      // The default bus channel must be derived from the actual key so that
+      // storages for different keys never cross-talk over the same channel.
+      eventBus:
+        eventBus ??
+        new BroadcastTypedEventBus({
+          delegate: new SerialTypedEventBus(key),
+        }),
+      ...reset,
+      serializer: typedIdentitySerializer(),
+    });
   }
 }
 

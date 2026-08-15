@@ -136,6 +136,35 @@ describe('AuthorizationResponseInterceptor', () => {
     expect(mockFetcher.interceptors.exchange).toHaveBeenCalledWith(exchange);
   });
 
+  // Regression test: retrying re-runs the whole request interceptor chain,
+  // where AuthorizationRequestInterceptor skips requests that already carry an
+  // Authorization header. The stale header must be dropped before the retry,
+  // otherwise the retried request sends the old token again and 401s forever.
+  it('should drop the stale Authorization header before retrying', async () => {
+    const exchange = {
+      response: {
+        status: ResponseCodes.UNAUTHORIZED,
+      } as Response,
+      fetcher: mockFetcher,
+      request: {
+        headers: { Authorization: 'Bearer stale-token' },
+      },
+      attributes: new Map(),
+    } as unknown as FetchExchange;
+
+    mockTokenStorage.get = vi.fn().mockReturnValue({
+      token: 'current-token',
+    });
+
+    mockTokenRefresher.refresh = vi.fn().mockResolvedValue('new-token');
+
+    await interceptor.intercept(exchange);
+
+    expect(mockTokenRefresher.refresh).toHaveBeenCalled();
+    expect(mockFetcher.interceptors.exchange).toHaveBeenCalledWith(exchange);
+    expect(exchange.request?.headers?.Authorization).toBeUndefined();
+  });
+
   it('should clear tokens and throw error when token refresh fails', async () => {
     const exchange = {
       response: {

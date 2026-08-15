@@ -53,21 +53,25 @@ export class TokenStorage
    * Creates a new TokenStorage instance.
    * @param options - Configuration options for the token storage.
    * @param options.key - The storage key for tokens. Defaults to DEFAULT_COSEC_TOKEN_KEY.
-   * @param options.eventBus - Event bus for token change notifications. Defaults to a BroadcastTypedEventBus with SerialTypedEventBus delegate.
+   * @param options.eventBus - Event bus for token change notifications. Defaults to a BroadcastTypedEventBus whose channel name is derived from the storage key.
    * @param options.earlyPeriod - Early period for token refresh in seconds. Defaults to 0.
    * @param reset - Additional options passed to KeyStorage.
    */
   constructor({
     key = DEFAULT_COSEC_TOKEN_KEY,
-    eventBus = new BroadcastTypedEventBus({
-      delegate: new SerialTypedEventBus(DEFAULT_COSEC_TOKEN_KEY),
-    }),
+    eventBus,
     earlyPeriod = 0,
     ...reset
   }: TokenStorageOptions = {}) {
     super({
       key,
-      eventBus,
+      // The default bus channel must be derived from the actual key so that
+      // storages for different keys never cross-talk over the same channel.
+      eventBus:
+        eventBus ??
+        new BroadcastTypedEventBus({
+          delegate: new SerialTypedEventBus(key),
+        }),
       ...reset,
       serializer: new JwtCompositeTokenSerializer(earlyPeriod),
     });

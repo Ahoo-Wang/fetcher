@@ -36,6 +36,12 @@ class MockBroadcastChannel {
 vi.stubGlobal('BroadcastChannel', MockBroadcastChannel);
 vi.stubGlobal('window', { localStorage: mockStorage });
 
+// Records the channel name of every SerialTypedEventBus constructed by the
+// module mock below, so tests can assert channel-name derivation.
+const { serialBusChannels } = vi.hoisted(() => ({
+  serialBusChannels: [] as string[],
+}));
+
 // Mock BroadcastTypedEventBus and SerialTypedEventBus
 vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
   BroadcastTypedEventBus: class BroadcastTypedEventBus {
@@ -49,6 +55,9 @@ vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
     on = vi.fn();
     off = vi.fn();
     destroy = vi.fn();
+    constructor(name: string) {
+      serialBusChannels.push(name);
+    }
   },
   nameGenerator: {
     generate: vi.fn((prefix: string) => `${prefix}_1`),
@@ -125,6 +134,16 @@ describe('TokenStorage', () => {
       });
       expect(customStorage).toBeDefined();
       expect(customStorage.earlyPeriod).toBe(300);
+    });
+
+    // Regression test: the default event bus channel must be derived from the
+    // actual key. Otherwise storages for different keys share one broadcast
+    // channel and cross-contaminate each other's cached token across tabs.
+    it('should derive the default event bus channel from the storage key', () => {
+      serialBusChannels.length = 0;
+      new TokenStorage({ key: 'my-token', storage: mockStorage as any });
+      expect(serialBusChannels).toContain('my-token');
+      expect(serialBusChannels).not.toContain(DEFAULT_COSEC_TOKEN_KEY);
     });
   });
 

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { ResponseCodes } from './types';
+import { CoSecHeaders, ResponseCodes } from './types';
 import type { FetchExchange } from '@ahoo-wang/fetcher';
 import { type ResponseInterceptor } from '@ahoo-wang/fetcher';
 import type { AuthorizationInterceptorOptions } from './authorizationRequestInterceptor';
@@ -88,7 +88,7 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
     // interceptor chain (including this interceptor), so a retried request
     // that still returns 401 would otherwise recurse refresh until the refresh
     // token expires or the call stack overflows.
-    const attributes = exchange.attributes ?? new Map<string, unknown>();
+    const attributes = (exchange.attributes ??= new Map<string, unknown>());
     const retryCount =
       (attributes.get(AUTHORIZATION_RETRY_COUNT_ATTRIBUTE) as
         | number
@@ -100,6 +100,10 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
 
     try {
       await this.options.tokenManager.refresh();
+      // Retrying re-runs the whole request interceptor chain. Drop the stale
+      // Authorization header so AuthorizationRequestInterceptor re-adds it
+      // with the refreshed token — it skips requests that already carry one.
+      delete exchange.request?.headers?.[CoSecHeaders.AUTHORIZATION];
       // Retry the original request with the new token
       await exchange.fetcher.interceptors.exchange(exchange);
     } catch (error) {
