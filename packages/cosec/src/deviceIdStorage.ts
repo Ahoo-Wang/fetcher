@@ -35,12 +35,21 @@ export interface DeviceIdStorageOptions extends Partial<
 export class DeviceIdStorage extends KeyStorage<string> {
   constructor({
     key = DEFAULT_COSEC_DEVICE_ID_KEY,
-    eventBus = new BroadcastTypedEventBus({
-      delegate: new SerialTypedEventBus(DEFAULT_COSEC_DEVICE_ID_KEY),
-    }),
+    eventBus,
     ...reset
   }: DeviceIdStorageOptions = {}) {
-    super({ key, eventBus, ...reset, serializer: typedIdentitySerializer() });
+    super({
+      key,
+      // The default bus channel must be derived from the actual key so that
+      // storages for different keys never cross-talk over the same channel.
+      eventBus:
+        eventBus ??
+        new BroadcastTypedEventBus({
+          delegate: new SerialTypedEventBus(key),
+        }),
+      ...reset,
+      serializer: typedIdentitySerializer(),
+    });
   }
 
   /**

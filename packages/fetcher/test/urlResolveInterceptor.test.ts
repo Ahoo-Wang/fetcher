@@ -69,4 +69,29 @@ describe('UrlResolveInterceptor', () => {
 
     expect(exchange.request.url).toBe(resolvedUrl);
   });
+
+  // Regression test: intercepting the same exchange twice (e.g. an error
+  // interceptor retrying after a token refresh) must not append the query
+  // string to the resolved URL a second time.
+  it('should be idempotent when re-run on an already-resolved request', () => {
+    const urlBuilder = new UrlBuilder('https://api.example.com');
+    const fetcher = { urlBuilder } as Fetcher;
+    const interceptor = new UrlResolveInterceptor();
+
+    const request = {
+      url: '/users/{id}',
+      urlParams: {
+        path: { id: 123 },
+        query: { filter: 'active' },
+      },
+    };
+    const exchange = new FetchExchange({ fetcher, request });
+
+    interceptor.intercept(exchange);
+    const firstUrl = exchange.request.url;
+    expect(firstUrl).toBe('https://api.example.com/users/123?filter=active');
+
+    interceptor.intercept(exchange);
+    expect(exchange.request.url).toBe(firstUrl);
+  });
 });
