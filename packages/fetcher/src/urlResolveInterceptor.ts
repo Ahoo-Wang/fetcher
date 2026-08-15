@@ -69,10 +69,17 @@ export class UrlResolveInterceptor implements RequestInterceptor {
   /**
    * Resolves the final URL by combining the base URL, path parameters, and query parameters.
    *
+   * Resolution consumes the request's URL params, making re-running this
+   * interceptor on an already-resolved request a no-op. This matters when the
+   * same exchange is intercepted twice, e.g. an error interceptor retrying a
+   * request after a token refresh — otherwise the query string would be
+   * appended to the resolved URL a second time.
+   *
    * @param exchange - The fetch exchange containing the request information
    */
   intercept(exchange: FetchExchange) {
     const request = exchange.request;
     request.url = exchange.fetcher.urlBuilder.resolveRequestUrl(request);
+    request.urlParams = undefined;
   }
 }
