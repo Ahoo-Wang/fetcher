@@ -64,4 +64,8 @@ export class NotificationCenter {
 
 export const notificationCenter = new NotificationCenter();
 
-window.addEventListener('beforeunload', beforeUnloadHandler);
+// Module-level side effect must be guarded so importing this module
+// in Node/SSR environments does not throw a ReferenceError.
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', beforeUnloadHandler);
+}
