@@ -143,10 +143,11 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   // immediately instead of performing the request, so a retry after a timeout
   // could never succeed.
   const existingController = request.abortController;
-  const controller =
-    existingController && !existingController.signal.aborted
-      ? existingController
-      : new AbortController();
+  const reuseExistingController =
+    existingController && !existingController.signal.aborted;
+  const controller = reuseExistingController
+    ? existingController
+    : new AbortController();
   request.abortController = controller;
   requestInit.signal = controller.signal;
 
@@ -182,6 +183,16 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
     aborted = true;
     if (timerId) {
       clearTimeout(timerId);
+    }
+    // Remove the controller/signal written onto the caller's request above,
+    // on BOTH the success and failure paths. Otherwise a later call reusing
+    // this same request object would mistake them for caller-provided values
+    // and delegate to plain fetch — silently ignoring the timeout. A
+    // caller-supplied (reused) controller is the caller's own property and
+    // is left in place.
+    delete requestInit.signal;
+    if (!reuseExistingController) {
+      request.abortController = undefined;
     }
   }
 }

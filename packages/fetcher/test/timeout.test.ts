@@ -195,6 +195,48 @@ describe('timeoutFetch', () => {
     expect(await response.text()).toBe('ok');
   });
 
+  // BUG (mirror of the timeout-failure pollution fixed above): on the SUCCESS
+  // path the internal AbortController and its signal stay written on the
+  // caller's request object. A later call reusing the SAME request object then
+  // hits the `if (request.signal)` delegation branch and the timeout is
+  // silently ignored.
+  it('should not leave an internal controller/signal on the request after a successful call', async () => {
+    const request: FetchRequest = {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+      timeout: 100,
+    };
+
+    const response = await timeoutFetch(request);
+    expect(response.status).toBe(200);
+
+    expect(request.signal).toBeUndefined();
+    expect(request.abortController).toBeUndefined();
+  });
+
+  it('should still enforce the timeout when reusing a request object after a successful call', async () => {
+    const request: FetchRequest = {
+      url: 'https://api.example.com/test',
+      method: 'GET',
+      timeout: 100,
+    };
+
+    // First attempt: fast endpoint → succeeds.
+    const response = await timeoutFetch(request);
+    expect(response.status).toBe(200);
+
+    // Second call reusing the SAME request object against a slow endpoint
+    // must still enforce the timeout — NOT delegate to plain fetch because of
+    // a signal left behind by the first call.
+    server.use(
+      http.get('https://api.example.com/test', async () => {
+        await delay(150);
+        return HttpResponse.text('slow');
+      }),
+    );
+    await expect(timeoutFetch(request)).rejects.toThrow(FetchTimeoutError);
+  });
+
   it('should reuse a caller-supplied, non-aborted AbortController', async () => {
     const userController = new AbortController();
     const request: FetchRequest = {
