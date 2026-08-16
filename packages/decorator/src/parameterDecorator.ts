@@ -209,9 +209,16 @@ export function parameter(type: ParameterType, name: string = '') {
       name,
     );
 
+    // Copy-on-write: Reflect.getMetadata walks the prototype chain and may
+    // return a PARENT class's Map. Mutating it in place would silently
+    // corrupt the parent's metadata when a subclass re-decorates an
+    // inherited method, so only mutate an own Map; otherwise start from a
+    // copy of the inherited one.
+    const inheritedParameters: Map<number, ParameterMetadata> | undefined =
+      Reflect.getMetadata(PARAMETER_METADATA_KEY, target, propertyKey);
     const existingParameters: Map<number, ParameterMetadata> =
-      Reflect.getMetadata(PARAMETER_METADATA_KEY, target, propertyKey) ||
-      new Map();
+      Reflect.getOwnMetadata(PARAMETER_METADATA_KEY, target, propertyKey) ??
+      new Map(inheritedParameters ?? []);
     const parameterMetadata: ParameterMetadata = {
       type: type,
       name: paramName,

@@ -319,4 +319,62 @@ describe('parameterDecorator', () => {
       expect(paramMetadata.name).toBe('attrParam');
     });
   });
+
+  describe('inheritance', () => {
+    // BUG: `parameter()` reads existing metadata via Reflect.getMetadata,
+    // which walks the prototype chain and returns the PARENT's Map object.
+    // When a subclass re-decorates an inherited method, `set()` then mutates
+    // that shared Map in place — silently corrupting the parent class's
+    // parameter metadata.
+    it('should not mutate parent class parameter metadata when a subclass re-decorates an inherited method', () => {
+      class BaseClass {
+        getUser(id: string, limit: number) {
+          return { id, limit };
+        }
+      }
+      class ChildClass extends BaseClass {}
+
+      // Base: single path parameter at index 0
+      parameter(ParameterType.PATH, 'id')(BaseClass.prototype, 'getUser', 0);
+
+      const baseBefore: Map<number, ParameterMetadata> =
+        Reflect.getOwnMetadata(
+          PARAMETER_METADATA_KEY,
+          BaseClass.prototype,
+          'getUser',
+        );
+      expect(baseBefore.size).toBe(1);
+
+      // Child re-decorates the SAME inherited method with an extra parameter
+      parameter(ParameterType.QUERY, 'limit')(
+        ChildClass.prototype,
+        'getUser',
+        1,
+      );
+
+      // Parent metadata must remain untouched
+      const baseAfter: Map<number, ParameterMetadata> = Reflect.getOwnMetadata(
+        PARAMETER_METADATA_KEY,
+        BaseClass.prototype,
+        'getUser',
+      );
+      expect(baseAfter.size).toBe(1);
+      expect(baseAfter.get(0)).toEqual({
+        type: ParameterType.PATH,
+        name: 'id',
+        index: 0,
+      });
+      expect(baseAfter.has(1)).toBe(false);
+
+      // Child resolves inherited + own parameters on its own copy
+      const childMetadata: Map<number, ParameterMetadata> = Reflect.getMetadata(
+        PARAMETER_METADATA_KEY,
+        ChildClass.prototype,
+        'getUser',
+      );
+      expect(childMetadata.size).toBe(2);
+      expect(childMetadata.get(0)?.type).toBe(ParameterType.PATH);
+      expect(childMetadata.get(1)?.type).toBe(ParameterType.QUERY);
+    });
+  });
 });
