@@ -68,7 +68,11 @@ describe('Fetcher', () => {
   function stubFetchReturning(body = 'ok', status = 200) {
     const calls: RequestInit[] = [];
     const stub = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      calls.push(init ?? ({ url: String(input) } as RequestInit));
+      // Snapshot the init at call time: timeoutFetch cleans up the internal
+      // signal/abortController it wrote onto the request once the call
+      // settles, so reading the shared object afterwards would observe the
+      // cleaned state instead of what fetch actually received.
+      calls.push({ ...(init ?? ({ url: String(input) } as RequestInit)) });
       return new Response(body, { status });
     });
     vi.stubGlobal('fetch', stub);
