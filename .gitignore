@@ -130,3 +130,6 @@ storybook-static
 # Test output directories
 test-output/
 **/test-output/
+
+# skill-creator iteration artifacts (benchmarks, eval runs)
+skills/*-workspace/
