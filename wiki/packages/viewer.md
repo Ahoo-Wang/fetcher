@@ -187,7 +187,15 @@ autonumber
     V->>V: ViewTable + FilterPanel + TopBar + ViewPanel
 ```
 
-Source: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:75-377](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L75-L377)
+Source: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:82-357](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L82-L357)
+
+### Refresh Event Bus
+
+`FetcherViewer` and the topbar refresh items (`RefreshDataBarItem`, `AutoRefreshBarItem`) communicate through a shared refresh event bus created by `useRefreshDataEventBus(subscriberId)`. `FetcherViewer` subscribes with its `viewerDefinitionId` as the subscriber ID and reloads the current page when a `REFRESH` event with a matching `subscriberId` arrives; the imperative `refreshData()` publishes to that same ID.
+
+Handlers are registered under names prefixed with the subscriber ID (`${subscriberId}:${handlerName}`). On unmount, the hook removes only the handlers registered by that specific hook instance — never the whole subscriber-ID prefix — so multiple components sharing the same `viewerDefinitionId` (for example a `FetcherViewer` and its refresh bar items) cannot remove each other's subscriptions.
+
+Source: [packages/viewer/src/hooks/useRefreshDataEventBus.ts:29-86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L29-L86), [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:254-285](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L254-L285)
 
 ## Filter System
 
@@ -311,6 +319,16 @@ The `ViewTable` component wraps Ant Design's `Table` and integrates with the vie
 - Action columns
 
 Source: [packages/viewer/src/table/ViewTable.tsx](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/ViewTable.tsx)
+
+#### Row Keys and Selection Stability
+
+`ViewTable` derives each row's `key` (used as Ant Design's `rowKey`) by calling `mapToTableRecord(dataSource, primaryKeyFieldName)`, where `primaryKeyFieldName` is the name of the field definition marked as `primaryKey`. Key precedence:
+
+1. The record's primary key field value — stable across data refreshes, sorting, and paging, so row selection does not drift to the wrong records.
+2. The record's own `key` property, if present (preserved, never overwritten by the index fallback).
+3. The array index — last resort only; index keys are not stable across data changes.
+
+Source: [packages/viewer/src/table/ViewTable.tsx:340-343](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/ViewTable.tsx#L340-L343), [packages/viewer/src/utils.ts:111-134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/utils.ts#L111-L134)
 
 ## View Management
 

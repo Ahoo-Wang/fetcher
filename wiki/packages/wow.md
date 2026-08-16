@@ -186,7 +186,7 @@ autonumber
     participant S as Wow Server
     participant AGG as Aggregate Root
 
-    C->>CC: send('add_cart_item', { body: {...} })
+    C->>CC: send(commandRequest)
     CC->>S: POST /owner/{ownerId}/cart/add_cart_item
     S->>AGG: Handle command
     AGG-->>S: Domain events produced
@@ -238,7 +238,7 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 | `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | List as SSE stream |
 | `listState(listQuery)` | `/snapshot/list/state` | `Promise<S[]>` | List state only |
 | `listStateStream(listQuery)` | `/snapshot/list/state` | `Promise<ReadableStream<JsonServerSentEvent<S>>>` | State as SSE stream |
-| `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<S>>` | Paginated snapshots |
+| `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<MaterializedSnapshot<S>>>` | Paginated snapshots |
 | `pagedState(pagedQuery)` | `/snapshot/paged/state` | `Promise<PagedList<S>>` | Paginated state |
 | `single(singleQuery)` | `/snapshot/single` | `Promise<MaterializedSnapshot<S>>` | Single snapshot |
 | `singleState(singleQuery)` | `/snapshot/single/state` | `Promise<S>` | Single state |

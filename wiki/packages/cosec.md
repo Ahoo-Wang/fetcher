@@ -133,13 +133,13 @@ Source: [packages/cosec/src/authorizationRequestInterceptor.ts:41-92](https://gi
 ### AuthorizationResponseInterceptor
 
 Handles 401 responses by:
-1. Checking if the response status is 401
-2. Verifying the refresh token is still valid
-3. Refreshing the access token
-4. Retrying the original request with the new token
-5. Clearing tokens on refresh failure
+1. Checking if the response status is 401 and the current token is still refreshable
+2. Bounding the refresh-retry loop per exchange (`AUTHORIZATION_RESPONSE_MAX_RETRY = 1`, tracked via an exchange attribute), since retrying re-runs the whole interceptor chain
+3. Refreshing the access token; on refresh failure, clearing stored tokens and re-throwing the error
+4. Dropping the stale `Authorization` header and retrying the original request through the full interceptor chain, so `AuthorizationRequestInterceptor` re-adds the header with the refreshed token
+5. Propagating a failure of the retried request itself unchanged — the freshly refreshed token is kept, not cleared
 
-Source: [packages/cosec/src/authorizationResponseInterceptor.ts:57-111](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L57-L111)
+Source: [packages/cosec/src/authorizationResponseInterceptor.ts:58-118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L58-L118)
 
 ### ResourceAttributionRequestInterceptor
 
@@ -232,7 +232,7 @@ console.log(composite.isRefreshable);    // true if refresh token still valid
 
 ### TokenStorage
 
-Extends `KeyStorage<JwtCompositeToken>` with authentication-specific methods and cross-tab synchronization:
+Extends `KeyStorage<JwtCompositeToken>` with authentication-specific methods and cross-tab synchronization. The default `BroadcastTypedEventBus` channel name is derived from the configured storage key, so storages with different keys never cross-contaminate each other's cached value across tabs:
 
 | Method | Description |
 |--------|-------------|
@@ -241,7 +241,7 @@ Extends `KeyStorage<JwtCompositeToken>` with authentication-specific methods and
 | `authenticated` | Check if a valid token is present |
 | `currentUser` | Get the JWT payload if authenticated |
 
-Source: [packages/cosec/src/tokenStorage.ts:43-121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenStorage.ts#L43-L121)
+Source: [packages/cosec/src/tokenStorage.ts:43-125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenStorage.ts#L43-L125)
 
 ### JwtTokenManager
 
@@ -312,7 +312,7 @@ Source: [packages/cosec/src/jwts.ts:17-80](https://github.com/Ahoo-Wang/fetcher/
 
 ## Device Tracking
 
-`DeviceIdStorage` extends `KeyStorage<string>` with a `getOrCreate()` method that generates a unique device ID (via nanoid) on first use and persists it:
+`DeviceIdStorage` extends `KeyStorage<string>` with a `getOrCreate()` method that generates a unique device ID (via nanoid) on first use and persists it. Like `TokenStorage`, its default cross-tab event bus channel is derived from the storage key:
 
 ```typescript
 import { DeviceIdStorage } from '@ahoo-wang/fetcher-cosec';
@@ -323,7 +323,7 @@ const deviceId = deviceStorage.getOrCreate();
 // Subsequent calls: returns the stored ID
 ```
 
-Source: [packages/cosec/src/deviceIdStorage.ts:35-71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/deviceIdStorage.ts#L35-L71)
+Source: [packages/cosec/src/deviceIdStorage.ts:35-80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/deviceIdStorage.ts#L35-L80)
 
 ## Key Exports
 

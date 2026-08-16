@@ -284,33 +284,46 @@ Common parameters for the chat completions endpoint. (Full interface: [`types.ts
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `messages` | `Message[]` | - | Conversation messages with role and content |
-| `model` | `string?` | - | Model ID (e.g., `gpt-3.5-turbo`, `gpt-4`) |
+| `messages` | `Message[]` | - | Conversation messages with role and content (required) |
+| `model` | `string` | - | Model ID (e.g., `gpt-3.5-turbo`, `gpt-4`) (required) |
 | `stream` | `boolean?` | `false` | Enable streaming responses |
 | `temperature` | `number?` | `1` | Sampling temperature (0-2) |
 | `max_tokens` | `number?` | `inf` | Maximum tokens to generate |
 | `top_p` | `number?` | `1` | Nucleus sampling threshold |
 | `frequency_penalty` | `number?` | `0` | Repetition penalty (-2.0 to 2.0) |
 | `presence_penalty` | `number?` | `0` | Topic diversity penalty (-2.0 to 2.0) |
-| `logit_bias` | `null?` | `null` | Modify likelihood of specified tokens |
-| `response_format` | `object?` | - | Output format constraint (e.g., `{ type: "json_object" }`) |
-| `seen` | `number?` | - | Seed for deterministic sampling (the OpenAI API field is `seed`; this type is named `seen`) |
-| `tool_choice` | `{ [key: string]: any }?` | - | Control tool selection (e.g., `{ type: "auto" }`) |
-| `tools` | `string[]?` | - | Tool/function definitions for function calling |
-| `stop` | `string?` | `null` | Stop sequences |
+| `logit_bias` | `Record<string, number> \| null?` | `null` | Modify likelihood of specified tokens (token ID → bias value, -100 to 100) |
+| `response_format` | `Record<string, unknown>?` | - | Output format constraint (e.g., `{ type: "json_object" }`) |
+| `seed` | `number?` | - | Seed for deterministic sampling (beta) |
+| `tool_choice` | `ChatToolChoice?` | - | Control tool selection: `'none'`, `'auto'`, or `{ type: 'function', function: { name } }` |
+| `tools` | `ChatTool[]?` | - | Tool/function definitions for function calling |
+| `stop` | `string \| string[] \| null?` | `null` | Stop sequences (up to 4) |
 | `n` | `number?` | `1` | Number of completions to generate |
 | `user` | `string?` | - | End-user identifier |
 
-> All fields except `messages` are optional. Note: `ChatRequest` has **no** index signature, so TypeScript excess-property checking will reject unknown keys on an object literal. (The `Message`, `ChatResponse`, `Choice`, and `Usage` types do accept extra properties.)
+> All fields except `messages` and `model` are optional. Note: `ChatRequest` has **no** index signature, so TypeScript excess-property checking will reject unknown keys on an object literal. (The `Message`, `ChatResponse`, `Choice`, and `Usage` types do accept extra properties.)
 
-::: warning Type fidelity caveats
-The exported `ChatRequest` type declares several fields more narrowly than the real OpenAI API requires:
-- **`tools`** is typed `string[]`, but the API expects an array of tool objects (`{ type: "function", function: { name, ... } }`). Cast or `as any` to send real tool definitions.
-- **`tool_choice`** is typed `{ [key: string]: any }`, excluding the common string values `"auto"` and `"none"`.
-- **`logit_bias`** is typed `null`, but the API accepts a `Record<string, number>` token-id → bias map.
+### ChatTool / ChatToolChoice
 
-See the package README for the intended usage shapes. These are limitations of the generated type definitions, not of the HTTP client.
-:::
+`ChatTool` describes a tool the model may call; currently only function tools are supported. `ChatToolChoice` controls which (if any) function is called by the model.
+
+```typescript
+export interface ChatToolFunction {
+  name: string; // a-z, A-Z, 0-9, underscores and dashes, max 64 chars
+  description?: string;
+  parameters?: Record<string, unknown>; // JSON Schema object
+}
+
+export interface ChatTool {
+  type: 'function'; // currently only 'function' is supported
+  function: ChatToolFunction;
+}
+
+export type ChatToolChoice =
+  | 'none' // model will not call a function
+  | 'auto' // model picks between message or function call
+  | { type: 'function'; function: { name: string } }; // force a specific function
+```
 
 ### Message
 
@@ -328,13 +341,12 @@ See the package README for the intended usage shapes. These are limitations of t
 
 ### Function / Tool Calling
 
-The client supports OpenAI's function/tool calling. The exported `ChatRequest` type does not yet include full tool-definition typing (`tools` is `string[]`), so tool-calling examples require a `as any` cast or a custom type extension:
+The client supports OpenAI's function/tool calling with full typing via `ChatTool` and `ChatToolChoice`:
 
 ```typescript
 const response = await openAI.chat.completions({
   model: 'gpt-4',
   messages: [{ role: 'user', content: 'What is the weather in Boston?' }],
-  // tools/tool_choice require 'as any' cast — ChatRequest types tools as string[]
   tools: [{
     type: 'function',
     function: {
@@ -349,7 +361,7 @@ const response = await openAI.chat.completions({
       },
     },
   }],
-  tool_choice: { type: 'auto' }, // let the model decide
+  tool_choice: 'auto', // let the model decide
 });
 
 // Check if the model wants to call a tool
@@ -381,6 +393,7 @@ if (message?.tool_calls) {
 |----------|------|-------------|
 | `index` | `number?` | Choice index |
 | `message` | `Message?` | The completion message (non-streaming) |
+| `delta` | `Message?` | Chat completion delta (only present on streaming chunks) |
 | `finish_reason` | `string?` | `"stop"`, `"length"`, `"content_filter"`, etc. |
 
 ### Usage
@@ -439,6 +452,9 @@ openai.fetcher.interceptors.error.use({
 | `OpenAIOptions` | Interface | [`openai.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/openai.ts) |
 | `ChatClient` | Class | [`chat/chatClient.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts) |
 | `ChatRequest` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatTool` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatToolFunction` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatToolChoice` | Type alias | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `ChatResponse` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `Message` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `Choice` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |

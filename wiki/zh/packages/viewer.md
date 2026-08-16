@@ -187,7 +187,15 @@ autonumber
     V->>V: ViewTable + FilterPanel + TopBar + ViewPanel
 ```
 
-来源: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:75-377](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L75-L377)
+来源: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:82-357](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L82-L357)
+
+### 刷新事件总线
+
+`FetcherViewer` 与顶部栏的刷新项（`RefreshDataBarItem`、`AutoRefreshBarItem`）通过 `useRefreshDataEventBus(subscriberId)` 创建的共享刷新事件总线通信。`FetcherViewer` 以其 `viewerDefinitionId` 作为订阅者 ID 进行订阅，当收到 `subscriberId` 匹配的 `REFRESH` 事件时重新加载当前页数据；命令式的 `refreshData()` 也向同一 ID 发布事件。
+
+注册的处理器名称以订阅者 ID 为前缀（`${subscriberId}:${handlerName}`）。卸载时，该 hook 只移除当前 hook 实例自己注册的处理器——绝不按整个订阅者 ID 前缀移除——因此共享同一 `viewerDefinitionId` 的多个组件（例如一个 `FetcherViewer` 及其刷新栏项）不会误删彼此的订阅。
+
+来源: [packages/viewer/src/hooks/useRefreshDataEventBus.ts:29-86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L29-L86)、[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:254-285](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L254-L285)
 
 ## 过滤系统
 
@@ -311,6 +319,16 @@ interface CellProps<ValueType, RecordType, Attributes> {
 - 操作列
 
 来源: [packages/viewer/src/table/ViewTable.tsx](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/ViewTable.tsx)
+
+#### 行键与选择稳定性
+
+`ViewTable` 通过调用 `mapToTableRecord(dataSource, primaryKeyFieldName)` 为每行生成 `key`（用作 Ant Design 的 `rowKey`），其中 `primaryKeyFieldName` 是在字段定义中标记为 `primaryKey` 的字段名。键的优先级：
+
+1. 记录的主键字段值——在数据刷新、排序和翻页后保持稳定，行选择不会错位到其他记录。
+2. 记录自带的 `key` 属性（如存在则保留，不会被数组下标兜底覆盖）。
+3. 数组下标——仅作为最后兜底；下标键在数据变化后不稳定。
+
+来源: [packages/viewer/src/table/ViewTable.tsx:340-343](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/ViewTable.tsx#L340-L343)、[packages/viewer/src/utils.ts:111-134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/utils.ts#L111-L134)
 
 ## 视图管理
 

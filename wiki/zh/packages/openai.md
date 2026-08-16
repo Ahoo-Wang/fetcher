@@ -284,33 +284,46 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 
 | 属性 | 类型 | 默认值 | 描述 |
 |----------|------|---------|-------------|
-| `messages` | `Message[]` | - | 包含角色和内容的对话消息 |
-| `model` | `string?` | - | 模型 ID（如 `gpt-3.5-turbo`、`gpt-4`） |
+| `messages` | `Message[]` | - | 包含角色和内容的对话消息（必填） |
+| `model` | `string` | - | 模型 ID（如 `gpt-3.5-turbo`、`gpt-4`）（必填） |
 | `stream` | `boolean?` | `false` | 启用流式响应 |
 | `temperature` | `number?` | `1` | 采样温度（0-2） |
 | `max_tokens` | `number?` | `inf` | 最大生成 token 数 |
 | `top_p` | `number?` | `1` | 核采样阈值 |
 | `frequency_penalty` | `number?` | `0` | 重复惩罚（-2.0 到 2.0） |
 | `presence_penalty` | `number?` | `0` | 主题多样性惩罚（-2.0 到 2.0） |
-| `logit_bias` | `null?` | `null` | 修改指定 token 出现的概率 |
-| `response_format` | `object?` | - | 输出格式约束（如 `{ type: "json_object" }`） |
-| `seen` | `number?` | - | 确定性采样的种子（OpenAI API 字段为 `seed`；此类型名为 `seen`） |
-| `tool_choice` | `{ [key: string]: any }?` | - | 控制工具选择（如 `{ type: "auto" }`） |
-| `tools` | `string[]?` | - | 函数/工具调用的工具定义 |
-| `stop` | `string?` | `null` | 停止序列 |
+| `logit_bias` | `Record<string, number> \| null?` | `null` | 修改指定 token 出现的概率（token ID → 偏差值，-100 到 100） |
+| `response_format` | `Record<string, unknown>?` | - | 输出格式约束（如 `{ type: "json_object" }`） |
+| `seed` | `number?` | - | 确定性采样的种子（beta） |
+| `tool_choice` | `ChatToolChoice?` | - | 控制工具选择：`'none'`、`'auto'` 或 `{ type: 'function', function: { name } }` |
+| `tools` | `ChatTool[]?` | - | 函数/工具调用的工具定义 |
+| `stop` | `string \| string[] \| null?` | `null` | 停止序列（最多 4 个） |
 | `n` | `number?` | `1` | 生成的补全数量 |
 | `user` | `string?` | - | 终端用户标识符 |
 
-> 除 `messages` 外所有字段均为可选。注意：`ChatRequest` **没有**索引签名，因此 TypeScript 的多余属性检查会拒绝对象字面量上的未知键。（`Message`、`ChatResponse`、`Choice` 和 `Usage` 类型接受额外属性。）
+> 除 `messages` 和 `model` 外所有字段均为可选。注意：`ChatRequest` **没有**索引签名，因此 TypeScript 的多余属性检查会拒绝对象字面量上的未知键。（`Message`、`ChatResponse`、`Choice` 和 `Usage` 类型接受额外属性。）
 
-::: warning 类型保真度说明
-导出的 `ChatRequest` 类型对部分字段的声明比真实 OpenAI API 更窄：
-- **`tools`** 类型为 `string[]`，但 API 需要工具对象数组（`{ type: "function", function: { name, ... } }`）。发送真实工具定义时需类型断言或 `as any`。
-- **`tool_choice`** 类型为 `{ [key: string]: any }`，不包含常用的字符串值 `"auto"` 和 `"none"`。
-- **`logit_bias`** 类型为 `null`，但 API 接受 `Record<string, number>`（token ID → 偏差值映射）。
+### ChatTool / ChatToolChoice
 
-预期的使用形态见包 README。这些是生成类型定义的局限，而非 HTTP 客户端的限制。
-:::
+`ChatTool` 描述模型可调用的工具；目前仅支持函数工具。`ChatToolChoice` 控制模型调用哪个（如果有的话）函数。
+
+```typescript
+export interface ChatToolFunction {
+  name: string; // a-z、A-Z、0-9、下划线和连字符，最长 64 字符
+  description?: string;
+  parameters?: Record<string, unknown>; // JSON Schema 对象
+}
+
+export interface ChatTool {
+  type: 'function'; // 目前仅支持 'function'
+  function: ChatToolFunction;
+}
+
+export type ChatToolChoice =
+  | 'none' // 模型不会调用函数
+  | 'auto' // 模型自行选择生成消息或调用函数
+  | { type: 'function'; function: { name: string } }; // 强制调用指定函数
+```
 
 ### Message
 
@@ -328,7 +341,7 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 
 ### 函数 / 工具调用
 
-客户端支持 OpenAI 的函数/工具调用。导出的 `ChatRequest` 类型尚未包含完整的工具定义类型（`tools` 为 `string[]`），因此工具调用示例需要使用 `as any` 类型断言或自定义类型扩展：
+客户端支持 OpenAI 的函数/工具调用，并通过 `ChatTool` 和 `ChatToolChoice` 提供完整类型：
 
 ```typescript
 const response = await openAI.chat.completions({
@@ -348,7 +361,7 @@ const response = await openAI.chat.completions({
       },
     },
   }],
-  tool_choice: { type: 'auto' }, // 让模型决定
+  tool_choice: 'auto', // 让模型决定
 });
 
 // 检查模型是否想要调用工具
@@ -380,6 +393,7 @@ if (message?.tool_calls) {
 |----------|------|-------------|
 | `index` | `number?` | 选项索引 |
 | `message` | `Message?` | 补全消息（非流式） |
+| `delta` | `Message?` | 聊天补全增量（仅出现在流式 chunk 上） |
 | `finish_reason` | `string?` | `"stop"`、`"length"`、`"content_filter"` 等 |
 
 ### Usage
@@ -438,6 +452,9 @@ openai.fetcher.interceptors.error.use({
 | `OpenAIOptions` | 接口 | [`openai.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/openai.ts) |
 | `ChatClient` | 类 | [`chat/chatClient.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts) |
 | `ChatRequest` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatTool` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatToolFunction` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatToolChoice` | 类型别名 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `ChatResponse` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `Message` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `Choice` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |

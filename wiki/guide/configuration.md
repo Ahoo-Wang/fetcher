@@ -116,7 +116,7 @@ await fetcher.get('/fast-endpoint', { timeout: 3000 });
 await fetcher.get('/slow-report', { timeout: 0 });
 ```
 
-Timeout is implemented via [`timeoutFetch()`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L172), which creates an `AbortController` and races the fetch promise against a timeout promise. If the timeout fires, a [`FetchTimeoutError`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33-L53) is thrown.
+Timeout is implemented via [`timeoutFetch()`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L198), which creates an `AbortController` and races the fetch promise against a timeout promise. If the timeout fires, a [`FetchTimeoutError`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33-L53) is thrown.
 
 | Scenario | Behavior |
 |----------|----------|
@@ -185,7 +185,7 @@ flowchart TD
 | Style | Template | Parameters Object | Resolver Class |
 |-------|----------|-------------------|----------------|
 | `UrlTemplateStyle.UriTemplate` (default) | `/users/{id}` | `{ id: 123 }` | [`UriTemplateResolver`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L205-L295) |
-| `UrlTemplateStyle.Express` | `/users/:id` | `{ id: 123 }` | [`ExpressUrlTemplateResolver`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L316-L390) |
+| `UrlTemplateStyle.Express` | `/users/:id` | `{ id: 123 }` | [`ExpressUrlTemplateResolver`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L316-L395) |
 
 ```typescript
 import { Fetcher, UrlTemplateStyle } from '@ahoo-wang/fetcher';

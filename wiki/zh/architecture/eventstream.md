@@ -163,7 +163,7 @@ classDiagram
 
 ## 流处理管道
 
-将原始 HTTP 响应转换为类型化 JSON 事件需要经过一个三阶段的 `pipeThrough` 链。
+将原始 HTTP 响应转换为类型化 JSON 事件需要经过一条 `pipeThrough` 链：三个阶段将原始字节解析为 `ServerSentEvent`，外加一个可选的第四阶段将事件数据解析为 JSON。
 
 ```mermaid
 graph LR
@@ -240,7 +240,7 @@ Source: [packages/eventstream/src/textLineTransformStream.ts:23-52](https://gith
 - 未指定事件类型时使用默认值 `"message"`
 
 ```typescript
-// [packages/eventstream/src/serverSentEventTransformStream.ts:23-32]
+// [packages/eventstream/src/serverSentEventTransformStream.ts:21-30]
 export interface ServerSentEvent {
   id?: string;
   event: string;
@@ -249,7 +249,7 @@ export interface ServerSentEvent {
 }
 ```
 
-Source: [packages/eventstream/src/serverSentEventTransformStream.ts:23-32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L23-L32)
+Source: [packages/eventstream/src/serverSentEventTransformStream.ts:21-30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21-L30)
 
 核心解析逻辑位于 `onTransform` 方法中，由继承自 `SafeTransformer` 的 `transform()` 方法调用。错误处理（try/catch、终止以及通过 `safeError` 转发）均继承自 `SafeTransformer`；发生错误时，下方的 `onError` 重写会重置事件状态：
 
@@ -435,6 +435,34 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
 ```
 
 Source: [packages/eventstream/src/readableStreamAsyncIterable.ts:54-148](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L54-L148)
+
+### 导入时 Polyfill 与环境检测
+
+配套的 `readableStreams.ts` 模块在导入时将该封装器接入全局 `ReadableStream`，使 `for await...of` 可用于任意 `ReadableStream`（包括 `toServerSentEventStream()` 产出的流）。它导出特性检测常量 `isReadableStreamAsyncIterableSupported`，并仅在需要时安装 polyfill：
+
+```typescript
+// [packages/eventstream/src/readableStreams.ts:37-52]
+export const isReadableStreamAsyncIterableSupported =
+  typeof ReadableStream !== 'undefined' &&
+  typeof ReadableStream.prototype[Symbol.asyncIterator] === 'function';
+
+// Add [Symbol.asyncIterator] to ReadableStream if not already implemented.
+// Guard on the global itself first: in runtimes without ReadableStream at all
+// (legacy SSR / non-stream environments) there is nothing to polyfill, and
+// referencing ReadableStream.prototype here would crash the module import.
+if (
+  typeof ReadableStream !== 'undefined' &&
+  !isReadableStreamAsyncIterableSupported
+) {
+  ReadableStream.prototype[Symbol.asyncIterator] = function <R = any>() {
+    return new ReadableStreamAsyncIterable<R>(this as ReadableStream<R>);
+  };
+}
+```
+
+Source: [packages/eventstream/src/readableStreams.ts:37-52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37-L52)
+
+对全局对象本身的守卫至关重要：如果没有它，在完全没有 `ReadableStream` 的运行时（旧版 SSR / 无流环境）中——由于此时 `isReadableStreamAsyncIterableSupported` 为 `false`——会进入 polyfill 分支，引用 `ReadableStream.prototype` 将在模块导入时抛出 `ReferenceError`。有了该守卫，在此类环境中导入该包是安全的，polyfill 只是被跳过。
 
 ## 与 Fetcher 的集成
 

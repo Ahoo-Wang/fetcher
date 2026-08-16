@@ -1,6 +1,6 @@
 # Fetcher Wiki — Full Content
 
-> All documentation pages inlined for LLM consumption. Generated 2026-07-22.
+> All documentation pages inlined for LLM consumption. Generated 2026-08-16.
 
 ## Onboarding
 
@@ -74,7 +74,7 @@ Here is the data flow:
 2. `@get('/users/{id}')` stores `{method: HttpMethod.GET, path: '/users/{id}'}` in metadata.
 3. `@api('/api/v1')` reads both metadata sets, creates `FunctionMetadata`, and builds a `RequestExecutor` that replaces the method body.
 
-**Source**: [packages/decorator/src/parameterDecorator.ts:199-228](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199-L228)
+**Source**: [packages/decorator/src/parameterDecorator.ts:199-235](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199-L235)
 
 ### The Fetch API
 
@@ -626,7 +626,7 @@ Two template styles are supported:
 | Style | Syntax | Example | Regex |
 |---|---|---|---|
 | `UrlTemplateStyle.UriTemplate` (default) | `{param}` | `/users/{id}` | `/{([^}]+)}/g` |
-| `UrlTemplateStyle.Express` | `:param` | `/users/:id` | `/:[^/]+/g` |
+| `UrlTemplateStyle.Express` | `:param` | `/users/:id` | `/(?<=^|\/):([^/]+)/g` |
 
 Path parameters are URL-encoded automatically via `encodeURIComponent`. If a required path parameter is missing, the resolver throws `Error("Missing required path parameter: {name}")`.
 
@@ -638,10 +638,10 @@ The `timeoutFetch` function wraps the native `fetch()` with `AbortController`-ba
 
 1. If the request already has a `signal`, it delegates directly to `fetch()` (no timeout wrapping to avoid conflicts).
 2. If no timeout is configured but an `abortController` is provided, it uses that controller's signal.
-3. If a timeout is configured, it creates (or reuses) an `AbortController`, then races `fetch()` against a `setTimeout` that aborts the controller after the timeout period.
-4. The timer is always cleaned up in a `finally` block to prevent resource leaks.
+3. If a timeout is configured, it creates (or reuses, if not already aborted) an `AbortController`, then races `fetch()` against a `setTimeout` that aborts the controller after the timeout period.
+4. The timer is always cleaned up in a `finally` block, and the controller/signal written onto the request are removed on both success and failure (a caller-supplied controller is kept), so reusing the same request object never silently loses the timeout.
 
-**Source**: [packages/fetcher/src/timeout.ts:120-172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L172)
+**Source**: [packages/fetcher/src/timeout.ts:120-198](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L198)
 
 ### RequestBodyInterceptor Logic
 
@@ -3637,7 +3637,7 @@ import 'reflect-metadata';
 
 ### Defining an API Service
 
-Use [`@api`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L232-L247) for class-level configuration and [`@get`/`@post`/`@put`/`@del`/`@patch`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L59-L259) for method endpoints. Parameter decorators [`@path`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L258-L260), [`@query`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L290-L292), [`@header`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L322-L324), and [`@body`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L340-L342) bind method arguments to request parts:
+Use [`@api`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L232-L247) for class-level configuration and [`@get`/`@post`/`@put`/`@del`/`@patch`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L59-L259) for method endpoints. Parameter decorators [`@path`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L265-L267), [`@query`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L297-L299), [`@header`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L329-L331), and [`@body`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L347-L349) bind method arguments to request parts:
 
 ```typescript
 import { api, get, post, del, path, query, body } from '@ahoo-wang/fetcher-decorator';
@@ -3989,7 +3989,7 @@ await fetcher.get('/fast-endpoint', { timeout: 3000 });
 await fetcher.get('/slow-report', { timeout: 0 });
 ```
 
-Timeout is implemented via [`timeoutFetch()`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L172), which creates an `AbortController` and races the fetch promise against a timeout promise. If the timeout fires, a [`FetchTimeoutError`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33-L53) is thrown.
+Timeout is implemented via [`timeoutFetch()`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L198), which creates an `AbortController` and races the fetch promise against a timeout promise. If the timeout fires, a [`FetchTimeoutError`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33-L53) is thrown.
 
 | Scenario | Behavior |
 |----------|----------|
@@ -4058,7 +4058,7 @@ flowchart TD
 | Style | Template | Parameters Object | Resolver Class |
 |-------|----------|-------------------|----------------|
 | `UrlTemplateStyle.UriTemplate` (default) | `/users/{id}` | `{ id: 123 }` | [`UriTemplateResolver`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L205-L295) |
-| `UrlTemplateStyle.Express` | `/users/:id` | `{ id: 123 }` | [`ExpressUrlTemplateResolver`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L316-L390) |
+| `UrlTemplateStyle.Express` | `/users/:id` | `{ id: 123 }` | [`ExpressUrlTemplateResolver`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L316-L395) |
 
 ```typescript
 import { Fetcher, UrlTemplateStyle } from '@ahoo-wang/fetcher';
@@ -5339,7 +5339,7 @@ The Fetcher provides convenience methods for all standard HTTP verbs. Each deleg
 | `post` | `post<R>(url, request?, options?)` | No |
 | `put` | `put<R>(url, request?, options?)` | No |
 | `patch` | `patch<R>(url, request?, options?)` | No |
-| `delete` | `delete<R>(url, request?, options?)` | Yes |
+| `delete` | `delete<R>(url, request?, options?)` | No |
 | `head` | `head<R>(url, request?, options?)` | Yes |
 | `options` | `options<R>(url, request?, options?)` | Yes |
 | `trace` | `trace<R>(url, request?, options?)` | Yes |
@@ -5476,23 +5476,24 @@ Key properties and methods:
 | `requiredResponse` | `Response` | Throws `ExchangeError` if no response |
 | `extractResult<R>()` | `Promise<R>` | Applies result extractor (cached) |
 
-Source: [packages/fetcher/src/fetchExchange.ts:105-286](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105-L286)
+Source: [packages/fetcher/src/fetchExchange.ts:105-293](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105-L293)
 
-The result is cached after the first call to `extractResult()` to avoid repeated computation:
+The result is cached after the first call to `extractResult()` to avoid repeated computation. The result is computed *before* the cache is marked as populated, so a synchronously-throwing extractor does not leave the exchange in a "cached-but-no-value" state and the next call can retry:
 
 ```typescript
-// [packages/fetcher/src/fetchExchange.ts:278-285]
+// [packages/fetcher/src/fetchExchange.ts:278-292]
 async extractResult<R>(): Promise<R> {
   if (this.hasCachedResult) {
     return await this.cachedExtractedResult;
   }
+  const result = this.resultExtractor(this) as Promise<R> | R;
+  this.cachedExtractedResult = result;
   this.hasCachedResult = true;
-  this.cachedExtractedResult = this.resultExtractor(this);
   return await this.cachedExtractedResult;
 }
 ```
 
-Source: [packages/fetcher/src/fetchExchange.ts:278-285](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L278-L285)
+Source: [packages/fetcher/src/fetchExchange.ts:278-292](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L278-L292)
 
 ## NamedFetcher & FetcherRegistrar
 
@@ -5588,9 +5589,12 @@ flowchart TD
   HasTimeout{{"request.timeout set?"}}
   HasAC{{"request.abortController?"}}
   UseAC["Use provided AbortController"]
+  ReuseAC{{"caller abortController<br>provided and not aborted?"}}
+  Reuse["Reuse caller's AbortController"]
   NewAC["Create new AbortController"]
   Race["Promise.race(fetch, timeoutPromise)"]
-  TimeoutErr["throw FetchTimeoutError"]
+  Cleanup["finally: clear timer, remove written signal/controller<br>(caller-supplied controller is kept)"]
+  TimeoutErr["abort controller, clear written signal/controller,<br>throw FetchTimeoutError"]
 
   Entry --> HasSignal
   HasSignal -->|Yes| DirectFetch
@@ -5598,8 +5602,10 @@ flowchart TD
   HasTimeout -->|No| HasAC
   HasAC -->|Yes| UseAC --> DirectFetch
   HasAC -->|No| DirectFetch
-  HasTimeout -->|Yes| NewAC --> Race
-  Race -->|fetch wins| DirectFetch
+  HasTimeout -->|Yes| ReuseAC
+  ReuseAC -->|Yes| Reuse --> Race
+  ReuseAC -->|No| NewAC --> Race
+  Race -->|fetch wins| Cleanup
   Race -->|timeout wins| TimeoutErr
 
   style Entry fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
@@ -5608,8 +5614,11 @@ flowchart TD
   style HasTimeout fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style HasAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style UseAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style ReuseAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style Reuse fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style NewAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style Race fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style Cleanup fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style TimeoutErr fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
 
@@ -5617,10 +5626,12 @@ Key behaviors:
 
 1. If `request.signal` already exists, timeout is bypassed to avoid conflicts.
 2. If no timeout is set but an `abortController` is provided, its signal is attached directly.
-3. If a timeout is set, a new `AbortController` is created (or the provided one is reused) and a timer races against the fetch.
+3. If a timeout is set, a caller-supplied `abortController` is reused only when it has **not** already been aborted (e.g. by a prior timeout on the same request object); otherwise a new `AbortController` is created. Reusing an aborted controller would make the retried fetch reject immediately instead of performing the request.
+4. On both the success and failure paths, a `finally` block removes the controller/signal that `timeoutFetch` wrote onto the caller's request. Without this, a later call reusing the same request object would mistake them for caller-provided values and delegate to plain `fetch()` — silently ignoring the timeout. A caller-supplied (reused) controller is the caller's own property and is left in place.
+5. When the timeout fires, the controller is aborted with a `FetchTimeoutError` and the now permanently unusable controller/signal are cleared from the request, so a retry reusing the same request object starts with a fresh controller.
 
 ```typescript
-// [packages/fetcher/src/timeout.ts:120-172]
+// [packages/fetcher/src/timeout.ts:120-198]
 export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   const url = request.url;
   const timeout = request.timeout;
@@ -5637,7 +5648,15 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
     return await fetch(url, requestInit);
   }
 
-  const controller = request.abortController ?? new AbortController();
+  // Reuse a caller-supplied controller only if it has not already been
+  // aborted; an aborted controller would make the retried fetch reject
+  // immediately instead of performing the request.
+  const existingController = request.abortController;
+  const reuseExistingController =
+    existingController && !existingController.signal.aborted;
+  const controller = reuseExistingController
+    ? existingController
+    : new AbortController();
   request.abortController = controller;
   requestInit.signal = controller.signal;
 
@@ -5650,6 +5669,10 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
       if (timerId) { clearTimeout(timerId); }
       const error = new FetchTimeoutError(request);
       controller.abort(error);
+      // The aborted controller/signal are permanently unusable; clear them
+      // so a retry reusing this request builds a fresh controller.
+      request.abortController = undefined;
+      delete requestInit.signal;
       reject(error);
     }, timeout);
   });
@@ -5659,11 +5682,18 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   } finally {
     aborted = true;
     if (timerId) { clearTimeout(timerId); }
+    // On BOTH success and failure, remove the controller/signal written
+    // onto the caller's request above. A caller-supplied (reused)
+    // controller is the caller's own property and is left in place.
+    delete requestInit.signal;
+    if (!reuseExistingController) {
+      request.abortController = undefined;
+    }
   }
 }
 ```
 
-Source: [packages/fetcher/src/timeout.ts:120-172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L172)
+Source: [packages/fetcher/src/timeout.ts:120-198](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L198)
 
 ### Timeout Resolution
 
@@ -5886,7 +5916,7 @@ Source: [packages/fetcher/src/interceptorManager.ts:62-103](https://github.com/A
 The `exchange()` method is the heart of the pipeline. It runs request interceptors, then response interceptors (on success) or error interceptors (on failure). If error interceptors clear the error, the exchange is returned successfully; otherwise an `ExchangeError` is thrown.
 
 ```typescript
-// [packages/fetcher/src/interceptorManager.ts:191-212]
+// [packages/fetcher/src/interceptorManager.ts:191-216]
 async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
   try {
     await this.request.intercept(fetchExchange);
@@ -5903,7 +5933,7 @@ async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
 }
 ```
 
-Source: [packages/fetcher/src/interceptorManager.ts:191-212](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191-L212)
+Source: [packages/fetcher/src/interceptorManager.ts:191-216](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191-L216)
 
 ### Complete Execution Flow
 
@@ -6078,15 +6108,18 @@ Source: [packages/fetcher/src/requestBodyInterceptor.ts:135-166](https://github.
 
 Resolves the final URL by calling the Fetcher's `UrlBuilder.resolveRequestUrl()`. This combines the base URL, interpolates path parameters, and appends query parameters.
 
+Resolution **consumes** the request's `urlParams` (sets them to `undefined`), so re-running this interceptor on an already-resolved request is a no-op. This matters when the same exchange passes through the request chain twice — for example, an error interceptor that retries a request after a token refresh — otherwise the query string would be appended to the resolved URL a second time.
+
 ```typescript
-// [packages/fetcher/src/urlResolveInterceptor.ts:74-78]
+// [packages/fetcher/src/urlResolveInterceptor.ts:80-84]
 intercept(exchange: FetchExchange) {
   const request = exchange.request;
   request.url = exchange.fetcher.urlBuilder.resolveRequestUrl(request);
+  request.urlParams = undefined;
 }
 ```
 
-Source: [packages/fetcher/src/urlResolveInterceptor.ts:74-78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L74-L78)
+Source: [packages/fetcher/src/urlResolveInterceptor.ts:80-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L80-L84)
 
 #### 3. FetchInterceptor (order: `Number.MAX_SAFE_INTEGER - 10000`)
 
@@ -6345,10 +6378,23 @@ classDiagram
     +constructor()
   }
 
-  class TextLineTransformer {
-    -buffer: string
+  class SafeTransformer~I,O~ {
+    <<abstract>>
+    #terminated: boolean
     +transform(chunk, controller)
     +flush(controller)
+    #enqueue(controller, chunk)
+    #terminate(controller)
+    #onError(error, phase)
+    #onTransform(chunk, controller)*
+    #onFlush(controller)
+  }
+
+  class TextLineTransformer {
+    -buffer: string
+    -normalizeLine(line)
+    #onTransform(chunk, controller)
+    #onFlush(controller)
   }
 
   class ServerSentEventTransformStream {
@@ -6357,8 +6403,10 @@ classDiagram
 
   class ServerSentEventTransformer {
     -currentEventState: EventState
-    +transform(chunk, controller)
-    +flush(controller)
+    -resetEventState()
+    #onError(error, phase)
+    #onTransform(chunk, controller)
+    #onFlush(controller)
   }
 
   class JsonServerSentEventTransformStream~DATA~ {
@@ -6367,7 +6415,7 @@ classDiagram
 
   class JsonServerSentEventTransform~DATA~ {
     -terminateDetector: TerminateDetector
-    +transform(chunk, controller)
+    #onTransform(chunk, controller)
   }
 
   class ReadableStreamAsyncIterable~T~ {
@@ -6384,6 +6432,9 @@ classDiagram
   }
 
   JsonServerSentEvent --|> ServerSentEvent : Omit data
+  TextLineTransformer --|> SafeTransformer : extends
+  ServerSentEventTransformer --|> SafeTransformer : extends
+  JsonServerSentEventTransform --|> SafeTransformer : extends
   TextLineTransformStream *-- TextLineTransformer
   ServerSentEventTransformStream *-- ServerSentEventTransformer
   JsonServerSentEventTransformStream *-- JsonServerSentEventTransform
@@ -6392,50 +6443,9 @@ classDiagram
   JsonServerSentEventTransform ..> JsonServerSentEvent : writes
 ```
 
-## SafeTransformer — Error-Safe Base Class
-
-All transformers in this package extend `SafeTransformer`, an abstract base class that provides three guarantees every concrete transformer inherits:
-
-::: tip Why SafeTransformer Exists
-Raw `TransformStream` transformers must manually handle errors, termination, and the "upstream pushes after close" race. Forgetting any of these causes `TypeError` or silent data loss. `SafeTransformer` centralizes this logic so SSE transformers focus purely on parsing.
-:::
-
-| Guarantee | How it works |
-|-----------|-------------|
-| **Termination guard** | Once `terminated` is set (via `terminate()` or an unhandled error), all subsequent chunks in `transform()` are silently dropped — no `TypeError` on closed streams. |
-| **Safe controller ops** | `enqueue()` delegates to `safeEnqueue()` which suppresses `TypeError` from already-closed streams. `terminate()` delegates to `safeTerminate()`. |
-| **Error boundary** | Unhandled errors in `onTransform()` / `onFlush()` are caught, the transformer is terminated, and the error is forwarded via `safeError()`. |
-
-Subclasses implement `onTransform()` and optionally `onFlush()` instead of the raw `transform()` / `flush()` methods:
-
-```typescript
-// Simplified — see safeTransformer.ts for full implementation
-abstract class SafeTransformer<I, O> implements Transformer<I, O> {
-  protected terminated = false;
-
-  async transform(chunk: I, controller: TransformStreamDefaultController<O>) {
-    if (this.terminated) return;          // drop after termination
-    try {
-      await this.onTransform(chunk, controller);
-    } catch (error) {
-      this.terminate();                    // mark as done
-      safeError(controller, error);        // forward error safely
-    }
-  }
-
-  protected abstract onTransform(chunk: I, controller: TransformStreamDefaultController<O>): void | Promise<void>;
-  protected enqueue(controller: TransformStreamDefaultController<O>, chunk: O) { safeEnqueue(controller, chunk); }
-  protected terminate() { this.terminated = true; }
-}
-```
-
-Source: [packages/eventstream/src/safeTransformer.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts)
-
-The `streamController.ts` module provides the low-level safe operations (`safeEnqueue`, `safeTerminate`, `safeError`) that `SafeTransformer` uses, including cross-realm `TypeError` detection for environments where `error instanceof TypeError` fails across realms.
-
 ## Stream Processing Pipeline
 
-Converting a raw HTTP response into typed JSON events involves a three-stage `pipeThrough` chain.
+Converting a raw HTTP response into typed JSON events involves a `pipeThrough` chain: three stages to turn raw bytes into `ServerSentEvent`s, plus an optional fourth stage that parses the event data as JSON.
 
 ```mermaid
 graph LR
@@ -6463,10 +6473,10 @@ Converts raw `Uint8Array` chunks to UTF-8 strings. This is a built-in browser/No
 
 ### Stage 2: TextLineTransformStream
 
-Accumulates text chunks and splits them by `\n`, emitting each complete line as a separate chunk. Partial lines at chunk boundaries are buffered until the next chunk completes them. Also normalizes `\r\n` line endings to `\r`-free lines.
+Accumulates text chunks and splits them by `\n`, emitting each complete line as a separate chunk. Partial lines at chunk boundaries are buffered until the next chunk completes them.
 
 ```typescript
-// Extends SafeTransformer — error handling is inherited, not manual.
+// [packages/eventstream/src/textLineTransformStream.ts:23-52]
 export class TextLineTransformer extends SafeTransformer<string, string> {
   private buffer = '';
 
@@ -6474,17 +6484,24 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
     return line.endsWith('\r') ? line.slice(0, -1) : line;
   }
 
-  protected onTransform(chunk: string, controller: TransformStreamDefaultController<string>): void {
+  protected onTransform(
+    chunk: string,
+    controller: TransformStreamDefaultController<string>,
+  ): void {
     this.buffer += chunk;
     const lines = this.buffer.split('\n');
     this.buffer = lines.pop() || '';
+
     for (const line of lines) {
       this.enqueue(controller, this.normalizeLine(line));
     }
   }
 
-  protected onFlush(controller: TransformStreamDefaultController<string>): void {
+  protected onFlush(
+    controller: TransformStreamDefaultController<string>,
+  ): void {
     const line = this.normalizeLine(this.buffer);
+    // Only send when normalized buffer is not empty.
     if (line) {
       this.enqueue(controller, line);
     }
@@ -6492,7 +6509,7 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
 }
 ```
 
-Source: [packages/eventstream/src/textLineTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts)
+Source: [packages/eventstream/src/textLineTransformStream.ts:23-52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L23-L52)
 
 ### Stage 3: ServerSentEventTransformStream
 
@@ -6505,7 +6522,7 @@ Parses individual lines into structured `ServerSentEvent` objects according to t
 - Default event type `"message"` when not specified
 
 ```typescript
-// [packages/eventstream/src/serverSentEventTransformStream.ts:23-32]
+// [packages/eventstream/src/serverSentEventTransformStream.ts:21-30]
 export interface ServerSentEvent {
   id?: string;
   event: string;
@@ -6514,67 +6531,92 @@ export interface ServerSentEvent {
 }
 ```
 
-Source: [packages/eventstream/src/serverSentEventTransformStream.ts:23-32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L23-L32)
+Source: [packages/eventstream/src/serverSentEventTransformStream.ts:21-30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21-L30)
 
-The core parsing logic extends `SafeTransformer` — error handling and termination are inherited:
+The core parsing logic lives in `onTransform`, which is called by the inherited `SafeTransformer.transform()` method. Error handling (try/catch, termination, and forwarding via `safeError`) is inherited from `SafeTransformer`; on error the `onError` override below resets the event state:
 
 ```typescript
-// Extends SafeTransformer<string, ServerSentEvent>
-// onTransform replaces raw transform(); errors are caught by the base class
-export class ServerSentEventTransformer extends SafeTransformer<string, ServerSentEvent> {
-  private currentEventState: EventState = { event: 'message', id: undefined, retry: undefined, data: [] };
+// [packages/eventstream/src/serverSentEventTransformStream.ts:99-108]
+private resetEventState() {
+  this.currentEventState.event = DEFAULT_EVENT_TYPE;
+  this.currentEventState.id = undefined;
+  this.currentEventState.retry = undefined;
+  this.currentEventState.data = [];
+}
 
-  // Reset state when an error occurs (override of SafeTransformer.onError)
-  protected override onError(_error: unknown, _phase: TransformerPhase): void {
-    this.resetEventState();
-  }
-
-  protected onTransform(chunk: string, controller: TransformStreamDefaultController<ServerSentEvent>): void {
-    const currentEvent = this.currentEventState;
-
-    if (chunk.trim() === '') {
-      // Empty line — emit accumulated event
-      if (currentEvent.data.length > 0) {
-        this.enqueue(controller, {
-          event: currentEvent.event || 'message',
-          data: currentEvent.data.join('\n'),
-          id: currentEvent.id || '',
-          retry: currentEvent.retry,
-        });
-        currentEvent.event = 'message';
-        currentEvent.data = [];
-      }
-      return;
-    }
-    if (chunk.startsWith(':')) { return; } // comment line
-
-    // Parse field: value
-    const colonIndex = chunk.indexOf(':');
-    // ... field/value extraction ...
-    processFieldInternal(field, value, currentEvent);
-  }
+protected override onError(_error: unknown, _phase: TransformerPhase): void {
+  this.resetEventState();
 }
 ```
 
-Source: [packages/eventstream/src/serverSentEventTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts)
+```typescript
+// [packages/eventstream/src/serverSentEventTransformStream.ts:110-155]
+protected onTransform(
+  chunk: string,
+  controller: TransformStreamDefaultController<ServerSentEvent>,
+): void {
+  const currentEvent = this.currentEventState;
+
+  // Skip empty lines (event separator)
+  if (chunk.trim() === '') {
+    if (currentEvent.data.length > 0) {
+      this.enqueue(controller, {
+        event: currentEvent.event || DEFAULT_EVENT_TYPE,
+        data: currentEvent.data.join('\n'),
+        id: currentEvent.id || '',
+        retry: currentEvent.retry,
+      } as ServerSentEvent);
+
+      currentEvent.event = DEFAULT_EVENT_TYPE;
+      currentEvent.data = [];
+    }
+    return;
+  }
+
+  // Ignore comment lines (starting with colon)
+  if (chunk.startsWith(':')) {
+    return;
+  }
+
+  // Parse fields
+  const colonIndex = chunk.indexOf(':');
+  let field: string;
+  let value: string;
+
+  if (colonIndex === -1) {
+    field = chunk.toLowerCase();
+    value = '';
+  } else {
+    field = chunk.substring(0, colonIndex).toLowerCase();
+    value = chunk.substring(colonIndex + 1);
+    if (value.startsWith(' ')) {
+      value = value.substring(1);
+    }
+  }
+
+  processFieldInternal(field, value, currentEvent);
+}
+```
+
+Source: [packages/eventstream/src/serverSentEventTransformStream.ts:110-155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L110-L155)
 
 ### Stage 4: JsonServerSentEventTransformStream
 
 An optional fourth stage that parses each `ServerSentEvent.data` string as JSON and supports automatic stream termination.
 
 ```typescript
-// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:44-50]
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:31-37]
 export interface JsonServerSentEvent<DATA> extends Omit<ServerSentEvent, 'data'> {
   data: DATA;
 }
 ```
 
-Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:44-50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L44-L50)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:31-37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L31-L37)
 
-The transform checks a `TerminateDetector` function before parsing. Like all transformers in this package, it extends `SafeTransformer`:
+The `JsonServerSentEventTransform` class `extends SafeTransformer`, so error handling and the termination guard are inherited. The `onTransform` method checks a `TerminateDetector` function before parsing, and uses `this.terminate()` / `this.enqueue()` instead of raw controller methods:
 
 ```typescript
-// Extends SafeTransformer — termination and error handling inherited
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:47-73]
 export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
   ServerSentEvent,
   JsonServerSentEvent<DATA>
@@ -6587,13 +6629,14 @@ export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
     chunk: ServerSentEvent,
     controller: TransformStreamDefaultController<JsonServerSentEvent<DATA>>,
   ): void {
-    // Check terminate condition (e.g., data === '[DONE]')
+    // Check if this is a terminate event
     if (this.terminateDetector?.(chunk)) {
-      this.terminate(controller);  // safe terminate from SafeTransformer
+      this.terminate(controller);
       return;
     }
+
     const json = JSON.parse(chunk.data) as DATA;
-    this.enqueue(controller, {    // safe enqueue from SafeTransformer
+    this.enqueue(controller, {
       data: json,
       event: chunk.event,
       id: chunk.id,
@@ -6603,7 +6646,7 @@ export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
 }
 ```
 
-Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:47-73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47-L73)
 
 ## The toServerSentEventStream Function
 
@@ -6627,7 +6670,7 @@ Source: [packages/eventstream/src/eventStreamConverter.ts:127-138](https://githu
 The `toJsonServerSentEventStream()` function adds stage 4:
 
 ```typescript
-// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:200-207]
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:107-114]
 export function toJsonServerSentEventStream<DATA>(
   serverSentEventStream: ServerSentEventStream,
   terminateDetector?: TerminateDetector,
@@ -6638,7 +6681,7 @@ export function toJsonServerSentEventStream<DATA>(
 }
 ```
 
-Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:200-207](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L200-L207)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:107-114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107-L114)
 
 ## Async Iteration Support
 
@@ -6674,6 +6717,34 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
 ```
 
 Source: [packages/eventstream/src/readableStreamAsyncIterable.ts:54-148](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L54-L148)
+
+### Import-Time Polyfill and Environment Detection
+
+The companion module `readableStreams.ts` wires this wrapper into the global `ReadableStream` at import time, so `for await...of` works on any `ReadableStream` (including the streams produced by `toServerSentEventStream()`). It exports the feature-detection constant `isReadableStreamAsyncIterableSupported` and installs the polyfill only when needed:
+
+```typescript
+// [packages/eventstream/src/readableStreams.ts:37-52]
+export const isReadableStreamAsyncIterableSupported =
+  typeof ReadableStream !== 'undefined' &&
+  typeof ReadableStream.prototype[Symbol.asyncIterator] === 'function';
+
+// Add [Symbol.asyncIterator] to ReadableStream if not already implemented.
+// Guard on the global itself first: in runtimes without ReadableStream at all
+// (legacy SSR / non-stream environments) there is nothing to polyfill, and
+// referencing ReadableStream.prototype here would crash the module import.
+if (
+  typeof ReadableStream !== 'undefined' &&
+  !isReadableStreamAsyncIterableSupported
+) {
+  ReadableStream.prototype[Symbol.asyncIterator] = function <R = any>() {
+    return new ReadableStreamAsyncIterable<R>(this as ReadableStream<R>);
+  };
+}
+```
+
+Source: [packages/eventstream/src/readableStreams.ts:37-52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37-L52)
+
+The guard on the global itself matters: without it, a runtime that has no `ReadableStream` at all (legacy SSR / non-stream environments) would enter the polyfill branch — because `isReadableStreamAsyncIterableSupported` is `false` there — and referencing `ReadableStream.prototype` would throw a `ReferenceError` during module import. With the guard, importing the package is safe in such environments; the polyfill is simply skipped.
 
 ## Integration with Fetcher
 
@@ -6915,17 +6986,18 @@ The `build()` method performs three steps in order:
 
 ### The resolveRequestUrl Bridge
 
-`UrlResolveInterceptor` calls `resolveRequestUrl()` to populate `request.url` before the actual fetch:
+`UrlResolveInterceptor` calls `resolveRequestUrl()` to populate `request.url` before the actual fetch, then clears `request.urlParams`. Consuming the params makes URL resolution idempotent: if the same exchange is intercepted again (e.g. an error interceptor retrying after a token refresh, which re-runs the whole request chain), the interceptor does not append the query string a second time.
 
 ```typescript
-// [packages/fetcher/src/urlResolveInterceptor.ts:74-78]
+// [packages/fetcher/src/urlResolveInterceptor.ts:80-84]
 intercept(exchange: FetchExchange) {
   const request = exchange.request;
   request.url = exchange.fetcher.urlBuilder.resolveRequestUrl(request);
+  request.urlParams = undefined;
 }
 ```
 
-Source: [packages/fetcher/src/urlResolveInterceptor.ts:74-78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L74-L78)
+Source: [packages/fetcher/src/urlResolveInterceptor.ts:80-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L80-L84)
 
 ## URL Combination
 
@@ -6968,7 +7040,7 @@ graph TD
   subgraph Styles["UrlTemplateStyle"]
     style Styles fill:#161b22,stroke:#30363d,color:#e6edf3
     UT["UriTemplate (default)<br>Pattern: {paramName}<br>Regex: /{[^}]+}/g"]
-    ET["Express<br>Pattern: :paramName<br>Regex: /:[^/]+/g"]
+    ET["Express<br>Pattern: :paramName<br>Regex: /(?<=^|\/):([^/]+)/g"]
   end
 
   UT --> UTR["UriTemplateResolver"]
@@ -7021,15 +7093,16 @@ Mimics Express.js route parameters using a colon prefix.
 |---|---|---|
 | `/users/:id` | `{ id: 123 }` | `/users/123` |
 | `/users/:id/posts/:postId` | `{ id: 1, postId: 42 }` | `/users/1/posts/42` |
+| `http://localhost:8080/users/:id` | `{ id: 123 }` | `http://localhost:8080/users/123` |
 
-The regex pattern `/: ([^/]+)/g` matches colon-prefixed segments:
+The regex pattern `/(?<=^|\/):([^/]+)/g` matches colon-prefixed segments. Its lookbehind restricts matches to placeholders that **start a path segment** (at the beginning of the template or right after `/`), so colons belonging to the URL itself — the scheme (`http:`) or an authority port (`host:8080`) — are never mistaken for parameters:
 
 ```typescript
-// [packages/fetcher/src/urlTemplateResolver.ts:320]
-private static PATH_PARAM_REGEX = /:([^/]+)/g;
+// [packages/fetcher/src/urlTemplateResolver.ts:325]
+private static PATH_PARAM_REGEX = /(?<=^|\/):([^/]+)/g;
 ```
 
-Source: [packages/fetcher/src/urlTemplateResolver.ts:320](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L320)
+Source: [packages/fetcher/src/urlTemplateResolver.ts:325](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L325)
 
 ### Template Resolution Algorithm
 
@@ -7286,6 +7359,7 @@ Source: [packages/fetcher/src/urlTemplateResolver.ts:174-184](https://github.com
 |---|---|---|
 | `/users/{id}/posts/{postId}` | UriTemplate | `['id', 'postId']` |
 | `/users/:id/posts/:postId` | Express | `['id', 'postId']` |
+| `http://localhost:8080/users/:id` | Express | `['id']` |
 | `/users/profile` | *any* | `[]` |
 
 ## Cross-References
@@ -7767,7 +7841,7 @@ const data = await fetcher.get<User[]>('/users', {}, {
 | `baseURL` | `string` | `''` | Base URL prepended to all requests |
 | `headers` | `RequestHeaders` | `{ 'Content-Type': 'application/json' }` | Default headers for all requests |
 | `timeout` | `number` | `undefined` | Default timeout in milliseconds |
-| `urlTemplateStyle` | `UrlTemplateStyle` | `Path` | URL template syntax (`Path` for `:id`, `UriTemplate` for `{id}`) |
+| `urlTemplateStyle` | `UrlTemplateStyle` | `UriTemplate` | URL template syntax (`UriTemplate` for `{id}`, `Express` for `:id`) |
 | `interceptors` | `InterceptorManager` | Built-in pipeline | Custom interceptor manager |
 | `validateStatus` | `ValidateStatus` | `status >= 200 && status < 300` | Status code validation function |
 
@@ -7783,7 +7857,7 @@ The `Fetcher` class exposes convenience methods for all standard HTTP verbs:
 | `post` | `post<R>(url, request?, options?)` | Yes |
 | `put` | `put<R>(url, request?, options?)` | Yes |
 | `patch` | `patch<R>(url, request?, options?)` | Yes |
-| `delete` | `del<R>(url, request?, options?)` | No |
+| `delete` | `delete<R>(url, request?, options?)` | Yes |
 | `head` | `head<R>(url, request?, options?)` | No |
 | `options` | `options<R>(url, request?, options?)` | No |
 | `trace` | `trace<R>(url, request?, options?)` | No |
@@ -7799,9 +7873,9 @@ flowchart TD
     START["Incoming Request"]
     START --> REQ["Request Interceptors<br>(ordered by priority)"]
 
-    REQ --> URI["UrlResolveInterceptor<br>Resolve URL with path/query params"]
-    URI --> BODY["RequestBodyInterceptor<br>Serialize object bodies to JSON"]
-    BODY --> FETCH["FetchInterceptor<br>Execute native fetch + timeout"]
+    REQ --> BODY["RequestBodyInterceptor<br>Serialize object bodies to JSON"]
+    BODY --> URI["UrlResolveInterceptor<br>Resolve URL with path/query params"]
+    URI --> FETCH["FetchInterceptor<br>Execute native fetch + timeout"]
     FETCH --> RESP_CHECK{Has Response?}
 
     RESP_CHECK -->|Yes| RESP["Response Interceptors"]
@@ -7878,8 +7952,8 @@ fetcher.interceptors.error.use(retryInterceptor);
 
 Handles URL composition with path parameter interpolation and query string generation. Supports two template styles:
 
+- **`UrlTemplateStyle.UriTemplate`** (default): RFC 6570 `{id}` parameters
 - **`UrlTemplateStyle.Express`**: Express-style `:id` parameters
-- **`UrlTemplateStyle.UriTemplate`**: RFC 6570 `{id}` parameters
 
 ```typescript
 import { UrlBuilder, UrlTemplateStyle } from '@ahoo-wang/fetcher';
@@ -8417,7 +8491,7 @@ service.search({ limit: 10, offset: 20, sort: 'name' });
 
 ## The @request Decorator
 
-The `@request()` decorator allows passing a `ParameterRequest` object for full control over the request. It is merged with endpoint-level configuration, with the parameter request taking precedence. ([`parameterDecorator.ts:372`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L372))
+The `@request()` decorator allows passing a `ParameterRequest` object for full control over the request. It is merged with endpoint-level configuration, with the parameter request taking precedence. ([`parameterDecorator.ts:379`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L379))
 
 ```typescript
 @api('/api/users')
@@ -8439,7 +8513,7 @@ service.createUser({
 
 ## The @attribute Decorator
 
-The `@attribute()` decorator passes data to the exchange attributes, which can be read by any interceptor in the pipeline. ([`parameterDecorator.ts:408`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L408))
+The `@attribute()` decorator passes data to the exchange attributes, which can be read by any interceptor in the pipeline. ([`parameterDecorator.ts:415`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L415))
 
 ```typescript
 @api('/api/orders')
@@ -8547,6 +8621,38 @@ graph TD
     style FINAL fill:#161b22,stroke:#30363d,color:#e6edf3
 ```
 
+## Inheritance and Metadata
+
+Decorated endpoints are inheritance-aware:
+
+- **Executor binding walks the prototype chain.** When `@api` decorates a class, it binds request executors for decorated methods found on the class's own prototype *and* on every ancestor prototype, so endpoints defined on a base class keep working on subclasses. ([`apiDecorator.ts:249`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L249))
+- **Metadata reads resolve through the prototype chain.** Endpoint and parameter metadata are read with `Reflect.getMetadata`, so a subclass inherits the base class's bindings even when it does not re-declare them. ([`apiDecorator.ts:118`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L118))
+- **Parameter metadata is copy-on-write.** When a subclass re-decorates a parameter of an inherited method, `parameter()` copies the inherited parameter `Map` before adding the subclass's own entries. The subclass sees inherited + own parameters, while the base class's metadata is never mutated. ([`parameterDecorator.ts:217`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L217))
+
+```typescript
+@api('/api/v1')
+class BaseService {
+  @get('/users/{id}')
+  getUser(@path('id') id: string): Promise<User> {
+    throw autoGeneratedError();
+  }
+}
+
+@api('/api/v2')
+class AdminService extends BaseService {
+  // Re-declares the inherited endpoint with an extra parameter.
+  // AdminService resolves @path('id') + @query('audit');
+  // BaseService metadata remains the single @path('id') parameter.
+  @get('/users/{id}')
+  getUser(
+    @path('id') id: string,
+    @query('audit') audit: boolean,
+  ): Promise<User> {
+    throw autoGeneratedError();
+  }
+}
+```
+
 ## autoGeneratedError
 
 The `autoGeneratedError()` function creates a placeholder error that satisfies ESLint's `no-unused-vars` rule while indicating the method body is replaced at runtime. ([`generated.ts:41`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/generated.ts#L41))
@@ -8626,17 +8732,22 @@ const items = await products.listProducts({ category: 'electronics' }, 1, 10);
 | Export | Type | Source |
 |--------|------|--------|
 | `api` | Decorator | [`apiDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts) |
+| `endpoint` | Decorator factory | [`endpointDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts) |
 | `get`, `post`, `put`, `del`, `patch`, `head`, `options` | Decorators | [`endpointDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts) |
+| `parameter` | Decorator factory | [`parameterDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts) |
 | `path`, `query`, `header`, `body`, `request`, `attribute` | Decorators | [`parameterDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts) |
 | `ApiMetadata` | Interface | [`apiDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts) |
 | `EndpointMetadata` | Interface | [`endpointDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts) |
+| `MethodEndpointMetadata` | Type | [`endpointDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts) |
 | `ParameterType` | Enum | [`parameterDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts) |
+| `ParameterRequest` | Interface | [`parameterDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts) |
 | `ParameterMetadata` | Interface | [`parameterDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts) |
 | `FunctionMetadata` | Class | [`functionMetadata.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts) |
 | `RequestExecutor` | Class | [`requestExecutor.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts) |
 | `ExecuteLifeCycle` | Interface | [`executeLifeCycle.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/executeLifeCycle.ts) |
 | `EndpointReturnType` | Enum | [`endpointReturnTypeCapable.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointReturnTypeCapable.ts) |
 | `autoGeneratedError` | Function | [`generated.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/generated.ts) |
+| `AutoGenerated` | Class (Error) | [`generated.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/generated.ts) |
 | `buildRequestExecutor` | Function | [`apiDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts) |
 | `getParameterNames` | Function | [`reflection.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts) |
 
@@ -8728,7 +8839,7 @@ Every handler implements the `EventHandler<EVENT>` interface. Handlers are uniqu
 ```typescript
 interface EventHandler<EVENT> {
   name: string;       // Unique identifier
-  order: number;      // Execution priority (lower = earlier)
+  order?: number;     // Execution priority (lower = earlier, defaults to 0)
   once?: boolean;     // Auto-remove after first execution
   handle(event: EVENT): void | Promise<void>;
 }
@@ -8789,7 +8900,7 @@ autonumber
 
 ## SerialTypedEventBus
 
-Executes handlers sequentially in priority order. Handlers with lower `order` values execute first. If a handler throws, subsequent handlers are not called. ([`serialTypedEventBus.ts:34`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L34))
+Executes handlers sequentially in priority order. Handlers with lower `order` values execute first. If a handler throws, the error is logged (`console.warn`) and execution continues with the remaining handlers -- one failing handler does not stop the chain. ([`serialTypedEventBus.ts:34`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L34))
 
 ```typescript
 import { SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
@@ -8835,7 +8946,13 @@ Executes all handlers concurrently using `Promise.all`. Useful when handlers are
 ```typescript
 import { ParallelTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
-const bus = new ParallelTypedEventBus<Notification>('notification');
+// Define a local event payload type (avoid the global DOM `Notification`)
+interface AppNotification {
+  message: string;
+  userId: string;
+}
+
+const bus = new ParallelTypedEventBus<AppNotification>('notification');
 
 bus.on({
   name: 'push-notification',
@@ -9114,7 +9231,7 @@ graph TB
 
 ## How the Side-Effect Import Works
 
-When `@ahoo-wang/fetcher-eventstream` is imported, it checks `typeof Response !== 'undefined'` and, if available, adds new properties and methods to `Response.prototype` using `Object.defineProperty`. The additions are idempotent -- each property is only defined once, guarded by `hasOwnProperty` checks. ([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102))
+When `@ahoo-wang/fetcher-eventstream` is imported, it checks `typeof Response !== 'undefined'` and, if available, adds new properties and methods to `Response.prototype` (the `contentType` / `isEventStream` getters via `Object.defineProperty`, the four methods via direct assignment). The additions are idempotent -- each member is only defined once, guarded by `hasOwnProperty` checks. ([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102))
 
 ```mermaid
 sequenceDiagram
@@ -9135,6 +9252,22 @@ autonumber
     Import->>Proto: Define requiredJsonEventStream() method
     Import-->>App: Prototype patched, ready to use
 ```
+
+## Environment Detection and Async Iteration Polyfill
+
+The import also ensures `ReadableStream` supports async iteration, which the `for await...of` consumption examples on this page rely on. The behavior adapts to the runtime at import time:
+
+- **Feature detection** — `isReadableStreamAsyncIterableSupported` is `true` only when the `ReadableStream` global exists and its prototype already implements `Symbol.asyncIterator`. ([`readableStreams.ts:37`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37))
+- **Conditional polyfill** — If the global exists but lacks async iteration, the package polyfills `ReadableStream.prototype[Symbol.asyncIterator]` with a wrapper backed by `ReadableStreamAsyncIterable`. ([`readableStreams.ts:45-52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L45-L52))
+- **SSR-safe skip** — In runtimes with no `ReadableStream` global at all (legacy SSR / non-stream environments), the polyfill is skipped entirely: there is nothing to polyfill, and importing the module never references the missing global, so the import cannot throw `ReferenceError`. ([`readableStreams.ts:45-52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L45-L52))
+
+| Environment | `isReadableStreamAsyncIterableSupported` | Import-time behavior |
+|-------------|------------------------------------------|----------------------|
+| Runtime provides native async iteration | `true` | No polyfill installed |
+| `ReadableStream` exists, no async iteration | `false` | Polyfills `ReadableStream.prototype[Symbol.asyncIterator]` |
+| No `ReadableStream` global (legacy SSR / non-stream) | `false` | Polyfill skipped; import is side-effect free for streams |
+
+Similarly, the `Response.prototype` patching only runs when the `Response` global is defined, so importing the package in non-fetch environments is safe. ([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102)) The package requires Node.js `>=18.20.8`. ([`package.json:28-30`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L28-L30))
 
 ## Patched Response Methods
 
@@ -9205,7 +9338,7 @@ for await (const event of eventStream) {
 
 ## ServerSentEvent
 
-The `ServerSentEvent` interface models the W3C Server-Sent Events format. ([`serverSentEventTransformStream.ts:23`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L23))
+The `ServerSentEvent` interface models the W3C Server-Sent Events format. ([`serverSentEventTransformStream.ts:21`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21))
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -9225,18 +9358,18 @@ interface ServerSentEvent {
 
 ## ServerSentEventTransformStream
 
-A `TransformStream<string, ServerSentEvent>` that implements the SSE parsing algorithm from the W3C specification. ([`serverSentEventTransformStream.ts:277`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L277))
+A `TransformStream<string, ServerSentEvent>` that implements the SSE parsing algorithm from the W3C specification. ([`serverSentEventTransformStream.ts:180`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L180))
 
 Key parsing behaviors:
 - Empty lines delimit events
 - Lines starting with `:` are comments (ignored)
 - Multi-line `data` fields are joined with `\n`
-- `id` and `retry` persist across events within a connection
+- `id` and `retry` persist across events within a connection: once set, they carry over to subsequent events until a new value is supplied (only `event` and `data` are reset after each dispatch). `resetEventState()` clears them only on error or final flush.
 - The `event` field defaults to `"message"`
 
 ## JsonServerSentEventTransformStream
 
-Extends the SSE pipeline to parse event data as JSON, with optional termination detection. ([`jsonServerSentEventTransformStream.ts:130`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L130))
+Extends the SSE pipeline to parse event data as JSON, with optional termination detection. ([`jsonServerSentEventTransformStream.ts:81`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L81))
 
 ```typescript
 interface JsonServerSentEvent<DATA> {
@@ -9249,7 +9382,7 @@ interface JsonServerSentEvent<DATA> {
 
 ### TerminateDetector
 
-A function that determines when a stream should terminate. This is critical for LLM streaming, where the API sends a `[DONE]` signal. ([`jsonServerSentEventTransformStream.ts:33`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L33))
+A function that determines when a stream should terminate. This is critical for LLM streaming, where the API sends a `[DONE]` signal. ([`jsonServerSentEventTransformStream.ts:24`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L24))
 
 ```typescript
 type TerminateDetector = (event: ServerSentEvent) => boolean;
@@ -9376,6 +9509,8 @@ try {
 | `JsonEventStreamResultExtractor` | Function | [`eventStreamResultExtractor.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts) |
 | `EventStreamConvertError` | Class | [`eventStreamConverter.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts) |
 | `TextLineTransformStream` | Class | [`textLineTransformStream.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts) |
+| `ReadableStreamAsyncIterable` | Class | [`readableStreamAsyncIterable.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts) |
+| `isReadableStreamAsyncIterableSupported` | Constant | [`readableStreams.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts) |
 
 ## Related Pages
 
@@ -9665,24 +9800,50 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 
 ### ChatRequest
 
-Full request body for the chat completions endpoint. ([`types.ts:14`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L14))
+Common parameters for the chat completions endpoint. (Full interface: [`types.ts:14`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L14))
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `model` | `string` | - | Model ID (e.g., `gpt-3.5-turbo`, `gpt-4`) |
-| `messages` | `Message[]` | - | Conversation messages with role and content |
-| `stream` | `boolean` | `false` | Enable streaming responses |
-| `temperature` | `number` | `1` | Sampling temperature (0-2) |
-| `max_tokens` | `number` | `inf` | Maximum tokens to generate |
-| `top_p` | `number` | `1` | Nucleus sampling threshold |
-| `frequency_penalty` | `number` | `0` | Repetition penalty (-2.0 to 2.0) |
-| `presence_penalty` | `number` | `0` | Topic diversity penalty (-2.0 to 2.0) |
-| `stop` | `string` | `null` | Stop sequences |
-| `n` | `number` | `1` | Number of completions to generate |
-| `user` | `string` | - | End-user identifier |
-| `tools` | `string[]` | - | Tool/function definitions for function calling |
-| `tool_choice` | `{ [key: string]: any }` | - | Control tool selection (e.g., `{ type: "auto" }`) |
-| `response_format` | `object` | - | Output format constraint (e.g., `{ type: "json_object" }`) |
+| `messages` | `Message[]` | - | Conversation messages with role and content (required) |
+| `model` | `string` | - | Model ID (e.g., `gpt-3.5-turbo`, `gpt-4`) (required) |
+| `stream` | `boolean?` | `false` | Enable streaming responses |
+| `temperature` | `number?` | `1` | Sampling temperature (0-2) |
+| `max_tokens` | `number?` | `inf` | Maximum tokens to generate |
+| `top_p` | `number?` | `1` | Nucleus sampling threshold |
+| `frequency_penalty` | `number?` | `0` | Repetition penalty (-2.0 to 2.0) |
+| `presence_penalty` | `number?` | `0` | Topic diversity penalty (-2.0 to 2.0) |
+| `logit_bias` | `Record<string, number> \| null?` | `null` | Modify likelihood of specified tokens (token ID → bias value, -100 to 100) |
+| `response_format` | `Record<string, unknown>?` | - | Output format constraint (e.g., `{ type: "json_object" }`) |
+| `seed` | `number?` | - | Seed for deterministic sampling (beta) |
+| `tool_choice` | `ChatToolChoice?` | - | Control tool selection: `'none'`, `'auto'`, or `{ type: 'function', function: { name } }` |
+| `tools` | `ChatTool[]?` | - | Tool/function definitions for function calling |
+| `stop` | `string \| string[] \| null?` | `null` | Stop sequences (up to 4) |
+| `n` | `number?` | `1` | Number of completions to generate |
+| `user` | `string?` | - | End-user identifier |
+
+> All fields except `messages` and `model` are optional. Note: `ChatRequest` has **no** index signature, so TypeScript excess-property checking will reject unknown keys on an object literal. (The `Message`, `ChatResponse`, `Choice`, and `Usage` types do accept extra properties.)
+
+### ChatTool / ChatToolChoice
+
+`ChatTool` describes a tool the model may call; currently only function tools are supported. `ChatToolChoice` controls which (if any) function is called by the model.
+
+```typescript
+export interface ChatToolFunction {
+  name: string; // a-z, A-Z, 0-9, underscores and dashes, max 64 chars
+  description?: string;
+  parameters?: Record<string, unknown>; // JSON Schema object
+}
+
+export interface ChatTool {
+  type: 'function'; // currently only 'function' is supported
+  function: ChatToolFunction;
+}
+
+export type ChatToolChoice =
+  | 'none' // model will not call a function
+  | 'auto' // model picks between message or function call
+  | { type: 'function'; function: { name: string } }; // force a specific function
+```
 
 ### Message
 
@@ -9692,7 +9853,7 @@ Full request body for the chat completions endpoint. ([`types.ts:14`](https://gi
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `role` | `string` | `"system"`, `"user"`, `"assistant"`, or `"tool"` |
+| `role` | `string?` | `"system"`, `"user"`, `"assistant"`, or `"tool"` |
 | `content` | `string?` | Message text content |
 | `tool_calls` | `any[]?` | Tool call requests from the assistant |
 | `tool_call_id` | `string?` | ID linking a tool response message to its call |
@@ -9700,13 +9861,12 @@ Full request body for the chat completions endpoint. ([`types.ts:14`](https://gi
 
 ### Function / Tool Calling
 
-The client supports OpenAI's function/tool calling. The exported `ChatRequest` type does not yet include full tool-definition typing (`tools` is `string[]`), so tool-calling examples require a `as any` cast or a custom type extension:
+The client supports OpenAI's function/tool calling with full typing via `ChatTool` and `ChatToolChoice`:
 
 ```typescript
 const response = await openAI.chat.completions({
   model: 'gpt-4',
   messages: [{ role: 'user', content: 'What is the weather in Boston?' }],
-  // tools/tool_choice require 'as any' cast — ChatRequest types tools as string[]
   tools: [{
     type: 'function',
     function: {
@@ -9721,7 +9881,7 @@ const response = await openAI.chat.completions({
       },
     },
   }],
-  tool_choice: { type: 'auto' }, // let the model decide
+  tool_choice: 'auto', // let the model decide
 });
 
 // Check if the model wants to call a tool
@@ -9753,6 +9913,7 @@ if (message?.tool_calls) {
 |----------|------|-------------|
 | `index` | `number?` | Choice index |
 | `message` | `Message?` | The completion message (non-streaming) |
+| `delta` | `Message?` | Chat completion delta (only present on streaming chunks) |
 | `finish_reason` | `string?` | `"stop"`, `"length"`, `"content_filter"`, etc. |
 
 ### Usage
@@ -9811,6 +9972,9 @@ openai.fetcher.interceptors.error.use({
 | `OpenAIOptions` | Interface | [`openai.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/openai.ts) |
 | `ChatClient` | Class | [`chat/chatClient.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts) |
 | `ChatRequest` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatTool` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatToolFunction` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatToolChoice` | Type alias | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `ChatResponse` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `Message` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `Choice` | Interface | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
@@ -10709,7 +10873,19 @@ const generator = new CodeGenerator({
   inputPath: './openapi.yaml',
   outputDir: './src/generated',
   tsConfigFilePath: './tsconfig.json',
-  logger: console,
+  // `logger` is REQUIRED and must implement the full Logger interface
+  // (info, success, error, progress, progressWithCount). The global
+  // `console` is not a valid value, and ConsoleLogger is not part of the
+  // public API, so you must provide a custom implementation:
+  logger: {
+    info(message, ...params) { console.log(message, ...params); },
+    success(message, ...params) { console.log('✓', message, ...params); },
+    error(message, ...params) { console.error(message, ...params); },
+    progress(message, level, ...params) { console.log(message, ...params); },
+    progressWithCount(current, total, message, level, ...params) {
+      console.log(`${message} (${current}/${total})`, ...params);
+    },
+  },
 });
 
 await generator.generate();
@@ -10717,15 +10893,17 @@ await generator.generate();
 
 ## Key Exports
 
+The package entry (`index.ts`) publicly exports only the following; the other types listed below are internal implementation types used by the generator pipeline.
+
 | Export | Description |
 |--------|-------------|
-| `CodeGenerator` | Main orchestrator class |
-| `GeneratorOptions` | Configuration options for code generation |
-| `GenerateContext` | Context object passed through the generation pipeline |
-| `Generator` | Interface implemented by all generator stages |
-| `Logger` | Logging interface for progress reporting |
-| `GeneratorConfiguration` | Per-tag configuration for API client generation |
-| `DEFAULT_CONFIG_PATH` | Default config file path (`./fetcher-generator.config.json`) |
+| `CodeGenerator` | Main orchestrator class (public) |
+| `DEFAULT_CONFIG_PATH` | Default config file path (`./fetcher-generator.config.json`, public) |
+| `GeneratorOptions` | Configuration options (internal, `types.ts`) |
+| `GenerateContext` | Context object passed through the pipeline (internal, `generateContext.ts`) |
+| `Generator` | Interface implemented by all generator stages (internal, `generateContext.ts`) |
+| `Logger` | Logging interface for progress reporting (internal, `types.ts`) |
+| `GeneratorConfiguration` | Per-tag configuration for API client generation (internal, `types.ts`) |
 
 ## Dependencies
 
@@ -10734,6 +10912,7 @@ await generator.generate();
 - **[@ahoo-wang/fetcher-openapi](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi)** -- OpenAPI 3.x type definitions
 - **[@ahoo-wang/fetcher](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher)** -- URL utilities (`combineURLs`)
 - **[@ahoo-wang/fetcher-decorator](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator)** -- Decorator utilities for generated clients
+- **[@ahoo-wang/fetcher-eventstream](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream)** -- Streaming result extractors used by generated streaming clients
 - **[@ahoo-wang/fetcher-wow](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow)** -- Wow framework types for aggregate definitions
 
 ## Cross-References
@@ -10938,6 +11117,7 @@ autonumber
 
 ```typescript
 import { useFetcher } from '@ahoo-wang/fetcher-react';
+import { ResultExtractors } from '@ahoo-wang/fetcher';
 
 function UserProfile({ userId }: { userId: string }) {
   const { loading, result, error, execute } = useFetcher<User>({
@@ -11001,7 +11181,7 @@ For search-as-you-type scenarios, debounced variants delay execution until input
 | `useDebouncedFetcher` | `useFetcher` | Debounced fetcher execution |
 | `useDebouncedFetcherQuery` | `useFetcherQuery` | Debounced POST query |
 
-Source: [packages/react/src/core/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/)
+Source: [packages/react/src/core/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/), [packages/react/src/fetcher/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/debounced/) (`useDebouncedFetcher`, `useDebouncedFetcherQuery`)
 
 ## API Hooks Generation
 
@@ -11116,7 +11296,7 @@ Security-related hooks for applications using [CoSec](./cosec.md) authentication
 |------------------|-------------|
 | `useSecurity` | Access current authentication state (`authenticated`, `currentUser`) |
 | `SecurityContext` | React context providing CoSec security state to child components |
-| `RouteGuard` | Guard component that redirects unauthenticated users |
+| `RouteGuard` | Conditionally renders `children` (when authenticated) or `fallback`; optional `onUnauthorized` callback for redirect wiring |
 | `RefreshableRouteGuard` | Route guard that attempts token refresh before redirecting |
 
 Source: [packages/react/src/cosec/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/)
@@ -11127,8 +11307,8 @@ React bindings for the [Storage](./storage.md) package:
 
 | Hook | Description |
 |------|-------------|
-| `useKeyStorage<T>` | Reactive binding to a `KeyStorage<T>` instance. Returns `[value, setValue, remove]` tuple. Auto-re-renders on storage changes. |
-| `useImmerKeyStorage<T>` | Like `useKeyStorage` but accepts Immer-style draft mutations |
+| `useKeyStorage<T>` | Reactive binding to a `KeyStorage<T>` instance. Returns a `[value, setValue, remove]` tuple. Auto-re-renders on storage changes. |
+| `useImmerKeyStorage<T>` | Like `useKeyStorage` but accepts Immer-style draft mutations. Returns `[value, updateImmer, remove]`. |
 
 Source: [packages/react/src/storage/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/)
 
@@ -11148,7 +11328,9 @@ A channel-based notification system:
 - `BrowserNotificationChannel` -- shows native browser notifications
 - Extensible via custom `NotificationChannel` implementations
 
-Source: [packages/react/src/notification/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/)
+The exported `notificationCenter` singleton registers a `beforeunload` cleanup handler at module scope. The registration is guarded by a `typeof window` check, so importing the package in Node/SSR environments does not throw.
+
+Source: [packages/react/src/notification/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/), [packages/react/src/notification/notificationCenter.ts:65-71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/notificationCenter.ts#L65-L71)
 
 ## Utility Hooks
 
@@ -11172,6 +11354,7 @@ Source: [packages/react/src/core/](https://github.com/Ahoo-Wang/fetcher/blob/mai
 | `useFetcherQuery` | `fetcher/` | POST-based query with Fetcher |
 | `PromiseStatus` | `core/` | Enum: `IDLE`, `LOADING`, `SUCCESS`, `ERROR` |
 | `useKeyStorage` | `storage/` | Reactive storage binding |
+| `useImmerKeyStorage` | `storage/` | Reactive storage binding with Immer-style draft updates |
 | `useEventSubscription` | `eventbus/` | Event bus subscription with auto-cleanup |
 
 ## Cross-References
@@ -11297,7 +11480,7 @@ prefsStorage.destroy();
 | `serializer` | `Serializer<string, T>` | `jsonSerializer` | Serialization strategy |
 | `storage` | `Storage` | `getStorage()` | Backend storage (auto-detected) |
 | `eventBus` | `TypedEventBus<StorageEvent<T>>` | `SerialTypedEventBus` | Change notification bus |
-| `defaultValue` | `T \| null` | `null` | Default value when key is missing |
+| `defaultValue` | `T` | `null` | Default value returned by `get()` when key is missing |
 
 Source: [packages/storage/src/keyStorage.ts:80-235](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L80-L235)
 
@@ -11544,7 +11727,7 @@ graph TB
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { CoSecConfigurer, CoSecTokenRefresher } from '@ahoo-wang/fetcher-cosec';
 
-const fetcher = new Fetcher({ baseUrl: 'https://api.example.com' });
+const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
 const configurer = new CoSecConfigurer({
   appId: 'my-web-app',
@@ -11610,13 +11793,13 @@ Source: [packages/cosec/src/authorizationRequestInterceptor.ts:41-92](https://gi
 ### AuthorizationResponseInterceptor
 
 Handles 401 responses by:
-1. Checking if the response status is 401
-2. Verifying the refresh token is still valid
-3. Refreshing the access token
-4. Retrying the original request with the new token
-5. Clearing tokens on refresh failure
+1. Checking if the response status is 401 and the current token is still refreshable
+2. Bounding the refresh-retry loop per exchange (`AUTHORIZATION_RESPONSE_MAX_RETRY = 1`, tracked via an exchange attribute), since retrying re-runs the whole interceptor chain
+3. Refreshing the access token; on refresh failure, clearing stored tokens and re-throwing the error
+4. Dropping the stale `Authorization` header and retrying the original request through the full interceptor chain, so `AuthorizationRequestInterceptor` re-adds the header with the refreshed token
+5. Propagating a failure of the retried request itself unchanged — the freshly refreshed token is kept, not cleared
 
-Source: [packages/cosec/src/authorizationResponseInterceptor.ts:42-81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L42-L81)
+Source: [packages/cosec/src/authorizationResponseInterceptor.ts:58-118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L58-L118)
 
 ### ResourceAttributionRequestInterceptor
 
@@ -11709,7 +11892,7 @@ console.log(composite.isRefreshable);    // true if refresh token still valid
 
 ### TokenStorage
 
-Extends `KeyStorage<JwtCompositeToken>` with authentication-specific methods and cross-tab synchronization:
+Extends `KeyStorage<JwtCompositeToken>` with authentication-specific methods and cross-tab synchronization. The default `BroadcastTypedEventBus` channel name is derived from the configured storage key, so storages with different keys never cross-contaminate each other's cached value across tabs:
 
 | Method | Description |
 |--------|-------------|
@@ -11718,7 +11901,7 @@ Extends `KeyStorage<JwtCompositeToken>` with authentication-specific methods and
 | `authenticated` | Check if a valid token is present |
 | `currentUser` | Get the JWT payload if authenticated |
 
-Source: [packages/cosec/src/tokenStorage.ts:43-121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenStorage.ts#L43-L121)
+Source: [packages/cosec/src/tokenStorage.ts:43-125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenStorage.ts#L43-L125)
 
 ### JwtTokenManager
 
@@ -11789,7 +11972,7 @@ Source: [packages/cosec/src/jwts.ts:17-80](https://github.com/Ahoo-Wang/fetcher/
 
 ## Device Tracking
 
-`DeviceIdStorage` extends `KeyStorage<string>` with a `getOrCreate()` method that generates a unique device ID (via nanoid) on first use and persists it:
+`DeviceIdStorage` extends `KeyStorage<string>` with a `getOrCreate()` method that generates a unique device ID (via nanoid) on first use and persists it. Like `TokenStorage`, its default cross-tab event bus channel is derived from the storage key:
 
 ```typescript
 import { DeviceIdStorage } from '@ahoo-wang/fetcher-cosec';
@@ -11800,7 +11983,7 @@ const deviceId = deviceStorage.getOrCreate();
 // Subsequent calls: returns the stored ID
 ```
 
-Source: [packages/cosec/src/deviceIdStorage.ts:35-71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/deviceIdStorage.ts#L35-L71)
+Source: [packages/cosec/src/deviceIdStorage.ts:35-80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/deviceIdStorage.ts#L35-L80)
 
 ## Key Exports
 
@@ -11921,7 +12104,6 @@ graph TB
     COND --> OP
 
     style CC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
-    style CSC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style SQC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style ESQC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style LSAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
@@ -12002,7 +12184,6 @@ classDiagram
         +id: string
         +waitCommandId: string
         +stage: CommandStage
-        +contextAlias: string
         +contextName: string
         +aggregateName: string
         +aggregateId: string
@@ -12054,7 +12235,7 @@ autonumber
     participant S as Wow Server
     participant AGG as Aggregate Root
 
-    C->>CC: send('add_cart_item', { body: {...} })
+    C->>CC: send(commandRequest)
     CC->>S: POST /owner/{ownerId}/cart/add_cart_item
     S->>AGG: Handle command
     AGG-->>S: Domain events produced
@@ -12103,13 +12284,13 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 |--------|----------|---------|-------------|
 | `count(condition)` | `/snapshot/count` | `Promise<number>` | Count matching aggregates |
 | `list(listQuery)` | `/snapshot/list` | `Promise<MaterializedSnapshot<S>[]>` | List snapshots |
-| `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<SSE>>` | List as SSE stream |
-| `listState(listQuery)` | `/snapshot/list_state` | `Promise<S[]>` | List state only |
-| `listStateStream(listQuery)` | `/snapshot/list_state` | `Promise<ReadableStream<SSE>>` | State as SSE stream |
-| `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<S>>` | Paginated snapshots |
-| `pagedState(pagedQuery)` | `/snapshot/paged_state` | `Promise<PagedList<S>>` | Paginated state |
+| `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | List as SSE stream |
+| `listState(listQuery)` | `/snapshot/list/state` | `Promise<S[]>` | List state only |
+| `listStateStream(listQuery)` | `/snapshot/list/state` | `Promise<ReadableStream<JsonServerSentEvent<S>>>` | State as SSE stream |
+| `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<MaterializedSnapshot<S>>>` | Paginated snapshots |
+| `pagedState(pagedQuery)` | `/snapshot/paged/state` | `Promise<PagedList<S>>` | Paginated state |
 | `single(singleQuery)` | `/snapshot/single` | `Promise<MaterializedSnapshot<S>>` | Single snapshot |
-| `singleState(singleQuery)` | `/snapshot/single_state` | `Promise<S>` | Single state |
+| `singleState(singleQuery)` | `/snapshot/single/state` | `Promise<S>` | Single state |
 | `getById(id)` | -- | `Promise<MaterializedSnapshot<S>>` | Get by aggregate ID |
 | `getStateById(id)` | -- | `Promise<S>` | Get state by ID |
 | `getByIds(ids)` | -- | `Promise<MaterializedSnapshot<S>[]>` | Get multiple by IDs |
@@ -12153,7 +12334,7 @@ Source: [packages/wow/src/query/queryClients.ts:62-214](https://github.com/Ahoo-
 The condition system supports building complex query predicates:
 
 ```typescript
-import { all, condition, aggregateId, aggregateIds } from '@ahoo-wang/fetcher-wow';
+import { all, and, isIn, between, aggregateId, aggregateIds } from '@ahoo-wang/fetcher-wow';
 
 // All records
 const allCondition = all();
@@ -12164,44 +12345,52 @@ const byId = aggregateId('cart-123');
 // By multiple IDs
 const byIds = aggregateIds(['cart-1', 'cart-2', 'cart-3']);
 
-// Complex conditions with operators
-const complex = condition({
-  field: 'status',
-  operator: 'IN',
-  value: ['ACTIVE', 'PENDING'],
-}).and({
-  field: 'createdAt',
-  operator: 'BETWEEN',
-  value: ['2024-01-01', '2024-12-31'],
-});
+// Complex conditions composed with logical helpers.
+// Set helpers take rest args: isIn(field, ...values).
+// between takes (field, start, end).
+const complex = and(
+  isIn('status', 'ACTIVE', 'PENDING'),
+  between('createdAt', '2024-01-01', '2024-12-31'),
+);
 ```
 
 ### Operators
 
-| Operator | Description | Example |
+| Operator | Description | Helper / Example |
 |----------|-------------|---------|
-| `EQ` | Equals | `{ field: 'name', operator: 'EQ', value: 'Alice' }` |
-| `NE` | Not equals | `{ field: 'status', operator: 'NE', value: 'DELETED' }` |
-| `IN` | In set | `{ field: 'type', operator: 'IN', value: ['A', 'B'] }` |
-| `NOT_IN` | Not in set | `{ field: 'type', operator: 'NOT_IN', value: ['C'] }` |
-| `BETWEEN` | Range | `{ field: 'age', operator: 'BETWEEN', value: [18, 65] }` |
-| `LIKE` | Pattern match | `{ field: 'name', operator: 'LIKE', value: '%john%' }` |
-| `GT` | Greater than | `{ field: 'price', operator: 'GT', value: 100 }` |
-| `LT` | Less than | `{ field: 'price', operator: 'LT', value: 50 }` |
-| `ALL` | Match all | No field/value needed |
+| `EQ` | Equals | `eq('name', 'Alice')` |
+| `NE` | Not equals | `ne('status', 'DELETED')` |
+| `GT` / `GTE` | Greater than / or equal | `gt('price', 100)`, `gte('price', 100)` |
+| `LT` / `LTE` | Less than / or equal | `lt('price', 50)`, `lte('price', 50)` |
+| `IN` | In set | `isIn('type', 'A', 'B')` (rest args) |
+| `NOT_IN` | Not in set | `notIn('type', 'C')` (rest args) |
+| `ALL_IN` | Match all of set | `allIn('tags', 'a', 'b')` (rest args) |
+| `BETWEEN` | Range | `between('age', 18, 65)` (`(field, start, end)`) |
+| `CONTAINS` | Contains substring | `contains('name', 'john')` |
+| `STARTS_WITH` | Prefix match | `startsWith('name', 'john')` |
+| `ENDS_WITH` | Suffix match | `endsWith('name', 'son')` |
+| `MATCH` | Full-text match (backend-specific, e.g. MongoDB text / ES match) | `match('name', 'keyword')` |
+| `AND` / `OR` / `NOR` | Logical composition | `and(c1, c2)`, `or(c1, c2)` |
+| `ALL` | Match all records | `all()` (no field/value) |
 
 Source: [packages/wow/src/query/operator.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/operator.ts)
 
 ### Sorting and Pagination
 
 ```typescript
-import { pagedQuery, listQuery } from '@ahoo-wang/fetcher-wow';
+import { pagedQuery, listQuery, SortDirection } from '@ahoo-wang/fetcher-wow';
 
-// Paged query with sorting
+// Paged query with sorting (pagination.index starts at 1)
 const query = pagedQuery({
   condition: all(),
   pagination: { index: 1, size: 20 },
-  sort: [{ field: 'createdAt', order: 'DESC' }],
+  sort: [{ field: 'createdAt', direction: SortDirection.DESC }],
+});
+
+// List query (limit only, no pagination)
+const list = listQuery({
+  condition: all(),
+  limit: 100,
 });
 ```
 
@@ -12303,11 +12492,14 @@ Source: [packages/wow/src/index.ts](https://github.com/Ahoo-Wang/fetcher/blob/ma
 | `EventStreamQueryClient` | `query/event/` | Domain event stream queries |
 | `LoadStateAggregateClient` | `query/state/` | Load aggregate state by ID/version/time |
 | `LoadOwnerStateAggregateClient` | `query/state/` | Load owner's aggregate state |
-| `Condition` | `query/` | Query condition builder |
+| `Condition` | `query/` | Query condition interface |
 | `all()` | `query/` | Match all records condition |
+| `and(...)` / `or(...)` / `nor(...)` | `query/` | Logical condition composition |
+| `eq/ne/gt/lt/gte/lte(...)` | `query/` | Comparison condition helpers |
+| `isIn/notIn/allIn(...)` | `query/` | Set membership helpers |
+| `between/contains/startsWith/endsWith/match(...)` | `query/` | Range & pattern helpers |
 | `aggregateId(id)` | `query/` | Condition matching a single aggregate ID |
 | `aggregateIds(ids)` | `query/` | Condition matching multiple aggregate IDs |
-| `condition(field, operator, value)` | `query/` | Condition builder |
 | `listQuery()` | `query/` | Create a list query |
 | `pagedQuery()` | `query/` | Create a paged query |
 | `singleQuery()` | `query/` | Create a single query |
@@ -12451,7 +12643,7 @@ function DataView() {
 | `ownerId` | `string` | `'(0)'` | Owner ID for data scoping |
 | `tenantId` | `string` | `'(0)'` | Tenant ID for data scoping |
 | `defaultViewId` | `string` | -- | Default view to activate |
-| `pagination` | `false \| PaginationProps` | (required) | Pagination configuration or `false` to disable |
+| `pagination` | `false \| PaginationProps` | *(required)* | Pagination configuration or `false` to disable |
 | `actionColumn` | `ViewTableActionColumn` | -- | Row action column configuration |
 | `onClickPrimaryKey` | `(id, record) => void` | -- | Click handler for primary key cells |
 | `enableRowSelection` | `boolean` | `false` | Enable checkbox row selection |
@@ -12531,7 +12723,15 @@ autonumber
     V->>V: ViewTable + FilterPanel + TopBar + ViewPanel
 ```
 
-Source: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:75-377](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L75-L377)
+Source: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:82-357](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L82-L357)
+
+### Refresh Event Bus
+
+`FetcherViewer` and the topbar refresh items (`RefreshDataBarItem`, `AutoRefreshBarItem`) communicate through a shared refresh event bus created by `useRefreshDataEventBus(subscriberId)`. `FetcherViewer` subscribes with its `viewerDefinitionId` as the subscriber ID and reloads the current page when a `REFRESH` event with a matching `subscriberId` arrives; the imperative `refreshData()` publishes to that same ID.
+
+Handlers are registered under names prefixed with the subscriber ID (`${subscriberId}:${handlerName}`). On unmount, the hook removes only the handlers registered by that specific hook instance — never the whole subscriber-ID prefix — so multiple components sharing the same `viewerDefinitionId` (for example a `FetcherViewer` and its refresh bar items) cannot remove each other's subscriptions.
+
+Source: [packages/viewer/src/hooks/useRefreshDataEventBus.ts:29-86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L29-L86), [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:254-285](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L254-L285)
 
 ## Filter System
 
@@ -12613,14 +12813,14 @@ Table cells are dispatched by type using the same registry pattern as filters:
 | `text` | `TextCell` | Plain text display with ellipsis support |
 | `tag` | `TagCell` | Single Ant Design Tag |
 | `tags` | `TagsCell` | Multiple Ant Design Tags |
-| `dateTime` | `DateTimeCell` | Formatted date/time display |
-| `calendar` | `CalendarTimeCell` | Calendar-based time display |
+| `datetime` | `DateTimeCell` | Formatted date/time display |
+| `calendar-time` | `CalendarTimeCell` | Calendar-based time display |
 | `image` | `ImageCell` | Image preview with thumbnail |
-| `imageGroup` | `ImageGroupCell` | Group of image previews |
+| `image-group` | `ImageGroupCell` | Group of image previews |
 | `link` | `LinkCell` | Clickable link |
 | `currency` | `CurrencyCell` | Formatted currency display |
 | `avatar` | `AvatarCell` | User avatar display |
-| `primaryKey` | `PrimaryKeyCell` | Clickable primary key cell |
+| `primary-key` | `PrimaryKeyCell` | Clickable primary key cell |
 | `action` | `ActionCell` | Single action button |
 | `actions` | `ActionsCell` | Multiple action buttons |
 
@@ -12655,6 +12855,16 @@ The `ViewTable` component wraps Ant Design's `Table` and integrates with the vie
 - Action columns
 
 Source: [packages/viewer/src/table/ViewTable.tsx](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/ViewTable.tsx)
+
+#### Row Keys and Selection Stability
+
+`ViewTable` derives each row's `key` (used as Ant Design's `rowKey`) by calling `mapToTableRecord(dataSource, primaryKeyFieldName)`, where `primaryKeyFieldName` is the name of the field definition marked as `primaryKey`. Key precedence:
+
+1. The record's primary key field value — stable across data refreshes, sorting, and paging, so row selection does not drift to the wrong records.
+2. The record's own `key` property, if present (preserved, never overwritten by the index fallback).
+3. The array index — last resort only; index keys are not stable across data changes.
+
+Source: [packages/viewer/src/table/ViewTable.tsx:340-343](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/ViewTable.tsx#L340-L343), [packages/viewer/src/utils.ts:111-134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/utils.ts#L111-L134)
 
 ## View Management
 
@@ -12691,7 +12901,7 @@ Each view (`ViewState`) persists:
 Views are managed via [Wow](./wow.md) command operations through `ViewCommandClient`:
 - `createView` -- create a new view
 - `editView` -- update an existing view
-- `deleteAggregate` -- delete a view
+- `defaultDeleteAggregate` -- delete a view
 
 Source: [packages/viewer/src/fetcherviewer/client/view/commandClient.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/commandClient.ts)
 
@@ -13498,10 +13708,11 @@ All method decorators share the same signature:
 
 ### MethodEndpointMetadata
 
-Extends `ApiMetadata` without `method` and `basePath`:
+Extends `ApiMetadata` without `method` and `path`:
 
 | Property | Type | Description |
 |----------|------|-------------|
+| `basePath` | `string` | Endpoint-specific base path (overrides the class-level `basePath`) |
 | `headers` | `RequestHeaders` | Endpoint-specific headers (merged with class headers) |
 | `timeout` | `number` | Endpoint-specific timeout |
 | `fetcher` | `string \| Fetcher` | Endpoint-specific fetcher |
@@ -13514,12 +13725,12 @@ Extends `ApiMetadata` without `method` and `basePath`:
 
 ### Generic @endpoint Decorator
 
-For HTTP methods not covered by convenience decorators:
+For HTTP methods not covered by convenience decorators (`HttpMethod` is exported by `@ahoo-wang/fetcher`, not by the decorator package):
 
 ```typescript
-import { endpoint, HttpMethod } from '@ahoo-wang/fetcher-decorator';
+import { endpoint, autoGeneratedError } from '@ahoo-wang/fetcher-decorator';
+import { HttpMethod } from '@ahoo-wang/fetcher';
 
-@get('/users')
 @endpoint(HttpMethod.TRACE, '/trace-endpoint')
 traceEndpoint(): Promise<Response> {
   throw autoGeneratedError();
@@ -13558,6 +13769,8 @@ Parameter decorators specify how method arguments map to HTTP request components
    ```
 
 3. **AbortSignal / AbortController.** If an argument is an `AbortSignal` or `AbortController` instance, it is automatically used for request cancellation -- no decorator needed.
+
+4. **Inheritance (copy-on-write).** Parameter metadata resolves through the prototype chain, so subclasses inherit the base class's parameter bindings. When a subclass re-decorates a parameter of an inherited method, the inherited parameter map is copied before the subclass's own entries are added -- the base class's metadata is never mutated. ([`parameterDecorator.ts:217`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L217))
 
 **Source:** [`packages/decorator/src/functionMetadata.ts:279`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L279)
 
@@ -13638,7 +13851,7 @@ getUser(
 }
 ```
 
-**Source:** [`packages/decorator/src/parameterDecorator.ts:408`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L408)
+**Source:** [`packages/decorator/src/parameterDecorator.ts:415`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L415)
 
 ## autoGeneratedError
 
@@ -14622,7 +14835,7 @@ interface ParameterRequest<BODY extends RequestBodyType = RequestBodyType>
   extends FetchRequestInit<BODY>, PathCapable {}
 ```
 
-**Source:** [`packages/decorator/src/parameterDecorator.ts:352`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L352)
+**Source:** [`packages/decorator/src/parameterDecorator.ts:359`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L359)
 
 ## Type Relationship Diagram
 
@@ -16160,7 +16373,7 @@ it('should fetch data', async () => {
 2. `@get('/users/{id}')` 在元数据中存储 `{method: HttpMethod.GET, path: '/users/{id}'}`。
 3. `@api('/api/v1')` 读取这两组元数据，创建 `FunctionMetadata`，并构建一个 `RequestExecutor` 来替换方法体。
 
-**来源**: [packages/decorator/src/parameterDecorator.ts:199-228](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199-L228)
+**来源**: [packages/decorator/src/parameterDecorator.ts:199-235](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199-L235)
 
 ### Fetch API
 
@@ -16712,7 +16925,7 @@ graph TD
 | 风格 | 语法 | 示例 | 正则表达式 |
 |---|---|---|---|
 | `UrlTemplateStyle.UriTemplate`（默认） | `{param}` | `/users/{id}` | `/{([^}]+)}/g` |
-| `UrlTemplateStyle.Express` | `:param` | `/users/:id` | `/:[^/]+/g` |
+| `UrlTemplateStyle.Express` | `:param` | `/users/:id` | `/(?<=^|\/):([^/]+)/g` |
 
 路径参数通过 `encodeURIComponent` 自动进行 URL 编码。如果缺少必需的路径参数，解析器会抛出 `Error("Missing required path parameter: {name}")`。
 
@@ -16724,10 +16937,10 @@ graph TD
 
 1. 如果请求已有 `signal`，则直接委托给 `fetch()`（不进行超时封装以避免冲突）。
 2. 如果没有配置超时但提供了 `abortController`，则使用该控制器的 signal。
-3. 如果配置了超时，则创建（或复用）一个 `AbortController`，然后让 `fetch()` 与一个 `setTimeout` 进行竞争，后者在超时后中止控制器。
-4. 计时器始终在 `finally` 块中清理，以防止资源泄漏。
+3. 如果配置了超时，则创建（或复用，前提是尚未被中止）一个 `AbortController`，然后让 `fetch()` 与一个 `setTimeout` 进行竞争，后者在超时后中止控制器。
+4. 计时器始终在 `finally` 块中清理，且写入请求的控制器/signal 在成功和失败时都会被移除（调用方提供的控制器会保留），因此复用同一请求对象永远不会静默丢失超时。
 
-**来源**: [packages/fetcher/src/timeout.ts:120-172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L172)
+**来源**: [packages/fetcher/src/timeout.ts:120-198](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L198)
 
 ### RequestBodyInterceptor 逻辑
 
@@ -19721,7 +19934,7 @@ import 'reflect-metadata';
 
 ### 定义 API 服务
 
-使用 [`@api`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L232-L247) 进行类级别的配置，使用 [`@get`/`@post`/`@put`/`@del`/`@patch`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L59-L259) 定义方法端点。参数装饰器 [`@path`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L258-L260)、[`@query`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L290-L292)、[`@header`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L322-L324) 和 [`@body`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L340-L342) 将方法参数绑定到请求的各个部分：
+使用 [`@api`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L232-L247) 进行类级别的配置，使用 [`@get`/`@post`/`@put`/`@del`/`@patch`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L59-L259) 定义方法端点。参数装饰器 [`@path`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L265-L267)、[`@query`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L297-L299)、[`@header`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L329-L331) 和 [`@body`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L347-L349) 将方法参数绑定到请求的各个部分：
 
 ```typescript
 import { api, get, post, del, path, query, body } from '@ahoo-wang/fetcher-decorator';
@@ -20073,7 +20286,7 @@ await fetcher.get('/fast-endpoint', { timeout: 3000 });
 await fetcher.get('/slow-report', { timeout: 0 });
 ```
 
-超时通过 [`timeoutFetch()`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L172) 实现，它创建一个 `AbortController` 并将 fetch promise 与超时 promise 进行竞争。如果超时触发，则抛出 [`FetchTimeoutError`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33-L53)。
+超时通过 [`timeoutFetch()`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L198) 实现，它创建一个 `AbortController` 并将 fetch promise 与超时 promise 进行竞争。如果超时触发，则抛出 [`FetchTimeoutError`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33-L53)。
 
 | 场景 | 行为 |
 |------|------|
@@ -20142,7 +20355,7 @@ flowchart TD
 | 风格 | 模板 | 参数对象 | 解析器类 |
 |------|------|---------|---------|
 | `UrlTemplateStyle.UriTemplate`（默认） | `/users/{id}` | `{ id: 123 }` | [`UriTemplateResolver`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L205-L295) |
-| `UrlTemplateStyle.Express` | `/users/:id` | `{ id: 123 }` | [`ExpressUrlTemplateResolver`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L316-L390) |
+| `UrlTemplateStyle.Express` | `/users/:id` | `{ id: 123 }` | [`ExpressUrlTemplateResolver`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L316-L395) |
 
 ```typescript
 import { Fetcher, UrlTemplateStyle } from '@ahoo-wang/fetcher';
@@ -21421,7 +21634,7 @@ Fetcher 为所有标准 HTTP 方法提供了便捷方法。每个方法都委托
 | `post` | `post<R>(url, request?, options?)` | 否 |
 | `put` | `put<R>(url, request?, options?)` | 否 |
 | `patch` | `patch<R>(url, request?, options?)` | 否 |
-| `delete` | `delete<R>(url, request?, options?)` | 是 |
+| `delete` | `delete<R>(url, request?, options?)` | 否 |
 | `head` | `head<R>(url, request?, options?)` | 是 |
 | `options` | `options<R>(url, request?, options?)` | 是 |
 | `trace` | `trace<R>(url, request?, options?)` | 是 |
@@ -21558,23 +21771,24 @@ autonumber
 | `requiredResponse` | `Response` | 无响应时抛出 `ExchangeError` |
 | `extractResult<R>()` | `Promise<R>` | 应用结果提取器（结果会被缓存） |
 
-Source: [packages/fetcher/src/fetchExchange.ts:105-286](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105-L286)
+Source: [packages/fetcher/src/fetchExchange.ts:105-293](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105-L293)
 
-首次调用 `extractResult()` 后结果会被缓存，以避免重复计算：
+首次调用 `extractResult()` 后结果会被缓存，以避免重复计算。结果在缓存标记置位*之前*计算，因此同步抛出异常的提取器不会让 exchange 处于"已缓存但无值"的状态，后续调用可以重试：
 
 ```typescript
-// [packages/fetcher/src/fetchExchange.ts:278-285]
+// [packages/fetcher/src/fetchExchange.ts:278-292]
 async extractResult<R>(): Promise<R> {
   if (this.hasCachedResult) {
     return await this.cachedExtractedResult;
   }
+  const result = this.resultExtractor(this) as Promise<R> | R;
+  this.cachedExtractedResult = result;
   this.hasCachedResult = true;
-  this.cachedExtractedResult = this.resultExtractor(this);
   return await this.cachedExtractedResult;
 }
 ```
 
-Source: [packages/fetcher/src/fetchExchange.ts:278-285](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L278-L285)
+Source: [packages/fetcher/src/fetchExchange.ts:278-292](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L278-L292)
 
 ## NamedFetcher 与 FetcherRegistrar
 
@@ -21670,9 +21884,12 @@ flowchart TD
   HasTimeout{{"request.timeout set?"}}
   HasAC{{"request.abortController?"}}
   UseAC["Use provided AbortController"]
+  ReuseAC{{"caller abortController<br>provided and not aborted?"}}
+  Reuse["Reuse caller's AbortController"]
   NewAC["Create new AbortController"]
   Race["Promise.race(fetch, timeoutPromise)"]
-  TimeoutErr["throw FetchTimeoutError"]
+  Cleanup["finally: clear timer, remove written signal/controller<br>(caller-supplied controller is kept)"]
+  TimeoutErr["abort controller, clear written signal/controller,<br>throw FetchTimeoutError"]
 
   Entry --> HasSignal
   HasSignal -->|Yes| DirectFetch
@@ -21680,8 +21897,10 @@ flowchart TD
   HasTimeout -->|No| HasAC
   HasAC -->|Yes| UseAC --> DirectFetch
   HasAC -->|No| DirectFetch
-  HasTimeout -->|Yes| NewAC --> Race
-  Race -->|fetch wins| DirectFetch
+  HasTimeout -->|Yes| ReuseAC
+  ReuseAC -->|Yes| Reuse --> Race
+  ReuseAC -->|No| NewAC --> Race
+  Race -->|fetch wins| Cleanup
   Race -->|timeout wins| TimeoutErr
 
   style Entry fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
@@ -21690,8 +21909,11 @@ flowchart TD
   style HasTimeout fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style HasAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style UseAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style ReuseAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style Reuse fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style NewAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style Race fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style Cleanup fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style TimeoutErr fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
 
@@ -21699,10 +21921,12 @@ flowchart TD
 
 1. 如果 `request.signal` 已存在，则跳过超时处理以避免冲突。
 2. 如果未设置超时但提供了 `abortController`，则直接附加其 signal。
-3. 如果设置了超时，将创建一个新的 `AbortController`（或复用已提供的），并启动计时器与 fetch 请求竞争。
+3. 如果设置了超时，仅当调用方提供的 `abortController` **尚未**被中止（例如被同一请求对象的前一次超时中止）时才复用它；否则创建新的 `AbortController`。复用已中止的控制器会导致重试的 fetch 立即拒绝，而不是真正发起请求。
+4. 无论成功还是失败路径，`finally` 块都会移除 `timeoutFetch` 写入调用方 request 对象上的控制器/signal。否则，后续复用同一 request 对象的调用会把它们误认为是调用方提供的值，从而退化为普通 `fetch()`——静默忽略超时。调用方提供（被复用）的控制器属于调用方自身属性，会保留在原处。
+5. 当超时触发时，控制器会以 `FetchTimeoutError` 中止，且已永久不可用的控制器/signal 会从请求中清除，因此复用同一 request 对象的重试会以全新的控制器开始。
 
 ```typescript
-// [packages/fetcher/src/timeout.ts:120-172]
+// [packages/fetcher/src/timeout.ts:120-198]
 export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   const url = request.url;
   const timeout = request.timeout;
@@ -21719,7 +21943,14 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
     return await fetch(url, requestInit);
   }
 
-  const controller = request.abortController ?? new AbortController();
+  // 仅当调用方提供的控制器尚未被中止时才复用它；
+  // 已中止的控制器会导致重试的 fetch 立即拒绝，而不是真正发起请求。
+  const existingController = request.abortController;
+  const reuseExistingController =
+    existingController && !existingController.signal.aborted;
+  const controller = reuseExistingController
+    ? existingController
+    : new AbortController();
   request.abortController = controller;
   requestInit.signal = controller.signal;
 
@@ -21732,6 +21963,10 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
       if (timerId) { clearTimeout(timerId); }
       const error = new FetchTimeoutError(request);
       controller.abort(error);
+      // 已中止的控制器/signal 永久不可用；清除它们，
+      // 以便复用此请求的重试构建全新的控制器。
+      request.abortController = undefined;
+      delete requestInit.signal;
       reject(error);
     }, timeout);
   });
@@ -21741,11 +21976,17 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   } finally {
     aborted = true;
     if (timerId) { clearTimeout(timerId); }
+    // 无论成功还是失败，都移除上面写入调用方 request 的控制器/signal。
+    // 调用方提供（被复用）的控制器属于调用方自身属性，保留在原处。
+    delete requestInit.signal;
+    if (!reuseExistingController) {
+      request.abortController = undefined;
+    }
   }
 }
 ```
 
-Source: [packages/fetcher/src/timeout.ts:120-172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L172)
+Source: [packages/fetcher/src/timeout.ts:120-198](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L198)
 
 ### 超时解析
 
@@ -21968,7 +22209,7 @@ Source: [packages/fetcher/src/interceptorManager.ts:62-103](https://github.com/A
 `exchange()` 方法是管道的核心。它先执行请求拦截器，成功后执行响应拦截器，失败时执行错误拦截器。如果错误拦截器清除了错误，则交换成功返回；否则抛出 `ExchangeError`。
 
 ```typescript
-// [packages/fetcher/src/interceptorManager.ts:191-212]
+// [packages/fetcher/src/interceptorManager.ts:191-216]
 async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
   try {
     await this.request.intercept(fetchExchange);
@@ -21985,7 +22226,7 @@ async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
 }
 ```
 
-Source: [packages/fetcher/src/interceptorManager.ts:191-212](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191-L212)
+Source: [packages/fetcher/src/interceptorManager.ts:191-216](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191-L216)
 
 ### 完整执行流程
 
@@ -22160,15 +22401,18 @@ Source: [packages/fetcher/src/requestBodyInterceptor.ts:135-166](https://github.
 
 通过调用 Fetcher 的 `UrlBuilder.resolveRequestUrl()` 解析最终 URL。该过程会合并基础 URL、插值路径参数并附加查询参数。
 
+解析会**消费**请求的 `urlParams`（将其置为 `undefined`），因此对已解析的请求再次运行此拦截器是空操作（no-op）。当同一个 exchange 两次经过请求链时这一点至关重要——例如，错误拦截器在刷新令牌后重试请求——否则查询字符串会被第二次拼接到已解析的 URL 上。
+
 ```typescript
-// [packages/fetcher/src/urlResolveInterceptor.ts:74-78]
+// [packages/fetcher/src/urlResolveInterceptor.ts:80-84]
 intercept(exchange: FetchExchange) {
   const request = exchange.request;
   request.url = exchange.fetcher.urlBuilder.resolveRequestUrl(request);
+  request.urlParams = undefined;
 }
 ```
 
-Source: [packages/fetcher/src/urlResolveInterceptor.ts:74-78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L74-L78)
+Source: [packages/fetcher/src/urlResolveInterceptor.ts:80-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L80-L84)
 
 #### 3. FetchInterceptor（order: `Number.MAX_SAFE_INTEGER - 10000`）
 
@@ -22427,10 +22671,23 @@ classDiagram
     +constructor()
   }
 
-  class TextLineTransformer {
-    -buffer: string
+  class SafeTransformer~I,O~ {
+    <<abstract>>
+    #terminated: boolean
     +transform(chunk, controller)
     +flush(controller)
+    #enqueue(controller, chunk)
+    #terminate(controller)
+    #onError(error, phase)
+    #onTransform(chunk, controller)*
+    #onFlush(controller)
+  }
+
+  class TextLineTransformer {
+    -buffer: string
+    -normalizeLine(line)
+    #onTransform(chunk, controller)
+    #onFlush(controller)
   }
 
   class ServerSentEventTransformStream {
@@ -22439,8 +22696,10 @@ classDiagram
 
   class ServerSentEventTransformer {
     -currentEventState: EventState
-    +transform(chunk, controller)
-    +flush(controller)
+    -resetEventState()
+    #onError(error, phase)
+    #onTransform(chunk, controller)
+    #onFlush(controller)
   }
 
   class JsonServerSentEventTransformStream~DATA~ {
@@ -22449,7 +22708,7 @@ classDiagram
 
   class JsonServerSentEventTransform~DATA~ {
     -terminateDetector: TerminateDetector
-    +transform(chunk, controller)
+    #onTransform(chunk, controller)
   }
 
   class ReadableStreamAsyncIterable~T~ {
@@ -22466,6 +22725,9 @@ classDiagram
   }
 
   JsonServerSentEvent --|> ServerSentEvent : Omit data
+  TextLineTransformer --|> SafeTransformer : extends
+  ServerSentEventTransformer --|> SafeTransformer : extends
+  JsonServerSentEventTransform --|> SafeTransformer : extends
   TextLineTransformStream *-- TextLineTransformer
   ServerSentEventTransformStream *-- ServerSentEventTransformer
   JsonServerSentEventTransformStream *-- JsonServerSentEventTransform
@@ -22474,50 +22736,9 @@ classDiagram
   JsonServerSentEventTransform ..> JsonServerSentEvent : writes
 ```
 
-## SafeTransformer —— 错误安全基类
-
-本包中的所有转换器都继承自 `SafeTransformer`，这是一个抽象基类，为每个具体转换器提供三大保证：
-
-::: tip 为什么需要 SafeTransformer
-原始的 `TransformStream` 转换器必须手动处理错误、终止和"上游在关闭后继续推送"的竞态。遗漏其中任何一个都会导致 `TypeError` 或静默数据丢失。`SafeTransformer` 将这些逻辑集中化，使 SSE 转换器可以专注于解析本身。
-:::
-
-| 保证 | 工作原理 |
-|------|---------|
-| **终止守卫** | 一旦 `terminated` 被设置（通过 `terminate()` 或未捕获的错误），`transform()` 中所有后续块都会被静默丢弃——不会在已关闭的流上抛出 `TypeError`。 |
-| **安全控制器操作** | `enqueue()` 委托给 `safeEnqueue()`，它会抑制来自已关闭流的 `TypeError`。`terminate()` 委托给 `safeTerminate()`。 |
-| **错误边界** | `onTransform()` / `onFlush()` 中的未捕获错误会被捕获，转换器被终止，并通过 `safeError()` 转发错误。 |
-
-子类实现 `onTransform()` 和可选的 `onFlush()`，而非原始的 `transform()` / `flush()` 方法：
-
-```typescript
-// 简化版——完整实现见 safeTransformer.ts
-abstract class SafeTransformer<I, O> implements Transformer<I, O> {
-  protected terminated = false;
-
-  async transform(chunk: I, controller: TransformStreamDefaultController<O>) {
-    if (this.terminated) return;          // 终止后丢弃
-    try {
-      await this.onTransform(chunk, controller);
-    } catch (error) {
-      this.terminate();                    // 标记完成
-      safeError(controller, error);        // 安全转发错误
-    }
-  }
-
-  protected abstract onTransform(chunk: I, controller: TransformStreamDefaultController<O>): void | Promise<void>;
-  protected enqueue(controller: TransformStreamDefaultController<O>, chunk: O) { safeEnqueue(controller, chunk); }
-  protected terminate() { this.terminated = true; }
-}
-```
-
-源码: [packages/eventstream/src/safeTransformer.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts)
-
-`streamController.ts` 模块提供了 `SafeTransformer` 使用的底层安全操作（`safeEnqueue`、`safeTerminate`、`safeError`），包括跨 realm 的 `TypeError` 检测，用于 `error instanceof TypeError` 在不同 realm 间失效的环境。
-
 ## 流处理管道
 
-将原始 HTTP 响应转换为类型化 JSON 事件需要经过一个三阶段的 `pipeThrough` 链。
+将原始 HTTP 响应转换为类型化 JSON 事件需要经过一条 `pipeThrough` 链：三个阶段将原始字节解析为 `ServerSentEvent`，外加一个可选的第四阶段将事件数据解析为 JSON。
 
 ```mermaid
 graph LR
@@ -22545,10 +22766,10 @@ graph LR
 
 ### 阶段 2：TextLineTransformStream
 
-累积文本块并按 `\n` 分割，将每一行作为独立的块发出。在块边界处的不完整行会被缓冲，直到下一块到来补全。同时将 `\r\n` 行尾标准化为不含 `\r` 的行。
+累积文本块并按 `\n` 分割，将每一行作为独立的块发出。在块边界处的不完整行会被缓冲，直到下一块到来补全。
 
 ```typescript
-// 继承 SafeTransformer —— 错误处理是继承的，无需手动处理。
+// [packages/eventstream/src/textLineTransformStream.ts:23-52]
 export class TextLineTransformer extends SafeTransformer<string, string> {
   private buffer = '';
 
@@ -22556,17 +22777,24 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
     return line.endsWith('\r') ? line.slice(0, -1) : line;
   }
 
-  protected onTransform(chunk: string, controller: TransformStreamDefaultController<string>): void {
+  protected onTransform(
+    chunk: string,
+    controller: TransformStreamDefaultController<string>,
+  ): void {
     this.buffer += chunk;
     const lines = this.buffer.split('\n');
     this.buffer = lines.pop() || '';
+
     for (const line of lines) {
       this.enqueue(controller, this.normalizeLine(line));
     }
   }
 
-  protected onFlush(controller: TransformStreamDefaultController<string>): void {
+  protected onFlush(
+    controller: TransformStreamDefaultController<string>,
+  ): void {
     const line = this.normalizeLine(this.buffer);
+    // Only send when normalized buffer is not empty.
     if (line) {
       this.enqueue(controller, line);
     }
@@ -22574,7 +22802,7 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
 }
 ```
 
-源码: [packages/eventstream/src/textLineTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts)
+Source: [packages/eventstream/src/textLineTransformStream.ts:23-52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L23-L52)
 
 ### 阶段 3：ServerSentEventTransformStream
 
@@ -22587,7 +22815,7 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
 - 未指定事件类型时使用默认值 `"message"`
 
 ```typescript
-// [packages/eventstream/src/serverSentEventTransformStream.ts:23-32]
+// [packages/eventstream/src/serverSentEventTransformStream.ts:21-30]
 export interface ServerSentEvent {
   id?: string;
   event: string;
@@ -22596,67 +22824,92 @@ export interface ServerSentEvent {
 }
 ```
 
-Source: [packages/eventstream/src/serverSentEventTransformStream.ts:23-32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L23-L32)
+Source: [packages/eventstream/src/serverSentEventTransformStream.ts:21-30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21-L30)
 
-核心解析逻辑继承 `SafeTransformer`——错误处理和终止由基类负责：
+核心解析逻辑位于 `onTransform` 方法中，由继承自 `SafeTransformer` 的 `transform()` 方法调用。错误处理（try/catch、终止以及通过 `safeError` 转发）均继承自 `SafeTransformer`；发生错误时，下方的 `onError` 重写会重置事件状态：
 
 ```typescript
-// 继承 SafeTransformer<string, ServerSentEvent>
-// onTransform 替代原始的 transform()；错误由基类捕获
-export class ServerSentEventTransformer extends SafeTransformer<string, ServerSentEvent> {
-  private currentEventState: EventState = { event: 'message', id: undefined, retry: undefined, data: [] };
+// [packages/eventstream/src/serverSentEventTransformStream.ts:99-108]
+private resetEventState() {
+  this.currentEventState.event = DEFAULT_EVENT_TYPE;
+  this.currentEventState.id = undefined;
+  this.currentEventState.retry = undefined;
+  this.currentEventState.data = [];
+}
 
-  // 发生错误时重置状态（覆盖 SafeTransformer.onError）
-  protected override onError(_error: unknown, _phase: TransformerPhase): void {
-    this.resetEventState();
-  }
-
-  protected onTransform(chunk: string, controller: TransformStreamDefaultController<ServerSentEvent>): void {
-    const currentEvent = this.currentEventState;
-
-    if (chunk.trim() === '') {
-      // 空行——发出累积的事件
-      if (currentEvent.data.length > 0) {
-        this.enqueue(controller, {
-          event: currentEvent.event || 'message',
-          data: currentEvent.data.join('\n'),
-          id: currentEvent.id || '',
-          retry: currentEvent.retry,
-        });
-        currentEvent.event = 'message';
-        currentEvent.data = [];
-      }
-      return;
-    }
-    if (chunk.startsWith(':')) { return; } // 注释行
-
-    // 解析字段: 值
-    const colonIndex = chunk.indexOf(':');
-    // ... 字段/值提取 ...
-    processFieldInternal(field, value, currentEvent);
-  }
+protected override onError(_error: unknown, _phase: TransformerPhase): void {
+  this.resetEventState();
 }
 ```
 
-源码: [packages/eventstream/src/serverSentEventTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts)
+```typescript
+// [packages/eventstream/src/serverSentEventTransformStream.ts:110-155]
+protected onTransform(
+  chunk: string,
+  controller: TransformStreamDefaultController<ServerSentEvent>,
+): void {
+  const currentEvent = this.currentEventState;
+
+  // Skip empty lines (event separator)
+  if (chunk.trim() === '') {
+    if (currentEvent.data.length > 0) {
+      this.enqueue(controller, {
+        event: currentEvent.event || DEFAULT_EVENT_TYPE,
+        data: currentEvent.data.join('\n'),
+        id: currentEvent.id || '',
+        retry: currentEvent.retry,
+      } as ServerSentEvent);
+
+      currentEvent.event = DEFAULT_EVENT_TYPE;
+      currentEvent.data = [];
+    }
+    return;
+  }
+
+  // Ignore comment lines (starting with colon)
+  if (chunk.startsWith(':')) {
+    return;
+  }
+
+  // Parse fields
+  const colonIndex = chunk.indexOf(':');
+  let field: string;
+  let value: string;
+
+  if (colonIndex === -1) {
+    field = chunk.toLowerCase();
+    value = '';
+  } else {
+    field = chunk.substring(0, colonIndex).toLowerCase();
+    value = chunk.substring(colonIndex + 1);
+    if (value.startsWith(' ')) {
+      value = value.substring(1);
+    }
+  }
+
+  processFieldInternal(field, value, currentEvent);
+}
+```
+
+Source: [packages/eventstream/src/serverSentEventTransformStream.ts:110-155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L110-L155)
 
 ### 阶段 4：JsonServerSentEventTransformStream
 
 可选的第四阶段，将每个 `ServerSentEvent.data` 字符串解析为 JSON，并支持自动终止流。
 
 ```typescript
-// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:44-50]
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:31-37]
 export interface JsonServerSentEvent<DATA> extends Omit<ServerSentEvent, 'data'> {
   data: DATA;
 }
 ```
 
-Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:44-50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L44-L50)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:31-37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L31-L37)
 
-转换器在解析前会检查 `TerminateDetector` 函数。与本包中的所有转换器一样，它继承 `SafeTransformer`：
+`JsonServerSentEventTransform` 类 `extends SafeTransformer`，因此错误处理和终止守卫都是继承的。`onTransform` 方法在解析前会检查 `TerminateDetector` 函数，并使用 `this.terminate()` / `this.enqueue()` 而非原始 controller 方法：
 
 ```typescript
-// 继承 SafeTransformer——终止和错误处理由基类继承
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:47-73]
 export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
   ServerSentEvent,
   JsonServerSentEvent<DATA>
@@ -22669,13 +22922,14 @@ export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
     chunk: ServerSentEvent,
     controller: TransformStreamDefaultController<JsonServerSentEvent<DATA>>,
   ): void {
-    // 检查终止条件（例如 data === '[DONE]'）
+    // Check if this is a terminate event
     if (this.terminateDetector?.(chunk)) {
-      this.terminate(controller);  // 来自 SafeTransformer 的安全终止
+      this.terminate(controller);
       return;
     }
+
     const json = JSON.parse(chunk.data) as DATA;
-    this.enqueue(controller, {    // 来自 SafeTransformer 的安全入队
+    this.enqueue(controller, {
       data: json,
       event: chunk.event,
       id: chunk.id,
@@ -22685,7 +22939,7 @@ export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
 }
 ```
 
-源码: [packages/eventstream/src/jsonServerSentEventTransformStream.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:47-73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47-L73)
 
 ## toServerSentEventStream 函数
 
@@ -22709,7 +22963,7 @@ Source: [packages/eventstream/src/eventStreamConverter.ts:127-138](https://githu
 `toJsonServerSentEventStream()` 函数添加阶段 4：
 
 ```typescript
-// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:200-207]
+// [packages/eventstream/src/jsonServerSentEventTransformStream.ts:107-114]
 export function toJsonServerSentEventStream<DATA>(
   serverSentEventStream: ServerSentEventStream,
   terminateDetector?: TerminateDetector,
@@ -22720,7 +22974,7 @@ export function toJsonServerSentEventStream<DATA>(
 }
 ```
 
-Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:200-207](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L200-L207)
+Source: [packages/eventstream/src/jsonServerSentEventTransformStream.ts:107-114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107-L114)
 
 ## 异步迭代支持
 
@@ -22756,6 +23010,34 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
 ```
 
 Source: [packages/eventstream/src/readableStreamAsyncIterable.ts:54-148](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L54-L148)
+
+### 导入时 Polyfill 与环境检测
+
+配套的 `readableStreams.ts` 模块在导入时将该封装器接入全局 `ReadableStream`，使 `for await...of` 可用于任意 `ReadableStream`（包括 `toServerSentEventStream()` 产出的流）。它导出特性检测常量 `isReadableStreamAsyncIterableSupported`，并仅在需要时安装 polyfill：
+
+```typescript
+// [packages/eventstream/src/readableStreams.ts:37-52]
+export const isReadableStreamAsyncIterableSupported =
+  typeof ReadableStream !== 'undefined' &&
+  typeof ReadableStream.prototype[Symbol.asyncIterator] === 'function';
+
+// Add [Symbol.asyncIterator] to ReadableStream if not already implemented.
+// Guard on the global itself first: in runtimes without ReadableStream at all
+// (legacy SSR / non-stream environments) there is nothing to polyfill, and
+// referencing ReadableStream.prototype here would crash the module import.
+if (
+  typeof ReadableStream !== 'undefined' &&
+  !isReadableStreamAsyncIterableSupported
+) {
+  ReadableStream.prototype[Symbol.asyncIterator] = function <R = any>() {
+    return new ReadableStreamAsyncIterable<R>(this as ReadableStream<R>);
+  };
+}
+```
+
+Source: [packages/eventstream/src/readableStreams.ts:37-52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37-L52)
+
+对全局对象本身的守卫至关重要：如果没有它，在完全没有 `ReadableStream` 的运行时（旧版 SSR / 无流环境）中——由于此时 `isReadableStreamAsyncIterableSupported` 为 `false`——会进入 polyfill 分支，引用 `ReadableStream.prototype` 将在模块导入时抛出 `ReferenceError`。有了该守卫，在此类环境中导入该包是安全的，polyfill 只是被跳过。
 
 ## 与 Fetcher 的集成
 
@@ -22997,17 +23279,18 @@ Source: [packages/fetcher/src/urlBuilder.ts:72-147](https://github.com/Ahoo-Wang
 
 ### resolveRequestUrl 桥接方法
 
-`UrlResolveInterceptor` 调用 `resolveRequestUrl()` 来在实际 fetch 之前填充 `request.url`：
+`UrlResolveInterceptor` 调用 `resolveRequestUrl()` 来在实际 fetch 之前填充 `request.url`，随后清除 `request.urlParams`。消费这些参数使 URL 解析具有幂等性：如果同一个 exchange 被再次拦截（例如错误拦截器在刷新令牌后重试，会重新运行整个请求链），拦截器不会第二次拼接查询字符串。
 
 ```typescript
-// [packages/fetcher/src/urlResolveInterceptor.ts:74-78]
+// [packages/fetcher/src/urlResolveInterceptor.ts:80-84]
 intercept(exchange: FetchExchange) {
   const request = exchange.request;
   request.url = exchange.fetcher.urlBuilder.resolveRequestUrl(request);
+  request.urlParams = undefined;
 }
 ```
 
-Source: [packages/fetcher/src/urlResolveInterceptor.ts:74-78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L74-L78)
+Source: [packages/fetcher/src/urlResolveInterceptor.ts:80-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L80-L84)
 
 ## URL 合并
 
@@ -23050,7 +23333,7 @@ graph TD
   subgraph Styles["UrlTemplateStyle"]
     style Styles fill:#161b22,stroke:#30363d,color:#e6edf3
     UT["UriTemplate (default)<br>Pattern: {paramName}<br>Regex: /{[^}]+}/g"]
-    ET["Express<br>Pattern: :paramName<br>Regex: /:[^/]+/g"]
+    ET["Express<br>Pattern: :paramName<br>Regex: /(?<=^|\/):([^/]+)/g"]
   end
 
   UT --> UTR["UriTemplateResolver"]
@@ -23103,15 +23386,16 @@ Source: [packages/fetcher/src/urlTemplateResolver.ts:217](https://github.com/Aho
 |---|---|---|
 | `/users/:id` | `{ id: 123 }` | `/users/123` |
 | `/users/:id/posts/:postId` | `{ id: 1, postId: 42 }` | `/users/1/posts/42` |
+| `http://localhost:8080/users/:id` | `{ id: 123 }` | `http://localhost:8080/users/123` |
 
-正则表达式模式 `/: ([^/]+)/g` 匹配冒号前缀的段落：
+正则表达式模式 `/(?<=^|\/):([^/]+)/g` 匹配冒号前缀的段落。其 lookbehind 将匹配限制为**位于路径段开头**的占位符（模板起点或紧跟 `/` 之后），因此 URL 自身的冒号——协议（`http:`）或主机端口（`host:8080`）——永远不会被误当作参数：
 
 ```typescript
-// [packages/fetcher/src/urlTemplateResolver.ts:320]
-private static PATH_PARAM_REGEX = /:([^/]+)/g;
+// [packages/fetcher/src/urlTemplateResolver.ts:325]
+private static PATH_PARAM_REGEX = /(?<=^|\/):([^/]+)/g;
 ```
 
-Source: [packages/fetcher/src/urlTemplateResolver.ts:320](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L320)
+Source: [packages/fetcher/src/urlTemplateResolver.ts:325](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L325)
 
 ### 模板解析算法
 
@@ -23368,6 +23652,7 @@ Source: [packages/fetcher/src/urlTemplateResolver.ts:174-184](https://github.com
 |---|---|---|
 | `/users/{id}/posts/{postId}` | UriTemplate | `['id', 'postId']` |
 | `/users/:id/posts/:postId` | Express | `['id', 'postId']` |
+| `http://localhost:8080/users/:id` | Express | `['id']` |
 | `/users/profile` | *任意* | `[]` |
 
 ## 交叉引用
@@ -23847,7 +24132,7 @@ const data = await fetcher.get<User[]>('/users', {}, {
 | `baseURL` | `string` | `''` | 拼接在所有请求前面的基础 URL |
 | `headers` | `RequestHeaders` | `{ 'Content-Type': 'application/json' }` | 所有请求的默认请求头 |
 | `timeout` | `number` | `undefined` | 默认超时时间（毫秒） |
-| `urlTemplateStyle` | `UrlTemplateStyle` | `Path` | URL 模板语法（`Path` 为 `:id` 格式，`UriTemplate` 为 `{id}` 格式） |
+| `urlTemplateStyle` | `UrlTemplateStyle` | `UriTemplate` | URL 模板语法（`UriTemplate` 为 `{id}` 格式，`Express` 为 `:id` 格式） |
 | `interceptors` | `InterceptorManager` | 内置管道 | 自定义拦截器管理器 |
 | `validateStatus` | `ValidateStatus` | `status >= 200 && status < 300` | HTTP 状态码验证函数 |
 
@@ -23863,7 +24148,7 @@ const data = await fetcher.get<User[]>('/users', {}, {
 | `post` | `post<R>(url, request?, options?)` | 是 |
 | `put` | `put<R>(url, request?, options?)` | 是 |
 | `patch` | `patch<R>(url, request?, options?)` | 是 |
-| `delete` | `del<R>(url, request?, options?)` | 否 |
+| `delete` | `delete<R>(url, request?, options?)` | 是 |
 | `head` | `head<R>(url, request?, options?)` | 否 |
 | `options` | `options<R>(url, request?, options?)` | 否 |
 | `trace` | `trace<R>(url, request?, options?)` | 否 |
@@ -23879,9 +24164,9 @@ flowchart TD
     START["Incoming Request"]
     START --> REQ["Request Interceptors<br>(ordered by priority)"]
 
-    REQ --> URI["UrlResolveInterceptor<br>Resolve URL with path/query params"]
-    URI --> BODY["RequestBodyInterceptor<br>Serialize object bodies to JSON"]
-    BODY --> FETCH["FetchInterceptor<br>Execute native fetch + timeout"]
+    REQ --> BODY["RequestBodyInterceptor<br>Serialize object bodies to JSON"]
+    BODY --> URI["UrlResolveInterceptor<br>Resolve URL with path/query params"]
+    URI --> FETCH["FetchInterceptor<br>Execute native fetch + timeout"]
     FETCH --> RESP_CHECK{Has Response?}
 
     RESP_CHECK -->|Yes| RESP["Response Interceptors"]
@@ -23958,8 +24243,8 @@ fetcher.interceptors.error.use(retryInterceptor);
 
 处理 URL 组合，包括路径参数插值和查询字符串生成。支持两种模板风格：
 
+- **`UrlTemplateStyle.UriTemplate`**（默认）：RFC 6570 的 `{id}` 参数
 - **`UrlTemplateStyle.Express`**：Express 风格的 `:id` 参数
-- **`UrlTemplateStyle.UriTemplate`**：RFC 6570 的 `{id}` 参数
 
 ```typescript
 import { UrlBuilder, UrlTemplateStyle } from '@ahoo-wang/fetcher';
@@ -24497,7 +24782,7 @@ service.search({ limit: 10, offset: 20, sort: 'name' });
 
 ## @request 装饰器
 
-`@request()` 装饰器允许传入 `ParameterRequest` 对象以完全控制请求。它会与端点级别的配置合并，参数请求具有更高优先级。([`parameterDecorator.ts:372`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L372))
+`@request()` 装饰器允许传入 `ParameterRequest` 对象以完全控制请求。它会与端点级别的配置合并，参数请求具有更高优先级。([`parameterDecorator.ts:379`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L379))
 
 ```typescript
 @api('/api/users')
@@ -24519,7 +24804,7 @@ service.createUser({
 
 ## @attribute 装饰器
 
-`@attribute()` 装饰器将数据传递到 exchange 属性中，可被管道中的任何拦截器读取。([`parameterDecorator.ts:408`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L408))
+`@attribute()` 装饰器将数据传递到 exchange 属性中，可被管道中的任何拦截器读取。([`parameterDecorator.ts:415`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L415))
 
 ```typescript
 @api('/api/orders')
@@ -24627,6 +24912,38 @@ graph TD
     style FINAL fill:#161b22,stroke:#30363d,color:#e6edf3
 ```
 
+## 继承与元数据
+
+被装饰的端点是继承感知的：
+
+- **执行器绑定会遍历原型链。** 当 `@api` 装饰一个类时，它会为类自身原型以及所有祖先原型上找到的被装饰方法绑定请求执行器，因此定义在基类上的端点在子类中依然可用。([`apiDecorator.ts:249`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L249))
+- **元数据读取沿原型链解析。** 端点和参数元数据通过 `Reflect.getMetadata` 读取，因此即使子类没有重新声明，也会继承基类的绑定。([`apiDecorator.ts:118`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L118))
+- **参数元数据采用写时复制（copy-on-write）。** 当子类重新装饰继承方法的参数时，`parameter()` 会先复制继承来的参数 `Map`，再添加子类自己的条目。子类可以看到继承的 + 自己的参数，而基类的元数据永远不会被修改。([`parameterDecorator.ts:217`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L217))
+
+```typescript
+@api('/api/v1')
+class BaseService {
+  @get('/users/{id}')
+  getUser(@path('id') id: string): Promise<User> {
+    throw autoGeneratedError();
+  }
+}
+
+@api('/api/v2')
+class AdminService extends BaseService {
+  // 重新声明继承的端点并添加额外参数。
+  // AdminService 解析到 @path('id') + @query('audit')；
+  // BaseService 的元数据仍只有 @path('id') 一个参数。
+  @get('/users/{id}')
+  getUser(
+    @path('id') id: string,
+    @query('audit') audit: boolean,
+  ): Promise<User> {
+    throw autoGeneratedError();
+  }
+}
+```
+
 ## autoGeneratedError
 
 `autoGeneratedError()` 函数创建一个占位错误，既能满足 ESLint 的 `no-unused-vars` 规则，又能表明方法体在运行时会被替换。([`generated.ts:41`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/generated.ts#L41))
@@ -24706,17 +25023,22 @@ const items = await products.listProducts({ category: 'electronics' }, 1, 10);
 | 导出 | 类型 | 源码 |
 |--------|------|--------|
 | `api` | 装饰器 | [`apiDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts) |
+| `endpoint` | 装饰器工厂 | [`endpointDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts) |
 | `get`、`post`、`put`、`del`、`patch`、`head`、`options` | 装饰器 | [`endpointDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts) |
+| `parameter` | 装饰器工厂 | [`parameterDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts) |
 | `path`、`query`、`header`、`body`、`request`、`attribute` | 装饰器 | [`parameterDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts) |
 | `ApiMetadata` | 接口 | [`apiDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts) |
 | `EndpointMetadata` | 接口 | [`endpointDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts) |
+| `MethodEndpointMetadata` | 类型 | [`endpointDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts) |
 | `ParameterType` | 枚举 | [`parameterDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts) |
+| `ParameterRequest` | 接口 | [`parameterDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts) |
 | `ParameterMetadata` | 接口 | [`parameterDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts) |
 | `FunctionMetadata` | 类 | [`functionMetadata.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts) |
 | `RequestExecutor` | 类 | [`requestExecutor.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts) |
 | `ExecuteLifeCycle` | 接口 | [`executeLifeCycle.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/executeLifeCycle.ts) |
 | `EndpointReturnType` | 枚举 | [`endpointReturnTypeCapable.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointReturnTypeCapable.ts) |
 | `autoGeneratedError` | 函数 | [`generated.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/generated.ts) |
+| `AutoGenerated` | 类（Error） | [`generated.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/generated.ts) |
 | `buildRequestExecutor` | 函数 | [`apiDecorator.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts) |
 | `getParameterNames` | 函数 | [`reflection.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts) |
 
@@ -24808,7 +25130,7 @@ graph TB
 ```typescript
 interface EventHandler<EVENT> {
   name: string;       // 唯一标识符
-  order: number;      // 执行优先级（值越小越先执行）
+  order?: number;     // 执行优先级（值越小越先执行，默认 0）
   once?: boolean;     // 首次执行后自动移除
   handle(event: EVENT): void | Promise<void>;
 }
@@ -24869,7 +25191,7 @@ autonumber
 
 ## SerialTypedEventBus
 
-按优先级顺序串行执行处理器。`order` 值较低的处理器优先执行。如果某个处理器抛出异常，后续处理器将不会被调用。([`serialTypedEventBus.ts:34`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L34))
+按优先级顺序串行执行处理器。`order` 值较低的处理器优先执行。如果某个处理器抛出异常，错误会被记录（`console.warn`）并继续执行剩余处理器——单个处理器失败不会中断整条链。([`serialTypedEventBus.ts:34`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L34))
 
 ```typescript
 import { SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
@@ -24915,7 +25237,13 @@ await bus.emit('user-123');
 ```typescript
 import { ParallelTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
-const bus = new ParallelTypedEventBus<Notification>('notification');
+// 定义本地事件负载类型（避免与全局 DOM `Notification` 冲突）
+interface AppNotification {
+  message: string;
+  userId: string;
+}
+
+const bus = new ParallelTypedEventBus<AppNotification>('notification');
 
 bus.on({
   name: 'push-notification',
@@ -25194,7 +25522,7 @@ graph TB
 
 ## 副作用导入的工作原理
 
-当导入 `@ahoo-wang/fetcher-eventstream` 时，它会检查 `typeof Response !== 'undefined'`，如果可用，则使用 `Object.defineProperty` 向 `Response.prototype` 添加新的属性和方法。这些添加是幂等的 -- 每个属性只定义一次，由 `hasOwnProperty` 检查保护。([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102))
+当导入 `@ahoo-wang/fetcher-eventstream` 时，它会检查 `typeof Response !== 'undefined'`，如果可用，则向 `Response.prototype` 添加新的属性和方法（`contentType` / `isEventStream` getter 通过 `Object.defineProperty` 添加，四个方法通过直接赋值添加）。这些添加是幂等的 -- 每个成员只定义一次，由 `hasOwnProperty` 检查保护。([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102))
 
 ```mermaid
 sequenceDiagram
@@ -25215,6 +25543,22 @@ autonumber
     Import->>Proto: Define requiredJsonEventStream() method
     Import-->>App: Prototype patched, ready to use
 ```
+
+## 环境检测与异步迭代 Polyfill
+
+导入时还会确保 `ReadableStream` 支持异步迭代，本页的 `for await...of` 消费示例依赖于此。该行为在导入时根据运行时自适应：
+
+- **特性检测** — 仅当 `ReadableStream` 全局存在且其原型已实现 `Symbol.asyncIterator` 时，`isReadableStreamAsyncIterableSupported` 才为 `true`。([`readableStreams.ts:37`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37))
+- **条件 polyfill** — 如果全局存在但缺少异步迭代能力，该包会基于 `ReadableStreamAsyncIterable` 为 `ReadableStream.prototype[Symbol.asyncIterator]` 安装 polyfill。([`readableStreams.ts:45-52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L45-L52))
+- **SSR 安全跳过** — 在完全没有 `ReadableStream` 全局的运行时（旧版 SSR / 无流环境）中，polyfill 会被完全跳过：没有可修补的对象，导入模块也不会引用缺失的全局，因此导入不会抛出 `ReferenceError`。([`readableStreams.ts:45-52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L45-L52))
+
+| 环境 | `isReadableStreamAsyncIterableSupported` | 导入时行为 |
+|-------------|------------------------------------------|----------------------|
+| 运行时原生提供异步迭代 | `true` | 不安装 polyfill |
+| 存在 `ReadableStream`，但无异步迭代 | `false` | 为 `ReadableStream.prototype[Symbol.asyncIterator]` 安装 polyfill |
+| 无 `ReadableStream` 全局（旧版 SSR / 无流环境） | `false` | 跳过 polyfill；导入对流无副作用 |
+
+类似地，`Response.prototype` 的修补仅在 `Response` 全局已定义时执行，因此在非 fetch 环境中导入该包也是安全的。([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102)) 该包要求 Node.js `>=18.20.8`。([`package.json:28-30`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L28-L30))
 
 ## 修补后的 Response 方法
 
@@ -25285,7 +25629,7 @@ for await (const event of eventStream) {
 
 ## ServerSentEvent
 
-`ServerSentEvent` 接口建模了 W3C 服务器发送事件格式。([`serverSentEventTransformStream.ts:23`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L23))
+`ServerSentEvent` 接口建模了 W3C 服务器发送事件格式。([`serverSentEventTransformStream.ts:21`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21))
 
 | 属性 | 类型 | 描述 |
 |----------|------|-------------|
@@ -25305,18 +25649,18 @@ interface ServerSentEvent {
 
 ## ServerSentEventTransformStream
 
-一个 `TransformStream<string, ServerSentEvent>`，实现了 W3C 规范中的 SSE 解析算法。([`serverSentEventTransformStream.ts:277`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L277))
+一个 `TransformStream<string, ServerSentEvent>`，实现了 W3C 规范中的 SSE 解析算法。([`serverSentEventTransformStream.ts:180`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L180))
 
 关键解析行为：
 - 空行分隔事件
 - 以 `:` 开头的行是注释（被忽略）
 - 多行 `data` 字段以 `\n` 连接
-- `id` 和 `retry` 在同一连接内的事件之间保持持久
+- `id` 和 `retry` 在连接内跨事件持久：一旦设置，会延续到后续事件直到提供新值（每次派发后只重置 `event` 和 `data`）。`resetEventState()` 仅在出错或最终 flush 时清除它们。
 - `event` 字段默认为 `"message"`
 
 ## JsonServerSentEventTransformStream
 
-扩展 SSE 管道以将事件数据解析为 JSON，支持可选的终止检测。([`jsonServerSentEventTransformStream.ts:130`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L130))
+扩展 SSE 管道以将事件数据解析为 JSON，支持可选的终止检测。([`jsonServerSentEventTransformStream.ts:81`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L81))
 
 ```typescript
 interface JsonServerSentEvent<DATA> {
@@ -25329,7 +25673,7 @@ interface JsonServerSentEvent<DATA> {
 
 ### TerminateDetector
 
-一个用于确定流何时应终止的函数。这对于 LLM 流式传输至关重要，因为 API 会发送 `[DONE]` 信号。([`jsonServerSentEventTransformStream.ts:33`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L33))
+一个用于确定流何时应终止的函数。这对于 LLM 流式传输至关重要，因为 API 会发送 `[DONE]` 信号。([`jsonServerSentEventTransformStream.ts:24`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L24))
 
 ```typescript
 type TerminateDetector = (event: ServerSentEvent) => boolean;
@@ -25456,6 +25800,8 @@ try {
 | `JsonEventStreamResultExtractor` | 函数 | [`eventStreamResultExtractor.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts) |
 | `EventStreamConvertError` | 类 | [`eventStreamConverter.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts) |
 | `TextLineTransformStream` | 类 | [`textLineTransformStream.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts) |
+| `ReadableStreamAsyncIterable` | 类 | [`readableStreamAsyncIterable.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts) |
+| `isReadableStreamAsyncIterableSupported` | 常量 | [`readableStreams.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts) |
 
 ## 相关页面
 
@@ -25745,24 +26091,50 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 
 ### ChatRequest
 
-聊天补全端点的完整请求体。([`types.ts:14`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L14))
+聊天补全端点的常用参数。（完整接口：[`types.ts:14`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L14)）
 
 | 属性 | 类型 | 默认值 | 描述 |
 |----------|------|---------|-------------|
-| `model` | `string` | - | 模型 ID（如 `gpt-3.5-turbo`、`gpt-4`） |
-| `messages` | `Message[]` | - | 包含角色和内容的对话消息 |
-| `stream` | `boolean` | `false` | 启用流式响应 |
-| `temperature` | `number` | `1` | 采样温度（0-2） |
-| `max_tokens` | `number` | `inf` | 最大生成 token 数 |
-| `top_p` | `number` | `1` | 核采样阈值 |
-| `frequency_penalty` | `number` | `0` | 重复惩罚（-2.0 到 2.0） |
-| `presence_penalty` | `number` | `0` | 主题多样性惩罚（-2.0 到 2.0） |
-| `stop` | `string` | `null` | 停止序列 |
-| `n` | `number` | `1` | 生成的补全数量 |
-| `user` | `string` | - | 终端用户标识符 |
-| `tools` | `string[]` | - | 函数/工具调用的工具定义 |
-| `tool_choice` | `{ [key: string]: any }` | - | 控制工具选择（如 `{ type: "auto" }`） |
-| `response_format` | `object` | - | 输出格式约束（如 `{ type: "json_object" }`） |
+| `messages` | `Message[]` | - | 包含角色和内容的对话消息（必填） |
+| `model` | `string` | - | 模型 ID（如 `gpt-3.5-turbo`、`gpt-4`）（必填） |
+| `stream` | `boolean?` | `false` | 启用流式响应 |
+| `temperature` | `number?` | `1` | 采样温度（0-2） |
+| `max_tokens` | `number?` | `inf` | 最大生成 token 数 |
+| `top_p` | `number?` | `1` | 核采样阈值 |
+| `frequency_penalty` | `number?` | `0` | 重复惩罚（-2.0 到 2.0） |
+| `presence_penalty` | `number?` | `0` | 主题多样性惩罚（-2.0 到 2.0） |
+| `logit_bias` | `Record<string, number> \| null?` | `null` | 修改指定 token 出现的概率（token ID → 偏差值，-100 到 100） |
+| `response_format` | `Record<string, unknown>?` | - | 输出格式约束（如 `{ type: "json_object" }`） |
+| `seed` | `number?` | - | 确定性采样的种子（beta） |
+| `tool_choice` | `ChatToolChoice?` | - | 控制工具选择：`'none'`、`'auto'` 或 `{ type: 'function', function: { name } }` |
+| `tools` | `ChatTool[]?` | - | 函数/工具调用的工具定义 |
+| `stop` | `string \| string[] \| null?` | `null` | 停止序列（最多 4 个） |
+| `n` | `number?` | `1` | 生成的补全数量 |
+| `user` | `string?` | - | 终端用户标识符 |
+
+> 除 `messages` 和 `model` 外所有字段均为可选。注意：`ChatRequest` **没有**索引签名，因此 TypeScript 的多余属性检查会拒绝对象字面量上的未知键。（`Message`、`ChatResponse`、`Choice` 和 `Usage` 类型接受额外属性。）
+
+### ChatTool / ChatToolChoice
+
+`ChatTool` 描述模型可调用的工具；目前仅支持函数工具。`ChatToolChoice` 控制模型调用哪个（如果有的话）函数。
+
+```typescript
+export interface ChatToolFunction {
+  name: string; // a-z、A-Z、0-9、下划线和连字符，最长 64 字符
+  description?: string;
+  parameters?: Record<string, unknown>; // JSON Schema 对象
+}
+
+export interface ChatTool {
+  type: 'function'; // 目前仅支持 'function'
+  function: ChatToolFunction;
+}
+
+export type ChatToolChoice =
+  | 'none' // 模型不会调用函数
+  | 'auto' // 模型自行选择生成消息或调用函数
+  | { type: 'function'; function: { name: string } }; // 强制调用指定函数
+```
 
 ### Message
 
@@ -25772,7 +26144,7 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 
 | 属性 | 类型 | 描述 |
 |----------|------|-------------|
-| `role` | `string` | `"system"`、`"user"`、`"assistant"` 或 `"tool"` |
+| `role` | `string?` | `"system"`、`"user"`、`"assistant"` 或 `"tool"` |
 | `content` | `string?` | 消息文本内容 |
 | `tool_calls` | `any[]?` | 助手发起的工具调用请求 |
 | `tool_call_id` | `string?` | 将工具响应消息链接到其调用的 ID |
@@ -25780,7 +26152,7 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 
 ### 函数 / 工具调用
 
-客户端支持 OpenAI 的函数/工具调用。导出的 `ChatRequest` 类型尚未包含完整的工具定义类型（`tools` 为 `string[]`），因此工具调用示例需要使用 `as any` 类型断言或自定义类型扩展：
+客户端支持 OpenAI 的函数/工具调用，并通过 `ChatTool` 和 `ChatToolChoice` 提供完整类型：
 
 ```typescript
 const response = await openAI.chat.completions({
@@ -25800,7 +26172,7 @@ const response = await openAI.chat.completions({
       },
     },
   }],
-  tool_choice: { type: 'auto' }, // 让模型决定
+  tool_choice: 'auto', // 让模型决定
 });
 
 // 检查模型是否想要调用工具
@@ -25832,6 +26204,7 @@ if (message?.tool_calls) {
 |----------|------|-------------|
 | `index` | `number?` | 选项索引 |
 | `message` | `Message?` | 补全消息（非流式） |
+| `delta` | `Message?` | 聊天补全增量（仅出现在流式 chunk 上） |
 | `finish_reason` | `string?` | `"stop"`、`"length"`、`"content_filter"` 等 |
 
 ### Usage
@@ -25890,6 +26263,9 @@ openai.fetcher.interceptors.error.use({
 | `OpenAIOptions` | 接口 | [`openai.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/openai.ts) |
 | `ChatClient` | 类 | [`chat/chatClient.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts) |
 | `ChatRequest` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatTool` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatToolFunction` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
+| `ChatToolChoice` | 类型别名 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `ChatResponse` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `Message` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
 | `Choice` | 接口 | [`chat/types.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) |
@@ -26788,7 +27164,19 @@ const generator = new CodeGenerator({
   inputPath: './openapi.yaml',
   outputDir: './src/generated',
   tsConfigFilePath: './tsconfig.json',
-  logger: console,
+  // `logger` 为必填，且必须实现完整的 Logger 接口
+  // （info、success、error、progress、progressWithCount）。
+  // 全局 `console` 不是合法取值，ConsoleLogger 也不属于公开 API，
+  // 因此必须提供自定义实现：
+  logger: {
+    info(message, ...params) { console.log(message, ...params); },
+    success(message, ...params) { console.log('✓', message, ...params); },
+    error(message, ...params) { console.error(message, ...params); },
+    progress(message, level, ...params) { console.log(message, ...params); },
+    progressWithCount(current, total, message, level, ...params) {
+      console.log(`${message} (${current}/${total})`, ...params);
+    },
+  },
 });
 
 await generator.generate();
@@ -26796,15 +27184,17 @@ await generator.generate();
 
 ## 主要导出
 
+包入口（`index.ts`）仅公开导出以下符号；下表其余类型为生成流水线使用的内部实现类型。
+
 | 导出 | 描述 |
 |------|------|
-| `CodeGenerator` | 主协调器类 |
-| `GeneratorOptions` | 代码生成配置选项 |
-| `GenerateContext` | 在生成流水线中传递的上下文对象 |
-| `Generator` | 所有生成器阶段实现的接口 |
-| `Logger` | 用于进度报告的日志接口 |
-| `GeneratorConfiguration` | API 客户端生成的逐标签配置 |
-| `DEFAULT_CONFIG_PATH` | 默认配置文件路径（`./fetcher-generator.config.json`） |
+| `CodeGenerator` | 主协调器类（公开） |
+| `DEFAULT_CONFIG_PATH` | 默认配置文件路径（`./fetcher-generator.config.json`，公开） |
+| `GeneratorOptions` | 代码生成配置选项（内部，`types.ts`） |
+| `GenerateContext` | 在生成流水线中传递的上下文对象（内部，`generateContext.ts`） |
+| `Generator` | 所有生成器阶段实现的接口（内部，`generateContext.ts`） |
+| `Logger` | 用于进度报告的日志接口（内部，`types.ts`） |
+| `GeneratorConfiguration` | API 客户端生成的逐标签配置（内部，`types.ts`） |
 
 ## 依赖
 
@@ -26813,6 +27203,7 @@ await generator.generate();
 - **[@ahoo-wang/fetcher-openapi](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi)** -- OpenAPI 3.x 类型定义
 - **[@ahoo-wang/fetcher](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher)** -- URL 工具（`combineURLs`）
 - **[@ahoo-wang/fetcher-decorator](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator)** -- 用于生成客户端的装饰器工具
+- **[@ahoo-wang/fetcher-eventstream](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream)** -- 生成的流式客户端使用的流式结果提取器
 - **[@ahoo-wang/fetcher-wow](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow)** -- Wow 框架类型，用于聚合定义
 
 ## 交叉引用
@@ -27017,6 +27408,7 @@ autonumber
 
 ```typescript
 import { useFetcher } from '@ahoo-wang/fetcher-react';
+import { ResultExtractors } from '@ahoo-wang/fetcher';
 
 function UserProfile({ userId }: { userId: string }) {
   const { loading, result, error, execute } = useFetcher<User>({
@@ -27080,7 +27472,7 @@ function SearchComponent() {
 | `useDebouncedFetcher` | `useFetcher` | 防抖的 Fetcher 执行 |
 | `useDebouncedFetcherQuery` | `useFetcherQuery` | 防抖的 POST 查询 |
 
-来源: [packages/react/src/core/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/)
+来源: [packages/react/src/core/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/), [packages/react/src/fetcher/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/debounced/)（`useDebouncedFetcher`、`useDebouncedFetcherQuery`）
 
 ## API Hooks 自动生成
 
@@ -27192,7 +27584,7 @@ graph LR
 |-------------|------|
 | `useSecurity` | 访问当前认证状态（`authenticated`、`currentUser`） |
 | `SecurityContext` | 向子组件提供 CoSec 安全状态的 React Context |
-| `RouteGuard` | 路由守卫组件，重定向未认证用户 |
+| `RouteGuard` | 条件渲染守卫组件：认证时渲染 `children`，否则渲染 `fallback`；可选 `onUnauthorized` 回调用于接入重定向 |
 | `RefreshableRouteGuard` | 在重定向前尝试刷新令牌的路由守卫 |
 
 来源: [packages/react/src/cosec/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/)
@@ -27203,8 +27595,8 @@ graph LR
 
 | Hook | 描述 |
 |------|------|
-| `useKeyStorage<T>` | 对 `KeyStorage<T>` 实例的响应式绑定。返回 `[value, setValue, remove]` 元组。存储变化时自动重新渲染。 |
-| `useImmerKeyStorage<T>` | 类似 `useKeyStorage`，但接受 Immer 风格的草稿变更 |
+| `useKeyStorage<T>` | 对 `KeyStorage<T>` 实例的响应式绑定。返回 `[value, setValue, remove]` 三元组。存储变化时自动重新渲染。 |
+| `useImmerKeyStorage<T>` | 类似 `useKeyStorage`，但接受 Immer 风格的草稿变更。返回 `[value, updateImmer, remove]`。 |
 
 来源: [packages/react/src/storage/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/)
 
@@ -27224,7 +27616,9 @@ graph LR
 - `BrowserNotificationChannel` -- 显示原生浏览器通知
 - 可通过自定义 `NotificationChannel` 实现进行扩展
 
-来源: [packages/react/src/notification/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/)
+导出的 `notificationCenter` 单例在模块作用域注册了 `beforeunload` 清理处理器。该注册带有 `typeof window` 守卫，因此在 Node/SSR 环境中导入本包不会抛出异常。
+
+来源: [packages/react/src/notification/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/), [packages/react/src/notification/notificationCenter.ts:65-71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/notificationCenter.ts#L65-L71)
 
 ## 工具 Hooks
 
@@ -27248,6 +27642,7 @@ graph LR
 | `useFetcherQuery` | `fetcher/` | 通过 Fetcher 的基于 POST 的查询 |
 | `PromiseStatus` | `core/` | 枚举：`IDLE`、`LOADING`、`SUCCESS`、`ERROR` |
 | `useKeyStorage` | `storage/` | 响应式存储绑定 |
+| `useImmerKeyStorage` | `storage/` | 支持 Immer 风格草稿更新的响应式存储绑定 |
 | `useEventSubscription` | `eventbus/` | 带自动清理的事件总线订阅 |
 
 ## 交叉引用
@@ -27373,7 +27768,7 @@ prefsStorage.destroy();
 | `serializer` | `Serializer<string, T>` | `jsonSerializer` | 序列化策略 |
 | `storage` | `Storage` | `getStorage()` | 后端存储（自动检测） |
 | `eventBus` | `TypedEventBus<StorageEvent<T>>` | `SerialTypedEventBus` | 变更通知总线 |
-| `defaultValue` | `T \| null` | `null` | 键缺失时的默认值 |
+| `defaultValue` | `T` | `null` | 键缺失时 `get()` 返回的默认值 |
 
 来源: [packages/storage/src/keyStorage.ts:80-235](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L80-L235)
 
@@ -27621,7 +28016,7 @@ graph TB
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { CoSecConfigurer, CoSecTokenRefresher } from '@ahoo-wang/fetcher-cosec';
 
-const fetcher = new Fetcher({ baseUrl: 'https://api.example.com' });
+const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 
 const configurer = new CoSecConfigurer({
   appId: 'my-web-app',
@@ -27688,13 +28083,13 @@ const users = await fetcher.get('/api/users');
 
 处理 401 响应：
 
-1. 检查响应状态是否为 401
-2. 验证刷新令牌是否仍然有效
-3. 刷新访问令牌
-4. 使用新令牌重试原始请求
-5. 刷新失败时清除令牌
+1. 检查响应状态是否为 401，以及当前令牌是否仍可刷新
+2. 对每个 exchange 限制刷新重试次数（`AUTHORIZATION_RESPONSE_MAX_RETRY = 1`，通过 exchange 属性跟踪），因为重试会重新执行整个拦截器链
+3. 刷新访问令牌；刷新失败时清除已存储的令牌并重新抛出错误
+4. 删除过期的 `Authorization` 请求头，并通过完整的拦截器链重试原始请求，使 `AuthorizationRequestInterceptor` 用刷新后的令牌重新添加该请求头
+5. 重试请求本身的失败将原样传播——新刷新的令牌会被保留，不会被清除
 
-来源: [packages/cosec/src/authorizationResponseInterceptor.ts:42-81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L42-L81)
+来源: [packages/cosec/src/authorizationResponseInterceptor.ts:58-118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L58-L118)
 
 ### ResourceAttributionRequestInterceptor
 
@@ -27787,7 +28182,7 @@ console.log(composite.isRefreshable);    // true if refresh token still valid
 
 ### TokenStorage
 
-扩展 `KeyStorage<JwtCompositeToken>`，增加了认证特定的方法和跨标签页同步：
+扩展 `KeyStorage<JwtCompositeToken>`，增加了认证特定的方法和跨标签页同步。默认的 `BroadcastTypedEventBus` 通道名派生自配置的存储键，因此使用不同键的存储实例绝不会跨标签页相互污染缓存值：
 
 | 方法 | 描述 |
 |------|------|
@@ -27796,7 +28191,7 @@ console.log(composite.isRefreshable);    // true if refresh token still valid
 | `authenticated` | 检查是否存在有效令牌 |
 | `currentUser` | 如已认证则获取 JWT 载荷 |
 
-来源: [packages/cosec/src/tokenStorage.ts:43-121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenStorage.ts#L43-L121)
+来源: [packages/cosec/src/tokenStorage.ts:43-125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenStorage.ts#L43-L125)
 
 ### JwtTokenManager
 
@@ -27867,7 +28262,7 @@ classDiagram
 
 ## 设备追踪
 
-`DeviceIdStorage` 扩展了 `KeyStorage<string>`，增加了 `getOrCreate()` 方法，该方法在首次使用时生成唯一的设备 ID（通过 nanoid）并持久化存储：
+`DeviceIdStorage` 扩展了 `KeyStorage<string>`，增加了 `getOrCreate()` 方法，该方法在首次使用时生成唯一的设备 ID（通过 nanoid）并持久化存储。与 `TokenStorage` 一样，其默认的跨标签页事件总线通道名派生自存储键：
 
 ```typescript
 import { DeviceIdStorage } from '@ahoo-wang/fetcher-cosec';
@@ -27878,7 +28273,7 @@ const deviceId = deviceStorage.getOrCreate();
 // Subsequent calls: returns the stored ID
 ```
 
-来源: [packages/cosec/src/deviceIdStorage.ts:35-71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/deviceIdStorage.ts#L35-L71)
+来源: [packages/cosec/src/deviceIdStorage.ts:35-80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/deviceIdStorage.ts#L35-L80)
 
 ## 主要导出
 
@@ -27999,7 +28394,6 @@ graph TB
     COND --> OP
 
     style CC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
-    style CSC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style SQC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style ESQC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
     style LSAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
@@ -28080,7 +28474,6 @@ classDiagram
         +id: string
         +waitCommandId: string
         +stage: CommandStage
-        +contextAlias: string
         +contextName: string
         +aggregateName: string
         +aggregateId: string
@@ -28132,7 +28525,7 @@ autonumber
     participant S as Wow Server
     participant AGG as Aggregate Root
 
-    C->>CC: send('add_cart_item', { body: {...} })
+    C->>CC: send(commandRequest)
     CC->>S: POST /owner/{ownerId}/cart/add_cart_item
     S->>AGG: Handle command
     AGG-->>S: Domain events produced
@@ -28181,13 +28574,13 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 |------|------|----------|------|
 | `count(condition)` | `/snapshot/count` | `Promise<number>` | 统计匹配的聚合数量 |
 | `list(listQuery)` | `/snapshot/list` | `Promise<MaterializedSnapshot<S>[]>` | 列表查询快照 |
-| `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<SSE>>` | 以 SSE 流形式列出快照 |
-| `listState(listQuery)` | `/snapshot/list_state` | `Promise<S[]>` | 仅列出状态 |
-| `listStateStream(listQuery)` | `/snapshot/list_state` | `Promise<ReadableStream<SSE>>` | 以 SSE 流形式列出状态 |
-| `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<S>>` | 分页查询快照 |
-| `pagedState(pagedQuery)` | `/snapshot/paged_state` | `Promise<PagedList<S>>` | 分页查询状态 |
+| `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | 以 SSE 流形式列出快照 |
+| `listState(listQuery)` | `/snapshot/list/state` | `Promise<S[]>` | 仅列出状态 |
+| `listStateStream(listQuery)` | `/snapshot/list/state` | `Promise<ReadableStream<JsonServerSentEvent<S>>>` | 以 SSE 流形式列出状态 |
+| `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<MaterializedSnapshot<S>>>` | 分页查询快照 |
+| `pagedState(pagedQuery)` | `/snapshot/paged/state` | `Promise<PagedList<S>>` | 分页查询状态 |
 | `single(singleQuery)` | `/snapshot/single` | `Promise<MaterializedSnapshot<S>>` | 单个快照查询 |
-| `singleState(singleQuery)` | `/snapshot/single_state` | `Promise<S>` | 单个状态查询 |
+| `singleState(singleQuery)` | `/snapshot/single/state` | `Promise<S>` | 单个状态查询 |
 | `getById(id)` | -- | `Promise<MaterializedSnapshot<S>>` | 通过聚合 ID 获取 |
 | `getStateById(id)` | -- | `Promise<S>` | 通过 ID 获取状态 |
 | `getByIds(ids)` | -- | `Promise<MaterializedSnapshot<S>[]>` | 通过多个 ID 获取 |
@@ -28231,7 +28624,7 @@ const eventClient = factory.createEventStreamQueryClient();
 条件系统支持构建复杂的查询谓词：
 
 ```typescript
-import { all, condition, aggregateId, aggregateIds } from '@ahoo-wang/fetcher-wow';
+import { all, and, isIn, between, aggregateId, aggregateIds } from '@ahoo-wang/fetcher-wow';
 
 // All records
 const allCondition = all();
@@ -28242,44 +28635,52 @@ const byId = aggregateId('cart-123');
 // By multiple IDs
 const byIds = aggregateIds(['cart-1', 'cart-2', 'cart-3']);
 
-// Complex conditions with operators
-const complex = condition({
-  field: 'status',
-  operator: 'IN',
-  value: ['ACTIVE', 'PENDING'],
-}).and({
-  field: 'createdAt',
-  operator: 'BETWEEN',
-  value: ['2024-01-01', '2024-12-31'],
-});
+// 使用逻辑辅助函数组合复杂条件。
+// 集合辅助函数使用剩余参数：isIn(field, ...values)。
+// between 接收 (field, start, end)。
+const complex = and(
+  isIn('status', 'ACTIVE', 'PENDING'),
+  between('createdAt', '2024-01-01', '2024-12-31'),
+);
 ```
 
 ### 运算符
 
-| 运算符 | 描述 | 示例 |
+| 运算符 | 描述 | 辅助函数 / 示例 |
 |--------|------|------|
-| `EQ` | 等于 | `{ field: 'name', operator: 'EQ', value: 'Alice' }` |
-| `NE` | 不等于 | `{ field: 'status', operator: 'NE', value: 'DELETED' }` |
-| `IN` | 在集合中 | `{ field: 'type', operator: 'IN', value: ['A', 'B'] }` |
-| `NOT_IN` | 不在集合中 | `{ field: 'type', operator: 'NOT_IN', value: ['C'] }` |
-| `BETWEEN` | 范围 | `{ field: 'age', operator: 'BETWEEN', value: [18, 65] }` |
-| `LIKE` | 模式匹配 | `{ field: 'name', operator: 'LIKE', value: '%john%' }` |
-| `GT` | 大于 | `{ field: 'price', operator: 'GT', value: 100 }` |
-| `LT` | 小于 | `{ field: 'price', operator: 'LT', value: 50 }` |
-| `ALL` | 匹配全部 | 无需字段/值 |
+| `EQ` | 等于 | `eq('name', 'Alice')` |
+| `NE` | 不等于 | `ne('status', 'DELETED')` |
+| `GT` / `GTE` | 大于 / 大于等于 | `gt('price', 100)`、`gte('price', 100)` |
+| `LT` / `LTE` | 小于 / 小于等于 | `lt('price', 50)`、`lte('price', 50)` |
+| `IN` | 在集合中 | `isIn('type', 'A', 'B')`（剩余参数） |
+| `NOT_IN` | 不在集合中 | `notIn('type', 'C')`（剩余参数） |
+| `ALL_IN` | 匹配集合中全部 | `allIn('tags', 'a', 'b')`（剩余参数） |
+| `BETWEEN` | 范围 | `between('age', 18, 65)`（`(field, start, end)`） |
+| `CONTAINS` | 包含子串 | `contains('name', 'john')` |
+| `STARTS_WITH` | 前缀匹配 | `startsWith('name', 'john')` |
+| `ENDS_WITH` | 后缀匹配 | `endsWith('name', 'son')` |
+| `MATCH` | 全文匹配（后端相关，如 MongoDB text / ES match） | `match('name', 'keyword')` |
+| `AND` / `OR` / `NOR` | 逻辑组合 | `and(c1, c2)`、`or(c1, c2)` |
+| `ALL` | 匹配全部记录 | `all()`（无需字段/值） |
 
 来源: [packages/wow/src/query/operator.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/operator.ts)
 
 ### 排序和分页
 
 ```typescript
-import { pagedQuery, listQuery } from '@ahoo-wang/fetcher-wow';
+import { pagedQuery, listQuery, SortDirection } from '@ahoo-wang/fetcher-wow';
 
-// Paged query with sorting
+// 带排序的分页查询（pagination.index 从 1 开始）
 const query = pagedQuery({
   condition: all(),
   pagination: { index: 1, size: 20 },
-  sort: [{ field: 'createdAt', order: 'DESC' }],
+  sort: [{ field: 'createdAt', direction: SortDirection.DESC }],
+});
+
+// 列表查询（仅 limit，无分页）
+const list = listQuery({
+  condition: all(),
+  limit: 100,
 });
 ```
 
@@ -28381,11 +28782,14 @@ graph TB
 | `EventStreamQueryClient` | `query/event/` | 领域事件流查询 |
 | `LoadStateAggregateClient` | `query/state/` | 通过 ID/版本/时间加载聚合状态 |
 | `LoadOwnerStateAggregateClient` | `query/state/` | 加载所有者的聚合状态 |
-| `Condition` | `query/` | 查询条件构建器 |
+| `Condition` | `query/` | 查询条件接口 |
 | `all()` | `query/` | 匹配所有记录的条件 |
+| `and(...)` / `or(...)` / `nor(...)` | `query/` | 逻辑条件组合 |
+| `eq/ne/gt/lt/gte/lte(...)` | `query/` | 比较条件辅助函数 |
+| `isIn/notIn/allIn(...)` | `query/` | 集合成员判断辅助函数 |
+| `between/contains/startsWith/endsWith/match(...)` | `query/` | 范围与模式匹配辅助函数 |
 | `aggregateId(id)` | `query/` | 匹配单个聚合 ID 的条件 |
 | `aggregateIds(ids)` | `query/` | 匹配多个聚合 ID 的条件 |
-| `condition(field, operator, value)` | `query/` | 条件构建器 |
 | `listQuery()` | `query/` | 创建列表查询 |
 | `pagedQuery()` | `query/` | 创建分页查询 |
 | `singleQuery()` | `query/` | 创建单条查询 |
@@ -28529,7 +28933,7 @@ function DataView() {
 | `ownerId` | `string` | `'(0)'` | 数据范围的所有者 ID |
 | `tenantId` | `string` | `'(0)'` | 数据范围的租户 ID |
 | `defaultViewId` | `string` | -- | 默认激活的视图 |
-| `pagination` | `false \| PaginationProps` | （必填） | 分页配置，设为 `false` 可禁用分页 |
+| `pagination` | `false \| PaginationProps` | *(必填)* | 分页配置，设为 `false` 可禁用分页 |
 | `actionColumn` | `ViewTableActionColumn` | -- | 行操作列配置 |
 | `onClickPrimaryKey` | `(id, record) => void` | -- | 主键单元格的点击处理器 |
 | `enableRowSelection` | `boolean` | `false` | 启用复选框行选择 |
@@ -28609,7 +29013,15 @@ autonumber
     V->>V: ViewTable + FilterPanel + TopBar + ViewPanel
 ```
 
-来源: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:75-377](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L75-L377)
+来源: [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:82-357](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L82-L357)
+
+### 刷新事件总线
+
+`FetcherViewer` 与顶部栏的刷新项（`RefreshDataBarItem`、`AutoRefreshBarItem`）通过 `useRefreshDataEventBus(subscriberId)` 创建的共享刷新事件总线通信。`FetcherViewer` 以其 `viewerDefinitionId` 作为订阅者 ID 进行订阅，当收到 `subscriberId` 匹配的 `REFRESH` 事件时重新加载当前页数据；命令式的 `refreshData()` 也向同一 ID 发布事件。
+
+注册的处理器名称以订阅者 ID 为前缀（`${subscriberId}:${handlerName}`）。卸载时，该 hook 只移除当前 hook 实例自己注册的处理器——绝不按整个订阅者 ID 前缀移除——因此共享同一 `viewerDefinitionId` 的多个组件（例如一个 `FetcherViewer` 及其刷新栏项）不会误删彼此的订阅。
+
+来源: [packages/viewer/src/hooks/useRefreshDataEventBus.ts:29-86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L29-L86)、[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:254-285](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L254-L285)
 
 ## 过滤系统
 
@@ -28691,14 +29103,14 @@ interface FilterProps {
 | `text` | `TextCell` | 支持省略号的纯文本显示 |
 | `tag` | `TagCell` | 单个 Ant Design 标签 |
 | `tags` | `TagsCell` | 多个 Ant Design 标签 |
-| `dateTime` | `DateTimeCell` | 格式化的日期/时间显示 |
-| `calendar` | `CalendarTimeCell` | 基于日历的时间显示 |
+| `datetime` | `DateTimeCell` | 格式化的日期/时间显示 |
+| `calendar-time` | `CalendarTimeCell` | 基于日历的时间显示 |
 | `image` | `ImageCell` | 带缩略图的图片预览 |
-| `imageGroup` | `ImageGroupCell` | 图片预览组 |
+| `image-group` | `ImageGroupCell` | 图片预览组 |
 | `link` | `LinkCell` | 可点击链接 |
 | `currency` | `CurrencyCell` | 格式化的货币显示 |
 | `avatar` | `AvatarCell` | 用户头像显示 |
-| `primaryKey` | `PrimaryKeyCell` | 可点击的主键单元格 |
+| `primary-key` | `PrimaryKeyCell` | 可点击的主键单元格 |
 | `action` | `ActionCell` | 单个操作按钮 |
 | `actions` | `ActionsCell` | 多个操作按钮 |
 
@@ -28733,6 +29145,16 @@ interface CellProps<ValueType, RecordType, Attributes> {
 - 操作列
 
 来源: [packages/viewer/src/table/ViewTable.tsx](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/ViewTable.tsx)
+
+#### 行键与选择稳定性
+
+`ViewTable` 通过调用 `mapToTableRecord(dataSource, primaryKeyFieldName)` 为每行生成 `key`（用作 Ant Design 的 `rowKey`），其中 `primaryKeyFieldName` 是在字段定义中标记为 `primaryKey` 的字段名。键的优先级：
+
+1. 记录的主键字段值——在数据刷新、排序和翻页后保持稳定，行选择不会错位到其他记录。
+2. 记录自带的 `key` 属性（如存在则保留，不会被数组下标兜底覆盖）。
+3. 数组下标——仅作为最后兜底；下标键在数据变化后不稳定。
+
+来源: [packages/viewer/src/table/ViewTable.tsx:340-343](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/ViewTable.tsx#L340-L343)、[packages/viewer/src/utils.ts:111-134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/utils.ts#L111-L134)
 
 ## 视图管理
 
@@ -28771,7 +29193,7 @@ stateDiagram-v2
 
 - `createView` -- 创建新视图
 - `editView` -- 更新已有视图
-- `deleteAggregate` -- 删除视图
+- `defaultDeleteAggregate` -- 删除视图
 
 来源: [packages/viewer/src/fetcherviewer/client/view/commandClient.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/commandClient.ts)
 
@@ -29576,10 +29998,11 @@ class UserService {
 
 ### MethodEndpointMetadata
 
-继承 `ApiMetadata`，不包含 `method` 和 `basePath`：
+继承 `ApiMetadata`，不包含 `method` 和 `path`：
 
 | 属性 | 类型 | 描述 |
 |----------|------|-------------|
+| `basePath` | `string` | 端点级别的基础路径（覆盖类级别的 `basePath`） |
 | `headers` | `RequestHeaders` | 端点级别的头部（与类头部合并） |
 | `timeout` | `number` | 端点级别的超时时间 |
 | `fetcher` | `string \| Fetcher` | 端点级别的 fetcher |
@@ -29592,12 +30015,12 @@ class UserService {
 
 ### 通用 @endpoint 装饰器
 
-用于便捷装饰器未覆盖的 HTTP 方法：
+用于便捷装饰器未覆盖的 HTTP 方法（`HttpMethod` 由 `@ahoo-wang/fetcher` 导出，而非装饰器包）：
 
 ```typescript
-import { endpoint, HttpMethod } from '@ahoo-wang/fetcher-decorator';
+import { endpoint, autoGeneratedError } from '@ahoo-wang/fetcher-decorator';
+import { HttpMethod } from '@ahoo-wang/fetcher';
 
-@get('/users')
 @endpoint(HttpMethod.TRACE, '/trace-endpoint')
 traceEndpoint(): Promise<Response> {
   throw autoGeneratedError();
@@ -29636,6 +30059,8 @@ traceEndpoint(): Promise<Response> {
    ```
 
 3. **AbortSignal / AbortController。** 如果参数是 `AbortSignal` 或 `AbortController` 实例，它会自动用于请求取消 -- 无需装饰器。
+
+4. **继承（写时复制）。** 参数元数据沿原型链解析，因此子类会继承基类的参数绑定。当子类重新装饰继承方法的参数时，会先复制继承的参数映射，再添加子类自己的条目 -- 基类的元数据永远不会被修改。([`parameterDecorator.ts:217`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L217))
 
 **源码:** [`packages/decorator/src/functionMetadata.ts:279`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L279)
 
@@ -29716,7 +30141,7 @@ getUser(
 }
 ```
 
-**源码:** [`packages/decorator/src/parameterDecorator.ts:408`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L408)
+**源码:** [`packages/decorator/src/parameterDecorator.ts:415`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L415)
 
 ## autoGeneratedError
 
@@ -30700,7 +31125,7 @@ interface ParameterRequest<BODY extends RequestBodyType = RequestBodyType>
   extends FetchRequestInit<BODY>, PathCapable {}
 ```
 
-**源码:** [`packages/decorator/src/parameterDecorator.ts:352`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L352)
+**源码:** [`packages/decorator/src/parameterDecorator.ts:359`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L359)
 
 ## 类型关系图
 

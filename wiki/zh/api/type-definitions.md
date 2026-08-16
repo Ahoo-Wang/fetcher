@@ -370,7 +370,7 @@ interface ParameterRequest<BODY extends RequestBodyType = RequestBodyType>
   extends FetchRequestInit<BODY>, PathCapable {}
 ```
 
-**源码:** [`packages/decorator/src/parameterDecorator.ts:352`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L352)
+**源码:** [`packages/decorator/src/parameterDecorator.ts:359`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L359)
 
 ## 类型关系图
 

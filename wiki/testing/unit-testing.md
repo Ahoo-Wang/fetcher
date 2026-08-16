@@ -317,14 +317,18 @@ flowchart TD
 
 | Package | Test Count | Key Test Areas |
 |---------|-----------|----------------|
-| fetcher | 21 test files | Fetcher, interceptors, URL builder, errors, registrar, timeout |
+| fetcher | 19 test files | Fetcher, interceptors, URL builder, errors, registrar, timeout |
 | decorator | 7 test files | API decorator, endpoint decorator, parameter decorator, metadata, executor |
-| eventbus | 5 test files | EventBus, parallel/serial/broadcast buses, name generator |
-| eventstream | 11 test files | Stream converters, SSE transforms, async iteration |
-| viewer | 1 test file | Utility functions (deepEqual, mapToTableRecord) |
-| wow | 2 test files | Index exports, property value extraction |
-| generator | 3 test files | CLI, E2E generation, index exports |
-| openai | 1 test file | OpenAI client |
+| eventbus | 8 test files | EventBus, parallel/serial/broadcast buses, name generator |
+| eventstream | 12 test files | Stream converters, SSE transforms, async iteration |
+| storage | 4 test files | KeyStorage, serializers, in-memory storage, environment detection |
+| cosec | 17 test files | Token storage/refresh, authorization interceptors, CoSec configurer |
+| wow | 21 test files | Conditions, pagination, cursor queries, command/query types, locale |
+| generator | 27 test files | Aggregate resolver, model/client generators, CLI, E2E snapshot baselines |
+| openai | 2 test files | OpenAI client, streaming extractor, request types |
+| openapi | 1 test file | OpenAPI type fixtures |
+| react | 42 test files | Core/fetcher/wow hooks, debounced variants, cosec components, storage hooks |
+| viewer | 60 test files | Filter/table/view components, cells, hooks, FetcherViewer |
 
 ## Mocking Patterns
 

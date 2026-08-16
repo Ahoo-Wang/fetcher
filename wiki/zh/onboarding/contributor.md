@@ -71,7 +71,7 @@ description: 面向 Fetcher monorepo 新贡献者的全面指南。涵盖 TypeSc
 2. `@get('/users/{id}')` 在元数据中存储 `{method: HttpMethod.GET, path: '/users/{id}'}`。
 3. `@api('/api/v1')` 读取这两组元数据，创建 `FunctionMetadata`，并构建一个 `RequestExecutor` 来替换方法体。
 
-**来源**: [packages/decorator/src/parameterDecorator.ts:199-228](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199-L228)
+**来源**: [packages/decorator/src/parameterDecorator.ts:199-235](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199-L235)
 
 ### Fetch API
 
@@ -623,7 +623,7 @@ graph TD
 | 风格 | 语法 | 示例 | 正则表达式 |
 |---|---|---|---|
 | `UrlTemplateStyle.UriTemplate`（默认） | `{param}` | `/users/{id}` | `/{([^}]+)}/g` |
-| `UrlTemplateStyle.Express` | `:param` | `/users/:id` | `/:[^/]+/g` |
+| `UrlTemplateStyle.Express` | `:param` | `/users/:id` | `/(?<=^|\/):([^/]+)/g` |
 
 路径参数通过 `encodeURIComponent` 自动进行 URL 编码。如果缺少必需的路径参数，解析器会抛出 `Error("Missing required path parameter: {name}")`。
 
@@ -635,10 +635,10 @@ graph TD
 
 1. 如果请求已有 `signal`，则直接委托给 `fetch()`（不进行超时封装以避免冲突）。
 2. 如果没有配置超时但提供了 `abortController`，则使用该控制器的 signal。
-3. 如果配置了超时，则创建（或复用）一个 `AbortController`，然后让 `fetch()` 与一个 `setTimeout` 进行竞争，后者在超时后中止控制器。
-4. 计时器始终在 `finally` 块中清理，以防止资源泄漏。
+3. 如果配置了超时，则创建（或复用，前提是尚未被中止）一个 `AbortController`，然后让 `fetch()` 与一个 `setTimeout` 进行竞争，后者在超时后中止控制器。
+4. 计时器始终在 `finally` 块中清理，且写入请求的控制器/signal 在成功和失败时都会被移除（调用方提供的控制器会保留），因此复用同一请求对象永远不会静默丢失超时。
 
-**来源**: [packages/fetcher/src/timeout.ts:120-172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L172)
+**来源**: [packages/fetcher/src/timeout.ts:120-198](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L198)
 
 ### RequestBodyInterceptor 逻辑
 

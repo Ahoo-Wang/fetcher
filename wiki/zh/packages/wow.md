@@ -186,7 +186,7 @@ autonumber
     participant S as Wow Server
     participant AGG as Aggregate Root
 
-    C->>CC: send('add_cart_item', { body: {...} })
+    C->>CC: send(commandRequest)
     CC->>S: POST /owner/{ownerId}/cart/add_cart_item
     S->>AGG: Handle command
     AGG-->>S: Domain events produced
@@ -238,7 +238,7 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 | `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | 以 SSE 流形式列出快照 |
 | `listState(listQuery)` | `/snapshot/list/state` | `Promise<S[]>` | 仅列出状态 |
 | `listStateStream(listQuery)` | `/snapshot/list/state` | `Promise<ReadableStream<JsonServerSentEvent<S>>>` | 以 SSE 流形式列出状态 |
-| `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<S>>` | 分页查询快照 |
+| `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<MaterializedSnapshot<S>>>` | 分页查询快照 |
 | `pagedState(pagedQuery)` | `/snapshot/paged/state` | `Promise<PagedList<S>>` | 分页查询状态 |
 | `single(singleQuery)` | `/snapshot/single` | `Promise<MaterializedSnapshot<S>>` | 单个快照查询 |
 | `singleState(singleQuery)` | `/snapshot/single/state` | `Promise<S>` | 单个状态查询 |

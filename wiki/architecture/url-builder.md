@@ -102,17 +102,18 @@ The `build()` method performs three steps in order:
 
 ### The resolveRequestUrl Bridge
 
-`UrlResolveInterceptor` calls `resolveRequestUrl()` to populate `request.url` before the actual fetch:
+`UrlResolveInterceptor` calls `resolveRequestUrl()` to populate `request.url` before the actual fetch, then clears `request.urlParams`. Consuming the params makes URL resolution idempotent: if the same exchange is intercepted again (e.g. an error interceptor retrying after a token refresh, which re-runs the whole request chain), the interceptor does not append the query string a second time.
 
 ```typescript
-// [packages/fetcher/src/urlResolveInterceptor.ts:74-78]
+// [packages/fetcher/src/urlResolveInterceptor.ts:80-84]
 intercept(exchange: FetchExchange) {
   const request = exchange.request;
   request.url = exchange.fetcher.urlBuilder.resolveRequestUrl(request);
+  request.urlParams = undefined;
 }
 ```
 
-Source: [packages/fetcher/src/urlResolveInterceptor.ts:74-78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L74-L78)
+Source: [packages/fetcher/src/urlResolveInterceptor.ts:80-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L80-L84)
 
 ## URL Combination
 
@@ -155,7 +156,7 @@ graph TD
   subgraph Styles["UrlTemplateStyle"]
     style Styles fill:#161b22,stroke:#30363d,color:#e6edf3
     UT["UriTemplate (default)<br>Pattern: {paramName}<br>Regex: /{[^}]+}/g"]
-    ET["Express<br>Pattern: :paramName<br>Regex: /:[^/]+/g"]
+    ET["Express<br>Pattern: :paramName<br>Regex: /(?<=^|\/):([^/]+)/g"]
   end
 
   UT --> UTR["UriTemplateResolver"]
@@ -208,15 +209,16 @@ Mimics Express.js route parameters using a colon prefix.
 |---|---|---|
 | `/users/:id` | `{ id: 123 }` | `/users/123` |
 | `/users/:id/posts/:postId` | `{ id: 1, postId: 42 }` | `/users/1/posts/42` |
+| `http://localhost:8080/users/:id` | `{ id: 123 }` | `http://localhost:8080/users/123` |
 
-The regex pattern `/: ([^/]+)/g` matches colon-prefixed segments:
+The regex pattern `/(?<=^|\/):([^/]+)/g` matches colon-prefixed segments. Its lookbehind restricts matches to placeholders that **start a path segment** (at the beginning of the template or right after `/`), so colons belonging to the URL itself — the scheme (`http:`) or an authority port (`host:8080`) — are never mistaken for parameters:
 
 ```typescript
-// [packages/fetcher/src/urlTemplateResolver.ts:320]
-private static PATH_PARAM_REGEX = /:([^/]+)/g;
+// [packages/fetcher/src/urlTemplateResolver.ts:325]
+private static PATH_PARAM_REGEX = /(?<=^|\/):([^/]+)/g;
 ```
 
-Source: [packages/fetcher/src/urlTemplateResolver.ts:320](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L320)
+Source: [packages/fetcher/src/urlTemplateResolver.ts:325](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L325)
 
 ### Template Resolution Algorithm
 
@@ -473,6 +475,7 @@ Source: [packages/fetcher/src/urlTemplateResolver.ts:174-184](https://github.com
 |---|---|---|
 | `/users/{id}/posts/{postId}` | UriTemplate | `['id', 'postId']` |
 | `/users/:id/posts/:postId` | Express | `['id', 'postId']` |
+| `http://localhost:8080/users/:id` | Express | `['id']` |
 | `/users/profile` | *any* | `[]` |
 
 ## Cross-References

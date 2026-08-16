@@ -132,7 +132,7 @@ Fetcher 为所有标准 HTTP 方法提供了便捷方法。每个方法都委托
 | `post` | `post<R>(url, request?, options?)` | 否 |
 | `put` | `put<R>(url, request?, options?)` | 否 |
 | `patch` | `patch<R>(url, request?, options?)` | 否 |
-| `delete` | `delete<R>(url, request?, options?)` | 是 |
+| `delete` | `delete<R>(url, request?, options?)` | 否 |
 | `head` | `head<R>(url, request?, options?)` | 是 |
 | `options` | `options<R>(url, request?, options?)` | 是 |
 | `trace` | `trace<R>(url, request?, options?)` | 是 |
@@ -269,23 +269,24 @@ autonumber
 | `requiredResponse` | `Response` | 无响应时抛出 `ExchangeError` |
 | `extractResult<R>()` | `Promise<R>` | 应用结果提取器（结果会被缓存） |
 
-Source: [packages/fetcher/src/fetchExchange.ts:105-286](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105-L286)
+Source: [packages/fetcher/src/fetchExchange.ts:105-293](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105-L293)
 
-首次调用 `extractResult()` 后结果会被缓存，以避免重复计算：
+首次调用 `extractResult()` 后结果会被缓存，以避免重复计算。结果在缓存标记置位*之前*计算，因此同步抛出异常的提取器不会让 exchange 处于"已缓存但无值"的状态，后续调用可以重试：
 
 ```typescript
-// [packages/fetcher/src/fetchExchange.ts:278-285]
+// [packages/fetcher/src/fetchExchange.ts:278-292]
 async extractResult<R>(): Promise<R> {
   if (this.hasCachedResult) {
     return await this.cachedExtractedResult;
   }
+  const result = this.resultExtractor(this) as Promise<R> | R;
+  this.cachedExtractedResult = result;
   this.hasCachedResult = true;
-  this.cachedExtractedResult = this.resultExtractor(this);
   return await this.cachedExtractedResult;
 }
 ```
 
-Source: [packages/fetcher/src/fetchExchange.ts:278-285](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L278-L285)
+Source: [packages/fetcher/src/fetchExchange.ts:278-292](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L278-L292)
 
 ## NamedFetcher 与 FetcherRegistrar
 
@@ -381,9 +382,12 @@ flowchart TD
   HasTimeout{{"request.timeout set?"}}
   HasAC{{"request.abortController?"}}
   UseAC["Use provided AbortController"]
+  ReuseAC{{"caller abortController<br>provided and not aborted?"}}
+  Reuse["Reuse caller's AbortController"]
   NewAC["Create new AbortController"]
   Race["Promise.race(fetch, timeoutPromise)"]
-  TimeoutErr["throw FetchTimeoutError"]
+  Cleanup["finally: clear timer, remove written signal/controller<br>(caller-supplied controller is kept)"]
+  TimeoutErr["abort controller, clear written signal/controller,<br>throw FetchTimeoutError"]
 
   Entry --> HasSignal
   HasSignal -->|Yes| DirectFetch
@@ -391,8 +395,10 @@ flowchart TD
   HasTimeout -->|No| HasAC
   HasAC -->|Yes| UseAC --> DirectFetch
   HasAC -->|No| DirectFetch
-  HasTimeout -->|Yes| NewAC --> Race
-  Race -->|fetch wins| DirectFetch
+  HasTimeout -->|Yes| ReuseAC
+  ReuseAC -->|Yes| Reuse --> Race
+  ReuseAC -->|No| NewAC --> Race
+  Race -->|fetch wins| Cleanup
   Race -->|timeout wins| TimeoutErr
 
   style Entry fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
@@ -401,8 +407,11 @@ flowchart TD
   style HasTimeout fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style HasAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style UseAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style ReuseAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style Reuse fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style NewAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style Race fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style Cleanup fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style TimeoutErr fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
 
@@ -410,10 +419,12 @@ flowchart TD
 
 1. 如果 `request.signal` 已存在，则跳过超时处理以避免冲突。
 2. 如果未设置超时但提供了 `abortController`，则直接附加其 signal。
-3. 如果设置了超时，将创建一个新的 `AbortController`（或复用已提供的），并启动计时器与 fetch 请求竞争。
+3. 如果设置了超时，仅当调用方提供的 `abortController` **尚未**被中止（例如被同一请求对象的前一次超时中止）时才复用它；否则创建新的 `AbortController`。复用已中止的控制器会导致重试的 fetch 立即拒绝，而不是真正发起请求。
+4. 无论成功还是失败路径，`finally` 块都会移除 `timeoutFetch` 写入调用方 request 对象上的控制器/signal。否则，后续复用同一 request 对象的调用会把它们误认为是调用方提供的值，从而退化为普通 `fetch()`——静默忽略超时。调用方提供（被复用）的控制器属于调用方自身属性，会保留在原处。
+5. 当超时触发时，控制器会以 `FetchTimeoutError` 中止，且已永久不可用的控制器/signal 会从请求中清除，因此复用同一 request 对象的重试会以全新的控制器开始。
 
 ```typescript
-// [packages/fetcher/src/timeout.ts:120-172]
+// [packages/fetcher/src/timeout.ts:120-198]
 export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   const url = request.url;
   const timeout = request.timeout;
@@ -430,7 +441,14 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
     return await fetch(url, requestInit);
   }
 
-  const controller = request.abortController ?? new AbortController();
+  // 仅当调用方提供的控制器尚未被中止时才复用它；
+  // 已中止的控制器会导致重试的 fetch 立即拒绝，而不是真正发起请求。
+  const existingController = request.abortController;
+  const reuseExistingController =
+    existingController && !existingController.signal.aborted;
+  const controller = reuseExistingController
+    ? existingController
+    : new AbortController();
   request.abortController = controller;
   requestInit.signal = controller.signal;
 
@@ -443,6 +461,10 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
       if (timerId) { clearTimeout(timerId); }
       const error = new FetchTimeoutError(request);
       controller.abort(error);
+      // 已中止的控制器/signal 永久不可用；清除它们，
+      // 以便复用此请求的重试构建全新的控制器。
+      request.abortController = undefined;
+      delete requestInit.signal;
       reject(error);
     }, timeout);
   });
@@ -452,11 +474,17 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   } finally {
     aborted = true;
     if (timerId) { clearTimeout(timerId); }
+    // 无论成功还是失败，都移除上面写入调用方 request 的控制器/signal。
+    // 调用方提供（被复用）的控制器属于调用方自身属性，保留在原处。
+    delete requestInit.signal;
+    if (!reuseExistingController) {
+      request.abortController = undefined;
+    }
   }
 }
 ```
 
-Source: [packages/fetcher/src/timeout.ts:120-172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L172)
+Source: [packages/fetcher/src/timeout.ts:120-198](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L198)
 
 ### 超时解析
 

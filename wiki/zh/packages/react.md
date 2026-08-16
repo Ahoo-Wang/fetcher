@@ -258,7 +258,7 @@ function SearchComponent() {
 | `useDebouncedFetcher` | `useFetcher` | 防抖的 Fetcher 执行 |
 | `useDebouncedFetcherQuery` | `useFetcherQuery` | 防抖的 POST 查询 |
 
-来源: [packages/react/src/core/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/)
+来源: [packages/react/src/core/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/), [packages/react/src/fetcher/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/debounced/)（`useDebouncedFetcher`、`useDebouncedFetcherQuery`）
 
 ## API Hooks 自动生成
 
@@ -402,7 +402,9 @@ graph LR
 - `BrowserNotificationChannel` -- 显示原生浏览器通知
 - 可通过自定义 `NotificationChannel` 实现进行扩展
 
-来源: [packages/react/src/notification/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/)
+导出的 `notificationCenter` 单例在模块作用域注册了 `beforeunload` 清理处理器。该注册带有 `typeof window` 守卫，因此在 Node/SSR 环境中导入本包不会抛出异常。
+
+来源: [packages/react/src/notification/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/), [packages/react/src/notification/notificationCenter.ts:65-71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/notificationCenter.ts#L65-L71)
 
 ## 工具 Hooks
 

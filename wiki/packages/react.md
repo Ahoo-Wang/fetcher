@@ -258,7 +258,7 @@ For search-as-you-type scenarios, debounced variants delay execution until input
 | `useDebouncedFetcher` | `useFetcher` | Debounced fetcher execution |
 | `useDebouncedFetcherQuery` | `useFetcherQuery` | Debounced POST query |
 
-Source: [packages/react/src/core/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/)
+Source: [packages/react/src/core/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/), [packages/react/src/fetcher/debounced/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/debounced/) (`useDebouncedFetcher`, `useDebouncedFetcherQuery`)
 
 ## API Hooks Generation
 
@@ -405,7 +405,9 @@ A channel-based notification system:
 - `BrowserNotificationChannel` -- shows native browser notifications
 - Extensible via custom `NotificationChannel` implementations
 
-Source: [packages/react/src/notification/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/)
+The exported `notificationCenter` singleton registers a `beforeunload` cleanup handler at module scope. The registration is guarded by a `typeof window` check, so importing the package in Node/SSR environments does not throw.
+
+Source: [packages/react/src/notification/](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/), [packages/react/src/notification/notificationCenter.ts:65-71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/notification/notificationCenter.ts#L65-L71)
 
 ## Utility Hooks
 

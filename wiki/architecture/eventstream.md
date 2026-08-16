@@ -163,7 +163,7 @@ classDiagram
 
 ## Stream Processing Pipeline
 
-Converting a raw HTTP response into typed JSON events involves a three-stage `pipeThrough` chain.
+Converting a raw HTTP response into typed JSON events involves a `pipeThrough` chain: three stages to turn raw bytes into `ServerSentEvent`s, plus an optional fourth stage that parses the event data as JSON.
 
 ```mermaid
 graph LR
@@ -240,7 +240,7 @@ Parses individual lines into structured `ServerSentEvent` objects according to t
 - Default event type `"message"` when not specified
 
 ```typescript
-// [packages/eventstream/src/serverSentEventTransformStream.ts:23-32]
+// [packages/eventstream/src/serverSentEventTransformStream.ts:21-30]
 export interface ServerSentEvent {
   id?: string;
   event: string;
@@ -249,7 +249,7 @@ export interface ServerSentEvent {
 }
 ```
 
-Source: [packages/eventstream/src/serverSentEventTransformStream.ts:23-32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L23-L32)
+Source: [packages/eventstream/src/serverSentEventTransformStream.ts:21-30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21-L30)
 
 The core parsing logic lives in `onTransform`, which is called by the inherited `SafeTransformer.transform()` method. Error handling (try/catch, termination, and forwarding via `safeError`) is inherited from `SafeTransformer`; on error the `onError` override below resets the event state:
 
@@ -435,6 +435,34 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
 ```
 
 Source: [packages/eventstream/src/readableStreamAsyncIterable.ts:54-148](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L54-L148)
+
+### Import-Time Polyfill and Environment Detection
+
+The companion module `readableStreams.ts` wires this wrapper into the global `ReadableStream` at import time, so `for await...of` works on any `ReadableStream` (including the streams produced by `toServerSentEventStream()`). It exports the feature-detection constant `isReadableStreamAsyncIterableSupported` and installs the polyfill only when needed:
+
+```typescript
+// [packages/eventstream/src/readableStreams.ts:37-52]
+export const isReadableStreamAsyncIterableSupported =
+  typeof ReadableStream !== 'undefined' &&
+  typeof ReadableStream.prototype[Symbol.asyncIterator] === 'function';
+
+// Add [Symbol.asyncIterator] to ReadableStream if not already implemented.
+// Guard on the global itself first: in runtimes without ReadableStream at all
+// (legacy SSR / non-stream environments) there is nothing to polyfill, and
+// referencing ReadableStream.prototype here would crash the module import.
+if (
+  typeof ReadableStream !== 'undefined' &&
+  !isReadableStreamAsyncIterableSupported
+) {
+  ReadableStream.prototype[Symbol.asyncIterator] = function <R = any>() {
+    return new ReadableStreamAsyncIterable<R>(this as ReadableStream<R>);
+  };
+}
+```
+
+Source: [packages/eventstream/src/readableStreams.ts:37-52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37-L52)
+
+The guard on the global itself matters: without it, a runtime that has no `ReadableStream` at all (legacy SSR / non-stream environments) would enter the polyfill branch — because `isReadableStreamAsyncIterableSupported` is `false` there — and referencing `ReadableStream.prototype` would throw a `ReferenceError` during module import. With the guard, importing the package is safe in such environments; the polyfill is simply skipped.
 
 ## Integration with Fetcher
 
