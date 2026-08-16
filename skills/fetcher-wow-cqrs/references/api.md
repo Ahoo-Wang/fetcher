@@ -58,7 +58,7 @@ The Wow framework implements CQRS + Event Sourcing + DDD:
 ## Package Imports
 
 ```typescript
-import '@ahoo-wang/fetcher-eventstream'; // Required side-effect import for SSE
+import '@ahoo-wang/fetcher-eventstream'; // Optional: SSE support loads transitively with fetcher-wow
 import { ContentTypeValues, HttpMethod } from '@ahoo-wang/fetcher';
 import {
   // Command
@@ -81,6 +81,11 @@ import {
   PagedQuery,
   SingleQuery,
   ResourceAttributionPathSpec,
+  SortDirection,
+  DeletionState,
+  // Sort helpers
+  asc,
+  desc,
   // Condition builders
   and,
   or,
@@ -119,6 +124,7 @@ import {
   active,
   all,
   deleted,
+  spaceId,
   id,
   ids,
   aggregateId,
@@ -149,6 +155,26 @@ const apiMetadata: ApiMetadata = {
 ```
 
 **CommandClient**, **SnapshotQueryClient**, **EventStreamQueryClient**, **LoadStateAggregateClient**, **LoadOwnerStateAggregateClient** all share this same constructor pattern.
+
+### Path Parameter Substitution (`{ownerId}`, `{tenantId}`)
+
+Templates in `basePath` (and `path`) are filled from `urlParams.path` on each request. Unbound placeholders are left as-is (and log a warning); bind them per call:
+
+```typescript
+// CommandRequest.urlParams / query request urlParams
+await commandClient.send({
+  path: 'items',
+  urlParams: { path: { ownerId: 'owner-123' } },
+  body: { productId: 'p-1', quantity: 2 },
+});
+// → POST {baseURL}/owner/owner-123/cart/items
+```
+
+Alternatively, CoSec's resource-attribution interceptor can fill `{tenantId}`/`{ownerId}` automatically from the JWT payload — see the `fetcher-cosec-auth` skill.
+
+### Space Attribution
+
+For space-scoped aggregates, `CommandHeaders.SPACE_ID` (`Command-Space-Id`) attributes a command to a space, and the `spaceId(value)` condition filters queries by space. Snapshots expose `spaceId` via `MaterializedSnapshot`.
 
 ---
 
@@ -245,7 +271,7 @@ interface CommandRequest<C extends object> extends ParameterRequest<
 
 `CommandResult` extends: Identifier, WaitCommandIdCapable, CommandStageCapable, NamedBoundedContext, AggregateNameCapable, AggregateId, ErrorInfo, CommandId, RequestId, FunctionInfoCapable, CommandResultCapable, SignalTimeCapable, NullableAggregateVersionCapable.
 
-Key fields: `id`, `waitCommandId`, `stage`, `contextAlias`, `contextName`, `aggregateName`, `aggregateId`, `aggregateVersion?`, `commandId`, `requestId`, `errorCode`, `errorMsg`, `signalTime`, `result`.
+Key fields: `id`, `waitCommandId`, `stage`, `contextName`, `aggregateName`, `aggregateId`, `aggregateVersion?`, `commandId`, `requestId`, `errorCode`, `errorMsg`, `bindingErrors?`, `signalTime`, `result`.
 
 ---
 
@@ -271,7 +297,7 @@ const count: number = await snapshotClient.count(all());
 // List snapshots (returns MaterializedSnapshot<S>[])
 const list = await snapshotClient.list({
   condition: all(),
-  sort: [{ field: 'eventTime', direction: 'desc' }],
+  sort: [{ field: 'eventTime', direction: SortDirection.DESC }], // 'ASC' | 'DESC'; or use desc('eventTime')
   limit: 10,
 });
 
@@ -467,7 +493,7 @@ exists('phoneNumber');
 
 ```typescript
 today('createdAt');
-beforeToday('lastLogin', 7); // Within last N days
+beforeToday('lastLogin', someTime); // Field is before today (time value is compared server-side)
 tomorrow('scheduledDate');
 thisWeek('updatedAt');
 nextWeek('startDate');
@@ -492,9 +518,11 @@ ownerId('owner-123');
 ### State Operators
 
 ```typescript
+import { DeletionState } from '@ahoo-wang/fetcher-wow';
+
 active(); // Not deleted (shorthand for deleted(DeletionState.ACTIVE))
 deleted(DeletionState.DELETED); // Is deleted
-all(); // No filter (shorthand for deleted(DeletionState.ALL))
+all(); // No filter ({ operator: Operator.ALL } — not tied to deletion state)
 ```
 
 ### Logical Operators
@@ -635,6 +663,6 @@ for await (const event of stream) {
 ## Key Dependencies
 
 - `@ahoo-wang/fetcher` - Core HTTP client
-- `@ahoo-wang/fetcher-eventstream` - SSE streaming support (required side-effect import)
+- `@ahoo-wang/fetcher-eventstream` - SSE streaming support (loads transitively with fetcher-wow)
 - `@ahoo-wang/fetcher-decorator` - ApiMetadata type, decorators for auto-implemented methods
 - `@ahoo-wang/fetcher-wow` - Wow CQRS/DDD types and clients

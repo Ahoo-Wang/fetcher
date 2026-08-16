@@ -9,7 +9,7 @@ description: >
 ## Use This Skill When
 
 - The task involves React hooks for Fetcher requests, generic queries, or promise state.
-- The task mentions `useFetcher`, `useQuery`, `usePromise`, `useExecutePromise`, or `PromiseStatus`.
+- The task mentions `useFetcher`, `useQuery`, `usePromiseState`, `useExecutePromise`, or `PromiseStatus`.
 - The task needs AbortController, unmount safety, race prevention, or auto-execute behavior.
 - The task needs storage hooks, event subscriptions, Wow query hooks, or data monitor hooks.
 

@@ -76,7 +76,7 @@ const userStorage = new KeyStorage<{ name: string; age: number }>({
 | `serializer`   | `Serializer<string, T>`          | Custom serializer (default: `jsonSerializer`)            |
 | `storage`      | `Storage`                        | Custom backend (default: `getStorage()`)                 |
 | `eventBus`     | `TypedEventBus<StorageEvent<T>>` | Custom event bus for notifications                       |
-| `defaultValue` | `T \| null`                      | Value returned by `get()` when key is missing in storage |
+| `defaultValue` | `T` (optional)                   | Value returned by `get()` when key is missing in storage |
 
 ### Methods
 

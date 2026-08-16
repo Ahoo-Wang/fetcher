@@ -28,7 +28,7 @@ pnpm add @ahoo-wang/fetcher-openai @ahoo-wang/fetcher @ahoo-wang/fetcher-decorat
 ```
 
 **Peer dependencies:** `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-eventstream`, `@ahoo-wang/fetcher-decorator`.
-`reflect-metadata` must be imported before using decorator-based features.
+`reflect-metadata` is loaded automatically by the decorator package; an explicit import is only needed if other libraries rely on it.
 
 ## Key Imports
 

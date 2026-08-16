@@ -24,7 +24,7 @@ description: >
 ## Key Practices
 
 - Treat generated code as an output boundary; adjust generator config rather than hand-editing generated clients.
-- Use explicit type mappings when OpenAPI schemas need domain-specific TypeScript types.
+- Remember aggregates need root-level tags plus both `.snapshot_state.single` and `.snapshot.count` operations; otherwise only plain API clients are emitted.
 - Keep API client tag exclusion and CQRS generation rules aligned so duplicate clients are not emitted.
 
 ## References

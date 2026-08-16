@@ -9,7 +9,7 @@ description: >
 ## Use This Skill When
 
 - The task involves SSE, EventSource-style data, streaming responses, or token-by-token UI updates.
-- The task mentions `eventStream`, `jsonEventStream`, `textEventStream`, or `ReadableStreamAsyncIterable`.
+- The task mentions `eventStream`, `jsonEventStream`, `ServerSentEvent`, or `ReadableStreamAsyncIterable`.
 - The task needs OpenAI-style completion chunks or DONE termination handling.
 - The task needs a decorator result extractor for streaming endpoints.
 
@@ -18,7 +18,7 @@ description: >
 1. Import `@ahoo-wang/fetcher-eventstream` for side-effect prototype helpers when using `Response` extensions.
 2. Use standalone conversion functions when prototype mutation is undesirable.
 3. Handle stream conversion errors explicitly with `EventStreamConvertError`.
-4. Detect termination with the package helper instead of ad hoc string checks.
+4. For OpenAI-style DONE termination, supply a detector function (`TerminateDetector`); the ready-made `DoneDetector` lives in `@ahoo-wang/fetcher-openai`.
 5. Load `references/api.md` for pipeline details, OpenAI streaming examples, and UI update patterns.
 
 ## Key Practices

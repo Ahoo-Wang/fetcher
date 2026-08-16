@@ -43,7 +43,7 @@ After the side-effect import, Response objects gain these members:
 
 ## EventStreamConvertError
 
-Thrown by `requiredEventStream()` and `requiredJsonEventStream()` when the response is not a valid event stream. Extends `FetcherError` and carries the original `Response` object.
+Thrown by `requiredEventStream()` and `requiredJsonEventStream()` when the response is not a valid event stream, and by `toServerSentEventStream()` when `response.body` is null. Extends `FetcherError` and carries the original `Response` object.
 
 ```typescript
 import { EventStreamConvertError } from '@ahoo-wang/fetcher-eventstream';

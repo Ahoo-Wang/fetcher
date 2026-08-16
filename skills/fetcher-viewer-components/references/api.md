@@ -351,6 +351,7 @@ interface ViewState {
   tableSize: 'small' | 'middle' | 'large';
   pageSize: number;
   condition: Condition;
+  internalCondition?: Condition; // Merged with condition at query time
   sorter: FieldSort[];
 }
 ```
@@ -450,7 +451,7 @@ interface ActiveFilter {
 
 ### filterRegistry
 
-Maps filter type strings to components. Register custom filters with `filterRegistry.register(type, Component)`.
+Maps filter type strings to components. Register custom filters with `filterRegistry.register(type, Component)` (throws on duplicate type). Build custom filters on `AssemblyFilter` — it takes `supportedOperators`, `valueInputRender`, converters, and validators, which is exactly how the built-in filters are composed.
 
 | Type Constant   | Value        | Component                              |
 | --------------- | ------------ | -------------------------------------- |
@@ -468,9 +469,11 @@ Unknown types render `FallbackFilter` (warning alert).
 Manages **single filter** state (operator + value). NOT for managing a list of filters.
 
 ```tsx
+import { Operator } from '@ahoo-wang/fetcher-wow';
+
 const { operator, value, setOperator, setValue, reset } = useFilterState({
   field: 'username',
-  operator: 'contains',
+  operator: Operator.CONTAINS, // SelectOperator values are uppercase enum strings
   value: '',
   onChange: filterValue => console.log(filterValue?.condition),
 });
@@ -478,23 +481,27 @@ const { operator, value, setOperator, setValue, reset } = useFilterState({
 
 ### Filter Component Examples
 
+Each built-in filter supports a fixed `supportedOperators` set (values from the `Operator` enum in `@ahoo-wang/fetcher-wow`, plus viewer-local `ExtendedOperator` additions like `UNDEFINED`; the combined option type is `SelectOperator`):
+
 ```tsx
-// TextFilter - operators: eq, ne, contains, startsWith, endsWith, match
+// TextFilter - operators: EQ, NE, CONTAINS, STARTS_WITH, ENDS_WITH, IN, NOT_IN
 <TextFilter field={{ name: 'username', label: 'Username' }} />
 
-// NumberFilter - operators: eq, ne, gt, gte, lt, lte, between
+// NumberFilter - operators: EQ, NE, GT, LT, GTE, LTE, BETWEEN, IN, NOT_IN
 <NumberFilter field={{ name: 'age', label: 'Age' }} />
 
-// SelectFilter - operators: eq, ne, in, notIn
+// SelectFilter - operators: IN, NOT_IN only
 <SelectFilter field={{ name: 'status', label: 'Status' }} />
 
-// IdFilter - operators: eq, ne, in, notIn (with remote search)
+// IdFilter - operators: ID (single Input), IDS (TagInput list); no remote search
 <IdFilter field={{ name: 'userId', label: 'User' }} />
 
-// BoolFilter - operators: isTrue, isFalse
+// BoolFilter - operators: UNDEFINED, TRUE, FALSE
 <BoolFilter field={{ name: 'isActive', label: 'Active' }} />
 
-// Registered date/time filter - operators: eq, ne, gt, gte, lt, lte, between
+// Registered date/time filter - operators: GT, LT, GTE, LTE, BETWEEN, TODAY,
+// BEFORE_TODAY, TOMORROW, THIS_WEEK, NEXT_WEEK, LAST_WEEK, THIS_MONTH,
+// LAST_MONTH, RECENT_DAYS, EARLIER_DAYS (no EQ/NE)
 <TypedFilter type="datetime" field={{ name: 'createdAt', label: 'Created At' }} />
 ```
 
@@ -610,6 +617,8 @@ Number range input with min/max validation.
 ---
 
 ## Locale Support
+
+`useLocale` is component-local state (default `zh_CN`), not a global provider — calling `setLocale` in one component does not affect other components, including built-in panels. Use it to override labels per component subtree, or wrap your own context around it for app-wide switching. Partial locales merge over the default:
 
 ```tsx
 import { useLocale } from '@ahoo-wang/fetcher-viewer';
