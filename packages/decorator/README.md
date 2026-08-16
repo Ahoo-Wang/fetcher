@@ -438,10 +438,10 @@ class UserService {
 
 ### Fetcher Resolution Priority
 
-The fetcher used for making HTTP requests is determined by the following priority order:
+The fetcher used for making HTTP requests is resolved via `getFetcher(endpoint.fetcher ?? api.fetcher)`, where `api` is the class-level `@api()` metadata merged with any instance-level `apiMetadata` override. Priority order:
 
-1. **Service Instance Fetcher Property**: The `fetcher` property on the service instance has the highest priority
-2. **Endpoint-Level Fetcher**: The fetcher specified in the endpoint metadata (`@get('/path', { fetcher: 'name' })`)
+1. **Endpoint-Level Fetcher**: The fetcher specified in the endpoint metadata (`@get('/path', { fetcher: 'name' })`) has the highest priority
+2. **Instance `apiMetadata` Property**: `ApiMetadataCapable` — an instance-level `apiMetadata` override shallow-merges over the class metadata
 3. **Class-Level Fetcher**: The fetcher specified in the class metadata (`@api('/base', { fetcher: 'name' })`)
 4. **Default Fetcher**: Falls back to the default fetcher if none of the above are specified
 
@@ -457,14 +457,15 @@ class UserService {
   }
 }
 
-// Service instance with fetcher property (highest priority)
+// Instance-level override via apiMetadata (ApiMetadataCapable)
 const userService = new UserService();
-userService.fetcher = customFetcher; // This fetcher will be used
+userService.apiMetadata = { fetcher: customFetcher };
 
-// If no fetcher property is set on the instance, it would use:
+// Resolution for getUser():
 // 1. 'endpoint-level-fetcher' (from @get decorator)
-// 2. 'class-level-fetcher' (from @api decorator)
-// 3. Default fetcher (if neither of the above are specified)
+// 2. customFetcher (instance apiMetadata, only if endpoint has no fetcher)
+// 3. 'class-level-fetcher' (from @api decorator)
+// 4. Default fetcher (if neither of the above is specified)
 ```
 
 ### Result Extractors
