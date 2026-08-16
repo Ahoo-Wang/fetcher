@@ -54,7 +54,7 @@ export interface ChatRequest {
    * JSON。如果不这样做,模型可能会生成无休止的空白流,直到生成达到令牌限制,从而导致延迟增加和请求“卡住”的外观。另请注意,如果
    * finish_reason="length",则消息内容可能会被部分切断,这表示生成超过了 max_tokens 或对话超过了最大上下文长度。  显示属性
    */
-  response_format?: { [key: string]: any };
+  response_format?: Record<string, unknown>;
   /**
    * 此功能处于测试阶段。如果指定,我们的系统将尽最大努力确定性地进行采样,以便使用相同的种子和参数进行重复请求应返回相同的结果。不能保证确定性,您应该参考
    * system_fingerprint 响应参数来监控后端的更改。
@@ -110,7 +110,7 @@ export interface ChatToolFunction {
   /**
    * The parameters the function accepts, described as a JSON Schema object.
    */
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
 }
 
 export interface ChatTool {

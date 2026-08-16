@@ -1,3 +1,4 @@
+import type { Key } from 'react';
 import type { TableRecordType } from './types';
 
 /**
@@ -113,10 +114,16 @@ export function mapToTableRecord<RecordType = any>(
 ): TableRecordType<RecordType>[] {
   if (dataSource && dataSource.length > 0) {
     return dataSource.map((record, index) => {
-      const recordAny = record as Record<string, any>;
-      const key = (primaryKey ? recordAny[primaryKey] : undefined) ??
-        recordAny.key ??
-        index;
+      let key: Key = (record as { key?: Key }).key ?? index;
+      if (primaryKey) {
+        // Computed destructuring reads the primary key field dynamically
+        // (the field name comes from the viewer's field metadata).
+        const { [primaryKey]: primaryKeyValue } = record as Record<
+          string,
+          Key | undefined
+        >;
+        key = primaryKeyValue ?? key;
+      }
       return {
         ...record,
         key,
