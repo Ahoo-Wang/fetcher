@@ -181,6 +181,44 @@ describe('useRefreshDataEventBus', () => {
 
       expect(handler2).toHaveBeenCalledTimes(1);
     });
+
+    // BUG: FetcherViewer, AutoRefreshBarItem and RefreshDataBarItem all share
+    // the SAME viewerDefinitionId as subscriberId. The unmount cleanup removes
+    // every handler with the `${subscriberId}:` prefix, so when one component
+    // unmounts (e.g. a loading state swaps the Viewer subtree out), the
+    // FetcherViewer subscription is silently removed too — and never
+    // re-subscribed, leaving refresh dead.
+    it('should not remove handlers of other components sharing the same subscriberId when unmounting', async () => {
+      const sharedSubscriberId = 'shared-viewer-definition-id';
+
+      // FetcherViewer-like long-lived subscriber
+      const { result: viewerResult } = renderHook(() =>
+        useRefreshDataEventBus(sharedSubscriberId),
+      );
+      const viewerHandler = vi.fn();
+      viewerResult.current.subscribe({
+        name: 'Viewer-Refresh-Data',
+        handle: viewerHandler,
+      });
+
+      // AutoRefreshBarItem-like subscriber that unmounts first
+      const { result: barResult, unmount: unmountBar } = renderHook(() =>
+        useRefreshDataEventBus(sharedSubscriberId),
+      );
+      const barHandler = vi.fn();
+      barResult.current.subscribe({
+        name: 'Auto-Refresh',
+        handle: barHandler,
+      });
+
+      unmountBar();
+
+      await act(async () => {
+        await viewerResult.current.publish(sharedSubscriberId);
+      });
+
+      expect(viewerHandler).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('subscriber isolation', () => {

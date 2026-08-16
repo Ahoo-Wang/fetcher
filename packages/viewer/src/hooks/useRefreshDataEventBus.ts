@@ -3,7 +3,7 @@ import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
-import { useCallback, useEffect, useId } from 'react';
+import { useCallback, useEffect, useId, useRef } from 'react';
 
 const RefreshDataEventType = 'REFRESH_DATA_EVENTS';
 
@@ -33,6 +33,12 @@ export function useRefreshDataEventBus(
 
   const targetSubscriberId = subscriberId ?? generatedId;
 
+  // Handler names registered through THIS hook instance. Multiple components
+  // may share the same subscriberId (e.g. FetcherViewer and the refresh bar
+  // items all use the viewerDefinitionId), so unmount cleanup must only
+  // remove this instance's own handlers — never the shared prefix.
+  const registeredHandlerNames = useRef<Set<string>>(new Set());
+
   const publish = useCallback((_subscriberId?: string) => {
     return bus.emit({
       type: 'REFRESH',
@@ -53,18 +59,22 @@ export function useRefreshDataEventBus(
           }
         },
       };
-      return bus.on(wrappedHandler);
+      const subscribed = bus.on(wrappedHandler);
+      if (subscribed) {
+        registeredHandlerNames.current.add(wrappedHandler.name);
+      }
+      return subscribed;
     },
     [targetSubscriberId],
   );
 
   useEffect(() => {
+    const ownHandlerNames = registeredHandlerNames.current;
     return () => {
-      bus.handlers
-        .filter(h => h.name.startsWith(`${targetSubscriberId}:`))
-        .forEach(handler => {
-          bus.off(handler.name);
-        });
+      ownHandlerNames.forEach(name => {
+        bus.off(name);
+      });
+      ownHandlerNames.clear();
     };
   }, [targetSubscriberId]);
 

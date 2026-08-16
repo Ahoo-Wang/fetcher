@@ -361,7 +361,42 @@ describe('mapToTableRecord', () => {
     expect(result[1].tags).toEqual(['user']);
   });
 
-  it('should handle records with existing key property', () => {
+  // BUG: index-based keys make antd's rowKey an array subscript. After a data
+  // refresh, sort, or page change the same key points at a DIFFERENT record,
+  // so selectedRowKeys silently targets the wrong rows (the root cause behind
+  // the stale-selection symptom noted in FetcherViewer). When a primary key
+  // field is available, its value must be used as the key.
+  it('should use the primary key field value as key when primaryKey is provided', () => {
+    const dataSource = [
+      { id: 101, name: 'John' },
+      { id: 202, name: 'Jane' },
+    ];
+
+    const result = mapToTableRecord(dataSource, 'id');
+
+    expect(result[0]).toEqual({ id: 101, name: 'John', key: 101 });
+    expect(result[1]).toEqual({ id: 202, name: 'Jane', key: 202 });
+  });
+
+  it('should keep keys stable for the same record across refreshed/reordered data', () => {
+    const before = mapToTableRecord([{ id: 1 }, { id: 2 }], 'id');
+    const after = mapToTableRecord([{ id: 2 }, { id: 1 }], 'id');
+
+    const keyOf = (rows: { id: number; key: unknown }[], id: number) =>
+      rows.find(row => row.id === id)?.key;
+
+    expect(keyOf(after, 2)).toBe(keyOf(before, 2));
+    expect(keyOf(after, 1)).toBe(keyOf(before, 1));
+  });
+
+  it('should fall back to the index key when the record has no primary key value', () => {
+    const result = mapToTableRecord([{ name: 'John' }, { name: 'Jane' }], 'id');
+
+    expect(result[0].key).toBe(0);
+    expect(result[1].key).toBe(1);
+  });
+
+  it('should preserve an existing record key property instead of overwriting it with the index', () => {
     const dataSource = [
       { id: 1, name: 'John', key: 'existing-key' },
       { id: 2, name: 'Jane', key: 'another-key' },
@@ -369,9 +404,8 @@ describe('mapToTableRecord', () => {
 
     const result = mapToTableRecord(dataSource);
 
-    // The function should overwrite existing key with index-based key
-    expect(result[0]).toEqual({ id: 1, name: 'John', key: 0 });
-    expect(result[1]).toEqual({ id: 2, name: 'Jane', key: 1 });
+    expect(result[0]).toEqual({ id: 1, name: 'John', key: 'existing-key' });
+    expect(result[1]).toEqual({ id: 2, name: 'Jane', key: 'another-key' });
   });
 
   it('should handle single record array', () => {

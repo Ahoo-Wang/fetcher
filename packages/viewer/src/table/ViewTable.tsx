@@ -337,7 +337,10 @@ export function ViewTable<RecordType>(props: ViewTableProps<RecordType>) {
   return (
     <Table<RecordType>
       loading={loading}
-      dataSource={mapToTableRecord(dataSource)}
+      dataSource={mapToTableRecord(
+        dataSource,
+        fields.find(field => field.primaryKey)?.name,
+      )}
       rowSelection={rowSelection}
       columns={tableColumns}
       {...attributes}

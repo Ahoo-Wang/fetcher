@@ -1,3 +1,4 @@
+import type { Key } from 'react';
 import type { TableRecordType } from './types';
 
 /**
@@ -93,14 +94,41 @@ export function deepEqual(left: any, right: any): boolean {
   return false;
 }
 
+/**
+ * Maps a data source array to table records with a `key` field used as antd's rowKey.
+ *
+ * Key precedence:
+ * 1. The value of the `primaryKey` field on the record (stable across data
+ *    refreshes, sorting, and paging — required for correct row selection).
+ * 2. The record's own `key` property, if present.
+ * 3. The array index (last resort: index keys are NOT stable across data
+ *    changes, so row selection may point at the wrong records).
+ *
+ * @param dataSource - The records to map
+ * @param primaryKey - Name of the record's primary key field, if known
+ * @returns Records with a `key` field added (or preserved)
+ */
 export function mapToTableRecord<RecordType = any>(
   dataSource: RecordType[] | undefined,
+  primaryKey?: string,
 ): TableRecordType<RecordType>[] {
   if (dataSource && dataSource.length > 0) {
-    return dataSource.map((record, index) => ({
-      ...record,
-      key: index,
-    }));
+    return dataSource.map((record, index) => {
+      let key: Key = (record as { key?: Key }).key ?? index;
+      if (primaryKey) {
+        // Computed destructuring reads the primary key field dynamically
+        // (the field name comes from the viewer's field metadata).
+        const { [primaryKey]: primaryKeyValue } = record as Record<
+          string,
+          Key | undefined
+        >;
+        key = primaryKeyValue ?? key;
+      }
+      return {
+        ...record,
+        key,
+      };
+    });
   }
   return [];
 }
