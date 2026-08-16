@@ -481,7 +481,7 @@ const { operator, value, setOperator, setValue, reset } = useFilterState({
 
 ### Filter Component Examples
 
-Each built-in filter supports a fixed `supportedOperators` set (values from the `Operator` enum in `@ahoo-wang/fetcher-wow`):
+Each built-in filter supports a fixed `supportedOperators` set (values from the `Operator` enum in `@ahoo-wang/fetcher-wow`, plus viewer-local `ExtendedOperator` additions like `UNDEFINED`; the combined option type is `SelectOperator`):
 
 ```tsx
 // TextFilter - operators: EQ, NE, CONTAINS, STARTS_WITH, ENDS_WITH, IN, NOT_IN

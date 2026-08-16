@@ -663,6 +663,6 @@ for await (const event of stream) {
 ## Key Dependencies
 
 - `@ahoo-wang/fetcher` - Core HTTP client
-- `@ahoo-wang/fetcher-eventstream` - SSE streaming support (required side-effect import)
+- `@ahoo-wang/fetcher-eventstream` - SSE streaming support (loads transitively with fetcher-wow)
 - `@ahoo-wang/fetcher-decorator` - ApiMetadata type, decorators for auto-implemented methods
 - `@ahoo-wang/fetcher-wow` - Wow CQRS/DDD types and clients

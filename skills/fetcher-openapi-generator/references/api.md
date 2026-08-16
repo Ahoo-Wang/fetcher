@@ -56,7 +56,7 @@ npx fetcher-generator generate -i ./openapi.yaml -o ./src/generated -t ./tsconfi
 
 ## Programmatic API (CodeGenerator)
 
-`logger` is a required option (`Logger` interface: `info`/`success`/`warn`/`error`). The package does not export a logger implementation — provide your own:
+`logger` is a required option (`Logger` interface: `info`/`success`/`error`/`progress`/`progressWithCount`). The package does not export a logger implementation — provide your own:
 
 ```typescript
 import { CodeGenerator } from '@ahoo-wang/fetcher-generator';
@@ -68,8 +68,10 @@ const generator = new CodeGenerator({
   logger: {
     info: console.info,
     success: console.info,
-    warn: console.warn,
     error: console.error,
+    progress: console.info,
+    progressWithCount: (current, total, message) =>
+      console.info(`${message} (${current}/${total})`),
   },
 });
 await generator.generate();
@@ -89,7 +91,7 @@ parseOpenAPI(inputPath) → AggregateResolver(openAPI).resolve()
 
 1. **parseOpenAPI** - Parse JSON/YAML spec (local file or URL)
 2. **AggregateResolver** - Identifies aggregates from tags (`{context}.{aggregate}` pattern), extracts commands, state, events, fields
-3. **ModelGenerator** - Generates TypeScript types/enums from schemas (skips `wow.*` schemas except `wow.api.query.*PagedList` and `wow.api.query.Operator*Map`, which are kept)
+3. **ModelGenerator** - Generates TypeScript types/enums from schemas (skips `wow.*` schemas except `wow.api.query.*PagedList` and `wow.api.query.Operator*Map`; the exact base `wow.api.query.PagedList` is skipped too, and aggregate-specific `*PagedList` schemas map to `PagedList` from `@ahoo-wang/fetcher-wow`)
 4. **ClientGenerator** - Generates QueryClient, CommandClient, StreamCommandClient, ApiClient per aggregate
 5. **Index Generator** - Creates `index.ts` barrel exports at every directory level
 6. **Post-processing** - `formatText()`, `organizeImports()`, `fixMissingImports()` on all files
