@@ -30,7 +30,7 @@ graph TB
         direction LR
         TF["TypedFilter<br>type-based dispatch"]
         FR["filterRegistry<br>type -> component map"]
-        FF["FilterField<br>id, text, number, select, bool, dateTime"]
+        FF["FilterField<br>id, text, number, select, bool, datetime"]
     end
 
     subgraph sg_3 ["Cell System"]
@@ -212,7 +212,7 @@ graph LR
         number["number -> NumberFilter"]
         select["select -> SelectFilter"]
         bool["bool -> BoolFilter"]
-        dateTime["dateTime -> DateTimeFilter"]
+        datetime["datetime -> DateTimeFilter"]
     end
 
     TF["TypedFilter<br>type-based dispatch"] --> filterRegistry
@@ -223,7 +223,7 @@ graph LR
     style number fill:#161b22,stroke:#30363d,color:#e6edf3
     style select fill:#161b22,stroke:#30363d,color:#e6edf3
     style bool fill:#161b22,stroke:#30363d,color:#e6edf3
-    style dateTime fill:#161b22,stroke:#30363d,color:#e6edf3
+    style datetime fill:#161b22,stroke:#30363d,color:#e6edf3
 ```
 
 | 过滤器类型 | 组件 | 描述 |
@@ -233,7 +233,7 @@ graph LR
 | `number` | `NumberFilter` | 支持范围的数值输入 |
 | `select` | `SelectFilter` | 带选项的下拉选择 |
 | `bool` | `BoolFilter` | 布尔值开关/复选框 |
-| `dateTime` | `DateTimeFilter` | 支持范围的日期/时间选择器 |
+| `datetime` | `DateTimeFilter` | 支持范围的日期/时间选择器 |
 
 来源: [packages/viewer/src/filter/filterRegistry.ts:73-83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/filterRegistry.ts#L73-L83)
 
