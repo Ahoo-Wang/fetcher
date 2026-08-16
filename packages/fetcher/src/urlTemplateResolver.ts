@@ -316,8 +316,13 @@ export const uriTemplateResolver = new UriTemplateResolver();
 export class ExpressUrlTemplateResolver implements UrlTemplateResolver {
   /**
    * Regular expression pattern to match Express-style path parameters in the format :paramName
+   *
+   * The lookbehind restricts matches to parameter placeholders that start a
+   * path segment (at the beginning of the template or right after `/`), so
+   * colons belonging to the URL itself — the scheme (`http:`) or an authority
+   * port (`host:8080`) — are never mistaken for parameters.
    */
-  private static PATH_PARAM_REGEX = /:([^/]+)/g;
+  private static PATH_PARAM_REGEX = /(?<=^|\/):([^/]+)/g;
 
   /**
    * Extracts path parameters from an Express-style URL string.

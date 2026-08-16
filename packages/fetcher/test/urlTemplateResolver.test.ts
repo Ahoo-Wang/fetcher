@@ -163,5 +163,32 @@ describe('ExpressUrlTemplateResolver', () => {
         expressUrlTemplateResolver.resolve('/users/:id', { name: 'john' });
       }).toThrow('Missing required path parameter: id');
     });
+
+    // BUG: the pattern /:([^/]+)/ matches any colon followed by non-slash
+    // chars, so the port of an absolute baseURL (e.g. http://localhost:8080)
+    // is mistaken for a path parameter and resolution throws
+    // "Missing required path parameter: 8080".
+    it('should not treat the port of an absolute URL as a path parameter', () => {
+      const result = expressUrlTemplateResolver.resolve(
+        'http://localhost:8080/users/:id',
+        { id: 1 },
+      );
+      expect(result).toBe('http://localhost:8080/users/1');
+    });
+
+    it('should not extract the port of an absolute URL as a path parameter', () => {
+      const result = expressUrlTemplateResolver.extractPathParams(
+        'https://api.example.com:8443/users/:id/posts/:postId',
+      );
+      expect(result).toEqual(['id', 'postId']);
+    });
+
+    it('should not replace the port even when pathParams contains a numeric-matching key', () => {
+      const result = expressUrlTemplateResolver.resolve(
+        'http://localhost:8080/users/:id',
+        { id: 1, '8080': 'HACKED' },
+      );
+      expect(result).toBe('http://localhost:8080/users/1');
+    });
   });
 });
