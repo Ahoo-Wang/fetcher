@@ -30,7 +30,7 @@ graph TB
         direction LR
         TF["TypedFilter<br>type-based dispatch"]
         FR["filterRegistry<br>type -> component map"]
-        FF["FilterField<br>id, text, number, select, bool, dateTime"]
+        FF["FilterField<br>id, text, number, select, bool, datetime"]
     end
 
     subgraph sg_3 ["Cell System"]
@@ -212,7 +212,7 @@ graph LR
         number["number -> NumberFilter"]
         select["select -> SelectFilter"]
         bool["bool -> BoolFilter"]
-        dateTime["dateTime -> DateTimeFilter"]
+        datetime["datetime -> DateTimeFilter"]
     end
 
     TF["TypedFilter<br>type-based dispatch"] --> filterRegistry
@@ -223,7 +223,7 @@ graph LR
     style number fill:#161b22,stroke:#30363d,color:#e6edf3
     style select fill:#161b22,stroke:#30363d,color:#e6edf3
     style bool fill:#161b22,stroke:#30363d,color:#e6edf3
-    style dateTime fill:#161b22,stroke:#30363d,color:#e6edf3
+    style datetime fill:#161b22,stroke:#30363d,color:#e6edf3
 ```
 
 | Filter Type | Component | Description |
@@ -233,7 +233,7 @@ graph LR
 | `number` | `NumberFilter` | Numeric input with range support |
 | `select` | `SelectFilter` | Dropdown select with options |
 | `bool` | `BoolFilter` | Boolean toggle/checkbox |
-| `dateTime` | `DateTimeFilter` | Date/time picker with range |
+| `datetime` | `DateTimeFilter` | Date/time picker with range |
 
 Source: [packages/viewer/src/filter/filterRegistry.ts:73-83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/filterRegistry.ts#L73-L83)
 
