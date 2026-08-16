@@ -72,6 +72,13 @@ export interface FetcherViewerProps<RecordType>
 
 const viewCommandClient = new ViewCommandClient();
 
+// useKeyStorage requires a stable KeyStorage reference (see its docstring);
+// keep the instance at module scope instead of constructing it per render.
+const localDefaultViewIdStorage = new KeyStorage<string | undefined>({
+  key: 'fetcher-viewer-local-default-view-id',
+  defaultValue: undefined,
+});
+
 export function FetcherViewer<RecordType = any>({
   ownerId = '(0)',
   tenantId = '(0)',
@@ -92,10 +99,6 @@ export function FetcherViewer<RecordType = any>({
     secondaryActions,
     batchActions,
   } = props;
-  const localDefaultViewIdStorage = new KeyStorage<string | undefined>({
-    key: 'fetcher-viewer-local-default-view-id',
-    defaultValue: undefined,
-  });
   const [localDefaultViewId, setLocalDefaultViewId] = useKeyStorage<
     string | undefined
   >(localDefaultViewIdStorage);
