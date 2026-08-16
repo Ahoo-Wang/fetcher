@@ -102,17 +102,18 @@ Source: [packages/fetcher/src/urlBuilder.ts:72-147](https://github.com/Ahoo-Wang
 
 ### resolveRequestUrl 桥接方法
 
-`UrlResolveInterceptor` 调用 `resolveRequestUrl()` 来在实际 fetch 之前填充 `request.url`：
+`UrlResolveInterceptor` 调用 `resolveRequestUrl()` 来在实际 fetch 之前填充 `request.url`，随后清除 `request.urlParams`。消费这些参数使 URL 解析具有幂等性：如果同一个 exchange 被再次拦截（例如错误拦截器在刷新令牌后重试，会重新运行整个请求链），拦截器不会第二次拼接查询字符串。
 
 ```typescript
-// [packages/fetcher/src/urlResolveInterceptor.ts:74-78]
+// [packages/fetcher/src/urlResolveInterceptor.ts:80-84]
 intercept(exchange: FetchExchange) {
   const request = exchange.request;
   request.url = exchange.fetcher.urlBuilder.resolveRequestUrl(request);
+  request.urlParams = undefined;
 }
 ```
 
-Source: [packages/fetcher/src/urlResolveInterceptor.ts:74-78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L74-L78)
+Source: [packages/fetcher/src/urlResolveInterceptor.ts:80-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L80-L84)
 
 ## URL 合并
 
@@ -155,7 +156,7 @@ graph TD
   subgraph Styles["UrlTemplateStyle"]
     style Styles fill:#161b22,stroke:#30363d,color:#e6edf3
     UT["UriTemplate (default)<br>Pattern: {paramName}<br>Regex: /{[^}]+}/g"]
-    ET["Express<br>Pattern: :paramName<br>Regex: /:[^/]+/g"]
+    ET["Express<br>Pattern: :paramName<br>Regex: /(?<=^|\/):([^/]+)/g"]
   end
 
   UT --> UTR["UriTemplateResolver"]
@@ -208,15 +209,16 @@ Source: [packages/fetcher/src/urlTemplateResolver.ts:217](https://github.com/Aho
 |---|---|---|
 | `/users/:id` | `{ id: 123 }` | `/users/123` |
 | `/users/:id/posts/:postId` | `{ id: 1, postId: 42 }` | `/users/1/posts/42` |
+| `http://localhost:8080/users/:id` | `{ id: 123 }` | `http://localhost:8080/users/123` |
 
-正则表达式模式 `/: ([^/]+)/g` 匹配冒号前缀的段落：
+正则表达式模式 `/(?<=^|\/):([^/]+)/g` 匹配冒号前缀的段落。其 lookbehind 将匹配限制为**位于路径段开头**的占位符（模板起点或紧跟 `/` 之后），因此 URL 自身的冒号——协议（`http:`）或主机端口（`host:8080`）——永远不会被误当作参数：
 
 ```typescript
-// [packages/fetcher/src/urlTemplateResolver.ts:320]
-private static PATH_PARAM_REGEX = /:([^/]+)/g;
+// [packages/fetcher/src/urlTemplateResolver.ts:325]
+private static PATH_PARAM_REGEX = /(?<=^|\/):([^/]+)/g;
 ```
 
-Source: [packages/fetcher/src/urlTemplateResolver.ts:320](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L320)
+Source: [packages/fetcher/src/urlTemplateResolver.ts:325](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L325)
 
 ### 模板解析算法
 
@@ -473,6 +475,7 @@ Source: [packages/fetcher/src/urlTemplateResolver.ts:174-184](https://github.com
 |---|---|---|
 | `/users/{id}/posts/{postId}` | UriTemplate | `['id', 'postId']` |
 | `/users/:id/posts/:postId` | Express | `['id', 'postId']` |
+| `http://localhost:8080/users/:id` | Express | `['id']` |
 | `/users/profile` | *任意* | `[]` |
 
 ## 交叉引用

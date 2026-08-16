@@ -184,7 +184,7 @@ const data = await fetcher.get<User[]>('/users', {}, {
 | `post` | `post<R>(url, request?, options?)` | 是 |
 | `put` | `put<R>(url, request?, options?)` | 是 |
 | `patch` | `patch<R>(url, request?, options?)` | 是 |
-| `delete` | `del<R>(url, request?, options?)` | 否 |
+| `delete` | `delete<R>(url, request?, options?)` | 是 |
 | `head` | `head<R>(url, request?, options?)` | 否 |
 | `options` | `options<R>(url, request?, options?)` | 否 |
 | `trace` | `trace<R>(url, request?, options?)` | 否 |
@@ -200,9 +200,9 @@ flowchart TD
     START["Incoming Request"]
     START --> REQ["Request Interceptors<br>(ordered by priority)"]
 
-    REQ --> URI["UrlResolveInterceptor<br>Resolve URL with path/query params"]
-    URI --> BODY["RequestBodyInterceptor<br>Serialize object bodies to JSON"]
-    BODY --> FETCH["FetchInterceptor<br>Execute native fetch + timeout"]
+    REQ --> BODY["RequestBodyInterceptor<br>Serialize object bodies to JSON"]
+    BODY --> URI["UrlResolveInterceptor<br>Resolve URL with path/query params"]
+    URI --> FETCH["FetchInterceptor<br>Execute native fetch + timeout"]
     FETCH --> RESP_CHECK{Has Response?}
 
     RESP_CHECK -->|Yes| RESP["Response Interceptors"]

@@ -71,7 +71,7 @@ Here is the data flow:
 2. `@get('/users/{id}')` stores `{method: HttpMethod.GET, path: '/users/{id}'}` in metadata.
 3. `@api('/api/v1')` reads both metadata sets, creates `FunctionMetadata`, and builds a `RequestExecutor` that replaces the method body.
 
-**Source**: [packages/decorator/src/parameterDecorator.ts:199-228](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199-L228)
+**Source**: [packages/decorator/src/parameterDecorator.ts:199-235](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199-L235)
 
 ### The Fetch API
 
@@ -623,7 +623,7 @@ Two template styles are supported:
 | Style | Syntax | Example | Regex |
 |---|---|---|---|
 | `UrlTemplateStyle.UriTemplate` (default) | `{param}` | `/users/{id}` | `/{([^}]+)}/g` |
-| `UrlTemplateStyle.Express` | `:param` | `/users/:id` | `/:[^/]+/g` |
+| `UrlTemplateStyle.Express` | `:param` | `/users/:id` | `/(?<=^|\/):([^/]+)/g` |
 
 Path parameters are URL-encoded automatically via `encodeURIComponent`. If a required path parameter is missing, the resolver throws `Error("Missing required path parameter: {name}")`.
 
@@ -635,10 +635,10 @@ The `timeoutFetch` function wraps the native `fetch()` with `AbortController`-ba
 
 1. If the request already has a `signal`, it delegates directly to `fetch()` (no timeout wrapping to avoid conflicts).
 2. If no timeout is configured but an `abortController` is provided, it uses that controller's signal.
-3. If a timeout is configured, it creates (or reuses) an `AbortController`, then races `fetch()` against a `setTimeout` that aborts the controller after the timeout period.
-4. The timer is always cleaned up in a `finally` block to prevent resource leaks.
+3. If a timeout is configured, it creates (or reuses, if not already aborted) an `AbortController`, then races `fetch()` against a `setTimeout` that aborts the controller after the timeout period.
+4. The timer is always cleaned up in a `finally` block, and the controller/signal written onto the request are removed on both success and failure (a caller-supplied controller is kept), so reusing the same request object never silently loses the timeout.
 
-**Source**: [packages/fetcher/src/timeout.ts:120-172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L172)
+**Source**: [packages/fetcher/src/timeout.ts:120-198](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L198)
 
 ### RequestBodyInterceptor Logic
 

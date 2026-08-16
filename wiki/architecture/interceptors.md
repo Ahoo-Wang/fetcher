@@ -45,7 +45,7 @@ Source: [packages/fetcher/src/interceptorManager.ts:62-103](https://github.com/A
 The `exchange()` method is the heart of the pipeline. It runs request interceptors, then response interceptors (on success) or error interceptors (on failure). If error interceptors clear the error, the exchange is returned successfully; otherwise an `ExchangeError` is thrown.
 
 ```typescript
-// [packages/fetcher/src/interceptorManager.ts:191-212]
+// [packages/fetcher/src/interceptorManager.ts:191-216]
 async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
   try {
     await this.request.intercept(fetchExchange);
@@ -62,7 +62,7 @@ async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
 }
 ```
 
-Source: [packages/fetcher/src/interceptorManager.ts:191-212](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191-L212)
+Source: [packages/fetcher/src/interceptorManager.ts:191-216](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191-L216)
 
 ### Complete Execution Flow
 
@@ -237,15 +237,18 @@ Source: [packages/fetcher/src/requestBodyInterceptor.ts:135-166](https://github.
 
 Resolves the final URL by calling the Fetcher's `UrlBuilder.resolveRequestUrl()`. This combines the base URL, interpolates path parameters, and appends query parameters.
 
+Resolution **consumes** the request's `urlParams` (sets them to `undefined`), so re-running this interceptor on an already-resolved request is a no-op. This matters when the same exchange passes through the request chain twice — for example, an error interceptor that retries a request after a token refresh — otherwise the query string would be appended to the resolved URL a second time.
+
 ```typescript
-// [packages/fetcher/src/urlResolveInterceptor.ts:74-78]
+// [packages/fetcher/src/urlResolveInterceptor.ts:80-84]
 intercept(exchange: FetchExchange) {
   const request = exchange.request;
   request.url = exchange.fetcher.urlBuilder.resolveRequestUrl(request);
+  request.urlParams = undefined;
 }
 ```
 
-Source: [packages/fetcher/src/urlResolveInterceptor.ts:74-78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L74-L78)
+Source: [packages/fetcher/src/urlResolveInterceptor.ts:80-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L80-L84)
 
 #### 3. FetchInterceptor (order: `Number.MAX_SAFE_INTEGER - 10000`)
 

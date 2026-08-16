@@ -71,7 +71,7 @@ graph TB
 
 ## 副作用导入的工作原理
 
-当导入 `@ahoo-wang/fetcher-eventstream` 时，它会检查 `typeof Response !== 'undefined'`，如果可用，则使用 `Object.defineProperty` 向 `Response.prototype` 添加新的属性和方法。这些添加是幂等的 -- 每个属性只定义一次，由 `hasOwnProperty` 检查保护。([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102))
+当导入 `@ahoo-wang/fetcher-eventstream` 时，它会检查 `typeof Response !== 'undefined'`，如果可用，则向 `Response.prototype` 添加新的属性和方法（`contentType` / `isEventStream` getter 通过 `Object.defineProperty` 添加，四个方法通过直接赋值添加）。这些添加是幂等的 -- 每个成员只定义一次，由 `hasOwnProperty` 检查保护。([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102))
 
 ```mermaid
 sequenceDiagram
@@ -92,6 +92,22 @@ autonumber
     Import->>Proto: Define requiredJsonEventStream() method
     Import-->>App: Prototype patched, ready to use
 ```
+
+## 环境检测与异步迭代 Polyfill
+
+导入时还会确保 `ReadableStream` 支持异步迭代，本页的 `for await...of` 消费示例依赖于此。该行为在导入时根据运行时自适应：
+
+- **特性检测** — 仅当 `ReadableStream` 全局存在且其原型已实现 `Symbol.asyncIterator` 时，`isReadableStreamAsyncIterableSupported` 才为 `true`。([`readableStreams.ts:37`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37))
+- **条件 polyfill** — 如果全局存在但缺少异步迭代能力，该包会基于 `ReadableStreamAsyncIterable` 为 `ReadableStream.prototype[Symbol.asyncIterator]` 安装 polyfill。([`readableStreams.ts:45-52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L45-L52))
+- **SSR 安全跳过** — 在完全没有 `ReadableStream` 全局的运行时（旧版 SSR / 无流环境）中，polyfill 会被完全跳过：没有可修补的对象，导入模块也不会引用缺失的全局，因此导入不会抛出 `ReferenceError`。([`readableStreams.ts:45-52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L45-L52))
+
+| 环境 | `isReadableStreamAsyncIterableSupported` | 导入时行为 |
+|-------------|------------------------------------------|----------------------|
+| 运行时原生提供异步迭代 | `true` | 不安装 polyfill |
+| 存在 `ReadableStream`，但无异步迭代 | `false` | 为 `ReadableStream.prototype[Symbol.asyncIterator]` 安装 polyfill |
+| 无 `ReadableStream` 全局（旧版 SSR / 无流环境） | `false` | 跳过 polyfill；导入对流无副作用 |
+
+类似地，`Response.prototype` 的修补仅在 `Response` 全局已定义时执行，因此在非 fetch 环境中导入该包也是安全的。([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102)) 该包要求 Node.js `>=18.20.8`。([`package.json:28-30`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L28-L30))
 
 ## 修补后的 Response 方法
 
@@ -162,7 +178,7 @@ for await (const event of eventStream) {
 
 ## ServerSentEvent
 
-`ServerSentEvent` 接口建模了 W3C 服务器发送事件格式。([`serverSentEventTransformStream.ts:23`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L23))
+`ServerSentEvent` 接口建模了 W3C 服务器发送事件格式。([`serverSentEventTransformStream.ts:21`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21))
 
 | 属性 | 类型 | 描述 |
 |----------|------|-------------|
@@ -333,6 +349,8 @@ try {
 | `JsonEventStreamResultExtractor` | 函数 | [`eventStreamResultExtractor.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts) |
 | `EventStreamConvertError` | 类 | [`eventStreamConverter.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts) |
 | `TextLineTransformStream` | 类 | [`textLineTransformStream.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts) |
+| `ReadableStreamAsyncIterable` | 类 | [`readableStreamAsyncIterable.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts) |
+| `isReadableStreamAsyncIterableSupported` | 常量 | [`readableStreams.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts) |
 
 ## 相关页面
 

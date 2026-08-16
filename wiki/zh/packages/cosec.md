@@ -134,13 +134,13 @@ const users = await fetcher.get('/api/users');
 
 处理 401 响应：
 
-1. 检查响应状态是否为 401
-2. 验证刷新令牌是否仍然有效
-3. 刷新访问令牌
-4. 使用新令牌重试原始请求
-5. 刷新失败时清除令牌
+1. 检查响应状态是否为 401，以及当前令牌是否仍可刷新
+2. 对每个 exchange 限制刷新重试次数（`AUTHORIZATION_RESPONSE_MAX_RETRY = 1`，通过 exchange 属性跟踪），因为重试会重新执行整个拦截器链
+3. 刷新访问令牌；刷新失败时清除已存储的令牌并重新抛出错误
+4. 删除过期的 `Authorization` 请求头，并通过完整的拦截器链重试原始请求，使 `AuthorizationRequestInterceptor` 用刷新后的令牌重新添加该请求头
+5. 重试请求本身的失败将原样传播——新刷新的令牌会被保留，不会被清除
 
-来源: [packages/cosec/src/authorizationResponseInterceptor.ts:57-111](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L57-L111)
+来源: [packages/cosec/src/authorizationResponseInterceptor.ts:58-118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L58-L118)
 
 ### ResourceAttributionRequestInterceptor
 
@@ -233,7 +233,7 @@ console.log(composite.isRefreshable);    // true if refresh token still valid
 
 ### TokenStorage
 
-扩展 `KeyStorage<JwtCompositeToken>`，增加了认证特定的方法和跨标签页同步：
+扩展 `KeyStorage<JwtCompositeToken>`，增加了认证特定的方法和跨标签页同步。默认的 `BroadcastTypedEventBus` 通道名派生自配置的存储键，因此使用不同键的存储实例绝不会跨标签页相互污染缓存值：
 
 | 方法 | 描述 |
 |------|------|
@@ -242,7 +242,7 @@ console.log(composite.isRefreshable);    // true if refresh token still valid
 | `authenticated` | 检查是否存在有效令牌 |
 | `currentUser` | 如已认证则获取 JWT 载荷 |
 
-来源: [packages/cosec/src/tokenStorage.ts:43-121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenStorage.ts#L43-L121)
+来源: [packages/cosec/src/tokenStorage.ts:43-125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenStorage.ts#L43-L125)
 
 ### JwtTokenManager
 
@@ -313,7 +313,7 @@ classDiagram
 
 ## 设备追踪
 
-`DeviceIdStorage` 扩展了 `KeyStorage<string>`，增加了 `getOrCreate()` 方法，该方法在首次使用时生成唯一的设备 ID（通过 nanoid）并持久化存储：
+`DeviceIdStorage` 扩展了 `KeyStorage<string>`，增加了 `getOrCreate()` 方法，该方法在首次使用时生成唯一的设备 ID（通过 nanoid）并持久化存储。与 `TokenStorage` 一样，其默认的跨标签页事件总线通道名派生自存储键：
 
 ```typescript
 import { DeviceIdStorage } from '@ahoo-wang/fetcher-cosec';
@@ -324,7 +324,7 @@ const deviceId = deviceStorage.getOrCreate();
 // Subsequent calls: returns the stored ID
 ```
 
-来源: [packages/cosec/src/deviceIdStorage.ts:35-71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/deviceIdStorage.ts#L35-L71)
+来源: [packages/cosec/src/deviceIdStorage.ts:35-80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/deviceIdStorage.ts#L35-L80)
 
 ## 主要导出
 

@@ -132,7 +132,7 @@ The Fetcher provides convenience methods for all standard HTTP verbs. Each deleg
 | `post` | `post<R>(url, request?, options?)` | No |
 | `put` | `put<R>(url, request?, options?)` | No |
 | `patch` | `patch<R>(url, request?, options?)` | No |
-| `delete` | `delete<R>(url, request?, options?)` | Yes |
+| `delete` | `delete<R>(url, request?, options?)` | No |
 | `head` | `head<R>(url, request?, options?)` | Yes |
 | `options` | `options<R>(url, request?, options?)` | Yes |
 | `trace` | `trace<R>(url, request?, options?)` | Yes |
@@ -269,23 +269,24 @@ Key properties and methods:
 | `requiredResponse` | `Response` | Throws `ExchangeError` if no response |
 | `extractResult<R>()` | `Promise<R>` | Applies result extractor (cached) |
 
-Source: [packages/fetcher/src/fetchExchange.ts:105-286](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105-L286)
+Source: [packages/fetcher/src/fetchExchange.ts:105-293](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105-L293)
 
-The result is cached after the first call to `extractResult()` to avoid repeated computation:
+The result is cached after the first call to `extractResult()` to avoid repeated computation. The result is computed *before* the cache is marked as populated, so a synchronously-throwing extractor does not leave the exchange in a "cached-but-no-value" state and the next call can retry:
 
 ```typescript
-// [packages/fetcher/src/fetchExchange.ts:278-285]
+// [packages/fetcher/src/fetchExchange.ts:278-292]
 async extractResult<R>(): Promise<R> {
   if (this.hasCachedResult) {
     return await this.cachedExtractedResult;
   }
+  const result = this.resultExtractor(this) as Promise<R> | R;
+  this.cachedExtractedResult = result;
   this.hasCachedResult = true;
-  this.cachedExtractedResult = this.resultExtractor(this);
   return await this.cachedExtractedResult;
 }
 ```
 
-Source: [packages/fetcher/src/fetchExchange.ts:278-285](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L278-L285)
+Source: [packages/fetcher/src/fetchExchange.ts:278-292](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L278-L292)
 
 ## NamedFetcher & FetcherRegistrar
 
@@ -381,9 +382,12 @@ flowchart TD
   HasTimeout{{"request.timeout set?"}}
   HasAC{{"request.abortController?"}}
   UseAC["Use provided AbortController"]
+  ReuseAC{{"caller abortController<br>provided and not aborted?"}}
+  Reuse["Reuse caller's AbortController"]
   NewAC["Create new AbortController"]
   Race["Promise.race(fetch, timeoutPromise)"]
-  TimeoutErr["throw FetchTimeoutError"]
+  Cleanup["finally: clear timer, remove written signal/controller<br>(caller-supplied controller is kept)"]
+  TimeoutErr["abort controller, clear written signal/controller,<br>throw FetchTimeoutError"]
 
   Entry --> HasSignal
   HasSignal -->|Yes| DirectFetch
@@ -391,8 +395,10 @@ flowchart TD
   HasTimeout -->|No| HasAC
   HasAC -->|Yes| UseAC --> DirectFetch
   HasAC -->|No| DirectFetch
-  HasTimeout -->|Yes| NewAC --> Race
-  Race -->|fetch wins| DirectFetch
+  HasTimeout -->|Yes| ReuseAC
+  ReuseAC -->|Yes| Reuse --> Race
+  ReuseAC -->|No| NewAC --> Race
+  Race -->|fetch wins| Cleanup
   Race -->|timeout wins| TimeoutErr
 
   style Entry fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
@@ -401,8 +407,11 @@ flowchart TD
   style HasTimeout fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style HasAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style UseAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style ReuseAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style Reuse fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style NewAC fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style Race fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
+  style Cleanup fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
   style TimeoutErr fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
 
@@ -410,10 +419,12 @@ Key behaviors:
 
 1. If `request.signal` already exists, timeout is bypassed to avoid conflicts.
 2. If no timeout is set but an `abortController` is provided, its signal is attached directly.
-3. If a timeout is set, a new `AbortController` is created (or the provided one is reused) and a timer races against the fetch.
+3. If a timeout is set, a caller-supplied `abortController` is reused only when it has **not** already been aborted (e.g. by a prior timeout on the same request object); otherwise a new `AbortController` is created. Reusing an aborted controller would make the retried fetch reject immediately instead of performing the request.
+4. On both the success and failure paths, a `finally` block removes the controller/signal that `timeoutFetch` wrote onto the caller's request. Without this, a later call reusing the same request object would mistake them for caller-provided values and delegate to plain `fetch()` — silently ignoring the timeout. A caller-supplied (reused) controller is the caller's own property and is left in place.
+5. When the timeout fires, the controller is aborted with a `FetchTimeoutError` and the now permanently unusable controller/signal are cleared from the request, so a retry reusing the same request object starts with a fresh controller.
 
 ```typescript
-// [packages/fetcher/src/timeout.ts:120-172]
+// [packages/fetcher/src/timeout.ts:120-198]
 export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   const url = request.url;
   const timeout = request.timeout;
@@ -430,7 +441,15 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
     return await fetch(url, requestInit);
   }
 
-  const controller = request.abortController ?? new AbortController();
+  // Reuse a caller-supplied controller only if it has not already been
+  // aborted; an aborted controller would make the retried fetch reject
+  // immediately instead of performing the request.
+  const existingController = request.abortController;
+  const reuseExistingController =
+    existingController && !existingController.signal.aborted;
+  const controller = reuseExistingController
+    ? existingController
+    : new AbortController();
   request.abortController = controller;
   requestInit.signal = controller.signal;
 
@@ -443,6 +462,10 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
       if (timerId) { clearTimeout(timerId); }
       const error = new FetchTimeoutError(request);
       controller.abort(error);
+      // The aborted controller/signal are permanently unusable; clear them
+      // so a retry reusing this request builds a fresh controller.
+      request.abortController = undefined;
+      delete requestInit.signal;
       reject(error);
     }, timeout);
   });
@@ -452,11 +475,18 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   } finally {
     aborted = true;
     if (timerId) { clearTimeout(timerId); }
+    // On BOTH success and failure, remove the controller/signal written
+    // onto the caller's request above. A caller-supplied (reused)
+    // controller is the caller's own property and is left in place.
+    delete requestInit.signal;
+    if (!reuseExistingController) {
+      request.abortController = undefined;
+    }
   }
 }
 ```
 
-Source: [packages/fetcher/src/timeout.ts:120-172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L172)
+Source: [packages/fetcher/src/timeout.ts:120-198](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120-L198)
 
 ### Timeout Resolution
 

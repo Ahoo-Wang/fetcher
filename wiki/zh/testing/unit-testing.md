@@ -317,14 +317,18 @@ flowchart TD
 
 | 包 | 测试数量 | 重点测试领域 |
 |---------|-----------|----------------|
-| fetcher | 21 个测试文件 | Fetcher、拦截器、URL 构建器、错误、注册器、超时 |
+| fetcher | 19 个测试文件 | Fetcher、拦截器、URL 构建器、错误、注册器、超时 |
 | decorator | 7 个测试文件 | API 装饰器、端点装饰器、参数装饰器、元数据、执行器 |
-| eventbus | 5 个测试文件 | EventBus、并行/串行/广播总线、名称生成器 |
-| eventstream | 11 个测试文件 | 流转换器、SSE 变换、异步迭代 |
-| viewer | 1 个测试文件 | 工具函数（deepEqual、mapToTableRecord） |
-| wow | 2 个测试文件 | 索引导出、属性值提取 |
-| generator | 3 个测试文件 | CLI、端到端生成、索引导出 |
-| openai | 1 个测试文件 | OpenAI 客户端 |
+| eventbus | 8 个测试文件 | EventBus、并行/串行/广播总线、名称生成器 |
+| eventstream | 12 个测试文件 | 流转换器、SSE 变换、异步迭代 |
+| storage | 4 个测试文件 | KeyStorage、序列化器、内存存储、环境探测 |
+| cosec | 17 个测试文件 | 令牌存储/刷新、授权拦截器、CoSec 配置器 |
+| wow | 21 个测试文件 | 条件、分页、游标查询、命令/查询类型、本地化 |
+| generator | 27 个测试文件 | 聚合解析器、模型/客户端生成器、CLI、E2E 快照基线 |
+| openai | 2 个测试文件 | OpenAI 客户端、流式提取器、请求类型 |
+| openapi | 1 个测试文件 | OpenAPI 类型 fixtures |
+| react | 42 个测试文件 | core/fetcher/wow hooks、防抖变体、cosec 组件、存储 hooks |
+| viewer | 60 个测试文件 | 筛选/表格/视图组件、单元格、hooks、FetcherViewer |
 
 ## 模拟模式
 

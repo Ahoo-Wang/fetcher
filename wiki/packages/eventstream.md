@@ -71,7 +71,7 @@ graph TB
 
 ## How the Side-Effect Import Works
 
-When `@ahoo-wang/fetcher-eventstream` is imported, it checks `typeof Response !== 'undefined'` and, if available, adds new properties and methods to `Response.prototype` using `Object.defineProperty`. The additions are idempotent -- each property is only defined once, guarded by `hasOwnProperty` checks. ([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102))
+When `@ahoo-wang/fetcher-eventstream` is imported, it checks `typeof Response !== 'undefined'` and, if available, adds new properties and methods to `Response.prototype` (the `contentType` / `isEventStream` getters via `Object.defineProperty`, the four methods via direct assignment). The additions are idempotent -- each member is only defined once, guarded by `hasOwnProperty` checks. ([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102))
 
 ```mermaid
 sequenceDiagram
@@ -92,6 +92,22 @@ autonumber
     Import->>Proto: Define requiredJsonEventStream() method
     Import-->>App: Prototype patched, ready to use
 ```
+
+## Environment Detection and Async Iteration Polyfill
+
+The import also ensures `ReadableStream` supports async iteration, which the `for await...of` consumption examples on this page rely on. The behavior adapts to the runtime at import time:
+
+- **Feature detection** — `isReadableStreamAsyncIterableSupported` is `true` only when the `ReadableStream` global exists and its prototype already implements `Symbol.asyncIterator`. ([`readableStreams.ts:37`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37))
+- **Conditional polyfill** — If the global exists but lacks async iteration, the package polyfills `ReadableStream.prototype[Symbol.asyncIterator]` with a wrapper backed by `ReadableStreamAsyncIterable`. ([`readableStreams.ts:45-52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L45-L52))
+- **SSR-safe skip** — In runtimes with no `ReadableStream` global at all (legacy SSR / non-stream environments), the polyfill is skipped entirely: there is nothing to polyfill, and importing the module never references the missing global, so the import cannot throw `ReferenceError`. ([`readableStreams.ts:45-52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L45-L52))
+
+| Environment | `isReadableStreamAsyncIterableSupported` | Import-time behavior |
+|-------------|------------------------------------------|----------------------|
+| Runtime provides native async iteration | `true` | No polyfill installed |
+| `ReadableStream` exists, no async iteration | `false` | Polyfills `ReadableStream.prototype[Symbol.asyncIterator]` |
+| No `ReadableStream` global (legacy SSR / non-stream) | `false` | Polyfill skipped; import is side-effect free for streams |
+
+Similarly, the `Response.prototype` patching only runs when the `Response` global is defined, so importing the package in non-fetch environments is safe. ([`responses.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L102)) The package requires Node.js `>=18.20.8`. ([`package.json:28-30`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L28-L30))
 
 ## Patched Response Methods
 
@@ -162,7 +178,7 @@ for await (const event of eventStream) {
 
 ## ServerSentEvent
 
-The `ServerSentEvent` interface models the W3C Server-Sent Events format. ([`serverSentEventTransformStream.ts:23`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L23))
+The `ServerSentEvent` interface models the W3C Server-Sent Events format. ([`serverSentEventTransformStream.ts:21`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21))
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -333,6 +349,8 @@ try {
 | `JsonEventStreamResultExtractor` | Function | [`eventStreamResultExtractor.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts) |
 | `EventStreamConvertError` | Class | [`eventStreamConverter.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts) |
 | `TextLineTransformStream` | Class | [`textLineTransformStream.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts) |
+| `ReadableStreamAsyncIterable` | Class | [`readableStreamAsyncIterable.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts) |
+| `isReadableStreamAsyncIterableSupported` | Constant | [`readableStreams.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts) |
 
 ## Related Pages
 

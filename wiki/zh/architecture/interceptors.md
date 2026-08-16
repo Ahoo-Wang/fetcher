@@ -45,7 +45,7 @@ Source: [packages/fetcher/src/interceptorManager.ts:62-103](https://github.com/A
 `exchange()` 方法是管道的核心。它先执行请求拦截器，成功后执行响应拦截器，失败时执行错误拦截器。如果错误拦截器清除了错误，则交换成功返回；否则抛出 `ExchangeError`。
 
 ```typescript
-// [packages/fetcher/src/interceptorManager.ts:191-212]
+// [packages/fetcher/src/interceptorManager.ts:191-216]
 async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
   try {
     await this.request.intercept(fetchExchange);
@@ -62,7 +62,7 @@ async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
 }
 ```
 
-Source: [packages/fetcher/src/interceptorManager.ts:191-212](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191-L212)
+Source: [packages/fetcher/src/interceptorManager.ts:191-216](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191-L216)
 
 ### 完整执行流程
 
@@ -237,15 +237,18 @@ Source: [packages/fetcher/src/requestBodyInterceptor.ts:135-166](https://github.
 
 通过调用 Fetcher 的 `UrlBuilder.resolveRequestUrl()` 解析最终 URL。该过程会合并基础 URL、插值路径参数并附加查询参数。
 
+解析会**消费**请求的 `urlParams`（将其置为 `undefined`），因此对已解析的请求再次运行此拦截器是空操作（no-op）。当同一个 exchange 两次经过请求链时这一点至关重要——例如，错误拦截器在刷新令牌后重试请求——否则查询字符串会被第二次拼接到已解析的 URL 上。
+
 ```typescript
-// [packages/fetcher/src/urlResolveInterceptor.ts:74-78]
+// [packages/fetcher/src/urlResolveInterceptor.ts:80-84]
 intercept(exchange: FetchExchange) {
   const request = exchange.request;
   request.url = exchange.fetcher.urlBuilder.resolveRequestUrl(request);
+  request.urlParams = undefined;
 }
 ```
 
-Source: [packages/fetcher/src/urlResolveInterceptor.ts:74-78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L74-L78)
+Source: [packages/fetcher/src/urlResolveInterceptor.ts:80-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L80-L84)
 
 #### 3. FetchInterceptor（order: `Number.MAX_SAFE_INTEGER - 10000`）
 
