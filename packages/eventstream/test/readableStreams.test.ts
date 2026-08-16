@@ -92,4 +92,18 @@ describe('readableStreams', () => {
     // 验证原始实现没有被覆盖
     expect((iterator as any)[customSymbol]).toBe(true);
   });
+
+  // BUG: when the runtime has no ReadableStream global at all (legacy SSR /
+  // non-stream environments), `isReadableStreamAsyncIterableSupported` is
+  // false, so the polyfill branch is entered and references the non-existent
+  // `ReadableStream` global — the module import itself throws ReferenceError.
+  it('should not throw on import when ReadableStream is unavailable in the environment', async () => {
+    vi.stubGlobal('ReadableStream', undefined);
+    vi.resetModules();
+
+    await expect(import('../src/readableStreams')).resolves.toBeDefined();
+
+    const module = await import('../src/readableStreams');
+    expect(module.isReadableStreamAsyncIterableSupported).toBe(false);
+  });
 });

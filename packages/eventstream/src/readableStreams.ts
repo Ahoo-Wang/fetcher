@@ -38,8 +38,14 @@ export const isReadableStreamAsyncIterableSupported =
   typeof ReadableStream !== 'undefined' &&
   typeof ReadableStream.prototype[Symbol.asyncIterator] === 'function';
 
-// Add [Symbol.asyncIterator] to ReadableStream if not already implemented
-if (!isReadableStreamAsyncIterableSupported) {
+// Add [Symbol.asyncIterator] to ReadableStream if not already implemented.
+// Guard on the global itself first: in runtimes without ReadableStream at all
+// (legacy SSR / non-stream environments) there is nothing to polyfill, and
+// referencing ReadableStream.prototype here would crash the module import.
+if (
+  typeof ReadableStream !== 'undefined' &&
+  !isReadableStreamAsyncIterableSupported
+) {
   ReadableStream.prototype[Symbol.asyncIterator] = function <R = any>() {
     return new ReadableStreamAsyncIterable<R>(this as ReadableStream<R>);
   };
