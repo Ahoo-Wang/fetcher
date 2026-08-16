@@ -45,10 +45,12 @@
 ### CoSec Authentication Flow
 
 ```
-Request → AuthorizationRequestInterceptor → CoSecRequestInterceptor → Server
-                                                                      ↓
+Request → CoSecRequestInterceptor (CoSec-* headers) → AuthorizationRequestInterceptor (Bearer) → Server
+                                                                                                         ↓
 Response ← AuthorizationResponseInterceptor (401 retry with fresh token)
 ```
+
+Interceptor order matters: CoSec headers are attached first (`Number.MIN_SAFE_INTEGER + step`), then the Authorization header.
 
 ---
 
@@ -191,7 +193,7 @@ new TokenStorage(options?: TokenStorageOptions)
   key?: string;              // defaults to 'cosec-token'
   eventBus?: TypedEventBus;  // defaults to BroadcastTypedEventBus
   earlyPeriod?: number;      // defaults to 0
-  storage?: Storage;         // defaults to localStorage
+  storage?: Storage;         // defaults to getStorage(): localStorage in browsers, in-memory elsewhere
 }
 ```
 
@@ -246,7 +248,7 @@ new DeviceIdStorage(options?: DeviceIdStorageOptions)
 {
   key?: string;              // defaults to 'cosec-device-id'
   eventBus?: TypedEventBus;  // defaults to BroadcastTypedEventBus
-  storage?: Storage;         // defaults to localStorage
+  storage?: Storage;         // defaults to getStorage(): localStorage in browsers, in-memory elsewhere
 }
 ```
 
@@ -395,10 +397,10 @@ fetcher.interceptors.response.use(
 
 **Behavior:**
 
-1. Detects 401 responses
+1. Detects 401 responses (skips entirely when the current token is not refreshable)
 2. Calls `tokenManager.refresh()`
-3. Retries original request with new token
-4. On failure: clears tokens and throws
+3. Retries the original request with the new token — at most once per exchange
+4. On refresh failure: clears tokens and throws. A failure of the retried request itself propagates normally without clearing the freshly refreshed token
 
 ### Skip Token Refresh for Specific Requests
 
@@ -550,6 +552,8 @@ const data = await fetcher.get('/api/protected-resource');
 | `CoSecTokenRefresher`                   | Built-in TokenRefresher using Fetcher POST        |
 | `TokenStorage`                          | JWT token persistence with cross-tab sync         |
 | `DeviceIdStorage`                       | Device ID persistence and generation              |
+| `SpaceIdStorage`                        | Space ID persistence (used by space providers)    |
+| `parseJwtPayload` / `isTokenExpired`    | Low-level JWT utilities for custom token logic    |
 | `AuthorizationRequestInterceptor`       | Adds Bearer token to requests                     |
 | `AuthorizationResponseInterceptor`      | Handles 401 and retries with fresh token          |
 | `CoSecRequestInterceptor`               | Adds CoSec headers (appId, deviceId, requestId)   |

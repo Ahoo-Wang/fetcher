@@ -56,6 +56,8 @@ npx fetcher-generator generate -i ./openapi.yaml -o ./src/generated -t ./tsconfi
 
 ## Programmatic API (CodeGenerator)
 
+`logger` is a required option (`Logger` interface: `info`/`success`/`warn`/`error`). The package does not export a logger implementation — provide your own:
+
 ```typescript
 import { CodeGenerator } from '@ahoo-wang/fetcher-generator';
 
@@ -63,13 +65,19 @@ const generator = new CodeGenerator({
   inputPath: './openapi.yaml',
   outputDir: './src/generated',
   tsConfigFilePath: './tsconfig.json',
+  logger: {
+    info: console.info,
+    success: console.info,
+    warn: console.warn,
+    error: console.error,
+  },
 });
 await generator.generate();
 ```
 
 ### Key Exports
 
-`CodeGenerator`, `DEFAULT_CONFIG_PATH` (`./fetcher-generator.config.json`)
+`CodeGenerator`, `DEFAULT_CONFIG_PATH` (`./fetcher-generator.config.json`) — that is the complete public surface; option and config interfaces (`GeneratorOptions`, `GeneratorConfiguration`) are not re-exported from the package entry.
 
 ## Code Generation Pipeline
 
@@ -81,7 +89,7 @@ parseOpenAPI(inputPath) → AggregateResolver(openAPI).resolve()
 
 1. **parseOpenAPI** - Parse JSON/YAML spec (local file or URL)
 2. **AggregateResolver** - Identifies aggregates from tags (`{context}.{aggregate}` pattern), extracts commands, state, events, fields
-3. **ModelGenerator** - Generates TypeScript types/enums from schemas (skips `wow.*` schemas and aggregated types)
+3. **ModelGenerator** - Generates TypeScript types/enums from schemas (skips `wow.*` schemas except `wow.api.query.*PagedList` and `wow.api.query.Operator*Map`, which are kept)
 4. **ClientGenerator** - Generates QueryClient, CommandClient, StreamCommandClient, ApiClient per aggregate
 5. **Index Generator** - Creates `index.ts` barrel exports at every directory level
 6. **Post-processing** - `formatText()`, `organizeImports()`, `fixMissingImports()` on all files
@@ -120,17 +128,19 @@ Model files use `types.ts` named by schema path prefix (e.g., schema key `ai.AiM
 ```
 
 - `apiClients` - Map of tag name to API client configuration
-- `ignorePathParameters` - Path parameters to exclude from generated methods (default: `['tenantId', 'ownerId']`)
+- `ignorePathParameters` - Path parameters to exclude from generated **API client** methods (default: `['tenantId', 'ownerId']`). Command clients always ignore `tenantId`/`ownerId` regardless of this setting.
 
 ## Wow CQRS Pattern Support
 
 ### Aggregate Identification
 
-Tags following `{contextAlias}.{aggregateName}` pattern identify aggregates (e.g., `example.cart`).
+Aggregates are discovered **only from the root `tags:` array** — tags appearing solely on operations are ignored. Tags following `{contextAlias}.{aggregateName}` pattern identify aggregates (e.g., `example.cart`).
+
+An aggregate is emitted only when **both** a state snapshot and a fields definition resolve for it; otherwise the tag falls through to plain API client generation.
 
 ### Operation Patterns
 
-- **Commands**: Operation IDs matching `{context}.{aggregate}.{command}` with a request body and an OK response `$ref: #/components/responses/wow.CommandOk`
+- **Commands**: Operation IDs matching `{context}.{aggregate}.{command}` with a request body and an OK response `$ref: #/components/responses/wow.CommandOk` ("OK" means strictly `responses['200']`; the operation `wow.command.send` is skipped)
 - **State Snapshots**: Operation IDs ending with `.snapshot_state.single`
 - **Events**: Operation IDs ending with `.event.list_query`
 - **Fields**: Operation IDs ending with `.snapshot.count`
@@ -200,4 +210,4 @@ const commandClient = new CartCommandClient();
 ## Package Reference
 
 - [Package Source](https://github.com/Ahoo-Wang/fetcher/tree/main/packages/generator/) - Source code and README
-- Key types: `GeneratorOptions`, `GeneratorConfiguration`, `ApiClientConfiguration`, `GenerateContextInit`, `Logger`
+- CLI: `fetcher-generator`; programmatic entry: `CodeGenerator` (see Key Exports above)

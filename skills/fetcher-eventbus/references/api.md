@@ -47,7 +47,7 @@ Abstract base class for all typed event bus implementations. Provides shared han
 ```typescript
 interface EventHandler<EVENT> extends NamedCapable, OrderedCapable {
   name: string; // Unique identifier (prevents duplicates)
-  order: number; // Execution priority (lower = earlier)
+  order?: number; // Execution priority (lower = earlier; default 0)
   handle(event: EVENT): void | Promise<void>;
   once?: boolean; // If true, auto-removes after first execution
 }
@@ -209,7 +209,7 @@ messenger.close();
 
 ### StorageMessenger
 
-Uses `localStorage` events as fallback when `BroadcastChannel` is unavailable. Supports TTL and cleanup.
+Uses `localStorage` events as fallback when `BroadcastChannel` is unavailable. Supports TTL and cleanup. Throws outside a browser environment (no `localStorage`); probe `isStorageEventSupported()` first if that matters. Options also include `storage` (defaults to `localStorage`).
 
 ```typescript
 import { StorageMessenger } from '@ahoo-wang/fetcher-eventbus';
@@ -223,6 +223,10 @@ messenger.onmessage = message => console.log('Received:', message);
 messenger.postMessage('Hello from another tab!');
 messenger.close();
 ```
+
+### Capability Probes
+
+`isBroadcastChannelSupported()` and `isStorageEventSupported()` report which messenger backends the current environment provides.
 
 ### createCrossTabMessenger() Fallback Chain
 
@@ -240,12 +244,17 @@ if (messenger) {
 
 ## API Reference
 
-| Method        | Returns         | Description                                          |
-| ------------- | --------------- | ---------------------------------------------------- |
-| `on(handler)` | `boolean`       | Register handler; returns `false` if duplicate name  |
-| `off(name)`   | `boolean`       | Remove handler by name; returns `false` if not found |
-| `emit(event)` | `Promise<void>` | Trigger event to all handlers                        |
-| `destroy()`   | `void`          | Clean up all handlers and resources                  |
+| Method        | Returns                  | Description                                                       |
+| ------------- | ------------------------ | ----------------------------------------------------------------- |
+| `on(handler)` | `boolean`                | Register handler; returns `false` if duplicate name               |
+| `off(name)`   | `boolean`                | Remove handler by name; returns `false` if not found              |
+| `emit(event)` | `Promise<void>`          | Trigger event to all handlers                                     |
+| `destroy()`   | `void`                   | Serial/Parallel: removes all handlers. Broadcast: closes the messenger only — call `delegate.destroy()` too if handlers must go |
+
+Notes:
+
+- The generic `EventBus` differs slightly: `on(type, handler)` / `off(type, name)` take a leading event-type argument, and `emit` may return `void | Promise<void>`.
+- A throwing handler is caught and logged with `console.warn`; it never rejects `emit()` or blocks other handlers.
 
 ## Ecosystem Usage
 

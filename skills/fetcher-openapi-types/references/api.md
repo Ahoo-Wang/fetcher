@@ -87,7 +87,7 @@ const doc: OpenAPI = {
 - **String:** `minLength`, `maxLength`, `pattern`
 - **Array:** `items` (Schema | Reference), `minItems`, `maxItems`, `uniqueItems`
 - **Object:** `properties`, `required`, `minProperties`, `maxProperties`, `additionalProperties`
-- **Composition:** `allOf`, `anyOf`, `oneOf`, `not` (each: Array<Schema | Reference>)
+- **Composition:** `allOf`, `anyOf`, `oneOf` (each: Array<Schema | Reference>); `not` is a single `Schema | Reference`
 - **Enumeration:** `enum` (any[])
 - **Polymorphism:** `discriminator` (Discriminator)
 - **XML:** `xml` (XML)
@@ -381,6 +381,6 @@ import type {
 
 - Pure type definitions — no runtime JavaScript, zero bundle size
 - Single entry point import (`@ahoo-wang/fetcher-openapi`)
-- All types extend `Extensible` for `x-*` extension support
+- Object types extend `Extensible` for `x-*` extension support (exceptions: `Reference` and type aliases like `IsReference`/`ComponentTypeMap`)
 - Framework agnostic — works with any TypeScript project
 - Full OpenAPI 3.0+ support including discriminator, callbacks, links

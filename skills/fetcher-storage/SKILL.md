@@ -1,7 +1,7 @@
 ---
 name: fetcher-storage
 description: >
-  Use when adding typed cross-environment key-value storage (localStorage/sessionStorage with in-memory fallback) — `KeyStorage`, serializers, defaults, change listeners, and cross-tab sync.
+  Use when adding typed cross-environment key-value storage (localStorage with in-memory fallback; sessionStorage via explicit option) — `KeyStorage`, serializers, defaults, change listeners, and cross-tab sync.
 ---
 
 # fetcher-storage

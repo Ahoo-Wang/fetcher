@@ -94,7 +94,7 @@ setIdle(); // status = IDLE, all cleared
 
 ### useExecutePromise
 
-Manages async operations with race condition protection, AbortController, and unmount safety. Accepts a `PromiseSupplier<R>`:
+Manages async operations with race condition protection, AbortController, and unmount safety. Race protection is built on `useRequestId` — each execution gets an id, and stale resolutions are discarded. Accepts a `PromiseSupplier<R>`:
 
 ```typescript
 type PromiseSupplier<R> = (abortController: AbortController) => Promise<R>;
@@ -130,6 +130,7 @@ HTTP-specific hook wrapping Fetcher with `FetchExchange` support.
 
 ```tsx
 import { useFetcher } from '@ahoo-wang/fetcher-react';
+import { ResultExtractors } from '@ahoo-wang/fetcher';
 
 function UserProfile({ userId }: { userId: string }) {
   const { loading, result, error, exchange, execute, abort } = useFetcher<User>(
@@ -399,7 +400,7 @@ const apiHooks = createExecuteApiHooks({ api: new UserApi() });
 
 ### createQueryApiHooks
 
-Generate query hooks with `useFetcherQuery`-based state management.
+Generate query hooks with `useQuery`-based state management (the generated hook wraps a typed `executeQuery` and calls `useQuery`).
 
 ```tsx
 const apiHooks = createQueryApiHooks({ api: new UserApi() });
@@ -453,6 +454,7 @@ import {
   usePromiseState,
   // Execution
   useExecutePromise,
+  useRequestId,
   // HTTP fetch
   useFetcher,
   useFetcherQuery,

@@ -4,11 +4,11 @@
     {
       "id": 1,
       "prompt": "Generate a type-safe TypeScript API client from this OpenAPI spec at ./evals/files/petstore.yaml. Use the fetcher-generator CLI tool to generate the client code into a src/generated/petstore directory. The generated code should include proper TypeScript types and an API client class for the pets endpoints.",
-      "expected_output": "Generated TypeScript API client with types.ts and PetApiClient.ts, properly structured with API client classes",
+      "expected_output": "Generated TypeScript API client with types.ts and PetsApiClient.ts (tag `pets` maps to the `Pets` model name), properly structured with API client classes",
       "files": ["evals/files/petstore.yaml"],
       "expectations": [
         "Generated TypeScript types are properly defined",
-        "API client class is generated for pets endpoints",
+        "PetsApiClient class is generated for pets endpoints (tag `pets` resolves to name `Pets`)",
         "Generated code compiles without errors",
         "Output directory structure follows the standard pattern"
       ]
@@ -16,25 +16,25 @@
     {
       "id": 2,
       "prompt": "Generate a type-safe TypeScript API client from this OpenAPI spec at ./evals/files/ecommerce.yaml. This is a CQRS-style API with bounded context 'ecommerce.cart'. Generate the client into src/generated/ecommerce directory using the Wow CQRS pattern support. Include command clients for operations like add_cart_item and query clients for snapshot_state and event queries.",
-      "expected_output": "Generated CQRS-style client with CartCommandClient, CartQueryClient factory, and proper bounded context structure",
+      "expected_output": "Generated CQRS-style client with CartCommandClient, cartQueryClientFactory, and proper bounded context structure under ecommerce/cart/",
       "files": ["evals/files/ecommerce.yaml"],
       "expectations": [
-        "CartCommandClient is generated with addCartItem method",
-        "QueryClientFactory is generated for snapshot queries",
-        "Event query client is generated for event.list_query operations",
-        "Generated code uses Wow CQRS patterns correctly"
+        "CartCommandClient is generated with addCartItem method (commands need inline requestBody and responses['200'] -> #/components/responses/wow.CommandOk)",
+        "cartQueryClientFactory (QueryClientFactory) is generated for snapshot queries",
+        "CartDomainEventType is generated from the event.list_query operation",
+        "Generated code uses Wow CQRS patterns correctly (root-level `ecommerce.cart` tag plus snapshot_state.single and snapshot.count operations)"
       ]
     },
     {
       "id": 3,
-      "prompt": "Generate a type-safe TypeScript API client from this OpenAPI spec at ./evals/files/user-service.yaml. This is a multi-tenant API with bounded context 'user_service' and users aggregate. Generate into src/generated/user-service directory. Also create a .fetcherrc.json config file that enables verbose output and custom type mappings for this generation.",
-      "expected_output": "Generated API client with proper tenant-based resource attribution and configuration file",
+      "prompt": "Generate a type-safe TypeScript API client from this OpenAPI spec at ./evals/files/user-service.yaml. This is a multi-tenant API with bounded context 'user_service' and users aggregate. Generate into src/generated/user-service directory. Also create a fetcher-generator.config.json config file that ignores the tenantId path parameter for the plain `users` API client tag.",
+      "expected_output": "Generated API client with tenant-based resource attribution (ResourceAttributionPathSpec.TENANT) and a valid fetcher-generator.config.json",
       "files": ["evals/files/user-service.yaml"],
       "expectations": [
-        "Users aggregate command and query clients are generated",
-        "Tenant-based resource attribution is properly configured",
-        ".delete_aggregate operation generates delete method",
-        ".fetcherrc.json configuration file is created with appropriate settings"
+        "Users aggregate command and query clients are generated under user_service/users/",
+        "Tenant-based resource attribution is properly configured (ResourceAttributionPathSpec.TENANT inferred from /tenant/{tenantId} paths)",
+        "default_delete_aggregate operation generates defaultDeleteAggregate method",
+        "fetcher-generator.config.json is created with apiClients.users.ignorePathParameters (there is no .fetcherrc.json; this is the only config file the CLI reads)"
       ]
     }
   ]

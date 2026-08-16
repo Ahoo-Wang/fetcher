@@ -15,7 +15,7 @@ description: >
 
 ## Workflow
 
-1. Ensure `reflect-metadata` is imported once at the application entry point.
+1. `reflect-metadata` ships with the package and is imported automatically; an explicit entry-point import is only needed for other decorator libraries.
 2. Define a service class with `@api()` and method decorators; leave method bodies as generated-error stubs.
 3. Bind path, query, header, body, request, and attribute values with parameter decorators.
 4. Choose the result extractor or endpoint return type that matches the caller contract.

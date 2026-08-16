@@ -95,6 +95,7 @@ interface FetchExchange {
   response?: Response; // Response after fetch (mutable)
   error?: Error | any; // Error if occurred (mutable)
   attributes: Map<string, any>; // Shared data between interceptors
+  resultExtractor: ResultExtractor<any>; // Used at the end of the exchange
 }
 ```
 
@@ -106,7 +107,7 @@ Key FetchExchange methods:
 
 ### InterceptorManager.exchange() Three-Phase Flow
 
-1. **Request phase** -- request interceptors (URL resolve, body serialize, fetch)
+1. **Request phase** -- request interceptors in ascending `order` (body serialization runs first, then URL resolve, then the actual fetch)
 2. **Response phase** -- response interceptors (validate status), only if request phase succeeded
 3. **Error phase** -- error interceptors run if any phase threw. Clearing `exchange.error` resolves successfully.
 
@@ -448,8 +449,28 @@ export const userService = {
 | `timeout`          | `number`                      | `undefined`                        | Timeout in ms (undefined = no timeout) |
 | `headers`          | `Record<string, string>`      | `{Content-Type: application/json}` | Default headers                        |
 | `urlTemplateStyle` | `UrlTemplateStyle`            | `UriTemplate`                      | Path param style                       |
-| `validateStatus`   | `(status: number) => boolean` | `status >= 200 && status < 300`    | Status validation                      |
+| `validateStatus`   | `(status: number) => boolean` | `status >= 200 && status < 300`    | Status validation¹                     |
 | `interceptors`     | `InterceptorManager`          | new InterceptorManager()           | Custom interceptor manager             |
+
+¹ `validateStatus` has no effect when a custom `interceptors` manager is provided — the default `ValidateStatusInterceptor` is only installed by the default manager. Register it yourself in that case.
+
+### Request Cancellation
+
+Pass an `AbortController` per request via the `abortController` option (its `signal` is forwarded to `fetch`):
+
+```typescript
+const abortController = new AbortController();
+fetcher.get('/slow', {}, { abortController });
+abortController.abort(); // cancels the in-flight request
+```
+
+### Other Utilities
+
+- `getFetcher(fetcher?: string | Fetcher, defaultFetcher?)` -- resolve a registered fetcher by name or pass an instance through (used by decorator services)
+- `mergeRequest(first, second)` -- merge two request configs (headers, nested `urlParams.path`/`query`)
+- `HttpMethod` -- enum of HTTP methods for the generic `fetcher.request()` / `fetcher.fetch()` calls
+- `combineURLs(base, relative)` / `isAbsoluteURL(url)` -- an already-absolute request URL bypasses `baseURL` entirely
+- `Response.json<T>()` -- the package augments `Response` globally so `response.json<User>()` type-checks
 
 ### HTTP Methods
 
