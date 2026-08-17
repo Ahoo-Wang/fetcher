@@ -82,8 +82,8 @@ catalogs:
       specifier: ^17.11.0
       version: 17.11.0
     immer:
-      specifier: ^11.1.16
-      version: 11.1.16
+      specifier: ^11.1.17
+      version: 11.1.17
     jsdom:
       specifier: ^29.1.1
       version: 29.1.1
@@ -683,7 +683,7 @@ importers:
         version: 2.0.3
       immer:
         specifier: 'catalog:'
-        version: 11.1.16
+        version: 11.1.17
       react:
         specifier: 'catalog:'
         version: 19.2.8
@@ -4412,8 +4412,8 @@ packages:
     resolution: {integrity: sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==}
     engines: {node: '>= 4'}
 
-  immer@11.1.16:
-    resolution: {integrity: sha512-Xs7H9rBc+kti1J6RueUvbEBkmOz7jqj11XYgf+YMXAYzu8EeE7hwZ9poLXdVfVnGmJu7QAf41T7H2KuF6QoK6Q==}
+  immer@11.1.17:
+    resolution: {integrity: sha512-8Vu44Y0MuMBlTQz/jQ8HEMYNq/bBqk87MnBwYR5mC8AthfhEXidZ5aT/oA/CUqboa8THKltnD9L3xyqhU/Sy1Q==}
 
   import-lazy@4.0.0:
     resolution: {integrity: sha512-rKtvo6a868b5Hu3heneU+L4yEQ4jYKLtjpnPeUdK7h0yzXGmyBTypknlkCvHFBqfX9YlorEiMM6Dnq/5atfHkw==}
@@ -9315,7 +9315,7 @@ snapshots:
 
   ignore@7.0.5: {}
 
-  immer@11.1.16: {}
+  immer@11.1.17: {}
 
   import-lazy@4.0.0:
     optional: true
