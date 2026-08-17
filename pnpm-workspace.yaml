@@ -30,7 +30,7 @@ catalog:
   eslint-plugin-react-compiler: ^19.1.0-rc.2
   eslint-plugin-react-hooks: ^7.1.1
   globals: ^17.11.0
-  immer: ^11.1.16
+  immer: ^11.1.17
   jsdom: ^29.1.1
   msw: ^2.15.0
   nanoid: ^5.1.16
