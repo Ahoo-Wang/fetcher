@@ -393,3 +393,16 @@ export const WithActionColumnAndSettings: Story = {
   },
   render: args => <ViewTableWrapper {...args} />,
 };
+
+export const OnlySetting: Story = {
+  args: {
+    fields,
+    columns,
+    dataSource: mockData,
+    tableSize: 'middle',
+    enableRowSelection: false,
+    viewTableSetting: { title: 'Table Settings' },
+    actionColumn: { onlySetting: true },
+  },
+  render: args => <ViewTableWrapper {...args} />,
+};

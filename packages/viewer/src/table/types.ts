@@ -57,8 +57,15 @@ export interface ColumnsCell {
  * };
  * ```
  */
-export interface ViewTableActionColumn<RecordType = any> {
-  title: string;
-  dataIndex?: string;
-  actions: (record: RecordType) => ActionsData<RecordType>;
-}
+export type ViewTableActionColumn<RecordType = any> =
+  | {
+      title: string;
+      dataIndex?: string;
+      actions: (record: RecordType) => ActionsData<RecordType>;
+      onlySetting?: false;
+    }
+  | {
+      title?: string;
+      dataIndex?: string;
+      onlySetting: true;
+    };
