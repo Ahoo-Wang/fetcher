@@ -15,15 +15,14 @@
   - [Extension Types](#extension-types)
 - [Quick Reference](#quick-reference)
 
-The `@ahoo-wang/fetcher-openapi` package is a pure type-only library for OpenAPI 3.0+ TypeScript definitions.
+The `@ahoo-wang/fetcher-openapi` package provides type-only source definitions for OpenAPI 3.x documents.
 
 ## Package Overview
 
 - **npm:** `@ahoo-wang/fetcher-openapi`
-- **Size:** ~2KB (zero runtime overhead)
-- **Type:** TypeScript types only (no runtime JavaScript)
-- **OpenAPI Support:** 3.0+
-- **Consumed by:** `@ahoo-wang/fetcher-generator` (code generation), `@ahoo-wang/fetcher-viewer` (API documentation UI)
+- **Type:** TypeScript types only
+- **OpenAPI Support:** The 3.x shapes represented by the exported interfaces
+- **Consumed by:** `@ahoo-wang/fetcher-generator` for code generation
 - **Imports:** Single entry point — `import type { ... } from '@ahoo-wang/fetcher-openapi'`
 
 ## All Exported Types
@@ -287,7 +286,7 @@ import type {
 
 // Distinguish $ref from inline definitions
 type ResolvedOrRef<T> = T | Reference;
-function isRef<T>(obj: T | Reference): obj is Reference {
+function isRef<T extends object>(obj: T | Reference): obj is Reference {
   return '$ref' in obj;
 }
 
@@ -383,4 +382,4 @@ import type {
 - Single entry point import (`@ahoo-wang/fetcher-openapi`)
 - Object types extend `Extensible` for `x-*` extension support (exceptions: `Reference` and type aliases like `IsReference`/`ComponentTypeMap`)
 - Framework agnostic — works with any TypeScript project
-- Full OpenAPI 3.0+ support including discriminator, callbacks, links
+- Covers the OpenAPI 3.x shapes currently declared by this package, including discriminator, callbacks, and links

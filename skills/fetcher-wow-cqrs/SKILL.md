@@ -1,17 +1,10 @@
 ---
 name: fetcher-wow-cqrs
 description: >
-  Use when creating Wow DDD/CQRS clients with Fetcher — `CommandClient`, snapshot/event-stream query clients, `QueryClientFactory`, command stages, and the query DSL.
+  Build Wow DDD/CQRS clients with `@ahoo-wang/fetcher-wow`: commands and wait stages, snapshot/event queries, aggregate-state loaders, `QueryClientFactory`, resource attribution, and the query DSL. Use for Wow runtime clients or generated CQRS client consumption.
 ---
 
 # fetcher-wow-cqrs
-
-## Use This Skill When
-
-- The task mentions Wow, CQRS, DDD, commands, queries, aggregates, snapshots, or event streams.
-- The task needs command sending, command stage waiting, or command headers.
-- The task needs snapshot queries, event-stream queries, aggregate state loading, or query factories.
-- The task needs the Wow query DSL, pagination, projections, sorting, or generated client patterns.
 
 ## Workflow
 

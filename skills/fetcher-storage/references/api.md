@@ -121,14 +121,14 @@ storage.destroy(); // prevent memory leaks
 
 ## Cross-tab Synchronization
 
-KeyStorage integrates with EventBus via `BroadcastTypedEventBus` for cross-tab sync. Events propagate via `BroadcastChannel` API with automatic fallback to `StorageEvent` when BroadcastChannel is unavailable.
+`KeyStorage` defaults to `SerialTypedEventBus`, so its change notifications stay in the current JavaScript context. Pass a `BroadcastTypedEventBus` to enable browser cross-tab synchronization; its default messenger uses `BroadcastChannel` with a `StorageEvent` fallback.
 
 ```typescript
 import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
-import { KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { KeyStorage, type StorageEvent } from '@ahoo-wang/fetcher-storage';
 
 const broadcastBus = new BroadcastTypedEventBus<StorageEvent<string>>({
   delegate: new SerialTypedEventBus('user-sync'),
@@ -146,7 +146,11 @@ const storage = new KeyStorage<string>({
 ### `jsonSerializer` (singleton, recommended)
 
 ```typescript
-import { jsonSerializer, JsonSerializer } from '@ahoo-wang/fetcher-storage';
+import {
+  JsonSerializer,
+  KeyStorage,
+  jsonSerializer,
+} from '@ahoo-wang/fetcher-storage';
 
 // Use the singleton (recommended)
 const storage = new KeyStorage<any>({
@@ -162,12 +166,11 @@ This is the default serializer. No need to specify it explicitly.
 
 ### `IdentitySerializer<T>` — Generic passthrough
 
-Passes values through unchanged for **any** type, not just strings.
+Passes values through unchanged. Because `KeyStorage` persists through the DOM `Storage` contract, its serialized value must be a string; use the identity serializer with `KeyStorage<string>` only.
 
 ```typescript
-import { IdentitySerializer } from '@ahoo-wang/fetcher-storage';
+import { IdentitySerializer, KeyStorage } from '@ahoo-wang/fetcher-storage';
 
-// Generic: works with any type T
 const stringStorage = new KeyStorage<string>({
   key: 'simple',
   serializer: new IdentitySerializer<string>(),
@@ -177,11 +180,14 @@ const stringStorage = new KeyStorage<string>({
 ### `typedIdentitySerializer<T>()` — Type-safe singleton
 
 ```typescript
-import { typedIdentitySerializer } from '@ahoo-wang/fetcher-storage';
+import {
+  KeyStorage,
+  typedIdentitySerializer,
+} from '@ahoo-wang/fetcher-storage';
 
-const numberStorage = new KeyStorage<number>({
-  key: 'count',
-  serializer: typedIdentitySerializer<number>(),
+const typedStringStorage = new KeyStorage<string>({
+  key: 'label',
+  serializer: typedIdentitySerializer<string>(),
 });
 ```
 

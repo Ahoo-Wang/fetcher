@@ -1,17 +1,10 @@
 ---
 name: fetcher-integration
 description: >
-  Use when setting up the core Fetcher HTTP client — `Fetcher`/`NamedFetcher`, interceptors, URL params, timeouts, result extractors, and status validation.
+  Set up the core `@ahoo-wang/fetcher` HTTP client with `Fetcher` or `NamedFetcher`, interceptors, URL parameters, timeouts, result extractors, cancellation, status validation, and the named registry. Use for direct Fetcher calls or request-lifecycle behavior.
 ---
 
 # fetcher-integration
-
-## Use This Skill When
-
-- The user needs a Fetcher or NamedFetcher instance configured.
-- The task involves HTTP methods, base URLs, headers, timeouts, or result extraction.
-- The task involves request, response, or error interceptors.
-- The task needs path/query parameter handling or the named fetcher registry.
 
 ## Workflow
 

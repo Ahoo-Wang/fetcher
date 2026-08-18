@@ -27,7 +27,7 @@
   - [Constructor Options](#constructor-options)
   - [HTTP Methods](#http-methods)
 
-The Fetcher HTTP client provides an ultra-lightweight (3KB), Axios-like API built on the native Fetch API with interceptors, timeout control, and path/query parameter handling.
+The Fetcher HTTP client provides an Axios-like API built on the native Fetch API with interceptors, timeout control, and path/query parameter handling.
 
 ## Installation
 
@@ -111,7 +111,7 @@ Key FetchExchange methods:
 2. **Response phase** -- response interceptors (validate status), only if request phase succeeded
 3. **Error phase** -- error interceptors run if any phase threw. Clearing `exchange.error` resolves successfully.
 
-```typescript
+```text
 // InterceptorRegistry methods
 registry.use(interceptor): boolean;       // add, false if name exists
 registry.eject(name: string): boolean;    // remove by name
@@ -225,7 +225,6 @@ FetcherError (base)
 
 ```typescript
 import {
-  FetcherError,
   ExchangeError,
   HttpStatusValidationError,
   FetchTimeoutError,
@@ -234,11 +233,14 @@ import {
 try {
   await fetcher.get('/users');
 } catch (error) {
-  if (error instanceof FetchTimeoutError) {
-    console.error('Timeout after', error.request.timeout, 'ms');
-  } else if (error instanceof HttpStatusValidationError) {
-    console.error('Status:', error.exchange.response?.status);
-  } else if (error instanceof ExchangeError) {
+  if (!(error instanceof ExchangeError)) {
+    throw error;
+  }
+  if (error.cause instanceof FetchTimeoutError) {
+    console.error('Timeout after', error.cause.request.timeout, 'ms');
+  } else if (error.cause instanceof HttpStatusValidationError) {
+    console.error('Status:', error.cause.exchange.response?.status);
+  } else {
     console.error('Exchange failed:', error.exchange.request.url);
   }
 }
@@ -251,6 +253,7 @@ import { Fetcher, IGNORE_VALIDATE_STATUS } from '@ahoo-wang/fetcher';
 
 // Custom status validation (default: status >= 200 && status < 300)
 const fetcher = new Fetcher({
+  baseURL: '',
   validateStatus: status => status < 500, // accept 4xx as valid
 });
 
@@ -287,19 +290,42 @@ fetcher.interceptors.response.use({
 ### Retry Logic (Error Interceptor)
 
 ```typescript
+import {
+  HttpMethod,
+  HttpStatusValidationError,
+  timeoutFetch,
+} from '@ahoo-wang/fetcher';
+
 fetcher.interceptors.error.use({
   name: 'retry-interceptor',
   order: 50,
   async intercept(exchange) {
-    const retryCount = exchange.attributes.get('retryCount') ?? 0;
-    if (retryCount < 3) {
-      exchange.attributes.set('retryCount', retryCount + 1);
-      exchange.response = await timeoutFetch(exchange.request);
-      exchange.error = undefined; // clear error to indicate recovery
+    if (
+      exchange.request.method !== HttpMethod.GET ||
+      exchange.request.signal?.aborted ||
+      exchange.request.abortController?.signal.aborted
+    ) {
+      return;
+    }
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await timeoutFetch(exchange.request);
+        exchange.response = response;
+        if (response.ok) {
+          exchange.error = undefined;
+          return;
+        }
+        exchange.error = new HttpStatusValidationError(exchange);
+      } catch (error) {
+        exchange.error = error;
+      }
     }
   },
 });
 ```
+
+Recovered responses do not re-enter the response interceptor chain, so validate the retry result before clearing `exchange.error`. This example retries only GET requests and skips caller cancellation; replace `response.ok` with the same predicate as a custom `validateStatus` when needed.
 
 ### Interceptor Order Reference
 
@@ -310,7 +336,7 @@ fetcher.interceptors.error.use({
 | `MAX_SAFE_INTEGER - 10000` | FetchInterceptor          | Request  |
 | `MAX_SAFE_INTEGER - 10000` | ValidateStatusInterceptor | Response |
 
-Custom interceptors: `1-10` (high priority), `50-100` (medium), `1000+` (low).
+Choose custom order values relative to the exported built-in order constants; lower values run first within each phase.
 
 ## 9. Named Fetcher Registry Pattern
 
@@ -460,7 +486,7 @@ Pass an `AbortController` per request via the `abortController` option (its `sig
 
 ```typescript
 const abortController = new AbortController();
-fetcher.get('/slow', {}, { abortController });
+fetcher.get('/slow', { abortController });
 abortController.abort(); // cancels the in-flight request
 ```
 

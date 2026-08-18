@@ -1,17 +1,10 @@
 ---
 name: fetcher-cosec-auth
 description: >
-  Use when adding CoSec authentication to Fetcher — JWT token lifecycle, refresh, device IDs, tenant/space resolution, resource attribution, and 401/403 handling.
+  Configure `@ahoo-wang/fetcher-cosec` authentication for Fetcher: JWT storage and refresh, device and space IDs, resource attribution, and 401/403 interceptors. Use for CoSec, bearer-token lifecycle, tenant/owner attribution, or auth recovery.
 ---
 
 # fetcher-cosec-auth
-
-## Use This Skill When
-
-- The task mentions CoSec, JWT, bearer auth, token refresh, or authorization headers.
-- The task needs device ID tracking, tenant or space resolution, resource attribution, or policy-aware requests.
-- The task involves 401 retry, unauthorized redirects, or forbidden error handling.
-- The task needs CoSec interceptors attached to a Fetcher instance.
 
 ## Workflow
 

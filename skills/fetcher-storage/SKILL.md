@@ -1,17 +1,10 @@
 ---
 name: fetcher-storage
 description: >
-  Use when adding typed cross-environment key-value storage (localStorage with in-memory fallback; sessionStorage via explicit option) — `KeyStorage`, serializers, defaults, change listeners, and cross-tab sync.
+  Add typed cross-environment storage with `@ahoo-wang/fetcher-storage`: `KeyStorage`, serializers, defaults, listeners, localStorage with in-memory fallback, custom sessionStorage, and optional cross-tab event buses. Use for persistent values or storage-backed React/CoSec flows.
 ---
 
 # fetcher-storage
-
-## Use This Skill When
-
-- The task needs typed persistent key-value storage.
-- The task mentions localStorage, sessionStorage, in-memory storage, serializers, or default values.
-- The task needs storage change listeners or cross-tab synchronization.
-- The code must run across browser and non-browser environments.
 
 ## Workflow
 

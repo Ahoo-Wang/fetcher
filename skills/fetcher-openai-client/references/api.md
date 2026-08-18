@@ -24,7 +24,7 @@ Type-safe OpenAI chat client built on the Fetcher decorator ecosystem. Uses `@ap
 ## Installation
 
 ```bash
-pnpm add @ahoo-wang/fetcher-openai @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventstream reflect-metadata
+pnpm add @ahoo-wang/fetcher-openai @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventstream
 ```
 
 **Peer dependencies:** `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-eventstream`, `@ahoo-wang/fetcher-decorator`.
@@ -35,18 +35,18 @@ pnpm add @ahoo-wang/fetcher-openai @ahoo-wang/fetcher @ahoo-wang/fetcher-decorat
 ```typescript
 import {
   OpenAI,
-  OpenAIOptions,
   ChatClient,
-  ChatRequest,
-  ChatResponse,
-  ChatTool,
-  ChatToolFunction,
-  ChatToolChoice,
-  Message,
-  Choice,
-  Usage,
   CompletionStreamResultExtractor,
   DoneDetector,
+  type OpenAIOptions,
+  type ChatRequest,
+  type ChatResponse,
+  type ChatTool,
+  type ChatToolFunction,
+  type ChatToolChoice,
+  type Message,
+  type Choice,
+  type Usage,
 } from '@ahoo-wang/fetcher-openai';
 ```
 
@@ -126,7 +126,7 @@ export const CompletionStreamResultExtractor: ResultExtractor<
 
 ## Types
 
-Aligned with the real OpenAI Chat Completions API (since v3.17.0):
+These are the package's current public Chat Completions types, not a complete schema for every OpenAI platform field:
 
 ```typescript
 interface ChatRequest {
@@ -160,9 +160,7 @@ interface ChatTool {
 }
 
 type ChatToolChoice =
-  | 'none'
-  | 'auto'
-  | { type: 'function'; function: { name: string } };
+  'none' | 'auto' | { type: 'function'; function: { name: string } };
 
 interface Message {
   content?: string;
@@ -200,12 +198,11 @@ interface Usage {
 ### Basic OpenAI Client
 
 ```typescript
-import 'reflect-metadata';
 import { OpenAI } from '@ahoo-wang/fetcher-openai';
 
 const openai = new OpenAI({
   baseURL: 'https://api.openai.com/v1',
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: '<api-key>',
 });
 ```
 
@@ -251,25 +248,24 @@ const stream = await openai.chat.completions({
   stream: true,
 });
 
+let fullResponse = '';
 for await (const event of stream) {
   const content = event.data.choices[0]?.delta?.content;
-  if (content) {
-    process.stdout.write(content);
-  }
+  fullResponse += content ?? '';
 }
+console.log(fullResponse);
 // Stream auto-terminates when DoneDetector receives '[DONE]'
 ```
 
 ### Using ChatClient Directly
 
 ```typescript
-import 'reflect-metadata';
 import { ChatClient } from '@ahoo-wang/fetcher-openai';
 import { Fetcher } from '@ahoo-wang/fetcher';
 
 const fetcher = new Fetcher({
   baseURL: 'https://api.openai.com/v1',
-  headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+  headers: { Authorization: 'Bearer <api-key>' },
 });
 
 const chatClient = new ChatClient({ fetcher });
@@ -345,9 +341,11 @@ try {
     stream: true,
   });
 
+  let fullResponse = '';
   for await (const event of stream) {
-    process.stdout.write(event.data.choices[0]?.delta?.content || '');
+    fullResponse += event.data.choices[0]?.delta?.content || '';
   }
+  console.log(fullResponse);
 } catch (error) {
   if (error instanceof ExchangeError) {
     console.error('Exchange failed:', error.exchange.response?.status);
@@ -357,8 +355,8 @@ try {
 
 ## Further Reading
 
-- [OpenAI Class](https://github.com/Ahoo-Wang/fetcher/tree/main/packages/openai/src/openai.ts) - OpenAI class source
-- [ChatClient](https://github.com/Ahoo-Wang/fetcher/tree/main/packages/openai/src/chat/chatClient.ts) - Decorator-based chat client
-- [Chat Types](https://github.com/Ahoo-Wang/fetcher/tree/main/packages/openai/src/chat/types.ts) - ChatRequest, ChatResponse, Message types
-- [CompletionStreamResultExtractor](https://github.com/Ahoo-Wang/fetcher/tree/main/packages/openai/src/chat/completionStreamResultExtractor.ts) - DoneDetector and streaming extractor
-- [Tests](https://github.com/Ahoo-Wang/fetcher/tree/main/packages/openai/test/openai.test.ts) - Usage examples
+- [OpenAI Class](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/openai.ts) - OpenAI class source
+- [ChatClient](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts) - Decorator-based chat client
+- [Chat Types](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts) - ChatRequest, ChatResponse, Message types
+- [CompletionStreamResultExtractor](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts) - DoneDetector and streaming extractor
+- [Tests](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/test/openai.test.ts) - Usage examples

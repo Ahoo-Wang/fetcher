@@ -1,17 +1,10 @@
 ---
 name: fetcher-llm-streaming
 description: >
-  Use when consuming SSE/LLM token streams with fetcher-eventstream — `eventStream` helpers, response prototype extensions, DONE termination detection, and ReadableStream async iteration.
+  Consume SSE and LLM token streams with `@ahoo-wang/fetcher-eventstream`: Response prototype helpers, standalone converters, termination detectors, result extractors, and ReadableStream async iteration. Use for `eventStream`, `jsonEventStream`, or token-by-token responses.
 ---
 
 # fetcher-llm-streaming
-
-## Use This Skill When
-
-- The task involves SSE, EventSource-style data, streaming responses, or token-by-token UI updates.
-- The task mentions `eventStream`, `jsonEventStream`, `ServerSentEvent`, or `ReadableStreamAsyncIterable`.
-- The task needs OpenAI-style completion chunks or DONE termination handling.
-- The task needs a decorator result extractor for streaming endpoints.
 
 ## Workflow
 

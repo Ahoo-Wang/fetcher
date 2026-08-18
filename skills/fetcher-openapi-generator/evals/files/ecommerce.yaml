@@ -26,7 +26,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ecommerce.cart.AddCartItemCommand'
+              $ref: '#/components/schemas/ecommerce.cart.AddCartItem'
       responses:
         '200':
           $ref: '#/components/responses/wow.CommandOk'
@@ -47,7 +47,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ecommerce.cart.DeleteCartCommand'
+              $ref: '#/components/schemas/ecommerce.cart.DeleteCart'
       responses:
         '200':
           $ref: '#/components/responses/wow.CommandOk'
@@ -150,7 +150,7 @@ components:
           type: integer
         price:
           type: number
-    ecommerce.cart.AddCartItemCommand:
+    ecommerce.cart.AddCartItem:
       type: object
       required:
         - productId
@@ -160,7 +160,7 @@ components:
           type: string
         quantity:
           type: integer
-    ecommerce.cart.DeleteCartCommand:
+    ecommerce.cart.DeleteCart:
       type: object
       properties: {}
     ecommerce.cart.CartAggregatedFields:

@@ -355,12 +355,15 @@ useEventSubscription({
 Monitors data changes via periodic count queries with notification support.
 
 ```tsx
+import { useDataMonitor } from '@ahoo-wang/fetcher-react';
+import { eq } from '@ahoo-wang/fetcher-wow';
+
 const { isEnabled, enable, disable, toggle } = useDataMonitor({
   viewId: 'orders',
   countUrl: '/api/orders/count',
   viewName: 'Orders',
-  condition: { status: 'pending' },
-  notification: { title: 'New Orders', body: 'You have new pending orders' },
+  condition: eq('status', 'pending'),
+  notification: { title: 'New Orders', navigationUrl: '/orders' },
   interval: 30000,
 });
 ```

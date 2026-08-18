@@ -1,17 +1,10 @@
 ---
 name: fetcher-react-hooks
 description: >
-  Use when building React data-fetching and state hooks with fetcher-react (`useFetcher`, `useQuery`, `useExecutePromise`, plus storage, event, and Wow query hooks) and AbortController/unmount safety.
+  Build React request and state flows with `@ahoo-wang/fetcher-react`: promise state, `useFetcher`, generic and Wow queries, storage/event hooks, CoSec context, debouncing, AbortController, and unmount/race safety. Use when a task mentions these hooks or Fetcher-backed React state.
 ---
 
 # fetcher-react-hooks
-
-## Use This Skill When
-
-- The task involves React hooks for Fetcher requests, generic queries, or promise state.
-- The task mentions `useFetcher`, `useQuery`, `usePromiseState`, `useExecutePromise`, or `PromiseStatus`.
-- The task needs AbortController, unmount safety, race prevention, or auto-execute behavior.
-- The task needs storage hooks, event subscriptions, Wow query hooks, or data monitor hooks.
 
 ## Workflow
 

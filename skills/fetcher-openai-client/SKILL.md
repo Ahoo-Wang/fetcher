@@ -1,17 +1,10 @@
 ---
 name: fetcher-openai-client
 description: >
-  Use when calling OpenAI Chat Completions through Fetcher (`@ahoo-wang/fetcher-openai`) — `OpenAI`/`ChatClient` setup, streaming or non-streaming completions, interceptors, and error handling.
+  Call Chat Completions through `@ahoo-wang/fetcher-openai` with `OpenAI` or `ChatClient`, streaming or non-streaming results, Fetcher interceptors, and exchange errors. Use for this repository's OpenAI client rather than general OpenAI platform questions.
 ---
 
 # fetcher-openai-client
-
-## Use This Skill When
-
-- The task needs an OpenAI chat completion client built on Fetcher.
-- The task mentions `OpenAI`, `ChatClient`, chat completions, streaming completions, or completion result extractors.
-- The task needs OpenAI request interceptors, base URL configuration, or error handling.
-- The task is about this repository's `@ahoo-wang/fetcher-openai` package rather than general OpenAI platform usage.
 
 ## Workflow
 

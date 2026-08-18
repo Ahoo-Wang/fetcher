@@ -178,17 +178,17 @@ const restored = serializer.deserialize(serialized);
 
 ## TokenStorage
 
-Secure token storage with localStorage backend and cross-tab synchronization.
+Token storage with a localStorage backend and cross-tab synchronization.
 
 ### Constructor
 
-```typescript
+```text
 new TokenStorage(options?: TokenStorageOptions)
 ```
 
 `TokenStorageOptions` extends `KeyStorageOptions<JwtCompositeToken>` (excluding `serializer`) with:
 
-```typescript
+```text
 {
   key?: string;              // defaults to 'cosec-token'
   eventBus?: TypedEventBus;  // defaults to BroadcastTypedEventBus
@@ -238,13 +238,13 @@ Manages persistent device identification with localStorage and cross-tab sync.
 
 ### Constructor
 
-```typescript
+```text
 new DeviceIdStorage(options?: DeviceIdStorageOptions)
 ```
 
 `DeviceIdStorageOptions` extends `Partial<KeyStorageOptions<string>>`:
 
-```typescript
+```text
 {
   key?: string;              // defaults to 'cosec-device-id'
   eventBus?: TypedEventBus;  // defaults to BroadcastTypedEventBus

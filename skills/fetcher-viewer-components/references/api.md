@@ -269,15 +269,18 @@ Combines filter panel + ViewTable + pagination. Supports controlled and uncontro
   availableFilters={viewDefinition.availableFilters}
   dataSource={{ list: users, total: 100 }}
   showFilter={true}
-  filterMode="editable"  // 'none' | 'normal' | 'editable'
+  filterMode="editable" // 'none' | 'normal' | 'editable'
   defaultColumns={columns}
   defaultPageSize={20}
   defaultTableSize="middle"
+  pagination={{ pageSize: 20 }}
   enableRowSelection={true}
   actionColumn={actionColumn}
   onClickPrimaryKey={(id, record) => navigate(`/users/${id}`)}
-  onChange={(condition, page, pageSize, sorter) => fetchData(...)}
-  onSelectedDataChange={(data) => setSelectedItems(data)}
+  onChange={(condition, page, pageSize, sorter) =>
+    fetchData(condition, page, pageSize, sorter)
+  }
+  onSelectedDataChange={data => setSelectedItems(data)}
 />
 ```
 
@@ -417,7 +420,7 @@ Read-only display of active filters with search/reset buttons. Each filter rende
 />
 ```
 
-**FilterPanelRef:** `search()`, `reset()`, `getCondition(): Condition`
+**FilterPanelRef:** `search()`, `reset()`, `getCondition(): Condition | undefined`
 
 ### EditableFilterPanel
 
@@ -484,25 +487,30 @@ const { operator, value, setOperator, setValue, reset } = useFilterState({
 Each built-in filter supports a fixed `supportedOperators` set (values from the `Operator` enum in `@ahoo-wang/fetcher-wow`, plus viewer-local `ExtendedOperator` additions like `UNDEFINED`; the combined option type is `SelectOperator`):
 
 ```tsx
-// TextFilter - operators: EQ, NE, CONTAINS, STARTS_WITH, ENDS_WITH, IN, NOT_IN
-<TextFilter field={{ name: 'username', label: 'Username' }} />
+<>
+  {/* TextFilter: EQ, NE, CONTAINS, STARTS_WITH, ENDS_WITH, IN, NOT_IN */}
+  <TextFilter field={{ name: 'username', label: 'Username' }} />
 
-// NumberFilter - operators: EQ, NE, GT, LT, GTE, LTE, BETWEEN, IN, NOT_IN
-<NumberFilter field={{ name: 'age', label: 'Age' }} />
+  {/* NumberFilter: EQ, NE, GT, LT, GTE, LTE, BETWEEN, IN, NOT_IN */}
+  <NumberFilter field={{ name: 'age', label: 'Age' }} />
 
-// SelectFilter - operators: IN, NOT_IN only
-<SelectFilter field={{ name: 'status', label: 'Status' }} />
+  {/* SelectFilter: IN and NOT_IN */}
+  <SelectFilter field={{ name: 'status', label: 'Status' }} />
 
-// IdFilter - operators: ID (single Input), IDS (TagInput list); no remote search
-<IdFilter field={{ name: 'userId', label: 'User' }} />
+  {/* IdFilter: ID and IDS; no remote search */}
+  <IdFilter field={{ name: 'userId', label: 'User' }} />
 
-// BoolFilter - operators: UNDEFINED, TRUE, FALSE
-<BoolFilter field={{ name: 'isActive', label: 'Active' }} />
+  {/* BoolFilter: UNDEFINED, TRUE, FALSE */}
+  <BoolFilter field={{ name: 'isActive', label: 'Active' }} />
 
-// Registered date/time filter - operators: GT, LT, GTE, LTE, BETWEEN, TODAY,
-// BEFORE_TODAY, TOMORROW, THIS_WEEK, NEXT_WEEK, LAST_WEEK, THIS_MONTH,
-// LAST_MONTH, RECENT_DAYS, EARLIER_DAYS (no EQ/NE)
-<TypedFilter type="datetime" field={{ name: 'createdAt', label: 'Created At' }} />
+  {/* Date/time: GT, LT, GTE, LTE, BETWEEN, TODAY, BEFORE_TODAY,
+      TOMORROW, THIS_WEEK, NEXT_WEEK, LAST_WEEK, THIS_MONTH, LAST_MONTH,
+      RECENT_DAYS, EARLIER_DAYS (no EQ/NE) */}
+  <TypedFilter
+    type="datetime"
+    field={{ name: 'createdAt', label: 'Created At' }}
+  />
+</>
 ```
 
 ---
@@ -596,8 +604,14 @@ Debounced search select fetching options from remote API.
 Tag input with serialization support.
 
 ```tsx
-<TagInput value={['tag1', 'tag2']} onChange={(tags) => setTags(tags)} />
-<TagInput<number> value={[1, 2]} serializer={NumberTagValueItemSerializer} onChange={setTags} />
+<>
+  <TagInput value={['tag1', 'tag2']} onChange={tags => setTags(tags)} />
+  <TagInput<number>
+    value={[1, 2]}
+    serializer={NumberTagValueItemSerializer}
+    onChange={setTags}
+  />
+</>
 ```
 
 ### NumberRange
@@ -618,7 +632,7 @@ Number range input with min/max validation.
 
 ## Locale Support
 
-`useLocale` is component-local state (default `zh_CN`), not a global provider — calling `setLocale` in one component does not affect other components, including built-in panels. Use it to override labels per component subtree, or wrap your own context around it for app-wide switching. Partial locales merge over the default:
+Each `useLocale` call owns independent component-local state (default `zh_CN`). Calling `setLocale` affects only the component reading that hook instance; it does not cascade to children or built-in panels, and the package currently has no global locale provider. Overrides are shallow-merged with the default, so a nested object such as `filterPanel` replaces that entire default section.
 
 ```tsx
 import { useLocale } from '@ahoo-wang/fetcher-viewer';

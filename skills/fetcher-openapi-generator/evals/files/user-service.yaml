@@ -28,7 +28,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/user_service.users.CreateUserCommand'
+              $ref: '#/components/schemas/user_service.users.CreateUser'
       responses:
         '200':
           $ref: '#/components/responses/wow.CommandOk'
@@ -54,7 +54,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/user_service.users.UpdateUserCommand'
+              $ref: '#/components/schemas/user_service.users.UpdateUser'
       responses:
         '200':
           $ref: '#/components/responses/wow.CommandOk'
@@ -79,7 +79,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/user_service.users.DeleteUserCommand'
+              $ref: '#/components/schemas/user_service.users.DeleteUser'
       responses:
         '200':
           $ref: '#/components/responses/wow.CommandOk'
@@ -181,7 +181,7 @@ components:
             - active
             - inactive
             - suspended
-    user_service.users.CreateUserCommand:
+    user_service.users.CreateUser:
       type: object
       required:
         - email
@@ -191,7 +191,7 @@ components:
           type: string
         name:
           type: string
-    user_service.users.UpdateUserCommand:
+    user_service.users.UpdateUser:
       type: object
       properties:
         email:
@@ -200,7 +200,7 @@ components:
           type: string
         status:
           type: string
-    user_service.users.DeleteUserCommand:
+    user_service.users.DeleteUser:
       type: object
       properties: {}
     user_service.users.UserAggregatedFields:
