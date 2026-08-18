@@ -119,7 +119,7 @@ import { OpenAI } from '@ahoo-wang/fetcher-openai';
 
 const openai = new OpenAI({
   baseURL: 'https://api.openai.com/v1',
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: '<api-key>',
 });
 
 const stream = await openai.chat.completions({
@@ -128,13 +128,13 @@ const stream = await openai.chat.completions({
   stream: true,
 });
 
+let fullResponse = '';
 // event is JsonServerSentEvent<ChatResponse> -- use event.data for the payload
 for await (const event of stream) {
   const content = event.data.choices[0]?.delta?.content || '';
-  if (content) {
-    process.stdout.write(content);
-  }
+  fullResponse += content;
 }
+console.log(fullResponse);
 ```
 
 ## Token-by-Token UI Updates

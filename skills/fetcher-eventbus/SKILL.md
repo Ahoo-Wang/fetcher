@@ -1,17 +1,10 @@
 ---
 name: fetcher-eventbus
 description: >
-  Use when implementing a typed event bus — serial/parallel execution, BroadcastChannel or storage cross-tab messaging, handler ordering, and once-only handlers.
+  Build with `@ahoo-wang/fetcher-eventbus`: serial, parallel, and broadcast typed buses; handler ordering and once semantics; and BroadcastChannel/storage messengers. Use for this package's event buses or browser-tab event synchronization.
 ---
 
 # fetcher-eventbus
-
-## Use This Skill When
-
-- The task mentions event bus, event handlers, broadcasts, or cross-tab communication.
-- The task needs serial versus parallel event execution semantics.
-- The task involves `BroadcastChannel`, storage fallback messaging, or cross-tab sync.
-- The task needs handler ordering, duplicate-name prevention, or once-only handlers.
 
 ## Workflow
 

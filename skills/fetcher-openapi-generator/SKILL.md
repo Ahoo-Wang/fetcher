@@ -1,17 +1,10 @@
 ---
 name: fetcher-openapi-generator
 description: >
-  Use when generating type-safe Fetcher API clients from OpenAPI 3.x specs via the `fetcher-generator` CLI or `CodeGenerator` API, including Wow CQRS client generation.
+  Generate type-safe Fetcher clients from OpenAPI 3.x documents with the `fetcher-generator` CLI or `CodeGenerator`, including models, plain API clients, and Wow CQRS clients. Use for generator configuration, output structure, or aggregate discovery rules.
 ---
 
 # fetcher-openapi-generator
-
-## Use This Skill When
-
-- The user wants TypeScript client code generated from an OpenAPI spec.
-- The task mentions `fetcher-generator`, CLI options, config files, or programmatic generation.
-- The task involves generated models, API clients, barrel exports, or post-processing.
-- The task needs Wow CQRS command/query clients generated from OpenAPI metadata.
 
 ## Workflow
 

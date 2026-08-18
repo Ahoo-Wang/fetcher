@@ -1,17 +1,10 @@
 ---
 name: fetcher-openapi-types
 description: >
-  Use when modeling OpenAPI 3.x documents in TypeScript — schemas, operations, parameters, responses, security schemes, components, references, and extensions (the type layer, not code generation).
+  Model OpenAPI 3.x documents with `@ahoo-wang/fetcher-openapi` types for schemas, operations, parameters, responses, security, components, references, and extensions. Use for the type layer or generator internals, not client generation execution.
 ---
 
 # fetcher-openapi-types
-
-## Use This Skill When
-
-- The task is about OpenAPI type definitions, not code generation execution.
-- The task mentions OpenAPI schemas, operations, parameters, responses, components, references, or extensions.
-- The task needs to model security schemes, media types, request bodies, or reusable document fragments.
-- The task needs accurate TypeScript shapes for generator or validation work.
 
 ## Workflow
 

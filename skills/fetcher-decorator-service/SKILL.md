@@ -1,17 +1,10 @@
 ---
 name: fetcher-decorator-service
 description: >
-  Use when building declarative TypeScript API service classes with fetcher-decorator (`@api`, HTTP-method and parameter decorators) instead of hand-written Fetcher calls.
+  Build declarative TypeScript API services with `@ahoo-wang/fetcher-decorator`: `@api`, HTTP and parameter decorators, result extractors, lifecycle hooks, inheritance, and generated method stubs. Use when a task needs decorator-based services instead of hand-written Fetcher calls.
 ---
 
 # fetcher-decorator-service
-
-## Use This Skill When
-
-- The user wants API service classes rather than hand-written Fetcher calls.
-- The task mentions `@api`, `@get`, `@post`, `@body`, `@query`, or endpoint decorators.
-- The task needs typed method return extraction or `EndpointReturnType` behavior.
-- The task involves decorator lifecycle hooks, inheritance, or fetcher resolution.
 
 ## Workflow
 

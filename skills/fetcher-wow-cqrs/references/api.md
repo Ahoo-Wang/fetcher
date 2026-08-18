@@ -63,9 +63,6 @@ import { ContentTypeValues, HttpMethod } from '@ahoo-wang/fetcher';
 import {
   // Command
   CommandClient,
-  CommandRequest,
-  CommandResult,
-  CommandBody,
   CommandHeaders,
   CommandStage,
   // Query clients
@@ -74,12 +71,6 @@ import {
   QueryClientFactory,
   LoadStateAggregateClient,
   LoadOwnerStateAggregateClient,
-  // Types
-  MaterializedSnapshot,
-  PagedList,
-  ListQuery,
-  PagedQuery,
-  SingleQuery,
   ResourceAttributionPathSpec,
   SortDirection,
   DeletionState,
@@ -131,6 +122,15 @@ import {
   aggregateIds,
   tenantId,
   ownerId,
+  // Types
+  type CommandRequest,
+  type CommandResult,
+  type CommandBody,
+  type MaterializedSnapshot,
+  type PagedList,
+  type ListQuery,
+  type PagedQuery,
+  type SingleQuery,
 } from '@ahoo-wang/fetcher-wow';
 ```
 

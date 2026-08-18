@@ -189,6 +189,8 @@ export const cartQueryClientFactory = new QueryClientFactory<
 });
 ```
 
+When an aggregate has no `.event.list_query` operation, its generated `DomainEventType` is `never`.
+
 Resource attribution inferred from command paths: `ResourceAttributionPathSpec.OWNER` (`/owner/{ownerId}`), `ResourceAttributionPathSpec.TENANT` (`/tenant/{tenantId}`), or `NONE`.
 
 ### API Clients

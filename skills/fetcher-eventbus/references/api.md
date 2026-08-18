@@ -165,10 +165,10 @@ Manages multiple named event types with lazy-loaded TypedEventBus instances:
 ```typescript
 import { EventBus, SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
-interface AppEvents {
+type AppEvents = {
   'user:login': { username: string };
   'order:created': { orderId: string };
-}
+};
 
 const supplier = (type: string) => new SerialTypedEventBus(type);
 const appBus = new EventBus<AppEvents>(supplier);
@@ -244,12 +244,12 @@ if (messenger) {
 
 ## API Reference
 
-| Method        | Returns                  | Description                                                       |
-| ------------- | ------------------------ | ----------------------------------------------------------------- |
-| `on(handler)` | `boolean`                | Register handler; returns `false` if duplicate name               |
-| `off(name)`   | `boolean`                | Remove handler by name; returns `false` if not found              |
-| `emit(event)` | `Promise<void>`          | Trigger event to all handlers                                     |
-| `destroy()`   | `void`                   | Serial/Parallel: removes all handlers. Broadcast: closes the messenger only — call `delegate.destroy()` too if handlers must go |
+| Method        | Returns         | Description                                                                                                                     |
+| ------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `on(handler)` | `boolean`       | Register handler; returns `false` if duplicate name                                                                             |
+| `off(name)`   | `boolean`       | Remove handler by name; returns `false` if not found                                                                            |
+| `emit(event)` | `Promise<void>` | Trigger event to all handlers                                                                                                   |
+| `destroy()`   | `void`          | Serial/Parallel: removes all handlers. Broadcast: closes the messenger only — call `delegate.destroy()` too if handlers must go |
 
 Notes:
 
