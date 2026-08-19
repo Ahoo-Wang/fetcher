@@ -274,7 +274,7 @@ const openai = new OpenAI({
 ```typescript
 interface ChatRequest {
   // 核心参数
-  model?: string; // 模型 ID（例如 'gpt-3.5-turbo', 'gpt-4'）
+  model: string; // 模型 ID（例如 'gpt-3.5-turbo', 'gpt-4'）
   messages: Message[]; // 会话消息
   stream?: boolean; // 启用流式响应
 
@@ -282,31 +282,22 @@ interface ChatRequest {
   temperature?: number; // 采样温度（0.0 - 2.0）
   max_tokens?: number; // 生成的最大令牌数
   top_p?: number; // 核采样参数（0.0 - 1.0）
+  n?: number; // 生成的补全选择数量
+  seed?: number; // 测试版功能，用于确定性采样
+  stop?: string | string[] | null; // 停止序列（最多 4 个）
 
   // 惩罚参数
   frequency_penalty?: number; // 重复惩罚（-2.0 - 2.0）
   presence_penalty?: number; // 主题多样性惩罚（-2.0 - 2.0）
 
+  // 函数/工具调用
+  tools?: ChatTool[]; // 模型可调用的工具：{ type: 'function', function: { name, description?, parameters? } }
+  tool_choice?: ChatToolChoice; // 'none' | 'auto' | { type: 'function', function: { name: string } }
+
   // 高级参数
-  n?: number; // 生成的补全选择数量
-  stop?: string | string[]; // 停止序列
-  logit_bias?: Record<string, number>; // 令牌偏差调整
+  logit_bias?: Record<string, number> | null; // 令牌偏差调整
+  response_format?: Record<string, unknown>; // 响应格式规范
   user?: string; // 最终用户标识符
-
-  // 响应格式
-  response_format?: object; // 响应格式规范
-
-  // 函数调用（测试版）
-  // tools 应该是工具对象数组: { type: "function", function: { name: string, description?: string, parameters?: object } }[]
-  // 注意: 类型定义使用 string[] 但 OpenAI 期望工具对象
-  tools?: string[];
-  // tool_choice 支持: "auto", "none", 或 { type: "function", function: { name: string } }
-  tool_choice?: { [key: string]: any };
-  // 非标准参数（不属于 OpenAI API）- 可能用于内部跟踪
-  seen?: number;
-
-  // 其他 OpenAI 参数
-  [key: string]: any;
 }
 ```
 
@@ -316,10 +307,10 @@ interface ChatRequest {
 
 ```typescript
 interface Message {
-  role: 'system' | 'user' | 'assistant' | 'function';
-  content: string;
-  name?: string; // 函数消息的名称
-  function_call?: any; // 函数调用结果
+  content?: string;
+  role?: string;
+
+  [property: string]: any;
 }
 ```
 
@@ -332,9 +323,10 @@ interface ChatResponse {
   id: string; // 唯一响应标识符
   object: string; // 对象类型（通常为 'chat.completion'）
   created: number; // 创建的 Unix 时间戳
-  model: string; // 使用的模型
   choices: Choice[]; // 补全选择数组
   usage: Usage; // 令牌使用统计
+
+  [property: string]: any;
 }
 ```
 
@@ -344,9 +336,12 @@ interface ChatResponse {
 
 ```typescript
 interface Choice {
-  index: number; // 选择索引（从 0 开始）
-  message: Message; // 补全消息
-  finish_reason: string; // 补全停止的原因
+  index?: number; // 选择索引（从 0 开始）
+  message?: Message; // 补全消息
+  delta?: Message; // 流式增量（仅在 `stream: true` 的分块中存在）
+  finish_reason?: string; // 补全停止的原因
+
+  [property: string]: any;
 }
 ```
 
@@ -1168,7 +1163,7 @@ class CachedOpenAI {
 
 ## 🤝 贡献
 
-我们欢迎贡献！请查看我们的[贡献指南](../../CONTRIBUTING.md)了解详情。
+我们欢迎贡献！请查看我们的[贡献指南](../../wiki/guide/contributing.md)了解详情。
 
 ### 开发设置
 

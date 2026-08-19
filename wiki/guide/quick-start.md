@@ -53,7 +53,7 @@ yarn add @ahoo-wang/fetcher-eventstream
 :::
 
 ::: tip
-Fetcher requires Node.js >= 18.0.0 and uses ES modules (`"type": "module"`). Make sure your project targets ESM or uses a bundler.
+Fetcher requires Node.js >= 18.20.8 and uses ES modules (`"type": "module"`). Make sure your project targets ESM or uses a bundler.
 :::
 
 ## Basic Usage

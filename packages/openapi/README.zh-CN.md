@@ -210,11 +210,6 @@ const operationWithExtensions: Operation & CommonExtensions = {
 ```typescript
 // 导入特定类型
 import type { OpenAPI, Schema, Operation } from '@ahoo-wang/fetcher-openapi';
-
-// 或从特定模块导入
-import type { OpenAPI } from '@ahoo-wang/fetcher-openapi/openAPI';
-import type { Schema } from '@ahoo-wang/fetcher-openapi/schema';
-import type { Operation } from '@ahoo-wang/fetcher-openapi/paths';
 ```
 
 #### 类型安全 API 开发

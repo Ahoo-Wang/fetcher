@@ -1097,7 +1097,7 @@ pnpm test --coverage
 
 ## 🤝 贡献
 
-欢迎贡献！请查看 [贡献指南](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) 了解更多详情。
+欢迎贡献！请查看 [贡献指南](https://github.com/Ahoo-Wang/fetcher/blob/main/wiki/guide/contributing.md) 了解更多详情。
 
 ## TypeScript 支持
 

@@ -1592,7 +1592,7 @@ For detailed CoSec framework documentation and advanced configuration options, v
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [contributing guide](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) for details on:
+We welcome contributions! Please see our [contributing guide](https://github.com/Ahoo-Wang/fetcher/blob/main/wiki/guide/contributing.md) for details on:
 
 - **Development Setup**: Getting started with the codebase
 - **Code Standards**: TypeScript, linting, and testing guidelines

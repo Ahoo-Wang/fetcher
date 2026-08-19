@@ -623,7 +623,7 @@ function AdvancedSearch() {
 
 ## 🤝 贡献
 
-我们欢迎贡献！请查看我们的[贡献指南](../../CONTRIBUTING.md)了解详情。
+我们欢迎贡献！请查看我们的[贡献指南](../../wiki/guide/contributing.md)了解详情。
 
 1. Fork 此仓库
 2. 创建您的功能分支（`git checkout -b feature/amazing-feature`）

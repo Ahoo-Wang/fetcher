@@ -37,7 +37,7 @@ graph TB
 
     subgraph Output
         direction TB
-        TYPES["model/*.ts<br>interfaces, enums, type aliases"]
+        TYPES["**/types.ts<br>interfaces, enums, type aliases"]
         APICLIENT["*ApiClient.ts<br>decorator-based REST clients"]
         CMDCLIENT["commandClient.ts<br>CommandClient + StreamCommandClient"]
         QRYCLIENT["queryClient.ts<br>QueryClientFactory"]
@@ -305,23 +305,20 @@ For a spec with bounded context `example` and aggregate `Cart`:
 ```
 src/generated/
   index.ts                          # barrel export
+  tsconfig.json                     # TypeScript config for generated code
   example/
     index.ts                        # barrel export
-    boundedContext.ts                # export const example = 'example';
-    model/
-      index.ts
-      CartState.ts                  # interface CartState { ... }
-      AddCartItem.ts                # interface AddCartItem { ... }
-      CartItemAdded.ts              # interface CartItemAdded { ... }
-      ...
+    boundedContext.ts               # export const EXAMPLE_BOUNDED_CONTEXT_ALIAS = 'example';
+    types.ts                        # shared types for the bounded context
+    CartApiClient.ts                # @api() class (one per OpenAPI tag)
+    OrderApiClient.ts               # @api() class (one per OpenAPI tag)
     cart/
       index.ts
+      types.ts                      # CartState, AddCartItem, CartItemAdded, ...
       commandClient.ts              # CartCommandClient, CartStreamCommandClient
       queryClient.ts                # cartQueryClientFactory
     order/
       ...
-  UserApiClient.ts                  # @api() class
-  OrderApiClient.ts                 # @api() class
 ```
 
 ## Programmatic Usage

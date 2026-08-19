@@ -116,14 +116,14 @@ const response2 = await fetcher3.get('/users/:id', {
 
 ```typescript
 import { NamedFetcher } from '@ahoo-wang/fetcher';
-import { cosecRequestInterceptor, cosecResponseInterceptor } from '../cosec';
+import { cosecRequestInterceptor, authorizationResponseInterceptor } from '../cosec';
 
 export const typicodeFetcher = new NamedFetcher('typicode', {
   baseURL: 'https://jsonplaceholder.typicode.com',
 });
 
 typicodeFetcher.interceptors.request.use(cosecRequestInterceptor);
-typicodeFetcher.interceptors.response.use(cosecResponseInterceptor);
+typicodeFetcher.interceptors.response.use(authorizationResponseInterceptor);
 ```
 
 ### 命名 Fetcher 用法
@@ -174,7 +174,7 @@ Fetcher 中的拦截器系统遵循中间件模式，允许您在 HTTP 请求生
 
 Fetcher 自带几个内置拦截器，它们会自动注册：
 
-1. **UrlResolveInterceptor**：解析带路径和查询参数的 URL（顺序：`Number.MAX_SAFE_INTEGER - 11000`）
+1. **UrlResolveInterceptor**：解析带路径和查询参数的 URL（顺序：`Number.MAX_SAFE_INTEGER - 20000`）
 2. **RequestBodyInterceptor**：将对象体转换为 JSON 字符串（顺序：`Number.MIN_SAFE_INTEGER + 10000`）
 3. **FetchInterceptor**：执行实际的 HTTP 请求（顺序：`Number.MAX_SAFE_INTEGER - 10000`）
 4. **ValidateStatusInterceptor**：验证 HTTP 状态码并在状态码无效时抛出错误（响应拦截器，顺序：`Number.MAX_SAFE_INTEGER - 10000`）
@@ -411,7 +411,7 @@ Fetcher 拦截器集合，包括请求、响应和错误拦截器管理器。
 
 ## 🤝 贡献
 
-欢迎贡献！请查看 [贡献指南](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) 了解更多详情。
+欢迎贡献！请查看 [贡献指南](https://github.com/Ahoo-Wang/fetcher/blob/main/wiki/guide/contributing.md) 了解更多详情。
 
 ## 📄 许可证
 
