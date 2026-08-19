@@ -116,14 +116,14 @@ in [integration-test/src/fetcher/typicodeFetcher.ts](../../integration-test/src/
 
 ```typescript
 import { NamedFetcher } from '@ahoo-wang/fetcher';
-import { cosecRequestInterceptor, cosecResponseInterceptor } from '../cosec';
+import { cosecRequestInterceptor, authorizationResponseInterceptor } from '../cosec';
 
 export const typicodeFetcher = new NamedFetcher('typicode', {
   baseURL: 'https://jsonplaceholder.typicode.com',
 });
 
 typicodeFetcher.interceptors.request.use(cosecRequestInterceptor);
-typicodeFetcher.interceptors.response.use(cosecResponseInterceptor);
+typicodeFetcher.interceptors.response.use(authorizationResponseInterceptor);
 ```
 
 ### Named Fetcher Usage
@@ -185,7 +185,7 @@ responses, and errors at different stages of the HTTP request lifecycle.
 
 Fetcher comes with several built-in interceptors that are automatically registered:
 
-1. **UrlResolveInterceptor**: Resolves URLs with path and query parameters (order: `Number.MAX_SAFE_INTEGER - 11000`)
+1. **UrlResolveInterceptor**: Resolves URLs with path and query parameters (order: `Number.MAX_SAFE_INTEGER - 20000`)
 2. **RequestBodyInterceptor**: Converts object bodies to JSON strings (order: `Number.MIN_SAFE_INTEGER + 10000`)
 3. **FetchInterceptor**: Executes the actual HTTP request (order: `Number.MAX_SAFE_INTEGER - 10000`)
 4. **ValidateStatusInterceptor**: Validates HTTP status codes and throws errors for invalid statuses (response
@@ -424,27 +424,20 @@ type Environment = 'development' | 'staging' | 'production';
 interface EnvironmentConfig {
   baseURL: string;
   timeout: number;
-  retryConfig?: {
-    maxRetries: number;
-    retryDelay: number;
-  };
 }
 
 const environmentConfigs: Record<Environment, EnvironmentConfig> = {
   development: {
     baseURL: 'http://localhost:3000/api',
     timeout: 30000,
-    retryConfig: { maxRetries: 0, retryDelay: 0 },
   },
   staging: {
     baseURL: 'https://api-staging.example.com',
     timeout: 10000,
-    retryConfig: { maxRetries: 2, retryDelay: 1000 },
   },
   production: {
     baseURL: 'https://api.example.com',
     timeout: 5000,
-    retryConfig: { maxRetries: 3, retryDelay: 2000 },
   },
 };
 
@@ -924,7 +917,7 @@ Fetcher interceptor collection, including request, response, and error intercept
 ## 🤝 Contributing
 
 Contributions are welcome! Please see
-the [contributing guide](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) for more details.
+the [contributing guide](https://github.com/Ahoo-Wang/fetcher/blob/main/wiki/guide/contributing.md) for more details.
 
 ## 📄 License
 

@@ -276,7 +276,7 @@ Configuration object for chat completion requests.
 ```typescript
 interface ChatRequest {
   // Core parameters
-  model?: string; // Model ID (e.g., 'gpt-3.5-turbo', 'gpt-4')
+  model: string; // Model ID (e.g., 'gpt-3.5-turbo', 'gpt-4')
   messages: Message[]; // Conversation messages
   stream?: boolean; // Enable streaming responses
 
@@ -284,31 +284,22 @@ interface ChatRequest {
   temperature?: number; // Sampling temperature (0.0 - 2.0)
   max_tokens?: number; // Maximum tokens to generate
   top_p?: number; // Nucleus sampling parameter (0.0 - 1.0)
+  n?: number; // Number of completions to generate
+  seed?: number; // Beta feature for deterministic sampling
+  stop?: string | string[] | null; // Stop sequences (max 4)
 
   // Penalty parameters
   frequency_penalty?: number; // Repetition penalty (-2.0 - 2.0)
   presence_penalty?: number; // Topic diversity penalty (-2.0 - 2.0)
 
-  // Advanced parameters
-  n?: number; // Number of completions to generate
-  stop?: string | string[]; // Stop sequences
-  logit_bias?: Record<string, number>; // Token bias adjustments
-  user?: string; // End-user identifier
-
-  // Response format
-  response_format?: object; // Response format specification
-
   // Function/Tool calling
-  // tools should be an array of tool objects: { type: "function", function: { name: string, description?: string, parameters?: object } }[]
-  // Note: The type definition uses string[] but OpenAI expects tool objects
-  tools?: string[];
-  // tool_choice supports: "auto", "none", or { type: "function", function: { name: string } }
-  tool_choice?: { [key: string]: any };
-  // Non-standard parameter (not part of OpenAI API) - likely for internal tracking
-  seen?: number;
+  tools?: ChatTool[]; // Tools the model may call: { type: 'function', function: { name, description?, parameters? } }
+  tool_choice?: ChatToolChoice; // 'none' | 'auto' | { type: 'function', function: { name: string } }
 
-  // Other OpenAI parameters
-  [key: string]: any;
+  // Advanced parameters
+  logit_bias?: Record<string, number> | null; // Token bias adjustments
+  response_format?: Record<string, unknown>; // Response format specification
+  user?: string; // End-user identifier
 }
 ```
 
@@ -318,15 +309,10 @@ Represents a single message in the conversation.
 
 ```typescript
 interface Message {
-  role: 'system' | 'user' | 'assistant' | 'tool';
   content?: string;
-  name?: string; // For tool messages
-  tool_call_id?: string; // ID of the tool call (for tool role messages)
-  tool_calls?: Array<{
-    id: string;
-    type: 'function';
-    function: { name: string; arguments: string };
-  }>; // For assistant messages with tool calls
+  role?: string;
+
+  [property: string]: any;
 }
 ```
 
@@ -339,9 +325,10 @@ interface ChatResponse {
   id: string; // Unique response identifier
   object: string; // Object type (usually 'chat.completion')
   created: number; // Unix timestamp of creation
-  model: string; // Model used for completion
   choices: Choice[]; // Array of completion choices
   usage: Usage; // Token usage statistics
+
+  [property: string]: any;
 }
 ```
 
@@ -351,9 +338,12 @@ Represents a single completion choice.
 
 ```typescript
 interface Choice {
-  index: number; // Choice index (0-based)
-  message: Message; // The completion message
-  finish_reason: string; // Reason completion stopped
+  index?: number; // Choice index (0-based)
+  message?: Message; // The completion message
+  delta?: Message; // Streaming delta (only present on `stream: true` chunks)
+  finish_reason?: string; // Reason completion stopped
+
+  [property: string]: any;
 }
 ```
 
@@ -1175,7 +1165,7 @@ class CachedOpenAI {
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](../../wiki/guide/contributing.md) for details.
 
 ### Development Setup
 

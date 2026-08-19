@@ -1036,7 +1036,7 @@ const deviceStorage = new MockDeviceStorage();
 
 ## 🤝 贡献
 
-我们欢迎贡献！请查看我们的 [贡献指南](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) 了解：
+我们欢迎贡献！请查看我们的 [贡献指南](https://github.com/Ahoo-Wang/fetcher/blob/main/wiki/guide/contributing.md) 了解：
 
 - **开发设置**：开始使用代码库
 - **代码标准**：TypeScript、linting 和测试指南

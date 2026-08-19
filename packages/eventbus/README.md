@@ -206,7 +206,7 @@ pnpm test --coverage
 ## 🤝 Contributing
 
 Contributions are welcome! Please see
-the [contributing guide](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md) for more details.
+the [contributing guide](https://github.com/Ahoo-Wang/fetcher/blob/main/wiki/guide/contributing.md) for more details.
 
 ## Browser Support
 

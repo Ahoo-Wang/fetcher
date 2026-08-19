@@ -37,7 +37,7 @@ graph TB
 
     subgraph Output
         direction TB
-        TYPES["model/*.ts<br>interfaces, enums, type aliases"]
+        TYPES["**/types.ts<br>interfaces, enums, type aliases"]
         APICLIENT["*ApiClient.ts<br>decorator-based REST clients"]
         CMDCLIENT["commandClient.ts<br>CommandClient + StreamCommandClient"]
         QRYCLIENT["queryClient.ts<br>QueryClientFactory"]
@@ -304,24 +304,21 @@ graph LR
 
 ```
 src/generated/
-  index.ts                          # barrel export
+  index.ts                          # 桶导出
+  tsconfig.json                     # 生成代码的 TypeScript 配置
   example/
-    index.ts                        # barrel export
-    boundedContext.ts                # export const example = 'example';
-    model/
-      index.ts
-      CartState.ts                  # interface CartState { ... }
-      AddCartItem.ts                # interface AddCartItem { ... }
-      CartItemAdded.ts              # interface CartItemAdded { ... }
-      ...
+    index.ts                        # 桶导出
+    boundedContext.ts               # export const EXAMPLE_BOUNDED_CONTEXT_ALIAS = 'example';
+    types.ts                        # 限界上下文的共享类型
+    CartApiClient.ts                # @api() 类（每个 OpenAPI 标签一个）
+    OrderApiClient.ts               # @api() 类（每个 OpenAPI 标签一个）
     cart/
       index.ts
-      commandClient.ts              # CartCommandClient, CartStreamCommandClient
+      types.ts                      # CartState、AddCartItem、CartItemAdded 等
+      commandClient.ts              # CartCommandClient、CartStreamCommandClient
       queryClient.ts                # cartQueryClientFactory
     order/
       ...
-  UserApiClient.ts                  # @api() class
-  OrderApiClient.ts                 # @api() class
 ```
 
 ## 编程式使用

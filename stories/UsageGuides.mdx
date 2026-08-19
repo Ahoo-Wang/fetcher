@@ -159,11 +159,9 @@ const user = await userService.getUser(1);`}</pre>
         fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
         fontSize: '14px'
       }}>{`import { Fetcher } from '@ahoo-wang/fetcher';
-
-import { EventStreamInterceptor } from '@ahoo-wang/fetcher-eventstream';
+import '@ahoo-wang/fetcher-eventstream';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-fetcher.interceptors.response.use(new EventStreamInterceptor());
 
 // Generic SSE streaming
 const eventStream = await fetcher.get('/events');

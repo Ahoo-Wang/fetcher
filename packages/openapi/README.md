@@ -211,11 +211,6 @@ Import only the types you need for better tree-shaking:
 ```typescript
 // Import specific types
 import type { OpenAPI, Schema, Operation } from '@ahoo-wang/fetcher-openapi';
-
-// Or import from specific modules
-import type { OpenAPI } from '@ahoo-wang/fetcher-openapi/openAPI';
-import type { Schema } from '@ahoo-wang/fetcher-openapi/schema';
-import type { Operation } from '@ahoo-wang/fetcher-openapi/paths';
 ```
 
 #### Type-Safe API Development
