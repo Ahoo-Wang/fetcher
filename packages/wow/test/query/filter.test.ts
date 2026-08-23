@@ -363,6 +363,12 @@ describe('filter', () => {
     ).toThrow();
   });
 
+  it('rejects malformed zone offsets with a validation error', () => {
+    expect(() =>
+      filter.today('createdAt', { zoneId: '+invalid' }),
+    ).toThrow('zoneId is invalid: [+invalid].');
+  });
+
   it.each([
     ['empty logical operands', () => Reflect.apply(filter.and, null, [])],
     [

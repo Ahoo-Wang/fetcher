@@ -160,7 +160,6 @@ function requireNonEmpty(name: string, values: readonly unknown[]): void {
 }
 
 function isValidOffsetZone(zoneId: string): boolean {
-  if (zoneId === 'Z') return true;
   const match = OFFSET_ZONE_PATTERN.exec(zoneId);
   if (!match) return false;
   const offset = match[1];
