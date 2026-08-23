@@ -26,6 +26,8 @@
   - [Setup](#setup-3)
   - [ResourceAttributionPathSpec](#resourceattributionpathspec)
   - [Factory Methods](#factory-methods)
+- [Filter Expressions](#filter-expressions)
+  - [Filter Cursor Queries](#filter-cursor-queries)
 - [Query DSL Conditions](#query-dsl-conditions)
   - [Comparison Operators](#comparison-operators)
   - [String Operators](#string-operators)
@@ -74,10 +76,16 @@ import {
   ResourceAttributionPathSpec,
   SortDirection,
   DeletionState,
+  FilterOperator,
+  StringComparison,
+  filter,
+  listQuery,
+  cursorFilter,
+  cursorQuery,
   // Sort helpers
   asc,
   desc,
-  // Condition builders
+  // Deprecated Condition builders (compatibility only)
   and,
   or,
   nor,
@@ -131,6 +139,16 @@ import {
   type ListQuery,
   type PagedQuery,
   type SingleQuery,
+  type FilterExpression,
+  type ElementFilterExpression,
+  type RelativeTimeFilterOptions,
+  type FilterListQuery,
+  type FilterPagedQuery,
+  type FilterSingleQuery,
+  type FilterCursorQuery,
+  type ListQueryRequest,
+  type PagedQueryRequest,
+  type SingleQueryRequest,
 } from '@ahoo-wang/fetcher-wow';
 ```
 
@@ -292,48 +310,50 @@ const snapshotClient = new SnapshotQueryClient<CartState>({
 
 ```typescript
 // Count matching snapshots
-const count: number = await snapshotClient.count(all());
+const count: number = await snapshotClient.count(filter.matchAll());
 
 // List snapshots (returns MaterializedSnapshot<S>[])
 const list = await snapshotClient.list({
-  condition: all(),
+  filter: filter.matchAll(),
   sort: [{ field: 'eventTime', direction: SortDirection.DESC }], // 'ASC' | 'DESC'; or use desc('eventTime')
   limit: 10,
 });
 
 // List snapshots as SSE stream
-const stream = await snapshotClient.listStream({ condition: all() });
+const stream = await snapshotClient.listStream({ filter: filter.matchAll() });
 for await (const event of stream) {
   console.log(event.data);
 }
 
 // List only state objects (returns S[])
-const states = await snapshotClient.listState({ condition: all() });
+const states = await snapshotClient.listState({ filter: filter.matchAll() });
 
 // List states as SSE stream
-const stateStream = await snapshotClient.listStateStream({ condition: all() });
+const stateStream = await snapshotClient.listStateStream({
+  filter: filter.matchAll(),
+});
 
 // Paged snapshots (returns PagedList<MaterializedSnapshot<S>>)
 const paged = await snapshotClient.paged({
-  condition: all(),
+  filter: filter.matchAll(),
   pagination: { index: 1, size: 20 },
 });
 // PagedList: { total: number, list: T[] }
 
 // Paged states (returns PagedList<S>)
 const pagedState = await snapshotClient.pagedState({
-  condition: all(),
+  filter: filter.matchAll(),
   pagination: { index: 1, size: 20 },
 });
 
 // Single snapshot
 const snapshot = await snapshotClient.single({
-  condition: aggregateId('cart-123'),
+  filter: filter.eq('aggregateId', 'cart-123'),
 });
 
 // Single state
 const state = await snapshotClient.singleState({
-  condition: aggregateId('cart-123'),
+  filter: filter.eq('aggregateId', 'cart-123'),
 });
 ```
 
@@ -371,11 +391,11 @@ const eventClient = new EventStreamQueryClient({
 ### Methods
 
 ```typescript
-const count = await eventClient.count(all());
-const list = await eventClient.list({ condition: all() });
-const stream = await eventClient.listStream({ condition: all() });
+const count = await eventClient.count(filter.matchAll());
+const list = await eventClient.list({ filter: filter.matchAll() });
+const stream = await eventClient.listStream({ filter: filter.matchAll() });
 const paged = await eventClient.paged({
-  condition: all(),
+  filter: filter.matchAll(),
   pagination: { index: 1, size: 20 },
 });
 ```
@@ -447,7 +467,98 @@ const ownerStateClient = factory.createOwnerLoadStateAggregateClient();
 
 ---
 
-## Query DSL Conditions
+## Filter Expressions
+
+Wow 8.11+ queries use a discriminated `FilterExpression` with `op` as the
+wire discriminator. Builders are grouped under `filter` so they do not collide
+with the legacy `Condition` helpers:
+
+```typescript
+const expression = filter.and(
+  filter.deletion(DeletionState.ACTIVE),
+  filter.eq('state.status', 'PAID'),
+  filter.elementMatch('state.items', filter.gt('quantity', 0)),
+  filter.search('wow', 'state.name'),
+);
+
+await snapshotClient.count(expression);
+await snapshotClient.list({ filter: expression, limit: 10 });
+// The factories infer FilterListQuery when filter is supplied.
+const query = listQuery({ filter: expression });
+```
+
+`listQuery({ filter })` defaults `limit` to `0` (unlimited), matching Wow
+8.11. Legacy `listQuery({ condition })` keeps the previous default page size.
+
+Available builders:
+
+- Logical: `matchAll`, `matchNone`, `and`, `or`, `nor`
+- Comparison: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `between`
+- String: `contains`, `startsWith`, `endsWith`; pass `StringComparison` as the third argument
+- Collection: `isIn`, `notIn`, `containsAll`
+- Presence: `isEmpty`, `isNull`, `isNotNull`, `exists`, `notExists`
+- Scope/search: `deletion`, `elementMatch`, `search`
+- Relative time: `today`, `beforeToday`, `tomorrow`, `thisWeek`, `nextWeek`, `lastWeek`, `thisMonth`, `lastMonth`, `recentDays`, `earlierDays`
+
+Relative-time builders accept JVM `ZoneId` and `DateTimeFormatter` options:
+
+```typescript
+interface RelativeTimeFilterOptions {
+  zoneId?: string;
+  datePattern?: string;
+}
+
+filter.today(field, options?);
+filter.beforeToday(field, time, options?);
+filter.tomorrow(field, options?);
+filter.thisWeek(field, options?);
+filter.nextWeek(field, options?);
+filter.lastWeek(field, options?);
+filter.thisMonth(field, options?);
+filter.lastMonth(field, options?);
+filter.recentDays(field, days, options?);
+filter.earlierDays(field, days, options?);
+```
+
+`days` must be a positive JVM `Int`. Only `zoneId` and `datePattern` from the
+options object are emitted on the wire.
+
+`SingleQueryRequest`, `ListQueryRequest`, and `PagedQueryRequest` accept either
+the filter-based request types or the existing condition-based request types.
+`count` likewise accepts `FilterExpression | Condition`. The legacy Condition
+API remains available for servers in the compatibility window.
+
+`elementMatch` accepts `ElementFilterExpression`, whose relative field type is
+independent from the outer query fields and excludes `deletion` and `search`,
+including inside nested `and`/`or`/`nor` expressions.
+
+### Filter Cursor Queries
+
+Use `FilterCursorQuery` with `cursorQuery` to append the cursor filter and sort
+to a filter-based list query. `cursorFilter` builds only the cursor predicate.
+
+```typescript
+const options: FilterCursorQuery<'id' | 'state.status'> = {
+  field: 'id',
+  cursorId: 'cursor-123',
+  direction: SortDirection.ASC,
+  query: listQuery({ filter: filter.eq('state.status', 'PAID') }),
+};
+
+const nextPageQuery: FilterListQuery<'id' | 'state.status'> =
+  cursorQuery(options);
+const predicate: FilterExpression<'id'> = cursorFilter({
+  field: 'id',
+  cursorId: 'cursor-123',
+  direction: SortDirection.ASC,
+});
+```
+
+## Query DSL Conditions (Deprecated)
+
+The complete Condition API (`Condition`, `ConditionCapable`, `Operator`,
+builders, helpers, and operator locales) is deprecated. Use `FilterExpression`
+and `filter.*`; keep Condition only while talking to a legacy Wow server.
 
 ### Comparison Operators
 
@@ -622,8 +733,7 @@ import {
   SnapshotQueryClient,
   CommandHeaders,
   CommandStage,
-  aggregateId,
-  all,
+  filter,
 } from '@ahoo-wang/fetcher-wow';
 
 const fetcher = new Fetcher({ baseURL: 'http://localhost:8080/' });
@@ -651,7 +761,7 @@ const cart = await snapshotClient.getStateById(result.aggregateId);
 
 // Stream real-time updates
 const stream = await snapshotClient.listStateStream({
-  condition: aggregateId(result.aggregateId),
+  filter: filter.eq('aggregateId', result.aggregateId),
 });
 for await (const event of stream) {
   console.log('Cart updated:', event.data);

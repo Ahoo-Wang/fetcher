@@ -205,7 +205,14 @@ const { getQuery, setQuery } = useQueryState<UserQuery>({
 
 ## Wow Query Hooks
 
-Wow-specific query hooks from `@ahoo-wang/fetcher-react`. These wrap `useQuery` with typed Wow query structures (ListQuery, PagedQuery, etc.) and require a custom `execute` function.
+Wow-specific query hooks from `@ahoo-wang/fetcher-react`. These wrap `useQuery`
+with Wow request unions (`ListQueryRequest`, `PagedQueryRequest`, etc.), so both
+`FilterExpression` queries and deprecated `Condition` queries are accepted. They
+require a custom `execute` function.
+
+The hooks preserve the concrete request subtype across `initialQuery`, `execute`,
+`getQuery`, and `setQuery`. Existing generic option/return types default to the
+legacy query subtype; passing a filter query selects the filter-specific overload.
 
 ### useListQuery
 
@@ -214,7 +221,12 @@ const { result, loading, execute, setQuery } = useListQuery<
   User,
   'id' | 'name'
 >({
-  initialQuery: { condition: all(), projection: {}, sort: [], limit: 10 },
+  initialQuery: {
+    filter: filter.matchAll(),
+    projection: {},
+    sort: [],
+    limit: 10,
+  },
   execute: async listQuery => fetchListData(listQuery),
   autoExecute: true,
 });
@@ -222,7 +234,9 @@ const { result, loading, execute, setQuery } = useListQuery<
 
 ### usePagedQuery / useSingleQuery / useCountQuery / useListStreamQuery
 
-Same pattern, typed for paged results, single items, counts, and streams respectively.
+Same pattern, typed for paged results, single items, counts, and streams
+respectively. Count hooks accept `FilterExpression | Condition`; the other hooks
+use their corresponding `*QueryRequest` union.
 
 ### Fetcher-based Variants
 
@@ -241,7 +255,7 @@ const { result, loading, execute, setQuery } = useFetcherListQuery<
 >({
   url: '/api/users/list',
   initialQuery: listQuery({
-    condition: all(),
+    filter: filter.matchAll(),
     sort: [desc('createdAt')],
     limit: 10,
   }),

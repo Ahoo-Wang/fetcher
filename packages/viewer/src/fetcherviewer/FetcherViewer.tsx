@@ -57,8 +57,7 @@ export interface FetcherViewerProps<RecordType>
   defaultViewId?: string;
 
   pagination:
-    | false
-    | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
+    false | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
   actionColumn?: ViewTableActionColumn<RecordType>;
 
   onClickPrimaryKey?: (id: any, record: RecordType) => void;
