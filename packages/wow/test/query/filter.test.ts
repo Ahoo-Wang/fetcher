@@ -257,6 +257,18 @@ describe('filter', () => {
       },
     },
     {
+      name: 'wide week-based-year pattern',
+      create: () =>
+        filter.today('createdAt', {
+          datePattern: 'YYYYYYYYYYYYYYYYYYYY',
+        }),
+      expected: {
+        op: FilterOperator.TODAY,
+        field: 'createdAt',
+        datePattern: 'YYYYYYYYYYYYYYYYYYYY',
+      },
+    },
+    {
       name: 'before today',
       create: () =>
         filter.beforeToday('createdAt', '09:30', {

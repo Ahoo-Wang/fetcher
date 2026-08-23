@@ -105,7 +105,7 @@ const DATE_PATTERN_COUNTS: Readonly<
   Z: 5,
   W: 1,
   w: 2,
-  Y: 19,
+  Y: Number.POSITIVE_INFINITY,
   g: 19,
 };
 
