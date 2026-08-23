@@ -211,6 +211,18 @@ function validateDatePatternLetter(
   }
 }
 
+function isNumericDatePatternLetter(
+  letter: string | undefined,
+  count: number,
+): boolean {
+  return (
+    letter !== undefined &&
+    ('uyDFdhHkKmsgAnNWwY'.includes(letter) ||
+      (letter === 'c' && count === 1) ||
+      ('eMLQq'.includes(letter) && count <= 2))
+  );
+}
+
 function validateDatePattern(pattern: string): void {
   if (typeof pattern !== 'string' || !pattern.trim()) {
     throw new TypeError('datePattern cannot be blank.');
@@ -233,7 +245,9 @@ function validateDatePattern(pattern: string): void {
       let end = index + 1;
       while (pattern[end] === letter) end++;
       let count = end - index;
+      let padded = false;
       if (letter === 'p') {
+        padded = true;
         letter = pattern[end];
         if (!letter || !/[A-Za-z]/.test(letter) || letter === 'p') {
           throw new TypeError(`datePattern is invalid: [${pattern}].`);
@@ -243,6 +257,14 @@ function validateDatePattern(pattern: string): void {
         count = end - fieldStart;
       }
       validateDatePatternLetter(pattern, letter, count);
+      if (padded && isNumericDatePatternLetter(letter, count)) {
+        const nextLetter = pattern[end];
+        let nextEnd = end + 1;
+        while (pattern[nextEnd] === nextLetter) nextEnd++;
+        if (isNumericDatePatternLetter(nextLetter, nextEnd - end)) {
+          throw new TypeError(`datePattern is invalid: [${pattern}].`);
+        }
+      }
       index = end - 1;
     } else if (character === '[') {
       optionalDepth++;

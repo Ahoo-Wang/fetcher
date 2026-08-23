@@ -490,6 +490,10 @@ describe('filter', () => {
       () => filter.today('createdAt', { datePattern: 'p' }),
     ],
     [
+      'padded adjacent numeric date pattern',
+      () => filter.today('createdAt', { datePattern: 'pym' }),
+    ],
+    [
       'forbidden date pattern character',
       () => filter.today('createdAt', { datePattern: 'yyyy{MM}' }),
     ],
