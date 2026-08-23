@@ -56,6 +56,14 @@ describe('queryable', () => {
     });
   });
 
+  it('rejects null filters instead of falling back to match-all', () => {
+    for (const createQuery of [singleQuery, listQuery, pagedQuery]) {
+      expect(() => createQuery({ filter: null } as never)).toThrowError(
+        'filter cannot be null.',
+      );
+    }
+  });
+
   describe('singleQuery', () => {
     it('should create a SingleQuery with default condition when no parameters are provided', () => {
       const result = singleQuery();

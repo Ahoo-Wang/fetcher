@@ -64,7 +64,10 @@ function queryFilter<FIELDS extends string>({
   filter,
 }: QueryFilterOptions<FIELDS>):
   ConditionCapable<FIELDS> | FilterCapable<FIELDS> {
-  return filter ? { filter } : { condition: condition ?? all() };
+  if (filter === null) {
+    throw new TypeError('filter cannot be null.');
+  }
+  return filter === undefined ? { condition: condition ?? all() } : { filter };
 }
 
 /**
@@ -158,7 +161,7 @@ export function listQuery<FIELDS extends string = string>({
     ...queryFilter({ condition, filter }),
     projection,
     sort,
-    limit: limit ?? (filter ? 0 : DEFAULT_PAGINATION.size),
+    limit: limit ?? (filter === undefined ? DEFAULT_PAGINATION.size : 0),
   };
 }
 
