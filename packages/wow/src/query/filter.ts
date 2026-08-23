@@ -66,8 +66,48 @@ const LOCAL_TIME_PATTERN =
 const LOGICAL_FIELD_PATTERN =
   /^[A-Za-z_][A-Za-z0-9_-]*(\.(?:[A-Za-z_][A-Za-z0-9_-]*|[0-9]+))*$/;
 const OFFSET_ZONE_PATTERN =
-  /^(?:(?:UTC|GMT|UT)?(?:Z|[+-](?:0?[0-9]|1[0-8])(?::[0-5][0-9])?))$/;
-const DATE_PATTERN_LETTERS = 'GuyDMLdgQqYwWEecFaBhKkHmsSAnNVvzOXxZp';
+  /^(?:UTC|GMT|UT)?[+-](\d{1,2}|\d{4}|\d{6}|\d{2}:\d{2}|\d{2}:\d{2}:\d{2})$/;
+const OFFSET_ZONE_CANDIDATE_PATTERN = /^(?:UTC|GMT|UT)?[+-]/;
+const DATE_PATTERN_COUNTS: Readonly<
+  Record<string, number | readonly number[]>
+> = {
+  G: 5,
+  u: 19,
+  y: 19,
+  Q: 5,
+  q: 5,
+  M: 5,
+  L: 5,
+  D: 3,
+  d: 2,
+  F: 1,
+  E: 5,
+  e: 5,
+  c: [1, 3, 4, 5],
+  a: 1,
+  B: [1, 4, 5],
+  h: 2,
+  H: 2,
+  k: 2,
+  K: 2,
+  m: 2,
+  s: 2,
+  S: 9,
+  A: 19,
+  n: 19,
+  N: 19,
+  V: [2],
+  v: [1, 4],
+  z: 4,
+  O: [1, 4],
+  X: 5,
+  x: 5,
+  Z: 5,
+  W: 1,
+  w: 2,
+  Y: 19,
+  g: 19,
+};
 
 function logicalField<FIELDS extends string>(field: FIELDS): FIELDS {
   if (typeof field !== 'string' || !LOGICAL_FIELD_PATTERN.test(field)) {
@@ -116,6 +156,24 @@ function requireNonEmpty(name: string, values: readonly unknown[]): void {
   }
 }
 
+function isValidOffsetZone(zoneId: string): boolean {
+  if (zoneId === 'Z') return true;
+  const match = OFFSET_ZONE_PATTERN.exec(zoneId);
+  if (!match) return false;
+  const offset = match[1];
+  const parts = offset.includes(':')
+    ? offset.split(':')
+    : offset.length <= 2
+      ? [offset]
+      : [offset.slice(0, 2), offset.slice(2, 4), offset.slice(4, 6)];
+  const [hours, minutes = 0, seconds = 0] = parts.map(Number);
+  return (
+    minutes <= 59 &&
+    seconds <= 59 &&
+    (hours < 18 || (hours === 18 && minutes === 0 && seconds === 0))
+  );
+}
+
 function validateRelativeTimeOptions({
   zoneId,
   datePattern,
@@ -124,16 +182,37 @@ function validateRelativeTimeOptions({
     if (typeof zoneId !== 'string' || !zoneId.trim()) {
       throw new TypeError('zoneId cannot be blank.');
     }
+    if (
+      OFFSET_ZONE_CANDIDATE_PATTERN.test(zoneId) &&
+      !isValidOffsetZone(zoneId)
+    ) {
+      throw new TypeError(`zoneId is invalid: [${zoneId}].`);
+    }
     try {
       new Intl.DateTimeFormat('en', { timeZone: zoneId });
     } catch {
-      if (!OFFSET_ZONE_PATTERN.test(zoneId)) {
+      if (!isValidOffsetZone(zoneId)) {
         throw new TypeError(`zoneId is invalid: [${zoneId}].`);
       }
     }
   }
   if (datePattern !== undefined) {
     validateDatePattern(datePattern);
+  }
+}
+
+function validateDatePatternLetter(
+  pattern: string,
+  letter: string,
+  count: number,
+): void {
+  const allowed = DATE_PATTERN_COUNTS[letter];
+  const valid =
+    typeof allowed === 'number'
+      ? count <= allowed
+      : allowed?.includes(count) === true;
+  if (!valid) {
+    throw new TypeError(`datePattern is invalid: [${pattern}].`);
   }
 }
 
@@ -154,22 +233,33 @@ function validateDatePattern(pattern: string): void {
       continue;
     }
     if (quoted) continue;
-    if (character === '[') {
+    if (/[A-Za-z]/.test(character)) {
+      let letter = character;
+      let end = index + 1;
+      while (pattern[end] === letter) end++;
+      let count = end - index;
+      if (letter === 'p') {
+        letter = pattern[end];
+        if (!letter || !/[A-Za-z]/.test(letter) || letter === 'p') {
+          throw new TypeError(`datePattern is invalid: [${pattern}].`);
+        }
+        const fieldStart = end++;
+        while (pattern[end] === letter) end++;
+        count = end - fieldStart;
+      }
+      validateDatePatternLetter(pattern, letter, count);
+      index = end - 1;
+    } else if (character === '[') {
       optionalDepth++;
     } else if (character === ']') {
       if (optionalDepth === 0)
         throw new TypeError(`datePattern is invalid: [${pattern}].`);
       optionalDepth--;
-    } else if (
-      /[A-Za-z]/.test(character) &&
-      !DATE_PATTERN_LETTERS.includes(character)
-    ) {
-      throw new TypeError(`datePattern is invalid: [${pattern}].`);
     } else if ('{}#'.includes(character)) {
       throw new TypeError(`datePattern is invalid: [${pattern}].`);
     }
   }
-  if (quoted || optionalDepth !== 0) {
+  if (quoted) {
     throw new TypeError(`datePattern is invalid: [${pattern}].`);
   }
 }

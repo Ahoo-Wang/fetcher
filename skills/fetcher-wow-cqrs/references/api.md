@@ -27,6 +27,7 @@
   - [ResourceAttributionPathSpec](#resourceattributionpathspec)
   - [Factory Methods](#factory-methods)
 - [Filter Expressions](#filter-expressions)
+  - [Filter Cursor Queries](#filter-cursor-queries)
 - [Query DSL Conditions](#query-dsl-conditions)
   - [Comparison Operators](#comparison-operators)
   - [String Operators](#string-operators)
@@ -79,6 +80,8 @@ import {
   StringComparison,
   filter,
   listQuery,
+  cursorFilter,
+  cursorQuery,
   // Sort helpers
   asc,
   desc,
@@ -141,6 +144,7 @@ import {
   type FilterListQuery,
   type FilterPagedQuery,
   type FilterSingleQuery,
+  type FilterCursorQuery,
   type ListQueryRequest,
   type PagedQueryRequest,
   type SingleQueryRequest,
@@ -503,6 +507,28 @@ API remains available for servers in the compatibility window.
 `elementMatch` accepts `ElementFilterExpression`, whose relative field type is
 independent from the outer query fields and excludes `deletion` and `search`,
 including inside nested `and`/`or`/`nor` expressions.
+
+### Filter Cursor Queries
+
+Use `FilterCursorQuery` with `cursorQuery` to append the cursor filter and sort
+to a filter-based list query. `cursorFilter` builds only the cursor predicate.
+
+```typescript
+const options: FilterCursorQuery<'id' | 'state.status'> = {
+  field: 'id',
+  cursorId: 'cursor-123',
+  direction: SortDirection.ASC,
+  query: listQuery({ filter: filter.eq('state.status', 'PAID') }),
+};
+
+const nextPageQuery: FilterListQuery<'id' | 'state.status'> =
+  cursorQuery(options);
+const predicate: FilterExpression<'id'> = cursorFilter({
+  field: 'id',
+  cursorId: 'cursor-123',
+  direction: SortDirection.ASC,
+});
+```
 
 ## Query DSL Conditions (Deprecated)
 

@@ -73,6 +73,28 @@ describe('cursorQuery', () => {
     );
   });
 
+  it('should treat an undefined filter as a legacy query', () => {
+    const query = {
+      condition: eq('status', 'active'),
+      filter: undefined,
+      limit: 10,
+    };
+    const options = {
+      field: 'id',
+      cursorId: 'cursor123',
+      direction: SortDirection.ASC,
+      query,
+    };
+
+    const result = cursorQuery(options);
+
+    expect(result).toEqual({
+      ...query,
+      condition: and(cursorCondition(options), query.condition),
+      sort: [{ field: 'id', direction: SortDirection.ASC }],
+    });
+  });
+
   it('should create cursor sort configuration', () => {
     const field = 'id';
     const direction = SortDirection.ASC;

@@ -222,6 +222,20 @@ describe('filter', () => {
       expected: { op: FilterOperator.TODAY, field: 'createdAt' },
     },
     {
+      name: 'today with JVM boundary options',
+      create: () =>
+        filter.today('createdAt', {
+          zoneId: '+18:00',
+          datePattern: 'ppHH[',
+        }),
+      expected: {
+        op: FilterOperator.TODAY,
+        field: 'createdAt',
+        zoneId: '+18:00',
+        datePattern: 'ppHH[',
+      },
+    },
+    {
       name: 'before today',
       create: () =>
         filter.beforeToday('createdAt', '09:30', {
@@ -287,6 +301,17 @@ describe('filter', () => {
   ])('builds the $name wire shape', ({ create, expected }) => {
     expect(create()).toEqual(expected);
   });
+
+  it.each(['Z', '+5', '+0530', '+05:30:15'])(
+    'accepts the JVM zone offset %s',
+    zoneId => {
+      expect(filter.today('createdAt', { zoneId })).toEqual({
+        op: FilterOperator.TODAY,
+        field: 'createdAt',
+        zoneId,
+      });
+    },
+  );
 
   it('restricts element predicates recursively', () => {
     const predicate = filter.and(
@@ -388,12 +413,16 @@ describe('filter', () => {
       () => filter.today('createdAt', { zoneId: 'Mars/Phobos' }),
     ],
     [
-      'blank date pattern',
-      () => filter.today('createdAt', { datePattern: '' }),
+      'zone offset outside the JVM range',
+      () => filter.today('createdAt', { zoneId: '+23:59' }),
     ],
     [
-      'invalid date pattern',
-      () => filter.today('createdAt', { datePattern: '[' }),
+      'zone offset beyond the JVM boundary minute',
+      () => filter.today('createdAt', { zoneId: '+18:01' }),
+    ],
+    [
+      'blank date pattern',
+      () => filter.today('createdAt', { datePattern: '' }),
     ],
     [
       'unexpected closing date pattern bracket',
@@ -402,6 +431,14 @@ describe('filter', () => {
     [
       'unsupported date pattern letter',
       () => filter.today('createdAt', { datePattern: 'jj' }),
+    ],
+    [
+      'invalid date pattern letter count',
+      () => filter.today('createdAt', { datePattern: 'cc' }),
+    ],
+    [
+      'date pattern ending with padding',
+      () => filter.today('createdAt', { datePattern: 'p' }),
     ],
     [
       'forbidden date pattern character',

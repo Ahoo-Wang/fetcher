@@ -119,16 +119,18 @@ export function cursorQuery<FIELDS extends string = string>(
 ): ListQuery<FIELDS> | FilterListQuery<FIELDS> {
   const query = options.query;
   const mergedSort = cursorSort(options);
-  if ('filter' in query) {
+  const queryFilter = 'filter' in query ? query.filter : undefined;
+  if (queryFilter !== undefined) {
     return {
       ...query,
-      filter: filter.and(cursorFilter(options), query.filter),
+      filter: filter.and(cursorFilter(options), queryFilter),
       sort: [mergedSort],
     };
   }
+  const conditionQuery = query as ListQuery<FIELDS>;
   return {
     ...query,
-    condition: and(cursorCondition(options), query.condition),
+    condition: and(cursorCondition(options), conditionQuery.condition),
     sort: [mergedSort],
   };
 }
