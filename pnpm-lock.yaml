@@ -676,7 +676,7 @@ importers:
         specifier: workspace:^3.0.0
         version: link:../storage
       '@ahoo-wang/fetcher-wow':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^
         version: link:../wow
       dequal:
         specifier: 'catalog:'

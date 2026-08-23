@@ -67,7 +67,13 @@ function queryFilter<FIELDS extends string>({
   if (filter === null) {
     throw new TypeError('filter cannot be null.');
   }
-  return filter === undefined ? { condition: condition ?? all() } : { filter };
+  if (filter !== undefined) {
+    return { filter };
+  }
+  if (condition === null) {
+    throw new TypeError('condition cannot be null.');
+  }
+  return { condition: condition === undefined ? all() : condition };
 }
 
 /**

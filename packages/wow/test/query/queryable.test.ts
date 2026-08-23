@@ -56,11 +56,26 @@ describe('queryable', () => {
     });
   });
 
-  it('rejects null filters instead of falling back to match-all', () => {
+  it('rejects null query discriminators instead of falling back to match-all', () => {
     for (const createQuery of [singleQuery, listQuery, pagedQuery]) {
       expect(() => createQuery({ filter: null } as never)).toThrowError(
         'filter cannot be null.',
       );
+      expect(() => createQuery({ condition: null } as never)).toThrowError(
+        'condition cannot be null.',
+      );
+    }
+  });
+
+  it('prefers an explicit filter over a legacy condition', () => {
+    const expression = filter.matchAll();
+    for (const createQuery of [singleQuery, listQuery, pagedQuery]) {
+      const query = createQuery({
+        filter: expression,
+        condition: null,
+      } as never);
+      expect(query).toHaveProperty('filter', expression);
+      expect(query).not.toHaveProperty('condition');
     }
   });
 
