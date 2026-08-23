@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
+import type { PagedList, PagedQueryRequest } from '@ahoo-wang/fetcher-wow';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryReturn } from '../../core';
 import type { UseFetcherQueryOptions } from '../../fetcher';
@@ -31,7 +31,7 @@ export interface UseFetcherPagedQueryOptions<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseFetcherQueryOptions<PagedQuery<FIELDS>, PagedList<R>, E> {}
+> extends UseFetcherQueryOptions<PagedQueryRequest<FIELDS>, PagedList<R>, E> {}
 
 /**
  * Return type for the useFetcherPagedQuery hook.
@@ -47,7 +47,7 @@ export interface UseFetcherPagedQueryReturn<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryReturn<PagedQuery<FIELDS>, PagedList<R>, E> {}
+> extends UseQueryReturn<PagedQueryRequest<FIELDS>, PagedList<R>, E> {}
 
 /**
  * A React hook for performing paged queries using the Fetcher library.
@@ -137,5 +137,5 @@ export function useFetcherPagedQuery<
 >(
   options: UseFetcherPagedQueryOptions<R, FIELDS, E>,
 ): UseFetcherPagedQueryReturn<R, FIELDS, E> {
-  return useFetcherQuery<PagedQuery<FIELDS>, PagedList<R>, E>(options);
+  return useFetcherQuery<PagedQueryRequest<FIELDS>, PagedList<R>, E>(options);
 }

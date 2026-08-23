@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { ListQuery } from '@ahoo-wang/fetcher-wow';
+import type { ListQueryRequest } from '@ahoo-wang/fetcher-wow';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryReturn } from '../../core';
 import type { UseFetcherQueryOptions } from '../../fetcher';
@@ -29,7 +29,7 @@ export interface UseFetcherListQueryOptions<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseFetcherQueryOptions<ListQuery<FIELDS>, R[], E> {}
+> extends UseFetcherQueryOptions<ListQueryRequest<FIELDS>, R[], E> {}
 
 /**
  * Return type of the useFetcherListQuery hook.
@@ -43,7 +43,7 @@ export interface UseFetcherListQueryReturn<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryReturn<ListQuery<FIELDS>, R[], E> {}
+> extends UseQueryReturn<ListQueryRequest<FIELDS>, R[], E> {}
 
 /**
  * A React hook for executing list queries using the fetcher library within the wow framework.
@@ -126,5 +126,5 @@ export function useFetcherListQuery<
 >(
   options: UseFetcherListQueryOptions<R, FIELDS, E>,
 ): UseFetcherListQueryReturn<R, FIELDS, E> {
-  return useFetcherQuery<ListQuery<FIELDS>, R[], E>(options);
+  return useFetcherQuery<ListQueryRequest<FIELDS>, R[], E>(options);
 }

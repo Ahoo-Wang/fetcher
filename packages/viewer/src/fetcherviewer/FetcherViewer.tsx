@@ -30,7 +30,7 @@ import type {
   Condition,
   FieldSort,
   PagedList,
-  PagedQuery,
+  PagedQueryRequest,
 } from '@ahoo-wang/fetcher-wow';
 import type { UrlParams } from '@ahoo-wang/fetcher';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
@@ -40,7 +40,7 @@ import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 export interface FetcherViewerRef {
   refreshData: () => void;
   clearSelectedRowKeys: () => void;
-  getPageQuery: () => PagedQuery | undefined;
+  getPageQuery: () => PagedQueryRequest | undefined;
   getActiveView: () => ViewState | undefined;
   getViewerDefinition: () => ViewDefinition | undefined;
 }
@@ -57,8 +57,7 @@ export interface FetcherViewerProps<RecordType>
   defaultViewId?: string;
 
   pagination:
-    | false
-    | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
+    false | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
   actionColumn?: ViewTableActionColumn<RecordType>;
 
   onClickPrimaryKey?: (id: any, record: RecordType) => void;

@@ -677,7 +677,7 @@ function UserPage() {
 
 - `@ahoo-wang/fetcher` - Core HTTP client
 - `@ahoo-wang/fetcher-react` - React hooks for data fetching (includes `useFetcher`, `useKeyStorage`)
-- `@ahoo-wang/fetcher-wow` - Wow CQRS types (`Condition`, `PagedList`, `PagedQuery`, `FieldSort`)
+- `@ahoo-wang/fetcher-wow` - Wow CQRS types (`Condition`, `PagedList`, `PagedQueryRequest`, `FieldSort`)
 - `@ahoo-wang/fetcher-storage` - Key/value storage for persistence
 - `@ahoo-wang/fetcher-decorator` - Decorator-based API clients (used by `ViewCommandClient`)
 - `@ahoo-wang/fetcher-viewer` - This package

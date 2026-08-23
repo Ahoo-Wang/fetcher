@@ -154,6 +154,9 @@ function requireNonEmpty(name: string, values: readonly unknown[]): void {
   if (values.length === 0) {
     throw new TypeError(`${name} cannot be empty.`);
   }
+  if (values.some(value => value === null || value === undefined)) {
+    throw new TypeError(`${name} cannot contain null.`);
+  }
 }
 
 function isValidOffsetZone(zoneId: string): boolean {

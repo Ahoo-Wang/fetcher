@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { SingleQuery } from '@ahoo-wang/fetcher-wow';
+import type { SingleQueryRequest } from '@ahoo-wang/fetcher-wow';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryOptions, UseQueryReturn } from '../core';
 import { useQuery } from '../core';
@@ -28,7 +28,7 @@ export interface UseSingleQueryOptions<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryOptions<SingleQuery<FIELDS>, R, E> {}
+> extends UseQueryOptions<SingleQueryRequest<FIELDS>, R, E> {}
 
 /**
  * Return type for the useSingleQuery hook.
@@ -42,7 +42,7 @@ export interface UseSingleQueryReturn<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryReturn<SingleQuery<FIELDS>, R, E> {}
+> extends UseQueryReturn<SingleQueryRequest<FIELDS>, R, E> {}
 
 /**
  * Hook for querying a single item with conditions, projection, and sorting.
@@ -73,5 +73,5 @@ export function useSingleQuery<
 >(
   options: UseSingleQueryOptions<R, FIELDS, E>,
 ): UseSingleQueryReturn<R, FIELDS, E> {
-  return useQuery<SingleQuery<FIELDS>, R, E>(options);
+  return useQuery<SingleQueryRequest<FIELDS>, R, E>(options);
 }

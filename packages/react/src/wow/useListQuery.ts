@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { ListQuery } from '@ahoo-wang/fetcher-wow';
+import type { ListQueryRequest } from '@ahoo-wang/fetcher-wow';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryOptions, UseQueryReturn } from '../core';
 import { useQuery } from '../core';
@@ -28,7 +28,7 @@ export interface UseListQueryOptions<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryOptions<ListQuery<FIELDS>, R[], E> {}
+> extends UseQueryOptions<ListQueryRequest<FIELDS>, R[], E> {}
 
 /**
  * Return type for the useListQuery hook.
@@ -42,7 +42,7 @@ export interface UseListQueryReturn<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryReturn<ListQuery<FIELDS>, R[], E> {}
+> extends UseQueryReturn<ListQueryRequest<FIELDS>, R[], E> {}
 
 /**
  * Hook for querying list data with conditions, projection, and sorting.
@@ -73,5 +73,5 @@ export function useListQuery<
 >(
   options: UseListQueryOptions<R, FIELDS, E>,
 ): UseListQueryReturn<R, FIELDS, E> {
-  return useQuery<ListQuery<FIELDS>, R[], E>(options);
+  return useQuery<ListQueryRequest<FIELDS>, R[], E>(options);
 }

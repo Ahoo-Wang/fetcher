@@ -15,7 +15,7 @@ import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryReturn } from '../../core';
 import type { UseFetcherQueryOptions } from '../../fetcher';
 import { useFetcherQuery } from '../../fetcher';
-import type { Condition } from '@ahoo-wang/fetcher-wow';
+import type { Condition, FilterExpression } from '@ahoo-wang/fetcher-wow';
 
 /**
  * Options for configuring the useFetcherCountQuery hook.
@@ -29,7 +29,11 @@ import type { Condition } from '@ahoo-wang/fetcher-wow';
 export interface UseFetcherCountQueryOptions<
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseFetcherQueryOptions<Condition<FIELDS>, number, E> {}
+> extends UseFetcherQueryOptions<
+  Condition<FIELDS> | FilterExpression<FIELDS>,
+  number,
+  E
+> {}
 
 /**
  * Return type for the useFetcherCountQuery hook.
@@ -43,7 +47,11 @@ export interface UseFetcherCountQueryOptions<
 export interface UseFetcherCountQueryReturn<
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryReturn<Condition<FIELDS>, number, E> {}
+> extends UseQueryReturn<
+  Condition<FIELDS> | FilterExpression<FIELDS>,
+  number,
+  E
+> {}
 
 /**
  * A React hook for performing count queries using the Fetcher library.
@@ -90,5 +98,9 @@ export function useFetcherCountQuery<
 >(
   options: UseFetcherCountQueryOptions<FIELDS, E>,
 ): UseFetcherCountQueryReturn<FIELDS, E> {
-  return useFetcherQuery<Condition<FIELDS>, number, E>(options);
+  return useFetcherQuery<
+    Condition<FIELDS> | FilterExpression<FIELDS>,
+    number,
+    E
+  >(options);
 }

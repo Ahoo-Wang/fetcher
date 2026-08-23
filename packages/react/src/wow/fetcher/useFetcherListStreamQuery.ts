@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { ListQuery } from '@ahoo-wang/fetcher-wow';
+import type { ListQueryRequest } from '@ahoo-wang/fetcher-wow';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryReturn } from '../../core';
 import type { UseFetcherQueryOptions } from '../../fetcher';
@@ -34,7 +34,7 @@ export interface UseFetcherListStreamQueryOptions<
   FIELDS extends string = string,
   E = FetcherError,
 > extends UseFetcherQueryOptions<
-  ListQuery<FIELDS>,
+  ListQueryRequest<FIELDS>,
   ReadableStream<JsonServerSentEvent<R>>,
   E
 > {}
@@ -54,7 +54,7 @@ export interface UseFetcherListStreamQueryReturn<
   FIELDS extends string = string,
   E = FetcherError,
 > extends UseQueryReturn<
-  ListQuery<FIELDS>,
+  ListQueryRequest<FIELDS>,
   ReadableStream<JsonServerSentEvent<R>>,
   E
 > {}
@@ -147,7 +147,7 @@ export function useFetcherListStreamQuery<
     resultExtractor: JsonEventStreamResultExtractor,
   };
   return useFetcherQuery<
-    ListQuery<FIELDS>,
+    ListQueryRequest<FIELDS>,
     ReadableStream<JsonServerSentEvent<R>>,
     E
   >(streamOptions);

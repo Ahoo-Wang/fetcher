@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { Condition } from '@ahoo-wang/fetcher-wow';
+import type { Condition, FilterExpression } from '@ahoo-wang/fetcher-wow';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryOptions, UseQueryReturn } from '../core';
 import { useQuery } from '../core';
@@ -25,7 +25,11 @@ import { useQuery } from '../core';
 export interface UseCountQueryOptions<
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryOptions<Condition<FIELDS>, number, E> {}
+> extends UseQueryOptions<
+  Condition<FIELDS> | FilterExpression<FIELDS>,
+  number,
+  E
+> {}
 
 /**
  * Return type for the useCountQuery hook.
@@ -37,7 +41,11 @@ export interface UseCountQueryOptions<
 export interface UseCountQueryReturn<
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryReturn<Condition<FIELDS>, number, E> {}
+> extends UseQueryReturn<
+  Condition<FIELDS> | FilterExpression<FIELDS>,
+  number,
+  E
+> {}
 
 /**
  * Hook for querying count data with conditions.

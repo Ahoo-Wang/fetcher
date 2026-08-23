@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { PagedList, PagedQuery } from '@ahoo-wang/fetcher-wow';
+import type { PagedList, PagedQueryRequest } from '@ahoo-wang/fetcher-wow';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryOptions, UseQueryReturn } from '../core';
 import { useQuery } from '../core';
@@ -28,7 +28,7 @@ export interface UsePagedQueryOptions<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryOptions<PagedQuery<FIELDS>, PagedList<R>, E> {}
+> extends UseQueryOptions<PagedQueryRequest<FIELDS>, PagedList<R>, E> {}
 
 /**
  * Return type for the usePagedQuery hook.
@@ -42,7 +42,7 @@ export interface UsePagedQueryReturn<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryReturn<PagedQuery<FIELDS>, PagedList<R>, E> {}
+> extends UseQueryReturn<PagedQueryRequest<FIELDS>, PagedList<R>, E> {}
 
 /**
  * Hook for querying paged data with conditions, projection, pagination, and sorting.
@@ -74,5 +74,5 @@ export function usePagedQuery<
 >(
   options: UsePagedQueryOptions<R, FIELDS, E>,
 ): UsePagedQueryReturn<R, FIELDS, E> {
-  return useQuery<PagedQuery<FIELDS>, PagedList<R>, E>(options);
+  return useQuery<PagedQueryRequest<FIELDS>, PagedList<R>, E>(options);
 }

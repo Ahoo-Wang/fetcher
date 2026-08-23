@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { SingleQuery } from '@ahoo-wang/fetcher-wow';
+import type { SingleQueryRequest } from '@ahoo-wang/fetcher-wow';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryReturn } from '../../core';
 import type { UseFetcherQueryOptions } from '../../fetcher';
@@ -30,7 +30,7 @@ export interface UseFetcherSingleQueryOptions<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseFetcherQueryOptions<SingleQuery<FIELDS>, R, E> {}
+> extends UseFetcherQueryOptions<SingleQueryRequest<FIELDS>, R, E> {}
 
 /**
  * Return type of the useFetcherSingleQuery hook.
@@ -45,7 +45,7 @@ export interface UseFetcherSingleQueryReturn<
   R,
   FIELDS extends string = string,
   E = FetcherError,
-> extends UseQueryReturn<SingleQuery<FIELDS>, R, E> {}
+> extends UseQueryReturn<SingleQueryRequest<FIELDS>, R, E> {}
 
 /**
  * A React hook for executing single item queries using the fetcher library within the wow framework.
@@ -111,5 +111,5 @@ export function useFetcherSingleQuery<
 >(
   options: UseFetcherSingleQueryOptions<R, FIELDS, E>,
 ): UseFetcherSingleQueryReturn<R, FIELDS, E> {
-  return useFetcherQuery<SingleQuery<FIELDS>, R, E>(options);
+  return useFetcherQuery<SingleQueryRequest<FIELDS>, R, E>(options);
 }

@@ -4,7 +4,7 @@ import type {
   Condition,
   FieldSort,
   PagedList,
-  PagedQuery,
+  PagedQueryRequest,
 } from '@ahoo-wang/fetcher-wow';
 import { all, and } from '@ahoo-wang/fetcher-wow';
 import type { FetcherError } from '@ahoo-wang/fetcher';
@@ -21,7 +21,7 @@ export interface UseFetchDataReturn<RecordType> {
   setQuery?: ViewChangeAction;
   error: FetcherError | undefined;
   reload: () => Promise<void>;
-  getPageQuery: () => PagedQuery | undefined;
+  getPageQuery: () => PagedQueryRequest | undefined;
 }
 
 export function useFetchData<RecordType>(

@@ -366,6 +366,15 @@ describe('filter', () => {
   it.each([
     ['empty logical operands', () => Reflect.apply(filter.and, null, [])],
     [
+      'undefined AND operand',
+      () => Reflect.apply(filter.and, null, [undefined]),
+    ],
+    ['null OR operand', () => Reflect.apply(filter.or, null, [null])],
+    [
+      'undefined NOR operand',
+      () => Reflect.apply(filter.nor, null, [undefined]),
+    ],
+    [
       'empty collection values',
       () => Reflect.apply(filter.isIn, null, ['status']),
     ],
