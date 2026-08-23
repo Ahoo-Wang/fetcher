@@ -141,6 +141,7 @@ import {
   type SingleQuery,
   type FilterExpression,
   type ElementFilterExpression,
+  type RelativeTimeFilterOptions,
   type FilterListQuery,
   type FilterPagedQuery,
   type FilterSingleQuery,
@@ -498,6 +499,29 @@ Available builders:
 - Presence: `isEmpty`, `isNull`, `isNotNull`, `exists`, `notExists`
 - Scope/search: `deletion`, `elementMatch`, `search`
 - Relative time: `today`, `beforeToday`, `tomorrow`, `thisWeek`, `nextWeek`, `lastWeek`, `thisMonth`, `lastMonth`, `recentDays`, `earlierDays`
+
+Relative-time builders accept JVM `ZoneId` and `DateTimeFormatter` options:
+
+```typescript
+interface RelativeTimeFilterOptions {
+  zoneId?: string;
+  datePattern?: string;
+}
+
+filter.today(field, options?);
+filter.beforeToday(field, time, options?);
+filter.tomorrow(field, options?);
+filter.thisWeek(field, options?);
+filter.nextWeek(field, options?);
+filter.lastWeek(field, options?);
+filter.thisMonth(field, options?);
+filter.lastMonth(field, options?);
+filter.recentDays(field, days, options?);
+filter.earlierDays(field, days, options?);
+```
+
+`days` must be a positive JVM `Int`. Only `zoneId` and `datePattern` from the
+options object are emitted on the wire.
 
 `SingleQueryRequest`, `ListQueryRequest`, and `PagedQueryRequest` accept either
 the filter-based request types or the existing condition-based request types.

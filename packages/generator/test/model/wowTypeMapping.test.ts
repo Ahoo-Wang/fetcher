@@ -64,9 +64,13 @@ describe('wowTypeMapping', () => {
       expect(WOW_TYPE_MAPPING['wow.api.query.ConditionOptions']).toBe(
         'ConditionOptions',
       );
-      expect(WOW_TYPE_MAPPING['wow.api.query.ListQuery']).toBe('ListQuery');
+      expect(WOW_TYPE_MAPPING['wow.api.query.ListQuery']).toBe(
+        'ListQueryRequest',
+      );
       expect(WOW_TYPE_MAPPING['wow.api.query.Operator']).toBe('Operator');
-      expect(WOW_TYPE_MAPPING['wow.api.query.PagedQuery']).toBe('PagedQuery');
+      expect(WOW_TYPE_MAPPING['wow.api.query.PagedQuery']).toBe(
+        'PagedQueryRequest',
+      );
       expect(WOW_TYPE_MAPPING['wow.api.query.Pagination']).toBe('Pagination');
       expect(WOW_TYPE_MAPPING['wow.api.query.Projection']).toBe('Projection');
       expect(WOW_TYPE_MAPPING['wow.api.query.Sort']).toBe('FieldSort');
