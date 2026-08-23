@@ -684,7 +684,7 @@ export const filter = {
     options: RelativeTimeFilterOptions = {},
   ): CalendarFilter<FIELDS> {
     validateRelativeTimeOptions(options);
-    return { op: FilterOperator.TODAY, field: logicalField(field), ...options };
+    return { ...options, op: FilterOperator.TODAY, field: logicalField(field) };
   },
   beforeToday<FIELDS extends string>(
     field: FIELDS,
@@ -696,10 +696,10 @@ export const filter = {
     }
     validateRelativeTimeOptions(options);
     return {
+      ...options,
       op: FilterOperator.BEFORE_TODAY,
       field: logicalField(field),
       time,
-      ...options,
     };
   },
   tomorrow<FIELDS extends string>(
@@ -708,9 +708,9 @@ export const filter = {
   ): CalendarFilter<FIELDS> {
     validateRelativeTimeOptions(options);
     return {
+      ...options,
       op: FilterOperator.TOMORROW,
       field: logicalField(field),
-      ...options,
     };
   },
   thisWeek<FIELDS extends string>(
@@ -719,9 +719,9 @@ export const filter = {
   ): CalendarFilter<FIELDS> {
     validateRelativeTimeOptions(options);
     return {
+      ...options,
       op: FilterOperator.THIS_WEEK,
       field: logicalField(field),
-      ...options,
     };
   },
   nextWeek<FIELDS extends string>(
@@ -730,9 +730,9 @@ export const filter = {
   ): CalendarFilter<FIELDS> {
     validateRelativeTimeOptions(options);
     return {
+      ...options,
       op: FilterOperator.NEXT_WEEK,
       field: logicalField(field),
-      ...options,
     };
   },
   lastWeek<FIELDS extends string>(
@@ -741,9 +741,9 @@ export const filter = {
   ): CalendarFilter<FIELDS> {
     validateRelativeTimeOptions(options);
     return {
+      ...options,
       op: FilterOperator.LAST_WEEK,
       field: logicalField(field),
-      ...options,
     };
   },
   thisMonth<FIELDS extends string>(
@@ -752,9 +752,9 @@ export const filter = {
   ): CalendarFilter<FIELDS> {
     validateRelativeTimeOptions(options);
     return {
+      ...options,
       op: FilterOperator.THIS_MONTH,
       field: logicalField(field),
-      ...options,
     };
   },
   lastMonth<FIELDS extends string>(
@@ -763,9 +763,9 @@ export const filter = {
   ): CalendarFilter<FIELDS> {
     validateRelativeTimeOptions(options);
     return {
+      ...options,
       op: FilterOperator.LAST_MONTH,
       field: logicalField(field),
-      ...options,
     };
   },
   recentDays<FIELDS extends string>(
@@ -776,10 +776,10 @@ export const filter = {
     validateDays(FilterOperator.RECENT_DAYS, days);
     validateRelativeTimeOptions(options);
     return {
+      ...options,
       op: FilterOperator.RECENT_DAYS,
       field: logicalField(field),
       days,
-      ...options,
     };
   },
   earlierDays<FIELDS extends string>(
@@ -790,10 +790,10 @@ export const filter = {
     validateDays(FilterOperator.EARLIER_DAYS, days);
     validateRelativeTimeOptions(options);
     return {
+      ...options,
       op: FilterOperator.EARLIER_DAYS,
       field: logicalField(field),
       days,
-      ...options,
     };
   },
 };

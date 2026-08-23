@@ -313,6 +313,44 @@ describe('filter', () => {
     },
   );
 
+  it('keeps builder-owned fields authoritative over structural options', () => {
+    const options = {
+      zoneId: 'UTC',
+      op: FilterOperator.MATCH_NONE,
+      field: 'ignored',
+      time: '00:00',
+      days: 99,
+    };
+    const calendarFilters = [
+      [FilterOperator.TODAY, filter.today('createdAt', options)],
+      [FilterOperator.TOMORROW, filter.tomorrow('createdAt', options)],
+      [FilterOperator.THIS_WEEK, filter.thisWeek('createdAt', options)],
+      [FilterOperator.NEXT_WEEK, filter.nextWeek('createdAt', options)],
+      [FilterOperator.LAST_WEEK, filter.lastWeek('createdAt', options)],
+      [FilterOperator.THIS_MONTH, filter.thisMonth('createdAt', options)],
+      [FilterOperator.LAST_MONTH, filter.lastMonth('createdAt', options)],
+    ] as const;
+
+    calendarFilters.forEach(([op, expression]) => {
+      expect(expression).toMatchObject({ op, field: 'createdAt' });
+    });
+    expect(filter.beforeToday('createdAt', '09:30', options)).toMatchObject({
+      op: FilterOperator.BEFORE_TODAY,
+      field: 'createdAt',
+      time: '09:30',
+    });
+    expect(filter.recentDays('createdAt', 7, options)).toMatchObject({
+      op: FilterOperator.RECENT_DAYS,
+      field: 'createdAt',
+      days: 7,
+    });
+    expect(filter.earlierDays('createdAt', 30, options)).toMatchObject({
+      op: FilterOperator.EARLIER_DAYS,
+      field: 'createdAt',
+      days: 30,
+    });
+  });
+
   it('restricts element predicates recursively', () => {
     const predicate = filter.and(
       filter.eq('sku', 'product-1'),
