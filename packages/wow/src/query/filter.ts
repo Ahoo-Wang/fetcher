@@ -191,13 +191,6 @@ function validateRelativeTimeOptions({
     ) {
       throw new TypeError(`zoneId is invalid: [${zoneId}].`);
     }
-    try {
-      new Intl.DateTimeFormat('en', { timeZone: zoneId });
-    } catch {
-      if (!isValidOffsetZone(zoneId)) {
-        throw new TypeError(`zoneId is invalid: [${zoneId}].`);
-      }
-    }
   }
   if (datePattern !== undefined) {
     validateDatePattern(datePattern);

@@ -302,8 +302,8 @@ describe('filter', () => {
     expect(create()).toEqual(expected);
   });
 
-  it.each(['Z', '+5', '+0530', '+05:30:15'])(
-    'accepts the JVM zone offset %s',
+  it.each(['Z', 'UT', '+5', '+0530', '+05:30:15'])(
+    'accepts the JVM zone ID %s',
     zoneId => {
       expect(filter.today('createdAt', { zoneId })).toEqual({
         op: FilterOperator.TODAY,
@@ -417,10 +417,6 @@ describe('filter', () => {
     ['non-positive recent days', () => filter.recentDays('createdAt', 0)],
     ['fractional earlier days', () => filter.earlierDays('createdAt', 1.5)],
     ['blank zone ID', () => filter.today('createdAt', { zoneId: ' ' })],
-    [
-      'invalid zone ID',
-      () => filter.today('createdAt', { zoneId: 'Mars/Phobos' }),
-    ],
     [
       'zone offset outside the JVM range',
       () => filter.today('createdAt', { zoneId: '+23:59' }),

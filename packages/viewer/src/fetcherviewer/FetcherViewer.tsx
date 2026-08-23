@@ -30,7 +30,7 @@ import type {
   Condition,
   FieldSort,
   PagedList,
-  PagedQueryRequest,
+  PagedQuery,
 } from '@ahoo-wang/fetcher-wow';
 import type { UrlParams } from '@ahoo-wang/fetcher';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
@@ -40,7 +40,7 @@ import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 export interface FetcherViewerRef {
   refreshData: () => void;
   clearSelectedRowKeys: () => void;
-  getPageQuery: () => PagedQueryRequest | undefined;
+  getPageQuery: () => PagedQuery | undefined;
   getActiveView: () => ViewState | undefined;
   getViewerDefinition: () => ViewDefinition | undefined;
 }

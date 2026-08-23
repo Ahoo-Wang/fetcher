@@ -210,6 +210,10 @@ with Wow request unions (`ListQueryRequest`, `PagedQueryRequest`, etc.), so both
 `FilterExpression` queries and deprecated `Condition` queries are accepted. They
 require a custom `execute` function.
 
+The hooks preserve the concrete request subtype across `initialQuery`, `execute`,
+`getQuery`, and `setQuery`. Existing generic option/return types default to the
+legacy query subtype; passing a filter query selects the filter-specific overload.
+
 ### useListQuery
 
 ```tsx
