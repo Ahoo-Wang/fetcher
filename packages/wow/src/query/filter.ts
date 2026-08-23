@@ -179,7 +179,7 @@ function isValidOffsetZone(zoneId: string): boolean {
 function validateRelativeTimeOptions({
   zoneId,
   datePattern,
-}: RelativeTimeFilterOptions): void {
+}: RelativeTimeFilterOptions): RelativeTimeFilterOptions {
   if (zoneId !== undefined) {
     if (typeof zoneId !== 'string' || !zoneId.trim()) {
       throw new TypeError('zoneId cannot be blank.');
@@ -194,6 +194,10 @@ function validateRelativeTimeOptions({
   if (datePattern !== undefined) {
     validateDatePattern(datePattern);
   }
+  return {
+    ...(zoneId === undefined ? {} : { zoneId }),
+    ...(datePattern === undefined ? {} : { datePattern }),
+  };
 }
 
 function validateDatePatternLetter(
@@ -217,7 +221,7 @@ function isNumericDatePatternLetter(
 ): boolean {
   return (
     letter !== undefined &&
-    ('uyDFdhHkKmsgAnNWwY'.includes(letter) ||
+    ('uyDFdhHkKmsSgAnNWwY'.includes(letter) ||
       (letter === 'c' && count === 1) ||
       ('eMLQq'.includes(letter) && count <= 2))
   );
@@ -259,8 +263,9 @@ function validateDatePattern(pattern: string): void {
       validateDatePatternLetter(pattern, letter, count);
       if (padded && isNumericDatePatternLetter(letter, count)) {
         const nextLetter = pattern[end];
-        let nextEnd = end + 1;
-        while (pattern[nextEnd] === nextLetter) nextEnd++;
+        let nextEnd = end;
+        while (nextEnd < pattern.length && pattern[nextEnd] === nextLetter)
+          nextEnd++;
         if (isNumericDatePatternLetter(nextLetter, nextEnd - end)) {
           throw new TypeError(`datePattern is invalid: [${pattern}].`);
         }
@@ -282,8 +287,8 @@ function validateDatePattern(pattern: string): void {
 }
 
 function validateDays(operator: FilterOperator, days: number): void {
-  if (!Number.isInteger(days) || days < 1) {
-    throw new TypeError(`${operator} days must be a positive integer.`);
+  if (!Number.isInteger(days) || days < 1 || days > 2_147_483_647) {
+    throw new TypeError(`${operator} days must be a positive JVM Int.`);
   }
 }
 
@@ -705,8 +710,11 @@ export const filter = {
     field: FIELDS,
     options: RelativeTimeFilterOptions = {},
   ): CalendarFilter<FIELDS> {
-    validateRelativeTimeOptions(options);
-    return { ...options, op: FilterOperator.TODAY, field: logicalField(field) };
+    return {
+      ...validateRelativeTimeOptions(options),
+      op: FilterOperator.TODAY,
+      field: logicalField(field),
+    };
   },
   beforeToday<FIELDS extends string>(
     field: FIELDS,
@@ -716,9 +724,8 @@ export const filter = {
     if (typeof time !== 'string' || !LOCAL_TIME_PATTERN.test(time)) {
       throw new TypeError('BEFORE_TODAY time is invalid.');
     }
-    validateRelativeTimeOptions(options);
     return {
-      ...options,
+      ...validateRelativeTimeOptions(options),
       op: FilterOperator.BEFORE_TODAY,
       field: logicalField(field),
       time,
@@ -728,9 +735,8 @@ export const filter = {
     field: FIELDS,
     options: RelativeTimeFilterOptions = {},
   ): CalendarFilter<FIELDS> {
-    validateRelativeTimeOptions(options);
     return {
-      ...options,
+      ...validateRelativeTimeOptions(options),
       op: FilterOperator.TOMORROW,
       field: logicalField(field),
     };
@@ -739,9 +745,8 @@ export const filter = {
     field: FIELDS,
     options: RelativeTimeFilterOptions = {},
   ): CalendarFilter<FIELDS> {
-    validateRelativeTimeOptions(options);
     return {
-      ...options,
+      ...validateRelativeTimeOptions(options),
       op: FilterOperator.THIS_WEEK,
       field: logicalField(field),
     };
@@ -750,9 +755,8 @@ export const filter = {
     field: FIELDS,
     options: RelativeTimeFilterOptions = {},
   ): CalendarFilter<FIELDS> {
-    validateRelativeTimeOptions(options);
     return {
-      ...options,
+      ...validateRelativeTimeOptions(options),
       op: FilterOperator.NEXT_WEEK,
       field: logicalField(field),
     };
@@ -761,9 +765,8 @@ export const filter = {
     field: FIELDS,
     options: RelativeTimeFilterOptions = {},
   ): CalendarFilter<FIELDS> {
-    validateRelativeTimeOptions(options);
     return {
-      ...options,
+      ...validateRelativeTimeOptions(options),
       op: FilterOperator.LAST_WEEK,
       field: logicalField(field),
     };
@@ -772,9 +775,8 @@ export const filter = {
     field: FIELDS,
     options: RelativeTimeFilterOptions = {},
   ): CalendarFilter<FIELDS> {
-    validateRelativeTimeOptions(options);
     return {
-      ...options,
+      ...validateRelativeTimeOptions(options),
       op: FilterOperator.THIS_MONTH,
       field: logicalField(field),
     };
@@ -783,9 +785,8 @@ export const filter = {
     field: FIELDS,
     options: RelativeTimeFilterOptions = {},
   ): CalendarFilter<FIELDS> {
-    validateRelativeTimeOptions(options);
     return {
-      ...options,
+      ...validateRelativeTimeOptions(options),
       op: FilterOperator.LAST_MONTH,
       field: logicalField(field),
     };
@@ -796,9 +797,8 @@ export const filter = {
     options: RelativeTimeFilterOptions = {},
   ): DaysFilter<FIELDS> {
     validateDays(FilterOperator.RECENT_DAYS, days);
-    validateRelativeTimeOptions(options);
     return {
-      ...options,
+      ...validateRelativeTimeOptions(options),
       op: FilterOperator.RECENT_DAYS,
       field: logicalField(field),
       days,
@@ -810,9 +810,8 @@ export const filter = {
     options: RelativeTimeFilterOptions = {},
   ): DaysFilter<FIELDS> {
     validateDays(FilterOperator.EARLIER_DAYS, days);
-    validateRelativeTimeOptions(options);
     return {
-      ...options,
+      ...validateRelativeTimeOptions(options),
       op: FilterOperator.EARLIER_DAYS,
       field: logicalField(field),
       days,

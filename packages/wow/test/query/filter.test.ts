@@ -236,6 +236,27 @@ describe('filter', () => {
       },
     },
     {
+      name: 'padded fraction separated from a numeric field',
+      create: () =>
+        filter.today('createdAt', {
+          datePattern: 'pS:mm',
+        }),
+      expected: {
+        op: FilterOperator.TODAY,
+        field: 'createdAt',
+        datePattern: 'pS:mm',
+      },
+    },
+    {
+      name: 'padded numeric field without adjacency',
+      create: () => filter.today('createdAt', { datePattern: 'py' }),
+      expected: {
+        op: FilterOperator.TODAY,
+        field: 'createdAt',
+        datePattern: 'py',
+      },
+    },
+    {
       name: 'before today',
       create: () =>
         filter.beforeToday('createdAt', '09:30', {
@@ -332,19 +353,22 @@ describe('filter', () => {
     ] as const;
 
     calendarFilters.forEach(([op, expression]) => {
-      expect(expression).toMatchObject({ op, field: 'createdAt' });
+      expect(expression).toEqual({ zoneId: 'UTC', op, field: 'createdAt' });
     });
-    expect(filter.beforeToday('createdAt', '09:30', options)).toMatchObject({
+    expect(filter.beforeToday('createdAt', '09:30', options)).toEqual({
+      zoneId: 'UTC',
       op: FilterOperator.BEFORE_TODAY,
       field: 'createdAt',
       time: '09:30',
     });
-    expect(filter.recentDays('createdAt', 7, options)).toMatchObject({
+    expect(filter.recentDays('createdAt', 7, options)).toEqual({
+      zoneId: 'UTC',
       op: FilterOperator.RECENT_DAYS,
       field: 'createdAt',
       days: 7,
     });
-    expect(filter.earlierDays('createdAt', 30, options)).toMatchObject({
+    expect(filter.earlierDays('createdAt', 30, options)).toEqual({
+      zoneId: 'UTC',
       op: FilterOperator.EARLIER_DAYS,
       field: 'createdAt',
       days: 30,
@@ -402,9 +426,9 @@ describe('filter', () => {
   });
 
   it('rejects malformed zone offsets with a validation error', () => {
-    expect(() =>
-      filter.today('createdAt', { zoneId: '+invalid' }),
-    ).toThrow('zoneId is invalid: [+invalid].');
+    expect(() => filter.today('createdAt', { zoneId: '+invalid' })).toThrow(
+      'zoneId is invalid: [+invalid].',
+    );
   });
 
   it.each([
@@ -460,6 +484,10 @@ describe('filter', () => {
     ],
     ['non-positive recent days', () => filter.recentDays('createdAt', 0)],
     ['fractional earlier days', () => filter.earlierDays('createdAt', 1.5)],
+    [
+      'days outside the JVM Int range',
+      () => filter.recentDays('createdAt', 2_147_483_648),
+    ],
     ['blank zone ID', () => filter.today('createdAt', { zoneId: ' ' })],
     [
       'zone offset outside the JVM range',
@@ -492,6 +520,10 @@ describe('filter', () => {
     [
       'padded adjacent numeric date pattern',
       () => filter.today('createdAt', { datePattern: 'pym' }),
+    ],
+    [
+      'padded fractional date pattern adjacent to a numeric field',
+      () => filter.today('createdAt', { datePattern: 'pSH' }),
     ],
     [
       'forbidden date pattern character',
