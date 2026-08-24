@@ -5,7 +5,7 @@ description: "Wow framework integration for Fetcher providing DDD + Event Sourci
 
 # @ahoo-wang/fetcher-wow
 
-The `@ahoo-wang/fetcher-wow` package provides the client-side integration layer for the [Wow](https://github.com/Ahoo-Wang/wow) DDD + Event Sourcing + CQRS framework. It delivers typed command clients for sending domain commands, snapshot query clients for reading aggregate state, event stream query clients for replaying domain events, and a rich query DSL with conditions, sorting, and pagination.
+The `@ahoo-wang/fetcher-wow` package provides the client-side integration layer for the [Wow](https://github.com/Ahoo-Wang/wow) DDD + Event Sourcing + CQRS framework. It delivers typed command clients for sending domain commands, snapshot query clients for reading aggregate state, event stream query clients for replaying domain events, and a rich `FilterExpression` query DSL with sorting and pagination.
 
 ## Installation
 
@@ -29,10 +29,10 @@ graph TB
     end
 
     subgraph sg_3 ["Query DSL"]
-        COND["Condition<br>where / and / or"]
+        COND["FilterExpression<br>filter.and / filter.or"]
         SORT["FieldSort<br>sort by field"]
         PAGE["PagedQuery / ListQuery<br>pagination"]
-        OP["Operator<br>EQ, NE, IN, BETWEEN..."]
+        OP["FilterOperator<br>EQ, NE, IN, BETWEEN..."]
     end
 
     subgraph sg_4 ["Factories"]
@@ -203,24 +203,24 @@ autonumber
 The primary client for reading aggregate state. Supports counting, listing, paging, and streaming snapshot queries.
 
 ```typescript
-import { SnapshotQueryClient, all, listQuery, pagedQuery, singleQuery } from '@ahoo-wang/fetcher-wow';
+import { SnapshotQueryClient, filter } from '@ahoo-wang/fetcher-wow';
 
 const client = new SnapshotQueryClient<CartState>(apiMetadata);
 
 // Count
-const count = await client.count(all());
+const count = await client.count(filter.matchAll());
 
 // List
-const items = await client.list(listQuery({
-  condition: all(),
+const items = await client.list({
+  filter: filter.matchAll(),
   limit: 100,
-}));
+});
 
 // Paged
-const page = await client.paged(pagedQuery({
-  condition: all(),
+const page = await client.paged({
+  filter: filter.matchAll(),
   pagination: { index: 1, size: 10 },
-}));
+});
 
 // Single by ID
 const cart = await client.getStateById('cart-123');
@@ -233,7 +233,7 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 
 | Method | Endpoint | Returns | Description |
 |--------|----------|---------|-------------|
-| `count(condition)` | `/snapshot/count` | `Promise<number>` | Count matching aggregates |
+| `count(filter)` | `/snapshot/count` | `Promise<number>` | Count matching aggregates |
 | `list(listQuery)` | `/snapshot/list` | `Promise<MaterializedSnapshot<S>[]>` | List snapshots |
 | `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | List as SSE stream |
 | `listState(listQuery)` | `/snapshot/list/state` | `Promise<S[]>` | List state only |
@@ -246,8 +246,40 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 | `getStateById(id)` | -- | `Promise<S>` | Get state by ID |
 | `getByIds(ids)` | -- | `Promise<MaterializedSnapshot<S>[]>` | Get multiple by IDs |
 | `getStateByIds(ids)` | -- | `Promise<S[]>` | Get multiple states |
+| `aggregate(query)` | `/snapshot/aggregation` | `Promise<Row[]>` | Aggregate snapshots |
+| `aggregateStream(query)` | `/snapshot/aggregation` | `Promise<ReadableStream<JsonServerSentEvent<Row>>>` | Aggregate snapshots as SSE |
+
+For compatibility with existing implementations, `SnapshotQueryApi` declares
+`aggregate?` and `aggregateStream?` as optional. `SnapshotQueryClient`
+implements both as required methods.
 
 Source: [packages/wow/src/query/snapshot/snapshotQueryClient.ts:119-516](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L119-L516)
+
+#### Snapshot Aggregation
+
+```typescript
+import {
+  AggregationFunction, AggregationGroupType, AggregationMetricType,
+  type AggregationQuery, SortDirection, filter,
+} from '@ahoo-wang/fetcher-wow';
+
+type ProductSummary = { product: string; itemCount: number; totalQuantity: number };
+
+const query: AggregationQuery = {
+  filter: filter.eq('state.status', 'COMPLETED'),
+  elements: [{ path: 'state.items' }],
+  groupBy: [{ type: AggregationGroupType.TERMS, field: 'productId', alias: 'product' }],
+  metrics: [
+    { type: AggregationMetricType.COUNT, alias: 'itemCount' },
+    { type: AggregationMetricType.NUMERIC, function: AggregationFunction.SUM, expression: { field: 'quantity' }, alias: 'totalQuantity' },
+  ],
+  sort: [{ field: 'totalQuantity', direction: SortDirection.DESC }],
+  limit: 10,
+};
+
+const summaries = await client.aggregate<ProductSummary>(query);
+const summaryStream = await client.aggregateStream<ProductSummary>(query);
+```
 
 ### QueryClientFactory
 
@@ -271,7 +303,7 @@ const eventClient = factory.createEventStreamQueryClient();
 
 | Factory Method | Creates | Description |
 |----------------|---------|-------------|
-| `createSnapshotQueryClient()` | `SnapshotQueryClient<S, FIELDS>` | Snapshot queries with conditions |
+| `createSnapshotQueryClient()` | `SnapshotQueryClient<S, FIELDS>` | Snapshot queries with filters |
 | `createLoadStateAggregateClient()` | `LoadStateAggregateClient<S>` | Load by ID, version, or time |
 | `createOwnerLoadStateAggregateClient()` | `LoadOwnerStateAggregateClient<S>` | Load owner's aggregate state |
 | `createEventStreamQueryClient()` | `EventStreamQueryClient` | Domain event stream queries |
@@ -280,69 +312,60 @@ Source: [packages/wow/src/query/queryClients.ts:62-214](https://github.com/Ahoo-
 
 ## Query DSL
 
-### Conditions
+### FilterExpression
 
-The condition system supports building complex query predicates:
+Use the `filter` builder for new queries. It creates typed
+`FilterExpression` values that are placed in a request's `filter` property.
 
 ```typescript
-import { all, and, isIn, between, aggregateId, aggregateIds } from '@ahoo-wang/fetcher-wow';
+import { filter, StringComparison } from '@ahoo-wang/fetcher-wow';
 
-// All records
-const allCondition = all();
-
-// By aggregate ID
-const byId = aggregateId('cart-123');
-
-// By multiple IDs
-const byIds = aggregateIds(['cart-1', 'cart-2', 'cart-3']);
-
-// Complex conditions composed with logical helpers.
-// Set helpers take rest args: isIn(field, ...values).
-// between takes (field, start, end).
-const complex = and(
-  isIn('status', 'ACTIVE', 'PENDING'),
-  between('createdAt', '2024-01-01', '2024-12-31'),
+const activeCarts = filter.and(
+  filter.isIn('state.status', 'ACTIVE', 'PENDING'),
+  filter.between('state.createdAt', '2024-01-01', '2024-12-31'),
+  filter.contains('state.ownerName', 'ahoowang', StringComparison.CASE_INSENSITIVE),
 );
+
+const request = { filter: activeCarts, limit: 100 };
 ```
 
-### Operators
+| Category | `filter` builders | Notes |
+|----------|-------------------|-------|
+| Logical | `matchAll()`, `matchNone()`, `and(...)`, `or(...)`, `nor(...)` | Logical builders require one or more operands. |
+| Metadata | `id(value)`, `ids(...values)`, `aggregateId(value)`, `aggregateIds(...values)`, `tenantId(value)`, `ownerId(value)`, `spaceId(value)` | Scope a root snapshot by Wow metadata. |
+| Comparison | `eq(field, value)`, `ne(field, value)`, `gt(field, value)`, `gte(field, value)`, `lt(field, value)`, `lte(field, value)`, `between(field, lowerBound, upperBound)` | Values are JSON scalar values; equality also accepts `null` and arrays. |
+| String | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)` | `stringComparison` defaults to `StringComparison.CASE_SENSITIVE`. |
+| Collection | `isIn(field, ...values)`, `notIn(field, ...values)`, `containsAll(field, ...values)` | Collection builders require at least one value. |
+| Presence | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)` | Field presence builders. |
+| Scope / search | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, ...fields)` | `deletion` accepts `DeletionState.ACTIVE`, `DELETED`, or `ALL`; element predicates cannot contain root metadata, deletion, or search filters. |
+| Relative time | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` may contain `zoneId` and `datePattern`; `days` must be a positive JVM `Int`. |
 
-| Operator | Description | Helper / Example |
-|----------|-------------|---------|
-| `EQ` | Equals | `eq('name', 'Alice')` |
-| `NE` | Not equals | `ne('status', 'DELETED')` |
-| `GT` / `GTE` | Greater than / or equal | `gt('price', 100)`, `gte('price', 100)` |
-| `LT` / `LTE` | Less than / or equal | `lt('price', 50)`, `lte('price', 50)` |
-| `IN` | In set | `isIn('type', 'A', 'B')` (rest args) |
-| `NOT_IN` | Not in set | `notIn('type', 'C')` (rest args) |
-| `ALL_IN` | Match all of set | `allIn('tags', 'a', 'b')` (rest args) |
-| `BETWEEN` | Range | `between('age', 18, 65)` (`(field, start, end)`) |
-| `CONTAINS` | Contains substring | `contains('name', 'john')` |
-| `STARTS_WITH` | Prefix match | `startsWith('name', 'john')` |
-| `ENDS_WITH` | Suffix match | `endsWith('name', 'son')` |
-| `MATCH` | Full-text match (backend-specific, e.g. MongoDB text / ES match) | `match('name', 'keyword')` |
-| `AND` / `OR` / `NOR` | Logical composition | `and(c1, c2)`, `or(c1, c2)` |
-| `ALL` | Match all records | `all()` (no field/value) |
+Source: [packages/wow/src/query/filter.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts)
 
-Source: [packages/wow/src/query/operator.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/operator.ts)
+### Legacy Conditions
+
+`Condition`, its helpers such as `all()` and `and(...)`, and `Operator` remain
+exported for compatibility but are deprecated. Existing client methods accept
+legacy conditions where their type permits; use `FilterExpression` and
+`filter.*` for new code. `raw()` has no `FilterExpression` replacement.
 
 ### Sorting and Pagination
 
 ```typescript
-import { pagedQuery, listQuery, SortDirection } from '@ahoo-wang/fetcher-wow';
+import { filter, SortDirection } from '@ahoo-wang/fetcher-wow';
 
 // Paged query with sorting (pagination.index starts at 1)
-const query = pagedQuery({
-  condition: all(),
+const query = {
+  filter: filter.matchAll(),
   pagination: { index: 1, size: 20 },
   sort: [{ field: 'createdAt', direction: SortDirection.DESC }],
-});
+};
 
 // List query (limit only, no pagination)
-const list = listQuery({
-  condition: all(),
+const list = {
+  filter: filter.matchAll(),
   limit: 100,
-});
+};
 ```
 
 ### Cursor Pagination
@@ -350,11 +373,11 @@ const list = listQuery({
 For large datasets, cursor-based pagination is more efficient than offset-based pagination. It avoids the performance degradation of deep offset queries by using a cursor ID to track position:
 
 ```typescript
-import { cursorQuery, CURSOR_ID_START, SortDirection } from '@ahoo-wang/fetcher-wow';
+import { cursorQuery, CURSOR_ID_START, filter, SortDirection } from '@ahoo-wang/fetcher-wow';
 
 // First page — start from the beginning
 const firstPage = cursorQuery({
-  query: { condition: all(), limit: 50, projection: { include: ['id', 'name'] } },
+  query: { filter: filter.matchAll(), limit: 50, projection: { include: ['id', 'name'] } },
   cursorId: CURSOR_ID_START,  // '~' — start from the beginning
   field: 'id',
   direction: SortDirection.ASC,
@@ -362,7 +385,7 @@ const firstPage = cursorQuery({
 
 // Subsequent pages — use the last item's cursor ID from the previous result
 const nextPage = cursorQuery({
-  query: { condition: all(), limit: 50 },
+  query: { filter: filter.matchAll(), limit: 50 },
   cursorId: lastItemId,  // cursor ID from the previous page
   field: 'id',
   direction: SortDirection.ASC,
@@ -374,21 +397,21 @@ const nextPage = cursorQuery({
 Control which fields are returned by the query using `projection` — include only the fields you need to reduce payload size:
 
 ```typescript
-import { projection, pagedQuery } from '@ahoo-wang/fetcher-wow';
+import { filter, projection } from '@ahoo-wang/fetcher-wow';
 
 // Include only specific fields
-const query = pagedQuery({
-  condition: all(),
+const query = {
+  filter: filter.matchAll(),
   pagination: { index: 1, size: 20 },
   projection: projection({ include: ['id', 'name', 'status'] }),
-});
+};
 
 // Exclude fields
-const query2 = pagedQuery({
-  condition: all(),
+const query2 = {
+  filter: filter.matchAll(),
   pagination: { index: 1, size: 20 },
   projection: projection({ exclude: ['internalNotes', 'metadata'] }),
-});
+};
 ```
 
 Source: [packages/wow/src/query/cursorQuery.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts), [packages/wow/src/query/projection.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/projection.ts)
@@ -443,19 +466,17 @@ Source: [packages/wow/src/index.ts](https://github.com/Ahoo-Wang/fetcher/blob/ma
 | `EventStreamQueryClient` | `query/event/` | Domain event stream queries |
 | `LoadStateAggregateClient` | `query/state/` | Load aggregate state by ID/version/time |
 | `LoadOwnerStateAggregateClient` | `query/state/` | Load owner's aggregate state |
-| `Condition` | `query/` | Query condition interface |
-| `all()` | `query/` | Match all records condition |
-| `and(...)` / `or(...)` / `nor(...)` | `query/` | Logical condition composition |
-| `eq/ne/gt/lt/gte/lte(...)` | `query/` | Comparison condition helpers |
-| `isIn/notIn/allIn(...)` | `query/` | Set membership helpers |
-| `between/contains/startsWith/endsWith/match(...)` | `query/` | Range & pattern helpers |
-| `aggregateId(id)` | `query/` | Condition matching a single aggregate ID |
-| `aggregateIds(ids)` | `query/` | Condition matching multiple aggregate IDs |
+| `FilterExpression` | `query/` | Typed query-filter union |
+| `filter` | `query/` | `FilterExpression` builders for new queries |
+| `AggregationQuery` | `query/` | Typed snapshot aggregation request |
+| `AggregationGroupType`, `AggregationMetricType`, `AggregationExpressionType`, `AggregationDateUnit`, `AggregationFunction` | `query/` | Aggregation schema enums |
+| `SnapshotQueryClient.aggregate()` | `query/snapshot/` | Run an aggregation and return result rows |
+| `SnapshotQueryClient.aggregateStream()` | `query/snapshot/` | Run an aggregation and stream result rows as SSE |
+| `Condition`, `all()`, `and(...)`, `Operator` | `query/` | Deprecated compatibility API |
 | `listQuery()` | `query/` | Create a list query |
 | `pagedQuery()` | `query/` | Create a paged query |
 | `singleQuery()` | `query/` | Create a single query |
 | `FieldSort` | `query/` | Sort specification |
-| `Operator` | `query/` | Query operator enum |
 | `ResourceAttributionPathSpec` | `types/` | Path spec for tenant/owner scoping |
 
 ## Generated Clients
@@ -472,9 +493,9 @@ const result = await commandClient.addCartItem({
 // Generated query client factory
 const factory = cartQueryClientFactory;
 const snapshotClient = factory.createSnapshotQueryClient();
-const cartState = await snapshotClient.singleState(singleQuery({
-  condition: aggregateId('cart-1'),
-}));
+const cartState = await snapshotClient.singleState({
+  filter: filter.aggregateId('cart-1'),
+});
 ```
 
 ## Cross-References

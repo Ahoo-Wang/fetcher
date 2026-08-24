@@ -16,6 +16,7 @@
 - [SnapshotQueryClient<S, FIELDS>](#snapshotqueryclients-fields)
   - [Setup](#setup-1)
   - [Query Methods](#query-methods)
+  - [Aggregation Methods](#aggregation-methods)
   - [ID-Based Lookup Methods](#id-based-lookup-methods)
 - [EventStreamQueryClient<DomainEventBody, FIELDS>](#eventstreamqueryclientdomaineventbody-fields)
   - [Setup](#setup-2)
@@ -28,6 +29,7 @@
   - [Factory Methods](#factory-methods)
 - [Filter Expressions](#filter-expressions)
   - [Filter Cursor Queries](#filter-cursor-queries)
+- [AggregationQuery](#aggregationquery)
 - [Query DSL Conditions](#query-dsl-conditions)
   - [Comparison Operators](#comparison-operators)
   - [String Operators](#string-operators)
@@ -61,6 +63,7 @@ The Wow framework implements CQRS + Event Sourcing + DDD:
 
 ```typescript
 import '@ahoo-wang/fetcher-eventstream'; // Optional: SSE support loads transitively with fetcher-wow
+import type { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
 import { ContentTypeValues, HttpMethod } from '@ahoo-wang/fetcher';
 import {
   // Command
@@ -75,6 +78,11 @@ import {
   LoadOwnerStateAggregateClient,
   ResourceAttributionPathSpec,
   SortDirection,
+  AggregationGroupType,
+  AggregationMetricType,
+  AggregationExpressionType,
+  AggregationDateUnit,
+  AggregationFunction,
   DeletionState,
   FilterOperator,
   StringComparison,
@@ -151,6 +159,11 @@ import {
   type ListQueryRequest,
   type PagedQueryRequest,
   type SingleQueryRequest,
+  type AggregationQuery,
+  type AggregationElement,
+  type AggregationGroup,
+  type AggregationMetric,
+  type DynamicDocument,
 } from '@ahoo-wang/fetcher-wow';
 ```
 
@@ -359,6 +372,63 @@ const state = await snapshotClient.singleState({
 });
 ```
 
+### Aggregation Methods
+
+```typescript
+type ProductSummary = {
+  product: string;
+  itemCount: number;
+  totalQuantity: number;
+};
+
+const aggregationQuery: AggregationQuery = {
+  filter: filter.eq('state.status', 'COMPLETED'),
+  elements: [{ path: 'state.items' }],
+  groupBy: [
+    {
+      type: AggregationGroupType.TERMS,
+      field: 'productId',
+      alias: 'product',
+    },
+  ],
+  metrics: [
+    { type: AggregationMetricType.COUNT, alias: 'itemCount' },
+    {
+      type: AggregationMetricType.NUMERIC,
+      function: AggregationFunction.SUM,
+      expression: { field: 'quantity' },
+      alias: 'totalQuantity',
+    },
+  ],
+  sort: [{ field: 'totalQuantity', direction: SortDirection.DESC }],
+  limit: 10,
+};
+
+const summaries =
+  await snapshotClient.aggregate<ProductSummary>(aggregationQuery);
+const summaryStream =
+  await snapshotClient.aggregateStream<ProductSummary>(aggregationQuery);
+```
+
+```typescript
+aggregate<Row extends DynamicDocument = DynamicDocument>(
+  query: AggregationQuery<FIELDS>,
+  attributes?: Record<string, any>,
+  abortController?: AbortController,
+): Promise<Row[]>;
+
+aggregateStream<Row extends DynamicDocument = DynamicDocument>(
+  query: AggregationQuery<FIELDS>,
+  attributes?: Record<string, any>,
+  abortController?: AbortController,
+): Promise<ReadableStream<JsonServerSentEvent<Row>>>;
+```
+
+`SnapshotQueryApi` makes these two members optional to remain compatible with
+existing implementations. `SnapshotQueryClient` implements both methods as
+required methods. Both submit to `snapshot/aggregation`; `aggregateStream`
+requests an SSE result stream.
+
 ### ID-Based Lookup Methods
 
 ```typescript
@@ -559,6 +629,48 @@ const predicate: FilterExpression<'id'> = cursorFilter({
   direction: SortDirection.ASC,
 });
 ```
+
+## AggregationQuery
+
+`AggregationQuery<FIELDS>` accepts these fields:
+
+- `filter?: FilterExpression<FIELDS>`
+- `elements?: AggregationElement[]`
+- `groupBy?: AggregationGroup[]`
+- `metrics: [AggregationMetric, ...AggregationMetric[]]` (non-empty)
+- `sort?: FieldSort[]`
+- `limit?: number`
+
+Each `AggregationElement` has a `path` and optional `filter`.
+`elements[].filter` is an `ElementFilterExpression`.
+Elements form an ordered expansion chain. The first path is root-relative;
+later element paths, group fields, and metric expression fields are relative
+to the current innermost element.
+
+`AggregationGroup` is one of:
+
+- `TERMS`: `field`, `alias`
+- `HISTOGRAM`: `field`, `alias`, `interval`
+- `DATE_HISTOGRAM`: `field`, `alias`, `unit`, optional `timeZone`
+
+`AggregationMetric` is one of:
+
+- `COUNT`: `alias`
+- `NUMERIC`: `function`, `expression`, `alias`
+
+`AggregationFunction` values are `SUM`, `AVG`, `MIN`, and `MAX`.
+`AggregationDateUnit` values are `YEAR`, `QUARTER`, `MONTH`, `WEEK`, `DAY`,
+`HOUR`, `MINUTE`, and `SECOND`. The only aggregation expression is `FIELD`:
+
+```typescript
+const expression = {
+  // type: AggregationExpressionType.FIELD, // optional
+  field: 'quantity', // relative to state.items in the example above
+};
+```
+
+The `Row` generic describes aggregation result rows only; Fetcher does not
+perform runtime decoding.
 
 ## Query DSL Conditions (Deprecated)
 

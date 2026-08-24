@@ -5,7 +5,7 @@ description: "Wow 框架集成，为 Fetcher 提供 DDD + 事件溯源 + CQRS �
 
 # @ahoo-wang/fetcher-wow
 
-`@ahoo-wang/fetcher-wow` 包为 [Wow](https://github.com/Ahoo-Wang/wow) DDD + 事件溯源 + CQRS 框架提供客户端集成层。它提供了用于发送领域命令的类型化命令客户端、用于读取聚合状态的快照查询客户端、用于重放领域事件的事件流查询客户端，以及支持条件查询、排序和分页的丰富查询 DSL。
+`@ahoo-wang/fetcher-wow` 包为 [Wow](https://github.com/Ahoo-Wang/wow) DDD + 事件溯源 + CQRS 框架提供客户端集成层。它提供了用于发送领域命令的类型化命令客户端、用于读取聚合状态的快照查询客户端、用于重放领域事件的事件流查询客户端，以及支持排序和分页的丰富 `FilterExpression` 查询 DSL。
 
 ## 安装
 
@@ -29,10 +29,10 @@ graph TB
     end
 
     subgraph sg_3 ["Query DSL"]
-        COND["Condition<br>where / and / or"]
+        COND["FilterExpression<br>filter.and / filter.or"]
         SORT["FieldSort<br>sort by field"]
         PAGE["PagedQuery / ListQuery<br>pagination"]
-        OP["Operator<br>EQ, NE, IN, BETWEEN..."]
+        OP["FilterOperator<br>EQ, NE, IN, BETWEEN..."]
     end
 
     subgraph sg_4 ["Factories"]
@@ -203,24 +203,24 @@ autonumber
 读取聚合状态的主要客户端。支持计数、列表、分页和流式快照查询。
 
 ```typescript
-import { SnapshotQueryClient, all, listQuery, pagedQuery, singleQuery } from '@ahoo-wang/fetcher-wow';
+import { SnapshotQueryClient, filter } from '@ahoo-wang/fetcher-wow';
 
 const client = new SnapshotQueryClient<CartState>(apiMetadata);
 
 // Count
-const count = await client.count(all());
+const count = await client.count(filter.matchAll());
 
 // List
-const items = await client.list(listQuery({
-  condition: all(),
+const items = await client.list({
+  filter: filter.matchAll(),
   limit: 100,
-}));
+});
 
 // Paged
-const page = await client.paged(pagedQuery({
-  condition: all(),
+const page = await client.paged({
+  filter: filter.matchAll(),
   pagination: { index: 1, size: 10 },
-}));
+});
 
 // Single by ID
 const cart = await client.getStateById('cart-123');
@@ -233,7 +233,7 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 
 | 方法 | 端点 | 返回类型 | 描述 |
 |------|------|----------|------|
-| `count(condition)` | `/snapshot/count` | `Promise<number>` | 统计匹配的聚合数量 |
+| `count(filter)` | `/snapshot/count` | `Promise<number>` | 统计匹配的聚合数量 |
 | `list(listQuery)` | `/snapshot/list` | `Promise<MaterializedSnapshot<S>[]>` | 列表查询快照 |
 | `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | 以 SSE 流形式列出快照 |
 | `listState(listQuery)` | `/snapshot/list/state` | `Promise<S[]>` | 仅列出状态 |
@@ -246,8 +246,39 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 | `getStateById(id)` | -- | `Promise<S>` | 通过 ID 获取状态 |
 | `getByIds(ids)` | -- | `Promise<MaterializedSnapshot<S>[]>` | 通过多个 ID 获取 |
 | `getStateByIds(ids)` | -- | `Promise<S[]>` | 通过多个 ID 获取状态 |
+| `aggregate(query)` | `/snapshot/aggregation` | `Promise<Row[]>` | 聚合快照 |
+| `aggregateStream(query)` | `/snapshot/aggregation` | `Promise<ReadableStream<JsonServerSentEvent<Row>>>` | 以 SSE 聚合快照 |
+
+为兼容既有实现，`SnapshotQueryApi` 将 `aggregate?` 和 `aggregateStream?`
+声明为可选方法；`SnapshotQueryClient` 将两者实现为必需方法。
 
 来源: [packages/wow/src/query/snapshot/snapshotQueryClient.ts:119-516](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L119-L516)
+
+#### 快照聚合
+
+```typescript
+import {
+  AggregationFunction, AggregationGroupType, AggregationMetricType,
+  type AggregationQuery, SortDirection, filter,
+} from '@ahoo-wang/fetcher-wow';
+
+type ProductSummary = { product: string; itemCount: number; totalQuantity: number };
+
+const query: AggregationQuery = {
+  filter: filter.eq('state.status', 'COMPLETED'),
+  elements: [{ path: 'state.items' }],
+  groupBy: [{ type: AggregationGroupType.TERMS, field: 'productId', alias: 'product' }],
+  metrics: [
+    { type: AggregationMetricType.COUNT, alias: 'itemCount' },
+    { type: AggregationMetricType.NUMERIC, function: AggregationFunction.SUM, expression: { field: 'quantity' }, alias: 'totalQuantity' },
+  ],
+  sort: [{ field: 'totalQuantity', direction: SortDirection.DESC }],
+  limit: 10,
+};
+
+const summaries = await client.aggregate<ProductSummary>(query);
+const summaryStream = await client.aggregateStream<ProductSummary>(query);
+```
 
 ### QueryClientFactory
 
@@ -271,7 +302,7 @@ const eventClient = factory.createEventStreamQueryClient();
 
 | 工厂方法 | 创建的客户端 | 描述 |
 |----------|-------------|------|
-| `createSnapshotQueryClient()` | `SnapshotQueryClient<S, FIELDS>` | 带条件的快照查询 |
+| `createSnapshotQueryClient()` | `SnapshotQueryClient<S, FIELDS>` | 带筛选器的快照查询 |
 | `createLoadStateAggregateClient()` | `LoadStateAggregateClient<S>` | 通过 ID、版本或时间加载 |
 | `createOwnerLoadStateAggregateClient()` | `LoadOwnerStateAggregateClient<S>` | 加载所有者的聚合状态 |
 | `createEventStreamQueryClient()` | `EventStreamQueryClient` | 领域事件流查询 |
@@ -280,69 +311,56 @@ const eventClient = factory.createEventStreamQueryClient();
 
 ## 查询 DSL
 
-### 条件查询
+### FilterExpression
 
-条件系统支持构建复杂的查询谓词：
+新查询应使用 `filter` 构建器。它创建类型化的 `FilterExpression` 值，并放入请求的 `filter` 属性。
 
 ```typescript
-import { all, and, isIn, between, aggregateId, aggregateIds } from '@ahoo-wang/fetcher-wow';
+import { filter, StringComparison } from '@ahoo-wang/fetcher-wow';
 
-// All records
-const allCondition = all();
-
-// By aggregate ID
-const byId = aggregateId('cart-123');
-
-// By multiple IDs
-const byIds = aggregateIds(['cart-1', 'cart-2', 'cart-3']);
-
-// 使用逻辑辅助函数组合复杂条件。
-// 集合辅助函数使用剩余参数：isIn(field, ...values)。
-// between 接收 (field, start, end)。
-const complex = and(
-  isIn('status', 'ACTIVE', 'PENDING'),
-  between('createdAt', '2024-01-01', '2024-12-31'),
+const activeCarts = filter.and(
+  filter.isIn('state.status', 'ACTIVE', 'PENDING'),
+  filter.between('state.createdAt', '2024-01-01', '2024-12-31'),
+  filter.contains('state.ownerName', 'ahoowang', StringComparison.CASE_INSENSITIVE),
 );
+
+const request = { filter: activeCarts, limit: 100 };
 ```
 
-### 运算符
+| 分类 | `filter` 构建器 | 说明 |
+|------|-----------------|------|
+| 逻辑 | `matchAll()`, `matchNone()`, `and(...)`, `or(...)`, `nor(...)` | 逻辑构建器至少需要一个操作数。 |
+| 元数据 | `id(value)`, `ids(...values)`, `aggregateId(value)`, `aggregateIds(...values)`, `tenantId(value)`, `ownerId(value)`, `spaceId(value)` | 按 Wow 元数据约束根快照范围。 |
+| 比较 | `eq(field, value)`, `ne(field, value)`, `gt(field, value)`, `gte(field, value)`, `lt(field, value)`, `lte(field, value)`, `between(field, lowerBound, upperBound)` | 值为 JSON 标量；相等比较也接受 `null` 和数组。 |
+| 字符串 | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)` | `stringComparison` 默认是 `StringComparison.CASE_SENSITIVE`。 |
+| 集合 | `isIn(field, ...values)`, `notIn(field, ...values)`, `containsAll(field, ...values)` | 集合构建器至少需要一个值。 |
+| 存在性 | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)` | 字段存在性构建器。 |
+| 作用域 / 搜索 | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, ...fields)` | `deletion` 接受 `DeletionState.ACTIVE`、`DELETED` 或 `ALL`；元素谓词不能包含根元数据、删除或搜索筛选器。 |
+| 相对时间 | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` 可包含 `zoneId` 和 `datePattern`；`days` 必须为正的 JVM `Int`。 |
 
-| 运算符 | 描述 | 辅助函数 / 示例 |
-|--------|------|------|
-| `EQ` | 等于 | `eq('name', 'Alice')` |
-| `NE` | 不等于 | `ne('status', 'DELETED')` |
-| `GT` / `GTE` | 大于 / 大于等于 | `gt('price', 100)`、`gte('price', 100)` |
-| `LT` / `LTE` | 小于 / 小于等于 | `lt('price', 50)`、`lte('price', 50)` |
-| `IN` | 在集合中 | `isIn('type', 'A', 'B')`（剩余参数） |
-| `NOT_IN` | 不在集合中 | `notIn('type', 'C')`（剩余参数） |
-| `ALL_IN` | 匹配集合中全部 | `allIn('tags', 'a', 'b')`（剩余参数） |
-| `BETWEEN` | 范围 | `between('age', 18, 65)`（`(field, start, end)`） |
-| `CONTAINS` | 包含子串 | `contains('name', 'john')` |
-| `STARTS_WITH` | 前缀匹配 | `startsWith('name', 'john')` |
-| `ENDS_WITH` | 后缀匹配 | `endsWith('name', 'son')` |
-| `MATCH` | 全文匹配（后端相关，如 MongoDB text / ES match） | `match('name', 'keyword')` |
-| `AND` / `OR` / `NOR` | 逻辑组合 | `and(c1, c2)`、`or(c1, c2)` |
-| `ALL` | 匹配全部记录 | `all()`（无需字段/值） |
+来源: [packages/wow/src/query/filter.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts)
 
-来源: [packages/wow/src/query/operator.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/operator.ts)
+### 旧版 Condition
+
+`Condition`、`all()` 和 `and(...)` 等辅助函数以及 `Operator` 仍为兼容性而导出，但已弃用。客户端方法在其类型允许处继续接受旧 Condition；新代码应使用 `FilterExpression` 和 `filter.*`。`raw()` 没有 `FilterExpression` 替代方案。
 
 ### 排序和分页
 
 ```typescript
-import { pagedQuery, listQuery, SortDirection } from '@ahoo-wang/fetcher-wow';
+import { filter, SortDirection } from '@ahoo-wang/fetcher-wow';
 
 // 带排序的分页查询（pagination.index 从 1 开始）
-const query = pagedQuery({
-  condition: all(),
+const query = {
+  filter: filter.matchAll(),
   pagination: { index: 1, size: 20 },
   sort: [{ field: 'createdAt', direction: SortDirection.DESC }],
-});
+};
 
 // 列表查询（仅 limit，无分页）
-const list = listQuery({
-  condition: all(),
+const list = {
+  filter: filter.matchAll(),
   limit: 100,
-});
+};
 ```
 
 ### 游标分页
@@ -350,11 +368,11 @@ const list = listQuery({
 对于大型数据集，基于游标的分页比基于偏移量的分页更高效。它通过使用游标 ID 跟踪位置，避免了深偏移查询的性能退化：
 
 ```typescript
-import { cursorQuery, CURSOR_ID_START, SortDirection } from '@ahoo-wang/fetcher-wow';
+import { cursorQuery, CURSOR_ID_START, filter, SortDirection } from '@ahoo-wang/fetcher-wow';
 
 // 第一页——从头开始
 const firstPage = cursorQuery({
-  query: { condition: all(), limit: 50, projection: { include: ['id', 'name'] } },
+  query: { filter: filter.matchAll(), limit: 50, projection: { include: ['id', 'name'] } },
   cursorId: CURSOR_ID_START,  // '~'——从头开始
   field: 'id',
   direction: SortDirection.ASC,
@@ -362,7 +380,7 @@ const firstPage = cursorQuery({
 
 // 后续页——使用前一个结果的最后一条记录的游标 ID
 const nextPage = cursorQuery({
-  query: { condition: all(), limit: 50 },
+  query: { filter: filter.matchAll(), limit: 50 },
   cursorId: lastItemId,  // 上一页的游标 ID
   field: 'id',
   direction: SortDirection.ASC,
@@ -374,21 +392,21 @@ const nextPage = cursorQuery({
 使用 `projection` 控制查询返回哪些字段——只包含你需要的字段以减少载荷大小：
 
 ```typescript
-import { projection, pagedQuery } from '@ahoo-wang/fetcher-wow';
+import { filter, projection } from '@ahoo-wang/fetcher-wow';
 
 // 仅包含特定字段
-const query = pagedQuery({
-  condition: all(),
+const query = {
+  filter: filter.matchAll(),
   pagination: { index: 1, size: 20 },
   projection: projection({ include: ['id', 'name', 'status'] }),
-});
+};
 
 // 排除字段
-const query2 = pagedQuery({
-  condition: all(),
+const query2 = {
+  filter: filter.matchAll(),
   pagination: { index: 1, size: 20 },
   projection: projection({ exclude: ['internalNotes', 'metadata'] }),
-});
+};
 ```
 
 源码: [packages/wow/src/query/cursorQuery.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts), [packages/wow/src/query/projection.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/projection.ts)
@@ -443,19 +461,17 @@ graph TB
 | `EventStreamQueryClient` | `query/event/` | 领域事件流查询 |
 | `LoadStateAggregateClient` | `query/state/` | 通过 ID/版本/时间加载聚合状态 |
 | `LoadOwnerStateAggregateClient` | `query/state/` | 加载所有者的聚合状态 |
-| `Condition` | `query/` | 查询条件接口 |
-| `all()` | `query/` | 匹配所有记录的条件 |
-| `and(...)` / `or(...)` / `nor(...)` | `query/` | 逻辑条件组合 |
-| `eq/ne/gt/lt/gte/lte(...)` | `query/` | 比较条件辅助函数 |
-| `isIn/notIn/allIn(...)` | `query/` | 集合成员判断辅助函数 |
-| `between/contains/startsWith/endsWith/match(...)` | `query/` | 范围与模式匹配辅助函数 |
-| `aggregateId(id)` | `query/` | 匹配单个聚合 ID 的条件 |
-| `aggregateIds(ids)` | `query/` | 匹配多个聚合 ID 的条件 |
+| `FilterExpression` | `query/` | 类型化查询筛选器联合类型 |
+| `filter` | `query/` | 用于新查询的 `FilterExpression` 构建器 |
+| `AggregationQuery` | `query/` | 类型化快照聚合请求 |
+| `AggregationGroupType`, `AggregationMetricType`, `AggregationExpressionType`, `AggregationDateUnit`, `AggregationFunction` | `query/` | 聚合结构枚举 |
+| `SnapshotQueryClient.aggregate()` | `query/snapshot/` | 执行聚合并返回结果行 |
+| `SnapshotQueryClient.aggregateStream()` | `query/snapshot/` | 执行聚合并以 SSE 流返回结果行 |
+| `Condition`, `all()`, `and(...)`, `Operator` | `query/` | 已弃用的兼容 API |
 | `listQuery()` | `query/` | 创建列表查询 |
 | `pagedQuery()` | `query/` | 创建分页查询 |
 | `singleQuery()` | `query/` | 创建单条查询 |
 | `FieldSort` | `query/` | 排序规范 |
-| `Operator` | `query/` | 查询运算符枚举 |
 | `ResourceAttributionPathSpec` | `types/` | 租户/所有者范围的路径规范 |
 
 ## 生成的客户端
@@ -472,9 +488,9 @@ const result = await commandClient.addCartItem({
 // Generated query client factory
 const factory = cartQueryClientFactory;
 const snapshotClient = factory.createSnapshotQueryClient();
-const cartState = await snapshotClient.singleState(singleQuery({
-  condition: aggregateId('cart-1'),
-}));
+const cartState = await snapshotClient.singleState({
+  filter: filter.aggregateId('cart-1'),
+});
 ```
 
 ## 交叉引用
