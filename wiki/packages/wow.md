@@ -249,6 +249,10 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 | `aggregate(query)` | `/snapshot/aggregation` | `Promise<Row[]>` | Aggregate snapshots |
 | `aggregateStream(query)` | `/snapshot/aggregation` | `Promise<ReadableStream<JsonServerSentEvent<Row>>>` | Aggregate snapshots as SSE |
 
+For compatibility with existing implementations, `SnapshotQueryApi` declares
+`aggregate?` and `aggregateStream?` as optional. `SnapshotQueryClient`
+implements both as required methods.
+
 Source: [packages/wow/src/query/snapshot/snapshotQueryClient.ts:119-516](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L119-L516)
 
 #### Snapshot Aggregation
@@ -331,8 +335,8 @@ const request = { filter: activeCarts, limit: 100 };
 | Comparison | `eq(field, value)`, `ne(field, value)`, `gt(field, value)`, `gte(field, value)`, `lt(field, value)`, `lte(field, value)`, `between(field, lowerBound, upperBound)` | Values are JSON scalar values; equality also accepts `null` and arrays. |
 | String | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)` | `stringComparison` defaults to `StringComparison.CASE_SENSITIVE`. |
 | Collection | `isIn(field, ...values)`, `notIn(field, ...values)`, `containsAll(field, ...values)` | Collection builders require at least one value. |
-| Presence | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)`, `deletion(state)` | `deletion` accepts `DeletionState.ACTIVE`, `DELETED`, or `ALL`. |
-| Scope / search | `elementMatch(field, predicate)`, `search(query, ...fields)` | Element predicates cannot contain root metadata, deletion, or search filters. |
+| Presence | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)` | Field presence builders. |
+| Scope / search | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, ...fields)` | `deletion` accepts `DeletionState.ACTIVE`, `DELETED`, or `ALL`; element predicates cannot contain root metadata, deletion, or search filters. |
 | Relative time | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` may contain `zoneId` and `datePattern`; `days` must be a positive JVM `Int`. |
 
 Source: [packages/wow/src/query/filter.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts)
@@ -472,7 +476,6 @@ Source: [packages/wow/src/index.ts](https://github.com/Ahoo-Wang/fetcher/blob/ma
 | `pagedQuery()` | `query/` | Create a paged query |
 | `singleQuery()` | `query/` | Create a single query |
 | `FieldSort` | `query/` | Sort specification |
-| `Operator` | `query/` | Query operator enum |
 | `ResourceAttributionPathSpec` | `types/` | Path spec for tenant/owner scoping |
 
 ## Generated Clients

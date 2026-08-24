@@ -249,6 +249,9 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 | `aggregate(query)` | `/snapshot/aggregation` | `Promise<Row[]>` | 聚合快照 |
 | `aggregateStream(query)` | `/snapshot/aggregation` | `Promise<ReadableStream<JsonServerSentEvent<Row>>>` | 以 SSE 聚合快照 |
 
+为兼容既有实现，`SnapshotQueryApi` 将 `aggregate?` 和 `aggregateStream?`
+声明为可选方法；`SnapshotQueryClient` 将两者实现为必需方法。
+
 来源: [packages/wow/src/query/snapshot/snapshotQueryClient.ts:119-516](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L119-L516)
 
 #### 快照聚合
@@ -330,8 +333,8 @@ const request = { filter: activeCarts, limit: 100 };
 | 比较 | `eq(field, value)`, `ne(field, value)`, `gt(field, value)`, `gte(field, value)`, `lt(field, value)`, `lte(field, value)`, `between(field, lowerBound, upperBound)` | 值为 JSON 标量；相等比较也接受 `null` 和数组。 |
 | 字符串 | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)` | `stringComparison` 默认是 `StringComparison.CASE_SENSITIVE`。 |
 | 集合 | `isIn(field, ...values)`, `notIn(field, ...values)`, `containsAll(field, ...values)` | 集合构建器至少需要一个值。 |
-| 存在性 | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)`, `deletion(state)` | `deletion` 接受 `DeletionState.ACTIVE`、`DELETED` 或 `ALL`。 |
-| 作用域 / 搜索 | `elementMatch(field, predicate)`, `search(query, ...fields)` | 元素谓词不能包含根元数据、删除或搜索筛选器。 |
+| 存在性 | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)` | 字段存在性构建器。 |
+| 作用域 / 搜索 | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, ...fields)` | `deletion` 接受 `DeletionState.ACTIVE`、`DELETED` 或 `ALL`；元素谓词不能包含根元数据、删除或搜索筛选器。 |
 | 相对时间 | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` 可包含 `zoneId` 和 `datePattern`；`days` 必须为正的 JVM `Int`。 |
 
 来源: [packages/wow/src/query/filter.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts)
@@ -468,7 +471,6 @@ graph TB
 | `pagedQuery()` | `query/` | 创建分页查询 |
 | `singleQuery()` | `query/` | 创建单条查询 |
 | `FieldSort` | `query/` | 排序规范 |
-| `Operator` | `query/` | 查询运算符枚举 |
 | `ResourceAttributionPathSpec` | `types/` | 租户/所有者范围的路径规范 |
 
 ## 生成的客户端
