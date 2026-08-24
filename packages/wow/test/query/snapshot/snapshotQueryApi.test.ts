@@ -13,11 +13,7 @@
 
 import type { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import type {
-  SnapshotAggregationQueryApi,
-  SnapshotQueryApi,
-  SnapshotQueryClient,
-} from '../../../src';
+import type { SnapshotQueryApi, SnapshotQueryClient } from '../../../src';
 import {
   AggregationMetricType,
   SnapshotQueryEndpointPaths,
@@ -46,11 +42,17 @@ describe('SnapshotQueryEndpointPaths', () => {
       product: string;
       total: number;
     };
+    type SnapshotApiHasAggregationKeys =
+      'aggregate' extends keyof SnapshotQueryApi<unknown, RootFields>
+        ? 'aggregateStream' extends keyof SnapshotQueryApi<unknown, RootFields>
+          ? true
+          : false
+        : false;
     type SnapshotApiRequiresAggregation =
-      SnapshotQueryApi<
-        unknown,
-        RootFields
-      > extends SnapshotAggregationQueryApi<RootFields>
+      SnapshotQueryApi<unknown, RootFields> extends {
+        aggregate: unknown;
+        aggregateStream: unknown;
+      }
         ? true
         : false;
 
@@ -68,10 +70,8 @@ describe('SnapshotQueryEndpointPaths', () => {
       >();
     };
 
+    expectTypeOf<SnapshotApiHasAggregationKeys>().toEqualTypeOf<true>();
     expectTypeOf<SnapshotApiRequiresAggregation>().toEqualTypeOf<false>();
-    expectTypeOf<SnapshotQueryClient<unknown, RootFields>>().toMatchTypeOf<
-      SnapshotAggregationQueryApi<RootFields>
-    >();
     expectTypeOf(assertClientTypes).toBeFunction();
   });
 });

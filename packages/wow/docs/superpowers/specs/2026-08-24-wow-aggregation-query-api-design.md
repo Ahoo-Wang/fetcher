@@ -13,7 +13,7 @@ Fetcher 3.17.1 的 `packages/wow` 尚未定义该查询结构，也没有对应�
 ## 目标
 
 - 为 Wow 当前 `AggregationQuery` 线协议提供直接、类型安全的 TypeScript 表达。
-- 通过独立的 `SnapshotAggregationQueryApi` 与现有 `SnapshotQueryClient` 同时提供 JSON 与 SSE 查询，同时保持 `SnapshotQueryApi` 的既有实现者兼容。
+- 通过 `SnapshotQueryApi` 的可选聚合成员与现有 `SnapshotQueryClient` 同时提供 JSON 与 SSE 查询，同时保持 `SnapshotQueryApi` 的既有实现者兼容。
 - 允许调用方通过泛型声明聚合 alias 对应的结果行类型，默认仍为 `DynamicDocument`。
 - 复用 Fetcher 已有过滤器、排序、装饰器、SSE 提取和取消请求能力。
 
@@ -70,27 +70,25 @@ Element 第一层路径是快照绝对路径，后续路径及每层 filter 都�
 
 ## 客户端 API
 
-新增独立的 `SnapshotAggregationQueryApi<FIELDS>`：
+在 `SnapshotQueryApi<S, FIELDS>` 上增加可选聚合成员：
 
 ```ts
-export interface SnapshotAggregationQueryApi<FIELDS extends string = string> {
-  aggregate<Row extends DynamicDocument = DynamicDocument>(
-    query: AggregationQuery<FIELDS>,
-    attributes?: Record<string, any>,
-    abortController?: AbortController,
-  ): Promise<Row[]>;
+aggregate?<Row extends DynamicDocument = DynamicDocument>(
+  query: AggregationQuery<FIELDS>,
+  attributes?: Record<string, any>,
+  abortController?: AbortController,
+): Promise<Row[]>;
 
-  aggregateStream<Row extends DynamicDocument = DynamicDocument>(
-    query: AggregationQuery<FIELDS>,
-    attributes?: Record<string, any>,
-    abortController?: AbortController,
-  ): Promise<ReadableStream<JsonServerSentEvent<Row>>>;
-}
+aggregateStream?<Row extends DynamicDocument = DynamicDocument>(
+  query: AggregationQuery<FIELDS>,
+  attributes?: Record<string, any>,
+  abortController?: AbortController,
+): Promise<ReadableStream<JsonServerSentEvent<Row>>>;
 ```
 
-`SnapshotQueryApi<S, FIELDS>` 保持原有必需方法集合，不加入聚合方法；`SnapshotQueryClient<S, FIELDS>` 同时实现 `SnapshotQueryApi<S, FIELDS>` 与 `SnapshotAggregationQueryApi<FIELDS>`。
+`SnapshotQueryClient<S, FIELDS>` 继续只实现 `SnapshotQueryApi<S, FIELDS>`，但其 `aggregate()` 与 `aggregateStream()` 具体方法保持必需，调用方获得的客户端无需空值判断。
 
-这是 3.17.1 的兼容性边界：下游可能自行实现 `SnapshotQueryApi` 作为 mock 或 adapter，向该接口加入必需方法会破坏既有实现。客户端仍直接暴露聚合方法，调用方无需新建客户端或工厂。
+这是 3.17.1 的兼容性边界：下游可能自行实现 `SnapshotQueryApi` 作为 mock 或 adapter。可选成员保留聚合键而不要求既有实现补齐方法；客户端仍直接暴露必需聚合方法，调用方无需新建客户端或工厂。
 
 `SnapshotQueryEndpointPaths` 增加：
 
@@ -137,7 +135,7 @@ Fetcher 不重复实现 Wow 已负责的结构校验，包括数量上限、alia
 - 验证所有新增枚举的线协议字符串。
 - 用一份覆盖 Element、三种 Group、两种 Metric、排序和 limit 的查询验证实际对象形状。
 - 类型检查根 filter 的 `FIELDS` 约束、Element filter 的受限操作符、非空 metrics，以及两个方法的泛型返回类型。
-- 类型检查 `SnapshotQueryApi` 不要求聚合能力，而 `SnapshotQueryClient` 匹配 `SnapshotAggregationQueryApi`，保护既有下游 API 实现者。
+- 类型检查 `SnapshotQueryApi` 包含两个聚合键但不要求它们，保护既有下游 API 实现者；同时保留客户端 JSON 与 SSE 返回类型断言。
 - 在现有端点测试中验证 `AGGREGATION === 'snapshot/aggregation'`。
 
 验证命令：
@@ -155,6 +153,6 @@ git diff --check
 - TypeScript 公共类型能表达 Wow 当前所有聚合查询变体及默认省略形式。
 - 现有快照客户端能从同一路由获取 JSON 数组或 SSE 行流。
 - 调用方可以显式声明结果行类型，未声明时返回 `DynamicDocument`。
-- 既有 `SnapshotQueryApi` 实现者无需添加聚合方法；客户端实现独立聚合接口。
+- 既有 `SnapshotQueryApi` 实现者无需添加聚合方法；客户端聚合方法保持必需。
 - 不增加新客户端、DSL、运行时验证、依赖或生成器改动。
 - `packages/wow` 构建、测试、类型检查和 lint 通过，根单元测试通过。

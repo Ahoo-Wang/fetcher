@@ -23,23 +23,6 @@ import type {
 } from '../queryable';
 import type { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
 
-/** Interface for snapshot aggregation query operations. */
-export interface SnapshotAggregationQueryApi<FIELDS extends string = string> {
-  /** Runs a snapshot aggregation and returns all result rows. */
-  aggregate<Row extends DynamicDocument = DynamicDocument>(
-    query: AggregationQuery<FIELDS>,
-    attributes?: Record<string, any>,
-    abortController?: AbortController,
-  ): Promise<Row[]>;
-
-  /** Runs a snapshot aggregation and streams result rows as SSE. */
-  aggregateStream<Row extends DynamicDocument = DynamicDocument>(
-    query: AggregationQuery<FIELDS>,
-    attributes?: Record<string, any>,
-    abortController?: AbortController,
-  ): Promise<ReadableStream<JsonServerSentEvent<Row>>>;
-}
-
 /**
  * Interface for snapshot query API operations.
  * Extends the base QueryApi interface for MaterializedSnapshot and adds methods
@@ -50,6 +33,20 @@ export interface SnapshotQueryApi<
   S,
   FIELDS extends string = string,
 > extends QueryApi<MaterializedSnapshot<S>, FIELDS> {
+  /** Runs a snapshot aggregation and returns all result rows. */
+  aggregate?<Row extends DynamicDocument = DynamicDocument>(
+    query: AggregationQuery<FIELDS>,
+    attributes?: Record<string, any>,
+    abortController?: AbortController,
+  ): Promise<Row[]>;
+
+  /** Runs a snapshot aggregation and streams result rows as SSE. */
+  aggregateStream?<Row extends DynamicDocument = DynamicDocument>(
+    query: AggregationQuery<FIELDS>,
+    attributes?: Record<string, any>,
+    abortController?: AbortController,
+  ): Promise<ReadableStream<JsonServerSentEvent<Row>>>;
+
   /**
    * Retrieves a single snapshot state based on the provided query parameters.
    * @param singleQuery - The query parameters for retrieving a single snapshot state
