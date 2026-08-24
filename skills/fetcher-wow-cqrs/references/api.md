@@ -141,6 +141,8 @@ import {
   type SingleQuery,
   type FilterExpression,
   type ElementFilterExpression,
+  type MetadataFilter,
+  type EqualityFilterValue,
   type RelativeTimeFilterOptions,
   type FilterListQuery,
   type FilterPagedQuery,
@@ -493,12 +495,16 @@ const query = listQuery({ filter: expression });
 Available builders:
 
 - Logical: `matchAll`, `matchNone`, `and`, `or`, `nor`
+- Metadata: `id`, `ids`, `aggregateId`, `aggregateIds`, `tenantId`, `ownerId`, `spaceId`
 - Comparison: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `between`
 - String: `contains`, `startsWith`, `endsWith`; pass `StringComparison` as the third argument
 - Collection: `isIn`, `notIn`, `containsAll`
 - Presence: `isEmpty`, `isNull`, `isNotNull`, `exists`, `notExists`
 - Scope/search: `deletion`, `elementMatch`, `search`
 - Relative time: `today`, `beforeToday`, `tomorrow`, `thisWeek`, `nextWeek`, `lastWeek`, `thisMonth`, `lastMonth`, `recentDays`, `earlierDays`
+
+`eq` and `ne` accept a JSON scalar or an array of JSON scalars. Logical field
+segments may start with `@`.
 
 Relative-time builders accept JVM `ZoneId` and `DateTimeFormatter` options:
 
@@ -529,8 +535,8 @@ the filter-based request types or the existing condition-based request types.
 API remains available for servers in the compatibility window.
 
 `elementMatch` accepts `ElementFilterExpression`, whose relative field type is
-independent from the outer query fields and excludes `deletion` and `search`,
-including inside nested `and`/`or`/`nor` expressions.
+independent from the outer query fields and excludes metadata filters,
+`deletion`, and `search`, including inside nested `and`/`or`/`nor` expressions.
 
 ### Filter Cursor Queries
 
