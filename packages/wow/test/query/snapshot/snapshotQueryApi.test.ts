@@ -13,7 +13,11 @@
 
 import type { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import type { SnapshotQueryClient } from '../../../src';
+import type {
+  SnapshotAggregationQueryApi,
+  SnapshotQueryApi,
+  SnapshotQueryClient,
+} from '../../../src';
 import {
   AggregationMetricType,
   SnapshotQueryEndpointPaths,
@@ -42,6 +46,13 @@ describe('SnapshotQueryEndpointPaths', () => {
       product: string;
       total: number;
     };
+    type SnapshotApiRequiresAggregation =
+      SnapshotQueryApi<
+        unknown,
+        RootFields
+      > extends SnapshotAggregationQueryApi<RootFields>
+        ? true
+        : false;
 
     const query: AggregationQuery<RootFields> = {
       metrics: [{ type: AggregationMetricType.COUNT, alias: 'total' }],
@@ -57,6 +68,10 @@ describe('SnapshotQueryEndpointPaths', () => {
       >();
     };
 
+    expectTypeOf<SnapshotApiRequiresAggregation>().toEqualTypeOf<false>();
+    expectTypeOf<SnapshotQueryClient<unknown, RootFields>>().toMatchTypeOf<
+      SnapshotAggregationQueryApi<RootFields>
+    >();
     expectTypeOf(assertClientTypes).toBeFunction();
   });
 });

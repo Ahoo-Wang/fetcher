@@ -12,6 +12,7 @@
  */
 
 import {
+  type SnapshotAggregationQueryApi,
   type SnapshotQueryApi,
   SnapshotQueryEndpointPaths,
 } from './snapshotQueryApi';
@@ -119,7 +120,10 @@ import {
  */
 @api()
 export class SnapshotQueryClient<S, FIELDS extends string = string>
-  implements SnapshotQueryApi<S, FIELDS>, ApiMetadataCapable
+  implements
+    SnapshotQueryApi<S, FIELDS>,
+    SnapshotAggregationQueryApi<FIELDS>,
+    ApiMetadataCapable
 {
   /**
    * Creates a new SnapshotQueryClient instance.

@@ -4,7 +4,7 @@
 
 **Goal:** 在 `@ahoo-wang/fetcher-wow` 中对齐 Wow 最新 `AggregationQuery` 线协议，并通过现有快照查询客户端提供 JSON 与 SSE 两种聚合查询。
 
-**Architecture:** 新增一个只负责聚合请求类型的 `query/aggregation.ts`，复用现有 `FilterExpression`、`ElementFilterExpression`、`LogicalField` 与 `FieldSort`。直接扩展 `SnapshotQueryApi` 和 `SnapshotQueryClient`；两个方法共用 `snapshot/aggregation` 路径，JSON 使用默认提取器，SSE 使用已有 `JsonEventStreamResultExtractor`。
+**Architecture:** 新增一个只负责聚合请求类型的 `query/aggregation.ts`，复用现有 `FilterExpression`、`ElementFilterExpression`、`LogicalField` 与 `FieldSort`。由独立的 `SnapshotAggregationQueryApi` 声明聚合方法，`SnapshotQueryClient` 同时实现它和既有 `SnapshotQueryApi`；两个方法共用 `snapshot/aggregation` 路径，JSON 使用默认提取器，SSE 使用已有 `JsonEventStreamResultExtractor`。
 
 **Tech Stack:** TypeScript strict mode、Fetcher decorators、Fetcher eventstream、Vitest、TypeScript compiler、Vite、ESLint、pnpm。
 
@@ -17,6 +17,7 @@
 - 根 filter 使用 `FilterExpression<FIELDS>`；Element、group 与 metric 的相对字段保持通用 `LogicalField`。
 - `metrics` 必填且在类型层非空；其他查询字段可省略，由 Wow 补默认值。
 - 同一路由必须同时提供 `aggregate<Row>()` JSON 数组和 `aggregateStream<Row>()` SSE 流。
+- `SnapshotQueryApi` 保持既有必需方法集合；聚合方法放入 `SnapshotAggregationQueryApi`，避免破坏下游 mock 与 adapter。
 - 结果泛型默认 `DynamicDocument`，只提供静态类型，不增加运行时解码。
 - 所有源文件保留 Apache 2.0 头，使用单引号、分号、尾随逗号和 type-only imports。
 - 每次提交前运行根 `pnpm test:unit`，并确认 `git diff --check` 通过。
@@ -399,7 +400,7 @@ git commit -m "feat(wow): add aggregation query types"
 
 **Interfaces:**
 - Consumes: `AggregationQuery<FIELDS>` from Task 1, `DynamicDocument`, `JsonServerSentEvent`, existing Fetcher decorators and `JsonEventStreamResultExtractor`.
-- Produces: `SnapshotQueryEndpointPaths.AGGREGATION`, `SnapshotQueryApi.aggregate<Row>()`, `SnapshotQueryApi.aggregateStream<Row>()`, and matching `SnapshotQueryClient` methods.
+- Produces: `SnapshotQueryEndpointPaths.AGGREGATION`, `SnapshotAggregationQueryApi.aggregate<Row>()`, `SnapshotAggregationQueryApi.aggregateStream<Row>()`, and matching `SnapshotQueryClient` methods. `SnapshotQueryClient` implements both snapshot query interfaces for compatibility.
 
 - [ ] **Step 1: Write the failing endpoint and client type tests**
 
@@ -408,9 +409,13 @@ Replace the body of `packages/wow/test/query/snapshot/snapshotQueryApi.test.ts` 
 ```ts
 import type { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
 import { describe, expect, expectTypeOf, it } from 'vitest';
+import type {
+  SnapshotAggregationQueryApi,
+  SnapshotQueryApi,
+  SnapshotQueryClient,
+} from '../../../src';
 import {
   AggregationMetricType,
-  SnapshotQueryClient,
   SnapshotQueryEndpointPaths,
   type AggregationQuery,
   type DynamicDocument,
@@ -419,9 +424,7 @@ import {
 describe('SnapshotQueryEndpointPaths', () => {
   it('should have correct endpoint path values', () => {
     expect(SnapshotQueryEndpointPaths.SNAPSHOT_RESOURCE_NAME).toBe('snapshot');
-    expect(SnapshotQueryEndpointPaths.AGGREGATION).toBe(
-      'snapshot/aggregation',
-    );
+    expect(SnapshotQueryEndpointPaths.AGGREGATION).toBe('snapshot/aggregation');
     expect(SnapshotQueryEndpointPaths.COUNT).toBe('snapshot/count');
     expect(SnapshotQueryEndpointPaths.LIST).toBe('snapshot/list');
     expect(SnapshotQueryEndpointPaths.LIST_STATE).toBe('snapshot/list/state');
@@ -439,6 +442,13 @@ describe('SnapshotQueryEndpointPaths', () => {
       product: string;
       total: number;
     };
+    type SnapshotApiRequiresAggregation =
+      SnapshotQueryApi<
+        unknown,
+        RootFields
+      > extends SnapshotAggregationQueryApi<RootFields>
+        ? true
+        : false;
 
     const query: AggregationQuery<RootFields> = {
       metrics: [{ type: AggregationMetricType.COUNT, alias: 'total' }],
@@ -446,16 +456,18 @@ describe('SnapshotQueryEndpointPaths', () => {
     const assertClientTypes = (
       client: SnapshotQueryClient<unknown, RootFields>,
     ) => {
-      expectTypeOf(
-        client.aggregate<AggregationRow>(query),
-      ).toEqualTypeOf<Promise<AggregationRow[]>>();
-      expectTypeOf(
-        client.aggregateStream<AggregationRow>(query),
-      ).toEqualTypeOf<
+      expectTypeOf(client.aggregate<AggregationRow>(query)).toEqualTypeOf<
+        Promise<AggregationRow[]>
+      >();
+      expectTypeOf(client.aggregateStream<AggregationRow>(query)).toEqualTypeOf<
         Promise<ReadableStream<JsonServerSentEvent<AggregationRow>>>
       >();
     };
 
+    expectTypeOf<SnapshotApiRequiresAggregation>().toEqualTypeOf<false>();
+    expectTypeOf<SnapshotQueryClient<unknown, RootFields>>().toMatchTypeOf<
+      SnapshotAggregationQueryApi<RootFields>
+    >();
     expectTypeOf(assertClientTypes).toBeFunction();
   });
 });
@@ -483,7 +495,7 @@ pnpm --filter @ahoo-wang/fetcher-wow test:type
 
 Expected: Vitest FAILS because `SnapshotQueryEndpointPaths.AGGREGATION` is undefined; `tsc` also reports that `aggregate` and `aggregateStream` do not exist.
 
-- [ ] **Step 3: Extend SnapshotQueryApi and its endpoint paths**
+- [ ] **Step 3: Define SnapshotAggregationQueryApi and its endpoint path**
 
 Add these type imports to `packages/wow/src/query/snapshot/snapshotQueryApi.ts`:
 
@@ -492,9 +504,10 @@ import type { AggregationQuery } from '../aggregation';
 import type { DynamicDocument } from '../types';
 ```
 
-Add these methods at the start of the `SnapshotQueryApi` body, before `singleState`:
+Keep `SnapshotQueryApi<S, FIELDS>` unchanged. Add the aggregation methods to a separate exported interface before it:
 
 ```ts
+export interface SnapshotAggregationQueryApi<FIELDS extends string = string> {
   /** Runs a snapshot aggregation and returns all result rows. */
   aggregate<Row extends DynamicDocument = DynamicDocument>(
     query: AggregationQuery<FIELDS>,
@@ -508,6 +521,7 @@ Add these methods at the start of the `SnapshotQueryApi` body, before `singleSta
     attributes?: Record<string, any>,
     abortController?: AbortController,
   ): Promise<ReadableStream<JsonServerSentEvent<Row>>>;
+}
 ```
 
 Add the endpoint immediately after `SNAPSHOT_RESOURCE_NAME`:
@@ -524,6 +538,8 @@ Add these type imports to `packages/wow/src/query/snapshot/snapshotQueryClient.t
 import type { AggregationQuery } from '../aggregation';
 import type { DynamicDocument } from '../types';
 ```
+
+Also import `SnapshotAggregationQueryApi` from `snapshotQueryApi` and declare `SnapshotQueryClient<S, FIELDS>` as implementing both `SnapshotQueryApi<S, FIELDS>` and `SnapshotAggregationQueryApi<FIELDS>`. This preserves downstream implementations of `SnapshotQueryApi` while keeping the concrete client aggregation-capable.
 
 Add these methods after the constructor and before `count`:
 

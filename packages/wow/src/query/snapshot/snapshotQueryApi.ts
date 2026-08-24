@@ -23,16 +23,8 @@ import type {
 } from '../queryable';
 import type { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
 
-/**
- * Interface for snapshot query API operations.
- * Extends the base QueryApi interface for MaterializedSnapshot and adds methods
- * for querying snapshot states directly without the full MaterializedSnapshot wrapper.
- * @template S - The type of the snapshot state
- */
-export interface SnapshotQueryApi<
-  S,
-  FIELDS extends string = string,
-> extends QueryApi<MaterializedSnapshot<S>, FIELDS> {
+/** Interface for snapshot aggregation query operations. */
+export interface SnapshotAggregationQueryApi<FIELDS extends string = string> {
   /** Runs a snapshot aggregation and returns all result rows. */
   aggregate<Row extends DynamicDocument = DynamicDocument>(
     query: AggregationQuery<FIELDS>,
@@ -46,7 +38,18 @@ export interface SnapshotQueryApi<
     attributes?: Record<string, any>,
     abortController?: AbortController,
   ): Promise<ReadableStream<JsonServerSentEvent<Row>>>;
+}
 
+/**
+ * Interface for snapshot query API operations.
+ * Extends the base QueryApi interface for MaterializedSnapshot and adds methods
+ * for querying snapshot states directly without the full MaterializedSnapshot wrapper.
+ * @template S - The type of the snapshot state
+ */
+export interface SnapshotQueryApi<
+  S,
+  FIELDS extends string = string,
+> extends QueryApi<MaterializedSnapshot<S>, FIELDS> {
   /**
    * Retrieves a single snapshot state based on the provided query parameters.
    * @param singleQuery - The query parameters for retrieving a single snapshot state
