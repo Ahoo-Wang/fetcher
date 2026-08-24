@@ -331,6 +331,7 @@ interface CartItem {
 }
 
 interface CartState extends Identifier {
+  status: string;
   items: CartItem[];
 }
 
@@ -408,29 +409,30 @@ const singleState = await cartSnapshotQueryClient.singleState(singleQuery);
 
 type ProductSummary = {
   product: string;
-  orderCount: number;
-  total: number;
+  itemCount: number;
+  totalQuantity: number;
 };
 
 const aggregationQuery: AggregationQuery = {
   filter: filter.eq('state.status', 'COMPLETED'),
+  elements: [{ path: 'state.items' }],
   groupBy: [
     {
       type: AggregationGroupType.TERMS,
-      field: 'state.items.productId',
+      field: 'productId',
       alias: 'product',
     },
   ],
   metrics: [
-    { type: AggregationMetricType.COUNT, alias: 'orderCount' },
+    { type: AggregationMetricType.COUNT, alias: 'itemCount' },
     {
       type: AggregationMetricType.NUMERIC,
       function: AggregationFunction.SUM,
-      expression: { field: 'state.total' },
-      alias: 'total',
+      expression: { field: 'quantity' },
+      alias: 'totalQuantity',
     },
   ],
-  sort: [{ field: 'total', direction: SortDirection.DESC }],
+  sort: [{ field: 'totalQuantity', direction: SortDirection.DESC }],
   limit: 10,
 };
 

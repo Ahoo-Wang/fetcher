@@ -32,10 +32,12 @@
 ### Task 1: 同步包 README
 
 **Files:**
+
 - Modify: `packages/wow/README.md`
 - Modify: `packages/wow/README.zh-CN.md`
 
 **Interfaces:**
+
 - Consumes: `AggregationQuery<FIELDS>`, `AggregationGroupType`, `AggregationMetricType`, `AggregationFunction`, `SortDirection`, `SnapshotQueryClient.aggregate<Row>()`, `SnapshotQueryClient.aggregateStream<Row>()`.
 - Produces: 面向 npm 用户的中英文聚合查询入口。
 
@@ -46,29 +48,30 @@
 ```ts
 type ProductSummary = {
   product: string;
-  orderCount: number;
-  total: number;
+  itemCount: number;
+  totalQuantity: number;
 };
 
 const aggregationQuery: AggregationQuery = {
   filter: filter.eq('state.status', 'COMPLETED'),
+  elements: [{ path: 'state.items' }],
   groupBy: [
     {
       type: AggregationGroupType.TERMS,
-      field: 'state.items.productId',
+      field: 'productId',
       alias: 'product',
     },
   ],
   metrics: [
-    { type: AggregationMetricType.COUNT, alias: 'orderCount' },
+    { type: AggregationMetricType.COUNT, alias: 'itemCount' },
     {
       type: AggregationMetricType.NUMERIC,
       function: AggregationFunction.SUM,
-      expression: { field: 'state.total' },
-      alias: 'total',
+      expression: { field: 'quantity' },
+      alias: 'totalQuantity',
     },
   ],
-  sort: [{ field: 'total', direction: SortDirection.DESC }],
+  sort: [{ field: 'totalQuantity', direction: SortDirection.DESC }],
   limit: 10,
 };
 
@@ -99,9 +102,11 @@ Expected: `All matched files use Prettier code style!`
 ### Task 2: 同步 Skill API reference
 
 **Files:**
+
 - Modify: `skills/fetcher-wow-cqrs/references/api.md`
 
 **Interfaces:**
+
 - Consumes: `packages/wow/src/query/aggregation.ts`, `snapshot/snapshotQueryApi.ts`, `snapshot/snapshotQueryClient.ts`.
 - Produces: 面向代理的完整聚合类型、枚举、调用方式与兼容边界。
 
@@ -155,10 +160,12 @@ Expected: `All matched files use Prettier code style!`
 ### Task 3: 同步 Wiki 中英文页面
 
 **Files:**
+
 - Modify: `wiki/packages/wow.md`
 - Modify: `wiki/zh/packages/wow.md`
 
 **Interfaces:**
+
 - Consumes: Task 1 的常用示例、Task 2 的准确 API 事实。
 - Produces: 面向站点读者的当前查询主路径。
 
@@ -196,9 +203,11 @@ Expected: VitePress build exits `0`; generated `llms*.txt` and `.vitepress/dist`
 ### Task 4: 全量复核并提交
 
 **Files:**
+
 - Review: all files listed in File Structure plus this plan.
 
 **Interfaces:**
+
 - Consumes: Tasks 1–3 outputs.
 - Produces: 可提交、可构建、与运行时契约一致的完整文档变更。
 

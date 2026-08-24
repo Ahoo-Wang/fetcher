@@ -262,16 +262,17 @@ import {
   type AggregationQuery, SortDirection, filter,
 } from '@ahoo-wang/fetcher-wow';
 
-type ProductSummary = { product: string; orderCount: number; total: number };
+type ProductSummary = { product: string; itemCount: number; totalQuantity: number };
 
 const query: AggregationQuery = {
   filter: filter.eq('state.status', 'COMPLETED'),
-  groupBy: [{ type: AggregationGroupType.TERMS, field: 'state.items.productId', alias: 'product' }],
+  elements: [{ path: 'state.items' }],
+  groupBy: [{ type: AggregationGroupType.TERMS, field: 'productId', alias: 'product' }],
   metrics: [
-    { type: AggregationMetricType.COUNT, alias: 'orderCount' },
-    { type: AggregationMetricType.NUMERIC, function: AggregationFunction.SUM, expression: { field: 'state.total' }, alias: 'total' },
+    { type: AggregationMetricType.COUNT, alias: 'itemCount' },
+    { type: AggregationMetricType.NUMERIC, function: AggregationFunction.SUM, expression: { field: 'quantity' }, alias: 'totalQuantity' },
   ],
-  sort: [{ field: 'total', direction: SortDirection.DESC }],
+  sort: [{ field: 'totalQuantity', direction: SortDirection.DESC }],
   limit: 10,
 };
 

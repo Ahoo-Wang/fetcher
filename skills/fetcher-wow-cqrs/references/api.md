@@ -377,29 +377,30 @@ const state = await snapshotClient.singleState({
 ```typescript
 type ProductSummary = {
   product: string;
-  orderCount: number;
-  total: number;
+  itemCount: number;
+  totalQuantity: number;
 };
 
 const aggregationQuery: AggregationQuery = {
   filter: filter.eq('state.status', 'COMPLETED'),
+  elements: [{ path: 'state.items' }],
   groupBy: [
     {
       type: AggregationGroupType.TERMS,
-      field: 'state.items.productId',
+      field: 'productId',
       alias: 'product',
     },
   ],
   metrics: [
-    { type: AggregationMetricType.COUNT, alias: 'orderCount' },
+    { type: AggregationMetricType.COUNT, alias: 'itemCount' },
     {
       type: AggregationMetricType.NUMERIC,
       function: AggregationFunction.SUM,
-      expression: { field: 'state.total' },
-      alias: 'total',
+      expression: { field: 'quantity' },
+      alias: 'totalQuantity',
     },
   ],
-  sort: [{ field: 'total', direction: SortDirection.DESC }],
+  sort: [{ field: 'totalQuantity', direction: SortDirection.DESC }],
   limit: 10,
 };
 
@@ -642,6 +643,9 @@ const predicate: FilterExpression<'id'> = cursorFilter({
 
 Each `AggregationElement` has a `path` and optional `filter`.
 `elements[].filter` is an `ElementFilterExpression`.
+Elements form an ordered expansion chain. The first path is root-relative;
+later element paths, group fields, and metric expression fields are relative
+to the current innermost element.
 
 `AggregationGroup` is one of:
 
@@ -661,7 +665,7 @@ Each `AggregationElement` has a `path` and optional `filter`.
 ```typescript
 const expression = {
   // type: AggregationExpressionType.FIELD, // optional
-  field: 'state.items.price',
+  field: 'quantity', // relative to state.items in the example above
 };
 ```
 

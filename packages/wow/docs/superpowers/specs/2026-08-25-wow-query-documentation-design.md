@@ -64,11 +64,13 @@
 统一示例使用：
 
 - 根过滤：`filter.eq('state.status', 'COMPLETED')`
-- 分组：`AggregationGroupType.TERMS`
+- Element 展开：`state.items`
+- 分组：相对 Element 的 `productId`，使用 `AggregationGroupType.TERMS`
 - 指标：`AggregationMetricType.COUNT` 与
-  `AggregationMetricType.NUMERIC` + `AggregationFunction.SUM`
+  `AggregationMetricType.NUMERIC` + `AggregationFunction.SUM`，后者汇总相对字段
+  `quantity`
 - 排序：`SortDirection.DESC`
-- 结果行：`{ product: string; orderCount: number; total: number }`
+- 结果行：`{ product: string; itemCount: number; totalQuantity: number }`
 
 README 与 Wiki 只展示常用结构，完整枚举清单只在 Skill API reference 展开，避免
 三处维护同一张大表。
