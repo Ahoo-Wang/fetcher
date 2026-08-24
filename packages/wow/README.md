@@ -24,6 +24,7 @@ working with the Wow CQRS/DDD framework.
 - **🚀 Command Client**: High-level client for sending commands to Wow services with both synchronous and streaming
   responses
 - **🔍 Powerful Query DSL**: Typed `FilterExpression` builders with comprehensive operator support
+- **📊 Snapshot Aggregation**: Group and aggregate snapshot data with typed queries
 - **🔍 Query Clients**: Specialized clients for querying snapshot and event stream data with comprehensive query
   operations:
   - Counting resources
@@ -320,7 +321,12 @@ import {
 } from '@ahoo-wang/fetcher';
 import '@ahoo-wang/fetcher-eventstream';
 import {
+  AggregationFunction,
+  AggregationGroupType,
+  AggregationMetricType,
+  AggregationQuery,
   SnapshotQueryClient,
+  SortDirection,
   filter,
   FilterListQuery,
   FilterPagedQuery,
@@ -408,6 +414,41 @@ const single = await cartSnapshotQueryClient.single(singleQuery);
 
 // Single snapshot state
 const singleState = await cartSnapshotQueryClient.singleState(singleQuery);
+
+type ProductSummary = {
+  product: string;
+  orderCount: number;
+  total: number;
+};
+
+const aggregationQuery: AggregationQuery = {
+  filter: filter.eq('state.status', 'COMPLETED'),
+  groupBy: [
+    {
+      type: AggregationGroupType.TERMS,
+      field: 'state.items.productId',
+      alias: 'product',
+    },
+  ],
+  metrics: [
+    { type: AggregationMetricType.COUNT, alias: 'orderCount' },
+    {
+      type: AggregationMetricType.NUMERIC,
+      function: AggregationFunction.SUM,
+      expression: { field: 'state.total' },
+      alias: 'total',
+    },
+  ],
+  sort: [{ field: 'total', direction: SortDirection.DESC }],
+  limit: 10,
+};
+
+const summaries =
+  await cartSnapshotQueryClient.aggregate<ProductSummary>(aggregationQuery);
+const summaryStream =
+  await cartSnapshotQueryClient.aggregateStream<ProductSummary>(
+    aggregationQuery,
+  );
 ```
 
 ##### Methods
@@ -426,6 +467,9 @@ const singleState = await cartSnapshotQueryClient.singleState(singleQuery);
 - `single(singleQuery: FilterSingleQuery): Promise<Partial<MaterializedSnapshot<S>>>` - Retrieves a single materialized
   snapshot.
 - `singleState(singleQuery: FilterSingleQuery): Promise<Partial<S>>` - Retrieves a single snapshot state.
+- `aggregate<Row extends DynamicDocument = DynamicDocument>(query: AggregationQuery<FIELDS>): Promise<Row[]>` - Runs a
+  snapshot aggregation and requests `snapshot/aggregation`.
+- `aggregateStream<Row extends DynamicDocument = DynamicDocument>(query: AggregationQuery<FIELDS>): Promise<ReadableStream<JsonServerSentEvent<Row>>>` - Runs a snapshot aggregation and requests `snapshot/aggregation` using Server-Sent Events (SSE).
 
 #### QueryClientFactory
 
