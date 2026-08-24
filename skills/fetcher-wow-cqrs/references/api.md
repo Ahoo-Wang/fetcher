@@ -63,6 +63,7 @@ The Wow framework implements CQRS + Event Sourcing + DDD:
 
 ```typescript
 import '@ahoo-wang/fetcher-eventstream'; // Optional: SSE support loads transitively with fetcher-wow
+import type { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
 import { ContentTypeValues, HttpMethod } from '@ahoo-wang/fetcher';
 import {
   // Command
@@ -394,7 +395,7 @@ const aggregationQuery: AggregationQuery = {
     {
       type: AggregationMetricType.NUMERIC,
       function: AggregationFunction.SUM,
-      expression: { field: 'state.items.price' },
+      expression: { field: 'state.total' },
       alias: 'total',
     },
   ],

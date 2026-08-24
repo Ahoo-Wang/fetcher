@@ -440,6 +440,9 @@ const summaryStream =
   await cartSnapshotQueryClient.aggregateStream<ProductSummary>(
     aggregationQuery,
   );
+for await (const event of summaryStream) {
+  console.log(event.data);
+}
 ```
 
 ##### 方法
