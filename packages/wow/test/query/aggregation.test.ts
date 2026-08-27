@@ -14,18 +14,20 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import {
   AggregationDateUnit,
+  AggregationExpressionOperator,
   AggregationExpressionType,
   AggregationFunction,
   AggregationGroupType,
   AggregationMetricType,
   filter,
   SortDirection,
-  type AggregationElement,
+  aggregation,
   type AggregationExpression,
   type AggregationQuery,
 } from '../../src';
 
 type RootFields = 'state.status' | 'state.orders';
+type ItemFields = 'status' | 'quantity' | 'productId' | 'amount' | 'createdAt';
 
 describe('AggregationQuery', () => {
   it('uses the Wow wire enum values', () => {
@@ -33,12 +35,14 @@ describe('AggregationQuery', () => {
       group: Object.values(AggregationGroupType),
       metric: Object.values(AggregationMetricType),
       expression: Object.values(AggregationExpressionType),
+      operator: Object.values(AggregationExpressionOperator),
       dateUnit: Object.values(AggregationDateUnit),
       function: Object.values(AggregationFunction),
     }).toEqual({
       group: ['TERMS', 'HISTOGRAM', 'DATE_HISTOGRAM'],
       metric: ['COUNT', 'NUMERIC'],
-      expression: ['FIELD'],
+      expression: ['FIELD', 'CONSTANT', 'BINARY'],
+      operator: ['ADD', 'SUBTRACT', 'MULTIPLY', 'DIVIDE'],
       dateUnit: [
         'YEAR',
         'QUARTER',
@@ -53,49 +57,32 @@ describe('AggregationQuery', () => {
     });
   });
 
-  it('represents the complete Wow request shape', () => {
-    const query: AggregationQuery<RootFields> = {
+  it('builds arithmetic aggregation JSON through the functional DSL', () => {
+    const revenue = aggregation.multiply(
+      aggregation.field<ItemFields>('amount'),
+      aggregation.constant(1.2),
+    );
+    const query: AggregationQuery<RootFields, ItemFields> = {
       filter: filter.eq('state.status', 'COMPLETED'),
       elements: [
-        {
-          path: 'state.orders',
-          filter: filter.eq('status', 'PAID'),
-        },
-        {
-          path: 'lines',
-          filter: filter.gt('quantity', 0),
-        },
+        aggregation.element('state.orders', filter.eq('status', 'PAID')),
       ],
       groupBy: [
-        {
-          type: AggregationGroupType.TERMS,
-          field: 'productId',
-          alias: 'product',
-        },
-        {
-          type: AggregationGroupType.HISTOGRAM,
-          field: 'amount',
-          alias: 'amountBand',
+        aggregation.terms('productId', 'product'),
+        aggregation.histogram('amount', {
           interval: 10,
-        },
-        {
-          type: AggregationGroupType.DATE_HISTOGRAM,
-          field: 'createdAt',
-          alias: 'month',
+          alias: 'amountBand',
+        }),
+        aggregation.dateHistogram('createdAt', {
           unit: AggregationDateUnit.MONTH,
-          timeZone: 'UTC',
-        },
+          alias: 'month',
+        }),
       ],
       metrics: [
-        { type: AggregationMetricType.COUNT, alias: 'count' },
-        {
-          type: AggregationMetricType.NUMERIC,
-          function: AggregationFunction.SUM,
-          expression: { field: 'amount' },
-          alias: 'total',
-        },
+        aggregation.count('count'),
+        aggregation.sum(revenue, 'revenue'),
       ],
-      sort: [{ field: 'total', direction: SortDirection.DESC }],
+      sort: [{ field: 'revenue', direction: SortDirection.DESC }],
       limit: 20,
     };
 
@@ -106,24 +93,20 @@ describe('AggregationQuery', () => {
           path: 'state.orders',
           filter: { op: 'EQ', field: 'status', value: 'PAID' },
         },
-        {
-          path: 'lines',
-          filter: { op: 'GT', field: 'quantity', value: 0 },
-        },
       ],
       groupBy: [
         { type: 'TERMS', field: 'productId', alias: 'product' },
         {
           type: 'HISTOGRAM',
           field: 'amount',
-          alias: 'amountBand',
           interval: 10,
+          alias: 'amountBand',
         },
         {
           type: 'DATE_HISTOGRAM',
           field: 'createdAt',
-          alias: 'month',
           unit: 'MONTH',
+          alias: 'month',
           timeZone: 'UTC',
         },
       ],
@@ -132,48 +115,109 @@ describe('AggregationQuery', () => {
         {
           type: 'NUMERIC',
           function: 'SUM',
-          expression: { field: 'amount' },
-          alias: 'total',
+          expression: {
+            type: 'BINARY',
+            operator: 'MULTIPLY',
+            left: { type: 'FIELD', field: 'amount' },
+            right: { type: 'CONSTANT', value: 1.2 },
+          },
+          alias: 'revenue',
         },
       ],
-      sort: [{ field: 'total', direction: 'DESC' }],
+      sort: [{ field: 'revenue', direction: 'DESC' }],
       limit: 20,
     });
   });
 
-  it('accepts defaulted and explicit field expression types', () => {
-    const expressions: AggregationExpression[] = [
-      { field: 'amount' },
-      { type: AggregationExpressionType.FIELD, field: 'amount' },
-    ];
+  it('builds every arithmetic and numeric metric helper', () => {
+    const field = aggregation.field<'amount'>('amount');
+    const constant = aggregation.constant(2);
 
-    expect(expressions).toEqual([
-      { field: 'amount' },
-      { type: 'FIELD', field: 'amount' },
+    expect([
+      aggregation.add(field, constant),
+      aggregation.subtract(field, constant),
+      aggregation.divide(field, constant),
+    ]).toEqual([
+      {
+        type: 'BINARY',
+        operator: 'ADD',
+        left: { type: 'FIELD', field: 'amount' },
+        right: { type: 'CONSTANT', value: 2 },
+      },
+      {
+        type: 'BINARY',
+        operator: 'SUBTRACT',
+        left: { type: 'FIELD', field: 'amount' },
+        right: { type: 'CONSTANT', value: 2 },
+      },
+      {
+        type: 'BINARY',
+        operator: 'DIVIDE',
+        left: { type: 'FIELD', field: 'amount' },
+        right: { type: 'CONSTANT', value: 2 },
+      },
+    ]);
+    expect([
+      aggregation.avg(field, 'average'),
+      aggregation.min(field, 'minimum'),
+      aggregation.max(field, 'maximum'),
+    ]).toEqual([
+      { type: 'NUMERIC', function: 'AVG', expression: field, alias: 'average' },
+      { type: 'NUMERIC', function: 'MIN', expression: field, alias: 'minimum' },
+      { type: 'NUMERIC', function: 'MAX', expression: field, alias: 'maximum' },
     ]);
   });
 
-  it('enforces the static request boundaries', () => {
-    const assertInvalidQueries = () => {
-      const invalidRootFilter: AggregationQuery<RootFields> = {
-        // @ts-expect-error Root filter fields must belong to RootFields.
-        filter: filter.eq('state.unknown', 'value'),
-        metrics: [{ type: AggregationMetricType.COUNT, alias: 'count' }],
-      };
-      const invalidElementFilter: AggregationElement = {
-        path: 'lines',
-        // @ts-expect-error Root metadata filters cannot scope an Element.
-        filter: filter.id('snapshot-1'),
-      };
-      const invalidEmptyMetrics: AggregationQuery = {
-        // @ts-expect-error Aggregation metrics must be non-empty.
-        metrics: [],
-      };
-      void invalidRootFilter;
-      void invalidElementFilter;
-      void invalidEmptyMetrics;
-    };
-
-    expectTypeOf(assertInvalidQueries).toBeFunction();
+  it.each([
+    ['invalid field', () => aggregation.field('bad field')],
+    ['non-finite constant', () => aggregation.constant(Number.NaN)],
+    [
+      'zero histogram interval',
+      () => aggregation.histogram('amount', { interval: 0, alias: 'band' }),
+    ],
+    ['multi-segment alias', () => aggregation.terms('status', 'group.status')],
+    ['reserved alias', () => aggregation.count('__wow_count')],
+    [
+      'blank time zone',
+      () =>
+        aggregation.dateHistogram('createdAt', {
+          unit: AggregationDateUnit.DAY,
+          alias: 'day',
+          timeZone: ' ',
+        }),
+    ],
+    [
+      'root filter inside element',
+      () =>
+        aggregation.element('state.items', filter.id('snapshot-1') as never),
+    ],
+  ])('rejects %s', (_name, create) => {
+    expect(create).toThrow(TypeError);
   });
+
+  const assertFieldTypeIsRequired = () => {
+    // @ts-expect-error FIELD expressions require their discriminator in 3.18.
+    const expression: AggregationExpression = { field: 'amount' };
+    void expression;
+  };
+  expectTypeOf(assertFieldTypeIsRequired).toBeFunction();
+
+  const assertAggregationFields = () => {
+    const valid: AggregationQuery<RootFields, ItemFields> = {
+      filter: filter.eq('state.status', 'PAID'),
+      groupBy: [aggregation.terms('productId', 'product')],
+      metrics: [aggregation.sum(aggregation.field('amount'), 'total')],
+    };
+    const invalidAggregationField: AggregationQuery<RootFields, ItemFields> = {
+      filter: filter.eq('state.status', 'PAID'),
+      groupBy: [
+        // @ts-expect-error unknown is not an ItemFields member.
+        aggregation.terms('unknown', 'unknown'),
+      ],
+      metrics: [aggregation.count('count')],
+    };
+    void valid;
+    void invalidAggregationField;
+  };
+  expectTypeOf(assertAggregationFields).toBeFunction();
 });
