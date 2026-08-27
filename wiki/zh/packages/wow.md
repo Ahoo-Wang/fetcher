@@ -1,6 +1,6 @@
 ---
-title: '@ahoo-wang/fetcher-wow'
-description: 'Wow 框架集成，为 Fetcher 提供 DDD + 事件溯源 + CQRS 支持，包括类型化命令客户端、快照查询客户端、事件流查询和聚合根交互模式。'
+title: "@ahoo-wang/fetcher-wow"
+description: "Wow 框架集成，为 Fetcher 提供 DDD + 事件溯源 + CQRS 支持，包括类型化命令客户端、快照查询客户端、事件流查询和聚合根交互模式。"
 ---
 
 # @ahoo-wang/fetcher-wow
@@ -110,18 +110,18 @@ console.log('Command ID:', result.commandId);
 
 ### 命令头
 
-| 请求头                      | 常量                               | 描述           |
-| --------------------------- | ---------------------------------- | -------------- |
-| `Command-Tenant-Id`         | `CommandHeaders.TENANT_ID`         | 租户标识符     |
-| `Command-Owner-Id`          | `CommandHeaders.OWNER_ID`          | 所有者标识符   |
-| `Command-Space-Id`          | `CommandHeaders.SPACE_ID`          | 空间标识符     |
-| `Command-Aggregate-Id`      | `CommandHeaders.AGGREGATE_ID`      | 聚合实例 ID    |
-| `Command-Aggregate-Version` | `CommandHeaders.AGGREGATE_VERSION` | 预期聚合版本   |
-| `Command-Wait-Stage`        | `CommandHeaders.WAIT_STAGE`        | 等待处理阶段   |
-| `Command-Wait-Timeout`      | `CommandHeaders.WAIT_TIME_OUT`     | 等待超时时长   |
-| `Command-Wait-Context`      | `CommandHeaders.WAIT_CONTEXT`      | 等待处理上下文 |
-| `Command-Request-Id`        | `CommandHeaders.REQUEST_ID`        | 请求关联 ID    |
-| `Command-Local-First`       | `CommandHeaders.LOCAL_FIRST`       | 优先本地执行   |
+| 请求头 | 常量 | 描述 |
+|--------|----------|-------------|
+| `Command-Tenant-Id` | `CommandHeaders.TENANT_ID` | 租户标识符 |
+| `Command-Owner-Id` | `CommandHeaders.OWNER_ID` | 所有者标识符 |
+| `Command-Space-Id` | `CommandHeaders.SPACE_ID` | 空间标识符 |
+| `Command-Aggregate-Id` | `CommandHeaders.AGGREGATE_ID` | 聚合实例 ID |
+| `Command-Aggregate-Version` | `CommandHeaders.AGGREGATE_VERSION` | 预期聚合版本 |
+| `Command-Wait-Stage` | `CommandHeaders.WAIT_STAGE` | 等待处理阶段 |
+| `Command-Wait-Timeout` | `CommandHeaders.WAIT_TIME_OUT` | 等待超时时长 |
+| `Command-Wait-Context` | `CommandHeaders.WAIT_CONTEXT` | 等待处理上下文 |
+| `Command-Request-Id` | `CommandHeaders.REQUEST_ID` | 请求关联 ID |
+| `Command-Local-First` | `CommandHeaders.LOCAL_FIRST` | 优先本地执行 |
 
 来源: [packages/wow/src/command/commandHeaders.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandHeaders.ts)
 
@@ -164,14 +164,14 @@ classDiagram
 
 `CommandStage` 枚举定义了命令等待策略可以发出完成信号的处理阶段。它用作 `Command-Wait-Stage` 头的值和 `CommandResult.stage` 字段：
 
-| 阶段            | 值                | 完成信号                     |
-| --------------- | ----------------- | ---------------------------- |
-| `SENT`          | `'SENT'`          | 命令已发布到命令总线/队列    |
-| `PROCESSED`     | `'PROCESSED'`     | 命令已被聚合根处理           |
-| `SNAPSHOT`      | `'SNAPSHOT'`      | 已生成快照（聚合状态已物化） |
-| `PROJECTED`     | `'PROJECTED'`     | 事件已投射到读模型           |
-| `EVENT_HANDLED` | `'EVENT_HANDLED'` | 事件已被事件处理器处理       |
-| `SAGA_HANDLED`  | `'SAGA_HANDLED'`  | 事件已被 Saga 处理           |
+| 阶段 | 值 | 完成信号 |
+|------|-----|---------|
+| `SENT` | `'SENT'` | 命令已发布到命令总线/队列 |
+| `PROCESSED` | `'PROCESSED'` | 命令已被聚合根处理 |
+| `SNAPSHOT` | `'SNAPSHOT'` | 已生成快照（聚合状态已物化） |
+| `PROJECTED` | `'PROJECTED'` | 事件已投射到读模型 |
+| `EVENT_HANDLED` | `'EVENT_HANDLED'` | 事件已被事件处理器处理 |
+| `SAGA_HANDLED` | `'SAGA_HANDLED'` | 事件已被 Saga 处理 |
 
 源码: [packages/wow/src/command/types.ts:54-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L54-L84)
 
@@ -231,23 +231,23 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 
 #### SnapshotQueryClient 方法
 
-| 方法                         | 端点                     | 返回类型                                                                | 描述                  |
-| ---------------------------- | ------------------------ | ----------------------------------------------------------------------- | --------------------- |
-| `count(filter)`              | `/snapshot/count`        | `Promise<number>`                                                       | 统计匹配的聚合数量    |
-| `list(listQuery)`            | `/snapshot/list`         | `Promise<MaterializedSnapshot<S>[]>`                                    | 列表查询快照          |
-| `listStream(listQuery)`      | `/snapshot/list`         | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | 以 SSE 流形式列出快照 |
-| `listState(listQuery)`       | `/snapshot/list/state`   | `Promise<S[]>`                                                          | 仅列出状态            |
-| `listStateStream(listQuery)` | `/snapshot/list/state`   | `Promise<ReadableStream<JsonServerSentEvent<S>>>`                       | 以 SSE 流形式列出状态 |
-| `paged(pagedQuery)`          | `/snapshot/paged`        | `Promise<PagedList<MaterializedSnapshot<S>>>`                           | 分页查询快照          |
-| `pagedState(pagedQuery)`     | `/snapshot/paged/state`  | `Promise<PagedList<S>>`                                                 | 分页查询状态          |
-| `single(singleQuery)`        | `/snapshot/single`       | `Promise<MaterializedSnapshot<S>>`                                      | 单个快照查询          |
-| `singleState(singleQuery)`   | `/snapshot/single/state` | `Promise<S>`                                                            | 单个状态查询          |
-| `getById(id)`                | --                       | `Promise<MaterializedSnapshot<S>>`                                      | 通过聚合 ID 获取      |
-| `getStateById(id)`           | --                       | `Promise<S>`                                                            | 通过 ID 获取状态      |
-| `getByIds(ids)`              | --                       | `Promise<MaterializedSnapshot<S>[]>`                                    | 通过多个 ID 获取      |
-| `getStateByIds(ids)`         | --                       | `Promise<S[]>`                                                          | 通过多个 ID 获取状态  |
-| `aggregate(query)`           | `/snapshot/aggregation`  | `Promise<Row[]>`                                                        | 聚合快照              |
-| `aggregateStream(query)`     | `/snapshot/aggregation`  | `Promise<ReadableStream<JsonServerSentEvent<Row>>>`                     | 以 SSE 聚合快照       |
+| 方法 | 端点 | 返回类型 | 描述 |
+|------|------|----------|------|
+| `count(filter)` | `/snapshot/count` | `Promise<number>` | 统计匹配的聚合数量 |
+| `list(listQuery)` | `/snapshot/list` | `Promise<MaterializedSnapshot<S>[]>` | 列表查询快照 |
+| `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | 以 SSE 流形式列出快照 |
+| `listState(listQuery)` | `/snapshot/list/state` | `Promise<S[]>` | 仅列出状态 |
+| `listStateStream(listQuery)` | `/snapshot/list/state` | `Promise<ReadableStream<JsonServerSentEvent<S>>>` | 以 SSE 流形式列出状态 |
+| `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<MaterializedSnapshot<S>>>` | 分页查询快照 |
+| `pagedState(pagedQuery)` | `/snapshot/paged/state` | `Promise<PagedList<S>>` | 分页查询状态 |
+| `single(singleQuery)` | `/snapshot/single` | `Promise<MaterializedSnapshot<S>>` | 单个快照查询 |
+| `singleState(singleQuery)` | `/snapshot/single/state` | `Promise<S>` | 单个状态查询 |
+| `getById(id)` | -- | `Promise<MaterializedSnapshot<S>>` | 通过聚合 ID 获取 |
+| `getStateById(id)` | -- | `Promise<S>` | 通过 ID 获取状态 |
+| `getByIds(ids)` | -- | `Promise<MaterializedSnapshot<S>[]>` | 通过多个 ID 获取 |
+| `getStateByIds(ids)` | -- | `Promise<S[]>` | 通过多个 ID 获取状态 |
+| `aggregate(query)` | `/snapshot/aggregation` | `Promise<Row[]>` | 聚合快照 |
+| `aggregateStream(query)` | `/snapshot/aggregation` | `Promise<ReadableStream<JsonServerSentEvent<Row>>>` | 以 SSE 聚合快照 |
 
 为兼容既有实现，`SnapshotQueryApi` 将 `aggregate?` 和 `aggregateStream?`
 声明为可选方法；`SnapshotQueryClient` 将两者实现为必需方法。
@@ -257,11 +257,7 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 #### 快照聚合
 
 ```typescript
-import {
-  aggregation,
-  filter,
-  type AggregationQuery,
-} from '@ahoo-wang/fetcher-wow';
+import { aggregation, filter, type AggregationQuery } from '@ahoo-wang/fetcher-wow';
 
 type CartFields = 'state.status' | 'state.items';
 type ItemFields = 'productId' | 'price' | 'quantity';
@@ -302,10 +298,7 @@ Element；集合字段或不具备 terms 聚合能力的字段由 Wow 拒绝。�
 为给定聚合创建所有查询客户端的工厂，预配置了正确的基本路径：
 
 ```typescript
-import {
-  QueryClientFactory,
-  ResourceAttributionPathSpec,
-} from '@ahoo-wang/fetcher-wow';
+import { QueryClientFactory, ResourceAttributionPathSpec } from '@ahoo-wang/fetcher-wow';
 
 const factory = new QueryClientFactory<CartState, CartFields, CartDomainEvent>({
   contextAlias: 'example',
@@ -320,12 +313,12 @@ const ownerStateClient = factory.createOwnerLoadStateAggregateClient();
 const eventClient = factory.createEventStreamQueryClient();
 ```
 
-| 工厂方法                                | 创建的客户端                       | 描述                    |
-| --------------------------------------- | ---------------------------------- | ----------------------- |
-| `createSnapshotQueryClient()`           | `SnapshotQueryClient<S, FIELDS>`   | 带筛选器的快照查询      |
-| `createLoadStateAggregateClient()`      | `LoadStateAggregateClient<S>`      | 通过 ID、版本或时间加载 |
-| `createOwnerLoadStateAggregateClient()` | `LoadOwnerStateAggregateClient<S>` | 加载所有者的聚合状态    |
-| `createEventStreamQueryClient()`        | `EventStreamQueryClient`           | 领域事件流查询          |
+| 工厂方法 | 创建的客户端 | 描述 |
+|----------|-------------|------|
+| `createSnapshotQueryClient()` | `SnapshotQueryClient<S, FIELDS>` | 带筛选器的快照查询 |
+| `createLoadStateAggregateClient()` | `LoadStateAggregateClient<S>` | 通过 ID、版本或时间加载 |
+| `createOwnerLoadStateAggregateClient()` | `LoadOwnerStateAggregateClient<S>` | 加载所有者的聚合状态 |
+| `createEventStreamQueryClient()` | `EventStreamQueryClient` | 领域事件流查询 |
 
 来源: [packages/wow/src/query/queryClients.ts:62-214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryClients.ts#L62-L214)
 
@@ -346,11 +339,7 @@ import {
 const activeCarts = filter.and([
   filter.isIn('state.status', ['ACTIVE', 'PENDING']),
   filter.between('state.createdAt', '2024-01-01', '2024-12-31'),
-  filter.contains(
-    'state.ownerName',
-    'ahoowang',
-    StringComparison.CASE_INSENSITIVE,
-  ),
+  filter.contains('state.ownerName', 'ahoowang', StringComparison.CASE_INSENSITIVE),
 ]);
 
 const request = { filter: activeCarts, limit: 100 };
@@ -366,16 +355,16 @@ const yesterday = filter.yesterday('state.createdAt', {
 });
 ```
 
-| 分类          | `filter` 构建器                                                                                                                                                                                                                                                                                                                                                                                                                                                              | 说明                                                                                                                                                                               |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 逻辑          | `matchAll()`, `matchNone()`, `and(operands)`, `or(operands)`, `nor(operands)`                                                                                                                                                                                                                                                                                                                                                                                                | 逻辑构建器接收一个至少含一个操作数的 `readonly` 数组。                                                                                                                             |
-| 元数据        | `id(value)`, `ids(values)`, `aggregateId(value)`, `aggregateIds(values)`, `tenantId(value)`, `ownerId(value)`, `spaceId(value)`                                                                                                                                                                                                                                                                                                                                              | 复数构建器接收一个非空 `readonly` 数组。                                                                                                                                           |
-| 比较          | `eq(field, value)`, `ne(field, value)`, `gt(field, value)`, `gte(field, value)`, `lt(field, value)`, `lte(field, value)`, `between(field, lowerBound, upperBound)`                                                                                                                                                                                                                                                                                                           | 值为 JSON 标量；相等比较也接受 `null` 和数组。                                                                                                                                     |
-| 字符串        | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)`                                                                                                                                                                                                                                                                                                                                                                                              | `stringComparison` 默认是 `StringComparison.CASE_SENSITIVE`。                                                                                                                      |
-| 集合          | `isIn(field, values)`, `notIn(field, values)`, `containsAll(field, values)`                                                                                                                                                                                                                                                                                                                                                                                                  | 集合构建器接收一个非空 `readonly` 数组。                                                                                                                                           |
-| 存在性        | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)`                                                                                                                                                                                                                                                                                                                                                                                   | 字段存在性构建器。                                                                                                                                                                 |
-| 作用域 / 搜索 | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, options?)`                                                                                                                                                                                                                                                                                                                                                                                               | `deletion` 接受 `DeletionState.ACTIVE`、`DELETED` 或 `ALL`；`SearchFilterOptions` 接受 `fields` 和 `mode`（默认 `SearchMode.TERMS`）；元素谓词不能包含根元数据、删除或搜索筛选器。 |
-| 相对时间      | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `yesterday(field, options?)`, `nextMonth(field, options?)`, `lastYear(field, options?)`, `thisYear(field, options?)`, `nextYear(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` 可包含 `zoneId`、`datePattern` 和 `timeUnit`（默认 `TimeUnit.MILLISECONDS`）；`days` 必须为正的 JVM `Int`。                                                              |
+| 分类 | `filter` 构建器 | 说明 |
+|------|-----------------|------|
+| 逻辑 | `matchAll()`, `matchNone()`, `and(operands)`, `or(operands)`, `nor(operands)` | 逻辑构建器接收一个至少含一个操作数的 `readonly` 数组。 |
+| 元数据 | `id(value)`, `ids(values)`, `aggregateId(value)`, `aggregateIds(values)`, `tenantId(value)`, `ownerId(value)`, `spaceId(value)` | 复数构建器接收一个非空 `readonly` 数组。 |
+| 比较 | `eq(field, value)`, `ne(field, value)`, `gt(field, value)`, `gte(field, value)`, `lt(field, value)`, `lte(field, value)`, `between(field, lowerBound, upperBound)` | 值为 JSON 标量；相等比较也接受 `null` 和数组。 |
+| 字符串 | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)` | `stringComparison` 默认是 `StringComparison.CASE_SENSITIVE`。 |
+| 集合 | `isIn(field, values)`, `notIn(field, values)`, `containsAll(field, values)` | 集合构建器接收一个非空 `readonly` 数组。 |
+| 存在性 | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)` | 字段存在性构建器。 |
+| 作用域 / 搜索 | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, options?)` | `deletion` 接受 `DeletionState.ACTIVE`、`DELETED` 或 `ALL`；`SearchFilterOptions` 接受 `fields` 和 `mode`（默认 `SearchMode.TERMS`）；元素谓词不能包含根元数据、删除或搜索筛选器。 |
+| 相对时间 | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `yesterday(field, options?)`, `nextMonth(field, options?)`, `lastYear(field, options?)`, `thisYear(field, options?)`, `nextYear(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` 可包含 `zoneId`、`datePattern` 和 `timeUnit`（默认 `TimeUnit.MILLISECONDS`）；`days` 必须为正的 JVM `Int`。 |
 
 来源: [packages/wow/src/query/filter.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts)
 
@@ -407,21 +396,12 @@ const list = {
 对于大型数据集，基于游标的分页比基于偏移量的分页更高效。它通过使用游标 ID 跟踪位置，避免了深偏移查询的性能退化：
 
 ```typescript
-import {
-  cursorQuery,
-  CURSOR_ID_START,
-  filter,
-  SortDirection,
-} from '@ahoo-wang/fetcher-wow';
+import { cursorQuery, CURSOR_ID_START, filter, SortDirection } from '@ahoo-wang/fetcher-wow';
 
 // 第一页——从头开始
 const firstPage = cursorQuery({
-  query: {
-    filter: filter.matchAll(),
-    limit: 50,
-    projection: { include: ['id', 'name'] },
-  },
-  cursorId: CURSOR_ID_START, // '~'——从头开始
+  query: { filter: filter.matchAll(), limit: 50, projection: { include: ['id', 'name'] } },
+  cursorId: CURSOR_ID_START,  // '~'——从头开始
   field: 'id',
   direction: SortDirection.ASC,
 });
@@ -429,7 +409,7 @@ const firstPage = cursorQuery({
 // 后续页——使用前一个结果的最后一条记录的游标 ID
 const nextPage = cursorQuery({
   query: { filter: filter.matchAll(), limit: 50 },
-  cursorId: lastItemId, // 上一页的游标 ID
+  cursorId: lastItemId,  // 上一页的游标 ID
   field: 'id',
   direction: SortDirection.ASC,
 });
@@ -495,34 +475,34 @@ graph TB
 
 ## 主要导出
 
-| 导出                                                                                                                                                        | 模块              | 描述                                   |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------- |
-| `CommandClient`                                                                                                                                             | `command/`        | 基于装饰器的命令发送客户端             |
-| `CommandRequest`                                                                                                                                            | `command/`        | 带请求头的类型化命令请求               |
-| `CommandResult`                                                                                                                                             | `command/`        | 命令执行结果                           |
-| `CommandResultEventStream`                                                                                                                                  | `command/`        | 命令结果的 SSE 流                      |
-| `CommandBody<C>`                                                                                                                                            | `command/`        | 命令体包装类型                         |
-| `CommandHeaders`                                                                                                                                            | `command/`        | 请求头名称常量                         |
-| `QueryClientFactory`                                                                                                                                        | `query/`          | 创建所有查询客户端的工厂               |
-| `QueryClientOptions`                                                                                                                                        | `query/`          | 查询客户端配置                         |
-| `SnapshotQueryClient`                                                                                                                                       | `query/snapshot/` | 快照查询操作                           |
-| `EventStreamQueryClient`                                                                                                                                    | `query/event/`    | 领域事件流查询                         |
-| `LoadStateAggregateClient`                                                                                                                                  | `query/state/`    | 通过 ID/版本/时间加载聚合状态          |
-| `LoadOwnerStateAggregateClient`                                                                                                                             | `query/state/`    | 加载所有者的聚合状态                   |
-| `FilterExpression`                                                                                                                                          | `query/`          | 类型化查询筛选器联合类型               |
-| `filter`                                                                                                                                                    | `query/`          | 用于新查询的 `FilterExpression` 构建器 |
-| `SearchMode`, `TimeUnit`                                                                                                                                    | `query/`          | 搜索与相对时间选项枚举                 |
-| `AggregationQuery`                                                                                                                                          | `query/`          | 类型化快照聚合请求                     |
-| `aggregation`                                                                                                                                               | `query/`          | 聚合查询构建器                         |
-| `AggregationGroupType`, `AggregationMetricType`, `AggregationExpressionType`, `AggregationExpressionOperator`, `AggregationDateUnit`, `AggregationFunction` | `query/`          | 聚合结构枚举                           |
-| `SnapshotQueryClient.aggregate()`                                                                                                                           | `query/snapshot/` | 执行聚合并返回结果行                   |
-| `SnapshotQueryClient.aggregateStream()`                                                                                                                     | `query/snapshot/` | 执行聚合并以 SSE 流返回结果行          |
-| `Condition`, `all()`, `and(...)`, `Operator`                                                                                                                | `query/`          | 已弃用的兼容 API                       |
-| `listQuery()`                                                                                                                                               | `query/`          | 创建列表查询                           |
-| `pagedQuery()`                                                                                                                                              | `query/`          | 创建分页查询                           |
-| `singleQuery()`                                                                                                                                             | `query/`          | 创建单条查询                           |
-| `FieldSort`                                                                                                                                                 | `query/`          | 排序规范                               |
-| `ResourceAttributionPathSpec`                                                                                                                               | `types/`          | 租户/所有者范围的路径规范              |
+| 导出 | 模块 | 描述 |
+|------|------|------|
+| `CommandClient` | `command/` | 基于装饰器的命令发送客户端 |
+| `CommandRequest` | `command/` | 带请求头的类型化命令请求 |
+| `CommandResult` | `command/` | 命令执行结果 |
+| `CommandResultEventStream` | `command/` | 命令结果的 SSE 流 |
+| `CommandBody<C>` | `command/` | 命令体包装类型 |
+| `CommandHeaders` | `command/` | 请求头名称常量 |
+| `QueryClientFactory` | `query/` | 创建所有查询客户端的工厂 |
+| `QueryClientOptions` | `query/` | 查询客户端配置 |
+| `SnapshotQueryClient` | `query/snapshot/` | 快照查询操作 |
+| `EventStreamQueryClient` | `query/event/` | 领域事件流查询 |
+| `LoadStateAggregateClient` | `query/state/` | 通过 ID/版本/时间加载聚合状态 |
+| `LoadOwnerStateAggregateClient` | `query/state/` | 加载所有者的聚合状态 |
+| `FilterExpression` | `query/` | 类型化查询筛选器联合类型 |
+| `filter` | `query/` | 用于新查询的 `FilterExpression` 构建器 |
+| `SearchMode`, `TimeUnit` | `query/` | 搜索与相对时间选项枚举 |
+| `AggregationQuery` | `query/` | 类型化快照聚合请求 |
+| `aggregation` | `query/` | 聚合查询构建器 |
+| `AggregationGroupType`, `AggregationMetricType`, `AggregationExpressionType`, `AggregationExpressionOperator`, `AggregationDateUnit`, `AggregationFunction` | `query/` | 聚合结构枚举 |
+| `SnapshotQueryClient.aggregate()` | `query/snapshot/` | 执行聚合并返回结果行 |
+| `SnapshotQueryClient.aggregateStream()` | `query/snapshot/` | 执行聚合并以 SSE 流返回结果行 |
+| `Condition`, `all()`, `and(...)`, `Operator` | `query/` | 已弃用的兼容 API |
+| `listQuery()` | `query/` | 创建列表查询 |
+| `pagedQuery()` | `query/` | 创建分页查询 |
+| `singleQuery()` | `query/` | 创建单条查询 |
+| `FieldSort` | `query/` | 排序规范 |
+| `ResourceAttributionPathSpec` | `types/` | 租户/所有者范围的路径规范 |
 
 ## 生成的客户端
 
