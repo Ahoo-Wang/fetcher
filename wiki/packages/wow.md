@@ -1,6 +1,6 @@
 ---
-title: "@ahoo-wang/fetcher-wow"
-description: "Wow framework integration for Fetcher providing DDD + Event Sourcing + CQRS support with typed command clients, snapshot query clients, event stream queries, and aggregate root interaction patterns."
+title: '@ahoo-wang/fetcher-wow'
+description: 'Wow framework integration for Fetcher providing DDD + Event Sourcing + CQRS support with typed command clients, snapshot query clients, event stream queries, and aggregate root interaction patterns.'
 ---
 
 # @ahoo-wang/fetcher-wow
@@ -110,18 +110,18 @@ Commands are wrapped in a `CommandRequest` that supports:
 
 ### Command Headers
 
-| Header | Constant | Description |
-|--------|----------|-------------|
-| `Command-Tenant-Id` | `CommandHeaders.TENANT_ID` | Tenant identifier |
-| `Command-Owner-Id` | `CommandHeaders.OWNER_ID` | Owner identifier |
-| `Command-Space-Id` | `CommandHeaders.SPACE_ID` | Space identifier |
-| `Command-Aggregate-Id` | `CommandHeaders.AGGREGATE_ID` | Aggregate instance ID |
+| Header                      | Constant                           | Description                |
+| --------------------------- | ---------------------------------- | -------------------------- |
+| `Command-Tenant-Id`         | `CommandHeaders.TENANT_ID`         | Tenant identifier          |
+| `Command-Owner-Id`          | `CommandHeaders.OWNER_ID`          | Owner identifier           |
+| `Command-Space-Id`          | `CommandHeaders.SPACE_ID`          | Space identifier           |
+| `Command-Aggregate-Id`      | `CommandHeaders.AGGREGATE_ID`      | Aggregate instance ID      |
 | `Command-Aggregate-Version` | `CommandHeaders.AGGREGATE_VERSION` | Expected aggregate version |
-| `Command-Wait-Stage` | `CommandHeaders.WAIT_STAGE` | Wait processing stage |
-| `Command-Wait-Timeout` | `CommandHeaders.WAIT_TIME_OUT` | Wait timeout duration |
-| `Command-Wait-Context` | `CommandHeaders.WAIT_CONTEXT` | Wait processing context |
-| `Command-Request-Id` | `CommandHeaders.REQUEST_ID` | Request correlation ID |
-| `Command-Local-First` | `CommandHeaders.LOCAL_FIRST` | Execute locally first |
+| `Command-Wait-Stage`        | `CommandHeaders.WAIT_STAGE`        | Wait processing stage      |
+| `Command-Wait-Timeout`      | `CommandHeaders.WAIT_TIME_OUT`     | Wait timeout duration      |
+| `Command-Wait-Context`      | `CommandHeaders.WAIT_CONTEXT`      | Wait processing context    |
+| `Command-Request-Id`        | `CommandHeaders.REQUEST_ID`        | Request correlation ID     |
+| `Command-Local-First`       | `CommandHeaders.LOCAL_FIRST`       | Execute locally first      |
 
 Source: [packages/wow/src/command/commandHeaders.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandHeaders.ts)
 
@@ -164,14 +164,14 @@ Source: [packages/wow/src/command/commandResult.ts:74-110](https://github.com/Ah
 
 The `CommandStage` enum defines the processing stages at which a command's wait-strategy can signal completion. It is used as the value of the `Command-Wait-Stage` header and the `CommandResult.stage` field:
 
-| Stage | Value | Completion Signal |
-|-------|-------|-------------------|
-| `SENT` | `'SENT'` | Command published to the command bus/queue |
-| `PROCESSED` | `'PROCESSED'` | Command processed by the aggregate root |
-| `SNAPSHOT` | `'SNAPSHOT'` | Snapshot generated (aggregate state materialized) |
-| `PROJECTED` | `'PROJECTED'` | Events projected to read models |
-| `EVENT_HANDLED` | `'EVENT_HANDLED'` | Events processed by event handlers |
-| `SAGA_HANDLED` | `'SAGA_HANDLED'` | Events processed by Saga processes |
+| Stage           | Value             | Completion Signal                                 |
+| --------------- | ----------------- | ------------------------------------------------- |
+| `SENT`          | `'SENT'`          | Command published to the command bus/queue        |
+| `PROCESSED`     | `'PROCESSED'`     | Command processed by the aggregate root           |
+| `SNAPSHOT`      | `'SNAPSHOT'`      | Snapshot generated (aggregate state materialized) |
+| `PROJECTED`     | `'PROJECTED'`     | Events projected to read models                   |
+| `EVENT_HANDLED` | `'EVENT_HANDLED'` | Events processed by event handlers                |
+| `SAGA_HANDLED`  | `'SAGA_HANDLED'`  | Events processed by Saga processes                |
 
 Source: [packages/wow/src/command/types.ts:54-84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L54-L84)
 
@@ -231,23 +231,23 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 
 #### SnapshotQueryClient Methods
 
-| Method | Endpoint | Returns | Description |
-|--------|----------|---------|-------------|
-| `count(filter)` | `/snapshot/count` | `Promise<number>` | Count matching aggregates |
-| `list(listQuery)` | `/snapshot/list` | `Promise<MaterializedSnapshot<S>[]>` | List snapshots |
-| `listStream(listQuery)` | `/snapshot/list` | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | List as SSE stream |
-| `listState(listQuery)` | `/snapshot/list/state` | `Promise<S[]>` | List state only |
-| `listStateStream(listQuery)` | `/snapshot/list/state` | `Promise<ReadableStream<JsonServerSentEvent<S>>>` | State as SSE stream |
-| `paged(pagedQuery)` | `/snapshot/paged` | `Promise<PagedList<MaterializedSnapshot<S>>>` | Paginated snapshots |
-| `pagedState(pagedQuery)` | `/snapshot/paged/state` | `Promise<PagedList<S>>` | Paginated state |
-| `single(singleQuery)` | `/snapshot/single` | `Promise<MaterializedSnapshot<S>>` | Single snapshot |
-| `singleState(singleQuery)` | `/snapshot/single/state` | `Promise<S>` | Single state |
-| `getById(id)` | -- | `Promise<MaterializedSnapshot<S>>` | Get by aggregate ID |
-| `getStateById(id)` | -- | `Promise<S>` | Get state by ID |
-| `getByIds(ids)` | -- | `Promise<MaterializedSnapshot<S>[]>` | Get multiple by IDs |
-| `getStateByIds(ids)` | -- | `Promise<S[]>` | Get multiple states |
-| `aggregate(query)` | `/snapshot/aggregation` | `Promise<Row[]>` | Aggregate snapshots |
-| `aggregateStream(query)` | `/snapshot/aggregation` | `Promise<ReadableStream<JsonServerSentEvent<Row>>>` | Aggregate snapshots as SSE |
+| Method                       | Endpoint                 | Returns                                                                 | Description                |
+| ---------------------------- | ------------------------ | ----------------------------------------------------------------------- | -------------------------- |
+| `count(filter)`              | `/snapshot/count`        | `Promise<number>`                                                       | Count matching aggregates  |
+| `list(listQuery)`            | `/snapshot/list`         | `Promise<MaterializedSnapshot<S>[]>`                                    | List snapshots             |
+| `listStream(listQuery)`      | `/snapshot/list`         | `Promise<ReadableStream<JsonServerSentEvent<MaterializedSnapshot<S>>>>` | List as SSE stream         |
+| `listState(listQuery)`       | `/snapshot/list/state`   | `Promise<S[]>`                                                          | List state only            |
+| `listStateStream(listQuery)` | `/snapshot/list/state`   | `Promise<ReadableStream<JsonServerSentEvent<S>>>`                       | State as SSE stream        |
+| `paged(pagedQuery)`          | `/snapshot/paged`        | `Promise<PagedList<MaterializedSnapshot<S>>>`                           | Paginated snapshots        |
+| `pagedState(pagedQuery)`     | `/snapshot/paged/state`  | `Promise<PagedList<S>>`                                                 | Paginated state            |
+| `single(singleQuery)`        | `/snapshot/single`       | `Promise<MaterializedSnapshot<S>>`                                      | Single snapshot            |
+| `singleState(singleQuery)`   | `/snapshot/single/state` | `Promise<S>`                                                            | Single state               |
+| `getById(id)`                | --                       | `Promise<MaterializedSnapshot<S>>`                                      | Get by aggregate ID        |
+| `getStateById(id)`           | --                       | `Promise<S>`                                                            | Get state by ID            |
+| `getByIds(ids)`              | --                       | `Promise<MaterializedSnapshot<S>[]>`                                    | Get multiple by IDs        |
+| `getStateByIds(ids)`         | --                       | `Promise<S[]>`                                                          | Get multiple states        |
+| `aggregate(query)`           | `/snapshot/aggregation`  | `Promise<Row[]>`                                                        | Aggregate snapshots        |
+| `aggregateStream(query)`     | `/snapshot/aggregation`  | `Promise<ReadableStream<JsonServerSentEvent<Row>>>`                     | Aggregate snapshots as SSE |
 
 For compatibility with existing implementations, `SnapshotQueryApi` declares
 `aggregate?` and `aggregateStream?` as optional. `SnapshotQueryClient`
@@ -258,11 +258,20 @@ Source: [packages/wow/src/query/snapshot/snapshotQueryClient.ts:119-516](https:/
 #### Snapshot Aggregation
 
 ```typescript
-import { aggregation, filter, type AggregationQuery } from '@ahoo-wang/fetcher-wow';
+import {
+  aggregation,
+  filter,
+  type AggregationQuery,
+} from '@ahoo-wang/fetcher-wow';
 
 type CartFields = 'state.status' | 'state.items';
 type ItemFields = 'productId' | 'price' | 'quantity';
-type ProductSummary = { product: string; itemCount: number; revenue: number };
+type ProductSummary = {
+  product: string;
+  representativeProduct: string | null;
+  itemCount: number;
+  revenue: number;
+};
 
 const revenue = aggregation.multiply(
   aggregation.field<ItemFields>('price'),
@@ -274,6 +283,7 @@ const query: AggregationQuery<CartFields, ItemFields> = {
   elements: [aggregation.element('state.items', filter.gt('quantity', 0))],
   groupBy: [aggregation.terms('productId', 'product')],
   metrics: [
+    aggregation.any('productId', 'representativeProduct'),
     aggregation.count('itemCount'),
     aggregation.sum(revenue, 'revenue'),
   ],
@@ -283,12 +293,21 @@ const summaries = await client.aggregate<ProductSummary>(query);
 const summaryStream = await client.aggregateStream<ProductSummary>(query);
 ```
 
+`aggregation.any(field, alias)` returns one non-null scalar per current group,
+or `null` when no value exists, without adding a group key. Selection is
+intentionally unspecified across backends and executions. The field is relative
+to the innermost element; Wow rejects collection or non-terms-capable fields.
+Sorting by an `ANY` alias is an expensive metric sort.
+
 ### QueryClientFactory
 
 A factory that creates all query clients for a given aggregate, pre-configured with the correct base path:
 
 ```typescript
-import { QueryClientFactory, ResourceAttributionPathSpec } from '@ahoo-wang/fetcher-wow';
+import {
+  QueryClientFactory,
+  ResourceAttributionPathSpec,
+} from '@ahoo-wang/fetcher-wow';
 
 const factory = new QueryClientFactory<CartState, CartFields, CartDomainEvent>({
   contextAlias: 'example',
@@ -303,12 +322,12 @@ const ownerStateClient = factory.createOwnerLoadStateAggregateClient();
 const eventClient = factory.createEventStreamQueryClient();
 ```
 
-| Factory Method | Creates | Description |
-|----------------|---------|-------------|
-| `createSnapshotQueryClient()` | `SnapshotQueryClient<S, FIELDS>` | Snapshot queries with filters |
-| `createLoadStateAggregateClient()` | `LoadStateAggregateClient<S>` | Load by ID, version, or time |
-| `createOwnerLoadStateAggregateClient()` | `LoadOwnerStateAggregateClient<S>` | Load owner's aggregate state |
-| `createEventStreamQueryClient()` | `EventStreamQueryClient` | Domain event stream queries |
+| Factory Method                          | Creates                            | Description                   |
+| --------------------------------------- | ---------------------------------- | ----------------------------- |
+| `createSnapshotQueryClient()`           | `SnapshotQueryClient<S, FIELDS>`   | Snapshot queries with filters |
+| `createLoadStateAggregateClient()`      | `LoadStateAggregateClient<S>`      | Load by ID, version, or time  |
+| `createOwnerLoadStateAggregateClient()` | `LoadOwnerStateAggregateClient<S>` | Load owner's aggregate state  |
+| `createEventStreamQueryClient()`        | `EventStreamQueryClient`           | Domain event stream queries   |
 
 Source: [packages/wow/src/query/queryClients.ts:62-214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryClients.ts#L62-L214)
 
@@ -330,7 +349,11 @@ import {
 const activeCarts = filter.and([
   filter.isIn('state.status', ['ACTIVE', 'PENDING']),
   filter.between('state.createdAt', '2024-01-01', '2024-12-31'),
-  filter.contains('state.ownerName', 'ahoowang', StringComparison.CASE_INSENSITIVE),
+  filter.contains(
+    'state.ownerName',
+    'ahoowang',
+    StringComparison.CASE_INSENSITIVE,
+  ),
 ]);
 
 const request = { filter: activeCarts, limit: 100 };
@@ -346,16 +369,16 @@ const yesterday = filter.yesterday('state.createdAt', {
 });
 ```
 
-| Category | `filter` builders | Notes |
-|----------|-------------------|-------|
-| Logical | `matchAll()`, `matchNone()`, `and(operands)`, `or(operands)`, `nor(operands)` | Logical builders accept one `readonly` array with at least one operand. |
-| Metadata | `id(value)`, `ids(values)`, `aggregateId(value)`, `aggregateIds(values)`, `tenantId(value)`, `ownerId(value)`, `spaceId(value)` | Plural builders accept one non-empty `readonly` array. |
-| Comparison | `eq(field, value)`, `ne(field, value)`, `gt(field, value)`, `gte(field, value)`, `lt(field, value)`, `lte(field, value)`, `between(field, lowerBound, upperBound)` | Values are JSON scalar values; equality also accepts `null` and arrays. |
-| String | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)` | `stringComparison` defaults to `StringComparison.CASE_SENSITIVE`. |
-| Collection | `isIn(field, values)`, `notIn(field, values)`, `containsAll(field, values)` | Collection builders accept one non-empty `readonly` array. |
-| Presence | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)` | Field presence builders. |
-| Scope / search | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, options?)` | `deletion` accepts `DeletionState.ACTIVE`, `DELETED`, or `ALL`; `SearchFilterOptions` accepts `fields` and `mode` (`SearchMode.TERMS` by default); element predicates cannot contain root metadata, deletion, or search filters. |
-| Relative time | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `yesterday(field, options?)`, `nextMonth(field, options?)`, `lastYear(field, options?)`, `thisYear(field, options?)`, `nextYear(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` may contain `zoneId`, `datePattern`, and `timeUnit` (`TimeUnit.MILLISECONDS` by default); `days` must be a positive JVM `Int`. |
+| Category       | `filter` builders                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Notes                                                                                                                                                                                                                            |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logical        | `matchAll()`, `matchNone()`, `and(operands)`, `or(operands)`, `nor(operands)`                                                                                                                                                                                                                                                                                                                                                                                                | Logical builders accept one `readonly` array with at least one operand.                                                                                                                                                          |
+| Metadata       | `id(value)`, `ids(values)`, `aggregateId(value)`, `aggregateIds(values)`, `tenantId(value)`, `ownerId(value)`, `spaceId(value)`                                                                                                                                                                                                                                                                                                                                              | Plural builders accept one non-empty `readonly` array.                                                                                                                                                                           |
+| Comparison     | `eq(field, value)`, `ne(field, value)`, `gt(field, value)`, `gte(field, value)`, `lt(field, value)`, `lte(field, value)`, `between(field, lowerBound, upperBound)`                                                                                                                                                                                                                                                                                                           | Values are JSON scalar values; equality also accepts `null` and arrays.                                                                                                                                                          |
+| String         | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)`                                                                                                                                                                                                                                                                                                                                                                                              | `stringComparison` defaults to `StringComparison.CASE_SENSITIVE`.                                                                                                                                                                |
+| Collection     | `isIn(field, values)`, `notIn(field, values)`, `containsAll(field, values)`                                                                                                                                                                                                                                                                                                                                                                                                  | Collection builders accept one non-empty `readonly` array.                                                                                                                                                                       |
+| Presence       | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)`                                                                                                                                                                                                                                                                                                                                                                                   | Field presence builders.                                                                                                                                                                                                         |
+| Scope / search | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, options?)`                                                                                                                                                                                                                                                                                                                                                                                               | `deletion` accepts `DeletionState.ACTIVE`, `DELETED`, or `ALL`; `SearchFilterOptions` accepts `fields` and `mode` (`SearchMode.TERMS` by default); element predicates cannot contain root metadata, deletion, or search filters. |
+| Relative time  | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `yesterday(field, options?)`, `nextMonth(field, options?)`, `lastYear(field, options?)`, `thisYear(field, options?)`, `nextYear(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` may contain `zoneId`, `datePattern`, and `timeUnit` (`TimeUnit.MILLISECONDS` by default); `days` must be a positive JVM `Int`.                                                                                         |
 
 Source: [packages/wow/src/query/filter.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts)
 
@@ -390,12 +413,21 @@ const list = {
 For large datasets, cursor-based pagination is more efficient than offset-based pagination. It avoids the performance degradation of deep offset queries by using a cursor ID to track position:
 
 ```typescript
-import { cursorQuery, CURSOR_ID_START, filter, SortDirection } from '@ahoo-wang/fetcher-wow';
+import {
+  cursorQuery,
+  CURSOR_ID_START,
+  filter,
+  SortDirection,
+} from '@ahoo-wang/fetcher-wow';
 
 // First page — start from the beginning
 const firstPage = cursorQuery({
-  query: { filter: filter.matchAll(), limit: 50, projection: { include: ['id', 'name'] } },
-  cursorId: CURSOR_ID_START,  // '~' — start from the beginning
+  query: {
+    filter: filter.matchAll(),
+    limit: 50,
+    projection: { include: ['id', 'name'] },
+  },
+  cursorId: CURSOR_ID_START, // '~' — start from the beginning
   field: 'id',
   direction: SortDirection.ASC,
 });
@@ -403,7 +435,7 @@ const firstPage = cursorQuery({
 // Subsequent pages — use the last item's cursor ID from the previous result
 const nextPage = cursorQuery({
   query: { filter: filter.matchAll(), limit: 50 },
-  cursorId: lastItemId,  // cursor ID from the previous page
+  cursorId: lastItemId, // cursor ID from the previous page
   field: 'id',
   direction: SortDirection.ASC,
 });
@@ -469,34 +501,34 @@ Source: [packages/wow/src/index.ts](https://github.com/Ahoo-Wang/fetcher/blob/ma
 
 ## Key Exports
 
-| Export | Module | Description |
-|--------|--------|-------------|
-| `CommandClient` | `command/` | Decorator-based command sending client |
-| `CommandRequest` | `command/` | Typed command request with headers |
-| `CommandResult` | `command/` | Command execution result |
-| `CommandResultEventStream` | `command/` | SSE stream of command results |
-| `CommandBody<C>` | `command/` | Command body wrapper type |
-| `CommandHeaders` | `command/` | Header name constants |
-| `QueryClientFactory` | `query/` | Factory for creating all query clients |
-| `QueryClientOptions` | `query/` | Configuration for query clients |
-| `SnapshotQueryClient` | `query/snapshot/` | Snapshot query operations |
-| `EventStreamQueryClient` | `query/event/` | Domain event stream queries |
-| `LoadStateAggregateClient` | `query/state/` | Load aggregate state by ID/version/time |
-| `LoadOwnerStateAggregateClient` | `query/state/` | Load owner's aggregate state |
-| `FilterExpression` | `query/` | Typed query-filter union |
-| `filter` | `query/` | `FilterExpression` builders for new queries |
-| `SearchMode`, `TimeUnit` | `query/` | Search and relative-time option enums |
-| `AggregationQuery` | `query/` | Typed snapshot aggregation request |
-| `aggregation` | `query/` | Aggregation query builders |
-| `AggregationGroupType`, `AggregationMetricType`, `AggregationExpressionType`, `AggregationExpressionOperator`, `AggregationDateUnit`, `AggregationFunction` | `query/` | Aggregation schema enums |
-| `SnapshotQueryClient.aggregate()` | `query/snapshot/` | Run an aggregation and return result rows |
-| `SnapshotQueryClient.aggregateStream()` | `query/snapshot/` | Run an aggregation and stream result rows as SSE |
-| `Condition`, `all()`, `and(...)`, `Operator` | `query/` | Deprecated compatibility API |
-| `listQuery()` | `query/` | Create a list query |
-| `pagedQuery()` | `query/` | Create a paged query |
-| `singleQuery()` | `query/` | Create a single query |
-| `FieldSort` | `query/` | Sort specification |
-| `ResourceAttributionPathSpec` | `types/` | Path spec for tenant/owner scoping |
+| Export                                                                                                                                                      | Module            | Description                                      |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------ |
+| `CommandClient`                                                                                                                                             | `command/`        | Decorator-based command sending client           |
+| `CommandRequest`                                                                                                                                            | `command/`        | Typed command request with headers               |
+| `CommandResult`                                                                                                                                             | `command/`        | Command execution result                         |
+| `CommandResultEventStream`                                                                                                                                  | `command/`        | SSE stream of command results                    |
+| `CommandBody<C>`                                                                                                                                            | `command/`        | Command body wrapper type                        |
+| `CommandHeaders`                                                                                                                                            | `command/`        | Header name constants                            |
+| `QueryClientFactory`                                                                                                                                        | `query/`          | Factory for creating all query clients           |
+| `QueryClientOptions`                                                                                                                                        | `query/`          | Configuration for query clients                  |
+| `SnapshotQueryClient`                                                                                                                                       | `query/snapshot/` | Snapshot query operations                        |
+| `EventStreamQueryClient`                                                                                                                                    | `query/event/`    | Domain event stream queries                      |
+| `LoadStateAggregateClient`                                                                                                                                  | `query/state/`    | Load aggregate state by ID/version/time          |
+| `LoadOwnerStateAggregateClient`                                                                                                                             | `query/state/`    | Load owner's aggregate state                     |
+| `FilterExpression`                                                                                                                                          | `query/`          | Typed query-filter union                         |
+| `filter`                                                                                                                                                    | `query/`          | `FilterExpression` builders for new queries      |
+| `SearchMode`, `TimeUnit`                                                                                                                                    | `query/`          | Search and relative-time option enums            |
+| `AggregationQuery`                                                                                                                                          | `query/`          | Typed snapshot aggregation request               |
+| `aggregation`                                                                                                                                               | `query/`          | Aggregation query builders                       |
+| `AggregationGroupType`, `AggregationMetricType`, `AggregationExpressionType`, `AggregationExpressionOperator`, `AggregationDateUnit`, `AggregationFunction` | `query/`          | Aggregation schema enums                         |
+| `SnapshotQueryClient.aggregate()`                                                                                                                           | `query/snapshot/` | Run an aggregation and return result rows        |
+| `SnapshotQueryClient.aggregateStream()`                                                                                                                     | `query/snapshot/` | Run an aggregation and stream result rows as SSE |
+| `Condition`, `all()`, `and(...)`, `Operator`                                                                                                                | `query/`          | Deprecated compatibility API                     |
+| `listQuery()`                                                                                                                                               | `query/`          | Create a list query                              |
+| `pagedQuery()`                                                                                                                                              | `query/`          | Create a paged query                             |
+| `singleQuery()`                                                                                                                                             | `query/`          | Create a single query                            |
+| `FieldSort`                                                                                                                                                 | `query/`          | Sort specification                               |
+| `ResourceAttributionPathSpec`                                                                                                                               | `types/`          | Path spec for tenant/owner scoping               |
 
 ## Generated Clients
 
