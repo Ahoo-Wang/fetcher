@@ -327,11 +327,11 @@ import {
   TimeUnit,
 } from '@ahoo-wang/fetcher-wow';
 
-const activeCarts = filter.and(
-  filter.isIn('state.status', 'ACTIVE', 'PENDING'),
+const activeCarts = filter.and([
+  filter.isIn('state.status', ['ACTIVE', 'PENDING']),
   filter.between('state.createdAt', '2024-01-01', '2024-12-31'),
   filter.contains('state.ownerName', 'ahoowang', StringComparison.CASE_INSENSITIVE),
-);
+]);
 
 const request = { filter: activeCarts, limit: 100 };
 
@@ -348,11 +348,11 @@ const yesterday = filter.yesterday('state.createdAt', {
 
 | Category | `filter` builders | Notes |
 |----------|-------------------|-------|
-| Logical | `matchAll()`, `matchNone()`, `and(...)`, `or(...)`, `nor(...)` | Logical builders require one or more operands. |
-| Metadata | `id(value)`, `ids(...values)`, `aggregateId(value)`, `aggregateIds(...values)`, `tenantId(value)`, `ownerId(value)`, `spaceId(value)` | Scope a root snapshot by Wow metadata. |
+| Logical | `matchAll()`, `matchNone()`, `and(operands)`, `or(operands)`, `nor(operands)` | Logical builders accept one `readonly` array with at least one operand. |
+| Metadata | `id(value)`, `ids(values)`, `aggregateId(value)`, `aggregateIds(values)`, `tenantId(value)`, `ownerId(value)`, `spaceId(value)` | Plural builders accept one non-empty `readonly` array. |
 | Comparison | `eq(field, value)`, `ne(field, value)`, `gt(field, value)`, `gte(field, value)`, `lt(field, value)`, `lte(field, value)`, `between(field, lowerBound, upperBound)` | Values are JSON scalar values; equality also accepts `null` and arrays. |
 | String | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)` | `stringComparison` defaults to `StringComparison.CASE_SENSITIVE`. |
-| Collection | `isIn(field, ...values)`, `notIn(field, ...values)`, `containsAll(field, ...values)` | Collection builders require at least one value. |
+| Collection | `isIn(field, values)`, `notIn(field, values)`, `containsAll(field, values)` | Collection builders accept one non-empty `readonly` array. |
 | Presence | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)` | Field presence builders. |
 | Scope / search | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, options?)` | `deletion` accepts `DeletionState.ACTIVE`, `DELETED`, or `ALL`; `SearchFilterOptions` accepts `fields` and `mode` (`SearchMode.TERMS` by default); element predicates cannot contain root metadata, deletion, or search filters. |
 | Relative time | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `yesterday(field, options?)`, `nextMonth(field, options?)`, `lastYear(field, options?)`, `thisYear(field, options?)`, `nextYear(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` may contain `zoneId`, `datePattern`, and `timeUnit` (`TimeUnit.MILLISECONDS` by default); `days` must be a positive JVM `Int`. |
