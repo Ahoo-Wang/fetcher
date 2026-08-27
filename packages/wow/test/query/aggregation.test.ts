@@ -104,6 +104,8 @@ describe('AggregationQuery', () => {
     );
     const query: AggregationQuery<RootFields, ItemFields> = {
       filter: filter.eq('state.status', 'COMPLETED'),
+      elements: [aggregation.element('state.orders')],
+      groupBy: [aggregation.terms('productId', 'product')],
       metrics: [
         aggregation.count('count'),
         aggregation.sum(revenue, 'revenue'),
@@ -114,6 +116,8 @@ describe('AggregationQuery', () => {
 
     expect(query).toStrictEqual({
       filter: { op: 'EQ', field: 'state.status', value: 'COMPLETED' },
+      elements: [{ path: 'state.orders' }],
+      groupBy: [{ type: 'TERMS', field: 'productId', alias: 'product' }],
       metrics: [
         { type: 'COUNT', alias: 'count' },
         {
