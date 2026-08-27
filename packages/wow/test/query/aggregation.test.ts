@@ -57,27 +57,53 @@ describe('AggregationQuery', () => {
     });
   });
 
-  it('builds arithmetic aggregation JSON through the functional DSL', () => {
+  it('builds aggregation elements', () => {
+    expect([
+      aggregation.element('state.orders', filter.eq('status', 'PAID')),
+    ]).toStrictEqual([
+      {
+        path: 'state.orders',
+        filter: { op: 'EQ', field: 'status', value: 'PAID' },
+      },
+    ]);
+  });
+
+  it('builds aggregation groups', () => {
+    expect([
+      aggregation.terms('productId', 'product'),
+      aggregation.histogram('amount', {
+        interval: 10,
+        alias: 'amountBand',
+      }),
+      aggregation.dateHistogram('createdAt', {
+        unit: AggregationDateUnit.MONTH,
+        alias: 'month',
+      }),
+    ]).toStrictEqual([
+      { type: 'TERMS', field: 'productId', alias: 'product' },
+      {
+        type: 'HISTOGRAM',
+        field: 'amount',
+        interval: 10,
+        alias: 'amountBand',
+      },
+      {
+        type: 'DATE_HISTOGRAM',
+        field: 'createdAt',
+        unit: 'MONTH',
+        alias: 'month',
+        timeZone: 'UTC',
+      },
+    ]);
+  });
+
+  it('builds an arithmetic aggregation query', () => {
     const revenue = aggregation.multiply(
       aggregation.field<ItemFields>('amount'),
       aggregation.constant(1.2),
     );
     const query: AggregationQuery<RootFields, ItemFields> = {
       filter: filter.eq('state.status', 'COMPLETED'),
-      elements: [
-        aggregation.element('state.orders', filter.eq('status', 'PAID')),
-      ],
-      groupBy: [
-        aggregation.terms('productId', 'product'),
-        aggregation.histogram('amount', {
-          interval: 10,
-          alias: 'amountBand',
-        }),
-        aggregation.dateHistogram('createdAt', {
-          unit: AggregationDateUnit.MONTH,
-          alias: 'month',
-        }),
-      ],
       metrics: [
         aggregation.count('count'),
         aggregation.sum(revenue, 'revenue'),
@@ -88,28 +114,6 @@ describe('AggregationQuery', () => {
 
     expect(query).toStrictEqual({
       filter: { op: 'EQ', field: 'state.status', value: 'COMPLETED' },
-      elements: [
-        {
-          path: 'state.orders',
-          filter: { op: 'EQ', field: 'status', value: 'PAID' },
-        },
-      ],
-      groupBy: [
-        { type: 'TERMS', field: 'productId', alias: 'product' },
-        {
-          type: 'HISTOGRAM',
-          field: 'amount',
-          interval: 10,
-          alias: 'amountBand',
-        },
-        {
-          type: 'DATE_HISTOGRAM',
-          field: 'createdAt',
-          unit: 'MONTH',
-          alias: 'month',
-          timeZone: 'UTC',
-        },
-      ],
       metrics: [
         { type: 'COUNT', alias: 'count' },
         {
@@ -129,43 +133,37 @@ describe('AggregationQuery', () => {
     });
   });
 
-  it('builds every arithmetic and numeric metric helper', () => {
+  it.each([
+    ['ADD', aggregation.add],
+    ['SUBTRACT', aggregation.subtract],
+    ['MULTIPLY', aggregation.multiply],
+    ['DIVIDE', aggregation.divide],
+  ] as const)('builds %s arithmetic expressions', (operator, create) => {
     const field = aggregation.field<'amount'>('amount');
     const constant = aggregation.constant(2);
 
-    expect([
-      aggregation.add(field, constant),
-      aggregation.subtract(field, constant),
-      aggregation.divide(field, constant),
-    ]).toEqual([
-      {
-        type: 'BINARY',
-        operator: 'ADD',
-        left: { type: 'FIELD', field: 'amount' },
-        right: { type: 'CONSTANT', value: 2 },
-      },
-      {
-        type: 'BINARY',
-        operator: 'SUBTRACT',
-        left: { type: 'FIELD', field: 'amount' },
-        right: { type: 'CONSTANT', value: 2 },
-      },
-      {
-        type: 'BINARY',
-        operator: 'DIVIDE',
-        left: { type: 'FIELD', field: 'amount' },
-        right: { type: 'CONSTANT', value: 2 },
-      },
-    ]);
-    expect([
-      aggregation.avg(field, 'average'),
-      aggregation.min(field, 'minimum'),
-      aggregation.max(field, 'maximum'),
-    ]).toEqual([
-      { type: 'NUMERIC', function: 'AVG', expression: field, alias: 'average' },
-      { type: 'NUMERIC', function: 'MIN', expression: field, alias: 'minimum' },
-      { type: 'NUMERIC', function: 'MAX', expression: field, alias: 'maximum' },
-    ]);
+    expect(create(field, constant)).toEqual({
+      type: 'BINARY',
+      operator,
+      left: { type: 'FIELD', field: 'amount' },
+      right: { type: 'CONSTANT', value: 2 },
+    });
+  });
+
+  it.each([
+    ['SUM', 'sum', aggregation.sum],
+    ['AVG', 'average', aggregation.avg],
+    ['MIN', 'minimum', aggregation.min],
+    ['MAX', 'maximum', aggregation.max],
+  ] as const)('builds %s numeric metrics', (fn, alias, create) => {
+    const field = aggregation.field<'amount'>('amount');
+
+    expect(create(field, alias)).toEqual({
+      type: 'NUMERIC',
+      function: fn,
+      expression: field,
+      alias,
+    });
   });
 
   it.each([
