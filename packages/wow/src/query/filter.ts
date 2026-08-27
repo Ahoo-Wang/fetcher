@@ -812,11 +812,20 @@ export const filter = {
   },
   search<FIELDS extends string>(
     query: string,
-    { fields = [], mode = SearchMode.TERMS }: SearchFilterOptions<FIELDS> = {},
+    options?: SearchFilterOptions<FIELDS>,
   ): SearchFilter<FIELDS> {
     if (typeof query !== 'string' || !query.trim()) {
       throw new TypeError('SEARCH query cannot be blank.');
     }
+    if (
+      options !== undefined &&
+      (options === null ||
+        typeof options !== 'object' ||
+        Array.isArray(options))
+    ) {
+      throw new TypeError('SEARCH options must be a non-null object.');
+    }
+    const { fields = [], mode = SearchMode.TERMS } = options ?? {};
     if (!Object.values(SearchMode).includes(mode)) {
       throw new TypeError(`SEARCH mode is invalid: [${String(mode)}].`);
     }

@@ -268,6 +268,9 @@ export const aggregation = {
     field: FIELDS,
     { unit, alias, timeZone = 'UTC' }: DateHistogramAggregationOptions,
   ): DateHistogramAggregationGroup<FIELDS> {
+    if (!Object.values(AggregationDateUnit).includes(unit)) {
+      throw new TypeError('date histogram unit is invalid.');
+    }
     if (typeof timeZone !== 'string' || !timeZone.trim()) {
       throw new TypeError('date histogram timeZone cannot be blank.');
     }

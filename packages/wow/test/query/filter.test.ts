@@ -96,6 +96,12 @@ describe('filter', () => {
   };
   expectTypeOf(assertOldSearchSignatureRemoved).toBeFunction();
 
+  it('rejects the removed runtime search signature', () => {
+    expect(() =>
+      Reflect.apply(filter.search, null, ['wow', 'state.name']),
+    ).toThrow(TypeError);
+  });
+
   it.each([
     ['yesterday', filter.yesterday, FilterOperator.YESTERDAY],
     ['next month', filter.nextMonth, FilterOperator.NEXT_MONTH],

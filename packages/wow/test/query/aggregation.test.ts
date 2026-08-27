@@ -187,6 +187,22 @@ describe('AggregationQuery', () => {
         }),
     ],
     [
+      'missing date histogram unit',
+      () =>
+        Reflect.apply(aggregation.dateHistogram, null, [
+          'createdAt',
+          { alias: 'day' },
+        ]),
+    ],
+    [
+      'invalid date histogram unit',
+      () =>
+        Reflect.apply(aggregation.dateHistogram, null, [
+          'createdAt',
+          { unit: 'INVALID', alias: 'day' },
+        ]),
+    ],
+    [
       'root filter inside element',
       () =>
         aggregation.element('state.items', filter.id('snapshot-1') as never),
@@ -216,8 +232,38 @@ describe('AggregationQuery', () => {
       ],
       metrics: [aggregation.count('count')],
     };
+    const invalidRootFilter: AggregationQuery<RootFields, ItemFields> = {
+      // @ts-expect-error status is not a RootFields member.
+      filter: filter.eq('status', 'PAID'),
+      metrics: [aggregation.count('count')],
+    };
+    const invalidElementFilter: AggregationQuery<RootFields, ItemFields> = {
+      elements: [
+        {
+          path: 'state.orders',
+          // @ts-expect-error root metadata filters are not element predicates.
+          filter: filter.id('snapshot-1'),
+        },
+      ],
+      metrics: [aggregation.count('count')],
+    };
+    const emptyMetrics: AggregationQuery<RootFields, ItemFields> = {
+      // @ts-expect-error aggregation queries require at least one metric.
+      metrics: [],
+    };
+    const invalidMetricExpression: AggregationQuery<RootFields, ItemFields> = {
+      groupBy: [aggregation.terms('productId', 'product')],
+      metrics: [
+        // @ts-expect-error unknown is not an ItemFields member.
+        aggregation.sum(aggregation.field('unknown'), 'total'),
+      ],
+    };
     void valid;
     void invalidAggregationField;
+    void invalidRootFilter;
+    void invalidElementFilter;
+    void emptyMetrics;
+    void invalidMetricExpression;
   };
   expectTypeOf(assertAggregationFields).toBeFunction();
 });
