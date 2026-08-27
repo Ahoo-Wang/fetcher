@@ -258,23 +258,25 @@ Source: [packages/wow/src/query/snapshot/snapshotQueryClient.ts:119-516](https:/
 #### Snapshot Aggregation
 
 ```typescript
-import {
-  AggregationFunction, AggregationGroupType, AggregationMetricType,
-  type AggregationQuery, SortDirection, filter,
-} from '@ahoo-wang/fetcher-wow';
+import { aggregation, filter, type AggregationQuery } from '@ahoo-wang/fetcher-wow';
 
-type ProductSummary = { product: string; itemCount: number; totalQuantity: number };
+type CartFields = 'state.status' | 'state.items';
+type ItemFields = 'productId' | 'price' | 'quantity';
+type ProductSummary = { product: string; itemCount: number; revenue: number };
 
-const query: AggregationQuery = {
+const revenue = aggregation.multiply(
+  aggregation.field<ItemFields>('price'),
+  aggregation.field<ItemFields>('quantity'),
+);
+
+const query: AggregationQuery<CartFields, ItemFields> = {
   filter: filter.eq('state.status', 'COMPLETED'),
-  elements: [{ path: 'state.items' }],
-  groupBy: [{ type: AggregationGroupType.TERMS, field: 'productId', alias: 'product' }],
+  elements: [aggregation.element('state.items', filter.gt('quantity', 0))],
+  groupBy: [aggregation.terms('productId', 'product')],
   metrics: [
-    { type: AggregationMetricType.COUNT, alias: 'itemCount' },
-    { type: AggregationMetricType.NUMERIC, function: AggregationFunction.SUM, expression: { field: 'quantity' }, alias: 'totalQuantity' },
+    aggregation.count('itemCount'),
+    aggregation.sum(revenue, 'revenue'),
   ],
-  sort: [{ field: 'totalQuantity', direction: SortDirection.DESC }],
-  limit: 10,
 };
 
 const summaries = await client.aggregate<ProductSummary>(query);
@@ -318,7 +320,12 @@ Use the `filter` builder for new queries. It creates typed
 `FilterExpression` values that are placed in a request's `filter` property.
 
 ```typescript
-import { filter, StringComparison } from '@ahoo-wang/fetcher-wow';
+import {
+  filter,
+  SearchMode,
+  StringComparison,
+  TimeUnit,
+} from '@ahoo-wang/fetcher-wow';
 
 const activeCarts = filter.and(
   filter.isIn('state.status', 'ACTIVE', 'PENDING'),
@@ -327,6 +334,16 @@ const activeCarts = filter.and(
 );
 
 const request = { filter: activeCarts, limit: 100 };
+
+const fullText = filter.search('event sourcing', {
+  mode: SearchMode.PHRASE,
+  fields: ['state.title', 'state.description'],
+});
+
+const yesterday = filter.yesterday('state.createdAt', {
+  zoneId: 'Asia/Shanghai',
+  timeUnit: TimeUnit.MILLISECONDS,
+});
 ```
 
 | Category | `filter` builders | Notes |
@@ -337,8 +354,8 @@ const request = { filter: activeCarts, limit: 100 };
 | String | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)` | `stringComparison` defaults to `StringComparison.CASE_SENSITIVE`. |
 | Collection | `isIn(field, ...values)`, `notIn(field, ...values)`, `containsAll(field, ...values)` | Collection builders require at least one value. |
 | Presence | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)` | Field presence builders. |
-| Scope / search | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, ...fields)` | `deletion` accepts `DeletionState.ACTIVE`, `DELETED`, or `ALL`; element predicates cannot contain root metadata, deletion, or search filters. |
-| Relative time | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` may contain `zoneId` and `datePattern`; `days` must be a positive JVM `Int`. |
+| Scope / search | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, options?)` | `deletion` accepts `DeletionState.ACTIVE`, `DELETED`, or `ALL`; `SearchFilterOptions` accepts `fields` and `mode` (`SearchMode.TERMS` by default); element predicates cannot contain root metadata, deletion, or search filters. |
+| Relative time | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `yesterday(field, options?)`, `nextMonth(field, options?)`, `lastYear(field, options?)`, `thisYear(field, options?)`, `nextYear(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` may contain `zoneId`, `datePattern`, and `timeUnit` (`TimeUnit.MILLISECONDS` by default); `days` must be a positive JVM `Int`. |
 
 Source: [packages/wow/src/query/filter.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts)
 
@@ -468,8 +485,10 @@ Source: [packages/wow/src/index.ts](https://github.com/Ahoo-Wang/fetcher/blob/ma
 | `LoadOwnerStateAggregateClient` | `query/state/` | Load owner's aggregate state |
 | `FilterExpression` | `query/` | Typed query-filter union |
 | `filter` | `query/` | `FilterExpression` builders for new queries |
+| `SearchMode`, `TimeUnit` | `query/` | Search and relative-time option enums |
 | `AggregationQuery` | `query/` | Typed snapshot aggregation request |
-| `AggregationGroupType`, `AggregationMetricType`, `AggregationExpressionType`, `AggregationDateUnit`, `AggregationFunction` | `query/` | Aggregation schema enums |
+| `aggregation` | `query/` | Aggregation query builders |
+| `AggregationGroupType`, `AggregationMetricType`, `AggregationExpressionType`, `AggregationExpressionOperator`, `AggregationDateUnit`, `AggregationFunction` | `query/` | Aggregation schema enums |
 | `SnapshotQueryClient.aggregate()` | `query/snapshot/` | Run an aggregation and return result rows |
 | `SnapshotQueryClient.aggregateStream()` | `query/snapshot/` | Run an aggregation and stream result rows as SSE |
 | `Condition`, `all()`, `and(...)`, `Operator` | `query/` | Deprecated compatibility API |

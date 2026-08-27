@@ -257,23 +257,25 @@ const carts = await client.getStateByIds(['cart-1', 'cart-2']);
 #### 快照聚合
 
 ```typescript
-import {
-  AggregationFunction, AggregationGroupType, AggregationMetricType,
-  type AggregationQuery, SortDirection, filter,
-} from '@ahoo-wang/fetcher-wow';
+import { aggregation, filter, type AggregationQuery } from '@ahoo-wang/fetcher-wow';
 
-type ProductSummary = { product: string; itemCount: number; totalQuantity: number };
+type CartFields = 'state.status' | 'state.items';
+type ItemFields = 'productId' | 'price' | 'quantity';
+type ProductSummary = { product: string; itemCount: number; revenue: number };
 
-const query: AggregationQuery = {
+const revenue = aggregation.multiply(
+  aggregation.field<ItemFields>('price'),
+  aggregation.field<ItemFields>('quantity'),
+);
+
+const query: AggregationQuery<CartFields, ItemFields> = {
   filter: filter.eq('state.status', 'COMPLETED'),
-  elements: [{ path: 'state.items' }],
-  groupBy: [{ type: AggregationGroupType.TERMS, field: 'productId', alias: 'product' }],
+  elements: [aggregation.element('state.items', filter.gt('quantity', 0))],
+  groupBy: [aggregation.terms('productId', 'product')],
   metrics: [
-    { type: AggregationMetricType.COUNT, alias: 'itemCount' },
-    { type: AggregationMetricType.NUMERIC, function: AggregationFunction.SUM, expression: { field: 'quantity' }, alias: 'totalQuantity' },
+    aggregation.count('itemCount'),
+    aggregation.sum(revenue, 'revenue'),
   ],
-  sort: [{ field: 'totalQuantity', direction: SortDirection.DESC }],
-  limit: 10,
 };
 
 const summaries = await client.aggregate<ProductSummary>(query);
@@ -316,7 +318,12 @@ const eventClient = factory.createEventStreamQueryClient();
 新查询应使用 `filter` 构建器。它创建类型化的 `FilterExpression` 值，并放入请求的 `filter` 属性。
 
 ```typescript
-import { filter, StringComparison } from '@ahoo-wang/fetcher-wow';
+import {
+  filter,
+  SearchMode,
+  StringComparison,
+  TimeUnit,
+} from '@ahoo-wang/fetcher-wow';
 
 const activeCarts = filter.and(
   filter.isIn('state.status', 'ACTIVE', 'PENDING'),
@@ -325,6 +332,16 @@ const activeCarts = filter.and(
 );
 
 const request = { filter: activeCarts, limit: 100 };
+
+const fullText = filter.search('event sourcing', {
+  mode: SearchMode.PHRASE,
+  fields: ['state.title', 'state.description'],
+});
+
+const yesterday = filter.yesterday('state.createdAt', {
+  zoneId: 'Asia/Shanghai',
+  timeUnit: TimeUnit.MILLISECONDS,
+});
 ```
 
 | 分类 | `filter` 构建器 | 说明 |
@@ -335,8 +352,8 @@ const request = { filter: activeCarts, limit: 100 };
 | 字符串 | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)` | `stringComparison` 默认是 `StringComparison.CASE_SENSITIVE`。 |
 | 集合 | `isIn(field, ...values)`, `notIn(field, ...values)`, `containsAll(field, ...values)` | 集合构建器至少需要一个值。 |
 | 存在性 | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)` | 字段存在性构建器。 |
-| 作用域 / 搜索 | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, ...fields)` | `deletion` 接受 `DeletionState.ACTIVE`、`DELETED` 或 `ALL`；元素谓词不能包含根元数据、删除或搜索筛选器。 |
-| 相对时间 | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` 可包含 `zoneId` 和 `datePattern`；`days` 必须为正的 JVM `Int`。 |
+| 作用域 / 搜索 | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, options?)` | `deletion` 接受 `DeletionState.ACTIVE`、`DELETED` 或 `ALL`；`SearchFilterOptions` 接受 `fields` 和 `mode`（默认 `SearchMode.TERMS`）；元素谓词不能包含根元数据、删除或搜索筛选器。 |
+| 相对时间 | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `yesterday(field, options?)`, `nextMonth(field, options?)`, `lastYear(field, options?)`, `thisYear(field, options?)`, `nextYear(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` 可包含 `zoneId`、`datePattern` 和 `timeUnit`（默认 `TimeUnit.MILLISECONDS`）；`days` 必须为正的 JVM `Int`。 |
 
 来源: [packages/wow/src/query/filter.ts](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts)
 
@@ -463,8 +480,10 @@ graph TB
 | `LoadOwnerStateAggregateClient` | `query/state/` | 加载所有者的聚合状态 |
 | `FilterExpression` | `query/` | 类型化查询筛选器联合类型 |
 | `filter` | `query/` | 用于新查询的 `FilterExpression` 构建器 |
+| `SearchMode`, `TimeUnit` | `query/` | 搜索与相对时间选项枚举 |
 | `AggregationQuery` | `query/` | 类型化快照聚合请求 |
-| `AggregationGroupType`, `AggregationMetricType`, `AggregationExpressionType`, `AggregationDateUnit`, `AggregationFunction` | `query/` | 聚合结构枚举 |
+| `aggregation` | `query/` | 聚合查询构建器 |
+| `AggregationGroupType`, `AggregationMetricType`, `AggregationExpressionType`, `AggregationExpressionOperator`, `AggregationDateUnit`, `AggregationFunction` | `query/` | 聚合结构枚举 |
 | `SnapshotQueryClient.aggregate()` | `query/snapshot/` | 执行聚合并返回结果行 |
 | `SnapshotQueryClient.aggregateStream()` | `query/snapshot/` | 执行聚合并以 SSE 流返回结果行 |
 | `Condition`, `all()`, `and(...)`, `Operator` | `query/` | 已弃用的兼容 API |
