@@ -22,7 +22,7 @@ Fetcher 是包含 12 个包的 TypeScript HTTP 客户端生态。目前公开内
 
 ## 目标
 
-1. 同时服务首次接触 Fetcher 的用户和需要精确参考的现有用户。
+1. 以 TypeScript 开发者为首要用户，同时服务首次接触 Fetcher 的用户和需要精确参考的现有用户。
 2. 让用户从项目首页到第一个成功请求只经过一条清晰路径。
 3. 为常见跨包场景提供任务导向的完整示例。
 4. 让 README、Wiki 和 Storybook 各有唯一职责，不再维护三套重复文档。
@@ -35,17 +35,17 @@ Fetcher 是包含 12 个包的 TypeScript HTTP 客户端生态。目前公开内
 - 不兼容现有 Wiki URL、导航顺序或 Story ID，也不提供重定向。
 - 不编辑 `skills/`、`AGENTS.md`、`CLAUDE.md`、许可证或其他内部指令。
 - 不手工编辑 `wiki/llms.txt`、`wiki/llms-full.txt` 或 `.vitepress/dist/` 等构建产物。
-- 不引入文档生成器、示例抽取器、视觉回归平台或新的 UI 抽象。
+- 不引入文档生成器、示例抽取器、视觉回归平台或新的 UI 抽象；唯一依赖例外是把 workspace catalog 已固定版本的 `@vitest/browser-playwright` 加入根开发依赖，用于 Storybook CI 浏览器测试。
 - 不为行数、页面数或 Story 数设目标；只删除重复或没有用户价值的内容。
 
 ## 架构决策
 
 采用“任务导向、单一事实来源”架构：
 
-| 载体 | 唯一职责 | 不再承担 |
-|------|----------|----------|
-| README | 定位、安装、最小示例、下一步入口 | 完整 API、架构长文、场景大全 |
-| Wiki | 学习路径、跨包场景、完整人工参考 | 可操作组件演示、README 内容镜像 |
+| 载体      | 唯一职责                           | 不再承担                           |
+| --------- | ---------------------------------- | ---------------------------------- |
+| README    | 定位、安装、最小示例、下一步入口   | 完整 API、架构长文、场景大全       |
+| Wiki      | 学习路径、跨包场景、完整人工参考   | 可操作组件演示、README 内容镜像    |
 | Storybook | 可操作、可观察、可测试的浏览器行为 | 纯类型参考、营销长文、第二套文档站 |
 
 事实流向保持单向：
@@ -199,10 +199,10 @@ Decorator、Generator、OpenAPI、CoSec 和 Wow 的纯 API 演示移入 Wiki。�
 
 ### 交互测试
 
-项目已使用 Storybook 10、Vitest 4、`@storybook/addon-vitest`、`@vitest/browser` 和 Playwright。增加独立的 Storybook Vitest project，并提供 `test:storybook` 脚本：
+项目已使用 Storybook 10、Vitest 4、`@storybook/addon-vitest` 和 `@vitest/browser`，workspace catalog 已固定 `@vitest/browser-playwright` 与 Playwright 版本。把该 provider 加入根开发依赖，增加独立的 Storybook Vitest project，并提供 `test:storybook` 脚本：
 
 ```text
-vitest --project=storybook
+vitest run --project=storybook
 ```
 
 所有 Story 至少验证能在真实浏览器环境渲染。关键任务使用 `play` 验证操作结果；表单、对话框、筛选、分页、视图切换和错误恢复同时运行无障碍检查。现有单元测试继续验证组件内部和非浏览器逻辑，Story 测试不重复这些断言。
@@ -216,6 +216,16 @@ vitest --project=storybook
 5. 中英文页面保持相同标题层级、代码和事实；文字按语言自然表达，不逐句机械翻译。
 6. 页面之间使用相对链接；源码证据链接使用固定的 GitHub 文件与行号格式。
 7. Mermaid 继续遵循 Wiki 现有深色主题与语法约束。
+
+### 开发者体验规则
+
+- 页面先给出可复制的结果，再解释设计原理；
+- 安装命令明确运行环境、peer dependency 和需要导入的副作用模块；
+- 示例使用真实导出名和严格 TypeScript，不用 `any` 隐藏类型问题；
+- 每个主要场景展示预期返回值或可见结果，避免只写“调用成功”；
+- 错误说明包含可搜索的错误类型或消息、常见原因和最短修复路径；
+- Reference 为复杂 API 提供参数、默认值、返回类型和失败行为，但不复制源码注释；
+- 关键页面提供指向源码、测试或可运行 Story 的下一步链接。
 
 ## 错误处理与用户状态
 
@@ -263,19 +273,19 @@ git diff --check
 
 ## 风险与缓解
 
-| 风险 | 缓解 |
-|------|------|
-| 全面重写遗漏冷门 API | 以 12 个包入口导出清单逐项核对 Reference |
-| 双语内容再次漂移 | 相同文件树与标题层级，在同一变更中成对修改 |
-| Story 变成第二套文档 | 限制说明长度，只保留交互与 Canonical Wiki 链接 |
-| Mock 与真实行为不一致 | MSW 只替代网络边界，Fetcher、Hook 和组件运行真实实现 |
-| 大范围修改难以评审 | 实施计划按 README、Wiki 信息架构、Reference、Storybook 基础设施和交互场景拆分验证点 |
-| 删除旧路径影响外部链接 | 已明确接受不兼容，优先保证新用户体验，不增加重定向层 |
+| 风险                   | 缓解                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| 全面重写遗漏冷门 API   | 以 12 个包入口导出清单逐项核对 Reference                                            |
+| 双语内容再次漂移       | 相同文件树与标题层级，在同一变更中成对修改                                          |
+| Story 变成第二套文档   | 限制说明长度，只保留交互与 Canonical Wiki 链接                                      |
+| Mock 与真实行为不一致  | MSW 只替代网络边界，Fetcher、Hook 和组件运行真实实现                                |
+| 大范围修改难以评审     | 实施计划按 README、Wiki 信息架构、Reference、Storybook 基础设施和交互场景拆分验证点 |
+| 删除旧路径影响外部链接 | 已明确接受不兼容，优先保证新用户体验，不增加重定向层                                |
 
 ## 明确取舍
 
 - 删除优于保留重复内容；
 - 人工策划的任务路径优于自动生成的大型 API 页面；
 - 少量代表性、可运行 Story 优于为每个导出符号制造演示；
-- 使用现有 VitePress、Storybook、Vitest、Playwright 和 MSW，不增加依赖；
+- 使用现有 VitePress、Storybook、Vitest、Playwright 和 MSW；只增加 catalog 中已有的 `@vitest/browser-playwright` provider，不增加新的依赖类别；
 - 不设计自定义文档组件、内容 DSL 或同步工具，只有实际漂移证明人工流程不足时再考虑自动化。
