@@ -1,4 +1,4 @@
-import { DefaultTheme } from 'vitepress'
+import { DefaultTheme } from 'vitepress';
 
 export const zh: DefaultTheme.Config = {
   label: '中文',
@@ -7,6 +7,7 @@ export const zh: DefaultTheme.Config = {
   description: '现代化 HTTP 客户端生态系统，原生支持 LLM 流式传输',
   themeConfig: {
     nav: [
+      { text: '开始', link: '/zh/start/' },
       { text: '指南', link: '/zh/guide/' },
       { text: '架构', link: '/zh/architecture/' },
       { text: '包', link: '/zh/packages/' },
@@ -22,6 +23,17 @@ export const zh: DefaultTheme.Config = {
       },
     ],
     sidebar: {
+      '/zh/start/': [
+        {
+          text: '开始',
+          items: [
+            { text: '概览', link: '/zh/start/' },
+            { text: '安装', link: '/zh/start/installation' },
+            { text: '第一个请求', link: '/zh/start/first-request' },
+            { text: '选择包', link: '/zh/start/choose-packages' },
+          ],
+        },
+      ],
       '/zh/guide/': [
         {
           text: '快速开始',
@@ -39,7 +51,10 @@ export const zh: DefaultTheme.Config = {
             { text: '概览', link: '/zh/architecture/' },
             { text: 'Fetcher 核心', link: '/zh/architecture/fetcher-core' },
             { text: '拦截器系统', link: '/zh/architecture/interceptors' },
-            { text: 'EventStream 与 SSE', link: '/zh/architecture/eventstream' },
+            {
+              text: 'EventStream 与 SSE',
+              link: '/zh/architecture/eventstream',
+            },
             { text: 'URL 构建器', link: '/zh/architecture/url-builder' },
           ],
         },
@@ -50,14 +65,32 @@ export const zh: DefaultTheme.Config = {
           items: [
             { text: '概览', link: '/zh/packages/' },
             { text: '@ahoo-wang/fetcher', link: '/zh/packages/fetcher' },
-            { text: '@ahoo-wang/fetcher-decorator', link: '/zh/packages/decorator' },
-            { text: '@ahoo-wang/fetcher-eventbus', link: '/zh/packages/eventbus' },
-            { text: '@ahoo-wang/fetcher-eventstream', link: '/zh/packages/eventstream' },
+            {
+              text: '@ahoo-wang/fetcher-decorator',
+              link: '/zh/packages/decorator',
+            },
+            {
+              text: '@ahoo-wang/fetcher-eventbus',
+              link: '/zh/packages/eventbus',
+            },
+            {
+              text: '@ahoo-wang/fetcher-eventstream',
+              link: '/zh/packages/eventstream',
+            },
             { text: '@ahoo-wang/fetcher-openai', link: '/zh/packages/openai' },
-            { text: '@ahoo-wang/fetcher-openapi', link: '/zh/packages/openapi' },
-            { text: '@ahoo-wang/fetcher-generator', link: '/zh/packages/generator' },
+            {
+              text: '@ahoo-wang/fetcher-openapi',
+              link: '/zh/packages/openapi',
+            },
+            {
+              text: '@ahoo-wang/fetcher-generator',
+              link: '/zh/packages/generator',
+            },
             { text: '@ahoo-wang/fetcher-react', link: '/zh/packages/react' },
-            { text: '@ahoo-wang/fetcher-storage', link: '/zh/packages/storage' },
+            {
+              text: '@ahoo-wang/fetcher-storage',
+              link: '/zh/packages/storage',
+            },
             { text: '@ahoo-wang/fetcher-cosec', link: '/zh/packages/cosec' },
             { text: '@ahoo-wang/fetcher-wow', link: '/zh/packages/wow' },
             { text: '@ahoo-wang/fetcher-viewer', link: '/zh/packages/viewer' },
@@ -122,4 +155,4 @@ export const zh: DefaultTheme.Config = {
       next: '下一页',
     },
   },
-}
+};
