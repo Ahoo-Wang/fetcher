@@ -554,7 +554,7 @@ wire discriminator. Builders are grouped under `filter` so they do not collide
 with the legacy `Condition` helpers:
 
 ```typescript
-const expression = filter.and(
+const expression = filter.and([
   filter.deletion(DeletionState.ACTIVE),
   filter.eq('state.status', 'PAID'),
   filter.elementMatch('state.items', filter.gt('quantity', 0)),
@@ -566,7 +566,7 @@ const expression = filter.and(
     zoneId: 'Asia/Shanghai',
     timeUnit: TimeUnit.MILLISECONDS,
   }),
-);
+]);
 
 await snapshotClient.count(expression);
 await snapshotClient.list({ filter: expression, limit: 10 });
@@ -587,6 +587,18 @@ Available builders:
 - Presence: `isEmpty`, `isNull`, `isNotNull`, `exists`, `notExists`
 - Scope/search: `deletion`, `elementMatch`, `search(query, options?: SearchFilterOptions)`
 - Relative time: `today`, `beforeToday`, `tomorrow`, `thisWeek`, `nextWeek`, `lastWeek`, `thisMonth`, `lastMonth`, `yesterday`, `nextMonth`, `lastYear`, `thisYear`, `nextYear`, `recentDays`, `earlierDays`
+
+Multi-operand and multi-value builders accept one `readonly` array:
+
+```typescript
+const statuses = ['PAID', 'SHIPPED'] as const;
+filter.and([filter.eq('state.status', 'PAID')]);
+filter.ids(['snapshot-1', 'snapshot-2']);
+filter.aggregateIds(['cart-1', 'cart-2']);
+filter.isIn('state.status', statuses);
+filter.notIn('state.status', ['CANCELLED']);
+filter.containsAll('state.tags', ['wow', 'cqrs']);
+```
 
 `eq` and `ne` accept a JSON scalar or an array of JSON scalars. Logical field
 segments may start with `@`.

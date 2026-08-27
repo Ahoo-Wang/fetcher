@@ -508,7 +508,7 @@ export class SnapshotQueryClient<S, FIELDS extends string = string>
   ): Promise<MaterializedSnapshot<S>[]> {
     if (ids.length === 0) return Promise.resolve([]);
     const query = listQuery<FIELDS>({
-      filter: filter.aggregateIds(ids[0], ...ids.slice(1)),
+      filter: filter.aggregateIds(ids),
       limit: ids.length,
     });
     return this.list(query, attributes, abortController);
@@ -539,7 +539,7 @@ export class SnapshotQueryClient<S, FIELDS extends string = string>
   ): Promise<S[]> {
     if (ids.length === 0) return Promise.resolve([]);
     const query = listQuery<FIELDS>({
-      filter: filter.aggregateIds(ids[0], ...ids.slice(1)),
+      filter: filter.aggregateIds(ids),
       limit: ids.length,
     });
     return this.listState(query, attributes, abortController);

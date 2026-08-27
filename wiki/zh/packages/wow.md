@@ -325,11 +325,11 @@ import {
   TimeUnit,
 } from '@ahoo-wang/fetcher-wow';
 
-const activeCarts = filter.and(
-  filter.isIn('state.status', 'ACTIVE', 'PENDING'),
+const activeCarts = filter.and([
+  filter.isIn('state.status', ['ACTIVE', 'PENDING']),
   filter.between('state.createdAt', '2024-01-01', '2024-12-31'),
   filter.contains('state.ownerName', 'ahoowang', StringComparison.CASE_INSENSITIVE),
-);
+]);
 
 const request = { filter: activeCarts, limit: 100 };
 
@@ -346,11 +346,11 @@ const yesterday = filter.yesterday('state.createdAt', {
 
 | 分类 | `filter` 构建器 | 说明 |
 |------|-----------------|------|
-| 逻辑 | `matchAll()`, `matchNone()`, `and(...)`, `or(...)`, `nor(...)` | 逻辑构建器至少需要一个操作数。 |
-| 元数据 | `id(value)`, `ids(...values)`, `aggregateId(value)`, `aggregateIds(...values)`, `tenantId(value)`, `ownerId(value)`, `spaceId(value)` | 按 Wow 元数据约束根快照范围。 |
+| 逻辑 | `matchAll()`, `matchNone()`, `and(operands)`, `or(operands)`, `nor(operands)` | 逻辑构建器接收一个至少含一个操作数的 `readonly` 数组。 |
+| 元数据 | `id(value)`, `ids(values)`, `aggregateId(value)`, `aggregateIds(values)`, `tenantId(value)`, `ownerId(value)`, `spaceId(value)` | 复数构建器接收一个非空 `readonly` 数组。 |
 | 比较 | `eq(field, value)`, `ne(field, value)`, `gt(field, value)`, `gte(field, value)`, `lt(field, value)`, `lte(field, value)`, `between(field, lowerBound, upperBound)` | 值为 JSON 标量；相等比较也接受 `null` 和数组。 |
 | 字符串 | `contains(field, value, stringComparison?)`, `startsWith(...)`, `endsWith(...)` | `stringComparison` 默认是 `StringComparison.CASE_SENSITIVE`。 |
-| 集合 | `isIn(field, ...values)`, `notIn(field, ...values)`, `containsAll(field, ...values)` | 集合构建器至少需要一个值。 |
+| 集合 | `isIn(field, values)`, `notIn(field, values)`, `containsAll(field, values)` | 集合构建器接收一个非空 `readonly` 数组。 |
 | 存在性 | `isEmpty(field)`, `isNull(field)`, `isNotNull(field)`, `exists(field)`, `notExists(field)` | 字段存在性构建器。 |
 | 作用域 / 搜索 | `deletion(state)`, `elementMatch(field, predicate)`, `search(query, options?)` | `deletion` 接受 `DeletionState.ACTIVE`、`DELETED` 或 `ALL`；`SearchFilterOptions` 接受 `fields` 和 `mode`（默认 `SearchMode.TERMS`）；元素谓词不能包含根元数据、删除或搜索筛选器。 |
 | 相对时间 | `today(field, options?)`, `beforeToday(field, time, options?)`, `tomorrow(field, options?)`, `thisWeek(field, options?)`, `nextWeek(field, options?)`, `lastWeek(field, options?)`, `thisMonth(field, options?)`, `lastMonth(field, options?)`, `yesterday(field, options?)`, `nextMonth(field, options?)`, `lastYear(field, options?)`, `thisYear(field, options?)`, `nextYear(field, options?)`, `recentDays(field, days, options?)`, `earlierDays(field, days, options?)` | `options` 可包含 `zoneId`、`datePattern` 和 `timeUnit`（默认 `TimeUnit.MILLISECONDS`）；`days` 必须为正的 JVM `Int`。 |
