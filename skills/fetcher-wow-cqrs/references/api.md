@@ -78,14 +78,18 @@ import {
   LoadOwnerStateAggregateClient,
   ResourceAttributionPathSpec,
   SortDirection,
+  aggregation,
   AggregationGroupType,
   AggregationMetricType,
   AggregationExpressionType,
+  AggregationExpressionOperator,
   AggregationDateUnit,
   AggregationFunction,
   DeletionState,
   FilterOperator,
+  SearchMode,
   StringComparison,
+  TimeUnit,
   filter,
   listQuery,
   cursorFilter,
@@ -151,6 +155,7 @@ import {
   type ElementFilterExpression,
   type MetadataFilter,
   type EqualityFilterValue,
+  type SearchFilterOptions,
   type RelativeTimeFilterOptions,
   type FilterListQuery,
   type FilterPagedQuery,
@@ -163,6 +168,8 @@ import {
   type AggregationElement,
   type AggregationGroup,
   type AggregationMetric,
+  type HistogramAggregationOptions,
+  type DateHistogramAggregationOptions,
   type DynamicDocument,
 } from '@ahoo-wang/fetcher-wow';
 ```
@@ -375,33 +382,28 @@ const state = await snapshotClient.singleState({
 ### Aggregation Methods
 
 ```typescript
+type CartFields = 'state.status' | 'state.items';
+type ItemFields = 'productId' | 'price' | 'quantity';
+
 type ProductSummary = {
   product: string;
   itemCount: number;
-  totalQuantity: number;
+  revenue: number;
 };
 
-const aggregationQuery: AggregationQuery = {
+const revenue = aggregation.multiply(
+  aggregation.field<ItemFields>('price'),
+  aggregation.field<ItemFields>('quantity'),
+);
+
+const aggregationQuery: AggregationQuery<CartFields, ItemFields> = {
   filter: filter.eq('state.status', 'COMPLETED'),
-  elements: [{ path: 'state.items' }],
-  groupBy: [
-    {
-      type: AggregationGroupType.TERMS,
-      field: 'productId',
-      alias: 'product',
-    },
-  ],
+  elements: [aggregation.element('state.items', filter.gt('quantity', 0))],
+  groupBy: [aggregation.terms('productId', 'product')],
   metrics: [
-    { type: AggregationMetricType.COUNT, alias: 'itemCount' },
-    {
-      type: AggregationMetricType.NUMERIC,
-      function: AggregationFunction.SUM,
-      expression: { field: 'quantity' },
-      alias: 'totalQuantity',
-    },
+    aggregation.count('itemCount'),
+    aggregation.sum(revenue, 'revenue'),
   ],
-  sort: [{ field: 'totalQuantity', direction: SortDirection.DESC }],
-  limit: 10,
 };
 
 const summaries =
@@ -411,14 +413,20 @@ const summaryStream =
 ```
 
 ```typescript
-aggregate<Row extends DynamicDocument = DynamicDocument>(
-  query: AggregationQuery<FIELDS>,
+aggregate<
+  Row extends DynamicDocument = DynamicDocument,
+  AGGREGATION_FIELDS extends string = string,
+>(
+  query: AggregationQuery<FIELDS, AGGREGATION_FIELDS>,
   attributes?: Record<string, any>,
   abortController?: AbortController,
 ): Promise<Row[]>;
 
-aggregateStream<Row extends DynamicDocument = DynamicDocument>(
-  query: AggregationQuery<FIELDS>,
+aggregateStream<
+  Row extends DynamicDocument = DynamicDocument,
+  AGGREGATION_FIELDS extends string = string,
+>(
+  query: AggregationQuery<FIELDS, AGGREGATION_FIELDS>,
   attributes?: Record<string, any>,
   abortController?: AbortController,
 ): Promise<ReadableStream<JsonServerSentEvent<Row>>>;
@@ -550,7 +558,14 @@ const expression = filter.and(
   filter.deletion(DeletionState.ACTIVE),
   filter.eq('state.status', 'PAID'),
   filter.elementMatch('state.items', filter.gt('quantity', 0)),
-  filter.search('wow', 'state.name'),
+  filter.search('event sourcing', {
+    mode: SearchMode.PHRASE,
+    fields: ['state.title', 'state.description'],
+  }),
+  filter.yesterday('state.createdAt', {
+    zoneId: 'Asia/Shanghai',
+    timeUnit: TimeUnit.MILLISECONDS,
+  }),
 );
 
 await snapshotClient.count(expression);
@@ -570,8 +585,8 @@ Available builders:
 - String: `contains`, `startsWith`, `endsWith`; pass `StringComparison` as the third argument
 - Collection: `isIn`, `notIn`, `containsAll`
 - Presence: `isEmpty`, `isNull`, `isNotNull`, `exists`, `notExists`
-- Scope/search: `deletion`, `elementMatch`, `search`
-- Relative time: `today`, `beforeToday`, `tomorrow`, `thisWeek`, `nextWeek`, `lastWeek`, `thisMonth`, `lastMonth`, `recentDays`, `earlierDays`
+- Scope/search: `deletion`, `elementMatch`, `search(query, options?: SearchFilterOptions)`
+- Relative time: `today`, `beforeToday`, `tomorrow`, `thisWeek`, `nextWeek`, `lastWeek`, `thisMonth`, `lastMonth`, `yesterday`, `nextMonth`, `lastYear`, `thisYear`, `nextYear`, `recentDays`, `earlierDays`
 
 `eq` and `ne` accept a JSON scalar or an array of JSON scalars. Logical field
 segments may start with `@`.
@@ -582,8 +597,10 @@ Relative-time builders accept JVM `ZoneId` and `DateTimeFormatter` options:
 interface RelativeTimeFilterOptions {
   zoneId?: string;
   datePattern?: string;
+  timeUnit?: TimeUnit;
 }
 
+filter.search(query, options?: SearchFilterOptions);
 filter.today(field, options?);
 filter.beforeToday(field, time, options?);
 filter.tomorrow(field, options?);
@@ -592,12 +609,18 @@ filter.nextWeek(field, options?);
 filter.lastWeek(field, options?);
 filter.thisMonth(field, options?);
 filter.lastMonth(field, options?);
+filter.yesterday(field, options?);
+filter.nextMonth(field, options?);
+filter.lastYear(field, options?);
+filter.thisYear(field, options?);
+filter.nextYear(field, options?);
 filter.recentDays(field, days, options?);
 filter.earlierDays(field, days, options?);
 ```
 
-`days` must be a positive JVM `Int`. Only `zoneId` and `datePattern` from the
-options object are emitted on the wire.
+`SearchFilterOptions` has optional `fields` and `mode`; `mode` defaults to
+`SearchMode.TERMS`. Relative-time `timeUnit` defaults to `TimeUnit.MILLISECONDS`.
+`days` must be a positive JVM `Int`.
 
 `SingleQueryRequest`, `ListQueryRequest`, and `PagedQueryRequest` accept either
 the filter-based request types or the existing condition-based request types.
@@ -632,12 +655,13 @@ const predicate: FilterExpression<'id'> = cursorFilter({
 
 ## AggregationQuery
 
-`AggregationQuery<FIELDS>` accepts these fields:
+`AggregationQuery<ROOT_FIELDS, AGGREGATION_FIELDS = ROOT_FIELDS>` accepts
+these fields:
 
-- `filter?: FilterExpression<FIELDS>`
+- `filter?: FilterExpression<ROOT_FIELDS>`
 - `elements?: AggregationElement[]`
-- `groupBy?: AggregationGroup[]`
-- `metrics: [AggregationMetric, ...AggregationMetric[]]` (non-empty)
+- `groupBy?: AggregationGroup<AGGREGATION_FIELDS>[]`
+- `metrics: [AggregationMetric<AGGREGATION_FIELDS>, ...AggregationMetric<AGGREGATION_FIELDS>[]]` (non-empty)
 - `sort?: FieldSort[]`
 - `limit?: number`
 
@@ -660,17 +684,37 @@ to the current innermost element.
 
 `AggregationFunction` values are `SUM`, `AVG`, `MIN`, and `MAX`.
 `AggregationDateUnit` values are `YEAR`, `QUARTER`, `MONTH`, `WEEK`, `DAY`,
-`HOUR`, `MINUTE`, and `SECOND`. The only aggregation expression is `FIELD`:
+`HOUR`, `MINUTE`, and `SECOND`. Aggregation expressions use these
+discriminators:
+
+- `AggregationExpressionType.FIELD`: `field`
+- `AggregationExpressionType.CONSTANT`: `value`
+- `AggregationExpressionType.BINARY`: `operator`, `left`, `right`
+
+`AggregationExpressionOperator` values are `ADD`, `SUBTRACT`, `MULTIPLY`, and
+`DIVIDE`. Use the `aggregation` builders rather than hand-writing these shapes:
 
 ```typescript
-const expression = {
-  // type: AggregationExpressionType.FIELD, // optional
-  field: 'quantity', // relative to state.items in the example above
-};
+aggregation.element(path, predicate?);
+aggregation.field(field);
+aggregation.constant(value);
+aggregation.add(left, right);
+aggregation.subtract(left, right);
+aggregation.multiply(left, right);
+aggregation.divide(left, right);
+aggregation.terms(field, alias);
+aggregation.histogram(field, { interval, alias });
+aggregation.dateHistogram(field, { unit, alias, timeZone }); // timeZone defaults to UTC
+aggregation.count(alias);
+aggregation.sum(expression, alias);
+aggregation.avg(expression, alias);
+aggregation.min(expression, alias);
+aggregation.max(expression, alias);
 ```
 
-The `Row` generic describes aggregation result rows only; Fetcher does not
-perform runtime decoding.
+Wow validates the complete aggregation's aliases, sort fields, and expression
+depth on the server. The `Row` generic describes aggregation result rows only;
+Fetcher does not perform runtime decoding.
 
 ## Query DSL Conditions (Deprecated)
 
