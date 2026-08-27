@@ -262,7 +262,12 @@ import { aggregation, filter, type AggregationQuery } from '@ahoo-wang/fetcher-w
 
 type CartFields = 'state.status' | 'state.items';
 type ItemFields = 'productId' | 'price' | 'quantity';
-type ProductSummary = { product: string; itemCount: number; revenue: number };
+type ProductSummary = {
+  product: string;
+  representativeProduct: string | null;
+  itemCount: number;
+  revenue: number;
+};
 
 const revenue = aggregation.multiply(
   aggregation.field<ItemFields>('price'),
@@ -274,6 +279,7 @@ const query: AggregationQuery<CartFields, ItemFields> = {
   elements: [aggregation.element('state.items', filter.gt('quantity', 0))],
   groupBy: [aggregation.terms('productId', 'product')],
   metrics: [
+    aggregation.any('productId', 'representativeProduct'),
     aggregation.count('itemCount'),
     aggregation.sum(revenue, 'revenue'),
   ],
@@ -282,6 +288,12 @@ const query: AggregationQuery<CartFields, ItemFields> = {
 const summaries = await client.aggregate<ProductSummary>(query);
 const summaryStream = await client.aggregateStream<ProductSummary>(query);
 ```
+
+`aggregation.any(field, alias)` returns one non-null scalar per current group,
+or `null` when no value exists, without adding a group key. Selection is
+intentionally unspecified across backends and executions. The field is relative
+to the innermost element; Wow rejects collection or non-terms-capable fields.
+Sorting by an `ANY` alias is an expensive metric sort.
 
 ### QueryClientFactory
 

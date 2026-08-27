@@ -261,7 +261,12 @@ import { aggregation, filter, type AggregationQuery } from '@ahoo-wang/fetcher-w
 
 type CartFields = 'state.status' | 'state.items';
 type ItemFields = 'productId' | 'price' | 'quantity';
-type ProductSummary = { product: string; itemCount: number; revenue: number };
+type ProductSummary = {
+  product: string;
+  representativeProduct: string | null;
+  itemCount: number;
+  revenue: number;
+};
 
 const revenue = aggregation.multiply(
   aggregation.field<ItemFields>('price'),
@@ -273,6 +278,7 @@ const query: AggregationQuery<CartFields, ItemFields> = {
   elements: [aggregation.element('state.items', filter.gt('quantity', 0))],
   groupBy: [aggregation.terms('productId', 'product')],
   metrics: [
+    aggregation.any('productId', 'representativeProduct'),
     aggregation.count('itemCount'),
     aggregation.sum(revenue, 'revenue'),
   ],
@@ -281,6 +287,11 @@ const query: AggregationQuery<CartFields, ItemFields> = {
 const summaries = await client.aggregate<ProductSummary>(query);
 const summaryStream = await client.aggregateStream<ProductSummary>(query);
 ```
+
+`aggregation.any(field, alias)` 在每个当前分组中返回一个非空标量；没有值时返回
+`null`，且不会增加分组键。跨后端或多次执行时具体选择值不属于契约。字段相对最内层
+Element；集合字段或不具备 terms 聚合能力的字段由 Wow 拒绝。按 `ANY` alias 排序属于
+昂贵的指标排序。
 
 ### QueryClientFactory
 
