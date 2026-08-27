@@ -219,7 +219,8 @@ DSL 参数错误统一抛 `TypeError`。跨节点约束由 Wow 服务端负责�
 - `wiki/packages/wow.md`
 - `wiki/zh/packages/wow.md`
 
-版本由 `pnpm update-version 3.18.0` 锁步更新根、全部 workspace 包和 lockfile。
+版本由 `pnpm update-version 3.18.0` 锁步更新根、全部 workspace 包和
+`integration-test` 的 `package.json`；现有脚本不修改 lockfile。
 
 ## 测试策略
 
