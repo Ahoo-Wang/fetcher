@@ -181,7 +181,8 @@ const expression = filter.and([
 
 所有构建器集中在 `filter`：`matchAll`、`matchNone`、`and`、`or`、`nor`、
 比较、字符串/集合谓词、存在性检查、`elementMatch`、`search`、删除范围和相对时间过滤器。
-包含多个操作数或值的构建器接收一个 `readonly` 数组。
+`and`、`or`、`nor`、`ids`、`aggregateIds`、`isIn`、`notIn` 和
+`containsAll` 接收一个非空 `readonly` 数组；传入空数组时抛出 `TypeError`。
 
 #### 条件构建器（已弃用）
 

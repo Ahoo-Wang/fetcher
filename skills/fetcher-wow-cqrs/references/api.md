@@ -588,7 +588,8 @@ Available builders:
 - Scope/search: `deletion`, `elementMatch`, `search(query, options?: SearchFilterOptions)`
 - Relative time: `today`, `beforeToday`, `tomorrow`, `thisWeek`, `nextWeek`, `lastWeek`, `thisMonth`, `lastMonth`, `yesterday`, `nextMonth`, `lastYear`, `thisYear`, `nextYear`, `recentDays`, `earlierDays`
 
-Multi-operand and multi-value builders accept one `readonly` array:
+`and`, `or`, `nor`, `ids`, `aggregateIds`, `isIn`, `notIn`, and `containsAll`
+accept one non-empty `readonly` array and throw `TypeError` for an empty array:
 
 ```typescript
 const statuses = ['PAID', 'SHIPPED'] as const;

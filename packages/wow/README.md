@@ -190,7 +190,9 @@ const expression = filter.and([
 Builders are grouped under `filter`: `matchAll`, `matchNone`, `and`, `or`,
 `nor`, comparisons, string/collection predicates, presence checks,
 `elementMatch`, `search`, deletion scope, and relative-time filters.
-Builders with multiple operands or values accept one `readonly` array.
+`and`, `or`, `nor`, `ids`, `aggregateIds`, `isIn`, `notIn`, and
+`containsAll` accept one non-empty `readonly` array and throw `TypeError` for
+an empty array.
 
 #### Condition Builder (Deprecated)
 
