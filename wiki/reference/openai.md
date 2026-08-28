@@ -1,13 +1,16 @@
 ---
 title: OpenAI reference
-description: Call Chat Completions through Fetcher with conditional typed streaming results.
+description: Call OpenAI-compatible Chat Completions through Fetcher, including typed SSE, cancellation, and protocol failures.
 pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-openai`
 
-The OpenAI package provides a typed Chat Completions client. It selects JSON or
-Server-Sent Event result extraction from the request's `stream` flag.
+Use this package for the OpenAI-compatible **Chat Completions** endpoint. It
+does not implement the broader OpenAI API, proxy requests, or protect keys.
+Choose the high-level `OpenAI` client for its built-in Bearer setup, or pass a
+shared `Fetcher` to `ChatClient` when the application owns routing and
+interceptors.
 
 ## Install
 
@@ -16,87 +19,175 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator \
   @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-openai
 ```
 
-## High-level client
+`@ahoo-wang/fetcher-decorator` and `@ahoo-wang/fetcher-eventstream` are peer
+dependencies. A runtime must provide the standard Fetch API and streaming
+`ReadableStream` support.
+
+## Choose an entry point
+
+| Need | Public entry | What it configures |
+| --- | --- | --- |
+| Simple Chat Completions client | `new OpenAI({ baseURL, apiKey })` | A `Fetcher` with `Authorization: Bearer …` and `chat` |
+| Reuse a proxy, timeout, or interceptors | `new ChatClient({ fetcher })` | The decorated `/chat/completions` endpoint on that Fetcher |
+| Abort a stream or choose extraction explicitly | `fetcher.post(..., { abortController }, { resultExtractor })` | The underlying request and stream lifecycle |
+
+`OpenAIOptions.baseURL` and `apiKey` are both required strings. The constructor
+uses only `baseURL` and creates the Bearer header; it does not expose timeout,
+custom headers, or interceptors as `OpenAIOptions` fields
+([`openai.ts:24`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/openai.ts#L24),
+[`openai.ts:99`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/openai.ts#L99)).
+
+## Typed completion
+
+`model` and `messages` are required. All other request properties are forwarded
+as JSON; this package does not validate provider-specific ranges or defaults.
+
+| Request field | Type | Notes |
+| --- | --- | --- |
+| `model` | `string` | Required provider model identifier |
+| `messages` | `Message[]` | Required; `Message` deliberately permits provider extensions |
+| `stream` | `boolean` | Omitted or `false` selects JSON; literal `true` selects SSE |
+| `tools` / `tool_choice` | `ChatTool[]` / `ChatToolChoice` | Function tools; choice is `'none'`, `'auto'`, or a function selector |
+| `stop` | `string \| string[] \| null` | Provider request field |
+| sampling fields | optional numbers | `temperature`, `top_p`, penalties, `seed`, and `max_tokens` |
 
 ```ts
-import { OpenAI } from '@ahoo-wang/fetcher-openai';
+import { OpenAI, type ChatResponse } from '@ahoo-wang/fetcher-openai';
 
-const openai = new OpenAI({
-  baseURL: 'https://api.openai.com/v1',
-  apiKey: process.env.OPENAI_API_KEY!,
+const client = new OpenAI({
+  baseURL: 'https://api.example.test/v1',
+  apiKey: 'placeholder-api-key',
 });
 
-const response = await openai.chat.completions({
-  model: 'gpt-4.1-mini',
-  messages: [{ role: 'user', content: 'Explain event sourcing briefly.' }],
+const completion: ChatResponse = await client.chat.completions({
+  model: 'example-chat-model',
+  messages: [{ role: 'user', content: 'Summarize this in one sentence.' }],
+  tools: [
+    {
+      type: 'function',
+      function: { name: 'lookup_status', parameters: { type: 'object' } },
+    },
+  ],
+  tool_choice: 'auto',
 });
 
-console.log(response.choices[0]?.message.content);
+const text = completion.choices[0]?.message?.content;
 ```
 
-Keep API keys on a trusted server. A browser bundle cannot protect a secret,
-even when it comes from an environment variable at build time.
+The JSON result is `ChatResponse`: `id`, `object`, `created`, `choices`, and
+`usage` are required by its TypeScript shape. A `Choice.message` is optional;
+read it defensively. Streaming chunks reuse `ChatResponse`, but a chunk normally
+carries `Choice.delta` instead of `Choice.message`
+([`types.ts:14`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L14),
+[`types.ts:143`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L143)).
 
-## Streaming
+## Shared Fetcher and ChatClient
+
+`ChatClient` has the class path `chat` and its `completions()` method posts to
+`/completions`, so its effective endpoint is `/chat/completions`
+([`chatClient.ts:77`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L77),
+[`chatClient.ts:255`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L255)).
+Pass a `Fetcher` object through the public `ApiMetadata`; the decorated client
+caches its executor after the first method call, so construct it with final
+metadata ([`apiDecorator.ts:168`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L168)).
 
 ```ts
-const chunks = await openai.chat.completions({
-  model: 'gpt-4.1-mini',
-  messages: [{ role: 'user', content: 'Write a release note.' }],
-  stream: true,
+import { Fetcher } from '@ahoo-wang/fetcher';
+import { ChatClient, type ChatResponse } from '@ahoo-wang/fetcher-openai';
+
+const api = new Fetcher({
+  baseURL: 'https://api.example.test/v1',
+  headers: { Authorization: 'Bearer placeholder-api-key' },
+  timeout: 15_000,
+});
+const chat = new ChatClient({ fetcher: api });
+
+const completion: ChatResponse = await chat.completions({
+  model: 'example-chat-model',
+  messages: [{ role: 'user', content: 'Hello.' }],
+});
+```
+
+## Streaming, `[DONE]`, and cancellation
+
+`completions<T>()` resolves to `ChatResponse` unless `T['stream']` is literally
+`true`; with `stream: true as const` it resolves to
+`JsonServerSentEventStream<ChatResponse>`
+([`chatClient.ts:146`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L146),
+[`chatClient.ts:255`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L255)).
+The extractor decodes JSON SSE events and stops before yielding an event whose
+data is exactly `[DONE]` ([`completionStreamResultExtractor.ts:39`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L39)).
+
+`ChatClient.completions()` accepts only the body argument, so it has no public
+per-call `AbortController` parameter. Use the public Fetcher entry when the
+caller must own cancellation:
+
+```ts
+import { Fetcher } from '@ahoo-wang/fetcher';
+import {
+  CompletionStreamResultExtractor,
+  type ChatResponse,
+} from '@ahoo-wang/fetcher-openai';
+import type { JsonServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
+
+const controller = new AbortController();
+const api = new Fetcher({
+  baseURL: 'https://api.example.test/v1',
+  headers: { Authorization: 'Bearer placeholder-api-key' },
 });
 
-for await (const event of chunks) {
-  const text = event.data.choices[0]?.delta?.content;
-  if (text) process.stdout.write(text);
+try {
+  const stream: JsonServerSentEventStream<ChatResponse> = await api.post(
+    '/chat/completions',
+    {
+      abortController: controller,
+      body: {
+        model: 'example-chat-model',
+        messages: [{ role: 'user', content: 'Stream a short answer.' }],
+        stream: true,
+      },
+    },
+    { resultExtractor: CompletionStreamResultExtractor },
+  );
+
+  for await (const event of stream) {
+    const delta = event.data.choices[0]?.delta?.content;
+    if (delta) process.stdout.write(delta);
+  }
+} finally {
+  controller.abort();
 }
 ```
 
-When `stream: true` is a literal, the return type is
-`JsonServerSentEventStream<ChatResponse>`; otherwise it is `ChatResponse`.
-`CompletionStreamResultExtractor` stops at the protocol's `[DONE]` marker.
+Stopping `for await` early is not a documented cancellation API for this
+package. Abort the caller-owned controller when the consumer is discarded;
+do not reuse an already-aborted controller for a new request.
 
-## Bring your own Fetcher
+## Failure boundary and troubleshooting
 
-```ts
-import { ChatClient } from '@ahoo-wang/fetcher-openai';
-import { api } from './api';
+The initial promise can reject for Fetcher transport, timeout, or non-2xx
+status validation. After it resolves, SSE content-type/frame/JSON conversion can
+still fail while the stream is consumed. Put both `await` and `for await` in the
+same error boundary. The extractor requires Fetcher's JSON event-stream response
+helper and throws when that conversion cannot be performed
+([`completionStreamResultExtractor.ts:88`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L88)).
 
-const chat = new ChatClient({ fetcher: api, basePath: 'chat' });
-```
+| Symptom | Check |
+| --- | --- |
+| `ChatResponse` where a stream was expected | Keep `stream: true` as a literal; a runtime boolean produces a union. |
+| Stream conversion fails | Confirm the provider returns SSE frames and a compatible event-stream content type, not JSON or an HTML proxy error. |
+| `401` or `403` | Check the trusted server's provider credential and the configured base URL; do not print the key to debug. |
+| Request will not stop | Use the custom Fetcher example and abort its controller. |
+| Custom Fetcher is ignored | Supply `fetcher` in `ChatClient` metadata before the first `completions()` call. |
 
-Use `ChatClient` when authentication, proxy routing, logging, or retries already
-live in a shared Fetcher. `ChatRequest`, `ChatResponse`, message, choice, usage,
-and stream delta types are public exports.
+## Security and source references
 
-## Request and result contract
+An API key in a browser bundle is readable by its users. Put provider calls and
+real credentials behind a trusted backend; use only placeholder keys in tests
+and documentation. This package sets a Bearer header but does not redact logs
+or add retry policy ([`openai.ts:99`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/openai.ts#L99)).
 
-| Area          | Main types                                                 | Notes                                             |
-| ------------- | ---------------------------------------------------------- | ------------------------------------------------- |
-| Input         | `ChatRequest`, `Message`, `ChatTool`, `ChatToolChoice`     | `model` and `messages` define the minimum request |
-| Non-streaming | `ChatResponse`, `Choice`, `Usage`                          | Returned when `stream` is absent or `false`       |
-| Streaming     | `JsonServerSentEventStream<ChatResponse>`                  | Each `Choice` can carry a partial `delta` message |
-| Extraction    | `ResultExtractors.Json`, `CompletionStreamResultExtractor` | Selects JSON versus SSE and handles `[DONE]`      |
-
-Keep `stream` as a literal when callers need a narrowed return type. A runtime
-boolean produces a union that the caller must narrow.
-
-## Error and cancellation boundary
-
-HTTP status, timeout, and transport failures remain Fetcher errors. SSE
-conversion failures can occur after the request promise resolves, while the
-stream is consumed. Put both the initial call and `for await` loop inside the
-error boundary and pass an `AbortController` owned by the caller.
-
-The package models OpenAI-compatible Chat Completions; it does not proxy or
-protect credentials. Browser applications should call their own trusted
-backend.
-
-## Source and agent reference
-
-- Public exports: [`packages/openai/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/index.ts)
-- Detailed agent API: [`skills/fetcher-openai-client/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openai-client/references/api.md)
-- Skill: [`$fetcher-openai-client`](../skills/streaming-and-openai.md#fetcher-openai-client)
-
-See [OpenAI streaming](../recipes/openai-streaming.md) for cancellation and UI
-assembly.
+- [packages/openai/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/index.ts#L14)
+- [packages/openai/src/openai.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/openai.ts#L63)
+- [packages/openai/src/chat/chatClient.ts:255](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L255)
+- [packages/openai/src/chat/completionStreamResultExtractor.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L39)
