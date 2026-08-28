@@ -57,10 +57,20 @@ function FetcherViewerDemo({
     >
       {showRefMethods && (
         <div className="story-actions">
-          <button onClick={() => viewerRef.current?.refreshData()}>
+          <button
+            onClick={() => {
+              viewerRef.current?.refreshData();
+              setOutput('Refresh requested');
+            }}
+          >
             Refresh data
           </button>
-          <button onClick={() => viewerRef.current?.clearSelectedRowKeys()}>
+          <button
+            onClick={() => {
+              viewerRef.current?.clearSelectedRowKeys();
+              setOutput('Selection cleared');
+            }}
+          >
             Clear selection
           </button>
           <button onClick={readState}>Read state</button>
@@ -185,6 +195,8 @@ export const ImperativeMethods: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(await canvas.findByText('Ada')).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: 'Refresh data' }));
+    await expect(await canvas.findByText('Refresh requested')).toBeVisible();
     await userEvent.click(canvas.getByRole('button', { name: 'Read state' }));
     await expect(
       await canvas.findByText('Definition: users · View: all-users · Page: 1'),

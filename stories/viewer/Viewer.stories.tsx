@@ -46,7 +46,11 @@ function ViewerDemo({ scenario }: { scenario: Scenario }) {
         defaultViews={fixtureViews}
         defaultView={fixtureDefaultView}
         definition={fixtureViewerDefinition}
-        dataSource={scenario === 'empty' ? emptyPagedUsers : fixturePagedUsers}
+        dataSource={
+          scenario === 'empty'
+            ? emptyPagedUsers
+            : { ...fixturePagedUsers, total: 20 }
+        }
         loading={scenario === 'loading'}
         pagination={{ showSizeChanger: false }}
         enableRowSelection
@@ -78,6 +82,19 @@ function ViewerDemo({ scenario }: { scenario: Scenario }) {
           )
         }
         onSwitchView={view => setOutput(`Switched to ${view.name}`)}
+        onCreateView={(view, onSuccess) => {
+          const created = { ...view, id: 'story-view' };
+          onSuccess?.(created);
+          setOutput(`Created view: ${created.name}`);
+        }}
+        onUpdateView={(view, onSuccess) => {
+          onSuccess?.(view);
+          setOutput(`Renamed view: ${view.name}`);
+        }}
+        onDeleteView={(view, onSuccess) => {
+          onSuccess?.(view);
+          setOutput(`Deleted view: ${view.name}`);
+        }}
       />
       <output className="story-output" aria-live="polite">
         {output}
@@ -123,6 +140,75 @@ export const SwitchSavedView: Story = {
     await userEvent.click(await canvas.findByText(fixtureAdminView.name));
     await expect(
       await canvas.findByText(`Switched to ${fixtureAdminView.name}`),
+    ).toBeVisible();
+  },
+};
+
+export const CreateSavedView: Story = {
+  args: { scenario: 'ready' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getAllByRole('img', { name: 'plus' })[0]);
+    const dialog = await page.findByRole('dialog', { name: '创建视图' });
+    await userEvent.type(within(dialog).getByRole('textbox'), 'My view');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: /确\s*认/ }),
+    );
+    await expect(
+      await canvas.findByText('Created view: My view'),
+    ).toBeVisible();
+  },
+};
+
+export const RenameSavedView: Story = {
+  args: { scenario: 'ready' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getAllByRole('img', { name: 'setting' })[0]);
+    const dialog = await page.findByRole('dialog', { name: '个人视图' });
+    await userEvent.click(
+      within(dialog).getAllByRole('img', { name: 'edit' })[0],
+    );
+    const nameInput = within(dialog).getByDisplayValue('Admins');
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, 'Admin team');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: /保\s*存/ }),
+    );
+    await expect(
+      await canvas.findByText('Renamed view: Admin team'),
+    ).toBeVisible();
+  },
+};
+
+export const DeleteSavedView: Story = {
+  args: { scenario: 'ready' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getAllByRole('img', { name: 'setting' })[0]);
+    const dialog = await page.findByRole('dialog', { name: '个人视图' });
+    await userEvent.click(
+      within(dialog).getAllByRole('img', { name: 'delete' })[0],
+    );
+    await userEvent.click(await page.findByRole('button', { name: /确\s*认/ }));
+    await expect(await canvas.findByText('Deleted view: Admins')).toBeVisible();
+  },
+};
+
+export const SortAndPaginate: Story = {
+  args: { scenario: 'ready' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('columnheader', { name: /Name/ }));
+    await expect(
+      await canvas.findByText('Load: page 1, size 10, sort name'),
+    ).toBeVisible();
+    await userEvent.click(canvas.getByTitle('2'));
+    await expect(
+      await canvas.findByText('Load: page 2, size 10, sort name'),
     ).toBeVisible();
   },
 };
