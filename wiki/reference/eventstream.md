@@ -26,7 +26,7 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventstream
 | --- | --- | --- |
 | Convert a `Response` yourself | `toServerSentEventStream(response)` | `ReadableStream<ServerSentEvent>`; throws for a missing body. |
 | Parse JSON `data` | `toJsonServerSentEventStream<T>(stream, detector?)` | `ReadableStream<JsonServerSentEvent<T>>`. |
-| Optional `Response` conversion | `response.eventStream()` / `jsonEventStream<T>()` | A stream or `null` when the content type is not SSE. |
+| Optional `Response` conversion | `response.eventStream()` / `jsonEventStream<T>()` | A stream; `null` for a non-SSE content type; `EventStreamConvertError` for SSE with no body. |
 | Required `Response` conversion | `response.requiredEventStream()` / `requiredJsonEventStream<T>()` | A stream or `EventStreamConvertError`. |
 | Fetcher result extraction | `EventStreamResultExtractor` / `JsonEventStreamResultExtractor` | Required raw / JSON stream from a `FetchExchange`. |
 | Build a custom stage | `TextLineTransformStream`, `ServerSentEventTransformStream`, `JsonServerSentEventTransformStream<T>` | The individual `TransformStream` stages. |
@@ -68,7 +68,8 @@ before `JSON.parse`; return `true` for a sentinel such as `[DONE]`.
 unspecified event type to `message`, ignores comment lines, joins repeated
 `data:` fields with `\n`, ignores `id` values containing NUL, and accepts
 `retry` only when it contains ASCII digits. It emits a frame at a blank line or
-when the input stream flushes.
+when the input stream flushes only if at least one `data:` field was received;
+event-, `id`-, or `retry`-only frames are dropped.
 
 ```text
 Response.body (ReadableStream<Uint8Array>)
@@ -96,9 +97,10 @@ the JSON transform only when every non-terminal `data` field is valid JSON.
 | `EventStreamResultExtractor` | Calls `exchange.requiredResponse.requiredEventStream()`. |
 | `JsonEventStreamResultExtractor` | Calls `exchange.requiredResponse.requiredJsonEventStream()`; its exported result type is `JsonServerSentEventStream<any>`. |
 
-The optional helpers do not consume a non-SSE response. The required helpers
-throw both for a non-SSE content type and for an SSE response whose body is
-`null`; inspect `error.response` when catching `EventStreamConvertError`.
+The optional helpers return `null` without consuming a non-SSE response. For
+an SSE response with a `null` body, their underlying conversion throws
+`EventStreamConvertError`. The required helpers also throw for a non-SSE
+content type; inspect `error.response` when catching that error.
 
 ## Termination, cancellation, and errors
 
@@ -142,10 +144,10 @@ stream creation and the whole consuming loop inside the same error boundary.
 
 ## Source reference
 
-- [Public exports: index.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts#L54)
-- [Response conversion and error: eventStreamConverter.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L31)
-- [Response helpers: responses.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L31)
-- [Fetcher extractors: eventStreamResultExtractor.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L32)
-- [SSE frame parser: serverSentEventTransformStream.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L19)
-- [JSON transform: jsonServerSentEventTransformStream.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L24)
-- [Async iterable cancellation: readableStreamAsyncIterable.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L62)
+- [Public exports: index.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts#L63)
+- [EventStreamConvertError: eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)
+- [Response helper implementation: responses.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L154)
+- [Fetcher extractors: eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)
+- [SSE frame parser: serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)
+- [JSON transform: jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)
+- [Async iterable cancellation: readableStreamAsyncIterable.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L125)

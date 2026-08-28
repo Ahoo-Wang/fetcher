@@ -119,8 +119,11 @@ Event Bus。调用 `destroy()` 前，应调用每个 `addListener()` 返回的 R
 ## 源码参考
 
 - [公共导出：index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/index.ts#L14)
-- [KeyStorage 选项与事件：keyStorage.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L23)
+- [StorageEvent：keyStorage.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L23)
+- [KeyStorage 选项：keyStorage.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L47)
 - [KeyStorage 生命周期：keyStorage.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L80)
-- [Serializer 实现：serializer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L19)
-- [运行时选择：env.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/env.ts#L20)
+- [Serializer 契约：serializer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L19)
+- [JsonSerializer：serializer.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L38)
+- [IdentitySerializer：serializer.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L62)
+- [运行时 Storage 选择：env.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/env.ts#L29)
 - [内存实现：inMemoryStorage.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/inMemoryStorage.ts#L14)

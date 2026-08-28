@@ -73,13 +73,14 @@ registration creates a child bus, emission alone does not.
 
 | Bus | Handler start/order | `emit()` resolves | `once` | Handler throw/reject |
 | --- | --- | --- | --- | --- |
-| `SerialTypedEventBus` | One after another, ascending `order` (ties preserve registration order) | After every handler settles | Removed after its attempt | Caught and sent to `console.warn`; later handlers continue. |
+| `SerialTypedEventBus` | One after another, ascending `order` (ties preserve registration order) | After every handler settles | Collected after its attempt; all collected `once` handlers are removed after the current `emit()` loop | Caught and sent to `console.warn`; later handlers continue. |
 | `ParallelTypedEventBus` | Concurrent; no completion order | After `Promise.all` of wrapped handlers | Removed after all attempts | Caught and sent to `console.warn`; peers continue. |
 | `BroadcastTypedEventBus` | Delegate semantics locally; incoming messages use the delegate | After local delegate completes and `postMessage()` returns | Delegate semantics | Delegate failures follow its implementation; messenger errors propagate from `postMessage()`. |
 
 Handler return values are deliberately discarded. Use a direct function call when
-the caller needs a result. `once` handlers are removed even if their own handler
-throws, because removal happens after the wrapped attempt completes.
+the caller needs a result. `once` handlers are collected even if their own handler
+throws, then removed only after the current `emit()` loop completes. A reentrant
+`emit()` before that cleanup can therefore invoke the same `once` handler again.
 
 ## Cross-tab bus and messenger selection
 
@@ -132,10 +133,11 @@ typed bus's `destroy()` clears its handlers.
 ## Source reference
 
 - [Public exports: index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/index.ts#L14)
-- [EventHandler and EventType: types.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L17)
+- [EventType: types.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L17)
+- [EventHandler: types.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L19)
 - [Typed bus contract: typedEventBus.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/typedEventBus.ts#L21)
 - [Serial delivery: serialTypedEventBus.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L34)
 - [Parallel delivery: parallelTypedEventBus.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/parallelTypedEventBus.ts#L33)
 - [Named bus: eventBus.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/eventBus.ts#L35)
 - [Broadcast bus: broadcastTypedEventBus.ts:111](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L111)
-- [Messenger factory: crossTabMessenger.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/crossTabMessenger.ts#L46)
+- [Messenger factory: crossTabMessenger.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/crossTabMessenger.ts#L63)

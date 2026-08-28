@@ -24,7 +24,7 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventstream
 | --- | --- | --- |
 | 自行转换 `Response` | `toServerSentEventStream(response)` | `ReadableStream<ServerSentEvent>`；Body 缺失时抛错。 |
 | 解析 JSON `data` | `toJsonServerSentEventStream<T>(stream, detector?)` | `ReadableStream<JsonServerSentEvent<T>>`。 |
-| 可选的 `Response` 转换 | `response.eventStream()` / `jsonEventStream<T>()` | 内容类型不是 SSE 时返回 Stream 或 `null`。 |
+| 可选的 `Response` 转换 | `response.eventStream()` / `jsonEventStream<T>()` | 返回 Stream；非 SSE Content Type 时为 `null`；SSE 但无 Body 时抛出 `EventStreamConvertError`。 |
 | 必需的 `Response` 转换 | `response.requiredEventStream()` / `requiredJsonEventStream<T>()` | 返回 Stream 或抛出 `EventStreamConvertError`。 |
 | Fetcher 结果提取 | `EventStreamResultExtractor` / `JsonEventStreamResultExtractor` | 从 `FetchExchange` 提取必需的原始 / JSON Stream。 |
 | 构建自定义阶段 | `TextLineTransformStream`、`ServerSentEventTransformStream`、`JsonServerSentEventTransformStream<T>` | 各个 `TransformStream` 阶段。 |
@@ -64,7 +64,8 @@ try {
 
 `ServerSentEvent` 的结构为 `{ event, data, id?, retry? }`。Parser 会把缺失的 Event Type
 设为 `message`，忽略注释行，用 `\n` 合并重复的 `data:` 字段，忽略包含 NUL 的 `id`，仅在
-`retry` 全为 ASCII 数字时接受它。它在空行或输入 Stream flush 时输出一个 Frame。
+`retry` 全为 ASCII 数字时接受它。只有至少收到一个 `data:` 字段时，它才会在空行或输入 Stream
+flush 时输出 Frame；只有 event、`id` 或 `retry` 的 Frame 会被丢弃。
 
 ```text
 Response.body (ReadableStream<Uint8Array>)
@@ -91,8 +92,9 @@ Response.body (ReadableStream<Uint8Array>)
 | `EventStreamResultExtractor` | 调用 `exchange.requiredResponse.requiredEventStream()`。 |
 | `JsonEventStreamResultExtractor` | 调用 `exchange.requiredResponse.requiredJsonEventStream()`；其导出结果类型是 `JsonServerSentEventStream<any>`。 |
 
-可选辅助 API 不会消费非 SSE Response。Required 辅助 API 会在 Content Type 非 SSE 或 SSE Response
-的 Body 为 `null` 时抛错；捕获 `EventStreamConvertError` 后检查 `error.response`。
+可选辅助 API 对非 SSE Response 返回 `null` 且不消费它。对 Body 为 `null` 的 SSE Response，其底层
+转换会抛出 `EventStreamConvertError`。Required 辅助 API 还会在 Content Type 非 SSE 时抛错；捕获后
+检查 `error.response`。
 
 ## 终止、取消与错误
 
@@ -134,10 +136,10 @@ for await (const event of events) {
 
 ## 源码参考
 
-- [公共导出：index.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts#L54)
-- [Response 转换与错误：eventStreamConverter.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L31)
-- [Response 辅助 API：responses.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L31)
-- [Fetcher Extractor：eventStreamResultExtractor.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L32)
-- [SSE Frame Parser：serverSentEventTransformStream.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L19)
-- [JSON Transform：jsonServerSentEventTransformStream.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L24)
-- [异步迭代取消：readableStreamAsyncIterable.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L62)
+- [公共导出：index.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts#L63)
+- [EventStreamConvertError：eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)
+- [Response 辅助 API 实现：responses.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L154)
+- [Fetcher Extractor：eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)
+- [SSE Frame Parser：serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)
+- [JSON Transform：jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)
+- [异步迭代取消：readableStreamAsyncIterable.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L125)
