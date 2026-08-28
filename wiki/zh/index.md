@@ -34,4 +34,7 @@ features:
     details: 将请求、存储、事件与 Wow 查询连接到可观察的加载、结果和错误状态。
   - title: Wow 与 Viewer
     details: 构建 CQRS 客户端，以及包含筛选、表格、保存视图和远程数据加载的数据界面。
+  - title: Agent-ready Skills
+    details: 为 Codex 提供理解包边界的工作流，覆盖请求、流式、代码生成、React、CoSec、Wow 与 Viewer。
+    link: /zh/skills/
 ---

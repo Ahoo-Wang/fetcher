@@ -1,6 +1,7 @@
 # Fetcher
 
 [English](./README.md) · [文档](https://fetcher.ahoo.me/zh/) ·
+[Skills](https://fetcher.ahoo.me/zh/skills/) ·
 [Storybook](https://fetcher.ahoo.me/storybook/) ·
 [npm](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 
@@ -71,6 +72,7 @@ try {
 - [五分钟开始](https://fetcher.ahoo.me/zh/start/first-request)
 - [理解请求生命周期](https://fetcher.ahoo.me/zh/learn/request-lifecycle)
 - [使用开发者实战指南](https://fetcher.ahoo.me/zh/recipes/declarative-services)
+- [使用理解包边界的 Agent Skills](https://fetcher.ahoo.me/zh/skills/)
 - [查询包 API](https://fetcher.ahoo.me/zh/reference/)
 - [体验交互工作流](https://fetcher.ahoo.me/storybook/)
 

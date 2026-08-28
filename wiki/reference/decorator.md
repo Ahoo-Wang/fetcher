@@ -1,6 +1,7 @@
 ---
 title: Decorator reference
 description: Define declarative HTTP service classes with Fetcher method and parameter decorators.
+pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-decorator`
@@ -86,6 +87,48 @@ Omitting a name uses reflected parameter metadata. For `path`, `query`,
 `ExecuteLifeCycle` describes the decorator request lifecycle. `EndpointReturnType`
 can annotate generated method return types, and `ApiMetadata` /
 `EndpointMetadata` are available when tooling needs to inspect configuration.
+
+## Fetcher resolution
+
+The decorator executor resolves a client in this order:
+
+1. A Fetcher supplied by invocation metadata.
+2. The client configured by endpoint or class metadata.
+3. A `NamedFetcher` from `fetcherRegistrar`.
+4. The default registered `fetcher`.
+
+Use a named client when multiple services share authentication, base URL, or
+interceptors. Do not create a new client inside every decorated method.
+
+## Return and cancellation contract
+
+| Capability       | Contract                                                                       |
+| ---------------- | ------------------------------------------------------------------------------ |
+| Return type      | The method's `Promise<T>` describes the extracted result, not the raw response |
+| Extractor        | Endpoint metadata can select any Fetcher `ResultExtractor<T>`                  |
+| `AbortSignal`    | A signal or controller parameter is detected and attached to the request       |
+| Attributes       | `@attribute()` values enter `FetchExchange.attributes`                         |
+| Request override | `@request()` supplies request initialization for one invocation                |
+
+`EndpointReturnType` exists for generators and reflection-heavy tooling. Normal
+services should keep the TypeScript method return type as the public contract.
+
+## Inheritance and lifecycle
+
+Decorated subclasses inherit service metadata. A subclass can add endpoints or
+override metadata, but should not silently change the meaning of an inherited
+method. Lifecycle hooks run around request creation and execution; use them for
+service behavior that cannot live in a Fetcher interceptor.
+
+If `reflect-metadata` is missing or a decorated parameter cannot be resolved,
+failure happens before the HTTP request. Initialize metadata in the application
+entry point so tests and production load the same runtime.
+
+## Source and agent reference
+
+- Public exports: [`packages/decorator/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/index.ts)
+- Detailed agent API: [`skills/fetcher-decorator-service/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-decorator-service/references/api.md)
+- Skill: [`$fetcher-decorator-service`](../skills/http-and-services.md#fetcher-decorator-service)
 
 See [Declarative services](../recipes/declarative-services.md) for Fetcher
 registration, inheritance, and an application-shaped example.

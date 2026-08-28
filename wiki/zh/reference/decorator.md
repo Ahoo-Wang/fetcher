@@ -1,6 +1,7 @@
 ---
 title: Decorator 参考
 description: 使用 Fetcher 方法和参数装饰器定义声明式 HTTP 服务类。
+pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-decorator`
@@ -84,5 +85,45 @@ DELETE 快捷装饰器名为 `del`，因为 `delete` 是 JavaScript 关键字。
 
 `ExecuteLifeCycle` 描述装饰器请求生命周期。`EndpointReturnType` 可标注生成方法的
 返回类型；工具需要检查配置时可使用 `ApiMetadata` / `EndpointMetadata`。
+
+## Fetcher 解析
+
+Decorator Executor 按以下顺序解析客户端：
+
+1. 调用元数据提供的 Fetcher。
+2. Endpoint 或 Class 元数据配置的客户端。
+3. `fetcherRegistrar` 中的 `NamedFetcher`。
+4. 默认注册的 `fetcher`。
+
+多个服务共享认证、Base URL 或拦截器时使用命名客户端。不要在每个装饰方法中创建
+新客户端。
+
+## 返回值与取消契约
+
+| 能力             | 契约                                                     |
+| ---------------- | -------------------------------------------------------- |
+| 返回类型         | 方法声明的 `Promise<T>` 描述提取结果，而不是原始响应     |
+| Extractor        | Endpoint 元数据可以选择任意 Fetcher `ResultExtractor<T>` |
+| `AbortSignal`    | Signal 或 Controller 参数会被识别并附加到请求            |
+| Attributes       | `@attribute()` 值进入 `FetchExchange.attributes`         |
+| Request override | `@request()` 为单次调用提供请求初始化                    |
+
+`EndpointReturnType` 面向 Generator 和依赖反射的工具。普通服务应继续以 TypeScript
+方法返回类型作为公共契约。
+
+## 继承与生命周期
+
+装饰子类会继承服务元数据。子类可以新增端点或覆盖元数据，但不应无提示地改变继承
+方法的语义。生命周期 Hook 围绕请求创建和执行运行，只把无法放入 Fetcher 拦截器的
+服务级行为放在这里。
+
+缺少 `reflect-metadata` 或无法解析装饰参数时，请求会在 HTTP I/O 之前失败。把初始化
+放在应用入口，让测试与生产加载同一套元数据运行时。
+
+## 源码与 Agent 参考
+
+- 公共导出：[`packages/decorator/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/index.ts)
+- Agent 精确 API：[`skills/fetcher-decorator-service/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-decorator-service/references/api.md)
+- Skill：[`$fetcher-decorator-service`](../skills/http-and-services.md#fetcher-decorator-service)
 
 参阅[声明式服务](../recipes/declarative-services.md)，了解 Fetcher 注册、继承和完整应用示例。

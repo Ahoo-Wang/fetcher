@@ -24,7 +24,7 @@ wiki/
   zh/                     — Chinese translations (mirrors root structure)
   .vitepress/             — VitePress config, theme
   scripts/                — Mermaid fix scripts
-  public/                 — Static assets (logo.svg)
+  public/                 — Static assets (fetcher-logo.png)
 ```
 
 ## Content Conventions

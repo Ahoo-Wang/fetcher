@@ -1,6 +1,7 @@
 ---
 title: Generator 参考
 description: 从本地或远程 OpenAPI 文档生成 Fetcher 和 Wow TypeScript 客户端。
+pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-generator`
@@ -55,5 +56,46 @@ Generator 会在发现的每个 bounded context 下生成模型与客户端，�
 
 Wow 发现规则中的后端 tags、响应引用、snapshot 路由和命令 request body 都是生成器
 输入，而不是装饰性文档。每次契约变更后重新生成，并在发布前编译输出。
+
+## 生成流水线
+
+1. 解析本地文件或远程 OpenAPI 文档。
+2. 根据文档契约解析 Bounded Context 与 Aggregate。
+3. 加载可选 Generator 配置。
+4. 生成 Model、普通 API Client 和发现到的 Wow Client。
+5. 递归创建 `index.ts` 导出。
+6. 整理、格式化并保存 TypeScript Project。
+
+Generator 拥有输出目录。把手写 Adapter 放在目录外，让重新生成可以直接替换生成文件，
+无需合并策略。
+
+## Wow 发现契约
+
+| Client               | 必需的 OpenAPI 证据                                                        |
+| -------------------- | -------------------------------------------------------------------------- |
+| Command              | 根级 Aggregate Tag、内联 Request Body，以及引用 `wow.CommandOk` 的成功响应 |
+| Single Snapshot      | 匹配 `.snapshot_state.single` 的 Operation                                 |
+| Count                | 匹配 `.snapshot.count` 的 Operation                                        |
+| Query 与 Aggregation | Resolver 可识别的 Wow Snapshot 路由与响应形状                              |
+| 普通 API             | 未被 Wow 专用 Resolver 接管的 Tagged Operation                             |
+
+缺少任一 Marker 时，Operation 可能变成普通 API Method 或被跳过。检查生成目录与日志，
+不要只根据进程退出判断成功。
+
+## 程序化 API 与失败
+
+`new CodeGenerator(options).generate()` 向构建工具暴露同一流水线。
+`GeneratorOptions` 包含 `inputPath`、`outputDir`、`tsConfigFilePath`、
+`configPath` 和 Logger。
+
+输入无效、TypeScript 配置不可读或模型生成失败会拒绝生成。默认
+`fetcher-generator.config.json` 不存在时只记录日志并以 `{}` 继续；仅当项目确实不需要
+Generator 配置时才把该消息视为无害。
+
+## 源码与 Agent 参考
+
+- 公共导出：[`packages/generator/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts)
+- Agent 精确 API：[`skills/fetcher-openapi-generator/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-generator/references/api.md)
+- Skill：[`$fetcher-openapi-generator`](../skills/openapi-and-generation.md#fetcher-openapi-generator)
 
 参阅[生成客户端](../recipes/openapi-client.md)，获取最小文档和可重复执行的包脚本。

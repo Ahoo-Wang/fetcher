@@ -5,8 +5,15 @@
   --vp-c-brand-soft: rgba(109, 93, 252, 0.14);
   --vp-home-hero-name-color: transparent;
   --vp-home-hero-name-background: linear-gradient(135deg, #6d5dfc 40%, #00d4aa);
-  --vp-home-hero-image-background-image: linear-gradient(135deg, rgba(109, 93, 252, 0.3) 50%, rgba(0, 212, 170, 0.3));
+  --vp-home-hero-image-background-image: linear-gradient(
+    135deg,
+    rgba(109, 93, 252, 0.3) 50%,
+    rgba(0, 212, 170, 0.3)
+  );
   --vp-home-hero-image-filter: blur(44px);
+  --fetcher-accent: #00a985;
+  --fetcher-panel: rgba(109, 93, 252, 0.06);
+  --fetcher-panel-strong: rgba(109, 93, 252, 0.12);
 }
 
 .dark {
@@ -16,6 +23,9 @@
   --vp-c-border: #30363d;
   --vp-c-text-1: #e6edf3;
   --vp-c-text-2: #8b949e;
+  --fetcher-accent: #35ddb8;
+  --fetcher-panel: rgba(109, 93, 252, 0.08);
+  --fetcher-panel-strong: rgba(109, 93, 252, 0.16);
 }
 
 .VPNavBarTitle .logo {
@@ -31,7 +41,7 @@
 /* Mermaid diagram styling */
 .mermaid,
 .vitepress-mermaid-renderer,
-[class*="mermaid"] {
+[class*='mermaid'] {
   background: #161b22 !important;
   border-radius: 8px;
   padding: 16px;
@@ -43,7 +53,7 @@
 
 .mermaid svg,
 .vitepress-mermaid-renderer svg,
-[class*="mermaid"] svg {
+[class*='mermaid'] svg {
   max-width: 100% !important;
   height: auto !important;
   display: block;
@@ -51,7 +61,7 @@
 
 /* Mermaid zoom container */
 .mermaid-zoom-container,
-[class*="mermaid-control"] {
+[class*='mermaid-control'] {
   width: 100%;
 }
 
@@ -75,23 +85,111 @@
   z-index: 201;
 }
 
-/* Wider content area for readability */
-.VPDoc.has-aside .content-container {
-  max-width: 100% !important;
-}
-
 .VPDoc .container {
   max-width: 1440px !important;
 }
 
 .VPDoc .content {
-  max-width: 100% !important;
   padding-right: 32px !important;
 }
 
-.VPDoc:not(.has-aside) .content,
-.VPDoc:not(.has-aside) .content-container {
-  max-width: 100% !important;
+.VPDoc .content-container {
+  max-width: 860px !important;
+}
+
+.reference-page .content-container,
+.reference-index-page .content-container,
+.skills-page .content-container {
+  max-width: 980px !important;
+}
+
+.reference-page .vp-doc > h1 code,
+.reference-index-page .vp-doc > h1 code,
+.skills-page .vp-doc > h1 code {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  padding: 0;
+}
+
+.reference-page .vp-doc > h2,
+.reference-index-page .vp-doc > h2,
+.skills-page .vp-doc > h2 {
+  margin-top: 42px;
+  border-top: 1px solid var(--vp-c-divider);
+  padding-top: 24px;
+  letter-spacing: -0.025em;
+}
+
+.reference-page .vp-doc > h3,
+.skills-page .vp-doc > h3 {
+  color: var(--fetcher-accent);
+}
+
+.reference-page .vp-doc table,
+.reference-index-page .vp-doc table,
+.skills-page .vp-doc table {
+  display: table;
+  width: 100%;
+  margin: 18px 0 26px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+.reference-page .vp-doc th,
+.reference-index-page .vp-doc th,
+.skills-page .vp-doc th {
+  background: var(--fetcher-panel-strong);
+  color: var(--vp-c-text-1);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.reference-page .vp-doc th,
+.reference-page .vp-doc td,
+.reference-index-page .vp-doc th,
+.reference-index-page .vp-doc td,
+.skills-page .vp-doc th,
+.skills-page .vp-doc td {
+  border-left: 0;
+  border-right: 0;
+  padding: 11px 14px;
+  vertical-align: top;
+}
+
+.reference-page .vp-doc tr:last-child td,
+.reference-index-page .vp-doc tr:last-child td,
+.skills-page .vp-doc tr:last-child td {
+  border-bottom: 0;
+}
+
+.reference-page .vp-doc div[class*='language-'],
+.skills-page .vp-doc div[class*='language-'] {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+}
+
+.skills-page .custom-block.tip,
+.reference-index-page .custom-block.info {
+  border: 1px solid color-mix(in srgb, var(--vp-c-brand-1) 45%, transparent);
+  background: var(--fetcher-panel);
+}
+
+@media (max-width: 767px) {
+  .VPDoc .content {
+    padding-right: 0 !important;
+  }
+
+  .reference-page .vp-doc table,
+  .reference-index-page .vp-doc table,
+  .skills-page .vp-doc table {
+    display: block;
+    overflow-x: auto;
+  }
 }
 
 /* Code group styling */
@@ -106,6 +204,10 @@
 
 /* Inter font for body text */
 :root {
-  --vp-font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --vp-font-family-mono: 'JetBrains Mono', 'Fira Code', Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --vp-font-family-base:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
+  --vp-font-family-mono:
+    'JetBrains Mono', 'Fira Code', Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }

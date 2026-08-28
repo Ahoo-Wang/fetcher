@@ -1,6 +1,7 @@
 ---
 title: 事件流参考
 description: 解析 Server-Sent Events、消费类型化 JSON 流并处理无效流式响应。
+pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-eventstream`
@@ -60,10 +61,40 @@ for await (const event of events) {
 `EventStreamResultExtractor` 和 `JsonEventStreamResultExtractor` 可把相同转换直接
 接入 Fetcher 结果提取。
 
+## 事件形状与流水线
+
+`ServerSentEvent` 暴露 SSE Frame 产生的 `data`、`event`、`id`，以及存在时的
+Retry 元数据。一个事件中的多行 `data:` 会在 JSON 转换前合并。
+
+```text
+Response.body
+  → TextLineTransformStream
+  → ServerSentEventTransformStream
+  → JsonServerSentEventTransformStream<T>
+  → for await...of
+```
+
+`event`、`id` 或非 JSON `data` 有意义时使用原始事件流；只有所有非终止 Data 都是
+有效 JSON 时才使用 JSON Stream。
+
+## 终止与取消
+
+`TerminateDetector` 在 JSON 转换前看到每个已解析 SSE Event，因此 `[DONE]` 等协议
+终止符可以结束 Stream，而不会变成 JSON 错误。取消会沿 Web Stream 传播；HTTP 调用方
+拥有 `AbortController` 时也应 Abort，让网络工作停止。
+
+不要假设服务端会在逻辑结束事件后立即关闭连接。协议存在显式终止符时声明 Detector。
+
 ## 错误
 
 `EventStreamConvertError` 保留源 `Response`。响应不是事件流或没有可读正文时，
 required 辅助 API 会抛出该错误。流解析错误在消费过程中抛出，因此应把 `for await`
 循环放在错误边界中。
+
+## 源码与 Agent 参考
+
+- 公共导出：[`packages/eventstream/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts)
+- Agent 精确 API：[`skills/fetcher-llm-streaming/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-llm-streaming/references/api.md)
+- Skill：[`$fetcher-llm-streaming`](../skills/streaming-and-openai.md#fetcher-llm-streaming)
 
 继续阅读[流式响应](../learn/streaming.md)和 [OpenAI 流式请求](../recipes/openai-streaming.md)。

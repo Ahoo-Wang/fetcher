@@ -36,9 +36,19 @@ const sidebarSections = [
     ],
   },
   {
+    text: 'Skills',
+    items: [
+      { text: '概览', link: '/zh/skills/' },
+      { text: 'HTTP 与服务', link: '/zh/skills/http-and-services' },
+      { text: '流式与 OpenAI', link: '/zh/skills/streaming-and-openai' },
+      { text: 'OpenAPI 与生成', link: '/zh/skills/openapi-and-generation' },
+      { text: 'React 与集成', link: '/zh/skills/react-and-integrations' },
+    ],
+  },
+  {
     text: '参考',
     items: [
-      { text: '包', link: '/zh/reference/' },
+      { text: '包概览', link: '/zh/reference/' },
       { text: 'Fetcher', link: '/zh/reference/fetcher' },
       { text: 'Decorator', link: '/zh/reference/decorator' },
       { text: '事件总线', link: '/zh/reference/eventbus' },
@@ -65,10 +75,11 @@ const sidebarSections = [
 ] satisfies DefaultTheme.SidebarItem[];
 
 function sidebar(activeSection: string) {
-  return sidebarSections.map(section => ({
-    ...section,
-    collapsed: section.text !== activeSection,
-  }));
+  return sidebarSections.map(section =>
+    section.text === activeSection
+      ? section
+      : { text: section.text, link: section.items?.[0]?.link },
+  );
 }
 
 export const zh: DefaultTheme.Config = {
@@ -82,6 +93,7 @@ export const zh: DefaultTheme.Config = {
       { text: '开始', link: '/zh/start/' },
       { text: '学习', link: '/zh/learn/request-lifecycle' },
       { text: '场景', link: '/zh/recipes/declarative-services' },
+      { text: 'Skills', link: '/zh/skills/' },
       { text: '参考', link: '/zh/reference/' },
       { text: '贡献', link: '/zh/contributing/' },
       { text: 'Storybook', link: '/storybook/', target: '_blank' },
@@ -90,6 +102,7 @@ export const zh: DefaultTheme.Config = {
       '/zh/start/': sidebar('开始'),
       '/zh/learn/': sidebar('学习'),
       '/zh/recipes/': sidebar('场景'),
+      '/zh/skills/': sidebar('Skills'),
       '/zh/reference/': sidebar('参考'),
       '/zh/contributing/': sidebar('贡献'),
     },
@@ -104,7 +117,7 @@ export const zh: DefaultTheme.Config = {
       pattern: 'https://github.com/Ahoo-Wang/fetcher/edit/main/wiki/:path',
       text: '在 GitHub 上编辑此页面',
     },
-    outline: { label: '页面导航' },
+    outline: { level: [2, 3], label: '页面导航' },
     lastUpdated: { text: '最后更新于' },
     docFooter: { prev: '上一页', next: '下一页' },
   },

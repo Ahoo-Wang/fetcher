@@ -2,7 +2,7 @@
 
 **日期**：2026-08-28
 **状态**：已确认
-**范围**：公开 README、双语 Wiki、Storybook
+**范围**：公开 README、双语 Wiki、Skills 入口、Storybook
 
 ## 背景
 
@@ -33,9 +33,9 @@ Fetcher 是包含 12 个包的 TypeScript HTTP 客户端生态。目前公开内
 
 - 不修改任何包的公共 API、运行时行为或发布版本。
 - 不兼容现有 Wiki URL、导航顺序或 Story ID，也不提供重定向。
-- 不编辑 `skills/`、`AGENTS.md`、`CLAUDE.md`、许可证或其他内部指令。
+- 不改变 `skills/` 的工作流或 API Reference 内容；公开 Wiki 负责解释如何选择和调用它们。
 - 不手工编辑 `wiki/llms.txt`、`wiki/llms-full.txt` 或 `.vitepress/dist/` 等构建产物。
-- 不引入文档生成器、示例抽取器、视觉回归平台或新的 UI 抽象；唯一依赖例外是把 workspace catalog 已固定版本的 `@vitest/browser-playwright` 加入根开发依赖，用于 Storybook CI 浏览器测试。
+- 不引入文档生成器、示例抽取器或视觉回归平台；允许使用现有 VitePress 主题扩展点和 CSS 改善导航、Reference 与 Skills 的扫描体验。唯一依赖例外是把 workspace catalog 已固定版本的 `@vitest/browser-playwright` 加入根开发依赖，用于 Storybook CI 浏览器测试。
 - 不为行数、页面数或 Story 数设目标；只删除重复或没有用户价值的内容。
 
 ## 架构决策
@@ -116,6 +116,13 @@ Recipes
   Add CoSec Authentication
   Share State and Events
   Build a Data Viewer
+
+Skills
+  Overview
+  HTTP and Services
+  Streaming and OpenAI
+  OpenAPI and Generation
+  React and Integrations
 
 Reference
   Fetcher

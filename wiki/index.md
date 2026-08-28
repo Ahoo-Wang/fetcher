@@ -34,4 +34,7 @@ features:
     details: Connect requests, storage, events, and Wow queries to observable loading, result, and error state.
   - title: Wow and Viewer
     details: Build CQRS clients and reusable data views with filters, tables, saved views, and remote data loading.
+  - title: Agent-ready Skills
+    details: Give Codex precise, package-aware workflows for requests, streaming, generation, React, CoSec, Wow, and Viewer work.
+    link: /skills/
 ---

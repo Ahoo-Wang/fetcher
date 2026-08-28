@@ -1,6 +1,7 @@
 ---
 title: Event stream reference
 description: Parse Server-Sent Events, consume typed JSON streams, and handle invalid stream responses.
+pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-eventstream`
@@ -62,12 +63,45 @@ event arrives, such as an OpenAI `[DONE]` marker.
 `EventStreamResultExtractor` and `JsonEventStreamResultExtractor` integrate the
 same conversions directly with Fetcher result extraction.
 
+## Event shape and pipeline
+
+`ServerSentEvent` exposes the fields produced by SSE framing: `data`, `event`,
+`id`, and retry metadata when present. Multiple `data:` lines belong to one
+event and are joined before JSON conversion.
+
+```text
+Response.body
+  → TextLineTransformStream
+  → ServerSentEventTransformStream
+  → JsonServerSentEventTransformStream<T>
+  → for await...of
+```
+
+Use the raw stream when `event`, `id`, or non-JSON `data` matters. Use the JSON
+stream only when every non-terminal data field is valid JSON.
+
+## Termination and cancellation
+
+A `TerminateDetector` sees each parsed SSE event before JSON conversion. This
+allows protocol terminators such as `[DONE]` to end the stream without becoming
+a JSON error. Cancellation propagates through the Web Stream; when the HTTP
+caller owns an `AbortController`, abort it as well so network work stops.
+
+Do not assume the server closes immediately after its logical terminal event.
+Declare a detector when the protocol has an explicit terminator.
+
 ## Errors
 
 `EventStreamConvertError` retains the source `Response`. Required helpers throw
 it when the response is not an event stream or has no readable body. Stream
 parsing errors surface while the stream is being consumed, so keep the
 `for await` loop inside your error boundary.
+
+## Source and agent reference
+
+- Public exports: [`packages/eventstream/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts)
+- Detailed agent API: [`skills/fetcher-llm-streaming/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-llm-streaming/references/api.md)
+- Skill: [`$fetcher-llm-streaming`](../skills/streaming-and-openai.md#fetcher-llm-streaming)
 
 Continue with [Streaming](../learn/streaming.md) and
 [OpenAI streaming](../recipes/openai-streaming.md).

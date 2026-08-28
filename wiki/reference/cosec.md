@@ -1,6 +1,7 @@
 ---
 title: CoSec reference
 description: Configure CoSec attribution headers, JWT persistence, refresh, and 401 or 403 handling.
+pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-cosec`
@@ -72,6 +73,44 @@ Public interceptors include CoSec request headers, authorization request and
 response handling, resource attribution, and 401/403 error handlers. Prefer
 `CoSecConfigurer`; instantiate individual interceptors only when an application
 owns a genuinely different pipeline.
+
+## Interceptor flow
+
+```text
+request attribution
+  → optional Authorization header
+  → HTTP request
+  → optional token refresh and retry
+  → unauthorized / forbidden handler
+```
+
+| Layer        | Main API                                                    | Responsibility                                          |
+| ------------ | ----------------------------------------------------------- | ------------------------------------------------------- |
+| Setup        | `CoSecConfigurer`                                           | Registers the coherent default interceptor set          |
+| Token state  | `TokenStorage`, `JwtCompositeTokenSerializer`               | Persists and observes sign-in state                     |
+| Refresh      | `JwtTokenManager`, `TokenRefresher`, `CoSecTokenRefresher`  | Deduplicates refresh and obtains a new token            |
+| Attribution  | `DeviceIdStorage`, `SpaceIdProvider`, resource interceptor  | Adds application, device, space, and resource context   |
+| Final errors | `UnauthorizedErrorInterceptor`, `ForbiddenErrorInterceptor` | Turns final 401/403 responses into application behavior |
+
+Use `CoSecHeaders` constants instead of repeating protocol header strings. An
+explicit `Authorization` request header wins so a caller can intentionally use
+a different credential for one request.
+
+## Token lifecycle and safety
+
+`JwtToken` decodes token timing and payload fields; `JwtCompositeToken` keeps
+access and refresh material together. Decoding is not signature verification.
+Only the server establishes trust.
+
+Sign-out must clear token storage and any application state derived from the
+authenticated identity. Never attach CoSec to the Fetcher used by
+`CoSecTokenRefresher`, or a refresh request can recursively trigger refresh.
+
+## Source and agent reference
+
+- Public exports: [`packages/cosec/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts)
+- Detailed agent API: [`skills/fetcher-cosec-auth/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-cosec-auth/references/api.md)
+- Skill: [`$fetcher-cosec-auth`](../skills/react-and-integrations.md#fetcher-cosec-auth)
 
 See [Add CoSec authentication](../recipes/cosec-authentication.md) for sign-in,
 sign-out, space attribution, and safe testing.

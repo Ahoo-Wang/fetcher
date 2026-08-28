@@ -1,21 +1,34 @@
-import DefaultTheme from 'vitepress/theme'
-import type { Theme } from 'vitepress'
-import './custom.css'
+import DefaultTheme from 'vitepress/theme';
+import type { Theme } from 'vitepress';
+import { onBeforeUnmount, onMounted } from 'vue';
+import './custom.css';
+import { observeSidebarAria } from './sidebarA11y';
 
-const hasSetup = Symbol('mermaid-setup')
+const hasSetup = Symbol('mermaid-setup');
 
 export default {
   extends: DefaultTheme,
   setup() {
+    let stopSidebarAria = () => {};
+
+    onMounted(() => {
+      stopSidebarAria = observeSidebarAria();
+    });
+    onBeforeUnmount(() => stopSidebarAria());
+
     if (typeof window !== 'undefined' && !(window as any)[hasSetup]) {
-      ;(window as any)[hasSetup] = true
+      (window as any)[hasSetup] = true;
       import('vitepress-mermaid-renderer').then(({ createMermaidRenderer }) => {
-        const isDark = document.documentElement.classList.contains('dark')
+        const isDark = document.documentElement.classList.contains('dark');
         createMermaidRenderer({
           theme: isDark ? 'dark' : 'default',
           startOnLoad: true,
           flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
-          sequence: { useMaxWidth: true, diagramMarginX: 50, diagramMarginY: 10 },
+          sequence: {
+            useMaxWidth: true,
+            diagramMarginX: 50,
+            diagramMarginY: 10,
+          },
           classDiagram: { useMaxWidth: true },
           stateDiagram: { useMaxWidth: true },
           er: { useMaxWidth: true },
@@ -35,8 +48,8 @@ export default {
             fontFamily: 'Inter, sans-serif',
             fontSize: '14px',
           },
-        })
-      })
+        });
+      });
     }
   },
-} satisfies Theme
+} satisfies Theme;

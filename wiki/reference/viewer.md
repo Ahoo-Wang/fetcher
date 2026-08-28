@@ -1,6 +1,7 @@
 ---
 title: Viewer reference
 description: Compose filters, tables, saved views, and remote Viewer workflows with React and Ant Design.
+pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-viewer`
@@ -138,6 +139,40 @@ views states. `FetcherViewerRef` exposes `refreshData()`,
 
 The built-in fallback locale is Chinese. `useLocale()` exposes a locally owned
 locale state and merges custom values over that fallback.
+
+## Ownership and failure matrix
+
+| Concern                           | `ViewTable` | `View` | `Viewer`          | `FetcherViewer`      |
+| --------------------------------- | ----------- | ------ | ----------------- | -------------------- |
+| Render rows and cells             | owns        | owns   | owns              | owns                 |
+| Compose filters and query state   | caller      | owns   | owns              | owns                 |
+| Load page and count data          | caller      | caller | caller            | owns                 |
+| Persist saved views               | caller      | caller | callback contract | owns through clients |
+| Render definition-loading failure | caller      | caller | caller            | owns                 |
+
+Choose the leftmost component that still owns the user experience you need.
+Dropping to a lower level gives control but also transfers loading, empty,
+error, retry, and persistence behavior to the application.
+
+### Persistence callbacks
+
+Create, update, and delete callbacks receive success continuations. Call the
+continuation only after persistence succeeds; otherwise the visible active view
+can diverge from the backend. Show the failure near the initiating action and
+leave the previous view usable.
+
+### Registries
+
+Register custom filter and cell types once before the first render. A registry
+entry is a public rendering contract: keep its type name stable for persisted
+view definitions, and validate server-provided definitions before resolving a
+component.
+
+## Source and agent reference
+
+- Public exports: [`packages/viewer/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/index.ts)
+- Detailed agent API: [`skills/fetcher-viewer-components/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-viewer-components/references/api.md)
+- Skill: [`$fetcher-viewer-components`](../skills/react-and-integrations.md#fetcher-viewer-components)
 
 Try the complete workflows in [Storybook](https://fetcher.ahoo.me/storybook/)
 and follow [Build a data viewer](../recipes/data-viewer.md).

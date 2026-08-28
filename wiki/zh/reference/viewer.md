@@ -1,6 +1,7 @@
 ---
 title: Viewer 参考
 description: 使用 React 和 Ant Design 组合过滤器、表格、保存视图与远程 Viewer 工作流。
+pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-viewer`
@@ -130,6 +131,36 @@ const defaultView: ViewState = {
 `getViewerDefinition()`。
 
 内置回退语言为中文。`useLocale()` 暴露局部持有的语言状态，并把自定义值合并到回退值上。
+
+## 所有权与失败矩阵
+
+| 关注点                     | `ViewTable` | `View` | `Viewer`      | `FetcherViewer`  |
+| -------------------------- | ----------- | ------ | ------------- | ---------------- |
+| 渲染 Row 与 Cell           | 负责        | 负责   | 负责          | 负责             |
+| 组合 Filter 与 Query State | 调用方      | 负责   | 负责          | 负责             |
+| 加载分页与 Count 数据      | 调用方      | 调用方 | 调用方        | 负责             |
+| 持久化保存视图             | 调用方      | 调用方 | Callback 契约 | 通过 Client 负责 |
+| 渲染 Definition 加载失败   | 调用方      | 调用方 | 调用方        | 负责             |
+
+选择仍能覆盖所需用户体验的最左侧组件。降到更低层能获得控制权，但 Loading、Empty、
+Error、Retry 和持久化行为也随之转移给应用。
+
+### 持久化 Callback
+
+Create、Update 和 Delete Callback 会收到 Success Continuation。只有持久化成功后才
+调用它，否则可见 Active View 可能与后端不一致。失败应显示在发起操作附近，并让旧视图
+继续可用。
+
+### Registry
+
+自定义 Filter 和 Cell Type 应在首次渲染前只注册一次。Registry Entry 是公共渲染契约：
+为持久化 View Definition 保持 Type Name 稳定，并在解析组件前校验服务端 Definition。
+
+## 源码与 Agent 参考
+
+- 公共导出：[`packages/viewer/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/index.ts)
+- Agent 精确 API：[`skills/fetcher-viewer-components/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-viewer-components/references/api.md)
+- Skill：[`$fetcher-viewer-components`](../skills/react-and-integrations.md#fetcher-viewer-components)
 
 在 [Storybook](https://fetcher.ahoo.me/storybook/) 中体验完整工作流，并继续阅读
 [构建数据 Viewer](../recipes/data-viewer.md)。

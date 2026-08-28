@@ -1,6 +1,7 @@
 # Fetcher
 
 [中文](./README.zh-CN.md) · [Documentation](https://fetcher.ahoo.me/) ·
+[Skills](https://fetcher.ahoo.me/skills/) ·
 [Storybook](https://fetcher.ahoo.me/storybook/) ·
 [npm](https://www.npmjs.com/package/@ahoo-wang/fetcher)
 
@@ -73,6 +74,7 @@ dependencies and the smallest useful combination.
 - [Start in five minutes](https://fetcher.ahoo.me/start/first-request)
 - [Understand the request lifecycle](https://fetcher.ahoo.me/learn/request-lifecycle)
 - [Follow developer recipes](https://fetcher.ahoo.me/recipes/declarative-services)
+- [Use package-aware agent Skills](https://fetcher.ahoo.me/skills/)
 - [Look up package APIs](https://fetcher.ahoo.me/reference/)
 - [Try interactive workflows](https://fetcher.ahoo.me/storybook/)
 

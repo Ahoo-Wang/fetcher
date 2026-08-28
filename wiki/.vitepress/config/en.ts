@@ -39,6 +39,22 @@ const sidebarSections = [
     ],
   },
   {
+    text: 'Skills',
+    items: [
+      { text: 'Overview', link: '/skills/' },
+      { text: 'HTTP and Services', link: '/skills/http-and-services' },
+      { text: 'Streaming and OpenAI', link: '/skills/streaming-and-openai' },
+      {
+        text: 'OpenAPI and Generation',
+        link: '/skills/openapi-and-generation',
+      },
+      {
+        text: 'React and Integrations',
+        link: '/skills/react-and-integrations',
+      },
+    ],
+  },
+  {
     text: 'Reference',
     items: [
       { text: 'Packages', link: '/reference/' },
@@ -68,10 +84,11 @@ const sidebarSections = [
 ] satisfies DefaultTheme.SidebarItem[];
 
 function sidebar(activeSection: string) {
-  return sidebarSections.map(section => ({
-    ...section,
-    collapsed: section.text !== activeSection,
-  }));
+  return sidebarSections.map(section =>
+    section.text === activeSection
+      ? section
+      : { text: section.text, link: section.items?.[0]?.link },
+  );
 }
 
 export const en: DefaultTheme.Config = {
@@ -85,6 +102,7 @@ export const en: DefaultTheme.Config = {
       { text: 'Start', link: '/start/' },
       { text: 'Learn', link: '/learn/request-lifecycle' },
       { text: 'Recipes', link: '/recipes/declarative-services' },
+      { text: 'Skills', link: '/skills/' },
       { text: 'Reference', link: '/reference/' },
       { text: 'Contributing', link: '/contributing/' },
       { text: 'Storybook', link: '/storybook/', target: '_blank' },
@@ -93,6 +111,7 @@ export const en: DefaultTheme.Config = {
       '/start/': sidebar('Start'),
       '/learn/': sidebar('Learn'),
       '/recipes/': sidebar('Recipes'),
+      '/skills/': sidebar('Skills'),
       '/reference/': sidebar('Reference'),
       '/contributing/': sidebar('Contributing'),
     },
@@ -107,5 +126,6 @@ export const en: DefaultTheme.Config = {
       pattern: 'https://github.com/Ahoo-Wang/fetcher/edit/main/wiki/:path',
       text: 'Edit this page on GitHub',
     },
+    outline: { level: [2, 3], label: 'On this page' },
   },
 };
