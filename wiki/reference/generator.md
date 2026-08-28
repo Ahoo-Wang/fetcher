@@ -36,7 +36,7 @@ These are the complete declared command options ([`cli.ts:17`](https://github.co
 
 ## Configuration and precedence
 
-The CLI passes `--config` to `CodeGenerator`; when absent, `DEFAULT_CONFIG_PATH` is `./fetcher-generator.config.json`. Configuration parse/load failures are logged and generation continues with `{}` ([`index.ts:27`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L27), [`index.ts:99`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L99)).
+The CLI passes `--config` to `CodeGenerator`; when absent, `DEFAULT_CONFIG_PATH` is `./fetcher-generator.config.json`. A missing, unreadable, or unparsable configuration file is logged and generation continues with `{}`. A successfully parsed object has no runtime shape validation: an incorrectly typed field can fail later when its consumer uses it ([`index.ts:27`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L27), [`index.ts:99`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L99), [`parsers.ts:38`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/parsers.ts#L38)).
 
 ```json
 {
@@ -53,7 +53,8 @@ The CLI passes `--config` to `CodeGenerator`; when absent, `DEFAULT_CONFIG_PATH`
 | `apiClients.<tag>.ignorePathParameters` | Ordinary API client for that exact tag | Tag array replaces default. |
 | No tag configuration | Ordinary API client | Ignore `tenantId`, `ownerId`. |
 | Command client | Wow command client | Always ignores `tenantId`, `ownerId`; `apiClients` does not override it. |
-| Missing or invalid config | Entire run | Log the parse failure, then use an empty configuration. |
+| Missing, unreadable, or unparsable config | Entire run | Log the failure, then use an empty configuration. |
+| Successfully parsed but wrong-shaped config | Later consumer | No runtime validation; correct the JSON/YAML field type. |
 
 The parser infers JSON or YAML from content rather than filename ([`parsers.ts:25`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/parsers.ts#L25)); parameter behavior is implemented in [`generateContext.ts:53`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/generateContext.ts#L53).
 
@@ -78,10 +79,10 @@ src/generated/
 2. Resolve aggregate definitions from root tags and operations.
 3. Load optional configuration.
 4. Generate models, ordinary API clients, and recognized Wow clients.
-5. Create an `index.ts` for each non-empty generated directory.
-6. Format imports/source and save the ts-morph project.
+5. If `project.getDirectory(outputDir)` exists, create an `index.ts` for each non-empty generated directory.
+6. In that same branch, format imports/source and save the ts-morph project.
 
-The order is defined by [`CodeGenerator.generate():80`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L80); recursive index generation excludes an existing `index.ts` and rewrites generated indexes ([`index.ts:187`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L187)).
+After model/client generation, `generate()` checks for the output directory. Only a created output directory (that is, generated source exists) enters the index, format, and save phase. With an empty document or no generatable symbols, it logs `Output directory not found.` and returns normally; the CLI then still prints success and exits `0` ([`index.ts:126`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L126), [`clis.ts:145`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L145)). Recursive index generation excludes an existing `index.ts` and rewrites generated indexes ([`index.ts:187`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L187)).
 
 ## Programmatic API
 
@@ -106,7 +107,14 @@ await new CodeGenerator({
 }).generate();
 ```
 
-The constructor requires input/output paths and a logger, then accepts ts-morph project options plus optional `configPath`; `generate()` resolves to `void` after saving ([`types.ts:21`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/types.ts#L21), [`index.ts:54`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L54)).
+| Member | Input / return | Contract |
+| --- | --- | --- |
+| `new CodeGenerator(options)` | `inputPath`, `outputDir`, `logger`; ts-morph project options and optional `configPath` → instance | Creates the ts-morph `Project`; the options type itself is not a package-root export. |
+| `generate()` | `Promise<void>` | Parses, resolves, generates, and conditionally indexes/formats/saves the output. |
+| `generateIndex(outputDir)` | ts-morph `Directory` → `void` | Recursively writes `index.ts` exports for non-empty directories. |
+| `optimizeSourceFiles(outputDir)` | ts-morph `Directory` → `void` | Formats source, organizes imports, and fixes missing imports. |
+
+The public methods are defined at [`index.ts:54`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L54), [`index.ts:80`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L80), [`index.ts:157`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L157), and [`index.ts:248`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L248).
 
 ## Wow discovery matrix
 
@@ -115,7 +123,7 @@ The constructor requires input/output paths and a logger, then accepts ts-morph 
 | Aggregate candidate | Root-level tag exactly `contextAlias.aggregateName`. |
 | Command | Three-part `operationId`, a non-`wow.command.send` operation, `$ref` response `#/components/responses/wow.CommandOk`, and an inline JSON request-body reference. |
 | Single snapshot state | `operationId` ending `.snapshot_state.single` with an OK JSON schema reference. |
-| Query fields | `operationId` ending `.snapshot.count`; request body provides `x-wow-query-fields` as a schema reference, or legacy `content.application/json.schema.properties.field` reference. |
+| Query fields | `operationId` ending `.snapshot.count`; `Operation.requestBody` must be a `#/components/requestBodies/...` reference. On the resolved `RequestBody`, `x-wow-query-fields` must be a schema reference, or the legacy `content.application/json.schema.properties.field` must be one. Inline request bodies are not supported by this resolver. |
 | Complete Wow aggregate | Both state and fields results; otherwise it is excluded from resolved aggregates. |
 | Ordinary API client | Tagged operations not claimed by aggregate/Actuator/wow filters. |
 
@@ -137,8 +145,10 @@ find /tmp/fetcher-reference-generator-check -type f -print -quit
 | --- | --- |
 | `Invalid input` / exit `2` | Use a non-empty local path or an HTTP(S) URL accepted by the guard; private/link-local remote addresses are rejected. |
 | `Configuration file parsing failed` | Benign only when no config is intended; otherwise pass `-c` with readable JSON/YAML. |
+| Parsed configuration later throws | The file parsed but its object shape is not validated; check the type of `apiClients.<tag>.ignorePathParameters`. |
 | Parse/generation error / exit `1` | Check input contents, path/URL reachability, and supplied TypeScript configuration. |
 | Exit `0` but expected Wow client is absent | Check the discovery matrix, generated tree, and logs; missing state or fields excludes an aggregate. |
+| Exit `0` but there are no output files | Check for `Output directory not found.`: no output directory was created, so indexing/formatting/saving were skipped and the CLI still reported success. |
 | Generated code fails application compilation | Pass the consumer `tsconfig` and install packages imported by generated files. |
 
 The repository E2E test uses this fixture and asserts both API and Wow command output ([`e2e.test.ts:125`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/test/e2e.test.ts#L125)).
@@ -150,3 +160,4 @@ The repository E2E test uses this fixture and asserts both API and Wow command o
 - [Configuration: `packages/generator/src/types.ts:21`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/types.ts#L21)
 - [Input/exit states: `packages/generator/src/utils/clis.ts:90`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90)
 - [Wow resolver: `packages/generator/src/aggregate/aggregateResolver.ts:52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/aggregateResolver.ts#L52)
+- [Request-body resolution: `packages/generator/src/utils/components.ts:89`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/components.ts#L89)

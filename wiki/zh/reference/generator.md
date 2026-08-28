@@ -36,7 +36,7 @@ pnpm exec fetcher-generator generate \
 
 ## 配置与优先级
 
-CLI 将 `--config` 传给 `CodeGenerator`；未传入时，`DEFAULT_CONFIG_PATH` 为 `./fetcher-generator.config.json`。配置解析/加载失败会记录日志，并以 `{}` 继续生成（[`index.ts:27`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L27)、[`index.ts:99`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L99)）。
+CLI 将 `--config` 传给 `CodeGenerator`；未传入时，`DEFAULT_CONFIG_PATH` 为 `./fetcher-generator.config.json`。配置文件缺失、不可读或不可解析时会记录日志，并以 `{}` 继续生成。成功解析出的对象没有运行时形状校验：字段类型错误可在后续消费时才失败（[`index.ts:27`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L27)、[`index.ts:99`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L99)、[`parsers.ts:38`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/parsers.ts#L38)）。
 
 ```json
 {
@@ -53,7 +53,8 @@ CLI 将 `--config` 传给 `CodeGenerator`；未传入时，`DEFAULT_CONFIG_PATH`
 | `apiClients.<tag>.ignorePathParameters` | 该精确 Tag 的普通 API Client | Tag 数组替换默认值。 |
 | 无 Tag 配置 | 普通 API Client | 忽略 `tenantId`、`ownerId`。 |
 | Command Client | Wow Command Client | 始终忽略 `tenantId`、`ownerId`；`apiClients` 不覆盖它。 |
-| 配置缺失或无效 | 整次运行 | 记录解析失败，随后使用空配置。 |
+| 配置缺失、不可读或不可解析 | 整次运行 | 记录失败，随后使用空配置。 |
+| 成功解析但形状错误的配置 | 后续 Consumer | 没有运行时校验；修正 JSON/YAML 字段类型。 |
 
 Parser 按内容而非扩展名推断 JSON/YAML（[`parsers.ts:25`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/parsers.ts#L25)）；参数行为实现于 [`generateContext.ts:53`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/generateContext.ts#L53)。
 
@@ -78,10 +79,10 @@ src/generated/
 2. 从根 Tag 与 Operation 解析 Aggregate 定义。
 3. 加载可选配置。
 4. 生成 Model、普通 API Client 与识别出的 Wow Client。
-5. 为每个非空生成目录创建 `index.ts`。
-6. 格式化 Import/源码，并保存 ts-morph Project。
+5. 若 `project.getDirectory(outputDir)` 存在，为每个非空生成目录创建 `index.ts`。
+6. 仅在该分支格式化 Import/源码，并保存 ts-morph Project。
 
-顺序定义于 [`CodeGenerator.generate():80`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L80)；递归索引生成会排除已有 `index.ts` 并重写生成索引（[`index.ts:187`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L187)）。
+Model/Client 生成后，`generate()` 会检查输出目录。只有创建了输出目录（即存在生成源码）才进入索引、格式化、保存阶段。文档为空或没有可生成符号时，它记录 `Output directory not found.` 后正常返回；CLI 仍会打印成功并以 `0` 退出（[`index.ts:126`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L126)、[`clis.ts:145`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L145)）。递归索引生成会排除已有 `index.ts` 并重写生成索引（[`index.ts:187`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L187)）。
 
 ## 程序化 API
 
@@ -106,7 +107,14 @@ await new CodeGenerator({
 }).generate();
 ```
 
-构造函数要求输入/输出路径与 Logger，此外接受 ts-morph Project Options 及可选 `configPath`；保存后 `generate()` resolve 为 `void`（[`types.ts:21`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/types.ts#L21)、[`index.ts:54`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L54)）。
+| 成员 | 输入 / 返回 | 契约 |
+| --- | --- | --- |
+| `new CodeGenerator(options)` | `inputPath`、`outputDir`、`logger`；ts-morph Project Options 与可选 `configPath` → 实例 | 创建 ts-morph `Project`；Options 类型自身不是包根导出。 |
+| `generate()` | `Promise<void>` | 解析、解析 Aggregate、生成，并条件性地索引/格式化/保存输出。 |
+| `generateIndex(outputDir)` | ts-morph `Directory` → `void` | 递归为非空目录写入 `index.ts` export。 |
+| `optimizeSourceFiles(outputDir)` | ts-morph `Directory` → `void` | 格式化源码、整理 Import、修复缺失 Import。 |
+
+公共方法定义于 [`index.ts:54`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L54)、[`index.ts:80`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L80)、[`index.ts:157`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L157)、[`index.ts:248`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L248)。
 
 ## Wow 发现矩阵
 
@@ -115,7 +123,7 @@ await new CodeGenerator({
 | Aggregate 候选 | 根级 Tag 必须恰为 `contextAlias.aggregateName`。 |
 | Command | 三段式 `operationId`、非 `wow.command.send` Operation、`#/components/responses/wow.CommandOk` 的 `$ref` Response，以及内联 JSON Request Body Reference。 |
 | Single Snapshot State | `operationId` 以 `.snapshot_state.single` 结尾，且 OK JSON Schema 为 Reference。 |
-| Query Fields | `operationId` 以 `.snapshot.count` 结尾；Request Body 提供 Schema Reference 类型的 `x-wow-query-fields`，或旧格式 `content.application/json.schema.properties.field` Reference。 |
+| Query Fields | `operationId` 以 `.snapshot.count` 结尾；`Operation.requestBody` 必须是 `#/components/requestBodies/...` Reference。解引用后的 `RequestBody` 上，`x-wow-query-fields` 必须为 Schema Reference，或旧格式 `content.application/json.schema.properties.field` 必须为 Reference。该 Resolver 不支持内联 Request Body。 |
 | 完整 Wow Aggregate | 同时有 State 和 Fields 结果；否则从已解析 Aggregate 排除。 |
 | 普通 API Client | 未被 Aggregate/Actuator/wow Filter 接管的带 Tag Operation。 |
 
@@ -137,8 +145,10 @@ find /tmp/fetcher-reference-generator-check -type f -print -quit
 | --- | --- |
 | `Invalid input` / 退出 `2` | 使用非空本地路径或通过 Guard 的 HTTP(S) URL；私网/Link-local 远程地址会被拒绝。 |
 | `Configuration file parsing failed` | 仅在确实不需要配置时无害；否则用 `-c` 传入可读 JSON/YAML。 |
+| 已解析配置在后续抛错 | 文件已解析但对象形状未校验；检查 `apiClients.<tag>.ignorePathParameters` 的类型。 |
 | Parse/Generation Error / 退出 `1` | 检查输入内容、Path/URL 可达性与传入的 TypeScript 配置。 |
 | 退出 `0` 但缺少 Wow Client | 按发现矩阵检查、查看生成树和日志；缺少 State 或 Fields 会排除 Aggregate。 |
+| 退出 `0` 但没有输出文件 | 检查 `Output directory not found.`：未创建输出目录，因此跳过索引/格式化/保存，CLI 仍报告成功。 |
 | 生成代码无法在应用中编译 | 传入消费方 `tsconfig` 并安装生成文件导入的包。 |
 
 仓库 E2E Test 使用该 Fixture，并同时断言 API 与 Wow Command 输出（[`e2e.test.ts:125`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/test/e2e.test.ts#L125)）。
@@ -150,3 +160,4 @@ find /tmp/fetcher-reference-generator-check -type f -print -quit
 - [配置：`packages/generator/src/types.ts:21`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/types.ts#L21)
 - [输入/退出状态：`packages/generator/src/utils/clis.ts:90`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90)
 - [Wow Resolver：`packages/generator/src/aggregate/aggregateResolver.ts:52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/aggregateResolver.ts#L52)
+- [Request Body 解引用：`packages/generator/src/utils/components.ts:89`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/components.ts#L89)
