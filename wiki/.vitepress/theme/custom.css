@@ -18,6 +18,16 @@
   --vp-c-text-2: #8b949e;
 }
 
+.VPNavBarTitle .logo {
+  width: 30px;
+  height: 30px;
+}
+
+.VPHero .image-src {
+  max-width: 320px;
+  max-height: 320px;
+}
+
 /* Mermaid diagram styling */
 .mermaid,
 .vitepress-mermaid-renderer,

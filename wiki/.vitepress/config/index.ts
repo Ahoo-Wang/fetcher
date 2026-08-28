@@ -15,7 +15,7 @@ export default defineConfig({
     /localhost/,
   ],
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+    ['link', { rel: 'icon', type: 'image/png', href: '/fetcher-logo.png' }],
     ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-D1JQFY3LP2' }],
     ['script', {}, 'window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-D1JQFY3LP2");'],
   ],

@@ -7,6 +7,9 @@ hero:
   name: Fetcher
   text: 从请求到界面的类型安全 HTTP 工作流
   tagline: 从轻量的 Fetch 客户端开始，在应用需要时再加入装饰器、流式处理、代码生成、React Hooks、认证或数据查看器。
+  image:
+    src: /fetcher-logo.png
+    alt: Fetcher 请求与响应标志
   actions:
     - theme: brand
       text: 发送第一个请求

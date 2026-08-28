@@ -7,6 +7,9 @@ hero:
   name: Fetcher
   text: Typed HTTP workflows, from request to UI
   tagline: Start with a small Fetch-based client, then add decorators, streaming, generated clients, React hooks, authentication, or data viewers when your application needs them.
+  image:
+    src: /fetcher-logo.png
+    alt: Fetcher request and response logo
   actions:
     - theme: brand
       text: Send your first request
