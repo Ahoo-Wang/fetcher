@@ -118,20 +118,32 @@ const completion: ChatResponse = await chat.completions({
 ([`completionStreamResultExtractor.ts:39`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L39))。
 
 ```ts
-if (shouldStream) {
-  const stream = await chat.completions({
-    model: 'example-chat-model',
-    messages: [{ role: 'user', content: '请流式输出。' }],
-    stream: true as const,
-  });
-  // stream 是 JsonServerSentEventStream<ChatResponse>
-} else {
-  const response = await chat.completions({
-    model: 'example-chat-model',
-    messages: [{ role: 'user', content: '请一次返回。' }],
-    stream: false as const,
-  });
-  // response 是 ChatResponse
+import {
+  type ChatClient,
+  type ChatResponse,
+} from '@ahoo-wang/fetcher-openai';
+import type { JsonServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
+
+async function complete(
+  chat: ChatClient,
+  shouldStream: boolean,
+): Promise<void> {
+  if (shouldStream) {
+    const stream: JsonServerSentEventStream<ChatResponse> =
+      await chat.completions({
+        model: 'example-chat-model',
+        messages: [{ role: 'user', content: '请流式输出。' }],
+        stream: true as const,
+      });
+    void stream;
+  } else {
+    const response: ChatResponse = await chat.completions({
+      model: 'example-chat-model',
+      messages: [{ role: 'user', content: '请一次返回。' }],
+      stream: false as const,
+    });
+    void response;
+  }
 }
 ```
 
