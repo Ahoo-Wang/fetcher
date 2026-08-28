@@ -432,11 +432,10 @@ aggregateStream<
 ): Promise<ReadableStream<JsonServerSentEvent<Row>>>;
 ```
 
-`QueryApi` makes these two members optional to remain compatible with existing
-implementations. `SnapshotQueryClient` and `EventStreamQueryClient` implement
-both as required methods. They submit to `snapshot/aggregation` and
-`event/aggregation`, respectively; `aggregateStream` requests an SSE result
-stream.
+`QueryApi` requires both methods, so custom implementations must provide them.
+`SnapshotQueryClient` and `EventStreamQueryClient` submit to
+`snapshot/aggregation` and `event/aggregation`, respectively;
+`aggregateStream` requests an SSE result stream.
 
 ### ID-Based Lookup Methods
 
