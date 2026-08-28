@@ -69,12 +69,14 @@ function TagInputDemo() {
 
 function RemoteSelectDemo({
   scenario,
+  waitForSearch = wait,
 }: {
   scenario: 'success' | 'empty' | 'error';
+  waitForSearch?: () => Promise<void>;
 }) {
   const [value, setValue] = useState<string>();
   const search = async (term: string): Promise<UserOption[]> => {
-    await wait();
+    await waitForSearch();
     if (scenario === 'error') throw new Error('Unable to load options');
     if (scenario === 'empty') return [];
     return userOptions.filter(option =>
@@ -133,16 +135,33 @@ export const Tags: Story = {
   },
 };
 
+let releaseRemoteSearch: (() => void) | undefined;
+
 export const RemoteLoadingAndSuccess: Story = {
-  render: () => <RemoteSelectDemo scenario="success" />,
+  render: () => (
+    <RemoteSelectDemo
+      scenario="success"
+      waitForSearch={() =>
+        new Promise<void>(resolve => {
+          releaseRemoteSearch = resolve;
+        })
+      }
+    />
+  ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const page = within(canvasElement.ownerDocument.body);
     const input = canvas.getByRole('combobox', { name: 'User search' });
     await userEvent.click(input);
     await userEvent.type(input, 'Ada');
-    await expect(await page.findByText('数据加载中...')).toBeVisible();
-    await userEvent.click(await page.findByText('Ada'));
+    const dropdown = canvasElement.ownerDocument.querySelector<HTMLElement>(
+      '.ant-select-dropdown:not(.ant-select-dropdown-hidden)',
+    );
+    await expect(dropdown).not.toBeNull();
+    const options = within(dropdown!);
+    await expect(await options.findByText('数据加载中...')).toBeVisible();
+    releaseRemoteSearch?.();
+    releaseRemoteSearch = undefined;
+    await userEvent.click(await options.findByText('Ada'));
     await expect(await canvas.findByText('Selected: Ada')).toBeVisible();
   },
 };
