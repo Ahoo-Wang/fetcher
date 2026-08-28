@@ -87,7 +87,7 @@ export const fixtureFields: FieldDefinition[] = [
     sorter: true,
   },
   { name: 'role', label: 'Role', type: 'tag', primaryKey: false },
-  { name: 'active', label: 'Active', type: 'tag', primaryKey: false },
+  { name: 'active', label: 'Active', type: 'text', primaryKey: false },
   {
     name: 'balance',
     label: 'Balance',
