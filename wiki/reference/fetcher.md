@@ -24,6 +24,17 @@ pnpm add @ahoo-wang/fetcher
 | Inspect the completed pipeline | `exchange(request, options?)` | `FetchExchange` |
 | Share a named client | `NamedFetcher` / `fetcherRegistrar` | `Fetcher` |
 
+### HTTP method matrix
+
+| Methods | Request body | Default result | Explicit result |
+| --- | --- | --- | --- |
+| `get`, `head`, `options`, `trace` | Not accepted: their request type omits `body`. | `Response` | Pass `options.resultExtractor` to return its `R`. |
+| `post`, `put`, `patch`, `delete` | Accepted: their request type omits only `method`. | `Response` | Pass `options.resultExtractor` to return its `R`. |
+
+Every shortcut supplies its own HTTP method and returns `Promise<R>`. The
+default `R` is `Response`; a generic argument alone does not parse the body, so
+pair it with an explicit extractor such as `ResultExtractors.Json`.
+
 ## Client configuration
 
 ```ts
@@ -109,11 +120,18 @@ recover by clearing `exchange.error`; response interceptors are not rerun.
 
 | Failure | What to inspect |
 | --- | --- |
-| Non-2xx rejects | `HttpStatusValidationError`; use `validateStatus` or `IGNORE_VALIDATE_STATUS` only for an expected status. |
-| Timeout rejects | `FetchTimeoutError`; the request timeout is in `error.request.timeout`. |
-| Network/interceptor failure | `ExchangeError.exchange.error` keeps the original cause and exchange. |
+| Non-2xx rejects | Top-level `ExchangeError`; inspect `error.exchange.error` or `error.cause` for `HttpStatusValidationError`. Use `validateStatus` or `IGNORE_VALIDATE_STATUS` only for an expected status. |
+| Timeout rejects | Top-level `ExchangeError`; inspect `error.exchange.error` or `error.cause` for `FetchTimeoutError` and its `request.timeout`. |
+| Network/interceptor failure | Top-level `ExchangeError.exchange.error` and `ExchangeError.cause` retain the original error. |
 | JSON parse failure | The selected extractor reads the response body; inspect `Content-Type` and server payload. |
 | URL still contains `{id}` | Check `urlParams.path` and the configured template style. |
+
+The public hierarchy is `FetcherError` → `ExchangeError` →
+`HttpStatusValidationError`; `FetchTimeoutError` extends `FetcherError`
+directly. `InterceptorManager.exchange()` wraps an unhandled pipeline error in
+the top-level `ExchangeError`, so catch that first and narrow
+`error.exchange.error` or `error.cause` for the original status or timeout
+type.
 
 ## Timeout and caller cancellation
 
@@ -134,8 +152,9 @@ await pending;
 
 ## Source reference
 
-- [Public exports](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/index.ts#L14)
-- [`Fetcher` defaults, request merging, and verb signatures](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L86)
-- [`FetchRequestInit`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)
-- [Pipeline ordering and recovery](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)
-- [Timeout and cancellation behavior](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)
+- [packages/fetcher/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/index.ts#L14)
+- [packages/fetcher/src/fetcher.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L86)
+- [packages/fetcher/src/fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)
+- [packages/fetcher/src/fetcherError.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L37)
+- [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)
+- [packages/fetcher/src/timeout.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)

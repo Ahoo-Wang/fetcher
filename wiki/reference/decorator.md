@@ -143,9 +143,9 @@ when it intentionally changes an inherited endpoint's request contract.
 
 ## Source reference
 
-- [Public exports](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/index.ts#L1)
-- [`ApiMetadata`, binding, and executor cache](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L40)
-- [Endpoint decorators](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L21)
-- [Parameter decorators and `ParameterRequest`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199)
-- [Merge and argument resolution](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L279)
-- [Lifecycle execution and return behavior](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L114)
+- [packages/decorator/src/index.ts:1](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/index.ts#L1)
+- [packages/decorator/src/apiDecorator.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L40)
+- [packages/decorator/src/endpointDecorator.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L21)
+- [packages/decorator/src/parameterDecorator.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199)
+- [packages/decorator/src/functionMetadata.ts:279](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L279)
+- [packages/decorator/src/requestExecutor.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L114)

@@ -120,9 +120,9 @@ const user = await service.find('u-42', 'team', 'req-9', controller);
 
 ## 源码参考
 
-- [公共导出](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/index.ts#L1)
-- [`ApiMetadata`、绑定与 Executor 缓存](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L40)
-- [Endpoint Decorator](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L21)
-- [Parameter Decorator 与 `ParameterRequest`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199)
-- [合并与参数解析](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L279)
-- [生命周期执行与返回行为](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L114)
+- [packages/decorator/src/index.ts:1](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/index.ts#L1)
+- [packages/decorator/src/apiDecorator.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L40)
+- [packages/decorator/src/endpointDecorator.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L21)
+- [packages/decorator/src/parameterDecorator.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199)
+- [packages/decorator/src/functionMetadata.ts:279](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L279)
+- [packages/decorator/src/requestExecutor.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L114)

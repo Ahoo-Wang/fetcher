@@ -22,6 +22,15 @@ pnpm add @ahoo-wang/fetcher
 | 检查已完成的 Pipeline | `exchange(request, options?)` | `FetchExchange` |
 | 共享命名 Client | `NamedFetcher` / `fetcherRegistrar` | `Fetcher` |
 
+### HTTP 方法矩阵
+
+| 方法 | 请求 Body | 默认结果 | 显式结果 |
+| --- | --- | --- | --- |
+| `get`、`head`、`options`、`trace` | 不接受：请求类型省略 `body`。 | `Response` | 传入 `options.resultExtractor` 以返回其 `R`。 |
+| `post`、`put`、`patch`、`delete` | 接受：请求类型只省略 `method`。 | `Response` | 传入 `options.resultExtractor` 以返回其 `R`。 |
+
+每个快捷方法都会提供自己的 HTTP 方法并返回 `Promise<R>`。默认 `R` 为 `Response`；仅传入泛型参数不会解析 Body，须同时指定如 `ResultExtractors.Json` 的 Extractor。
+
 ## Client 配置
 
 ```ts
@@ -93,11 +102,17 @@ Query 的强制转换由 `URLSearchParams` 定义。重复 Query Key 请使用�
 
 | 失败 | 检查项 |
 | --- | --- |
-| 非 2xx 被拒绝 | `HttpStatusValidationError`；仅在状态确属预期时使用 `validateStatus` 或 `IGNORE_VALIDATE_STATUS`。 |
-| 超时被拒绝 | `FetchTimeoutError`；请求 Timeout 位于 `error.request.timeout`。 |
-| 网络/Interceptor 失败 | `ExchangeError.exchange.error` 保留原始原因与 Exchange。 |
+| 非 2xx 被拒绝 | 顶层为 `ExchangeError`；在 `error.exchange.error` 或 `error.cause` 中检查 `HttpStatusValidationError`。仅在状态确属预期时使用 `validateStatus` 或 `IGNORE_VALIDATE_STATUS`。 |
+| 超时被拒绝 | 顶层为 `ExchangeError`；在 `error.exchange.error` 或 `error.cause` 中检查 `FetchTimeoutError` 及其 `request.timeout`。 |
+| 网络/Interceptor 失败 | 顶层 `ExchangeError.exchange.error` 与 `ExchangeError.cause` 保留原始错误。 |
 | JSON 解析失败 | 选择的 Extractor 会读取响应 Body；检查 `Content-Type` 与服务端 Payload。 |
 | URL 仍含 `{id}` | 检查 `urlParams.path` 与模板风格配置。 |
+
+公开继承关系为 `FetcherError` → `ExchangeError` →
+`HttpStatusValidationError`；`FetchTimeoutError` 直接继承 `FetcherError`。
+`InterceptorManager.exchange()` 会把未处理的 Pipeline 错误包装为顶层
+`ExchangeError`，因此先捕获它，再在 `error.exchange.error` 或
+`error.cause` 中缩小原始状态或超时类型。
 
 ## 超时与调用方取消
 
@@ -115,8 +130,9 @@ await pending;
 
 ## 源码参考
 
-- [公共导出](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/index.ts#L14)
-- [`Fetcher` 默认值、请求合并与方法签名](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L86)
-- [`FetchRequestInit`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)
-- [Pipeline 顺序与恢复](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)
-- [超时与取消行为](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)
+- [packages/fetcher/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/index.ts#L14)
+- [packages/fetcher/src/fetcher.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L86)
+- [packages/fetcher/src/fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)
+- [packages/fetcher/src/fetcherError.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L37)
+- [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)
+- [packages/fetcher/src/timeout.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)
