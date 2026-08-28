@@ -109,7 +109,13 @@ export function installFetchFixture(): () => void {
     if (pathname === '/events') return eventStreamResponse(fixtureSseChunks);
 
     if (pathname === '/chat/completions') {
-      const body = (await request.json()) as { stream?: boolean };
+      const body = (await request.json()) as {
+        model?: string;
+        stream?: boolean;
+      };
+      if (body.model === 'fixture-error') {
+        return jsonResponse({ message: 'Fixture rate limit' }, 429);
+      }
       if (body.stream) return eventStreamResponse(fixtureSseChunks);
       return jsonResponse({
         id: 'chat-1',
