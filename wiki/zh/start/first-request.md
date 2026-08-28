@@ -86,6 +86,6 @@ try {
 ## 下一步
 
 - [选择包](./choose-packages.md)：查看可选能力。
-- [配置](../guide/configuration.md)：查看客户端和请求选项。
-- [Fetcher 核心](../architecture/fetcher-core.md)：理解拦截器管线。
+- [Fetcher 参考](../reference/fetcher.md)：查看客户端和请求选项。
+- [请求生命周期](../learn/request-lifecycle.md)：理解拦截器管线。
 - [Storybook](https://fetcher.ahoo.me/storybook/)：体验可交互请求行为。

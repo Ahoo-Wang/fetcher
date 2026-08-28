@@ -14,7 +14,7 @@ Fetcher 是一组围绕 HTTP 请求及其应用工作流构建的 TypeScript 包
 | 发送类型安全的 HTTP 请求       | [第一个请求](./first-request.md)                |
 | 确认运行环境和 peer dependency | [安装](./installation.md)                       |
 | 决定应用应该引入哪个包         | [选择包](./choose-packages.md)                  |
-| 理解请求处理管线               | [Fetcher 架构](../architecture/fetcher-core.md) |
+| 理解请求处理管线               | [请求生命周期](../learn/request-lifecycle.md)   |
 | 体验 React 和 Viewer 行为      | [Storybook](https://fetcher.ahoo.me/storybook/) |
 
 ## 最小可用配置

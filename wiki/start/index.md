@@ -9,13 +9,13 @@ Fetcher is a set of TypeScript packages for HTTP requests and the workflows buil
 
 ## Pick a path
 
-| Goal                                     | Start here                                              |
-| ---------------------------------------- | ------------------------------------------------------- |
-| Send a typed HTTP request                | [First Request](./first-request.md)                     |
-| Check runtime and peer dependencies      | [Installation](./installation.md)                       |
-| Decide which package belongs in your app | [Choose Packages](./choose-packages.md)                 |
-| Understand the request pipeline          | [Fetcher architecture](../architecture/fetcher-core.md) |
-| Try React and Viewer behavior            | [Storybook](https://fetcher.ahoo.me/storybook/)         |
+| Goal                                     | Start here                                         |
+| ---------------------------------------- | -------------------------------------------------- |
+| Send a typed HTTP request                | [First Request](./first-request.md)                |
+| Check runtime and peer dependencies      | [Installation](./installation.md)                  |
+| Decide which package belongs in your app | [Choose Packages](./choose-packages.md)            |
+| Understand the request pipeline          | [Request lifecycle](../learn/request-lifecycle.md) |
+| Try React and Viewer behavior            | [Storybook](https://fetcher.ahoo.me/storybook/)    |
 
 ## The shortest useful setup
 

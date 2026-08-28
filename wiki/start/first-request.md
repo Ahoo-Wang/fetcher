@@ -86,6 +86,6 @@ try {
 ## Next steps
 
 - [Choose Packages](./choose-packages.md) for optional capabilities.
-- [Configuration](../guide/configuration.md) for client and request options.
-- [Fetcher Core](../architecture/fetcher-core.md) for the interceptor pipeline.
+- [Fetcher reference](../reference/fetcher.md) for client and request options.
+- [Request lifecycle](../learn/request-lifecycle.md) for the interceptor pipeline.
 - [Storybook](https://fetcher.ahoo.me/storybook/) for interactive request behavior.
