@@ -66,6 +66,7 @@
     "antd": "catalog:",
     "eslint-plugin-storybook": "^10.5.10",
     "globals": "catalog:",
+    "immer": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "storybook": "^10.5.10",

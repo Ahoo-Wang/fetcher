@@ -89,6 +89,8 @@ export function installFetchFixture(): () => void {
       return jsonResponse(fixtureUsers);
     }
 
+    if (pathname === '/users/empty') return jsonResponse([]);
+
     if (pathname === '/users' && request.method === 'POST') {
       const body = (await request.json()) as Omit<FixtureUser, 'id'>;
       return jsonResponse({ id: 'u-new', ...body }, 201);

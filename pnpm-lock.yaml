@@ -215,6 +215,9 @@ importers:
       globals:
         specifier: 'catalog:'
         version: 17.11.0
+      immer:
+        specifier: 'catalog:'
+        version: 11.1.18
       react:
         specifier: 'catalog:'
         version: 19.2.8
