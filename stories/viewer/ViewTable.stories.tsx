@@ -157,5 +157,14 @@ export const ActionColumn: Story = {
     await expect(await canvas.findByText('Edited Ada')).toBeVisible();
   },
 };
-export const ColumnSettings: Story = { args: { scenario: 'settings' } };
+export const ColumnSettings: Story = {
+  args: { scenario: 'settings' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('img', { name: 'setting' }));
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await page.findByRole('checkbox', { name: 'Name' }));
+    await expect(await canvas.findByText('Columns: 6')).toBeVisible();
+  },
+};
 export const DenseRows: Story = { args: { scenario: 'small' } };

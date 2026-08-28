@@ -7,9 +7,12 @@ description: 安装 Fetcher Monorepo、理解包边界并遵循 TypeScript 工�
 
 ## 环境要求
 
-- Node.js 18.20.8 或更高版本
+- 本仓库的 Vite 8 与 Vitest 4 工具链要求 Node.js 20.19.0 或更高版本
 - 通过 Corepack 使用 pnpm 10.34.5
 - Git
+
+已发布 Fetcher 运行时包仍维持独立的 Node.js 18.20.8 下限；这里更高的版本是 Monorepo
+开发要求。
 
 ## 配置仓库
 

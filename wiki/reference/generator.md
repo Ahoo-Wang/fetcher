@@ -92,8 +92,10 @@ from process exit alone.
 ## Programmatic API and failures
 
 `new CodeGenerator(options).generate()` exposes the same pipeline to build
-tools. `GeneratorOptions` includes `inputPath`, `outputDir`,
-`tsConfigFilePath`, `configPath`, and a logger.
+tools. The constructor accepts an object with `inputPath`, `outputDir`,
+`tsConfigFilePath`, optional `configPath`, and a logger. The internal
+`GeneratorOptions` name is not re-exported from the package root, so consumers
+should rely on the constructor's inferred structural type rather than import it.
 
 Invalid input, an unreadable TypeScript config, or a model-generation failure
 rejects generation. A missing default `fetcher-generator.config.json` is

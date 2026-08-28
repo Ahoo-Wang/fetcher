@@ -69,6 +69,7 @@ export function TextFilter(props: FilterProps) {
         case Operator.NOT_IN: {
           return (
             <TagInput
+              aria-label={`${props.field.label} value`}
               value={filterState.value}
               onChange={filterState.setValue}
               {...props.value}
@@ -78,6 +79,7 @@ export function TextFilter(props: FilterProps) {
         default: {
           return (
             <Input
+              aria-label={`${props.field.label} value`}
               style={{ width: '100%' }}
               value={filterState.value}
               onChange={e => filterState.setValue(e.target.value)}

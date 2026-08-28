@@ -50,11 +50,7 @@ function FetcherViewerDemo({
   };
 
   return (
-    <section
-      className="story-stack"
-      aria-label="FetcherViewer workflow"
-      data-scenario={scenario}
-    >
+    <div className="story-stack" data-scenario={scenario}>
       {showRefMethods && (
         <div className="story-actions">
           <button
@@ -99,7 +95,7 @@ function FetcherViewerDemo({
           {output}
         </output>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -196,7 +192,7 @@ export const ImperativeMethods: Story = {
     const canvas = within(canvasElement);
     await expect(await canvas.findByText('Ada')).toBeVisible();
     await userEvent.click(canvas.getByRole('button', { name: 'Refresh data' }));
-    await expect(await canvas.findByText('Refresh requested')).toBeVisible();
+    await expect(await canvas.findByText('Ada (refreshed)')).toBeVisible();
     await userEvent.click(canvas.getByRole('button', { name: 'Read state' }));
     await expect(
       await canvas.findByText('Definition: users · View: all-users · Page: 1'),

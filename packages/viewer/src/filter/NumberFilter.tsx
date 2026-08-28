@@ -94,6 +94,7 @@ export function NumberFilter(props: FilterProps) {
         case Operator.NOT_IN: {
           return (
             <TagInput
+              aria-label={`${props.field.label} value`}
               value={filterState.value}
               serializer={NumberTagValueItemSerializer}
               onChange={e => filterState.setValue(e)}
@@ -102,7 +103,6 @@ export function NumberFilter(props: FilterProps) {
           );
         }
         case Operator.BETWEEN: {
-           
           const { placeholder, ...restValue } = props.value ?? {};
           return (
             <NumberRange
@@ -122,6 +122,7 @@ export function NumberFilter(props: FilterProps) {
             : filterState.value;
           return (
             <InputNumber<number>
+              aria-label={`${props.field.label} value`}
               value={value}
               defaultValue={defaultInputNumber}
               onChange={v => {

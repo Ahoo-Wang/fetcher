@@ -50,10 +50,14 @@ function RequestDemo({ scenario }: RequestDemoProps) {
         );
         setOutput(user.name);
       } else if (scenario === 'path-query') {
-        await api.get('/users/{id}', {
-          urlParams: { path: { id: 'u-ada' }, query: { include: 'team' } },
-        });
-        setOutput('GET https://api.example.test/users/u-ada?include=team');
+        const result = await api.get<{ requestUrl: string }>(
+          '/users/{id}',
+          {
+            urlParams: { path: { id: 'u-ada' }, query: { include: 'team' } },
+          },
+          { resultExtractor: ResultExtractors.Json },
+        );
+        setOutput(`GET ${result.requestUrl}`);
       } else if (scenario === 'post') {
         const user = await api.post<{ id: string; name: string }>(
           '/users',

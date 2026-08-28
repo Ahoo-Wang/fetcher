@@ -21,6 +21,11 @@ import { installFetchFixture } from '../fixtures/http';
 
 type Scenario = 'success' | 'empty' | 'error' | 'refetch' | 'debounce';
 
+interface SearchResult {
+  query: string;
+  users: FixtureUser[];
+}
+
 function FetcherHookDemo({ scenario }: { scenario: Scenario }) {
   const fetcher = useMemo(
     () => new Fetcher({ baseURL: 'https://api.example.test' }),
@@ -32,7 +37,7 @@ function FetcherHookDemo({ scenario }: { scenario: Scenario }) {
     resultExtractor: ResultExtractors.Json,
     onSuccess: () => setLoadCount(count => count + 1),
   });
-  const debounced = useDebouncedFetcher<FixtureUser[]>({
+  const debounced = useDebouncedFetcher<SearchResult>({
     fetcher,
     resultExtractor: ResultExtractors.Json,
     debounce: { delay: 20 },
@@ -40,9 +45,9 @@ function FetcherHookDemo({ scenario }: { scenario: Scenario }) {
 
   const load = () => {
     if (scenario === 'debounce') {
-      debounced.run({ url: '/users?query=A' });
-      debounced.run({ url: '/users?query=Ad' });
-      debounced.run({ url: '/users?query=Ada' });
+      debounced.run({ url: '/users/search?query=A' });
+      debounced.run({ url: '/users/search?query=Ad' });
+      debounced.run({ url: '/users/search?query=Ada' });
       return;
     }
     const url =
@@ -57,7 +62,7 @@ function FetcherHookDemo({ scenario }: { scenario: Scenario }) {
   let output = request.status;
   if (scenario === 'debounce') {
     output = debounced.result
-      ? `Debounced · ${debounced.result.map(user => user.name).join(', ')}`
+      ? `Debounced · ${debounced.result.users.map(user => user.name).join(', ')} · query ${debounced.result.query}`
       : debounced.status;
   } else if (request.error) {
     output = `Error · ${request.error.name}`;
@@ -128,5 +133,5 @@ export const ManualRefetch: Story = {
 export const DebouncedRequest: Story = {
   args: { scenario: 'debounce' },
   play: ({ canvasElement }) =>
-    loadAndExpect(canvasElement, 'Debounced · Ada, Lin'),
+    loadAndExpect(canvasElement, 'Debounced · Ada · query Ada'),
 };

@@ -12,7 +12,7 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { JsonServerSentEvent } from '@ahoo-wang/fetcher-eventstream';
+import { Fetcher } from '@ahoo-wang/fetcher';
 import {
   useCountQuery,
   useListQuery,
@@ -25,40 +25,46 @@ import {
   listQuery,
   pagedQuery,
   singleQuery,
+  SnapshotQueryClient,
 } from '@ahoo-wang/fetcher-wow';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
+import { installFetchFixture } from '../fixtures/http';
 import type { FixtureViewerUser } from '../fixtures/viewer';
-import { fixturePagedUsers, fixtureViewerUsers } from '../fixtures/viewer';
 
 type Scenario = 'single' | 'list' | 'paged' | 'count' | 'stream';
 
-function fixtureStream(): ReadableStream<
-  JsonServerSentEvent<FixtureViewerUser[]>
-> {
-  return new ReadableStream({
-    start(controller) {
-      controller.enqueue({
-        id: 'stream-1',
-        event: 'message',
-        data: fixtureViewerUsers,
-      });
-      controller.close();
-    },
-  });
-}
-
 function WowQueryDemo({ scenario }: { scenario: Scenario }) {
   const activeFilter = filter.eq('active', true);
+  const fetcher = useMemo(
+    () => new Fetcher({ baseURL: 'https://api.example.test' }),
+    [],
+  );
+  const client = useMemo(
+    () =>
+      new SnapshotQueryClient<FixtureViewerUser>({
+        fetcher,
+        basePath: '/users',
+      }),
+    [fetcher],
+  );
+  const streamClient = useMemo(
+    () =>
+      new SnapshotQueryClient<FixtureViewerUser[]>({
+        fetcher,
+        basePath: '/users',
+      }),
+    [fetcher],
+  );
   const single = useSingleQuery<FixtureViewerUser>({
     initialQuery: singleQuery({ filter: activeFilter }),
     autoExecute: false,
-    execute: async () => fixtureViewerUsers[0],
+    execute: query => client.singleState(query),
   });
   const list = useListQuery<FixtureViewerUser>({
     initialQuery: listQuery({ filter: activeFilter, limit: 20 }),
     autoExecute: false,
-    execute: async () => fixtureViewerUsers,
+    execute: query => client.listState(query),
   });
   const paged = usePagedQuery<FixtureViewerUser>({
     initialQuery: pagedQuery({
@@ -66,17 +72,17 @@ function WowQueryDemo({ scenario }: { scenario: Scenario }) {
       pagination: { index: 1, size: 10 },
     }),
     autoExecute: false,
-    execute: async () => fixturePagedUsers,
+    execute: query => client.pagedState(query),
   });
   const count = useCountQuery({
     initialQuery: activeFilter,
     autoExecute: false,
-    execute: async () => fixtureViewerUsers.length,
+    execute: query => client.count(query),
   });
   const stream = useListStreamQuery<FixtureViewerUser[]>({
     initialQuery: listQuery({ filter: activeFilter, limit: 0 }),
     autoExecute: false,
-    execute: async () => fixtureStream(),
+    execute: query => streamClient.listStateStream(query),
   });
   const [streamOutput, setStreamOutput] = useState('idle');
 
@@ -127,6 +133,7 @@ function WowQueryDemo({ scenario }: { scenario: Scenario }) {
 const meta = {
   title: 'React Hooks/Wow Queries',
   component: WowQueryDemo,
+  beforeEach: installFetchFixture,
   args: { scenario: 'single' },
   argTypes: { scenario: { control: 'radio' } },
 } satisfies Meta<typeof WowQueryDemo>;

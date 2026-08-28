@@ -84,9 +84,10 @@ Generator 拥有输出目录。把手写 Adapter 放在目录外，让重新生�
 
 ## 程序化 API 与失败
 
-`new CodeGenerator(options).generate()` 向构建工具暴露同一流水线。
-`GeneratorOptions` 包含 `inputPath`、`outputDir`、`tsConfigFilePath`、
-`configPath` 和 Logger。
+`new CodeGenerator(options).generate()` 向构建工具暴露同一流水线。构造参数对象包含
+`inputPath`、`outputDir`、`tsConfigFilePath`、可选 `configPath` 和 Logger。内部的
+`GeneratorOptions` 名称没有从包根导出；消费者应依赖构造函数推断的结构类型，而不是
+导入该名称。
 
 输入无效、TypeScript 配置不可读或模型生成失败会拒绝生成。默认
 `fetcher-generator.config.json` 不存在时只记录日志并以 `{}` 继续；仅当项目确实不需要

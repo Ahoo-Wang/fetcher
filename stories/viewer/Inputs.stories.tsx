@@ -75,13 +75,22 @@ function RemoteSelectDemo({
   waitForSearch?: () => Promise<void>;
 }) {
   const [value, setValue] = useState<string>();
+  const [searchStatus, setSearchStatus] = useState('idle');
   const search = async (term: string): Promise<UserOption[]> => {
+    setSearchStatus('loading');
     await waitForSearch();
-    if (scenario === 'error') throw new Error('Unable to load options');
-    if (scenario === 'empty') return [];
-    return userOptions.filter(option =>
-      option.label.toLowerCase().includes(term.toLowerCase()),
-    );
+    if (scenario === 'error') {
+      setSearchStatus('error');
+      throw new Error('Unable to load options');
+    }
+    const options =
+      scenario === 'empty'
+        ? []
+        : userOptions.filter(option =>
+            option.label.toLowerCase().includes(term.toLowerCase()),
+          );
+    setSearchStatus(options.length === 0 ? 'empty' : 'success');
+    return options;
   };
   return (
     <section className="story-stack" aria-label="Remote select">
@@ -97,9 +106,7 @@ function RemoteSelectDemo({
       <output className="story-output" aria-live="polite">
         {value
           ? `Selected: ${userOptions.find(option => option.value === value)?.label}`
-          : scenario === 'error'
-            ? 'Errors use the empty-state presentation'
-            : 'No selection'}
+          : `Search: ${searchStatus}`}
       </output>
     </section>
   );
@@ -168,12 +175,23 @@ export const RemoteLoadingAndSuccess: Story = {
 
 export const RemoteEmpty: Story = {
   render: () => <RemoteSelectDemo scenario="empty" />,
+  play: ({ canvasElement }) => searchAndExpect(canvasElement, 'Search: empty'),
 };
 
 export const RemoteError: Story = {
   render: () => <RemoteSelectDemo scenario="error" />,
+  play: ({ canvasElement }) => searchAndExpect(canvasElement, 'Search: error'),
 };
 
 export const FullscreenDisabled: Story = {
   render: () => <Fullscreen disabled>Fullscreen unavailable</Fullscreen>,
 };
+
+async function searchAndExpect(canvasElement: HTMLElement, text: string) {
+  const canvas = within(canvasElement);
+  const input = canvas.getByRole('combobox', { name: 'User search' });
+  await userEvent.click(input);
+  await userEvent.type(input, 'Nobody');
+  await expect(await canvas.findByText(text)).toBeVisible();
+  await userEvent.tab();
+}

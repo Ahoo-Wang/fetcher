@@ -7,9 +7,12 @@ description: Install the Fetcher monorepo, understand package boundaries, and fo
 
 ## Requirements
 
-- Node.js 18.20.8 or newer
+- Node.js 20.19.0 or newer for this repository's Vite 8 and Vitest 4 toolchain
 - pnpm 10.34.5 through Corepack
 - Git
+
+Published Fetcher runtime packages keep their separate Node.js 18.20.8 floor;
+the higher version here is the monorepo development requirement.
 
 ## Set up the repository
 

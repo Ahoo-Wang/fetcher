@@ -44,7 +44,7 @@ async function runScenario(scenario: Scenario): Promise<string> {
     }
 
     const stream = await openai.chat.completions({
-      model: 'fixture-model',
+      model: scenario === 'cancel' ? 'fixture-cancel' : 'fixture-model',
       messages: [{ role: 'user', content: 'Stream locally' }],
       stream: true,
     });
@@ -53,7 +53,8 @@ async function runScenario(scenario: Scenario): Promise<string> {
       const reader = stream.getReader();
       await reader.read();
       await reader.cancel();
-      return 'Stream cancelled';
+      await reader.closed;
+      return 'Reader cancelled';
     }
 
     let output = '';
@@ -113,9 +114,9 @@ export const TokenStream: Story = {
   play: ({ canvasElement }) => chatAndExpect(canvasElement, 'Hello Fetcher'),
 };
 
-export const Abort: Story = {
+export const ReaderCancellation: Story = {
   args: { scenario: 'cancel' },
-  play: ({ canvasElement }) => chatAndExpect(canvasElement, 'Stream cancelled'),
+  play: ({ canvasElement }) => chatAndExpect(canvasElement, 'Reader cancelled'),
 };
 
 export const ApiError: Story = {

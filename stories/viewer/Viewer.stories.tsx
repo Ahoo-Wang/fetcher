@@ -33,15 +33,15 @@ function ViewerDemo({ scenario }: { scenario: Scenario }) {
 
   if (scenario === 'error' && !retrySucceeded) {
     return (
-      <section className="story-stack" aria-label="Viewer request error">
+      <div className="story-stack">
         <div role="alert">{fixtureViewerError.message}</div>
         <button onClick={() => setRetrySucceeded(true)}>Retry</button>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section className="story-stack" aria-label="Viewer workflow">
+    <div className="story-stack">
       <Viewer
         defaultViews={fixtureViews}
         defaultView={fixtureDefaultView}
@@ -99,7 +99,7 @@ function ViewerDemo({ scenario }: { scenario: Scenario }) {
       <output className="story-output" aria-live="polite">
         {output}
       </output>
-    </section>
+    </div>
   );
 }
 

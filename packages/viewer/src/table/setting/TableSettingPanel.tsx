@@ -12,11 +12,7 @@
  */
 
 import type { RefAttributes } from 'react';
-import React, {
-  useState,
-  useCallback,
-  useImperativeHandle,
-} from 'react';
+import React, { useState, useCallback, useImperativeHandle } from 'react';
 import { TableFieldItem } from './TableFieldItem';
 import styles from './TableSettingPanel.module.css';
 import { t } from './tableLocale';
@@ -222,13 +218,6 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     onChange?.(newColumns);
   };
 
-  const handleColumnKeyDown = (e: React.KeyboardEvent, columnIndex: number) => {
-    if (e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault();
-      handleVisibilityChange(columnIndex, !localColumns[columnIndex]?.hidden);
-    }
-  };
-
   /**
    * Renders a draggable column item for fixed or visible columns.
    * These items can be reordered via drag-and-drop and have visibility toggles.
@@ -253,14 +242,10 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
         className={`${styles.item} ${dragState?.index === column.index ? styles.dragging : ''}`}
         key={columnDefinition.name}
         draggable={!columnDefinition.primaryKey} // Primary key columns cannot be reordered
-        role="listitem"
-        tabIndex={0}
-        aria-label={columnDefinition.label}
         onDragStart={e => handleDragStart(e, group, column.index)}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
         onDrop={e => handleDrop(e, group, column.index)}
-        onKeyDown={e => handleColumnKeyDown(e, column.index)}
       >
         <TableFieldItem
           columnDefinition={columnDefinition}
@@ -289,13 +274,7 @@ export function TableSettingPanel(props: TableSettingPanelProps) {
     }
 
     return (
-      <div
-        className={styles.item}
-        key={columnDefinition.name}
-        role="listitem"
-        tabIndex={0}
-        aria-label={columnDefinition.label}
-      >
+      <div className={styles.item} key={columnDefinition.name}>
         <TableFieldItem
           columnDefinition={columnDefinition}
           fixed={column.fixed || false}

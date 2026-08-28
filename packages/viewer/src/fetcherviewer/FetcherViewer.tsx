@@ -300,7 +300,7 @@ export function FetcherViewer<RecordType = any>({
 
   if (definitionError) {
     return (
-      <div style={{ padding: 24, color: '#ff4d4f' }}>
+      <div style={{ padding: 24, color: '#a8071a' }}>
         加载视图定义失败: {definitionError.message}
       </div>
     );

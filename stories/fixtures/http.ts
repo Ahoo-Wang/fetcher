@@ -48,13 +48,16 @@ function jsonResponse(value: unknown, status = 200): Response {
   });
 }
 
-function eventStreamResponse(chunks: readonly string[]): Response {
+function eventStreamResponse(
+  chunks: readonly string[],
+  close = true,
+): Response {
   const encoder = new TextEncoder();
   return new Response(
     new ReadableStream<Uint8Array>({
       start(controller) {
         for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
-        controller.close();
+        if (close) controller.close();
       },
     }),
     { headers: { 'Content-Type': 'text/event-stream' } },
@@ -86,6 +89,7 @@ function toRequest(input: RequestInfo | URL, init?: RequestInit): Request {
 
 function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
   const originalFetch = globalThis.fetch;
+  let pagedRequestCount = 0;
 
   globalThis.fetch = async (input, init) => {
     const request = toRequest(input, init);
@@ -94,6 +98,16 @@ function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
 
     if (pathname === '/users' && request.method === 'GET') {
       return jsonResponse(fixtureUsers);
+    }
+
+    if (pathname === '/users/search' && request.method === 'GET') {
+      const query = url.searchParams.get('query') ?? '';
+      return jsonResponse({
+        query,
+        users: fixtureUsers.filter(user =>
+          user.name.toLowerCase().includes(query.toLowerCase()),
+        ),
+      });
     }
 
     if (pathname === '/users/empty') return jsonResponse([]);
@@ -105,6 +119,9 @@ function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
 
     const userMatch = pathname.match(/^\/users\/([^/]+)$/);
     if (userMatch && !['count', 'paged'].includes(userMatch[1])) {
+      if (url.searchParams.has('include')) {
+        return jsonResponse({ requestUrl: url.href });
+      }
       const user = fixtureUsers.find(item => item.id === userMatch[1]);
       return user
         ? jsonResponse(user)
@@ -124,6 +141,9 @@ function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
       };
       if (body.model === 'fixture-error') {
         return jsonResponse({ message: 'Fixture rate limit' }, 429);
+      }
+      if (body.model === 'fixture-cancel') {
+        return eventStreamResponse([fixtureSseChunks[0]], false);
       }
       if (body.stream) return eventStreamResponse(fixtureSseChunks);
       return jsonResponse({
@@ -152,7 +172,33 @@ function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
     if (pathname === '/viewer/view/snapshot/list/state') {
       return jsonResponse(viewerScenario === 'empty-views' ? [] : fixtureViews);
     }
-    if (pathname === '/users/paged') return jsonResponse(fixturePagedUsers);
+    if (pathname === '/users/snapshot/single/state') {
+      return jsonResponse(fixturePagedUsers.list[0]);
+    }
+    if (pathname === '/users/snapshot/list/state') {
+      if (request.headers.get('Accept')?.includes('text/event-stream')) {
+        return eventStreamResponse([
+          `data: ${JSON.stringify(fixturePagedUsers.list)}\n\n`,
+        ]);
+      }
+      return jsonResponse(fixturePagedUsers.list);
+    }
+    if (pathname === '/users/snapshot/paged/state') {
+      return jsonResponse(fixturePagedUsers);
+    }
+    if (pathname === '/users/snapshot/count') {
+      return jsonResponse(fixturePagedUsers.total);
+    }
+    if (pathname === '/users/paged') {
+      pagedRequestCount += 1;
+      if (pagedRequestCount === 1) return jsonResponse(fixturePagedUsers);
+      return jsonResponse({
+        ...fixturePagedUsers,
+        list: fixturePagedUsers.list.map((user, index) =>
+          index === 0 ? { ...user, name: 'Ada (refreshed)' } : user,
+        ),
+      });
+    }
     if (pathname === '/users/count') {
       return new Response(String(fixturePagedUsers.total), {
         headers: { 'Content-Type': 'text/plain' },

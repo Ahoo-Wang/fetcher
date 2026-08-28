@@ -102,7 +102,9 @@ Structured Clone 或 JSON 约束；函数、DOM Node 和存活的类实例都不
 
 - 一个 Handler 失败时会记录错误，但不会阻止其余 Handler 运行。
 - `ParallelTypedEventBus` 不提供确定的完成顺序。
-- `destroy()` 释放 Bus 拥有的 Handler 与 Messenger 资源。
+- `SerialTypedEventBus` 与 `ParallelTypedEventBus` 在 `destroy()` 时清除自己的 Handler。
+- `EventBus.destroy()` 销毁所有惰性创建的子 Bus，然后清空 Registry。
+- `BroadcastTypedEventBus.destroy()` 只关闭 Messenger；调用方拥有 Delegate 时应另行销毁。
 - 组件级订阅应在同一生命周期中配对注册和移除。
 
 一个调用方需要一个结果时，使用返回值或直接函数调用。Event Bus 用于 Fan-out 和解耦

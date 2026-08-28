@@ -13,6 +13,7 @@
 
 import type { CellProps } from './types';
 import { Empty, Image, Badge } from 'antd';
+import type { ImageProps } from 'antd';
 import type { PreviewGroupProps } from 'antd/es/image/PreviewGroup';
 
 /**
@@ -70,7 +71,7 @@ export const IMAGE_GROUP_CELL_TYPE: string = 'image-group';
 export interface ImageGroupCellProps<RecordType = any> extends CellProps<
   string[],
   RecordType,
-  PreviewGroupProps
+  PreviewGroupProps & Pick<ImageProps, 'alt'>
 > {}
 
 /**
@@ -155,7 +156,11 @@ export function ImageGroupCell<RecordType = any>(
   }
   const hasMultipleImages = data.value.length > 1;
   const mainImageElement = (
-    <Image src={data.value[0]} {...(attributes as any)} />
+    <Image
+      src={data.value[0]}
+      alt={attributes.alt ?? 'Preview image'}
+      {...(attributes as any)}
+    />
   );
 
   return (

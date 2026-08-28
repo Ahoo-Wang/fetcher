@@ -185,10 +185,10 @@ export function DateTimeFilter(props: FilterProps) {
     valueInputRender: (filterState: UseFilterStateReturn) => {
       switch (filterState.operator) {
         case Operator.BETWEEN: {
-           
           const { placeholder, ...rangResetProps } = props.value || {};
           return (
             <DatePicker.RangePicker
+              aria-label={`${props.field.label} value`}
               value={filterState.value}
               onChange={filterState.setValue}
               {...rangResetProps}
@@ -209,6 +209,7 @@ export function DateTimeFilter(props: FilterProps) {
         case Operator.EARLIER_DAYS: {
           return (
             <InputNumber
+              aria-label={`${props.field.label} value`}
               value={filterState.value}
               min={1}
               onChange={filterState.setValue}
@@ -219,6 +220,7 @@ export function DateTimeFilter(props: FilterProps) {
         case Operator.BEFORE_TODAY: {
           return (
             <DatePicker
+              aria-label={`${props.field.label} value`}
               picker={'time'}
               value={filterState.value}
               onChange={filterState.setValue}
@@ -230,6 +232,7 @@ export function DateTimeFilter(props: FilterProps) {
         default: {
           return (
             <DatePicker
+              aria-label={`${props.field.label} value`}
               value={filterState.value}
               picker={'date'}
               showNow={false}

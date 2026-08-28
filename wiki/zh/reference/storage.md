@@ -56,41 +56,42 @@ preferences.destroy();
 
 ## 方法契约
 
-| 方法                   | 结果     | 副作用                           |
-| ---------------------- | -------- | -------------------------------- |
-| `get()`                | `T       | null`                            | 读取并缓存反序列化值 |
-| `set(value)`           | `void`   | 序列化、写入、更新缓存并发布变化 |
-| `remove()`             | `void`   | 删除 Key、清除缓存并发布变化     |
-| `addListener(handler)` | 移除函数 | 订阅类型化本地变化               |
-| `destroy()`            | `void`   | 释放监听器与自身拥有的事件资源   |
+| 方法                   | 结果                       | 副作用                               |
+| ---------------------- | -------------------------- | ------------------------------------ |
+| `get()`                | <code>T &#124; null</code> | 读取并缓存反序列化值                 |
+| `set(value)`           | `void`                     | 序列化、写入、更新缓存并发布变化     |
+| `remove()`             | `void`                     | 删除 Key、清除缓存并发布变化         |
+| `addListener(handler)` | 移除函数                   | 订阅类型化本地变化                   |
+| `destroy()`            | `void`                     | 只移除 KeyStorage 的内部缓存 Handler |
 
-`StorageEvent<T>` 包含 Key、`oldValue` 和 `newValue`。把 `null` 视为缺失；如果删除
-必须可区分，就不要让它同时表示一个领域值。
+`StorageEvent<T>` 只包含 `oldValue` 和 `newValue`；Key 已由 `KeyStorage` 实例持有。
+把 `null` 视为缺失；如果删除必须可区分，就不要让它同时表示一个领域值。
 
 ## 存储与序列化器
 
-`getStorage()` 在可用时返回 `localStorage`，否则返回 `InMemoryStorage`。如果持久化
-范围属于应用契约，应显式传入 storage。
+只要 `window` 存在，`getStorage()` 就返回 `window.localStorage`；仅在非浏览器环境返回
+`InMemoryStorage`。如果持久化范围或受限浏览器行为属于应用契约，应显式传入 Storage。
 
 结构化值使用 `JsonSerializer` / `jsonSerializer`。仅当存储实现的值类型已经与 `T`
 一致时，才使用 `IdentitySerializer` 或 `typedIdentitySerializer<T>()`。
 
 ### 运行时选择
 
-| 运行时                         | 默认 Storage      | 持久化范围          |
-| ------------------------------ | ----------------- | ------------------- |
-| 可访问 `localStorage` 的浏览器 | `localStorage`    | 同 Origin 跨 Reload |
-| SSR、测试或受限浏览器          | `InMemoryStorage` | 仅当前进程          |
+| 运行时             | 默认 Storage          | 持久化范围          |
+| ------------------ | --------------------- | ------------------- |
+| 浏览器             | `window.localStorage` | 同 Origin 跨 Reload |
+| SSR 或非浏览器测试 | `InMemoryStorage`     | 仅当前进程          |
 
-持久化是需求时显式传入 Storage。Fallback 只保证代码可以运行，不承诺数据持久。
-Serializer 失败会从 `get()` 或 `set()` 抛出；如果 Schema 变化无法安全读取旧格式，
-应给存储数据加版本。
+隐私限制或 Sandbox 中访问 `localStorage` 可能抛错；`getStorage()` 不捕获该错误，也不会
+自动降级。需要该策略时显式传入 `InMemoryStorage`。Serializer 失败会从 `get()` 或
+`set()` 抛出；如果 Schema 变化无法安全读取旧格式，应给存储数据加版本。
 
 ## 生命周期
 
-`addListener()` 返回移除函数。组件或服务销毁时，应同时调用监听移除函数和
-`destroy()`。默认事件总线只在当前进程内传递；多个浏览器标签页需要相互观察时，使用
-事件总线的跨标签页 messenger。
+`addListener()` 返回移除函数。先调用所有由调用方创建的 Remover，再调用 `destroy()`
+移除 KeyStorage 的内部缓存 Handler。`destroy()` 不移除其他 Listener，也不销毁调用方
+传入的 Event Bus。默认事件总线只在当前进程内传递；多个浏览器标签页需要相互观察时，
+使用事件总线的跨标签页 Messenger。
 
 ## 源码与 Agent 参考
 

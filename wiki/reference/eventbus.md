@@ -109,7 +109,9 @@ payloads.
 
 - A handler failure is logged and does not prevent remaining handlers from running.
 - `ParallelTypedEventBus` does not provide deterministic completion order.
-- `destroy()` releases handlers and messenger resources owned by the bus.
+- `SerialTypedEventBus` and `ParallelTypedEventBus` clear their own handlers on `destroy()`.
+- `EventBus.destroy()` destroys every lazily created child bus, then clears its registry.
+- `BroadcastTypedEventBus.destroy()` closes only its messenger; destroy the delegate separately when you own it.
 - Pair component-level registration and removal in the same lifecycle.
 
 Use a return value or direct function call when one caller needs one result.

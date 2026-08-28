@@ -38,7 +38,7 @@
   },
   "packageManager": "pnpm@10.34.5",
   "engines": {
-    "node": ">=18.20.8"
+    "node": ">=20.19.0"
   },
   "devDependencies": {
     "@ahoo-wang/fetcher": "workspace:*",

@@ -98,7 +98,10 @@ function CellGallery() {
                 data={data(fixtureAvatar)}
                 attributes={{ alt: 'Ada profile', width: 32, preview: false }}
               />{' '}
-              <ImageGroupCell data={data([fixtureAvatar, fixtureAvatar])} />
+              <ImageGroupCell
+                data={data([fixtureAvatar, fixtureAvatar])}
+                attributes={{ alt: 'Ada gallery' }}
+              />
             </td>
           </tr>
           <tr>
