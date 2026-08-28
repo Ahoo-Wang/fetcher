@@ -127,12 +127,12 @@ before destroying the wrapper.
 
 ## Source reference
 
-- [Public exports: index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/index.ts#L14)
-- [StorageEvent: keyStorage.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L23)
-- [KeyStorage options: keyStorage.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L47)
-- [KeyStorage lifecycle: keyStorage.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L80)
-- [Serializer contract: serializer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L19)
-- [JsonSerializer: serializer.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L38)
-- [IdentitySerializer: serializer.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L62)
-- [Runtime storage selection: env.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/env.ts#L29)
-- [In-memory implementation: inMemoryStorage.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/inMemoryStorage.ts#L14)
+- Public exports: [index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/index.ts#L14)
+- StorageEvent: [keyStorage.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L23)
+- KeyStorage options: [keyStorage.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L47)
+- KeyStorage lifecycle: [keyStorage.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L80)
+- Serializer contract: [serializer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L19)
+- JsonSerializer: [serializer.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L38)
+- IdentitySerializer: [serializer.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L62)
+- Runtime storage selection: [env.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/env.ts#L29)
+- In-memory implementation: [inMemoryStorage.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/inMemoryStorage.ts#L14)

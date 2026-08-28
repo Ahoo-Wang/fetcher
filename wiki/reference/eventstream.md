@@ -144,10 +144,10 @@ stream creation and the whole consuming loop inside the same error boundary.
 
 ## Source reference
 
-- [Public exports: index.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts#L63)
-- [EventStreamConvertError: eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)
-- [Response helper implementation: responses.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L154)
-- [Fetcher extractors: eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)
-- [SSE frame parser: serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)
-- [JSON transform: jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)
-- [Async iterable cancellation: readableStreamAsyncIterable.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L125)
+- Public exports: [index.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts#L63)
+- EventStreamConvertError: [eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)
+- Response helper implementation: [responses.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L154)
+- Fetcher extractors: [eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)
+- SSE frame parser: [serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)
+- JSON transform: [jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)
+- Async iterable cancellation: [readableStreamAsyncIterable.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L125)

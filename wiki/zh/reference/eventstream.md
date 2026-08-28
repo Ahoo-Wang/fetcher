@@ -136,10 +136,10 @@ for await (const event of events) {
 
 ## 源码参考
 
-- [公共导出：index.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts#L63)
-- [EventStreamConvertError：eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)
-- [Response 辅助 API 实现：responses.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L154)
-- [Fetcher Extractor：eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)
-- [SSE Frame Parser：serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)
-- [JSON Transform：jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)
-- [异步迭代取消：readableStreamAsyncIterable.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L125)
+- 公共导出：[index.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts#L63)
+- EventStreamConvertError：[eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)
+- Response 辅助 API 实现：[responses.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L154)
+- Fetcher Extractor：[eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)
+- SSE Frame Parser：[serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)
+- JSON Transform：[jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)
+- 异步迭代取消：[readableStreamAsyncIterable.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L125)
