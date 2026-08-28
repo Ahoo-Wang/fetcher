@@ -432,10 +432,11 @@ aggregateStream<
 ): Promise<ReadableStream<JsonServerSentEvent<Row>>>;
 ```
 
-`SnapshotQueryApi` makes these two members optional to remain compatible with
-existing implementations. `SnapshotQueryClient` implements both methods as
-required methods. Both submit to `snapshot/aggregation`; `aggregateStream`
-requests an SSE result stream.
+`QueryApi` makes these two members optional to remain compatible with existing
+implementations. `SnapshotQueryClient` and `EventStreamQueryClient` implement
+both as required methods. They submit to `snapshot/aggregation` and
+`event/aggregation`, respectively; `aggregateStream` requests an SSE result
+stream.
 
 ### ID-Based Lookup Methods
 
@@ -478,7 +479,24 @@ const paged = await eventClient.paged({
   filter: filter.matchAll(),
   pagination: { index: 1, size: 20 },
 });
+
+type EventStreamFields = 'body';
+type EventFields = 'name';
+const eventAggregationQuery: AggregationQuery<EventStreamFields, EventFields> =
+  {
+    elements: [aggregation.element('body')],
+    groupBy: [aggregation.terms('name', 'eventType')],
+    metrics: [aggregation.count('count')],
+  };
+const eventCounts = await eventClient.aggregate(eventAggregationQuery);
+const eventCountStream = await eventClient.aggregateStream(
+  eventAggregationQuery,
+);
 ```
+
+Event aggregation expands the event array at `body`. Event fields are then
+relative to that element; payload fields are nested below its `body` field.
+Both aggregation methods use `event/aggregation`.
 
 ---
 
