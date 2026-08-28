@@ -1,75 +1,80 @@
 ---
 title: Package reference
-description: Choose a Fetcher package, understand its contract, and open the detailed API or matching agent skill.
+description: Choose the Fetcher package that owns a responsibility, then use the right depth of documentation.
 pageClass: reference-index-page
 ---
 
 # Package reference
 
-Fetcher is a layered ecosystem, not a framework bundle. Start with the package
-that owns the behavior, then add only the integrations the application uses.
-
-::: info Reading a package page
-Every reference page covers installation, primary API groups, defaults,
-lifecycle, failure behavior, source exports, and the matching agent skill.
-Exact long-form signatures remain in each Skill's source-checked API reference.
-:::
+Fetcher is a layered ecosystem. Start with the package that owns the behavior,
+then add only the integrations your application needs.
 
 ## Choose by responsibility
 
-| Responsibility                   | Start with                                | Add when                                                          |
-| -------------------------------- | ----------------------------------------- | ----------------------------------------------------------------- |
-| Send an HTTP request             | [`@ahoo-wang/fetcher`](./fetcher.md)      | Always the runtime foundation                                     |
-| Expose class-based API services  | [`fetcher-decorator`](./decorator.md)     | Stable service interfaces are useful                              |
-| Deliver typed events             | [`fetcher-eventbus`](./eventbus.md)       | Multiple owners react to one event                                |
-| Parse SSE and token streams      | [`fetcher-eventstream`](./eventstream.md) | The response is `text/event-stream`                               |
-| Persist one typed value          | [`fetcher-storage`](./storage.md)         | State must survive outside a component                            |
-| Manage request state in React    | [`fetcher-react`](./react.md)             | UI owns loading, result, error, and cancellation                  |
-| Describe OpenAPI documents       | [`fetcher-openapi`](./openapi.md)         | Tooling needs compile-time document types                         |
-| Generate typed clients           | [`fetcher-generator`](./generator.md)     | OpenAPI is the API contract                                       |
-| Call OpenAI-compatible Chat APIs | [`fetcher-openai`](./openai.md)           | Chat request and stream types are needed                          |
-| Add CoSec authentication         | [`fetcher-cosec`](./cosec.md)             | The server speaks the CoSec protocol                              |
-| Call Wow commands and queries    | [`fetcher-wow`](./wow.md)                 | The server exposes Wow endpoints                                  |
-| Build a data exploration UI      | [`fetcher-viewer`](./viewer.md)           | Filters, tables, saved views, and remote data form one experience |
+| Need | Start with | Add when |
+| --- | --- | --- |
+| Send typed HTTP requests | [`@ahoo-wang/fetcher`](./fetcher.md) | Every runtime request needs a client. |
+| Define class-based API services | [`fetcher-decorator`](./decorator.md) | A stable decorated service interface is useful. |
+| Deliver typed or named events | [`fetcher-eventbus`](./eventbus.md) | Multiple owners react to one event. |
+| Consume SSE or token streams | [`fetcher-eventstream`](./eventstream.md) | A response uses `text/event-stream`. |
+| Persist a typed value | [`fetcher-storage`](./storage.md) | State must outlive a component. |
+| Describe an OpenAPI document | [`fetcher-openapi`](./openapi.md) | Tooling needs compile-time OpenAPI types. |
+| Generate typed clients | [`fetcher-generator`](./generator.md) | OpenAPI is the API contract. |
+| Call OpenAI-compatible APIs | [`fetcher-openai`](./openai.md) | Chat and streaming protocol types are needed. |
+| Add CoSec authentication | [`fetcher-cosec`](./cosec.md) | The server uses the CoSec protocol. |
+| Manage request state in React | [`fetcher-react`](./react.md) | The UI owns loading, result, error, and cancellation. |
+| Build a data-exploration UI | [`fetcher-viewer`](./viewer.md) | Filters, tables, saved views, and remote data belong together. |
+| Call Wow commands and queries | [`fetcher-wow`](./wow.md) | The server exposes Wow endpoints. |
 
 ## Layer map
 
-| Layer      | Packages                                 | What crosses the boundary                                   |
-| ---------- | ---------------------------------------- | ----------------------------------------------------------- |
-| Transport  | Fetcher, EventStream                     | Request, response, exchange, stream, error                  |
-| Service    | Decorator, Generator, OpenAI, Wow, CoSec | Domain-oriented clients and protocol metadata               |
-| State      | EventBus, Storage, React                 | Events, persisted values, observable async state            |
-| Experience | Viewer                                   | Filters, view state, tables, actions, user-visible failures |
+```mermaid
+flowchart TD
+  app[Application]
+  experience[Experience<br>Viewer]
+  state[State<br>React · EventBus · Storage]
+  integration[Service and integration<br>Decorator · Generator · OpenAI · CoSec · Wow]
+  transport[Transport and types<br>Fetcher · EventStream · OpenAPI]
 
-Dependencies should point down this table. If a low-level request helper imports
-Viewer or React, the responsibility is in the wrong layer.
+  app --> experience
+  app --> state
+  app --> integration
+  experience --> state
+  state --> transport
+  integration --> transport
 
-## Core contracts at a glance
+  classDef layer fill:#2d333b,stroke:#6d5dfc,color:#e6edf3;
+  class app,experience,state,integration,transport layer;
+```
 
-| Package     | Main entry point                        | Default ownership             | Typical cleanup                                     |
-| ----------- | --------------------------------------- | ----------------------------- | --------------------------------------------------- |
-| Fetcher     | `Fetcher`, `NamedFetcher`               | Request lifecycle             | Abort caller-owned work; eject dynamic interceptors |
-| Decorator   | `@api`, method and parameter decorators | Service metadata              | Application owns shared Fetcher                     |
-| EventBus    | `SerialTypedEventBus`, `EventBus`       | Handler delivery              | `off()` / `destroy()`                               |
-| EventStream | `Response` helpers, conversion streams  | Stream parsing                | Cancel stream and abort network owner               |
-| Storage     | `KeyStorage`                            | One key and its listeners     | Listener remover / `destroy()`                      |
-| React       | `useFetcher`, `useFetcherQuery`         | Component-visible async state | Hook unmount plus explicit user abort               |
-| Viewer      | `Viewer`, `FetcherViewer`               | Data exploration workflow     | Component and persistence callback lifecycle        |
+Dependencies point toward the lower layers. If a transport helper needs Viewer
+or React, move that behavior to the owning higher-level package instead.
 
-## Integration contracts at a glance
+## Package coverage
 
-| Package   | Input source of truth                                   | Failure boundary                                        |
-| --------- | ------------------------------------------------------- | ------------------------------------------------------- |
-| OpenAPI   | OpenAPI 3 document object                               | Compile-time shape only; runtime validation is external |
-| Generator | OpenAPI file or URL plus TypeScript config              | Parsing, discovery, generation, and output compilation  |
-| OpenAI    | Chat request and Fetcher configuration                  | Initial HTTP call plus later stream consumption         |
-| CoSec     | CoSec server protocol and token state                   | Refresh, final unauthorized, final forbidden            |
-| Wow       | Wow routes, metadata, filter, and aggregation contracts | Command result, query validation, HTTP/SSE processing   |
+| Package | This Reference covers |
+| --- | --- |
+| [Fetcher](./fetcher.md) | Client configuration, typed requests, interceptors, timeouts, and errors. |
+| [Decorator](./decorator.md) | API, endpoint, and parameter decorators; metadata and execution. |
+| [EventBus](./eventbus.md) | Typed and named delivery, messengers, failure behavior, and cleanup. |
+| [EventStream](./eventstream.md) | SSE conversion, JSON streams, response helpers, cancellation, and parsing errors. |
+| [Storage](./storage.md) | `KeyStorage`, serializers, listeners, runtimes, and destruction. |
+| [OpenAPI](./openapi.md) | OpenAPI type families, references, extensions, and 3.0/3.1 boundaries. |
+| [Generator](./generator.md) | CLI, configuration, output, programmatic entry points, and Wow discovery. |
+| [OpenAI](./openai.md) | Chat requests, streamed chunks, Fetcher composition, cancellation, and protocol failures. |
+| [CoSec](./cosec.md) | Token lifecycle, refresh, interceptor order, attribution, and security boundaries. |
+| [React](./react.md) | Providers, request-state hooks, UI helpers, ownership, and cancellation. |
+| [Viewer](./viewer.md) | Viewer models, registries, components, persistence, and remote data flow. |
+| [Wow](./wow.md) | Commands, snapshot and event queries, filters, aggregations, defaults, and result shapes. |
 
-## Reference versus Skills
+## Pick the right documentation depth
 
-- Use **Reference** to choose an API, understand defaults, and review behavior.
-- Use **Skills** to have Codex implement a task under the corresponding package boundary.
-- Use the Skill's `references/api.md` when an agent needs exhaustive signatures or edge cases.
+| Resource | Use it for | It does not replace |
+| --- | --- | --- |
+| **Reference** | Selecting public APIs, defaults, lifecycle rules, failures, and source evidence. | Package-specific recipes or interactive component exploration. |
+| **Recipe** | A task-shaped, end-to-end integration workflow. | The complete API contract. |
+| **Skill** | Having Codex perform work within a package boundary; use its `references/api.md` for exhaustive agent-facing details. | Human-facing behavior and lifecycle guidance in Reference. |
+| **Storybook** | Rendering, interaction states, and component variants for Viewer. | API ownership, persistence, and remote-data contracts. |
 
-Open the [Skills catalog](../skills/index.md) to select by task.
+Use the Recipes navigation, the [Skills catalog](../skills/index.md), or the
+[Viewer Storybook](https://fetcher.ahoo.me/storybook/) when that depth better matches the task.

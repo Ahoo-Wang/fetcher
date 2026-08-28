@@ -37,19 +37,19 @@
 
 ## Reference
 
-- [Package reference](/reference/) — Choose a Fetcher package, understand its contract, and open the detailed API or matching agent skill.
-- [`@ahoo-wang/fetcher`](/reference/fetcher) — Configure Fetcher, send HTTP requests, extract results, and handle request failures.
-- [`@ahoo-wang/fetcher-decorator`](/reference/decorator) — Define declarative HTTP service classes with Fetcher method and parameter decorators.
-- [`@ahoo-wang/fetcher-eventbus`](/reference/eventbus) — Choose serial, parallel, or cross-tab typed event delivery and manage handler lifecycles.
-- [`@ahoo-wang/fetcher-eventstream`](/reference/eventstream) — Parse Server-Sent Events, consume typed JSON streams, and handle invalid stream responses.
-- [`@ahoo-wang/fetcher-storage`](/reference/storage) — Store one typed value, observe changes, and select browser or in-memory persistence.
-- [`@ahoo-wang/fetcher-react`](/reference/react) — Manage Fetcher requests, queries, storage, events, and authorization state in React.
-- [`@ahoo-wang/fetcher-openapi`](/reference/openapi) — Type OpenAPI documents and extensions without adding runtime code.
-- [`@ahoo-wang/fetcher-generator`](/reference/generator) — Generate Fetcher and Wow TypeScript clients from local or remote OpenAPI documents.
-- [`@ahoo-wang/fetcher-openai`](/reference/openai) — Call Chat Completions through Fetcher with conditional typed streaming results.
+- [Package reference](/reference/) — Choose the Fetcher package that owns a responsibility, then use the right depth of documentation.
+- [`@ahoo-wang/fetcher`](/reference/fetcher) — Configure Fetcher, send typed HTTP requests, and diagnose lifecycle failures.
+- [`@ahoo-wang/fetcher-decorator`](/reference/decorator) — Define declarative Fetcher services and understand metadata, execution, and inheritance.
+- [`@ahoo-wang/fetcher-eventbus`](/reference/eventbus) — Select typed in-process or cross-tab event delivery and own its lifecycle.
+- [`@ahoo-wang/fetcher-eventstream`](/reference/eventstream) — Convert SSE responses into typed Web Streams and own parsing and cancellation boundaries.
+- [`@ahoo-wang/fetcher-storage`](/reference/storage) — Persist one typed key, choose serialization and runtime storage, and own local change listeners.
+- [`@ahoo-wang/fetcher-react`](/reference/react) — Own Fetcher, query, storage, event, security, and Wow state in React.
+- [`@ahoo-wang/fetcher-openapi`](/reference/openapi) — Type OpenAPI 3.x documents, references, extensions, and schemas without runtime code.
+- [`@ahoo-wang/fetcher-generator`](/reference/generator) — Generate TypeScript models and Fetcher or Wow clients from an OpenAPI JSON or YAML document.
+- [`@ahoo-wang/fetcher-openai`](/reference/openai) — Call OpenAI-compatible Chat Completions through Fetcher, including typed SSE, cancellation, and protocol failures.
 - [`@ahoo-wang/fetcher-wow`](/reference/wow) — Complete reference for Wow commands, typed snapshot and event queries, filters, cursors, aggregation, and state loading.
-- [`@ahoo-wang/fetcher-cosec`](/reference/cosec) — Configure CoSec attribution headers, JWT persistence, refresh, and 401 or 403 handling.
-- [`@ahoo-wang/fetcher-viewer`](/reference/viewer) — Compose filters, tables, saved views, and remote Viewer workflows with React and Ant Design.
+- [`@ahoo-wang/fetcher-cosec`](/reference/cosec) — Configure CoSec request attribution, JWT storage and refresh, retry limits, cleanup, and security boundaries.
+- [`@ahoo-wang/fetcher-viewer`](/reference/viewer) — Compose typed filters, tables, saved views, and Fetcher-backed Viewer flows.
 
 ## Contributing
 
