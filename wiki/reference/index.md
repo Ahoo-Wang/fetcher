@@ -29,9 +29,10 @@ the responsibility in the table becomes part of your application.
 | `@ahoo-wang/fetcher-openai`    | Chat Completions with typed streaming                    | [OpenAI](./openai.md)       |
 | `@ahoo-wang/fetcher-wow`       | Wow commands, queries, filters, and aggregation          | [Wow](./wow.md)             |
 | `@ahoo-wang/fetcher-cosec`     | CoSec headers, tokens, refresh, and authorization errors | [CoSec](./cosec.md)         |
+| `@ahoo-wang/fetcher-viewer`    | Filters, tables, saved views, and remote data workflows  | [Viewer](./viewer.md)       |
 
-The Viewer component library has a separate reference because its public API
-is organized around UI composition rather than request infrastructure.
+The Viewer reference starts with UI composition and then connects it to request
+infrastructure.
 
 ## Reading conventions
 

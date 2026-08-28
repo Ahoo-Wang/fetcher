@@ -28,8 +28,9 @@ Fetcher 被拆分为多个小包，应用只需安装实际使用的运行时能
 | `@ahoo-wang/fetcher-openai`    | 支持类型化流式响应的 Chat Completions     | [OpenAI](./openai.md)       |
 | `@ahoo-wang/fetcher-wow`       | Wow 命令、查询、过滤与聚合                | [Wow](./wow.md)             |
 | `@ahoo-wang/fetcher-cosec`     | CoSec 请求头、令牌、刷新与鉴权错误        | [CoSec](./cosec.md)         |
+| `@ahoo-wang/fetcher-viewer`    | 过滤、表格、保存视图与远程数据工作流      | [Viewer](./viewer.md)       |
 
-Viewer 组件库使用独立参考页，因为它的公开 API 围绕 UI 组合，而不是请求基础设施组织。
+Viewer 参考先讲 UI 组合，再连接请求基础设施。
 
 ## 阅读约定
 

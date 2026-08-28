@@ -1,26 +1,18 @@
-import { DefaultTheme } from 'vitepress';
+import type { DefaultTheme } from 'vitepress';
 
 export const en: DefaultTheme.Config = {
   label: 'English',
   lang: 'en',
   title: 'Fetcher',
-  description: 'Modern HTTP Client Ecosystem with Native LLM Streaming Support',
+  description: 'Typed HTTP clients, streaming, React hooks, and data viewers',
   themeConfig: {
     nav: [
       { text: 'Start', link: '/start/' },
-      { text: 'Guide', link: '/guide/' },
-      { text: 'Architecture', link: '/architecture/' },
-      { text: 'Packages', link: '/packages/' },
-      { text: 'API', link: '/api/' },
-      { text: 'Onboarding', link: '/onboarding/' },
-      {
-        text: 'More',
-        items: [
-          { text: 'Testing', link: '/testing/' },
-          { text: 'Contributing', link: '/guide/contributing' },
-          { text: 'Storybook', link: '/storybook/', target: '_blank' },
-        ],
-      },
+      { text: 'Learn', link: '/learn/request-lifecycle' },
+      { text: 'Recipes', link: '/recipes/declarative-services' },
+      { text: 'Reference', link: '/reference/' },
+      { text: 'Contributing', link: '/contributing/' },
+      { text: 'Storybook', link: '/storybook/', target: '_blank' },
     ],
     sidebar: {
       '/start/': [
@@ -34,98 +26,72 @@ export const en: DefaultTheme.Config = {
           ],
         },
       ],
-      '/guide/': [
+      '/learn/': [
         {
-          text: 'Getting Started',
+          text: 'Learn',
           items: [
-            { text: 'Introduction', link: '/guide/' },
-            { text: 'Quick Start', link: '/guide/quick-start' },
-            { text: 'Configuration', link: '/guide/configuration' },
+            { text: 'Request Lifecycle', link: '/learn/request-lifecycle' },
+            {
+              text: 'Requests and Results',
+              link: '/learn/requests-and-results',
+            },
+            {
+              text: 'Interceptors, Errors, and Timeouts',
+              link: '/learn/interceptors-errors-timeouts',
+            },
+            { text: 'Streaming', link: '/learn/streaming' },
+            { text: 'React Data Flow', link: '/learn/react-data-flow' },
           ],
         },
       ],
-      '/architecture/': [
+      '/recipes/': [
         {
-          text: 'Architecture',
+          text: 'Recipes',
           items: [
-            { text: 'Overview', link: '/architecture/' },
-            { text: 'Fetcher Core', link: '/architecture/fetcher-core' },
-            { text: 'Interceptor System', link: '/architecture/interceptors' },
-            { text: 'EventStream & SSE', link: '/architecture/eventstream' },
-            { text: 'URL Builder', link: '/architecture/url-builder' },
+            {
+              text: 'Declarative Services',
+              link: '/recipes/declarative-services',
+            },
+            { text: 'Generate a Client', link: '/recipes/openapi-client' },
+            { text: 'OpenAI Streaming', link: '/recipes/openai-streaming' },
+            { text: 'Wow CQRS', link: '/recipes/wow-cqrs' },
+            {
+              text: 'CoSec Authentication',
+              link: '/recipes/cosec-authentication',
+            },
+            { text: 'State and Events', link: '/recipes/state-and-events' },
+            { text: 'Data Viewer', link: '/recipes/data-viewer' },
           ],
         },
       ],
-      '/packages/': [
+      '/reference/': [
         {
-          text: 'Packages',
+          text: 'Reference',
           items: [
-            { text: 'Overview', link: '/packages/' },
-            { text: '@ahoo-wang/fetcher', link: '/packages/fetcher' },
-            {
-              text: '@ahoo-wang/fetcher-decorator',
-              link: '/packages/decorator',
-            },
-            { text: '@ahoo-wang/fetcher-eventbus', link: '/packages/eventbus' },
-            {
-              text: '@ahoo-wang/fetcher-eventstream',
-              link: '/packages/eventstream',
-            },
-            { text: '@ahoo-wang/fetcher-openai', link: '/packages/openai' },
-            { text: '@ahoo-wang/fetcher-openapi', link: '/packages/openapi' },
-            {
-              text: '@ahoo-wang/fetcher-generator',
-              link: '/packages/generator',
-            },
-            { text: '@ahoo-wang/fetcher-react', link: '/packages/react' },
-            { text: '@ahoo-wang/fetcher-storage', link: '/packages/storage' },
-            { text: '@ahoo-wang/fetcher-cosec', link: '/packages/cosec' },
-            { text: '@ahoo-wang/fetcher-wow', link: '/packages/wow' },
-            { text: '@ahoo-wang/fetcher-viewer', link: '/packages/viewer' },
+            { text: 'Packages', link: '/reference/' },
+            { text: 'Fetcher', link: '/reference/fetcher' },
+            { text: 'Decorator', link: '/reference/decorator' },
+            { text: 'Event Bus', link: '/reference/eventbus' },
+            { text: 'Event Stream', link: '/reference/eventstream' },
+            { text: 'Storage', link: '/reference/storage' },
+            { text: 'React', link: '/reference/react' },
+            { text: 'OpenAPI', link: '/reference/openapi' },
+            { text: 'Generator', link: '/reference/generator' },
+            { text: 'OpenAI', link: '/reference/openai' },
+            { text: 'Wow', link: '/reference/wow' },
+            { text: 'CoSec', link: '/reference/cosec' },
+            { text: 'Viewer', link: '/reference/viewer' },
           ],
         },
       ],
-      '/api/': [
+      '/contributing/': [
         {
-          text: 'API Reference',
+          text: 'Contributing',
           items: [
-            { text: 'Overview', link: '/api/' },
-            { text: 'Fetcher Client', link: '/api/fetcher-client' },
-            { text: 'Decorators', link: '/api/decorators' },
-            { text: 'React Hooks', link: '/api/react-hooks' },
-            { text: 'Type Definitions', link: '/api/type-definitions' },
-          ],
-        },
-      ],
-      '/testing/': [
-        {
-          text: 'Testing',
-          items: [
-            { text: 'Overview', link: '/testing/' },
-            { text: 'Unit Testing', link: '/testing/unit-testing' },
-            {
-              text: 'Integration Testing',
-              link: '/testing/integration-testing',
-            },
-            { text: 'Browser Testing', link: '/testing/browser-testing' },
-          ],
-        },
-      ],
-      '/onboarding/': [
-        {
-          text: 'Onboarding',
-          collapsed: false,
-          items: [
-            { text: 'Contributor Guide', link: '/onboarding/contributor' },
-            {
-              text: 'Staff Engineer Guide',
-              link: '/onboarding/staff-engineer',
-            },
-            { text: 'Executive Guide', link: '/onboarding/executive' },
-            {
-              text: 'Product Manager Guide',
-              link: '/onboarding/product-manager',
-            },
+            { text: 'Overview', link: '/contributing/' },
+            { text: 'Development', link: '/contributing/development' },
+            { text: 'Testing', link: '/contributing/testing' },
+            { text: 'Documentation', link: '/contributing/documentation' },
           ],
         },
       ],
