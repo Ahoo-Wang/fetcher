@@ -19,7 +19,8 @@
     "init": "sh ./scripts/init.sh",
     "update-version": "sh ./scripts/update-all-versions.sh",
     "storybook": "storybook dev --docs -p 6006",
-    "build-storybook": "storybook build --docs"
+    "build-storybook": "storybook build --docs",
+    "test:storybook": "vitest run --project=storybook"
   },
   "keywords": [
     "fetcher",
@@ -45,14 +46,16 @@
     "@eslint/js": "catalog:",
     "@storybook/addon-a11y": "^10.5.10",
     "@storybook/addon-docs": "^10.5.10",
-    "@storybook/addon-onboarding": "^10.5.10",
     "@storybook/addon-vitest": "^10.5.10",
     "@storybook/react": "^10.5.10",
     "@storybook/react-vite": "^10.5.10",
     "@vitest/browser": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
     "antd": "catalog:",
     "eslint-plugin-storybook": "^10.5.10",
     "globals": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "storybook": "^10.5.10",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",

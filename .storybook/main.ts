@@ -9,11 +9,7 @@ function getAbsolutePath(value: string): string {
 }
 
 const config: StorybookConfig = {
-  stories: [
-    '../stories/**/*.mdx',
-    '../stories/**/*.stories.@(js|jsx|mjs|ts|tsx)',
-    '../packages/*/src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
-  ],
+  stories: ['../stories/**/*.mdx', '../stories/**/*.stories.@(ts|tsx)'],
   addons: [
     getAbsolutePath('@chromatic-com/storybook'),
     {
@@ -22,7 +18,6 @@ const config: StorybookConfig = {
         transcludeMarkdown: true,
       },
     },
-    getAbsolutePath('@storybook/addon-onboarding'),
     getAbsolutePath('@storybook/addon-a11y'),
     getAbsolutePath('@storybook/addon-vitest'),
   ],
@@ -32,47 +27,6 @@ const config: StorybookConfig = {
   framework: {
     name: getAbsolutePath('@storybook/react-vite'),
     options: {},
-  },
-  async viteFinal(config) {
-    config.assetsInclude = ['../**/*.md', '../*.md'];
-
-    config.esbuild = {
-      legalComments: 'none',
-      jsx: 'automatic',
-    };
-
-    config.plugins = config.plugins || [];
-    config.plugins.push({
-      name: 'markdown-link-transform',
-      transform(code, id) {
-        if (id.endsWith('.md?raw')) {
-          return code
-            .replace(
-              /\]\(\.\/packages\//g,
-              '](https://github.com/Ahoo-Wang/fetcher/tree/main/packages/',
-            )
-            .replace(
-              /\]\(\.\/integration-test/g,
-              '](https://github.com/Ahoo-Wang/fetcher/tree/main/integration-test',
-            )
-            .replace(
-              /\]\(\.\/CONTRIBUTING\.md/g,
-              '](https://github.com/Ahoo-Wang/fetcher/blob/main/CONTRIBUTING.md',
-            )
-            .replace(
-              /\]\(\.\/LICENSE/g,
-              '](https://github.com/Ahoo-Wang/fetcher/blob/main/LICENSE',
-            )
-            .replace(
-              /\]\(\.\//g,
-              '](https://github.com/Ahoo-Wang/fetcher/blob/main/',
-            );
-        }
-        return code;
-      },
-    });
-
-    return config;
   },
 };
 export default config;

@@ -25,25 +25,11 @@ const preview: Preview = {
     },
     options: {
       storySort: {
-        order: [
-          'Introduction',
-          'Fetcher',
-          'Decorator',
-          'EventStream',
-          'OpenAI',
-          'EventBus',
-          'Storage',
-          'React',
-          'Wow',
-          'Generator',
-          'CoSec',
-          'OpenAPI',
-          'Viewer',
-        ],
+        order: ['Overview', 'HTTP & Streaming', 'React Hooks', 'Viewer'],
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
 };
 
 export default preview;
