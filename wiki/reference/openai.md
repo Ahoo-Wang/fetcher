@@ -39,8 +39,9 @@ custom headers, or interceptors as `OpenAIOptions` fields
 
 ## Typed completion
 
-`model` and `messages` are required. All other request properties are forwarded
-as JSON; this package does not validate provider-specific ranges or defaults.
+`model` and `messages` are required by TypeScript. All request properties are
+forwarded as JSON; these types are not runtime schema validation, and this
+package does not validate provider-specific ranges or defaults.
 
 | Request field | Type | Notes |
 | --- | --- | --- |
@@ -74,10 +75,13 @@ const completion: ChatResponse = await client.chat.completions({
 const text = completion.choices[0]?.message?.content;
 ```
 
-The JSON result is `ChatResponse`: `id`, `object`, `created`, `choices`, and
-`usage` are required by its TypeScript shape. A `Choice.message` is optional;
-read it defensively. Streaming chunks reuse `ChatResponse`, but a chunk normally
-carries `Choice.delta` instead of `Choice.message`
+The JSON result is *typed* as `ChatResponse`: `id`, `object`, `created`,
+`choices`, and `usage` are required by its TypeScript shape. A successful HTTP
+response with a provider error shape or missing fields is not automatically
+turned into a protocol exception. Streaming chunks reuse `ChatResponse`, but
+normally carry `Choice.delta` instead of `Choice.message` and can omit declared
+full-response fields such as `usage`. Check the provider payload defensively
+before reading `choices`, `message`, `delta`, or `usage`
 ([`types.ts:14`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L14),
 [`types.ts:143`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L143)).
 
@@ -110,13 +114,35 @@ const completion: ChatResponse = await chat.completions({
 
 ## Streaming, `[DONE]`, and cancellation
 
-`completions<T>()` resolves to `ChatResponse` unless `T['stream']` is literally
-`true`; with `stream: true as const` it resolves to
-`JsonServerSentEventStream<ChatResponse>`
+`completions<T>()` resolves to `JsonServerSentEventStream<ChatResponse>` only
+when `T['stream']` extends literal `true`; otherwise it resolves to
+`ChatResponse`. This conditional type is non-distributive: `stream: boolean`
+therefore has the static result `ChatResponse`, even though `beforeExecute()`
+will choose SSE at runtime when that boolean happens to be `true`. Do not call
+this API with a runtime-boolean `stream`; branch first and construct literal
+`true` / `false` requests in each branch.
 ([`chatClient.ts:146`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L146),
 [`chatClient.ts:255`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L255)).
 The extractor decodes JSON SSE events and stops before yielding an event whose
 data is exactly `[DONE]` ([`completionStreamResultExtractor.ts:39`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L39)).
+
+```ts
+if (shouldStream) {
+  const stream = await chat.completions({
+    model: 'example-chat-model',
+    messages: [{ role: 'user', content: 'Stream this.' }],
+    stream: true as const,
+  });
+  // stream is JsonServerSentEventStream<ChatResponse>
+} else {
+  const response = await chat.completions({
+    model: 'example-chat-model',
+    messages: [{ role: 'user', content: 'Return this once.' }],
+    stream: false as const,
+  });
+  // response is ChatResponse
+}
+```
 
 `ChatClient.completions()` accepts only the body argument, so it has no public
 per-call `AbortController` parameter. Use the public Fetcher entry when the
@@ -174,8 +200,9 @@ helper and throws when that conversion cannot be performed
 
 | Symptom | Check |
 | --- | --- |
-| `ChatResponse` where a stream was expected | Keep `stream: true` as a literal; a runtime boolean produces a union. |
+| Static `ChatResponse` but runtime SSE | Do not use `stream: boolean`: it statically resolves to `ChatResponse`; branch and call with literal `true` or `false`. |
 | Stream conversion fails | Confirm the provider returns SSE frames and a compatible event-stream content type, not JSON or an HTML proxy error. |
+| HTTP succeeded but a field is absent | The package does not runtime-validate success payloads; check provider error/data shapes before dereferencing typed fields. |
 | `401` or `403` | Check the trusted server's provider credential and the configured base URL; do not print the key to debug. |
 | Request will not stop | Use the custom Fetcher example and abort its controller. |
 | Custom Fetcher is ignored | Supply `fetcher` in `ChatClient` metadata before the first `completions()` call. |

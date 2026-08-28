@@ -35,8 +35,8 @@ Bearer Header；`OpenAIOptions` 不提供 Timeout、自定义 Header 或 Interce
 
 ## 类型化 Completion
 
-`model` 与 `messages` 必填。其余请求字段会作为 JSON 转发；此包不校验 provider 特有的
-取值范围或默认值。
+TypeScript 中 `model` 与 `messages` 必填。其余请求字段会作为 JSON 转发；这些类型不是
+Runtime Schema Validation，此包也不校验 provider 特有的取值范围或默认值。
 
 | 请求字段 | 类型 | 说明 |
 | --- | --- | --- |
@@ -70,9 +70,11 @@ const completion: ChatResponse = await client.chat.completions({
 const text = completion.choices[0]?.message?.content;
 ```
 
-JSON 结果是 `ChatResponse`：它的 TypeScript 形状要求 `id`、`object`、`created`、
-`choices` 和 `usage`。`Choice.message` 是可选的，应防御性读取。流式 Chunk 复用
-`ChatResponse`，但通常使用 `Choice.delta` 而非 `Choice.message`
+JSON 结果被*声明为* `ChatResponse`：它的 TypeScript 形状要求 `id`、`object`、`created`、
+`choices` 和 `usage`。成功 HTTP Response 即使携带 provider error shape 或缺少字段，也不会被
+自动转换为协议异常。流式 Chunk 复用 `ChatResponse`，但通常使用 `Choice.delta` 而非
+`Choice.message`，并可能缺少 `usage` 等完整 Response 声明为必填的字段。读取 `choices`、
+`message`、`delta` 或 `usage` 前都应防御性检查 provider Payload
 ([`types.ts:14`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L14)，
 [`types.ts:143`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L143))。
 
@@ -105,12 +107,33 @@ const completion: ChatResponse = await chat.completions({
 
 ## Streaming、`[DONE]` 与取消
 
-`completions<T>()` 在 `T['stream']` 不是字面量 `true` 时解析为 `ChatResponse`；使用
-`stream: true as const` 时解析为 `JsonServerSentEventStream<ChatResponse>`
+仅当 `T['stream']` extends 字面量 `true` 时，`completions<T>()` 才解析为
+`JsonServerSentEventStream<ChatResponse>`；否则解析为 `ChatResponse`。该 Conditional Type
+不是 distributive：`stream: boolean` 的静态结果因此是 `ChatResponse`，即使运行时 Boolean
+恰为 `true` 时 `beforeExecute()` 仍会选择 SSE。不要以运行时 Boolean 调用此 API；应先分支，
+并在两条分支中构造字面量 `true` / `false` 请求。
 ([`chatClient.ts:146`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L146)，
 [`chatClient.ts:255`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L255))。
 提取器解码 JSON SSE Event，并在 `data` 恰为 `[DONE]` 时停止，且不产出该 Event
 ([`completionStreamResultExtractor.ts:39`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L39))。
+
+```ts
+if (shouldStream) {
+  const stream = await chat.completions({
+    model: 'example-chat-model',
+    messages: [{ role: 'user', content: '请流式输出。' }],
+    stream: true as const,
+  });
+  // stream 是 JsonServerSentEventStream<ChatResponse>
+} else {
+  const response = await chat.completions({
+    model: 'example-chat-model',
+    messages: [{ role: 'user', content: '请一次返回。' }],
+    stream: false as const,
+  });
+  // response 是 ChatResponse
+}
+```
 
 `ChatClient.completions()` 只接收 Body 参数，因此没有公开的单次调用
 `AbortController` 参数。需要由调用者拥有取消权时，使用公开 Fetcher 入口：
@@ -165,8 +188,9 @@ Helper，不能转换时会抛错
 
 | 现象 | 检查项 |
 | --- | --- |
-| 期待 Stream 却得到 `ChatResponse` | 保持 `stream: true` 为字面量；运行时 Boolean 会产生联合类型。 |
+| 静态 `ChatResponse` 但运行时得到 SSE | 不要使用 `stream: boolean`：它静态解析为 `ChatResponse`；先分支并以字面量 `true` 或 `false` 调用。 |
 | Stream 转换失败 | 确认 provider 返回 SSE Frame 和兼容的 Event Stream Content-Type，而不是 JSON 或 HTML Proxy Error。 |
+| HTTP 成功但字段缺失 | 此包不 Runtime Validate Success Payload；解引用类型字段前检查 provider error/data shape。 |
 | `401` 或 `403` | 检查可信服务端的 provider credential 和 Base URL；排障时不要输出 Key。 |
 | 请求无法停止 | 使用自定义 Fetcher 示例并 Abort 它的 Controller。 |
 | 自定义 Fetcher 没有生效 | 首次 `completions()` 调用前就在 `ChatClient` Metadata 中提供 `fetcher`。 |

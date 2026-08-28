@@ -108,8 +108,8 @@ Configurer 的预期组合，而不是客户端做出的授权决定。
 
 ```text
 CoSecRequest
-  → ResourceAttribution
   → AuthorizationRequest（仅 tokenRefresher 存在）
+  → ResourceAttribution
   → 网络响应
   → AuthorizationResponse（仅 tokenRefresher 存在）
   → Unauthorized / Forbidden Error Callback（仅被配置时）
@@ -119,9 +119,16 @@ CoSecRequest
 | --- | --- | --- |
 | 请求身份 | `CoSecRequestInterceptor` | 设置应用、设备、唯一请求和可选空间 Header |
 | 资源归属 | `ResourceAttributionRequestInterceptor` | 从解码 Claim 填充缺失的 URL Template `tenantId` 与 `ownerId` |
-| Bearer 请求 | `AuthorizationRequestInterceptor` | 保留显式 `Authorization` Header；否则按需刷新并添加 `Bearer` |
+| Bearer 请求 | `AuthorizationRequestInterceptor` | 在该请求阶段保留显式 `Authorization` Header；否则按需刷新并添加 `Bearer` |
 | 401 响应 | `AuthorizationResponseInterceptor` | 刷新、移除过期 Bearer，然后至多重跑一次 Exchange |
 | 最终错误 | `UnauthorizedErrorInterceptor`、`ForbiddenErrorInterceptor` | 调用应用 Callback；不修复权限 |
+
+Request 顺序按数值 `order` 升序：`CoSecRequestInterceptor`，然后
+`AuthorizationRequestInterceptor`，最后 `ResourceAttributionRequestInterceptor`。最后一个
+Interceptor 被有意放在 URL Resolve 紧前方
+([`interceptor.ts:173`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L173)，
+[`authorizationRequestInterceptor.ts:28`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L28)，
+[`resourceAttributionRequestInterceptor.ts:50`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L50))。
 
 Resource Attribution 由 URL Template 选择：只有 Template 含默认 `tenantId` 和 `ownerId` Key，且
 调用方尚未传值时，它才填充。它读取已解码 Access Payload 的 `tenantId` 与 `sub`
@@ -131,6 +138,10 @@ Resource Attribution 由 URL Template 选择：只有 Template 含默认 `tenant
 发送请求前，`AuthorizationRequestInterceptor` 会保留显式 `Authorization` Header。存在受管 Token
 时，它只在 Access Token 需要刷新、Refresh JWT 仍有效且请求不带忽略刷新 Attribute 时刷新
 ([`authorizationRequestInterceptor.ts:63`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L63))。
+该保留只适用于初始 Request Interceptor Pass：401 时，`AuthorizationResponseInterceptor` 不会检查
+Header 来自哪里。它可能刷新、删除该 Header，并使用受管 Token 重试。需要有意使用不同凭据时，
+应使用未安装 CoSec Authorization Response Interceptor 的独立 Fetcher
+([`authorizationResponseInterceptor.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L102))。
 
 ## 并发刷新、重试与错误
 
@@ -154,9 +165,13 @@ Resource Attribution 由 URL Template 选择：只有 Template 含默认 `tenant
 
 ## 清理、安全与排障
 
-Sign-out 时调用 `tokenStorage.signOut()`，并清理由 `currentUser` 派生的 UI/Cache State；Storage
-Object 不再使用时再调用 `destroy()`。不要记录 `CompositeToken`、原始 JWT String、Authorization
-Header，或带敏感 Claim 的解码 Payload。`parseJwtPayload()` 是 Decode Helper，不是签名验证；
+`signOut()` 不会取消进行中的 `JwtTokenManager.refresh()`。之后成功的 Refresh 会无条件写入新 Pair，
+因此可能在 Sign-out 后恢复 Token
+([`jwtTokenManager.ts:68`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L68))。
+最终 Logout 应停止接纳新的受保护请求，协调取消或等待可能触发 Refresh 的进行中请求，再在其结束后
+调用 `signOut()`；若切换期间可能已完成 Refresh，则再次调用它作为最终清理。Storage Object 不再使用时
+再调用 `destroy()`。不要记录 `CompositeToken`、原始 JWT String、Authorization Header，或带敏感
+Claim 的解码 Payload。`parseJwtPayload()` 是 Decode Helper，不是签名验证；
 无效解析返回 `null`，且当前实现会将通用解析错误写到 `console.error`，因此不能把它当作脱敏边界
 ([`jwts.ts:91`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L91))。
 
@@ -167,6 +182,7 @@ Header，或带敏感 Claim 的解码 Payload。`parseJwtPayload()` 是 Decode H
 | Token 意外消失 | Refresh 失败会有意移除 Storage；通过 `onUnauthorized` 处理 `RefreshTokenError`。 |
 | Tenant/Owner Path 错误 | 确保 URL Template 中有 `{tenantId}` / `{ownerId}`，或显式传值覆盖归属。 |
 | Component 卸载后 Token 仍在 | `destroy()` 仅清理；调用 `signOut()` 才会移除存储项。 |
+| Logout 后 Token 再次出现 | 协调进行中的 Refresh/请求，然后执行最终 `signOut()`；单独 Sign-out 无法取消 Refresh。 |
 | 浏览器安全顾虑 | 默认 `localStorage` 是明文；迁移到 HttpOnly/服务端设计，或提供经过评审的 Storage Adapter。 |
 
 ## 源码参考

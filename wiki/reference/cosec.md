@@ -116,8 +116,8 @@ composition, not an authorization decision made by the client.
 
 ```text
 CoSecRequest
-  → ResourceAttribution
   → AuthorizationRequest (only with tokenRefresher)
+  → ResourceAttribution
   → network response
   → AuthorizationResponse (only with tokenRefresher)
   → Unauthorized / Forbidden error callback (only when configured)
@@ -127,9 +127,16 @@ CoSecRequest
 | --- | --- | --- |
 | Request identity | `CoSecRequestInterceptor` | Sets app, device, unique request, and optional space headers |
 | Resource attribution | `ResourceAttributionRequestInterceptor` | Fills missing URL-template `tenantId` and `ownerId` from decoded claims |
-| Bearer request | `AuthorizationRequestInterceptor` | Keeps an explicit `Authorization` header; otherwise refreshes if needed and adds `Bearer` |
+| Bearer request | `AuthorizationRequestInterceptor` | Keeps an explicit `Authorization` header for that request phase; otherwise refreshes if needed and adds `Bearer` |
 | 401 response | `AuthorizationResponseInterceptor` | Refreshes, drops stale Bearer, then reruns the exchange at most once |
 | Final errors | `UnauthorizedErrorInterceptor`, `ForbiddenErrorInterceptor` | Invoke application callbacks; they do not repair permissions |
+
+The request order is ascending numeric `order`: `CoSecRequestInterceptor`, then
+`AuthorizationRequestInterceptor`, then `ResourceAttributionRequestInterceptor`.
+The last interceptor is deliberately placed immediately before URL resolution
+([`interceptor.ts:173`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L173),
+[`authorizationRequestInterceptor.ts:28`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L28),
+[`resourceAttributionRequestInterceptor.ts:50`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L50)).
 
 Resource attribution is opt-in by URL template: it only fills the default
 `tenantId` and `ownerId` keys when those placeholders exist and the caller did
@@ -143,6 +150,12 @@ explicit `Authorization` Header. With an owned token, it refreshes only when
 the access token needs refresh, the refresh JWT remains valid, and the request
 does not contain the ignore-refresh attribute
 ([`authorizationRequestInterceptor.ts:63`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L63)).
+That preservation applies only to the initial request-interceptor pass: on a
+401, `AuthorizationResponseInterceptor` does not inspect who supplied the
+header. It can refresh, deletes that header, and retries with the managed token.
+For a deliberately different credential, use an independent Fetcher that does
+not install CoSec's authorization-response interceptor
+([`authorizationResponseInterceptor.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L102)).
 
 ## Concurrent refresh, retry, and errors
 
@@ -169,10 +182,16 @@ clearing an otherwise fresh token
 
 ## Cleanup, security, and troubleshooting
 
-On sign-out, call `tokenStorage.signOut()` and clear any UI/cache state derived
-from `currentUser`; when the storage object itself is no longer used, also call
-`destroy()`. Do not log `CompositeToken`, raw JWT strings, Authorization headers,
-or decoded payloads that contain sensitive claims. `parseJwtPayload()` is a
+`signOut()` does not cancel an in-progress `JwtTokenManager.refresh()`. A refresh
+that succeeds later unconditionally writes its new pair, so it can restore a
+token after sign-out ([`jwtTokenManager.ts:68`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L68)).
+For final logout, stop admitting new protected requests, coordinate cancellation
+or completion of in-flight requests that can trigger refresh, then call
+`signOut()` after that work settles; call it again as the final cleanup if a
+refresh may have completed during the transition. When the storage object itself
+is no longer used, also call `destroy()`. Do not log `CompositeToken`, raw JWT
+strings, Authorization headers, or decoded payloads that contain sensitive
+claims. `parseJwtPayload()` is a
 decode helper, not signature verification; invalid parsing returns `null`, and
 the current implementation writes a generic parsing error to `console.error`,
 so do not rely on it as a redaction boundary
@@ -185,6 +204,7 @@ so do not rely on it as a redaction boundary
 | Token unexpectedly disappears | A failed refresh intentionally removes storage; handle `RefreshTokenError` through `onUnauthorized`. |
 | Wrong tenant/owner path | Ensure `{tenantId}` / `{ownerId}` are in the URL template, or pass the explicit values to override attribution. |
 | Tokens survive component teardown | `destroy()` is cleanup only; call `signOut()` to remove the stored entry. |
+| Token reappears after logout | Coordinate in-flight refresh/request work, then perform final `signOut()`; sign-out alone cannot cancel refresh. |
 | Browser security concern | Default `localStorage` is plaintext; move credentials to an HttpOnly/server-side design or provide a reviewed storage adapter. |
 
 ## Source references
