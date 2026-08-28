@@ -118,10 +118,12 @@ if (!cellRegistry.has('score')) cellRegistry.register('score', ScoreCell);
 | `ViewTable` / `View` / `Viewer` Loading | 调用方传入 `loading`；调用方持有 Transport Error 与 Retry UI。 |
 | Empty Row | 这三层的 Data Source 都由调用方持有；请渲染业务自身的 Empty Semantics。 |
 | `FetcherViewer` Loading | Definition 或 View Loading 时渲染 Spinner。 |
-| Definition Error | `FetcherViewer` 渲染内置 Definition-error UI。 |
-| Views Error | Views Hook 会返回 Error，但 `FetcherViewer` 忽略它；没有 Views/Default View 时会进入最终 Spinner，可能一直停留。 |
-| Data Request Error | Data Hook 返回 Error，但 `FetcherViewer` 既不暴露也不渲染它。 |
-| `enhanceDataSource` Rejection | Async Effect 没有 Rejection Handling，因此 `FetcherViewer` 不会暴露或渲染它。 |
+| Definition Error | `FetcherViewer` 渲染内置 Definition-error UI。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:301](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L301) |
+| Missing Definition（Empty Result） | `FetcherViewer` 渲染 `未找到视图定义`。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:309](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L309) |
+| No Saved Views（Empty Result） | `FetcherViewer` 渲染 `未找到视图`。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:313](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L313) |
+| Views Error | Views Hook 会返回 Error，但 `FetcherViewer` 忽略它；没有 Views/Default View 时会进入最终 Spinner，可能一直停留。[packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts:6](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts#L6) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:344](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L344) |
+| Data Request Error | Data Hook 返回 Error，但 `FetcherViewer` 既不暴露也不渲染它。[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L18) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L122) |
+| `enhanceDataSource` Rejection | Async Effect 没有 Rejection Handling，因此 `FetcherViewer` 不会暴露或渲染它。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L140) |
 
 挂载前必须配置 Default Fetcher。默认 `ownerId` 和 `tenantId` 都是 `'(0)'`；改变它们会改变远程 View Query。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L81) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:286](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L286)
 

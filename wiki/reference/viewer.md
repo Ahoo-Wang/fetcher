@@ -118,10 +118,12 @@ if (!cellRegistry.has('score')) cellRegistry.register('score', ScoreCell);
 | `ViewTable` / `View` / `Viewer` loading | Caller passes `loading`; caller owns transport errors and retry UI. |
 | Empty rows | The data source is caller-owned at these three levels; render product-specific empty semantics. |
 | `FetcherViewer` loading | Renders a spinner while definition or views load. |
-| Definition error | `FetcherViewer` renders its built-in definition-error UI. |
-| Views error | The views hook returns an error, but `FetcherViewer` ignores it; with no views/default view it reaches the final spinner and can remain there. |
-| Data request error | The data hook returns an error, but `FetcherViewer` neither exposes nor renders it. |
-| `enhanceDataSource` rejection | The async effect has no rejection handling, so it is neither exposed nor rendered by `FetcherViewer`. |
+| Definition error | `FetcherViewer` renders its built-in definition-error UI. [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:301](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L301) |
+| Missing definition (empty result) | `FetcherViewer` renders `未找到视图定义`. [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:309](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L309) |
+| No saved views (empty result) | `FetcherViewer` renders `未找到视图`. [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:313](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L313) |
+| Views error | The views hook returns an error, but `FetcherViewer` ignores it; with no views/default view it reaches the final spinner and can remain there. [packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts:6](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts#L6) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:344](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L344) |
+| Data request error | The data hook returns an error, but `FetcherViewer` neither exposes nor renders it. [packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L18) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L122) |
+| `enhanceDataSource` rejection | The async effect has no rejection handling, so it is neither exposed nor rendered by `FetcherViewer`. [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L140) |
 
 The component requires a configured default Fetcher before mount. It uses default `ownerId` and `tenantId` of `'(0)'`; changing those changes the remote view query. [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L81) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:286](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L286)
 
