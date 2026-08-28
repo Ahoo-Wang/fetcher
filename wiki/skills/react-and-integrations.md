@@ -50,7 +50,7 @@ Continue with the [CoSec reference](../reference/cosec.md).
 ## `$fetcher-wow-cqrs`
 
 **Use for:** command delivery, command waiting streams, snapshot and event
-queries, array-first filters, aggregation, attribution paths, generated Wow
+queries, the query DSL, aggregation, attribution paths, generated Wow
 clients, and matching React hooks.
 
 ```text

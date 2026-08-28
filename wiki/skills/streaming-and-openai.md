@@ -33,8 +33,8 @@ streaming choices, completion extractors, and client interceptors.
 
 ```text
 $fetcher-openai-client build a streaming chat service with an injected API key.
-Render incremental text, stop on the protocol terminator, and make cancellation
-visible to the caller.
+Render incremental text, stop on the protocol terminator, and surface partial
+data and stream errors to the caller.
 ```
 
 The skill never treats a browser-bundled secret as safe. Put credentials behind

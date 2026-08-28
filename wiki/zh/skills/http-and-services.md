@@ -32,8 +32,8 @@ $fetcher-integration 为计费 API 增加可复用 NamedFetcher。
 **适用于：** 使用 `@api`、HTTP 方法装饰器、参数装饰器、生命周期钩子和生成元数据
 定义类服务。
 
-**前置条件：** 必须启用 TypeScript 装饰器元数据，并在服务加载前初始化
-`reflect-metadata`。
+`reflect-metadata` 随包提供并自动导入。只有其他装饰器库必须在 Fetcher 服务加载前
+完成初始化时，才在应用入口显式导入它。
 
 ```text
 $fetcher-decorator-service 定义类型安全的 UserService，包含获取、创建和删除接口。

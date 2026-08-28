@@ -6,33 +6,45 @@ pageClass: skills-page
 
 # Fetcher Skills
 
-Fetcher ships twelve task-focused agent skills. Each skill gives an agent a
-bounded workflow, the relevant package boundary, and an API reference checked
-against the public exports. Use them when you want an agent to implement with
-Fetcher instead of rediscovering the ecosystem from scratch.
+Fetcher maintains twelve task-focused Agent Skills in this repository and
+publishes them together as the `ahoo-fetcher-skills` plugin through the
+[Ahoo Skills marketplace](https://github.com/Ahoo-Wang/skills). One plugin
+install gives an agent the package boundaries, workflows, and API references
+for the full Fetcher ecosystem.
 
 ::: tip Skills complement the documentation
 Use this site to understand and review an implementation. Use a skill when you
 want an agent to perform the work with the right package and constraints.
 :::
 
-## Start in two minutes
+## Install the Fetcher plugin
 
-Codex discovers repository skills from `.agents/skills`. From a Fetcher clone,
-link the skills you want into that directory:
+[Ahoo Skills](https://github.com/Ahoo-Wang/skills) is the central distribution
+repository. It publishes one split plugin per source project; Fetcher's plugin
+is `ahoo-fetcher-skills`.
+
+### Codex
 
 ```bash
-mkdir -p .agents/skills
-ln -s ../../skills/fetcher-integration .agents/skills/fetcher-integration
-ln -s ../../skills/fetcher-react-hooks .agents/skills/fetcher-react-hooks
+codex plugin marketplace add Ahoo-Wang/skills --ref main
+codex plugin add ahoo-fetcher-skills@ahoo-skills
 ```
 
-Codex follows symlinked skill directories. Restart Codex only when a newly
-added skill does not appear. See the
-[official OpenAI Skills documentation](https://developers.openai.com/codex/skills/)
-for supported locations and discovery behavior.
+### Claude Code
 
-Invoke a skill explicitly with `$` in Codex CLI or the IDE extension:
+```bash
+/plugin marketplace add https://github.com/Ahoo-Wang/skills
+/plugin install ahoo-fetcher-skills
+```
+
+The marketplace syncs source repositories every six hours and turns each sync
+commit into a new plugin version. In Claude Code, run `/plugin update` to pull
+the latest synchronized copy. These installation and update rules come from
+the [Ahoo Skills installation guide](https://github.com/Ahoo-Wang/skills/blob/main/README.md#L47-L66).
+
+## Invoke a skill
+
+After installing the plugin, invoke one of its skills explicitly with `$`:
 
 ```text
 $fetcher-integration create a named client with a 10 second timeout,
@@ -41,6 +53,19 @@ JSON extraction, and a typed 401 recovery interceptor.
 
 An agent may also select a skill automatically when the request matches its
 description. Explicit invocation is better when the package boundary matters.
+
+## Source and distribution
+
+| Layer        | Location                                                                                                             | Purpose                                           |
+| ------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Source       | [`fetcher/skills`](https://github.com/Ahoo-Wang/fetcher/tree/main/skills)                                            | Author and review Fetcher-owned skill content     |
+| Distribution | [`plugins/ahoo-fetcher-skills`](https://github.com/Ahoo-Wang/skills/tree/main/plugins/ahoo-fetcher-skills)           | Generated plugin consumed by agents               |
+| Marketplace  | [`.agents/plugins/marketplace.json`](https://github.com/Ahoo-Wang/skills/blob/main/.agents/plugins/marketplace.json) | Advertise the installable Codex plugin collection |
+
+Edit skills in Fetcher, not in the generated distribution copy. Ahoo Skills
+shallow-clones this repository, mirrors `skills/plugins.json`, and regenerates
+the plugin on its sync schedule. The central repository documents that flow in
+its [source synchronization description](https://github.com/Ahoo-Wang/skills/blob/main/README.md#L68-L80).
 
 ## Choose a skill
 
@@ -61,13 +86,14 @@ description. Explicit invocation is better when the package boundary matters.
 
 ## How each skill is structured
 
-Every Fetcher skill has three layers:
+Every Fetcher skill has three core layers; some also include `evals/` fixtures:
 
 | File                 | Loaded when                | Purpose                                        |
 | -------------------- | -------------------------- | ---------------------------------------------- |
 | `SKILL.md`           | The skill activates        | Trigger boundary and implementation workflow   |
 | `references/api.md`  | Exact API detail is needed | Signatures, defaults, examples, and edge cases |
 | `agents/openai.yaml` | The host lists the skill   | Display name and default prompt                |
+| `evals/`             | The skill is validated     | Optional activation or behavior fixtures       |
 
 The short workflow prevents unrelated packages from entering a change. The API
 reference is intentionally deeper than the public Wiki page and remains the

@@ -35,8 +35,9 @@ Continue with the [Fetcher reference](../reference/fetcher.md).
 **Use for:** class-based services built with `@api`, HTTP method decorators,
 parameter decorators, lifecycle hooks, and generated decorator metadata.
 
-**Prerequisite:** TypeScript decorator metadata must be enabled and
-`reflect-metadata` must be initialized before decorated services load.
+`reflect-metadata` ships with the package and is imported automatically. Add an
+explicit application entry-point import only when another decorator library
+must initialize it before Fetcher services load.
 
 ```text
 $fetcher-decorator-service define a UserService with typed get, create,

@@ -6,30 +6,41 @@ pageClass: skills-page
 
 # Fetcher Skills
 
-Fetcher 提供十二个面向具体任务的 Agent Skill。每个 Skill 都包含明确的触发边界、
-对应包的实施工作流，以及根据公共导出核对过的 API 参考。它们让 Agent 直接按
-Fetcher 的真实约束工作，而不是重新猜测整个生态。
+Fetcher 在本仓库维护十二个面向具体任务的 Agent Skill，并通过
+[Ahoo Skills Marketplace](https://github.com/Ahoo-Wang/skills)统一发布为
+`ahoo-fetcher-skills` 插件。安装一个插件即可获得覆盖整个 Fetcher 生态的包边界、
+工作流和 API 参考。
 
 ::: tip Skills 与文档各司其职
 使用本站理解和审查实现；需要 Agent 执行任务时使用 Skill，让它选择正确的包和工作流。
 :::
 
-## 两分钟开始使用
+## 安装 Fetcher 插件
 
-Codex 会从 `.agents/skills` 发现仓库级 Skill。在 Fetcher 克隆目录中，把需要的
-Skill 链接到该目录：
+[Ahoo Skills](https://github.com/Ahoo-Wang/skills) 是统一分发仓库，按源项目发布
+拆分插件；Fetcher 对应 `ahoo-fetcher-skills`。
+
+### Codex
 
 ```bash
-mkdir -p .agents/skills
-ln -s ../../skills/fetcher-integration .agents/skills/fetcher-integration
-ln -s ../../skills/fetcher-react-hooks .agents/skills/fetcher-react-hooks
+codex plugin marketplace add Ahoo-Wang/skills --ref main
+codex plugin add ahoo-fetcher-skills@ahoo-skills
 ```
 
-Codex 支持指向 Skill 目录的符号链接。新增 Skill 未出现时再重启 Codex。完整的
-发现位置与行为见
-[OpenAI 官方 Skills 文档](https://developers.openai.com/codex/skills/)。
+### Claude Code
 
-在 Codex CLI 或 IDE 扩展中，用 `$` 显式调用 Skill：
+```bash
+/plugin marketplace add https://github.com/Ahoo-Wang/skills
+/plugin install ahoo-fetcher-skills
+```
+
+Marketplace 每六小时同步一次源仓库，每次同步提交都会形成新的插件版本。在
+Claude Code 中运行 `/plugin update` 即可拉取最新同步副本。安装与更新规则以
+[Ahoo Skills 安装说明](https://github.com/Ahoo-Wang/skills/blob/main/README.zh-CN.md#L47-L66)为准。
+
+## 调用 Skill
+
+安装插件后，用 `$` 显式调用其中一个 Skill：
 
 ```text
 $fetcher-integration 创建一个 10 秒超时的命名客户端，
@@ -38,6 +49,18 @@ $fetcher-integration 创建一个 10 秒超时的命名客户端，
 
 当任务匹配 `description` 时，Agent 也可以自动选择 Skill；包边界很重要时，优先
 显式调用。
+
+## 源码与分发
+
+| 层级        | 位置                                                                                                                 | 用途                               |
+| ----------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 源码        | [`fetcher/skills`](https://github.com/Ahoo-Wang/fetcher/tree/main/skills)                                            | 编写和审查 Fetcher 自有 Skill 内容 |
+| 分发        | [`plugins/ahoo-fetcher-skills`](https://github.com/Ahoo-Wang/skills/tree/main/plugins/ahoo-fetcher-skills)           | Agent 实际安装的生成式插件         |
+| Marketplace | [`.agents/plugins/marketplace.json`](https://github.com/Ahoo-Wang/skills/blob/main/.agents/plugins/marketplace.json) | 发布可安装的 Codex 插件集合        |
+
+Skill 应在 Fetcher 仓库修改，而不是直接编辑生成的分发副本。Ahoo Skills 会浅克隆本仓库、
+镜像 `skills/plugins.json`，并按同步周期重新生成插件。具体流程见
+[Ahoo Skills 源码同步说明](https://github.com/Ahoo-Wang/skills/blob/main/README.zh-CN.md#L68-L80)。
 
 ## 选择 Skill
 
@@ -58,13 +81,14 @@ $fetcher-integration 创建一个 10 秒超时的命名客户端，
 
 ## Skill 的结构
 
-每个 Fetcher Skill 都有三层：
+每个 Fetcher Skill 都有三个核心层级，部分 Skill 还包含 `evals/` Fixture：
 
 | 文件                 | 加载时机           | 用途                         |
 | -------------------- | ------------------ | ---------------------------- |
 | `SKILL.md`           | Skill 激活时       | 触发边界与实施工作流         |
 | `references/api.md`  | 需要精确 API 时    | 签名、默认值、示例和边界情况 |
 | `agents/openai.yaml` | Host 展示 Skill 时 | 显示名称与默认提示词         |
+| `evals/`             | 校验 Skill 时      | 可选的激活或行为测试 Fixture |
 
 短工作流防止无关包进入变更；API reference 比 Wiki 更深入，是 Agent 查询精确签名
 时的事实来源。

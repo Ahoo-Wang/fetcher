@@ -47,7 +47,7 @@ $fetcher-cosec-auth 为服务端 Fetcher 配置 Token 刷新、空间归属，
 
 ## `$fetcher-wow-cqrs`
 
-**适用于：** 命令投递、命令等待流、快照与事件查询、数组优先 Filter、聚合、
+**适用于：** 命令投递、命令等待流、快照与事件查询、Query DSL、聚合、
 归属路径、生成式 Wow 客户端和对应 React Hooks。
 
 ```text

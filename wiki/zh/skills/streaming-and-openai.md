@@ -31,7 +31,7 @@ Skill 会提醒 Agent：使用 `Response` 原型扩展前必须导入 eventstrea
 
 ```text
 $fetcher-openai-client 构建注入 API Key 的流式 Chat 服务。
-增量渲染文本，在协议终止符处停止，并让调用方可以观察取消状态。
+增量渲染文本，在协议终止符处停止，并向调用方呈现部分数据与流错误。
 ```
 
 Skill 不会把浏览器 Bundle 中的 Secret 视为安全。凭据必须放在可信服务端边界，
