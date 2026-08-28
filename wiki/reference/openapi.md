@@ -1,91 +1,110 @@
 ---
 title: OpenAPI reference
-description: Type OpenAPI documents and extensions without adding runtime code.
+description: Type OpenAPI 3.x documents, references, extensions, and schemas without runtime code.
 pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-openapi`
 
-This is a type-only package for OpenAPI 3.x documents. It has no runtime
-dependencies and does not parse, validate, or generate code.
+`@ahoo-wang/fetcher-openapi` is a type-only vocabulary for authoring or transforming OpenAPI documents. It does not load, validate, dereference, or generate a document.
 
-## Install
+## Install and entry points
 
 ```bash
 pnpm add -D @ahoo-wang/fetcher-openapi
 ```
 
-## Type a document
+Use `import type`: all types are re-exported by [`packages/openapi/src/index.ts:19`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19), with no runtime value. Use the [Generator reference](./generator.md) for client generation and a dedicated validator before trusting JSON/YAML.
+
+| Need | Start with | Contract |
+| --- | --- | --- |
+| Root document | `OpenAPI`, `Info`, `Server`, `Tag` | `openapi`, `info`, and `paths` are required. |
+| Route | `Paths`, `PathItem`, `Operation` | An operation requires `responses`. |
+| Request | `Parameter`, `RequestBody`, `MediaType`, `Encoding` | Parameter needs `name`/`in`; request body needs `content`. |
+| Result/callback | `Responses`, `Response`, `Header`, `Link`, `Callback` | Result entries may be inline or `$ref`. |
+| Components | `Components`, `Schema`, `Reference` | Preserve each `Schema | Reference` union. |
+| Auth/extension | `SecurityScheme`, `SecurityRequirement`, `Extensible` | `x-*` is allowed; its meaning is application-defined. |
+
+## Export map
+
+| Family | Public types |
+| --- | --- |
+| Base/document | `HTTPMethod`, `ParameterLocation`, `SchemaType`, `ExternalDocumentation`, `Example`, `Header`, `OpenAPI`, `Info`, `Contact`, `License`, `Server`, `ServerVariable`, `Tag` |
+| Paths | `Paths`, `PathItem`, `Operation` |
+| Inputs/outputs | `Parameter`, `RequestBody`, `MediaType`, `Encoding`, `Responses`, `Response`, `Link`, `Callback` |
+| Components/schema | `Components`, `ComponentTypeMap`, `Schema`, `Discriminator`, `XML` |
+| Security | `OAuthFlow`, `OAuthFlows`, `SecurityScheme`, `SecurityRequirement` |
+| Reference/extension | `Reference`, `IsReference<T>`, `Extensible`, `CommonExtensions` |
+
+## Minimal typed document
 
 ```ts
-import type { OpenAPI, Operation, Schema } from '@ahoo-wang/fetcher-openapi';
+import type { OpenAPI, Operation, Reference, Schema } from '@ahoo-wang/fetcher-openapi';
 
-export function operationIds(document: OpenAPI): string[] {
-  return Object.values(document.paths).flatMap(pathItem =>
-    Object.values(pathItem ?? {})
-      .filter((value): value is Operation => typeof value === 'object')
-      .flatMap(operation => operation.operationId ?? []),
-  );
+const page: Schema = {
+  type: 'object',
+  required: ['total'],
+  properties: { total: { type: 'integer', format: 'int64' } },
+};
+
+const document: OpenAPI = {
+  openapi: '3.0.3',
+  info: { title: 'Catalog', version: '1.0.0' },
+  paths: {
+    '/products/{id}': {
+      get: {
+        operationId: 'getProduct',
+        parameters: [{ name: 'id', in: 'path', required: true }],
+        responses: { '200': { description: 'OK' } },
+      },
+    },
+  },
+  components: { schemas: { Page: page } },
+};
+
+function isReference(value: Schema | Reference): value is Reference {
+  return '$ref' in value;
 }
 
-export const pageSchema: Schema = {
-  type: 'object',
-  properties: {
-    total: { type: 'integer', format: 'int64' },
-  },
-};
+const operation: Operation = document.paths['/products/{id}'].get!;
 ```
 
-## Export groups
+`OpenAPI` requires only `openapi`, `info`, and `paths`; `servers`, `components`, global `security`, `tags`, and `externalDocs` are optional ([`openAPI.ts:41`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/openAPI.ts#L41)). `PathItem` exposes eight HTTP-method keys and `Operation.responses` is required ([`paths.ts:44`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L44)).
 
-| Group      | Representative types                                      |
-| ---------- | --------------------------------------------------------- |
-| Document   | `OpenAPI`, `Info`, `Tag`, `Server`                        |
-| Paths      | `Paths`, `PathItem`, `Operation`                          |
-| Inputs     | `Parameter`, `RequestBody`, `MediaType`                   |
-| Outputs    | `Responses`, `Response`, `Header`, `Link`                 |
-| Models     | `Schema`, `Discriminator`, `XML`                          |
-| Reuse      | `Components`, `Reference`                                 |
-| Security   | `SecurityScheme`, `SecurityRequirement`, OAuth flow types |
-| Extensions | `Extensible` and `x-*` extension support                  |
+## Type contracts
 
-## Document contracts
+| Type | Required | Important branches |
+| --- | --- | --- |
+| `Parameter` | `name`, `in` | `schema` or `content`; both may contain references. |
+| `RequestBody` | `content` | `Operation.requestBody` is `RequestBody | Reference`. |
+| `Responses` | — | `default` and status keys are `Response | Reference | undefined`. |
+| `Schema` | — | Constraints, `items`, `properties`, `additionalProperties`, composition, `discriminator`, `xml`. |
+| `Components` | — | Maps schemas, responses, parameters, examples, request bodies, headers, security schemes, links, callbacks. |
+| `SecurityScheme` | `type` | `apiKey`, `http`, `oauth2`, `openIdConnect`; each OAuth flow requires `scopes`. |
+| `Callback` | — | Expression keys map to `PathItem`. |
 
-### References and reusable components
+The public `$ref` shape is `Reference` (`{ $ref: string }`), not `ReferenceObject`. Narrow every `Schema | Reference`, `Response | Reference`, or similar union before reading inline fields ([`reference.ts:23`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/reference.ts#L23)). `Operation` uses reference unions for parameters, request bodies, and callbacks; `Responses` does so for response entries ([`paths.ts:50`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L50), [`responses.ts:62`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L62)).
 
-Use `Reference` where OpenAPI allows `$ref`, and place reusable schema,
-response, parameter, request-body, header, security, example, link, and callback
-objects under `Components`. A reference identifies another document node; this
-package does not dereference it at runtime.
+## OpenAPI 3.0 / 3.1 boundary
 
-### Schema families
+`OpenAPI.openapi` is an unconstrained `string`: the package does not select, validate, or convert an OpenAPI version. `Schema` admits common 3.0 fields such as `nullable` and 3.1/JSON-Schema-oriented fields such as `$schema`, `const`, `type: 'null'`, numeric exclusive bounds, and a type array. This is a permissive shape, not proof of 3.0 or 3.1 compliance ([`schema.ts:91`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/schema.ts#L91)).
 
-| Schema kind | Important fields                                                   |
-| ----------- | ------------------------------------------------------------------ |
-| Primitive   | `type`, `format`, `enum`, `default`, numeric or string constraints |
-| Array       | `items`, length constraints, uniqueness                            |
-| Object      | `properties`, `required`, `additionalProperties`, composition      |
-| Composition | `allOf`, `oneOf`, `anyOf`, `not`, `discriminator`                  |
+Every extensible object accepts `x-${string}`. `CommonExtensions` is a convenience list, not a restriction on all vendor extensions ([`extensions.ts:22`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/extensions.ts#L22)).
 
-Operation types connect parameters, request bodies, responses, callbacks,
-security, tags, and vendor extensions at one path and HTTP method.
+## Failure guide
 
-## Extension and validation boundary
+| Symptom | Check |
+| --- | --- |
+| A field is rejected | Check the exact interface; this package does not model every dialect extension. |
+| Cannot read `properties` or `content` | Narrow the `Reference` union first. |
+| JSON/YAML type-checks but tooling fails | Validate and dereference separately; there is no parser or runtime validator. |
+| Extension is rejected | Use an `x-` key; arbitrary unknown keys are not allowed. |
+| Need 3.1 compliance | Add a version-aware validator. |
 
-`Extensible` permits `x-*` properties without widening every known field.
-Preserve extensions when transforming a document; generators may use them as a
-contract. TypeScript assignment only checks compile-time shape. It does not
-prove that loaded YAML or JSON is valid OpenAPI.
+## Source reference
 
-## Source and agent reference
-
-- Public exports: [`packages/openapi/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts)
-- Detailed agent API: [`skills/fetcher-openapi-types/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-types/references/api.md)
-- Skill: [`$fetcher-openapi-types`](../skills/openapi-and-generation.md#fetcher-openapi-types)
-
-Use `import type` so the package disappears from emitted JavaScript. These
-interfaces describe document shape; validate untrusted JSON or YAML with a
-dedicated validator before treating it as an `OpenAPI` object.
-
-Use the [Generator reference](./generator.md) when the goal is client code,
-not document tooling.
+- [Public exports: `packages/openapi/src/index.ts:19`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)
+- [Document root: `packages/openapi/src/openAPI.ts:41`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/openAPI.ts#L41)
+- [Inputs: `packages/openapi/src/parameters.ts:40`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/parameters.ts#L40)
+- [Schema: `packages/openapi/src/schema.ts:91`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/schema.ts#L91)
+- [Security: `packages/openapi/src/security.ts:63`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/security.ts#L63)
