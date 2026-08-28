@@ -79,10 +79,10 @@ src/generated/
 2. Resolve aggregate definitions from root tags and operations.
 3. Load optional configuration.
 4. Generate models, ordinary API clients, and recognized Wow clients.
-5. If `project.getDirectory(outputDir)` exists, create an `index.ts` for each non-empty generated directory.
+5. If `project.getDirectory(outputDir) !== undefined`, create an `index.ts` for each non-empty generated directory.
 6. In that same branch, format imports/source and save the ts-morph project.
 
-After model/client generation, `generate()` checks for the output directory. Only a created output directory (that is, generated source exists) enters the index, format, and save phase. With an empty document or no generatable symbols, it logs `Output directory not found.` and returns normally; the CLI then still prints success and exits `0` ([`index.ts:126`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L126), [`clis.ts:145`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L145)). Recursive index generation excludes an existing `index.ts` and rewrites generated indexes ([`index.ts:187`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L187)).
+After model/client generation, `generate()` reads `project.getDirectory(outputDir)`. If it is `undefined`, it logs `Output directory not found.` and returns normally. An empty document or no generatable symbols typically reaches that branch only when the Project has no existing source under that directory; if `tsconfig` already includes source there, the directory may be found and indexing, formatting, and saving still run. The CLI awaits this normal return, then writes its success log and exits `0` ([`index.ts:126`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L126), [`clis.ts:147`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L147)). Recursive index generation excludes an existing `index.ts` and rewrites generated indexes ([`index.ts:187`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L187)).
 
 ## Programmatic API
 
@@ -148,7 +148,7 @@ find /tmp/fetcher-reference-generator-check -type f -print -quit
 | Parsed configuration later throws | The file parsed but its object shape is not validated; check the type of `apiClients.<tag>.ignorePathParameters`. |
 | Parse/generation error / exit `1` | Check input contents, path/URL reachability, and supplied TypeScript configuration. |
 | Exit `0` but expected Wow client is absent | Check the discovery matrix, generated tree, and logs; missing state or fields excludes an aggregate. |
-| Exit `0` but there are no output files | Check for `Output directory not found.`: no output directory was created, so indexing/formatting/saving were skipped and the CLI still reported success. |
+| Exit `0` but there are no output files | Check for `Output directory not found.`: `project.getDirectory(outputDir)` was unavailable, so indexing/formatting/saving were skipped and the CLI still reported success. Do not infer that this run created no source if `tsconfig` already includes the directory. |
 | Generated code fails application compilation | Pass the consumer `tsconfig` and install packages imported by generated files. |
 
 The repository E2E test uses this fixture and asserts both API and Wow command output ([`e2e.test.ts:125`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/test/e2e.test.ts#L125)).

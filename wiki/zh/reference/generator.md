@@ -79,10 +79,10 @@ src/generated/
 2. 从根 Tag 与 Operation 解析 Aggregate 定义。
 3. 加载可选配置。
 4. 生成 Model、普通 API Client 与识别出的 Wow Client。
-5. 若 `project.getDirectory(outputDir)` 存在，为每个非空生成目录创建 `index.ts`。
+5. 若 `project.getDirectory(outputDir) !== undefined`，为每个非空生成目录创建 `index.ts`。
 6. 仅在该分支格式化 Import/源码，并保存 ts-morph Project。
 
-Model/Client 生成后，`generate()` 会检查输出目录。只有创建了输出目录（即存在生成源码）才进入索引、格式化、保存阶段。文档为空或没有可生成符号时，它记录 `Output directory not found.` 后正常返回；CLI 仍会打印成功并以 `0` 退出（[`index.ts:126`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L126)、[`clis.ts:145`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L145)）。递归索引生成会排除已有 `index.ts` 并重写生成索引（[`index.ts:187`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L187)）。
+Model/Client 生成后，`generate()` 读取 `project.getDirectory(outputDir)`。若为 `undefined`，它记录 `Output directory not found.` 后正常返回。文档为空或没有可生成符号时，通常仅在 Project 没有该目录下的既有源码才会进入此分支；若 `tsconfig` 已纳入该目录下的源码，仍可能找到目录并继续索引、格式化、保存。CLI 会 await 这次正常返回，随后写入成功日志并以 `0` 退出（[`index.ts:126`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L126)、[`clis.ts:147`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L147)）。递归索引生成会排除已有 `index.ts` 并重写生成索引（[`index.ts:187`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L187)）。
 
 ## 程序化 API
 
@@ -148,7 +148,7 @@ find /tmp/fetcher-reference-generator-check -type f -print -quit
 | 已解析配置在后续抛错 | 文件已解析但对象形状未校验；检查 `apiClients.<tag>.ignorePathParameters` 的类型。 |
 | Parse/Generation Error / 退出 `1` | 检查输入内容、Path/URL 可达性与传入的 TypeScript 配置。 |
 | 退出 `0` 但缺少 Wow Client | 按发现矩阵检查、查看生成树和日志；缺少 State 或 Fields 会排除 Aggregate。 |
-| 退出 `0` 但没有输出文件 | 检查 `Output directory not found.`：未创建输出目录，因此跳过索引/格式化/保存，CLI 仍报告成功。 |
+| 退出 `0` 但没有输出文件 | 检查 `Output directory not found.`：`project.getDirectory(outputDir)` 不可用，因此跳过索引/格式化/保存，CLI 仍报告成功。若 `tsconfig` 已纳入该目录，不要据此推断本轮没有创建源码。 |
 | 生成代码无法在应用中编译 | 传入消费方 `tsconfig` 并安装生成文件导入的包。 |
 
 仓库 E2E Test 使用该 Fixture，并同时断言 API 与 Wow Command 输出（[`e2e.test.ts:125`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/test/e2e.test.ts#L125)）。
