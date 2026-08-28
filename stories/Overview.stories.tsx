@@ -14,11 +14,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { fixtureUsers } from './fixtures/http';
-import { fixtureViewerDefinition } from './fixtures/viewer';
 
 const meta = {
   title: 'Overview',
-  parameters: { layout: 'centered' },
+  parameters: { layout: 'fullscreen' },
 } satisfies Meta;
 
 export default meta;
@@ -27,28 +26,91 @@ type Story = StoryObj<typeof meta>;
 
 export const StartHere: Story = {
   render: () => (
-    <main aria-labelledby="storybook-title" className="story-stack">
-      <h1 id="storybook-title">Fetcher interactive workflows</h1>
-      <p>
-        Explore real package behavior with deterministic local data. No story
-        contacts an external service or requires credentials.
-      </p>
-      <ul>
-        <li>HTTP &amp; Streaming</li>
-        <li>React Hooks</li>
-        <li>Viewer</li>
-      </ul>
-      <p>
-        Use Controls to change inputs, Interactions to inspect assertions, and
-        Accessibility to review the rendered result.
-      </p>
-      <output className="story-output">
-        Fixtures: {fixtureUsers.map(user => user.name).join(', ')} ·{' '}
-        {fixtureViewerDefinition.name}
-      </output>
-      <a href="https://fetcher.ahoo.me/start/first-request">
-        Read the five-minute guide
-      </a>
+    <main aria-labelledby="storybook-title" className="story-overview">
+      <header className="story-overview__hero">
+        <p className="story-overview__eyebrow">Fetcher Scenario Lab</p>
+        <h1 id="storybook-title">Fetcher interactive workflows</h1>
+        <p>
+          Explore real package behavior with deterministic local data. Every
+          scenario names its setup, action, and observable contract before you
+          run it.
+        </p>
+        <div className="story-overview__facts" aria-label="Lab guarantees">
+          <span>Local fixtures</span>
+          <span>No credentials</span>
+          <span>Repeatable assertions</span>
+        </div>
+      </header>
+
+      <section aria-labelledby="scenario-catalog-title">
+        <h2 id="scenario-catalog-title">Choose a developer scenario</h2>
+        <div className="story-overview__grid">
+          <a href="./?path=/docs/http-streaming-fetcher--docs" target="_top">
+            <span>HTTP exchange</span>
+            <strong>Trace a request</strong>
+            <p>Follow URL resolution, transport, extraction, and failure.</p>
+          </a>
+          <a href="./?path=/docs/http-streaming-event-bus--docs" target="_top">
+            <span>Event delivery</span>
+            <strong>Compare handler execution</strong>
+            <p>Observe serial order, parallel completion, and cleanup.</p>
+          </a>
+          <a
+            href="./?path=/docs/http-streaming-event-stream--docs"
+            target="_top"
+          >
+            <span>Streaming</span>
+            <strong>Read an SSE response</strong>
+            <p>
+              Inspect parsing, termination, malformed data, and cancellation.
+            </p>
+          </a>
+          <a href="./?path=/docs/react-hooks-async-state--docs" target="_top">
+            <span>React async state</span>
+            <strong>Drive a promise lifecycle</strong>
+            <p>
+              See success, rejection, retry, debounce, and stale suppression.
+            </p>
+          </a>
+          <a href="./?path=/docs/react-hooks-fetcher--docs" target="_top">
+            <span>React request state</span>
+            <strong>Bind Fetcher to a hook</strong>
+            <p>Exercise loading, result, error, refresh, and cancellation.</p>
+          </a>
+          <a href="./?path=/docs/react-hooks-wow-queries--docs" target="_top">
+            <span>CQRS query state</span>
+            <strong>Run typed Wow queries</strong>
+            <p>Compare single, list, page, count, and stream query state.</p>
+          </a>
+        </div>
+      </section>
+
+      <section aria-labelledby="scenario-reading-title">
+        <h2 id="scenario-reading-title">Read every scenario the same way</h2>
+        <ol className="story-overview__flow">
+          <li>
+            <strong>Setup</strong>
+            <span>Know the fixture and starting state.</span>
+          </li>
+          <li>
+            <strong>Action</strong>
+            <span>Run one named behavior variant.</span>
+          </li>
+          <li>
+            <strong>Observe</strong>
+            <span>Compare the visible result with the contract.</span>
+          </li>
+        </ol>
+      </section>
+
+      <footer className="story-overview__footer">
+        <output className="story-output">
+          Fixtures: {fixtureUsers.map(user => user.name).join(', ')} · Users
+        </output>
+        <a href="https://fetcher.ahoo.me/start/first-request">
+          Read the five-minute guide
+        </a>
+      </footer>
     </main>
   ),
   play: async ({ canvasElement }) => {
@@ -56,6 +118,16 @@ export const StartHere: Story = {
     await expect(
       canvas.getByRole('heading', { name: 'Fetcher interactive workflows' }),
     ).toBeVisible();
+    await expect(canvas.getByText('Setup')).toBeVisible();
+    await expect(canvas.getByText('Action')).toBeVisible();
+    await expect(canvas.getByText('Observe')).toBeVisible();
+    const links = canvas.getAllByRole('link');
+    await expect(links).toHaveLength(7);
+    for (const link of links.slice(0, 6)) {
+      await expect(link.getAttribute('href')?.startsWith('./?path=')).toBe(
+        true,
+      );
+    }
     await expect(canvas.getByText('Fixtures: Ada, Lin · Users')).toBeVisible();
   },
 };

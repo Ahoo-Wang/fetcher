@@ -92,7 +92,7 @@ const meta = {
   component: OpenAIDemo,
   beforeEach: installFetchFixture,
   args: { scenario: 'json' },
-  argTypes: { scenario: { control: 'radio' } },
+  argTypes: { scenario: { table: { disable: true } } },
 } satisfies Meta<typeof OpenAIDemo>;
 
 export default meta;

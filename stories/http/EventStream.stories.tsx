@@ -123,7 +123,7 @@ const meta = {
   title: 'HTTP & Streaming/Event Stream',
   component: EventStreamDemo,
   args: { scenario: 'tokens' },
-  argTypes: { scenario: { control: 'radio' } },
+  argTypes: { scenario: { table: { disable: true } } },
 } satisfies Meta<typeof EventStreamDemo>;
 
 export default meta;

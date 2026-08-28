@@ -87,7 +87,7 @@ const meta = {
   title: 'HTTP & Streaming/Storage',
   component: StorageDemo,
   args: { scenario: 'read-write' },
-  argTypes: { scenario: { control: 'radio' } },
+  argTypes: { scenario: { table: { disable: true } } },
 } satisfies Meta<typeof StorageDemo>;
 
 export default meta;

@@ -117,7 +117,7 @@ const meta = {
   title: 'React Hooks/Async State',
   component: AsyncStateDemo,
   args: { scenario: 'success' },
-  argTypes: { scenario: { control: 'radio' } },
+  argTypes: { scenario: { table: { disable: true } } },
 } satisfies Meta<typeof AsyncStateDemo>;
 
 export default meta;
@@ -125,7 +125,17 @@ type Story = StoryObj<typeof meta>;
 
 async function runAndExpect(canvasElement: HTMLElement, text: string) {
   const canvas = within(canvasElement);
-  await userEvent.click(canvas.getByRole('button', { name: 'Run operation' }));
+  await expect(canvas.getByText('Setup')).toBeVisible();
+  await expect(canvas.getByText('Action')).toBeVisible();
+  await expect(canvas.getByText('Observe')).toBeVisible();
+  const trigger = canvas.getByRole('button', { name: 'Run operation' });
+  await expect(window.getComputedStyle(trigger).borderRadius).toBe('8px');
+  await userEvent.tab();
+  await expect(trigger).toHaveFocus();
+  await expect(window.getComputedStyle(trigger).outlineColor).toBe(
+    'rgb(9, 88, 217)',
+  );
+  await userEvent.click(trigger);
   await expect(await canvas.findByText(text)).toBeVisible();
 }
 

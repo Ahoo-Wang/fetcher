@@ -38,7 +38,7 @@ function FetcherViewerDemo({
   showRefMethods,
 }: FetcherViewerDemoProps) {
   const viewerRef = useRef<FetcherViewerRef>(null);
-  const [output, setOutput] = useState('Ready');
+  const [output, setOutput] = useState<string>();
 
   const readState = () => {
     const definition = viewerRef.current?.getViewerDefinition();
@@ -90,7 +90,7 @@ function FetcherViewerDemo({
           }
         />
       </FullscreenProvider>
-      {showRefMethods && (
+      {showRefMethods && output && (
         <output className="story-output" aria-live="polite">
           {output}
         </output>
@@ -137,7 +137,9 @@ type Story = StoryObj<typeof meta>;
 export const RemoteSuccess: Story = {
   args: { scenario: 'success' },
   play: async ({ canvasElement }) => {
-    await expect(await within(canvasElement).findByText('Ada')).toBeVisible();
+    const canvas = within(canvasElement);
+    expect(canvas.queryByText('Setup')).not.toBeInTheDocument();
+    await expect(await canvas.findByText('Ada')).toBeVisible();
   },
 };
 
@@ -191,7 +193,16 @@ export const ImperativeMethods: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(await canvas.findByText('Ada')).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: 'Refresh data' }));
+    expect(canvas.queryByText('Ready')).not.toBeInTheDocument();
+    const actions = canvasElement.querySelector('.story-actions');
+    await expect(getComputedStyle(actions!).display).toBe('block');
+    const searchButton = canvas.getByRole('button', { name: /搜索/ });
+    await expect(getComputedStyle(searchButton).backgroundColor).toBe(
+      'rgb(9, 88, 217)',
+    );
+    const refreshButton = canvas.getByRole('button', { name: 'Refresh data' });
+    await expect(getComputedStyle(refreshButton).borderRadius).not.toBe('8px');
+    await userEvent.click(refreshButton);
     await expect(await canvas.findByText('Ada (refreshed)')).toBeVisible();
     await userEvent.click(canvas.getByRole('button', { name: 'Read state' }));
     await expect(

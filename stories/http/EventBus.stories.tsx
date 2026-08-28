@@ -110,7 +110,7 @@ const meta = {
   title: 'HTTP & Streaming/Event Bus',
   component: EventBusDemo,
   args: { scenario: 'serial' },
-  argTypes: { scenario: { control: 'radio' } },
+  argTypes: { scenario: { table: { disable: true } } },
 } satisfies Meta<typeof EventBusDemo>;
 
 export default meta;
@@ -118,6 +118,9 @@ type Story = StoryObj<typeof meta>;
 
 async function emitAndExpect(canvasElement: HTMLElement, text: string) {
   const canvas = within(canvasElement);
+  await expect(canvas.getByText('Setup')).toBeVisible();
+  await expect(canvas.getByText('Action')).toBeVisible();
+  await expect(canvas.getByText('Observe')).toBeVisible();
   await userEvent.click(canvas.getByRole('button', { name: 'Emit event' }));
   await expect(await canvas.findByText(text)).toBeVisible();
 }

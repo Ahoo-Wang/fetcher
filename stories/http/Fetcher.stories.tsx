@@ -107,7 +107,7 @@ const meta = {
   component: RequestDemo,
   beforeEach: installFetchFixture,
   args: { scenario: 'basic' },
-  argTypes: { scenario: { control: 'radio' } },
+  argTypes: { scenario: { table: { disable: true } } },
 } satisfies Meta<typeof RequestDemo>;
 
 export default meta;
