@@ -1,20 +1,12 @@
 ---
 title: Viewer 参考
-description: 使用 React 和 Ant Design 组合过滤器、表格、保存视图与远程 Viewer 工作流。
+description: 组合类型化过滤器、表格、保存视图与 Fetcher 驱动的 Viewer Flow。
 pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-viewer`
 
-Viewer 是面向可查询数据集的 React + Ant Design 组件系统。请选择所有权与应用匹配的
-最高层组件：
-
-| 组件            | 组件负责                              | 应用负责                |
-| --------------- | ------------------------------------- | ----------------------- |
-| `ViewTable`     | 列、单元格渲染、选择 UI               | 数据、排序回调、列状态  |
-| `View`          | 过滤、表格、分页、受控/非受控视图状态 | 数据加载                |
-| `Viewer`        | 保存视图切换、顶栏、过滤、表格        | 数据和视图持久化回调    |
-| `FetcherViewer` | 定义、视图、数据加载、持久化客户端    | 默认 Fetcher 与后端契约 |
+`@ahoo-wang/fetcher-viewer` 是 React + Ant Design 数据视图系统。它适用于类型化 Field Definition、Filter、Column、保存 View 与 Table Flow；它不是通用数据 Fetch Cache。请选择仍持有所需行为的最高层组件。
 
 ## 安装
 
@@ -23,144 +15,131 @@ pnpm add react react-dom antd @ant-design/icons dayjs \
   @ahoo-wang/fetcher-viewer
 ```
 
-同时安装包管理器列出的 Fetcher peer 包。在应用根部提供反馈和浮层所需的 Ant Design
-上下文：
+此包有 Fetcher、React、Wow、Storage、Event、Decorator、OpenAPI 和 EventStream peer dependencies。请提供应用需要的 Ant Design App Context。已发布的 root barrel 是 Public API Boundary。[packages/viewer/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/index.ts#L14)
+
+## 组件选择与所有权
+
+| 组件 | 组件负责 | 调用方负责 |
+| --- | --- | --- |
+| `ViewTable<RecordType>` | Table Column、类型化 Cell、Selection UI | `fields`、`columns`、Row Data、Sort / Selection Callback、Loading 与 Empty/Error Presentation。 |
+| `View<RecordType>` | Filter Panel、Pagination、Sort、受控/非受控 View State | Data Loading；受控模式的 External State Value/Callback。 |
+| `Viewer<RecordType>` | Active Saved View、Side Panel、Top Bar，以及 `View` 组合 | `PagedList` Data、`onLoadData` 与 Persistence Callback。 |
+| `FetcherViewer<RecordType>` | Definition/View/Data Query、Command Client、Default View Persistence 与组合 | Default Fetcher Registration 与 Viewer Backend Contract。 |
+
+`Viewer` 明确不加载 Row，也不远程持久化 View。`FetcherViewer` 使用 Default Fetcher 和内置 Viewer Endpoint。[packages/viewer/src/viewer/Viewer.tsx:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L39) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L48)
+
+## 核心模型与 Callback
+
+`ViewDefinition` 提供 `id`、`name`、类型化 `fields`、`availableFilters`、`dataUrl` 和 `countUrl`。`FieldDefinition` 包含 `name`、`type`、`label`、`primaryKey`、可选 custom `render` 与可选 Ant Design Sorter Configuration。`ViewState` 持久化 View Identity、`PERSONAL`/`SHARED` Type、`SYSTEM`/`CUSTOM` Source、Default Flag、Filter、Column、Table Size、Page Size、Condition、可选 Internal Condition 与 Sorter。[packages/viewer/src/viewer/types.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L15) [packages/viewer/src/viewer/types.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L35)
+
+| `Viewer` 分组 | 必要 / 重要契约 |
+| --- | --- |
+| 初始 View | `defaultViews`、`defaultView`、`definition`；选择 View 时会补齐缺失 Field。 |
+| Row | `dataSource: PagedList<RecordType>` 与 `pagination`（`false` 关闭）；`loading` 可选。 |
+| Data Callback | `onLoadData(condition, oneBasedPage, pageSize, sorter?)` 接收 State Change。 |
+| View Callback | `onSwitchView(view)` 观察切换。 |
+| 持久化 | `onCreateView`、`onUpdateView`、`onDeleteView` 接收 Proposed View 和 `onSuccess(newView)` Continuation；仅在 Remote Success 后调用。 |
+| Actions | `onGetRecordCount`、Primary/Secondary/Batch Action、Row Selection、Primary Key Click、Table Setting、Action Column。 |
+
+`ViewerRef` 有 `getCondition`、`getActiveView`、`clearSelectedRowKeys`；`ViewRef` 还包括 `reset`、`updateTableSize`。[packages/viewer/src/viewer/Viewer.tsx:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L34) [packages/viewer/src/view/View.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L47)
+
+### 精确 Public Component Contract
+
+| 组件 | Required Props | Optional Props / Callback | Ref 与 Default |
+| --- | --- | --- | --- |
+| `View<RecordType>` | `fields`、`availableFilters`、`dataSource`、`showFilter`、`filterMode`、`defaultColumns`、`defaultPageSize`、`defaultTableSize`、`pagination`、`enableRowSelection` | 所有 `external*` / `externalUpdate*` Controlled Pair；`defaultActiveFilters`、`defaultPage`、`defaultSorter`、`defaultCondition`、`actionColumn`、`loading`、`onChange`、Selection 与 Primary-key Callback | `ViewRef`：Table Reset/Selection 加 `getCondition`、`updateTableSize`、`reset`。Internal Hook Fallback 是 Page `1`、Page Size `10`、Table Size `middle`、`all()`、`[]`；Required Props 在该 Component Boundary 仍然必填。 |
+| `Viewer<RecordType>` | `defaultViews`、`defaultView`、`definition`、`dataSource`、`pagination` | `loading`、`onLoadData`、`onSwitchView`、三个 Persistence Callback、Count/Action/Table/Selection/Fullscreen Props | `ViewerRef`：`getCondition`、`getActiveView`、`clearSelectedRowKeys`。它向 Internal `View` 传递 `enableRowSelection ?? true`；这不是必填的 `Viewer` Prop。 |
+| `FetcherViewer<RecordType>` | `viewerDefinitionId`、`pagination` | `ownerId`、`tenantId`、`defaultViewId`、Action/Table/Selection Props、`enhanceDataSource`、`onSwitchView` | `FetcherViewerRef`：`refreshData`、`clearSelectedRowKeys`、`getPageQuery`、`getActiveView`、`getViewerDefinition`；`ownerId` / `tenantId` 默认 `'(0)'`。 |
+
+导出的 `useRefreshDataEventBus(subscriberId?)` 返回共享 Broadcast `bus`、`publish(subscriberId?)`、`subscribe(handler, subscriberId?)`。一个 Hook Instance 只 Prefix/Track 自己成功注册的 Handler Name；Unmount 或 Subscriber-ID Change 时 Cleanup 只移除这些 Name，不会移除共享相同 ID 的另一 Instance Handler。Component-scoped Handler 应从 Effect 中订阅；不要假设存在 Manual Unsubscribe API。[packages/viewer/src/hooks/useRefreshDataEventBus.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L15) [packages/viewer/src/hooks/useRefreshDataEventBus.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L36) [packages/viewer/src/hooks/useRefreshDataEventBus.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L71)
 
 ```tsx
-import { App, ConfigProvider } from 'antd';
-
-root.render(
-  <ConfigProvider>
-    <App>
-      <ProductViewer />
-    </App>
-  </ConfigProvider>,
-);
-```
-
-## 核心模型
-
-`ViewDefinition` 描述字段、可用过滤器和数据/计数 URL。`ViewState` 存储一个个人或
-共享视图的过滤器、列、表格密度、分页大小、条件和排序。
-
-```ts
+import { Viewer } from '@ahoo-wang/fetcher-viewer';
+import type { PagedList } from '@ahoo-wang/fetcher-wow';
 import type { ViewDefinition, ViewState } from '@ahoo-wang/fetcher-viewer';
-import { all } from '@ahoo-wang/fetcher-wow';
 
-const definition: ViewDefinition = {
-  id: 'users',
-  name: '用户',
-  dataUrl: '/users/list',
-  countUrl: '/users/count',
-  fields: [
-    { name: 'id', label: 'ID', type: 'text', primaryKey: true },
-    { name: 'name', label: '姓名', type: 'text', primaryKey: false },
-  ],
-  availableFilters: [],
-};
+type UserRow = { id: string; name: string };
 
-const defaultView: ViewState = {
-  id: 'all-users',
-  name: '全部用户',
-  definitionId: definition.id,
-  type: 'PERSONAL',
-  source: 'SYSTEM',
-  isDefault: true,
-  filters: [],
-  columns: [
-    { name: 'id', key: 'id', fixed: true, hidden: false },
-    { name: 'name', key: 'name', fixed: false, hidden: false },
-  ],
-  tableSize: 'middle',
-  pageSize: 20,
-  condition: all(),
-  sorter: [],
-};
+export function UsersViewer(props: {
+  definition: ViewDefinition;
+  views: ViewState[];
+  activeView: ViewState;
+  data: PagedList<UserRow>;
+}) {
+  return <Viewer<UserRow>
+    defaultViews={props.views}
+    defaultView={props.activeView}
+    definition={props.definition}
+    dataSource={props.data}
+    pagination={{ showSizeChanger: false }}
+    enableRowSelection={false}
+    onLoadData={(condition, page, size, sorter) => {
+      void loadUsers(condition, page, size, sorter);
+    }}
+  />;
+}
+
+declare function loadUsers(...args: unknown[]): Promise<void>;
 ```
 
-## `Viewer<RecordType>`
+## State 与保存 View 持久化
 
-必填属性为 `defaultViews`、`defaultView`、`definition`、`dataSource` 和
-`pagination`。`dataSource` 是 `PagedList<RecordType>`；传入 `pagination={false}`
-可关闭分页。
+`View` 支持非受控 `default*` State，以及受控 `external*` / 对应 `externalUpdate*` Pair，覆盖 Filter、Column、Page、Page Size、Table Size、Condition 与 Sorter。`filterMode` 可为 `none`、`normal`、`editable`；`onChange` 接收 Compose 后的 Condition、从 1 开始的 Page、Page Size、Sorter。默认值为 Page `1`、Page Size `10`、Table Size `middle`、`all()` Condition 和空 Sorter。[packages/viewer/src/view/View.tsx:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L66) [packages/viewer/src/view/View.tsx:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L106) [packages/viewer/src/view/hooks/useViewState.ts:171](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L171)
 
-| 属性组 | 重要属性                                                               |
-| ------ | ---------------------------------------------------------------------- |
-| 数据   | `dataSource`、`loading`、`onLoadData`                                  |
-| 视图   | `defaultViews`、`defaultView`、`onSwitchView`                          |
-| 持久化 | `onCreateView`、`onUpdateView`、`onDeleteView`、`onGetRecordCount`     |
-| 表格   | `pagination`、`actionColumn`、`enableRowSelection`、`viewTableSetting` |
-| 操作   | `primaryAction`、`secondaryActions`、`batchActions`                    |
+受控 Pair 必须完整：只提供 External Value 而没有 Update Callback，会使调用方无法持有 Next State。在 `Viewer` 层，成功的 Create/Update/Delete Continuation 会更新 Local View Collection；Persistence Action 失败时应让旧的可见 State 继续可用，并在调用方持有的 Action Flow 中显示 Error。[packages/viewer/src/viewer/Viewer.tsx:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L127)
 
-`Viewer` 不加载数据，也不持久化视图。回调接收新的条件、从 1 开始的页码、分页大小、
-排序或视图变更。持久化回调调用 `onSuccess` 后，再更新 UI。
+`FetcherViewer` 将最近一次选中的 Default View ID 保存在 module-scope `KeyStorage`，Key 为 `fetcher-viewer-local-default-view-id`；未提供 Storage 时 `KeyStorage` 默认使用 Browser Storage。选择优先级固定为显式 `defaultViewId`、Local Stored ID、`isDefault` View、第一条 View。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L72) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:358](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L358) [packages/storage/src/keyStorage.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L47)
 
-`ViewerRef` 暴露 `getCondition()`、`getActiveView()` 和
-`clearSelectedRowKeys()`。
+## Filter、Cell、Input 与 Registry
 
-## `View<RecordType>` 状态
+公开 Built-in 包括 `TagInput`、`NumberRange`、`RemoteSelect`、`Fullscreen`；Filter 包括 `TypedFilter`、`AssemblyFilter`、ID、Text、Number、Select、Boolean、Date/Time 及其 Panel；Cell 包括 Text、Primary Key、Link、Avatar、Image、Image Group、Tag(s)、Currency、Date/Time、Calendar Time、Action(s)。`RemoteSelect` 默认使用 300 ms Trailing Debounce、`uniqueKey: 'value'`，并合并 Remote、Initial、Additional Option。[packages/viewer/src/components/RemoteSelect.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/RemoteSelect.tsx#L29) [packages/viewer/src/components/RemoteSelect.tsx:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/RemoteSelect.tsx#L59)
 
-非受控状态使用 `default*` 属性。控制某个维度时，应成对传入对应 `external*` 值和
-`externalUpdate*` 回调。可控维度包括过滤器、列、页码、分页大小、表格密度、条件和排序。
+`filterRegistry` 预装 `id`、`text`、`number`、`select`、`bool`、`datetime`；未知 `TypedFilter` 使用 `FallbackFilter`。`cellRegistry` 包含文档列出的 Cell Type；`typedCellRender` 遇到未注册 Type 返回 `undefined`。[packages/viewer/src/filter/filterRegistry.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/filterRegistry.ts#L73) [packages/viewer/src/filter/TypedFilter.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/TypedFilter.tsx#L30) [packages/viewer/src/table/cell/cellRegistry.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/cell/cellRegistry.ts#L67) [packages/viewer/src/table/cell/TypedCell.tsx:117](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/cell/TypedCell.tsx#L117)
 
-`filterMode` 可为 `none`、`normal` 或 `editable`。`onChange` 接收组合后的
-`Condition`、页码、分页大小和排序。`ViewRef` 还暴露 `reset()` 和
-`updateTableSize()`。
+自定义 Type 必须在首次 render 前注册一次，并保持 Identifier 稳定，因为服务端 View Definition 可能持久化它。Duplicate `register` 会抛错；开发期注册前请 `has` 检查，不能在 Component Render 中清空 Shared Registry。[packages/viewer/src/registry/componentRegistry.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/registry/componentRegistry.ts#L37) [packages/viewer/src/registry/componentRegistry.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/registry/componentRegistry.ts#L98)
 
-## 输入、过滤器、单元格与注册表
+```tsx
+import type { CellProps } from '@ahoo-wang/fetcher-viewer';
+import { cellRegistry } from '@ahoo-wang/fetcher-viewer';
 
-- 输入：`TagInput`、`NumberRange`、`RemoteSelect`、`Fullscreen`。
-- 过滤器：ID、文本、数字、选择、布尔、日期时间、类型化、组合和可编辑面板。
-- 单元格：文本、主键、链接、头像、图片、图片组、标签、货币、日期时间、日历时间与操作。
-- `filterRegistry` 和 `cellRegistry` 按类型解析内置组件；
-  `TypedComponentRegistry` 支持应用自定义类型。
-- `ViewTable`、`TableSettingPanel` 与顶栏项均为公开导出，可用于低于 `Viewer` 层级的
-  自定义组合。
+function ScoreCell({ data }: CellProps) {
+  return <strong>{String(data.value)}</strong>;
+}
 
-未知过滤器类型渲染 `FallbackFilter`；未知单元格类型回退到文本。自定义类型名必须唯一，
-并在首次渲染前注册。
+if (!cellRegistry.has('score')) cellRegistry.register('score', ScoreCell);
+```
 
-## `FetcherViewer<RecordType>`
+## FetcherViewer Data Flow 与失败边界
 
-`FetcherViewer` 通过默认注册的 Fetcher 和内置 Wow 客户端加载
-`viewerDefinitionId`、保存视图、计数与分页数据。挂载前配置
-`fetcherRegistrar.default`。
+`FetcherViewer` 加载 Definition、Saved View，再用 `definition.dataUrl` 发起 Paged POST Query；它会组合 View 的 `internalCondition` 与可见 Condition，并接收可选 async `enhanceDataSource`。它通过 Ref 暴露 `refreshData`、`clearSelectedRowKeys`、`getPageQuery`、`getActiveView`、`getViewerDefinition`。[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L27) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L40)
 
-它会显式渲染加载、定义加载失败、缺少定义和缺少视图状态。`FetcherViewerRef` 暴露
-`refreshData()`、`clearSelectedRowKeys()`、`getPageQuery()`、`getActiveView()` 和
-`getViewerDefinition()`。
+| State | 所有者与行为 |
+| --- | --- |
+| `ViewTable` / `View` / `Viewer` Loading | 调用方传入 `loading`；调用方持有 Transport Error 与 Retry UI。 |
+| Empty Row | 这三层的 Data Source 都由调用方持有；请渲染业务自身的 Empty Semantics。 |
+| `FetcherViewer` Loading | Definition 或 View Loading 时渲染 Spinner。 |
+| Definition Error | `FetcherViewer` 渲染内置 Definition-error UI。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:301](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L301) |
+| Missing Definition（Empty Result） | `FetcherViewer` 渲染 `未找到视图定义`。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:309](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L309) |
+| No Saved Views（Empty Result） | `FetcherViewer` 渲染 `未找到视图`。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:313](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L313) |
+| Views Error | Views Hook 会返回 Error，但 `FetcherViewer` 忽略它；没有 Views/Default View 时会进入最终 Spinner，可能一直停留。[packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts:6](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts#L6) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:344](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L344) |
+| Data Request Error | Data Hook 返回 Error，但 `FetcherViewer` 既不暴露也不渲染它。[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L18) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L122) |
+| `enhanceDataSource` Rejection | Async Effect 没有 Rejection Handling，因此 `FetcherViewer` 不会暴露或渲染它。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L140) |
 
-内置回退语言为中文。`useLocale()` 暴露局部持有的语言状态，并把自定义值合并到回退值上。
+挂载前必须配置 Default Fetcher。默认 `ownerId` 和 `tenantId` 都是 `'(0)'`；改变它们会改变远程 View Query。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L81) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:286](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L286)
 
-## 所有权与失败矩阵
+## 故障定位与场景
 
-| 关注点                     | `ViewTable` | `View` | `Viewer`      | `FetcherViewer`  |
-| -------------------------- | ----------- | ------ | ------------- | ---------------- |
-| 渲染 Row 与 Cell           | 负责        | 负责   | 负责          | 负责             |
-| 组合 Filter 与 Query State | 调用方      | 负责   | 负责          | 负责             |
-| 加载分页与 Count 数据      | 调用方      | 调用方 | 调用方        | 负责             |
-| 持久化保存视图             | 调用方      | 调用方 | Callback 契约 | 通过 Client 负责 |
-| 渲染 Definition 加载失败   | 调用方      | 调用方 | 调用方        | 负责             |
+| 现象 | 检查项 |
+| --- | --- |
+| 自定义 Filter/Cell 缺失 | 首次 render 前按 Field 的精确 `type` 注册；`TypedFilter` 会 fallback，`typedCellRender` 返回 `undefined`。 |
+| View 看似忽略 External State | 同时提供 `external*` 与对应 `externalUpdate*`；不要意外混用所有权。 |
+| Saved View 在持久化前出现 | 只在 Remote Operation 成功后调用 Mutation Continuation。 |
+| Default View 不符合预期 | 依次检查 `defaultViewId`、Local `fetcher-viewer-local-default-view-id`、`isDefault`、Source Order。 |
+| FetcherViewer 始终不可用 | 检查 Default Fetcher Registration、Definition Endpoint、Views Endpoint、`viewerDefinitionId`。 |
+| 需要 Views/Data/Enhancement Error UI | 不要为该路径使用 `FetcherViewer`：以 Public `useViewerDefinition`、`useViewerViews`、`useFetchData` 组合 `Viewer`，然后自行持有并渲染每种 Error。 |
 
-选择仍能覆盖所需用户体验的最左侧组件。降到更低层能获得控制权，但 Loading、Empty、
-Error、Retry 和持久化行为也随之转移给应用。
+- 完整 Caller-Owned Viewer Flow：[success](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-viewer--complete-flow)、[empty](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-viewer--empty-result)、[caller error and retry](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-viewer--caller-owned-error-and-retry)
+- FetcherViewer Flow：[remote success](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-fetcherviewer--remote-success)、[definition error](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-fetcherviewer--definition-request-error)、[imperative methods](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-fetcherviewer--imperative-methods)
+- Component Gallery：[filters](https://fetcher.ahoo.me/storybook/?path=/story/viewer-filters--typed-gallery)、[cells](https://fetcher.ahoo.me/storybook/?path=/story/viewer-tables-cells--gallery)、[inputs](https://fetcher.ahoo.me/storybook/?path=/story/viewer-inputs--remote-loading-and-success)
 
-### 持久化 Callback
-
-Create、Update 和 Delete Callback 会收到 Success Continuation。只有持久化成功后才
-调用它，否则可见 Active View 可能与后端不一致。失败应显示在发起操作附近，并让旧视图
-继续可用。
-
-### Registry
-
-自定义 Filter 和 Cell Type 应在首次渲染前只注册一次。Registry Entry 是公共渲染契约：
-为持久化 View Definition 保持 Type Name 稳定，并在解析组件前校验服务端 Definition。
-
-## 源码与 Agent 参考
-
-- 公共导出：[`packages/viewer/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/index.ts)
-- Agent 精确 API：[`skills/fetcher-viewer-components/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-viewer-components/references/api.md)
-- Skill：[`$fetcher-viewer-components`](../skills/react-and-integrations.md#fetcher-viewer-components)
-
-在 [Storybook](https://fetcher.ahoo.me/storybook/) 中体验完整工作流，并继续阅读
-[构建数据 Viewer](../recipes/data-viewer.md)。
+继续阅读 [构建数据 Viewer](../recipes/data-viewer.md)。

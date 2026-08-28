@@ -1,60 +1,75 @@
 ---
 title: Fetcher 参考
-description: 配置 Fetcher、发送 HTTP 请求、提取结果并处理请求失败。
+description: 配置 Fetcher、发送类型化 HTTP 请求并定位生命周期失败。
 pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher`
 
-核心包在平台 `fetch` 之上提供 URL 模板、拦截器、超时、状态校验和类型化结果提取。
+`Fetcher` 是核心 HTTP Client：它在平台 `fetch` 之上增加请求解析、Interceptor、超时、状态校验和结果提取。它适合应用 HTTP Client；不是服务端 Router，也不提供重试策略。
 
-## 安装
+## 安装与入口选择
 
 ```bash
 pnpm add @ahoo-wang/fetcher
 ```
 
-## 创建客户端
+| 目标 | 入口 | 默认结果 |
+| --- | --- | --- |
+| 传入 URL 与请求初始化 | `fetch(url, init?, options?)` | `Response` |
+| 调用处已知 HTTP 方法 | `get`、`post`、`put`、`patch`、`delete`、`head`、`options`、`trace` | `Response` |
+| 已有完整请求 | `request(request, options?)` | `FetchExchange` |
+| 检查已完成的 Pipeline | `exchange(request, options?)` | `FetchExchange` |
+| 共享命名 Client | `NamedFetcher` / `fetcherRegistrar` | `Fetcher` |
+
+### HTTP 方法矩阵
+
+| 方法 | 请求 Body | 默认结果 | 显式结果 |
+| --- | --- | --- | --- |
+| `get`、`head`、`options`、`trace` | 不接受：请求类型省略 `body`。 | `Response` | 传入 `options.resultExtractor` 以返回其 `R`。 |
+| `post`、`put`、`patch`、`delete` | 接受：请求类型只省略 `method`。 | `Response` | 传入 `options.resultExtractor` 以返回其 `R`。 |
+
+每个快捷方法都会提供自己的 HTTP 方法并返回 `Promise<R>`。默认 `R` 为 `Response`；仅传入泛型参数不会解析 Body，须同时指定如 `ResultExtractors.Json` 的 Extractor。
+
+## Client 配置
 
 ```ts
 import { Fetcher } from '@ahoo-wang/fetcher';
 
 export const api = new Fetcher({
   baseURL: 'https://api.example.com',
+  headers: { Authorization: 'Bearer token' },
   timeout: 10_000,
-  headers: { 'Content-Type': 'application/json' },
 });
 ```
 
-### `FetcherOptions`
+| `FetcherOptions` 成员 | 默认值 | 契约 |
+| --- | --- | --- |
+| `baseURL` | `''` | 为相对 URL 添加前缀；绝对 URL 由 `combineURLs` 保留。 |
+| `headers` | `{ 'Content-Type': 'application/json' }` | 与请求 Headers 浅合并；请求值优先。 |
+| `timeout` | `undefined` | 毫秒。单次请求的 Timeout（包括 `0`）优先。 |
+| `urlTemplateStyle` | `UrlTemplateStyle.UriTemplate` | 解析 `{id}`；只有 `:id` 路由才使用 `Express`。 |
+| `validateStatus` | `status >= 200 && status < 300` | 仅在 Fetcher 创建默认 `InterceptorManager` 时使用。 |
+| `interceptors` | 新建 `InterceptorManager` | 替换整套默认 Manager，因此会忽略 `validateStatus`。 |
 
-| 选项               | 默认值                | 用途                                 |
-| ------------------ | --------------------- | ------------------------------------ |
-| `baseURL`          | `''`                  | 相对请求 URL 的前缀                  |
-| `headers`          | JSON 内容类型         | 合并到每个请求的请求头               |
-| `timeout`          | 不超时                | 默认超时毫秒数                       |
-| `urlTemplateStyle` | `UriTemplate`         | URI Template 或 Express 风格路径参数 |
-| `interceptors`     | 新建默认管理器        | 替换完整拦截器链                     |
-| `validateStatus`   | `200 <= status < 300` | 判断响应是否成功                     |
+## 类型化请求与 `FetchRequestInit`
 
-`validateStatus` 只配置默认拦截器管理器。显式传入 `interceptors` 后，该选项不再生效。
-
-## 发送请求
+所有方法的返回类型都是 `Promise<R>`，参数为 `(url, request?, options?)`。`get`、`head`、`options` 和 `trace` 排除 `body`；其余方法只排除 `method`。当 `R` 不是 `Response` 时，传入 `resultExtractor`。
 
 ```ts
-import { ResultExtractors } from '@ahoo-wang/fetcher';
-import { api } from './api';
+import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 
 interface User {
   id: string;
   name: string;
 }
 
-const user = await api.get<User>(
-  '/users/{id}',
+const api = new Fetcher({ baseURL: 'https://api.example.com' });
+const user: User = await api.get<User>(
+  '/teams/{teamId}/users/{userId}',
   {
     urlParams: {
-      path: { id: 'u-42' },
+      path: { teamId: 'platform', userId: 'u-42' },
       query: { expand: 'team' },
     },
   },
@@ -62,99 +77,65 @@ const user = await api.get<User>(
 );
 ```
 
-`fetch`、`get`、`post`、`put`、`patch`、`delete`、`head`、`options` 和
-`trace` 默认返回 `Response`。已有完整 `FetchRequest` 时使用 `request()`；它默认
-返回 `FetchExchange`。
+`FetchRequestInit` 基于平台 `RequestInit`，但使用类型化 `headers`、`body`，并新增 `urlParams`、`timeout` 与 `abortController`。普通对象 Body 由标准请求 Interceptor JSON 序列化；`FormData`、`Blob`、Stream 和其他受支持 `BodyInit` 不会被序列化。
 
-单次请求的请求头和超时会覆盖客户端默认值。默认请求体拦截器会把普通对象序列化为 JSON。
+### 解析与 URL 规则
 
-## 提取结果
+1. `resolveExchange()` 先浅合并 Client Headers，再合并请求 Headers。
+2. 请求 `timeout` 优先于 Client Timeout。
+3. `UrlBuilder` 合并 Base URL、解析 Path Placeholder，最后追加 `new URLSearchParams(query)`。
+4. Pipeline 会消费 `urlParams`；再次解析 URL 不会重复追加 Query String。
+5. 结果提取通过 `FetchExchange.extractResult()` 执行并缓存 Promise，因此同一 Exchange 不要选择两个读取 Body 的 Extractor。
 
-| 提取器                         | 结果                 |
-| ------------------------------ | -------------------- |
-| `ResultExtractors.Response`    | 原生 `Response`      |
-| `ResultExtractors.Json`        | 已解析 JSON          |
-| `ResultExtractors.Text`        | 文本正文             |
-| `ResultExtractors.Blob`        | `Blob`               |
-| `ResultExtractors.ArrayBuffer` | `ArrayBuffer`        |
-| `ResultExtractors.Bytes`       | `Uint8Array`         |
-| `ResultExtractors.Exchange`    | 完整 `FetchExchange` |
+Query 的强制转换由 `URLSearchParams` 定义。重复 Query Key 请使用该平台 API 支持的形状；不要把 Array 理解为多个同名 Key。
 
-自定义 `ResultExtractor` 接收已完成的 exchange，并可返回同步值或 Promise。
+## Result、Interceptor 与错误契约
 
-## API 导航
+| Extractor | 结果 |
+| --- | --- |
+| `ResultExtractors.Exchange` | `FetchExchange` |
+| `ResultExtractors.Response` | 原生 `Response` |
+| `ResultExtractors.Json` / `Text` | 已解析 JSON / 文本 Body |
+| `Blob` / `ArrayBuffer` / `Bytes` | 对应的二进制 Body 值 |
 
-| API                                         | 默认结果        | 适用场景                            |
-| ------------------------------------------- | --------------- | ----------------------------------- |
-| `fetch(url, init?, options?)`               | `Response`      | 已有 URL 和可选请求初始化           |
-| `get` / `post` / `put` / `patch` / `delete` | `Response`      | 调用处已确定 HTTP 方法              |
-| `exchange(request, options?)`               | `FetchExchange` | 基础设施需要完整生命周期容器        |
-| `request<R>(request, options?)`             | 提取后的 `R`    | 已有完整 `FetchRequest`             |
-| `resolveExchange(request, options?)`        | `FetchExchange` | 适配器需要在 I/O 前检查解析后的请求 |
-| `NamedFetcher(name, options?)`              | 已注册客户端    | 服务按名称解析共享客户端            |
+默认 Pipeline 按 `order` 升序运行请求 Interceptor，再按升序运行响应 Interceptor；失败时运行错误 Interceptor。内置顺序为 `RequestBodyInterceptor`、`UrlResolveInterceptor`、`FetchInterceptor`，最后是 `ValidateStatusInterceptor`。错误 Interceptor 可通过清除 `exchange.error` 恢复；不会重新运行响应 Interceptor。
 
-`fetcher` 是以 `default` 注册的默认 `NamedFetcher`；其他命名客户端可通过
-`fetcherRegistrar.get(name)` 解析。应用代码优先显式导出客户端，只在围绕命名客户端
-设计的集成边界使用注册表。
+| 失败 | 检查项 |
+| --- | --- |
+| 非 2xx 被拒绝 | 顶层为 `ExchangeError`；在 `error.exchange.error` 或 `error.cause` 中检查 `HttpStatusValidationError`。仅在状态确属预期时使用 `validateStatus` 或 `IGNORE_VALIDATE_STATUS`。 |
+| 超时被拒绝 | 顶层为 `ExchangeError`；在 `error.exchange.error` 或 `error.cause` 中检查 `FetchTimeoutError` 及其 `request.timeout`。 |
+| 网络/Interceptor 失败 | 顶层 `ExchangeError.exchange.error` 与 `ExchangeError.cause` 保留原始错误。 |
+| JSON 解析失败 | 选择的 Extractor 会读取响应 Body；检查 `Content-Type` 与服务端 Payload。 |
+| URL 仍含 `{id}` | 检查 `urlParams.path` 与模板风格配置。 |
 
-## 请求契约
+公开继承关系为 `FetcherError` → `ExchangeError` →
+`HttpStatusValidationError`；`FetchTimeoutError` 直接继承 `FetcherError`。
+`InterceptorManager.exchange()` 会把未处理的 Pipeline 错误包装为顶层
+`ExchangeError`，因此先捕获它，再在 `error.exchange.error` 或
+`error.cause` 中缩小原始状态或超时类型。
 
-`FetchRequestInit` 在平台 `RequestInit` 之上增加 `urlParams`、`timeout`、类型化
-Headers、普通对象 Body 和 `abortController`。
+## 超时与调用方取消
 
-### 解析顺序
-
-1. 请求 Headers 通过浅合并覆盖客户端 Headers。
-2. 单次请求 Timeout 覆盖客户端 Timeout。
-3. 路径和查询参数被解析进最终 URL。
-4. 请求体拦截器把普通对象序列化为 JSON。
-5. 请求、响应和错误拦截器修改同一个 `FetchExchange`。
-6. 结果提取器只执行一次，结果由 Exchange 缓存。
-
-`attributes` 在 `FetchExchange` 上转换为 `Map<string, unknown>`。多个拦截器共享
-数据时使用带命名空间的 Key；不要把请求级可变状态放到 `Fetcher` 实例上。
-
-### URL 参数
+调用方拥有取消权时传入 Controller。请求已有平台 `signal` 时，Fetcher 直接委托给平台 `fetch`，不会自行安装超时竞争；否则超时会在 Controller 仍可用时复用它。
 
 ```ts
-await api.get('/teams/{teamId}/users/{userId}', {
-  urlParams: {
-    path: { teamId: 'platform', userId: 'u-42' },
-    query: { include: ['roles', 'permissions'], active: true },
-  },
+import { Fetcher } from '@ahoo-wang/fetcher';
+
+const api = new Fetcher({ baseURL: 'https://api.example.test' });
+const controller = new AbortController();
+const pending = api.get('/jobs/{id}', {
+  urlParams: { path: { id: 'job-1' } },
+  abortController: controller,
 });
+controller.abort();
+await pending;
 ```
 
-默认使用 `{userId}` 形式的 URI Template。只有既有路由使用 `:userId` 时才选择
-Express 风格；一个客户端中不要混用两种风格。
+## 源码参考
 
-## 取消与超时
-
-调用方拥有取消行为时传入 `abortController`。配置的超时使用同一取消路径并抛出
-`FetchTimeoutError`。单次请求 Timeout 优先于客户端默认值；两者都省略时 Fetcher
-不主动超时。
-
-## 拦截器与错误
-
-`fetcher.interceptors` 暴露请求、响应和错误注册表。处理器名称唯一，按 `order`
-升序运行；使用 `use()` 注册、`eject()` 移除。
-
-当错误类型会影响用户体验时，可捕获以下公开类型：
-
-- `HttpStatusValidationError`：响应未通过 `validateStatus`。
-- `FetchTimeoutError`：达到配置的超时时间。
-- `ExchangeError`：请求处理失败，并保留 exchange 上下文。
-- `FetcherError`：Fetcher 专用错误的基类。
-
-拦截器处理失败后，必须让 Exchange 保持后续拦截器和结果提取器可以理解的状态。
-仅当非 2xx 响应本来就是预期结果时使用 `IGNORE_VALIDATE_STATUS`，不要用它掩盖未知
-服务端失败。
-
-## 源码与 Agent 参考
-
-- 公共导出：[`packages/fetcher/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/index.ts)
-- Agent 精确 API：[`skills/fetcher-integration/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-integration/references/api.md)
-- Skill：[`$fetcher-integration`](../skills/http-and-services.md#fetcher-integration)
-
-继续阅读[请求与结果](../learn/requests-and-results.md)和
-[拦截器、错误与超时](../learn/interceptors-errors-timeouts.md)。
+- [packages/fetcher/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/index.ts#L14)
+- [packages/fetcher/src/fetcher.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L86)
+- [packages/fetcher/src/fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)
+- [packages/fetcher/src/fetcherError.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L37)
+- [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)
+- [packages/fetcher/src/timeout.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)

@@ -1,14 +1,14 @@
 ---
 title: Event stream reference
-description: Parse Server-Sent Events, consume typed JSON streams, and handle invalid stream responses.
+description: Convert SSE responses into typed Web Streams and own parsing and cancellation boundaries.
 pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-eventstream`
 
-This package converts `text/event-stream` responses into Web Streams that can
-be consumed with `for await`. Importing it also adds event-stream helpers to
-the platform `Response` type and prototype.
+Use this package to parse `text/event-stream` into Web Streams. It parses SSE
+frames; it does not open HTTP connections, validate application protocol
+semantics, or reconnect after a network failure.
 
 ## Install
 
@@ -16,7 +16,25 @@ the platform `Response` type and prototype.
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventstream
 ```
 
-## Consume JSON events
+`@ahoo-wang/fetcher` is a peer dependency. The runtime needs Web Streams,
+`Response`, and `TextDecoderStream`; importing this package installs the
+`Response` helpers and an async-iterator fallback for `ReadableStream`.
+
+## Choose an entry point
+
+| Need | API | Result |
+| --- | --- | --- |
+| Convert a `Response` yourself | `toServerSentEventStream(response)` | `ReadableStream<ServerSentEvent>`; throws for a missing body. |
+| Parse JSON `data` | `toJsonServerSentEventStream<T>(stream, detector?)` | `ReadableStream<JsonServerSentEvent<T>>`. |
+| Optional `Response` conversion | `response.eventStream()` / `jsonEventStream<T>()` | A stream; `null` for a non-SSE content type; `EventStreamConvertError` for SSE with no body. |
+| Required `Response` conversion | `response.requiredEventStream()` / `requiredJsonEventStream<T>()` | A stream or `EventStreamConvertError`. |
+| Fetcher result extraction | `EventStreamResultExtractor` / `JsonEventStreamResultExtractor` | Required raw / JSON stream from a `FetchExchange`. |
+| Build a custom stage | `TextLineTransformStream`, `ServerSentEventTransformStream`, `JsonServerSentEventTransformStream<T>` | The individual `TransformStream` stages. |
+
+Import `@ahoo-wang/fetcher-eventstream` before calling the `Response` prototype
+helpers. `isEventStream` uses `Content-Type.includes('text/event-stream')`.
+
+## Consume typed JSON events
 
 ```ts
 import '@ahoo-wang/fetcher-eventstream';
@@ -26,82 +44,114 @@ interface Progress {
   percent: number;
 }
 
-const response = await new Fetcher().get('/jobs/42/events');
-const events = response.requiredJsonEventStream<Progress>();
+const controller = new AbortController();
+const response = await new Fetcher().get('/jobs/42/events', {
+  signal: controller.signal,
+});
 
-for await (const event of events) {
-  renderProgress(event.data.percent);
+try {
+  for await (const event of response.requiredJsonEventStream<Progress>()) {
+    console.log(event.data.percent);
+  }
+} finally {
+  controller.abort();
 }
 ```
 
-The server must return `Content-Type: text/event-stream`. JSON helpers parse
-each SSE `data` field and reject malformed JSON.
+`JsonServerSentEvent<T>` keeps `event`, `id`, and `retry`, while replacing
+`data: string` with `data: T`. A `TerminateDetector` sees the raw parsed frame
+before `JSON.parse`; return `true` for a sentinel such as `[DONE]`.
 
-## `Response` helpers
+## SSE frame and conversion pipeline
 
-| API                                              | Result                                                |
-| ------------------------------------------------ | ----------------------------------------------------- |
-| `response.contentType`                           | `Content-Type` header or `null`                       |
-| `response.isEventStream`                         | Whether the content type contains `text/event-stream` |
-| `response.eventStream()`                         | Parsed SSE stream or `null`                           |
-| `response.requiredEventStream()`                 | Parsed SSE stream or throws                           |
-| `response.jsonEventStream<T>(detector?)`         | Typed JSON SSE stream or `null`                       |
-| `response.requiredJsonEventStream<T>(detector?)` | Typed JSON SSE stream or throws                       |
-
-A `TerminateDetector` can stop a JSON stream when a protocol-specific terminal
-event arrives, such as an OpenAI `[DONE]` marker.
-
-## Conversion APIs
-
-- `toServerSentEventStream(response)` converts a native `Response`.
-- `toJsonServerSentEventStream(stream, detector?)` parses SSE data as JSON.
-- `TextLineTransformStream`, `ServerSentEventTransformStream`, and
-  `JsonServerSentEventTransformStream` expose the pipeline stages.
-- `ReadableStreamAsyncIterable` adapts streams in runtimes without native async
-  iteration support.
-
-`EventStreamResultExtractor` and `JsonEventStreamResultExtractor` integrate the
-same conversions directly with Fetcher result extraction.
-
-## Event shape and pipeline
-
-`ServerSentEvent` exposes the fields produced by SSE framing: `data`, `event`,
-`id`, and retry metadata when present. Multiple `data:` lines belong to one
-event and are joined before JSON conversion.
+`ServerSentEvent` is `{ event, data, id?, retry? }`. The parser defaults an
+unspecified event type to `message`, ignores comment lines, joins repeated
+`data:` fields with `\n`, ignores `id` values containing NUL, and accepts
+`retry` only when it contains ASCII digits. It emits a frame at a blank line or
+when the input stream flushes only if at least one `data:` field was received.
+A metadata-only group does not emit at its blank line, and that blank line does
+not reset its `event`, `id`, or `retry`: those values apply to the following
+data-bearing event. At EOF, metadata-only residue is discarded by flush cleanup
+([`packages/eventstream/src/serverSentEventTransformStream.ts:116`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L116),
+[`packages/eventstream/src/serverSentEventTransformStream.ts:157`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L157)).
 
 ```text
-Response.body
-  → TextLineTransformStream
-  → ServerSentEventTransformStream
-  → JsonServerSentEventTransformStream<T>
-  → for await...of
+Response.body (ReadableStream<Uint8Array>)
+  -> TextDecoderStream('utf-8')
+  -> TextLineTransformStream
+  -> ServerSentEventTransformStream
+  -> JsonServerSentEventTransformStream<T> (optional)
+  -> ReadableStream<...> / for await...of
 ```
 
-Use the raw stream when `event`, `id`, or non-JSON `data` matters. Use the JSON
-stream only when every non-terminal data field is valid JSON.
+`toServerSentEventStream(response)` is exactly the first three conversions.
+Use the raw stream when `data` is not JSON or frame metadata matters; append
+the JSON transform only when every non-terminal `data` field is valid JSON.
 
-## Termination and cancellation
+## Response helpers and Fetcher extractors
 
-A `TerminateDetector` sees each parsed SSE event before JSON conversion. This
-allows protocol terminators such as `[DONE]` to end the stream without becoming
-a JSON error. Cancellation propagates through the Web Stream; when the HTTP
-caller owns an `AbortController`, abort it as well so network work stops.
+| API | Return / failure boundary |
+| --- | --- |
+| `response.contentType` | `string | null` from the `Content-Type` header. |
+| `response.isEventStream` | `true` only when that header includes `text/event-stream`. |
+| `response.eventStream()` | Raw stream or `null`; it does not throw for a non-SSE content type. |
+| `response.requiredEventStream()` | Raw stream; otherwise `EventStreamConvertError` retaining `response`. |
+| `response.jsonEventStream<T>(detector?)` | JSON stream or `null`. |
+| `response.requiredJsonEventStream<T>(detector?)` | JSON stream or `EventStreamConvertError`. |
+| `EventStreamResultExtractor` | Calls `exchange.requiredResponse.requiredEventStream()`. |
+| `JsonEventStreamResultExtractor` | Calls `exchange.requiredResponse.requiredJsonEventStream()`; its exported result type is `JsonServerSentEventStream<any>`. |
 
-Do not assume the server closes immediately after its logical terminal event.
-Declare a detector when the protocol has an explicit terminator.
+The optional helpers return `null` without consuming a non-SSE response. For
+an SSE response with a `null` body, their underlying conversion throws
+`EventStreamConvertError`. The required helpers also throw for a non-SSE
+content type; inspect `error.response` when catching that error.
 
-## Errors
+## Termination, cancellation, and errors
 
-`EventStreamConvertError` retains the source `Response`. Required helpers throw
-it when the response is not an event stream or has no readable body. Stream
-parsing errors surface while the stream is being consumed, so keep the
-`for await` loop inside your error boundary.
+```ts
+import {
+  toJsonServerSentEventStream,
+  toServerSentEventStream,
+} from '@ahoo-wang/fetcher-eventstream';
 
-## Source and agent reference
+const response = await fetch('/chat');
+const events = toJsonServerSentEventStream<{ token: string }>(
+  toServerSentEventStream(response),
+  event => event.data === '[DONE]',
+);
 
-- Public exports: [`packages/eventstream/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts)
-- Detailed agent API: [`skills/fetcher-llm-streaming/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-llm-streaming/references/api.md)
-- Skill: [`$fetcher-llm-streaming`](../skills/streaming-and-openai.md#fetcher-llm-streaming)
+for await (const event of events) {
+  console.log(event.data.token);
+}
+```
 
-Continue with [Streaming](../learn/streaming.md) and
-[OpenAI streaming](../recipes/openai-streaming.md).
+`TerminateDetector` terminates the JSON transform without enqueueing the
+sentinel. `break` from the async loop cancels the stream reader (the package
+fallback does so explicitly). If the request was created with an
+`AbortController`, also call `abort()` to stop the network request.
+
+An invalid JSON payload throws while the JSON stream is consumed. Each
+`SafeTransformer` forwards transformation errors to its controller and then
+drops later chunks; already-closed controller `TypeError`s are suppressed. Put
+stream creation and the whole consuming loop inside the same error boundary.
+
+## Diagnosis
+
+| Symptom | Check |
+| --- | --- |
+| `requiredEventStream()` throws immediately | Confirm `Content-Type` includes `text/event-stream` and the `Response` has a body. |
+| `response.eventStream` is missing | Import `@ahoo-wang/fetcher-eventstream` for its prototype side effect. |
+| JSON processing fails after some events | Identify the malformed `data` payload; use the raw stream for mixed text/JSON protocols or a detector for sentinels. |
+| A `[DONE]` frame becomes a parse error | Pass `event => event.data === '[DONE]'` as the `TerminateDetector`. |
+| Leaving the UI does not stop the connection | Cancel/break the reader and abort the owner `AbortController`. |
+| A final SSE event is absent | Ensure the server sends a blank line or closes the body so the parser flushes its buffered frame. |
+
+## Source reference
+
+- Public exports: [index.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts#L63)
+- EventStreamConvertError: [eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)
+- Response helper implementation: [responses.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L154)
+- Fetcher extractors: [eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)
+- SSE frame parser: [serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)
+- JSON transform: [jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)
+- Async iterable cancellation: [readableStreamAsyncIterable.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L125)

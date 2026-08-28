@@ -1,129 +1,125 @@
 ---
 title: React 参考
-description: 在 React 中管理 Fetcher 请求、查询、存储、事件与鉴权状态。
+description: 在 React 中持有 Fetcher、查询、存储、事件、鉴权与 Wow 状态。
 pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-react`
 
-React 包把 Fetcher 原语连接到组件状态。它的 Hook 会防止过期结果覆盖新结果，在替换
-请求或卸载时中止请求，并暴露明确的 loading、result、error 和 reset 控制。
+`@ahoo-wang/fetcher-react` 将 Fetcher 生态操作绑定到 React State。它适用于组件持有的异步任务、Query State、CoSec Context、Storage、Event 和 Wow Query Shape；它不是 Fetcher Provider，也不是 Cache/Query Client 的替代品。
 
-## 安装
+## 安装与 Fetcher 来源
 
 ```bash
 pnpm add react react-dom @ahoo-wang/fetcher @ahoo-wang/fetcher-react
 ```
 
-导入某项集成时，还需安装对应 peer 包，例如 `fetcher-storage`、`fetcher-eventbus`、
-`fetcher-wow` 或 `fetcher-cosec`。
+只为实际使用的集成安装 peer 包：`@ahoo-wang/fetcher-wow`、`@ahoo-wang/fetcher-cosec`、`@ahoo-wang/fetcher-storage`、`@ahoo-wang/fetcher-eventbus` 或 `@ahoo-wang/fetcher-eventstream`。
 
-## 请求与查询
+此包**没有 Fetcher Provider**。`useFetcher` 可接收 `fetcher`；未传入时会通过 `getFetcher` 解析 `fetcherRegistrar.default`。请在渲染前配置 core registrar，或传入在 render 外创建 / 以 `useMemo` 固定的 Fetcher Instance。[packages/react/src/fetcher/useFetcher.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L37) [packages/react/src/fetcher/useFetcher.ts:162](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L162)
+
+`SecurityProvider` 不同：它为子树持有基于 `TokenStorage` 的 Security Context。[packages/react/src/cosec/SecurityContext.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/SecurityContext.tsx#L49) [packages/react/src/cosec/SecurityContext.tsx:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/SecurityContext.tsx#L107)
+
+## 选择公开 Hook
+
+| 需求 | 公开 API | 执行与所有权 |
+| --- | --- | --- |
+| 自行设置 `idle` / `loading` / `success` / `error` | `usePromiseState` | 只管理 State；不会启动 Promise。 |
+| 一个可取消的 Promise Supplier | `useExecutePromise` | 调用 `execute(supplier)`；Hook 持有 Controller 与 Result State。 |
+| Query Object 加任意 Executor | `useQuery`、`useQueryState` | `autoExecute` 默认 `true`；mount 和 `setQuery` 都可能执行。 |
+| 完整 `FetchRequest` | `useFetcher` | 调用 `execute(request)`；可传 `fetcher`，否则用 registrar default。 |
+| 将 Query State 作为 JSON POST Body | `useFetcherQuery` | 需要 `url`；POST Query，默认 `JsonResultExtractor`。 |
+| 延迟 Promise、Callback、Query、Fetcher 或 Fetcher Query | `useDebouncedExecutePromise`、`useDebouncedCallback`、`useDebouncedQuery`、`useDebouncedFetcher`、`useDebouncedFetcherQuery` | 使用 `run`、`cancel`、`isPending`，而不是 `execute`。 |
+| 浏览器全屏 State | `useFullscreen`、`FullscreenProvider`、`useFullscreenContext` | 持有全屏事件订阅；Target 默认 `document.documentElement`。 |
+| CoSec 登录 State / 路由保护 | `SecurityProvider`、`useSecurityContext`、`useSecurity`、`RouteGuard`、`RefreshableRouteGuard` | Provider 持有 Context；直接调用 Hook 只持有本组件订阅。 |
+| 类型化 Storage 或 EventBus 订阅 | `useKeyStorage`、`useImmerKeyStorage`、`useEventSubscription` | 传入稳定 Storage/Bus Object，并按组件生命周期清理。 |
+| 数据计数监控 | `useDataMonitor`、`useDataMonitorEventBus`、`DataMonitorService` | Hook 按 `viewId` 启停 module-level monitor；卸载时会禁用已启用监控。 |
+| Wow Query Result Shape | `useSingleQuery`、`useListQuery`、`usePagedQuery`、`useCountQuery`、`useListStreamQuery` | 提供 Executor；Result 依次为 `R`、`R[]`、`PagedList<R>`、`number` 或 SSE `ReadableStream`。 |
+| Wow POST Query | `useFetcherSingleQuery`、`useFetcherListQuery`、`useFetcherPagedQuery`、`useFetcherCountQuery`、`useFetcherListStreamQuery` | 增加 Endpoint `url`；这些 Hook 特化 `useFetcherQuery`。 |
+| Notification Center | package root 中没有 API | `notification/` 未从已发布 root entry re-export；不要导入 `src` Internal。 [packages/react/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/index.ts#L14) |
+
+Root barrel 是 Public Boundary；只有它 re-export 的分组受支持。[packages/react/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/index.ts#L14)
+
+### 其余 Root Helper 与 API-hook Factory
+
+| API | 参数 → 返回 | 触发、依赖与 Timer/Request Cleanup 所有权 |
+| --- | --- | --- |
+| `useDebouncedExecutePromise<R, E>(options)` | `UseExecutePromiseOptions` 加必填 `debounce` → Promise State 加 `run(supplier)`、`cancel`、`isPending` | `run` 调度执行；Timer 由 Hook 持有并在 unmount 时清除，底层 Request 由 `useExecutePromise` 持有。 |
+| `useRequestId()` | 无 → 稳定的 `generate`、`current`、`isLatest`、`invalidate`、`reset` | 纯 Ref Counter：不启动也不终止工作；调用方用它拒绝过期 Completion。 |
+| `useLatest(value)` | 一个 Value → `.current` 在 render 中更新的 Stable Ref | 无 Effect/Cleanup；用于在不把它加入 Async Callback Dependency 的情况下读取当前 Value/Callback。 |
+| `useMounted()` | 无 → 稳定的 `() => boolean` | Effect 标记 mount/unmount；防止 unmount 后 State Write，但不取消 I/O。 |
+| `useRefs<T>()` | 无 → Map-like `register`、`get`、`set`、`delete`、`clear`、Iteration | `register(key)` 会移除 null Instance；Hook 在 unmount 时清空 Map。 |
+| `useForceUpdate()` | 无 → `() => void` | Imperatively 调度一次 Render；不持有 Resource，仅用于 External Imperative State。 |
+| `createExecuteApiHooks({ api })` | Promise-returning Object Method → 带 State 与 `execute(...methodArgs)` 的 `useMethod` Hook | 为 Stable API Object 在 Component Render 外创建一次；生成 Hook 持有和 `useExecutePromise` 相同的 Request Replace/Unmount Cleanup。 |
+| `createQueryApiHooks({ api })` | Query-style `(query, attributes?, abortController?) => Promise` Method → 返回 `useQuery` State 的 `useMethod` Hook | 为 Stable API Object 创建一次；每个生成 Hook 有 `initialQuery`/`query`/`autoExecute`，并通过 `useQuery` 持有 Query/Request Lifecycle。 |
+
+Runtime 中，`collectMethods` 会遍历 Own Property 与 Prototype，并 Bind **所有** Function。Public `APIHooks` / `QueryAPIHooks` Type Mapping 只将 Promise-returning Method Shape 暴露为 `use${Capitalize<name>}` Hook；不能在 render 中重新创建 Factory Output。`onBeforeExecute` 在 API Method 运行前收到 Controller，但 API Method 必须自行消费 Signal 才能真正取消 Transport。[packages/react/src/api/apiHooks.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L38) [packages/react/src/api/createExecuteApiHooks.ts:201](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L201) [packages/react/src/api/createQueryApiHooks.ts:174](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createQueryApiHooks.ts#L174) [packages/react/src/core/useRequestId.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useRequestId.ts#L71) [packages/react/src/core/useRefs.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useRefs.ts#L53)
+
+## Promise 与 Query 契约
+
+所有执行类 Hook 都暴露 `status`、`loading`、`result`、`error`、`reset`、`abort`；`useFetcher` 额外暴露最近一次 `exchange`。`PromiseStatus` 为 `idle`、`loading`、`success` 或 `error`。[packages/react/src/core/usePromiseState.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/usePromiseState.ts#L22) [packages/react/src/fetcher/useFetcher.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L47)
+
+`useExecutePromise` 会为每次执行提供 `AbortController`，在下一次执行前中止前一个由它持有的操作，只接受最新 Request ID，并在 unmount cleanup 中中止。`AbortError` 会使 State 回到 idle。Rejection 会写入 `error`；只有 `propagateError: true` 才会继续抛出，默认值为 `false`。[packages/react/src/core/useExecutePromise.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L27) [packages/react/src/core/useExecutePromise.ts:244](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L244) [packages/react/src/core/useExecutePromise.ts:307](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L307)
+
+`useQuery` / `useFetcherQuery` 将 Query 保留在 Ref 中：`getQuery()` 可以为 `undefined`；`setQuery(query)` 存储它，并在 `autoExecute` 为 true 时执行。传入的 `query` 优先于 `initialQuery`。内容相等的受控 Query 会去重，而改变 Executor 或 `autoExecute` 仍会生效。[packages/react/src/core/useQueryState.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L18) [packages/react/src/core/useQueryState.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L113) [packages/react/src/fetcher/useFetcherQuery.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L125)
 
 ```tsx
+import { useCallback } from 'react';
 import { useFetcherQuery } from '@ahoo-wang/fetcher-react';
 
-interface SearchQuery {
-  term: string;
-}
+type SearchQuery = { term: string };
+type SearchResult = { items: Array<{ id: string; title: string }> };
 
-interface SearchResult {
-  items: Array<{ id: string; title: string }>;
-}
-
-function Search() {
-  const { loading, result, error, setQuery, execute } = useFetcherQuery<
-    SearchQuery,
-    SearchResult
-  >({
+export function Search() {
+  const search = useFetcherQuery<SearchQuery, SearchResult>({
     url: '/api/search',
     initialQuery: { term: '' },
     autoExecute: false,
   });
+  const submit = useCallback(() => void search.execute(), [search]);
 
   return (
-    <form
-      onSubmit={event => {
-        event.preventDefault();
-        void execute();
-      }}
-    >
-      <input onChange={event => setQuery({ term: event.target.value })} />
-      <button disabled={loading}>搜索</button>
-      {error && <p role="alert">搜索失败</p>}
-      <ul>
-        {result?.items.map(item => (
-          <li key={item.id}>{item.title}</li>
-        ))}
-      </ul>
+    <form onSubmit={event => { event.preventDefault(); submit(); }}>
+      <input onChange={event => search.setQuery({ term: event.target.value })} />
+      <button disabled={search.loading}>搜索</button>
+      {search.error && <p role="alert">搜索失败</p>}
+      {search.result?.items.map(item => <p key={item.id}>{item.title}</p>)}
     </form>
   );
 }
 ```
 
-`useFetcher` 执行完整 `FetchRequest`；`useFetcherQuery` 针对 JSON POST 查询特化，
-并持有查询状态。防抖变体会延迟快速变化的任务，同时保留取消行为。
+Hook 而非组件持有 Request Cancellation。组件仍持有何时调用 `abort()`、成功空列表是否有业务含义，以及 Loading/Error/Retry UI。若 Callback 或显式 Fetcher 的 Identity 不应改变请求语义，请保持它们稳定。
 
-## Hook 家族
+## Debounce 与 Fullscreen
 
-| 家族       | 主要 API                                                                                 |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| 异步状态   | `useExecutePromise`、`usePromiseState`、`useQuery`、`useQueryState`                      |
-| Fetcher    | `useFetcher`、`useFetcherQuery`、防抖变体                                                |
-| API 对象   | `createExecuteApiHooks`、`createQueryApiHooks`                                           |
-| 存储与事件 | `useKeyStorage`、`useImmerKeyStorage`、`useEventSubscription`                            |
-| Wow        | `useSingleQuery`、`useListQuery`、`usePagedQuery`、`useCountQuery`、`useListStreamQuery` |
-| CoSec      | `SecurityProvider`、`useSecurity`、`RouteGuard`、`RefreshableRouteGuard`                 |
-| 监控       | `useDataMonitor`、`useDataMonitorEventBus`、`DataMonitorService`                         |
+`useDebouncedCallback` 接受 number `delay`（包括 `0`）；默认 `leading: false`、`trailing: true`，唯一被拒绝的配置是二者都为 `false`。Pending Timer 在 unmount 时取消。Debounced Query 变体会关闭 inner Query 的 auto-execution；仅当调用方要求 `autoExecute` 时，再在 mount 和 `setQuery` 后调用 `run()`。`cancel()` 取消 Timer；`abort()` 取消已经启动的 Request。[packages/react/src/core/debounced/useDebouncedCallback.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L19) [packages/react/src/core/debounced/useDebouncedCallback.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L87) [packages/react/src/core/debounced/useDebouncedQuery.ts:139](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedQuery.ts#L139)
 
-## 状态与所有权
+`useFullscreen` 追踪浏览器 `fullscreenchange` Event，返回 `fullscreen`、`getTarget`、`enter`、`exit`、`toggle`；直接传入的 Target 优先于配置的 Ref，再优先于 document root fallback。`FullscreenProvider` 总是用 `<div>` 包裹 Children；未传 `target` 时该 Wrapper Ref 就是 Fullscreen Target，显式传 `target` 时 Wrapper 不绑定 Ref。[packages/react/src/core/fullscreen/useFullscreen.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/useFullscreen.ts#L24) [packages/react/src/core/fullscreen/FullscreenContext.tsx:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/FullscreenContext.tsx#L28)
 
-每个请求只保留一个 Hook 所有者。显式渲染加载、空、失败和成功状态。用户操作取消任务时
-调用 `abort()`；自动清理作为最后防线。
+## CoSec、Monitor 与 Wow
 
-`createExecuteApiHooks()` 与 `createQueryApiHooks()` 会从 API 对象中返回 Promise 的
-方法派生命名 Hook。共享服务已定义请求边界时使用它们；不要只为一次请求额外制造抽象。
+`SecurityProvider` 需要 `tokenStorage`；在它之外调用 `useSecurityContext()` 会抛错。`signIn` 接收 `CompositeToken` 或 async supplier，通过 `TokenStorage.signIn` 持久化后运行 `onSignIn`；`signOut` 删除 Storage Key 后运行 `onSignOut`。不要在 render 中创建 Token Storage。[packages/react/src/cosec/SecurityContext.tsx:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/SecurityContext.tsx#L146) [packages/react/src/cosec/useSecurity.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/useSecurity.ts#L150)
 
-## 异步状态契约
+`useDataMonitor` 需要 `viewId`、`countUrl`、`viewName`、`condition` 和 Notification Settings。它会在 Condition 或 Notification 改变时更新已启用 Monitor，并在 unmount 时禁用当前 `viewId`。`useDataMonitorEventBus` 返回带名字的 `subscribe` / `unsubscribe`；订阅无需继续时应取消订阅。[packages/react/src/dataMonitor/useDataMonitor.ts:9](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/dataMonitor/useDataMonitor.ts#L9) [packages/react/src/dataMonitor/useDataMonitor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/dataMonitor/useDataMonitor.ts#L61) [packages/react/src/dataMonitor/useDataMonitorEventBus.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/dataMonitor/useDataMonitorEventBus.ts#L18)
 
-Fetcher Hooks 暴露相同的可观察状态机：
+非 Fetcher Wow Hook 只是 type-specialized `useQuery`，并不知道 Endpoint。Projection 或 Partial Result 请声明返回 Row Type，不能声明为完整 Aggregate。Streaming 变体返回 `ReadableStream<JsonServerSentEvent<R>>`；除中止替换 Request 外，还要在 Effect Cleanup 中消费/取消其 Reader。[packages/react/src/wow/usePagedQuery.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/wow/usePagedQuery.ts#L32) [packages/react/src/wow/useListStreamQuery.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/wow/useListStreamQuery.ts#L32) [packages/react/src/wow/fetcher/useFetcherListStreamQuery.ts:175](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/wow/fetcher/useFetcherListStreamQuery.ts#L175)
 
-```text
-idle → loading → success
-              ↘ error
-loading → aborted 或 replaced → 只有最新请求拥有结果
-```
+## 故障定位
 
-| 值          | 含义                       |
-| ----------- | -------------------------- |
-| `loading`   | 当前所有者的执行仍在等待   |
-| `result`    | 最近一次被接受的成功结果   |
-| `error`     | 最近一次被接受的失败       |
-| `execute()` | 启动工作并返回 Promise     |
-| `abort()`   | 底层支持取消时终止当前工作 |
-| `reset()`   | 把可观察状态恢复为初始形状 |
+| 现象 | 检查项 |
+| --- | --- |
+| 首次渲染就发起请求 | `autoExecute` 默认是 `true`；用户触发任务请设为 `false`。 |
+| 旧 Result 看似覆盖新 Result | 不要用单独的 State Write 绕过 Hook；同一操作只能由一个 Hook 持有。 |
+| Debounce cancel 没有停止 HTTP | `cancel()` 只清除尚未执行的 Timer；`run()` 已启动 Request 后调用 `abort()`。 |
+| `useSecurityContext` 抛错 | 确保在带稳定 `TokenStorage` 的 `SecurityProvider` 之下渲染。 |
+| Fullscreen Target 不正确 | 用 `target` 传 Ref，或把 Target 传给 `enter` / `toggle`。 |
+| 无法导入 notifications | Root barrel 排除了 `notification`；请使用受支持的 Public Integration，不要走 Internal Path。 |
 
-替换与卸载取消可防止过期更新，但不能替代明确的用户反馈。Loading、Empty、Error 和
-Success 应渲染为不同产品状态。
+## 源码与可运行场景
 
-## 选择最窄的 Hook
-
-| 需求                          | 优先使用                                         |
-| ----------------------------- | ------------------------------------------------ |
-| 任意返回 Promise 的函数       | `useExecutePromise`                              |
-| 完整 Fetcher Request          | `useFetcher`                                     |
-| Query State 加 JSON POST 执行 | `useFetcherQuery`                                |
-| 类型化 API 对象的方法         | `createExecuteApiHooks` 或 `createQueryApiHooks` |
-| Wow Snapshot 或 Event         | 对应的 `use*Query` Hook                          |
-| 类型化 Storage Key            | `useKeyStorage` 或 `useImmerKeyStorage`          |
-| 类型化事件订阅                | `useEventSubscription`                           |
-
-防抖 Hook 延迟执行，不延迟 Input State。可见输入应独立受控，并明确展示请求等待状态。
-
-## 源码与 Agent 参考
-
-- 公共导出：[`packages/react/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/index.ts)
-- Agent 精确 API：[`skills/fetcher-react-hooks/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-react-hooks/references/api.md)
-- Skill：[`$fetcher-react-hooks`](../skills/react-and-integrations.md#fetcher-react-hooks)
+- 公共导出：[packages/react/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/index.ts#L14)
+- Promise 与 Fetcher 场景：[Async State](https://fetcher.ahoo.me/storybook/?path=/story/react-hooks-async-state--success)、[Fetcher success](https://fetcher.ahoo.me/storybook/?path=/story/react-hooks-fetcher--get-success)、[debounced request](https://fetcher.ahoo.me/storybook/?path=/story/react-hooks-fetcher--debounced-request)
+- Wow Result Shape 场景：[single、list、paged、count、stream](https://fetcher.ahoo.me/storybook/?path=/story/react-hooks-wow-queries--single)
 
 继续阅读 [React 数据流](../learn/react-data-flow.md)。

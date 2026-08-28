@@ -1,62 +1,81 @@
 ---
 title: Fetcher reference
-description: Configure Fetcher, send HTTP requests, extract results, and handle request failures.
+description: Configure Fetcher, send typed HTTP requests, and diagnose lifecycle failures.
 pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher`
 
-The core package wraps the platform `fetch` API with URL templates,
-interceptors, timeouts, status validation, and typed result extraction.
+`Fetcher` is the core HTTP client: it adds request resolution, interceptors,
+timeouts, status validation, and result extraction around platform `fetch`. Use
+it for application HTTP clients; it is not a server router or a retry policy.
 
-## Install
+## Install and choose an entry point
 
 ```bash
 pnpm add @ahoo-wang/fetcher
 ```
 
-## Create a client
+| Goal | Entry point | Default result |
+| --- | --- | --- |
+| Send a URL and request init | `fetch(url, init?, options?)` | `Response` |
+| Use a known verb | `get`, `post`, `put`, `patch`, `delete`, `head`, `options`, `trace` | `Response` |
+| Start from a complete request | `request(request, options?)` | `FetchExchange` |
+| Inspect the completed pipeline | `exchange(request, options?)` | `FetchExchange` |
+| Share a named client | `NamedFetcher` / `fetcherRegistrar` | `Fetcher` |
+
+### HTTP method matrix
+
+| Methods | Request body | Default result | Explicit result |
+| --- | --- | --- | --- |
+| `get`, `head`, `options`, `trace` | Not accepted: their request type omits `body`. | `Response` | Pass `options.resultExtractor` to return its `R`. |
+| `post`, `put`, `patch`, `delete` | Accepted: their request type omits only `method`. | `Response` | Pass `options.resultExtractor` to return its `R`. |
+
+Every shortcut supplies its own HTTP method and returns `Promise<R>`. The
+default `R` is `Response`; a generic argument alone does not parse the body, so
+pair it with an explicit extractor such as `ResultExtractors.Json`.
+
+## Client configuration
 
 ```ts
 import { Fetcher } from '@ahoo-wang/fetcher';
 
 export const api = new Fetcher({
   baseURL: 'https://api.example.com',
+  headers: { Authorization: 'Bearer token' },
   timeout: 10_000,
-  headers: { 'Content-Type': 'application/json' },
 });
 ```
 
-### `FetcherOptions`
+| `FetcherOptions` member | Default | Contract |
+| --- | --- | --- |
+| `baseURL` | `''` | Prefixes relative URLs; absolute URLs are preserved by `combineURLs`. |
+| `headers` | `{ 'Content-Type': 'application/json' }` | Shallow-merged with request headers; request values win. |
+| `timeout` | `undefined` | Milliseconds. Request timeout, including `0`, wins. |
+| `urlTemplateStyle` | `UrlTemplateStyle.UriTemplate` | Resolves `{id}`; use `Express` only for `:id` routes. |
+| `validateStatus` | `status >= 200 && status < 300` | Used only while Fetcher creates its default `InterceptorManager`. |
+| `interceptors` | new `InterceptorManager` | Replaces the whole default manager, so `validateStatus` is then ignored. |
 
-| Option             | Default               | Purpose                                       |
-| ------------------ | --------------------- | --------------------------------------------- |
-| `baseURL`          | `''`                  | Prefix for relative request URLs              |
-| `headers`          | JSON content type     | Headers merged into every request             |
-| `timeout`          | no timeout            | Default timeout in milliseconds               |
-| `urlTemplateStyle` | `UriTemplate`         | URI-template or Express-style path parameters |
-| `interceptors`     | new default manager   | Replace the complete interceptor pipeline     |
-| `validateStatus`   | `200 <= status < 300` | Decide which responses are successful         |
+## Typed request and `FetchRequestInit`
 
-`validateStatus` only configures the default interceptor manager. It has no
-effect when you supply a custom `interceptors` instance.
-
-## Send requests
+All verb methods are `Promise<R>` and accept `(url, request?, options?)`.
+`get`, `head`, `options`, and `trace` exclude `body`; the other verb methods
+exclude only `method`. Supply `resultExtractor` when `R` is not `Response`.
 
 ```ts
-import { ResultExtractors } from '@ahoo-wang/fetcher';
-import { api } from './api';
+import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 
 interface User {
   id: string;
   name: string;
 }
 
-const user = await api.get<User>(
-  '/users/{id}',
+const api = new Fetcher({ baseURL: 'https://api.example.com' });
+const user: User = await api.get<User>(
+  '/teams/{teamId}/users/{userId}',
   {
     urlParams: {
-      path: { id: 'u-42' },
+      path: { teamId: 'platform', userId: 'u-42' },
       query: { expand: 'team' },
     },
   },
@@ -64,106 +83,81 @@ const user = await api.get<User>(
 );
 ```
 
-`fetch`, `get`, `post`, `put`, `patch`, `delete`, `head`, `options`, and
-`trace` return a `Response` by default. Use `request()` when you already have a
-complete `FetchRequest`; it returns a `FetchExchange` by default.
+`FetchRequestInit` is platform `RequestInit`, except for its typed `headers`
+and `body`, plus `urlParams`, `timeout`, and `abortController`. Plain object
+bodies are JSON-serialized by the standard request interceptor; `FormData`,
+`Blob`, streams, and other supported `BodyInit` values are not serialized.
 
-Request headers and timeouts override client defaults. Plain object bodies are
-JSON-serialized by the default request-body interceptor.
+### Resolution and URL rules
 
-## Extract results
+1. `resolveExchange()` shallow-merges client headers then request headers.
+2. Request `timeout` takes precedence over the client timeout.
+3. `UrlBuilder` combines the base URL, resolves path placeholders, then appends
+   `new URLSearchParams(query)`.
+4. The pipeline consumes `urlParams`; re-running URL resolution does not append
+   a second query string.
+5. A result extractor runs through `FetchExchange.extractResult()` and caches
+   its promise, so do not select two body-reading extractors for one exchange.
 
-| Extractor                      | Result                   |
-| ------------------------------ | ------------------------ |
-| `ResultExtractors.Response`    | Native `Response`        |
-| `ResultExtractors.Json`        | Parsed JSON              |
-| `ResultExtractors.Text`        | Text body                |
-| `ResultExtractors.Blob`        | `Blob`                   |
-| `ResultExtractors.ArrayBuffer` | `ArrayBuffer`            |
-| `ResultExtractors.Bytes`       | `Uint8Array`             |
-| `ResultExtractors.Exchange`    | Complete `FetchExchange` |
+`URLSearchParams` defines query coercion. Give repeated query keys explicitly
+as the shape supported by that platform API; do not expect an array to mean
+multiple keys.
 
-A custom `ResultExtractor` receives the completed exchange and may return a
-value or a promise.
+## Result, interceptor, and error contracts
 
-## API map
+| Extractor | Result |
+| --- | --- |
+| `ResultExtractors.Exchange` | `FetchExchange` |
+| `ResultExtractors.Response` | native `Response` |
+| `ResultExtractors.Json` / `Text` | parsed JSON / text body |
+| `Blob` / `ArrayBuffer` / `Bytes` | matching binary body value |
 
-| API                                         | Default result    | Use when                                                    |
-| ------------------------------------------- | ----------------- | ----------------------------------------------------------- |
-| `fetch(url, init?, options?)`               | `Response`        | You have a URL and optional request initialization          |
-| `get` / `post` / `put` / `patch` / `delete` | `Response`        | The HTTP method is known at the call site                   |
-| `exchange(request, options?)`               | `FetchExchange`   | Infrastructure needs the completed lifecycle container      |
-| `request<R>(request, options?)`             | extracted `R`     | You already have a complete `FetchRequest`                  |
-| `resolveExchange(request, options?)`        | `FetchExchange`   | An adapter needs to inspect the resolved request before I/O |
-| `NamedFetcher(name, options?)`              | registered client | Services resolve a shared client by name                    |
+The default pipeline runs request interceptors in ascending `order`, then
+response interceptors in ascending `order`; a failure runs error interceptors.
+Its built-ins are `RequestBodyInterceptor`, `UrlResolveInterceptor`,
+`FetchInterceptor`, then `ValidateStatusInterceptor`. An error interceptor may
+recover by clearing `exchange.error`; response interceptors are not rerun.
 
-`fetcher` is the default `NamedFetcher` registered as `default`.
-`fetcherRegistrar.get(name)` resolves other registered clients. Prefer an
-explicit exported client in application code; use the registry at integration
-boundaries designed around named clients.
+| Failure | What to inspect |
+| --- | --- |
+| Non-2xx rejects | Top-level `ExchangeError`; inspect `error.exchange.error` or `error.cause` for `HttpStatusValidationError`. Use `validateStatus` or `IGNORE_VALIDATE_STATUS` only for an expected status. |
+| Timeout rejects | Top-level `ExchangeError`; inspect `error.exchange.error` or `error.cause` for `FetchTimeoutError` and its `request.timeout`. |
+| Network/interceptor failure | Top-level `ExchangeError.exchange.error` and `ExchangeError.cause` retain the original error. |
+| JSON parse failure | The selected extractor reads the response body; inspect `Content-Type` and server payload. |
+| URL still contains `{id}` | Check `urlParams.path` and the configured template style. |
 
-## Request contract
+The public hierarchy is `FetcherError` → `ExchangeError` →
+`HttpStatusValidationError`; `FetchTimeoutError` extends `FetcherError`
+directly. `InterceptorManager.exchange()` wraps an unhandled pipeline error in
+the top-level `ExchangeError`, so catch that first and narrow
+`error.exchange.error` or `error.cause` for the original status or timeout
+type.
 
-`FetchRequestInit` extends the platform `RequestInit` with `urlParams`,
-`timeout`, typed headers, a plain-object body, and `abortController`.
+## Timeout and caller cancellation
 
-### Resolution order
-
-1. Request headers override client headers with a shallow merge.
-2. Request timeout overrides the client timeout.
-3. Path and query parameters are resolved into the final URL.
-4. Plain-object bodies are serialized as JSON by the request-body interceptor.
-5. Request, response, and error interceptors mutate the same `FetchExchange`.
-6. The selected result extractor runs once and its result is cached.
-
-`attributes` becomes a `Map<string, unknown>` on `FetchExchange`. Use
-namespaced keys when interceptors share data, and never put request-global
-mutable state on the `Fetcher` instance.
-
-### URL parameters
+Pass a controller when the caller owns cancellation. If a request already has a
+platform `signal`, Fetcher delegates to platform `fetch` and does not install
+its own timeout race; otherwise timeout uses the supplied controller when it is
+still usable.
 
 ```ts
-await api.get('/teams/{teamId}/users/{userId}', {
-  urlParams: {
-    path: { teamId: 'platform', userId: 'u-42' },
-    query: { include: ['roles', 'permissions'], active: true },
-  },
+import { Fetcher } from '@ahoo-wang/fetcher';
+
+const api = new Fetcher({ baseURL: 'https://api.example.test' });
+const controller = new AbortController();
+const pending = api.get('/jobs/{id}', {
+  urlParams: { path: { id: 'job-1' } },
+  abortController: controller,
 });
+controller.abort();
+await pending;
 ```
 
-The default style uses URI-template placeholders such as `{userId}`. Select
-the Express style only when existing routes use `:userId`; do not mix styles
-inside one client.
+## Source reference
 
-## Cancellation and timeout
-
-Pass `abortController` when the caller owns cancellation. A configured timeout
-uses the same cancellation path and throws `FetchTimeoutError`. A request-level
-timeout wins over the client default. Omitting both means no Fetcher timeout.
-
-## Interceptors and errors
-
-`fetcher.interceptors` exposes request, response, and error registries. Handlers
-have unique names and run by ascending `order`; `use()` registers a handler and
-`eject()` removes it.
-
-Catch these public error types when the distinction affects user behavior:
-
-- `HttpStatusValidationError`: the response failed `validateStatus`.
-- `FetchTimeoutError`: the configured timeout expired.
-- `ExchangeError`: request processing failed and retains exchange context.
-- `FetcherError`: base class for Fetcher-specific failures.
-
-When an interceptor handles a failure, it must leave the exchange in a state
-that later interceptors and the extractor can understand. Use
-`IGNORE_VALIDATE_STATUS` only when a non-2xx response is an intentional result,
-not to silence an unknown server failure.
-
-## Source and agent reference
-
-- Public exports: [`packages/fetcher/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/index.ts)
-- Detailed agent API: [`skills/fetcher-integration/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-integration/references/api.md)
-- Skill: [`$fetcher-integration`](../skills/http-and-services.md#fetcher-integration)
-
-Continue with [Requests and results](../learn/requests-and-results.md) and
-[Interceptors, errors, and timeouts](../learn/interceptors-errors-timeouts.md).
+- [packages/fetcher/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/index.ts#L14)
+- [packages/fetcher/src/fetcher.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L86)
+- [packages/fetcher/src/fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)
+- [packages/fetcher/src/fetcherError.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L37)
+- [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)
+- [packages/fetcher/src/timeout.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)

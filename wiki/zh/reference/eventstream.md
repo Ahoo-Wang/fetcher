@@ -1,13 +1,13 @@
 ---
 title: 事件流参考
-description: 解析 Server-Sent Events、消费类型化 JSON 流并处理无效流式响应。
+description: 将 SSE 响应转换为类型化 Web Stream，并管理解析与取消边界。
 pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-eventstream`
 
-该包把 `text/event-stream` 响应转换为可通过 `for await` 消费的 Web Streams。
-导入它还会给平台 `Response` 类型和原型添加事件流辅助 API。
+本包把 `text/event-stream` 解析为 Web Stream。它解析 SSE Frame；不负责建立 HTTP 连接、
+校验应用协议语义，或在网络失败后重连。
 
 ## 安装
 
@@ -15,7 +15,24 @@ pageClass: reference-page
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventstream
 ```
 
-## 消费 JSON 事件
+`@ahoo-wang/fetcher` 是 Peer Dependency。运行时需要 Web Streams、`Response` 和
+`TextDecoderStream`；导入本包会安装 `Response` 辅助 API 与 `ReadableStream` 的异步迭代回退。
+
+## 选择入口
+
+| 需求 | API | 结果 |
+| --- | --- | --- |
+| 自行转换 `Response` | `toServerSentEventStream(response)` | `ReadableStream<ServerSentEvent>`；Body 缺失时抛错。 |
+| 解析 JSON `data` | `toJsonServerSentEventStream<T>(stream, detector?)` | `ReadableStream<JsonServerSentEvent<T>>`。 |
+| 可选的 `Response` 转换 | `response.eventStream()` / `jsonEventStream<T>()` | 返回 Stream；非 SSE Content Type 时为 `null`；SSE 但无 Body 时抛出 `EventStreamConvertError`。 |
+| 必需的 `Response` 转换 | `response.requiredEventStream()` / `requiredJsonEventStream<T>()` | 返回 Stream 或抛出 `EventStreamConvertError`。 |
+| Fetcher 结果提取 | `EventStreamResultExtractor` / `JsonEventStreamResultExtractor` | 从 `FetchExchange` 提取必需的原始 / JSON Stream。 |
+| 构建自定义阶段 | `TextLineTransformStream`、`ServerSentEventTransformStream`、`JsonServerSentEventTransformStream<T>` | 各个 `TransformStream` 阶段。 |
+
+调用 `Response` 原型辅助 API 前必须导入 `@ahoo-wang/fetcher-eventstream`。
+`isEventStream` 通过 `Content-Type.includes('text/event-stream')` 判断。
+
+## 消费类型化 JSON 事件
 
 ```ts
 import '@ahoo-wang/fetcher-eventstream';
@@ -25,76 +42,107 @@ interface Progress {
   percent: number;
 }
 
-const response = await new Fetcher().get('/jobs/42/events');
-const events = response.requiredJsonEventStream<Progress>();
+const controller = new AbortController();
+const response = await new Fetcher().get('/jobs/42/events', {
+  signal: controller.signal,
+});
 
-for await (const event of events) {
-  renderProgress(event.data.percent);
+try {
+  for await (const event of response.requiredJsonEventStream<Progress>()) {
+    console.log(event.data.percent);
+  }
+} finally {
+  controller.abort();
 }
 ```
 
-服务端必须返回 `Content-Type: text/event-stream`。JSON 辅助 API 会解析每个 SSE
-的 `data` 字段，并拒绝格式错误的 JSON。
+`JsonServerSentEvent<T>` 保留 `event`、`id` 与 `retry`，同时把 `data: string` 替换成
+`data: T`。`TerminateDetector` 会在 `JSON.parse` 前看到解析后的原始 Frame；对 `[DONE]`
+等 Sentinel 返回 `true`。
 
-## `Response` 辅助 API
+## SSE Frame 与转换流水线
 
-| API                                              | 结果                                 |
-| ------------------------------------------------ | ------------------------------------ |
-| `response.contentType`                           | `Content-Type` 请求头或 `null`       |
-| `response.isEventStream`                         | 内容类型是否包含 `text/event-stream` |
-| `response.eventStream()`                         | 解析后的 SSE 流或 `null`             |
-| `response.requiredEventStream()`                 | 解析后的 SSE 流，失败时抛错          |
-| `response.jsonEventStream<T>(detector?)`         | 类型化 JSON SSE 流或 `null`          |
-| `response.requiredJsonEventStream<T>(detector?)` | 类型化 JSON SSE 流，失败时抛错       |
-
-`TerminateDetector` 可在协议专用的结束事件到达时停止 JSON 流，例如 OpenAI 的
-`[DONE]` 标记。
-
-## 转换 API
-
-- `toServerSentEventStream(response)` 转换原生 `Response`。
-- `toJsonServerSentEventStream(stream, detector?)` 把 SSE data 解析为 JSON。
-- `TextLineTransformStream`、`ServerSentEventTransformStream` 和
-  `JsonServerSentEventTransformStream` 暴露各流水线阶段。
-- `ReadableStreamAsyncIterable` 为不支持原生异步迭代的运行时提供适配。
-
-`EventStreamResultExtractor` 和 `JsonEventStreamResultExtractor` 可把相同转换直接
-接入 Fetcher 结果提取。
-
-## 事件形状与流水线
-
-`ServerSentEvent` 暴露 SSE Frame 产生的 `data`、`event`、`id`，以及存在时的
-Retry 元数据。一个事件中的多行 `data:` 会在 JSON 转换前合并。
+`ServerSentEvent` 的结构为 `{ event, data, id?, retry? }`。Parser 会把缺失的 Event Type
+设为 `message`，忽略注释行，用 `\n` 合并重复的 `data:` 字段，忽略包含 NUL 的 `id`，仅在
+`retry` 全为 ASCII 数字时接受它。只有至少收到一个 `data:` 字段时，它才会在空行或输入 Stream
+flush 时输出 Frame。仅含 Metadata 的 Group 不会在空行立即输出，且该空行不会重置 `event`、`id`
+或 `retry`；这些值会应用到后续含 `data` 的 Event。EOF 时，只有 Metadata 的残余会由 flush 清理丢弃
+（[`packages/eventstream/src/serverSentEventTransformStream.ts:116`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L116)、
+[`packages/eventstream/src/serverSentEventTransformStream.ts:157`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L157)）。
 
 ```text
-Response.body
-  → TextLineTransformStream
-  → ServerSentEventTransformStream
-  → JsonServerSentEventTransformStream<T>
-  → for await...of
+Response.body (ReadableStream<Uint8Array>)
+  -> TextDecoderStream('utf-8')
+  -> TextLineTransformStream
+  -> ServerSentEventTransformStream
+  -> JsonServerSentEventTransformStream<T> (可选)
+  -> ReadableStream<...> / for await...of
 ```
 
-`event`、`id` 或非 JSON `data` 有意义时使用原始事件流；只有所有非终止 Data 都是
-有效 JSON 时才使用 JSON Stream。
+`toServerSentEventStream(response)` 正是前三个转换。`data` 不是 JSON 或需要 Frame 元数据时
+使用 Raw Stream；只有每个非终止 `data` 都是有效 JSON 时才追加 JSON Transform。
 
-## 终止与取消
+## Response 辅助 API 与 Fetcher Extractor
 
-`TerminateDetector` 在 JSON 转换前看到每个已解析 SSE Event，因此 `[DONE]` 等协议
-终止符可以结束 Stream，而不会变成 JSON 错误。取消会沿 Web Stream 传播；HTTP 调用方
-拥有 `AbortController` 时也应 Abort，让网络工作停止。
+| API | 返回值 / 失败边界 |
+| --- | --- |
+| `response.contentType` | 从 `Content-Type` Header 取得的 `string | null`。 |
+| `response.isEventStream` | 仅当 Header 包含 `text/event-stream` 时为 `true`。 |
+| `response.eventStream()` | Raw Stream 或 `null`；非 SSE Content Type 时不抛错。 |
+| `response.requiredEventStream()` | Raw Stream；否则抛出并保留 `response` 的 `EventStreamConvertError`。 |
+| `response.jsonEventStream<T>(detector?)` | JSON Stream 或 `null`。 |
+| `response.requiredJsonEventStream<T>(detector?)` | JSON Stream 或 `EventStreamConvertError`。 |
+| `EventStreamResultExtractor` | 调用 `exchange.requiredResponse.requiredEventStream()`。 |
+| `JsonEventStreamResultExtractor` | 调用 `exchange.requiredResponse.requiredJsonEventStream()`；其导出结果类型是 `JsonServerSentEventStream<any>`。 |
 
-不要假设服务端会在逻辑结束事件后立即关闭连接。协议存在显式终止符时声明 Detector。
+可选辅助 API 对非 SSE Response 返回 `null` 且不消费它。对 Body 为 `null` 的 SSE Response，其底层
+转换会抛出 `EventStreamConvertError`。Required 辅助 API 还会在 Content Type 非 SSE 时抛错；捕获后
+检查 `error.response`。
 
-## 错误
+## 终止、取消与错误
 
-`EventStreamConvertError` 保留源 `Response`。响应不是事件流或没有可读正文时，
-required 辅助 API 会抛出该错误。流解析错误在消费过程中抛出，因此应把 `for await`
-循环放在错误边界中。
+```ts
+import {
+  toJsonServerSentEventStream,
+  toServerSentEventStream,
+} from '@ahoo-wang/fetcher-eventstream';
 
-## 源码与 Agent 参考
+const response = await fetch('/chat');
+const events = toJsonServerSentEventStream<{ token: string }>(
+  toServerSentEventStream(response),
+  event => event.data === '[DONE]',
+);
 
-- 公共导出：[`packages/eventstream/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts)
-- Agent 精确 API：[`skills/fetcher-llm-streaming/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-llm-streaming/references/api.md)
-- Skill：[`$fetcher-llm-streaming`](../skills/streaming-and-openai.md#fetcher-llm-streaming)
+for await (const event of events) {
+  console.log(event.data.token);
+}
+```
 
-继续阅读[流式响应](../learn/streaming.md)和 [OpenAI 流式请求](../recipes/openai-streaming.md)。
+`TerminateDetector` 会终止 JSON Transform，但不会输出 Sentinel。通过 `break` 退出异步循环会
+取消 Stream Reader（本包回退会显式执行）；若请求由 `AbortController` 创建，还应调用 `abort()`
+停止网络请求。
+
+无效 JSON 在消费 JSON Stream 时抛出。每个 `SafeTransformer` 会把转换错误送入 Controller，
+然后丢弃后续 Chunk；已关闭 Controller 的 `TypeError` 会被抑制。创建 Stream 与完整消费循环应
+处于同一个错误边界内。
+
+## 故障定位
+
+| 现象 | 检查项 |
+| --- | --- |
+| `requiredEventStream()` 立即抛错 | 确认 `Content-Type` 包含 `text/event-stream`，并且 `Response` 有 Body。 |
+| `response.eventStream` 不存在 | 导入 `@ahoo-wang/fetcher-eventstream` 以执行原型 Side Effect。 |
+| 处理若干事件后 JSON 失败 | 定位无效的 `data`；混合文本/JSON 协议使用 Raw Stream，Sentinel 使用 Detector。 |
+| `[DONE]` Frame 变成解析错误 | 传入 `event => event.data === '[DONE]'` 作为 `TerminateDetector`。 |
+| 离开 UI 后连接仍未停止 | 取消/跳出 Reader，并 Abort 所有者的 `AbortController`。 |
+| 最后一个 SSE Event 缺失 | 确保服务端发送空行或关闭 Body，以便 Parser flush 缓冲 Frame。 |
+
+## 源码参考
+
+- 公共导出：[index.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/index.ts#L63)
+- EventStreamConvertError：[eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)
+- Response 辅助 API 实现：[responses.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/responses.ts#L154)
+- Fetcher Extractor：[eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)
+- SSE Frame Parser：[serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)
+- JSON Transform：[jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)
+- 异步迭代取消：[readableStreamAsyncIterable.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L125)
