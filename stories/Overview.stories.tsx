@@ -13,6 +13,8 @@
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
+import { fixtureUsers } from './fixtures/http';
+import { fixtureViewerDefinition } from './fixtures/viewer';
 
 const meta = {
   title: 'Overview',
@@ -41,7 +43,13 @@ export const StartHere: Story = {
         Use Controls to change inputs, Interactions to inspect assertions, and
         Accessibility to review the rendered result.
       </p>
-      <a href="/start/first-request">Read the five-minute guide</a>
+      <output className="story-output">
+        Fixtures: {fixtureUsers.map(user => user.name).join(', ')} ·{' '}
+        {fixtureViewerDefinition.name}
+      </output>
+      <a href="https://fetcher.ahoo.me/start/first-request">
+        Read the five-minute guide
+      </a>
     </main>
   ),
   play: async ({ canvasElement }) => {
@@ -49,5 +57,6 @@ export const StartHere: Story = {
     await expect(
       canvas.getByRole('heading', { name: 'Fetcher interactive workflows' }),
     ).toBeVisible();
+    await expect(canvas.getByText('Fixtures: Ada, Lin · Users')).toBeVisible();
   },
 };

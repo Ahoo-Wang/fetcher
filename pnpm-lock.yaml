@@ -140,6 +140,42 @@ importers:
 
   .:
     devDependencies:
+      '@ahoo-wang/fetcher':
+        specifier: workspace:*
+        version: link:packages/fetcher
+      '@ahoo-wang/fetcher-cosec':
+        specifier: workspace:*
+        version: link:packages/cosec
+      '@ahoo-wang/fetcher-decorator':
+        specifier: workspace:*
+        version: link:packages/decorator
+      '@ahoo-wang/fetcher-eventbus':
+        specifier: workspace:*
+        version: link:packages/eventbus
+      '@ahoo-wang/fetcher-eventstream':
+        specifier: workspace:*
+        version: link:packages/eventstream
+      '@ahoo-wang/fetcher-generator':
+        specifier: workspace:*
+        version: link:packages/generator
+      '@ahoo-wang/fetcher-openai':
+        specifier: workspace:*
+        version: link:packages/openai
+      '@ahoo-wang/fetcher-openapi':
+        specifier: workspace:*
+        version: link:packages/openapi
+      '@ahoo-wang/fetcher-react':
+        specifier: workspace:*
+        version: link:packages/react
+      '@ahoo-wang/fetcher-storage':
+        specifier: workspace:*
+        version: link:packages/storage
+      '@ahoo-wang/fetcher-viewer':
+        specifier: workspace:*
+        version: link:packages/viewer
+      '@ahoo-wang/fetcher-wow':
+        specifier: workspace:*
+        version: link:packages/wow
       '@babel/plugin-proposal-decorators':
         specifier: ^7.29.7
         version: 7.29.7(@babel/core@7.29.0)

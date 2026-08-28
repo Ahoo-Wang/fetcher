@@ -41,6 +41,18 @@
     "node": ">=18.20.8"
   },
   "devDependencies": {
+    "@ahoo-wang/fetcher": "workspace:*",
+    "@ahoo-wang/fetcher-cosec": "workspace:*",
+    "@ahoo-wang/fetcher-decorator": "workspace:*",
+    "@ahoo-wang/fetcher-eventbus": "workspace:*",
+    "@ahoo-wang/fetcher-eventstream": "workspace:*",
+    "@ahoo-wang/fetcher-generator": "workspace:*",
+    "@ahoo-wang/fetcher-openai": "workspace:*",
+    "@ahoo-wang/fetcher-openapi": "workspace:*",
+    "@ahoo-wang/fetcher-react": "workspace:*",
+    "@ahoo-wang/fetcher-storage": "workspace:*",
+    "@ahoo-wang/fetcher-viewer": "workspace:*",
+    "@ahoo-wang/fetcher-wow": "workspace:*",
     "@babel/plugin-proposal-decorators": "^7.29.7",
     "@chromatic-com/storybook": "^5.3.0",
     "@eslint/js": "catalog:",
