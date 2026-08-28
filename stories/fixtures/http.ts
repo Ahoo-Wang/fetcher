@@ -34,6 +34,13 @@ export const fixtureSseChunks: readonly string[] = [
   'data: [DONE]\n\n',
 ];
 
+export type ViewerFixtureScenario =
+  | 'success'
+  | 'loading'
+  | 'missing-definition'
+  | 'definition-error'
+  | 'empty-views';
+
 function jsonResponse(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), {
     status,
@@ -77,7 +84,7 @@ function toRequest(input: RequestInfo | URL, init?: RequestInit): Request {
   return new Request(url, init);
 }
 
-export function installFetchFixture(): () => void {
+function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
   const originalFetch = globalThis.fetch;
 
   globalThis.fetch = async (input, init) => {
@@ -97,7 +104,7 @@ export function installFetchFixture(): () => void {
     }
 
     const userMatch = pathname.match(/^\/users\/([^/]+)$/);
-    if (userMatch) {
+    if (userMatch && !['count', 'paged'].includes(userMatch[1])) {
       const user = fixtureUsers.find(item => item.id === userMatch[1]);
       return user
         ? jsonResponse(user)
@@ -133,10 +140,17 @@ export function installFetchFixture(): () => void {
     }
 
     if (pathname === '/viewer/viewer_definition/snapshot/single/state') {
+      if (viewerScenario === 'loading') {
+        return new Promise<Response>(() => {});
+      }
+      if (viewerScenario === 'missing-definition') return jsonResponse(null);
+      if (viewerScenario === 'definition-error') {
+        return jsonResponse({ message: 'Definition unavailable' }, 500);
+      }
       return jsonResponse(fixtureViewerDefinition);
     }
     if (pathname === '/viewer/view/snapshot/list/state') {
-      return jsonResponse(fixtureViews);
+      return jsonResponse(viewerScenario === 'empty-views' ? [] : fixtureViews);
     }
     if (pathname === '/users/paged') return jsonResponse(fixturePagedUsers);
     if (pathname === '/users/count') {
@@ -160,4 +174,14 @@ export function installFetchFixture(): () => void {
   return () => {
     globalThis.fetch = originalFetch;
   };
+}
+
+export function installFetchFixture(): () => void {
+  return installFixture('success');
+}
+
+export function installViewerFetchFixture(
+  scenario: ViewerFixtureScenario,
+): () => void {
+  return installFixture(scenario);
 }
