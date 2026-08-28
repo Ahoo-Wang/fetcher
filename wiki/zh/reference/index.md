@@ -46,7 +46,7 @@ flowchart TD
   class app,experience,state,integration,transport layer;
 ```
 
-依赖应指向较低层。如果 Transport Helper 需要 Viewer 或 React，应把该行为移动到真正拥有它的高层包。
+这是概念性的职责地图，不是 Package Dependency Graph。箭头表示典型的组合或调用路径；实际也存在跨层和跨分组依赖。
 
 ## 包覆盖范围
 

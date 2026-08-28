@@ -47,8 +47,9 @@ flowchart TD
   class app,experience,state,integration,transport layer;
 ```
 
-Dependencies point toward the lower layers. If a transport helper needs Viewer
-or React, move that behavior to the owning higher-level package instead.
+This is a conceptual responsibility map, not a package dependency graph. Its
+arrows show typical composition or call paths; cross-layer and cross-group
+dependencies exist.
 
 ## Package coverage
 
