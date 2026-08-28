@@ -53,6 +53,7 @@ export function SelectFilter(props: FilterProps<SelectFilterValueProps>) {
     valueInputRender: (filterState: UseFilterStateReturn) => {
       return (
         <Select
+          aria-label={`${props.field.label} value`}
           mode={'multiple'}
           value={filterState.value}
           onChange={filterState.setValue}

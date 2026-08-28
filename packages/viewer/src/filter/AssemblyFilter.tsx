@@ -77,7 +77,7 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
     value: supportedOperator,
     label: operatorLocale[supportedOperator],
   }));
-   
+
   const {
     locale: _locale,
     supportedOperators: _supportedOperators,
@@ -104,6 +104,7 @@ export function AssemblyFilter({ ref, ...props }: AssemblyFilterProps) {
       </Typography>
       <Select
         style={{ minWidth: 120 }}
+        aria-label={`${props.field.label} operator`}
         {...operatorProps}
         onChange={filterState.setOperator}
         value={filterState.operator}

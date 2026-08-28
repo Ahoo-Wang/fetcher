@@ -31,8 +31,10 @@ export function AvailableFilterSelectModal(props: AvailableFiltersModalProps) {
   const handleOk = () => {
     props?.onSave?.(availableFilterSelectRef.current?.getValue() ?? []);
   };
+  const accessibleName =
+    typeof props.title === 'string' ? props.title : 'Available filters';
   return (
-    <Modal {...props} onOk={handleOk} width={880}>
+    <Modal aria-label={accessibleName} {...props} onOk={handleOk} width={880}>
       <AvailableFilterSelect
         {...props.availableFilters}
         ref={availableFilterSelectRef}

@@ -7,6 +7,10 @@ on:
       - 'wiki/**'
       - 'packages/**'
       - '.storybook/**'
+      - 'stories/**'
+      - 'vitest.config.ts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
   workflow_dispatch:
 
 permissions:

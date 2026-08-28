@@ -1,104 +1,110 @@
-import { DefaultTheme } from 'vitepress'
+import type { DefaultTheme } from 'vitepress';
+
+const sidebarSections = [
+  {
+    text: '开始',
+    items: [
+      { text: '概览', link: '/zh/start/' },
+      { text: '安装', link: '/zh/start/installation' },
+      { text: '第一个请求', link: '/zh/start/first-request' },
+      { text: '选择包', link: '/zh/start/choose-packages' },
+    ],
+  },
+  {
+    text: '学习',
+    items: [
+      { text: '请求生命周期', link: '/zh/learn/request-lifecycle' },
+      { text: '请求与结果', link: '/zh/learn/requests-and-results' },
+      {
+        text: '拦截器、错误与超时',
+        link: '/zh/learn/interceptors-errors-timeouts',
+      },
+      { text: '流式响应', link: '/zh/learn/streaming' },
+      { text: 'React 数据流', link: '/zh/learn/react-data-flow' },
+    ],
+  },
+  {
+    text: '场景',
+    items: [
+      { text: '声明式服务', link: '/zh/recipes/declarative-services' },
+      { text: '生成客户端', link: '/zh/recipes/openapi-client' },
+      { text: 'OpenAI 流式请求', link: '/zh/recipes/openai-streaming' },
+      { text: 'Wow CQRS', link: '/zh/recipes/wow-cqrs' },
+      { text: 'CoSec 认证', link: '/zh/recipes/cosec-authentication' },
+      { text: '状态与事件', link: '/zh/recipes/state-and-events' },
+      { text: '数据 Viewer', link: '/zh/recipes/data-viewer' },
+    ],
+  },
+  {
+    text: 'Skills',
+    items: [
+      { text: '概览', link: '/zh/skills/' },
+      { text: 'HTTP 与服务', link: '/zh/skills/http-and-services' },
+      { text: '流式与 OpenAI', link: '/zh/skills/streaming-and-openai' },
+      { text: 'OpenAPI 与生成', link: '/zh/skills/openapi-and-generation' },
+      { text: 'React 与集成', link: '/zh/skills/react-and-integrations' },
+    ],
+  },
+  {
+    text: '参考',
+    items: [
+      { text: '包概览', link: '/zh/reference/' },
+      { text: 'Fetcher', link: '/zh/reference/fetcher' },
+      { text: 'Decorator', link: '/zh/reference/decorator' },
+      { text: '事件总线', link: '/zh/reference/eventbus' },
+      { text: '事件流', link: '/zh/reference/eventstream' },
+      { text: 'Storage', link: '/zh/reference/storage' },
+      { text: 'React', link: '/zh/reference/react' },
+      { text: 'OpenAPI', link: '/zh/reference/openapi' },
+      { text: 'Generator', link: '/zh/reference/generator' },
+      { text: 'OpenAI', link: '/zh/reference/openai' },
+      { text: 'Wow', link: '/zh/reference/wow' },
+      { text: 'CoSec', link: '/zh/reference/cosec' },
+      { text: 'Viewer', link: '/zh/reference/viewer' },
+    ],
+  },
+  {
+    text: '贡献',
+    items: [
+      { text: '概览', link: '/zh/contributing/' },
+      { text: '开发', link: '/zh/contributing/development' },
+      { text: '测试', link: '/zh/contributing/testing' },
+      { text: '文档', link: '/zh/contributing/documentation' },
+    ],
+  },
+] satisfies DefaultTheme.SidebarItem[];
+
+function sidebar(activeSection: string) {
+  return sidebarSections.map(section =>
+    section.text === activeSection
+      ? section
+      : { text: section.text, link: section.items?.[0]?.link },
+  );
+}
 
 export const zh: DefaultTheme.Config = {
   label: '中文',
   lang: 'zh-CN',
   title: 'Fetcher',
-  description: '现代化 HTTP 客户端生态系统，原生支持 LLM 流式传输',
+  description: '类型化 HTTP 客户端、流式响应、React Hooks 与数据 Viewer',
   themeConfig: {
+    logo: { src: '/fetcher-logo.png', alt: 'Fetcher 标志' },
     nav: [
-      { text: '指南', link: '/zh/guide/' },
-      { text: '架构', link: '/zh/architecture/' },
-      { text: '包', link: '/zh/packages/' },
-      { text: 'API', link: '/zh/api/' },
-      { text: '入门指南', link: '/zh/onboarding/' },
-      {
-        text: '更多',
-        items: [
-          { text: '测试', link: '/zh/testing/' },
-          { text: '贡献指南', link: '/zh/guide/contributing' },
-          { text: 'Storybook', link: '/storybook/', target: '_blank' },
-        ],
-      },
+      { text: '开始', link: '/zh/start/' },
+      { text: '学习', link: '/zh/learn/request-lifecycle' },
+      { text: '场景', link: '/zh/recipes/declarative-services' },
+      { text: 'Skills', link: '/zh/skills/' },
+      { text: '参考', link: '/zh/reference/' },
+      { text: '贡献', link: '/zh/contributing/' },
+      { text: 'Storybook', link: '/storybook/', target: '_blank' },
     ],
     sidebar: {
-      '/zh/guide/': [
-        {
-          text: '快速开始',
-          items: [
-            { text: '介绍', link: '/zh/guide/' },
-            { text: '快速上手', link: '/zh/guide/quick-start' },
-            { text: '配置', link: '/zh/guide/configuration' },
-          ],
-        },
-      ],
-      '/zh/architecture/': [
-        {
-          text: '架构',
-          items: [
-            { text: '概览', link: '/zh/architecture/' },
-            { text: 'Fetcher 核心', link: '/zh/architecture/fetcher-core' },
-            { text: '拦截器系统', link: '/zh/architecture/interceptors' },
-            { text: 'EventStream 与 SSE', link: '/zh/architecture/eventstream' },
-            { text: 'URL 构建器', link: '/zh/architecture/url-builder' },
-          ],
-        },
-      ],
-      '/zh/packages/': [
-        {
-          text: '包',
-          items: [
-            { text: '概览', link: '/zh/packages/' },
-            { text: '@ahoo-wang/fetcher', link: '/zh/packages/fetcher' },
-            { text: '@ahoo-wang/fetcher-decorator', link: '/zh/packages/decorator' },
-            { text: '@ahoo-wang/fetcher-eventbus', link: '/zh/packages/eventbus' },
-            { text: '@ahoo-wang/fetcher-eventstream', link: '/zh/packages/eventstream' },
-            { text: '@ahoo-wang/fetcher-openai', link: '/zh/packages/openai' },
-            { text: '@ahoo-wang/fetcher-openapi', link: '/zh/packages/openapi' },
-            { text: '@ahoo-wang/fetcher-generator', link: '/zh/packages/generator' },
-            { text: '@ahoo-wang/fetcher-react', link: '/zh/packages/react' },
-            { text: '@ahoo-wang/fetcher-storage', link: '/zh/packages/storage' },
-            { text: '@ahoo-wang/fetcher-cosec', link: '/zh/packages/cosec' },
-            { text: '@ahoo-wang/fetcher-wow', link: '/zh/packages/wow' },
-            { text: '@ahoo-wang/fetcher-viewer', link: '/zh/packages/viewer' },
-          ],
-        },
-      ],
-      '/zh/api/': [
-        {
-          text: 'API 参考',
-          items: [
-            { text: '概览', link: '/zh/api/' },
-            { text: 'Fetcher 客户端', link: '/zh/api/fetcher-client' },
-            { text: '装饰器', link: '/zh/api/decorators' },
-            { text: 'React Hooks', link: '/zh/api/react-hooks' },
-            { text: '类型定义', link: '/zh/api/type-definitions' },
-          ],
-        },
-      ],
-      '/zh/testing/': [
-        {
-          text: '测试',
-          items: [
-            { text: '概览', link: '/zh/testing/' },
-            { text: '单元测试', link: '/zh/testing/unit-testing' },
-            { text: '集成测试', link: '/zh/testing/integration-testing' },
-            { text: '浏览器测试', link: '/zh/testing/browser-testing' },
-          ],
-        },
-      ],
-      '/zh/onboarding/': [
-        {
-          text: '入门指南',
-          collapsed: false,
-          items: [
-            { text: '贡献者指南', link: '/zh/onboarding/contributor' },
-            { text: '高级工程师指南', link: '/zh/onboarding/staff-engineer' },
-            { text: '管理层指南', link: '/zh/onboarding/executive' },
-            { text: '产品经理指南', link: '/zh/onboarding/product-manager' },
-          ],
-        },
-      ],
+      '/zh/start/': sidebar('开始'),
+      '/zh/learn/': sidebar('学习'),
+      '/zh/recipes/': sidebar('场景'),
+      '/zh/skills/': sidebar('Skills'),
+      '/zh/reference/': sidebar('参考'),
+      '/zh/contributing/': sidebar('贡献'),
     },
     socialLinks: [
       { icon: 'github', link: 'https://github.com/Ahoo-Wang/fetcher' },
@@ -111,15 +117,8 @@ export const zh: DefaultTheme.Config = {
       pattern: 'https://github.com/Ahoo-Wang/fetcher/edit/main/wiki/:path',
       text: '在 GitHub 上编辑此页面',
     },
-    outline: {
-      label: '页面导航',
-    },
-    lastUpdated: {
-      text: '最后更新于',
-    },
-    docFooter: {
-      prev: '上一页',
-      next: '下一页',
-    },
+    outline: { level: [2, 3], label: '页面导航' },
+    lastUpdated: { text: '最后更新于' },
+    docFooter: { prev: '上一页', next: '下一页' },
   },
-}
+};
