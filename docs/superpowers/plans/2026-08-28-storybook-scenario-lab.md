@@ -82,7 +82,7 @@ interface SceneDefinition {
 ```
 
 Wrap only matching titles with semantic markup containing the current
-`context.name`, then render `<Story />` inside `.story-scene__stage`. Return the
+`context.name`, then render `<Story />` inside `.story-scene-stage`. Return the
 plain Story for Overview and Viewer.
 
 - [ ] **Step 4: Hide the internal HTTP/React scenario Controls**
