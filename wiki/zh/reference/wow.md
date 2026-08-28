@@ -29,7 +29,7 @@ Events。
 | 发送命令 | `CommandClient<C>` | `send`、`sendAndWaitStream` |
 | 查询物化快照 | `SnapshotQueryClient<S, FIELDS>` | `single`、`list`、`paged`、`count`、`aggregate` |
 | 只返回 State，不带快照元数据 | `SnapshotQueryClient<S, FIELDS>` | `singleState`、`listState`、`pagedState` |
-| 查询领域事件流 | `EventStreamQueryClient<E, FIELDS>` | `list`、`listStream`、`paged`、`count` |
+| 查询领域事件流 | `EventStreamQueryClient<E, FIELDS>` | `list`、`listStream`、`paged`、`count`、`aggregate`、`aggregateStream` |
 | 按 Aggregate ID 重建状态 | `LoadStateAggregateClient<S>` | `load`、`loadVersioned`、`loadTimeBased` |
 | 重建 Owner-scoped Aggregate | `LoadOwnerStateAggregateClient<S>` | `load`、`loadVersioned`、`loadTimeBased` |
 | 创建一组关联查询 Client | `QueryClientFactory<S, FIELDS, E>` | `createSnapshotQueryClient` 等 Factory 方法 |
@@ -501,13 +501,20 @@ Sort、Pagination、Attributes 和取消约定。
 | `listStream(query)` | `event/list` | `DomainEventStream<E>` SSE |
 | `paged(query)` | `event/paged` | `PagedList<DomainEventStream<E>>` |
 | `count(filter)` | `event/count` | `number` |
+| `aggregate<Row>(query)` | `event/aggregation` | `Row[]` |
+| `aggregateStream<Row>(query)` | `event/aggregation` | `Row` SSE |
 
 `DomainEventStream` 包含 Aggregate、Owner、Space、Command、Request、Version、
 Timestamp、Header 和 Event Body 数据。可通过 `DomainEventStreamMetadataFields` 使用
 稳定的事件元数据 Field 常量。
 
 ```ts
-import { pagedQuery, pagination } from '@ahoo-wang/fetcher-wow';
+import {
+  aggregation,
+  pagedQuery,
+  pagination,
+  type AggregationQuery,
+} from '@ahoo-wang/fetcher-wow';
 
 const eventPage = await events.paged(
   pagedQuery({
@@ -516,6 +523,20 @@ const eventPage = await events.paged(
     sort: [desc('version')],
   }),
 );
+
+type EventStreamFields = 'body';
+type EventFields = 'name';
+type EventCount = { eventType: string; count: number };
+
+const eventAggregation: AggregationQuery<EventStreamFields, EventFields> = {
+  elements: [aggregation.element('body')],
+  groupBy: [aggregation.terms('name', 'eventType')],
+  metrics: [aggregation.count('count')],
+};
+
+const eventCounts = await events.aggregate<EventCount>(eventAggregation);
+const eventCountStream =
+  await events.aggregateStream<EventCount>(eventAggregation);
 ```
 
 Event Stream 是集合资源，因此没有 `single` 方法。
