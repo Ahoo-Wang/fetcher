@@ -22,7 +22,21 @@ The package requires Node.js `>=18.20.8`. Generated code may import Fetcher, Dec
 
 ## CLI contract
 
-`fetcher-generator` has one `generate` command. Input accepts a file path or HTTP(S) URL; unsupported URL protocols and blocked private/link-local remote addresses exit `2`. `SIGINT` exits `130`; generation errors exit `1` ([`clis.ts:90`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90), [`clis.ts:123`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L123)).
+`fetcher-generator` has one `generate` command. Input accepts a file path or HTTP(S) URL; unsupported URL protocols and rejected remote input exit `2`. `SIGINT` exits `130`; generation errors exit `1` ([`clis.ts:90`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90), [`clis.ts:123`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L123)).
+
+### Remote-input guard
+
+The guard rejects only the literal IPv4 ranges covered in source: `0.0.0.0/8`,
+`10.0.0.0/8`, `169.254.0.0/16`, `172.16.0.0/12`, and `192.168.0.0/16`; and
+literal IPv6 unspecified `::`, link-local `fe80::/10`, and ULA `fc00::/7`
+([`packages/generator/src/utils/clis.ts:24`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L24),
+[`packages/generator/src/utils/clis.ts:70`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L70)).
+Loopback literals (`127.0.0.0/8` and `::1`) are intentionally allowed. This is
+not a guarantee against IPv4-mapped IPv6 private addresses or a hostname that
+resolves to a private address: the guard only examines the parsed hostname and
+does not resolve DNS ([`packages/generator/src/utils/clis.ts:48`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L48),
+[`packages/generator/src/utils/clis.ts:54`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L54),
+[`packages/generator/src/utils/clis.ts:60`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L60)).
 
 | Option | Required | Default | Meaning |
 | --- | --- | --- | --- |
@@ -143,7 +157,7 @@ find /tmp/fetcher-reference-generator-check -type f -print -quit
 
 | Symptom | Check |
 | --- | --- |
-| `Invalid input` / exit `2` | Use a non-empty local path or an HTTP(S) URL accepted by the guard; private/link-local remote addresses are rejected. |
+| `Invalid input` / exit `2` | Use a non-empty local path or an HTTP(S) URL accepted by the guard; see its deliberately limited literal-address coverage above. |
 | `Configuration file parsing failed` | Benign only when no config is intended; otherwise pass `-c` with readable JSON/YAML. |
 | Parsed configuration later throws | The file parsed but its object shape is not validated; check the type of `apiClients.<tag>.ignorePathParameters`. |
 | Parse/generation error / exit `1` | Check input contents, path/URL reachability, and supplied TypeScript configuration. |
@@ -155,9 +169,9 @@ The repository E2E test uses this fixture and asserts both API and Wow command o
 
 ## Source reference
 
-- [CLI: `packages/generator/src/cli.ts:17`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/cli.ts#L17)
-- [Public API/pipeline: `packages/generator/src/index.ts:27`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L27)
-- [Configuration: `packages/generator/src/types.ts:21`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/types.ts#L21)
-- [Input/exit states: `packages/generator/src/utils/clis.ts:90`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90)
-- [Wow resolver: `packages/generator/src/aggregate/aggregateResolver.ts:52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/aggregateResolver.ts#L52)
-- [Request-body resolution: `packages/generator/src/utils/components.ts:89`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/components.ts#L89)
+- CLI: [packages/generator/src/cli.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/cli.ts#L17)
+- Public API and pipeline: [packages/generator/src/index.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L27)
+- Configuration: [packages/generator/src/types.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/types.ts#L21)
+- Input and exit states: [packages/generator/src/utils/clis.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90)
+- Wow resolver: [packages/generator/src/aggregate/aggregateResolver.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/aggregateResolver.ts#L52)
+- Request-body resolution: [packages/generator/src/utils/components.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/components.ts#L89)

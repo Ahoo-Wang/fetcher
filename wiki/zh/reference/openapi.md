@@ -103,8 +103,8 @@ const operation: Operation = document.paths['/products/{id}'].get!;
 
 ## 源码参考
 
-- [公共导出：`packages/openapi/src/index.ts:19`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)
-- [文档根：`packages/openapi/src/openAPI.ts:41`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/openAPI.ts#L41)
-- [输入：`packages/openapi/src/parameters.ts:40`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/parameters.ts#L40)
-- [Schema：`packages/openapi/src/schema.ts:91`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/schema.ts#L91)
-- [Security：`packages/openapi/src/security.ts:63`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/security.ts#L63)
+- 公共导出：[packages/openapi/src/index.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)
+- 文档根：[packages/openapi/src/openAPI.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/openAPI.ts#L41)
+- 输入：[packages/openapi/src/parameters.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/parameters.ts#L40)
+- Schema：[packages/openapi/src/schema.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/schema.ts#L91)
+- Security：[packages/openapi/src/security.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/security.ts#L63)

@@ -141,6 +141,9 @@ its own timeout race; otherwise timeout uses the supplied controller when it is
 still usable.
 
 ```ts
+import { Fetcher } from '@ahoo-wang/fetcher';
+
+const api = new Fetcher({ baseURL: 'https://api.example.test' });
 const controller = new AbortController();
 const pending = api.get('/jobs/{id}', {
   urlParams: { path: { id: 'job-1' } },

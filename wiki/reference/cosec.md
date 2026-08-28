@@ -24,9 +24,11 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus \
 | Application-level 401 / 403 reaction | Add `onUnauthorized` / `onForbidden` | Adds the corresponding error interceptor |
 | Different resource path names or ordering | Individual public interceptors | Application owns the complete pipeline |
 
-`appId` is required. `CoSecConfigurer` always creates a `TokenStorage`, a
-`DeviceIdStorage`, and a no-space provider; it creates `JwtTokenManager` only
-when `tokenRefresher` exists ([`cosecConfigurer.ts:445`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L445)).
+`appId` is required. `CoSecConfigurer` always resolves and retains its storage
+and space-provider dependencies: it uses a supplied instance first, otherwise
+creates the default `TokenStorage` or `DeviceIdStorage`, or selects
+`NoneSpaceIdProvider`. It creates `JwtTokenManager` only when `tokenRefresher`
+exists ([`cosecConfigurer.ts:445`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L445)).
 
 ## Configuration and minimal safe example
 

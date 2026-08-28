@@ -23,8 +23,9 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus \
 | 应用级 401 / 403 响应 | 增加 `onUnauthorized` / `onForbidden` | 增加对应 Error Interceptor |
 | 不同资源参数名或顺序 | 单独使用公开 Interceptor | 应用拥有完整 Pipeline |
 
-`appId` 必填。`CoSecConfigurer` 总会创建 `TokenStorage`、`DeviceIdStorage` 和无空间
-Provider；仅当存在 `tokenRefresher` 时才创建 `JwtTokenManager`
+`appId` 必填。`CoSecConfigurer` 总会解析并持有 Storage 与 Space Provider 依赖：优先使用
+传入的实例，缺省时创建默认 `TokenStorage` 或 `DeviceIdStorage`，或选择
+`NoneSpaceIdProvider`；仅当存在 `tokenRefresher` 时才创建 `JwtTokenManager`
 ([`cosecConfigurer.ts:445`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L445))。
 
 ## 配置与最小安全示例

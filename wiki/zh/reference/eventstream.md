@@ -65,7 +65,10 @@ try {
 `ServerSentEvent` 的结构为 `{ event, data, id?, retry? }`。Parser 会把缺失的 Event Type
 设为 `message`，忽略注释行，用 `\n` 合并重复的 `data:` 字段，忽略包含 NUL 的 `id`，仅在
 `retry` 全为 ASCII 数字时接受它。只有至少收到一个 `data:` 字段时，它才会在空行或输入 Stream
-flush 时输出 Frame；只有 event、`id` 或 `retry` 的 Frame 会被丢弃。
+flush 时输出 Frame。仅含 Metadata 的 Group 不会在空行立即输出，且该空行不会重置 `event`、`id`
+或 `retry`；这些值会应用到后续含 `data` 的 Event。EOF 时，只有 Metadata 的残余会由 flush 清理丢弃
+（[`packages/eventstream/src/serverSentEventTransformStream.ts:116`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L116)、
+[`packages/eventstream/src/serverSentEventTransformStream.ts:157`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L157)）。
 
 ```text
 Response.body (ReadableStream<Uint8Array>)

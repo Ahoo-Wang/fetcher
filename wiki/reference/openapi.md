@@ -103,8 +103,8 @@ Every extensible object accepts `x-${string}`. `CommonExtensions` is a convenien
 
 ## Source reference
 
-- [Public exports: `packages/openapi/src/index.ts:19`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)
-- [Document root: `packages/openapi/src/openAPI.ts:41`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/openAPI.ts#L41)
-- [Inputs: `packages/openapi/src/parameters.ts:40`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/parameters.ts#L40)
-- [Schema: `packages/openapi/src/schema.ts:91`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/schema.ts#L91)
-- [Security: `packages/openapi/src/security.ts:63`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/security.ts#L63)
+- Public exports: [packages/openapi/src/index.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)
+- Document root: [packages/openapi/src/openAPI.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/openAPI.ts#L41)
+- Inputs: [packages/openapi/src/parameters.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/parameters.ts#L40)
+- Schema: [packages/openapi/src/schema.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/schema.ts#L91)
+- Security: [packages/openapi/src/security.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/security.ts#L63)

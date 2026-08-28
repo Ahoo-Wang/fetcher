@@ -22,7 +22,20 @@ pnpm exec fetcher-generator generate \
 
 ## CLI 契约
 
-`fetcher-generator` 只有一个 `generate` 命令。输入接受文件路径或 HTTP(S) URL；不支持的 URL Protocol 以及被阻止的私网/Link-local 远程地址以 `2` 退出。`SIGINT` 以 `130` 退出，生成错误以 `1` 退出（[`clis.ts:90`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90)、[`clis.ts:123`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L123)）。
+`fetcher-generator` 只有一个 `generate` 命令。输入接受文件路径或 HTTP(S) URL；不支持的 URL Protocol 或被拒绝的远程输入以 `2` 退出。`SIGINT` 以 `130` 退出，生成错误以 `1` 退出（[`clis.ts:90`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90)、[`clis.ts:123`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L123)）。
+
+### 远程输入 Guard
+
+Guard 仅拒绝源码明确覆盖的字面量 IPv4 范围：`0.0.0.0/8`、`10.0.0.0/8`、
+`169.254.0.0/16`、`172.16.0.0/12`、`192.168.0.0/16`；以及字面量 IPv6 的未指定地址
+`::`、Link-local `fe80::/10` 与 ULA `fc00::/7`
+（[`packages/generator/src/utils/clis.ts:24`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L24)、
+[`packages/generator/src/utils/clis.ts:70`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L70)）。
+Loopback 字面量（`127.0.0.0/8` 和 `::1`）有意允许。这并不保证拦截 IPv4-mapped IPv6
+私网地址，也不保证拦截 DNS 解析后指向私网的 Hostname：Guard 只检查已解析的 Hostname，不做
+DNS 解析（[`packages/generator/src/utils/clis.ts:48`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L48)、
+[`packages/generator/src/utils/clis.ts:54`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L54)、
+[`packages/generator/src/utils/clis.ts:60`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L60)）。
 
 | 选项 | 必填 | 默认值 | 含义 |
 | --- | --- | --- | --- |
@@ -143,7 +156,7 @@ find /tmp/fetcher-reference-generator-check -type f -print -quit
 
 | 现象 | 检查 |
 | --- | --- |
-| `Invalid input` / 退出 `2` | 使用非空本地路径或通过 Guard 的 HTTP(S) URL；私网/Link-local 远程地址会被拒绝。 |
+| `Invalid input` / 退出 `2` | 使用非空本地路径或通过 Guard 的 HTTP(S) URL；其字面量地址覆盖范围有意受限，见上文。 |
 | `Configuration file parsing failed` | 仅在确实不需要配置时无害；否则用 `-c` 传入可读 JSON/YAML。 |
 | 已解析配置在后续抛错 | 文件已解析但对象形状未校验；检查 `apiClients.<tag>.ignorePathParameters` 的类型。 |
 | Parse/Generation Error / 退出 `1` | 检查输入内容、Path/URL 可达性与传入的 TypeScript 配置。 |
@@ -155,9 +168,9 @@ find /tmp/fetcher-reference-generator-check -type f -print -quit
 
 ## 源码参考
 
-- [CLI：`packages/generator/src/cli.ts:17`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/cli.ts#L17)
-- [公共 API/流水线：`packages/generator/src/index.ts:27`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L27)
-- [配置：`packages/generator/src/types.ts:21`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/types.ts#L21)
-- [输入/退出状态：`packages/generator/src/utils/clis.ts:90`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90)
-- [Wow Resolver：`packages/generator/src/aggregate/aggregateResolver.ts:52`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/aggregateResolver.ts#L52)
-- [Request Body 解引用：`packages/generator/src/utils/components.ts:89`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/components.ts#L89)
+- CLI：[packages/generator/src/cli.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/cli.ts#L17)
+- 公共 API 与流水线：[packages/generator/src/index.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L27)
+- 配置：[packages/generator/src/types.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/types.ts#L21)
+- 输入与退出状态：[packages/generator/src/utils/clis.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90)
+- Wow Resolver：[packages/generator/src/aggregate/aggregateResolver.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/aggregateResolver.ts#L52)
+- Request Body 解引用：[packages/generator/src/utils/components.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/components.ts#L89)

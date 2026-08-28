@@ -119,6 +119,9 @@ Query 的强制转换由 `URLSearchParams` 定义。重复 Query Key 请使用�
 调用方拥有取消权时传入 Controller。请求已有平台 `signal` 时，Fetcher 直接委托给平台 `fetch`，不会自行安装超时竞争；否则超时会在 Controller 仍可用时复用它。
 
 ```ts
+import { Fetcher } from '@ahoo-wang/fetcher';
+
+const api = new Fetcher({ baseURL: 'https://api.example.test' });
 const controller = new AbortController();
 const pending = api.get('/jobs/{id}', {
   urlParams: { path: { id: 'job-1' } },

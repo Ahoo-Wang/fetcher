@@ -68,8 +68,12 @@ before `JSON.parse`; return `true` for a sentinel such as `[DONE]`.
 unspecified event type to `message`, ignores comment lines, joins repeated
 `data:` fields with `\n`, ignores `id` values containing NUL, and accepts
 `retry` only when it contains ASCII digits. It emits a frame at a blank line or
-when the input stream flushes only if at least one `data:` field was received;
-event-, `id`-, or `retry`-only frames are dropped.
+when the input stream flushes only if at least one `data:` field was received.
+A metadata-only group does not emit at its blank line, and that blank line does
+not reset its `event`, `id`, or `retry`: those values apply to the following
+data-bearing event. At EOF, metadata-only residue is discarded by flush cleanup
+([`packages/eventstream/src/serverSentEventTransformStream.ts:116`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L116),
+[`packages/eventstream/src/serverSentEventTransformStream.ts:157`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L157)).
 
 ```text
 Response.body (ReadableStream<Uint8Array>)
