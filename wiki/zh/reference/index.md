@@ -20,9 +20,16 @@ Fetcher 被拆分为多个小包，应用只需安装实际使用的运行时能
 
 ## 集成包
 
-集成参考将覆盖 React Hooks、OpenAPI 类型与生成器、OpenAI 流式请求、Wow
-CQRS、CoSec 认证和 Viewer 组件库。在此之前，可通过[选择包](../start/choose-packages.md)
-确定入口，并从[实战指南](../recipes/declarative-services.md)获得端到端示例。
+| 包                             | 适用场景                                  | 参考                        |
+| ------------------------------ | ----------------------------------------- | --------------------------- |
+| `@ahoo-wang/fetcher-react`     | React 请求状态、查询 Hook、存储与路由守卫 | [React](./react.md)         |
+| `@ahoo-wang/fetcher-openapi`   | OpenAPI 文档的 TypeScript 类型            | [OpenAPI](./openapi.md)     |
+| `@ahoo-wang/fetcher-generator` | 从 OpenAPI 生成类型化客户端               | [Generator](./generator.md) |
+| `@ahoo-wang/fetcher-openai`    | 支持类型化流式响应的 Chat Completions     | [OpenAI](./openai.md)       |
+| `@ahoo-wang/fetcher-wow`       | Wow 命令、查询、过滤与聚合                | [Wow](./wow.md)             |
+| `@ahoo-wang/fetcher-cosec`     | CoSec 请求头、令牌、刷新与鉴权错误        | [CoSec](./cosec.md)         |
+
+Viewer 组件库使用独立参考页，因为它的公开 API 围绕 UI 组合，而不是请求基础设施组织。
 
 ## 阅读约定
 

@@ -21,11 +21,17 @@ the responsibility in the table becomes part of your application.
 
 ## Integration packages
 
-The integration references cover React hooks, OpenAPI types and generation,
-OpenAI streaming, Wow CQRS, CoSec authentication, and the Viewer component
-library. Until then, use [Choose packages](../start/choose-packages.md) to pick
-the right entry point and the [recipes](../recipes/declarative-services.md) for
-end-to-end examples.
+| Package                        | Use it for                                               | Reference                   |
+| ------------------------------ | -------------------------------------------------------- | --------------------------- |
+| `@ahoo-wang/fetcher-react`     | React request state, query hooks, storage, and guards    | [React](./react.md)         |
+| `@ahoo-wang/fetcher-openapi`   | TypeScript types for OpenAPI documents                   | [OpenAPI](./openapi.md)     |
+| `@ahoo-wang/fetcher-generator` | Generate typed clients from OpenAPI                      | [Generator](./generator.md) |
+| `@ahoo-wang/fetcher-openai`    | Chat Completions with typed streaming                    | [OpenAI](./openai.md)       |
+| `@ahoo-wang/fetcher-wow`       | Wow commands, queries, filters, and aggregation          | [Wow](./wow.md)             |
+| `@ahoo-wang/fetcher-cosec`     | CoSec headers, tokens, refresh, and authorization errors | [CoSec](./cosec.md)         |
+
+The Viewer component library has a separate reference because its public API
+is organized around UI composition rather than request infrastructure.
 
 ## Reading conventions
 
