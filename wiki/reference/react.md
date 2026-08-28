@@ -1,136 +1,110 @@
 ---
 title: React reference
-description: Manage Fetcher requests, queries, storage, events, and authorization state in React.
+description: Own Fetcher, query, storage, event, security, and Wow state in React.
 pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-react`
 
-The React package connects Fetcher primitives to component state. Its hooks
-protect against stale results, abort requests on replacement or unmount, and
-expose explicit loading, result, error, and reset controls.
+`@ahoo-wang/fetcher-react` binds Fetcher ecosystem operations to React state. It is for component-owned asynchronous work, query state, CoSec context, storage, events, and Wow query shapes; it is not a Fetcher provider or a cache/query-client replacement.
 
-## Install
+## Install and Fetcher source
 
 ```bash
 pnpm add react react-dom @ahoo-wang/fetcher @ahoo-wang/fetcher-react
 ```
 
-Install the peer package for each integration you import, such as
-`fetcher-storage`, `fetcher-eventbus`, `fetcher-wow`, or `fetcher-cosec`.
+Install a peer package only for the integration used: `@ahoo-wang/fetcher-wow`, `@ahoo-wang/fetcher-cosec`, `@ahoo-wang/fetcher-storage`, `@ahoo-wang/fetcher-eventbus`, or `@ahoo-wang/fetcher-eventstream`.
 
-## Fetch and query
+There is **no Fetcher Provider** in this package. `useFetcher` takes an optional `fetcher`; otherwise it resolves `fetcherRegistrar.default` through `getFetcher`. Configure the core registrar before rendering, or pass a stable Fetcher instance created outside render / with `useMemo`. [useFetcher:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L37) [useFetcher:162](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L162)
+
+`SecurityProvider` is different: it owns a `TokenStorage`-backed security context for its descendants. [SecurityContext:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/SecurityContext.tsx#L49) [SecurityContext:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/SecurityContext.tsx#L107)
+
+## Choose a public hook
+
+| Need | Public API | Execution and ownership |
+| --- | --- | --- |
+| Set `idle` / `loading` / `success` / `error` yourself | `usePromiseState` | State only; no promise is started. |
+| One abortable promise supplier | `useExecutePromise` | Call `execute(supplier)`; the hook owns its controller and result state. |
+| Query object plus arbitrary executor | `useQuery`, `useQueryState` | `autoExecute` defaults to `true`; `setQuery` and mount can execute. |
+| Complete `FetchRequest` | `useFetcher` | Call `execute(request)`; optional `fetcher`, otherwise registrar default. |
+| JSON POST body from query state | `useFetcherQuery` | Requires `url`; POSTs the query and defaults to `JsonResultExtractor`. |
+| Delay callback, query, Fetcher, or Fetcher query | `useDebouncedCallback`, `useDebouncedQuery`, `useDebouncedFetcher`, `useDebouncedFetcherQuery` | Use `run`, `cancel`, and `isPending`, not `execute`. |
+| Browser fullscreen state | `useFullscreen`, `FullscreenProvider`, `useFullscreenContext` | Owns fullscreen event subscription; target defaults to `document.documentElement`. |
+| CoSec sign-in state / route protection | `SecurityProvider`, `useSecurityContext`, `useSecurity`, `RouteGuard`, `RefreshableRouteGuard` | Provider owns the context; a direct hook call owns only that component's subscription. |
+| Typed storage or EventBus subscription | `useKeyStorage`, `useImmerKeyStorage`, `useEventSubscription` | Pass a stable storage/bus object and clean up with the component lifecycle. |
+| Data-count monitor | `useDataMonitor`, `useDataMonitorEventBus`, `DataMonitorService` | Hook enables/disables the module-level monitor by `viewId`; it disables an enabled monitor on unmount. |
+| Wow query result shape | `useSingleQuery`, `useListQuery`, `usePagedQuery`, `useCountQuery`, `useListStreamQuery` | Supply the executor; result is respectively `R`, `R[]`, `PagedList<R>`, `number`, or an SSE `ReadableStream`. |
+| Wow POST query | `useFetcherSingleQuery`, `useFetcherListQuery`, `useFetcherPagedQuery`, `useFetcherCountQuery`, `useFetcherListStreamQuery` | Add the endpoint `url`; these specialize `useFetcherQuery`. |
+| Notification center | None from the package root | `notification/` is not re-exported by the published root entry; do not import `src` internals. [index:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/index.ts#L14) |
+
+The root barrel is the public boundary; only its re-exported groups are supported. [index:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/index.ts#L14)
+
+## Promise and query contract
+
+All execution hooks expose `status`, `loading`, `result`, `error`, `reset`, and `abort`; `useFetcher` additionally exposes the latest `exchange`. `PromiseStatus` is `idle`, `loading`, `success`, or `error`. [usePromiseState:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/usePromiseState.ts#L22) [useFetcher:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L47)
+
+`useExecutePromise` gives each execution an `AbortController`, aborts an earlier owned operation before another starts, accepts only the latest request ID, and aborts during unmount cleanup. `AbortError` returns the state to idle. Rejections update `error`; they are rethrown only when `propagateError: true` (default `false`). [useExecutePromise:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L27) [useExecutePromise:244](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L244) [useExecutePromise:307](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L307)
+
+`useQuery` / `useFetcherQuery` retain the query in a ref: `getQuery()` can be `undefined`; `setQuery(query)` stores it and executes when `autoExecute` is true. A supplied `query` wins over `initialQuery`. Equal controlled-query values are de-duplicated, while a changed executor or `autoExecute` setting is still honored. [useQueryState:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L18) [useQueryState:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L113) [useFetcherQuery:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L125)
 
 ```tsx
+import { useCallback } from 'react';
 import { useFetcherQuery } from '@ahoo-wang/fetcher-react';
 
-interface SearchQuery {
-  term: string;
-}
+type SearchQuery = { term: string };
+type SearchResult = { items: Array<{ id: string; title: string }> };
 
-interface SearchResult {
-  items: Array<{ id: string; title: string }>;
-}
-
-function Search() {
-  const { loading, result, error, setQuery, execute } = useFetcherQuery<
-    SearchQuery,
-    SearchResult
-  >({
+export function Search() {
+  const search = useFetcherQuery<SearchQuery, SearchResult>({
     url: '/api/search',
     initialQuery: { term: '' },
     autoExecute: false,
   });
+  const submit = useCallback(() => void search.execute(), [search]);
 
   return (
-    <form
-      onSubmit={event => {
-        event.preventDefault();
-        void execute();
-      }}
-    >
-      <input onChange={event => setQuery({ term: event.target.value })} />
-      <button disabled={loading}>Search</button>
-      {error && <p role="alert">Search failed</p>}
-      <ul>
-        {result?.items.map(item => (
-          <li key={item.id}>{item.title}</li>
-        ))}
-      </ul>
+    <form onSubmit={event => { event.preventDefault(); submit(); }}>
+      <input onChange={event => search.setQuery({ term: event.target.value })} />
+      <button disabled={search.loading}>Search</button>
+      {search.error && <p role="alert">Search failed</p>}
+      {search.result?.items.map(item => <p key={item.id}>{item.title}</p>)}
     </form>
   );
 }
 ```
 
-`useFetcher` executes complete `FetchRequest` objects. `useFetcherQuery`
-specializes it for JSON POST queries and owns query state. Debounced variants
-delay rapidly changing work while preserving cancellation behavior.
+The hook, not the component, owns request cancellation. The component still owns when to call `abort()`, whether an empty successful list is meaningful, and the UI for loading/error/retry. Keep option callbacks and any explicit Fetcher stable when their identity should not change request semantics.
 
-## Hook families
+## Debounce and fullscreen
 
-| Family             | Primary APIs                                                                             |
-| ------------------ | ---------------------------------------------------------------------------------------- |
-| Async state        | `useExecutePromise`, `usePromiseState`, `useQuery`, `useQueryState`                      |
-| Fetcher            | `useFetcher`, `useFetcherQuery`, debounced variants                                      |
-| API objects        | `createExecuteApiHooks`, `createQueryApiHooks`                                           |
-| Storage and events | `useKeyStorage`, `useImmerKeyStorage`, `useEventSubscription`                            |
-| Wow                | `useSingleQuery`, `useListQuery`, `usePagedQuery`, `useCountQuery`, `useListStreamQuery` |
-| CoSec              | `SecurityProvider`, `useSecurity`, `RouteGuard`, `RefreshableRouteGuard`                 |
-| Monitoring         | `useDataMonitor`, `useDataMonitorEventBus`, `DataMonitorService`                         |
+`useDebouncedCallback` requires a positive `delay`; defaults are `leading: false` and `trailing: true`, and setting both to `false` throws. Pending timeouts are cancelled at unmount. The debounced query variants force their inner query's auto-execution off, then call `run()` on mount and after `setQuery` only when the caller requested `autoExecute`. `cancel()` cancels a timer; `abort()` cancels an already-started request. [useDebouncedCallback:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L19) [useDebouncedCallback:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L87) [useDebouncedQuery:139](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedQuery.ts#L139)
 
-## State and ownership
+`useFullscreen` tracks the browser `fullscreenchange` event and returns `fullscreen`, `getTarget`, `enter`, `exit`, and `toggle`; a direct target argument takes precedence over the configured ref and the document root fallback. `FullscreenProvider` supplies that same return value and wraps children in a `<div>` only when it supplies the target itself. [useFullscreen:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/useFullscreen.ts#L24) [FullscreenContext:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/FullscreenContext.tsx#L28)
 
-Use one hook as the owner of each request. Render loading, empty, failure, and
-success states explicitly. Call `abort()` when a user action cancels work;
-automatic cleanup remains the last line of defense.
+## CoSec, monitors, and Wow
 
-`createExecuteApiHooks()` and `createQueryApiHooks()` derive named hooks from
-promise-returning methods on an API object. Use them when a shared service
-already defines the request boundary; do not wrap a one-off call only to create
-another abstraction.
+`SecurityProvider` requires `tokenStorage`; `useSecurityContext()` throws outside it. `signIn` accepts a `CompositeToken` or async supplier, persists through `TokenStorage.signIn`, and runs `onSignIn`; `signOut` removes the stored key and runs `onSignOut`. Do not create a token storage in render. [SecurityContext:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/SecurityContext.tsx#L146) [useSecurity:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/useSecurity.ts#L150)
 
-## Async state contract
+`useDataMonitor` requires `viewId`, `countUrl`, `viewName`, `condition`, and notification settings. It updates the enabled monitor when condition or notification changes and disables the current `viewId` on unmount. `useDataMonitorEventBus` returns named `subscribe` / `unsubscribe`; unsubscribe it when its subscription should end. [useDataMonitor:9](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/dataMonitor/useDataMonitor.ts#L9) [useDataMonitor:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/dataMonitor/useDataMonitor.ts#L61) [useDataMonitorEventBus:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/dataMonitor/useDataMonitorEventBus.ts#L18)
 
-Fetcher hooks expose the same observable state machine:
+The non-Fetcher Wow hooks are type-specialized `useQuery` calls; they do not know an endpoint. For a projection or partial result, declare the returned row type rather than the full aggregate. The streaming variant returns a `ReadableStream<JsonServerSentEvent<R>>`; consume/cancel its reader in your effect cleanup in addition to aborting a replacement request. [usePagedQuery:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/wow/usePagedQuery.ts#L32) [useListStreamQuery:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/wow/useListStreamQuery.ts#L32) [useFetcherListStreamQuery:175](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/wow/fetcher/useFetcherListStreamQuery.ts#L175)
 
-```text
-idle → loading → success
-              ↘ error
-loading → aborted or replaced → latest request owns the result
-```
+## Diagnose
 
-| Value       | Meaning                                                    |
-| ----------- | ---------------------------------------------------------- |
-| `loading`   | The owning execution is still pending                      |
-| `result`    | Last accepted successful result                            |
-| `error`     | Last accepted failure                                      |
-| `execute()` | Starts work and returns its promise                        |
-| `abort()`   | Cancels the owned operation when cancellation is supported |
-| `reset()`   | Returns observable state to its initial shape              |
+| Symptom | Check |
+| --- | --- |
+| Request fires on first render | `autoExecute` defaults to `true`; set it to `false` for user-triggered work. |
+| Older result appears to win | Do not bypass the hook with a separate state write; one hook must own that operation. |
+| Debounce cancel did not stop HTTP | `cancel()` only clears a pending timer; call `abort()` after `run()` has started the request. |
+| `useSecurityContext` throws | Render below `SecurityProvider` with a stable `TokenStorage`. |
+| Fullscreen target is wrong | Pass a ref through `target`, or pass the target to `enter` / `toggle`. |
+| Cannot import notifications | The root barrel excludes `notification`; use a supported public integration instead of an internal path. |
 
-Replacement and unmount cancellation prevent stale updates, but they do not
-replace explicit user feedback. Render loading, empty, error, and success as
-different product states.
+## Source and runnable scenarios
 
-## Select the narrowest hook
-
-| Need                                    | Start with                                       |
-| --------------------------------------- | ------------------------------------------------ |
-| An arbitrary promise-returning function | `useExecutePromise`                              |
-| A complete Fetcher request              | `useFetcher`                                     |
-| Query state plus JSON POST execution    | `useFetcherQuery`                                |
-| A typed API object's method             | `createExecuteApiHooks` or `createQueryApiHooks` |
-| Wow snapshots or events                 | The corresponding `use*Query` hook               |
-| A typed storage key                     | `useKeyStorage` or `useImmerKeyStorage`          |
-| A typed event subscription              | `useEventSubscription`                           |
-
-Debounced hooks delay execution, not input state. Keep the visible input
-controlled independently and present when a request is pending.
-
-## Source and agent reference
-
-- Public exports: [`packages/react/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/index.ts)
-- Detailed agent API: [`skills/fetcher-react-hooks/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-react-hooks/references/api.md)
-- Skill: [`$fetcher-react-hooks`](../skills/react-and-integrations.md#fetcher-react-hooks)
+- Public exports: [packages/react/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/index.ts#L14)
+- Promise and Fetcher scenarios: [Async State](https://fetcher.ahoo.me/storybook/?path=/story/react-hooks-async-state--success), [Fetcher success](https://fetcher.ahoo.me/storybook/?path=/story/react-hooks-fetcher--get-success), and [debounced request](https://fetcher.ahoo.me/storybook/?path=/story/react-hooks-fetcher--debounced-request)
+- Wow result-shape scenarios: [single, list, paged, count, and stream](https://fetcher.ahoo.me/storybook/?path=/story/react-hooks-wow-queries--single)
 
 Continue with [React data flow](../learn/react-data-flow.md).

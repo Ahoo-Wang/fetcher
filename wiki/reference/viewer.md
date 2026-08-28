@@ -1,20 +1,12 @@
 ---
 title: Viewer reference
-description: Compose filters, tables, saved views, and remote Viewer workflows with React and Ant Design.
+description: Compose typed filters, tables, saved views, and Fetcher-backed Viewer flows.
 pageClass: reference-page
 ---
 
 # `@ahoo-wang/fetcher-viewer`
 
-Viewer is a React and Ant Design component system for queryable data sets. Pick
-the highest-level component whose ownership matches your application:
-
-| Component       | Owns                                                           | Your application owns                |
-| --------------- | -------------------------------------------------------------- | ------------------------------------ |
-| `ViewTable`     | Columns, cell rendering, selection UI                          | Data, sort callbacks, column state   |
-| `View`          | Filters, table, pagination, controlled/uncontrolled view state | Data loading                         |
-| `Viewer`        | Saved-view switching, top bar, filters, table                  | Data and view persistence callbacks  |
-| `FetcherViewer` | Definition, views, data loading, persistence clients           | Default Fetcher and backend contract |
+`@ahoo-wang/fetcher-viewer` is a React + Ant Design data-view system. Use it for a typed field definition, filters, columns, saved views, and table workflows; it is not a generic data-fetch cache. Choose the highest level that owns the behavior you want.
 
 ## Install
 
@@ -23,156 +15,117 @@ pnpm add react react-dom antd @ant-design/icons dayjs \
   @ahoo-wang/fetcher-viewer
 ```
 
-Install the Fetcher peer packages listed by your package manager. At the
-application root, provide the Ant Design contexts used by feedback and overlays:
+The package has Fetcher, React, Wow, storage, event, decorator, OpenAPI, and event-stream peer dependencies. Supply the Ant Design app contexts required by your application. The published root barrel is the public API boundary. [index:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/index.ts#L14)
+
+## Component selection and ownership
+
+| Component | It owns | Caller owns |
+| --- | --- | --- |
+| `ViewTable<RecordType>` | Table columns, typed cells, selection UI | `fields`, `columns`, row data, sort / selection callbacks, loading and empty/error presentation. |
+| `View<RecordType>` | Filter panel, pagination, sort, controlled/uncontrolled view state | Data loading and the external state values/callbacks when using controlled mode. |
+| `Viewer<RecordType>` | Active saved view, side panel, top bar, and composition of `View` | `PagedList` data, `onLoadData`, and persistence callbacks. |
+| `FetcherViewer<RecordType>` | Definition/view/data queries, command clients, default-view persistence, and composition | Default Fetcher registration and the Viewer backend contract. |
+
+`Viewer` explicitly does not fetch rows or remotely persist views. `FetcherViewer` uses the default Fetcher and built-in viewer endpoints. [Viewer:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L39) [FetcherViewer:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L48)
+
+## Core models and callbacks
+
+`ViewDefinition` supplies `id`, `name`, typed `fields`, `availableFilters`, `dataUrl`, and `countUrl`. A `FieldDefinition` has `name`, `type`, `label`, `primaryKey`, optional custom `render`, and optional Ant Design sorter configuration. `ViewState` persists the view identity, `PERSONAL`/`SHARED` type, `SYSTEM`/`CUSTOM` source, default flag, filters, columns, table size, page size, condition, optional internal condition, and sorters. [types:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L15) [types:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L35)
+
+| `Viewer` group | Required / important contract |
+| --- | --- |
+| Initial view | `defaultViews`, `defaultView`, and `definition`; missing fields are merged into a selected view. |
+| Rows | `dataSource: PagedList<RecordType>` and `pagination` (`false` disables it); `loading` is optional. |
+| Data callback | `onLoadData(condition, oneBasedPage, pageSize, sorter?)` receives state changes. |
+| View callback | `onSwitchView(view)` observes a switch. |
+| Persistence | `onCreateView`, `onUpdateView`, `onDeleteView` receive the proposed view and an `onSuccess(newView)` continuation. Call it only after remote success. |
+| Actions | `onGetRecordCount`, primary/secondary/batch actions, row selection, primary-key click, table setting, action column. |
+
+`ViewerRef` has `getCondition`, `getActiveView`, and `clearSelectedRowKeys`; `ViewRef` also has `reset` and `updateTableSize`. [Viewer:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L34) [View:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L47)
 
 ```tsx
-import { App, ConfigProvider } from 'antd';
-
-root.render(
-  <ConfigProvider>
-    <App>
-      <ProductViewer />
-    </App>
-  </ConfigProvider>,
-);
-```
-
-## Core model
-
-`ViewDefinition` describes fields, available filters, and data/count URLs.
-`ViewState` stores filters, columns, table size, page size, condition, and sort
-order for one personal or shared view.
-
-```ts
+import { Viewer } from '@ahoo-wang/fetcher-viewer';
+import type { PagedList } from '@ahoo-wang/fetcher-wow';
 import type { ViewDefinition, ViewState } from '@ahoo-wang/fetcher-viewer';
-import { all } from '@ahoo-wang/fetcher-wow';
 
-const definition: ViewDefinition = {
-  id: 'users',
-  name: 'Users',
-  dataUrl: '/users/list',
-  countUrl: '/users/count',
-  fields: [
-    { name: 'id', label: 'ID', type: 'text', primaryKey: true },
-    { name: 'name', label: 'Name', type: 'text', primaryKey: false },
-  ],
-  availableFilters: [],
-};
+type UserRow = { id: string; name: string };
 
-const defaultView: ViewState = {
-  id: 'all-users',
-  name: 'All users',
-  definitionId: definition.id,
-  type: 'PERSONAL',
-  source: 'SYSTEM',
-  isDefault: true,
-  filters: [],
-  columns: [
-    { name: 'id', key: 'id', fixed: true, hidden: false },
-    { name: 'name', key: 'name', fixed: false, hidden: false },
-  ],
-  tableSize: 'middle',
-  pageSize: 20,
-  condition: all(),
-  sorter: [],
-};
+export function UsersViewer(props: {
+  definition: ViewDefinition;
+  views: ViewState[];
+  activeView: ViewState;
+  data: PagedList<UserRow>;
+}) {
+  return <Viewer<UserRow>
+    defaultViews={props.views}
+    defaultView={props.activeView}
+    definition={props.definition}
+    dataSource={props.data}
+    pagination={{ showSizeChanger: false }}
+    enableRowSelection={false}
+    onLoadData={(condition, page, size, sorter) => {
+      void loadUsers(condition, page, size, sorter);
+    }}
+  />;
+}
+
+declare function loadUsers(...args: unknown[]): Promise<void>;
 ```
 
-## `Viewer<RecordType>`
+## State and saved-view persistence
 
-Required props are `defaultViews`, `defaultView`, `definition`, `dataSource`,
-and `pagination`. `dataSource` is a `PagedList<RecordType>`. Pass
-`pagination={false}` to disable pagination.
+`View` supports uncontrolled `default*` state and controlled `external*` / matching `externalUpdate*` pairs for filters, columns, page, page size, table size, condition, and sorter. Its `filterMode` is `none`, `normal`, or `editable`; its `onChange` receives composed condition, one-based page, page size, and sorters. Defaults include page `1`, page size `10`, table size `middle`, `all()` condition, and empty sorter. [View:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L66) [View:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L106) [useViewState:171](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L171)
 
-| Prop group  | Important props                                                        |
-| ----------- | ---------------------------------------------------------------------- |
-| Data        | `dataSource`, `loading`, `onLoadData`                                  |
-| Views       | `defaultViews`, `defaultView`, `onSwitchView`                          |
-| Persistence | `onCreateView`, `onUpdateView`, `onDeleteView`, `onGetRecordCount`     |
-| Table       | `pagination`, `actionColumn`, `enableRowSelection`, `viewTableSetting` |
-| Actions     | `primaryAction`, `secondaryActions`, `batchActions`                    |
+Keep controlled pairs together: a supplied external value without its update callback leaves the caller unable to own the next state. At the `Viewer` level, successful create/update/delete continuations update its local view collection; a failed persistence action should leave the previous visible state usable and surface an error in the caller-owned action flow. [Viewer:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L127)
 
-`Viewer` does not fetch data or persist views. Its callbacks receive the next
-condition, one-based page, page size, sorter, or view mutation. Only update the
-UI after a persistence callback invokes its `onSuccess` continuation.
+`FetcherViewer` keeps the last selected default view ID in a module-scope `KeyStorage` named `fetcher-viewer-local-default-view-id`; `KeyStorage` defaults to browser storage when none is supplied. Selection priority is explicit `defaultViewId`, then local stored ID, then the `isDefault` view, then the first view. [FetcherViewer:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L72) [FetcherViewer:358](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L358) [KeyStorage:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L47)
 
-`ViewerRef` exposes `getCondition()`, `getActiveView()`, and
-`clearSelectedRowKeys()`.
+## Filters, cells, inputs, and registries
 
-## `View<RecordType>` state
+Public built-ins are `TagInput`, `NumberRange`, `RemoteSelect`, and `Fullscreen`; filters include `TypedFilter`, `AssemblyFilter`, ID, text, number, select, boolean, date/time, and their panels; cells include text, primary key, link, avatar, image, image group, tag(s), currency, date/time, calendar time, and action(s). `RemoteSelect` defaults to a 300 ms trailing debounce, `uniqueKey: 'value'`, and merges remote, initial, and additional options. [RemoteSelect:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/RemoteSelect.tsx#L29) [RemoteSelect:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/RemoteSelect.tsx#L59)
 
-Use `default*` props for uncontrolled state. For each controlled dimension,
-pass the matching `external*` value and `externalUpdate*` callback together.
-Controlled dimensions include filters, columns, page, page size, table size,
-condition, and sorter.
+`filterRegistry` is preloaded with `id`, `text`, `number`, `select`, `bool`, and `datetime`; an unknown `TypedFilter` uses `FallbackFilter`. `cellRegistry` contains the documented cell types; `typedCellRender` returns `undefined` for an unregistered type. [filterRegistry:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/filterRegistry.ts#L73) [TypedFilter:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/TypedFilter.tsx#L30) [cellRegistry:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/cell/cellRegistry.ts#L67) [TypedCell:117](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/cell/TypedCell.tsx#L117)
 
-`filterMode` is `none`, `normal`, or `editable`. `onChange` receives the
-composed `Condition`, page, page size, and sorters. `ViewRef` also exposes
-`reset()` and `updateTableSize()`.
+Register a custom type once before the first render, and keep its identifier stable because server-side view definitions may persist it. `register` throws on a duplicate; use `has` before a development-time registration, and do not clear a shared registry during component render. [componentRegistry:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/registry/componentRegistry.ts#L37) [componentRegistry:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/registry/componentRegistry.ts#L98)
 
-## Inputs, filters, cells, and registries
+```tsx
+import type { CellProps } from '@ahoo-wang/fetcher-viewer';
+import { cellRegistry } from '@ahoo-wang/fetcher-viewer';
 
-- Inputs: `TagInput`, `NumberRange`, `RemoteSelect`, and `Fullscreen`.
-- Filters: ID, text, number, select, boolean, date/time, typed, assembly, and
-  editable panels.
-- Cells: text, primary key, link, avatar, image, image group, tag(s), currency,
-  date/time, calendar time, and action(s).
-- `filterRegistry` and `cellRegistry` resolve built-ins by type;
-  `TypedComponentRegistry` supports application-defined types.
-- `ViewTable`, `TableSettingPanel`, and top-bar items are public for custom
-  composition below `Viewer`.
+function ScoreCell({ data }: CellProps) {
+  return <strong>{String(data.value)}</strong>;
+}
 
-Unknown filter types render `FallbackFilter`; unknown cell types fall back to
-text. Keep custom type names unique and register them before the first render.
+if (!cellRegistry.has('score')) cellRegistry.register('score', ScoreCell);
+```
 
-## `FetcherViewer<RecordType>`
+## FetcherViewer data flow and failure boundaries
 
-`FetcherViewer` loads a `viewerDefinitionId`, its saved views, counts, and paged
-data through the default registered Fetcher and built-in Wow clients. Configure
-`fetcherRegistrar.default` before mounting it.
+`FetcherViewer` loads the definition, saved views, then a paged POST query using `definition.dataUrl`; it combines a view's `internalCondition` with its visible condition, and accepts optional async `enhanceDataSource`. It exposes `refreshData`, `clearSelectedRowKeys`, `getPageQuery`, `getActiveView`, and `getViewerDefinition` through its ref. [useFetchData:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L27) [FetcherViewer:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L40)
 
-It renders explicit loading, definition error, missing definition, and missing
-views states. `FetcherViewerRef` exposes `refreshData()`,
-`clearSelectedRowKeys()`, `getPageQuery()`, `getActiveView()`, and
-`getViewerDefinition()`.
+| State | Owner and behavior |
+| --- | --- |
+| `ViewTable` / `View` / `Viewer` loading | Caller passes `loading`; caller owns transport errors and retry UI. |
+| Empty rows | The data source is caller-owned at these three levels; render product-specific empty semantics. |
+| `FetcherViewer` loading | Renders a spinner while definition or views load. |
+| Definition error / missing definition / no views | `FetcherViewer` renders its built-in messages. |
+| Data request error in `FetcherViewer` | The internal fetch hook returns an error, but `FetcherViewer` does not render it itself; observe or wrap the flow if product error UI is required. |
 
-The built-in fallback locale is Chinese. `useLocale()` exposes a locally owned
-locale state and merges custom values over that fallback.
+The component requires a configured default Fetcher before mount. It uses default `ownerId` and `tenantId` of `'(0)'`; changing those changes the remote view query. [FetcherViewer:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L81) [FetcherViewer:286](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L286)
 
-## Ownership and failure matrix
+## Diagnose and scenarios
 
-| Concern                           | `ViewTable` | `View` | `Viewer`          | `FetcherViewer`      |
-| --------------------------------- | ----------- | ------ | ----------------- | -------------------- |
-| Render rows and cells             | owns        | owns   | owns              | owns                 |
-| Compose filters and query state   | caller      | owns   | owns              | owns                 |
-| Load page and count data          | caller      | caller | caller            | owns                 |
-| Persist saved views               | caller      | caller | callback contract | owns through clients |
-| Render definition-loading failure | caller      | caller | caller            | owns                 |
+| Symptom | Check |
+| --- | --- |
+| Custom filter/cell is missing | Register its exact field `type` before rendering; `TypedFilter` falls back, while `typedCellRender` returns `undefined`. |
+| View seems to ignore external state | Provide both `external*` and matching `externalUpdate*`; do not mix ownership accidentally. |
+| Saved view appears before persistence | Invoke the mutation continuation only after the remote operation succeeds. |
+| Unexpected default view | Check `defaultViewId`, local `fetcher-viewer-local-default-view-id`, `isDefault`, then source order. |
+| FetcherViewer remains unavailable | Check default Fetcher registration, definition endpoint, views endpoint, and `viewerDefinitionId`. |
+| Need a data-error retry button | Use `Viewer` / `View` and own fetch errors, or add product-level handling around `FetcherViewer`; it only renders definition error itself. |
 
-Choose the leftmost component that still owns the user experience you need.
-Dropping to a lower level gives control but also transfers loading, empty,
-error, retry, and persistence behavior to the application.
+- Full caller-owned Viewer flows: [success](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-viewer--complete-flow), [empty](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-viewer--empty-result), [caller error and retry](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-viewer--caller-owned-error-and-retry)
+- FetcherViewer flows: [remote success](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-fetcherviewer--remote-success), [definition error](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-fetcherviewer--definition-request-error), [imperative methods](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-fetcherviewer--imperative-methods)
+- Component galleries: [filters](https://fetcher.ahoo.me/storybook/?path=/story/viewer-filters--typed-gallery), [cells](https://fetcher.ahoo.me/storybook/?path=/story/viewer-tables-cells--gallery), and [inputs](https://fetcher.ahoo.me/storybook/?path=/story/viewer-inputs--remote-loading-and-success)
 
-### Persistence callbacks
-
-Create, update, and delete callbacks receive success continuations. Call the
-continuation only after persistence succeeds; otherwise the visible active view
-can diverge from the backend. Show the failure near the initiating action and
-leave the previous view usable.
-
-### Registries
-
-Register custom filter and cell types once before the first render. A registry
-entry is a public rendering contract: keep its type name stable for persisted
-view definitions, and validate server-provided definitions before resolving a
-component.
-
-## Source and agent reference
-
-- Public exports: [`packages/viewer/src/index.ts`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/index.ts)
-- Detailed agent API: [`skills/fetcher-viewer-components/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-viewer-components/references/api.md)
-- Skill: [`$fetcher-viewer-components`](../skills/react-and-integrations.md#fetcher-viewer-components)
-
-Try the complete workflows in [Storybook](https://fetcher.ahoo.me/storybook/)
-and follow [Build a data viewer](../recipes/data-viewer.md).
+Continue with [Build a data viewer](../recipes/data-viewer.md).
