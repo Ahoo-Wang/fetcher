@@ -1,56 +1,63 @@
 # Fetcher
 
-> A modular HTTP client ecosystem built on the native Fetch API with interceptor-powered middleware and native LLM streaming support. Published as an npm monorepo under `@ahoo-wang/*`.
+> Typed HTTP clients, streaming, React hooks, and data viewers.
 
-## Onboarding
+## Start
 
-- [Contributor Guide](/onboarding/contributor) — For new contributors: language foundations, architecture, getting productive
-- [Staff Engineer Guide](/onboarding/staff-engineer) — Architectural deep dive, design tradeoffs, decision log
-- [Executive Guide](/onboarding/executive) — Capability map, risk assessment, technology investment thesis
-- [Product Manager Guide](/onboarding/product-manager) — Feature map, user journeys, competitive landscape
+- [Start with Fetcher](/start/) — Choose the shortest path from the core Fetch client to the Fetcher package you need.
+- [Installation](/start/installation) — Install Fetcher packages with the required runtime and peer dependencies.
+- [First Request](/start/first-request) — Install Fetcher and make a typed HTTP request in five minutes.
+- [Choose Packages](/start/choose-packages) — Match each Fetcher package to the developer job it performs.
 
-## Getting Started
+## Learn
 
-- [Introduction](/guide/) — Overview of the Fetcher ecosystem, package graph, key features
-- [Quick Start](/guide/quick-start) — Installation, basic usage, interceptors, decorators, LLM streaming
-- [Configuration](/guide/configuration) — FetcherOptions, NamedFetcher, FetcherRegistrar, environment configs
-- [Contributing](/guide/contributing) — Development setup, testing, code style, PR process
+- [Request Lifecycle](/learn/request-lifecycle) — Follow a Fetcher request through exchange creation, interceptors, native fetch, error handling, and result extraction.
+- [URLs, Bodies, and Results](/learn/requests-and-results) — Build Fetcher URLs and request bodies, then choose the result shape your application needs.
+- [Interceptors, Errors, and Timeouts](/learn/interceptors-errors-timeouts) — Extend the Fetcher pipeline and diagnose status, network, cancellation, and timeout failures.
+- [Streaming](/learn/streaming) — Parse Server-Sent Events, convert JSON events, stop on a terminator, and cancel safely.
+- [React Data Flow](/learn/react-data-flow) — Model asynchronous work as explicit React loading, result, error, cancellation, and query state.
 
-## Architecture
+## Recipes
 
-- [Overview](/architecture/) — System architecture, package dependency graph, design principles
-- [Fetcher Core](/architecture/fetcher-core) — Fetcher class, NamedFetcher, request lifecycle, error handling
-- [Interceptor System](/architecture/interceptors) — InterceptorManager, request/response/error chain, custom interceptors
-- [EventStream & SSE](/architecture/eventstream) — Side-effect module, SSE protocol, LLM streaming
-- [URL Builder](/architecture/url-builder) — Path parameters, query parameters, base URL resolution
+- [Declarative API Services](/recipes/declarative-services) — Turn TypeScript decorator metadata into executable Fetcher service methods.
+- [Generate an OpenAPI Client](/recipes/openapi-client) — Generate Fetcher TypeScript models and clients from a local or remote OpenAPI document.
+- [Stream an OpenAI Response](/recipes/openai-streaming) — Configure ChatClient for typed non-streaming and streaming Chat Completions responses.
+- [Build a Wow CQRS Client](/recipes/wow-cqrs) — Send Wow commands and query materialized snapshots with typed filters, pagination, streaming, and aggregation.
+- [Add CoSec Authentication](/recipes/cosec-authentication) — Add CoSec request headers, token storage, automatic refresh, and authorization error handling to a Fetcher.
+- [Share State and Events](/recipes/state-and-events) — Store typed values and coordinate serial, parallel, and cross-tab work with Fetcher packages.
+- [Build a Data Viewer](/recipes/data-viewer) — Compose field definitions, filters, columns, views, data loading, and remote definitions into a Viewer workflow.
 
-## Packages
+## Skills
 
-- [Overview](/packages/) — All 12 packages with descriptions and dependencies
-- [@ahoo-wang/fetcher](/packages/fetcher) — Core HTTP client
-- [@ahoo-wang/fetcher-decorator](/packages/decorator) — TypeScript decorators for API services
-- [@ahoo-wang/fetcher-eventbus](/packages/eventbus) — Event bus (serial, parallel, broadcast)
-- [@ahoo-wang/fetcher-eventstream](/packages/eventstream) — SSE/streaming side-effect module
-- [@ahoo-wang/fetcher-openai](/packages/openai) — OpenAI API client integration
-- [@ahoo-wang/fetcher-openapi](/packages/openapi) — OpenAPI 3.x TypeScript types
-- [@ahoo-wang/fetcher-generator](/packages/generator) — CLI code generator from OpenAPI specs
-- [@ahoo-wang/fetcher-react](/packages/react) — React hooks for data fetching
-- [@ahoo-wang/fetcher-storage](/packages/storage) — Cross-environment storage abstraction
-- [@ahoo-wang/fetcher-cosec](/packages/cosec) — CoSec authentication integration
-- [@ahoo-wang/fetcher-wow](/packages/wow) — Wow DDD/CQRS framework integration
-- [@ahoo-wang/fetcher-viewer](/packages/viewer) — React + Ant Design component library
+- [Fetcher Skills](/skills/) — Use Fetcher package-aware skills with Codex and other compatible coding agents.
+- [HTTP and service skills](/skills/http-and-services) — Choose Fetcher skills for direct requests, declarative services, typed events, and storage.
+- [Streaming and OpenAI skills](/skills/streaming-and-openai) — Choose Fetcher skills for Server-Sent Events and OpenAI chat streaming.
+- [OpenAPI and generation skills](/skills/openapi-and-generation) — Choose Fetcher skills for OpenAPI TypeScript types and generated clients.
+- [React and integration skills](/skills/react-and-integrations) — Choose Fetcher skills for React state, data viewers, CoSec authentication, and Wow CQRS.
 
-## API Reference
+## Reference
 
-- [Overview](/api/) — API surface summary and navigation
-- [Fetcher Client](/api/fetcher-client) — Fetcher class, FetcherOptions, RequestConfig, error types
-- [Decorators](/api/decorators) — @api, @get, @post, @put, @delete, @path, @query, @body
-- [React Hooks](/api/react-hooks) — useFetcher, useQuery, usePromise
-- [Type Definitions](/api/type-definitions) — Key TypeScript interfaces across packages
+- [Package reference](/reference/) — Choose a Fetcher package, understand its contract, and open the detailed API or matching agent skill.
+- [`@ahoo-wang/fetcher`](/reference/fetcher) — Configure Fetcher, send HTTP requests, extract results, and handle request failures.
+- [`@ahoo-wang/fetcher-decorator`](/reference/decorator) — Define declarative HTTP service classes with Fetcher method and parameter decorators.
+- [`@ahoo-wang/fetcher-eventbus`](/reference/eventbus) — Choose serial, parallel, or cross-tab typed event delivery and manage handler lifecycles.
+- [`@ahoo-wang/fetcher-eventstream`](/reference/eventstream) — Parse Server-Sent Events, consume typed JSON streams, and handle invalid stream responses.
+- [`@ahoo-wang/fetcher-storage`](/reference/storage) — Store one typed value, observe changes, and select browser or in-memory persistence.
+- [`@ahoo-wang/fetcher-react`](/reference/react) — Manage Fetcher requests, queries, storage, events, and authorization state in React.
+- [`@ahoo-wang/fetcher-openapi`](/reference/openapi) — Type OpenAPI documents and extensions without adding runtime code.
+- [`@ahoo-wang/fetcher-generator`](/reference/generator) — Generate Fetcher and Wow TypeScript clients from local or remote OpenAPI documents.
+- [`@ahoo-wang/fetcher-openai`](/reference/openai) — Call Chat Completions through Fetcher with conditional typed streaming results.
+- [`@ahoo-wang/fetcher-wow`](/reference/wow) — Send Wow commands and build typed snapshot, event, filter, pagination, and aggregation queries.
+- [`@ahoo-wang/fetcher-cosec`](/reference/cosec) — Configure CoSec attribution headers, JWT persistence, refresh, and 401 or 403 handling.
+- [`@ahoo-wang/fetcher-viewer`](/reference/viewer) — Compose filters, tables, saved views, and remote Viewer workflows with React and Ant Design.
 
-## Testing
+## Contributing
 
-- [Overview](/testing/) — Testing strategy, tools (Vitest, MSW, Playwright)
-- [Unit Testing](/testing/unit-testing) — Vitest setup, MSW mocking, testing patterns
-- [Integration Testing](/testing/integration-testing) — Real API testing, setup, environment
-- [Browser Testing](/testing/browser-testing) — Playwright, jsdom, component testing, Storybook
+- [Contributing](/contributing/) — Set up Fetcher locally and choose the right development, testing, or documentation workflow.
+- [Development](/contributing/development) — Install the Fetcher monorepo, understand package boundaries, and follow its TypeScript workflow.
+- [Testing](/contributing/testing) — Run the right Fetcher unit, integration, browser, Wiki, and Storybook checks.
+- [Documentation](/contributing/documentation) — Keep Fetcher Wiki, README, examples, diagrams, and package skills accurate and bilingual.
+
+## 中文文档
+
+- [Fetcher 中文文档](/zh/) — 与英文文档采用相同的信息架构。

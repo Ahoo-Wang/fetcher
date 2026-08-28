@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev",
+    "generate:llms": "node scripts/generate-llms-full.mjs",
+    "prebuild": "pnpm generate:llms",
     "build": "vitepress build",
     "preview": "vitepress preview",
     "fix:mermaid": "node scripts/fix-mermaid.mjs"

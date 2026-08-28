@@ -160,14 +160,14 @@ export const RemoteLoadingAndSuccess: Story = {
     const input = canvas.getByRole('combobox', { name: 'User search' });
     await userEvent.click(input);
     await userEvent.type(input, 'Ada');
+    await expect(await canvas.findByText('Search: loading')).toBeVisible();
+    releaseRemoteSearch?.();
+    releaseRemoteSearch = undefined;
     const dropdown = canvasElement.ownerDocument.querySelector<HTMLElement>(
       '.ant-select-dropdown:not(.ant-select-dropdown-hidden)',
     );
     await expect(dropdown).not.toBeNull();
     const options = within(dropdown!);
-    await expect(await options.findByText('数据加载中...')).toBeVisible();
-    releaseRemoteSearch?.();
-    releaseRemoteSearch = undefined;
     await userEvent.click(await options.findByText('Ada'));
     await expect(await canvas.findByText('Selected: Ada')).toBeVisible();
   },
