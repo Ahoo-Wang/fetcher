@@ -90,13 +90,13 @@ const preview: Preview = {
           aria-labelledby={`story-scene-${context.id}`}
           className="story-scene"
         >
-          <header className="story-scene__header">
-            <p className="story-scene__domain">{scene.domain}</p>
+          <header className="story-scene-header">
+            <p className="story-scene-domain">{scene.domain}</p>
             <h2 id={`story-scene-${context.id}`}>{context.name}</h2>
-            <p className="story-scene__summary">{scene.summary}</p>
-            <p className="story-scene__fixture">Fixture · {scene.fixture}</p>
+            <p className="story-scene-summary">{scene.summary}</p>
+            <p className="story-scene-fixture">Fixture · {scene.fixture}</p>
           </header>
-          <ol aria-label="Scenario contract" className="story-scene__contract">
+          <ol aria-label="Scenario contract" className="story-scene-contract">
             <li>
               <strong>Setup</strong>
               <span>{scene.setup}</span>
@@ -110,7 +110,7 @@ const preview: Preview = {
               <span>{scene.observe}</span>
             </li>
           </ol>
-          <div className="story-scene__stage">
+          <div className="story-scene-stage">
             <Story />
           </div>
         </article>

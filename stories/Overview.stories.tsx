@@ -27,15 +27,15 @@ type Story = StoryObj<typeof meta>;
 export const StartHere: Story = {
   render: () => (
     <main aria-labelledby="storybook-title" className="story-overview">
-      <header className="story-overview__hero">
-        <p className="story-overview__eyebrow">Fetcher Scenario Lab</p>
+      <header className="story-overview-hero">
+        <p className="story-overview-eyebrow">Fetcher Scenario Lab</p>
         <h1 id="storybook-title">Fetcher interactive workflows</h1>
         <p>
           Explore real package behavior with deterministic local data. Every
           scenario names its setup, action, and observable contract before you
           run it.
         </p>
-        <div className="story-overview__facts" aria-label="Lab guarantees">
+        <div className="story-overview-facts" aria-label="Lab guarantees">
           <span>Local fixtures</span>
           <span>No credentials</span>
           <span>Repeatable assertions</span>
@@ -44,7 +44,7 @@ export const StartHere: Story = {
 
       <section aria-labelledby="scenario-catalog-title">
         <h2 id="scenario-catalog-title">Choose a developer scenario</h2>
-        <div className="story-overview__grid">
+        <div className="story-overview-grid">
           <a href="./?path=/docs/http-streaming-fetcher--docs" target="_top">
             <span>HTTP exchange</span>
             <strong>Trace a request</strong>
@@ -87,7 +87,7 @@ export const StartHere: Story = {
 
       <section aria-labelledby="scenario-reading-title">
         <h2 id="scenario-reading-title">Read every scenario the same way</h2>
-        <ol className="story-overview__flow">
+        <ol className="story-overview-flow">
           <li>
             <strong>Setup</strong>
             <span>Know the fixture and starting state.</span>
@@ -103,7 +103,7 @@ export const StartHere: Story = {
         </ol>
       </section>
 
-      <footer className="story-overview__footer">
+      <footer className="story-overview-footer">
         <output className="story-output">
           Fixtures: {fixtureUsers.map(user => user.name).join(', ')} · Users
         </output>
