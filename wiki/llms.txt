@@ -47,7 +47,7 @@
 - [`@ahoo-wang/fetcher-openapi`](/reference/openapi) — Type OpenAPI documents and extensions without adding runtime code.
 - [`@ahoo-wang/fetcher-generator`](/reference/generator) — Generate Fetcher and Wow TypeScript clients from local or remote OpenAPI documents.
 - [`@ahoo-wang/fetcher-openai`](/reference/openai) — Call Chat Completions through Fetcher with conditional typed streaming results.
-- [`@ahoo-wang/fetcher-wow`](/reference/wow) — Send Wow commands and build typed snapshot, event, filter, pagination, and aggregation queries.
+- [`@ahoo-wang/fetcher-wow`](/reference/wow) — Complete reference for Wow commands, typed snapshot and event queries, filters, cursors, aggregation, and state loading.
 - [`@ahoo-wang/fetcher-cosec`](/reference/cosec) — Configure CoSec attribution headers, JWT persistence, refresh, and 401 or 403 handling.
 - [`@ahoo-wang/fetcher-viewer`](/reference/viewer) — Compose filters, tables, saved views, and remote Viewer workflows with React and Ant Design.
 
