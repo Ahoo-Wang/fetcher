@@ -26,7 +26,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const StartHere: Story = {
-  name: 'Start Here',
   render: () => (
     <main aria-labelledby="storybook-title" className="story-stack">
       <h1 id="storybook-title">Fetcher interactive workflows</h1>

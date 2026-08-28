@@ -65,7 +65,9 @@ async function runScenario(scenario: Scenario): Promise<string> {
       fixtureSseChunks,
     ).requiredJsonEventStream<ChatChunk>(event => event.data === '[DONE]');
     let count = 0;
-    for await (const _event of events) count++;
+    for await (const event of events) {
+      if (event.data.choices.length) count++;
+    }
     return `${count} chunks · stopped at [DONE]`;
   }
 

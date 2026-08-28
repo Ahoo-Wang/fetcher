@@ -8,12 +8,7 @@ const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   optimizeDeps: {
-    include: [
-      '@ant-design/icons',
-      'dayjs',
-      'immer',
-      'react/compiler-runtime',
-    ],
+    include: ['@ant-design/icons', 'dayjs', 'immer', 'react/compiler-runtime'],
   },
   test: {
     projects: [
@@ -28,6 +23,7 @@ export default defineConfig({
           name: 'storybook',
           browser: {
             enabled: true,
+            fileParallelism: false,
             headless: true,
             provider: playwright({ launchOptions: { channel: 'chrome' } }),
             instances: [{ browser: 'chromium' }],

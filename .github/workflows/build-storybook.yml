@@ -30,5 +30,8 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Test Storybook interactions
+        run: pnpm test:storybook
+
       - name: Build Storybook
         run: pnpm build-storybook

@@ -6,7 +6,7 @@ Reproduce the matching local gate before changing workflow configuration.
 | Workflow               | Trigger                           | Purpose                                                     | Local equivalent                                              |
 | ---------------------- | --------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------- |
 | `ci.yml`               | Push/PR to `main`, manual         | Build, lint, and package unit tests on Node 20/22/24        | `pnpm build && pnpm lint && pnpm test:unit`                   |
-| `build-storybook.yml`  | PR to `main`, manual              | Build packages and static Storybook                         | `pnpm build && pnpm build-storybook`                          |
+| `build-storybook.yml`  | PR to `main`, manual              | Build packages, test interactions, build Storybook          | `pnpm build && pnpm test:storybook && pnpm build-storybook`   |
 | `codecov.yml`          | Push/PR to `main`, manual         | Build, unit coverage, Codecov upload                        | `pnpm build && pnpm test:unit`                                |
 | `integration-test.yml` | Push/PR to `main`, manual         | Wow service, generation, integration and optional LLM tests | Follow `integration-test/README.md`                           |
 | `generator-test.yml`   | Push/PR to `main`, manual         | Generate clients against supported Wow server versions      | Run generator against the matching local server               |
