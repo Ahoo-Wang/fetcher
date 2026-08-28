@@ -1,49 +1,32 @@
-# GitHub Actions Workflows
+# GitHub Actions workflows
 
-This directory contains the GitHub Actions workflows for the Fetcher project.
+CI workflows run with pnpm 10.34.5 and current supported Node.js versions.
+Reproduce the matching local gate before changing workflow configuration.
 
-## Workflows
+| Workflow               | Trigger                           | Purpose                                                     | Local equivalent                                              |
+| ---------------------- | --------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------- |
+| `ci.yml`               | Push/PR to `main`, manual         | Build, lint, and package unit tests on Node 20/22/24        | `pnpm build && pnpm lint && pnpm test:unit`                   |
+| `build-storybook.yml`  | PR to `main`, manual              | Build packages and static Storybook                         | `pnpm build && pnpm build-storybook`                          |
+| `codecov.yml`          | Push/PR to `main`, manual         | Build, unit coverage, Codecov upload                        | `pnpm build && pnpm test:unit`                                |
+| `integration-test.yml` | Push/PR to `main`, manual         | Wow service, generation, integration and optional LLM tests | Follow `integration-test/README.md`                           |
+| `generator-test.yml`   | Push/PR to `main`, manual         | Generate clients against supported Wow server versions      | Run generator against the matching local server               |
+| `deploy-wiki.yml`      | Relevant `main` changes, manual   | Build Wiki and Storybook, deploy GitHub Pages               | `pnpm build && pnpm --dir wiki build && pnpm build-storybook` |
+| `release.yml`          | GitHub release, manual            | Build and publish all packages to npm                       | No ordinary local equivalent                                  |
+| `gitee-sync.yml`       | Schedule, selected pushes, manual | Mirror the repository to Gitee                              | No local equivalent                                           |
+| `renovate.yml`         | Schedule, manual                  | Run self-hosted dependency updates                          | Inspect `renovate.json`                                       |
+| `opencode.yml`         | Explicit PR/issue comment command | Run the configured coding assistant                         | No local equivalent                                           |
 
-### 1. CI Workflow (`ci.yml`)
+## Secrets
 
-- Runs on push and pull request to main branch
-- Tests multiple Node.js versions (20, 22)
-- Performs build, test, and lint checks
+Workflows reference secret categories for Codecov, npm publishing, repository
+mirroring, Renovate, the coding assistant, and optional LLM integration tests.
+Secret values belong in GitHub environment/repository settings and must never be
+printed, copied into workflow files, or included in fixtures.
 
-### 2. Integration Test Workflow (`integration-test.yml`)
+## Triage
 
-- Runs on push and pull request to main and master branches
-- Tests integration tests on Node.js versions 18.x and 20.x
-- Ensures integration with external APIs works correctly
-
-### 3. Release Workflow (`release.yml`)
-
-- Automates the release process
-- Creates GitHub releases and publishes packages
-
-### 4. Codecov Workflow (`codecov.yml`)
-
-- Uploads code coverage reports to Codecov
-- Tracks test coverage over time
-
-### 5. Gitee Sync Workflow (`gitee-sync.yml`)
-
-- Synchronizes the repository with Gitee mirror
-- Maintains consistency across code hosting platforms
-
-## Usage
-
-All workflows run automatically based on their triggers. To manually trigger a workflow:
-
-1. Go to the "Actions" tab in the GitHub repository
-2. Select the desired workflow
-3. Click "Run workflow" and configure as needed
-
-## Adding New Workflows
-
-To add a new workflow:
-
-1. Create a new `.yml` file in this directory
-2. Define the workflow triggers and jobs
-3. Follow the existing patterns for consistency
-4. Test the workflow by pushing to a branch
+1. Open the full failing job log and find the first failing command.
+2. Reproduce that exact command and Node version locally.
+3. Distinguish service readiness, missing secret, network, generation, build,
+   lint, and test failures.
+4. Fix the smallest owning layer; do not weaken checks to make a job green.
