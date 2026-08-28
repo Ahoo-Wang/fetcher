@@ -28,7 +28,7 @@ import {
 type Scenario = 'ready' | 'loading' | 'empty' | 'error';
 
 function ViewerDemo({ scenario }: { scenario: Scenario }) {
-  const [output, setOutput] = useState('Ready');
+  const [output, setOutput] = useState<string>();
   const [retrySucceeded, setRetrySucceeded] = useState(false);
 
   if (scenario === 'error' && !retrySucceeded) {
@@ -96,9 +96,11 @@ function ViewerDemo({ scenario }: { scenario: Scenario }) {
           setOutput(`Deleted view: ${view.name}`);
         }}
       />
-      <output className="story-output" aria-live="polite">
-        {output}
-      </output>
+      {output && (
+        <output className="story-output" aria-live="polite">
+          {output}
+        </output>
+      )}
     </div>
   );
 }
@@ -121,6 +123,7 @@ export const CompleteFlow: Story = {
     const page = within(canvasElement.ownerDocument.body);
 
     await expect(await canvas.findByText('Ada')).toBeVisible();
+    expect(canvas.queryByText('Ready')).not.toBeInTheDocument();
     await userEvent.click(canvas.getByText('u-ada'));
     await expect(await canvas.findByText('Opened u-ada: Ada')).toBeVisible();
 

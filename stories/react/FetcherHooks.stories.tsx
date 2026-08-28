@@ -90,7 +90,7 @@ const meta = {
   component: FetcherHookDemo,
   beforeEach: installFetchFixture,
   args: { scenario: 'success' },
-  argTypes: { scenario: { control: 'radio' } },
+  argTypes: { scenario: { table: { disable: true } } },
 } satisfies Meta<typeof FetcherHookDemo>;
 
 export default meta;
