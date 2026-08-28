@@ -8,7 +8,12 @@ const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   optimizeDeps: {
-    include: ['immer', 'react/compiler-runtime'],
+    include: [
+      '@ant-design/icons',
+      'dayjs',
+      'immer',
+      'react/compiler-runtime',
+    ],
   },
   test: {
     projects: [
