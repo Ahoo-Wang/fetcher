@@ -31,7 +31,7 @@ event-stream package to decode JSON Server-Sent Events.
 | Send a command | `CommandClient<C>` | `send`, `sendAndWaitStream` |
 | Query materialized snapshots | `SnapshotQueryClient<S, FIELDS>` | `single`, `list`, `paged`, `count`, `aggregate` |
 | Return state without snapshot metadata | `SnapshotQueryClient<S, FIELDS>` | `singleState`, `listState`, `pagedState` |
-| Query domain-event streams | `EventStreamQueryClient<E, FIELDS>` | `list`, `listStream`, `paged`, `count` |
+| Query domain-event streams | `EventStreamQueryClient<E, FIELDS>` | `list`, `listStream`, `paged`, `count`, `aggregate`, `aggregateStream` |
 | Rebuild state by aggregate ID | `LoadStateAggregateClient<S>` | `load`, `loadVersioned`, `loadTimeBased` |
 | Rebuild an owner-scoped aggregate | `LoadOwnerStateAggregateClient<S>` | `load`, `loadVersioned`, `loadTimeBased` |
 | Create related query clients | `QueryClientFactory<S, FIELDS, E>` | `createSnapshotQueryClient` and related factory methods |
@@ -517,13 +517,20 @@ pagination, attributes, and cancellation conventions as snapshot queries.
 | `listStream(query)` | `event/list` | SSE of `DomainEventStream<E>` |
 | `paged(query)` | `event/paged` | `PagedList<DomainEventStream<E>>` |
 | `count(filter)` | `event/count` | `number` |
+| `aggregate<Row>(query)` | `event/aggregation` | `Row[]` |
+| `aggregateStream<Row>(query)` | `event/aggregation` | SSE of `Row` |
 
 A `DomainEventStream` contains aggregate, owner, space, command, request,
 version, timestamp, header, and event-body data. Event metadata field constants
 are available through `DomainEventStreamMetadataFields`.
 
 ```ts
-import { pagedQuery, pagination } from '@ahoo-wang/fetcher-wow';
+import {
+  aggregation,
+  pagedQuery,
+  pagination,
+  type AggregationQuery,
+} from '@ahoo-wang/fetcher-wow';
 
 const eventPage = await events.paged(
   pagedQuery({
@@ -532,6 +539,20 @@ const eventPage = await events.paged(
     sort: [desc('version')],
   }),
 );
+
+type EventStreamFields = 'body';
+type EventFields = 'name';
+type EventCount = { eventType: string; count: number };
+
+const eventAggregation: AggregationQuery<EventStreamFields, EventFields> = {
+  elements: [aggregation.element('body')],
+  groupBy: [aggregation.terms('name', 'eventType')],
+  metrics: [aggregation.count('count')],
+};
+
+const eventCounts = await events.aggregate<EventCount>(eventAggregation);
+const eventCountStream =
+  await events.aggregateStream<EventCount>(eventAggregation);
 ```
 
 There is no `single` event-stream method; event streams are collection
