@@ -28,6 +28,7 @@
   - [ResourceAttributionPathSpec](#resourceattributionpathspec)
   - [Factory Methods](#factory-methods)
 - [Cursor Queries](#cursor-queries)
+- [Query Schema Metadata](#query-schema-metadata)
 - [Filter Expressions](#filter-expressions)
 - [AggregationQuery](#aggregationquery)
 - [Query DSL Conditions](#query-dsl-conditions)
@@ -97,6 +98,8 @@ import {
   QueryCapability,
   QueryValueType,
   QueryCardinality,
+  QueryCompatibilityLevel,
+  QuerySemanticTypeValue,
   // Sort helpers
   asc,
   desc,
@@ -165,6 +168,8 @@ import {
   type FilterSingleQuery,
   type CursorQuery,
   type CursorPage,
+  type QuerySemanticType,
+  type QueryFieldSchemaMetadata,
   type QueryModelSchemaMetadata,
   type ListQueryRequest,
   type PagedQueryRequest,
@@ -607,6 +612,45 @@ if (first.nextCursor) {
 `size` defaults to `10` and must be between `1` and `2147483646`. A request
 accepts at most 32 explicit sort fields. Snapshot and event-stream cursors use
 `snapshot/cursor`, `snapshot/cursor/state`, and `event/cursor`.
+
+## Query Schema Metadata
+
+The package exports Query Schema metadata types for schema-aware tooling, but
+does not expose Wow's operational schema endpoints as a client.
+
+```typescript
+interface QueryModelSchemaMetadata<FIELDS extends string = string> {
+  model: QueryModel;
+  capabilities: QueryCapability[];
+  fields: QueryFieldSchemaMetadata<FIELDS>[];
+}
+
+interface QueryFieldSchemaMetadata<FIELDS extends string = string> {
+  field: FIELDS;
+  title: string | null;
+  description: string | null;
+  enumValues: unknown[] | null;
+  valueTypes: QueryValueType[];
+  nullable: boolean;
+  required: boolean;
+  cardinality: QueryCardinality;
+  semanticType: QuerySemanticType | null;
+  dynamicChildren: boolean;
+  capabilities: QueryCapability[];
+  masked?: boolean;
+}
+```
+
+`QueryModel`, `QueryCapability`, and `QueryValueType` are intentionally open
+string aliases because Wow accepts custom safe identifiers. Their exported
+constant objects provide the built-in values. `QueryCardinality` and
+`QueryCompatibilityLevel` are closed enums.
+
+`QuerySemanticType` is discriminated by `QuerySemanticTypeValue`:
+
+- `TEMPORAL_DATE`: no additional fields
+- `TEMPORAL_EPOCH`: optional `timeUnit` (`TimeUnit.MILLISECONDS` by default)
+- `TEMPORAL_FORMATTED`: required `pattern`
 
 ## Filter Expressions
 
