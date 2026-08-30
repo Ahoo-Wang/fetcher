@@ -1,6 +1,6 @@
 # Fetcher Wiki — Full Content
 
-> All documentation pages inlined for LLM consumption. Generated 2026-08-28.
+> All documentation pages inlined for LLM consumption. Generated 2026-08-30.
 
 ## Start
 
@@ -3216,9 +3216,9 @@ event-stream package to decode JSON Server-Sent Events.
 | Goal | Client | Main methods |
 | --- | --- | --- |
 | Send a command | `CommandClient<C>` | `send`, `sendAndWaitStream` |
-| Query materialized snapshots | `SnapshotQueryClient<S, FIELDS>` | `single`, `list`, `paged`, `count`, `aggregate` |
-| Return state without snapshot metadata | `SnapshotQueryClient<S, FIELDS>` | `singleState`, `listState`, `pagedState` |
-| Query domain-event streams | `EventStreamQueryClient<E, FIELDS>` | `list`, `listStream`, `paged`, `count`, `aggregate`, `aggregateStream` |
+| Query materialized snapshots | `SnapshotQueryClient<S, FIELDS>` | `single`, `list`, `paged`, `cursor`, `count`, `aggregate` |
+| Return state without snapshot metadata | `SnapshotQueryClient<S, FIELDS>` | `singleState`, `listState`, `pagedState`, `cursorState` |
+| Query domain-event streams | `EventStreamQueryClient<E, FIELDS>` | `list`, `listStream`, `paged`, `cursor`, `count`, `aggregate`, `aggregateStream` |
 | Rebuild state by aggregate ID | `LoadStateAggregateClient<S>` | `load`, `loadVersioned`, `loadTimeBased` |
 | Rebuild an owner-scoped aggregate | `LoadOwnerStateAggregateClient<S>` | `load`, `loadVersioned`, `loadTimeBased` |
 | Create related query clients | `QueryClientFactory<S, FIELDS, E>` | `createSnapshotQueryClient` and related factory methods |
@@ -3407,6 +3407,8 @@ Snapshot methods post to paths below the client's `basePath`.
 | `listStateStream<T>(query)` | `snapshot/list/state` | SSE of `T` states |
 | `paged<T>(query)` | `snapshot/paged` | `PagedList<T>`; defaults to full snapshots |
 | `pagedState<T>(query)` | `snapshot/paged/state` | `PagedList<T>`; defaults to `S` |
+| `cursor<T>(query)` | `snapshot/cursor` | `CursorPage<T>`; defaults to full snapshots |
+| `cursorState<T>(query)` | `snapshot/cursor/state` | `CursorPage<T>`; defaults to `S` |
 | `count(filter)` | `snapshot/count` | `number` |
 | `aggregate<Row>(query)` | `snapshot/aggregation` | `Row[]` |
 | `aggregateStream<Row>(query)` | `snapshot/aggregation` | SSE of `Row` |
@@ -3477,39 +3479,34 @@ Prefer the `filter` property. The `condition` property and standalone
 
 ### Cursor traversal
 
-`cursorQuery()` turns a list query into an exclusive, single-field cursor
-query. It adds `gt` for ascending traversal or `lt` for descending traversal
-and replaces the query sort with the cursor field.
+`cursorQuery()` creates a Wow V9 forward-only cursor request. The server
+returns an opaque `nextCursor`; pass it back unchanged and do not derive a
+cursor from result fields.
 
 ```ts
 import {
-  CURSOR_ID_START,
-  SortDirection,
+  asc,
   cursorQuery,
   filter,
-  listQuery,
 } from '@ahoo-wang/fetcher-wow';
 
-const page = await snapshots.list(
-  cursorQuery<CartFields>({
-    field: 'aggregateId',
-    cursorId: CURSOR_ID_START,
-    direction: SortDirection.DESC,
-    query: listQuery({
-      filter: filter.eq('state.status', 'ACTIVE'),
-      limit: 100,
-    }),
-  }),
-);
+let query = cursorQuery<CartFields>({
+  filter: filter.eq('state.status', 'ACTIVE'),
+  sort: [asc('aggregateId')],
+  size: 100,
+});
 
-const nextCursor = page.at(-1)?.aggregateId;
+const page = await snapshots.cursor(query);
+
+if (page.nextCursor) {
+  query = cursorQuery({ ...query, cursor: page.nextCursor });
+  const nextPage = await snapshots.cursor(query);
+}
 ```
 
-Use the last returned cursor field as the next `cursorId`. Choose a stable,
-unique field; the helper intentionally produces one cursor sort.
-`CURSOR_ID_START` (`~`) is the start sentinel for the default descending
-direction. An ascending traversal needs a domain-specific sentinel that sorts
-below every real ID.
+`size` defaults to `10`, accepts `1..2147483646`, and each request accepts at
+most 32 sort fields. `CursorPage<T>` contains `list` and nullable
+`nextCursor`; unlike `PagedList<T>`, it has no `total`.
 
 ## `FilterExpression`
 
@@ -3703,6 +3700,7 @@ pagination, attributes, and cancellation conventions as snapshot queries.
 | `list(query)` | `event/list` | `DomainEventStream<E>[]` |
 | `listStream(query)` | `event/list` | SSE of `DomainEventStream<E>` |
 | `paged(query)` | `event/paged` | `PagedList<DomainEventStream<E>>` |
+| `cursor(query)` | `event/cursor` | `CursorPage<DomainEventStream<E>>` |
 | `count(filter)` | `event/count` | `number` |
 | `aggregate<Row>(query)` | `event/aggregation` | `Row[]` |
 | `aggregateStream<Row>(query)` | `event/aggregation` | SSE of `Row` |
@@ -7457,9 +7455,9 @@ Events。
 | 目标 | Client | 主要方法 |
 | --- | --- | --- |
 | 发送命令 | `CommandClient<C>` | `send`、`sendAndWaitStream` |
-| 查询物化快照 | `SnapshotQueryClient<S, FIELDS>` | `single`、`list`、`paged`、`count`、`aggregate` |
-| 只返回 State，不带快照元数据 | `SnapshotQueryClient<S, FIELDS>` | `singleState`、`listState`、`pagedState` |
-| 查询领域事件流 | `EventStreamQueryClient<E, FIELDS>` | `list`、`listStream`、`paged`、`count`、`aggregate`、`aggregateStream` |
+| 查询物化快照 | `SnapshotQueryClient<S, FIELDS>` | `single`、`list`、`paged`、`cursor`、`count`、`aggregate` |
+| 只返回 State，不带快照元数据 | `SnapshotQueryClient<S, FIELDS>` | `singleState`、`listState`、`pagedState`、`cursorState` |
+| 查询领域事件流 | `EventStreamQueryClient<E, FIELDS>` | `list`、`listStream`、`paged`、`cursor`、`count`、`aggregate`、`aggregateStream` |
 | 按 Aggregate ID 重建状态 | `LoadStateAggregateClient<S>` | `load`、`loadVersioned`、`loadTimeBased` |
 | 重建 Owner-scoped Aggregate | `LoadOwnerStateAggregateClient<S>` | `load`、`loadVersioned`、`loadTimeBased` |
 | 创建一组关联查询 Client | `QueryClientFactory<S, FIELDS, E>` | `createSnapshotQueryClient` 等 Factory 方法 |
@@ -7643,6 +7641,8 @@ Snapshot 方法都向 Client `basePath` 下的以下路径发送 POST 请求。
 | `listStateStream<T>(query)` | `snapshot/list/state` | `T` State SSE |
 | `paged<T>(query)` | `snapshot/paged` | `PagedList<T>`；默认为完整 Snapshot |
 | `pagedState<T>(query)` | `snapshot/paged/state` | `PagedList<T>`；默认为 `S` |
+| `cursor<T>(query)` | `snapshot/cursor` | `CursorPage<T>`；默认为完整 Snapshot |
+| `cursorState<T>(query)` | `snapshot/cursor/state` | `CursorPage<T>`；默认为 `S` |
 | `count(filter)` | `snapshot/count` | `number` |
 | `aggregate<Row>(query)` | `snapshot/aggregation` | `Row[]` |
 | `aggregateStream<Row>(query)` | `snapshot/aggregation` | `Row` SSE |
@@ -7712,36 +7712,33 @@ API。
 
 ### Cursor 遍历
 
-`cursorQuery()` 把 List Query 转换为排他的单字段 Cursor Query。升序遍历增加 `gt`，
-降序遍历增加 `lt`，并把查询排序替换为 Cursor Field。
+`cursorQuery()` 创建 Wow V9 仅向后翻页的 Cursor Request。服务端返回不透明的
+`nextCursor`；下一次请求必须原样传回，不能从结果字段自行推导 Cursor。
 
 ```ts
 import {
-  CURSOR_ID_START,
-  SortDirection,
+  asc,
   cursorQuery,
   filter,
-  listQuery,
 } from '@ahoo-wang/fetcher-wow';
 
-const page = await snapshots.list(
-  cursorQuery<CartFields>({
-    field: 'aggregateId',
-    cursorId: CURSOR_ID_START,
-    direction: SortDirection.DESC,
-    query: listQuery({
-      filter: filter.eq('state.status', 'ACTIVE'),
-      limit: 100,
-    }),
-  }),
-);
+let query = cursorQuery<CartFields>({
+  filter: filter.eq('state.status', 'ACTIVE'),
+  sort: [asc('aggregateId')],
+  size: 100,
+});
 
-const nextCursor = page.at(-1)?.aggregateId;
+const page = await snapshots.cursor(query);
+
+if (page.nextCursor) {
+  query = cursorQuery({ ...query, cursor: page.nextCursor });
+  const nextPage = await snapshots.cursor(query);
+}
 ```
 
-下一页把最后一条记录的 Cursor Field 作为 `cursorId`。应选择稳定且唯一的字段；该
-Helper 会有意生成唯一的 Cursor Sort。`CURSOR_ID_START`（`~`）是默认降序方向的起始
-哨兵；升序遍历需要传入一个排序在所有真实 ID 之前的领域专用哨兵。
+`size` 默认为 `10`，允许范围为 `1..2147483646`，每次请求最多接受 32 个 Sort
+Field。`CursorPage<T>` 包含 `list` 和可空的 `nextCursor`；与 `PagedList<T>` 不同，
+它没有 `total`。
 
 ## `FilterExpression`
 
@@ -7930,6 +7927,7 @@ Sort、Pagination、Attributes 和取消约定。
 | `list(query)` | `event/list` | `DomainEventStream<E>[]` |
 | `listStream(query)` | `event/list` | `DomainEventStream<E>` SSE |
 | `paged(query)` | `event/paged` | `PagedList<DomainEventStream<E>>` |
+| `cursor(query)` | `event/cursor` | `CursorPage<DomainEventStream<E>>` |
 | `count(filter)` | `event/count` | `number` |
 | `aggregate<Row>(query)` | `event/aggregation` | `Row[]` |
 | `aggregateStream<Row>(query)` | `event/aggregation` | `Row` SSE |

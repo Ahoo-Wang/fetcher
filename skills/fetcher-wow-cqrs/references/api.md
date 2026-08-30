@@ -27,8 +27,8 @@
   - [Setup](#setup-3)
   - [ResourceAttributionPathSpec](#resourceattributionpathspec)
   - [Factory Methods](#factory-methods)
+- [Cursor Queries](#cursor-queries)
 - [Filter Expressions](#filter-expressions)
-  - [Filter Cursor Queries](#filter-cursor-queries)
 - [AggregationQuery](#aggregationquery)
 - [Query DSL Conditions](#query-dsl-conditions)
   - [Comparison Operators](#comparison-operators)
@@ -92,8 +92,11 @@ import {
   TimeUnit,
   filter,
   listQuery,
-  cursorFilter,
   cursorQuery,
+  QueryModel,
+  QueryCapability,
+  QueryValueType,
+  QueryCardinality,
   // Sort helpers
   asc,
   desc,
@@ -160,7 +163,9 @@ import {
   type FilterListQuery,
   type FilterPagedQuery,
   type FilterSingleQuery,
-  type FilterCursorQuery,
+  type CursorQuery,
+  type CursorPage,
+  type QueryModelSchemaMetadata,
   type ListQueryRequest,
   type PagedQueryRequest,
   type SingleQueryRequest,
@@ -368,6 +373,15 @@ const pagedState = await snapshotClient.pagedState({
   pagination: { index: 1, size: 20 },
 });
 
+// Forward-only cursor pages (no total count)
+const cursorPage = await snapshotClient.cursor(
+  cursorQuery({ filter: filter.matchAll(), size: 20 }),
+);
+const stateCursorPage = await snapshotClient.cursorState(
+  cursorQuery({ filter: filter.matchAll(), size: 20 }),
+);
+// CursorPage<T>: { list: T[], nextCursor: string | null }
+
 // Single snapshot
 const snapshot = await snapshotClient.single({
   filter: filter.eq('aggregateId', 'cart-123'),
@@ -432,7 +446,9 @@ aggregateStream<
 ): Promise<ReadableStream<JsonServerSentEvent<Row>>>;
 ```
 
-`QueryApi` requires both methods, so custom implementations must provide them.
+`QueryApi` requires both aggregation methods and `cursor`, so custom
+implementations must provide all three. `SnapshotQueryApi` additionally
+requires `cursorState`.
 `SnapshotQueryClient` and `EventStreamQueryClient` submit to
 `snapshot/aggregation` and `event/aggregation`, respectively;
 `aggregateStream` requests an SSE result stream.
@@ -478,6 +494,9 @@ const paged = await eventClient.paged({
   filter: filter.matchAll(),
   pagination: { index: 1, size: 20 },
 });
+const cursorPage = await eventClient.cursor(
+  cursorQuery({ filter: filter.matchAll(), size: 20 }),
+);
 
 type EventStreamFields = 'body';
 type EventFields = 'name';
@@ -563,6 +582,31 @@ const ownerStateClient = factory.createOwnerLoadStateAggregateClient();
 ```
 
 ---
+
+## Cursor Queries
+
+Wow V9 cursor queries are forward-only and return no total count. Pass the
+opaque `nextCursor` unchanged to the next request.
+
+```typescript
+let query = cursorQuery({
+  filter: filter.eq('state.status', 'PAID'),
+  sort: [asc('state.createdAt')],
+  size: 100,
+});
+
+const first: CursorPage<MaterializedSnapshot<CartState>> =
+  await snapshotClient.cursor(query);
+
+if (first.nextCursor) {
+  query = cursorQuery({ ...query, cursor: first.nextCursor });
+  const second = await snapshotClient.cursor(query);
+}
+```
+
+`size` defaults to `10` and must be between `1` and `2147483646`. A request
+accepts at most 32 explicit sort fields. Snapshot and event-stream cursors use
+`snapshot/cursor`, `snapshot/cursor/state`, and `event/cursor`.
 
 ## Filter Expressions
 
@@ -660,28 +704,6 @@ API remains available for servers in the compatibility window.
 `elementMatch` accepts `ElementFilterExpression`, whose relative field type is
 independent from the outer query fields and excludes metadata filters,
 `deletion`, and `search`, including inside nested `and`/`or`/`nor` expressions.
-
-### Filter Cursor Queries
-
-Use `FilterCursorQuery` with `cursorQuery` to append the cursor filter and sort
-to a filter-based list query. `cursorFilter` builds only the cursor predicate.
-
-```typescript
-const options: FilterCursorQuery<'id' | 'state.status'> = {
-  field: 'id',
-  cursorId: 'cursor-123',
-  direction: SortDirection.ASC,
-  query: listQuery({ filter: filter.eq('state.status', 'PAID') }),
-};
-
-const nextPageQuery: FilterListQuery<'id' | 'state.status'> =
-  cursorQuery(options);
-const predicate: FilterExpression<'id'> = cursorFilter({
-  field: 'id',
-  cursorId: 'cursor-123',
-  direction: SortDirection.ASC,
-});
-```
 
 ## AggregationQuery
 

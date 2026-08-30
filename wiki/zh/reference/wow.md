@@ -27,9 +27,9 @@ Events。
 | 目标 | Client | 主要方法 |
 | --- | --- | --- |
 | 发送命令 | `CommandClient<C>` | `send`、`sendAndWaitStream` |
-| 查询物化快照 | `SnapshotQueryClient<S, FIELDS>` | `single`、`list`、`paged`、`count`、`aggregate` |
-| 只返回 State，不带快照元数据 | `SnapshotQueryClient<S, FIELDS>` | `singleState`、`listState`、`pagedState` |
-| 查询领域事件流 | `EventStreamQueryClient<E, FIELDS>` | `list`、`listStream`、`paged`、`count`、`aggregate`、`aggregateStream` |
+| 查询物化快照 | `SnapshotQueryClient<S, FIELDS>` | `single`、`list`、`paged`、`cursor`、`count`、`aggregate` |
+| 只返回 State，不带快照元数据 | `SnapshotQueryClient<S, FIELDS>` | `singleState`、`listState`、`pagedState`、`cursorState` |
+| 查询领域事件流 | `EventStreamQueryClient<E, FIELDS>` | `list`、`listStream`、`paged`、`cursor`、`count`、`aggregate`、`aggregateStream` |
 | 按 Aggregate ID 重建状态 | `LoadStateAggregateClient<S>` | `load`、`loadVersioned`、`loadTimeBased` |
 | 重建 Owner-scoped Aggregate | `LoadOwnerStateAggregateClient<S>` | `load`、`loadVersioned`、`loadTimeBased` |
 | 创建一组关联查询 Client | `QueryClientFactory<S, FIELDS, E>` | `createSnapshotQueryClient` 等 Factory 方法 |
@@ -213,6 +213,8 @@ Snapshot 方法都向 Client `basePath` 下的以下路径发送 POST 请求。
 | `listStateStream<T>(query)` | `snapshot/list/state` | `T` State SSE |
 | `paged<T>(query)` | `snapshot/paged` | `PagedList<T>`；默认为完整 Snapshot |
 | `pagedState<T>(query)` | `snapshot/paged/state` | `PagedList<T>`；默认为 `S` |
+| `cursor<T>(query)` | `snapshot/cursor` | `CursorPage<T>`；默认为完整 Snapshot |
+| `cursorState<T>(query)` | `snapshot/cursor/state` | `CursorPage<T>`；默认为 `S` |
 | `count(filter)` | `snapshot/count` | `number` |
 | `aggregate<Row>(query)` | `snapshot/aggregation` | `Row[]` |
 | `aggregateStream<Row>(query)` | `snapshot/aggregation` | `Row` SSE |
@@ -282,36 +284,33 @@ API。
 
 ### Cursor 遍历
 
-`cursorQuery()` 把 List Query 转换为排他的单字段 Cursor Query。升序遍历增加 `gt`，
-降序遍历增加 `lt`，并把查询排序替换为 Cursor Field。
+`cursorQuery()` 创建 Wow V9 仅向后翻页的 Cursor Request。服务端返回不透明的
+`nextCursor`；下一次请求必须原样传回，不能从结果字段自行推导 Cursor。
 
 ```ts
 import {
-  CURSOR_ID_START,
-  SortDirection,
+  asc,
   cursorQuery,
   filter,
-  listQuery,
 } from '@ahoo-wang/fetcher-wow';
 
-const page = await snapshots.list(
-  cursorQuery<CartFields>({
-    field: 'aggregateId',
-    cursorId: CURSOR_ID_START,
-    direction: SortDirection.DESC,
-    query: listQuery({
-      filter: filter.eq('state.status', 'ACTIVE'),
-      limit: 100,
-    }),
-  }),
-);
+let query = cursorQuery<CartFields>({
+  filter: filter.eq('state.status', 'ACTIVE'),
+  sort: [asc('aggregateId')],
+  size: 100,
+});
 
-const nextCursor = page.at(-1)?.aggregateId;
+const page = await snapshots.cursor(query);
+
+if (page.nextCursor) {
+  query = cursorQuery({ ...query, cursor: page.nextCursor });
+  const nextPage = await snapshots.cursor(query);
+}
 ```
 
-下一页把最后一条记录的 Cursor Field 作为 `cursorId`。应选择稳定且唯一的字段；该
-Helper 会有意生成唯一的 Cursor Sort。`CURSOR_ID_START`（`~`）是默认降序方向的起始
-哨兵；升序遍历需要传入一个排序在所有真实 ID 之前的领域专用哨兵。
+`size` 默认为 `10`，允许范围为 `1..2147483646`，每次请求最多接受 32 个 Sort
+Field。`CursorPage<T>` 包含 `list` 和可空的 `nextCursor`；与 `PagedList<T>` 不同，
+它没有 `total`。
 
 ## `FilterExpression`
 
@@ -500,6 +499,7 @@ Sort、Pagination、Attributes 和取消约定。
 | `list(query)` | `event/list` | `DomainEventStream<E>[]` |
 | `listStream(query)` | `event/list` | `DomainEventStream<E>` SSE |
 | `paged(query)` | `event/paged` | `PagedList<DomainEventStream<E>>` |
+| `cursor(query)` | `event/cursor` | `CursorPage<DomainEventStream<E>>` |
 | `count(filter)` | `event/count` | `number` |
 | `aggregate<Row>(query)` | `event/aggregation` | `Row[]` |
 | `aggregateStream<Row>(query)` | `event/aggregation` | `Row` SSE |

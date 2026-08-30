@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-viewer",
-  "version": "3.18.1",
+  "version": "4.0.0",
   "description": "A comprehensive React component library for API documentation viewing and data filtering, built on top of Ant Design and the Fetcher ecosystem. Provides reusable UI components for building rich data-driven applications with advanced filtering capabilities and remote data selection.",
   "keywords": [
     "react",
@@ -52,14 +52,14 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "workspace:^3.0.0",
-    "@ahoo-wang/fetcher-decorator": "workspace:^3.0.0",
-    "@ahoo-wang/fetcher-eventbus": "workspace:^3.0.0",
-    "@ahoo-wang/fetcher-eventstream": "workspace:^3.0.0",
-    "@ahoo-wang/fetcher-openapi": "workspace:^3.0.0",
-    "@ahoo-wang/fetcher-react": "workspace:^3.0.0",
-    "@ahoo-wang/fetcher-storage": "workspace:^3.0.0",
-    "@ahoo-wang/fetcher-wow": "workspace:^3.0.0",
+    "@ahoo-wang/fetcher": "workspace:^4.0.0",
+    "@ahoo-wang/fetcher-decorator": "workspace:^4.0.0",
+    "@ahoo-wang/fetcher-eventbus": "workspace:^4.0.0",
+    "@ahoo-wang/fetcher-eventstream": "workspace:^4.0.0",
+    "@ahoo-wang/fetcher-openapi": "workspace:^4.0.0",
+    "@ahoo-wang/fetcher-react": "workspace:^4.0.0",
+    "@ahoo-wang/fetcher-storage": "workspace:^4.0.0",
+    "@ahoo-wang/fetcher-wow": "workspace:^4.0.0",
     "@ant-design/icons": "catalog:",
     "antd": "catalog:",
     "dayjs": "catalog:",
