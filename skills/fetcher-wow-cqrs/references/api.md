@@ -92,6 +92,9 @@ import {
   TimeUnit,
   filter,
   listQuery,
+  DEFAULT_CURSOR_SIZE,
+  MAX_CURSOR_SIZE,
+  MAX_CURSOR_SORT_FIELDS,
   cursorQuery,
   // Sort helpers
   asc,
@@ -599,9 +602,10 @@ if (first.nextCursor) {
 }
 ```
 
-`size` defaults to `10` and must be between `1` and `2147483646`. A request
-accepts at most 32 explicit sort fields. Snapshot and event-stream cursors use
-`snapshot/cursor`, `snapshot/cursor/state`, and `event/cursor`.
+`DEFAULT_CURSOR_SIZE` is `10`; `size` must be between `1` and
+`MAX_CURSOR_SIZE` (`2147483646`). A request accepts at most
+`MAX_CURSOR_SORT_FIELDS` (`32`) explicit sort fields. Snapshot and event-stream
+cursors use `snapshot/cursor`, `snapshot/cursor/state`, and `event/cursor`.
 
 ## Filter Expressions
 
