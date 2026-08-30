@@ -29,9 +29,9 @@ event-stream package to decode JSON Server-Sent Events.
 | Goal | Client | Main methods |
 | --- | --- | --- |
 | Send a command | `CommandClient<C>` | `send`, `sendAndWaitStream` |
-| Query materialized snapshots | `SnapshotQueryClient<S, FIELDS>` | `single`, `list`, `paged`, `count`, `aggregate` |
-| Return state without snapshot metadata | `SnapshotQueryClient<S, FIELDS>` | `singleState`, `listState`, `pagedState` |
-| Query domain-event streams | `EventStreamQueryClient<E, FIELDS>` | `list`, `listStream`, `paged`, `count`, `aggregate`, `aggregateStream` |
+| Query materialized snapshots | `SnapshotQueryClient<S, FIELDS>` | `single`, `list`, `paged`, `cursor`, `count`, `aggregate` |
+| Return state without snapshot metadata | `SnapshotQueryClient<S, FIELDS>` | `singleState`, `listState`, `pagedState`, `cursorState` |
+| Query domain-event streams | `EventStreamQueryClient<E, FIELDS>` | `list`, `listStream`, `paged`, `cursor`, `count`, `aggregate`, `aggregateStream` |
 | Rebuild state by aggregate ID | `LoadStateAggregateClient<S>` | `load`, `loadVersioned`, `loadTimeBased` |
 | Rebuild an owner-scoped aggregate | `LoadOwnerStateAggregateClient<S>` | `load`, `loadVersioned`, `loadTimeBased` |
 | Create related query clients | `QueryClientFactory<S, FIELDS, E>` | `createSnapshotQueryClient` and related factory methods |
@@ -220,6 +220,8 @@ Snapshot methods post to paths below the client's `basePath`.
 | `listStateStream<T>(query)` | `snapshot/list/state` | SSE of `T` states |
 | `paged<T>(query)` | `snapshot/paged` | `PagedList<T>`; defaults to full snapshots |
 | `pagedState<T>(query)` | `snapshot/paged/state` | `PagedList<T>`; defaults to `S` |
+| `cursor<T>(query)` | `snapshot/cursor` | `CursorPage<T>`; defaults to full snapshots |
+| `cursorState<T>(query)` | `snapshot/cursor/state` | `CursorPage<T>`; defaults to `S` |
 | `count(filter)` | `snapshot/count` | `number` |
 | `aggregate<Row>(query)` | `snapshot/aggregation` | `Row[]` |
 | `aggregateStream<Row>(query)` | `snapshot/aggregation` | SSE of `Row` |
@@ -290,39 +292,34 @@ Prefer the `filter` property. The `condition` property and standalone
 
 ### Cursor traversal
 
-`cursorQuery()` turns a list query into an exclusive, single-field cursor
-query. It adds `gt` for ascending traversal or `lt` for descending traversal
-and replaces the query sort with the cursor field.
+`cursorQuery()` creates a Wow V9 forward-only cursor request. The server
+returns an opaque `nextCursor`; pass it back unchanged and do not derive a
+cursor from result fields.
 
 ```ts
 import {
-  CURSOR_ID_START,
-  SortDirection,
+  asc,
   cursorQuery,
   filter,
-  listQuery,
 } from '@ahoo-wang/fetcher-wow';
 
-const page = await snapshots.list(
-  cursorQuery<CartFields>({
-    field: 'aggregateId',
-    cursorId: CURSOR_ID_START,
-    direction: SortDirection.DESC,
-    query: listQuery({
-      filter: filter.eq('state.status', 'ACTIVE'),
-      limit: 100,
-    }),
-  }),
-);
+let query = cursorQuery<CartFields>({
+  filter: filter.eq('state.status', 'ACTIVE'),
+  sort: [asc('aggregateId')],
+  size: 100,
+});
 
-const nextCursor = page.at(-1)?.aggregateId;
+const page = await snapshots.cursor(query);
+
+if (page.nextCursor) {
+  query = cursorQuery({ ...query, cursor: page.nextCursor });
+  const nextPage = await snapshots.cursor(query);
+}
 ```
 
-Use the last returned cursor field as the next `cursorId`. Choose a stable,
-unique field; the helper intentionally produces one cursor sort.
-`CURSOR_ID_START` (`~`) is the start sentinel for the default descending
-direction. An ascending traversal needs a domain-specific sentinel that sorts
-below every real ID.
+`size` defaults to `10`, accepts `1..2147483646`, and each request accepts at
+most 32 sort fields. `CursorPage<T>` contains `list` and nullable
+`nextCursor`; unlike `PagedList<T>`, it has no `total`.
 
 ## `FilterExpression`
 
@@ -516,6 +513,7 @@ pagination, attributes, and cancellation conventions as snapshot queries.
 | `list(query)` | `event/list` | `DomainEventStream<E>[]` |
 | `listStream(query)` | `event/list` | SSE of `DomainEventStream<E>` |
 | `paged(query)` | `event/paged` | `PagedList<DomainEventStream<E>>` |
+| `cursor(query)` | `event/cursor` | `CursorPage<DomainEventStream<E>>` |
 | `count(filter)` | `event/count` | `number` |
 | `aggregate<Row>(query)` | `event/aggregation` | `Row[]` |
 | `aggregateStream<Row>(query)` | `event/aggregation` | SSE of `Row` |
