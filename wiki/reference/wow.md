@@ -335,7 +335,7 @@ supported enums, and relative-time option shapes before a request is sent.
 | Equality/comparison | `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `between` |
 | String | `contains`, `startsWith`, `endsWith` |
 | Collection | `isIn`, `notIn`, `containsAll` |
-| Presence | `isEmpty`, `isNull`, `isNotNull`, `exists`, `notExists` |
+| Presence | `isEmpty`, `isEmptyString`, `isNotEmptyString`, `isNull`, `isNotNull`, `exists`, `notExists` |
 | Lifecycle | `deletion` with `DeletionState.ACTIVE`, `DELETED`, or `ALL` |
 | Nested arrays | `elementMatch` |
 | Search | `search` with optional fields and `SearchMode` |
@@ -380,6 +380,9 @@ Rules that commonly affect application code:
   `containsAll` require one non-empty readonly array.
 - `eq` and `ne` accept JSON scalars, `null`, or an array of JSON scalars.
 - Comparison and collection values cannot be `null` or non-finite numbers.
+- `isEmptyString` matches exactly `""`; `isNotEmptyString` requires the field
+  to exist, be non-null, and differ from `""`. Whitespace-only strings are not
+  empty.
 - `elementMatch` predicates use element-relative fields and cannot contain
   root metadata, deletion, or search filters.
 - Snapshot state fields are normally addressed through `state.*`; metadata
