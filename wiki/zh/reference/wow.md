@@ -325,7 +325,7 @@ Field。`CursorPage<T>` 包含 `list` 和可空的 `nextCursor`；与 `PagedList
 | 相等/比较 | `eq`、`ne`、`gt`、`gte`、`lt`、`lte`、`between` |
 | 字符串 | `contains`、`startsWith`、`endsWith` |
 | 集合 | `isIn`、`notIn`、`containsAll` |
-| 存在性 | `isEmpty`、`isNull`、`isNotNull`、`exists`、`notExists` |
+| 存在性 | `isEmpty`、`isEmptyString`、`isNotEmptyString`、`isNull`、`isNotNull`、`exists`、`notExists` |
 | 生命周期 | `deletion`，接收 `DeletionState.ACTIVE`、`DELETED` 或 `ALL` |
 | 嵌套数组 | `elementMatch` |
 | 搜索 | `search`，可指定 Field 和 `SearchMode` |
@@ -370,6 +370,8 @@ const cartFilter = filter.and<CartFields>([
   `containsAll` 接收一个非空 Readonly Array。
 - `eq` 和 `ne` 接收 JSON Scalar、`null` 或 JSON Scalar Array。
 - 比较和集合值不能是 `null` 或非有限数字。
+- `isEmptyString` 只匹配 `""`；`isNotEmptyString` 要求 Field 存在、非
+  `null` 且不等于 `""`。仅含空白的字符串不视为空字符串。
 - `elementMatch` Predicate 使用 Element-relative Field，不能包含根级元数据、删除或
   Search Filter。
 - Snapshot State Field 通常使用 `state.*`；`aggregateId`、`snapshotTime` 等元数据位于

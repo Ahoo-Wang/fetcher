@@ -644,7 +644,7 @@ Available builders:
 - Comparison: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `between`
 - String: `contains`, `startsWith`, `endsWith`; pass `StringComparison` as the third argument
 - Collection: `isIn`, `notIn`, `containsAll`
-- Presence: `isEmpty`, `isNull`, `isNotNull`, `exists`, `notExists`
+- Presence: `isEmpty`, `isEmptyString`, `isNotEmptyString`, `isNull`, `isNotNull`, `exists`, `notExists`
 - Scope/search: `deletion`, `elementMatch`, `search(query, options?: SearchFilterOptions)`
 - Relative time: `today`, `beforeToday`, `tomorrow`, `thisWeek`, `nextWeek`, `lastWeek`, `thisMonth`, `lastMonth`, `yesterday`, `nextMonth`, `lastYear`, `thisYear`, `nextYear`, `recentDays`, `earlierDays`
 
@@ -663,6 +663,9 @@ filter.containsAll('state.tags', ['wow', 'cqrs']);
 
 `eq` and `ne` accept a JSON scalar or an array of JSON scalars. Logical field
 segments may start with `@`.
+
+`isEmptyString` matches exactly `""`. `isNotEmptyString` requires the field to
+exist, be non-null, and differ from `""`. Whitespace-only strings are not empty.
 
 Relative-time builders accept JVM `ZoneId` and `DateTimeFormatter` options:
 
