@@ -378,7 +378,8 @@ Rules that commonly affect application code:
 
 - `and`, `or`, `nor`, `ids`, `aggregateIds`, `isIn`, `notIn`, and
   `containsAll` require one non-empty readonly array.
-- `eq` and `ne` accept JSON scalars, `null`, or an array of JSON scalars.
+- `eq` and `ne` accept a JSON scalar or `null`; use `isIn`/`notIn` for multiple
+  values.
 - Comparison and collection values cannot be `null` or non-finite numbers.
 - `isEmptyString` matches exactly `""`; `isNotEmptyString` requires the field
   to exist, be non-null, and differ from `""`. Whitespace-only strings are not

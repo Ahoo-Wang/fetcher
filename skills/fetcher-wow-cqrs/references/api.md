@@ -154,6 +154,7 @@ import {
   type PagedQuery,
   type SingleQuery,
   type FilterExpression,
+  type QueryField,
   type ElementFilterExpression,
   type MetadataFilter,
   type EqualityFilterValue,
@@ -634,8 +635,8 @@ await snapshotClient.list({ filter: expression, limit: 10 });
 const query = listQuery({ filter: expression });
 ```
 
-`listQuery({ filter })` defaults `limit` to `0` (unlimited), matching Wow
-8.11. Legacy `listQuery({ condition })` keeps the previous default page size.
+`listQuery({ filter })` defaults `limit` to `0` (unlimited), matching current
+Wow V9. Legacy `listQuery({ condition })` keeps the previous default page size.
 
 Available builders:
 
@@ -661,8 +662,8 @@ filter.notIn('state.status', ['CANCELLED']);
 filter.containsAll('state.tags', ['wow', 'cqrs']);
 ```
 
-`eq` and `ne` accept a JSON scalar or an array of JSON scalars. Logical field
-segments may start with `@`.
+`eq` and `ne` accept a JSON scalar or `null`; use `isIn`/`notIn` for multiple
+values. Query field segments may start with `@`.
 
 `isEmptyString` matches exactly `""`. `isNotEmptyString` requires the field to
 exist, be non-null, and differ from `""`. Whitespace-only strings are not empty.
