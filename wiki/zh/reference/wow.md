@@ -368,7 +368,7 @@ const cartFilter = filter.and<CartFields>([
 
 - `and`、`or`、`nor`、`ids`、`aggregateIds`、`isIn`、`notIn` 和
   `containsAll` 接收一个非空 Readonly Array。
-- `eq` 和 `ne` 接收 JSON Scalar、`null` 或 JSON Scalar Array。
+- `eq` 和 `ne` 接收 JSON Scalar 或 `null`；多值匹配请使用 `isIn`/`notIn`。
 - 比较和集合值不能是 `null` 或非有限数字。
 - `isEmptyString` 只匹配 `""`；`isNotEmptyString` 要求 Field 存在、非
   `null` 且不等于 `""`。仅含空白的字符串不视为空字符串。
