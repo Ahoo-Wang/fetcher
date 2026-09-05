@@ -113,6 +113,20 @@ export interface UseQueryStateReturn<Q> {
 export function useQueryState<Q>(
   options: UseQueryStateOptions<Q>,
 ): UseQueryStateReturn<Q> {
+  return useQueryStateInternal(options, false);
+}
+
+/** @internal Query state for hooks that cancel executions during cleanup. */
+export function useCancellableQueryState<Q>(
+  options: UseQueryStateOptions<Q>,
+): UseQueryStateReturn<Q> {
+  return useQueryStateInternal(options, true);
+}
+
+function useQueryStateInternal<Q>(
+  options: UseQueryStateOptions<Q>,
+  resetOnCleanup: boolean,
+): UseQueryStateReturn<Q> {
   const { initialQuery, query, autoExecute = true, execute } = options;
   const queryOptions = query ?? initialQuery;
   const queryRef = useRef<Q>(queryOptions);
@@ -148,6 +162,15 @@ export function useQueryState<Q>(
   // autoExecute false→true flip (case b) still issues a request even when the
   // query content is unchanged.
   const lastExecuteWrapperRef = useRef(executeWrapper);
+
+  useEffect(
+    () => () => {
+      if (resetOnCleanup) {
+        lastCommittedQueryRef.current = undefined;
+      }
+    },
+    [resetOnCleanup],
+  );
 
   useEffect(() => {
     const configChanged = lastExecuteWrapperRef.current !== executeWrapper;

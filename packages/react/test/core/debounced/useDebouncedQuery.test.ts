@@ -81,7 +81,7 @@ describe('useDebouncedQuery', () => {
     expect(result.current).toHaveProperty('abort', expect.any(Function)); // abort function from useExecutePromise
     expect(result.current).toHaveProperty('getQuery', mockGetQuery);
     expect(result.current).toHaveProperty('setQuery', expect.any(Function)); // setQuery function from useQueryState
-    expect(result.current).toHaveProperty('run', mockDebouncedReturn.run);
+    expect(result.current).toHaveProperty('run', expect.any(Function));
     expect(result.current).toHaveProperty('cancel', mockDebouncedReturn.cancel);
     expect(result.current).toHaveProperty(
       'isPending',

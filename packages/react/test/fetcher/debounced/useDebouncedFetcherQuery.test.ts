@@ -88,7 +88,7 @@ describe('useDebouncedFetcherQuery', () => {
       expect(result.current).toHaveProperty('abort', mockAbort);
       expect(result.current).toHaveProperty('getQuery', mockGetQuery);
       expect(result.current).toHaveProperty('setQuery', expect.any(Function)); // setQuery function from useQueryState
-      expect(result.current).toHaveProperty('run', mockDebouncedReturn.run);
+      expect(result.current).toHaveProperty('run', expect.any(Function));
       expect(result.current).toHaveProperty(
         'cancel',
         mockDebouncedReturn.cancel,
@@ -523,7 +523,8 @@ describe('useDebouncedFetcherQuery', () => {
       rerender();
 
       // The return object should be different due to memoization dependencies
-      expect(result.current.run).toBe(newRun);
+      act(() => result.current.run());
+      expect(newRun).toHaveBeenCalledTimes(1);
       expect(result.current.cancel).toBe(newCancel);
       expect(result.current.isPending).toBe(newIsPending);
     });
