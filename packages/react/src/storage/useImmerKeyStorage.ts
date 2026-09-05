@@ -11,10 +11,14 @@
  * limitations under the License.
  */
 
-import { useCallback } from 'react';
+import { createRef, useCallback, useLayoutEffect, useMemo } from 'react';
 import type { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { useKeyStorage } from './useKeyStorage';
 import { produce } from 'immer';
+
+function createStorageDefaults<T>(storage: KeyStorage<T>) {
+  return { storage, defaultValueRef: createRef<T | undefined>() };
+}
 
 export function useImmerKeyStorage<T>(
   keyStorage: KeyStorage<T>,
@@ -136,16 +140,27 @@ export function useImmerKeyStorage<T>(
     keyStorage,
     defaultValue as T,
   );
+  // Retained updaters keep the defaults committed for their own storage.
+  const { storage, defaultValueRef } = useMemo(
+    () => createStorageDefaults(keyStorage),
+    [keyStorage],
+  );
+  useLayoutEffect(() => {
+    defaultValueRef.current = defaultValue;
+  }, [defaultValueRef, defaultValue]);
   const updateImmer = useCallback(
     (updater: (draft: T | null) => T | null | void) => {
-      const nextValue = produce(value, updater);
+      const nextValue = produce(
+        storage.get() ?? defaultValueRef.current ?? null,
+        updater,
+      );
       if (nextValue === null) {
         remove();
         return;
       }
       return setValue(nextValue);
     },
-    [value, setValue, remove],
+    [storage, defaultValueRef, setValue, remove],
   );
 
   return [value, updateImmer, remove];

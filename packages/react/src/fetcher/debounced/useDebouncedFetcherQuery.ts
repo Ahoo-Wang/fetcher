@@ -14,7 +14,8 @@
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { DebounceCapable, UseDebouncedCallbackReturn } from '../../core';
 import { useDebouncedCallback } from '../../core';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { dequal } from 'dequal';
 import type { UseFetcherQueryOptions, UseFetcherQueryReturn } from '../index';
 import { useFetcherQuery } from '../index';
 
@@ -145,6 +146,8 @@ export function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
   options: UseDebouncedFetcherQueryOptions<Q, R, E>,
 ): UseDebouncedFetcherQueryReturn<Q, R, E> {
   const originalAutoExecute = options.autoExecute;
+  const hasQuery = 'query' in options;
+  const hasQueryToExecute = options.query !== undefined || !hasQuery;
   const debouncedExecuteOptions = {
     ...options,
     autoExecute: false,
@@ -160,24 +163,79 @@ export function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
     getQuery,
     setQuery,
   } = useFetcherQuery(debouncedExecuteOptions);
-  const { run, cancel, isPending } = useDebouncedCallback(
-    execute,
-    options.debounce,
+  const {
+    run: schedule,
+    cancel,
+    isPending,
+  } = useDebouncedCallback(execute, options.debounce);
+  const automaticallyScheduled = useRef<{ query: Q | undefined } | undefined>(
+    undefined,
   );
+  const run = useCallback(() => {
+    automaticallyScheduled.current = undefined;
+    schedule();
+  }, [schedule]);
   const setQueryFn = useCallback(
     (query: Q) => {
       setQuery(query);
       if (originalAutoExecute) {
-        run();
+        automaticallyScheduled.current = { query };
+        schedule();
       }
     },
-    [setQuery, run, originalAutoExecute],
+    [setQuery, schedule, originalAutoExecute],
+  );
+  const lastExecution = useRef({
+    autoExecute: false,
+    hasQuery,
+    query: options.query,
+  });
+  useEffect(
+    () => () => {
+      // The debounce cleanup cancels pending work, including StrictMode replay.
+      lastExecution.current.autoExecute = false;
+    },
+    [],
   );
   useEffect(() => {
-    if (originalAutoExecute) {
-      run();
+    const previous = lastExecution.current;
+    lastExecution.current = {
+      autoExecute: !!originalAutoExecute,
+      hasQuery,
+      query: options.query,
+    };
+    if (
+      (!originalAutoExecute && previous.autoExecute) ||
+      (originalAutoExecute && !hasQueryToExecute)
+    ) {
+      if (automaticallyScheduled.current) cancel();
+    } else if (
+      originalAutoExecute &&
+      hasQueryToExecute &&
+      (!previous.autoExecute ||
+        previous.hasQuery !== hasQuery ||
+        !dequal(previous.query, options.query))
+    ) {
+      if (
+        previous.autoExecute &&
+        previous.hasQuery === hasQuery &&
+        automaticallyScheduled.current &&
+        dequal(automaticallyScheduled.current.query, options.query)
+      ) {
+        return;
+      }
+      automaticallyScheduled.current = { query: getQuery() };
+      schedule();
     }
-  }, [run, originalAutoExecute]);
+  }, [
+    schedule,
+    cancel,
+    originalAutoExecute,
+    hasQuery,
+    hasQueryToExecute,
+    options.query,
+    getQuery,
+  ]);
   return useMemo(
     () => ({
       loading,

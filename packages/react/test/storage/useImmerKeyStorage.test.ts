@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { useLayoutEffect } from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useImmerKeyStorage } from '../../src';
 import { KeyStorage, InMemoryStorage } from '@ahoo-wang/fetcher-storage';
@@ -373,4 +374,118 @@ describe('useImmerKeyStorage', () => {
       newKeyStorage.destroy();
     });
   });
+});
+
+it('applies consecutive Immer updaters to the latest stored value', async () => {
+  const storage = new KeyStorage<{ count: number }>({
+    key: 'counter',
+    storage: new InMemoryStorage(),
+  });
+  const { result } = renderHook(() =>
+    useImmerKeyStorage(storage, { count: 0 }),
+  );
+  await act(async () => {
+    result.current[1](draft => {
+      draft.count++;
+    });
+    result.current[1](draft => {
+      draft.count++;
+    });
+  });
+  expect(storage.get()).toEqual({ count: 2 });
+  storage.destroy();
+});
+
+it('keeps the Immer updater stable with inline defaults and reads the latest default', async () => {
+  const storage = new KeyStorage<{ count: number }>({
+    key: 'inline-default',
+    storage: new InMemoryStorage(),
+  });
+  try {
+    const { result, rerender } = renderHook(
+      ({ count }) => useImmerKeyStorage(storage, { count }),
+      { initialProps: { count: 0 } },
+    );
+    const update = result.current[1];
+    rerender({ count: 0 });
+    expect(result.current[1]).toBe(update);
+
+    rerender({ count: 10 });
+    await act(async () => {
+      update(draft => {
+        draft.count++;
+      });
+    });
+    expect(storage.get()).toEqual({ count: 11 });
+    expect(result.current[0]).toEqual({ count: 11 });
+  } finally {
+    storage.destroy();
+  }
+});
+
+it('keeps a retained updater paired with its storage and latest default before switching', async () => {
+  const backing = new InMemoryStorage();
+  const first = new KeyStorage<{ owner: string; count: number }>({
+    key: 'first',
+    storage: backing,
+  });
+  const second = new KeyStorage<{ owner: string; count: number }>({
+    key: 'second',
+    storage: backing,
+  });
+  try {
+    const { result, rerender } = renderHook(
+      ({ storage, owner, count }) =>
+        useImmerKeyStorage(storage, { owner, count }),
+      { initialProps: { storage: first, owner: 'A', count: 0 } },
+    );
+    const updateFirst = result.current[1];
+    rerender({ storage: first, owner: 'A', count: 10 });
+    expect(result.current[1]).toBe(updateFirst);
+    rerender({ storage: second, owner: 'B', count: 100 });
+    const updateSecond = result.current[1];
+    expect(updateSecond).not.toBe(updateFirst);
+    rerender({ storage: second, owner: 'B', count: 200 });
+    expect(result.current[1]).toBe(updateSecond);
+
+    await act(async () => {
+      updateFirst(draft => {
+        draft.count++;
+      });
+    });
+    expect(first.get()).toEqual({ owner: 'A', count: 11 });
+    expect(second.get()).toBeNull();
+    expect(result.current[0]).toEqual({ owner: 'B', count: 200 });
+    await act(async () => {
+      updateSecond(draft => {
+        draft.count++;
+      });
+    });
+    expect(second.get()).toEqual({ owner: 'B', count: 201 });
+  } finally {
+    first.destroy();
+    second.destroy();
+  }
+});
+
+it('makes the current default available to updates in a consumer layout effect', () => {
+  const storage = new KeyStorage<{ count: number }>({
+    key: 'layout-default',
+    storage: new InMemoryStorage(),
+  });
+  try {
+    const { result } = renderHook(() => {
+      const [value, update] = useImmerKeyStorage(storage, { count: 10 });
+      useLayoutEffect(() => {
+        update(draft => {
+          draft.count++;
+        });
+      }, [update]);
+      return value;
+    });
+    expect(storage.get()).toEqual({ count: 11 });
+    expect(result.current).toEqual({ count: 11 });
+  } finally {
+    storage.destroy();
+  }
 });

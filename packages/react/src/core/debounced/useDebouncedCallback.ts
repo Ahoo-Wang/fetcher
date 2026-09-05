@@ -177,6 +177,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   useEffect(() => {
     return () => {
       cancel();
+      lastInvokeTimeRef.current = null;
     };
   }, [cancel]);
 
