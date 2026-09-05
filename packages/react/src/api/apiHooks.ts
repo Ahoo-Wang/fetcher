@@ -51,7 +51,7 @@ export function collectMethods<T extends (...args: any[]) => Promise<any>>(
     Object.getOwnPropertyNames(target).forEach(key => {
       if (!processedKeys.has(key) && key !== 'constructor') {
         processedKeys.add(key);
-        const value = target[key];
+        const value = Object.getOwnPropertyDescriptor(target, key)?.value;
         if (typeof value === 'function') {
           // Bind method to the original object to preserve 'this' context
           methods.set(key, value.bind(obj) as T);
@@ -161,7 +161,7 @@ export type ApiHooksMapping<
   MethodType extends (...args: any[]) => Promise<any>,
   HookType,
 > = {
-  [K in keyof API as API[K] extends MethodType
-    ? HookName<string & K>
-    : never]: API[K] extends MethodType ? HookType : never;
+  [
+    K in keyof API as API[K] extends MethodType ? HookName<string & K> : never
+  ]: API[K] extends MethodType ? HookType : never;
 };

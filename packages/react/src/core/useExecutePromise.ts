@@ -243,13 +243,16 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
    */
   const execute = useCallback(
     async (input: PromiseSupplier<R>): Promise<void> => {
+      const currentRequestId = requestId.generate();
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         await handleOnAbort();
+        if (!requestId.isLatest(currentRequestId)) {
+          return;
+        }
       }
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
-      const currentRequestId = requestId.generate();
       setLoading();
       try {
         const data = await input(abortController);
@@ -305,6 +308,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
    * Safe to call even when no operation is currently running.
    */
   const abort = useCallback(async () => {
+    requestId.invalidate();
     reset();
     if (!abortControllerRef.current) {
       return;
@@ -312,7 +316,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
     abortControllerRef.current.abort();
     abortControllerRef.current = undefined;
     await handleOnAbort();
-  }, [reset, handleOnAbort]);
+  }, [reset, handleOnAbort, requestId]);
 
   useEffect(() => {
     return () => {

@@ -25,6 +25,13 @@ export interface StorageEvent<Deserialized> {
   oldValue?: Deserialized | null;
 }
 
+// Kept on the wire so receivers never need to serialize a cloned class instance.
+const SERIALIZED_STORAGE_EVENT = '__fetcher_storage_snapshot__';
+
+type SerializedStorageEvent<T> = StorageEvent<T> & {
+  [SERIALIZED_STORAGE_EVENT]?: StorageEvent<string>;
+};
+
 /**
  * A function that removes a storage listener when called.
  */
@@ -86,11 +93,15 @@ export class KeyStorage<
   public readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
   private readonly defaultValue: Deserialized | null = null;
   private cacheValue: Deserialized | null = null;
+  private readonly resolvedEvents = new WeakMap<
+    StorageEvent<Deserialized>,
+    StorageEvent<Deserialized>
+  >();
   private readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> =
     {
       name: nameGenerator.generate('KeyStorage'),
       handle: (event: StorageEvent<Deserialized>) => {
-        this.cacheValue = event.newValue ?? null;
+        this.cacheValue = this.resolveEvent(event).newValue ?? null;
       },
     };
 
@@ -137,7 +148,12 @@ export class KeyStorage<
   addListener(
     listener: EventHandler<StorageEvent<Deserialized>>,
   ): RemoveStorageListener {
-    this.eventBus.on(listener);
+    this.eventBus.on({
+      name: listener.name,
+      order: listener.order,
+      once: listener.once,
+      handle: event => listener.handle(this.resolveEvent(event)),
+    });
     return () => this.eventBus.off(listener.name);
   }
 
@@ -185,12 +201,10 @@ export class KeyStorage<
   set(value: Deserialized): void {
     const oldValue = this.get();
     const serialized = this.serializer.serialize(value);
+    const event = this.snapshotEvent({ newValue: value, oldValue }, serialized);
     this.storage.setItem(this.key, serialized);
     this.cacheValue = value;
-    this.eventBus.emit({
-      newValue: value,
-      oldValue: oldValue,
-    });
+    this.eventBus.emit(event);
   }
 
   /**
@@ -207,12 +221,54 @@ export class KeyStorage<
    */
   remove(): void {
     const oldValue = this.get();
+    const event = this.snapshotEvent({ newValue: null, oldValue }, null);
     this.storage.removeItem(this.key);
     this.cacheValue = null;
-    this.eventBus.emit({
-      oldValue: oldValue,
-      newValue: null,
-    });
+    this.eventBus.emit(event);
+  }
+
+  private snapshotEvent(
+    event: StorageEvent<Deserialized>,
+    serializedNewValue: string | null,
+  ): StorageEvent<Deserialized> {
+    const wireEvent: SerializedStorageEvent<Deserialized> = {
+      ...event,
+      [SERIALIZED_STORAGE_EVENT]: {
+        newValue: serializedNewValue,
+        oldValue:
+          event.oldValue === undefined
+            ? undefined
+            : event.oldValue === null
+              ? null
+              : this.serializer.serialize(event.oldValue),
+      },
+    };
+    // Local listeners and get() retain the caller's original object identity.
+    this.resolvedEvents.set(wireEvent, event);
+    return wireEvent;
+  }
+
+  private resolveEvent(
+    event: StorageEvent<Deserialized>,
+  ): StorageEvent<Deserialized> {
+    const cached = this.resolvedEvents.get(event);
+    if (cached) return cached;
+    const snapshot = (event as SerializedStorageEvent<Deserialized>)[
+      SERIALIZED_STORAGE_EVENT
+    ];
+    if (!snapshot) return event;
+    const resolved: StorageEvent<Deserialized> = {
+      newValue:
+        snapshot.newValue == null
+          ? snapshot.newValue
+          : this.serializer.deserialize(snapshot.newValue),
+      oldValue:
+        snapshot.oldValue == null
+          ? snapshot.oldValue
+          : this.serializer.deserialize(snapshot.oldValue),
+    };
+    this.resolvedEvents.set(event, resolved);
+    return resolved;
   }
 
   /**

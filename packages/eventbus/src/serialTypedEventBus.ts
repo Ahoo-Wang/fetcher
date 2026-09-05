@@ -44,24 +44,16 @@ export class SerialTypedEventBus<EVENT> extends AbstractTypedEventBus<EVENT> {
   /**
    * Emits an event to all registered handlers serially
    *
-   * Handlers are executed in order of their priority. Once-only handlers are removed after execution.
+   * Handlers are executed in order of their priority. Once-only handlers are claimed before dispatch.
    * Errors in individual handlers are logged but do not stop other handlers.
    *
    * @param event - The event to emit
    */
   async emit(event: EVENT): Promise<void> {
-    const onceHandlers: EventHandler<EVENT>[] = [];
-    for (const handler of this.eventHandlers) {
+    const handlers = this.eventHandlers;
+    this.eventHandlers = handlers.filter(handler => !handler.once);
+    for (const handler of handlers) {
       await this.handleEvent(handler, event);
-      if (handler.once) {
-        onceHandlers.push(handler);
-      }
-    }
-    if (onceHandlers.length > 0) {
-      const onceHandlerNames = new Set(onceHandlers.map(h => h.name));
-      this.eventHandlers = toSorted(
-        this.eventHandlers.filter(item => !onceHandlerNames.has(item.name)),
-      );
     }
   }
 

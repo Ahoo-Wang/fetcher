@@ -14,6 +14,7 @@
 import type { FetchExchange } from '@ahoo-wang/fetcher';
 import {
   DEFAULT_INTERCEPTOR_ORDER_STEP,
+  setHeader,
   type RequestInterceptor,
 } from '@ahoo-wang/fetcher';
 import type { AppIdCapable, DeviceIdStorageCapable } from './types';
@@ -372,11 +373,11 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     const requestHeaders = exchange.ensureRequestHeaders();
 
     // Add CoSec headers to the request
-    requestHeaders[CoSecHeaders.APP_ID] = this.appId;
-    requestHeaders[CoSecHeaders.DEVICE_ID] = deviceId;
-    requestHeaders[CoSecHeaders.REQUEST_ID] = requestId;
+    setHeader(requestHeaders, CoSecHeaders.APP_ID, this.appId);
+    setHeader(requestHeaders, CoSecHeaders.DEVICE_ID, deviceId);
+    setHeader(requestHeaders, CoSecHeaders.REQUEST_ID, requestId);
     if (spaceId) {
-      requestHeaders[CoSecHeaders.SPACE_ID] = spaceId;
+      setHeader(requestHeaders, CoSecHeaders.SPACE_ID, spaceId);
     }
   }
 }

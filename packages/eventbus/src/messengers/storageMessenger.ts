@@ -65,7 +65,7 @@ export class StorageMessenger implements CrossTabMessenger {
     }
     this.channelName = options.channelName;
     this.storage = options.storage ?? localStorage;
-    this.messageKeyPrefix = `_storage_msg_${this.channelName}`;
+    this.messageKeyPrefix = `_storage_msg_${encodeURIComponent(this.channelName)}:`;
     this.ttl = options.ttl ?? DEFAULT_TTL;
     this.cleanupInterval = options.cleanupInterval ?? DEFAULT_CLEANUP_INTERVAL;
     this.cleanupTimer = window.setInterval(

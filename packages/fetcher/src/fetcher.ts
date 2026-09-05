@@ -29,6 +29,7 @@ import type { UrlTemplateStyle } from './urlTemplateResolver';
 import type { ResultExtractorCapable } from './resultExtractor';
 import { ResultExtractors } from './resultExtractor';
 import { mergeRequestOptions } from './mergeRequest';
+import { mergeHeaders } from './requestHeaders';
 import type { ValidateStatus } from './validateStatusInterceptor';
 
 /**
@@ -171,10 +172,7 @@ export class Fetcher
    */
   resolveExchange(request: FetchRequest, options?: RequestOptions) {
     // Merge default headers and request-level headers. defensive copy
-    const mergedHeaders = {
-      ...this.headers,
-      ...request.headers,
-    };
+    const mergedHeaders = mergeHeaders(this.headers, request.headers);
     // Merge request options
     const fetchRequest: FetchRequest = {
       ...request,

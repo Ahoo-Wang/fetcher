@@ -68,10 +68,14 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
     this.refreshInProgress = this.tokenRefresher
       .refresh(jwtToken.token)
       .then(newToken => {
-        this.tokenStorage.setCompositeToken(newToken);
+        if (this.currentToken === jwtToken) {
+          this.tokenStorage.setCompositeToken(newToken);
+        }
       })
       .catch(error => {
-        this.tokenStorage.remove();
+        if (this.currentToken === jwtToken) {
+          this.tokenStorage.remove();
+        }
         throw new RefreshTokenError(jwtToken, error);
       })
       .finally(() => {

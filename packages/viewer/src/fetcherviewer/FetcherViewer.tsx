@@ -78,7 +78,18 @@ const localDefaultViewIdStorage = new KeyStorage<string | undefined>({
   defaultValue: undefined,
 });
 
-export function FetcherViewer<RecordType = any>({
+export function FetcherViewer<RecordType = any>(
+  props: FetcherViewerProps<RecordType>,
+) {
+  return (
+    <FetcherViewerContent<RecordType>
+      key={props.viewerDefinitionId}
+      {...props}
+    />
+  );
+}
+
+function FetcherViewerContent<RecordType>({
   ownerId = '(0)',
   tenantId = '(0)',
   ...props
@@ -103,21 +114,35 @@ export function FetcherViewer<RecordType = any>({
   >(localDefaultViewIdStorage);
 
   const {
-    viewerDefinition,
+    viewerDefinition: loadedDefinition,
     loading: definitionLoading,
     error: definitionError,
   } = useViewerDefinition(viewerDefinitionId);
 
   const {
-    views,
+    views: loadedViews,
     loading: viewsLoading,
     execute: loadViews,
   } = useViewerViews(viewerDefinitionId, tenantId, ownerId);
+
+  const viewerDefinition =
+    loadedDefinition?.id === viewerDefinitionId ? loadedDefinition : undefined;
+  const views = useMemo(
+    () => loadedViews?.filter(view => view.definitionId === viewerDefinitionId),
+    [loadedViews, viewerDefinitionId],
+  );
 
   const defaultView = useMemo(
     () => getDefaultView(views, localDefaultViewId, defaultViewId),
     [views, defaultViewId, localDefaultViewId],
   );
+  const [selectedView, setSelectedView] = useState<ViewState | undefined>(
+    defaultView,
+  );
+  if (!selectedView && defaultView) {
+    setSelectedView(defaultView);
+  }
+  const activeView = selectedView ?? defaultView;
 
   const {
     dataSource,
@@ -127,7 +152,7 @@ export function FetcherViewer<RecordType = any>({
     getPageQuery,
   } = useFetchData<RecordType>({
     viewerDefinition,
-    defaultView,
+    defaultView: activeView,
   });
 
   const [enhancedDataSource, setEnhancedDataSource] = useState<
@@ -138,16 +163,22 @@ export function FetcherViewer<RecordType = any>({
   });
 
   useEffect(() => {
+    let current = true;
     const asyncFn = async () => {
       const result =
         (await enhanceDataSource?.(dataSource?.list || [])) || dataSource?.list;
 
-      setEnhancedDataSource({
-        list: result || [],
-        total: dataSource?.total || 0,
-      });
+      if (current) {
+        setEnhancedDataSource({
+          list: result || [],
+          total: dataSource?.total || 0,
+        });
+      }
     };
     asyncFn();
+    return () => {
+      current = false;
+    };
   }, [dataSource, enhanceDataSource, setEnhancedDataSource]);
 
   const viewerRef = useRef<ViewerRef | null>(null);
@@ -166,6 +197,7 @@ export function FetcherViewer<RecordType = any>({
 
   const handleSwitchView = useCallback(
     (view: ViewState) => {
+      setSelectedView(view);
       onSwitchView?.(view);
       setLocalDefaultViewId(view.id);
     },
@@ -314,12 +346,12 @@ export function FetcherViewer<RecordType = any>({
     return <div style={{ padding: 24 }}>未找到视图</div>;
   }
 
-  if (views && views.length > 0 && defaultView) {
+  if (views && views.length > 0 && activeView) {
     return (
       <Viewer<RecordType>
         ref={viewerRef}
         defaultViews={views}
-        defaultView={defaultView}
+        defaultView={activeView}
         definition={viewerDefinition}
         loading={fetchLoading}
         dataSource={enhancedDataSource}

@@ -49,7 +49,13 @@ export class NotificationCenter {
   }
 
   publish(type: ChannelType, message: Message): Promise<void> {
-    return this.eventBus.emit({ type, message });
+    const localMessage = { ...message };
+    // Local handlers can invoke the callback; structured clone and JSON omit it.
+    Object.defineProperty(localMessage, 'onClick', {
+      value: message.onClick,
+      enumerable: false,
+    });
+    return this.eventBus.emit({ type, message: localMessage });
   }
 
   off() {

@@ -56,6 +56,9 @@ npx fetcher-generator generate -i ./openapi.yaml -o ./src/generated -t ./tsconfi
 
 ## Programmatic API (CodeGenerator)
 
+The published package supports both ESM imports and CommonJS
+`const { CodeGenerator } = require('@ahoo-wang/fetcher-generator')`.
+
 `logger` is a required option (`Logger` interface: `info`/`success`/`error`/`progress`/`progressWithCount`). The package does not export a logger implementation — provide your own:
 
 ```typescript
@@ -95,6 +98,20 @@ parseOpenAPI(inputPath) → AggregateResolver(openAPI).resolve()
 4. **ClientGenerator** - Generates QueryClient, CommandClient, StreamCommandClient, ApiClient per aggregate
 5. **Index Generator** - Creates `index.ts` barrel exports at every directory level
 6. **Post-processing** - `formatText()`, `organizeImports()`, `fixMissingImports()` on all files
+
+Generated object properties follow each schema's `required` list, including nested
+objects and `allOf` siblings. Required keys absent from `properties` follow
+`additionalProperties`; forbidden required keys have type `never`. OpenAPI 3.0 `nullable: true` permits `null` only
+when enum and composition constraints also allow it. All `allOf` schemas generate TypeScript intersection aliases so required, optional,
+and conflicting property types retain every member constraint. Plain object
+schemas continue generating interfaces. String enums remain TypeScript enums (including empty-string members); numeric and mixed enums use literal unions
+that preserve the JSON value types. Component aliases are resolved locally;
+cyclic component aliases fail generation.
+
+Path-level parameters are inherited by operations; an operation overrides a
+parameter with the same name and location. JSON string responses are decoded as
+JSON. Re-running generation with the output included in the supplied tsconfig
+rebuilds the generated declarations instead of appending duplicates.
 
 ## Generated Output Structure
 

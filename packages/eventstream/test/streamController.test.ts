@@ -12,6 +12,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { runInNewContext } from 'node:vm';
 import { safeTerminate, safeEnqueue, safeError } from '../src';
 
 describe('safeTerminate', () => {
@@ -38,11 +39,8 @@ describe('safeTerminate', () => {
     expect(() => safeTerminate(controller as any)).toThrow(RangeError);
   });
 
-  it('should return false for cross-realm TypeError (instanceof fails, toString matches)', () => {
-    // Construct an object that instanceof TypeError returns false for,
-    // but Object.prototype.toString returns '[object TypeError]'
-    // This simulates a TypeError from another realm
-    const crossRealmLike = { [Symbol.toStringTag]: 'TypeError', message: 'stream closed' };
+  it('should return false for real cross-realm TypeError', () => {
+    const crossRealmLike = runInNewContext('new TypeError("stream closed")');
     const controller = {
       terminate: vi.fn(() => {
         throw crossRealmLike;
@@ -93,8 +91,8 @@ describe('safeEnqueue', () => {
     expect(() => safeEnqueue(controller as any, 'chunk')).toThrow(RangeError);
   });
 
-  it('should return false for cross-realm TypeError (instanceof fails, toString matches)', () => {
-    const crossRealmLike = { [Symbol.toStringTag]: 'TypeError', message: 'stream closed' };
+  it('should return false for real cross-realm TypeError', () => {
+    const crossRealmLike = runInNewContext('new TypeError("stream closed")');
     const controller = {
       enqueue: vi.fn(() => {
         throw crossRealmLike;
@@ -148,8 +146,8 @@ describe('safeError', () => {
     );
   });
 
-  it('should return false for cross-realm TypeError (instanceof fails, toString matches)', () => {
-    const crossRealmLike = { [Symbol.toStringTag]: 'TypeError', message: 'stream closed' };
+  it('should return false for real cross-realm TypeError', () => {
+    const crossRealmLike = runInNewContext('new TypeError("stream closed")');
     const controller = {
       error: vi.fn(() => {
         throw crossRealmLike;
@@ -173,4 +171,46 @@ describe('safeError', () => {
     }
     expect(caught).toBe(fakeError);
   });
+});
+
+it.each([
+  { name: 'TypeError', [Symbol.toStringTag]: 'TypeError' },
+  { name: 'TypeError', [Symbol.toStringTag]: 'Error' },
+  Object.create(TypeError.prototype),
+  Object.assign(new Error('other'), { name: 'TypeError' }),
+  runInNewContext('new RangeError("other")'),
+  runInNewContext(
+    'class Other extends Error {}; Other.prototype.name = "TypeError"; new Other("other")',
+  ),
+])('does not swallow a forged or unrelated TypeError-like value: %j', value => {
+  let caught: unknown;
+  try {
+    safeEnqueue(
+      {
+        enqueue() {
+          throw value;
+        },
+      } as any,
+      1,
+    );
+  } catch (error) {
+    caught = error;
+  }
+  expect(caught).toBe(value);
+});
+
+it('recognizes a real cross-realm TypeError subclass', () => {
+  const error = runInNewContext(
+    'class Closed extends TypeError {}; new Closed("closed")',
+  );
+  expect(
+    safeEnqueue(
+      {
+        enqueue() {
+          throw error;
+        },
+      } as any,
+      1,
+    ),
+  ).toBe(false);
 });

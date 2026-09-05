@@ -59,15 +59,43 @@ export function operationEndpointComparator(
   return 0;
 }
 
+function mergeParameters(
+  inherited: (Parameter | Reference)[],
+  own: (Parameter | Reference)[],
+  components?: Components,
+): (Parameter | Reference)[] {
+  const parameters = new Map<string, Parameter | Reference>();
+  for (const parameter of [...inherited, ...own]) {
+    const resolved = isReference(parameter)
+      ? components && extractParameter(parameter, components)
+      : parameter;
+    const key = resolved
+      ? `${resolved.in}:${resolved.name}`
+      : (parameter as Reference).$ref;
+    parameters.set(key, parameter);
+  }
+  return [...parameters.values()];
+}
+
 export function extractOperationEndpoints(
   paths: Paths,
+  components?: Components,
 ): Array<OperationEndpoint> {
   const operationEndpoints: OperationEndpoint[] = [];
   for (const [path, pathItem] of Object.entries(paths)) {
     extractOperations(pathItem).forEach(methodOperation => {
       operationEndpoints.push({
         method: methodOperation.method,
-        operation: methodOperation.operation,
+        operation: pathItem.parameters?.length
+          ? {
+              ...methodOperation.operation,
+              parameters: mergeParameters(
+                pathItem.parameters,
+                methodOperation.operation.parameters ?? [],
+                components,
+              ),
+            }
+          : methodOperation.operation,
         path,
       });
     });

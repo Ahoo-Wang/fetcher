@@ -24,7 +24,7 @@ import { LoadOwnerStateAggregateClient } from './state';
 /**
  * Configuration options for query clients.
  *
- * This interface extends ApiMetadata (without basePath), AliasBoundedContext, and AggregateNameCapable
+ * This interface extends ApiMetadata (with optional basePath), AliasBoundedContext, and AggregateNameCapable
  * to provide a complete configuration for query clients. It includes optional context alias and
  * resource attribution path specifications.
  */
@@ -56,7 +56,7 @@ export function createQueryApiMetadata(
   if (options.contextAlias) {
     basePath = combineURLs(options.contextAlias, basePath);
   }
-  return { ...options, basePath };
+  return { ...options, basePath: options.basePath ?? basePath };
 }
 
 export class QueryClientFactory<

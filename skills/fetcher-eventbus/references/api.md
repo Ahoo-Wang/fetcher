@@ -55,7 +55,8 @@ interface EventHandler<EVENT> extends NamedCapable, OrderedCapable {
 
 #### Once Handlers
 
-Handlers with `once: true` automatically unregister after their first execution:
+Handlers with `once: true` are claimed before dispatch, so overlapping or
+recursive emissions cannot deliver them twice:
 
 ```typescript
 bus.on({

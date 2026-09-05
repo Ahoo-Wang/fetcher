@@ -242,7 +242,7 @@ describe('AuthorizationResponseInterceptor', () => {
 
     expect(mockTokenStorage.get).toHaveBeenCalled();
     expect(mockTokenRefresher.refresh).not.toHaveBeenCalled();
-    expect(mockTokenStorage.remove).toHaveBeenCalled();
+    expect(mockTokenStorage.remove).not.toHaveBeenCalled();
     expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
   });
 

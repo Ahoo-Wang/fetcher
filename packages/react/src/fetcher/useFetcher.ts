@@ -25,7 +25,7 @@ import type {
 } from '../core';
 import { useExecutePromise } from '../core';
 import { useCallback, useState, useMemo } from 'react';
-import { useLatest } from '../core';
+import { useLatest, useMounted, useRequestId } from '../core';
 
 /**
  * Configuration options for the useFetcher hook.
@@ -176,6 +176,8 @@ export function useFetcher<R, E = FetcherError>(
     undefined,
   );
   const latestOptions = useLatest(options);
+  const requestId = useRequestId();
+  const isMounted = useMounted();
   const currentFetcher = getFetcher(fetcher);
   /**
    * Execute the fetch operation with automatic abort support.
@@ -184,6 +186,7 @@ export function useFetcher<R, E = FetcherError>(
    */
   const execute = useCallback(
     async (request: FetchRequest) => {
+      const currentRequestId = requestId.generate();
       try {
         await promiseExecutor(async abortController => {
           request.abortController = abortController;
@@ -191,15 +194,19 @@ export function useFetcher<R, E = FetcherError>(
             request,
             latestOptions.current,
           );
-          setExchange(exchange);
+          if (isMounted() && requestId.isLatest(currentRequestId)) {
+            setExchange(exchange);
+          }
           return await exchange.extractResult<R>();
         });
       } catch (error) {
-        setExchange(undefined);
+        if (isMounted() && requestId.isLatest(currentRequestId)) {
+          setExchange(undefined);
+        }
         throw error;
       }
     },
-    [promiseExecutor, currentFetcher, latestOptions],
+    [promiseExecutor, currentFetcher, latestOptions, requestId, isMounted],
   );
 
   const resetFn = useCallback(() => {
@@ -207,9 +214,10 @@ export function useFetcher<R, E = FetcherError>(
     setExchange(undefined);
   }, [reset]);
   const abortFn = useCallback(() => {
+    requestId.invalidate();
     abort();
     setExchange(undefined);
-  }, [abort]);
+  }, [abort, requestId]);
   return useMemo(
     () => ({
       loading,

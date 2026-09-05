@@ -16,7 +16,6 @@ import { resolveReferenceModelInfo } from './modelInfo';
 import type { InterfaceDeclaration, JSDocableNode, SourceFile } from 'ts-morph';
 import type { Components, Reference, Schema } from '@ahoo-wang/fetcher-openapi';
 import type {
-  AllOfSchema,
   ArraySchema,
   CompositionSchema,
   EnumSchema,
@@ -65,17 +64,23 @@ export class TypeGenerator implements Generator {
 
   private process(): JSDocableNode | undefined {
     const { schema } = this.keySchema;
-    if (isEnum(schema)) {
-      return this.processEnum(schema);
+    if (isEnum(schema) && !isComposition(schema)) {
+      return schema.enum.every(value => typeof value === 'string')
+        ? this.processEnum(schema)
+        : this.processTypeAlias(schema);
+    }
+    if (
+      (schema.nullable && schema.type) ||
+      (isComposition(schema) &&
+        (schema.type || schema.properties || schema.required))
+    ) {
+      return this.processTypeAlias(schema);
     }
     if (isObject(schema)) {
       return this.processInterface(schema);
     }
     if (isArray(schema)) {
       return this.processArray(schema);
-    }
-    if (isAllOf(schema)) {
-      return this.processIntersection(schema);
     }
     if (isComposition(schema)) {
       return this.processComposition(schema);
@@ -106,15 +111,38 @@ export class TypeGenerator implements Generator {
       return '[key: string]: any';
     }
 
-    const valueType = this.resolveType(schema.additionalProperties);
-    return `[key: string]: ${valueType}`;
+    return `[key: string]: ${this.resolveAdditionalPropertyType(schema)}`;
+  }
+
+  private resolveAdditionalPropertyType(schema: Schema): string {
+    const valueType = this.resolveType(
+      typeof schema.additionalProperties === 'object'
+        ? schema.additionalProperties
+        : {},
+    );
+    const hasOptionalProperty = Object.keys(schema.properties ?? {}).some(
+      name => !schema.required?.includes(name),
+    );
+    return hasOptionalProperty && valueType !== 'any'
+      ? `${valueType} | undefined`
+      : valueType;
+  }
+
+  private resolveRequiredAdditionalPropertyType(schema: Schema): string {
+    if (schema.additionalProperties === false) return 'never';
+    if (typeof schema.additionalProperties === 'object') {
+      return this.resolveType(schema.additionalProperties);
+    }
+    return '{} | null';
   }
 
   private resolvePropertyDefinitions(schema: ObjectSchema): string[] {
     const { properties } = schema;
     return Object.entries(properties).map(([propName, propSchema]) => {
       const type = this.resolveType(propSchema);
-      const resolvedPropName = resolvePropertyName(propName);
+      const resolvedPropName =
+        resolvePropertyName(propName) +
+        (schema.required?.includes(propName) ? '' : '?');
       if (!isReference(propSchema)) {
         const jsDocDescriptions = schemaJSDoc(propSchema);
         const doc = jsDoc(jsDocDescriptions, '\n * ');
@@ -138,6 +166,13 @@ export class TypeGenerator implements Generator {
       parts.push(...propertyDefs);
     }
 
+    for (const name of schema.required ?? []) {
+      if (!schema.properties || !(name in schema.properties)) {
+        parts.push(
+          `${resolvePropertyName(name)}: ${this.resolveRequiredAdditionalPropertyType(schema)}`,
+        );
+      }
+    }
     const additionalProps = this.resolveAdditionalProperties(schema);
     if (additionalProps) {
       parts.push(additionalProps);
@@ -179,21 +214,45 @@ export class TypeGenerator implements Generator {
     if (isReference(schema)) {
       return this.resolveReference(schema).name;
     }
-    if (isMap(schema)) {
+    if (isComposition(schema)) {
+      const schemas = schema.oneOf || schema.anyOf || schema.allOf || [];
+      const types = schemas.map(s => {
+        const type = this.resolveType(s);
+        return type === 'any'
+          ? 'unknown'
+          : /[|&]/.test(type)
+            ? `(${type})`
+            : type;
+      });
+      const separator = isAllOf(schema) ? ' & ' : ' | ';
+      const composed = `(${types.join(separator)})`;
+      const base = {
+        ...schema,
+        oneOf: undefined,
+        anyOf: undefined,
+        allOf: undefined,
+      };
+      return base.type || base.properties || base.required?.length || base.enum
+        ? `(${composed} & (${this.resolveType(base)}))`
+        : composed;
+    }
+    if (schema.nullable && schema.type && !isEnum(schema)) {
+      return `(${this.resolveType({ ...schema, nullable: false })}) | null`;
+    }
+    if (isMap(schema) && !schema.required?.length) {
       return this.resolveMapType(schema);
     }
     if (schema.const) {
       return `'${schema.const}'`;
     }
     if (isEnum(schema)) {
-      return schema.enum.map(val => `\`${val}\``).join(' | ');
-    }
-
-    if (isComposition(schema)) {
-      const schemas = schema.oneOf || schema.anyOf || schema.allOf || [];
-      const types = schemas.map(s => this.resolveType(s));
-      const separator = isAllOf(schema) ? ' & ' : ' | ';
-      return `(${types.join(separator)})`;
+      return schema.enum
+        .map(value =>
+          typeof value === 'string'
+            ? `\`${value.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')}\``
+            : JSON.stringify(value),
+        )
+        .join(' | ');
     }
 
     if (isArray(schema)) {
@@ -204,6 +263,10 @@ export class TypeGenerator implements Generator {
       return this.resolveObjectType(schema);
     }
     if (!schema.type) {
+      if (schema.required?.length) {
+        // required constrains objects; by itself it does not reject null or other JSON types.
+        return `(${this.resolveObjectType({ ...schema, type: 'object' })} | null | string | number | boolean | unknown[])`;
+      }
       return 'any';
     }
     return resolvePrimitiveType(schema.type);
@@ -227,7 +290,7 @@ export class TypeGenerator implements Generator {
       name: this.modelInfo.name,
       isExported: true,
       members: schema.enum
-        .filter(value => typeof value === 'string' && value.length > 0)
+        .filter(value => typeof value === 'string')
         .map(value => ({
           name: resolveEnumMemberName(value),
           initializer: `\`${value}\``,
@@ -239,17 +302,20 @@ export class TypeGenerator implements Generator {
     interfaceDeclaration: InterfaceDeclaration,
     propName: string,
     propSchema: Schema | Reference,
+    required: boolean = true,
   ): void {
     const propType = this.resolveType(propSchema);
     const resolvedPropName = resolvePropertyName(propName);
     let propertySignature = interfaceDeclaration.getProperty(resolvedPropName);
     if (propertySignature) {
       propertySignature.setType(propType);
+      if (required) propertySignature.setHasQuestionToken(false);
     } else {
       propertySignature = interfaceDeclaration.addProperty({
         name: resolvedPropName,
         type: propType,
         isReadonly: isReadOnly(propSchema),
+        hasQuestionToken: !required,
       });
     }
     addSchemaJSDoc(propertySignature, propSchema);
@@ -264,18 +330,28 @@ export class TypeGenerator implements Generator {
     const properties = schema.properties || {};
 
     Object.entries(properties).forEach(([propName, propSchema]) => {
-      this.addPropertyToInterface(interfaceDeclaration, propName, propSchema);
+      this.addPropertyToInterface(
+        interfaceDeclaration,
+        propName,
+        propSchema,
+        schema.required?.includes(propName) ?? false,
+      );
     });
+
+    for (const name of schema.required ?? []) {
+      if (!(name in properties)) {
+        interfaceDeclaration.addProperty({
+          name: resolvePropertyName(name),
+          type: this.resolveRequiredAdditionalPropertyType(schema),
+        });
+      }
+    }
 
     if (schema.additionalProperties) {
       const indexSignature = interfaceDeclaration.addIndexSignature({
         keyName: 'key',
         keyType: 'string',
-        returnType: this.resolveType(
-          schema.additionalProperties === true
-            ? {}
-            : (schema.additionalProperties as Schema | Reference),
-        ),
+        returnType: this.resolveAdditionalPropertyType(schema),
       });
       indexSignature.addJsDoc('Additional properties');
     }
@@ -299,33 +375,6 @@ export class TypeGenerator implements Generator {
       type: this.resolveType(schema),
       isExported: true,
     });
-  }
-
-  private processIntersection(schema: AllOfSchema): JSDocableNode | undefined {
-    const interfaceDeclaration = this.sourceFile.addInterface({
-      name: this.modelInfo.name,
-      isExported: true,
-    });
-    schema.allOf.forEach(allOfSchema => {
-      if (isReference(allOfSchema)) {
-        const resolvedType = this.resolveType(allOfSchema);
-        interfaceDeclaration.addExtends(resolvedType);
-        return;
-      }
-      if (isObject(allOfSchema)) {
-        Object.entries(allOfSchema.properties).forEach(
-          ([propName, propSchema]) => {
-            this.addPropertyToInterface(
-              interfaceDeclaration,
-              propName,
-              propSchema,
-            );
-          },
-        );
-      }
-    });
-
-    return interfaceDeclaration;
   }
 
   private processTypeAlias(schema: Schema): JSDocableNode | undefined {

@@ -94,7 +94,10 @@ describe('AggregateResolver', () => {
 
       const aggregateResolver = new AggregateResolver(mockOpenAPI);
 
-      expect(extractOperationEndpoints).toHaveBeenCalledWith(mockOpenAPI.paths);
+      expect(extractOperationEndpoints).toHaveBeenCalledWith(
+        mockOpenAPI.paths,
+        mockOpenAPI.components,
+      );
       // Verify that commands, state, events, fields are called
       // Since they are private methods, we can't directly spy, but we can check side effects
     });

@@ -14,7 +14,8 @@
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { DebounceCapable, UseDebouncedCallbackReturn } from '../../core';
 import { useDebouncedCallback } from '../../core';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { dequal } from 'dequal';
 import type { UseFetcherQueryOptions, UseFetcherQueryReturn } from '../index';
 import { useFetcherQuery } from '../index';
 
@@ -173,11 +174,29 @@ export function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
     },
     [setQuery, run, originalAutoExecute],
   );
+  const lastExecution = useRef({ autoExecute: false, query: options.query });
+  useEffect(
+    () => () => {
+      // The debounce cleanup cancels pending work, including StrictMode replay.
+      lastExecution.current.autoExecute = false;
+    },
+    [],
+  );
   useEffect(() => {
-    if (originalAutoExecute) {
+    const previous = lastExecution.current;
+    lastExecution.current = {
+      autoExecute: !!originalAutoExecute,
+      query: options.query,
+    };
+    if (!originalAutoExecute && previous.autoExecute) {
+      cancel();
+    } else if (
+      originalAutoExecute &&
+      (!previous.autoExecute || !dequal(previous.query, options.query))
+    ) {
       run();
     }
-  }, [run, originalAutoExecute]);
+  }, [run, cancel, originalAutoExecute, options.query]);
   return useMemo(
     () => ({
       loading,

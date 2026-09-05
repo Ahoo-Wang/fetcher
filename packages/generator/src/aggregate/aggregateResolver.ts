@@ -69,7 +69,10 @@ export class AggregateResolver {
    * @private
    */
   private build() {
-    const endpoints = extractOperationEndpoints(this.openAPI.paths);
+    const endpoints = extractOperationEndpoints(
+      this.openAPI.paths,
+      this.openAPI.components,
+    );
     for (const endpoint of endpoints) {
       this.commands(endpoint.path, endpoint);
       this.state(endpoint.operation);

@@ -209,7 +209,7 @@ const viewerRef = useRef<FetcherViewerRef>(null);
 - `viewerDefinitionId: string` - Required. ID of the view definition resource
 - `ownerId?: string` - Default `'(0)'`
 - `tenantId?: string` - Default `'(0)'`
-- `defaultViewId?: string` - Initial view to display
+- `defaultViewId?: string` - Initial view to display; it does not control later user selections. Later selections are persisted locally and supply the query's internal condition.
 - `pagination: false | Omit<PaginationProps, ...>` - Required. Pagination config or `false` to disable
 - `actionColumn?: ViewTableActionColumn<RecordType>` - Row action column config
 - `onClickPrimaryKey?: (id, record) => void` - Primary key click handler
@@ -256,6 +256,8 @@ Layout component with sidebar (ViewPanel), TopBar, and content area. Does not ha
 
 **ViewerRef methods:** `clearSelectedRowKeys()`, `getActiveView()`, `getCondition()`
 
+`getActiveView(): ViewState | undefined` returns `undefined` after the last view is deleted; the viewer displays an empty state. Switching views, including switches after create/update/delete, clears row selection and batch-action records. Reset restores the saved view and loads its query once.
+
 ---
 
 ## View Component
@@ -288,6 +290,10 @@ Combines filter panel + ViewTable + pagination. Supports controlled and uncontro
 
 **ViewRef methods:** `clearSelectedRowKeys()`, `updateTableSize(size)`, `reset()`, `getCondition()`
 
+`defaultPage` initializes the uncontrolled page (default `1`). `reset()` restores the `default*` values, notifies supplied external state setters in controlled mode, clears selection, and emits one `onChange` with the restored query. `pagination={false}` hides pagination even when row selection remains enabled.
+
+The exported `useViewState` hook also exposes `setPagination(page: number, pageSize: number): void`. Use it when page and page size change together; it updates both values and emits one `onChange` using those values. Individual `setPage` and `setPageSize` calls each emit their own change.
+
 ---
 
 ## ViewTable Component
@@ -313,6 +319,8 @@ Ant Design Table wrapper with automatic column generation from field definitions
 ```
 
 Columns are auto-generated from `FieldDefinition[]` + `ViewColumn[]`. Each field maps to a cell type via `cellRegistry`. Primary key fields render as `PrimaryKeyCell` (clickable link). Action column uses `ActionsCell`.
+
+Primary key names may be nested paths such as `state.id`; row keys resolve that same path to remain stable when records are reordered.
 
 ---
 

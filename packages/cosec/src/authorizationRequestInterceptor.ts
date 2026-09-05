@@ -12,7 +12,11 @@
  */
 
 import type { FetchExchange, RequestInterceptor } from '@ahoo-wang/fetcher';
-import { DEFAULT_INTERCEPTOR_ORDER_STEP } from '@ahoo-wang/fetcher';
+import {
+  DEFAULT_INTERCEPTOR_ORDER_STEP,
+  getHeader,
+  setHeader,
+} from '@ahoo-wang/fetcher';
 import {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
   IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
@@ -67,7 +71,10 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
     const requestHeaders = exchange.ensureRequestHeaders();
 
     // Skip if no token exists or Authorization header is already set
-    if (!currentToken || requestHeaders[CoSecHeaders.AUTHORIZATION]) {
+    if (
+      !currentToken ||
+      getHeader(requestHeaders, CoSecHeaders.AUTHORIZATION)
+    ) {
       return;
     }
 
@@ -85,8 +92,11 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
 
     // Add Authorization header if we have a token
     if (currentToken) {
-      requestHeaders[CoSecHeaders.AUTHORIZATION] =
-        `Bearer ${currentToken.access.token}`;
+      setHeader(
+        requestHeaders,
+        CoSecHeaders.AUTHORIZATION,
+        `Bearer ${currentToken.access.token}`,
+      );
     }
   }
 }

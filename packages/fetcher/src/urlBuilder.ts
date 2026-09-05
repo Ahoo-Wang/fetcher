@@ -126,7 +126,16 @@ export class UrlBuilder implements BaseURLCapable {
     if (query) {
       const queryString = new URLSearchParams(query).toString();
       if (queryString) {
-        finalUrl += '?' + queryString;
+        const fragmentIndex = finalUrl.indexOf('#');
+        const fragment = fragmentIndex < 0 ? '' : finalUrl.slice(fragmentIndex);
+        const beforeFragment =
+          fragmentIndex < 0 ? finalUrl : finalUrl.slice(0, fragmentIndex);
+        const separator = beforeFragment.includes('?')
+          ? /[?&]$/.test(beforeFragment)
+            ? ''
+            : '&'
+          : '?';
+        finalUrl = beforeFragment + separator + queryString + fragment;
       }
     }
     return finalUrl;

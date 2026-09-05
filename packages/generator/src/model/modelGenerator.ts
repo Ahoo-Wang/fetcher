@@ -11,12 +11,17 @@
  * limitations under the License.
  */
 
-import type { Schema } from '@ahoo-wang/fetcher-openapi';
+import type { Reference, Schema } from '@ahoo-wang/fetcher-openapi';
 import type { SourceFile } from 'ts-morph';
 
 import type { GenerateContext, Generator } from '../generateContext';
 import type { KeySchema } from '../utils';
-import { getModelFileName, pascalCase } from '../utils';
+import {
+  extractSchema,
+  getModelFileName,
+  isReference,
+  pascalCase,
+} from '../utils';
 import type { ModelInfo } from './modelInfo';
 import { resolveContextDeclarationName, resolveModelInfo } from './modelInfo';
 import { TypeGenerator } from './typeGenerator';
@@ -70,13 +75,15 @@ export class ModelGenerator implements Generator {
   }
 
   private filterSchemas(
-    schemas: Record<string, Schema>,
+    schemas: Record<string, Schema | Reference>,
     aggregatedTypeNames: Set<string>,
   ): KeySchema[] {
     return Object.entries(schemas)
       .map(([schemaKey, schema]) => ({
         key: schemaKey,
-        schema,
+        schema: isReference(schema)
+          ? extractSchema(schema, this.context.openAPI.components!)!
+          : schema,
       }))
       .filter(
         keySchema => !this.isWowSchema(keySchema.key, aggregatedTypeNames),

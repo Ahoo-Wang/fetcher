@@ -152,3 +152,54 @@ describe('BrowserNotificationChannel', () => {
     });
   });
 });
+
+describe('received notification click behavior', () => {
+  let instance: Notification;
+  let originalUrl: string;
+  beforeEach(() => {
+    originalUrl = window.location.href;
+    vi.spyOn(window, 'focus').mockImplementation(() => {});
+    class TestNotification extends EventTarget {
+      static permission = 'granted';
+      constructor() {
+        super();
+        instance = this as unknown as Notification;
+      }
+    }
+    vi.stubGlobal('Notification', TestNotification);
+  });
+  afterEach(() => {
+    window.history.replaceState(null, '', originalUrl);
+  });
+
+  it('focuses and navigates from serialized notification data', async () => {
+    await BrowserNotificationChannel.send({
+      title: 'Changed',
+      payload: { data: { navigationUrl: '#changed' } },
+    });
+    instance.dispatchEvent(new Event('click'));
+    expect(window.focus).toHaveBeenCalledOnce();
+    expect(window.location.hash).toBe('#changed');
+  });
+
+  it('still focuses when there is no navigationUrl', async () => {
+    await BrowserNotificationChannel.send({ title: 'Changed', payload: {} });
+    instance.dispatchEvent(new Event('click'));
+    expect(window.focus).toHaveBeenCalledOnce();
+    expect(window.location.href).toBe(originalUrl);
+  });
+
+  it('uses an explicit local callback instead of the navigation fallback', async () => {
+    const onClick = vi.fn();
+    await BrowserNotificationChannel.send({
+      title: 'Changed',
+      payload: { data: { navigationUrl: '#changed' } },
+      onClick,
+    });
+    instance.dispatchEvent(new Event('click'));
+    instance.dispatchEvent(new Event('click'));
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(window.focus).not.toHaveBeenCalled();
+    expect(window.location.href).toBe(originalUrl);
+  });
+});

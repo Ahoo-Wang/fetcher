@@ -462,9 +462,8 @@ describe('DataMonitorService', () => {
       expect(notificationCenterMock.publish).not.toHaveBeenCalled();
     });
 
-    it('should include onClick with navigationUrl in notification', async () => {
+    it('publishes cloneable navigation data instead of a click closure', async () => {
       setupFetchResponses(0, 10);
-
       service.enable(
         'view-1',
         '/api/count',
@@ -472,60 +471,18 @@ describe('DataMonitorService', () => {
         {},
         { title: 'Test', navigationUrl: '/test' },
       );
-
       await vi.advanceTimersByTimeAsync(30000);
-
-      expect(notificationCenterMock.publish).toHaveBeenCalledWith(
-        'browser',
-        expect.objectContaining({
-          title: 'Test',
-          onClick: expect.any(Function),
-        }),
-      );
+      const message = notificationCenterMock.publish.mock.calls[0][1];
+      expect(message.payload.data).toEqual({ navigationUrl: '/test' });
+      expect(message.onClick).toBeUndefined();
+      expect(structuredClone(message)).toEqual(message);
     });
 
-    it('should navigate to navigationUrl when notification onClick is called', async () => {
+    it('handles notification rejection without blocking DATA_CHANGED', async () => {
+      const error = new Error('Broadcast failed');
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      notificationCenterMock.publish.mockRejectedValueOnce(error);
       setupFetchResponses(0, 10);
-
-      const originalLocation = window.location;
-      Object.defineProperty(window, 'location', {
-        value: { href: '' },
-        writable: true,
-        configurable: true,
-      });
-
-      service.enable(
-        'view-1',
-        '/api/count',
-        'Test View',
-        {},
-        { title: 'Test', navigationUrl: '/navigate-here' },
-      );
-
-      await vi.advanceTimersByTimeAsync(30000);
-
-      const publishedMessage = notificationCenterMock.publish.mock.calls[0][1];
-      publishedMessage.onClick();
-
-      expect(window.location.href).toBe('/navigate-here');
-
-      Object.defineProperty(window, 'location', {
-        value: originalLocation,
-        writable: true,
-        configurable: true,
-      });
-    });
-
-    it('should not navigate when navigationUrl is not set', async () => {
-      setupFetchResponses(0, 10);
-
-      const originalLocation = window.location;
-      Object.defineProperty(window, 'location', {
-        value: { href: '' },
-        writable: true,
-        configurable: true,
-      });
-
       service.enable(
         'view-1',
         '/api/count',
@@ -533,19 +490,14 @@ describe('DataMonitorService', () => {
         {},
         { title: 'Test' },
       );
-
       await vi.advanceTimersByTimeAsync(30000);
-
-      const publishedMessage = notificationCenterMock.publish.mock.calls[0][1];
-      publishedMessage.onClick();
-
-      expect(window.location.href).toBe('');
-
-      Object.defineProperty(window, 'location', {
-        value: originalLocation,
-        writable: true,
-        configurable: true,
-      });
+      expect(errorLog).toHaveBeenCalledWith(
+        'DataMonitor: failed to notify for view-1',
+        error,
+      );
+      expect(dataMonitorEventBusMock.emit).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'DATA_CHANGED', currentTotal: 10 }),
+      );
     });
   });
 

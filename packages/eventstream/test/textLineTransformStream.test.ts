@@ -113,7 +113,7 @@ describe('textLineTransformStream.ts', () => {
       expect(controller.enqueue).not.toHaveBeenCalled();
     });
 
-    it('should not flush a trailing carriage return as an empty line', async () => {
+    it('should emit a CR separator once without duplicating it on flush', async () => {
       const transformer = new TextLineTransformer();
       const controller = {
         enqueue: vi.fn(),
@@ -121,9 +121,9 @@ describe('textLineTransformStream.ts', () => {
       } as any;
 
       await transformer.transform('\r', controller);
+      expect(controller.enqueue).toHaveBeenCalledExactlyOnceWith('');
       await transformer.flush(controller);
-
-      expect(controller.enqueue).not.toHaveBeenCalled();
+      expect(controller.enqueue).toHaveBeenCalledExactlyOnceWith('');
     });
 
     it('should handle errors in transform', async () => {

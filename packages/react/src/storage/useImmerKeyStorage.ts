@@ -138,14 +138,17 @@ export function useImmerKeyStorage<T>(
   );
   const updateImmer = useCallback(
     (updater: (draft: T | null) => T | null | void) => {
-      const nextValue = produce(value, updater);
+      const nextValue = produce(
+        keyStorage.get() ?? defaultValue ?? null,
+        updater,
+      );
       if (nextValue === null) {
         remove();
         return;
       }
       return setValue(nextValue);
     },
-    [value, setValue, remove],
+    [keyStorage, defaultValue, setValue, remove],
   );
 
   return [value, updateImmer, remove];

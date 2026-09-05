@@ -32,6 +32,7 @@ vi.mock('ts-morph', () => ({
 }));
 
 vi.mock('../src/utils', () => ({
+  beginGeneration: vi.fn(),
   parseOpenAPI: vi.fn(),
   parseConfiguration: vi.fn(),
 }));

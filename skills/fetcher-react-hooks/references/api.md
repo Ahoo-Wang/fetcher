@@ -94,7 +94,7 @@ setIdle(); // status = IDLE, all cleared
 
 ### useExecutePromise
 
-Manages async operations with race condition protection, AbortController, and unmount safety. Race protection is built on `useRequestId` — each execution gets an id, and stale resolutions are discarded. Accepts a `PromiseSupplier<R>`:
+Manages async operations with race condition protection, AbortController, and unmount safety. Race protection is built on `useRequestId` — each execution gets an id, and stale resolutions are discarded. Manual cancellation invalidates the id even when the supplier ignores its signal, so late results and errors cannot restore state. Accepts a `PromiseSupplier<R>`:
 
 ```typescript
 type PromiseSupplier<R> = (abortController: AbortController) => Promise<R>;
@@ -126,7 +126,8 @@ reset(); // reset to IDLE
 
 ### useFetcher
 
-HTTP-specific hook wrapping Fetcher with `FetchExchange` support.
+HTTP-specific hook wrapping Fetcher with `FetchExchange` support. Exchange
+snapshots follow the same cancellation and stale-request rules as result state.
 
 ```tsx
 import { useFetcher } from '@ahoo-wang/fetcher-react';
@@ -332,7 +333,8 @@ const [theme, setTheme, clearTheme] = useKeyStorage(themeStorage, 'light'); // w
 
 ### useImmerKeyStorage
 
-Immer-powered immutable updates for complex objects.
+Immer-powered immutable updates for complex objects. Each updater reads the
+latest stored value, so consecutive updates in one render batch accumulate.
 
 ```tsx
 const [prefs, updatePrefs, resetPrefs] = useImmerKeyStorage(
@@ -367,6 +369,10 @@ useEventSubscription({
 ### useDataMonitor
 
 Monitors data changes via periodic count queries with notification support.
+Browser notifications transmit `NotificationOptions.data.navigationUrl`; the
+receiving context handles click-to-focus and optional navigation. A custom
+notification `onClick` callback is local to the publishing context and is not
+broadcast. Notification failures do not prevent data-change events.
 
 ```tsx
 import { useDataMonitor } from '@ahoo-wang/fetcher-react';
@@ -397,7 +403,8 @@ subscribe({ name: 'onDataChanged', handle: event => console.log(event) });
 
 ### createExecuteApiHooks
 
-Generate `useExecutePromise`-based hooks from decorator API classes.
+Generate `useExecutePromise`-based hooks from decorator API classes. Method
+collection skips accessors without evaluating them and preserves instance binding.
 
 ```tsx
 @api('/users')
@@ -444,7 +451,10 @@ import {
 
 ## Debounced Hooks
 
-Rate-limiting variants of core hooks:
+Rate-limiting variants of core hooks. With `autoExecute: true`, controlled query
+changes schedule execution; equal query values do not schedule duplicate work.
+Disabling automatic execution cancels pending automatic work, while explicit
+`run()` remains available. Scheduling also supports StrictMode effect replay.
 
 - `useDebouncedCallback` - Debounce any callback
 - `useDebouncedExecutePromise` - Debounce promise execution

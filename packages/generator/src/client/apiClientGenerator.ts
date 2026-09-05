@@ -61,8 +61,8 @@ import {
   addImportFetcher,
   createDecoratorClass,
   DEFAULT_RETURN_TYPE,
-  STREAM_RESULT_EXTRACTOR_METADATA,
   STRING_RETURN_TYPE,
+  STREAM_RESULT_EXTRACTOR_METADATA,
 } from './decorators';
 import { methodToDecorator, resolveMethodName } from './utils';
 
@@ -394,21 +394,17 @@ export class ApiClientGenerator implements Generator {
       );
       return this.defaultReturnType;
     }
+    const responseJsonSchema = extractResponseJsonSchema(okResponse);
     const jsonSchema =
-      extractResponseJsonSchema(okResponse) ||
-      extractResponseWildcardSchema(okResponse);
+      responseJsonSchema || extractResponseWildcardSchema(okResponse);
     if (jsonSchema) {
       const returnType = this.resolveSchemaReturnType(sourceFile, jsonSchema);
       this.context.logger.info(
         `Resolved JSON/wildcard response return type for operation ${operation.operationId}: ${returnType}`,
       );
-      return {
-        type: returnType,
-        metadata:
-          returnType === STRING_RETURN_TYPE.type
-            ? STRING_RETURN_TYPE.metadata
-            : undefined,
-      };
+      return !responseJsonSchema && returnType === STRING_RETURN_TYPE.type
+        ? STRING_RETURN_TYPE
+        : { type: returnType };
     }
     const eventStreamSchema = extractResponseEventStreamSchema(okResponse);
     if (eventStreamSchema) {
@@ -517,6 +513,7 @@ export class ApiClientGenerator implements Generator {
     const operations: Map<string, Set<OperationEndpoint>> = new Map();
     const availableEndpoints = extractOperationEndpoints(
       this.context.openAPI.paths,
+      this.context.openAPI.components,
     ).filter(endpoint => {
       if (!endpoint.operation.operationId) {
         return false;

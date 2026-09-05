@@ -19,6 +19,7 @@ import type {
   Response,
   Schema,
 } from '@ahoo-wang/fetcher-openapi';
+import { isReference } from './references';
 
 /** Prefix for OpenAPI components references */
 export const COMPONENTS_PREFIX = '#/components/';
@@ -58,12 +59,27 @@ export function extractComponentKey(reference: Reference): string {
  * @param components - The OpenAPI components object
  * @returns The schema if found, undefined otherwise
  */
+function resolveComponent<T>(
+  reference: Reference,
+  components?: Record<string, T | Reference>,
+): T | undefined {
+  const visited = new Set<string>();
+  let current: T | Reference | undefined = reference;
+  while (isReference(current)) {
+    if (visited.has(current.$ref)) {
+      throw new TypeError(`Cyclic component reference: ${current.$ref}`);
+    }
+    visited.add(current.$ref);
+    current = components?.[extractComponentKey(current)];
+  }
+  return current;
+}
+
 export function extractSchema(
   reference: Reference,
   components: Components,
 ): Schema | undefined {
-  const componentKey = extractComponentKey(reference);
-  return components.schemas?.[componentKey];
+  return resolveComponent(reference, components.schemas);
 }
 
 /**
@@ -76,8 +92,7 @@ export function extractResponse(
   reference: Reference,
   components: Components,
 ): Response | undefined {
-  const componentKey = extractComponentKey(reference);
-  return components.responses?.[componentKey];
+  return resolveComponent(reference, components.responses);
 }
 
 /**
@@ -90,8 +105,7 @@ export function extractRequestBody(
   reference: Reference,
   components: Components,
 ): RequestBody | undefined {
-  const componentKey = extractComponentKey(reference);
-  return components.requestBodies?.[componentKey];
+  return resolveComponent(reference, components.requestBodies);
 }
 
 /**
@@ -104,8 +118,7 @@ export function extractParameter(
   reference: Reference,
   components: Components,
 ): Parameter | undefined {
-  const componentKey = extractComponentKey(reference);
-  return components.parameters?.[componentKey];
+  return resolveComponent(reference, components.parameters);
 }
 
 /**

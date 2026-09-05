@@ -35,6 +35,9 @@ The Fetcher HTTP client provides an Axios-like API built on the native Fetch API
 pnpm add @ahoo-wang/fetcher
 ```
 
+The core package supports ESM imports and CommonJS
+`const { Fetcher } = require('@ahoo-wang/fetcher')` through its package entry.
+
 ## 1. Setting Up NamedFetcher
 
 ### Basic Setup
@@ -493,7 +496,11 @@ abortController.abort(); // cancels the in-flight request
 ### Other Utilities
 
 - `getFetcher(fetcher?: string | Fetcher, defaultFetcher?)` -- resolve a registered fetcher by name or pass an instance through (used by decorator services)
-- `mergeRequest(first, second)` -- merge two request configs (headers, nested `urlParams.path`/`query`)
+- `mergeRequest(first, second)` -- merge two request configs (case-insensitive headers, nested `urlParams.path`/`query`)
+- `mergeHeaders(...headers: (RequestHeaders | undefined)[]): RequestHeaders` -- case-insensitive replacement; the last layer and its spelling win, without mutating inputs
+- `getHeader(headers: RequestHeaders | undefined, name: string): string | undefined` -- case-insensitive lookup (last matching key wins)
+- `setHeader(headers: RequestHeaders, name: string, value: string | undefined): void` -- replaces all spellings, retaining `name`; `undefined` removes the header
+- `deleteHeader(headers: RequestHeaders, name: string): void` -- removes all spellings; use these helpers when interceptors read or modify header records
 - `HttpMethod` -- enum of HTTP methods for the generic `fetcher.request()` / `fetcher.fetch()` calls
 - `combineURLs(base, relative)` / `isAbsoluteURL(url)` -- an already-absolute request URL bypasses `baseURL` entirely
 - `Response.json<T>()` -- the package augments `Response` globally so `response.json<User>()` type-checks

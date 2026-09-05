@@ -268,7 +268,9 @@ deviceStorage.get(); // string | null
 
 ## JwtTokenManager
 
-Manages JWT token lifecycle with deduplicated concurrent refresh calls.
+Manages JWT token lifecycle with deduplicated concurrent refresh calls. A refresh
+only writes or removes the token instance that started it; signing out or
+replacing the session prevents an old result from overwriting the new state.
 
 ```typescript
 import { JwtTokenManager, TokenStorage } from '@ahoo-wang/fetcher-cosec';
@@ -379,7 +381,7 @@ fetcher.interceptors.request.use(
 
 **Behavior:**
 
-1. Skips if Authorization header already present
+1. Skips if Authorization header already present (case-insensitive)
 2. Refreshes token if `isRefreshNeeded && isRefreshable` (unless `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` set)
 3. Adds `Authorization: Bearer <access-token>`
 
@@ -397,10 +399,10 @@ fetcher.interceptors.response.use(
 
 **Behavior:**
 
-1. Detects 401 responses (skips entirely when the current token is not refreshable)
+1. Detects 401 responses (skips when the current token is not refreshable or the exchange carries `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`)
 2. Calls `tokenManager.refresh()`
 3. Retries the original request with the new token — at most once per exchange
-4. On refresh failure: clears tokens and throws. A failure of the retried request itself propagates normally without clearing the freshly refreshed token
+4. On refresh failure: the manager clears only the original, unchanged session and throws. The response interceptor does not clear a replacement session. A failure of the retried request itself propagates normally without clearing the freshly refreshed token
 
 ### Skip Token Refresh for Specific Requests
 

@@ -71,13 +71,13 @@ describe('StorageMessenger', () => {
     const key1 = calls[0][0];
     const key2 = calls[1][0];
     expect(key1).not.toBe(key2);
-    expect(key1.startsWith('_storage_msg_test-channel_')).toBe(true);
+    expect(key1.startsWith('_storage_msg_test-channel:_')).toBe(true);
   });
 
   it('should clean up expired messages', () => {
     (storageMock as any).length = 1;
     (storageMock.key as any).mockReturnValue(
-      '_storage_msg_test-channel_expired',
+      '_storage_msg_test-channel:_expired',
     );
     (storageMock.getItem as any).mockReturnValue(
       JSON.stringify({
@@ -89,7 +89,7 @@ describe('StorageMessenger', () => {
     vi.advanceTimersByTime(500);
 
     expect(storageMock.removeItem).toHaveBeenCalledWith(
-      '_storage_msg_test-channel_expired',
+      '_storage_msg_test-channel:_expired',
     );
   });
 
@@ -109,7 +109,7 @@ describe('StorageMessenger', () => {
     // Valid event
     const validEvent = {
       storageArea: storageMock,
-      key: '_storage_msg_test-channel_123',
+      key: '_storage_msg_test-channel:_123',
       newValue: JSON.stringify({ data: testMessage, timestamp: Date.now() }),
     };
     eventHandler(validEvent);
@@ -118,7 +118,7 @@ describe('StorageMessenger', () => {
     // Invalid storageArea
     const invalidStorageEvent = {
       storageArea: { getItem: vi.fn() },
-      key: '_storage_msg_test-channel_123',
+      key: '_storage_msg_test-channel:_123',
       newValue: JSON.stringify({ data: 'invalid', timestamp: Date.now() }),
     };
     eventHandler(invalidStorageEvent);
@@ -136,7 +136,7 @@ describe('StorageMessenger', () => {
     // No newValue
     const noNewValueEvent = {
       storageArea: storageMock,
-      key: '_storage_msg_test-channel_123',
+      key: '_storage_msg_test-channel:_123',
       newValue: null,
     };
     eventHandler(noNewValueEvent);
@@ -150,7 +150,7 @@ describe('StorageMessenger', () => {
 
     const invalidJsonEvent = {
       storageArea: storageMock,
-      key: '_storage_msg_test-channel_123',
+      key: '_storage_msg_test-channel:_123',
       newValue: 'invalid json',
     };
     eventHandler(invalidJsonEvent);
@@ -165,14 +165,14 @@ describe('StorageMessenger', () => {
   it('should handle invalid data in cleanup', () => {
     (storageMock as any).length = 1;
     (storageMock.key as any).mockReturnValue(
-      '_storage_msg_test-channel_invalid',
+      '_storage_msg_test-channel:_invalid',
     );
     (storageMock.getItem as any).mockReturnValue('invalid json');
 
     vi.advanceTimersByTime(500);
 
     expect(storageMock.removeItem).toHaveBeenCalledWith(
-      '_storage_msg_test-channel_invalid',
+      '_storage_msg_test-channel:_invalid',
     );
   });
 });

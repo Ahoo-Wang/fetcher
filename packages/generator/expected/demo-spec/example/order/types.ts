@@ -41,13 +41,13 @@
  * ```
  */
 export interface WowExampleOrderState {
-    readonly address: ShippingAddress;
+    readonly address?: ShippingAddress;
     id: string;
-    readonly items: OrderItem[];
-    paidAmount: number;
-    status: OrderStatus;
-    totalAmount: number;
-    readonly payable: number;
+    readonly items?: OrderItem[];
+    paidAmount?: number;
+    status?: OrderStatus;
+    totalAmount?: number;
+    readonly payable?: number;
 }
 
 /**
@@ -230,6 +230,7 @@ export interface CreateOrderItem {
  * ```
  */
 export enum OrderAggregatedFields {
+    '' = ``,
     AGGREGATE_ID = `aggregateId`,
     TENANT_ID = `tenantId`,
     OWNER_ID = `ownerId`,
@@ -343,7 +344,7 @@ export interface OrderItem {
     productId: string;
     /** - format: int32 */
     quantity: number;
-    readonly totalPrice: number;
+    readonly totalPrice?: number;
 }
 
 /**

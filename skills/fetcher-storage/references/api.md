@@ -121,7 +121,7 @@ storage.destroy(); // prevent memory leaks
 
 ## Cross-tab Synchronization
 
-`KeyStorage` defaults to `SerialTypedEventBus`, so its change notifications stay in the current JavaScript context. Pass a `BroadcastTypedEventBus` to enable browser cross-tab synchronization; its default messenger uses `BroadcastChannel` with a `StorageEvent` fallback.
+`KeyStorage` defaults to `SerialTypedEventBus`, so its change notifications stay in the current JavaScript context. Pass a `BroadcastTypedEventBus` to enable browser cross-tab synchronization; its default messenger uses `BroadcastChannel` with a `StorageEvent` fallback. `KeyStorage` includes private serialized snapshots so receiving caches and `addListener` values pass through the configured deserializer, restoring custom class semantics for both `newValue` and `oldValue`. Local notifications preserve object identity; listeners receive only the standard `StorageEvent` fields. Ordinary events from custom local buses remain supported.
 
 ```typescript
 import {

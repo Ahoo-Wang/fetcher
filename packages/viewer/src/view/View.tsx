@@ -176,8 +176,7 @@ export interface ViewProps<RecordType>
    * - Object: Antd Pagination props excluding 'onChange', 'onShowSizeChange', and 'total'.
    */
   pagination:
-    | false
-    | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
+    false | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
 
   /** Whether to enable row selection for batch operations */
   enableRowSelection: boolean;
@@ -232,19 +231,19 @@ export function View<RecordType>({
    */
   const {
     page,
-    setPage,
     activeFilters,
     setActiveFilters,
     columns,
     setColumns,
     pageSize,
-    setPageSize,
+    setPagination,
     tableSize,
     setTableSize,
     setCondition,
     setSorter,
     selectedCount,
     updateSelectedCount,
+    reset,
   } = useViewState(viewState);
 
   const { locale } = useLocale();
@@ -274,11 +273,8 @@ export function View<RecordType>({
     currentPage: number,
     currentPageSize: number,
   ) => {
-    if (page !== currentPage) {
-      setPage(currentPage);
-    }
-    if (pageSize !== currentPageSize) {
-      setPageSize(currentPageSize);
+    if (page !== currentPage || pageSize !== currentPageSize) {
+      setPagination(currentPage, currentPageSize);
     }
   };
 
@@ -348,7 +344,7 @@ export function View<RecordType>({
    * Called via ref imperatively from parent components.
    */
   const resetFn = () => {
-    // reset();
+    reset();
     editableFilterPanelRef.current?.reset();
     clearSelectedRowKeysFn();
   };
@@ -448,16 +444,18 @@ export function View<RecordType>({
               : ''}
           </span>
           {/* Antd Pagination component */}
-          <Pagination
-            showTotal={total => `共 ${total} 条数据`}
-            defaultCurrent={page}
-            current={page}
-            pageSize={pageSize || 10}
-            total={dataSource.total}
-            pageSizeOptions={['10', '20', '50', '100']}
-            {...pagination}
-            onChange={handlePaginationChange}
-          />
+          {pagination !== false && (
+            <Pagination
+              showTotal={total => `共 ${total} 条数据`}
+              defaultCurrent={page}
+              current={page}
+              pageSize={pageSize || 10}
+              total={dataSource.total}
+              pageSizeOptions={['10', '20', '50', '100']}
+              {...pagination}
+              onChange={handlePaginationChange}
+            />
+          )}
         </div>
       )}
     </Space>
