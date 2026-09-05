@@ -1,5 +1,6 @@
 import type { Key } from 'react';
 import type { TableRecordType } from './types';
+import { getPropertyValue } from '@ahoo-wang/fetcher-wow';
 
 /**
  * Performs a deep equality comparison between two values.
@@ -116,13 +117,7 @@ export function mapToTableRecord<RecordType = any>(
     return dataSource.map((record, index) => {
       let key: Key = (record as { key?: Key }).key ?? index;
       if (primaryKey) {
-        // Computed destructuring reads the primary key field dynamically
-        // (the field name comes from the viewer's field metadata).
-        const { [primaryKey]: primaryKeyValue } = record as Record<
-          string,
-          Key | undefined
-        >;
-        key = primaryKeyValue ?? key;
+        key = getPropertyValue<Key>(record, primaryKey.split('.')) ?? key;
       }
       return {
         ...record,

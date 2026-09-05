@@ -56,6 +56,7 @@ export interface UseViewerStateReturn {
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
     filterStates: Map<Key, FilterState>,
+    resetFilters?: ActiveFilter[],
   ) => void;
   page: number;
   setPage: (page: number) => void;
@@ -151,78 +152,81 @@ export function useViewerState({
 
   const setColumnsFn = (newColumns: ViewColumn[]) => {
     setColumns(newColumns);
-    setActiveView({
-      ...activeView,
+    setActiveView(view => ({
+      ...view,
       columns: newColumns,
-    });
+    }));
   };
 
   const setPageSizeFn = (size: number) => {
     setPageSize(size);
-    setActiveView({
-      ...activeView,
+    setActiveView(view => ({
+      ...view,
       pageSize: size,
-    });
+    }));
   };
 
   const setActiveFiltersFn = (filters: ActiveFilter[]) => {
     setActiveFilters(filters);
-    setActiveView({
-      ...activeView,
+    setActiveView(view => ({
+      ...view,
       filters: filters,
-    });
+    }));
   };
 
   const setTableSizeFn = (size: SizeType) => {
     setTableSize(size);
-    setActiveView({
-      ...activeView,
+    setActiveView(view => ({
+      ...view,
       tableSize: size,
-    });
+    }));
   };
 
   const setConditionFn = (
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
     filterStates: Map<Key, FilterState>,
+    resetFilters?: ActiveFilter[],
   ) => {
     setCondition(finalCondition);
-    const newActiveFilters = activeFilters.map(activeFilter => {
-      const activeFilterValue = activeFilterValues.get(activeFilter.key);
-      const activeFilterState = filterStates.get(activeFilter.key);     
-       
-      if (!activeFilterValue) {
+    const newActiveFilters =
+      resetFilters ??
+      activeFilters.map(activeFilter => {
+        const activeFilterValue = activeFilterValues.get(activeFilter.key);
+        const activeFilterState = filterStates.get(activeFilter.key);
 
-        if(activeFilterState?.operator) {
+        if (!activeFilterValue) {
           return {
             ...activeFilter,
-            operator: { 
+            operator: {
               ...activeFilter.operator,
-              defaultValue: activeFilterState.operator
-             },
-            value: null,
+              defaultValue:
+                activeFilterState?.operator ??
+                activeFilter.operator?.defaultValue,
+            },
+            value: { ...activeFilter.value, defaultValue: undefined },
           };
         }
 
         return {
           ...activeFilter,
-          value: null,
+          value: {
+            ...activeFilter.value,
+            defaultValue: activeFilterValue.value,
+          },
+          operator: {
+            ...activeFilter.operator,
+            defaultValue: activeFilterValue.operator,
+          },
         };
-      }
-      
-      return {
-        ...activeFilter,
-        value: { defaultValue: activeFilterValue.value },
-        operator: { defaultValue: activeFilterValue.operator },
-      };
-    });
+      });
     setActiveFilters(newActiveFilters);
 
-    setActiveView({
-      ...activeView,
+    setActiveView(view => ({
+      ...view,
       condition: finalCondition,
       filters: newActiveFilters,
-    });
+    }));
   };
 
   const setSorterFn = (sorter: FieldSort[]) => {
@@ -239,12 +243,11 @@ export function useViewerState({
         : { ...column, sortOrder: undefined };
     });
     setColumns(newColumns);
-    const newView: ViewState = {
-      ...activeView,
+    setActiveView(view => ({
+      ...view,
       sorter: sorter,
       columns: newColumns,
-    };
-    setActiveView(newView);
+    }));
   };
 
   const resetFn = (): ViewState => {
