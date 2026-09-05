@@ -159,6 +159,35 @@ await bus.emit('broadcast-message'); // Local + cross-tab
 
 Default messenger channel: `_broadcast_:{type}`. Pass a custom `messenger` option to override.
 
+`BroadcastTypedEventBusOptions<EVENT>` also accepts an optional message conversion:
+
+```typescript
+messageTransformer?: {
+  serialize(event: EVENT): unknown;
+  deserialize(message: unknown): EVENT;
+  serializeBeforeDispatch?: boolean;
+  fallbackSerialize?(message: unknown, error: unknown): unknown;
+};
+```
+
+It can also be assigned to `bus.messageTransformer` after construction. Local
+handlers receive the original event. By default, serialization runs after local
+handlers, before posting to the messenger. With `serializeBeforeDispatch: true`,
+`serialize` runs at the start of each emission and its result belongs to that
+emission, so nested or overlapping emissions cannot overwrite its prepared message.
+The messenger post still occurs after local handlers. An early conversion error
+rejects before local dispatch. Each `emit()` captures its starting transformer and
+this option before awaiting local handlers, so changing or clearing them does not
+change an in-flight message's encoding. Incoming messages are deserialized before any delegate handlers
+run, including handlers registered before the transformer was configured. Without
+a transformer, messages pass through unchanged. Outgoing conversion errors propagate
+from `emit()`. When a messenger post throws, `fallbackSerialize`, if provided,
+receives that already serialized message and error; its replacement is posted once.
+Conversion errors do not invoke the fallback, and fallback errors or a second post
+failure still reject `emit()`. Incoming conversion or delegate errors are reported with `console.warn`
+and the bus type; an undecodable message is not dispatched, and later messages can
+still be received. Messenger callbacks do not leave rejected promises unhandled.
+
 ### Generic EventBus<Events>
 
 Manages multiple named event types with lazy-loaded TypedEventBus instances:

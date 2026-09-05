@@ -192,6 +192,14 @@ authentication or integrity check; the server still validates JWTs.
 
 Token storage with a localStorage backend and cross-tab synchronization.
 
+TokenStorage instances sharing one supplied `eventBus` must use the same storage key and `earlyPeriod`; they reuse one serializer object, including across duplicate package modules in the same JavaScript global. A different `earlyPeriod` on that bus throws, including after an earlier instance is destroyed. For independent expiration policies, use separate buses on the same channel. The default creates one bus per TokenStorage instance with a channel derived from its key, so each receiver keeps its own `earlyPeriod` while synchronizing the same token record.
+
+`JwtCompositeTokenSerializer.deserializeLegacy(value: unknown)` restores the known plain-object shape broadcast
+by older TokenStorage tabs. It requires string `value.token.accessToken` and
+`value.token.refreshToken`, then reuses the normal serializer to restore getters,
+the receiving serializer's `earlyPeriod`, and session identity. Malformed legacy
+shapes throw `TypeError`; this hook is used only when no serialized snapshot exists.
+
 ### Constructor
 
 ```text

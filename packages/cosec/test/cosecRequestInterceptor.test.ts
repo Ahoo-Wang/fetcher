@@ -45,13 +45,13 @@ vi.stubGlobal('window', { localStorage: mockStorage });
 
 vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
   BroadcastTypedEventBus: class BroadcastTypedEventBus {
-    emit = vi.fn();
+    emit = vi.fn().mockResolvedValue(undefined);
     on = vi.fn();
     off = vi.fn();
     destroy = vi.fn();
   },
   SerialTypedEventBus: class SerialTypedEventBus {
-    emit = vi.fn();
+    emit = vi.fn().mockResolvedValue(undefined);
     on = vi.fn();
     off = vi.fn();
     destroy = vi.fn();
