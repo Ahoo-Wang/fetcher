@@ -107,11 +107,11 @@ const completion: ChatResponse = await chat.completions({
 
 ## Streaming、`[DONE]` 与取消
 
-仅当 `T['stream']` extends 字面量 `true` 时，`completions<T>()` 才解析为
-`JsonServerSentEventStream<ChatResponse>`；否则解析为 `ChatResponse`。该 Conditional Type
-不是 distributive：`stream: boolean` 的静态结果因此是 `ChatResponse`，即使运行时 Boolean
-恰为 `true` 时 `beforeExecute()` 仍会选择 SSE。不要以运行时 Boolean 调用此 API；应先分支，
-并在两条分支中构造字面量 `true` / `false` 请求。
+`completions<T>()` 对字面量 `stream: true` 返回流；对 `false`、`undefined`
+或省略的标记返回 `ChatResponse`。运行时布尔值、宽泛的 `ChatRequest`，以及流式与
+非流式请求的联合类型，均返回 `ChatResponse | JsonServerSentEventStream<ChatResponse>`。
+条件类型会对请求联合的各成员分别推导结果。使用
+`result instanceof ReadableStream` 缩小类型后再消费结果。
 ([`chatClient.ts:146`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L146)，
 [`chatClient.ts:255`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L255))。
 提取器解码 JSON SSE Event，并在 `data` 恰为 `[DONE]` 时停止，且不产出该 Event
@@ -200,7 +200,7 @@ Helper，不能转换时会抛错
 
 | 现象 | 检查项 |
 | --- | --- |
-| 静态 `ChatResponse` 但运行时得到 SSE | 不要使用 `stream: boolean`：它静态解析为 `ChatResponse`；先分支并以字面量 `true` 或 `false` 调用。 |
+| 动态 `stream` 标记得到联合返回类型 | `stream: boolean` 返回 `ChatResponse \| JsonServerSentEventStream<ChatResponse>`；使用前收窄结果，或先分支并以字面量 `true`、`false` 调用以获得明确的返回类型。 |
 | Stream 转换失败 | 确认 provider 返回 SSE Frame 和兼容的 Event Stream Content-Type，而不是 JSON 或 HTML Proxy Error。 |
 | HTTP 成功但字段缺失 | 此包不 Runtime Validate Success Payload；解引用类型字段前检查 provider error/data shape。 |
 | `401` 或 `403` | 检查可信服务端的 provider credential 和 Base URL；排障时不要输出 Key。 |
