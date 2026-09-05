@@ -14,7 +14,6 @@
 import type {
   OpenAPI,
   Operation,
-  Parameter,
   Reference,
   RequestBody,
   Schema,
@@ -33,7 +32,7 @@ import {
   extractOkResponse,
   extractOperationEndpoints,
   extractOperationOkResponseJsonSchema,
-  extractParameter,
+  extractPathParameters,
   extractRequestBody,
   extractSchema,
   isReference,
@@ -43,7 +42,6 @@ import type { EventStreamSchema } from './types';
 import { operationIdToCommandName, tagsToAggregates } from './utils';
 
 const CommandOkResponseRef = '#/components/responses/wow.CommandOk';
-const IdParameterRef = '#/components/parameters/wow.id';
 
 /**
  * Resolves aggregate definitions from OpenAPI specifications.
@@ -69,7 +67,10 @@ export class AggregateResolver {
    * @private
    */
   private build() {
-    const endpoints = extractOperationEndpoints(this.openAPI.paths);
+    const endpoints = extractOperationEndpoints(
+      this.openAPI.paths,
+      this.openAPI.components,
+    );
     for (const endpoint of endpoints) {
       this.commands(endpoint.path, endpoint);
       this.state(endpoint.operation);
@@ -130,20 +131,10 @@ export class AggregateResolver {
       return;
     }
 
-    const parameters = operation.parameters ?? [];
-    const idRefParameter = parameters
-      .filter(p => isReference(p) && p.$ref === IdParameterRef)
-      .at(0) as Reference | undefined;
-    const pathParameters = parameters.filter(
-      p => !isReference(p) && p.in === 'path',
-    ) as Parameter[];
-    if (idRefParameter) {
-      const idParameter = extractParameter(
-        idRefParameter,
-        this.openAPI.components!,
-      );
-      pathParameters.push(idParameter!);
-    }
+    const pathParameters = extractPathParameters(
+      operation,
+      this.openAPI.components ?? {},
+    );
     const requestBody = operation.requestBody as RequestBody;
     const commandRefSchema = requestBody.content[
       ContentTypeValues.APPLICATION_JSON
@@ -183,7 +174,10 @@ export class AggregateResolver {
     if (!operation.operationId?.endsWith('.snapshot_state.single')) {
       return;
     }
-    const stateRefSchema = extractOperationOkResponseJsonSchema(operation);
+    const stateRefSchema = extractOperationOkResponseJsonSchema(
+      operation,
+      this.openAPI.components,
+    );
     if (!isReference(stateRefSchema)) {
       return;
     }
@@ -211,8 +205,10 @@ export class AggregateResolver {
     if (!operation.operationId?.endsWith('.event.list_query')) {
       return;
     }
-    const eventStreamArraySchema =
-      extractOperationOkResponseJsonSchema(operation);
+    const eventStreamArraySchema = extractOperationOkResponseJsonSchema(
+      operation,
+      this.openAPI.components,
+    );
     if (isReference(eventStreamArraySchema)) {
       return;
     }
