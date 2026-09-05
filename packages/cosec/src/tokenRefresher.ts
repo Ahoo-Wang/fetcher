@@ -14,6 +14,7 @@
 import type { Fetcher } from '@ahoo-wang/fetcher';
 import { ResultExtractors } from '@ahoo-wang/fetcher';
 import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from './cosecRequestInterceptor';
+import { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './unauthorizedErrorInterceptor';
 
 /**
  * Interface representing an access token used for authentication.
@@ -188,11 +189,24 @@ export class CoSecTokenRefresher implements TokenRefresher {
    *
    * @warning **Important**: Always include the `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` attribute
    * in refresh requests to avoid infinite loops caused by recursive token refresh attempts.
+   * @param shouldNotifyUnauthorized Optional manager guard, evaluated when a refresh error reaches the unauthorized interceptor
    */
-  refresh(token: CompositeToken): Promise<CompositeToken> {
+  refresh(
+    token: CompositeToken,
+    shouldNotifyUnauthorized?: () => boolean,
+  ): Promise<CompositeToken> {
     // Send a POST request to the configured endpoint with the token as body
     // and extract the response as JSON to return a new CompositeToken
 
+    const attributes = new Map<string, unknown>([
+      [IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true],
+    ]);
+    if (shouldNotifyUnauthorized) {
+      attributes.set(
+        UNAUTHORIZED_ERROR_INTERCEPTOR_NAME,
+        shouldNotifyUnauthorized,
+      );
+    }
     return this.options.fetcher.post<CompositeToken>(
       this.options.endpoint,
       {
@@ -200,7 +214,7 @@ export class CoSecTokenRefresher implements TokenRefresher {
       },
       {
         resultExtractor: ResultExtractors.Json,
-        attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]]),
+        attributes,
       },
     );
   }

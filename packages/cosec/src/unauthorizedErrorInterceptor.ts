@@ -12,7 +12,10 @@
  */
 import type { ErrorInterceptor, FetchExchange } from '@ahoo-wang/fetcher';
 import { ResponseCodes } from './types';
-import { RefreshTokenError } from './jwtTokenManager';
+import {
+  RefreshSessionChangedError,
+  RefreshTokenError,
+} from './jwtTokenManager';
 
 /**
  * The name identifier for the UnauthorizedErrorInterceptor.
@@ -112,10 +115,19 @@ export class UnauthorizedErrorInterceptor implements ErrorInterceptor {
    * ```
    */
   async intercept(exchange: FetchExchange): Promise<void> {
+    const notification = exchange.attributes?.get(this.name);
+    if (
+      exchange.error instanceof RefreshSessionChangedError ||
+      notification === true
+    ) {
+      return;
+    }
     if (
       exchange.response?.status === ResponseCodes.UNAUTHORIZED ||
       exchange.error instanceof RefreshTokenError
     ) {
+      if (typeof notification === 'function' && !notification()) return;
+      exchange.attributes?.set(this.name, true);
       await this.options.onUnauthorized(exchange);
     }
   }
