@@ -93,11 +93,12 @@ export interface UseViewStateOptions {
   defaultCondition?: Condition;
   /** Current filter condition (controlled mode) */
   externalCondition?: Condition;
-  /** Callback to update condition (controlled mode) */
+  /** Callback to update condition; reset also supplies the complete default filters. */
   externalUpdateCondition?: (
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
     filterStates: Map<Key, FilterState>,
+    resetFilters?: ActiveFilter[],
   ) => void;
   /** Default sort configuration (uncontrolled mode) */
   defaultSorter?: FieldSort[];
@@ -141,6 +142,8 @@ export interface UseViewStateReturn {
   pageSize: number;
   /** Function to update page size */
   setPageSize: (pageSize: number) => void;
+  /** Updates the page and page size together, emitting one change. */
+  setPagination: (page: number, pageSize: number) => void;
   /** Current filter condition */
   condition: Condition;
   /** Function to update condition */
@@ -267,6 +270,7 @@ export function useViewState({
     reset,
   } = useActiveViewState({
     defaultColumns: defaultColumns,
+    defaultPage: defaultPage,
     defaultPageSize: defaultPageSize,
     defaultActiveFilters: defaultActiveFilters || [],
     defaultTableSize: defaultTableSize,
@@ -326,6 +330,12 @@ export function useViewState({
     onChange?.(condition, page, pageSize, sorter);
   };
 
+  const setPagination = (page: number, pageSize: number) => {
+    setPage(page);
+    setPageSize(pageSize);
+    onChange?.(condition, page, pageSize, sorter);
+  };
+
   /**
    * Updates filter condition and triggers onChange callback.
    * Typically called when user applies a new filter.
@@ -359,6 +369,18 @@ export function useViewState({
    */
   const resetFn = () => {
     reset();
+    externalUpdateCondition?.(
+      defaultCondition || DEFAULT_CONDITION,
+      new Map(),
+      new Map(),
+      defaultActiveFilters ?? [],
+    );
+    externalUpdateSorter?.(defaultSorter ?? []);
+    externalUpdateColumns?.(defaultColumns);
+    externalUpdateActiveFilters?.(defaultActiveFilters ?? []);
+    externalUpdatePage?.(defaultPage);
+    externalUpdatePageSize?.(defaultPageSize);
+    externalUpdateTableSize?.(defaultTableSize);
     onChange?.(
       defaultCondition || DEFAULT_CONDITION,
       defaultPage,
@@ -384,6 +406,7 @@ export function useViewState({
     setPage: setPageFn,
     pageSize,
     setPageSize: setPageSizeFn,
+    setPagination,
     columns,
     setColumns,
     activeFilters,
