@@ -32,7 +32,10 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventstream
 | Build a custom stage | `TextLineTransformStream`, `ServerSentEventTransformStream`, `JsonServerSentEventTransformStream<T>` | The individual `TransformStream` stages. |
 
 Import `@ahoo-wang/fetcher-eventstream` before calling the `Response` prototype
-helpers. `isEventStream` uses `Content-Type.includes('text/event-stream')`.
+helpers. `isEventStream` compares the complete media type before the first `;`
+with `text/event-stream`, ignoring case and surrounding whitespace. Parameters
+such as `charset=utf-8` are accepted; `text/event-stream-extra` and
+`application/json; note=text/event-stream` are not.
 
 ## Consume typed JSON events
 
@@ -69,11 +72,15 @@ unspecified event type to `message`, ignores comment lines, joins repeated
 `data:` fields with `\n`, ignores `id` values containing NUL, and accepts
 `retry` only when it contains ASCII digits. It emits a frame at a blank line or
 when the input stream flushes only if at least one `data:` field was received.
-A metadata-only group does not emit at its blank line, and that blank line does
-not reset its `event`, `id`, or `retry`: those values apply to the following
-data-bearing event. At EOF, metadata-only residue is discarded by flush cleanup
+A metadata-only group does not emit at its blank line. Every blank line resets
+the event type to `message`, while retaining `id` and `retry`. An empty `data:`
+field still emits an event with empty data; after dispatch, its event type also
+resets. At EOF, metadata-only residue is discarded by flush cleanup
 ([`packages/eventstream/src/serverSentEventTransformStream.ts:116`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L116),
 [`packages/eventstream/src/serverSentEventTransformStream.ts:157`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L157)).
+
+The blank-line reset follows the [WHATWG SSE dispatch steps](https://html.spec.whatwg.org/multipage/server-sent-events.html#dispatchMessage),
+which clear the event type even when no data has been received.
 
 ```text
 Response.body (ReadableStream<Uint8Array>)
@@ -93,7 +100,7 @@ the JSON transform only when every non-terminal `data` field is valid JSON.
 | API | Return / failure boundary |
 | --- | --- |
 | `response.contentType` | `string | null` from the `Content-Type` header. |
-| `response.isEventStream` | `true` only when that header includes `text/event-stream`. |
+| `response.isEventStream` | `true` when the media type before `;`, trimmed and compared without case sensitivity, equals `text/event-stream`. |
 | `response.eventStream()` | Raw stream or `null`; it does not throw for a non-SSE content type. |
 | `response.requiredEventStream()` | Raw stream; otherwise `EventStreamConvertError` retaining `response`. |
 | `response.jsonEventStream<T>(detector?)` | JSON stream or `null`. |
@@ -139,7 +146,7 @@ stream creation and the whole consuming loop inside the same error boundary.
 
 | Symptom | Check |
 | --- | --- |
-| `requiredEventStream()` throws immediately | Confirm `Content-Type` includes `text/event-stream` and the `Response` has a body. |
+| `requiredEventStream()` throws immediately | Confirm the media type before Content-Type parameters is `text/event-stream` and the `Response` has a body. |
 | `response.eventStream` is missing | Import `@ahoo-wang/fetcher-eventstream` for its prototype side effect. |
 | JSON processing fails after some events | Identify the malformed `data` payload; use the raw stream for mixed text/JSON protocols or a detector for sentinels. |
 | A `[DONE]` frame becomes a parse error | Pass `event => event.data === '[DONE]'` as the `TerminateDetector`. |
