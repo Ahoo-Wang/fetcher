@@ -352,4 +352,23 @@ describe('useDebouncedCallback', () => {
       'useDebouncedCallback: at least one of leading or trailing must be true',
     );
   });
+  it.each([false, true])(
+    'keeps the leading window across explicit cancel and rerender (trailing: %s)',
+    trailing => {
+      vi.setSystemTime(1000);
+      const callback = vi.fn();
+      const { result, rerender } = renderHook(() =>
+        useDebouncedCallback(callback, { delay: 100, leading: true, trailing }),
+      );
+      act(() => result.current.run('first'));
+      act(() => result.current.cancel());
+      rerender();
+      act(() => result.current.run('second'));
+      expect(callback).toHaveBeenCalledExactlyOnceWith('first');
+      expect(result.current.isPending()).toBe(trailing);
+      act(() => vi.advanceTimersByTime(100));
+      expect(callback).toHaveBeenCalledTimes(trailing ? 2 : 1);
+      expect(result.current.isPending()).toBe(false);
+    },
+  );
 });

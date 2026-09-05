@@ -12,6 +12,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { useQueryState } from '../../src';
 
@@ -626,4 +627,30 @@ describe('useQueryState', () => {
       });
     });
   });
+});
+
+it('does not replay an uncancelled standalone query under StrictMode', async () => {
+  const pending: (() => void)[] = [];
+  const completed: string[] = [];
+  const execute = vi.fn(async (query: { id: string }) => {
+    await new Promise<void>(resolve => pending.push(resolve));
+    completed.push(query.id);
+  });
+  const { rerender } = renderHook(
+    ({ query }) => useQueryState({ query, autoExecute: true, execute }),
+    { initialProps: { query: { id: 'first' } }, wrapper: StrictMode },
+  );
+  expect(execute).toHaveBeenCalledTimes(1);
+  rerender({ query: { id: 'first' } });
+  expect(execute).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    pending[0]();
+  });
+  expect(completed).toEqual(['first']);
+  rerender({ query: { id: 'next' } });
+  expect(execute).toHaveBeenCalledTimes(2);
+  await act(async () => {
+    pending[1]();
+  });
+  expect(completed).toEqual(['first', 'next']);
 });
