@@ -6,7 +6,7 @@ TypeScript HTTP-client ecosystem built around `Fetcher`.
 
 - 默认使用中文与用户沟通。
 - Read applicable nested `AGENTS.md` files before editing, including `packages/<package>/AGENTS.md` or `wiki/AGENTS.md`. Their rules apply within their directory.
-- Read versions, Node/pnpm requirements, and scripts from root `package.json`; workspace membership and dependency versions come from `pnpm-workspace.yaml`.
+- Read the release version, Node/pnpm requirements, and root scripts from `package.json`; use `pnpm-workspace.yaml` for workspace membership and the catalog, and each package's `package.json` for its dependencies and scripts.
 - Keep changes scoped, follow existing patterns, and reuse package APIs. For fixes, inspect callers and address the shared cause.
 
 ## Repository Map
@@ -44,7 +44,7 @@ pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 ```
 
 - Run affected package tests and builds. **Before committing, `pnpm test:unit` must pass.** Report checks run and any blocked validation.
-- Use Vitest globals and the package's `test/` layout. React/viewer use jsdom; viewer loads `test/setup.ts`. Storybook browser tests run separately from `test:unit`.
+- Follow each package's Vitest configuration, test imports, and `test/` layout. React/viewer use jsdom; viewer loads `test/setup.ts`. Storybook browser tests run separately from `test:unit`.
 - `pnpm lint` runs ESLint with `--fix`; `pnpm format` rewrites the repository. Prefer file-scoped checks/formatting and inspect the diff.
 
 ## Code and Change Boundaries
