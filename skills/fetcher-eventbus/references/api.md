@@ -159,6 +159,26 @@ await bus.emit('broadcast-message'); // Local + cross-tab
 
 Default messenger channel: `_broadcast_:{type}`. Pass a custom `messenger` option to override.
 
+`BroadcastTypedEventBusOptions<EVENT>` also accepts an optional message conversion:
+
+```typescript
+messageTransformer?: {
+  serialize(event: EVENT): unknown;
+  deserialize(message: unknown): EVENT;
+};
+```
+
+It can also be assigned to `bus.messageTransformer` after construction. Local
+handlers receive the original event; serialization runs only before posting to
+the messenger. Each `emit()` captures its starting transformer before awaiting
+local handlers, so changing or clearing the property does not change an in-flight
+message's encoding. Incoming messages are deserialized before any delegate handlers
+run, including handlers registered before the transformer was configured. Without
+a transformer, messages pass through unchanged. Outgoing conversion errors propagate
+from `emit()`. Incoming conversion or delegate errors are reported with `console.warn`
+and the bus type; an undecodable message is not dispatched, and later messages can
+still be received. Messenger callbacks do not leave rejected promises unhandled.
+
 ### Generic EventBus<Events>
 
 Manages multiple named event types with lazy-loaded TypedEventBus instances:

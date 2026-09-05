@@ -15,6 +15,7 @@ import type { Serializer } from './serializer';
 import { jsonSerializer } from './serializer';
 import type { EventHandler, TypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 import {
+  BroadcastTypedEventBus,
   nameGenerator,
   SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
@@ -23,6 +24,46 @@ import { getStorage } from './env';
 export interface StorageEvent<Deserialized> {
   newValue?: Deserialized | null;
   oldValue?: Deserialized | null;
+}
+
+// Kept on the wire so receivers never need to serialize a cloned class instance.
+const SERIALIZED_STORAGE_EVENT = '__fetcher_storage_snapshot__';
+
+type SerializedStorageEvent = StorageEvent<unknown> & {
+  [SERIALIZED_STORAGE_EVENT]: StorageEvent<string>;
+};
+
+const broadcastStorageStates = new WeakMap<
+  object,
+  {
+    owners: number;
+    snapshots: WeakMap<object, SerializedStorageEvent>;
+    transformer: object;
+  }
+>();
+
+function deserializeStorageEvent<T>(
+  message: unknown,
+  serializer: Serializer<string, T>,
+): StorageEvent<T> {
+  const snapshot = (message as SerializedStorageEvent)[
+    SERIALIZED_STORAGE_EVENT
+  ];
+  if (!snapshot) return message as StorageEvent<T>;
+  const newValue =
+    snapshot.newValue == null
+      ? snapshot.newValue
+      : serializer.deserialize(snapshot.newValue);
+  let oldValue: T | null | undefined;
+  try {
+    oldValue =
+      snapshot.oldValue == null
+        ? snapshot.oldValue
+        : serializer.deserialize(snapshot.oldValue);
+  } catch {
+    // A missing historical value must not discard a valid current value.
+  }
+  return { newValue, oldValue };
 }
 
 /**
@@ -84,8 +125,13 @@ export class KeyStorage<
   private readonly serializer: Serializer<string, Deserialized>;
   private readonly storage: Storage;
   public readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
+  private releaseTransformer?: () => void;
   private readonly defaultValue: Deserialized | null = null;
   private cacheValue: Deserialized | null = null;
+  private readonly serializedEvents = new WeakMap<
+    object,
+    SerializedStorageEvent
+  >();
   private readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> =
     {
       name: nameGenerator.generate('KeyStorage'),
@@ -107,6 +153,33 @@ export class KeyStorage<
       new SerialTypedEventBus<StorageEvent<Deserialized>>(
         `KeyStorage:${this.key}`,
       );
+    if (this.eventBus instanceof BroadcastTypedEventBus) {
+      const bus = this.eventBus;
+      let state = broadcastStorageStates.get(bus);
+      if (state?.transformer !== bus.messageTransformer) state = undefined;
+      if (state?.owners === 0 || (!state && !bus.messageTransformer)) {
+        const snapshots = new WeakMap<object, SerializedStorageEvent>();
+        const serializer = this.serializer;
+        const transformer = {
+          serialize: (event: StorageEvent<Deserialized>) =>
+            snapshots.get(event) ?? event,
+          deserialize: (message: unknown) =>
+            deserializeStorageEvent(message, serializer),
+        };
+        state = { owners: 0, snapshots, transformer };
+        bus.messageTransformer = transformer;
+        broadcastStorageStates.set(bus, state);
+      }
+      if (state) {
+        this.serializedEvents = state.snapshots;
+        state.owners++;
+        const ownedState = state;
+        this.releaseTransformer = () => {
+          // Direct bus subscribers can still receive already posted snapshots.
+          ownedState.owners--;
+        };
+      }
+    }
     this.defaultValue = options.defaultValue ?? null;
     this.eventBus.on(this.keyStorageHandler);
   }
@@ -185,12 +258,14 @@ export class KeyStorage<
   set(value: Deserialized): void {
     const oldValue = this.get();
     const serialized = this.serializer.serialize(value);
+    const event = this.snapshotEvent(
+      { newValue: value, oldValue },
+      serialized,
+      this.snapshotOldValue(oldValue),
+    );
     this.storage.setItem(this.key, serialized);
     this.cacheValue = value;
-    this.eventBus.emit({
-      newValue: value,
-      oldValue: oldValue,
-    });
+    this.eventBus.emit(event);
   }
 
   /**
@@ -207,12 +282,52 @@ export class KeyStorage<
    */
   remove(): void {
     const oldValue = this.get();
+    const event = this.snapshotEvent(
+      { newValue: null, oldValue },
+      null,
+      this.snapshotOldValue(oldValue),
+    );
     this.storage.removeItem(this.key);
     this.cacheValue = null;
-    this.eventBus.emit({
-      oldValue: oldValue,
-      newValue: null,
-    });
+    this.eventBus.emit(event);
+  }
+
+  private snapshotOldValue(
+    oldValue: Deserialized | null,
+  ): string | null | undefined {
+    try {
+      const stored = this.storage.getItem(this.key);
+      if (stored != null) return stored;
+      if (oldValue == null) return oldValue === null ? null : undefined;
+      return this.serializer.serialize(oldValue);
+    } catch {
+      // Missing snapshot data must not prevent a cached value from being changed.
+      return undefined;
+    }
+  }
+
+  private snapshotEvent(
+    event: StorageEvent<Deserialized>,
+    serializedNewValue: string | null,
+    serializedOldValue: string | null | undefined,
+  ): StorageEvent<Deserialized> {
+    if (!this.releaseTransformer) return event;
+    const wireEvent: SerializedStorageEvent = {
+      [SERIALIZED_STORAGE_EVENT]: {
+        newValue: serializedNewValue,
+        oldValue: serializedOldValue,
+      },
+    };
+    for (const name of ['newValue', 'oldValue'] as const) {
+      try {
+        const json = JSON.stringify(event[name]);
+        if (json !== undefined) wireEvent[name] = JSON.parse(json);
+      } catch {
+        // Unsupported JSON values still travel in the serializer's string snapshot.
+      }
+    }
+    this.serializedEvents.set(event, wireEvent);
+    return event;
   }
 
   /**
@@ -231,5 +346,7 @@ export class KeyStorage<
    */
   destroy() {
     this.eventBus.off(this.keyStorageHandler.name);
+    this.releaseTransformer?.();
+    this.releaseTransformer = undefined;
   }
 }

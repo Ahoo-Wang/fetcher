@@ -35,6 +35,12 @@ export interface BroadcastTypedEventBusOptions<EVENT> {
    * implementation when provided.
    */
   messenger?: CrossTabMessenger;
+
+  /** Converts only messages crossing the messenger boundary; local events stay unchanged. */
+  messageTransformer?: {
+    serialize(event: EVENT): unknown;
+    deserialize(message: unknown): EVENT;
+  };
 }
 
 /**
@@ -112,6 +118,7 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   public readonly type: EventType;
   private readonly delegate: TypedEventBus<EVENT>;
   private messenger: CrossTabMessenger;
+  public messageTransformer?: BroadcastTypedEventBusOptions<EVENT>['messageTransformer'];
 
   /**
    * Creates a new broadcast event bus with cross-context communication
@@ -122,14 +129,22 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   constructor(options: BroadcastTypedEventBusOptions<EVENT>) {
     this.delegate = options.delegate;
     this.type = this.delegate.type;
+    this.messageTransformer = options.messageTransformer;
     const messenger =
       options.messenger ?? createCrossTabMessenger(`_broadcast_:${this.type}`);
     if (!messenger) {
       throw new Error('Messenger setup failed');
     }
     this.messenger = messenger;
-    this.messenger.onmessage = async (event: EVENT) => {
-      await this.delegate.emit(event);
+    this.messenger.onmessage = async (message: unknown) => {
+      try {
+        const event = this.messageTransformer
+          ? this.messageTransformer.deserialize(message)
+          : (message as EVENT);
+        await this.delegate.emit(event);
+      } catch (error) {
+        console.warn(`Broadcast message error for ${this.type}:`, error);
+      }
     };
   }
 
@@ -160,8 +175,11 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    * @throws Propagates any errors from local event processing
    */
   async emit(event: EVENT): Promise<void> {
+    const transformer = this.messageTransformer;
     await this.delegate.emit(event);
-    this.messenger.postMessage(event);
+    this.messenger.postMessage(
+      transformer ? transformer.serialize(event) : event,
+    );
   }
 
   /**

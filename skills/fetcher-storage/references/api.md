@@ -83,7 +83,7 @@ const userStorage = new KeyStorage<{ name: string; age: number }>({
 - `get(): T | null` — Get value (cached, or deserialized from storage). Returns `defaultValue` if key missing.
 - `set(value: T): void` — Store value with caching and emit change event.
 - `remove(): void` — Remove value, clear cache, emit change event.
-- `destroy(): void` — Remove internal event handler to prevent memory leaks. Call when done.
+- `destroy(): void` — Remove the internal event handler and release this storage's share of the default message transformer. The automatic codec stays on the supplied bus so its direct subscribers can decode messages already in transit. Call when done.
 - `addListener(handler: EventHandler<StorageEvent<T>>): RemoveStorageListener`
 
 ### Example: Basic Usage with defaultValue
@@ -121,7 +121,15 @@ storage.destroy(); // prevent memory leaks
 
 ## Cross-tab Synchronization
 
-`KeyStorage` defaults to `SerialTypedEventBus`, so its change notifications stay in the current JavaScript context. Pass a `BroadcastTypedEventBus` to enable browser cross-tab synchronization; its default messenger uses `BroadcastChannel` with a `StorageEvent` fallback.
+`KeyStorage` defaults to `SerialTypedEventBus`, so its change notifications stay in the current JavaScript context. Pass a `BroadcastTypedEventBus` to enable browser cross-tab synchronization; its default messenger uses `BroadcastChannel` with a `StorageEvent` fallback. When the bus has no `messageTransformer`, KeyStorage installs its default snapshot conversion. Storage instances sharing that bus also share the default transformer and snapshot table; their serializers must accept the same value type and wire representation. Receiving caches and listeners use the serializer to restore custom class semantics for both `newValue` and `oldValue`.
+
+`keyStorage.eventBus` is the supplied bus itself. A preconfigured `messageTransformer` takes precedence and remains unchanged; the caller then owns transport encoding and decoding of ordinary `StorageEvent` values, including custom class restoration. KeyStorage does not send its private snapshot format through the caller's transformer. `destroy()` releases one default-transformer owner but leaves the codec available to direct bus subscribers. When no owners remain, a later KeyStorage can install its serializer and snapshot table if the bus still uses that automatic codec. Preconfigured or subsequently replaced transformers remain in place. In-flight emissions retain their starting transformer and snapshots after an owner is destroyed; incoming messages use the codec present when they arrive, including after an explicit replacement or idle-bus takeover.
+
+With the default transformer, storage snapshots are serialized only at the messenger boundary and decoded before any receiving handler runs. Subscribers registered on the supplied bus before or after KeyStorage construction, through `eventBus.on`, or through `addListener` all receive standard enumerable `newValue` and `oldValue` fields. Spreading or JSON-serializing these events does not expose transport metadata. Local notifications preserve object identity; ordinary custom local buses receive the same standard events.
+
+Wire messages additionally retain each JSON-serializable standard value alongside snapshot metadata, so existing tabs that only understand `newValue`/`oldValue` continue receiving ordinary JSON updates. Unsupported JSON values, such as BigInt or cyclic objects, use only the string snapshots and require the newer decoder; those values cannot be reconstructed by a legacy receiver. The default channel and storage keys do not change.
+
+For the default transformer, the old snapshot comes from the stored string without reserializing a cached value, so readable legacy values can still be replaced or removed. When storage returns null or undefined for a missing key, a serializable source default is included as the old value. If that default cannot be serialized, the optional snapshot read fails, or a receiving serializer cannot decode the old snapshot, remote `oldValue` is undefined and a valid new value still updates the cache and listeners. New-value decoding errors, uncached `get()` reads and actual storage writes/removals still propagate their errors.
 
 ```typescript
 import {
