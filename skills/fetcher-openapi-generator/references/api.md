@@ -119,6 +119,64 @@ parseOpenAPI(inputPath) → AggregateResolver(openAPI).resolve()
 5. **Index Generator** - Creates `index.ts` barrel exports at every directory level
 6. **Post-processing** - `formatText()`, `organizeImports()`, `fixMissingImports()` on all files
 
+Generated object properties follow each schema's `required` list, including nested
+objects and `allOf` siblings. Read-only properties retain `readonly` in nullable
+and inline object aliases. Required keys absent from `properties` follow
+`additionalProperties`, remain open to extra keys when that option is omitted,
+and preserve custom `x-map-key-schema` constraints. Forbidden required keys have
+type `never`; required names use own-property checks and escaped property names.
+For undeclared required keys with default or `true` additional properties, the
+fallback accepts primitive/null values, dictionaries, and readonly arrays while
+rejecting function values, so inherited prototype methods do not satisfy them.
+TypeScript cannot prove arbitrary properties are own properties or recursively
+validate JSON values through these structural types.
+OpenAPI 3.0 `nullable: true` permits `null` only when enum, const, and composition
+constraints also allow it. A standalone `required` list only constrains objects.
+Without `type`, nonempty `properties` still constrain object instances, including
+beside compositions; these object branches remain open when
+`additionalProperties` is omitted. The unconstrained non-object branch includes
+mutable and readonly arrays.
+Object constraints in `allOf`, including nested compositions and references,
+exclude primitive and array branches. Object-constrained compositions and nonempty
+enum/const object literals, including nested literals, also add an
+optional `globalThis.Symbol.iterator` property of type `never`, so readonly arrays
+cannot satisfy a weak object shape. This boundary requires `ES2015.Iterable` or a
+higher standard library, such as the repository's ES2020 library. Custom iterable
+objects must first be converted to plain JSON objects; this is not a general
+TypeScript representation of every JavaScript object that is not an array.
+Mixed `oneOf` and `anyOf` branches retain their allowed non-object values.
+Empty root properties do not erase composition constraints. When multiple
+composition keywords occur together, each `allOf` intersection and `oneOf` or
+`anyOf` union is retained, then their results are intersected. A `type` array
+applies the same schema constraints to each listed type before forming its union,
+so object/array alternatives do not introduce an unconstrained `any`. Repeated
+composition nodes and edges are collected once, then object constraints propagate
+until stable. Recursive references do not produce path-dependent partial cache
+entries, and repeated DAG branches reuse the same collected nodes. A component named
+`Exclude` remains usable alongside composed object schemas. Generated `Record`
+references use `globalThis.Record` so a component named `Record` cannot shadow
+the utility type.
+
+All `allOf` schemas generate TypeScript intersection aliases so required,
+optional, and conflicting property types retain every member constraint. Object
+schemas with optional properties and schema-valued `additionalProperties` also
+use an intersection alias: the declared properties retain their modifiers while
+the string index keeps the additional-property type without adding `undefined`.
+Other plain object schemas continue generating interfaces. TypeScript string
+indexes also constrain declared keys; they cannot express the JSON Schema case
+where declared properties have types incompatible with `additionalProperties`.
+Generated types do not perform runtime JSON validation.
+
+String-only enums with no const or composition constraints, and with `type` omitted or set to `'string'`, remain TypeScript enums (including empty-string members).
+Separator-only values whose normalized name is empty retain their original key,
+so `Model['']` and `Model['-']` are distinct; the same keys apply to `EnumText` and
+composed enum value objects. When a string enum also has `allOf`, `oneOf`, or `anyOf`, it generates a constrained type
+alias and a same-name `const` object, preserving runtime access such as
+`Model.ON`. The object retains every declared enum value; the type alias rejects
+values excluded by the composition. Use `typeof Model.ON` for a member's type in
+this form. `ModelEnumText` remains available when `x-enum-text` is supplied.
+Numeric and mixed enums use literal unions that preserve the JSON value types and keep `ModelEnumText` when supplied. Mixed enums also export a same-name `const` object for their existing string members. Enum and const literals are intersected with supported type, object, and composition constraints; contradictory literal and type constraints reject every value. Known literals are checked against JSON type categories, so arrays do not satisfy `object` and fractional numbers do not satisfy `integer`. Empty object literals, including nested enum/const objects, use `globalThis.Record<string, never>` rather than the broad TypeScript `{}` type.
+
 ## Generated Output Structure
 
 ```
