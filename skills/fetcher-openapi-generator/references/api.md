@@ -109,6 +109,42 @@ parseOpenAPI(inputPath) → AggregateResolver(openAPI).resolve()
 5. **Index Generator** - Creates `index.ts` barrel exports at every directory level
 6. **Post-processing** - `formatText()`, `organizeImports()`, `fixMissingImports()` on all files
 
+Generated object properties follow each schema's `required` list, including nested
+objects and `allOf` siblings. Read-only properties retain `readonly` in nullable
+and inline object aliases. Required keys absent from `properties` follow
+`additionalProperties`, remain open to extra keys when that option is omitted,
+and preserve custom `x-map-key-schema` constraints. Forbidden required keys have
+type `never`; required names use own-property checks and escaped property names.
+OpenAPI 3.0 `nullable: true` permits `null` only when enum, const, and composition
+constraints also allow it. A standalone `required` list only constrains objects.
+Object constraints in `allOf`, including nested compositions and references,
+exclude primitive and array alternatives while preserving permitted `null`.
+Mixed `oneOf` and `anyOf` branches retain their allowed non-object values.
+Empty root properties do not erase composition constraints. When multiple
+composition keywords occur together, each `allOf` intersection and `oneOf` or
+`anyOf` union is retained, then their results are intersected. A component named
+`Exclude` remains usable alongside composed object schemas.
+
+All `allOf` schemas generate TypeScript intersection aliases so required,
+optional, and conflicting property types retain every member constraint. Object
+schemas with optional properties and schema-valued `additionalProperties` also
+use an intersection alias: the declared properties retain their modifiers while
+the string index keeps the additional-property type without adding `undefined`.
+Other plain object schemas continue generating interfaces. TypeScript string
+indexes also constrain declared keys; they cannot express the JSON Schema case
+where declared properties have types incompatible with `additionalProperties`.
+Generated types do not perform runtime JSON validation.
+
+String enums remain TypeScript enums (including empty-string members).
+Separator-only values whose normalized name is empty retain their original key,
+so `Model['']` and `Model['-']` are distinct; the same keys apply to `EnumText` and
+composed enum value objects. When a string enum also has `allOf`, `oneOf`, or `anyOf`, it generates a constrained type
+alias and a same-name `const` object, preserving runtime access such as
+`Model.ON`. The object retains every declared enum value; the type alias rejects
+values excluded by the composition. Use `typeof Model.ON` for a member's type in
+this form. `ModelEnumText` remains available when `x-enum-text` is supplied.
+Numeric and mixed enums use literal unions that preserve the JSON value types.
+
 ## Generated Output Structure
 
 ```

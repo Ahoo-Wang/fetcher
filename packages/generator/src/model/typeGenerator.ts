@@ -14,9 +14,9 @@
 import type { ModelInfo } from './modelInfo';
 import { resolveReferenceModelInfo } from './modelInfo';
 import type { InterfaceDeclaration, JSDocableNode, SourceFile } from 'ts-morph';
+import { CodeBlockWriter, VariableDeclarationKind } from 'ts-morph';
 import type { Components, Reference, Schema } from '@ahoo-wang/fetcher-openapi';
 import type {
-  AllOfSchema,
   ArraySchema,
   CompositionSchema,
   EnumSchema,
@@ -28,9 +28,9 @@ import {
   addImportModelInfo,
   addMainSchemaJSDoc,
   addSchemaJSDoc,
+  extractSchema,
   getEnumText,
   getMapKeySchema,
-  isAllOf,
   isArray,
   isComposition,
   isEnum,
@@ -69,16 +69,22 @@ export class TypeGenerator implements Generator {
       return this.processTypeAlias(schema);
     }
     if (isEnum(schema)) {
-      return this.processEnum(schema);
+      return schema.enum.every(value => typeof value === 'string')
+        ? this.processEnum(schema)
+        : this.processTypeAlias(schema);
+    }
+    if (
+      (schema.nullable && schema.type) ||
+      (isComposition(schema) &&
+        (schema.type || schema.properties || schema.required))
+    ) {
+      return this.processTypeAlias(schema);
     }
     if (isObject(schema)) {
       return this.processInterface(schema);
     }
     if (isArray(schema)) {
       return this.processArray(schema);
-    }
-    if (isAllOf(schema)) {
-      return this.processIntersection(schema);
     }
     if (isComposition(schema)) {
       return this.processComposition(schema);
@@ -99,25 +105,58 @@ export class TypeGenerator implements Generator {
 
   private resolveAdditionalProperties(schema: Schema): string {
     if (
-      schema.additionalProperties === undefined ||
-      schema.additionalProperties === false
+      schema.additionalProperties === false ||
+      (schema.additionalProperties === undefined &&
+        !schema.required?.some(
+          name => !Object.hasOwn(schema.properties ?? {}, name),
+        ))
     ) {
       return '';
     }
 
-    if (schema.additionalProperties === true) {
+    if (
+      schema.additionalProperties === true ||
+      schema.additionalProperties === undefined
+    ) {
       return '[key: string]: any';
     }
 
-    const valueType = this.resolveType(schema.additionalProperties);
-    return `[key: string]: ${valueType}`;
+    return `[key: string]: ${this.resolveAdditionalPropertyType(schema)}`;
+  }
+
+  private resolveAdditionalPropertyType(schema: Schema): string {
+    return this.resolveType(
+      typeof schema.additionalProperties === 'object'
+        ? schema.additionalProperties
+        : {},
+    );
+  }
+
+  private requiresAdditionalPropertiesIntersection(schema: Schema): boolean {
+    return (
+      typeof schema.additionalProperties === 'object' &&
+      Object.keys(schema.properties ?? {}).some(
+        name => !schema.required?.includes(name),
+      )
+    );
+  }
+
+  private resolveRequiredAdditionalPropertyType(schema: Schema): string {
+    if (schema.additionalProperties === false) return 'never';
+    if (typeof schema.additionalProperties === 'object') {
+      return this.resolveType(schema.additionalProperties);
+    }
+    return '{} | null';
   }
 
   private resolvePropertyDefinitions(schema: ObjectSchema): string[] {
     const { properties } = schema;
     return Object.entries(properties).map(([propName, propSchema]) => {
       const type = this.resolveType(propSchema);
-      const resolvedPropName = resolvePropertyName(propName);
+      const resolvedPropName =
+        (isReadOnly(propSchema) ? 'readonly ' : '') +
+        resolvePropertyName(propName) +
+        (schema.required?.includes(propName) ? '' : '?');
       if (!isReference(propSchema)) {
         const jsDocDescriptions = schemaJSDoc(propSchema);
         const doc = jsDoc(jsDocDescriptions, '\n * ');
@@ -141,7 +180,22 @@ export class TypeGenerator implements Generator {
       parts.push(...propertyDefs);
     }
 
-    const additionalProps = this.resolveAdditionalProperties(schema);
+    for (const name of schema.required ?? []) {
+      if (!Object.hasOwn(schema.properties ?? {}, name)) {
+        parts.push(
+          `${resolvePropertyName(name)}: ${this.resolveRequiredAdditionalPropertyType(schema)}`,
+        );
+      }
+    }
+    const mapType =
+      isMap(schema) && getMapKeySchema(schema)
+        ? this.resolveMapType(schema)
+        : this.requiresAdditionalPropertiesIntersection(schema)
+          ? `Record<string, ${this.resolveAdditionalPropertyType(schema)}>`
+          : undefined;
+    const additionalProps = mapType
+      ? ''
+      : this.resolveAdditionalProperties(schema);
     if (additionalProps) {
       parts.push(additionalProps);
     }
@@ -150,7 +204,8 @@ export class TypeGenerator implements Generator {
       return 'Record<string, any>';
     }
 
-    return `{\n  ${parts.join(';\n  ')}; \n}`;
+    const objectType = `{\n  ${parts.join(';\n  ')}; \n}`;
+    return mapType ? `(${objectType} & ${mapType})` : objectType;
   }
 
   private resolveMapValueType(schema: MapSchema): string {
@@ -178,25 +233,106 @@ export class TypeGenerator implements Generator {
     return `Record<${keyType},${valueType}>`;
   }
 
+  private resolveCompositionConstraints(
+    schema: Schema | Reference,
+    visiting = new Set<Schema>(),
+  ): { objectConstrained: boolean; hasUntypedRequired: boolean } {
+    const resolved = isReference(schema)
+      ? this.components && extractSchema(schema, this.components)
+      : schema;
+    if (!resolved || visiting.has(resolved)) {
+      return { objectConstrained: false, hasUntypedRequired: false };
+    }
+    visiting.add(resolved);
+    const [allOf, oneOf, anyOf] = [
+      resolved.allOf,
+      resolved.oneOf,
+      resolved.anyOf,
+    ].map(
+      members =>
+        members?.map(member =>
+          this.resolveCompositionConstraints(member, visiting),
+        ) ?? [],
+    );
+    visiting.delete(resolved);
+    return {
+      objectConstrained:
+        resolved.type === 'object' ||
+        resolved.type === 'null' ||
+        allOf.some(member => member.objectConstrained) ||
+        [oneOf, anyOf].some(
+          members =>
+            members.length > 0 &&
+            members.every(member => member.objectConstrained),
+        ),
+      hasUntypedRequired:
+        (!resolved.type && !!resolved.required?.length) ||
+        [allOf, oneOf, anyOf].some(members =>
+          members.some(member => member.hasUntypedRequired),
+        ),
+    };
+  }
+
   resolveType(schema: Schema | Reference): string {
     if (isReference(schema)) {
       return this.resolveReference(schema).name;
     }
-    if (isMap(schema)) {
+    if (isComposition(schema)) {
+      const compositions = (['allOf', 'oneOf', 'anyOf'] as const).flatMap(
+        keyword => {
+          const schemas = schema[keyword];
+          if (!schemas?.length) return [];
+          const types = schemas.map(member => {
+            const type = this.resolveType(member);
+            return type === 'any'
+              ? 'unknown'
+              : /[|&]/.test(type)
+                ? `(${type})`
+                : type;
+          });
+          return [`(${types.join(keyword === 'allOf' ? ' & ' : ' | ')})`];
+        },
+      );
+      const composed =
+        compositions.length === 1
+          ? compositions[0]
+          : `(${compositions.join(' & ')})`;
+      const base = {
+        ...schema,
+        oneOf: undefined,
+        anyOf: undefined,
+        allOf: undefined,
+      };
+      const baseType = this.resolveType(base);
+      const type =
+        baseType === 'any' ? composed : `(${composed} & (${baseType}))`;
+      const constraints = this.resolveCompositionConstraints(schema);
+      // Weak object types can otherwise admit non-object branches through intersections.
+      return constraints.objectConstrained && constraints.hasUntypedRequired
+        ? `globalThis.Exclude<${type}, string | number | boolean | unknown[]>`
+        : type;
+    }
+    if (schema.const !== undefined) {
+      return typeof schema.const === 'string'
+        ? new CodeBlockWriter({ useSingleQuote: true })
+            .quote(schema.const)
+            .toString()
+        : JSON.stringify(schema.const);
+    }
+    if (schema.nullable && schema.type && !isEnum(schema)) {
+      return `(${this.resolveType({ ...schema, nullable: false })}) | null`;
+    }
+    if (isMap(schema) && !schema.required?.length) {
       return this.resolveMapType(schema);
     }
-    if (schema.const) {
-      return `'${schema.const}'`;
-    }
     if (isEnum(schema)) {
-      return schema.enum.map(val => `\`${val}\``).join(' | ');
-    }
-
-    if (isComposition(schema)) {
-      const schemas = schema.oneOf || schema.anyOf || schema.allOf || [];
-      const types = schemas.map(s => this.resolveType(s));
-      const separator = isAllOf(schema) ? ' & ' : ' | ';
-      return `(${types.join(separator)})`;
+      return schema.enum
+        .map(value =>
+          typeof value === 'string'
+            ? `\`${value.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')}\``
+            : JSON.stringify(value),
+        )
+        .join(' | ');
     }
 
     if (isArray(schema)) {
@@ -207,6 +343,10 @@ export class TypeGenerator implements Generator {
       return this.resolveObjectType(schema);
     }
     if (!schema.type) {
+      if (schema.required?.length) {
+        // required constrains objects; by itself it does not reject null or other JSON types.
+        return `(${this.resolveObjectType({ ...schema, type: 'object' })} | null | string | number | boolean | unknown[])`;
+      }
       return 'any';
     }
     return resolvePrimitiveType(schema.type);
@@ -226,11 +366,35 @@ export class TypeGenerator implements Generator {
         }),
       });
     }
+    if (isComposition(schema)) {
+      this.sourceFile.addVariableStatement({
+        declarationKind: VariableDeclarationKind.Const,
+        isExported: true,
+        declarations: [
+          {
+            name: this.modelInfo.name,
+            initializer: writer => {
+              writer.inlineBlock(() => {
+                for (const value of schema.enum) {
+                  writer
+                    .write(`${resolveEnumMemberName(value)}: `)
+                    .quote(value)
+                    .write(',')
+                    .newLine();
+                }
+              });
+              writer.write(' as const');
+            },
+          },
+        ],
+      });
+      return this.processTypeAlias(schema);
+    }
     return this.sourceFile.addEnum({
       name: this.modelInfo.name,
       isExported: true,
       members: schema.enum
-        .filter(value => typeof value === 'string' && value.length > 0)
+        .filter(value => typeof value === 'string')
         .map(value => ({
           name: resolveEnumMemberName(value),
           initializer: `\`${value}\``,
@@ -242,23 +406,29 @@ export class TypeGenerator implements Generator {
     interfaceDeclaration: InterfaceDeclaration,
     propName: string,
     propSchema: Schema | Reference,
+    required: boolean = true,
   ): void {
     const propType = this.resolveType(propSchema);
     const resolvedPropName = resolvePropertyName(propName);
     let propertySignature = interfaceDeclaration.getProperty(resolvedPropName);
     if (propertySignature) {
       propertySignature.setType(propType);
+      if (required) propertySignature.setHasQuestionToken(false);
     } else {
       propertySignature = interfaceDeclaration.addProperty({
         name: resolvedPropName,
         type: propType,
         isReadonly: isReadOnly(propSchema),
+        hasQuestionToken: !required,
       });
     }
     addSchemaJSDoc(propertySignature, propSchema);
   }
 
   private processInterface(schema: ObjectSchema): JSDocableNode | undefined {
+    if (this.requiresAdditionalPropertiesIntersection(schema)) {
+      return this.processTypeAlias(schema);
+    }
     const interfaceDeclaration = this.sourceFile.addInterface({
       name: this.modelInfo.name,
       isExported: true,
@@ -267,18 +437,28 @@ export class TypeGenerator implements Generator {
     const properties = schema.properties || {};
 
     Object.entries(properties).forEach(([propName, propSchema]) => {
-      this.addPropertyToInterface(interfaceDeclaration, propName, propSchema);
+      this.addPropertyToInterface(
+        interfaceDeclaration,
+        propName,
+        propSchema,
+        schema.required?.includes(propName) ?? false,
+      );
     });
 
-    if (schema.additionalProperties) {
+    for (const name of schema.required ?? []) {
+      if (!Object.hasOwn(properties, name)) {
+        interfaceDeclaration.addProperty({
+          name: resolvePropertyName(name),
+          type: this.resolveRequiredAdditionalPropertyType(schema),
+        });
+      }
+    }
+
+    if (this.resolveAdditionalProperties(schema)) {
       const indexSignature = interfaceDeclaration.addIndexSignature({
         keyName: 'key',
         keyType: 'string',
-        returnType: this.resolveType(
-          schema.additionalProperties === true
-            ? {}
-            : (schema.additionalProperties as Schema | Reference),
-        ),
+        returnType: this.resolveAdditionalPropertyType(schema),
       });
       indexSignature.addJsDoc('Additional properties');
     }
@@ -302,33 +482,6 @@ export class TypeGenerator implements Generator {
       type: this.resolveType(schema),
       isExported: true,
     });
-  }
-
-  private processIntersection(schema: AllOfSchema): JSDocableNode | undefined {
-    const interfaceDeclaration = this.sourceFile.addInterface({
-      name: this.modelInfo.name,
-      isExported: true,
-    });
-    schema.allOf.forEach(allOfSchema => {
-      if (isReference(allOfSchema)) {
-        const resolvedType = this.resolveType(allOfSchema);
-        interfaceDeclaration.addExtends(resolvedType);
-        return;
-      }
-      if (isObject(allOfSchema)) {
-        Object.entries(allOfSchema.properties).forEach(
-          ([propName, propSchema]) => {
-            this.addPropertyToInterface(
-              interfaceDeclaration,
-              propName,
-              propSchema,
-            );
-          },
-        );
-      }
-    });
-
-    return interfaceDeclaration;
   }
 
   private processTypeAlias(

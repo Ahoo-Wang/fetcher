@@ -118,7 +118,7 @@ describe('TypeGenerator', () => {
         type: 'object',
         properties: { name: { type: 'string' }, age: { type: 'number' } },
       });
-      expect(result).toBe('{\n  name: string;\n  age: number; \n}');
+      expect(result).toBe('{\n  name?: string;\n  age?: number; \n}');
     });
 
     it('should resolve object type with additional properties', () => {
@@ -185,7 +185,7 @@ describe('TypeGenerator', () => {
         type: 'object',
         properties: { name: { type: 'string' } },
       });
-      expect(result).toBe('{\n  name: string; \n}');
+      expect(result).toBe('{\n  name?: string; \n}');
     });
 
     it('should resolve object with additional properties only', () => {
@@ -214,7 +214,7 @@ describe('TypeGenerator', () => {
         properties: { name: { type: 'string' } },
         additionalProperties: { type: 'number' },
       });
-      expect(result).toBe('{\n  name: string;\n  [key: string]: number; \n}');
+      expect(result).toBe('({\n  name?: string; \n} & Record<string, number>)');
     });
 
     it('should return Record<string, any> for empty object', () => {
@@ -296,7 +296,7 @@ describe('TypeGenerator', () => {
           age: { type: 'number' },
         },
       });
-      expect(result).toEqual(['name: string', 'age: number']);
+      expect(result).toEqual(['name?: string', 'age?: number']);
     });
   });
 
@@ -403,11 +403,7 @@ describe('TypeGenerator', () => {
 
     it('should process allOf schema', () => {
       const mockSourceFile = {
-        addInterface: vi.fn().mockReturnValue({
-          addProperty: vi.fn(),
-          getProperty: vi.fn().mockReturnValue(null),
-          addExtends: vi.fn(),
-        }),
+        addTypeAlias: vi.fn().mockReturnValue({ addJsDoc: vi.fn() }),
         getDirectoryPath: vi.fn().mockReturnValue('/output'),
         getImportDeclaration: vi.fn().mockReturnValue(null),
         addImportDeclaration: vi.fn().mockReturnValue({
@@ -432,8 +428,9 @@ describe('TypeGenerator', () => {
       );
 
       const result = (generator as any).process();
-      expect(mockSourceFile.addInterface).toHaveBeenCalledWith({
+      expect(mockSourceFile.addTypeAlias).toHaveBeenCalledWith({
         name: 'TestModel',
+        type: '(BaseModel & {\n  extra?: boolean; \n})',
         isExported: true,
       });
       expect(result).toBeDefined();
@@ -547,6 +544,7 @@ describe('TypeGenerator', () => {
     it('should update existing property type when property already exists', () => {
       const mockPropertySignature = {
         setType: vi.fn(),
+        setHasQuestionToken: vi.fn(),
       };
       const mockInterfaceDeclaration = {
         getProperty: vi.fn().mockReturnValue(mockPropertySignature),
@@ -617,7 +615,7 @@ describe('TypeGenerator', () => {
       expect(result).toBe(mockInterfaceDeclaration);
     });
 
-    it('should add index signature when additionalProperties is a schema', () => {
+    it('should add a strict index signature when declared properties are required', () => {
       const mockIndexSignature = {
         addJsDoc: vi.fn(),
       };
@@ -636,7 +634,8 @@ describe('TypeGenerator', () => {
           key: 'TestModel',
           schema: {
             type: 'object',
-            properties: { id: { type: 'string' } },
+            properties: { id: { type: 'number' } },
+            required: ['id'],
             additionalProperties: { type: 'number' },
           },
         },
@@ -645,7 +644,8 @@ describe('TypeGenerator', () => {
 
       const result = (generator as any).processInterface({
         type: 'object',
-        properties: { id: { type: 'string' } },
+        properties: { id: { type: 'number' } },
+        required: ['id'],
         additionalProperties: { type: 'number' },
       });
 
