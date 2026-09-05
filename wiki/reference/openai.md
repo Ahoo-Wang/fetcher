@@ -114,13 +114,12 @@ const completion: ChatResponse = await chat.completions({
 
 ## Streaming, `[DONE]`, and cancellation
 
-`completions<T>()` resolves to `JsonServerSentEventStream<ChatResponse>` only
-when `T['stream']` extends literal `true`; otherwise it resolves to
-`ChatResponse`. This conditional type is non-distributive: `stream: boolean`
-therefore has the static result `ChatResponse`, even though `beforeExecute()`
-will choose SSE at runtime when that boolean happens to be `true`. Do not call
-this API with a runtime-boolean `stream`; branch first and construct literal
-`true` / `false` requests in each branch.
+`completions<T>()` returns a stream for literal `stream: true` and a
+`ChatResponse` for literal `false`, `undefined`, or an omitted flag. A runtime
+boolean, a broad `ChatRequest`, or a union of streaming and non-streaming requests
+returns `ChatResponse | JsonServerSentEventStream<ChatResponse>`. The conditional
+type distributes over request unions. Narrow the result with
+`result instanceof ReadableStream` before consuming it.
 ([`chatClient.ts:146`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L146),
 [`chatClient.ts:255`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L255)).
 The extractor decodes JSON SSE events and stops before yielding an event whose
@@ -212,7 +211,7 @@ helper and throws when that conversion cannot be performed
 
 | Symptom | Check |
 | --- | --- |
-| Static `ChatResponse` but runtime SSE | Do not use `stream: boolean`: it statically resolves to `ChatResponse`; branch and call with literal `true` or `false`. |
+| A dynamic `stream` flag gives a union return type | `stream: boolean` returns `ChatResponse \| JsonServerSentEventStream<ChatResponse>`; narrow the result before using it, or branch before calling with literal `true` or `false` for a precise return type. |
 | Stream conversion fails | Confirm the provider returns SSE frames and a compatible event-stream content type, not JSON or an HTML proxy error. |
 | HTTP succeeded but a field is absent | The package does not runtime-validate success payloads; check provider error/data shapes before dereferencing typed fields. |
 | `401` or `403` | Check the trusted server's provider credential and the configured base URL; do not print the key to debug. |
