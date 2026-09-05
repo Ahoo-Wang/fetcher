@@ -30,6 +30,9 @@ export interface Serializer<Serialized, Deserialized> {
    * @returns The deserialized value
    */
   deserialize(value: Serialized): Deserialized;
+
+  /** Restores a known legacy broadcast value when no serialized snapshot exists. */
+  deserializeLegacy?(value: unknown): Deserialized;
 }
 
 /**

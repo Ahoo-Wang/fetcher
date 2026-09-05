@@ -285,6 +285,25 @@ export class JwtCompositeTokenSerializer
     );
   }
 
+  /** Restores the known object shape emitted by legacy token storage tabs. */
+  deserializeLegacy(value: unknown): JwtCompositeToken {
+    if (typeof value !== 'object' || value === null || !('token' in value)) {
+      throw new TypeError('Invalid legacy composite token');
+    }
+    const token = value.token;
+    if (
+      typeof token !== 'object' ||
+      token === null ||
+      !('accessToken' in token) ||
+      typeof token.accessToken !== 'string' ||
+      !('refreshToken' in token) ||
+      typeof token.refreshToken !== 'string'
+    ) {
+      throw new TypeError('Invalid legacy composite token');
+    }
+    return this.deserialize(this.serialize(value as JwtCompositeToken));
+  }
+
   /**
    * Serializes a JwtCompositeToken to a JSON string.
    *

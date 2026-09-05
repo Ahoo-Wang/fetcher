@@ -45,13 +45,13 @@ const { serialBusChannels } = vi.hoisted(() => ({
 // Mock BroadcastTypedEventBus and SerialTypedEventBus
 vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
   BroadcastTypedEventBus: class BroadcastTypedEventBus {
-    emit = vi.fn();
+    emit = vi.fn().mockResolvedValue(undefined);
     on = vi.fn();
     off = vi.fn();
     destroy = vi.fn();
   },
   SerialTypedEventBus: class SerialTypedEventBus {
-    emit = vi.fn();
+    emit = vi.fn().mockResolvedValue(undefined);
     on = vi.fn();
     off = vi.fn();
     destroy = vi.fn();
@@ -113,7 +113,7 @@ describe('TokenStorage', () => {
   describe('constructor', () => {
     it('should initialize with default options', () => {
       const mockEventBus = {
-        emit: vi.fn(),
+        emit: vi.fn().mockResolvedValue(undefined),
         on: vi.fn(),
         off: vi.fn(),
         destroy: vi.fn(),

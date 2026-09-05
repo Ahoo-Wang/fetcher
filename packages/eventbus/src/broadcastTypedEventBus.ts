@@ -35,6 +35,16 @@ export interface BroadcastTypedEventBusOptions<EVENT> {
    * implementation when provided.
    */
   messenger?: CrossTabMessenger;
+
+  /** Converts only messages crossing the messenger boundary; local events stay unchanged. */
+  messageTransformer?: {
+    serialize(event: EVENT): unknown;
+    deserialize(message: unknown): EVENT;
+    /** Capture this dispatch's wire message before local handlers; defaults to false. */
+    serializeBeforeDispatch?: boolean;
+    /** Retries a failed messenger post once using a replacement wire message. */
+    fallbackSerialize?(message: unknown, error: unknown): unknown;
+  };
 }
 
 /**
@@ -112,6 +122,7 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   public readonly type: EventType;
   private readonly delegate: TypedEventBus<EVENT>;
   private messenger: CrossTabMessenger;
+  public messageTransformer?: BroadcastTypedEventBusOptions<EVENT>['messageTransformer'];
 
   /**
    * Creates a new broadcast event bus with cross-context communication
@@ -122,14 +133,22 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   constructor(options: BroadcastTypedEventBusOptions<EVENT>) {
     this.delegate = options.delegate;
     this.type = this.delegate.type;
+    this.messageTransformer = options.messageTransformer;
     const messenger =
       options.messenger ?? createCrossTabMessenger(`_broadcast_:${this.type}`);
     if (!messenger) {
       throw new Error('Messenger setup failed');
     }
     this.messenger = messenger;
-    this.messenger.onmessage = async (event: EVENT) => {
-      await this.delegate.emit(event);
+    this.messenger.onmessage = async (message: unknown) => {
+      try {
+        const event = this.messageTransformer
+          ? this.messageTransformer.deserialize(message)
+          : (message as EVENT);
+        await this.delegate.emit(event);
+      } catch (error) {
+        console.warn(`Broadcast message error for ${this.type}:`, error);
+      }
     };
   }
 
@@ -160,8 +179,22 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    * @throws Propagates any errors from local event processing
    */
   async emit(event: EVENT): Promise<void> {
+    const transformer = this.messageTransformer;
+    const beforeDispatch = transformer?.serializeBeforeDispatch === true;
+    const preparedMessage =
+      transformer && beforeDispatch ? transformer.serialize(event) : undefined;
     await this.delegate.emit(event);
-    this.messenger.postMessage(event);
+    const message = beforeDispatch
+      ? preparedMessage
+      : transformer
+        ? transformer.serialize(event)
+        : event;
+    try {
+      this.messenger.postMessage(message);
+    } catch (error) {
+      if (!transformer?.fallbackSerialize) throw error;
+      this.messenger.postMessage(transformer.fallbackSerialize(message, error));
+    }
   }
 
   /**
