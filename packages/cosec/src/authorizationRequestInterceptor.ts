@@ -12,13 +12,18 @@
  */
 
 import type { FetchExchange, RequestInterceptor } from '@ahoo-wang/fetcher';
-import { DEFAULT_INTERCEPTOR_ORDER_STEP } from '@ahoo-wang/fetcher';
+import {
+  DEFAULT_INTERCEPTOR_ORDER_STEP,
+  getHeader,
+  setHeader,
+} from '@ahoo-wang/fetcher';
 import {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
   IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
 } from './cosecRequestInterceptor';
 import type { JwtTokenManagerCapable } from './types';
 import { CoSecHeaders } from './types';
+import { assertTokenSession, TOKEN_SESSION_ATTRIBUTE } from './refreshSession';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AuthorizationInterceptorOptions extends JwtTokenManagerCapable {}
@@ -63,11 +68,16 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
   async intercept(exchange: FetchExchange): Promise<void> {
     // Get the current token from token manager
     let currentToken = this.options.tokenManager.currentToken;
+    assertTokenSession(exchange, currentToken);
 
     const requestHeaders = exchange.ensureRequestHeaders();
 
-    // Skip if no token exists or Authorization header is already set
-    if (!currentToken || requestHeaders[CoSecHeaders.AUTHORIZATION]) {
+    // Caller-provided credentials remain outside the managed session.
+    if (getHeader(requestHeaders, CoSecHeaders.AUTHORIZATION) !== undefined) {
+      return;
+    }
+    if (!currentToken) {
+      exchange.attributes.set(TOKEN_SESSION_ATTRIBUTE, null);
       return;
     }
 
@@ -77,16 +87,20 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
       currentToken.isRefreshNeeded &&
       currentToken.isRefreshable
     ) {
-      await this.options.tokenManager.refresh();
+      await this.options.tokenManager.refresh(exchange);
     }
 
     // Get the current token again (might have been refreshed)
     currentToken = this.options.tokenManager.currentToken;
+    assertTokenSession(exchange, currentToken);
 
     // Add Authorization header if we have a token
     if (currentToken) {
-      requestHeaders[CoSecHeaders.AUTHORIZATION] =
-        `Bearer ${currentToken.access.token}`;
+      const authorization = `Bearer ${currentToken.access.token}`;
+      setHeader(requestHeaders, CoSecHeaders.AUTHORIZATION, authorization);
+      // Only this injected credential may be replaced during a 401 retry.
+      exchange.attributes.set(this.name, authorization);
+      exchange.attributes.set(TOKEN_SESSION_ATTRIBUTE, currentToken);
     }
   }
 }

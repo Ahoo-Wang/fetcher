@@ -81,10 +81,14 @@ const cosec = new CoSecConfigurer({
 cosec.applyTo(api);
 ```
 
-Use a refresh Fetcher that is not configured with this CoSec configurer. The
-built-in refresher marks its request with
-`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`, preventing the request interceptor from
-trying to refresh again ([`tokenRefresher.ts:192`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L192)).
+The example uses a separate Fetcher for refresh traffic. The same configured
+Fetcher is also supported: the built-in refresher marks its request with
+`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` to skip recursive refresh in both request
+and response interceptors. Its 401 notification is deferred to the originating
+request only when that request's Fetcher has an unauthorized handler. Direct
+refresher calls and a separate refresh Fetcher retain their handler when there
+is no outer handler. An old session's refresh does not notify a replacement session
+([`tokenRefresher.ts:194`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L194)).
 
 ## Token lifecycle and state
 
@@ -103,7 +107,7 @@ does **not** sign out or erase persisted tokens
 | `authenticated` | `boolean` | `true` only when the access JWT is not expired |
 | `currentUser` | `CoSecJwtPayload \| null` | Decoded payload only; never proof of trust |
 | `JwtTokenManager.currentToken` | `JwtCompositeToken \| null` | Current wrapped pair |
-| `JwtTokenManager.refresh()` | `Promise<void>` | Replaces the stored pair or fails and removes it |
+| `JwtTokenManager.refresh()` | `Promise<void>` | Updates or removes only the unchanged session that started the refresh |
 
 `earlyPeriod` defaults to `0` seconds. It shifts expiration earlier for both
 access and refresh JWTs; malformed JWTs are considered expired
@@ -129,8 +133,8 @@ CoSecRequest
 | --- | --- | --- |
 | Request identity | `CoSecRequestInterceptor` | Sets app, device, unique request, and optional space headers |
 | Resource attribution | `ResourceAttributionRequestInterceptor` | Fills missing URL-template `tenantId` and `ownerId` from decoded claims |
-| Bearer request | `AuthorizationRequestInterceptor` | Keeps an explicit `Authorization` header for that request phase; otherwise refreshes if needed and adds `Bearer` |
-| 401 response | `AuthorizationResponseInterceptor` | Refreshes, drops stale Bearer, then reruns the exchange at most once |
+| Bearer request | `AuthorizationRequestInterceptor` | Keeps an explicit `Authorization` header regardless of case; otherwise refreshes if needed and adds `Bearer` |
+| 401 response | `AuthorizationResponseInterceptor` | Preserves caller credentials; otherwise refreshes, drops managed stale Bearer, and retries at most once |
 | Final errors | `UnauthorizedErrorInterceptor`, `ForbiddenErrorInterceptor` | Invoke application callbacks; they do not repair permissions |
 
 The request order is ascending numeric `order`: `CoSecRequestInterceptor`, then
@@ -148,50 +152,62 @@ Use its constructor options only when your templates use different parameter
 names.
 
 Before sending a request, `AuthorizationRequestInterceptor` preserves an
-explicit `Authorization` Header. With an owned token, it refreshes only when
+explicit `Authorization` header regardless of case, including an empty value.
+With a managed token, it refreshes only when
 the access token needs refresh, the refresh JWT remains valid, and the request
 does not contain the ignore-refresh attribute
 ([`authorizationRequestInterceptor.ts:63`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L63)).
-That preservation applies only to the initial request-interceptor pass: on a
-401, `AuthorizationResponseInterceptor` does not inspect who supplied the
-header. It can refresh, deletes that header, and retries with the managed token.
-For a deliberately different credential, use an independent Fetcher that does
-not install CoSec's authorization-response interceptor
-([`authorizationResponseInterceptor.ts:102`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L102)).
+On a 401, `AuthorizationResponseInterceptor` skips automatic refresh and retry
+when the header was supplied by the caller or replaced after CoSec injected it.
+Only CoSec's injected header can be removed for a retry with the managed token
+([`authorizationResponseInterceptor.ts:95`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L95)).
 
 ## Concurrent refresh, retry, and errors
 
-`JwtTokenManager` stores one in-flight refresh promise. Simultaneous callers
-await that same promise; a successful refresh writes the new pair. A refresh
-failure removes stored state and throws `RefreshTokenError` wrapping the old
-token and original cause ([`jwtTokenManager.ts:59`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L59)).
+`JwtTokenManager` shares an in-flight refresh promise only between callers with
+the same current token instance. A replacement session starts its own refresh
+without waiting for an older session. Success writes the new pair only if the
+starting token is still current; failure removes only that unchanged session
+and throws `RefreshTokenError` wrapping its token and original cause
+([`jwtTokenManager.ts:83`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L83)).
+
+If the session changes during refresh, `RefreshSessionChangedError` rejects
+the original request. It neither sends nor retries that request using the
+replacement session, and it does not trigger `onUnauthorized` for the old 401.
+Authorization interceptors pass their exchange to `refresh(exchange?)` so the
+manager can select the actual notification handler; direct calls can omit it.
+Session changes from token-storage write or removal listeners receive the same
+protection. The exchange retains its refresh result and checks ownership again
+before choosing Authorization and before an unauthorized callback runs.
 
 A 401 response is separate from proactive expiry refresh. The response
 interceptor retries one exchange at most once (`AUTHORIZATION_RESPONSE_MAX_RETRY
-=== 1`). It refreshes only when a refresh token is still usable, removes the
-stale Bearer header before retry, and propagates a retry failure without
-clearing an otherwise fresh token
-([`authorizationResponseInterceptor.ts:72`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L72)).
+=== 1`). It refreshes only when a refresh token is still usable and the request
+does not carry caller credentials or the ignore-refresh attribute. It removes
+the managed stale Bearer header before retry and propagates a retry failure
+without clearing an otherwise fresh token
+([`authorizationResponseInterceptor.ts:80`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L80)).
 
 | Failure | Result |
 | --- | --- |
 | No current token and `refresh()` is called directly | Rejects with `Error('No token found')` |
-| Refresh endpoint / parsing fails | Token storage is removed; `RefreshTokenError` propagates |
+| Refresh endpoint / parsing fails | Only the unchanged starting session is removed; `RefreshTokenError` propagates |
+| Session changes during refresh | `RefreshSessionChangedError` stops the original request; the replacement session is preserved without unauthorized notification |
 | Refresh JWT expired | No 401 refresh/retry; the original response continues |
 | Retry still returns 401 | No second refresh/retry; final error pipeline may run |
-| 401 with configured `onUnauthorized` | Callback runs for 401 or `RefreshTokenError` |
+| 401 with configured `onUnauthorized` | Callback runs once per exchange for 401 or `RefreshTokenError`; a built-in refresh defers only to an existing outer handler |
 | 403 with configured `onForbidden` | Callback runs for 403 only |
 
 ## Cleanup, security, and troubleshooting
 
-`signOut()` does not cancel an in-progress `JwtTokenManager.refresh()`. A refresh
-that succeeds later unconditionally writes its new pair, so it can restore a
-token after sign-out ([`jwtTokenManager.ts:68`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L68)).
-For final logout, stop admitting new protected requests, coordinate cancellation
-or completion of in-flight requests that can trigger refresh, then call
-`signOut()` after that work settles; call it again as the final cleanup if a
-refresh may have completed during the transition. When the storage object itself
-is no longer used, also call `destroy()`. Do not log `CompositeToken`, raw JWT
+`signOut()` clears stored state immediately. It does not cancel an in-progress
+`JwtTokenManager.refresh()`, but the manager discards its late result instead of
+restoring the signed-out token. If another `signIn()` replaces the session,
+the old refresh cannot overwrite or remove that replacement
+([`jwtTokenManager.ts:120`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L120)).
+Applications can still cancel in-flight requests when their results are no
+longer needed. When the storage object itself is no longer used, also call
+`destroy()`. Do not log `CompositeToken`, raw JWT
 strings, Authorization headers, or decoded payloads that contain sensitive
 claims. `parseJwtPayload()` is a
 decode helper, not signature verification; invalid parsing returns `null`, and
@@ -203,10 +219,10 @@ so do not rely on it as a redaction boundary
 | --- | --- |
 | No `Authorization` header | Supply `tokenRefresher`, sign in a valid access JWT, and check that the request did not set its own header. |
 | Repeated 401 | The client retries only once; inspect server-side authorization and refresh endpoint behavior without logging token data. |
-| Token unexpectedly disappears | A failed refresh intentionally removes storage; handle `RefreshTokenError` through `onUnauthorized`. |
+| Token unexpectedly disappears | A failed refresh removes its unchanged starting session; handle `RefreshTokenError` through `onUnauthorized`. |
 | Wrong tenant/owner path | Ensure `{tenantId}` / `{ownerId}` are in the URL template, or pass the explicit values to override attribution. |
 | Tokens survive component teardown | `destroy()` is cleanup only; call `signOut()` to remove the stored entry. |
-| Token reappears after logout | Coordinate in-flight refresh/request work, then perform final `signOut()`; sign-out alone cannot cancel refresh. |
+| Token reappears after logout | The manager discards old refresh results after sign-out; check later `signIn()` calls or other token-storage writers. |
 | Browser security concern | Default `localStorage` is plaintext; move credentials to an HttpOnly/server-side design or provide a reviewed storage adapter. |
 
 ## Source references
@@ -214,5 +230,5 @@ so do not rely on it as a redaction boundary
 - [packages/cosec/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts#L14)
 - [packages/cosec/src/cosecConfigurer.ts:445](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L445)
 - [packages/cosec/src/tokenStorage.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenStorage.ts#L60)
-- [packages/cosec/src/jwtTokenManager.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L59)
+- [packages/cosec/src/jwtTokenManager.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L83)
 - [packages/cosec/src/authorizationResponseInterceptor.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L29)

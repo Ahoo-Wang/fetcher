@@ -15,6 +15,7 @@ import type { CoSecJwtPayload, EarlyPeriodCapable, JwtPayload } from './jwts';
 import { isTokenExpired, parseJwtPayload } from './jwts';
 import type { CompositeToken } from './tokenRefresher';
 import type { Serializer } from '@ahoo-wang/fetcher-storage';
+import { idGenerator } from './idGenerator';
 
 /**
  * Interface for JWT token with typed payload.
@@ -180,10 +181,12 @@ export class JwtCompositeToken
    *
    * @param token The composite token containing access and refresh token strings
    * @param earlyPeriod The early expiration period in seconds (default: 0)
+   * @param sessionId Session generation retained when restoring or refreshing a token.
    */
   constructor(
     public readonly token: CompositeToken,
     public readonly earlyPeriod: number = 0,
+    public readonly sessionId: string = idGenerator.generateId(),
   ) {
     this.access = new JwtToken(token.accessToken, earlyPeriod);
     this.refresh = new JwtToken(token.refreshToken, earlyPeriod);
@@ -215,6 +218,21 @@ export class JwtCompositeToken
   get authenticated(): boolean {
     return !this.access.isExpired;
   }
+}
+
+// A non-cryptographic fingerprint identifies the exact legacy record across tabs.
+// It is not an authentication or integrity check; new sign-ins use random IDs.
+function legacyTokenSessionId(token: CompositeToken): string {
+  let hash = 0x6c62272e07bb014262b821756295c58dn;
+  for (const byte of new TextEncoder().encode(
+    JSON.stringify([token.accessToken, token.refreshToken]),
+  )) {
+    hash = BigInt.asUintN(
+      128,
+      (hash ^ BigInt(byte)) * 0x1000000000000000000013bn,
+    );
+  }
+  return `legacy:${hash.toString(16).padStart(32, '0')}`;
 }
 
 /**
@@ -253,8 +271,18 @@ export class JwtCompositeTokenSerializer
    * @throws Error if the parsed object doesn't match the expected CompositeToken structure
    */
   deserialize(value: string): JwtCompositeToken {
-    const compositeToken = JSON.parse(value) as CompositeToken;
-    return new JwtCompositeToken(compositeToken, this.earlyPeriod);
+    const { sessionId, ...compositeToken } = JSON.parse(
+      value,
+    ) as CompositeToken & {
+      sessionId?: unknown;
+    };
+    return new JwtCompositeToken(
+      compositeToken,
+      this.earlyPeriod,
+      typeof sessionId === 'string' && sessionId.length > 0
+        ? sessionId
+        : legacyTokenSessionId(compositeToken),
+    );
   }
 
   /**
@@ -266,7 +294,7 @@ export class JwtCompositeTokenSerializer
    * @returns A JSON string representation of the composite token
    */
   serialize(value: JwtCompositeToken): string {
-    return JSON.stringify(value.token);
+    return JSON.stringify({ ...value.token, sessionId: value.sessionId });
   }
 }
 
