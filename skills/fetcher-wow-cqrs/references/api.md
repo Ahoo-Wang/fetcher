@@ -4,6 +4,7 @@
 
 - [Core Concepts](#core-concepts)
 - [Package Imports](#package-imports)
+- [CommonJS](#commonjs)
 - [Constructors (All Use ApiMetadata)](#constructors-all-use-apimetadata)
 - [CommandClient<C>](#commandclientc)
   - [Setup](#setup)
@@ -179,6 +180,26 @@ import {
 ```
 
 ---
+
+## CommonJS
+
+The package supports ESM and CommonJS. `require('@ahoo-wang/fetcher-wow')`
+uses `dist/index.cjs`; ESM imports use `dist/index.es.js`. Save this runtime
+query-builder example as a `.cjs` file and run it with Node:
+
+```javascript
+const { filter, pagedQuery } = require('@ahoo-wang/fetcher-wow');
+
+const query = pagedQuery({
+  filter: filter.eq('state.status', 'PAID'),
+  pagination: { index: 1, size: 10 },
+});
+console.log(query.filter.field); // state.status
+console.log(query.pagination.size); // 10
+```
+
+`filter` and `pagedQuery` are runtime exports. Types such as `FilterExpression`
+and `PagedList` remain TypeScript-only and use `import type`.
 
 ## Constructors (All Use ApiMetadata)
 

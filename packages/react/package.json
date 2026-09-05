@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-react",
-  "version": "4.0.2",
+  "version": "5.0.0",
   "description": "React integration for Fetcher HTTP client. Provides React Hooks and components for seamless data fetching with automatic re-rendering and loading states.",
   "keywords": [
     "fetch",
@@ -56,12 +56,12 @@
     "immer": "catalog:"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "workspace:^4.0.0",
-    "@ahoo-wang/fetcher-eventstream": "workspace:^4.0.0",
-    "@ahoo-wang/fetcher-eventbus": "workspace:^4.0.0",
-    "@ahoo-wang/fetcher-storage": "workspace:^4.0.0",
+    "@ahoo-wang/fetcher": "workspace:^5.0.0",
+    "@ahoo-wang/fetcher-eventstream": "workspace:^5.0.0",
+    "@ahoo-wang/fetcher-eventbus": "workspace:^5.0.0",
+    "@ahoo-wang/fetcher-storage": "workspace:^5.0.0",
     "@ahoo-wang/fetcher-wow": "workspace:^",
-    "@ahoo-wang/fetcher-cosec": "workspace:^4.0.0",
+    "@ahoo-wang/fetcher-cosec": "workspace:^5.0.0",
     "react": "catalog:",
     "react-dom": "catalog:"
   },

@@ -14,6 +14,7 @@
 - [Result Extractors (for Decorator Pattern)](#result-extractors-for-decorator-pattern)
 - [ReadableStreamAsyncIterable](#readablestreamasynciterable)
 - [Installation](#installation)
+- [CommonJS](#commonjs)
 - [Related Packages](#related-packages)
 
 Implement streaming features for LLM APIs using Fetcher's eventstream package.
@@ -185,6 +186,36 @@ Internal wrapper enabling `for await...of` on ReadableStream. Polyfilled automat
 ```bash
 pnpm add @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-openai
 ```
+
+## CommonJS
+
+`@ahoo-wang/fetcher-eventstream` supports ESM and CommonJS. `require()` uses
+`dist/index.umd.cjs`, while ESM imports use `dist/index.es.js`. Requiring the
+package also installs its Response prototype extensions. This `.cjs` example
+uses runtime conversion functions and a local SSE response:
+
+```javascript
+const {
+  toServerSentEventStream,
+  toJsonServerSentEventStream,
+} = require('@ahoo-wang/fetcher-eventstream');
+
+async function main() {
+  const response = new Response('data: {"text":"Hello"}\n\n', {
+    headers: { 'Content-Type': 'text/event-stream' },
+  });
+  const events = toJsonServerSentEventStream(toServerSentEventStream(response));
+  for await (const event of events) console.log(event.data.text); // Hello
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+```
+
+Stream interfaces such as `ServerSentEvent` are TypeScript-only; they are not
+values to destructure from `require()`.
 
 ## Related Packages
 

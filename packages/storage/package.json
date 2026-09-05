@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-storage",
-  "version": "4.0.2",
+  "version": "5.0.0",
   "description": "A lightweight, cross-environment storage library with key-based storage and automatic environment detection. Provides consistent API for browser localStorage and in-memory storage with change notifications.",
   "keywords": [
     "storage",
@@ -53,7 +53,7 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher-eventbus": "workspace:^4.0.0"
+    "@ahoo-wang/fetcher-eventbus": "workspace:^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
