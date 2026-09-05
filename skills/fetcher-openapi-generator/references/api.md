@@ -80,6 +80,19 @@ const generator = new CodeGenerator({
 await generator.generate();
 ```
 
+Re-running generation with the output included in the supplied tsconfig
+rebuilds the generated declarations instead of appending duplicates.
+Each successful run records generated files and their content hashes in
+`<outputDir>/.fetcher-generator.json`, including barrel indexes. Later runs remove
+files no longer generated only when they remain unchanged, then rebuild indexes
+without exports for removed output. This also works across generator instances
+when the output is not included in tsconfig. Handwritten files, modified stale
+files, and legacy output without an ownership record are preserved; keep the
+manifest with the generated output to enable cleanup. Only current generated
+files are formatted and saved. Rendering failures leave existing output intact,
+and retrying the same instance discards drafts from the failed run. Filesystem
+save failures can leave partial output; generation is not a directory transaction.
+
 ### Key Exports
 
 `CodeGenerator`, `DEFAULT_CONFIG_PATH` (`./fetcher-generator.config.json`) — that is the complete public surface; option and config interfaces (`GeneratorOptions`, `GeneratorConfiguration`) are not re-exported from the package entry.
