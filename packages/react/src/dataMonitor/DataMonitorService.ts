@@ -178,16 +178,15 @@ export class DataMonitorService {
       payload: {
         body: `当前共 ${currentTotal} 条数据`,
         icon: '/logo.png',
-      },
-      onClick: () => {
-        window.focus();
-        if (notification.navigationUrl) {
-          window.location.href = notification.navigationUrl;
-        }
+        data: { navigationUrl: notification.navigationUrl },
       },
     };
 
-    notificationCenter.publish('browser', message);
+    void notificationCenter
+      .publish('browser', message)
+      .catch((error: unknown) => {
+        console.error(`DataMonitor: failed to notify for ${viewId}`, error);
+      });
   }
 
   private saveToStorage(): void {
