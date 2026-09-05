@@ -80,6 +80,9 @@ const generator = new CodeGenerator({
 await generator.generate();
 ```
 
+Re-running generation with the output included in the supplied tsconfig
+rebuilds the generated declarations instead of appending duplicates.
+
 ### Key Exports
 
 `CodeGenerator`, `DEFAULT_CONFIG_PATH` (`./fetcher-generator.config.json`) — that is the complete public surface; option and config interfaces (`GeneratorOptions`, `GeneratorConfiguration`) are not re-exported from the package entry.

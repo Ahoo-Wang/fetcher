@@ -22,6 +22,13 @@ const MODEL_FILE_NAME = 'types.ts';
 /** Alias for import paths */
 const IMPORT_ALIAS = '@';
 
+const generatedFiles = new WeakMap<Project, Set<string>>();
+
+/** Start a run without clearing files that this generator does not rewrite. */
+export function beginGeneration(project: Project): void {
+  generatedFiles.set(project, new Set());
+}
+
 /**
  * Generates the file path for a model file.
  * @param modelInfo - The model information
@@ -79,13 +86,20 @@ export function getOrCreateSourceFile(
 ): SourceFile {
   const fileName = combineURLs(outputDir, filePath);
   assertWithinOutputDir(outputDir, fileName);
-  const file = project.getSourceFile(fileName);
-  if (file) {
-    return file;
+  const file =
+    project.getSourceFile(fileName) ??
+    project.createSourceFile(fileName, '', {
+      overwrite: true,
+    });
+  const written = generatedFiles.get(project);
+  if (written) {
+    const path = file.getFilePath();
+    if (!written.has(path)) {
+      file.removeText();
+      written.add(path);
+    }
   }
-  return project.createSourceFile(fileName, '', {
-    overwrite: true,
-  });
+  return file;
 }
 
 /**

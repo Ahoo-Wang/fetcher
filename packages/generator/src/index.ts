@@ -18,7 +18,7 @@ import { ClientGenerator } from './client';
 import { GenerateContext } from './generateContext';
 import { ModelGenerator } from './model';
 import type { GeneratorConfiguration, GeneratorOptions } from './types';
-import { parseConfiguration, parseOpenAPI } from './utils';
+import { beginGeneration, parseConfiguration, parseOpenAPI } from './utils';
 
 /**
  * Default path to the generator configuration file.
@@ -104,6 +104,8 @@ export class CodeGenerator {
     } catch (e) {
       this.options.logger.info(`Configuration file parsing failed: ${e}`);
     }
+
+    beginGeneration(this.project);
 
     const context: GenerateContext = new GenerateContext({
       openAPI: openAPI,
