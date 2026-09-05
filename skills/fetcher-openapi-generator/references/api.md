@@ -86,6 +86,16 @@ await generator.generate();
 
 ## Code Generation Pipeline
 
+Component aliases are resolved locally; cyclic component aliases fail generation.
+Schema aliases retain their target type identity (`type Alias = Target`), including
+enum aliases across model files. Response aliases are resolved before selecting
+the JSON, text, or event-stream decoder.
+Path-level parameters are inherited by operations; an operation overrides a
+parameter with the same name and location. API and command clients both resolve
+custom component parameter references and aliases before binding path arguments.
+Command clients retain `wow.id` and continue to omit `tenantId`/`ownerId` arguments.
+JSON string responses are decoded as JSON.
+
 ```
 parseOpenAPI(inputPath) → AggregateResolver(openAPI).resolve()
   → ModelGenerator.generate() → ClientGenerator.generate()

@@ -51,7 +51,7 @@ export class TypeGenerator implements Generator {
   constructor(
     private readonly modelInfo: ModelInfo,
     private readonly sourceFile: SourceFile,
-    private readonly keySchema: KeySchema,
+    private readonly keySchema: KeySchema<Schema | Reference>,
     private readonly outputDir: string,
     private readonly components?: Components,
   ) {}
@@ -65,6 +65,9 @@ export class TypeGenerator implements Generator {
 
   private process(): JSDocableNode | undefined {
     const { schema } = this.keySchema;
+    if (isReference(schema)) {
+      return this.processTypeAlias(schema);
+    }
     if (isEnum(schema)) {
       return this.processEnum(schema);
     }
@@ -328,7 +331,9 @@ export class TypeGenerator implements Generator {
     return interfaceDeclaration;
   }
 
-  private processTypeAlias(schema: Schema): JSDocableNode | undefined {
+  private processTypeAlias(
+    schema: Schema | Reference,
+  ): JSDocableNode | undefined {
     return this.sourceFile.addTypeAlias({
       name: this.modelInfo.name,
       type: this.resolveType(schema),
