@@ -49,6 +49,34 @@ describe('UrlBuilder', () => {
       expect(url).toBe('https://api.example.com/users?filter=active&page=1');
     });
 
+    it.each([
+      ['/search?pattern=?', 'https://api.example.com/search?pattern=?&page=2'],
+      [
+        '/search?pattern=?#details',
+        'https://api.example.com/search?pattern=?&page=2#details',
+      ],
+      ['/search??#details', 'https://api.example.com/search??&page=2#details'],
+      [
+        '/search?pattern=why?now',
+        'https://api.example.com/search?pattern=why?now&page=2',
+      ],
+      ['/search?', 'https://api.example.com/search?page=2'],
+      ['/search?#details', 'https://api.example.com/search?page=2#details'],
+      [
+        '/search?pattern=ok&#details',
+        'https://api.example.com/search?pattern=ok&page=2#details',
+      ],
+      ['/search#details?', 'https://api.example.com/search?page=2#details?'],
+    ])(
+      'preserves the existing query when appending parameters: %s',
+      (input, expected) => {
+        const urlBuilder = new UrlBuilder('https://api.example.com');
+        const url = urlBuilder.build(input, { query: { page: 2 } });
+        expect(url).toBe(expected);
+        expect(new URL(url).searchParams.get('page')).toBe('2');
+      },
+    );
+
     it('should build URL with path parameters and query parameters', () => {
       const urlBuilder = new UrlBuilder('https://api.example.com');
       const url = urlBuilder.build('/users/{id}', {

@@ -14,6 +14,7 @@
 import { type FetchRequestInit } from './fetchRequest';
 import { type UrlParams } from './urlBuilder';
 import { mergeRecords } from './utils';
+import { mergeHeaders } from './requestHeaders';
 import type { RequestOptions } from './fetcher';
 import { DEFAULT_REQUEST_OPTIONS } from './fetcher';
 
@@ -67,12 +68,16 @@ export function mergeRequest(
 ): FetchRequestInit {
   // If first request is empty, return second request
   if (Object.keys(first).length === 0) {
-    return second;
+    return second.headers
+      ? { ...second, headers: mergeHeaders(second.headers) }
+      : second;
   }
 
   // If second request is empty, return first request
   if (Object.keys(second).length === 0) {
-    return first;
+    return first.headers
+      ? { ...first, headers: mergeHeaders(first.headers) }
+      : first;
   }
 
   // Merge nested objects
@@ -81,10 +86,7 @@ export function mergeRequest(
     query: mergeRecords(first.urlParams?.query, second.urlParams?.query),
   };
 
-  const headers = {
-    ...first.headers,
-    ...second.headers,
-  };
+  const headers = mergeHeaders(first.headers, second.headers);
 
   // For primitive values, second takes precedence
   const method = second.method ?? first.method;
