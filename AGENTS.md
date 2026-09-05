@@ -1,89 +1,69 @@
 # AGENTS.md — Fetcher Monorepo
 
-TypeScript HTTP-client ecosystem: core `Fetcher`, decorators, event bus, SSE streaming, OpenAI client, OpenAPI types + code generator, React hooks, storage, CoSec auth, Wow CQRS integration, and an Ant Design viewer component library. All packages share one version (currently 3.17.0, updated together via `pnpm update-version <version>`).
+TypeScript HTTP-client ecosystem built around `Fetcher`.
 
-## Build & Run Commands
+## Scope and Sources
+
+- 默认使用中文与用户沟通。
+- Read applicable nested `AGENTS.md` files before editing, including `packages/<package>/AGENTS.md` or `wiki/AGENTS.md`. Their rules apply within their directory.
+- Read the release version, Node/pnpm requirements, and root scripts from `package.json`; use `pnpm-workspace.yaml` for workspace membership and the catalog, and each package's `package.json` for its dependencies and scripts.
+- Keep changes scoped, follow existing patterns, and reuse package APIs. For fixes, inspect callers and address the shared cause.
+
+## Repository Map
+
+| Path                                                                 | Responsibility                                       |
+| -------------------------------------------------------------------- | ---------------------------------------------------- |
+| `packages/fetcher/`                                                  | Core HTTP client; no internal dependencies           |
+| `packages/decorator/`, `packages/eventbus/`, `packages/eventstream/` | API decorators, event bus, SSE streams               |
+| `packages/openapi/`, `packages/generator/`                           | OpenAPI types and TypeScript client generation       |
+| `packages/openai/`, `packages/cosec/`                                | OpenAI client and CoSec authentication               |
+| `packages/storage/`                                                  | Cross-environment storage                            |
+| `packages/wow/`                                                      | Wow command/query clients and query DSLs             |
+| `packages/react/`, `packages/viewer/`                                | React hooks and Ant Design viewer components         |
+| `stories/`, `.storybook/`                                            | Shared Storybook stories and configuration           |
+| `integration-test/`                                                  | Integration tests; service setup in its README files |
+| `skills/`, `wiki/`                                                   | Agent skills and bilingual VitePress documentation   |
+
+## Commands and Verification
+
+Run from the repository root unless noted:
 
 ```bash
-pnpm install              # Install all dependencies (pnpm@10, Node >= 18.20.8)
-pnpm build                # Build all packages
-pnpm test:unit            # Run unit tests (all packages)
-pnpm test:it              # Run integration tests
-pnpm lint                 # Lint all packages
-pnpm format               # Format with Prettier
-pnpm clean                # Clean all build artifacts
-pnpm storybook            # Start Storybook (viewer/react)
+pnpm install
+pnpm build                # Recursive workspace build, including wiki
+pnpm test:unit            # Package tests, coverage, and declared type checks
+pnpm test:it              # Integration tests; requires service configuration
+pnpm test:storybook       # Storybook browser interaction tests (Playwright)
+pnpm storybook            # Shared Storybook on port 6006
+pnpm --dir wiki build     # Validate and build the documentation site
 
-# Single package
-pnpm --filter @ahoo-wang/fetcher build
-pnpm --filter @ahoo-wang/fetcher test
-pnpm --filter @ahoo-wang/fetcher vitest run src/fetcher.test.ts
+# Focused package work; ... includes workspace dependencies when building
+pnpm --filter @ahoo-wang/fetcher-react... build
+pnpm --filter @ahoo-wang/fetcher-react test
+pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 ```
 
-## Testing
+- Run affected package tests and builds. **Before committing, `pnpm test:unit` must pass.** Report checks run and any blocked validation.
+- Follow each package's Vitest configuration, test imports, and `test/` layout. React/viewer use jsdom; viewer loads `test/setup.ts`. Storybook browser tests run separately from `test:unit`.
+- `pnpm lint` runs ESLint with `--fix`; `pnpm format` rewrites the repository. Prefer file-scoped checks/formatting and inspect the diff.
 
-- **Framework**: Vitest with `@vitest/coverage-v8`
-- **Globals**: `true` — use `describe`, `it`, `expect`, `vi` without imports
-- **HTTP Mocking**: MSW (Mock Service Worker) in fetcher package
-- **Browser Tests**: `@vitest/browser` with Playwright (viewer package)
-- **Viewer Environment**: jsdom with `test/setup.ts`
-- **Naming**: `*.test.ts` / `*.test.tsx` alongside source files
-- **Lint**: ESLint ignores `**/**.test.ts` files
+## Code and Change Boundaries
 
-## Project Structure
+- Use strict TypeScript, ES modules, type-only imports, and Apache 2.0 headers. Follow `.prettierrc` and the target package's configs.
+- **Ask first** before adding packages, changing root `tsconfig.json`, or modifying build configuration, unless already authorized for the task.
+- Add external dependencies to the `pnpm-workspace.yaml` catalog and use `catalog:`; use the workspace protocol for internal dependencies.
+- Keep package versions aligned with `pnpm update-version <version>`. Never break a public API without a version bump.
+- Branch new work from `main`; use conventional commits (`feat:`, `fix:`, `chore:`, `test:`, `refactor:`, `docs:`). Merge PRs with squash only.
 
-```
-packages/
-  fetcher/      — Core HTTP client (no internal deps; everything depends on it)
-  decorator/    — TypeScript decorators for API services
-  eventbus/     — Event bus (serial, parallel, broadcast)
-  eventstream/  — SSE/streaming side-effect module
-  openai/       — OpenAI API client integration
-  openapi/      — OpenAPI 3.x TypeScript types (type-only, zero runtime)
-  generator/    — CLI code generator from OpenAPI specs
-  react/        — React hooks for data fetching
-  storage/      — Cross-environment storage abstraction
-  cosec/        — CoSec authentication integration
-  wow/          — Wow DDD/CQRS framework integration
-  viewer/       — React + Ant Design component library
-integration-test/ — Integration test workspace
-skills/         — Agent skills (see below)
-wiki/           — VitePress documentation site (see wiki/AGENTS.md)
-```
+## Skills and Documentation
 
-## skills/ — Agent Skills
+- Verify documented symbols, signatures, defaults, and examples against `packages/<package>/src/index.ts` and its exported implementations.
+- Public API changes must update the matching `skills/<skill>/references/api.md` in the same change. Plugin manifest: `skills/plugins.json`.
+- CQRS evals in `skills/fetcher-openapi-generator/evals/` must match `packages/generator/src/aggregate/aggregateResolver.ts`: root-level `tags`, inline command `requestBody`, `responses['200'].$ref` → `#/components/responses/wow.CommandOk`, and both `.snapshot_state.single` and `.snapshot.count` operations. Build the generator and its dependencies, then run from `packages/generator/`:
 
-- 12 skills, one per package family: `SKILL.md` (~38 lines, trigger + workflow) + `references/api.md` (detailed API) + `agents/openai.yaml`; packaged by `skills/plugins.json` (plugin `ahoo-fetcher-skills`).
-- `skills/*/evals/` hold test fixtures for some skills (notably `fetcher-openapi-generator`).
-- **Skills must stay in sync with package source.** When a package's public API changes, update the matching skill's `api.md` in the same change. Verify documented symbols/signatures/defaults against `packages/*/src/index.ts` exports — past audits found fabricated symbols, wrong operator sets, and non-compiling examples.
-- CQRS eval fixtures must satisfy the generator's real discovery rules: root-level `tags:`, inline command `requestBody` + `responses['200']` → `#/components/responses/wow.CommandOk`, plus both `.snapshot_state.single` and `.snapshot.count` operations. Verify fixtures by running the built CLI:
-  `cd packages/generator && node dist/cli.js generate -i <spec.yaml> -o /tmp/out -t tsconfig.json` (the "Configuration file parsing failed: ENOENT ./fetcher-generator.config.json" warning is benign).
+  ```bash
+  node dist/cli.js generate -i <absolute-spec-path> -o <temporary-output-dir> -t tsconfig.json
+  ```
 
-## wiki/ — Documentation Site
-
-- VitePress; **EN pages (`wiki/…`) and ZH pages (`wiki/zh/…`) must be updated together**.
-- Read `wiki/AGENTS.md` before editing the wiki.
-- `llms-full.txt`, `llms.txt`, and `.vitepress/dist/` are build artifacts — never hand-edit.
-- Validate edits with `pnpm build` inside `wiki/` (checks Mermaid + markdown).
-
-## Code Style
-
-- TypeScript strict mode, ES modules (`"type": "module"`)
-- Prettier: single quotes, trailing commas, semicolons, 80 char width
-- ESLint: `@typescript-eslint/no-explicit-any` OFF
-- ESLint: `consistent-type-imports` with `prefer: "type-imports"` enforced
-- All source files have Apache 2.0 license headers
-- Root tsconfig: `experimentalDecorators` and `emitDecoratorMetadata` enabled
-- All packages use Vite for building with `unplugin-dts` for types
-
-## Git Workflow
-
-- Branch from `main`; conventional commits: `feat:`, `fix:`, `chore:`, `test:`, `refactor:`, `docs:`
-- PRs merge **squash-only** (merge commits are disabled repo-wide; branch auto-deletes on merge)
-- Version updates via `pnpm update-version <version>` (bumps all packages in lockstep)
-
-## Boundaries
-
-✅ **Always**: Run `pnpm test:unit` before committing, follow existing code patterns, verify doc claims (skills/wiki/README) against actual source before writing them
-⚠️ **Ask first**: Adding new packages, changing root tsconfig, modifying build config
-🚫 **Never**: Commit without tests, break public API without version bump, add dependencies without catalog entry (catalog lives in `pnpm-workspace.yaml`)
+- Update English wiki pages and their `wiki/zh/` counterparts together; follow `wiki/AGENTS.md` and validate with `pnpm --dir wiki build`.
+- Never hand-edit generated `wiki/llms.txt`, `wiki/llms-full.txt`, or `wiki/.vitepress/dist/`.
