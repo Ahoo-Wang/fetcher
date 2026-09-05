@@ -662,7 +662,7 @@ describe('serverSentEventTransformStream.ts', () => {
 
       // Mock chunk to throw a non-Error object
       const chunk = {
-        trim: () => {
+        startsWith: () => {
           throw 'Test error string';
         },
       } as any;

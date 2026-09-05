@@ -22,8 +22,7 @@
  * @template T - The type of chunks the controller handles
  */
 export type StreamController<T> =
-  | ReadableStreamDefaultController<T>
-  | TransformStreamDefaultController<T>;
+  ReadableStreamDefaultController<T> | TransformStreamDefaultController<T>;
 
 /**
  * Executes an action and suppresses TypeError, returning a boolean indicating success.
@@ -33,11 +32,9 @@ export type StreamController<T> =
  * the stream is already closed or errored. This helper catches that TypeError
  * and returns false, while re-throwing any non-TypeError exceptions.
  *
- * Uses both `instanceof TypeError` and `Object.prototype.toString` checks
- * to handle cross-realm TypeErrors (e.g. from iframes or worker threads)
- * where `instanceof` alone would fail. The toString check matches values
- * with the internal TypeError class tag, which covers cross-realm TypeErrors
- * while rejecting plain objects that merely have a `name` property.
+ * Checks the Error brand and a native TypeError constructor in its prototype
+ * chain to support other realms and subclasses without trusting error names.
+ * A custom toStringTag is rejected because it can spoof the Error brand.
  *
  * @param action - The controller operation to attempt
  * @returns true if the action succeeded, false if a TypeError was caught
@@ -48,10 +45,28 @@ function suppressTypeError(action: () => void): boolean {
     return true;
   } catch (error) {
     if (
-      error instanceof TypeError ||
-      Object.prototype.toString.call(error) === '[object TypeError]'
+      typeof error === 'object' &&
+      error !== null &&
+      !(Symbol.toStringTag in error) &&
+      Object.prototype.toString.call(error) === '[object Error]'
     ) {
-      return false;
+      for (
+        let prototype = Object.getPrototypeOf(error);
+        prototype;
+        prototype = Object.getPrototypeOf(prototype)
+      ) {
+        const constructor = Object.getOwnPropertyDescriptor(
+          prototype,
+          'constructor',
+        )?.value;
+        if (
+          typeof constructor === 'function' &&
+          Function.prototype.toString.call(constructor) ===
+            Function.prototype.toString.call(TypeError)
+        ) {
+          return false;
+        }
+      }
     }
     throw error;
   }

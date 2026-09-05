@@ -58,6 +58,8 @@ try {
 }
 ```
 
+SSE media types are matched case-insensitively after removing parameters, using the complete type (`text/event-stream`). Field names remain case-sensitive. CR, LF and CRLF delimit lines, including pairs split across chunks; only an empty line ends an event block. Empty blocks reset the event type while retaining the last event ID.
+
 ## SSE Stream Processing Pipeline
 
 The internal pipeline transforms raw bytes into typed events:

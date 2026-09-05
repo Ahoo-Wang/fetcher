@@ -30,7 +30,9 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventstream
 | 构建自定义阶段 | `TextLineTransformStream`、`ServerSentEventTransformStream`、`JsonServerSentEventTransformStream<T>` | 各个 `TransformStream` 阶段。 |
 
 调用 `Response` 原型辅助 API 前必须导入 `@ahoo-wang/fetcher-eventstream`。
-`isEventStream` 通过 `Content-Type.includes('text/event-stream')` 判断。
+`isEventStream` 取第一个 `;` 前的完整媒体类型，去除两端空白后与 `text/event-stream`
+进行不区分大小写的比较。允许 `charset=utf-8` 等参数；不接受 `text/event-stream-extra`
+或 `application/json; note=text/event-stream`。
 
 ## 消费类型化 JSON 事件
 
@@ -65,10 +67,14 @@ try {
 `ServerSentEvent` 的结构为 `{ event, data, id?, retry? }`。Parser 会把缺失的 Event Type
 设为 `message`，忽略注释行，用 `\n` 合并重复的 `data:` 字段，忽略包含 NUL 的 `id`，仅在
 `retry` 全为 ASCII 数字时接受它。只有至少收到一个 `data:` 字段时，它才会在空行或输入 Stream
-flush 时输出 Frame。仅含 Metadata 的 Group 不会在空行立即输出，且该空行不会重置 `event`、`id`
-或 `retry`；这些值会应用到后续含 `data` 的 Event。EOF 时，只有 Metadata 的残余会由 flush 清理丢弃
+flush 时输出 Frame。仅含 Metadata 的 Group 不会在空行输出。每个空行都会把事件类型重置为
+`message`，同时保留 `id` 和 `retry`。空的 `data:` 字段仍会输出数据为空字符串的事件，
+分发后也会重置事件类型。EOF 时，只有 Metadata 的残余会由 flush 清理丢弃
 （[`packages/eventstream/src/serverSentEventTransformStream.ts:116`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L116)、
 [`packages/eventstream/src/serverSentEventTransformStream.ts:157`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L157)）。
+
+空行重置遵循 [WHATWG SSE 分发步骤](https://html.spec.whatwg.org/multipage/server-sent-events.html#dispatchMessage)：
+即使没有收到数据，也会清空事件类型缓冲区。
 
 ```text
 Response.body (ReadableStream<Uint8Array>)
@@ -87,7 +93,7 @@ Response.body (ReadableStream<Uint8Array>)
 | API | 返回值 / 失败边界 |
 | --- | --- |
 | `response.contentType` | 从 `Content-Type` Header 取得的 `string | null`。 |
-| `response.isEventStream` | 仅当 Header 包含 `text/event-stream` 时为 `true`。 |
+| `response.isEventStream` | 取 `;` 前的媒体类型并去除两端空白，不区分大小写地等于 `text/event-stream` 时为 `true`。 |
 | `response.eventStream()` | Raw Stream 或 `null`；非 SSE Content Type 时不抛错。 |
 | `response.requiredEventStream()` | Raw Stream；否则抛出并保留 `response` 的 `EventStreamConvertError`。 |
 | `response.jsonEventStream<T>(detector?)` | JSON Stream 或 `null`。 |
@@ -130,7 +136,7 @@ for await (const event of events) {
 
 | 现象 | 检查项 |
 | --- | --- |
-| `requiredEventStream()` 立即抛错 | 确认 `Content-Type` 包含 `text/event-stream`，并且 `Response` 有 Body。 |
+| `requiredEventStream()` 立即抛错 | 确认 Content-Type 参数前的媒体类型为 `text/event-stream`，并且 `Response` 有 Body。 |
 | `response.eventStream` 不存在 | 导入 `@ahoo-wang/fetcher-eventstream` 以执行原型 Side Effect。 |
 | 处理若干事件后 JSON 失败 | 定位无效的 `data`；混合文本/JSON 协议使用 Raw Stream，Sentinel 使用 Detector。 |
 | `[DONE]` Frame 变成解析错误 | 传入 `event => event.data === '[DONE]'` 作为 `TerminateDetector`。 |
