@@ -572,6 +572,12 @@ const timeBased = await ownerClient.loadTimeBased(Date.now());
 
 ## QueryClientFactory<S, FIELDS, DomainEventBody>
 
+An explicit `basePath` in factory defaults or per-client options takes precedence
+over the path assembled from context, resource attribution, and aggregate name.
+Per-client `basePath` overrides the factory default only when it is not nullish;
+`basePath: undefined` retains the factory path. An empty string is an explicit
+override too.
+
 Factory for creating pre-configured typed query clients.
 
 ### Setup
@@ -1024,3 +1030,6 @@ for await (const event of stream) {
 - `@ahoo-wang/fetcher-eventstream` - SSE streaming support (loads transitively with fetcher-wow)
 - `@ahoo-wang/fetcher-decorator` - ApiMetadata type, decorators for auto-implemented methods
 - `@ahoo-wang/fetcher-wow` - Wow CQRS/DDD types and clients
+
+`getPropertyValue` accepts only complete non-negative integer array indices;
+segments such as `1oops` and `1.5` return the supplied default value.
