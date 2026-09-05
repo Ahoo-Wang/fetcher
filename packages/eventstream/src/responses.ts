@@ -136,7 +136,10 @@ if (typeof Response !== 'undefined') {
         if (!contentType) {
           return false;
         }
-        return contentType.includes(ContentTypeValues.TEXT_EVENT_STREAM);
+        return (
+          contentType.split(';', 1)[0].trim().toLowerCase() ===
+          ContentTypeValues.TEXT_EVENT_STREAM
+        );
       },
       configurable: true,
     });
