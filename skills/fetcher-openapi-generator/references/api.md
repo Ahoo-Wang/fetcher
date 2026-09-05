@@ -86,6 +86,26 @@ await generator.generate();
 
 ## Code Generation Pipeline
 
+Component aliases are resolved locally; cyclic component aliases fail generation. When a referenced model shares a name with a declaration or another import in the generated file, the import receives a distinct local alias; repeated references reuse it. The public generated model keeps its original component name. Potential `EnumText` names are reserved before generation, so schema order cannot create an import collision.
+Schema aliases retain their target type identity (`type Alias = Target`), including
+enum aliases across model files. Response aliases are resolved before selecting
+the JSON, text, or event-stream decoder.
+Path-level parameters are inherited by operations; an operation overrides a
+parameter with the same name and location. API and command clients both resolve
+custom component parameter references and aliases before binding path arguments.
+Command clients retain `wow.id` and continue to omit `tenantId`/`ownerId` arguments.
+JSON string responses are decoded as JSON.
+
+Command identification follows local response aliases only when their chain reaches
+`#/components/responses/wow.CommandOk`; matching an unrelated response shape is not
+sufficient. Inline and locally referenced command request bodies are supported.
+Component lookup stays within the referenced local component category at every
+alias hop. External documents are not fetched or substituted with same-named local
+components. Unbundled external schema references fail with their URI and bundling
+guidance instead of generating a local model name. Unresolved response references keep the raw `Promise<Response>` fallback;
+unresolved parameter references do not produce named path arguments. Bundle or
+inline external references before generation for complete typed signatures.
+
 ```
 parseOpenAPI(inputPath) → AggregateResolver(openAPI).resolve()
   → ModelGenerator.generate() → ClientGenerator.generate()
