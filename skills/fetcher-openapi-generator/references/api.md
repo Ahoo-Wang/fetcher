@@ -56,6 +56,9 @@ npx fetcher-generator generate -i ./openapi.yaml -o ./src/generated -t ./tsconfi
 
 ## Programmatic API (CodeGenerator)
 
+The published package supports both ESM imports and CommonJS
+`const { CodeGenerator } = require('@ahoo-wang/fetcher-generator')`.
+
 `logger` is a required option (`Logger` interface: `info`/`success`/`error`/`progress`/`progressWithCount`). The package does not export a logger implementation — provide your own:
 
 ```typescript

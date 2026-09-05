@@ -20,7 +20,8 @@ export default defineConfig({
     lib: {
       entry: 'src/index.ts',
       name: 'Fetcher',
-      fileName: format => `index.${format}.js`,
+      fileName: format =>
+        format === 'es' ? 'index.es.js' : `index.${format}.cjs`,
     },
     rollupOptions: {
       external: [],
