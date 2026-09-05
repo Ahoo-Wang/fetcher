@@ -107,11 +107,7 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   functionName: string,
   apiMetadata: ApiMetadata,
 ) {
-  const endpointFunction = constructor.prototype[functionName];
   if (functionName === 'constructor') {
-    return;
-  }
-  if (typeof endpointFunction !== 'function') {
     return;
   }
 
@@ -250,16 +246,16 @@ function bindAllExecutors<T extends new (...args: any[]) => any>(
   constructor: T,
   apiMetadata: ApiMetadata,
 ) {
-  const boundProto = new Set();
+  const visitedNames = new Set<string>();
   let proto = constructor.prototype;
   while (proto && proto !== Object.prototype) {
-    if (boundProto.has(proto)) {
-      proto = Object.getPrototypeOf(proto);
-      continue;
-    }
-    boundProto.add(proto);
     Object.getOwnPropertyNames(proto).forEach(functionName => {
-      bindExecutor(constructor, functionName, apiMetadata);
+      if (visitedNames.has(functionName)) return;
+      visitedNames.add(functionName);
+      const descriptor = Object.getOwnPropertyDescriptor(proto, functionName);
+      if (typeof descriptor?.value === 'function') {
+        bindExecutor(constructor, functionName, apiMetadata);
+      }
     });
     proto = Object.getPrototypeOf(proto);
   }

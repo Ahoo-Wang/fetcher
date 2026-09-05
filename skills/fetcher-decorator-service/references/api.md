@@ -97,7 +97,7 @@ export class UserService {
 **Method decorator options** (`@get(path, options)` — `path` is the first positional argument, not an option field):
 
 - `timeout` (number) - Per-method timeout override (ms)
-- `headers` (RequestHeaders) - Method-specific headers
+- `headers` (RequestHeaders) - Method-specific headers; header names are matched case-insensitively across API, method and parameter layers (later values win).
 - `fetcher` (string | Fetcher) - Override the fetcher for this method
 - `basePath` (string) - Per-method base path override (falls back to the class-level `@api()` basePath)
 - `resultExtractor` - Override result extractor for this method
