@@ -35,6 +35,9 @@ The Fetcher HTTP client provides an Axios-like API built on the native Fetch API
 pnpm add @ahoo-wang/fetcher
 ```
 
+The core package supports ESM imports and CommonJS
+`const { Fetcher } = require('@ahoo-wang/fetcher')` through its package entry.
+
 ## 1. Setting Up NamedFetcher
 
 ### Basic Setup
