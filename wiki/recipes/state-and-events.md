@@ -64,7 +64,7 @@ await saved.emit({ id: '42' });
 saved.destroy();
 ```
 
-Serial handlers run by ascending order. A `once` handler is removed after it runs. Handler names are unique.
+Serial handlers run by ascending order. Each emission removes its `once` registrations before any callback starts, so reentrant or concurrent emissions cannot invoke them again. Handler names are unique.
 
 ## Run independent handlers concurrently
 

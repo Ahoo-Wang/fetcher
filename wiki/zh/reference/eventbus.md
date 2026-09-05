@@ -70,13 +70,13 @@ events.destroy();
 
 | Bus | Handler 启动/顺序 | `emit()` 解析时机 | `once` | Handler throw/reject |
 | --- | --- | --- | --- | --- |
-| `SerialTypedEventBus` | 逐个执行，按 `order` 升序（相同值保持注册顺序） | 所有 Handler settle 后 | 尝试执行后收集；当前 `emit()` 循环结束后移除全部已收集的 `once` Handler | 捕获后发往 `console.warn`；后续 Handler 继续。 |
-| `ParallelTypedEventBus` | 并发执行；没有完成顺序 | 包装后 Handler 的 `Promise.all` 完成后 | 全部尝试结束后移除 | 捕获后发往 `console.warn`；其他 Handler 继续。 |
+| `SerialTypedEventBus` | 逐个执行，按 `order` 升序（相同值保持注册顺序） | 所有 Handler settle 后 | 任何回调开始前，从已注册 Handler 中移除 | 捕获后发往 `console.warn`；后续 Handler 继续。 |
+| `ParallelTypedEventBus` | 并发执行；没有完成顺序 | 包装后 Handler 的 `Promise.all` 完成后 | 任何回调开始前，从已注册 Handler 中移除 | 捕获后发往 `console.warn`；其他 Handler 继续。 |
 | `BroadcastTypedEventBus` | 本地遵循 Delegate；入站消息使用 Delegate | 本地 Delegate 完成且 `postMessage()` 返回后 | 遵循 Delegate | Delegate 错误遵循其实现；Messenger 错误从 `postMessage()` 传播。 |
 
-Handler 的返回值会被丢弃。调用者需要结果时应直接调用函数。`once` Handler 即使自身抛错也会
-被收集，但只会在当前 `emit()` 循环结束后移除。因此在清理前发生重入 `emit()` 时，同一个
-`once` Handler 仍可能再次执行。
+Handler 的返回值会被丢弃。调用者需要结果时应直接调用函数。每次 `emit()` 先取得 Handler
+快照，并在执行任何回调前从注册集合中移除本次的 `once` Handler。因此重入或并发的投递
+不会再次执行这些注册，即使其回调抛错也是如此。投递期间新注册的 Handler 从后续投递开始参与。
 
 ## 跨标签页 Bus 与 Messenger 选择
 

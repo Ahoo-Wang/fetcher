@@ -73,14 +73,15 @@ registration creates a child bus, emission alone does not.
 
 | Bus | Handler start/order | `emit()` resolves | `once` | Handler throw/reject |
 | --- | --- | --- | --- | --- |
-| `SerialTypedEventBus` | One after another, ascending `order` (ties preserve registration order) | After every handler settles | Collected after its attempt; all collected `once` handlers are removed after the current `emit()` loop | Caught and sent to `console.warn`; later handlers continue. |
-| `ParallelTypedEventBus` | Concurrent; no completion order | After `Promise.all` of wrapped handlers | Removed after all attempts | Caught and sent to `console.warn`; peers continue. |
+| `SerialTypedEventBus` | One after another, ascending `order` (ties preserve registration order) | After every handler settles | Removed from the registered handlers before any callback starts | Caught and sent to `console.warn`; later handlers continue. |
+| `ParallelTypedEventBus` | Concurrent; no completion order | After `Promise.all` of wrapped handlers | Removed from the registered handlers before any callback starts | Caught and sent to `console.warn`; peers continue. |
 | `BroadcastTypedEventBus` | Delegate semantics locally; incoming messages use the delegate | After local delegate completes and `postMessage()` returns | Delegate semantics | Delegate failures follow its implementation; messenger errors propagate from `postMessage()`. |
 
 Handler return values are deliberately discarded. Use a direct function call when
-the caller needs a result. `once` handlers are collected even if their own handler
-throws, then removed only after the current `emit()` loop completes. A reentrant
-`emit()` before that cleanup can therefore invoke the same `once` handler again.
+the caller needs a result. Each `emit()` takes a handler snapshot and removes its
+`once` handlers from the registered set before invoking any callback. Reentrant
+or concurrent emissions cannot invoke those registrations again, even if their
+callbacks throw. A handler registered during delivery participates in a later emission.
 
 ## Cross-tab bus and messenger selection
 
