@@ -44,7 +44,7 @@ export class StorageMessenger implements CrossTabMessenger {
   private readonly storageEventHandler = (event: StorageEvent) => {
     if (
       event.storageArea !== this.storage ||
-      !event.key?.startsWith(this.messageKeyPrefix) ||
+      !this.matchesMessageKey(event.key) ||
       !event.newValue
     ) {
       return;
@@ -79,6 +79,14 @@ export class StorageMessenger implements CrossTabMessenger {
     return `${this.messageKeyPrefix}_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   }
 
+  private matchesMessageKey(key: string | null): boolean {
+    return (
+      key !== null &&
+      key.startsWith(this.messageKeyPrefix) &&
+      /^_-?\d+_[a-z0-9]*$/.test(key.slice(this.messageKeyPrefix.length))
+    );
+  }
+
   /**
    * Send a message to other tabs/windows via localStorage
    */
@@ -111,7 +119,7 @@ export class StorageMessenger implements CrossTabMessenger {
     const keysToRemove: string[] = [];
     for (let i = 0; i < this.storage.length; i++) {
       const key = this.storage.key(i);
-      if (key?.startsWith(this.messageKeyPrefix)) {
+      if (key !== null && this.matchesMessageKey(key)) {
         try {
           const value = this.storage.getItem(key);
           if (value) {

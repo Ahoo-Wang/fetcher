@@ -43,26 +43,17 @@ export class ParallelTypedEventBus<EVENT> extends AbstractTypedEventBus<EVENT> {
   /**
    * Emits an event to all registered handlers in parallel
    *
-   * Handlers are executed concurrently. Once-only handlers are removed after all executions complete.
+   * Handlers are executed concurrently. Once-only handlers are claimed before dispatch.
    * Errors in individual handlers are logged but do not affect other handlers.
    *
    * @param event - The event to emit
    */
   async emit(event: EVENT): Promise<void> {
-    const onceHandlers: EventHandler<EVENT>[] = [];
-    const promises = this.eventHandlers.map(async handler => {
-      await this.handleEvent(handler, event);
-      if (handler.once) {
-        onceHandlers.push(handler);
-      }
-    });
-    await Promise.all(promises);
-    if (onceHandlers.length > 0) {
-      const onceHandlerNames = new Set(onceHandlers.map(h => h.name));
-      this.eventHandlers = this.eventHandlers.filter(
-        item => !onceHandlerNames.has(item.name),
-      );
-    }
+    const handlers = this.eventHandlers;
+    this.eventHandlers = handlers.filter(handler => !handler.once);
+    await Promise.all(
+      handlers.map(handler => this.handleEvent(handler, event)),
+    );
   }
 
   /**

@@ -49,13 +49,14 @@ interface EventHandler<EVENT> extends NamedCapable, OrderedCapable {
   name: string; // Unique identifier (prevents duplicates)
   order?: number; // Execution priority (lower = earlier; default 0)
   handle(event: EVENT): void | Promise<void>;
-  once?: boolean; // If true, auto-removes after first execution
+  once?: boolean; // If true, removed before dispatch and invoked at most once
 }
 ```
 
 #### Once Handlers
 
-Handlers with `once: true` automatically unregister after their first execution:
+Handlers with `once: true` are claimed before dispatch, so overlapping or
+recursive emissions cannot deliver them twice:
 
 ```typescript
 bus.on({
@@ -209,7 +210,7 @@ messenger.close();
 
 ### StorageMessenger
 
-Uses `localStorage` events as fallback when `BroadcastChannel` is unavailable. Supports TTL and cleanup. Throws outside a browser environment (no `localStorage`); probe `isStorageEventSupported()` first if that matters. Options also include `storage` (defaults to `localStorage`).
+Uses `localStorage` events as fallback when `BroadcastChannel` is unavailable. It retains the legacy raw channel key format and validates the full timestamp/random suffix to isolate channels, including arbitrary UTF-16 names. Supports TTL and cleanup. Throws outside a browser environment (no `localStorage`); probe `isStorageEventSupported()` first if that matters. Options also include `storage` (defaults to `localStorage`).
 
 ```typescript
 import { StorageMessenger } from '@ahoo-wang/fetcher-eventbus';
