@@ -26,7 +26,7 @@ pnpm add react react-dom antd @ant-design/icons dayjs \
 | `Viewer<RecordType>` | Active Saved View、Side Panel、Top Bar，以及 `View` 组合 | `PagedList` Data、`onLoadData` 与 Persistence Callback。 |
 | `FetcherViewer<RecordType>` | Definition/View/Data Query、Command Client、Default View Persistence 与组合 | Default Fetcher Registration 与 Viewer Backend Contract。 |
 
-`Viewer` 明确不加载 Row，也不远程持久化 View。`FetcherViewer` 使用 Default Fetcher 和内置 Viewer Endpoint。[packages/viewer/src/viewer/Viewer.tsx:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L39) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L48)
+`Viewer` 明确不加载 Row，也不远程持久化 View。`FetcherViewer` 使用 Default Fetcher 和内置 Viewer Endpoint。[packages/viewer/src/viewer/Viewer.tsx:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L39) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L69)
 
 ## 核心模型与 Callback
 
@@ -88,7 +88,11 @@ declare function loadUsers(...args: unknown[]): Promise<void>;
 
 受控 Pair 必须完整：只提供 External Value 而没有 Update Callback，会使调用方无法持有 Next State。在 `Viewer` 层，成功的 Create/Update/Delete Continuation 会更新 Local View Collection；Persistence Action 失败时应让旧的可见 State 继续可用，并在调用方持有的 Action Flow 中显示 Error。[packages/viewer/src/viewer/Viewer.tsx:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L127)
 
-`FetcherViewer` 将最近一次选中的 Default View ID 保存在 module-scope `KeyStorage`，Key 为 `fetcher-viewer-local-default-view-id`；未提供 Storage 时 `KeyStorage` 默认使用 Browser Storage。选择优先级固定为显式 `defaultViewId`、Local Stored ID、`isDefault` View、第一条 View。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L72) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:358](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L358) [packages/storage/src/keyStorage.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L47)
+`FetcherViewer` 将最近选中的视图 ID 保存在模块级 `KeyStorage`，键名为 `fetcher-viewer-local-default-view-id`。首次选择依次使用显式 `defaultViewId`、本地保存的 ID、`isDefault` 视图和第一条视图。后续重新加载视图时保留用户选择，并将选中 ID 绑定到服务端返回的新视图对象。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L97) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:587](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L587)
+
+创建和更新请求使用 `PROCESSED` 命令阶段，并等待快照的 `version` 达到返回的 `aggregateVersion`。确认还会匹配命令结果中的租户、聚合身份以及预期所有者；其他租户或所有者下的较新快照不能确认此次保存。后端需提供已有的快照列表接口及其 `version`、`state` 字段。若命令未返回有效目标版本，组件会提示无法确认保存结果，并允许重新加载视图恢复浏览；恢复操作不重发命令，也不调用保存成功回调。 快照确认前会用 `ErrorCodes.isSucceeded` 检查业务结果；失败时显示命令错误，不调用成功回调。保存仍待确认时，`refreshData` 和对应刷新事件不会重发上一视图的查询。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:430](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L430)
+
+更新命令返回业务失败时，`Viewer` 保持挂载，保留草稿中的筛选、排序和列配置，用户可以纠正后再次保存。创建失败时仍可重新加载视图恢复浏览，不重发命令，也不调用成功回调。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:211](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L211) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:536](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L536)
 
 ## Filter、Cell、Input 与 Registry
 
@@ -111,21 +115,22 @@ if (!cellRegistry.has('score')) cellRegistry.register('score', ScoreCell);
 
 ## FetcherViewer Data Flow 与失败边界
 
-`FetcherViewer` 加载 Definition、Saved View，再用 `definition.dataUrl` 发起 Paged POST Query；它会组合 View 的 `internalCondition` 与可见 Condition，并接收可选 async `enhanceDataSource`。它通过 Ref 暴露 `refreshData`、`clearSelectedRowKeys`、`getPageQuery`、`getActiveView`、`getViewerDefinition`。[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L27) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L40)
+`FetcherViewer` 加载 Definition、Saved View，再用 `definition.dataUrl` 发起 Paged POST Query；它会组合 View 的 `internalCondition` 与可见 Condition，并接收可选 async `enhanceDataSource`。它通过 Ref 暴露 `refreshData`、`clearSelectedRowKeys`、`getPageQuery`、`getActiveView`、`getViewerDefinition`。[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L47) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L61)
 
 | State | 所有者与行为 |
 | --- | --- |
 | `ViewTable` / `View` / `Viewer` Loading | 调用方传入 `loading`；调用方持有 Transport Error 与 Retry UI。 |
 | Empty Row | 这三层的 Data Source 都由调用方持有；请渲染业务自身的 Empty Semantics。 |
-| `FetcherViewer` Loading | Definition 或 View Loading 时渲染 Spinner。 |
-| Definition Error | `FetcherViewer` 渲染内置 Definition-error UI。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:301](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L301) |
-| Missing Definition（Empty Result） | `FetcherViewer` 渲染 `未找到视图定义`。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:309](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L309) |
-| No Saved Views（Empty Result） | `FetcherViewer` 渲染 `未找到视图`。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:313](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L313) |
-| Views Error | Views Hook 会返回 Error，但 `FetcherViewer` 忽略它；没有 Views/Default View 时会进入最终 Spinner，可能一直停留。[packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts:6](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts#L6) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:344](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L344) |
-| Data Request Error | Data Hook 返回 Error，但 `FetcherViewer` 既不暴露也不渲染它。[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L18) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L122) |
-| `enhanceDataSource` Rejection | Async Effect 没有 Rejection Handling，因此 `FetcherViewer` 不会暴露或渲染它。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L140) |
+| `FetcherViewer` Loading | 加载视图定义或保存的视图时显示 Spinner。 |
+| 视图或查询变更 | 切换视图、分页、筛选或排序后，在当前请求返回前隐藏旧数据；刷新同一查询时可以保留已有结果。[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:144](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L144) |
+| Definition Error | 渲染内置的视图定义加载错误。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:493](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L493) |
+| Missing Definition（Empty Result） | 渲染 `未找到视图定义`。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:501](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L501) |
+| No Saved Views（Empty Result） | 显示 `未找到视图`，并提供 `创建视图` 操作；删除最后一个视图后也可继续创建。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:507](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L507) |
+| Views Error | 创建或更新成功后，刷新失败、暂未查到视图或快照版本仍落后于命令返回版本时保留重试操作；重试只加载快照，不重复提交命令。其他首次加载视图的错误没有独立错误界面。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:430](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L430) |
+| Data Request Error | 数据 Hook 返回错误，`FetcherViewer` 不提供独立的数据请求错误界面。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:224](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L224) |
+| `enhanceDataSource` Rejection | Effect 捕获拒绝并通过 alert 显示 `处理视图数据失败`，同时保持 Viewer 挂载，保留编辑中的筛选、排序、列配置和分页；成功增强后清除错误，被替换 Effect 的晚到结果会被忽略。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:259](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L259) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:542](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L542) |
 
-挂载前必须配置 Default Fetcher。默认 `ownerId` 和 `tenantId` 都是 `'(0)'`；改变它们会改变远程 View Query。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L81) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:286](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L286)
+挂载前必须配置默认 Fetcher。`ownerId` 和 `tenantId` 默认均为 `'(0)'`；修改视图定义、租户或所有者会重新挂载内容，并加载对应范围。[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:102](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L102) [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L118)
 
 ## 故障定位与场景
 
@@ -136,7 +141,7 @@ if (!cellRegistry.has('score')) cellRegistry.register('score', ScoreCell);
 | Saved View 在持久化前出现 | 只在 Remote Operation 成功后调用 Mutation Continuation。 |
 | Default View 不符合预期 | 依次检查 `defaultViewId`、Local `fetcher-viewer-local-default-view-id`、`isDefault`、Source Order。 |
 | FetcherViewer 始终不可用 | 检查 Default Fetcher Registration、Definition Endpoint、Views Endpoint、`viewerDefinitionId`。 |
-| 需要 Views/Data/Enhancement Error UI | 不要为该路径使用 `FetcherViewer`：以 Public `useViewerDefinition`、`useViewerViews`、`useFetchData` 组合 `Viewer`，然后自行持有并渲染每种 Error。 |
+| 需要自定义视图或数据错误界面 | 需要控制首次加载视图或数据请求的错误与重试时，可用公开的 `useViewerDefinition`、`useViewerViews`、`useFetchData` 组合 `Viewer`。`FetcherViewer` 已提供增强失败提示。 |
 
 - 完整 Caller-Owned Viewer Flow：[success](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-viewer--complete-flow)、[empty](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-viewer--empty-result)、[caller error and retry](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-viewer--caller-owned-error-and-retry)
 - FetcherViewer Flow：[remote success](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-fetcherviewer--remote-success)、[definition error](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-fetcherviewer--definition-request-error)、[imperative methods](https://fetcher.ahoo.me/storybook/?path=/story/viewer-flows-fetcherviewer--imperative-methods)

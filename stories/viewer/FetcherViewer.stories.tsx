@@ -16,12 +16,13 @@ import {
   DEFAULT_FETCHER_NAME,
   Fetcher,
   fetcherRegistrar,
+  URL_RESOLVE_INTERCEPTOR_ORDER,
 } from '@ahoo-wang/fetcher';
 import { FullscreenProvider } from '@ahoo-wang/fetcher-react';
 import type { FetcherViewerRef } from '@ahoo-wang/fetcher-viewer';
 import { FetcherViewer } from '@ahoo-wang/fetcher-viewer';
 import { useRef, useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import type { ViewerFixtureScenario } from '../fixtures/http';
 import { installViewerFetchFixture } from '../fixtures/http';
 import type { FixtureViewerUser } from '../fixtures/viewer';
@@ -76,6 +77,7 @@ function FetcherViewerDemo({
         <FetcherViewer<FixtureViewerUser>
           ref={viewerRef}
           viewerDefinitionId="users"
+          defaultViewId="all-users"
           pagination={{ showSizeChanger: false }}
           enableRowSelection
           viewTableSetting={false}
@@ -118,6 +120,14 @@ const meta = {
 
     fetcherRegistrar.default = new Fetcher({
       baseURL: 'https://api.example.test',
+    });
+    fetcherRegistrar.default.interceptors.request.use({
+      name: 'storybook-viewer-tenant',
+      order: URL_RESOLVE_INTERCEPTOR_ORDER - 1,
+      intercept(exchange) {
+        const { path } = exchange.ensureRequestUrlParams();
+        path.tenantId ??= '(0)';
+      },
     });
     localStorage.removeItem(storageKey);
 
@@ -173,9 +183,44 @@ export const DefinitionRequestError: Story = {
 export const NoSavedViews: Story = {
   args: { scenario: 'empty-views' },
   play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await expect(await canvas.findByText('未找到视图')).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: '创建视图' }));
+    await userEvent.type(
+      page.getByLabelText('视图名称'),
+      'Created in Storybook',
+    );
+    await userEvent.click(page.getByRole('button', { name: /^确\s*认$/ }));
     await expect(
-      await within(canvasElement).findByText('未找到视图'),
+      (await canvas.findAllByText('Created in Storybook'))[0],
     ).toBeVisible();
+    await expect(await canvas.findByText('Ada')).toBeVisible();
+    expect(canvas.queryByRole('alert')).not.toBeInTheDocument();
+  },
+};
+
+export const SaveViewChanges: Story = {
+  args: { scenario: 'success' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await canvas.findByText('Admins'));
+    await userEvent.click(
+      await canvas.findByRole('columnheader', { name: 'Name' }),
+    );
+    await userEvent.click(canvas.getByRole('button', { name: /保\s*存/ }));
+    await userEvent.click(await page.findByText('覆盖当前视图'));
+    await userEvent.click(page.getByRole('button', { name: /^确\s*认$/ }));
+    await waitFor(async () => {
+      await expect(
+        canvas.getByRole('columnheader', { name: 'Name' }),
+      ).toHaveAttribute('aria-sort', 'ascending');
+      await expect(
+        canvas.queryByRole('button', { name: /保\s*存/ }),
+      ).not.toBeInTheDocument();
+    });
+    expect(canvas.queryByRole('alert')).not.toBeInTheDocument();
   },
 };
 
