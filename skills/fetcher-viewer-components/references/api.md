@@ -204,12 +204,64 @@ const viewerRef = useRef<FetcherViewerRef>(null);
 
 **FetcherViewerRef methods:** `refreshData()`, `clearSelectedRowKeys()`, `getPageQuery()`, `getActiveView()`, `getViewerDefinition()`
 
+Changing `viewerDefinitionId`, `tenantId`, or `ownerId` reinitializes the selected
+view and displayed data for the new scope. Omitted tenant/owner IDs use `'(0)'`.
+List refreshes match the selected snapshot by context, aggregate name, tenant,
+owner, and aggregate ID. A missing entry in the limited display list retains the
+selection. Equivalent saved query fields preserve local filters, pagination, and
+sorting, including when callers recreate view or definition objects on render.
+An empty list keeps the create-view action, including after deleting the last
+view or mounting with no views. Creation sends a draft without an ID. After a
+create or update command succeeds, FetcherViewer waits for a new versioned
+snapshot list response containing the affected ID at or beyond the command's
+`aggregateVersion` before querying data or invoking the switch callback. Both
+commands explicitly request `Command-Wait-Stage: PROCESSED`. The list reference
+is captured when the command completes; a new array containing an older version
+of the same ID cannot satisfy this wait. Queries use the snapshot's server-provided
+`ViewState`, including its `internalCondition`. Confirmation also matches the
+command response's `contextName`, `aggregateName`, `tenantId`, and `aggregateId`,
+plus the applicable owner: the component's `ownerId` for PERSONAL views or
+`'(shared)'` for SHARED views. Create, update, and delete requests explicitly
+supply the component tenant and applicable owner path values; existing request
+interceptors still run. A missing target receives a scoped lookup beyond the
+display list limit. Retry repeats these reads without resubmitting the command.
+
+An HTTP 200 command response is confirmed only when
+`ErrorCodes.isSucceeded(result.errorCode)` is true. A rejected create or update
+shows the command's `errorMsg` (or `errorCode` when no message is supplied),
+without refreshing for confirmation or invoking the success callback. Transport
+failures are also displayed. Failed updates and save-as operations keep the
+existing Viewer and draft mounted so users can correct and retry. Empty-state
+creation offers "重新加载视图" to resume browsing without repeating the command.
+Only the latest submitted create/update response may change confirmation state
+or invoke its success callback.
+
+Version `0` is valid. If the command response omits a finite version,
+FetcherViewer reports that it cannot confirm the save. The "重新加载视图" action
+discards the success callback but keeps data requests suspended until a successful
+read rebinds the matching authoritative snapshot. It then resumes browsing
+without repeating the command or reporting a confirmed save.
+
+Switching views, accepting a refreshed server view, or changing the page,
+filters, or sort hides previous rows until the new query's data and enhancement
+are ready. Query results must match the active request object as well as its
+view and URL. A same-query reload reuses that request and can keep its current
+rows visible while loading. Asynchronous enhancements retain their originating
+view and data source.
+
+`refreshData()` and shared refresh events call `useFetchData.reload()`. It only
+executes when the current view and data URL match the saved query's owner; it
+skips requests while no view is active, including pending save confirmation.
+`getPageQuery()` also returns `undefined` during that interval.
+Retained references to `reload()` use the current options. Matching reloads still
+execute the current paged query and return `Promise<void>`.
+
 **FetcherViewerProps key fields:**
 
 - `viewerDefinitionId: string` - Required. ID of the view definition resource
 - `ownerId?: string` - Default `'(0)'`
 - `tenantId?: string` - Default `'(0)'`
-- `defaultViewId?: string` - Initial view to display
+- `defaultViewId?: string` - Initial view to display; it does not control later user selections. Later selections are persisted locally and supply the query's internal condition.
 - `pagination: false | Omit<PaginationProps, ...>` - Required. Pagination config or `false` to disable
 - `actionColumn?: ViewTableActionColumn<RecordType>` - Row action column config
 - `onClickPrimaryKey?: (id, record) => void` - Primary key click handler
@@ -220,6 +272,26 @@ const viewerRef = useRef<FetcherViewerRef>(null);
 - `secondaryActions?: TopBarActionItem[]` - Dropdown actions beside primary
 - `batchActions?: BatchActionsConfig` - Batch operations for selected rows
 - `viewTableSetting?: false | ViewTableSetting` - Column settings panel config
+
+If `enhanceDataSource` rejects, FetcherViewer displays the failure instead of
+leaving an unhandled promise rejection. The Viewer stays mounted with its edited
+filters, sorting, columns, and page intact. A successful later enhancement clears
+the error; stale asynchronous failures do not replace newer results. Empty-view
+creation remains available even if enhancement fails while no view is active.
+
+`useViewerViews(definitionId, tenantId, ownerId, target?)` keeps returning
+`views: ViewState[] | undefined`, `loading`, `error`, and `execute(target?)`. It queries
+`/viewer/view/snapshot/list` and additionally exposes optional
+`snapshots?: MaterializedSnapshot<ViewState>[]` containing the version metadata
+that backs `views`. The same deleted, definition, tenant, and owner filters apply.
+The optional `ViewSnapshotTarget` is `AggregateId & { ownerId: string }`. Each load
+keeps the display list limit of 999, then queries a missing target by its full
+identity with limit 1 before publishing the combined snapshots. The target lookup
+shares the load's cancellation and error state; superseded loads cannot replace
+newer results. `execute(target)` supplies the identity from a just-completed
+command; no-argument retries use the latest optional hook target. Changing only
+that hook target does not start a duplicate load. Snapshot versions remain intact
+for the caller's minimum-version confirmation check.
 
 ---
 
