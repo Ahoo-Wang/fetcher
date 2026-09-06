@@ -142,7 +142,11 @@ describe('useViewerState', () => {
         value: '1',
       };
       act(() => {
-        result.current.setCondition(condition, new Map([['test', condition]]), new Map());
+        result.current.setCondition(
+          condition,
+          new Map([['test', condition]]),
+          new Map(),
+        );
       });
 
       expect(result.current.viewChanged).toBe(true);
@@ -150,6 +154,34 @@ describe('useViewerState', () => {
   });
 
   describe('setCondition', () => {
+    it.each([null, undefined])(
+      'preserves an empty value config (%s) without marking the view changed',
+      value => {
+        const view = createViewState({
+          condition: all(),
+          filters: [
+            {
+              type: 'test',
+              key: 'test',
+              field: { name: 'test', label: 'test' },
+              operator: { defaultValue: Operator.EQ },
+              value,
+            },
+          ],
+        });
+        const { result } = renderHook(() =>
+          useViewerState({
+            views: [view],
+            defaultView: view,
+            definition: viewDefinition,
+          }),
+        );
+        act(() => result.current.setCondition(all(), new Map(), new Map()));
+        expect(result.current.activeView.filters[0].value).toBe(value);
+        expect(result.current.viewChanged).toBe(false);
+      },
+    );
+
     it('should preserve operator when value is empty (partial filter save)', () => {
       const view = createViewState({
         filters: [
@@ -185,10 +217,10 @@ describe('useViewerState', () => {
         );
       });
 
-      // Verify operator is preserved with value: null
+      // Verify the operator is preserved and only the default value is cleared.
       const savedFilter = result.current.activeView.filters[0];
       expect(savedFilter.operator?.defaultValue).toBe(newOperator);
-      expect(savedFilter.value).toBe(null);
+      expect(savedFilter.value?.defaultValue).toBeUndefined();
     });
 
     it('should save full filter when both operator and value are provided', () => {
@@ -234,7 +266,7 @@ describe('useViewerState', () => {
       expect(savedFilter.value).toEqual({ defaultValue: 'search term' });
     });
 
-    it('should reset value to null when no filterState exists', () => {
+    it('should clear the default value when no filterState exists', () => {
       const view = createViewState({
         filters: [
           {
@@ -264,7 +296,7 @@ describe('useViewerState', () => {
       });
 
       const savedFilter = result.current.activeView.filters[0];
-      expect(savedFilter.value).toBe(null);
+      expect(savedFilter.value?.defaultValue).toBeUndefined();
     });
   });
 

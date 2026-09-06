@@ -256,6 +256,10 @@ Layout component with sidebar (ViewPanel), TopBar, and content area. Does not ha
 
 **ViewerRef methods:** `clearSelectedRowKeys()`, `getActiveView()`, `getCondition()`
 
+`getActiveView(): ViewState | undefined` returns `undefined` after the last view is deleted; the viewer displays an empty state. Switching views, including switches after create/update/delete, clears row selection and batch-action records. Reset restores the saved view and loads its query once.
+When `onCreateView` is supplied, the empty state keeps a create-view action and
+activates the new view after the callback succeeds.
+
 ---
 
 ## View Component
@@ -288,6 +292,23 @@ Combines filter panel + ViewTable + pagination. Supports controlled and uncontro
 
 **ViewRef methods:** `clearSelectedRowKeys()`, `updateTableSize(size)`, `reset()`, `getCondition()`
 
+`defaultPage` initializes the uncontrolled page (default `1`). `reset()` restores the `default*` values, notifies supplied external state setters in controlled mode, clears selection, and emits one `onChange` with the restored query. `pagination={false}` hides pagination even when row selection remains enabled.
+Filter inputs and the table are recreated from the restored props, so both
+normal and editable panels display the defaults and the table header restores
+the default sort order. The next search or sort action starts from those
+restored values; row selection is cleared with one notification.
+
+The exported `useViewState` hook also exposes `setPagination(page: number, pageSize: number): void`. Use it when page and page size change together; it updates both values and emits one `onChange` using those values. Individual `setPage` and `setPageSize` calls each emit their own change.
+
+`externalUpdateCondition(condition, activeFilterValues, filterStates, resetFilters?)`
+accepts an optional fourth `ActiveFilter[]` parameter. During reset, the first
+argument is the default condition, both Maps are empty, and `resetFilters` is the
+complete default filter list. `useViewerState.setCondition` accepts this same
+optional parameter and restores those definitions exactly, including omitted
+operator/value settings. Normal searches continue to use the existing three
+arguments. This supports controlling the condition while managing active filters
+inside `useViewState`.
+
 ---
 
 ## ViewTable Component
@@ -313,6 +334,8 @@ Ant Design Table wrapper with automatic column generation from field definitions
 ```
 
 Columns are auto-generated from `FieldDefinition[]` + `ViewColumn[]`. Each field maps to a cell type via `cellRegistry`. Primary key fields render as `PrimaryKeyCell` (clickable link). Action column uses `ActionsCell`.
+
+Primary key names may be nested paths such as `state.id`; row keys resolve that same path to remain stable when records are reordered.
 
 ---
 
