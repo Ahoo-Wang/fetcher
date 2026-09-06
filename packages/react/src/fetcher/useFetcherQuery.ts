@@ -16,7 +16,8 @@ import { useFetcher } from './index';
 import type { FetcherError, FetchRequest } from '@ahoo-wang/fetcher';
 import { JsonResultExtractor } from '@ahoo-wang/fetcher';
 import type { QueryOptions, UseQueryStateReturn } from '../core';
-import { isValidateQuery, useLatest, useQueryState } from '../core';
+import { isValidateQuery, useLatest } from '../core';
+import { useCancellableQueryState } from '../core/useQueryState';
 import { useCallback, useMemo } from 'react';
 import type { AutoExecuteCapable } from '../types';
 
@@ -151,7 +152,7 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
     [fetcherExecute, latestOptionsRef],
   );
 
-  const { getQuery, setQuery } = useQueryState({
+  const { getQuery, setQuery } = useCancellableQueryState({
     initialQuery: useFetcherQueryOptions.initialQuery,
     query: useFetcherQueryOptions.query,
     autoExecute: useFetcherQueryOptions.autoExecute,
