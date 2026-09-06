@@ -398,6 +398,12 @@ useEventSubscription({
 ### useDataMonitor
 
 Monitors data changes via periodic count queries with notification support.
+Set `notification.title` and an optional `notification.navigationUrl`. Clicking
+a browser notification focuses its receiving window and follows HTTP/HTTPS
+navigation. Relative URLs resolve against the receiving page; invalid URLs and
+other protocols are ignored. Each context sends its polling notifications locally,
+so parallel monitors do not rebroadcast the same notification to each other.
+Notification construction and delivery failures do not prevent data-change events.
 
 ```tsx
 import { useDataMonitor } from '@ahoo-wang/fetcher-react';

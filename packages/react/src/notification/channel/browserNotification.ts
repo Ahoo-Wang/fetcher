@@ -3,6 +3,7 @@ import type { Message, ChannelType } from '../';
 
 export const BROWSER_NOTIFICATION_TYPE: ChannelType = 'browser';
 
+/** Without a local onClick, clicks focus the window and follow HTTP(S) data.navigationUrl. */
 export type BrowserNotificationPayload = NotificationOptions;
 
 class BrowserNotificationChannel implements NotificationChannel<BrowserNotificationPayload> {
@@ -23,9 +24,26 @@ class BrowserNotificationChannel implements NotificationChannel<BrowserNotificat
       }
 
       const notification = new Notification(message.title, message.payload);
-      if (message.onClick) {
-        notification.addEventListener('click', message.onClick, { once: true });
-      }
+      notification.addEventListener(
+        'click',
+        message.onClick ??
+          (() => {
+            window.focus();
+            const navigationUrl = message.payload.data?.navigationUrl;
+            if (typeof navigationUrl === 'string' && navigationUrl) {
+              let url: URL;
+              try {
+                url = new URL(navigationUrl, window.location.href);
+              } catch {
+                return;
+              }
+              if (url.protocol === 'http:' || url.protocol === 'https:') {
+                window.location.assign(url.href);
+              }
+            }
+          }),
+        { once: true },
+      );
     } catch (e) {
       console.error('send notification failed.', e);
       return;
