@@ -88,6 +88,22 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
   options: UseDebouncedCallbackOptions,
 ): UseDebouncedCallbackReturn<T> {
+  const {
+    run,
+    cancel: cancelInternal,
+    isPending,
+  } = useDebouncedCallbackInternal(callback, options);
+  const cancel = useCallback(() => cancelInternal(), [cancelInternal]);
+  return useMemo(() => ({ run, cancel, isPending }), [run, cancel, isPending]);
+}
+
+/** @internal Automatic query cancellation can also reset the leading window. */
+export function useDebouncedCallbackInternal<T extends (...args: any[]) => any>(
+  callback: T,
+  options: UseDebouncedCallbackOptions,
+): Omit<UseDebouncedCallbackReturn<T>, 'cancel'> & {
+  readonly cancel: (resetLeading?: boolean) => void;
+} {
   if (options.leading === false && options.trailing === false) {
     throw new Error(
       'useDebouncedCallback: at least one of leading or trailing must be true',
@@ -167,16 +183,20 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
       scheduleTrailing,
     ],
   );
-  const cancel = useCallback(() => {
-    cleanTimeout();
-    lastArgsRef.current = null;
-  }, [cleanTimeout]);
+  const cancel = useCallback(
+    (resetLeading = false) => {
+      cleanTimeout();
+      lastArgsRef.current = null;
+      if (resetLeading) lastInvokeTimeRef.current = null;
+    },
+    [cleanTimeout],
+  );
   const isPending = useCallback(() => {
     return timeoutRef.current !== undefined;
   }, []);
   useEffect(() => {
     return () => {
-      cancel();
+      cancel(true);
     };
   }, [cancel]);
 

@@ -14,6 +14,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useDebouncedCallback } from '../../../src';
+import { useDebouncedCallbackInternal } from '../../../src/core/debounced/useDebouncedCallback';
 
 describe('useDebouncedCallback', () => {
   beforeEach(() => {
@@ -352,4 +353,75 @@ describe('useDebouncedCallback', () => {
       'useDebouncedCallback: at least one of leading or trailing must be true',
     );
   });
+  it.each([false, true])(
+    'keeps the leading window across explicit cancel and rerender (trailing: %s)',
+    trailing => {
+      vi.setSystemTime(1000);
+      const callback = vi.fn();
+      const { result, rerender } = renderHook(() =>
+        useDebouncedCallback(callback, { delay: 100, leading: true, trailing }),
+      );
+      act(() => result.current.run('first'));
+      act(() => result.current.cancel());
+      rerender();
+      act(() => result.current.run('second'));
+      expect(callback).toHaveBeenCalledExactlyOnceWith('first');
+      expect(result.current.isPending()).toBe(trailing);
+      act(() => vi.advanceTimersByTime(100));
+      expect(callback).toHaveBeenCalledTimes(trailing ? 2 : 1);
+      expect(result.current.isPending()).toBe(false);
+    },
+  );
+});
+
+it.each([true, 'event'] as const)(
+  'preserves the public cancel cooldown when used as a callback receiving %s',
+  argument => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1000);
+    const callback = vi.fn();
+    const { result, unmount } = renderHook(() =>
+      useDebouncedCallback(callback, {
+        delay: 100,
+        leading: true,
+        trailing: false,
+      }),
+    );
+    try {
+      const cancelHandler: (value: unknown) => void = result.current.cancel;
+      act(() => {
+        result.current.run('first');
+        cancelHandler(argument === true ? true : new Event('click'));
+        result.current.run('second');
+      });
+      expect(callback).toHaveBeenCalledExactlyOnceWith('first');
+    } finally {
+      unmount();
+      vi.useRealTimers();
+    }
+  },
+);
+
+it('internal cancellation starts a fresh leading window and keeps the run return value unchanged', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(1000);
+  const callback = vi.fn();
+  const { result, unmount } = renderHook(() =>
+    useDebouncedCallbackInternal(callback, {
+      delay: 100,
+      leading: true,
+      trailing: false,
+    }),
+  );
+  try {
+    act(() => {
+      expect(result.current.run('first')).toBeUndefined();
+      result.current.cancel(true);
+      expect(result.current.run('second')).toBeUndefined();
+    });
+    expect(callback.mock.calls).toEqual([['first'], ['second']]);
+  } finally {
+    unmount();
+    vi.useRealTimers();
+  }
 });

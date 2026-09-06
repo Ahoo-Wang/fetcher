@@ -373,3 +373,33 @@ describe('useExecutePromise', () => {
     consoleWarnSpy.mockRestore();
   });
 });
+
+it.each(['success', 'failure'] as const)(
+  'ignores late %s after manual abort',
+  async outcome => {
+    let resolve!: (value: string) => void;
+    let reject!: (error: Error) => void;
+    let execution!: Promise<void>;
+    const { result } = renderHook(() => useExecutePromise<string>());
+    act(() => {
+      execution = result.current.execute(
+        () =>
+          new Promise((yes, no) => {
+            resolve = yes;
+            reject = no;
+          }),
+      );
+    });
+    await act(async () => {
+      await result.current.abort();
+    });
+    await act(async () => {
+      if (outcome === 'success') resolve('obsolete');
+      else reject(new Error('obsolete'));
+      await execution;
+    });
+    expect(result.current.status).toBe('idle');
+    expect(result.current.result).toBeUndefined();
+    expect(result.current.error).toBeUndefined();
+  },
+);
