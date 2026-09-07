@@ -82,7 +82,7 @@ it('fills available width with automatic business columns and preserves explicit
       kind: 'field',
       field: 'amount',
       width: 100,
-      summary: 'SUM',
+      summary: ['SUM'],
     },
     { id: 'actions', kind: 'actions', width: 80 },
   ];
@@ -238,7 +238,7 @@ it('keeps headers, records and summaries aligned with default action pins, resiz
       kind: 'field',
       field: 'amount',
       width: 200,
-      summary: 'SUM',
+      summary: ['SUM'],
     },
     {
       id: 'alias',
@@ -268,10 +268,14 @@ it('keeps headers, records and summaries aligned with default action pins, resiz
         extensions: { rowActions: { actions: () => <button>查看</button> } },
         pageSummary: {
           status: 'success',
-          values: { amount: 10 },
+          values: { amount: { SUM: 10 } },
           error: null,
         },
-        allSummary: { status: 'success', values: { amount: 100 }, error: null },
+        allSummary: {
+          status: 'success',
+          values: { amount: { SUM: 100 } },
+          error: null,
+        },
         selectable,
         onColumnsChange,
       })}
@@ -297,13 +301,13 @@ it('keeps headers, records and summaries aligned with default action pins, resiz
     '查看',
   ]);
   expect(
-    cells('tfoot tr:first-child td').map(cell => cell.textContent),
-  ).toEqual(['', '', '', '本页 · 合计10', '', '']);
+    cells('tfoot tr:first-child > *').map(cell => cell.textContent),
+  ).toEqual(['本页', '', '', '合计10', '', '']);
   for (const selector of [
     'thead th',
     'tbody td',
-    'tfoot tr:first-child td',
-    'tfoot tr:last-child td',
+    'tfoot tr:first-child > *',
+    'tfoot tr:last-child > *',
   ]) {
     const row = cells(selector);
     expect(row[0].style.left).toBe('0px');
@@ -874,9 +878,9 @@ it('keeps renderer failures isolated across unrelated updates and recovers after
   expect(screen.getByText('渲染已恢复')).toBeTruthy();
 });
 
-it('preserves numeric precision and shows date-only, zoned datetime and null values', () => {
+it('honors configured numeric precision and shows date-only, zoned datetime and null values', () => {
   const fields = [
-    definition.fields[1],
+    { ...definition.fields[1], numberFormat: { maximumFractionDigits: 8 } },
     { field: 'date', label: '日期', type: 'date' as const },
     {
       field: 'datetime',
@@ -1124,7 +1128,175 @@ it('supports keyboard reordering on the drag handle without crossing fixed regio
   ).toEqual(['key', 'name', 'amount', 'actions']);
 });
 
-it('aligns summary cells with columns, preserves zero, and reports aggregate failure separately', () => {
+it('selects multiple summary functions and clears the last selection without closing the list', async () => {
+  const onChange = vi.fn();
+  function Example() {
+    const [columns, setColumns] = useState<RecordColumn[]>([
+      { id: 'amount', kind: 'field', field: 'amount', summary: ['SUM'] },
+    ]);
+    return (
+      <RecordColumnSettings
+        definition={definition}
+        columns={columns}
+        onChange={next => {
+          setColumns(next);
+          onChange(next);
+        }}
+      />
+    );
+  }
+  render(<Example />);
+  fireEvent.click(screen.getByRole('button', { name: '列设置' }));
+  fireEvent.click(screen.getByRole('combobox', { name: '金额汇总方式' }));
+  const average = await screen.findByRole('option', { name: '平均值' });
+  fireEvent.pointerDown(average, { pointerType: 'mouse' });
+  fireEvent.click(average);
+  expect(onChange.mock.lastCall?.[0][0].summary).toEqual(['SUM', 'AVG']);
+  expect(
+    screen.getByRole('option', { name: '合计' }).getAttribute('aria-selected'),
+  ).toBe('true');
+  expect(
+    screen
+      .getByRole('option', { name: '平均值' })
+      .getAttribute('aria-selected'),
+  ).toBe('true');
+  const sum = screen.getByRole('option', { name: '合计' });
+  fireEvent.pointerDown(sum, { pointerType: 'mouse' });
+  fireEvent.click(sum);
+  expect(onChange.mock.lastCall?.[0][0].summary).toEqual(['AVG']);
+  fireEvent.pointerDown(average, { pointerType: 'mouse' });
+  fireEvent.click(average);
+  expect(onChange.mock.lastCall?.[0][0].summary).toBeUndefined();
+  expect(
+    screen.getByRole('combobox', { name: '金额汇总方式' }).textContent,
+  ).toContain('不汇总');
+  expect(screen.getByRole('listbox').getAttribute('aria-multiselectable')).toBe(
+    'true',
+  );
+});
+
+it('shows one spinner per loading scope instead of repeating loading text for every metric', () => {
+  const configured: ViewInstance = {
+    ...instance,
+    config: {
+      ...instance.config,
+      presentation: {
+        layout: 'table',
+        table: {
+          columns: [
+            {
+              id: 'amount',
+              kind: 'field',
+              field: 'amount',
+              summary: ['AVG', 'MIN', 'MAX'],
+            },
+            {
+              id: 'amount-copy',
+              kind: 'field',
+              field: 'amount',
+              summary: ['SUM'],
+            },
+          ],
+        },
+      },
+    },
+  };
+  const loading = { status: 'loading' as const, values: {}, error: null };
+  const draw = (selectable: boolean, querying = true) => (
+    <RecordTable
+      {...props({
+        instance: configured,
+        selectable,
+        querying,
+        rows: querying ? [] : props().rows,
+        pageSummary: querying
+          ? loading
+          : {
+              status: 'success',
+              values: { amount: { AVG: 1, MIN: 0, MAX: 2 } },
+              error: null,
+            },
+        allSummary: loading,
+      })}
+    />
+  );
+  const view = render(draw(true));
+  expect(screen.getAllByRole('status')).toHaveLength(3);
+  expect(screen.getByRole('status', { name: '正在加载记录' })).toBeTruthy();
+  expect(screen.getByRole('status', { name: '本页汇总加载中' })).toBeTruthy();
+  expect(screen.getByRole('status', { name: '所有汇总加载中' })).toBeTruthy();
+  expect(screen.queryByText(/统计中|正在加载/)).toBeNull();
+  view.rerender(draw(false));
+  expect(screen.getAllByRole('status')).toHaveLength(3);
+  view.rerender(draw(false, false));
+  expect(screen.getAllByRole('status')).toHaveLength(1);
+  expect(screen.getByRole('status', { name: '所有汇总加载中' })).toBeTruthy();
+});
+
+it('formats numeric records and ordered metrics consistently with one fixed scope label', () => {
+  const numberFormat = { style: 'currency' as const, currency: 'CNY' };
+  const formattedDefinition = {
+    ...definition,
+    fields: definition.fields.map(field =>
+      field.field === 'amount' ? { ...field, numberFormat } : field,
+    ),
+  };
+  const value = 2025.3333333333333;
+  const configured: ViewInstance = {
+    ...instance,
+    config: {
+      ...instance.config,
+      presentation: {
+        layout: 'table',
+        table: {
+          columns: [
+            {
+              id: 'amount',
+              kind: 'field',
+              field: 'amount',
+              summary: ['MAX', 'AVG', 'SUM'],
+            },
+          ],
+        },
+      },
+    },
+  };
+  const drawProps = props({
+    definition: formattedDefinition,
+    instance: configured,
+    selectable: true,
+    rows: [{ meta: { id: 'one' }, amount: value }],
+    pageSummary: {
+      status: 'success',
+      values: { amount: { SUM: 6076, AVG: value, MAX: 3600 } },
+      error: null,
+    },
+    allSummary: {
+      status: 'success',
+      values: { amount: { SUM: 6076, AVG: value, MAX: 3600 } },
+      error: null,
+    },
+  });
+  const view = render(<RecordTable {...drawProps} />);
+  expect(screen.getByRole('cell', { name: '¥2,025.33' })).toBeTruthy();
+  const page = within(screen.getByRole('row', { name: '本页汇总' }));
+  expect(
+    page.getByRole('rowheader', { name: '本页' }).getAttribute('data-pinned'),
+  ).toBe('start');
+  expect(screen.getAllByText('本页')).toHaveLength(1);
+  expect(screen.getAllByText('所有')).toHaveLength(1);
+  expect(
+    page.getAllByRole('group').map(node => node.getAttribute('aria-label')),
+  ).toEqual(['金额合计', '金额平均值', '金额最大值']);
+  expect(page.getByText('¥2,025.33')).toBeTruthy();
+  expect(page.queryByText(/本页 ·/)).toBeNull();
+  view.rerender(<RecordTable {...drawProps} selectable={false} />);
+  const singleColumn = within(screen.getByRole('row', { name: '本页汇总' }));
+  expect(singleColumn.getByRole('rowheader', { name: '本页' })).toBeTruthy();
+  expect(singleColumn.getByText('¥2,025.33')).toBeTruthy();
+});
+
+it('aligns multiple summary values with columns, preserves zero, and reports aggregate failure separately', () => {
   const configured: ViewInstance = {
     ...instance,
     config: {
@@ -1134,7 +1306,12 @@ it('aligns summary cells with columns, preserves zero, and reports aggregate fai
         table: {
           columns: [
             { id: 'name', kind: 'field', field: 'name' },
-            { id: 'amount', kind: 'field', field: 'amount', summary: 'SUM' },
+            {
+              id: 'amount',
+              kind: 'field',
+              field: 'amount',
+              summary: ['SUM', 'AVG'],
+            },
           ],
         },
       },
@@ -1143,7 +1320,7 @@ it('aligns summary cells with columns, preserves zero, and reports aggregate fai
   const retry = vi.fn();
   const pageSummary = {
     status: 'success' as const,
-    values: { amount: 0 },
+    values: { amount: { SUM: 0, AVG: 0 } },
     error: null,
   };
   const view = render(
@@ -1153,7 +1330,7 @@ it('aligns summary cells with columns, preserves zero, and reports aggregate fai
         pageSummary,
         allSummary: {
           status: 'success',
-          values: { amount: null },
+          values: { amount: { SUM: null, AVG: null } },
           error: null,
         },
         onSummaryRetry: retry,
@@ -1165,6 +1342,10 @@ it('aligns summary cells with columns, preserves zero, and reports aggregate fai
     '合计0',
   );
   expect(footer.textContent).toContain('合计—');
+  expect(footer.textContent).toContain('平均值—');
+  expect(screen.getByRole('row', { name: '本页汇总' }).textContent).toContain(
+    '平均值0',
+  );
   expect(screen.queryByRole('combobox', { name: '汇总范围' })).toBeNull();
   expect(screen.queryByText('记录数')).toBeNull();
   expect(screen.getByRole('cell', { name: 'Zulu' })).toBeTruthy();

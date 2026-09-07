@@ -18,7 +18,12 @@ import {
   useState,
   type CSSProperties,
 } from 'react';
-import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from 'lucide-react';
+import {
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
+  InboxIcon,
+} from 'lucide-react';
 import { SortDirection } from '@ahoo-wang/fetcher-wow';
 import {
   columnOrderingFeature,
@@ -36,6 +41,13 @@ import {
 } from '@tanstack/react-table';
 import { Button } from '../components/ui/button.js';
 import { Checkbox } from '../components/ui/checkbox.js';
+import { Spinner } from '../components/ui/spinner.js';
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from '../components/ui/tooltip.js';
 import {
   Table,
   TableBody,
@@ -51,6 +63,8 @@ import {
   RECORD_COLUMN_MAX_WIDTH,
   RECORD_COLUMN_MIN_WIDTH,
   RECORD_SUMMARY_LABELS,
+  formatRecordNumber,
+  type RecordSummaryFunction,
   getRecordColumnPinning,
   orderRecordColumns,
   type RecordColumn,
@@ -61,6 +75,10 @@ import {
 import type { RecordTableProps } from './recordReactTypes.js';
 import { getRecordKey, readRecordValue } from './recordValidation.js';
 import { RecordRendererBoundary } from './RecordRendererBoundary.js';
+
+const summaryOrder = Object.keys(
+  RECORD_SUMMARY_LABELS,
+) as RecordSummaryFunction[];
 
 const features = tableFeatures({
   columnOrderingFeature,
@@ -93,10 +111,7 @@ function displayValue(value: unknown, field: ViewFieldDefinition): string {
       }).format(date);
   }
   if (typeof value === 'boolean') return value ? '是' : '否';
-  if (typeof value === 'number')
-    return new Intl.NumberFormat('zh-CN', {
-      maximumSignificantDigits: 21,
-    }).format(value);
+  if (typeof value === 'number') return formatRecordNumber(value, field);
   if (typeof value === 'object') return JSON.stringify(value) ?? '—';
   return String(value);
 }
@@ -394,7 +409,7 @@ export function RecordTable({
   }
   const hasSummary = visibleColumns.some(column => {
     const configured = byId.get(column.id);
-    return configured?.kind === 'field' && configured.summary !== undefined;
+    return configured?.kind === 'field' && !!configured.summary?.length;
   });
   const summaries = [
     { label: '本页', result: pageSummary },
@@ -615,77 +630,150 @@ export function RecordTable({
                 }
                 className="fve:h-24 fve:text-center"
               >
-                {querying ? '正在加载…' : '暂无记录'}
+                <div className="fve:flex fve:justify-center">
+                  {querying ? (
+                    <Spinner aria-label="正在加载记录" />
+                  ) : (
+                    <InboxIcon
+                      role="img"
+                      aria-label="暂无记录"
+                      className="fve:size-6 fve:text-muted-foreground"
+                    />
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           )}
         </TableBody>
         {hasSummary && (
-          <TableFooter aria-label="汇总">
-            {summaries.map(({ label, result }) => (
-              <TableRow
-                key={label}
-                aria-label={`${label}汇总`}
-                aria-busy={result?.status === 'loading' || undefined}
-              >
-                {selectable && (
-                  <TableCell data-pinned="start" style={{ left: 0 }} />
-                )}
-                {withFiller(visibleColumns).map(column => {
-                  if (!column)
-                    return <TableCell key="space" aria-hidden="true" />;
-                  const configured = byId.get(column.id)!;
-                  const value = result?.values[configured.id];
-                  return (
-                    <TableCell
-                      key={column.id}
-                      className="fve:whitespace-normal fve:align-top"
-                      style={columnStyle(column)}
-                      data-pinned={column.getIsPinned() || undefined}
+          <TooltipProvider>
+            <TableFooter aria-label="汇总">
+              {summaries.map(({ label, result }) => (
+                <TableRow
+                  key={label}
+                  aria-label={`${label}汇总`}
+                  aria-busy={result?.status === 'loading' || undefined}
+                >
+                  {selectable && (
+                    <TableHead
+                      scope="row"
+                      aria-label={label}
+                      data-pinned="start"
+                      style={{ left: 0 }}
+                      title={
+                        label === '所有'
+                          ? '当前已查询条件下的所有记录'
+                          : '当前页记录'
+                      }
+                      className="fve:h-auto fve:px-1 fve:py-2 fve:align-top fve:text-xs fve:leading-5 fve:font-normal fve:text-muted-foreground"
                     >
-                      {configured.kind === 'field' && configured.summary && (
-                        <div
-                          role="group"
-                          className="fve:flex fve:flex-col fve:gap-1"
-                          aria-label={`${configured.title ?? definition.fields.find(field => field.field === configured.field)?.label ?? configured.field}${RECORD_SUMMARY_LABELS[configured.summary]}`}
-                        >
+                      <span className="fve:inline-flex fve:items-center fve:gap-0.5">
+                        {label}
+                        {result?.status === 'loading' && (
+                          <Spinner
+                            className="fve:size-3 fve:shrink-0"
+                            aria-label={`${label}汇总加载中`}
+                          />
+                        )}
+                      </span>
+                    </TableHead>
+                  )}
+                  {withFiller(visibleColumns).map(column => {
+                    if (!column)
+                      return <TableCell key="space" aria-hidden="true" />;
+                    const configured = byId.get(column.id)!;
+                    const field =
+                      configured.kind === 'field'
+                        ? definition.fields.find(
+                            field => field.field === configured.field,
+                          )
+                        : undefined;
+                    const scopeCell =
+                      !selectable && column.id === visibleColumns[0]?.id;
+                    const Cell = scopeCell ? TableHead : TableCell;
+                    return (
+                      <Cell
+                        key={column.id}
+                        scope={scopeCell ? 'row' : undefined}
+                        aria-label={scopeCell ? label : undefined}
+                        className="fve:h-auto fve:py-2 fve:align-top fve:font-normal"
+                        style={columnStyle(column)}
+                        data-pinned={column.getIsPinned() || undefined}
+                      >
+                        {scopeCell && (
                           <span
-                            className="fve:text-xs fve:font-normal fve:text-muted-foreground"
                             title={
                               label === '所有'
                                 ? '当前已查询条件下的所有记录'
                                 : '当前页记录'
                             }
+                            className="fve:inline-flex fve:items-center fve:gap-0.5 fve:text-xs fve:leading-5 fve:text-muted-foreground"
                           >
-                            {label} ·{' '}
-                            {RECORD_SUMMARY_LABELS[configured.summary]}
+                            {label}
+                            {result?.status === 'loading' && (
+                              <Spinner
+                                className="fve:size-3 fve:shrink-0"
+                                aria-label={`${label}汇总加载中`}
+                              />
+                            )}
                           </span>
-                          <span
-                            className="fve:truncate"
-                            title={
-                              result?.status === 'success' &&
-                              typeof value === 'number'
-                                ? String(value)
-                                : undefined
-                            }
-                          >
-                            {result?.status === 'loading'
-                              ? '统计中…'
-                              : result?.status === 'success' &&
-                                  typeof value === 'number'
-                                ? new Intl.NumberFormat('zh-CN', {
-                                    maximumSignificantDigits: 21,
-                                  }).format(value)
-                                : '—'}
-                          </span>
-                        </div>
-                      )}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableFooter>
+                        )}
+                        {configured.kind === 'field' &&
+                          field &&
+                          summaryOrder
+                            .filter(summary =>
+                              configured.summary?.includes(summary),
+                            )
+                            .map(summary => {
+                              const value =
+                                result?.values[configured.id]?.[summary];
+                              const success =
+                                result?.status === 'success' &&
+                                typeof value === 'number';
+                              const metricLabel = `${configured.title ?? field.label}${RECORD_SUMMARY_LABELS[summary]}`;
+                              const formatted = success
+                                ? formatRecordNumber(value, field)
+                                : undefined;
+                              return (
+                                <div
+                                  key={summary}
+                                  role="group"
+                                  aria-label={metricLabel}
+                                  className="fve:grid fve:grid-cols-[auto_minmax(0,1fr)] fve:items-baseline fve:gap-2 fve:leading-5"
+                                >
+                                  <span className="fve:whitespace-nowrap fve:text-xs fve:font-normal fve:text-muted-foreground">
+                                    {RECORD_SUMMARY_LABELS[summary]}
+                                  </span>
+                                  {success ? (
+                                    <Tooltip>
+                                      <TooltipTrigger
+                                        render={<span tabIndex={0} />}
+                                        aria-label={`${label}${metricLabel}：${formatted}`}
+                                        className="fve:min-w-0 fve:truncate fve:text-right fve:font-medium fve:tabular-nums fve:outline-none fve:focus-visible:ring-2 fve:focus-visible:ring-ring"
+                                      >
+                                        {formatted}
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        原值：{String(value)}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  ) : (
+                                    <span className="fve:min-w-0 fve:truncate fve:text-right fve:font-medium fve:tabular-nums">
+                                      {result?.status === 'loading'
+                                        ? null
+                                        : '—'}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                      </Cell>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableFooter>
+          </TooltipProvider>
         )}
       </Table>
       {hasSummary &&

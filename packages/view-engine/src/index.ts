@@ -28,6 +28,7 @@ export { ViewEngine } from './record/ViewEngine.js';
 export {
   RECORD_SUMMARY_LABELS,
   getRecordSummaryFunctions,
+  formatRecordNumber,
   getRecordColumnPinning,
   orderRecordColumns,
 } from './record/recordModel.js';

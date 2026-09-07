@@ -30,6 +30,8 @@ export type RendererReference = FilterEditorReference;
 export interface ViewFieldDefinition extends FilterFieldDefinition {
   sortable?: boolean;
   cellRenderer?: RendererReference;
+  /** Shared display format for numeric cells and summaries; computation keeps raw values. */
+  numberFormat?: Intl.NumberFormatOptions & { locale?: string };
   /** Restricts numeric summaries; other field types cannot summarize. */
   summaryFunctions?: readonly RecordSummaryFunction[];
 }
@@ -67,7 +69,8 @@ export type RecordColumn =
   | (RecordColumnBase & {
       kind: 'field';
       field: string;
-      summary?: RecordSummaryFunction;
+      /** Selected numeric metrics; omitted or empty disables summaries. */
+      summary?: readonly RecordSummaryFunction[];
     })
   | (RecordColumnBase & { kind: 'actions' });
 export function getRecordColumnPinning(
@@ -208,9 +211,29 @@ export const RECORD_SUMMARY_LABELS = {
   MAX: '最大值',
 } as const;
 export type RecordSummaryFunction = keyof typeof RECORD_SUMMARY_LABELS;
+export function formatRecordNumber(
+  value: number,
+  field: ViewFieldDefinition,
+): string {
+  const { locale = 'zh-CN', ...options } = field.numberFormat ?? {};
+  if (
+    (!options.style || options.style === 'decimal') &&
+    options.minimumFractionDigits === undefined &&
+    options.maximumFractionDigits === undefined &&
+    options.minimumSignificantDigits === undefined &&
+    options.maximumSignificantDigits === undefined
+  )
+    options.maximumFractionDigits = 2;
+  return new Intl.NumberFormat(locale, options).format(value);
+}
 export interface RecordSummaryResult {
   readonly status: 'idle' | 'loading' | 'success' | 'error';
-  readonly values: Readonly<Record<string, number | null>>;
+  readonly values: Readonly<
+    Record<
+      string,
+      Readonly<Partial<Record<RecordSummaryFunction, number | null>>>
+    >
+  >;
   readonly error: string | null;
 }
 export function getRecordSummaryFunctions(

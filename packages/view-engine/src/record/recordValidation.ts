@@ -17,6 +17,7 @@ import {
   RECORD_COLUMN_MAX_WIDTH,
   RECORD_SUMMARY_LABELS,
   getRecordSummaryFunctions,
+  formatRecordNumber,
   type RecordSummaryFunction,
   type ViewFieldDefinition,
   RECORD_COLUMN_MIN_WIDTH,
@@ -122,6 +123,13 @@ function fields(value: unknown) {
     if (field.timeZone !== undefined) {
       text(field.timeZone, '时区');
       new Intl.DateTimeFormat('en', { timeZone: field.timeZone });
+    }
+    if (field.numberFormat !== undefined) {
+      object(field.numberFormat, '数值格式');
+      if (field.type !== 'number') throw new Error('只有数值字段支持数值格式');
+      if (field.numberFormat.locale !== undefined)
+        text(field.numberFormat.locale, '数值区域设置');
+      formatRecordNumber(0, field as unknown as ViewFieldDefinition);
     }
     if (field.summaryFunctions !== undefined) {
       if (
@@ -279,12 +287,17 @@ export function validateViewInstance(
       if (
         column.kind !== 'field' ||
         !field ||
-        !getRecordSummaryFunctions(field as ViewFieldDefinition).includes(
-          column.summary as RecordSummaryFunction,
+        !Array.isArray(column.summary) ||
+        new Set(column.summary).size !== column.summary.length ||
+        column.summary.some(
+          summary =>
+            !getRecordSummaryFunctions(field as ViewFieldDefinition).includes(
+              summary as RecordSummaryFunction,
+            ),
         )
       )
         throw new Error('列汇总函数无效或字段不支持');
-      summaryCount++;
+      summaryCount += column.summary.length;
     }
     if (column.kind === 'field') {
       if (!definition.fields.some(field => field.field === column.field))
@@ -295,7 +308,7 @@ export function validateViewInstance(
     } else throw new Error('列类型不支持');
   }
   if (!visible) throw new Error('请至少显示一列');
-  if (summaryCount > 64) throw new Error('最多配置 64 个汇总列');
+  if (summaryCount > 64) throw new Error('最多配置 64 个汇总指标');
 }
 /** Dot paths use exact own-property segments, preserving null and falsey values. */
 export function readRecordValue(record: RecordData, field: string): unknown {

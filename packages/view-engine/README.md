@@ -96,23 +96,40 @@ The stories use an in-memory service to demonstrate request/response behavior.
 
 ### Page and all-record summaries
 
-Only fields declared as `type: 'number'` support `summary: 'SUM' | 'AVG' | 'MIN' |
-'MAX'` on their columns. Column settings expose these functions; other field types
-have no summary controls. `field.summaryFunctions` can restrict the list, with `[]`
+Only fields declared as `type: 'number'` support column summaries. Set
+`summary: ['SUM', 'AVG', 'MIN', 'MAX']` to select several metrics for one column.
+Column settings use a multi-select; deselecting every option disables summaries.
+Other field types have no summary controls. `field.summaryFunctions` can restrict the list, with `[]`
 disabling summaries. Column functions are saved with the instance; COUNT is not
 supported.
 
-The footer displays page and all-record summaries together in two aligned rows.
+The footer displays page and all-record summaries together in two aligned rows,
+listing each selected metric in SUM/AVG/MIN/MAX order. Scope labels appear once
+on the left; metric labels and right-aligned numbers stay on one line. Loading
+uses a centered Spinner for records and one Spinner beside each pending scope
+label. Pending metric values stay blank, and pagination does not repeat loading
+text.
 Page values use the loaded records; all-record values use the host's Wow `aggregate`
 with the applied filter, without fetching every record. Unapplied filter edits and
 row selection do not change the scope. Aggregate loading/failure leaves page values
 and records available, with a separate retry. Changing a function recalculates both
 summaries without reloading the list.
 
+Numeric fields can set `numberFormat`, using `Intl.NumberFormatOptions` plus an
+optional `locale` (default `zh-CN`). For money, use
+`numberFormat: { style: 'currency', currency: 'CNY' }`; for integers, use
+`{ maximumFractionDigits: 0 }`. Decimal formatting defaults to at most two
+fraction digits unless digit options are supplied; other styles use Intl defaults.
+Default record cells and summaries share this format. Custom cells can reuse
+`formatRecordNumber(value, field)`. Formatting does not change records or aggregate
+values. Focus or hover a summary value to see its raw precision in a tooltip.
+
 Numeric functions skip null/missing values. Empty inputs return null (“—”), distinct
 from zero. Headless consumers can use `calculateRecordSummary`,
 `createRecordSummaryQuery`, `readRecordSummaryResult`, or the engine's
-`refreshSummary` method and session `pageSummary` / `allSummary`.
+`refreshSummary` method and session `pageSummary` / `allSummary`. Result values
+are keyed by column ID and function, for example `values.amount.SUM`. Across all
+columns, at most 64 metrics are allowed.
 
 ### Automatic refresh and expansion
 

@@ -16,7 +16,14 @@ import { Columns3Icon, GripVerticalIcon, PinIcon } from 'lucide-react';
 import { Button } from '../components/ui/button.js';
 import { Checkbox } from '../components/ui/checkbox.js';
 import { cn } from '../lib/utils.js';
-import { FilterSelect } from '../filter/FilterSelect.js';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select.js';
 import {
   Popover,
   PopoverContent,
@@ -254,16 +261,13 @@ export function RecordColumnSettings({
                   </label>
                   {column.kind === 'field' && summaryFunctions.length > 0 && (
                     <div className="fve:shrink-0">
-                      <FilterSelect<RecordSummaryFunction | 'none'>
-                        label={`${title}汇总方式`}
-                        value={column.summary ?? 'none'}
-                        options={[
-                          { value: 'none', label: '不汇总' },
-                          ...summaryFunctions.map(value => ({
-                            value,
-                            label: RECORD_SUMMARY_LABELS[value],
-                          })),
-                        ]}
+                      <Select<RecordSummaryFunction, true>
+                        multiple
+                        value={[...(column.summary ?? [])]}
+                        items={summaryFunctions.map(value => ({
+                          value,
+                          label: RECORD_SUMMARY_LABELS[value],
+                        }))}
                         disabled={disabled}
                         onValueChange={value => {
                           if (disabled) return;
@@ -272,14 +276,44 @@ export function RecordColumnSettings({
                               item.id === column.id
                                 ? {
                                     ...item,
-                                    summary:
-                                      value === 'none' ? undefined : value,
+                                    summary: value.length
+                                      ? summaryFunctions.filter(fn =>
+                                          value.includes(fn),
+                                        )
+                                      : undefined,
                                   }
                                 : item,
                             ),
                           );
                         }}
-                      />
+                      >
+                        <SelectTrigger
+                          aria-label={`${title}汇总方式`}
+                          title={column.summary
+                            ?.map(fn => RECORD_SUMMARY_LABELS[fn])
+                            .join('、')}
+                        >
+                          <SelectValue placeholder="不汇总">
+                            {!column.summary?.length
+                              ? '不汇总'
+                              : column.summary.length === 1
+                                ? RECORD_SUMMARY_LABELS[column.summary[0]]
+                                : `汇总 ${column.summary.length}`}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent
+                          alignItemWithTrigger={false}
+                          align="start"
+                        >
+                          <SelectGroup>
+                            {summaryFunctions.map(fn => (
+                              <SelectItem key={fn} value={fn}>
+                                {RECORD_SUMMARY_LABELS[fn]}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
                   <Button

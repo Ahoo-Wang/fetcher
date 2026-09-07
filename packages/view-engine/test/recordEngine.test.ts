@@ -1393,7 +1393,7 @@ it('waits for an in-flight all-record summary before another background refresh'
     id: 'amount',
     kind: 'field',
     field: 'state.amount',
-    summary: 'SUM',
+    summary: ['SUM'],
   };
   const { engine } = setup({
     instances: { instances: [value], defaultInstanceId: value.id },

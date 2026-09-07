@@ -367,9 +367,13 @@ export function RecordView({
         aria-label="记录分页"
         className="fve:flex fve:flex-wrap fve:items-center fve:justify-between fve:gap-x-4 fve:gap-y-2 fve:border-t fve:px-3 fve:py-2 fve:text-sm"
       >
-        <div role="status" className="fve:text-muted-foreground">
+        <div
+          role="status"
+          aria-busy={querying || undefined}
+          className="fve:min-h-5 fve:text-muted-foreground"
+        >
           {querying
-            ? '正在加载…'
+            ? null
             : session.total !== null
               ? `共 ${session.total} 条记录`
               : `本页 ${session.rows.length} 条记录`}

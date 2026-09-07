@@ -278,7 +278,8 @@ engine.dispose();
 `ViewDefinition` contains `id`, `title`, `sourceId`, `rowKey`, `fields` and optional
 `allowedOperators`, `filterEditors`, `recordActions: {global?, table?, row?}`. A
 `ViewFieldDefinition` extends `FilterFieldDefinition` with `sortable?: boolean`,
-`cellRenderer?: RendererReference` and `summaryFunctions?: readonly RecordSummaryFunction[]`.
+`cellRenderer?: RendererReference`, `summaryFunctions?: readonly RecordSummaryFunction[]`,
+and `numberFormat?: Intl.NumberFormatOptions & { locale?: string }`.
 Sorting requires `sortable: true`.
 `RendererReference` uses the existing `{name, options?}` JSON contract. Filter
 references keep field `editor` and definition `filterEditors`; there is no
@@ -476,14 +477,14 @@ select instances or cause new queries.
 ### Record summaries
 
 Only fields explicitly declared as `type: 'number'` can summarize. Set their
-column `summary` to `SUM`, `AVG`, `MIN` or `MAX`:
+column `summary` to an array of `SUM`, `AVG`, `MIN` and/or `MAX`:
 
 ```ts
 import type { RecordColumn } from '@ahoo-wang/fetcher-view-engine';
 
 const columns: RecordColumn[] = [
   { id: 'id', kind: 'field', field: 'id' },
-  { id: 'amount', kind: 'field', field: 'amount', summary: 'SUM' },
+  { id: 'amount', kind: 'field', field: 'amount', summary: ['SUM', 'AVG'] },
 ];
 ```
 
@@ -491,14 +492,52 @@ const columns: RecordColumn[] = [
 `getRecordSummaryFunctions(field)` returns all four for numeric fields, or their
 explicit `field.summaryFunctions` subset. `[]` disables summaries. Other field
 types have no summary controls or capabilities. Definition and instance validation
-reject nonnumeric summaries and unsupported functions, including COUNT. Action
-columns cannot summarize; at most 64 columns may have summary metrics.
+reject nonnumeric summaries, duplicate selections and unsupported functions, including
+COUNT. Action columns cannot summarize; all columns together may select at most
+64 metrics (four metrics on one column count as four).
 
-Column settings expose the permitted functions and “不汇总”. The selected
-functions are saved with the instance. The footer displays **本页 and 所有 together
+Column settings use a multi-select for the permitted functions. The menu stays
+open while toggling selections; clearing the last selection shows “不汇总”. Omitted
+or empty `summary` arrays disable summaries. The selected functions are saved
+with the instance. The footer displays **本页 and 所有 together
 as two aligned rows**; there is no exclusive summary-scope setting or switch.
-Each metric identifies its scope and function. Hiding columns retains their
+The scope label appears once in the left selection column, or the first visible
+column when selection is disabled, following that column’s pinning. Each column
+lists metrics in SUM/AVG/MIN/MAX order regardless of the persisted selection order.
+Metric labels stay left, numbers stay right and use tabular digits on a single line. Hiding columns retains their
 configuration; the footer is hidden when no visible column summarizes.
+
+Numeric `field.numberFormat` shares formatting between default cells and summaries.
+It accepts `Intl.NumberFormatOptions` plus `locale?: string` (default `zh-CN`).
+Decimal formatting with no digit options defaults to `maximumFractionDigits: 2`;
+currency, percent and unit styles use Intl defaults. For example:
+
+```ts
+import type { ViewFieldDefinition } from '@ahoo-wang/fetcher-view-engine';
+
+const fields: ViewFieldDefinition[] = [
+  {
+    field: 'amount',
+    label: 'Amount',
+    type: 'number',
+    numberFormat: { style: 'currency', currency: 'CNY' },
+  },
+  {
+    field: 'quantity',
+    label: 'Quantity',
+    type: 'number',
+    numberFormat: { maximumFractionDigits: 0 },
+  },
+];
+```
+
+The core exports `formatRecordNumber(value: number, field: ViewFieldDefinition): string`
+for custom cells and headless consumers. Invalid formats are rejected when loading
+definitions; only numeric fields may declare them. Formatting is for display only:
+raw records, aggregates and queries retain full precision. Summary values use a
+shadcn Tooltip to expose the raw value on hover or keyboard focus; Escape dismisses
+it. Null/unavailable values remain “—”. Narrow columns truncate displayed values
+without wrapping; the complete value remains accessible through the tooltip.
 
 - **Page:** calculates from the loaded current-page records, independent of row
   selection. Numeric functions skip null/missing values and reject nonnumeric or
@@ -519,8 +558,9 @@ scope. Function changes recompute the page and request the new all-record metric
 without reloading records.
 
 `RecordSummaryResult` is `{status: 'idle' | 'loading' | 'success' | 'error',
-values: Readonly<Record<string, number | null>>, error: string | null}`; values
-are keyed by column ID. Session `pageSummary` and `allSummary` are transient and
+values: Readonly<Record<string, Readonly<Partial<Record<RecordSummaryFunction, number | null>>>>>,
+error: string | null}`; values are keyed by column ID and function, for example
+`values.amount.SUM` and `values.amount.AVG`. Session `pageSummary` and `allSummary` are transient and
 independent of each other and the record query. `load`/record queries do not wait
 for aggregation. `refreshSummary(id?)` recalculates the page and retries aggregation
 without reloading records; errors reject the promise and populate summary state.
@@ -531,12 +571,19 @@ an atomic server snapshot.
 The core exports `calculateRecordSummary(rows, columns)`,
 `createRecordSummaryQuery(filter, columns)` and
 `readRecordSummaryResult(response, columns)`. Query/result helpers use aliases
-`summary0`, `summary1`, … in stable column-ID order. Pass the same validated column
+`summary0`, `summary1`, … in stable column-ID/function order, independent of
+column presentation or selection-array order. Pass the same validated column
 bindings to both; query creation requires 1–64 metrics. `RECORD_SUMMARY_LABELS`
 contains the default function labels.
 
 Standalone `RecordTable` accepts controlled `pageSummary`, `allSummary` and
 `onSummaryRetry()`. It renders both results without fetching or calculating them.
+Record loading uses one centered shadcn Spinner. Each loading summary scope has
+one Spinner beside its label, independent of the number of selected metrics.
+Pending metric slots stay blank; pagination omits duplicate loading text. Spinners
+have accessible status labels and respect reduced-motion preferences. Loading
+does not collapse metric rows.
+
 Loading and errors remain separate: an all-summary failure retains the page values
 and records, and offers “重试汇总”. Null/unavailable values display “—”; actual zero
 remains zero. Long numbers stay on one line with an ellipsis and their complete,
@@ -577,7 +624,7 @@ browser's native preview without manual popup/iframe coordinate offsets.
 Dropping calls `onChange` with the reordered columns; cancelled
 or cross-group drops do not change the configuration. Focus a handle and press
 Up/Down for keyboard access, with focus retained and the new position announced.
-Column settings have one row per column: order handle, visibility/title, optional numeric summary Select, and pin icon. Width is adjusted at table-header edges only (drag or keyboard). For an unpinned field, exactly one adjacent settings row must be pinned; the field inherits that side. With zero or two pinned neighbors pinning is disabled. Ordinary pinned fields can still be unpinned; key/action anchors remain locked. The active instance has no separate dirty badge; the save button and pending/error guards express its actionable state. Inactive instances retain draft markers.
+Column settings have one row per column: order handle, visibility/title, optional numeric summary multi-select, and pin icon. Width is adjusted at table-header edges only (drag or keyboard). For an unpinned field, exactly one adjacent settings row must be pinned; the field inherits that side. With zero or two pinned neighbors pinning is disabled. Ordinary pinned fields can still be unpinned; key/action anchors remain locked. The active instance has no separate dirty badge; the save button and pending/error guards express its actionable state. Inactive instances retain draft markers.
 
 The page uses its own container width (64rem threshold), so it also adapts inside narrow host layouts. The wide page shows personal/system/shared groups; collapsing replaces the
 sidebar with a grouped Select. Narrow layouts show the Select without losing

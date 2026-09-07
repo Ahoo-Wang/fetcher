@@ -24,7 +24,10 @@ import type {
 } from './recordModel.js';
 import { readRecordValue } from './recordValidation.js';
 
-type SummaryColumn = Extract<RecordColumn, { kind: 'field' }> & {
+type SummaryColumn = Omit<
+  Extract<RecordColumn, { kind: 'field' }>,
+  'summary'
+> & {
   summary: RecordSummaryFunction;
 };
 export const EMPTY_RECORD_SUMMARY: RecordSummaryResult = {
@@ -37,18 +40,24 @@ export function getRecordSummaryColumns(
   columns: readonly RecordColumn[],
 ): SummaryColumn[] {
   return columns
-    .filter(
-      (column): column is SummaryColumn =>
-        column.kind === 'field' && column.summary !== undefined,
+    .flatMap(column =>
+      column.kind === 'field'
+        ? (column.summary ?? []).map(summary => ({ ...column, summary }))
+        : [],
     )
-    .sort((a, b) => a.id.localeCompare(b.id));
+    .sort(
+      (a, b) => a.id.localeCompare(b.id) || a.summary.localeCompare(b.summary),
+    );
 }
 /** Current-page values use the loaded record snapshot, never a second record query. */
 export function calculateRecordSummary(
   rows: readonly RecordData[],
   columns: readonly RecordColumn[],
-): Record<string, number | null> {
-  const result: Record<string, number | null> = Object.create(null);
+): RecordSummaryResult['values'] {
+  const result: Record<
+    string,
+    Partial<Record<RecordSummaryFunction, number | null>>
+  > = Object.create(null);
   for (const column of getRecordSummaryColumns(columns)) {
     const values: number[] = [];
     for (const row of rows) {
@@ -59,7 +68,7 @@ export function calculateRecordSummary(
       values.push(value);
     }
     if (!values.length) {
-      result[column.id] = null;
+      (result[column.id] ??= {})[column.summary] = null;
       continue;
     }
     let value: number;
@@ -84,7 +93,7 @@ export function calculateRecordSummary(
     }
     if (!Number.isFinite(value))
       throw new Error(`${column.field} 汇总结果超出数值范围`);
-    result[column.id] = value;
+    (result[column.id] ??= {})[column.summary] = value;
   }
   return result;
 }
@@ -109,14 +118,14 @@ export function createRecordSummaryQuery(
     }
   });
   const [first, ...rest] = metrics;
-  if (!first || metrics.length > 64) throw new Error('汇总列需要 1–64 项');
+  if (!first || metrics.length > 64) throw new Error('汇总指标需要 1–64 项');
   return { filter, metrics: [first, ...rest] };
 }
 /** Wow's ungrouped contract always returns one row; missing aliases are errors, not zero. */
 export function readRecordSummaryResult(
   value: unknown,
   columns: readonly RecordColumn[],
-): Record<string, number | null> {
+): RecordSummaryResult['values'] {
   if (
     !Array.isArray(value) ||
     value.length !== 1 ||
@@ -125,7 +134,10 @@ export function readRecordSummaryResult(
     Array.isArray(value[0])
   )
     throw new Error('所有汇总应返回一行聚合结果');
-  const result: Record<string, number | null> = Object.create(null);
+  const result: Record<
+    string,
+    Partial<Record<RecordSummaryFunction, number | null>>
+  > = Object.create(null);
   getRecordSummaryColumns(columns).forEach((column, index) => {
     const alias = `summary${index}`;
     if (!Object.prototype.hasOwnProperty.call(value[0], alias))
@@ -136,7 +148,7 @@ export function readRecordSummaryResult(
       (typeof metric !== 'number' || !Number.isFinite(metric))
     )
       throw new Error(`汇总结果 ${alias} 必须是合法数值`);
-    result[column.id] = metric as number | null;
+    (result[column.id] ??= {})[column.summary] = metric as number | null;
   });
   return result;
 }

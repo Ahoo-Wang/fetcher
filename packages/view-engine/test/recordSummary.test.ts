@@ -14,10 +14,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ViewEngine } from '../src/record/ViewEngine.js';
 import type {
+  RecordSummaryFunction,
   ViewDefinition,
   ViewInstance,
 } from '../src/record/recordModel.js';
-import { getRecordSummaryFunctions } from '../src/record/recordModel.js';
+import {
+  getRecordSummaryFunctions,
+  formatRecordNumber,
+} from '../src/record/recordModel.js';
 import {
   validateViewDefinition,
   validateViewInstance,
@@ -30,28 +34,108 @@ import {
 } from '../src/record/recordSummary.js';
 import type { RecordColumn } from '../src/record/recordModel.js';
 const columns: RecordColumn[] = [
-  { id: 'sum', kind: 'field', field: 'amount', summary: 'SUM' },
-  { id: 'avg', kind: 'field', field: 'amount', summary: 'AVG' },
-  { id: 'min', kind: 'field', field: 'amount', summary: 'MIN' },
-  { id: 'max', kind: 'field', field: 'amount', summary: 'MAX' },
+  { id: 'sum', kind: 'field', field: 'amount', summary: ['SUM'] },
+  { id: 'avg', kind: 'field', field: 'amount', summary: ['AVG'] },
+  { id: 'min', kind: 'field', field: 'amount', summary: ['MIN'] },
+  { id: 'max', kind: 'field', field: 'amount', summary: ['MAX'] },
 ];
 describe('record summaries', () => {
+  it('formats numbers by field without changing calculation precision', () => {
+    const field = { field: 'amount', label: '金额', type: 'number' as const };
+    expect(formatRecordNumber(2025.3333333333333, field)).toBe('2,025.33');
+    expect(
+      formatRecordNumber(2025.3333333333333, {
+        ...field,
+        numberFormat: { style: 'currency', currency: 'CNY' },
+      }),
+    ).toBe('¥2,025.33');
+    expect(
+      formatRecordNumber(2025.3333333333333, {
+        ...field,
+        numberFormat: { style: 'currency', currency: 'JPY' },
+      }),
+    ).toBe('JP¥2,025');
+    expect(
+      formatRecordNumber(2.5, {
+        ...field,
+        numberFormat: { maximumFractionDigits: 0 },
+      }),
+    ).toBe('3');
+    expect(
+      formatRecordNumber(0.12345, {
+        ...field,
+        numberFormat: { style: 'percent', maximumFractionDigits: 2 },
+      }),
+    ).toBe('12.35%');
+    expect(
+      formatRecordNumber(1234.5, {
+        ...field,
+        numberFormat: { locale: 'de-DE', minimumFractionDigits: 4 },
+      }),
+    ).toBe('1.234,5000');
+    expect(formatRecordNumber(0, field)).toBe('0');
+  });
+  it('keeps multiple metrics on one column distinct with stable query aliases', () => {
+    const multiple: RecordColumn[] = [
+      {
+        id: 'amount',
+        kind: 'field',
+        field: 'amount',
+        summary: ['SUM', 'AVG', 'MIN', 'MAX'],
+      },
+    ];
+    const values = { amount: { SUM: 3, AVG: 1, MIN: -3, MAX: 6 } };
+    expect(
+      calculateRecordSummary(
+        [{ amount: 0 }, { amount: 6 }, { amount: -3 }],
+        multiple,
+      ),
+    ).toEqual(values);
+    const query = createRecordSummaryQuery(filter.matchAll(), multiple);
+    expect(query.metrics).toEqual([
+      aggregation.avg(aggregation.field('amount'), 'summary0'),
+      aggregation.max(aggregation.field('amount'), 'summary1'),
+      aggregation.min(aggregation.field('amount'), 'summary2'),
+      aggregation.sum(aggregation.field('amount'), 'summary3'),
+    ]);
+    expect(
+      readRecordSummaryResult(
+        [{ summary0: 1, summary1: 6, summary2: -3, summary3: 3 }],
+        multiple,
+      ),
+    ).toEqual(values);
+    expect(
+      createRecordSummaryQuery(filter.matchAll(), [
+        {
+          ...multiple[0],
+          kind: 'field',
+          field: 'amount',
+          summary: ['MAX', 'MIN', 'AVG', 'SUM'],
+        },
+      ]),
+    ).toEqual(query);
+  });
   it('summarizes visible page records with nulls and real zero kept distinct', () => {
     expect(
       calculateRecordSummary(
         [{ amount: 0 }, { amount: 6 }, { amount: -3 }, { amount: null }, {}],
         columns,
       ),
-    ).toEqual({ sum: 3, avg: 1, min: -3, max: 6 });
+    ).toEqual({
+      sum: { SUM: 3 },
+      avg: { AVG: 1 },
+      min: { MIN: -3 },
+      max: { MAX: 6 },
+    });
     expect(calculateRecordSummary([], columns)).toEqual({
-      sum: null,
-      avg: null,
-      min: null,
-      max: null,
+      sum: { SUM: null },
+      avg: { AVG: null },
+      min: { MIN: null },
+      max: { MAX: null },
     });
     expect(calculateRecordSummary([{ amount: 0 }], columns)).toMatchObject({
-      sum: 0,
-      avg: 0,
+      sum: { SUM: 0 },
+      avg: { AVG: 0 },
     });
     expect(() => calculateRecordSummary([{ amount: '12' }], columns)).toThrow();
     expect(() =>
@@ -85,7 +169,12 @@ describe('record summaries', () => {
         [{ summary0: 1, summary1: 6, summary2: -3, summary3: 3 }],
         columns,
       ),
-    ).toEqual({ avg: 1, max: 6, min: -3, sum: 3 });
+    ).toEqual({
+      avg: { AVG: 1 },
+      max: { MAX: 6 },
+      min: { MIN: -3 },
+      sum: { SUM: 3 },
+    });
     for (const value of [
       [],
       [{}],
@@ -106,7 +195,12 @@ describe('record summaries', () => {
         ],
         columns,
       ),
-    ).toEqual({ avg: null, max: null, min: null, sum: null });
+    ).toEqual({
+      avg: { AVG: null },
+      max: { MAX: null },
+      min: { MIN: null },
+      sum: { SUM: null },
+    });
   });
 });
 
@@ -135,7 +229,7 @@ function setup() {
         layout: 'table',
         table: {
           columns: [
-            { id: 'amount', kind: 'field', field: 'amount', summary: 'SUM' },
+            { id: 'amount', kind: 'field', field: 'amount', summary: ['SUM'] },
             { id: 'id', kind: 'field', field: 'id' },
           ],
         },
@@ -175,12 +269,90 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
+it('refreshes changed metric sets, ignores stale results and disables empty selections', async () => {
+  const { engine, source } = setup();
+  await engine.load();
+  await vi.waitFor(() =>
+    expect(session(engine).allSummary.status).toBe('success'),
+  );
+  const stale = deferred<unknown>();
+  source.aggregate
+    .mockReturnValueOnce(stale.promise)
+    .mockResolvedValueOnce([{ summary0: 9, summary1: 30 }]);
+  const setMetrics = (summary: RecordSummaryFunction[]) =>
+    engine.setColumns(
+      session(engine).instance.config.presentation.table.columns.map(column =>
+        column.kind === 'field' && column.id === 'amount'
+          ? { ...column, summary }
+          : column,
+      ),
+    );
+  setMetrics(['SUM', 'AVG']);
+  expect(session(engine).pageSummary.values.amount).toEqual({
+    SUM: 5,
+    AVG: 2.5,
+  });
+  await vi.waitFor(() => expect(source.aggregate).toHaveBeenCalledTimes(2));
+  setMetrics(['MAX', 'SUM']);
+  expect(source.aggregate.mock.calls[1][2].signal.aborted).toBe(true);
+  await vi.waitFor(() =>
+    expect(session(engine).allSummary.values.amount).toEqual({
+      MAX: 9,
+      SUM: 30,
+    }),
+  );
+  stale.resolve([{ summary0: 999, summary1: 999 }]);
+  await Promise.resolve();
+  expect(session(engine).allSummary.values.amount).toEqual({ MAX: 9, SUM: 30 });
+  setMetrics(['SUM', 'MAX']);
+  expect(source.aggregate).toHaveBeenCalledTimes(3);
+  expect(source.paged).toHaveBeenCalledTimes(1);
+  setMetrics([]);
+  expect(session(engine).pageSummary.status).toBe('idle');
+  expect(session(engine).allSummary.status).toBe('idle');
+  engine.dispose();
+});
+
+it('rejects duplicate or unsupported selections and counts the total number of metrics', () => {
+  const { engine, instance } = setup();
+  const validate = (columns: unknown[]) =>
+    validateViewInstance(
+      {
+        ...instance,
+        config: {
+          ...instance.config,
+          presentation: { layout: 'table', table: { columns } },
+        },
+      },
+      definition,
+    );
+  for (const summary of ['SUM', ['SUM', 'SUM'], ['COUNT'], [null]])
+    expect(() =>
+      validate([{ id: 'amount', kind: 'field', field: 'amount', summary }]),
+    ).toThrow();
+  expect(() =>
+    validate([{ id: 'amount', kind: 'field', field: 'amount', summary: [] }]),
+  ).not.toThrow();
+  const all = Array.from({ length: 17 }, (_, index) => ({
+    id: `amount${index}`,
+    kind: 'field',
+    field: 'amount',
+    summary: ['SUM', 'AVG', 'MIN', 'MAX'],
+  }));
+  expect(() => validate(all.slice(0, 16))).not.toThrow();
+  expect(() => validate(all)).toThrow('最多配置 64 个汇总指标');
+  expect(() =>
+    createRecordSummaryQuery(filter.matchAll(), all as RecordColumn[]),
+  ).toThrow('汇总指标需要 1–64 项');
+  engine.dispose();
+});
+
 it('loads page and all summaries together, preserving totals across page and presentation changes', async () => {
   const { engine, source } = setup();
   const total = deferred<unknown>();
   source.aggregate.mockReturnValueOnce(total.promise);
   await engine.load();
-  expect(session(engine).pageSummary.values).toEqual({ amount: 5 });
+  expect(session(engine).pageSummary.values).toEqual({ amount: { SUM: 5 } });
   expect(session(engine).allSummary.status).toBe('loading');
   expect(source.aggregate).toHaveBeenCalledOnce();
   engine.setSelection(['a']);
@@ -188,7 +360,7 @@ it('loads page and all summaries together, preserving totals across page and pre
   await vi.waitFor(() =>
     expect(session(engine).allSummary.status).toBe('success'),
   );
-  expect(session(engine).allSummary.values).toEqual({ amount: 30 });
+  expect(session(engine).allSummary.values).toEqual({ amount: { SUM: 30 } });
   expect(session(engine).selectedRowKeys).toEqual(['a']);
   expect(session(engine).dirty).toBe(false);
   expect(source.paged).toHaveBeenCalledTimes(1);
@@ -221,10 +393,10 @@ it('isolates aggregation failure and retries only the summary', async () => {
   );
   expect(session(engine).queryStatus).toBe('success');
   expect(session(engine).rows).toHaveLength(2);
-  expect(session(engine).pageSummary.values).toEqual({ amount: 5 });
+  expect(session(engine).pageSummary.values).toEqual({ amount: { SUM: 5 } });
   expect(source.aggregate).toHaveBeenCalledTimes(1);
   await engine.refreshSummary();
-  expect(session(engine).allSummary.values.amount).toBe(30);
+  expect(session(engine).allSummary.values.amount?.SUM).toBe(30);
   expect(source.paged).toHaveBeenCalledTimes(1);
   engine.dispose();
 });
@@ -244,11 +416,11 @@ it('ignores old aggregate responses after filtering, removing summaries and disp
   expect(source.aggregate.mock.calls[0][2].signal.aborted).toBe(true);
   second.resolve([{ summary0: 20 }]);
   await vi.waitFor(() =>
-    expect(session(engine).allSummary.values.amount).toBe(20),
+    expect(session(engine).allSummary.values.amount?.SUM).toBe(20),
   );
   first.resolve([{ summary0: 999 }]);
   await Promise.resolve();
-  expect(session(engine).allSummary.values.amount).toBe(20);
+  expect(session(engine).allSummary.values.amount?.SUM).toBe(20);
   const refresh = engine.refreshSummary();
   await vi.waitFor(() => expect(source.aggregate).toHaveBeenCalledTimes(3));
   engine.setColumns(
@@ -281,7 +453,7 @@ it('refreshes changed summary bindings but preserves totals on presentation chan
   );
   await vi.waitFor(() => expect(source.aggregate).toHaveBeenCalledTimes(2));
   await vi.waitFor(() =>
-    expect(session(engine).allSummary.values.amount2).toBe(30),
+    expect(session(engine).allSummary.values.amount2?.SUM).toBe(30),
   );
   expect(session(engine).allSummary.values.amount).toBeUndefined();
   expect(source.paged).toHaveBeenCalledTimes(1);
@@ -335,7 +507,7 @@ it('offers only numeric summaries and rejects COUNT or nonnumeric field capabili
             layout: 'table',
             table: {
               columns: [
-                { id: 'id', kind: 'field', field: 'id', summary: 'SUM' },
+                { id: 'id', kind: 'field', field: 'id', summary: ['SUM'] },
               ],
             },
           },
@@ -355,7 +527,7 @@ it('offers only numeric summaries and rejects COUNT or nonnumeric field capabili
               layout: 'table',
               table: {
                 columns: [
-                  { id: field, kind: 'field', field, summary: 'COUNT' },
+                  { id: field, kind: 'field', field, summary: ['COUNT'] },
                 ],
               },
             },

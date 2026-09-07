@@ -34,8 +34,10 @@ import type {
   ViewInstance,
   ViewInstanceList,
 } from '@ahoo-wang/fetcher-view-engine';
+import { formatRecordNumber } from '@ahoo-wang/fetcher-view-engine';
 import {
   Button,
+  RecordTable,
   ViewPage,
   type CellRendererProps,
   type GlobalActionsRendererProps,
@@ -108,7 +110,8 @@ const definition: ViewDefinition = {
       type: 'number',
       sortable: true,
       operators: numberOperators,
-      cellRenderer: { name: 'order-amount', options: { currency: 'CNY' } },
+      numberFormat: { style: 'currency', currency: 'CNY' },
+      cellRenderer: { name: 'order-amount' },
     },
     {
       field: 'status',
@@ -189,7 +192,7 @@ function makeInstances(
               kind: 'field',
               field: 'amount',
               width: 150,
-              ...(summaries ? { summary: 'SUM' as const } : {}),
+              ...(summaries ? { summary: ['SUM'] as const } : {}),
             },
             { id: 'status', kind: 'field', field: 'status' },
             { id: 'createdAt', kind: 'field', field: 'createdAt', width: 190 },
@@ -571,13 +574,10 @@ function createHost(
   };
 }
 
-function AmountCell({ value, options }: CellRendererProps) {
+function AmountCell({ value, field }: CellRendererProps) {
   return (
     <span className="fve:font-medium fve:tabular-nums">
-      {new Intl.NumberFormat('zh-CN', {
-        style: 'currency',
-        currency: String(options?.currency ?? 'CNY'),
-      }).format(Number(value))}
+      {formatRecordNumber(Number(value), field)}
     </span>
   );
 }
@@ -1642,14 +1642,53 @@ export const Summaries: Story = {
       page.queryByRole('option', { name: '记录数' }),
     ).not.toBeInTheDocument();
     await userEvent.click(await page.findByRole('option', { name: '平均值' }));
+    await expect(page.getByRole('listbox')).toHaveAttribute(
+      'aria-multiselectable',
+      'true',
+    );
+    await expect(page.getByRole('option', { name: '合计' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(page.getByRole('option', { name: '平均值' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(
+        page.getByRole('combobox', { name: '订单金额汇总方式' }),
+      ).toHaveFocus(),
+    );
     await userEvent.keyboard('{Escape}');
     await waitFor(() =>
       expect(
         page.queryByRole('dialog', { name: '列设置' }),
       ).not.toBeInTheDocument(),
     );
-    await expect(local()).toHaveTextContent('2,791.6');
-    await waitFor(() => expect(all()).toHaveTextContent('2,676.4166666666665'));
+    await expect(local()).toHaveTextContent('13,958');
+    await expect(local()).toHaveTextContent('¥2,791.60');
+    await waitFor(() => expect(all()).toHaveTextContent('¥2,676.42'));
+    await expect(all()).toHaveTextContent('32,117');
+    await expect(canvas.getAllByText('本页', { exact: true })).toHaveLength(1);
+    await expect(canvas.getAllByText('所有', { exact: true })).toHaveLength(1);
+    const average = within(all()).getByLabelText(
+      '所有订单金额平均值：¥2,676.42',
+    );
+    await expect(getComputedStyle(average).whiteSpace).toBe('nowrap');
+    average.focus();
+    await expect(await page.findByRole('tooltip')).toHaveTextContent(
+      '原值：2676.4166666666665',
+    );
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(page.queryByRole('tooltip')).toBeNull());
+    average.blur();
+    await userEvent.hover(average);
+    await expect(await page.findByRole('tooltip')).toHaveTextContent(
+      '原值：2676.4166666666665',
+    );
+    await userEvent.unhover(average);
+    await waitFor(() => expect(page.queryByRole('tooltip')).toBeNull());
     await expect(canvas.getByTestId('record-summary-count')).toHaveTextContent(
       /^3$/,
     );
@@ -1661,8 +1700,63 @@ export const Summaries: Story = {
       expect(canvas.getByTestId('record-save-count')).toHaveTextContent(/^1$/),
     );
     await expect(canvas.getByTestId('record-write')).toHaveTextContent(
-      '"summary": "AVG"',
+      /"summary":\s*\[\s*"SUM",\s*"AVG"\s*\]/,
     );
+  },
+};
+
+export const LoadingSummaries: Story = {
+  name: '加载状态 · Spin 与汇总',
+  render: args => {
+    const instance = makeInstances('paged', true).instances[0];
+    instance.config.presentation.table.columns =
+      instance.config.presentation.table.columns.map(column =>
+        column.kind === 'field' && column.field === 'amount'
+          ? { ...column, summary: ['AVG', 'MIN', 'MAX'] }
+          : column,
+      );
+    const loading = { status: 'loading' as const, values: {}, error: null };
+    return (
+      <div
+        className="fve-root"
+        data-theme={args.appearance}
+        style={{
+          padding: 16,
+          minHeight: '100vh',
+          background: 'var(--fve-background)',
+        }}
+      >
+        <RecordTable
+          definition={definition}
+          instance={instance}
+          rows={[]}
+          querying
+          selectable
+          pageSummary={loading}
+          allSummary={loading}
+          selectedRowKeys={[]}
+          onSelectionChange={() => {}}
+          onColumnsChange={() => {}}
+          onSortChange={() => {}}
+          refresh={async () => {}}
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByRole('status')).toHaveLength(3);
+    await expect(
+      canvas.getByRole('status', { name: '正在加载记录' }),
+    ).toBeVisible();
+    for (const label of ['本页', '所有']) {
+      const scope = within(canvas.getByRole('row', { name: `${label}汇总` }));
+      await expect(
+        scope.getByRole('status', { name: `${label}汇总加载中` }),
+      ).toBeVisible();
+      await expect(scope.getAllByRole('group')).toHaveLength(3);
+    }
+    await expect(canvas.queryByText(/统计中|正在加载/)).toBeNull();
   },
 };
 
@@ -1852,7 +1946,7 @@ export const PinnedColumns: Story = {
     const amountCell = within(row).getByText('¥680.00').closest('td')!;
     const idSummary = within(
       canvas.getByRole('row', { name: '本页汇总' }),
-    ).getAllByRole('cell')[1];
+    ).getAllByRole('cell')[0];
     const amountSummary = within(canvas.getByRole('row', { name: '本页汇总' }))
       .getByRole('group', { name: '订单金额合计' })
       .closest('td')!;
@@ -1925,7 +2019,10 @@ export const EmptySummary: Story = {
   render: args => <Scenario {...args} summaries empty />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await canvas.findByText('暂无记录');
+    await expect(
+      await canvas.findByRole('img', { name: '暂无记录' }),
+    ).toBeVisible();
+    await expect(canvas.queryByText('暂无记录')).toBeNull();
     for (const name of ['本页汇总', '所有汇总']) {
       await waitFor(() =>
         expect(
@@ -2191,6 +2288,7 @@ export const RuntimeTools: Story = {
       await userEvent.click(
         await page.findByRole('menuitemradio', { name: `每 ${label}` }),
       );
+      await waitFor(() => expect(page.queryByRole('menu')).toBeNull());
       await expect(
         globalToolbar.getByRole('button', { name: '刷新' }),
       ).toHaveTextContent(label);
@@ -2238,6 +2336,7 @@ export const RuntimeTools: Story = {
     await userEvent.click(
       await page.findByRole('menuitemradio', { name: '关闭自动刷新' }),
     );
+    await waitFor(() => expect(page.queryByRole('menu')).toBeNull());
     await userEvent.click(canvas.getByRole('button', { name: '撤销筛选修改' }));
     await expect(
       canvas.getByRole('button', { name: '刷新' }),
@@ -2248,6 +2347,7 @@ export const RuntimeTools: Story = {
     await userEvent.click(
       await page.findByRole('menuitemradio', { name: '每 30 秒' }),
     );
+    await waitFor(() => expect(page.queryByRole('menu')).toBeNull());
     const refresh = globalToolbar.getByRole('button', { name: '刷新' });
     await waitFor(() => expect(refresh).toHaveTextContent(/00:2[89]/), {
       timeout: 3000,

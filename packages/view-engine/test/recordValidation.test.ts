@@ -48,6 +48,42 @@ const instance: ViewInstance = {
   },
 };
 describe('record boundaries', () => {
+  it('validates numeric display options when loading field definitions', () => {
+    for (const numberFormat of [
+      null,
+      'currency',
+      { locale: 'bad_locale' },
+      { style: 'currency' },
+      { maximumFractionDigits: -1 },
+    ])
+      expect(() =>
+        validateViewDefinition({
+          ...definition,
+          fields: [
+            { field: 'amount', label: '金额', type: 'number', numberFormat },
+          ],
+        }),
+      ).toThrow();
+    expect(() =>
+      validateViewDefinition({
+        ...definition,
+        fields: [{ ...definition.fields[0], type: 'string', numberFormat: {} }],
+      }),
+    ).toThrow('只有数值字段支持数值格式');
+    expect(() =>
+      validateViewDefinition({
+        ...definition,
+        fields: [
+          {
+            field: 'amount',
+            label: '金额',
+            type: 'number',
+            numberFormat: { style: 'currency', currency: 'CNY' },
+          },
+        ],
+      }),
+    ).not.toThrow();
+  });
   it('validates display groups and rejects duplicate AND fields at the instance boundary', () => {
     expect(() =>
       validateViewDefinition({

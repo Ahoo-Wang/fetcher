@@ -152,7 +152,8 @@
 .fve-record-table tbody tr:not(:last-child) td {
   border-bottom: 1px solid var(--fve-border);
 }
-.fve-record-table tfoot td {
+.fve-record-table tfoot td,
+.fve-record-table tfoot th {
   border-top: 1px solid var(--fve-border);
 }
 

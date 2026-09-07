@@ -46,11 +46,13 @@ Storybook 的 **View Engine → Record View** 使用内存服务演示完整请�
 
 ### 本页 / 所有汇总
 
-只有明确声明为 `type: 'number'` 的字段支持汇总，字段列通过 `summary: 'SUM' | 'AVG' | 'MIN' | 'MAX'` 配置合计、平均值、最小值或最大值。列设置仅为数值字段提供汇总入口，不支持 COUNT 记录数汇总。`field.summaryFunctions` 可限制可用方式，`[]` 可关闭汇总；列汇总方式随实例保存。
+只有明确声明为 `type: 'number'` 的字段支持汇总，字段列通过 `summary: ['SUM', 'AVG', 'MIN', 'MAX']` 多选合计、平均值、最小值和最大值；取消全部选择即不汇总，省略或空数组均表示关闭。列设置仅为数值字段提供汇总入口，不支持 COUNT 记录数汇总。`field.summaryFunctions` 可限制可用方式，`[]` 可关闭汇总；列汇总方式随实例保存。
 
-表格底部同时显示“本页”和“所有”两行，并与列对齐。本页直接计算已加载记录，所有通过宿主 Wow 查询客户端的 `aggregate` 按已查询条件跨页统计，不拉取全部明细。未提交的筛选修改与行勾选不影响统计范围；所有汇总的加载或失败不影响本页数值和业务记录，并支持独立重试。修改汇总方式会同步更新两行，不重新查询列表。
+表格底部同时显示“本页”和“所有”两行，范围标签在左侧各显示一次，列内按合计、平均值、最小值、最大值的固定顺序展示已选指标，标签左对齐、数字右对齐且保持单行。加载时记录区居中显示 Spin，本页与所有范围标签旁各显示一个 Spin；待加载指标保留空位，分页不重复显示加载文字。本页直接计算已加载记录，所有通过宿主 Wow 查询客户端的 `aggregate` 按已查询条件跨页统计，不拉取全部明细。未提交的筛选修改与行勾选不影响统计范围；所有汇总的加载或失败不影响本页数值和业务记录，并支持独立重试。修改汇总方式会同步更新两行，不重新查询列表。
 
-数值汇总忽略空值和缺失值；空集结果为 null，显示“—”，与零区分。不使用 React 时，可独立调用 `calculateRecordSummary`、`createRecordSummaryQuery`、`readRecordSummaryResult`，或使用引擎 `refreshSummary` 及会话 `pageSummary` / `allSummary`。Storybook 提供同时汇总、失败重试和空集场景。
+数值字段可配置 `numberFormat`（`Intl.NumberFormatOptions` 加可选的 `locale`，默认 `zh-CN`）。金额使用 `{ style: 'currency', currency: 'CNY' }`，整数使用 `{ maximumFractionDigits: 0 }`。普通数字未配置精度时默认最多两位小数，其他样式遵循 Intl 默认值。默认数据单元格与汇总共用该配置，自定义单元格可调用 `formatRecordNumber(value, field)`；原始记录与汇总值保持不变。悬停或键盘聚焦汇总值可通过 Tooltip 查看完整原值。
+
+数值汇总忽略空值和缺失值；空集结果为 null，显示“—”，与零区分。不使用 React 时，可独立调用 `calculateRecordSummary`、`createRecordSummaryQuery`、`readRecordSummaryResult`，或使用引擎 `refreshSummary` 及会话 `pageSummary` / `allSummary`。结果按列 ID 和函数索引，例如 `values.amount.SUM`；所有列合计最多 64 个指标。Storybook 提供多选汇总、失败重试和空集场景。
 
 ### 自动刷新与页面展开
 
