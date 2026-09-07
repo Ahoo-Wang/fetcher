@@ -31,6 +31,7 @@ import type {
   ViewInstance,
 } from '../src/record/recordModel.js';
 import type { GlobalActionsRendererProps } from '../src/record/recordReactTypes.js';
+import type { FilterEditorProps } from '../src/filter/filterReactTypes.js';
 
 afterEach(cleanup);
 const definition: ViewDefinition = {
@@ -404,6 +405,172 @@ it('business refresh stays bound to its instance after navigation', async () => 
   await act(() => previous.refresh());
   expect(engine.getSnapshot().selectedInstanceId).toBe('system');
   expect(paged).toHaveBeenCalledTimes(3);
+  engine.dispose();
+});
+
+it('rejects applying an invalid custom buffer without enabling Save or querying', async () => {
+  const { host, paged } = setup();
+  function Custom({ onValidityChange }: FilterEditorProps) {
+    return (
+      <>
+        <button onClick={() => onValidityChange(false, '金额尚未完成')}>
+          输入不完整金额
+        </button>
+        <button onClick={() => onValidityChange(true)}>修正金额</button>
+      </>
+    );
+  }
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition: {
+      ...definition,
+      fields: [{ ...definition.fields[0], editor: { name: 'custom' } }],
+    },
+    host,
+  });
+  await engine.load();
+  render(
+    <ViewPageContent
+      engine={engine}
+      extensions={{
+        filters: {
+          custom: { component: Custom, modes: ['simple', 'advanced'] },
+        },
+      }}
+    />,
+  );
+  await act(() => engine.setTitle('Updated title'));
+  fireEvent.click(screen.getByRole('button', { name: '输入不完整金额' }));
+  await act(async () => {
+    await expect(engine.applyFilter(filter.gte('amount', 10))).rejects.toThrow(
+      /筛选/,
+    );
+    await expect(engine.applyFilter(filter.gte('amount', 100))).rejects.toThrow(
+      /筛选/,
+    );
+    await expect(engine.save()).rejects.toThrow(/先查询/);
+  });
+  expect(engine.getSnapshot().sessions.mine).toMatchObject({
+    filterValid: false,
+    filterPending: true,
+  });
+  expect(screen.getByText('金额尚未完成')).toBeTruthy();
+  expect(
+    (
+      screen.getByRole('button', {
+        name: '查询',
+        exact: true,
+      }) as HTMLButtonElement
+    ).disabled,
+  ).toBe(true);
+  expect(
+    (
+      screen.getByRole('button', {
+        name: '保存',
+        exact: true,
+      }) as HTMLButtonElement
+    ).disabled,
+  ).toBe(true);
+  expect(paged).toHaveBeenCalledTimes(1);
+  expect(host.saveInstance).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '修正金额' }));
+  await act(() => engine.applyFilter(filter.gte('amount', 10)));
+  await act(() => engine.save());
+  expect(engine.getSnapshot().sessions.mine).toMatchObject({
+    filterValid: true,
+    filterPending: false,
+  });
+  expect(paged).toHaveBeenCalledTimes(2);
+  expect(host.saveInstance).toHaveBeenCalledTimes(1);
+  engine.dispose();
+});
+
+it('recovers batch actions on selection changes without retrying on unrelated draft edits', async () => {
+  const { host, paged } = setup();
+  paged.mockResolvedValue({
+    list: [
+      { id: 0, amount: 42 },
+      { id: 1, amount: 84 },
+    ],
+    total: 2,
+  });
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  let attempts = 0;
+  function Batch({ selectedRowKeys }: GlobalActionsRendererProps) {
+    attempts++;
+    if (selectedRowKeys.includes(0))
+      throw new Error('record 0 cannot be rendered');
+    return <button>{`可处理 ${selectedRowKeys.join(',')}`}</button>;
+  }
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition: { ...definition, recordActions: { table: { name: 'batch' } } },
+    host,
+  });
+  await engine.load();
+  render(
+    <ViewPageContent
+      engine={engine}
+      selectable
+      extensions={{ tableActions: { batch: Batch } }}
+    />,
+  );
+  await act(() => engine.setSelection([0]));
+  expect(screen.getByText('表格操作渲染失败')).toBeTruthy();
+  const failedAttempts = attempts;
+  fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
+    target: { value: '99' },
+  });
+  expect(attempts).toBe(failedAttempts);
+  await act(() => engine.setSelection([1]));
+  expect(screen.getByRole('button', { name: '可处理 1' })).toBeTruthy();
+  expect(screen.queryByText('表格操作渲染失败')).toBeNull();
+  engine.dispose();
+});
+
+it('recovers global actions when a pending query finishes', async () => {
+  const { host, paged } = setup();
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  function Actions({ querying }: GlobalActionsRendererProps) {
+    if (querying) throw new Error('query input is not ready');
+    return <button>可用操作</button>;
+  }
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition: {
+      ...definition,
+      recordActions: { global: { name: 'actions' } },
+    },
+    host,
+  });
+  await engine.load();
+  render(
+    <ViewPageContent
+      engine={engine}
+      extensions={{ globalActions: { actions: Actions } }}
+    />,
+  );
+  let finish!: (result: {
+    list: { id: number; amount: number }[];
+    total: number;
+  }) => void;
+  paged.mockImplementationOnce(
+    () =>
+      new Promise(resolve => {
+        finish = resolve;
+      }),
+  );
+  let request!: Promise<void>;
+  act(() => {
+    request = engine.refresh();
+  });
+  await screen.findByText('全局操作渲染失败');
+  await act(async () => {
+    finish({ list: [{ id: 0, amount: 42 }], total: 1 });
+    await request;
+  });
+  expect(screen.getByRole('button', { name: '可用操作' })).toBeTruthy();
+  expect(screen.queryByText('全局操作渲染失败')).toBeNull();
   engine.dispose();
 });
 

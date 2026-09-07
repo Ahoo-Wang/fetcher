@@ -285,6 +285,8 @@ describe('ViewEngine loading and query sessions', () => {
       instance: { title: 'Local draft' },
     });
     expect(paged).toHaveBeenCalledTimes(3);
+    await expect(engine.applyFilter(filter.matchAll())).rejects.toThrow(/筛选/);
+    engine.setFilterValidity(true);
     await engine.applyFilter(filter.matchAll());
     expect(selected(engine).filterDraft).toEqual(draft);
     expect(selected(engine).filterPending).toBe(false);

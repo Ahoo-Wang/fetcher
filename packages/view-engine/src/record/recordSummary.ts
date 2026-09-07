@@ -24,6 +24,7 @@ import type {
 } from './recordModel.js';
 import { readRecordValue } from './recordValidation.js';
 import { RECORD_SUMMARY_LABELS } from './recordModel.js';
+import { cloneSnapshot, type DeepReadonly } from '../lib/types.js';
 
 export const EMPTY_RECORD_SUMMARY: RecordSummaryResult = {
   status: 'idle',
@@ -109,7 +110,7 @@ export function calculateRecordSummary(
   return result;
 }
 export function createRecordSummaryQuery(
-  filter: FilterExpression,
+  filter: DeepReadonly<FilterExpression>,
   metrics: readonly RecordSummaryMetric[],
 ): AggregationQuery {
   const expressions = orderedMetrics(metrics).map((metric, index) => {
@@ -130,7 +131,10 @@ export function createRecordSummaryQuery(
   });
   const [first, ...rest] = expressions;
   if (!first) throw new Error('汇总指标需要 1–64 项');
-  return { filter, metrics: [first, ...rest] };
+  return {
+    filter: cloneSnapshot<FilterExpression>(filter),
+    metrics: [first, ...rest],
+  };
 }
 /** Wow's ungrouped contract always returns one row; missing aliases are errors, not zero. */
 export function readRecordSummaryResult(

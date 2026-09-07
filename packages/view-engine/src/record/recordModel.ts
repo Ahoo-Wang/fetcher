@@ -23,6 +23,7 @@ import type {
   FilterFieldDefinition,
   FilterMode,
 } from '../filter/filterModel.js';
+import type { DeepReadonly } from '../lib/types.js';
 
 export type RecordData = Record<string, unknown>;
 export type RecordKey = string | number;
@@ -178,12 +179,12 @@ export interface ViewEngineOptions {
   instances?: ViewInstanceList;
 }
 export interface RecordSession {
-  readonly baseline: ViewInstance;
-  readonly instance: ViewInstance;
+  readonly baseline: DeepReadonly<ViewInstance>;
+  readonly instance: DeepReadonly<ViewInstance>;
   readonly dirty: boolean;
-  readonly filterDraft: FilterDraftNode;
+  readonly filterDraft: DeepReadonly<FilterDraftNode>;
   /** Last applied editor tree, including intentionally unset controls. */
-  readonly filterBaseline: FilterDraftNode;
+  readonly filterBaseline: DeepReadonly<FilterDraftNode>;
   /** Validity of local editor buffers not represented in the Wow expression. */
   readonly filterValid: boolean;
   readonly filterMode: FilterMode;
@@ -191,7 +192,7 @@ export interface RecordSession {
   readonly page: number;
   readonly cursor: string | null;
   readonly nextCursor: string | null;
-  readonly rows: readonly RecordData[];
+  readonly rows: DeepReadonly<readonly RecordData[]>;
   readonly total: number | null;
   readonly pageSummary: RecordSummaryResult;
   readonly allSummary: RecordSummaryResult;
@@ -208,7 +209,7 @@ export interface RecordSession {
 export interface ViewEngineState {
   readonly status: 'idle' | 'loading' | 'ready' | 'error';
   readonly error: string | null;
-  readonly definition: ViewDefinition | null;
+  readonly definition: DeepReadonly<ViewDefinition> | null;
   readonly instanceIds: readonly string[];
   readonly selectedInstanceId: string | null;
   readonly sessions: Readonly<Record<string, RecordSession>>;

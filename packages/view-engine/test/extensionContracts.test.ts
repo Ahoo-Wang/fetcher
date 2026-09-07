@@ -24,11 +24,29 @@ it('rejects mutation of extension snapshots at compile time', () => {
     import type { CellRendererProps } from './record/recordReactTypes.js';
     import type { FilterEditorProps } from './filter/filterReactTypes.js';
     import type { DeepReadonly } from './lib/types.js';
+    import type { ViewEngine } from './record/ViewEngine.js';
+    import type { RecordSession, ViewEngineState } from './record/recordModel.js';
     declare const cell: CellRendererProps;
     declare const editor: FilterEditorProps;
     const value: unknown = cell.record.amount;
     const callback: DeepReadonly<(id: string) => boolean> = id => id.length > 0;
     callback('record-id');
+    declare const engine: ViewEngine;
+    declare const session: RecordSession;
+    declare const state: ViewEngineState;
+    const snapshot = engine.getSnapshot();
+    // @ts-expect-error core instance metadata is a snapshot
+    snapshot.sessions.mine.instance.title = 'changed';
+    // @ts-expect-error core query configuration is a snapshot
+    snapshot.sessions.mine.instance.config.sort.pop();
+    // @ts-expect-error core drafts are snapshots
+    session.filterDraft.field = 'other';
+    // @ts-expect-error definition metadata is a snapshot
+    state.definition!.title = 'changed';
+    engine.setFilterDraft(snapshot.sessions.mine.filterDraft);
+    engine.setSort(snapshot.sessions.mine.instance.config.sort);
+    engine.setColumns(snapshot.sessions.mine.instance.config.presentation.table.columns);
+    engine.applyFilter(snapshot.sessions.mine.instance.config.filter);
     // @ts-expect-error extension records are snapshots
     cell.record.amount = 100;
     // @ts-expect-error instance metadata is a snapshot

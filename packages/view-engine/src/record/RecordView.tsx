@@ -175,7 +175,15 @@ export function RecordView({
         {Actions ? (
           <RecordRendererBoundary
             label={label}
-            resetKey={[Actions, instance, reference.options]}
+            resetKey={[
+              Actions,
+              definition,
+              instance,
+              reference.options,
+              session!.selectedRowKeys,
+              querying,
+              refresh,
+            ]}
           >
             <Actions
               definition={definition!}

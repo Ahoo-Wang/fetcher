@@ -15,10 +15,11 @@ import type {
   RecordSummaryMetric,
   RecordTablePresentation,
 } from './recordModel.js';
+import type { DeepReadonly } from '../lib/types.js';
 
 /** Maps the implemented presentation to query requirements; visibility and widths do not affect metrics. */
 export function getRecordSummaryMetrics(
-  presentation: RecordTablePresentation,
+  presentation: DeepReadonly<RecordTablePresentation>,
 ): RecordSummaryMetric[] {
   return presentation.table.columns
     .flatMap(column =>

@@ -15,11 +15,13 @@ import {
   Component,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
 import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
+import { cloneSnapshot, type DeepReadonly } from '../lib/types.js';
 import { ChevronDownIcon, SearchIcon, XIcon } from 'lucide-react';
 import {
   compileFilterDraft,
@@ -115,7 +117,7 @@ function clearValue(node: FilterDraftNode): FilterDraftNode {
     delete next[key];
   return next;
 }
-function readValue(value: FilterExpression) {
+function readValue(value: DeepReadonly<FilterExpression>) {
   try {
     return { draft: createFilterDraft(value), error: undefined };
   } catch (error) {
@@ -233,7 +235,12 @@ export function FilterPanel(props: FilterPanelProps) {
     };
   });
   const [localDraft, setLocalDraft] = useState(initial.draft);
-  const draft = props.draft ?? localDraft;
+  const controlledDraft = useMemo(
+    () =>
+      props.draft ? cloneSnapshot<FilterDraftNode>(props.draft) : undefined,
+    [props.draft],
+  );
+  const draft = controlledDraft ?? localDraft;
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const mounted = useRef(true);
@@ -1031,7 +1038,7 @@ export function FilterPanel(props: FilterPanelProps) {
               variant="ghost"
               disabled={disabled || !pending}
               onClick={() => {
-                change(structuredClone(baseline));
+                change(cloneSnapshot<FilterDraftNode>(baseline));
                 setEditorValidity({});
                 setEditorOutputErrors({});
                 setBuiltIn(new Set());

@@ -14,6 +14,7 @@
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { newFilterDraft } from './filterCore.js';
 import type { FilterDraftNode, FilterFieldDefinition } from './filterModel.js';
+import type { DeepReadonly } from '../lib/types.js';
 
 export function sameFilterState(a: unknown, b: unknown): boolean {
   function canonical(value: unknown): unknown {
@@ -30,10 +31,10 @@ export function sameFilterState(a: unknown, b: unknown): boolean {
   return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 }
 export function sameFilterDraft(
-  a: FilterDraftNode,
-  b: FilterDraftNode,
+  a: DeepReadonly<FilterDraftNode>,
+  b: DeepReadonly<FilterDraftNode>,
 ): boolean {
-  function content(node: FilterDraftNode): unknown {
+  function content(node: DeepReadonly<FilterDraftNode>): unknown {
     return {
       ...node,
       id: undefined,
@@ -45,8 +46,8 @@ export function sameFilterDraft(
 }
 /** Pending is derived from editing facts, never assigned independently. */
 export function isFilterDraftPending(
-  draft: FilterDraftNode,
-  baseline: FilterDraftNode,
+  draft: DeepReadonly<FilterDraftNode>,
+  baseline: DeepReadonly<FilterDraftNode>,
   valid = true,
 ): boolean {
   return !valid || !sameFilterDraft(draft, baseline);

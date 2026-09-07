@@ -26,6 +26,11 @@ Core imports do not load React, DOM or CSS. These descriptors are UI inputs, not
 
 `FilterDraftNode` is transient editor state with a stable `id` and Wow property names. Raw numeric text uses `FilterScalarDraftValue = {type: 'number', value: raw}`; never interpret an already-loaded protocol string as numeric input. Mixed scalar collection items can similarly use string/boolean wrappers. `FilterDateTimeValue = {date?: string, time?: string, offsetMinutes?: number}` keeps both parts while editing. Drafts are not persisted query JSON.
 
+`createFilterDraft` accepts `DeepReadonly<FilterExpression>` and returns an editable
+draft. `compileFilterDraft` and `isSimpleFilter` accept `DeepReadonly<FilterDraftNode>`.
+`FilterPanel.value`, `draft` and `appliedDraft` also accept these readonly inputs;
+its editing buffer and emitted drafts remain independent editable values.
+
 | Export                                                 | Contract                                                                                                                                                                                         |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `FILTER_OPERATORS`                                     | Complete readonly record of all 50 Wow operators: business label, category, input kind, and relative-time flag.                                                                                  |
@@ -419,6 +424,15 @@ keeps baseline and current instance, dirty flag, transient filter draft/mode,
 derived `filterPending`, rows, total, page/cursor, selected keys, `pageSummary`, `allSummary`, and independent query/write
 status and error. Runtime state is never serialized into instance config.
 
+`RecordSession.baseline`, `instance`, `filterDraft`, `filterBaseline` and `rows`,
+plus `ViewEngineState.definition`, use `DeepReadonly<T>` recursively. Assignment
+to nested metadata or mutation of query arrays is rejected by TypeScript.
+`applyFilter`, `setFilterDraft`, `setSort` and `setColumns` accept readonly
+snapshots directly and copy accepted inputs. Host query/write/permission
+callbacks still receive independent editable DTOs. `RecordTable` accepts
+readonly definitions, instances and rows; presentation/summary readers also
+accept readonly inputs.
+
 Methods with an optional instance ID default to the selected instance:
 
 - `load()`, `selectInstance(id)`, `reloadInstance(id?)`, `canReloadInstance(id?)`, `refresh(id?, {background?: boolean})`, `dispose()`.
@@ -439,8 +453,13 @@ editor baseline (including unset controls); Restore rebuilds it from the saved
 configuration. Copy/reload reconciliation preserves each session's matching editor
 baseline and validity. These invariants also apply without React.
 
-Async operations return `Promise<void>`; errors are reflected in state and
-reject the returned promise. UI consumers must handle rejections. Superseded
+`applyFilter` rejects before mutation or any request when `filterValid` is false,
+including reapplying the current expression. Correct or undo the invalid editor
+buffer first. Rejection preserves the draft, editor validity and applied query;
+it cannot make an invalid editor's old output eligible for saving.
+
+Async operations return `Promise<void>` and reject on failure. Query and write
+failures are also reflected in state. UI consumers must handle rejections. Superseded
 or disposed results cannot update state. Queries pass an AbortController to
 Wow, and generation checks also protect against sources that ignore abort.
 
@@ -713,6 +732,10 @@ or unmount. In an iframe it expands within that frame.
 `rowActions`, each a local name-to-React-component map. Custom components may use
 any React UI. Explicit missing names and renderer failures are visible and
 isolated per rendering area.
+
+Global/table action error boundaries retry when their actual renderer inputs
+change, including `selectedRowKeys` or `querying`. Unrelated unsubmitted draft
+edits keep the failure isolated instead of repeatedly rerendering it.
 
 Core exports `DeepReadonly<T>`. Extension records, instances, definitions, columns,
 filters, field metadata and JSON options use recursive readonly inputs. Components

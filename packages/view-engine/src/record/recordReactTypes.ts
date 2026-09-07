@@ -67,9 +67,9 @@ export interface ViewExtensions extends FilterExtensions {
   rowActions?: Readonly<Record<string, ComponentType<RowActionsRendererProps>>>;
 }
 export interface RecordTableProps {
-  definition: ViewDefinition;
-  instance: ViewInstance;
-  rows: readonly RecordData[];
+  definition: DeepReadonly<ViewDefinition>;
+  instance: DeepReadonly<ViewInstance>;
+  rows: DeepReadonly<readonly RecordData[]>;
   extensions?: ViewExtensions;
   querying?: boolean;
   /** Query failure is distinct from a successful empty result. Existing rows are retained. */

@@ -44,6 +44,14 @@ can atomically publish a draft and local validity. `setFilterValidity(valid, id?
 reports an invalid local buffer; reporting true cannot clear a changed draft.
 Apply or Undo must return it to an applied baseline before saving. Unset controls
 remain part of that baseline. The old `setFilterPending` setter has been removed.
+`applyFilter` rejects while an editor reports invalid input, even when applying
+the current expression again. Correct the input or undo it before submitting;
+the rejection changes neither the draft nor the current query.
+
+Core snapshots use `DeepReadonly` for definitions, instances, drafts and records.
+Read these values directly, or pass them back to `applyFilter`, `setFilterDraft`,
+`setSort` and `setColumns`; the engine copies accepted inputs. Build edits as new
+objects. Host query/write requests receive independent, editable DTOs.
 
 The table uses shadcn Table + TanStack Table with server sorting and paged or
 forward cursor queries. Resize at table-header edges by dragging, with keyboard arrows as an accessible alternative. Reorder columns by dragging their handles within the same
@@ -134,6 +142,8 @@ column. Pin/order changes do not query records or aggregates.
 Extension inputs use exported `DeepReadonly<T>` snapshots. Copy the fields needed
 into a component's own form state, then submit changes through host commands or
 engine methods. Unsubmitted filter edits do not rerender the record-cell boundary.
+Action rendering errors recover when the renderer's inputs change, including
+selection or query state; unrelated draft edits do not repeatedly retry a failure.
 Definitions use `recordActions.global`, `.table` and `.row` to choose their action
 areas (for example, create, batch process and inspect record). Existing global
 registrations retain their location; move batch components to `tableActions` explicitly.

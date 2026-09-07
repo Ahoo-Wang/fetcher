@@ -84,17 +84,17 @@ export interface FilterPanelToolbarProps {
   onModeChange(mode: FilterMode): void;
 }
 export interface FilterPanelProps {
-  value: FilterExpression;
+  value: DeepReadonly<FilterExpression>;
   fields: readonly FilterFieldDefinition[];
   onApply(expression: FilterExpression): void;
   mode?: FilterMode;
   onModeChange?(mode: FilterMode): void;
   onPendingChange?(pending: boolean): void;
   /** Optional controlled transient tree; keep it per view instance to preserve unmounted editors. */
-  draft?: FilterDraftNode;
+  draft?: DeepReadonly<FilterDraftNode>;
   onDraftChange?(draft: FilterDraftNode): void;
   /** Controlled last-applied editor tree, including unset controls. */
-  appliedDraft?: FilterDraftNode;
+  appliedDraft?: DeepReadonly<FilterDraftNode>;
   /** Reports local buffer and editor validity; pending remains derived. */
   onValidityChange?(valid: boolean): void;
   allowedOperators?: readonly FilterOperator[];

@@ -20,6 +20,7 @@ import {
   type FilterLiteral,
 } from '@ahoo-wang/fetcher-wow';
 import { TZDate } from '@date-fns/tz';
+import type { DeepReadonly } from '../lib/types.js';
 import type {
   FilterCompileResult,
   FilterDateTimeValue,
@@ -232,7 +233,9 @@ function definition(op: Op): FilterOperatorDefinition {
   return FILTER_OPERATORS[op];
 }
 
-function checkShape(node: FilterDraftNode): FilterOperatorDefinition {
+function checkShape(
+  node: DeepReadonly<FilterDraftNode>,
+): FilterOperatorDefinition {
   const descriptor = definition(node.op);
   const keys = ['id', 'op'];
   if (descriptor.category === 'field' || descriptor.category === 'element')
@@ -271,9 +274,14 @@ function checkShape(node: FilterDraftNode): FilterOperatorDefinition {
   return descriptor;
 }
 
-type CompiledNode = Omit<FilterDraftNode, 'operands' | 'predicate'> & {
+type CompiledNode = Omit<
+  FilterDraftNode,
+  'operands' | 'predicate' | 'values' | 'fields'
+> & {
   operands?: FilterExpression[];
   predicate?: FilterExpression;
+  values?: readonly unknown[];
+  fields?: readonly string[];
 };
 
 /** The Wow constructors remain the authority for wire-level operator validation. */
@@ -434,7 +442,7 @@ function build(node: CompiledNode): FilterExpression {
 }
 
 export function createFilterDraft(
-  expression: FilterExpression,
+  expression: DeepReadonly<FilterExpression>,
 ): FilterDraftNode {
   if (
     !expression ||
@@ -451,13 +459,13 @@ export function createFilterDraft(
     if (!Array.isArray(node.operands))
       throw new TypeError('分组条件必须是数组');
     node.operands = Array.from(
-      (expression as { operands: FilterExpression[] }).operands,
+      (expression as { operands: DeepReadonly<FilterExpression[]> }).operands,
       createFilterDraft,
     );
   }
   if (node.predicate !== undefined)
     node.predicate = createFilterDraft(
-      (expression as { predicate: FilterExpression }).predicate,
+      (expression as { predicate: DeepReadonly<FilterExpression> }).predicate,
     );
   if (node.values !== undefined) {
     if (!Array.isArray(node.values)) throw new TypeError('集合值必须是数组');
@@ -645,13 +653,13 @@ function scalar(
 }
 
 export function compileFilterDraft(
-  draft: FilterDraftNode,
+  draft: DeepReadonly<FilterDraftNode>,
   fields: readonly FilterFieldDefinition[],
   allowedOperators?: readonly Op[],
 ): FilterCompileResult {
   const errors: FilterValidationError[] = [];
   const visit = (
-    node: FilterDraftNode,
+    node: DeepReadonly<FilterDraftNode>,
     scope: readonly FilterFieldDefinition[],
     element = false,
   ): FilterExpression | undefined => {
@@ -785,8 +793,8 @@ export function compileFilterDraft(
     : { expression: expression ?? filter.matchAll(), errors };
 }
 
-export function isSimpleFilter(draft: FilterDraftNode): boolean {
-  const ordinary = (node: FilterDraftNode) =>
+export function isSimpleFilter(draft: DeepReadonly<FilterDraftNode>): boolean {
+  const ordinary = (node: DeepReadonly<FilterDraftNode>) =>
     Object.prototype.hasOwnProperty.call(FILTER_OPERATORS, node.op) &&
     FILTER_OPERATORS[node.op].category === 'field' &&
     typeof node.field === 'string' &&

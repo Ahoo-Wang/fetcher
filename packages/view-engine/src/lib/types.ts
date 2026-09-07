@@ -21,3 +21,8 @@ export type DeepReadonly<T> = unknown extends T
       : T extends object
         ? { readonly [Key in keyof T]: DeepReadonly<T[Key]> }
         : T;
+
+/** A structured clone is an independent, writable DTO; the source remains readonly. */
+export function cloneSnapshot<T>(value: DeepReadonly<T>): T {
+  return structuredClone(value) as T;
+}

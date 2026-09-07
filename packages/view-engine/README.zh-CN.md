@@ -31,6 +31,10 @@ export function OrderPage({
 
 引擎根据 `filterDraft`、最近一次查询应用的编辑基线 `filterBaseline` 和编辑器报告的有效性 `filterValid` 推导 pending。`setFilterDraft(draft, id?, valid?)` 可原子更新草稿及局部有效性；`setFilterValidity(valid, id?)` 报告输入缓冲区是否有效，传入 true 不能清除尚未查询的草稿修改。查询或撤销使草稿回到已应用基线后才能保存，未设置值的控件也保留在编辑基线中。原 `setFilterPending` setter 已移除。
 
+编辑器报告无效输入时，`applyFilter` 会拒绝执行，重复应用当前条件也不能绕过。先修正输入或撤销修改后再提交；拒绝时保留草稿和当前查询。
+
+核心快照中的定义、实例、草稿和记录采用 `DeepReadonly`。可直接读取，也可将快照传回 `applyFilter`、`setFilterDraft`、`setSort` 和 `setColumns`，引擎会复制接受的输入。修改时构造新对象；传给宿主查询和写入接口的参数仍是独立、可编辑的数据对象。
+
 表格采用 shadcn Table + TanStack Table，支持服务端排序、分页与只向前的游标查询。仅在表头列边缘拖动调整宽度，并保留键盘方向键作为无障碍替代；列设置通过拖动手柄调整同一区域内的顺序，也可聚焦手柄后按上、下方向键移动，同时支持显示/隐藏。松手后写入顺序，取消拖动保持原配置。调整列展示不查询，筛选点击“查询”才生效。页面按实例保留草稿，当前实例不再单独显示“已编辑”标签，由保存按钮表达可保存状态，有待查询筛选时仍阻止保存。另存为支持个人和公共共享实例，实际权限与持久化由宿主负责。
 
 紧凑工作台将标题与全局工具栏合并：按标题、当前实例、保存组合按钮排列，菜单提供另存为与还原，创建等全局操作置于右侧。没有原实例保存权限时，主按钮改为另存为。筛选组合按钮同时提供展开/收起和简单/高级模式选择，省去独立标题行；添加筛选在左，撤销、清空与查询在右。
@@ -56,6 +60,8 @@ export function OrderPage({
 `extensions.cells`、`globalActions`、`tableActions`、`rowActions` 与 `filters` 注册任意本地 React 组件，远程定义只保存名称与 JSON 参数。定义通过 `recordActions.global`、`.table`、`.row` 指定创建、批量处理、查看记录等操作所在区域。已有全局注册保留原位置，批量组件需显式移到 `tableActions`。业务操作得到已应用的查询范围、稳定记录主键与绑定当前实例的刷新回调。勾选仅表示明确选择的当前页记录。定义、实例和记录必须是 JSON 数据；主键必须为唯一字符串或有限数字，不回退到数组下标。核心入口仍不加载 React。
 
 扩展输入采用导出的 `DeepReadonly<T>` 递归只读快照。把需要编辑的字段复制到组件自己的表单状态，再通过宿主命令或引擎方法提交。尚未查询的筛选编辑不会触发记录单元格边界的重渲染。
+
+全局和批量操作组件渲染失败后，选择、查询状态等实际输入发生变化时会重新尝试渲染；无关的筛选草稿编辑不会反复触发失败组件。
 
 Storybook 的 **View Engine → Record View** 使用内存服务演示完整请求与回包。详见[宿主与扩展契约](../../skills/fetcher-view-engine/references/api.md#record-views-and-host-contract)。
 

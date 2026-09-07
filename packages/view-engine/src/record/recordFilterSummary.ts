@@ -20,10 +20,11 @@ import {
 } from '@ahoo-wang/fetcher-wow';
 import { FILTER_OPERATORS } from '../filter/filterCore.js';
 import type { FilterFieldDefinition } from '../filter/filterModel.js';
+import type { DeepReadonly } from '../lib/types.js';
 
 /** Describes the applied expression; draft values and display rounding must not change its meaning. */
 export function describeRecordFilter(
-  expression: FilterExpression,
+  expression: DeepReadonly<FilterExpression>,
   fields: readonly FilterFieldDefinition[],
   root = true,
 ): { count: number; text: string } {

@@ -18,6 +18,7 @@ import {
   isSimpleFilter,
 } from '../filter/filterCore.js';
 import type { FilterDraftNode, FilterMode } from '../filter/filterModel.js';
+import { cloneSnapshot, type DeepReadonly } from '../lib/types.js';
 import { isFilterDraftPending, sameFilterState } from '../filter/filterTree.js';
 import { getRecordRefreshBlockReason } from './recordRefreshPolicy.js';
 import { getRecordSummaryMetrics } from './recordPresentation.js';
@@ -115,7 +116,7 @@ function sessionFor(instance: ViewInstance): RecordSession {
   };
 }
 
-function content({ title, scope, config }: ViewInstance) {
+function content({ title, scope, config }: DeepReadonly<ViewInstance>) {
   return { title, scope, config };
 }
 
@@ -343,9 +344,7 @@ export class ViewEngine {
       if (!source.aggregate)
         throw new Error('数据源未提供 aggregate，无法汇总所有记录');
       const result = await source.aggregate(
-        structuredClone(
-          createRecordSummaryQuery(session.instance.config.filter, metrics),
-        ),
+        createRecordSummaryQuery(session.instance.config.filter, metrics),
         undefined,
         controller,
       );
@@ -692,7 +691,7 @@ export class ViewEngine {
       const result =
         pagination.mode === 'paged'
           ? await source.paged(
-              structuredClone({
+              cloneSnapshot<Parameters<RecordQuerySource['paged']>[0]>({
                 filter,
                 sort,
                 pagination: { index: session.page, size: pagination.size },
@@ -701,7 +700,7 @@ export class ViewEngine {
               controller,
             )
           : await source.cursor(
-              structuredClone({
+              cloneSnapshot<Parameters<RecordQuerySource['cursor']>[0]>({
                 filter,
                 sort,
                 size: pagination.size,
@@ -759,15 +758,20 @@ export class ViewEngine {
 
   private updateInstance(
     session: RecordSession,
-    instance: ViewInstance,
+    instance: DeepReadonly<ViewInstance>,
     patch: Partial<RecordSession> = {},
   ): void {
     validateViewInstance(instance, this.definition(), session.instance.id);
     this.patch(session.instance.id, { ...patch, instance: copy(instance) });
   }
 
-  async applyFilter(expression: FilterExpression, id?: string): Promise<void> {
+  async applyFilter(
+    expression: DeepReadonly<FilterExpression>,
+    id?: string,
+  ): Promise<void> {
     const session = this.session(id);
+    if (!session.filterValid)
+      throw new Error('筛选输入无效，请先修正或撤销修改');
     const definition = this.definition();
     const compiled = compileFilterDraft(
       session.filterDraft,
@@ -801,7 +805,11 @@ export class ViewEngine {
     await this.query(session.instance.id);
   }
 
-  setFilterDraft(draft: FilterDraftNode, id?: string, valid?: boolean): void {
+  setFilterDraft(
+    draft: DeepReadonly<FilterDraftNode>,
+    id?: string,
+    valid?: boolean,
+  ): void {
     const session = this.session(id);
     const nextValid = valid === undefined ? session.filterValid : valid;
     if (typeof nextValid !== 'boolean')
@@ -833,7 +841,7 @@ export class ViewEngine {
     this.patch(session.instance.id, { filterMode: mode });
   }
 
-  async setSort(sort: FieldSort[], id?: string): Promise<void> {
+  async setSort(sort: DeepReadonly<FieldSort[]>, id?: string): Promise<void> {
     const session = this.session(id);
     this.updateInstance(
       session,
@@ -843,7 +851,7 @@ export class ViewEngine {
     await this.query(session.instance.id);
   }
 
-  setColumns(columns: RecordColumn[], id?: string): void {
+  setColumns(columns: DeepReadonly<RecordColumn[]>, id?: string): void {
     const session = this.session(id);
     const key = this.summaryKey(session);
     this.updateInstance(session, {
@@ -970,7 +978,7 @@ export class ViewEngine {
     if (!session) return denied;
     try {
       const permissions = this.host.getInstancePermissions(
-        structuredClone(session.instance),
+        cloneSnapshot<ViewInstance>(session.instance),
       );
       const system = [session.baseline, session.instance].some(
         value =>
