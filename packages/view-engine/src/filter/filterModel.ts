@@ -30,8 +30,8 @@ export type FilterJsonValue =
   | string
   | number
   | boolean
-  | FilterJsonValue[]
-  | { [key: string]: FilterJsonValue };
+  | readonly FilterJsonValue[]
+  | { readonly [key: string]: FilterJsonValue };
 export interface FilterEditorReference {
   name: string;
   options?: Readonly<Record<string, FilterJsonValue>>;

@@ -12,6 +12,7 @@
  */
 
 import {
+  memo,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -76,7 +77,6 @@ import {
   RECORD_SUMMARY_LABELS,
   formatRecordNumber,
   type RecordSummaryFunction,
-  getRecordColumnPinning,
   orderRecordColumns,
   type RecordColumn,
   type RecordData,
@@ -87,6 +87,7 @@ import {
 import type { RecordTableProps } from './recordReactTypes.js';
 import { getRecordKey, readRecordValue } from './recordValidation.js';
 import { RecordRendererBoundary } from './RecordRendererBoundary.js';
+import { getRecordTableLayout } from './recordTableLayout.js';
 
 const summaryOrder = Object.keys(
   RECORD_SUMMARY_LABELS,
@@ -350,7 +351,7 @@ function SummaryScope({
   );
 }
 
-export function RecordTable({
+export const RecordTable = memo(function RecordTable({
   definition,
   instance,
   rows,
@@ -426,94 +427,31 @@ export function RecordTable({
   for (const column of columns)
     if (column.kind === 'field')
       sortFields.set(JSON.stringify(column.id), column.field);
-  const columnSizing = Object.fromEntries(
-    columns.map(column => [
-      JSON.stringify(column.id),
-      column.width ?? RECORD_COLUMN_DEFAULT_WIDTH,
-    ]),
+  const {
+    columnSizing,
+    columnPinning,
+    compact,
+    insufficientWidth,
+    relaxedPinning,
+    contentWidth,
+    fillerWidth,
+    summaryLabelColumnCount,
+    summaryLabelSpan,
+    summaryLabelWidth,
+  } = useMemo(
+    () =>
+      getRecordTableLayout({
+        columns,
+        fields: definition.fields,
+        rowKey: definition.rowKey,
+        selectable,
+        availableWidth,
+      }),
+    [columns, definition.fields, definition.rowKey, selectable, availableWidth],
   );
-  const visibleConfigured = columns.filter(column => column.visible !== false);
-  const centerMinimum = visibleConfigured.some(
-    column => column.kind === 'field' && column.field !== definition.rowKey,
-  )
-    ? 128
-    : 0;
-  const pinnedWidth = visibleConfigured.reduce(
-    (total, column) =>
-      total +
-      (getRecordColumnPinning(column, definition.rowKey)
-        ? columnSizing[JSON.stringify(column.id)]
-        : 0),
-    selectable ? 48 : 0,
-  );
-  const compact =
-    availableWidth > 0 && pinnedWidth + centerMinimum > availableWidth;
-  function effectivePinning(column: RecordColumn) {
-    if (
-      compact &&
-      column.kind === 'field' &&
-      column.field !== definition.rowKey
-    )
-      return false;
-    return getRecordColumnPinning(column, definition.rowKey);
-  }
-  if (compact) {
-    const actions = visibleConfigured.filter(
-      column => column.kind === 'actions',
-    );
-    const keys = visibleConfigured.filter(
-      column => column.kind === 'field' && column.field === definition.rowKey,
-    );
-    const keyBudget =
-      (availableWidth -
-        (selectable ? 48 : 0) -
-        actions.length * RECORD_COLUMN_MIN_WIDTH -
-        centerMinimum) /
-      Math.max(1, keys.length);
-    for (const column of actions)
-      columnSizing[JSON.stringify(column.id)] = RECORD_COLUMN_MIN_WIDTH;
-    for (const column of keys)
-      columnSizing[JSON.stringify(column.id)] = Math.max(
-        RECORD_COLUMN_MIN_WIDTH,
-        Math.min(
-          columnSizing[JSON.stringify(column.id)],
-          Math.floor(keyBudget),
-        ),
-      );
-  }
-  const automatic = visibleConfigured.filter(
-    column =>
-      column.kind === 'field' &&
-      column.width === undefined &&
-      !getRecordColumnPinning(column, definition.rowKey) &&
-      !definition.fields.find(field => field.field === column.field)?.options
-        ?.length &&
-      definition.fields.find(field => field.field === column.field)?.type ===
-        'string',
-  );
-  const minimumWidth = visibleConfigured.reduce(
-    (total, column) => total + columnSizing[JSON.stringify(column.id)],
-    selectable ? 48 : 0,
-  );
-  const extraPerColumn = automatic.length
-    ? Math.max(0, availableWidth - minimumWidth) / automatic.length
-    : 0;
-  for (const column of automatic)
-    columnSizing[JSON.stringify(column.id)] = Math.min(
-      480,
-      RECORD_COLUMN_DEFAULT_WIDTH + extraPerColumn,
-    );
   const rowSelection = Object.fromEntries(
     selectedRowKeys.map(key => [JSON.stringify(key), true as const]),
   );
-  const columnPinning = {
-    start: columns
-      .filter(column => effectivePinning(column) === 'left')
-      .map(column => JSON.stringify(column.id)),
-    end: columns
-      .filter(column => effectivePinning(column) === 'right')
-      .map(column => JSON.stringify(column.id)),
-  };
   const table = useTable({
     features,
     columns: columnDefs,
@@ -593,22 +531,6 @@ export function RecordTable({
     ...table.getCenterVisibleLeafColumns(),
     ...table.getEndVisibleLeafColumns(),
   ];
-  const contentWidth = table.getTotalSize() + (selectable ? 48 : 0);
-  const compactPinnedWidth = visibleColumns.reduce(
-    (total, column) => total + (column.getIsPinned() ? column.getSize() : 0),
-    selectable ? 48 : 0,
-  );
-  const insufficientWidth =
-    compact && availableWidth - compactPinnedWidth < centerMinimum;
-  const relaxedPinning =
-    compact &&
-    visibleConfigured.some(
-      column =>
-        column.kind === 'field' &&
-        column.field !== definition.rowKey &&
-        getRecordColumnPinning(column, definition.rowKey),
-    );
-  const fillerWidth = Math.max(0, availableWidth - contentWidth);
   const firstEnd = visibleColumns.findIndex(
     column => column.getIsPinned() === 'end',
   );
@@ -643,21 +565,6 @@ export function RecordTable({
     const configured = byId.get(column.id);
     return configured?.kind === 'field' && !!configured.summary?.length;
   });
-  const summaryLabelColumns = [];
-  for (const column of visibleColumns) {
-    const configured = byId.get(column.id)!;
-    if (
-      column.getIsPinned() !== 'start' ||
-      (configured.kind === 'field' && configured.summary?.length)
-    )
-      break;
-    summaryLabelColumns.push(column);
-  }
-  const summaryLabelSpan = summaryLabelColumns.length + (selectable ? 1 : 0);
-  const summaryLabelWidth = summaryLabelColumns.reduce(
-    (width, column) => width + column.getSize(),
-    selectable ? 48 : 0,
-  );
   const summaries = [
     { label: '本页', result: pageSummary },
     { label: '所有', result: allSummary },
@@ -1001,7 +908,7 @@ export function RecordTable({
                     </TableHead>
                   )}
                   {withFiller(visibleColumns).map((column, index) => {
-                    if (index < summaryLabelColumns.length) return null;
+                    if (index < summaryLabelColumnCount) return null;
                     if (!column)
                       return <TableCell key="space" aria-hidden="true" />;
                     const configured = byId.get(column.id)!;
@@ -1095,4 +1002,4 @@ export function RecordTable({
       </Table>
     </div>
   );
-}
+});

@@ -13,7 +13,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { filter, FilterOperator, SortDirection } from '@ahoo-wang/fetcher-wow';
-import { newFilterDraft } from '../src/filter/filterCore.js';
+import { createFilterDraft, newFilterDraft } from '../src/filter/filterCore.js';
 import { ViewEngine } from '../src/record/ViewEngine.js';
 import type {
   ViewDefinition,
@@ -93,6 +93,43 @@ function setup(options: Partial<ViewEngineOptions> = {}) {
   });
   return { engine, host, paged, cursor };
 }
+
+it('derives pending from core draft changes and only accepts the queried editing baseline', async () => {
+  const saved = instance();
+  saved.config.filter = filter.gte('state.amount', 10);
+  const { engine, host } = setup({
+    instances: { instances: [saved], defaultInstanceId: saved.id },
+  });
+  await engine.load();
+  engine.setTitle('Edited title');
+  engine.setFilterDraft(createFilterDraft(filter.gte('state.amount', 500)));
+  expect(selected(engine).filterPending).toBe(true);
+  await expect(engine.save()).rejects.toThrow(/先查询/);
+  expect(host.saveInstance).not.toHaveBeenCalled();
+  engine.setFilterDraft(createFilterDraft(filter.gte('state.amount', 10)));
+  expect(selected(engine).filterPending).toBe(false);
+  engine.setFilterValidity(false);
+  expect(selected(engine).filterPending).toBe(true);
+  engine.setFilterDraft(
+    createFilterDraft(filter.gte('state.amount', 500)),
+    undefined,
+    true,
+  );
+  expect(selected(engine).filterPending).toBe(true);
+  await engine.applyFilter(filter.gte('state.amount', 500));
+  expect(selected(engine).filterPending).toBe(false);
+  await engine.save();
+  expect(selected(engine).baseline.config.filter).toEqual({
+    op: 'GTE',
+    field: 'state.amount',
+    value: 500,
+  });
+  engine.setFilterDraft(newFilterDraft(FilterOperator.EQ, 'state.amount'));
+  expect(selected(engine).filterPending).toBe(true);
+  await engine.applyFilter(filter.matchAll());
+  expect(selected(engine).filterPending).toBe(false);
+  expect(selected(engine).filterDraft.op).toBe(FilterOperator.EQ);
+});
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -232,7 +269,7 @@ describe('ViewEngine loading and query sessions', () => {
     await engine.load();
     const draft = newFilterDraft(FilterOperator.EQ, 'state.amount');
     engine.setFilterDraft(draft);
-    engine.setFilterPending(true);
+    engine.setFilterValidity(false);
     engine.setFilterMode('advanced');
     engine.setTitle('Local draft');
     engine.setSelection(['a']);
@@ -462,7 +499,7 @@ describe('ViewEngine loading and query sessions', () => {
     const snapshot = engine.getSnapshot();
     const listener = vi.fn();
     engine.subscribe(listener);
-    engine.setFilterPending(false);
+    engine.setFilterValidity(true);
     engine.setFilterMode('simple');
     engine.setFilterDraft(structuredClone(selected(engine).filterDraft));
     expect(engine.getSnapshot()).toBe(snapshot);
@@ -531,7 +568,7 @@ describe('ViewEngine writes', () => {
     expect(host.saveInstance).not.toHaveBeenCalled();
     const pending = setup();
     await pending.engine.load();
-    pending.engine.setFilterPending(true);
+    pending.engine.setFilterValidity(false);
     await expect(pending.engine.save()).rejects.toThrow();
     await expect(
       pending.engine.saveAs({ title: 'New', scope: { type: 'personal' } }),
@@ -652,7 +689,7 @@ describe('ViewEngine writes', () => {
       expect(saveInstance).toHaveBeenCalledOnce();
       const draft = newFilterDraft(FilterOperator.EQ, 'state.amount');
       engine.setFilterDraft(draft);
-      engine.setFilterPending(true);
+      engine.setFilterValidity(false);
       await engine.reloadInstance();
       expect(selected(engine)).toMatchObject({
         requiresReload: false,
@@ -870,7 +907,7 @@ it('reconciles a changed create echo by reading the created ID and preserving bo
   ]);
   const draft = newFilterDraft(FilterOperator.GTE, 'state.amount');
   engine.setFilterDraft(draft);
-  engine.setFilterPending(true);
+  engine.setFilterValidity(false);
   await engine.reloadInstance();
   expect(loadInstance.mock.calls[0][0]).toBe('created-1');
   expect(engine.getSnapshot().selectedInstanceId).toBe('created-1');
@@ -1165,7 +1202,7 @@ describe('ViewEngine view management', () => {
     ]);
     const draft = newFilterDraft(FilterOperator.GTE, 'state.amount');
     engine.setFilterDraft({ ...draft, value: 50 });
-    engine.setFilterPending(true);
+    engine.setFilterValidity(false);
     const before = selected(engine);
     const renaming = engine.renameInstance('  New name  ');
     expect(renameInstance).toHaveBeenCalledWith('mine', 'New name', 'r1');
@@ -1363,7 +1400,7 @@ describe('background record refresh', () => {
     engine.setSelection(['a']);
     await engine.refresh(undefined, { background: true });
     engine.setSelection([]);
-    engine.setFilterPending(true);
+    engine.setFilterValidity(false);
     await engine.refresh(undefined, { background: true });
     expect(paged).toHaveBeenCalledTimes(1);
     engine.dispose();

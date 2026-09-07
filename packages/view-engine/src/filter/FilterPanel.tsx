@@ -46,7 +46,7 @@ import {
   locateFilterNodes,
   replaceFilterNode,
   sameFilterState,
-  sameFilterDraft,
+  isFilterDraftPending,
   type FilterNodeLocation,
 } from './filterTree.js';
 import { FieldFilter } from './FieldFilter.js';
@@ -214,6 +214,7 @@ export function FilterPanel(props: FilterPanelProps) {
     onApply,
     onPendingChange,
     onDraftChange,
+    onValidityChange,
     disabled = false,
     querying = false,
   } = props;
@@ -242,7 +243,8 @@ export function FilterPanel(props: FilterPanelProps) {
       mounted.current = false;
     };
   }, []);
-  const [baseline, setBaseline] = useState(initial.baseline);
+  const [localBaseline, setBaseline] = useState(initial.baseline);
+  const baseline = props.appliedDraft ?? localBaseline;
   const [loadError, setLoadError] = useState(initial.error);
   const [applyError, setApplyError] = useState<string>();
   const [editorValidity, setEditorValidity] = useState<Record<string, string>>(
@@ -289,13 +291,15 @@ export function FilterPanel(props: FilterPanelProps) {
         message: text || '输入尚未完成或格式无效。',
       })),
   );
-  const pending =
-    !sameFilterDraft(draft, baseline) ||
-    issues.some(
-      issue =>
-        editorValidity[issue.id] !== undefined ||
-        editorOutputErrors[issue.id] !== undefined,
-    );
+  const valid = !loadError && issues.length === 0;
+  const pending = isFilterDraftPending(draft, baseline, valid);
+  const previousValidity = useRef<boolean | undefined>(undefined);
+  useEffect(() => {
+    if (previousValidity.current !== valid) {
+      previousValidity.current = valid;
+      onValidityChange?.(valid);
+    }
+  }, [valid, onValidityChange]);
   const previousPending = useRef<boolean | undefined>(undefined);
   useEffect(() => {
     if (previousPending.current !== pending) {

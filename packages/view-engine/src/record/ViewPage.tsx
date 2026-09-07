@@ -72,18 +72,55 @@ import { cn } from '../lib/utils.js';
 
 export interface ViewPageProps
   extends ViewEngineOptions, Omit<RecordViewProps, 'engine' | 'toolbarStart'> {
+  /** Stable user/tenant/access identity. Changing it creates an isolated session. */
+  scopeKey: string;
   initialSidebarCollapsed?: boolean;
 }
-/** Owns one engine per fixed host/definition input. Keep these input references stable. */
+/** Owns one engine per explicit scope and definition. Local data initializes that lifetime. */
 export function ViewPage(props: ViewPageProps) {
-  const { definitionId, host, definition, instances } = props;
+  if (typeof props.scopeKey !== 'string' || !props.scopeKey.trim())
+    return (
+      <div className="fve-root fve:p-4" role="alert">
+        scopeKey 必须标识当前用户与访问范围
+      </div>
+    );
+  return (
+    <OwnedViewPage
+      key={JSON.stringify([props.scopeKey, props.definitionId])}
+      {...props}
+    />
+  );
+}
+function OwnedViewPage(props: ViewPageProps) {
+  const hostRef = useRef(props.host);
+  const [, reflectHost] = useState(0);
+  useLayoutEffect(() => {
+    if (hostRef.current === props.host) return;
+    hostRef.current = props.host;
+    // Reflect committed capabilities without replacing the engine or its sessions.
+    reflectHost(version => version + 1);
+  }, [props.host]);
+  const [initial] = useState(() => ({
+    definitionId: props.definitionId,
+    definition: props.definition,
+    instances: props.instances,
+  }));
   const [owned, setOwned] = useState<{
     engine: ViewEngine | null;
-    options: ViewEngineOptions;
     error?: string;
   } | null>(null);
   useEffect(() => {
-    const options = { definitionId, host, definition, instances };
+    const options: ViewEngineOptions = {
+      ...initial,
+      // Resolve optional methods at call time; each scope owns a separate adapter.
+      host: new Proxy({} as ViewEngineOptions['host'], {
+        get(_target, property) {
+          const host = hostRef.current;
+          const value = Reflect.get(host, property, host);
+          return typeof value === 'function' ? value.bind(host) : value;
+        },
+      }),
+    };
     let engine: ViewEngine;
     try {
       engine = new ViewEngine(options);
@@ -91,23 +128,16 @@ export function ViewPage(props: ViewPageProps) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- report invalid local input from external resource creation.
       setOwned({
         engine: null,
-        options,
         error: error instanceof Error ? error.message : '视图数据无效',
       });
       return;
     }
     // A fresh subscription owner on every effect setup also supports React StrictMode cleanup/replay.
-    setOwned({ engine, options });
+    setOwned({ engine });
     void engine.load().catch(() => {});
     return () => engine.dispose();
-  }, [definitionId, host, definition, instances]);
-  if (
-    !owned ||
-    owned.options.definitionId !== definitionId ||
-    owned.options.host !== host ||
-    owned.options.definition !== definition ||
-    owned.options.instances !== instances
-  )
+  }, [initial]);
+  if (!owned)
     return (
       <div className="fve-root fve:p-4" role="status">
         正在加载视图…
@@ -121,7 +151,7 @@ export function ViewPage(props: ViewPageProps) {
     );
   return (
     <ViewPageContent
-      key={definitionId}
+      key={props.definitionId}
       engine={owned.engine}
       extensions={props.extensions}
       filterContext={props.filterContext}

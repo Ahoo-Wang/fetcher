@@ -93,11 +93,110 @@ function setup() {
   };
   return { host, paged };
 }
+it('does not load data without an explicit access scope', () => {
+  const { host, paged } = setup();
+  render(<ViewPage scopeKey="" definitionId="orders" host={host} />);
+  expect(screen.getByRole('alert').textContent).toContain('scopeKey');
+  expect(host.loadDefinition).not.toHaveBeenCalled();
+  expect(paged).not.toHaveBeenCalled();
+});
+
+it('keeps same-scope drafts across host reference changes and resets on an explicit scope change', async () => {
+  const { host, paged } = setup();
+  const page = render(
+    <ViewPage
+      scopeKey="user-one"
+      definitionId="orders"
+      host={Object.freeze(host)}
+    />,
+  );
+  await screen.findByRole('cell', { name: '42' });
+  fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
+    target: { value: '500' },
+  });
+  const resolveSource = vi.fn(host.resolveSource);
+  const nextHost = { ...host, resolveSource };
+  page.rerender(
+    <ViewPage scopeKey="user-one" definitionId="orders" host={nextHost} />,
+  );
+  await waitFor(() =>
+    expect(
+      (screen.getByRole('textbox', { name: '金额值' }) as HTMLInputElement)
+        .value,
+    ).toBe('500'),
+  );
+  expect(paged).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: '查询' }));
+  await waitFor(() => expect(resolveSource).toHaveBeenCalledOnce());
+  page.rerender(
+    <ViewPage
+      scopeKey="user-one"
+      definitionId="orders"
+      host={{
+        ...nextHost,
+        getInstancePermissions: () => ({
+          save: false,
+          saveAsPersonal: true,
+          saveAsShared: false,
+        }),
+      }}
+    />,
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: '保存' })).toBeNull(),
+  );
+  expect(screen.getByRole('button', { name: '另存为' })).toBeTruthy();
+  page.rerender(
+    <ViewPage scopeKey="user-two" definitionId="orders" host={nextHost} />,
+  );
+  await waitFor(() =>
+    expect(
+      (screen.getByRole('textbox', { name: '金额值' }) as HTMLInputElement)
+        .value,
+    ).toBe('10'),
+  );
+  await waitFor(() => expect(paged).toHaveBeenCalledTimes(3));
+});
+
+it('does not rerender record cells for an unsubmitted filter edit', async () => {
+  const { host, paged } = setup();
+  const Cell = vi.fn(({ value }: { value: unknown }) => (
+    <span>{String(value)}</span>
+  ));
+  const extendedDefinition = {
+    ...definition,
+    fields: definition.fields.map(field => ({
+      ...field,
+      cellRenderer: { name: 'amount' },
+    })),
+  };
+  render(
+    <ViewPage
+      scopeKey="user-one"
+      definitionId="orders"
+      host={host}
+      definition={extendedDefinition}
+      extensions={{ cells: { amount: Cell } }}
+    />,
+  );
+  await screen.findByRole('cell', { name: '42' });
+  const calls = Cell.mock.calls.length;
+  fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
+    target: { value: '500' },
+  });
+  await screen.findByText('筛选未生效');
+  expect(Cell.mock.calls).toHaveLength(calls);
+  expect(paged).toHaveBeenCalledTimes(1);
+  paged.mockResolvedValue({ list: [{ id: 0, amount: 500 }], total: 1 });
+  fireEvent.click(screen.getByRole('button', { name: '查询' }));
+  await screen.findByRole('cell', { name: '500' });
+});
+
 it('owns a working engine across StrictMode replay and stops on unmount', async () => {
   const { host } = setup();
   const view = render(
     <StrictMode>
-      <ViewPage definitionId="orders" host={host} />
+      <ViewPage scopeKey="test-user" definitionId="orders" host={host} />
     </StrictMode>,
   );
   expect(await screen.findByRole('cell', { name: '42' })).toBeTruthy();
@@ -107,7 +206,7 @@ it('owns a working engine across StrictMode replay and stops on unmount', async 
 it('places query failure in the record area without claiming an empty result or unknown page count', async () => {
   const { host, paged } = setup();
   paged.mockRejectedValueOnce(new Error('订单服务不可用'));
-  render(<ViewPage definitionId="orders" host={host} />);
+  render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   const failure = await screen.findByRole('alert');
   expect(failure.closest('table')).toBe(screen.getByRole('table'));
   expect(failure.textContent).toContain('订单服务不可用');
@@ -121,7 +220,7 @@ it('places query failure in the record area without claiming an empty result or 
 });
 it('keeps filter edits manual, blocks saves while pending, then saves applied configuration', async () => {
   const { host, paged } = setup();
-  render(<ViewPage definitionId="orders" host={host} />);
+  render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   const amount = screen.getByRole('textbox', { name: '金额值' });
   fireEvent.change(amount, { target: { value: '20' } });
@@ -154,7 +253,7 @@ it('keeps filter edits manual, blocks saves while pending, then saves applied co
 });
 it('describes applied filters while drafts remain pending', async () => {
   const { host } = setup();
-  render(<ViewPage definitionId="orders" host={host} />);
+  render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   expect(screen.getByLabelText('已应用 1 项筛选').textContent).toBe('1');
   fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
@@ -182,7 +281,7 @@ it.each(['personal', 'shared'])(
       saveAsPersonal: allowed === 'personal',
       saveAsShared: allowed === 'shared',
     });
-    render(<ViewPage definitionId="orders" host={host} />);
+    render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
     await screen.findByRole('cell', { name: '42' });
     fireEvent.click(screen.getByRole('button', { name: '视图选项' }));
     fireEvent.click(await screen.findByRole('menuitem', { name: '另存为' }));
@@ -214,7 +313,7 @@ it.each(['personal', 'shared'])(
 
 it('navigation collapse retains the filter buffer and does not query', async () => {
   const { host, paged } = setup();
-  render(<ViewPage definitionId="orders" host={host} />);
+  render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
     target: { value: '99' },
@@ -228,7 +327,14 @@ it('navigation collapse retains the filter buffer and does not query', async () 
 });
 it('collapses filters without unmounting editors, applying drafts or clearing selection', async () => {
   const { host, paged } = setup();
-  render(<ViewPage definitionId="orders" host={host} selectable />);
+  render(
+    <ViewPage
+      scopeKey="test-user"
+      definitionId="orders"
+      host={host}
+      selectable
+    />,
+  );
   await screen.findByRole('cell', { name: '42' });
   const amount = screen.getByRole('textbox', {
     name: '金额值',
@@ -347,7 +453,7 @@ it('separates global and table actions while sharing the applied query context',
 
 it('opens Save As from the save menu and preserves the host create contract', async () => {
   const { host } = setup();
-  render(<ViewPage definitionId="orders" host={host} />);
+  render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   fireEvent.click(screen.getByRole('button', { name: '视图选项' }));
   fireEvent.click(await screen.findByRole('menuitem', { name: '另存为' }));
@@ -404,7 +510,14 @@ it('shows invalid local JSON as a load error instead of crashing the page', asyn
     ...definition,
     fields: [{ ...definition.fields[0], extra: NaN }],
   };
-  render(<ViewPage definitionId="orders" definition={malformed} host={host} />);
+  render(
+    <ViewPage
+      scopeKey="test-user"
+      definitionId="orders"
+      definition={malformed}
+      host={host}
+    />,
+  );
   expect((await screen.findByRole('alert')).textContent).toContain('JSON');
   expect(host.loadDefinition).not.toHaveBeenCalled();
 });
@@ -482,7 +595,7 @@ it('manages names and deletion together while protecting system views and pendin
     .fn()
     .mockRejectedValueOnce(new Error('删除失败，请重试'))
     .mockResolvedValue(undefined);
-  render(<ViewPage definitionId="orders" host={host} />);
+  render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
     target: { value: '99' },
@@ -566,7 +679,7 @@ it('manages names for prototype-like instance IDs', async () => {
     rename: true,
   });
   host.renameInstance = vi.fn(async (id, title) => ({ ...value, id, title }));
-  render(<ViewPage definitionId="orders" host={host} />);
+  render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   fireEvent.click(screen.getAllByRole('button', { name: '管理视图' })[0]);
   const manager = within(
@@ -592,7 +705,12 @@ it.each([false, true])(
         .fn()
         .mockResolvedValue({ instances: [], defaultInstanceId: null });
     render(
-      <ViewPage definitionId="orders" host={host} initialSidebarCollapsed />,
+      <ViewPage
+        scopeKey="test-user"
+        definitionId="orders"
+        host={host}
+        initialSidebarCollapsed
+      />,
     );
     const chooser = await screen.findByRole('combobox', {
       name: '选择视图实例',
@@ -618,7 +736,7 @@ it.each([false, true])(
 it('automatically refreshes without overlapping requests and stops when disabled', async () => {
   const { host, paged } = setup();
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
-  render(<ViewPage definitionId="orders" host={host} />);
+  render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   fireEvent.click(screen.getByRole('button', { name: '自动刷新设置' }));
   const interval = await screen.findByRole('menuitemradio', {
@@ -672,7 +790,9 @@ it('automatically refreshes without overlapping requests and stops when disabled
 
 it('expands the page without remounting filters and lets Escape close overlays first', async () => {
   const { host, paged } = setup();
-  const view = render(<ViewPage definitionId="orders" host={host} />);
+  const view = render(
+    <ViewPage scopeKey="test-user" definitionId="orders" host={host} />,
+  );
   await screen.findByRole('cell', { name: '42' });
   const input = screen.getByRole('textbox', { name: '金额值' });
   fireEvent.change(input, { target: { value: '99' } });
@@ -707,7 +827,9 @@ it('pauses automatic refresh while hidden, editing or explicitly paused and clea
   const visibility = vi
     .spyOn(document, 'visibilityState', 'get')
     .mockReturnValue('hidden');
-  const view = render(<ViewPage definitionId="orders" host={host} />);
+  const view = render(
+    <ViewPage scopeKey="test-user" definitionId="orders" host={host} />,
+  );
   await screen.findByRole('cell', { name: '42' });
   fireEvent.click(screen.getByRole('button', { name: '自动刷新设置' }));
   const interval = await screen.findByRole('menuitemradio', {
@@ -740,7 +862,12 @@ it('pauses automatic refresh while hidden, editing or explicitly paused and clea
     await act(() => vi.advanceTimersByTimeAsync(30000));
     expect(paged).toHaveBeenCalledTimes(2);
     view.rerender(
-      <ViewPage definitionId="orders" host={host} autoRefreshPaused />,
+      <ViewPage
+        scopeKey="test-user"
+        definitionId="orders"
+        host={host}
+        autoRefreshPaused
+      />,
     );
     await act(() => vi.advanceTimersByTimeAsync(45000));
     expect(paged).toHaveBeenCalledTimes(2);

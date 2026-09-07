@@ -9,12 +9,27 @@ import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
 import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
-export function OrderPage({ host }: { host: ViewHost }) {
-  return <ViewPage definitionId="orders" host={host} selectable />;
+export function OrderPage({
+  host,
+  scopeKey,
+}: {
+  host: ViewHost;
+  scopeKey: string;
+}) {
+  return (
+    <ViewPage
+      scopeKey={scopeKey}
+      definitionId="orders"
+      host={host}
+      selectable
+    />
+  );
 }
 ```
 
-`ViewHost` 加载定义及完整实例列表、解析已配置的 Wow 查询客户端、提供权限，并按需实现保存与创建接口。本地数据可直接传入 `definition` 与 `instances: {instances, defaultInstanceId}`。保持这些对象引用稳定；用户、租户或访问范围改变时重新创建页面。`ViewPage` 管理引擎生命周期；宿主自行管理引擎时，使用 `ViewPageContent` 或 `RecordView`。
+`ViewHost` 加载定义及完整实例列表、解析已配置的 Wow 查询客户端、提供权限，并按需实现保存与创建接口。本地数据可直接传入 `definition` 与 `instances: {instances, defaultInstanceId}`。必填 `scopeKey` 标识用户、租户与访问范围，范围变化时更换此值；引擎按 `[scopeKey, definitionId]` 管理生命周期。同一作用域下替换宿主对象会更新回调与能力，保留草稿。本地定义和列表作为该生命周期的初始值，引用变化不触发重载；需要重新初始化时显式改变 React key。宿主自行管理引擎时，使用 `ViewPageContent` 或 `RecordView`。
+
+引擎根据 `filterDraft`、最近一次查询应用的编辑基线 `filterBaseline` 和编辑器报告的有效性 `filterValid` 推导 pending。`setFilterDraft(draft, id?, valid?)` 可原子更新草稿及局部有效性；`setFilterValidity(valid, id?)` 报告输入缓冲区是否有效，传入 true 不能清除尚未查询的草稿修改。查询或撤销使草稿回到已应用基线后才能保存，未设置值的控件也保留在编辑基线中。原 `setFilterPending` setter 已移除。
 
 表格采用 shadcn Table + TanStack Table，支持服务端排序、分页与只向前的游标查询。仅在表头列边缘拖动调整宽度，并保留键盘方向键作为无障碍替代；列设置通过拖动手柄调整同一区域内的顺序，也可聚焦手柄后按上、下方向键移动，同时支持显示/隐藏。松手后写入顺序，取消拖动保持原配置。调整列展示不查询，筛选点击“查询”才生效。页面按实例保留草稿，当前实例不再单独显示“已编辑”标签，由保存按钮表达可保存状态，有待查询筛选时仍阻止保存。另存为支持个人和公共共享实例，实际权限与持久化由宿主负责。
 
@@ -40,6 +55,8 @@ export function OrderPage({ host }: { host: ViewHost }) {
 
 `extensions.cells`、`globalActions`、`tableActions`、`rowActions` 与 `filters` 注册任意本地 React 组件，远程定义只保存名称与 JSON 参数。定义通过 `recordActions.global`、`.table`、`.row` 指定创建、批量处理、查看记录等操作所在区域。已有全局注册保留原位置，批量组件需显式移到 `tableActions`。业务操作得到已应用的查询范围、稳定记录主键与绑定当前实例的刷新回调。勾选仅表示明确选择的当前页记录。定义、实例和记录必须是 JSON 数据；主键必须为唯一字符串或有限数字，不回退到数组下标。核心入口仍不加载 React。
 
+扩展输入采用导出的 `DeepReadonly<T>` 递归只读快照。把需要编辑的字段复制到组件自己的表单状态，再通过宿主命令或引擎方法提交。尚未查询的筛选编辑不会触发记录单元格边界的重渲染。
+
 Storybook 的 **View Engine → Record View** 使用内存服务演示完整请求与回包。详见[宿主与扩展契约](../../skills/fetcher-view-engine/references/api.md#record-views-and-host-contract)。
 
 另存为的“可见范围”使用 Radio：个人视图仅自己可见，公共视图对有访问权限的用户可见。两项均直接展示说明；无创建权限的范围禁用，默认选中有权限的范围。
@@ -49,6 +66,8 @@ Storybook 的 **View Engine → Record View** 使用内存服务演示完整请�
 查询失败在记录区展示图标、原因与重试，不使用空结果图标，不显示零条记录或分页。后台失败保留原记录，并标明上次查询结果。筛选组合按钮显示已应用条件数量，Tooltip 保留原逻辑分组和阈值；待查询草稿不会替换已应用摘要。自动刷新暂停时提供原因和恢复条件。普通保存成功后短暂显示“已保存”及无障碍播报。
 
 ### 本页 / 所有汇总
+
+计算、查询构建与结果解析函数接收独立的 `RecordSummaryMetric[]`，每项为 `{ id, field, function }`。使用 `getRecordSummaryMetrics(instance.config.presentation)` 将表格实例转换为指标，查询计算不再依赖列宽、固定位置等展示属性。`ViewInstanceMetadata`、`RecordQueryConfig` 与 `RecordTablePresentation` 分别描述通用实例元数据、记录查询与表格展示。
 
 只有明确声明为 `type: 'number'` 的字段支持汇总，字段列通过 `summary: ['SUM', 'AVG', 'MIN', 'MAX']` 多选合计、平均值、最小值和最大值；取消全部选择即不汇总，省略或空数组均表示关闭。列设置仅为数值字段提供汇总入口，不支持 COUNT 记录数汇总。`field.summaryFunctions` 可限制可用方式，`[]` 可关闭汇总；列汇总方式随实例保存。
 

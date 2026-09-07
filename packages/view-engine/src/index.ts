@@ -12,6 +12,7 @@
  */
 
 export type { FilterField, FilterOption } from './filter/filterTypes.js';
+export type { DeepReadonly } from './lib/types.js';
 
 export type * from './filter/filterModel.js';
 export {
@@ -25,6 +26,7 @@ export {
 
 export type * from './record/recordModel.js';
 export { ViewEngine } from './record/ViewEngine.js';
+export { getRecordSummaryMetrics } from './record/recordPresentation.js';
 export {
   RECORD_SUMMARY_LABELS,
   getRecordSummaryFunctions,

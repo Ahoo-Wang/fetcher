@@ -319,10 +319,10 @@ RecordView 当前实例不再显示独立的“已编辑”标签，由保存按
 尽可能直接复用 shadcn 预制组件、默认主题及内置 variant / size，仅为布局与组合增加必要样式；过滤器采用 `InputGroup` 等现有组合，不重新设计按钮、输入框、修改标记和焦点样式。
 
 ```tsx
-<ViewPage definitionId="orders" host={host} />
+<ViewPage scopeKey={scopeKey} definitionId="orders" host={host} />
 ```
 
-`ViewPage` 执行页面加载、实例选择、查询和保存流程。三类视图组件也可与核心运行对象一起单独使用，供宿主组成自己的页面。
+`ViewPage` 执行页面加载、实例选择、查询和保存流程。 `scopeKey` 显式标识用户、租户与访问范围，引擎按 `[scopeKey, definitionId]` 建立生命周期；同作用域下替换宿主回调不丢弃草稿。本地定义与列表只用于初始化，显式更换 React key 可重新初始化。三类视图组件也可与核心运行对象一起单独使用，供宿主组成自己的页面。
 
 共用能力包括：按个人、公共 / 系统、公共 / 共享分组的实例选择器，实例名称与 [已编辑] 标记，保存视图、另存为、还原更改、刷新和配置入口。共用能力不要求三类视图使用相同的业务工具栏；保存视图的操作层级不能挤占记录视图的业务主操作。
 
@@ -406,7 +406,12 @@ const extensions: ViewExtensions = {
   rowActions: { orders: OrderRowActions },
 };
 
-<ViewPage definitionId="orders" host={host} extensions={extensions} />;
+<ViewPage
+  scopeKey={scopeKey}
+  definitionId="orders"
+  host={host}
+  extensions={extensions}
+/>;
 ```
 
 上述组件由宿主实现。定义使用 `recordActions.global: { name: 'orders' }`、`recordActions.table: { name: 'orders' }` 与 `recordActions.row: { name: 'orders' }` 引用对应组件。筛选器注册项提供 `component` 与支持的 `modes`；简单模式的兼容检查同时检查表达式结构和编辑器声明。单元格、全局操作、行操作和图表注册项直接提供组件。

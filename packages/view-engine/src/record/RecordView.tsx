@@ -12,7 +12,9 @@
  */
 
 import {
+  useCallback,
   useContext,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -45,7 +47,7 @@ import { FilterPanel } from '../filter/FilterPanel.js';
 import { FilterSelect } from '../filter/FilterSelect.js';
 import { cn } from '../lib/utils.js';
 import type { ViewEngine } from './ViewEngine.js';
-import type { ViewExtensions } from './recordReactTypes.js';
+import type { RecordTableProps, ViewExtensions } from './recordReactTypes.js';
 import { RecordRefreshControls } from './RecordRefreshControls.js';
 import { useViewExpansion, ViewExpansionContext } from './viewExpansion.js';
 import { RecordTable } from './RecordTable.js';
@@ -95,6 +97,53 @@ export function RecordView({
     Boolean(session && definition && !inheritedExpansion),
   );
   const expansion = inheritedExpansion ?? localExpansion;
+  const run = useCallback(
+    (action: () => void | Promise<void>) => {
+      if (!id) return;
+      setLocalError(null);
+      try {
+        void Promise.resolve(action()).catch(error =>
+          setLocalError({
+            id,
+            message: error instanceof Error ? error.message : '操作失败',
+          }),
+        );
+      } catch (error) {
+        setLocalError({
+          id,
+          message: error instanceof Error ? error.message : '操作失败',
+        });
+      }
+    },
+    [id],
+  );
+  const refresh = useCallback(
+    () => engine.refresh(id ?? undefined),
+    [engine, id],
+  );
+  const tableHandlers = useMemo<
+    Pick<
+      RecordTableProps,
+      | 'onQueryRetry'
+      | 'onSummaryRetry'
+      | 'onSelectionChange'
+      | 'onColumnsChange'
+      | 'onSortChange'
+    >
+  >(
+    () => ({
+      onQueryRetry: () => run(refresh),
+      onSummaryRetry: () => {
+        void engine.refreshSummary(id ?? undefined).catch(() => {});
+      },
+      onSelectionChange: keys =>
+        run(() => engine.setSelection(keys, id ?? undefined)),
+      onColumnsChange: columns =>
+        run(() => engine.setColumns(columns, id ?? undefined)),
+      onSortChange: sort => run(() => engine.setSort(sort, id ?? undefined)),
+    }),
+    [engine, id, refresh, run],
+  );
   if (!id || !session || !definition) return null;
   const { instance } = session;
   const appliedFilter = describeRecordFilter(
@@ -107,25 +156,8 @@ export function RecordView({
     session.total === null
       ? null
       : Math.max(1, Math.ceil(session.total / instance.config.pagination.size));
-  function run(action: () => void | Promise<void>) {
-    setLocalError(null);
-    try {
-      void Promise.resolve(action()).catch(error =>
-        setLocalError({
-          id: instance.id,
-          message: error instanceof Error ? error.message : '操作失败',
-        }),
-      );
-    } catch (error) {
-      setLocalError({
-        id: instance.id,
-        message: error instanceof Error ? error.message : '操作失败',
-      });
-    }
-  }
   const error =
     !session.queryError && localError?.id === id ? localError.message : null;
-  const refresh = () => engine.refresh(id);
   function renderActions(kind: 'global' | 'table') {
     const reference = definition?.recordActions?.[kind];
     if (!reference) return null;
@@ -179,10 +211,11 @@ export function RecordView({
         fields={definition.fields}
         onApply={filter => run(() => engine.applyFilter(filter, id))}
         draft={session.filterDraft}
+        appliedDraft={session.filterBaseline}
         onDraftChange={draft => engine.setFilterDraft(draft, id)}
         mode={session.filterMode}
         onModeChange={mode => engine.setFilterMode(mode, id)}
-        onPendingChange={pending => engine.setFilterPending(pending, id)}
+        onValidityChange={valid => engine.setFilterValidity(valid, id)}
         allowedOperators={definition.allowedOperators}
         editors={definition.filterEditors}
         extensions={extensions}
@@ -378,19 +411,13 @@ export function RecordView({
         instance={instance}
         rows={session.rows}
         queryError={session.queryError}
-        onQueryRetry={() => run(refresh)}
+        {...tableHandlers}
         pageSummary={session.pageSummary}
         allSummary={session.allSummary}
-        onSummaryRetry={() => {
-          void engine.refreshSummary(id).catch(() => {});
-        }}
         extensions={extensions}
         querying={querying}
         selectable={selectable}
         selectedRowKeys={session.selectedRowKeys}
-        onSelectionChange={keys => run(() => engine.setSelection(keys, id))}
-        onColumnsChange={columns => run(() => engine.setColumns(columns, id))}
-        onSortChange={sort => run(() => engine.setSort(sort, id))}
         refresh={refresh}
       />
       {!session.queryError && (

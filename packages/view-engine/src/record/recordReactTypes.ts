@@ -14,6 +14,7 @@
 import type { ComponentType } from 'react';
 import type { FieldSort, FilterExpression } from '@ahoo-wang/fetcher-wow';
 import type { FilterExtensions } from '../filter/filterReactTypes.js';
+import type { DeepReadonly } from '../lib/types.js';
 import type {
   RecordColumn,
   RecordData,
@@ -26,11 +27,11 @@ import type {
 } from './recordModel.js';
 
 export interface RecordActionsContext {
-  definition: ViewDefinition;
-  instance: ViewInstance;
-  filter: FilterExpression;
-  sort: readonly FieldSort[];
-  options: RendererReference['options'];
+  readonly definition: DeepReadonly<ViewDefinition>;
+  readonly instance: DeepReadonly<ViewInstance>;
+  readonly filter: DeepReadonly<FilterExpression>;
+  readonly sort: DeepReadonly<readonly FieldSort[]>;
+  readonly options: DeepReadonly<RendererReference['options']>;
   /** Bound to this instance, even if navigation changes while an action is running. */
   refresh(): Promise<void>;
 }
@@ -41,19 +42,19 @@ export interface GlobalActionsRendererProps extends RecordActionsContext {
 /** Table operations receive the current page selection and the applied query scope. */
 export type TableActionsRendererProps = GlobalActionsRendererProps;
 export interface RowActionsRendererProps extends RecordActionsContext {
-  record: RecordData;
+  readonly record: DeepReadonly<RecordData>;
   rowKey: RecordKey;
 }
 export interface CellRendererProps {
-  value: unknown;
-  record: RecordData;
-  rowKey: RecordKey;
-  index: number;
-  field: ViewFieldDefinition;
-  column: RecordColumn;
-  definition: ViewDefinition;
-  instance: ViewInstance;
-  options: RendererReference['options'];
+  readonly value: unknown;
+  readonly record: DeepReadonly<RecordData>;
+  readonly rowKey: RecordKey;
+  readonly index: number;
+  readonly field: DeepReadonly<ViewFieldDefinition>;
+  readonly column: DeepReadonly<RecordColumn>;
+  readonly definition: DeepReadonly<ViewDefinition>;
+  readonly instance: DeepReadonly<ViewInstance>;
+  readonly options: DeepReadonly<RendererReference['options']>;
 }
 export interface ViewExtensions extends FilterExtensions {
   cells?: Readonly<Record<string, ComponentType<CellRendererProps>>>;

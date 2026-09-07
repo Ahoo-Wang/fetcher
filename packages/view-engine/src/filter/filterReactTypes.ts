@@ -14,6 +14,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import type { FilterExpression, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import type { FilterOption } from './filterTypes.js';
+import type { DeepReadonly } from '../lib/types.js';
 import type {
   FilterDraftNode,
   FilterEditorReference,
@@ -24,13 +25,13 @@ import type {
 
 /** UI-library-independent value editor. Inputs are read-only snapshots, not applied query state. */
 export interface FilterEditorProps {
-  node: Readonly<FilterExpression> | undefined;
+  node: DeepReadonly<FilterExpression> | undefined;
   operator: FilterOperator;
-  field?: Readonly<FilterFieldDefinition>;
-  fields: readonly FilterFieldDefinition[];
+  field?: DeepReadonly<FilterFieldDefinition>;
+  fields: DeepReadonly<readonly FilterFieldDefinition[]>;
   mode: FilterMode;
   context?: unknown;
-  options?: Readonly<Record<string, FilterJsonValue>>;
+  options?: DeepReadonly<Record<string, FilterJsonValue>>;
   disabled: boolean;
   /** Publish a valid node for the same binding. Undefined clears a valued node, or removes a value-free node. Never queries. */
   onChange(node: FilterExpression | undefined): void;
@@ -42,7 +43,7 @@ export interface FilterComponentProps extends FilterEditorProps {
   /** Stable DOM-safe identity for this mounted panel/node; never persist it. */
   readonly id: string;
   /** Labels and capability restrictions for the current binding and mode. */
-  readonly operators: readonly FilterOption<FilterOperator>[];
+  readonly operators: DeepReadonly<readonly FilterOption<FilterOperator>[]>;
   readonly errors: readonly string[];
   /** Connect inputs with aria-describedby when the panel displays an error. */
   readonly errorId?: string;
@@ -58,7 +59,7 @@ export interface FilterEditorRegistration {
   render?: 'value';
   component: ComponentType<FilterEditorProps>;
   modes: readonly FilterMode[];
-  supports?: (node: Readonly<FilterExpression> | undefined) => boolean;
+  supports?: (node: DeepReadonly<FilterExpression> | undefined) => boolean;
 }
 export interface FilterComponentRegistration extends Omit<
   FilterEditorRegistration,
@@ -92,6 +93,10 @@ export interface FilterPanelProps {
   /** Optional controlled transient tree; keep it per view instance to preserve unmounted editors. */
   draft?: FilterDraftNode;
   onDraftChange?(draft: FilterDraftNode): void;
+  /** Controlled last-applied editor tree, including unset controls. */
+  appliedDraft?: FilterDraftNode;
+  /** Reports local buffer and editor validity; pending remains derived. */
+  onValidityChange?(valid: boolean): void;
   allowedOperators?: readonly FilterOperator[];
   extensions?: FilterExtensions;
   editors?: Readonly<Partial<Record<FilterOperator, FilterEditorReference>>>;

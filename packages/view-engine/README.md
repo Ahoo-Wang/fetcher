@@ -9,17 +9,41 @@ import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
 import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
-export function OrderPage({ host }: { host: ViewHost }) {
-  return <ViewPage definitionId="orders" host={host} selectable />;
+export function OrderPage({
+  host,
+  scopeKey,
+}: {
+  host: ViewHost;
+  scopeKey: string;
+}) {
+  return (
+    <ViewPage
+      scopeKey={scopeKey}
+      definitionId="orders"
+      host={host}
+      selectable
+    />
+  );
 }
 ```
 
 `ViewHost` loads the definition and complete instance list, resolves a configured
 Wow query source, supplies permissions, and optionally saves/creates instances.
 For local data, pass `definition` and `instances: {instances, defaultInstanceId}`
-to the page. Keep input references stable, and recreate the page for a different
-user/tenant/access scope. `ViewPage` owns the engine lifecycle; use
+to the page. Required `scopeKey` identifies the user/tenant/access scope; change
+it when that scope changes. The engine lives for `[scopeKey, definitionId]`.
+Same-scope host callbacks and capabilities update without discarding drafts.
+Local definition/list values initialize that lifetime; changing their object
+references does not reload them. Change the React key to explicitly reinitialize.
+`ViewPage` owns the engine lifecycle; use
 `ViewPageContent` or `RecordView` with an existing engine when the host owns it.
+
+The engine derives filter pending state from `filterDraft`, its last-applied
+`filterBaseline`, and reported editor validity (`filterValid`). `setFilterDraft(draft, id?, valid?)`
+can atomically publish a draft and local validity. `setFilterValidity(valid, id?)`
+reports an invalid local buffer; reporting true cannot clear a changed draft.
+Apply or Undo must return it to an applied baseline before saving. Unset controls
+remain part of that baseline. The old `setFilterPending` setter has been removed.
 
 The table uses shadcn Table + TanStack Table with server sorting and paged or
 forward cursor queries. Resize at table-header edges by dragging, with keyboard arrows as an accessible alternative. Reorder columns by dragging their handles within the same
@@ -88,6 +112,12 @@ show the empty-result icon, zero-record claims or pagination. Background failure
 retain existing rows and label them as the previous result. Auto-refresh tooltips
 explain pauses and what will resume the countdown.
 
+Summary calculation/query helpers consume `RecordSummaryMetric[]` (`id`, `field`,
+`function`) independently of table settings. Use
+`getRecordSummaryMetrics(instance.config.presentation)` to adapt a table instance.
+Common instance metadata, record query settings and table presentation are named
+separately as `ViewInstanceMetadata`, `RecordQueryConfig` and `RecordTablePresentation`.
+
 The field bound to `definition.rowKey` always stays at the left edge, and action
 columns at the right edge. Their sides cannot be changed by saved preferences or
 column settings. An unpinned field can be pinned only when exactly one adjacent settings row is
@@ -101,6 +131,9 @@ column. Pin/order changes do not query records or aggregates.
 
 `extensions.cells`, `extensions.globalActions`, `extensions.tableActions`, `extensions.rowActions`, and
 `extensions.filters` register local React components referenced by JSON names.
+Extension inputs use exported `DeepReadonly<T>` snapshots. Copy the fields needed
+into a component's own form state, then submit changes through host commands or
+engine methods. Unsubmitted filter edits do not rerender the record-cell boundary.
 Definitions use `recordActions.global`, `.table` and `.row` to choose their action
 areas (for example, create, batch process and inspect record). Existing global
 registrations retain their location; move batch components to `tableActions` explicitly.

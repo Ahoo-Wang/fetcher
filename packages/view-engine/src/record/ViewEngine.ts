@@ -18,7 +18,9 @@ import {
   isSimpleFilter,
 } from '../filter/filterCore.js';
 import type { FilterDraftNode, FilterMode } from '../filter/filterModel.js';
-import { sameFilterState } from '../filter/filterTree.js';
+import { isFilterDraftPending, sameFilterState } from '../filter/filterTree.js';
+import { getRecordRefreshBlockReason } from './recordRefreshPolicy.js';
+import { getRecordSummaryMetrics } from './recordPresentation.js';
 import type {
   RecordColumn,
   RecordQuerySource,
@@ -44,7 +46,6 @@ import {
   calculateRecordSummary,
   createRecordSummaryQuery,
   EMPTY_RECORD_SUMMARY,
-  getRecordSummaryColumns,
   readRecordSummaryResult,
 } from './recordSummary.js';
 
@@ -93,6 +94,8 @@ function sessionFor(instance: ViewInstance): RecordSession {
     instance,
     dirty: false,
     filterDraft,
+    filterBaseline: filterDraft,
+    filterValid: true,
     filterMode: isSimpleFilter(filterDraft) ? 'simple' : 'advanced',
     filterPending: false,
     page: 1,
@@ -119,6 +122,11 @@ function content({ title, scope, config }: ViewInstance) {
 function edited(session: RecordSession): RecordSession {
   return {
     ...session,
+    filterPending: isFilterDraftPending(
+      session.filterDraft,
+      session.filterBaseline,
+      session.filterValid,
+    ),
     dirty: !sameFilterState(
       content(session.instance),
       content(session.baseline),
@@ -250,28 +258,30 @@ export class ViewEngine {
   }
 
   private summaryKey(session: RecordSession): string | undefined {
-    const columns = getRecordSummaryColumns(
-      session.instance.config.presentation.table.columns,
+    const metrics = getRecordSummaryMetrics(
+      session.instance.config.presentation,
     );
-    if (!columns.length) return undefined;
+    if (!metrics.length) return undefined;
     return JSON.stringify([
       session.instance.config.filter,
-      columns.map(({ id, field, summary }) => [id, field, summary]),
+      metrics.map(({ id, field, function: fn }) => [id, field, fn]),
     ]);
   }
 
   private updatePageSummary(id: string): void {
     const session = this.session(id);
-    const columns = session.instance.config.presentation.table.columns;
+    const metrics = getRecordSummaryMetrics(
+      session.instance.config.presentation,
+    );
     let pageSummary: RecordSummaryResult = EMPTY_RECORD_SUMMARY;
-    if (getRecordSummaryColumns(columns).length) {
+    if (metrics.length) {
       if (session.queryStatus === 'loading')
         pageSummary = { status: 'loading', values: {}, error: null };
       else if (session.queryStatus === 'success') {
         try {
           pageSummary = {
             status: 'success',
-            values: calculateRecordSummary(session.rows, columns),
+            values: calculateRecordSummary(session.rows, metrics),
             error: null,
           };
         } catch (error) {
@@ -320,7 +330,9 @@ export class ViewEngine {
     this.summaryKeys.set(id, key);
     const current = () =>
       this.current(lifecycle) && this.summaryQueries.get(id) === controller;
-    const columns = session.instance.config.presentation.table.columns;
+    const metrics = getRecordSummaryMetrics(
+      session.instance.config.presentation,
+    );
     this.patch(id, {
       allSummary: { status: 'loading', values: {}, error: null },
     });
@@ -332,7 +344,7 @@ export class ViewEngine {
         throw new Error('数据源未提供 aggregate，无法汇总所有记录');
       const result = await source.aggregate(
         structuredClone(
-          createRecordSummaryQuery(session.instance.config.filter, columns),
+          createRecordSummaryQuery(session.instance.config.filter, metrics),
         ),
         undefined,
         controller,
@@ -341,7 +353,7 @@ export class ViewEngine {
       this.patch(id, {
         allSummary: {
           status: 'success',
-          values: copy(readRecordSummaryResult(result, columns)),
+          values: copy(readRecordSummaryResult(result, metrics)),
           error: null,
         },
       });
@@ -571,6 +583,8 @@ export class ViewEngine {
               config: latest.instance.config,
             },
             filterDraft: latest.filterDraft,
+            filterBaseline: latest.filterBaseline,
+            filterValid: latest.filterValid,
             filterMode: latest.filterMode,
             filterPending: latest.filterPending,
           });
@@ -765,6 +779,7 @@ export class ViewEngine {
       sameFilterState(compiled.expression, expression)
         ? session.filterDraft
         : createFilterDraft(expression);
+    const editingBaseline = copy(filterDraft);
     this.updateInstance(
       session,
       {
@@ -772,8 +787,9 @@ export class ViewEngine {
         config: { ...session.instance.config, filter: expression },
       },
       {
-        filterDraft: copy(filterDraft),
-        filterPending: false,
+        filterDraft: editingBaseline,
+        filterBaseline: editingBaseline,
+        filterValid: true,
         page: 1,
         cursor: null,
         filterMode: isSimpleFilter(filterDraft)
@@ -785,18 +801,26 @@ export class ViewEngine {
     await this.query(session.instance.id);
   }
 
-  setFilterDraft(draft: FilterDraftNode, id?: string): void {
+  setFilterDraft(draft: FilterDraftNode, id?: string, valid?: boolean): void {
     const session = this.session(id);
-    if (sameFilterState(session.filterDraft, draft)) return;
-    this.patch(session.instance.id, { filterDraft: copy(draft) });
+    const nextValid = valid === undefined ? session.filterValid : valid;
+    if (typeof nextValid !== 'boolean')
+      throw new Error('筛选有效性必须是布尔值');
+    if (
+      sameFilterState(session.filterDraft, draft) &&
+      session.filterValid === nextValid
+    )
+      return;
+    this.patch(session.instance.id, {
+      filterDraft: copy(draft),
+      filterValid: nextValid,
+    });
   }
 
-  setFilterPending(pending: boolean, id?: string): void {
+  setFilterValidity(valid: boolean, id?: string): void {
+    if (typeof valid !== 'boolean') throw new Error('筛选有效性必须是布尔值');
     const session = this.session(id);
-    if (typeof pending !== 'boolean')
-      throw new Error('筛选待查询状态必须是布尔值');
-    if (session.filterPending === pending) return;
-    this.patch(session.instance.id, { filterPending: pending });
+    this.setFilterDraft(session.filterDraft, session.instance.id, valid);
   }
 
   setFilterMode(mode: FilterMode, id?: string): void {
@@ -905,18 +929,7 @@ export class ViewEngine {
   ): Promise<void> {
     const session = this.session(id);
     if (options?.background) {
-      if (
-        session.queryStatus !== 'success' ||
-        session.allSummary.status === 'loading' ||
-        session.refreshing ||
-        session.filterPending ||
-        session.selectedRowKeys.length ||
-        session.writeStatus !== 'idle' ||
-        session.requiresReload ||
-        (session.instance.config.pagination.mode === 'cursor' &&
-          session.page > 1)
-      )
-        return;
+      if (getRecordRefreshBlockReason(session)) return;
       await this.query(session.instance.id, true);
       return;
     }
@@ -933,7 +946,8 @@ export class ViewEngine {
     this.patch(session.instance.id, {
       instance: session.baseline,
       filterDraft,
-      filterPending: false,
+      filterBaseline: filterDraft,
+      filterValid: true,
       filterMode: isSimpleFilter(filterDraft) ? session.filterMode : 'advanced',
       page: 1,
       cursor: null,
@@ -1245,6 +1259,8 @@ export class ViewEngine {
             ...created,
             instance: { ...saved, config: latest.instance.config },
             filterDraft: latest.filterDraft,
+            filterBaseline: latest.filterBaseline,
+            filterValid: latest.filterValid,
             filterMode: latest.filterMode,
             filterPending: latest.filterPending,
           });

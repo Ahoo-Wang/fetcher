@@ -30,6 +30,7 @@ import {
 } from '../components/ui/dropdown-menu.js';
 import type { ViewEngine } from './ViewEngine.js';
 import type { RecordSession } from './recordModel.js';
+import { getRecordRefreshBlockReason } from './recordRefreshPolicy.js';
 import { cn } from '../lib/utils.js';
 
 const INTERVALS = [
@@ -38,6 +39,20 @@ const INTERVALS = [
   { value: 60000, label: '1 分钟' },
   { value: 300000, label: '5 分钟' },
 ];
+const PAUSE_MESSAGES: Record<
+  NonNullable<ReturnType<typeof getRecordRefreshBlockReason>>,
+  string
+> = {
+  reload: '视图已变化，重新加载后恢复。',
+  error: '查询失败，重试成功后恢复。',
+  write: '正在保存视图，完成后恢复。',
+  filter: '筛选尚未查询，查询或撤销修改后恢复。',
+  selection: '已选择记录，取消选择后恢复。',
+  query: '等待查询完成后恢复。',
+  summary: '等待所有汇总完成后恢复。',
+  cursor: '游标后续页暂停，点击查询返回第一页后恢复。',
+  refresh: '正在刷新当前结果。',
+};
 
 export function RecordRefreshControls({
   engine,
@@ -58,26 +73,15 @@ export function RecordRefreshControls({
   const statusId = useId();
   const id = session.instance.id;
   const querying = session.queryStatus === 'loading' || session.refreshing;
-  const pauseReason = session.requiresReload
-    ? '视图已变化，重新加载后恢复。'
-    : session.queryStatus === 'error'
-      ? '查询失败，重试成功后恢复。'
+  const reason = getRecordRefreshBlockReason(session);
+  const pauseReason =
+    reason === 'reload' || reason === 'error'
+      ? PAUSE_MESSAGES[reason]
       : paused
         ? '业务操作进行中，完成后恢复。'
-        : session.writeStatus !== 'idle'
-          ? '正在保存视图，完成后恢复。'
-          : session.filterPending
-            ? '筛选尚未查询，查询或撤销修改后恢复。'
-            : session.selectedRowKeys.length > 0
-              ? '已选择记录，取消选择后恢复。'
-              : session.queryStatus !== 'success'
-                ? '等待查询完成后恢复。'
-                : session.allSummary.status === 'loading'
-                  ? '等待所有汇总完成后恢复。'
-                  : session.instance.config.pagination.mode === 'cursor' &&
-                      session.page > 1
-                    ? '游标后续页暂停，点击查询返回第一页后恢复。'
-                    : null;
+        : reason
+          ? PAUSE_MESSAGES[reason]
+          : null;
   const suspended = pauseReason !== null;
   useEffect(() => {
     const doc = root.current?.ownerDocument;

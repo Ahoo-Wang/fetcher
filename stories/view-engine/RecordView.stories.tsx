@@ -738,6 +738,7 @@ function Scenario({ appearance, ...options }: DemoArgs & ScenarioOptions) {
       }}
     >
       <ViewPage
+        scopeKey="storybook-user"
         definitionId={definition.id}
         host={runtime.host}
         definition={options.local ? definition : undefined}

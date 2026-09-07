@@ -94,21 +94,30 @@ export function orderRecordColumns(
   }
   return [...columns].sort((left, right) => priority(left) - priority(right));
 }
-export interface RecordViewConfig {
+export interface RecordQueryConfig {
   filter: FilterExpression;
   sort: FieldSort[];
   pagination: { mode: 'paged' | 'cursor'; size: number };
-  presentation: { layout: 'table'; table: { columns: RecordColumn[] } };
 }
-/** This release implements record instances. Other view kinds will add their own config contracts. */
-export interface RecordViewInstance {
+export interface RecordTablePresentation {
+  layout: 'table';
+  table: { columns: RecordColumn[] };
+}
+export interface RecordViewConfig extends RecordQueryConfig {
+  presentation: RecordTablePresentation;
+}
+/** Metadata shared by saved view kinds; query and presentation belong to their kind. */
+export interface ViewInstanceMetadata {
   id: string;
   definitionId: string;
   title: string;
-  kind: 'record';
   scope: ViewScope;
-  config: RecordViewConfig;
   revision?: string;
+}
+/** This release implements record instances. Other view kinds add their own config contracts. */
+export interface RecordViewInstance extends ViewInstanceMetadata {
+  kind: 'record';
+  config: RecordViewConfig;
 }
 export type ViewInstance = RecordViewInstance;
 export interface ViewInstanceList {
@@ -173,6 +182,10 @@ export interface RecordSession {
   readonly instance: ViewInstance;
   readonly dirty: boolean;
   readonly filterDraft: FilterDraftNode;
+  /** Last applied editor tree, including intentionally unset controls. */
+  readonly filterBaseline: FilterDraftNode;
+  /** Validity of local editor buffers not represented in the Wow expression. */
+  readonly filterValid: boolean;
   readonly filterMode: FilterMode;
   readonly filterPending: boolean;
   readonly page: number;
@@ -211,6 +224,12 @@ export const RECORD_SUMMARY_LABELS = {
   MAX: '最大值',
 } as const;
 export type RecordSummaryFunction = keyof typeof RECORD_SUMMARY_LABELS;
+/** A query metric independent of a table column or other presentation settings. */
+export interface RecordSummaryMetric {
+  id: string;
+  field: string;
+  function: RecordSummaryFunction;
+}
 export function formatRecordNumber(
   value: number,
   field: ViewFieldDefinition,

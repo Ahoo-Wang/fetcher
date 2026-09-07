@@ -62,8 +62,10 @@ Import components from `@ahoo-wang/fetcher-view-engine/react` and compiled style
 | `fields`                        | Required field definitions for this root scope; array fields carry their element-relative definitions.                                                                                            |
 | `onApply(expression)`           | Called exactly when Query applies a complete valid expression. The host synchronously updates `value`, then owns asynchronous requests and cancellation.                                          |
 | `mode`, `onModeChange(mode)`    | Optional controlled simple/advanced mode. Otherwise initialized from the expression. Complex loaded trees safely display advanced mode; incompatible or incomplete trees cannot switch to simple. |
-| `onPendingChange(pending)`      | Reports unsubmitted edits, including custom-editor invalid state; host uses it for view-save guards. Separate from a saved view's dirty flag.                                                     |
+| `onPendingChange(pending)`      | Observes unsubmitted edits, including custom-editor invalid state. ViewEngine derives its own save guards from the draft and validity. Separate from a saved view's dirty flag.                   |
 | `draft`, `onDraftChange(draft)` | Optional controlled transient draft tree; parent can retain built-in buffers per instance. Otherwise managed locally.                                                                             |
+| `appliedDraft`                  | Optional controlled last-applied editor baseline, including unset controls. ViewEngine consumers pass `session.filterBaseline`.                                                                   |
+| `onValidityChange(valid)`       | Reports aggregate editor/buffer validity. ViewEngine consumers call `setFilterValidity`; reporting true cannot clear an unsubmitted draft.                                                        |
 | `allowedOperators`              | Optional global operator allowlist, including logical and root operators.                                                                                                                         |
 | `extensions`                    | Per-panel `{filters: Record<string, FilterRegistration>}` map; no global registry.                                                                                                                |
 | `editors`                       | Optional operator-to-editor-reference map; field references take priority.                                                                                                                        |
@@ -119,7 +121,7 @@ const fields: FilterFieldDefinition[] = [
 
 `FilterRegistration` is a union of `FilterEditorRegistration` (`render?: 'value'`, the backward-compatible default) and `FilterComponentRegistration` (`render: 'filter'`). Both contain `component`, supported `modes`, and optional `supports(node)`. The former composes inside the default frame; the latter replaces the complete non-container body with any React component, including its label, operator/value UI and clear/remove controls. Resolution is field reference → operator reference → built-in. A registered editor that does not support the mode/node falls through; a missing explicit name or failing compatibility check is an error, never a silent fallback.
 
-`FilterEditorProps` supplies a cloned readonly `node: FilterExpression | undefined`, `operator`, readonly `field`, current-scope `fields`, `mode`, `context`, JSON `options`, `disabled`, `onChange(node)` and `onValidityChange(valid, message?)`. Publish only valid Wow nodes. For a value-dependent predicate, `onChange(undefined)` clears its value while retaining the field/operator/options; for a value-free predicate it removes the condition. Invalid local input must notify `onValidityChange(false)` so old valid output cannot be queried, including when the supplied message is empty. A later valid callback cannot erase an invalid-output/field-binding error; publish a valid node to resolve that error.
+`FilterEditorProps` supplies a cloned `node: DeepReadonly<FilterExpression> | undefined`, `operator`, recursively readonly `field`, current-scope `fields`, `mode`, `context`, JSON `options`, `disabled`, `onChange(node)` and `onValidityChange(valid, message?)`. Publish only valid Wow nodes. For a value-dependent predicate, `onChange(undefined)` clears its value while retaining the field/operator/options; for a value-free predicate it removes the condition. Invalid local input must notify `onValidityChange(false)` so old valid output cannot be queried, including when the supplied message is empty. A later valid callback cannot erase an invalid-output/field-binding error; publish a valid node to resolve that error.
 
 Editor references apply to non-container nodes; logical and element containers use the built-in tree controls. Output cannot change the bound field, escape the current scope or turn a non-container editor into a container. Rendering errors are contained per editor, block Query, and offer an explicit built-in fallback. Callbacks from an editor that has been cleared, replaced or unmounted are permanently ignored, including when that component later returns. A value-dependent `onChange(undefined)` remounts that editor to discard its old local buffer and callbacks; custom editors provide their own clear affordance. The built-in `FilterValueEditor` is also exported with `{node, field?, fields, disabled?, onChange(node)}` for hosts composing raw draft editors.
 
@@ -412,21 +414,30 @@ when invoking a request; backend authorization remains authoritative.
 
 `getSnapshot` is referentially stable until state changes; `subscribe` returns
 an unsubscribe function. Snapshots isolate and freeze JSON data. Each session
-keeps baseline and current instance, dirty flag, transient filter draft/mode/
-pending flag, rows, total, page/cursor, selected keys, `pageSummary`, `allSummary`, and independent query/write
+keeps baseline and current instance, dirty flag, transient filter draft/mode,
+`filterBaseline` (last-applied editor tree), `filterValid` (reported local editor validity),
+derived `filterPending`, rows, total, page/cursor, selected keys, `pageSummary`, `allSummary`, and independent query/write
 status and error. Runtime state is never serialized into instance config.
 
-All methods with an optional final instance ID default to the selected instance:
+Methods with an optional instance ID default to the selected instance:
 
 - `load()`, `selectInstance(id)`, `reloadInstance(id?)`, `canReloadInstance(id?)`, `refresh(id?, {background?: boolean})`, `dispose()`.
-- `applyFilter(expression,id?)`, `setFilterDraft(draft,id?)`,
-  `setFilterPending(pending,id?)`, `setFilterMode(mode,id?)`.
+- `applyFilter(expression,id?)`, `setFilterDraft(draft,id?,valid?)`,
+  `setFilterValidity(valid,id?)`, `setFilterMode(mode,id?)`.
 - `setSort(sort,id?)`, `setColumns(columns,id?)`, `setPage(index,id?)`,
   `setPageSize(size,id?)`, `nextPage(id?)`, `setSelection(keys,id?)`.
 - `refreshSummary(id?)` (async).
 - `setTitle(title,id?)`, `restore(id?)`, `save(id?)`,
   `saveAs({title,scope},id?)`, `deleteInstance(id?)`, `renameInstance(title,id?)`, `getPermissions(id?)`.
 - `canReorderInstances()`, `reorderInstances(instanceIds)` save the current user's navigation order.
+
+`filterPending` is always derived from draft/baseline inequality or invalid editor
+input. `setFilterDraft` can atomically update both facts; omitted `valid` retains
+the previous local validity. `setFilterValidity(true)` cannot clear a changed
+draft. The old `setFilterPending` setter is removed. Apply records the submitted
+editor baseline (including unset controls); Restore rebuilds it from the saved
+configuration. Copy/reload reconciliation preserves each session's matching editor
+baseline and validity. These invariants also apply without React.
 
 Async operations return `Promise<void>`; errors are reflected in state and
 reject the returned promise. UI consumers must handle rejections. Superseded
@@ -570,12 +581,17 @@ Aborted/old responses cannot overwrite newer results. Removing all summary metri
 cancels pending aggregation. Separate record and aggregate requests do not promise
 an atomic server snapshot.
 
-The core exports `calculateRecordSummary(rows, columns)`,
-`createRecordSummaryQuery(filter, columns)` and
-`readRecordSummaryResult(response, columns)`. Query/result helpers use aliases
-`summary0`, `summary1`, … in stable column-ID/function order, independent of
-column presentation or selection-array order. Pass the same validated column
-bindings to both; query creation requires 1–64 metrics. `RECORD_SUMMARY_LABELS`
+The core exports `calculateRecordSummary(rows, metrics)`,
+`createRecordSummaryQuery(filter, metrics)` and
+`readRecordSummaryResult(response, metrics)`. Each `RecordSummaryMetric` is
+`{id: string, field: string, function: 'SUM' | 'AVG' | 'MIN' | 'MAX'}` without
+table display settings. Empty/malformed IDs or fields, duplicate ID/function
+pairs and more than 64 metrics are rejected. Query construction requires at
+least one metric. `getRecordSummaryMetrics(instance.config.presentation)` adapts
+the implemented table presentation to these query inputs. Query/result helpers use aliases
+`summary0`, `summary1`, … in stable metric-ID/function order, independent of
+column presentation or selection-array order. Pass the same validated metric
+bindings to both. `RECORD_SUMMARY_LABELS`
 contains the default function labels.
 
 Standalone `RecordTable` accepts controlled `pageSummary`, `allSummary` and
@@ -605,14 +621,27 @@ or business-action renderers.
 
 ### React composition and business extensions
 
-`ViewPage` accepts `ViewEngineOptions` plus `extensions`, `filterContext`,
+`ViewPage` accepts `ViewEngineOptions`, required nonempty `scopeKey`, plus `extensions`, `filterContext`,
 `selectable` (default false), `autoRefreshPaused` (false), `className`, and `initialSidebarCollapsed` (false).
-It owns creation/loading/disposal, including React StrictMode. Keep the host,
-local definition and local list references stable. `ViewPageContent` takes an
+It owns creation/loading/disposal, including React StrictMode. `[scopeKey, definitionId]`
+identifies the lifetime; change scopeKey when user, tenant or access scope changes.
+Same-scope host callbacks and optional capabilities update after commit without
+recreating the engine. Local definition and list are initialization inputs;
+new object references do not reload them. Change the React key to explicitly
+reinitialize local data. `ViewPageContent` takes an
 already-owned `engine` with the same visual props and leaves lifecycle to the
 caller. `RecordView` renders only the selected record instance's business
 operations, FilterPanel, column controls, table and pagination. The lower-level
 `RecordTable` and `RecordColumnSettings` can also be controlled directly.
+`ViewInstanceMetadata`, `RecordQueryConfig` and `RecordTablePresentation` name
+the common metadata, record query and implemented presentation boundaries.
+`RecordViewConfig` combines the last two; `ViewInstance` currently remains the
+record kind. These named boundaries do not claim additional view renderers.
+The record table is a memoized result boundary; RecordView supplies stable
+callbacks so unsubmitted draft edits do not rerender record cells. Its widths,
+effective pinning, filler and summary-label region are computed in a pure internal
+layout module. The engine and auto-refresh control share one domain block policy;
+document visibility and focus remain React concerns.
 RecordView's global toolbar orders the title, current instance and Save split button before its global actions.
 `toolbarStart?: ReactNode` replaces its default definition heading with leading
 content; ViewPage owns this slot for its Save split button and instance navigation.
@@ -684,6 +713,11 @@ or unmount. In an iframe it expands within that frame.
 `rowActions`, each a local name-to-React-component map. Custom components may use
 any React UI. Explicit missing names and renderer failures are visible and
 isolated per rendering area.
+
+Core exports `DeepReadonly<T>`. Extension records, instances, definitions, columns,
+filters, field metadata and JSON options use recursive readonly inputs. Components
+copy required fields into their own form state and submit through host commands
+or engine methods; direct writes to a snapshot are compile-time errors.
 
 | Renderer props               | Values                                                                                                                                                                                             |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

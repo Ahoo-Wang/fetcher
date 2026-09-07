@@ -17,62 +17,73 @@ import {
   type FilterExpression,
 } from '@ahoo-wang/fetcher-wow';
 import type {
-  RecordColumn,
+  RecordSummaryMetric,
   RecordData,
   RecordSummaryFunction,
   RecordSummaryResult,
 } from './recordModel.js';
 import { readRecordValue } from './recordValidation.js';
+import { RECORD_SUMMARY_LABELS } from './recordModel.js';
 
-type SummaryColumn = Omit<
-  Extract<RecordColumn, { kind: 'field' }>,
-  'summary'
-> & {
-  summary: RecordSummaryFunction;
-};
 export const EMPTY_RECORD_SUMMARY: RecordSummaryResult = {
   status: 'idle',
   values: {},
   error: null,
 };
-/** Stable ordering keeps server aliases and query identity independent of table presentation. */
-export function getRecordSummaryColumns(
-  columns: readonly RecordColumn[],
-): SummaryColumn[] {
-  return columns
-    .flatMap(column =>
-      column.kind === 'field'
-        ? (column.summary ?? []).map(summary => ({ ...column, summary }))
-        : [],
+/** Validate public query input and keep aliases independent of presentation ordering. */
+function orderedMetrics(
+  metrics: readonly RecordSummaryMetric[],
+): RecordSummaryMetric[] {
+  if (!Array.isArray(metrics) || metrics.length > 64)
+    throw new Error('最多配置 64 个汇总指标');
+  const seen = new Set<string>();
+  for (const metric of metrics) {
+    if (
+      !metric ||
+      typeof metric.id !== 'string' ||
+      !metric.id.trim() ||
+      typeof metric.field !== 'string' ||
+      !metric.field.trim() ||
+      !Object.prototype.hasOwnProperty.call(
+        RECORD_SUMMARY_LABELS,
+        metric.function,
+      )
     )
-    .sort(
-      (a, b) => a.id.localeCompare(b.id) || a.summary.localeCompare(b.summary),
-    );
+      throw new Error('汇总指标需要有效的 ID、字段与统计函数');
+    const key = JSON.stringify([metric.id, metric.function]);
+    if (seen.has(key)) throw new Error('汇总指标重复');
+    seen.add(key);
+  }
+  return [...metrics].sort(
+    (left, right) =>
+      left.id.localeCompare(right.id) ||
+      left.function.localeCompare(right.function),
+  );
 }
 /** Current-page values use the loaded record snapshot, never a second record query. */
 export function calculateRecordSummary(
   rows: readonly RecordData[],
-  columns: readonly RecordColumn[],
+  metrics: readonly RecordSummaryMetric[],
 ): RecordSummaryResult['values'] {
   const result: Record<
     string,
     Partial<Record<RecordSummaryFunction, number | null>>
   > = Object.create(null);
-  for (const column of getRecordSummaryColumns(columns)) {
+  for (const metric of orderedMetrics(metrics)) {
     const values: number[] = [];
     for (const row of rows) {
-      const value = readRecordValue(row, column.field);
+      const value = readRecordValue(row, metric.field);
       if (value === null || value === undefined) continue;
       if (typeof value !== 'number' || !Number.isFinite(value))
-        throw new Error(`${column.field} 包含非有限数值，无法汇总`);
+        throw new Error(`${metric.field} 包含非有限数值，无法汇总`);
       values.push(value);
     }
     if (!values.length) {
-      (result[column.id] ??= {})[column.summary] = null;
+      (result[metric.id] ??= {})[metric.function] = null;
       continue;
     }
     let value: number;
-    switch (column.summary) {
+    switch (metric.function) {
       case 'SUM':
         value = values.reduce((sum, item) => sum + item, 0);
         break;
@@ -92,19 +103,19 @@ export function calculateRecordSummary(
         throw new Error('汇总函数不支持');
     }
     if (!Number.isFinite(value))
-      throw new Error(`${column.field} 汇总结果超出数值范围`);
-    (result[column.id] ??= {})[column.summary] = value;
+      throw new Error(`${metric.field} 汇总结果超出数值范围`);
+    (result[metric.id] ??= {})[metric.function] = value;
   }
   return result;
 }
 export function createRecordSummaryQuery(
   filter: FilterExpression,
-  columns: readonly RecordColumn[],
+  metrics: readonly RecordSummaryMetric[],
 ): AggregationQuery {
-  const metrics = getRecordSummaryColumns(columns).map((column, index) => {
+  const expressions = orderedMetrics(metrics).map((metric, index) => {
     const alias = `summary${index}`;
-    const expression = aggregation.field(column.field);
-    switch (column.summary) {
+    const expression = aggregation.field(metric.field);
+    switch (metric.function) {
       case 'SUM':
         return aggregation.sum(expression, alias);
       case 'AVG':
@@ -117,14 +128,14 @@ export function createRecordSummaryQuery(
         throw new Error('汇总函数不支持');
     }
   });
-  const [first, ...rest] = metrics;
-  if (!first || metrics.length > 64) throw new Error('汇总指标需要 1–64 项');
+  const [first, ...rest] = expressions;
+  if (!first) throw new Error('汇总指标需要 1–64 项');
   return { filter, metrics: [first, ...rest] };
 }
 /** Wow's ungrouped contract always returns one row; missing aliases are errors, not zero. */
 export function readRecordSummaryResult(
   value: unknown,
-  columns: readonly RecordColumn[],
+  metrics: readonly RecordSummaryMetric[],
 ): RecordSummaryResult['values'] {
   if (
     !Array.isArray(value) ||
@@ -138,17 +149,17 @@ export function readRecordSummaryResult(
     string,
     Partial<Record<RecordSummaryFunction, number | null>>
   > = Object.create(null);
-  getRecordSummaryColumns(columns).forEach((column, index) => {
+  orderedMetrics(metrics).forEach((metric, index) => {
     const alias = `summary${index}`;
     if (!Object.prototype.hasOwnProperty.call(value[0], alias))
       throw new Error(`汇总结果缺少 ${alias}`);
-    const metric: unknown = value[0][alias];
+    const resultValue: unknown = value[0][alias];
     if (
-      metric !== null &&
-      (typeof metric !== 'number' || !Number.isFinite(metric))
+      resultValue !== null &&
+      (typeof resultValue !== 'number' || !Number.isFinite(resultValue))
     )
       throw new Error(`汇总结果 ${alias} 必须是合法数值`);
-    (result[column.id] ??= {})[column.summary] = metric as number | null;
+    (result[metric.id] ??= {})[metric.function] = resultValue as number | null;
   });
   return result;
 }

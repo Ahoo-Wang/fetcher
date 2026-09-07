@@ -43,6 +43,14 @@ export function sameFilterDraft(
   }
   return sameFilterState(content(a), content(b));
 }
+/** Pending is derived from editing facts, never assigned independently. */
+export function isFilterDraftPending(
+  draft: FilterDraftNode,
+  baseline: FilterDraftNode,
+  valid = true,
+): boolean {
+  return !valid || !sameFilterDraft(draft, baseline);
+}
 export function replaceFilterNode(
   root: FilterDraftNode,
   id: string,
