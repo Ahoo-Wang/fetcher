@@ -120,7 +120,7 @@ it('fills available width with automatic business columns and preserves explicit
   render(<Example />);
   act(() => resize(1000));
   const name = screen.getByRole('columnheader', { name: /名称/ });
-  expect(name.style.width).toBe('652px');
+  expect(name.style.width).toBe('480px');
   expect(screen.getByRole('columnheader', { name: /编号/ }).style.width).toBe(
     '120px',
   );
@@ -139,12 +139,12 @@ it('fills available width with automatic business columns and preserves explicit
   });
   expect(onColumnsChange).toHaveBeenLastCalledWith(
     configured.map(column =>
-      column.id === 'name' ? { ...column, width: 642 } : column,
+      column.id === 'name' ? { ...column, width: 470 } : column,
     ),
   );
-  expect(name.style.width).toBe('642px');
+  expect(name.style.width).toBe('470px');
   act(() => resize(1200));
-  expect(name.style.width).toBe('642px');
+  expect(name.style.width).toBe('470px');
   expect(screen.getByRole('table').style.width).toBe('1200px');
   expect(screen.getByRole('columnheader', { name: /操作/ }).style.right).toBe(
     '0px',
@@ -152,7 +152,7 @@ it('fills available width with automatic business columns and preserves explicit
   expect(screen.getAllByRole('columnheader')).toHaveLength(5);
   expect(onColumnsChange).toHaveBeenCalledTimes(1);
   act(() => resize(400));
-  expect(screen.getByRole('table').style.width).toBe('990px');
+  expect(screen.getByRole('table').style.width).toBe('818px');
 });
 
 it('keeps fractional automatic columns automatic after a resize gesture without movement', () => {
@@ -370,6 +370,95 @@ const columns: RecordColumn[] = [
   { id: 'name', kind: 'field', field: 'name', width: 180 },
   { id: 'amount', kind: 'field', field: 'amount', width: 180 },
 ];
+
+it('keeps business fields readable in compact tables and restores saved pinning and widths', async () => {
+  let resize!: (width: number) => void;
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(private callback: ResizeObserverCallback) {}
+      observe(target: Element) {
+        if (!target.querySelector('table')) return;
+        resize = width =>
+          this.callback(
+            [{ contentRect: { width } } as ResizeObserverEntry],
+            this as unknown as ResizeObserver,
+          );
+      }
+      disconnect() {}
+    },
+  );
+  const onColumnsChange = vi.fn();
+  const configured: RecordColumn[] = [
+    { id: 'key', kind: 'field', field: 'meta.id', width: 210 },
+    { id: 'name', kind: 'field', field: 'name', width: 180, pinned: 'left' },
+    { id: 'amount', kind: 'field', field: 'amount', width: 150 },
+    { id: 'actions', kind: 'actions', width: 110 },
+  ];
+  render(
+    <RecordTable
+      {...props({
+        definition: {
+          ...definition,
+          fields: [
+            ...definition.fields,
+            { field: 'meta.id', label: '编号', type: 'string' },
+          ],
+          recordActions: { row: { name: 'actions' } },
+        },
+        instance: {
+          ...instance,
+          config: {
+            ...instance.config,
+            presentation: { layout: 'table', table: { columns: configured } },
+          },
+        },
+        selectable: true,
+        extensions: {
+          rowActions: {
+            actions: ({ rowKey }) => <button>查看 {rowKey}</button>,
+          },
+        },
+        onColumnsChange,
+      })}
+    />,
+  );
+  act(() => resize(356));
+  const key = screen.getByRole('columnheader', { name: /编号/ });
+  const actions = screen.getByRole('columnheader', { name: /操作/ });
+  expect(
+    356 - 48 - parseFloat(key.style.width) - parseFloat(actions.style.width),
+  ).toBeGreaterThanOrEqual(128);
+  expect(key.getAttribute('data-pinned')).toBe('start');
+  expect(actions.getAttribute('data-pinned')).toBe('end');
+  expect(
+    screen
+      .getByRole('columnheader', { name: /名称/ })
+      .getAttribute('data-pinned'),
+  ).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '记录 0 操作' }));
+  expect(
+    within(
+      await screen.findByRole('dialog', { name: '记录 0 操作' }),
+    ).getByRole('button', { name: '查看 0' }),
+  ).toBeTruthy();
+  act(() => resize(160));
+  expect(screen.getByText('空间不足，请展开视图或减少显示列。')).toBeTruthy();
+  act(() => resize(1000));
+  expect(screen.queryByText('空间不足，请展开视图或减少显示列。')).toBeNull();
+  expect(screen.getByRole('columnheader', { name: /编号/ }).style.width).toBe(
+    '210px',
+  );
+  expect(screen.getByRole('columnheader', { name: /操作/ }).style.width).toBe(
+    '110px',
+  );
+  expect(
+    screen
+      .getByRole('columnheader', { name: /名称/ })
+      .getAttribute('data-pinned'),
+  ).toBe('start');
+  expect(onColumnsChange).not.toHaveBeenCalled();
+});
 const instance: ViewInstance = {
   id: 'mine',
   definitionId: 'orders',

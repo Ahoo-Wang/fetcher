@@ -104,6 +104,21 @@ it('owns a working engine across StrictMode replay and stops on unmount', async 
   view.unmount();
   expect(host.loadDefinition).toHaveBeenCalledTimes(2);
 });
+it('places query failure in the record area without claiming an empty result or unknown page count', async () => {
+  const { host, paged } = setup();
+  paged.mockRejectedValueOnce(new Error('订单服务不可用'));
+  render(<ViewPage definitionId="orders" host={host} />);
+  const failure = await screen.findByRole('alert');
+  expect(failure.closest('table')).toBe(screen.getByRole('table'));
+  expect(failure.textContent).toContain('订单服务不可用');
+  expect(screen.queryByRole('img', { name: '暂无记录' })).toBeNull();
+  expect(screen.queryByText('本页 0 条记录')).toBeNull();
+  expect(screen.queryByText('第 1 / – 页')).toBeNull();
+  fireEvent.click(within(failure).getByRole('button', { name: '重试查询' }));
+  expect(await screen.findByRole('cell', { name: '42' })).toBeTruthy();
+  expect(screen.getByText('共 1 条记录')).toBeTruthy();
+  expect(screen.queryByRole('alert')).toBeNull();
+});
 it('keeps filter edits manual, blocks saves while pending, then saves applied configuration', async () => {
   const { host, paged } = setup();
   render(<ViewPage definitionId="orders" host={host} />);
@@ -133,6 +148,30 @@ it('keeps filter edits manual, blocks saves while pending, then saves applied co
       ).disabled,
     ).toBe(true),
   );
+  expect(
+    screen.getByRole('status', { name: '保存状态' }).textContent,
+  ).toContain('视图已保存');
+});
+it('describes applied filters while drafts remain pending', async () => {
+  const { host } = setup();
+  render(<ViewPage definitionId="orders" host={host} />);
+  await screen.findByRole('cell', { name: '42' });
+  expect(screen.getByLabelText('已应用 1 项筛选').textContent).toBe('1');
+  fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
+    target: { value: '20' },
+  });
+  const toggle = screen.getByRole('button', { name: '收起筛选' });
+  act(() => toggle.focus());
+  expect((await screen.findByRole('tooltip')).textContent).toContain(
+    '金额 大于等于 10',
+  );
+  expect(screen.getByRole('tooltip').textContent).not.toContain(
+    '金额 大于等于 20',
+  );
+  fireEvent.click(toggle);
+  expect(
+    screen.getByRole('button', { name: '展开筛选' }).textContent,
+  ).toContain('待查询');
 });
 it.each(['personal', 'shared'])(
   'save-as radios explain visibility and respect %s-only permission',
@@ -681,11 +720,13 @@ it('pauses automatic refresh while hidden, editing or explicitly paused and clea
     expect(paged).toHaveBeenCalledTimes(1);
     const refresh = screen.getByRole('button', { name: '刷新' });
     expect(refresh.textContent).toContain('已暂停');
+    expect(refresh.getAttribute('title')).toContain('页面处于后台');
     visibility.mockReturnValue('visible');
     const input = screen.getByRole('textbox', { name: '金额值' });
     act(() => input.focus());
     await act(() => vi.advanceTimersByTimeAsync(30000));
     expect(paged).toHaveBeenCalledTimes(1);
+    expect(refresh.getAttribute('title')).toContain('正在编辑');
     act(() => input.blur());
     expect(refresh.textContent).toContain('00:30');
     await act(() => vi.advanceTimersByTimeAsync(10000));

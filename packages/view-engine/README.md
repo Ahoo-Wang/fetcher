@@ -31,6 +31,7 @@ instances; permissions and actual persistence remain with the host.
 
 The compact workbench orders its global toolbar as title, current instance and Save split button, with Save As/Restore in the menu. Creation stays on the right.
 The active instance has no separate edited badge; save enablement reflects the guarded draft state.
+Successful saves briefly show a check and “已保存”, with an accessible announcement.
 Personal and public views form two navigation groups; system views carry a System badge.
 **Manage views**, beside the sidebar heading and inside the view switcher dropdown, combines inline
 name editing, confirmed deletion and within-group drag ordering. Names display
@@ -59,15 +60,33 @@ keeps the query and filter draft. Pending edits appear near Query when expanded
 and in the filter toggle when collapsed; the current title/sidebar does not repeat
 the notice, while other instances retain pending markers. Record counts and
 pagination share the footer. Collapsing filters keeps editors, drafts and selection.
+The filter toggle displays the applied condition count. Its tooltip describes the
+applied expression, preserving boolean groups and exact thresholds; pending edits
+do not replace that description. Long descriptions direct users to expand filters.
 
-Unpinned string columns without an explicit `width` share spare container width,
-starting from 180px and growing up to 960px. Explicit widths, pinned columns and
+Unpinned string columns without enum options or an explicit `width` share spare container width,
+starting from 180px and growing up to 480px. Explicit widths, pinned columns and
 other field types keep their configured/default sizes. Narrow tables scroll
 horizontally. Dragging an automatic column persists its actual new width. Column settings have
 no width input; definitions can omit width to opt into automatic sizing. Container
 resizing never edits the instance or queries. Space that cannot be assigned stays
 before right-pinned columns, keeping actions at the right edge. The responsive
 workbench Storybook scene shows 15 records per page.
+Numeric cells and headers align right and use tabular numerals, including cells
+rendered by extensions unless the extension overrides their alignment.
+
+When pinned regions leave less than 128px for business fields, the table uses a
+temporary compact layout: row keys shrink with full values available in tooltips,
+action columns use 64px popover triggers, and ordinary pinned fields scroll with
+the center region. Saved widths and pinning return when space allows; key/action
+resize handles are available in the regular layout. Extremely small containers or
+many mandatory columns show an explicit space warning. This adaptation does not
+persist presentation changes.
+
+Query failures render in the record area, with an icon, cause and retry. They do not
+show the empty-result icon, zero-record claims or pagination. Background failures
+retain existing rows and label them as the previous result. Auto-refresh tooltips
+explain pauses and what will resume the countdown.
 
 The field bound to `definition.rowKey` always stays at the left edge, and action
 columns at the right edge. Their sides cannot be changed by saved preferences or

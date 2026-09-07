@@ -56,8 +56,10 @@ function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
   return (
     <TooltipPrimitive.Trigger
       data-slot="tooltip-trigger"
-      aria-describedby={id}
       {...props}
+      aria-describedby={[id, props['aria-describedby']]
+        .filter(Boolean)
+        .join(' ')}
     />
   );
 }

@@ -300,8 +300,8 @@ action columns use `{kind:'actions'}` and require either a column renderer or
 `definition.recordActions.row`. At least one column must remain visible.
 Widths range from `RECORD_COLUMN_MIN_WIDTH` (64) to `RECORD_COLUMN_MAX_WIDTH`
 (960), default `RECORD_COLUMN_DEFAULT_WIDTH` (180). Action columns cannot sort.
-Visible, unpinned `string` columns with omitted `width` equally share available
-space above the default size, capped at 960. All explicit widths and other columns
+Visible, unpinned `string` columns without enum options and with omitted `width` equally share available
+space above the default size, capped at 480. All explicit widths and other columns
 remain fixed; insufficient space scrolls horizontally. Surplus space after caps or
 when all widths are explicit stays before the right-pinned region. Container
 changes update presentation only, without callbacks, dirty state or queries.
@@ -580,6 +580,10 @@ contains the default function labels.
 
 Standalone `RecordTable` accepts controlled `pageSummary`, `allSummary` and
 `onSummaryRetry()`. It renders both results without fetching or calculating them.
+It also accepts `queryError?: string | null` and `onQueryRetry?()`. Failures render
+inside the record area rather than as empty data; existing rows remain visible
+and are labelled as the previous result. RecordView omits pagination until the
+failed query recovers. Retry returns focus to the record-result container.
 Record loading uses one centered shadcn Spinner. Each loading summary scope has
 one Spinner beside its label, independent of the number of selected metrics.
 Pending metric slots stay blank; pagination omits duplicate loading text. Spinners
@@ -626,6 +630,19 @@ near Query while expanded and on the filter toggle while collapsed. The active
 instance title/sidebar does not duplicate the notice; other instances keep their
 pending markers. Toggling filters does not query or clear selection
 and is not saved to the instance. Controls wrap within narrow containers.
+The filter toggle shows the number of applied conditions and a tooltip describing
+their boolean structure and exact thresholds, independent of pending drafts.
+Auto-refresh tooltips explain the pause cause and resumption rule. Successful
+saves briefly show a check and “已保存” with an accessible status announcement.
+
+If fixed regions leave less than 128px for ordinary fields, RecordTable temporarily
+shrinks key columns, presents actions in 64px popovers and lets ordinary pinned
+columns scroll in the center. Key values retain readable suffixes and expose their
+full values through tooltips. Saved configuration is restored when width permits;
+mandatory-column resize handles appear in the regular layout. An explicit warning
+covers containers still too small for their mandatory columns. Adaptation does not
+save configuration, query records or change the selection. Numeric headers and
+cells default to right alignment and tabular numerals.
 Column settings use drag handles to reorder within the same fixed group; arrows
 are not displayed. Pointer position selects the insertion boundary, and gaps
 between rows accept drops at the displayed indicator. The drag handle uses the

@@ -16,6 +16,12 @@ import { ChevronDownIcon, RefreshCwIcon } from 'lucide-react';
 import { Button } from '../components/ui/button.js';
 import { ButtonGroup } from '../components/ui/button-group.js';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../components/ui/tooltip.js';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
@@ -48,18 +54,31 @@ export function RecordRefreshControls({
 }) {
   const [interval, setInterval] = useState(0);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [activityPause, setActivityPause] = useState<string | null>(null);
   const statusId = useId();
   const id = session.instance.id;
   const querying = session.queryStatus === 'loading' || session.refreshing;
-  const suspended =
-    paused ||
-    session.filterPending ||
-    session.selectedRowKeys.length > 0 ||
-    session.writeStatus !== 'idle' ||
-    session.requiresReload ||
-    session.queryStatus !== 'success' ||
-    session.allSummary.status === 'loading' ||
-    (session.instance.config.pagination.mode === 'cursor' && session.page > 1);
+  const pauseReason = session.requiresReload
+    ? '视图已变化，重新加载后恢复。'
+    : session.queryStatus === 'error'
+      ? '查询失败，重试成功后恢复。'
+      : paused
+        ? '业务操作进行中，完成后恢复。'
+        : session.writeStatus !== 'idle'
+          ? '正在保存视图，完成后恢复。'
+          : session.filterPending
+            ? '筛选尚未查询，查询或撤销修改后恢复。'
+            : session.selectedRowKeys.length > 0
+              ? '已选择记录，取消选择后恢复。'
+              : session.queryStatus !== 'success'
+                ? '等待查询完成后恢复。'
+                : session.allSummary.status === 'loading'
+                  ? '等待所有汇总完成后恢复。'
+                  : session.instance.config.pagination.mode === 'cursor' &&
+                      session.page > 1
+                    ? '游标后续页暂停，点击查询返回第一页后恢复。'
+                    : null;
+  const suspended = pauseReason !== null;
   useEffect(() => {
     const doc = root.current?.ownerDocument;
     if (!interval || !doc) return;
@@ -73,13 +92,16 @@ export function RecordRefreshControls({
       const editing = doc!.activeElement?.closest(
         'input, textarea, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]',
       );
-      if (
-        suspended ||
-        querying ||
-        doc!.visibilityState !== 'visible' ||
-        editing ||
-        engine.getSnapshot().selectedInstanceId !== id
-      ) {
+      const activity =
+        doc!.visibilityState !== 'visible'
+          ? '页面处于后台，返回页面后恢复。'
+          : editing
+            ? '正在编辑或使用弹层，完成后自动恢复。'
+            : engine.getSnapshot().selectedInstanceId !== id
+              ? '已切换视图。'
+              : null;
+      setActivityPause(activity);
+      if (suspended || querying || activity) {
         deadline = null;
         setRemaining(null);
         return;
@@ -121,71 +143,89 @@ export function RecordRefreshControls({
     remaining === null
       ? null
       : `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
+  const hint = interval
+    ? querying
+      ? '正在刷新当前结果。'
+      : (pauseReason ??
+        activityPause ??
+        '自动刷新已开启；点击可立即刷新当前结果。')
+    : '刷新当前已查询条件下的结果。';
   return (
-    <DropdownMenu>
-      <ButtonGroup aria-label="刷新控制">
-        <Button
-          variant="outline"
-          size={interval ? 'sm' : 'icon-sm'}
-          aria-label="刷新"
-          aria-describedby={interval ? statusId : undefined}
-          title="刷新"
-          onClick={onRefresh}
-          disabled={querying}
-        >
-          <RefreshCwIcon
-            aria-hidden="true"
-            className={cn(
-              querying && 'fve:animate-spin fve:motion-reduce:animate-none',
-            )}
-          />
-          {interval > 0 && (
-            <span id={statusId} className="fve:tabular-nums" aria-live="off">
-              {INTERVALS.find(option => option.value === interval)?.label}
-              {' · '}
-              {querying
-                ? '刷新中'
-                : suspended || countdown === null
-                  ? '已暂停'
-                  : countdown}
-            </span>
-          )}
-        </Button>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="自动刷新设置"
-              title="自动刷新设置"
-            />
-          }
-        >
-          <ChevronDownIcon aria-hidden="true" />
-        </DropdownMenuTrigger>
-      </ButtonGroup>
-      <DropdownMenuContent align="end" className="fve:min-w-40">
-        <DropdownMenuRadioGroup
-          value={String(interval)}
-          onValueChange={value => {
-            const next = Number(value);
-            if (INTERVALS.some(option => option.value === next)) {
-              setInterval(next);
-              setRemaining(next / 1000);
-            }
-          }}
-        >
-          {INTERVALS.map(({ value, label }) => (
-            <DropdownMenuRadioItem
-              key={value}
-              value={String(value)}
-              closeOnClick
+    <TooltipProvider>
+      <Tooltip>
+        <DropdownMenu>
+          <ButtonGroup aria-label="刷新控制">
+            <TooltipTrigger
+              render={
+                <Button variant="outline" size={interval ? 'sm' : 'icon-sm'} />
+              }
+              aria-label="刷新"
+              aria-describedby={interval ? statusId : undefined}
+              title={hint}
+              aria-description={hint}
+              onClick={onRefresh}
+              disabled={querying}
             >
-              {value ? `每 ${label}` : label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+              <RefreshCwIcon
+                aria-hidden="true"
+                className={cn(
+                  querying && 'fve:animate-spin fve:motion-reduce:animate-none',
+                )}
+              />
+              {interval > 0 && (
+                <span
+                  id={statusId}
+                  className="fve:tabular-nums"
+                  aria-live="off"
+                >
+                  {INTERVALS.find(option => option.value === interval)?.label}
+                  {' · '}
+                  {querying
+                    ? '刷新中'
+                    : suspended || countdown === null
+                      ? '已暂停'
+                      : countdown}
+                </span>
+              )}
+            </TooltipTrigger>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label="自动刷新设置"
+                  title="自动刷新设置"
+                />
+              }
+            >
+              <ChevronDownIcon aria-hidden="true" />
+            </DropdownMenuTrigger>
+          </ButtonGroup>
+          <DropdownMenuContent align="end" className="fve:min-w-40">
+            <DropdownMenuRadioGroup
+              value={String(interval)}
+              onValueChange={value => {
+                const next = Number(value);
+                if (INTERVALS.some(option => option.value === next)) {
+                  setInterval(next);
+                  setRemaining(next / 1000);
+                }
+              }}
+            >
+              {INTERVALS.map(({ value, label }) => (
+                <DropdownMenuRadioItem
+                  key={value}
+                  value={String(value)}
+                  closeOnClick
+                >
+                  {value ? `每 ${label}` : label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <TooltipContent>{hint}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

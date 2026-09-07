@@ -1306,6 +1306,14 @@ export const QueryFailure: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await canvas.findByText('订单服务暂时不可用，请重试查询。');
+    await expect(canvas.getByRole('alert').closest('table')).toBe(
+      canvas.getByRole('table'),
+    );
+    await expect(canvas.queryByRole('img', { name: '暂无记录' })).toBeNull();
+    await expect(canvas.queryByText('本页 0 条记录')).toBeNull();
+    await expect(
+      canvas.queryByRole('navigation', { name: '记录分页' }),
+    ).toBeNull();
     await userEvent.clear(canvas.getByLabelText('订单金额值'));
     await userEvent.type(canvas.getByLabelText('订单金额值'), '1000');
     await userEvent.click(canvas.getByRole('button', { name: '重试查询' }));
@@ -1477,6 +1485,32 @@ export const NarrowRecords: Story = {
     const document = canvasElement.ownerDocument;
     const page = within(document.body);
     await canvas.findByRole('row', { name: /ORD-202609-1001/ });
+    const firstRow = canvas.getByRole('row', { name: /ORD-202609-1001/ });
+    const keyCell = within(firstRow)
+      .getByLabelText('ORD-202609-1001')
+      .closest('td')!;
+    const actionTrigger = within(firstRow).getByRole('button', {
+      name: '记录 ORD-202609-1001 操作',
+    });
+    await waitFor(() =>
+      expect(
+        actionTrigger.closest('td')!.getBoundingClientRect().left -
+          keyCell.getBoundingClientRect().right,
+      ).toBeGreaterThanOrEqual(127),
+    );
+    await userEvent.click(actionTrigger);
+    const actions = await page.findByRole('dialog', {
+      name: '记录 ORD-202609-1001 操作',
+    });
+    await userEvent.click(
+      within(actions).getByRole('button', { name: '查看订单 ORD-202609-1001' }),
+    );
+    await expect(
+      canvas.getByRole('status', { name: '订单操作结果' }),
+    ).toHaveTextContent('青岚科技');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(page.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(actionTrigger).toHaveFocus());
     await expect(
       canvas.queryByRole('complementary', { name: '视图列表' }),
     ).not.toBeInTheDocument();

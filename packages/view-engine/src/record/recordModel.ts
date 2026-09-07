@@ -58,7 +58,7 @@ export type RecordColumnPinning = 'left' | 'right' | false;
 interface RecordColumnBase {
   id: string;
   title?: string;
-  /** Explicit pixel width. Omitted, unpinned string columns share the available table space. */
+  /** Explicit pixel width. Omitted, unpinned strings without enum options grow up to 480px. */
   width?: number;
   visible?: boolean;
   /** Preference for ordinary fields; row-key and action columns have mandatory sides. */

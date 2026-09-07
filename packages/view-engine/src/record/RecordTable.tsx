@@ -25,6 +25,7 @@ import {
   ArrowUpIcon,
   InboxIcon,
   CircleAlertIcon,
+  EllipsisIcon,
 } from 'lucide-react';
 import { SortDirection } from '@ahoo-wang/fetcher-wow';
 import {
@@ -136,6 +137,7 @@ function RecordCell({
   instance,
   extensions,
   refresh,
+  compact = false,
 }: Pick<
   RecordTableProps,
   'definition' | 'instance' | 'extensions' | 'refresh'
@@ -144,6 +146,7 @@ function RecordCell({
   record: RecordData;
   rowKey: RecordKey;
   index: number;
+  compact?: boolean;
 }) {
   if (column.kind === 'actions') {
     const reference = column.renderer ?? definition.recordActions?.row;
@@ -156,7 +159,7 @@ function RecordCell({
             : '操作列未配置渲染器'}
         </span>
       );
-    return (
+    const actions = (
       <Renderer
         definition={definition}
         instance={instance}
@@ -167,6 +170,24 @@ function RecordCell({
         record={record}
         rowKey={rowKey}
       />
+    );
+    if (!compact) return actions;
+    const label = `记录 ${rowKey} ${column.title ?? '操作'}`;
+    return (
+      <Popover>
+        <PopoverTrigger
+          aria-label={label}
+          render={<Button type="button" variant="ghost" size="icon-sm" />}
+        >
+          <EllipsisIcon aria-hidden="true" />
+        </PopoverTrigger>
+        <PopoverContent align="end">
+          <PopoverTitle>{label}</PopoverTitle>
+          <div className="fve:flex fve:flex-wrap fve:items-center fve:gap-2">
+            {actions}
+          </div>
+        </PopoverContent>
+      </Popover>
     );
   }
   const field = definition.fields.find(field => field.field === column.field);
@@ -192,6 +213,31 @@ function RecordCell({
     );
   }
   const text = displayValue(value, field);
+  if (compact && column.field === definition.rowKey) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger
+            render={<span tabIndex={0} />}
+            aria-label={text}
+            className="fve:flex fve:min-w-0 fve:outline-none fve:focus-visible:ring-2 fve:focus-visible:ring-ring"
+          >
+            {text.length > 6 ? (
+              <>
+                <span className="fve:min-w-0 fve:truncate">
+                  {text.slice(0, -4)}
+                </span>
+                <span className="fve:shrink-0">{text.slice(-4)}</span>
+              </>
+            ) : (
+              text
+            )}
+          </TooltipTrigger>
+          <TooltipContent>{text}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
   return (
     <span className="fve:break-words" title={text}>
       {text}
@@ -280,7 +326,7 @@ function SummaryScope({
       tabIndex={-1}
       aria-label={`${label}汇总状态`}
       title={label === '所有' ? '当前已查询条件下的所有记录' : '当前页记录'}
-      className="fve:inline-flex fve:h-6 fve:items-center fve:gap-0.5 fve:text-xs fve:leading-5 fve:text-muted-foreground fve:outline-none fve:focus-visible:ring-2 fve:focus-visible:ring-ring"
+      className="fve:flex fve:h-6 fve:items-center fve:justify-center fve:gap-0.5 fve:text-xs fve:leading-5 fve:text-muted-foreground fve:outline-none fve:focus-visible:ring-2 fve:focus-visible:ring-ring"
     >
       {result?.status === 'error' ? (
         <SummaryError
@@ -310,6 +356,8 @@ export function RecordTable({
   rows,
   extensions,
   querying,
+  queryError,
+  onQueryRetry,
   pageSummary,
   allSummary,
   onSummaryRetry,
@@ -385,11 +433,61 @@ export function RecordTable({
     ]),
   );
   const visibleConfigured = columns.filter(column => column.visible !== false);
+  const centerMinimum = visibleConfigured.some(
+    column => column.kind === 'field' && column.field !== definition.rowKey,
+  )
+    ? 128
+    : 0;
+  const pinnedWidth = visibleConfigured.reduce(
+    (total, column) =>
+      total +
+      (getRecordColumnPinning(column, definition.rowKey)
+        ? columnSizing[JSON.stringify(column.id)]
+        : 0),
+    selectable ? 48 : 0,
+  );
+  const compact =
+    availableWidth > 0 && pinnedWidth + centerMinimum > availableWidth;
+  function effectivePinning(column: RecordColumn) {
+    if (
+      compact &&
+      column.kind === 'field' &&
+      column.field !== definition.rowKey
+    )
+      return false;
+    return getRecordColumnPinning(column, definition.rowKey);
+  }
+  if (compact) {
+    const actions = visibleConfigured.filter(
+      column => column.kind === 'actions',
+    );
+    const keys = visibleConfigured.filter(
+      column => column.kind === 'field' && column.field === definition.rowKey,
+    );
+    const keyBudget =
+      (availableWidth -
+        (selectable ? 48 : 0) -
+        actions.length * RECORD_COLUMN_MIN_WIDTH -
+        centerMinimum) /
+      Math.max(1, keys.length);
+    for (const column of actions)
+      columnSizing[JSON.stringify(column.id)] = RECORD_COLUMN_MIN_WIDTH;
+    for (const column of keys)
+      columnSizing[JSON.stringify(column.id)] = Math.max(
+        RECORD_COLUMN_MIN_WIDTH,
+        Math.min(
+          columnSizing[JSON.stringify(column.id)],
+          Math.floor(keyBudget),
+        ),
+      );
+  }
   const automatic = visibleConfigured.filter(
     column =>
       column.kind === 'field' &&
       column.width === undefined &&
       !getRecordColumnPinning(column, definition.rowKey) &&
+      !definition.fields.find(field => field.field === column.field)?.options
+        ?.length &&
       definition.fields.find(field => field.field === column.field)?.type ===
         'string',
   );
@@ -402,7 +500,7 @@ export function RecordTable({
     : 0;
   for (const column of automatic)
     columnSizing[JSON.stringify(column.id)] = Math.min(
-      RECORD_COLUMN_MAX_WIDTH,
+      480,
       RECORD_COLUMN_DEFAULT_WIDTH + extraPerColumn,
     );
   const rowSelection = Object.fromEntries(
@@ -410,14 +508,10 @@ export function RecordTable({
   );
   const columnPinning = {
     start: columns
-      .filter(
-        column => getRecordColumnPinning(column, definition.rowKey) === 'left',
-      )
+      .filter(column => effectivePinning(column) === 'left')
       .map(column => JSON.stringify(column.id)),
     end: columns
-      .filter(
-        column => getRecordColumnPinning(column, definition.rowKey) === 'right',
-      )
+      .filter(column => effectivePinning(column) === 'right')
       .map(column => JSON.stringify(column.id)),
   };
   const table = useTable({
@@ -500,6 +594,20 @@ export function RecordTable({
     ...table.getEndVisibleLeafColumns(),
   ];
   const contentWidth = table.getTotalSize() + (selectable ? 48 : 0);
+  const compactPinnedWidth = visibleColumns.reduce(
+    (total, column) => total + (column.getIsPinned() ? column.getSize() : 0),
+    selectable ? 48 : 0,
+  );
+  const insufficientWidth =
+    compact && availableWidth - compactPinnedWidth < centerMinimum;
+  const relaxedPinning =
+    compact &&
+    visibleConfigured.some(
+      column =>
+        column.kind === 'field' &&
+        column.field !== definition.rowKey &&
+        getRecordColumnPinning(column, definition.rowKey),
+    );
   const fillerWidth = Math.max(0, availableWidth - contentWidth);
   const firstEnd = visibleColumns.findIndex(
     column => column.getIsPinned() === 'end',
@@ -514,8 +622,16 @@ export function RecordTable({
     column: Column<typeof features, RecordData>,
   ): CSSProperties {
     const pinned = column.getIsPinned();
+    const configured = byId.get(column.id)!;
+    const numeric =
+      configured.kind === 'field' &&
+      definition.fields.some(
+        field => field.field === configured.field && field.type === 'number',
+      );
     return {
       width: column.getSize(),
+      textAlign: numeric ? 'right' : undefined,
+      fontVariantNumeric: numeric ? 'tabular-nums' : undefined,
       left:
         pinned === 'start'
           ? column.getStart('start') + (selectable ? 48 : 0)
@@ -531,15 +647,65 @@ export function RecordTable({
     { label: '本页', result: pageSummary },
     { label: '所有', result: allSummary },
   ];
+  const failure =
+    !querying && queryError ? (
+      <div
+        role="alert"
+        aria-label="查询失败"
+        className="fve:flex fve:flex-wrap fve:items-center fve:justify-center fve:gap-2 fve:p-3 fve:text-sm fve:text-destructive"
+      >
+        <CircleAlertIcon
+          aria-hidden="true"
+          className="fve:size-5 fve:shrink-0"
+        />
+        <span className="fve:break-words">{queryError}</span>
+        {rows.length > 0 && (
+          <span className="fve:text-muted-foreground">显示上次查询结果</span>
+        )}
+        {onQueryRetry && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              containerRef.current?.focus();
+              onQueryRetry();
+            }}
+          >
+            重试查询
+          </Button>
+        )}
+      </div>
+    ) : null;
+  const statusStyle: CSSProperties = {
+    width: availableWidth ? Math.max(0, availableWidth - 24) : undefined,
+  };
   return (
     <div
       ref={containerRef}
+      tabIndex={-1}
+      aria-label="记录结果"
       className={cn(
-        'fve-root fve:isolate fve:min-w-0 fve:max-w-full fve:overflow-hidden fve:rounded-lg fve:border',
+        'fve-root fve:isolate fve:min-w-0 fve:max-w-full fve:overflow-hidden fve:rounded-lg fve:border fve:outline-none fve:focus-visible:ring-2 fve:focus-visible:ring-inset fve:focus-visible:ring-ring',
         className,
       )}
       aria-busy={querying || undefined}
     >
+      {insufficientWidth ? (
+        <p
+          role="status"
+          className="fve:m-0 fve:px-3 fve:py-2 fve:text-xs fve:text-muted-foreground"
+        >
+          空间不足，请展开视图或减少显示列。
+        </p>
+      ) : relaxedPinning ? (
+        <p
+          role="status"
+          className="fve:m-0 fve:px-3 fve:py-2 fve:text-xs fve:text-muted-foreground"
+        >
+          空间有限，仅固定主键和操作列；其他固定设置在宽度恢复后生效。
+        </p>
+      ) : null}
       <Table
         className="fve-record-table fve:table-fixed fve:border-separate fve:border-spacing-0"
         style={{ width: contentWidth + (fillerWidth >= 1 ? fillerWidth : 0) }}
@@ -618,7 +784,12 @@ export function RecordTable({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="fve:h-auto fve:w-full fve:min-w-0 fve:justify-start fve:px-0 fve:py-1"
+                        className={cn(
+                          'fve:h-auto fve:w-full fve:min-w-0 fve:px-0 fve:py-1',
+                          field?.type === 'number'
+                            ? 'fve:justify-end'
+                            : 'fve:justify-start',
+                        )}
                         aria-label={`${title}排序：${direction === 'asc' ? '升序' : direction === 'desc' ? '降序' : '未排序'}`}
                         title="点击排序，按住 Shift 添加排序"
                         onClick={sortingColumn?.getToggleSortingHandler()}
@@ -636,46 +807,52 @@ export function RecordTable({
                     ) : (
                       <span className="fve:break-words">{title}</span>
                     )}
-                    <div
-                      role="separator"
-                      aria-label={`调整${title}列宽`}
-                      aria-orientation="vertical"
-                      aria-valuemin={RECORD_COLUMN_MIN_WIDTH}
-                      aria-valuemax={RECORD_COLUMN_MAX_WIDTH}
-                      aria-valuenow={header.getSize()}
-                      tabIndex={0}
-                      className={cn(
-                        'fve:absolute fve:inset-y-0 fve:right-0 fve:w-2 fve:cursor-col-resize fve:touch-none fve:border-border fve:select-none fve:hover:bg-accent fve:focus-visible:outline-2 fve:focus-visible:outline-ring',
-                        // Left-pinned cells already draw their right separator; only add the moving guide during resizing.
-                        (header.column.getIsPinned() !== 'start' ||
-                          header.column.getIsResizing()) &&
-                          'fve:border-r',
-                      )}
-                      onMouseDown={header.getResizeHandler()}
-                      onTouchStart={header.getResizeHandler()}
-                      onKeyDown={event => {
-                        const delta =
-                          event.key === 'ArrowLeft'
-                            ? -10
-                            : event.key === 'ArrowRight'
-                              ? 10
-                              : 0;
-                        if (delta) {
-                          event.preventDefault();
-                          table.setColumnSizing(old => ({
-                            ...old,
-                            [header.column.id]: header.getSize() + delta,
-                          }));
+                    {!(
+                      compact &&
+                      (column.kind === 'actions' ||
+                        column.field === definition.rowKey)
+                    ) && (
+                      <div
+                        role="separator"
+                        aria-label={`调整${title}列宽`}
+                        aria-orientation="vertical"
+                        aria-valuemin={RECORD_COLUMN_MIN_WIDTH}
+                        aria-valuemax={RECORD_COLUMN_MAX_WIDTH}
+                        aria-valuenow={header.getSize()}
+                        tabIndex={0}
+                        className={cn(
+                          'fve:absolute fve:inset-y-0 fve:right-0 fve:w-2 fve:cursor-col-resize fve:touch-none fve:border-border fve:select-none fve:hover:bg-accent fve:focus-visible:outline-2 fve:focus-visible:outline-ring',
+                          // Left-pinned cells already draw their right separator; only add the moving guide during resizing.
+                          (header.column.getIsPinned() !== 'start' ||
+                            header.column.getIsResizing()) &&
+                            'fve:border-r',
+                        )}
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        onKeyDown={event => {
+                          const delta =
+                            event.key === 'ArrowLeft'
+                              ? -10
+                              : event.key === 'ArrowRight'
+                                ? 10
+                                : 0;
+                          if (delta) {
+                            event.preventDefault();
+                            table.setColumnSizing(old => ({
+                              ...old,
+                              [header.column.id]: header.getSize() + delta,
+                            }));
+                          }
+                        }}
+                        style={
+                          header.column.getIsResizing()
+                            ? {
+                                transform: `translateX(${table.state.columnResizing.deltaOffset ?? 0}px)`,
+                              }
+                            : undefined
                         }
-                      }}
-                      style={
-                        header.column.getIsResizing()
-                          ? {
-                              transform: `translateX(${table.state.columnResizing.deltaOffset ?? 0}px)`,
-                            }
-                          : undefined
-                      }
-                    />
+                      />
+                    )}
                   </TableHead>
                 );
               })}
@@ -683,6 +860,22 @@ export function RecordTable({
           ))}
         </TableHeader>
         <TableBody>
+          {rows.length > 0 && failure && (
+            <TableRow>
+              <TableCell
+                colSpan={
+                  withFiller(visibleColumns).length + (selectable ? 1 : 0)
+                }
+              >
+                <div
+                  className="fve:sticky fve:left-0 fve:max-w-full"
+                  style={statusStyle}
+                >
+                  {failure}
+                </div>
+              </TableCell>
+            </TableRow>
+          )}
           {table.getRowModel().rows.length ? (
             table.getRowModel().rows.map(row => (
               <TableRow
@@ -731,6 +924,7 @@ export function RecordTable({
                           instance={instance}
                           extensions={extensions}
                           refresh={refresh}
+                          compact={compact}
                         />
                       </RecordRendererBoundary>
                     </TableCell>
@@ -746,9 +940,14 @@ export function RecordTable({
                 }
                 className="fve:h-24 fve:text-center"
               >
-                <div className="fve:flex fve:justify-center">
+                <div
+                  className="fve:sticky fve:left-0 fve:flex fve:max-w-full fve:justify-center"
+                  style={statusStyle}
+                >
                   {querying ? (
                     <Spinner aria-label="正在加载记录" />
+                  ) : failure ? (
+                    failure
                   ) : (
                     <InboxIcon
                       role="img"
@@ -776,7 +975,7 @@ export function RecordTable({
                       aria-label={label}
                       data-pinned="start"
                       style={{ left: 0 }}
-                      className="fve:h-auto fve:px-1 fve:py-2 fve:align-top fve:text-xs fve:leading-5 fve:font-normal fve:text-muted-foreground"
+                      className="fve:h-auto fve:px-1 fve:py-2 fve:align-middle fve:text-xs fve:leading-5 fve:font-normal fve:text-muted-foreground"
                     >
                       <SummaryScope
                         label={label}
@@ -803,7 +1002,10 @@ export function RecordTable({
                         key={column.id}
                         scope={scopeCell ? 'row' : undefined}
                         aria-label={scopeCell ? label : undefined}
-                        className="fve:h-auto fve:py-2 fve:align-top fve:font-normal"
+                        className={cn(
+                          'fve:h-auto fve:py-2 fve:font-normal',
+                          scopeCell ? 'fve:align-middle' : 'fve:align-top',
+                        )}
                         style={columnStyle(column)}
                         data-pinned={column.getIsPinned() || undefined}
                       >

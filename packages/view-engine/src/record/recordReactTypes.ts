@@ -71,6 +71,9 @@ export interface RecordTableProps {
   rows: readonly RecordData[];
   extensions?: ViewExtensions;
   querying?: boolean;
+  /** Query failure is distinct from a successful empty result. Existing rows are retained. */
+  queryError?: string | null;
+  onQueryRetry?(): void;
   /** Independent loaded-page and applied-filter results, rendered together. */
   pageSummary?: RecordSummaryResult;
   allSummary?: RecordSummaryResult;

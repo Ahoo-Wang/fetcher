@@ -29,6 +29,12 @@ import {
 import { Button } from '../components/ui/button.js';
 import { ButtonGroup } from '../components/ui/button-group.js';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../components/ui/tooltip.js';
+import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -45,6 +51,7 @@ import { useViewExpansion, ViewExpansionContext } from './viewExpansion.js';
 import { RecordTable } from './RecordTable.js';
 import { RecordColumnSettings } from './RecordColumnSettings.js';
 import { RecordRendererBoundary } from './RecordRendererBoundary.js';
+import { describeRecordFilter } from './recordFilterSummary.js';
 
 export interface RecordViewProps {
   engine: ViewEngine;
@@ -90,6 +97,10 @@ export function RecordView({
   const expansion = inheritedExpansion ?? localExpansion;
   if (!id || !session || !definition) return null;
   const { instance } = session;
+  const appliedFilter = describeRecordFilter(
+    instance.config.filter,
+    definition.fields,
+  );
   const querying = session.queryStatus === 'loading';
   const paged = instance.config.pagination.mode === 'paged';
   const pageCount =
@@ -113,7 +124,7 @@ export function RecordView({
     }
   }
   const error =
-    session.queryError || (localError?.id === id ? localError.message : null);
+    !session.queryError && localError?.id === id ? localError.message : null;
   const refresh = () => engine.refresh(id);
   function renderActions(kind: 'global' | 'table') {
     const reference = definition?.recordActions?.[kind];
@@ -202,67 +213,89 @@ export function RecordView({
               )}
             </div>
             <div className="fve:ml-auto fve:flex fve:flex-wrap fve:items-center fve:gap-2">
-              <DropdownMenu>
-                <ButtonGroup aria-label="筛选控制">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-label={filtersOpen ? '收起筛选' : '展开筛选'}
-                    aria-expanded={filtersOpen}
-                    aria-controls={panelId}
-                    aria-describedby={
-                      !filtersOpen && pending ? `${panelId}-pending` : undefined
-                    }
-                    onClick={() => setFiltersOpen(open => !open)}
-                  >
-                    <ListFilterIcon
-                      data-icon="inline-start"
-                      aria-hidden="true"
-                    />
-                    筛选 · {mode === 'simple' ? '简单' : '高级'}
-                    {!filtersOpen && pending && (
-                      <span id={`${panelId}-pending`}>· 待查询</span>
-                    )}
-                  </Button>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        aria-label="筛选模式"
-                        disabled={disabled}
-                      />
-                    }
-                  >
-                    <ChevronDownIcon aria-hidden="true" />
-                  </DropdownMenuTrigger>
-                </ButtonGroup>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuRadioGroup
-                    value={mode}
-                    onValueChange={next => {
-                      if (next !== 'simple' && next !== 'advanced') return;
-                      if (
-                        options.find(option => option.value === next)?.disabled
-                      )
-                        return;
-                      onModeChange(next);
-                      setFiltersOpen(true);
-                    }}
-                  >
-                    {options.map(option => (
-                      <DropdownMenuRadioItem
-                        key={option.value}
-                        value={option.value}
-                        disabled={option.disabled}
-                        closeOnClick
+              <TooltipProvider>
+                <Tooltip>
+                  <DropdownMenu>
+                    <ButtonGroup aria-label="筛选控制">
+                      <TooltipTrigger
+                        render={<Button variant="outline" size="sm" />}
+                        aria-label={filtersOpen ? '收起筛选' : '展开筛选'}
+                        aria-expanded={filtersOpen}
+                        aria-controls={panelId}
+                        aria-describedby={
+                          !filtersOpen && pending
+                            ? `${panelId}-pending`
+                            : undefined
+                        }
+                        onClick={() => setFiltersOpen(open => !open)}
                       >
-                        {option.label}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                        <ListFilterIcon
+                          data-icon="inline-start"
+                          aria-hidden="true"
+                        />
+                        筛选 · {mode === 'simple' ? '简单' : '高级'}
+                        {appliedFilter.count > 0 && (
+                          <>
+                            {' '}
+                            ·{' '}
+                            <span
+                              aria-label={`已应用 ${appliedFilter.count} 项筛选`}
+                            >
+                              {appliedFilter.count}
+                            </span>
+                          </>
+                        )}
+                        {!filtersOpen && pending && (
+                          <span id={`${panelId}-pending`}>· 待查询</span>
+                        )}
+                      </TooltipTrigger>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            variant="outline"
+                            size="icon-sm"
+                            aria-label="筛选模式"
+                            disabled={disabled}
+                          />
+                        }
+                      >
+                        <ChevronDownIcon aria-hidden="true" />
+                      </DropdownMenuTrigger>
+                    </ButtonGroup>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuRadioGroup
+                        value={mode}
+                        onValueChange={next => {
+                          if (next !== 'simple' && next !== 'advanced') return;
+                          if (
+                            options.find(option => option.value === next)
+                              ?.disabled
+                          )
+                            return;
+                          onModeChange(next);
+                          setFiltersOpen(true);
+                        }}
+                      >
+                        {options.map(option => (
+                          <DropdownMenuRadioItem
+                            key={option.value}
+                            value={option.value}
+                            disabled={option.disabled}
+                            closeOnClick
+                          >
+                            {option.label}
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <TooltipContent className="fve:max-w-md fve:whitespace-pre-wrap">
+                    {appliedFilter.count
+                      ? `已应用筛选：${appliedFilter.text.length > 600 ? `${appliedFilter.text.slice(0, 600)}…（展开筛选查看全部）` : appliedFilter.text}`
+                      : '当前视图未设置额外筛选条件。'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <RecordRefreshControls
                 key={`refresh:${id}`}
                 engine={engine}
@@ -336,11 +369,6 @@ export function RecordView({
           className="fve:mx-3 fve:mb-3 fve:flex fve:flex-wrap fve:items-center fve:gap-2 fve:rounded-lg fve:border fve:border-destructive/30 fve:p-3 fve:text-sm fve:text-destructive"
         >
           <span>{error}</span>
-          {session.queryStatus === 'error' && (
-            <Button variant="outline" onClick={() => run(refresh)}>
-              重试查询
-            </Button>
-          )}
         </div>
       )}
       <RecordTable
@@ -349,6 +377,8 @@ export function RecordView({
         definition={definition}
         instance={instance}
         rows={session.rows}
+        queryError={session.queryError}
+        onQueryRetry={() => run(refresh)}
         pageSummary={session.pageSummary}
         allSummary={session.allSummary}
         onSummaryRetry={() => {
@@ -363,79 +393,89 @@ export function RecordView({
         onSortChange={sort => run(() => engine.setSort(sort, id))}
         refresh={refresh}
       />
-      <nav
-        aria-label="记录分页"
-        className="fve:flex fve:flex-wrap fve:items-center fve:justify-between fve:gap-x-4 fve:gap-y-2 fve:border-t fve:px-3 fve:py-2 fve:text-sm"
-      >
-        <div
-          role="status"
-          aria-busy={querying || undefined}
-          className="fve:min-h-5 fve:text-muted-foreground"
+      {!session.queryError && (
+        <nav
+          aria-label="记录分页"
+          className="fve:flex fve:flex-wrap fve:items-center fve:justify-between fve:gap-x-4 fve:gap-y-2 fve:border-t fve:px-3 fve:py-2 fve:text-sm"
         >
-          {querying
-            ? null
-            : session.total !== null
-              ? `共 ${session.total} 条记录`
-              : `本页 ${session.rows.length} 条记录`}
-        </div>
-        <div className="fve:ml-auto fve:flex fve:flex-wrap fve:items-center fve:gap-x-4 fve:gap-y-2">
-          <div className="fve:flex fve:items-center fve:gap-2">
-            <span>每页</span>
-            <FilterSelect
-              label="每页记录数"
-              value={String(instance.config.pagination.size)}
-              onValueChange={size =>
-                run(() => engine.setPageSize(Number(size), id))
-              }
-              disabled={querying}
-              options={[
-                ...new Set([10, 20, 50, 100, instance.config.pagination.size]),
-              ]
-                .sort((a, b) => a - b)
-                .map(size => ({ value: String(size), label: `${size} 条` }))}
-            />
+          <div
+            role="status"
+            aria-busy={querying || undefined}
+            className="fve:min-h-5 fve:text-muted-foreground"
+          >
+            {querying
+              ? null
+              : session.total !== null
+                ? `共 ${session.total} 条记录`
+                : `本页 ${session.rows.length} 条记录`}
           </div>
-          <div className="fve:flex fve:items-center fve:gap-2">
-            <span>
-              {paged
-                ? `第 ${session.page} / ${pageCount ?? '–'} 页`
-                : `第 ${session.page} 页`}
-            </span>
-            {paged && (
+          <div className="fve:ml-auto fve:flex fve:flex-wrap fve:items-center fve:gap-x-4 fve:gap-y-2">
+            <div className="fve:flex fve:items-center fve:gap-2">
+              <span>每页</span>
+              <FilterSelect
+                label="每页记录数"
+                value={String(instance.config.pagination.size)}
+                onValueChange={size =>
+                  run(() => engine.setPageSize(Number(size), id))
+                }
+                disabled={querying}
+                options={[
+                  ...new Set([
+                    10,
+                    20,
+                    50,
+                    100,
+                    instance.config.pagination.size,
+                  ]),
+                ]
+                  .sort((a, b) => a - b)
+                  .map(size => ({ value: String(size), label: `${size} 条` }))}
+              />
+            </div>
+            <div className="fve:flex fve:items-center fve:gap-2">
+              <span>
+                {paged
+                  ? `第 ${session.page} / ${pageCount ?? '–'} 页`
+                  : `第 ${session.page} 页`}
+              </span>
+              {paged && (
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label="上一页"
+                  disabled={querying || session.page <= 1}
+                  onClick={() =>
+                    run(() => engine.setPage(session.page - 1, id))
+                  }
+                >
+                  <ChevronLeftIcon aria-hidden="true" />
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="icon-sm"
-                aria-label="上一页"
-                disabled={querying || session.page <= 1}
-                onClick={() => run(() => engine.setPage(session.page - 1, id))}
+                aria-label="下一页"
+                disabled={
+                  querying ||
+                  session.queryStatus !== 'success' ||
+                  (paged
+                    ? pageCount === null || session.page >= pageCount
+                    : session.nextCursor === null)
+                }
+                onClick={() =>
+                  run(() =>
+                    paged
+                      ? engine.setPage(session.page + 1, id)
+                      : engine.nextPage(id),
+                  )
+                }
               >
-                <ChevronLeftIcon aria-hidden="true" />
+                <ChevronRightIcon aria-hidden="true" />
               </Button>
-            )}
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="下一页"
-              disabled={
-                querying ||
-                session.queryStatus !== 'success' ||
-                (paged
-                  ? pageCount === null || session.page >= pageCount
-                  : session.nextCursor === null)
-              }
-              onClick={() =>
-                run(() =>
-                  paged
-                    ? engine.setPage(session.page + 1, id)
-                    : engine.nextPage(id),
-                )
-              }
-            >
-              <ChevronRightIcon aria-hidden="true" />
-            </Button>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
     </section>
   );
 }

@@ -27,6 +27,7 @@ import {
   CopyIcon,
   RotateCcwIcon,
   Settings2Icon,
+  CheckIcon,
 } from 'lucide-react';
 import { useViewExpansion, ViewExpansionContext } from './viewExpansion.js';
 import { ViewManager } from './ViewManager.js';
@@ -276,7 +277,7 @@ export function ViewPageContent({
           <SelectContent
             alignItemWithTrigger={false}
             align="start"
-            finalFocus={() => (managerOpen ? false : true)}
+            finalFocus={!managerOpen}
             footer={
               <Button
                 variant="ghost"
@@ -468,6 +469,12 @@ function ViewInstanceActions({
   run(action: () => void | Promise<void>): void;
 }) {
   const [open, setOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    if (!saved) return;
+    const timer = setTimeout(() => setSaved(false), 2500);
+    return () => clearTimeout(timer);
+  }, [saved]);
   const primaryRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLButtonElement>(null);
   const dialogFocus = useRef<HTMLButtonElement>(null);
@@ -478,6 +485,8 @@ function ViewInstanceActions({
   const canRestore = session.dirty || session.filterPending;
   const writing = session.writeStatus !== 'idle';
   const blocked = writing || session.filterPending || session.requiresReload;
+  const showSaved =
+    saved && !session.dirty && !session.filterPending && !writing;
   // Move focus after React removes the restore-only menu and disables Save.
   useLayoutEffect(() => {
     if (restoreFocus.current && !canRestore) {
@@ -510,16 +519,24 @@ function ViewInstanceActions({
             ref={primaryRef}
             variant="outline"
             size="sm"
+            aria-label={permissions.save ? '保存' : '另存为'}
             disabled={blocked || (permissions.save && !session.dirty)}
             onClick={() => {
-              if (permissions.save) run(() => engine.save(session.instance.id));
+              if (permissions.save)
+                run(async () => {
+                  setSaved(false);
+                  await engine.save(session.instance.id);
+                  setSaved(true);
+                });
               else {
                 dialogFocus.current = primaryRef.current;
                 setOpen(true);
               }
             }}
           >
-            {permissions.save ? (
+            {showSaved ? (
+              <CheckIcon data-icon="inline-start" aria-hidden="true" />
+            ) : permissions.save ? (
               <SaveIcon data-icon="inline-start" aria-hidden="true" />
             ) : (
               <CopyIcon data-icon="inline-start" aria-hidden="true" />
@@ -528,9 +545,11 @@ function ViewInstanceActions({
               ? '删除中…'
               : writing
                 ? '保存中…'
-                : permissions.save
-                  ? '保存'
-                  : '另存为'}
+                : showSaved
+                  ? '已保存'
+                  : permissions.save
+                    ? '保存'
+                    : '另存为'}
           </Button>
 
           {hasMenu && (
@@ -549,18 +568,11 @@ function ViewInstanceActions({
             </DropdownMenuTrigger>
           )}
         </ButtonGroup>
+        <span role="status" aria-label="保存状态" className="fve:sr-only">
+          {showSaved ? '视图已保存' : ''}
+        </span>
         {hasMenu && (
-          <DropdownMenuContent
-            align="start"
-            finalFocus={() =>
-              open
-                ? false
-                : (menuRef.current ??
-                  (primaryRef.current?.disabled
-                    ? actionsRef.current
-                    : primaryRef.current))
-            }
-          >
+          <DropdownMenuContent align="start" finalFocus={!open}>
             <DropdownMenuGroup>
               {permissions.save && canSaveAs && (
                 <DropdownMenuItem
