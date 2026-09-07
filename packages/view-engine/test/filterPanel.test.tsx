@@ -182,6 +182,7 @@ it('uses field checkboxes for continuous selection and removal without querying'
   const amount = picker.getByRole('checkbox', { name: '订单金额' });
   const status = picker.getByRole('checkbox', { name: '订单状态' });
   expect(amount.getAttribute('aria-checked')).toBe('true');
+  expect(picker.queryByRole('button', { name: '追加订单金额条件' })).toBeNull();
   fireEvent.click(status);
   expect(status.getAttribute('aria-checked')).toBe('true');
   expect(screen.getByLabelText('订单状态值')).toBeTruthy();
@@ -205,69 +206,84 @@ it('uses field checkboxes for continuous selection and removal without querying'
   expect(apply).toHaveBeenCalledWith(filter.matchAll());
 });
 
-it('keeps repeated OR conditions available and unchecks only the current group field', async () => {
-  const apply = vi.fn();
-  render(
-    <FilterPanel
-      fields={fields}
-      value={filter.and([
+it.each(['AND', 'OR', 'NOR'] as const)(
+  'appends repeated %s conditions and unchecks only the current group field',
+  async op => {
+    const apply = vi.fn();
+    const group = { AND: filter.and, OR: filter.or, NOR: filter.nor }[op];
+    render(
+      <FilterPanel
+        fields={fields}
+        value={filter.and([
+          filter.eq('amount', 1),
+          group([filter.eq('amount', 2), filter.eq('status', 'pending')]),
+        ])}
+        onApply={apply}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '添加到组合 3' }));
+    const picker = within(
+      await screen.findByRole('dialog', { name: '选择筛选字段' }),
+    );
+    const amount = picker.getByRole('checkbox', { name: '订单金额' });
+    expect(amount.getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(picker.getByRole('button', { name: '追加订单金额条件' }));
+    expect(screen.getAllByLabelText('订单金额值')).toHaveLength(3);
+    expect(picker.getByText('2 条')).toBeTruthy();
+    fireEvent.click(amount);
+    expect(screen.getAllByLabelText('订单金额值')).toHaveLength(1);
+    expect(amount.getAttribute('aria-checked')).toBe('false');
+    expect(
+      picker
+        .getByRole('checkbox', { name: '订单状态' })
+        .getAttribute('aria-checked'),
+    ).toBe('true');
+    expect(apply).not.toHaveBeenCalled();
+    fireEvent.click(picker.getByRole('button', { name: '完成' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '选择筛选字段' })).toBeNull(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
+    expect(apply).toHaveBeenCalledWith(
+      filter.and([
         filter.eq('amount', 1),
-        filter.or([filter.eq('amount', 2), filter.eq('status', 'pending')]),
-      ])}
-      onApply={apply}
-    />,
-  );
-  fireEvent.click(screen.getByRole('button', { name: '添加到组合 3' }));
-  const picker = within(
-    await screen.findByRole('dialog', { name: '选择筛选字段' }),
-  );
-  const amount = picker.getByRole('checkbox', { name: '订单金额' });
-  expect(amount.getAttribute('aria-checked')).toBe('true');
-  fireEvent.click(picker.getByRole('button', { name: '添加订单金额条件' }));
-  expect(screen.getAllByLabelText('订单金额值')).toHaveLength(3);
-  fireEvent.click(amount);
-  expect(screen.getAllByLabelText('订单金额值')).toHaveLength(1);
-  expect(amount.getAttribute('aria-checked')).toBe('false');
-  expect(
-    picker
-      .getByRole('checkbox', { name: '订单状态' })
-      .getAttribute('aria-checked'),
-  ).toBe('true');
-  expect(apply).not.toHaveBeenCalled();
-  fireEvent.click(picker.getByRole('button', { name: '完成' }));
-  await waitFor(() =>
-    expect(screen.queryByRole('dialog', { name: '选择筛选字段' })).toBeNull(),
-  );
-  fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
-  expect(apply).toHaveBeenCalledWith(
-    filter.and([
-      filter.eq('amount', 1),
-      filter.or([filter.eq('status', 'pending')]),
-    ]),
-  );
-});
+        group([filter.eq('status', 'pending')]),
+      ]),
+    );
+  },
+);
 
-it('reports loaded AND duplicates without discarding either condition', () => {
+it('preserves loaded AND duplicates in advanced mode until simple mode can represent them', async () => {
   const apply = vi.fn();
+  const value = filter.and([filter.gte('amount', 1), filter.lte('amount', 2)]);
   render(
-    <FilterPanel
-      fields={fields}
-      value={filter.and([filter.eq('amount', 1), filter.gte('amount', 2)])}
-      onApply={apply}
-    />,
+    <FilterPanel fields={fields} value={value} mode="simple" onApply={apply} />,
   );
   expect(screen.getAllByLabelText('订单金额值')).toHaveLength(2);
-  expect(screen.getByText(/同一 AND 分组不能重复使用字段/)).toBeTruthy();
+  expect(
+    screen.getByRole('combobox', { name: '筛选模式' }).textContent,
+  ).toContain('高级');
+  expect(screen.queryByRole('alert')).toBeNull();
+  fireEvent.click(screen.getByRole('combobox', { name: '筛选模式' }));
+  expect(
+    (await screen.findByRole('option', { name: '简单' })).getAttribute(
+      'aria-disabled',
+    ),
+  ).toBe('true');
+  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
   fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
-  expect(apply).not.toHaveBeenCalled();
+  expect(apply).toHaveBeenCalledWith(value);
   fireEvent.click(
     screen.getAllByRole('button', { name: '删除订单金额条件' })[1],
   );
+  expect(
+    screen.getByRole('combobox', { name: '筛选模式' }).textContent,
+  ).toContain('简单');
   fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
-  expect(apply).toHaveBeenCalledWith(filter.and([filter.eq('amount', 1)]));
+  expect(apply).toHaveBeenCalledWith(filter.and([filter.gte('amount', 1)]));
 });
 
-it('disables converting repeated OR fields into AND', async () => {
+it('allows switching repeated-field groups from OR to AND without dropping rules', async () => {
   const apply = vi.fn();
   render(
     <FilterPanel
@@ -278,11 +294,14 @@ it('disables converting repeated OR fields into AND', async () => {
   );
   fireEvent.click(screen.getByRole('combobox', { name: '组合方式' }));
   const and = await screen.findByRole('option', { name: '满足全部条件' });
-  expect(and.getAttribute('aria-disabled')).toBe('true');
+  expect(and.getAttribute('aria-disabled')).not.toBe('true');
+  fireEvent.pointerDown(and, { pointerType: 'mouse' });
   fireEvent.click(and);
-  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
+  expect(apply).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
-  expect(apply.mock.calls[0][0].op).toBe(FilterOperator.OR);
+  expect(apply).toHaveBeenCalledWith(
+    filter.and([filter.eq('amount', 1), filter.gte('amount', 2)]),
+  );
 });
 
 it('buffers edits and clears until Query, retains unset controls, and undoes without querying', () => {
@@ -643,9 +662,9 @@ it('does not offer destructive simple-mode conversion for element conditions', a
   );
   fireEvent.click(screen.getByRole('combobox', { name: '筛选模式' }));
   expect(
-    (
-      await screen.findByRole('option', { name: '简单', exact: true })
-    ).getAttribute('aria-disabled'),
+    (await screen.findByRole('option', { name: '简单' })).getAttribute(
+      'aria-disabled',
+    ),
   ).toBe('true');
   fireEvent.keyDown(screen.getByRole('option', { name: '高级', exact: true }), {
     key: 'Escape',

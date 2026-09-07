@@ -35,7 +35,7 @@ Core imports do not load React, DOM or CSS. These descriptors are UI inputs, not
 | `getFieldOperators(field)`                             | Returns the field's compatible operators, restricted by its explicit allowlist.                                                                                                                  |
 | `isSimpleFilter(draft)`                                | Structural eligibility: MATCH_ALL, an ordinary field predicate, or a flat AND of those predicates. Panel also checks editor validity before switching modes.                                     |
 
-Direct children of each AND group must have unique `field` bindings, including unset predicates and ELEMENT_MATCH containers. Duplicate bindings produce a validation error and no executable expression; view-instance validation enforces the same rule. OR/NOR branches, nested groups and element predicates keep their own scopes. Adding, moving and changing group operators cannot introduce duplicates.
+Field uniqueness is a simple-mode editing rule, not a compiler restriction. Advanced AND/OR/NOR groups accept repeated direct field bindings, including within element predicates. Compilation and view-instance validation preserve these conditions. `isSimpleFilter` returns false for repeated-field AND drafts, including unset conditions; a requested simple mode is rendered as advanced until the draft can be represented without losing rules.
 
 Fully unset scalar predicates and cleared collections are omitted. An explicitly empty new group is incomplete; a nonempty group whose children are all inactive is omitted. Empty output at the query root becomes MATCH_ALL. Inactive children never become MATCH_ALL inside OR/NOR. A missing part of a bound, collection item or date/time pair blocks compilation. False, zero, explicit null and valid empty strings retain their meaning. ELEMENT_MATCH only accepts element-relative fields and excludes root-only metadata/search/deletion nodes.
 
@@ -93,9 +93,11 @@ focus; outside interaction also dismisses it.
 
 Checkboxes reflect the current group's direct field bindings, including unset
 values. Checking adds a condition; unchecking removes that field's direct
-conditions from that group, without changing other groups or querying. AND
-still forbids duplicate fields. OR/NOR fields expose an adjacent add action
-for additional same-field conditions. In advanced mode, an adjacent icon dropdown adds AND/OR/NOR to the current
+conditions from that group, without changing other groups or querying. Simple mode
+keeps one condition per field. Advanced mode displays each selected field’s direct
+condition count and an Append condition icon for additional conditions in AND,
+OR or NOR groups. The checkbox remains selected while any direct condition exists.
+Changing logical operators preserves all conditions. In advanced mode, an adjacent icon dropdown adds AND/OR/NOR to the current
 group; these three entries are excluded from the field picker. Disallowed
 operators are disabled. Simple mode omits this icon. Root-level operators
 remain add actions. Removing a field from its filter row also updates its
@@ -584,8 +586,15 @@ Pending metric slots stay blank; pagination omits duplicate loading text. Spinne
 have accessible status labels and respect reduced-motion preferences. Loading
 does not collapse metric rows.
 
+Each failed scope shows one error icon beside its label. Activating it opens a
+Popover with the cause; all-summary errors include “重试汇总” when `onSummaryRetry`
+is provided. Page-summary errors show their own cause without retrying all records.
+Errors are announced once per scope and stay inside the corresponding summary row,
+without a separate full-width alert below the table. Closing details returns focus
+to the error trigger, or to the scope label when retry clears the error.
+
 Loading and errors remain separate: an all-summary failure retains the page values
-and records, and offers “重试汇总”. Null/unavailable values display “—”; actual zero
+and records; retry only requests aggregation. Null/unavailable values display “—”; actual zero
 remains zero. Long numbers stay on one line with an ellipsis and their complete,
 unrounded value in the title. Summary cells never pass fabricated records to cell
 or business-action renderers.

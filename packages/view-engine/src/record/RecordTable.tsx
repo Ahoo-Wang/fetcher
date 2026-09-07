@@ -17,12 +17,14 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type RefObject,
 } from 'react';
 import {
   ArrowDownIcon,
   ArrowUpDownIcon,
   ArrowUpIcon,
   InboxIcon,
+  CircleAlertIcon,
 } from 'lucide-react';
 import { SortDirection } from '@ahoo-wang/fetcher-wow';
 import {
@@ -42,6 +44,14 @@ import {
 import { Button } from '../components/ui/button.js';
 import { Checkbox } from '../components/ui/checkbox.js';
 import { Spinner } from '../components/ui/spinner.js';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverDescription,
+} from '../components/ui/popover.js';
 import {
   Tooltip,
   TooltipProvider,
@@ -70,6 +80,7 @@ import {
   type RecordColumn,
   type RecordData,
   type RecordKey,
+  type RecordSummaryResult,
   type ViewFieldDefinition,
 } from './recordModel.js';
 import type { RecordTableProps } from './recordReactTypes.js';
@@ -184,6 +195,111 @@ function RecordCell({
   return (
     <span className="fve:break-words" title={text}>
       {text}
+    </span>
+  );
+}
+
+function SummaryError({
+  label,
+  error,
+  onRetry,
+  fallback,
+}: {
+  label: string;
+  error: string;
+  onRetry?: () => void;
+  fallback: RefObject<HTMLSpanElement | null>;
+}) {
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <span role="alert" className="fve:sr-only">
+        {label}汇总失败
+      </span>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          ref={trigger}
+          aria-label={`${label}汇总失败，查看详情`}
+          title={`${label}汇总失败`}
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="fve:h-6 fve:gap-0.5 fve:px-0 fve:text-xs fve:text-destructive"
+            />
+          }
+        >
+          {label}
+          <CircleAlertIcon aria-hidden="true" />
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="fve:w-80 fve:max-w-[calc(100vw-2rem)]"
+          finalFocus={() => trigger.current ?? fallback.current ?? false}
+        >
+          <PopoverHeader>
+            <PopoverTitle>{label}汇总失败</PopoverTitle>
+            <PopoverDescription className="fve:break-words">
+              {error}
+            </PopoverDescription>
+          </PopoverHeader>
+          {onRetry && (
+            <Button
+              type="button"
+              size="sm"
+              className="fve:self-start"
+              onClick={() => {
+                setOpen(false);
+                onRetry();
+              }}
+            >
+              重试汇总
+            </Button>
+          )}
+        </PopoverContent>
+      </Popover>
+    </>
+  );
+}
+
+function SummaryScope({
+  label,
+  result,
+  onRetry,
+}: {
+  label: string;
+  result?: RecordSummaryResult;
+  onRetry?: () => void;
+}) {
+  const scope = useRef<HTMLSpanElement>(null);
+  return (
+    <span
+      ref={scope}
+      tabIndex={-1}
+      aria-label={`${label}汇总状态`}
+      title={label === '所有' ? '当前已查询条件下的所有记录' : '当前页记录'}
+      className="fve:inline-flex fve:h-6 fve:items-center fve:gap-0.5 fve:text-xs fve:leading-5 fve:text-muted-foreground fve:outline-none fve:focus-visible:ring-2 fve:focus-visible:ring-ring"
+    >
+      {result?.status === 'error' ? (
+        <SummaryError
+          label={label}
+          error={result.error ?? '暂时无法完成汇总。'}
+          onRetry={onRetry}
+          fallback={scope}
+        />
+      ) : (
+        <>
+          {label}
+          {result?.status === 'loading' && (
+            <Spinner
+              className="fve:size-3 fve:shrink-0"
+              aria-label={`${label}汇总加载中`}
+            />
+          )}
+        </>
+      )}
     </span>
   );
 }
@@ -660,22 +776,13 @@ export function RecordTable({
                       aria-label={label}
                       data-pinned="start"
                       style={{ left: 0 }}
-                      title={
-                        label === '所有'
-                          ? '当前已查询条件下的所有记录'
-                          : '当前页记录'
-                      }
                       className="fve:h-auto fve:px-1 fve:py-2 fve:align-top fve:text-xs fve:leading-5 fve:font-normal fve:text-muted-foreground"
                     >
-                      <span className="fve:inline-flex fve:items-center fve:gap-0.5">
-                        {label}
-                        {result?.status === 'loading' && (
-                          <Spinner
-                            className="fve:size-3 fve:shrink-0"
-                            aria-label={`${label}汇总加载中`}
-                          />
-                        )}
-                      </span>
+                      <SummaryScope
+                        label={label}
+                        result={result}
+                        onRetry={label === '所有' ? onSummaryRetry : undefined}
+                      />
                     </TableHead>
                   )}
                   {withFiller(visibleColumns).map(column => {
@@ -701,22 +808,13 @@ export function RecordTable({
                         data-pinned={column.getIsPinned() || undefined}
                       >
                         {scopeCell && (
-                          <span
-                            title={
-                              label === '所有'
-                                ? '当前已查询条件下的所有记录'
-                                : '当前页记录'
+                          <SummaryScope
+                            label={label}
+                            result={result}
+                            onRetry={
+                              label === '所有' ? onSummaryRetry : undefined
                             }
-                            className="fve:inline-flex fve:items-center fve:gap-0.5 fve:text-xs fve:leading-5 fve:text-muted-foreground"
-                          >
-                            {label}
-                            {result?.status === 'loading' && (
-                              <Spinner
-                                className="fve:size-3 fve:shrink-0"
-                                aria-label={`${label}汇总加载中`}
-                              />
-                            )}
-                          </span>
+                          />
                         )}
                         {configured.kind === 'field' &&
                           field &&
@@ -776,26 +874,6 @@ export function RecordTable({
           </TooltipProvider>
         )}
       </Table>
-      {hasSummary &&
-        summaries.map(
-          ({ label, result }) =>
-            result?.status === 'error' && (
-              <div
-                key={label}
-                role="alert"
-                className="fve:flex fve:flex-wrap fve:items-center fve:gap-2 fve:border-t fve:px-3 fve:py-2 fve:text-sm fve:text-destructive"
-              >
-                <span>
-                  {label}汇总：{result.error}
-                </span>
-                {label === '所有' && onSummaryRetry && (
-                  <Button variant="ghost" size="sm" onClick={onSummaryRetry}>
-                    重试汇总
-                  </Button>
-                )}
-              </div>
-            ),
-        )}
     </div>
   );
 }

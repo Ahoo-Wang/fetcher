@@ -1765,21 +1765,43 @@ export const SummaryFailure: Story = {
   render: args => <Scenario {...args} summaries failFirstSummary />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
     await canvas.findByRole('row', { name: /ORD-202609-1001/ });
-    await expect(await canvas.findByRole('alert')).toHaveTextContent(
-      '所有汇总：汇总服务暂时不可用',
+    const all = canvas.getByRole('row', { name: '所有汇总' });
+    const error = await within(all).findByRole('button', {
+      name: '所有汇总失败，查看详情',
+    });
+    await expect(canvas.getAllByRole('alert')).toHaveLength(1);
+    await expect(within(all).getByRole('alert')).toHaveTextContent(
+      '所有汇总失败',
     );
+    await expect(within(all).getByText('—')).toBeVisible();
+    await expect(
+      canvas.queryByText('汇总服务暂时不可用，请重试汇总。'),
+    ).toBeNull();
     await expect(
       canvas.getByRole('row', { name: '本页汇总' }),
     ).toHaveTextContent('8,499');
     await expect(
       canvas.getByRole('row', { name: /ORD-202609-1001/ }),
     ).toBeInTheDocument();
-    await userEvent.click(canvas.getByRole('button', { name: '重试汇总' }));
+    await userEvent.click(error);
+    await expect(
+      await page.findByRole('dialog', { name: '所有汇总失败' }),
+    ).toHaveTextContent('汇总服务暂时不可用，请重试汇总。');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(page.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(error).toHaveFocus());
+    await userEvent.click(error);
+    const details = await page.findByRole('dialog', { name: '所有汇总失败' });
+    await userEvent.click(
+      within(details).getByRole('button', { name: '重试汇总' }),
+    );
+    await waitFor(() => expect(all).toHaveTextContent('36,456'));
+    await expect(page.queryByRole('dialog')).toBeNull();
+    await expect(canvas.queryByRole('alert')).toBeNull();
     await waitFor(() =>
-      expect(canvas.getByRole('row', { name: '所有汇总' })).toHaveTextContent(
-        '36,456',
-      ),
+      expect(canvas.getByLabelText('所有汇总状态')).toHaveFocus(),
     );
     await expect(
       canvas.getByRole('row', { name: '本页汇总' }),
@@ -2362,6 +2384,7 @@ export const RuntimeTools: Story = {
     await userEvent.click(
       await page.findByRole('menuitemradio', { name: '关闭自动刷新' }),
     );
+    await waitFor(() => expect(page.queryByRole('menu')).toBeNull());
     await expect(refresh).not.toHaveTextContent(/\d{2}:\d{2}/);
   },
 };

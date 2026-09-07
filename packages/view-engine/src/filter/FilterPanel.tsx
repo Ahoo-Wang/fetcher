@@ -23,7 +23,6 @@ import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
 import { ChevronDownIcon, SearchIcon, XIcon } from 'lucide-react';
 import {
   compileFilterDraft,
-  duplicateAndFields,
   createFilterDraft,
   FILTER_OPERATORS,
   getFieldOperators,
@@ -88,12 +87,6 @@ function appendNode(
     return { ...target, operands: [...target.operands, child] };
   if (target.op === FilterOperator.MATCH_ALL) return child;
   return { ...newFilterDraft(FilterOperator.AND), operands: [target, child] };
-}
-function canAppend(target: FilterDraftNode, child: FilterDraftNode): boolean {
-  if (target.operands && target.op !== FilterOperator.AND) return true;
-  const siblings =
-    target.operands ?? (target.op === FilterOperator.MATCH_ALL ? [] : [target]);
-  return !child.field || !siblings.some(node => node.field === child.field);
 }
 function message(error: unknown) {
   return (
@@ -429,8 +422,9 @@ export function FilterPanel(props: FilterPanelProps) {
     const current = locateFilterNodes(draftRef.current, fields).find(
       item => item.node.id === target.id,
     )?.node;
-    if (current && canAppend(current, child))
-      update(current.id, appendNode(current, child));
+    if (!current) return;
+    const next = appendNode(current, child);
+    if (mode === 'advanced' || isSimpleFilter(next)) update(current.id, next);
   }
   function addControl(
     target: FilterDraftNode,
@@ -455,9 +449,8 @@ export function FilterPanel(props: FilterPanelProps) {
           value: `field:${field.field}`,
           label: field.label,
           group: field.group ?? '',
-          selected: bindings.some(node => node.field === field.field),
-          repeatable:
-            target.op === FilterOperator.OR || target.op === FilterOperator.NOR,
+          count: bindings.filter(node => node.field === field.field).length,
+          repeatable: mode === 'advanced',
         },
       ];
     });
@@ -790,15 +783,11 @@ export function FilterPanel(props: FilterPanelProps) {
                   value: op,
                   label: groupLabels[op],
                   disabled:
-                    (!!props.allowedOperators &&
-                      !props.allowedOperators.includes(op)) ||
-                    duplicateAndFields({ ...node, op }).length > 0,
+                    !!props.allowedOperators &&
+                    !props.allowedOperators.includes(op),
                 }))}
                 disabled={disabled}
-                onValueChange={op => {
-                  if (!duplicateAndFields({ ...node, op }).length)
-                    update(node.id, { ...node, op });
-                }}
+                onValueChange={op => update(node.id, { ...node, op })}
               />
             )}
             <Button
@@ -1007,7 +996,7 @@ export function FilterPanel(props: FilterPanelProps) {
         )}
         {!simple && (
           <p className="fve:m-0 fve:text-sm fve:text-muted-foreground">
-            当前包含嵌套或特殊条件，需使用高级模式；不会自动展开或删除分支。
+            当前包含同一字段的多条规则、嵌套或特殊条件，需使用高级模式。
           </p>
         )}
         {mode === 'advanced' && simple && issues.length > 0 && (

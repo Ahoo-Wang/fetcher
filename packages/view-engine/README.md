@@ -115,6 +115,11 @@ row selection do not change the scope. Aggregate loading/failure leaves page val
 and records available, with a separate retry. Changing a function recalculates both
 summaries without reloading the list.
 
+Each failed scope shows one error icon beside its label. Click it to open the
+cause; the all-record scope also offers a retry that only requests aggregation.
+Failed metrics keep “—” placeholders. Errors stay in their summary row, without a
+full-width alert below the table.
+
 Numeric fields can set `numberFormat`, using `Intl.NumberFormatOptions` plus an
 optional `locale` (default `zh-CN`). For money, use
 `numberFormat: { style: 'currency', currency: 'CNY' }`; for integers, use
@@ -192,9 +197,9 @@ export function OrderFilters({
 
 Simple mode uses an implicit AND; advanced mode structurally edits all 50 Wow operators including AND / OR / NOR / ELEMENT_MATCH. Editing, clearing, undo and mode switches make no requests. Query calls `onApply` with a valid expression. The host synchronously updates `value`, executes the request and supplies `querying` / `queryError`. Use `onPendingChange` to guard view saving.
 
-Each AND group allows one direct condition per field, even while its value is unset. OR/NOR and separate groups retain independent bindings. Duplicate AND fields fail compilation and instance validation.
+Simple mode allows one condition per field, including unset values. Advanced AND/OR/NOR groups allow multiple conditions on the same field, including inside element scopes. Repeated bindings are valid for compilation and instance persistence; they keep the editor in advanced mode until each field occurs once and the tree is otherwise simple.
 
-Add filter opens an anchored Popover with grouped checkboxes, keeping the table and query toolbar in place. Its height is capped and its field area scrolls internally. It stays open for continuous additions; Done or Escape closes it and returns focus to Add filter. Clicking outside dismisses it. Set `group` on field definitions to group choices in definition order. Ungrouped fields appear under Other fields when mixed with named groups. Checking a field adds its condition; unchecking removes that field's direct conditions in the current group. Checkbox state follows the draft even when a value is unset. OR/NOR fields provide an adjacent add action for additional same-field predicates; advanced mode places AND/OR/NOR in the adjacent icon dropdown instead of the field picker. Root-level operators remain add actions. Logical menu choices respect the definition allowlist. Changes apply only on Query.
+Add filter opens an anchored Popover with grouped checkboxes, keeping the table and query toolbar in place. Its height is capped and its field area scrolls internally. It stays open for continuous additions; Done or Escape closes it and returns focus to Add filter. Clicking outside dismisses it. Set `group` on field definitions to group choices in definition order. Ungrouped fields appear under Other fields when mixed with named groups. Checking a field adds its condition; unchecking removes that field's direct conditions in the current group. Checkbox state follows the draft even when a value is unset. Advanced mode shows each selected field’s condition count and an adjacent Append condition action for additional same-field predicates in any logical group; advanced mode places AND/OR/NOR in the adjacent icon dropdown instead of the field picker. Root-level operators remain add actions. Logical menu choices respect the definition allowlist. Changes apply only on Query.
 
 Fully unset values keep their controls but produce no predicate; partial values, invalid data and missing extensions block Query. Fields bind when added and remain in their original group and scope. `extensions.filters` supplies local custom editors. `draft` / `onDraftChange` lets the host retain built-in edit buffers per instance; custom components should keep their own temporary UI state in host context or remain mounted.
 

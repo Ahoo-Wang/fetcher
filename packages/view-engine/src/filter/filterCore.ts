@@ -644,18 +644,6 @@ function scalar(
   return value;
 }
 
-/** Direct bindings in one AND group; logical branches and element predicates own their groups. */
-export function duplicateAndFields(node: FilterDraftNode): FilterDraftNode[] {
-  if (node.op !== Op.AND || !Array.isArray(node.operands)) return [];
-  const seen = new Set<string>();
-  return node.operands.filter(child => {
-    if (typeof child?.field !== 'string') return false;
-    if (seen.has(child.field)) return true;
-    seen.add(child.field);
-    return false;
-  });
-}
-
 export function compileFilterDraft(
   draft: FilterDraftNode,
   fields: readonly FilterFieldDefinition[],
@@ -694,11 +682,6 @@ export function compileFilterDraft(
       if (descriptor.category === 'logical') {
         if (!Array.isArray(node.operands) || node.operands.length === 0)
           throw new TypeError('分组至少需要一个条件');
-        for (const duplicate of duplicateAndFields(node))
-          errors.push({
-            id: duplicate.id,
-            message: `同一 AND 分组不能重复使用字段 ${scope.find(field => field.field === duplicate.field)?.label ?? duplicate.field}`,
-          });
         const operands = Array.from(node.operands, child =>
           visit(child, scope, element),
         ).filter((child): child is FilterExpression => child !== undefined);
@@ -816,6 +799,8 @@ export function isSimpleFilter(draft: FilterDraftNode): boolean {
     (draft.op === Op.AND &&
       Array.isArray(draft.operands) &&
       draft.operands.length > 0 &&
-      draft.operands.every(ordinary))
+      draft.operands.every(ordinary) &&
+      new Set(draft.operands.map(node => node.field)).size ===
+        draft.operands.length)
   );
 }

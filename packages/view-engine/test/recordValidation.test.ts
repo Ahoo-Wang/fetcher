@@ -84,7 +84,7 @@ describe('record boundaries', () => {
       }),
     ).not.toThrow();
   });
-  it('validates display groups and rejects duplicate AND fields at the instance boundary', () => {
+  it('validates display groups and accepts repeated AND fields at the instance boundary', () => {
     expect(() =>
       validateViewDefinition({
         ...definition,
@@ -114,7 +114,7 @@ describe('record boundaries', () => {
         },
         definition,
       ),
-    ).toThrow('不能重复使用字段');
+    ).not.toThrow();
   });
   it('validates the table action reference from remote definitions', () => {
     expect(() =>

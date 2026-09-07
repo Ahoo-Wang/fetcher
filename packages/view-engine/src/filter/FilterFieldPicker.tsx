@@ -27,8 +27,8 @@ export interface FieldChoice {
   value: string;
   label: string;
   group: string;
-  /** Undefined for actions that add root-level conditions. */
-  selected?: boolean;
+  /** Direct conditions for this field; undefined for root-level actions. */
+  count?: number;
   repeatable?: boolean;
 }
 
@@ -98,14 +98,19 @@ export function FilterFieldPicker({
               )}
               <div className="fve:grid fve:grid-cols-[repeat(auto-fill,minmax(min(100%,10rem),1fr))] fve:gap-2">
                 {items.map(option =>
-                  option.selected !== undefined ? (
+                  option.count !== undefined ? (
                     <div
                       key={option.value}
                       className="fve:flex fve:min-w-0 fve:items-center fve:gap-1"
                     >
                       <label className="fve:flex fve:min-w-0 fve:flex-1 fve:cursor-pointer fve:items-center fve:gap-2 fve:rounded-md fve:p-1.5 fve:hover:bg-accent">
                         <Checkbox
-                          checked={option.selected}
+                          checked={option.count > 0}
+                          aria-description={
+                            option.repeatable
+                              ? `已添加 ${option.count} 条条件`
+                              : undefined
+                          }
                           disabled={disabled}
                           onCheckedChange={checked => {
                             if (disabled) return;
@@ -115,18 +120,23 @@ export function FilterFieldPicker({
                         />
                         <span className="fve:truncate">{option.label}</span>
                       </label>
-                      {option.selected && option.repeatable && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          aria-label={`添加${option.label}条件`}
-                          title="再添加一个条件"
-                          disabled={disabled}
-                          onClick={() => onAdd(option.value)}
-                        >
-                          <PlusIcon aria-hidden="true" />
-                        </Button>
+                      {option.count > 0 && option.repeatable && (
+                        <>
+                          <span className="fve:shrink-0 fve:text-xs fve:text-muted-foreground">
+                            {option.count} 条
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label={`追加${option.label}条件`}
+                            title="追加条件"
+                            disabled={disabled}
+                            onClick={() => onAdd(option.value)}
+                          >
+                            <PlusIcon aria-hidden="true" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   ) : (

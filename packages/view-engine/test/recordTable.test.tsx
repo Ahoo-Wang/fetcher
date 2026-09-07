@@ -20,6 +20,7 @@ import {
   render,
   screen,
   within,
+  waitFor,
 } from '@testing-library/react';
 import { filter, SortDirection } from '@ahoo-wang/fetcher-wow';
 import { RecordTable } from '../src/record/RecordTable.js';
@@ -1296,7 +1297,7 @@ it('formats numeric records and ordered metrics consistently with one fixed scop
   expect(singleColumn.getByText('¥2,025.33')).toBeTruthy();
 });
 
-it('aligns multiple summary values with columns, preserves zero, and reports aggregate failure separately', () => {
+it('keeps summary failures in their scope and retries from its error details', async () => {
   const configured: ViewInstance = {
     ...instance,
     config: {
@@ -1359,11 +1360,78 @@ it('aligns multiple summary values with columns, preserves zero, and reports agg
       })}
     />,
   );
-  expect(screen.getByRole('alert').textContent).toContain('所有汇总：统计失败');
+  const scope = within(screen.getByRole('row', { name: '所有汇总' }));
+  expect(scope.getByRole('alert').textContent).toContain('所有汇总失败');
+  expect(screen.getAllByRole('alert')).toHaveLength(1);
+  expect(screen.queryByText('统计失败')).toBeNull();
+  const error = scope.getByRole('button', { name: '所有汇总失败，查看详情' });
   expect(screen.getByRole('row', { name: '本页汇总' }).textContent).toContain(
     '合计0',
   );
   expect(screen.getByRole('cell', { name: 'Zulu' })).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: '重试汇总' }));
+  fireEvent.click(error);
+  const details = within(
+    await screen.findByRole('dialog', { name: '所有汇总失败' }),
+  );
+  expect(details.getByText('统计失败')).toBeTruthy();
+  fireEvent.click(details.getByRole('button', { name: '重试汇总' }));
   expect(retry).toHaveBeenCalledOnce();
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  await waitFor(() => expect(document.activeElement).toBe(error));
 });
+
+it.each([true, false])(
+  'shows one error per scope with selection %s and keeps page errors separate',
+  async selectable => {
+    const configured: ViewInstance = {
+      ...instance,
+      config: {
+        ...instance.config,
+        presentation: {
+          layout: 'table',
+          table: {
+            columns: [
+              {
+                id: 'amount',
+                kind: 'field',
+                field: 'amount',
+                summary: ['SUM', 'AVG', 'MIN'],
+              },
+            ],
+          },
+        },
+      },
+    };
+    render(
+      <RecordTable
+        {...props({
+          instance: configured,
+          selectable,
+          pageSummary: {
+            status: 'error',
+            values: {},
+            error: '本页有非数值内容',
+          },
+          allSummary: { status: 'error', values: {}, error: '聚合服务不可用' },
+          onSummaryRetry: vi.fn(),
+        })}
+      />,
+    );
+    expect(screen.getAllByRole('alert')).toHaveLength(2);
+    for (const label of ['本页', '所有']) {
+      const scope = within(screen.getByRole('row', { name: `${label}汇总` }));
+      expect(
+        scope.getAllByRole('button', { name: /汇总失败，查看详情/ }),
+      ).toHaveLength(1);
+      expect(scope.getAllByText('—')).toHaveLength(3);
+    }
+    fireEvent.click(
+      screen.getByRole('button', { name: '本页汇总失败，查看详情' }),
+    );
+    const details = within(
+      await screen.findByRole('dialog', { name: '本页汇总失败' }),
+    );
+    expect(details.getByText('本页有非数值内容')).toBeTruthy();
+    expect(details.queryByRole('button', { name: '重试汇总' })).toBeNull();
+  },
+);

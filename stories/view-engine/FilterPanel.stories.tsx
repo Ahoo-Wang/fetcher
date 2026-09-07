@@ -579,6 +579,65 @@ export const LogicalGroupMenu: Story = {
     );
   },
 };
+export const RepeatedFields: Story = {
+  name: '高级 · 同一字段多条规则',
+  render: args => (
+    <Scenario
+      {...args}
+      initial={filter.and([
+        filter.startsWith('customer', '上海'),
+        filter.contains('customer', '科技'),
+      ])}
+    />
+  ),
+  play: async ({ canvasElement, args }) => {
+    if (args.disabled) return;
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await expect(
+      canvas.getByRole('combobox', { name: '筛选模式' }),
+    ).toHaveTextContent('高级');
+    await expect(
+      canvas.getAllByRole('textbox', { name: '客户值' }),
+    ).toHaveLength(2);
+    await userEvent.click(canvas.getByRole('button', { name: '添加筛选' }));
+    const picker = within(
+      await page.findByRole('dialog', { name: '选择筛选字段' }),
+    );
+    await expect(picker.getByText('2 条')).toBeVisible();
+    await expect(picker.getByRole('checkbox', { name: '客户' })).toBeChecked();
+    await userEvent.click(picker.getByRole('button', { name: '追加客户条件' }));
+    await expect(picker.getByText('3 条')).toBeVisible();
+    await expect(
+      canvas.getAllByRole('textbox', { name: '客户值' }),
+    ).toHaveLength(3);
+    await userEvent.click(picker.getByRole('button', { name: '完成' }));
+    await waitFor(() => expect(page.queryByRole('dialog')).toBeNull());
+    await userEvent.click(
+      canvas.getAllByRole('button', { name: '删除客户条件' })[2],
+    );
+    await userEvent.click(canvas.getByRole('combobox', { name: '筛选模式' }));
+    await expect(
+      await page.findByRole('option', { name: '简单' }),
+    ).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(page.queryByRole('listbox')).toBeNull());
+    await expect(canvas.getByLabelText('宿主状态')).toHaveTextContent(
+      '已应用 0 次',
+    );
+    await userEvent.click(canvas.getByRole('button', { name: '查询' }));
+    await expect(canvas.getByTestId('applied-filter')).toHaveTextContent(
+      'STARTS_WITH',
+    );
+    await expect(canvas.getByTestId('applied-filter')).toHaveTextContent(
+      'CONTAINS',
+    );
+    await expect(canvas.getByLabelText('宿主状态')).toHaveTextContent(
+      '已应用 1 次',
+    );
+  },
+};
+
 export const CustomEditor: Story = {
   name: '自定义筛选器 · 无效状态保护',
   render: args => (
