@@ -2,6 +2,39 @@
 
 Independent `@ahoo-wang/fetcher-view-engine` package with headless Wow filter compilation and validation, a complete `FilterPanel`, structured value editors, and shadcn/Base UI controls. It also provides a headless ViewEngine and a complete RecordView page with host-managed definitions, instances and persistence. Cards, AnalysisView and DashboardView remain separate work.
 
+## Module responsibilities
+
+The public `ViewEngine` composes internal services; applications use its public commands and snapshots. The core runtime imports no React, DOM or table component library.
+
+| Module                                                     | Owns                                                                                                                     |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `record/engine/SessionStore`, `sessionState`               | Immutable snapshots, subscriptions, saved/editing baselines and derived dirty/pending state.                             |
+| `EngineScope`, `InstanceWork`                              | Lifetime/navigation versions, cancellable selection, write/reload exclusion and uncertain create receipts.               |
+| `RecordEdits`                                              | Validated draft/config changes and the record/summary queries each change requires.                                      |
+| `RecordQueries`, `RecordSummaries`                         | Independent record and aggregate requests, cancellation, result validation and failure recovery.                         |
+| `ViewLoader`, `ViewReload`                                 | Definition/instance loading, navigation and reload reconciliation without discarding edits.                              |
+| `ViewPersistence`, `ViewManagement`, `instancePermissions` | Save/save-as, names/deletion/user order, permissions and response reconciliation.                                        |
+| `record/validation`                                        | Definition, instance/list and record trust boundaries.                                                                   |
+| `filter`                                                   | Operator metadata, protocol construction/compilation, editor lifetimes and focused panel/value components.               |
+| `record/page`, `record/table`                              | Page ownership/navigation/actions and table state/header/body/cell/summary composition. Layout calculations remain pure. |
+
+Tests and Storybook interactions are grouped by behavior. Source modules target 300 lines and none exceed 400. The 330-line `useFilterPanelState` deliberately retains one controlled editor lifecycle: splitting its coordinated draft/acknowledgement transitions would separate state that must change together. Its synchronous callback boundary has a regression covering child layout-effect updates.
+
+## Runnable public-package examples
+
+From the repository root, using the existing workspace dependencies:
+
+```bash
+pnpm --filter @ahoo-wang/fetcher-view-engine build
+node packages/view-engine/examples/core.mjs
+node packages/view-engine/scripts/verify-package.mjs
+pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
+```
+
+`examples/core.mjs` runs the headless public API. The standalone `examples/react/OrderExample.tsx` composes a page and all five extension types using public imports only. Open `http://127.0.0.1:4175`, or **View Engine → Library Delivery** in Storybook, for actions, custom filtering/cells, error recovery and a narrow dark view.
+
+`verify-package.mjs` creates a temporary archive, checks its exports/CSS and exact distribution content, then runs and type-checks consumers against the extracted package. It performs no installation or publication. These are library integration examples backed by a strict local simulated service; production authentication, authorization, persistence and backend query behavior still require host-system verification.
+
 ## RecordView
 
 ```tsx

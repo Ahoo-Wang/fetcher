@@ -1,0 +1,186 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  filter,
+  FilterOperator as Op,
+  type FilterExpression,
+} from '@ahoo-wang/fetcher-wow';
+import { expect, it } from 'vitest';
+import { createFilterDraft } from '../src/filter/filterCore';
+import { compile, fields, node } from './fixtures/filterCore.js';
+
+it('outputs real date strings and rejects calendar normalization', () => {
+  expect(
+    compile(node(Op.EQ, 'day', { value: '2024-02-29' })).expression,
+  ).toEqual(filter.eq('day', '2024-02-29'));
+  for (const value of [
+    '2023-02-29',
+    '2024-02-30',
+    '2024-13-01',
+    '2024-2-01',
+    '',
+  ])
+    expect(compile(node(Op.EQ, 'day', { value })).errors).not.toEqual([]);
+});
+
+it('keeps epoch zero and converts datetime parts using field timezone', () => {
+  expect(compile(node(Op.EQ, 'created', { value: 0 })).expression).toEqual(
+    filter.eq('created', 0),
+  );
+  expect(
+    compile(
+      node(Op.EQ, 'created', {
+        value: { date: '1970-01-01', time: '08:00' },
+      }),
+    ).expression,
+  ).toEqual(filter.eq('created', 0));
+  expect(compile(node(Op.EQ, 'created', { value: {} })).expression).toEqual(
+    filter.matchAll(),
+  );
+  expect(
+    compile(node(Op.EQ, 'created', { value: { date: '', time: '' } }))
+      .expression,
+  ).toEqual(filter.matchAll());
+  for (const value of [
+    { date: '2024-01-01' },
+    { time: '12:00' },
+    { date: '2024-02-30', time: '12:00' },
+    { date: '2024-01-01', time: '25:00' },
+  ])
+    expect(compile(node(Op.EQ, 'created', { value })).errors).not.toEqual([]);
+});
+
+it('rejects DST gaps and invalid zones while handling real zoned dates', () => {
+  const zoned = [
+    {
+      field: 'created',
+      label: '时间',
+      type: 'datetime' as const,
+      timeZone: 'America/New_York',
+    },
+  ];
+  expect(
+    compile(
+      node(Op.EQ, 'created', {
+        value: { date: '2024-03-10', time: '02:30' },
+      }),
+      zoned,
+    ).errors,
+  ).not.toEqual([]);
+  expect(
+    compile(
+      node(Op.EQ, 'created', {
+        value: { date: '2024-03-10', time: '03:30' },
+      }),
+      zoned,
+    ).expression,
+  ).toEqual(filter.eq('created', 1710055800000));
+  expect(
+    compile(
+      node(Op.EQ, 'created', {
+        value: { date: '2024-01-01', time: '12:00' },
+      }),
+      [{ ...zoned[0], timeZone: 'Bad/Zone' }],
+    ).errors,
+  ).not.toEqual([]);
+});
+
+it.each([
+  ['2026-11-01', '01:30', 240, 1793511000000],
+  ['2026-11-01', '01:30', 300, 1793514600000],
+  ['2026-11-01', '01:45:12.345', 240, 1793511912345],
+  ['2026-11-01', '01:45:12.345', 300, 1793515512345],
+  ['2026-11-01', '01:30', undefined, 1793511000000],
+  ['2026-07-01', '01:30', 300, 1782883800000],
+  ['2026-12-01', '01:30', 240, 1796106600000],
+])(
+  'uses an applicable offset hint for %s %s (offset %s)',
+  (date, time, offsetMinutes, timestamp) => {
+    expect(
+      compile(
+        node(Op.EQ, 'created', {
+          value: { date, time, offsetMinutes },
+        }),
+        [{ ...fields[4], timeZone: 'America/New_York' }],
+      ),
+    ).toEqual({
+      expression: { op: Op.EQ, field: 'created', value: timestamp },
+      errors: [],
+    });
+  },
+);
+
+it('rejects DST gaps and malformed datetime offset hints', () => {
+  const zoned = [{ ...fields[4], timeZone: 'America/New_York' }];
+  for (const value of [
+    { date: '2026-03-08', time: '02:30', offsetMinutes: 240 },
+    { date: '2026-03-08', time: '02:30', offsetMinutes: 300 },
+    ...[NaN, Infinity, -Infinity, '300', null, {}, 300.5].map(
+      offsetMinutes => ({
+        date: '2026-11-01',
+        time: '01:30',
+        offsetMinutes,
+      }),
+    ),
+    { offsetMinutes: NaN },
+  ]) {
+    const result = compile(node(Op.EQ, 'created', { value }), zoned);
+    expect(result.expression).toBeUndefined();
+    expect(result.errors).toEqual([
+      { id: 'draft', message: expect.any(String) },
+    ]);
+  }
+});
+
+it.each([
+  { op: Op.EQ, field: 'created', value: 0 },
+  { op: Op.IN, field: 'created', values: [0] },
+  { op: Op.BETWEEN, field: 'created', lowerBound: 0, upperBound: 1 },
+] as FilterExpression[])(
+  'validates the timezone of loaded numeric datetime values for $op',
+  expression => {
+    const draft = createFilterDraft(expression);
+    const invalid = compile(draft, [
+      {
+        field: 'created',
+        label: '时间',
+        type: 'datetime',
+        timeZone: 'Bad/Zone',
+      },
+    ]);
+    expect(invalid.errors).not.toEqual([]);
+    expect(invalid.expression).toBeUndefined();
+    for (const timeZone of ['Asia/Shanghai', '+08:00', undefined]) {
+      expect(
+        compile(draft, [
+          { field: 'created', label: '时间', type: 'datetime', timeZone },
+        ]),
+      ).toEqual({ expression, errors: [] });
+    }
+  },
+);
+
+it('keeps local datetime behavior when no field timezone is specified', () => {
+  const local = [
+    { field: 'created', label: '时间', type: 'datetime' as const },
+  ];
+  const expected = new Date(2024, 0, 15, 12, 30, 59, 123).getTime();
+  expect(
+    compile(
+      node(Op.EQ, 'created', {
+        value: { date: '2024-01-15', time: '12:30:59.123' },
+      }),
+      local,
+    ).expression,
+  ).toEqual(filter.eq('created', expected));
+});

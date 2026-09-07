@@ -11,7 +11,6 @@
  * limitations under the License.
  */
 
-import { useId, useState, type DragEvent } from 'react';
 import { Columns3Icon, GripVerticalIcon, PinIcon } from 'lucide-react';
 import { Button } from '../components/ui/button.js';
 import { Checkbox } from '../components/ui/checkbox.js';
@@ -36,11 +35,11 @@ import {
   RECORD_SUMMARY_LABELS,
   getRecordSummaryFunctions,
   getRecordColumnPinning,
-  orderRecordColumns,
   type RecordColumn,
   type RecordSummaryFunction,
 } from './recordModel.js';
 import type { RecordColumnSettingsProps } from './recordReactTypes.js';
+import { useRecordColumnOrder } from './table/useRecordColumnOrder.js';
 
 export function RecordColumnSettings({
   definition,
@@ -48,75 +47,26 @@ export function RecordColumnSettings({
   onChange,
   disabled,
 }: RecordColumnSettingsProps) {
-  const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [dropBoundary, setDropBoundary] = useState<number | null>(null);
-  const [announcement, setAnnouncement] = useState('');
-  const instructionsId = useId();
-  const columns = orderRecordColumns(configuredColumns, definition.rowKey);
-  const draggedIndex = columns.findIndex(column => column.id === draggedId);
+  const {
+    columns,
+    draggedId,
+    dropBoundary,
+    announcement,
+    instructionsId,
+    isLocked,
+    titleOf,
+    endDrag,
+    listProps,
+    handleProps,
+  } = useRecordColumnOrder({
+    definition,
+    columns: configuredColumns,
+    onChange,
+    disabled,
+  });
   const visibleCount = columns.filter(
     column => column.visible !== false,
   ).length;
-  function isLocked(column: RecordColumn): boolean {
-    return column.kind === 'actions' || column.field === definition.rowKey;
-  }
-  function titleOf(column: RecordColumn): string {
-    return (
-      column.title ??
-      (column.kind === 'field'
-        ? (definition.fields.find(field => field.field === column.field)
-            ?.label ?? column.field)
-        : '操作')
-    );
-  }
-  function canMove(index: number, target: number): boolean {
-    const column = columns[index];
-    const other = columns[target];
-    return Boolean(
-      !disabled &&
-      column &&
-      other &&
-      index !== target &&
-      getRecordColumnPinning(column, definition.rowKey) ===
-        getRecordColumnPinning(other, definition.rowKey) &&
-      isLocked(column) === isLocked(other),
-    );
-  }
-  function move(index: number, target: number) {
-    if (!canMove(index, target)) return;
-    const next = [...columns];
-    const [column] = next.splice(index, 1);
-    next.splice(target, 0, column);
-    onChange(next);
-    setAnnouncement(`${titleOf(column)}已移至第 ${target + 1} 列`);
-  }
-  function endDrag() {
-    setDraggedId(null);
-    setDropBoundary(null);
-  }
-  function resolveDrop(event: DragEvent<HTMLOListElement>) {
-    if (disabled || draggedIndex < 0) return null;
-    const bounds = Array.from(event.currentTarget.children, row =>
-      row.getBoundingClientRect(),
-    );
-    const hovered = bounds.findIndex(
-      row => event.clientY >= row.top && event.clientY <= row.bottom,
-    );
-    if (
-      hovered >= 0 &&
-      hovered !== draggedIndex &&
-      !canMove(draggedIndex, hovered)
-    )
-      return null;
-    const before = bounds.findIndex(
-      row => event.clientY < row.top + row.height / 2,
-    );
-    const boundary = before < 0 ? bounds.length : before;
-    const target = boundary > draggedIndex ? boundary - 1 : boundary;
-    return target === draggedIndex || canMove(draggedIndex, target)
-      ? { boundary, target }
-      : null;
-  }
   return (
     <Popover
       onOpenChange={open => {
@@ -148,29 +98,7 @@ export function RecordColumnSettings({
         </span>
         <ol
           className="fve:m-0 fve:flex fve:max-h-80 fve:list-none fve:flex-col fve:gap-3 fve:overflow-y-auto fve:p-1"
-          onDragOver={event => {
-            const drop = resolveDrop(event);
-            setDropBoundary(
-              drop && drop.target !== draggedIndex ? drop.boundary : null,
-            );
-            event.dataTransfer.dropEffect = drop ? 'move' : 'none';
-            if (drop) event.preventDefault();
-          }}
-          onDragLeave={event => {
-            if (
-              !(event.relatedTarget instanceof Node) ||
-              !event.currentTarget.contains(event.relatedTarget)
-            )
-              setDropBoundary(null);
-          }}
-          onDrop={event => {
-            const drop = resolveDrop(event);
-            if (drop) {
-              event.preventDefault();
-              move(draggedIndex, drop.target);
-            }
-            endDrag();
-          }}
+          {...listProps}
         >
           {columns.map((column, index) => {
             const field =
@@ -189,8 +117,6 @@ export function RecordColumnSettings({
               .filter(side => side !== false);
             const pinSide = neighbors.length === 1 ? neighbors[0] : undefined;
             const pinDisabled = disabled || locked || (!pinned && !pinSide);
-            const movable =
-              canMove(index, index - 1) || canMove(index, index + 1);
             return (
               <li
                 key={column.id}
@@ -218,24 +144,7 @@ export function RecordColumnSettings({
                     className="fve:cursor-grab fve:text-muted-foreground fve:active:cursor-grabbing"
                     aria-label={`拖动调整${title}顺序`}
                     aria-describedby={instructionsId}
-                    disabled={!movable}
-                    draggable={movable}
-                    onDragStart={event => {
-                      if (!movable) {
-                        event.preventDefault();
-                        return;
-                      }
-                      event.dataTransfer.effectAllowed = 'move';
-                      event.dataTransfer.setData('text/plain', column.id);
-                      setDraggedId(column.id);
-                    }}
-                    onDragEnd={endDrag}
-                    onKeyDown={event => {
-                      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')
-                        return;
-                      event.preventDefault();
-                      move(index, index + (event.key === 'ArrowUp' ? -1 : 1));
-                    }}
+                    {...handleProps(index)}
                   >
                     <GripVerticalIcon />
                   </Button>

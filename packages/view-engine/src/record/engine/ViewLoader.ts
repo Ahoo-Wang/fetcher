@@ -1,0 +1,178 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import type {
+  RecordSession,
+  ViewHost,
+  ViewDefinition,
+  ViewInstanceList,
+  ViewEngineOptions,
+} from '../recordModel.js';
+import {
+  validateViewDefinition,
+  validateViewInstance,
+} from '../recordValidation.js';
+import { readInstanceList } from '../validation/instanceValidation.js';
+import type { EngineScope } from './EngineScope.js';
+import type { SessionStore } from './SessionStore.js';
+import type { InstanceWork } from './InstanceWork.js';
+import type { RecordQueries } from './RecordQueries.js';
+import type { RecordSummaries } from './RecordSummaries.js';
+import { copy, message } from './recordSnapshot.js';
+import { createSession } from './sessionState.js';
+
+/** Loads definitions/instances and owns navigation intent independently of record queries. */
+export class ViewLoader {
+  private readonly definitionId: string;
+  private readonly localDefinition?: ViewDefinition;
+  private readonly localInstances?: ViewInstanceList;
+  private readonly inputError?: unknown;
+  private loadController?: AbortController;
+  constructor(
+    private readonly store: SessionStore,
+    private readonly scope: EngineScope,
+    private readonly host: ViewHost,
+    private readonly work: InstanceWork,
+    private readonly queries: RecordQueries,
+    private readonly summaries: RecordSummaries,
+    options: ViewEngineOptions,
+  ) {
+    this.definitionId = options.definitionId;
+    try {
+      this.localDefinition =
+        options.definition === undefined ? undefined : copy(options.definition);
+      this.localInstances =
+        options.instances === undefined ? undefined : copy(options.instances);
+    } catch (error) {
+      this.inputError = error;
+    }
+  }
+  dispose(): void {
+    this.loadController?.abort();
+  }
+  async load(): Promise<void> {
+    const lifecycle = this.scope.restart();
+    this.loadController?.abort();
+    this.work.cancelReloads();
+    this.queries.reset();
+    if (!this.scope.current(lifecycle)) return;
+    const controller = new AbortController();
+    this.loadController = controller;
+    this.store.publish({
+      status: 'loading',
+      error: null,
+      definition: null,
+      instanceIds: [],
+      selectedInstanceId: null,
+      sessions: Object.create(null),
+    });
+    let defaultId: string | null = null;
+    try {
+      if (this.inputError) throw this.inputError;
+      const [definition, list] = await Promise.all([
+        Promise.resolve().then(() => {
+          if (this.localDefinition !== undefined) return this.localDefinition;
+          if (!this.host.loadDefinition)
+            throw new Error('缺少视图定义或 loadDefinition');
+          return this.host.loadDefinition(this.definitionId, controller.signal);
+        }),
+        Promise.resolve().then(() => {
+          if (this.localInstances !== undefined) return this.localInstances;
+          if (!this.host.listInstances)
+            throw new Error('缺少实例列表或 listInstances');
+          return this.host.listInstances(this.definitionId, controller.signal);
+        }),
+      ]);
+      if (!this.scope.current(lifecycle)) return;
+      validateViewDefinition(definition);
+      if (definition.id !== this.definitionId)
+        throw new Error('返回的视图定义 ID 不匹配');
+      const instances = readInstanceList(list, definition);
+      const sessions: Record<string, RecordSession> = Object.create(null);
+      for (const instance of instances) {
+        sessions[instance.id] = {
+          ...createSession(copy(instance)),
+          requiresReload: this.work.unverifiedCreates.has(instance.id),
+          writeError: this.work.unverifiedCreates.has(instance.id)
+            ? '另存结果尚未核对，请重新加载核对'
+            : null,
+        };
+      }
+      if (
+        typeof list.defaultInstanceId === 'string' &&
+        Object.prototype.hasOwnProperty.call(sessions, list.defaultInstanceId)
+      )
+        defaultId = list.defaultInstanceId;
+      this.store.publish({
+        status: 'ready',
+        error: null,
+        definition: copy(definition),
+        instanceIds: instances.map(instance => instance.id),
+        selectedInstanceId: defaultId,
+        sessions,
+      });
+    } catch (error) {
+      if (!this.scope.current(lifecycle)) return;
+      controller.abort();
+      this.store.publish({ status: 'error', error: message(error) });
+      throw error;
+    }
+    if (
+      defaultId !== null &&
+      this.scope.current(lifecycle) &&
+      this.store.getSnapshot().selectedInstanceId === defaultId
+    )
+      await this.queries.run(defaultId);
+  }
+
+  async selectInstance(id: string): Promise<void> {
+    const definition = this.store.definition();
+    const lifecycle = this.scope.version;
+    const { selection, controller } = this.scope.beginSelection();
+    const current = () =>
+      this.scope.current(lifecycle) && this.scope.selection === selection;
+    if (!this.store.find(id)) {
+      try {
+        if (!this.host.loadInstance) throw new Error(`无法加载实例：${id}`);
+        const instance = await this.host.loadInstance(id, controller.signal);
+        if (!current()) return;
+        validateViewInstance(instance, definition, id);
+        this.store.publish({
+          sessions: {
+            ...this.store.getSnapshot().sessions,
+            [id]: createSession(copy(instance)),
+          },
+          instanceIds: [...this.store.getSnapshot().instanceIds, id],
+        });
+      } catch (error) {
+        if (!current()) return;
+        this.store.publish({ error: message(error) });
+        throw error;
+      }
+    }
+    if (!current()) return;
+    const previousId = this.store.getSnapshot().selectedInstanceId;
+    if (previousId === id) return;
+    if (previousId !== null) {
+      this.queries.cancel(previousId);
+      if (!current()) return;
+      if (this.summaries.hasPending(previousId))
+        this.summaries.invalidate(previousId);
+    }
+    if (!current()) return;
+    this.summaries.invalidate(id);
+    if (!current()) return;
+    this.store.publish({ selectedInstanceId: id, error: null });
+    if (current()) await this.queries.run(id);
+  }
+}

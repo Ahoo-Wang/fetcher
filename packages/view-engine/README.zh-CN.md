@@ -2,6 +2,39 @@
 
 独立的 `@ahoo-wang/fetcher-view-engine` 包，提供可独立使用的 Wow 过滤器编译与校验、完整 `FilterPanel`、结构化值编辑器和 shadcn/Base UI 控件。同时提供不依赖 React 的 ViewEngine 和完整 RecordView 页面，定义、实例与保存接口由宿主管理。卡片、AnalysisView 与 DashboardView 属于后续工作。
 
+## 模块职责
+
+公开 `ViewEngine` 负责组合内部服务，应用通过公开命令和快照接入。核心运行时不导入 React、DOM 或表格组件库。
+
+| 模块                                                       | 职责                                                                          |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `record/engine/SessionStore`、`sessionState`               | 不可变快照、订阅、保存与编辑基线，集中推导 dirty/pending。                    |
+| `EngineScope`、`InstanceWork`                              | 生命周期与导航版本、选择请求取消、写入/重载互斥，以及待核对的创建回包。       |
+| `RecordEdits`                                              | 校验草稿与配置修改，统一决定何时查询记录或汇总。                              |
+| `RecordQueries`、`RecordSummaries`                         | 独立的记录和聚合请求、取消、回包校验与失败恢复。                              |
+| `ViewLoader`、`ViewReload`                                 | 定义/实例加载、导航与重载核对，保留本地编辑。                                 |
+| `ViewPersistence`、`ViewManagement`、`instancePermissions` | 保存/另存、改名/删除/个人排序、权限和回包核对。                               |
+| `record/validation`                                        | 定义、实例/列表和业务记录的输入边界。                                         |
+| `filter`                                                   | 操作元数据、协议构造/编译、编辑器生命周期及面板/值组件。                      |
+| `record/page`、`record/table`                              | 页面所有权/导航/操作，以及表格状态/表头/单元格/汇总组合；布局计算保持纯函数。 |
+
+测试和 Storybook 交互按行为领域组织。源码以 300 行为目标，没有超过 400 行的文件。`useFilterPanelState` 保留 330 行，集中维护受控编辑会话：草稿与提交确认必须一起协调，继续拆分会分散同一状态的变更。同步回调边界有子组件 layout-effect 更新的回归验证。
+
+## 可运行的公开包示例
+
+在仓库根目录使用已有工作区依赖运行：
+
+```bash
+pnpm --filter @ahoo-wang/fetcher-view-engine build
+node packages/view-engine/examples/core.mjs
+node packages/view-engine/scripts/verify-package.mjs
+pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
+```
+
+`examples/core.mjs` 演示无 React 的公开 API；`examples/react/OrderExample.tsx` 仅通过公开导入组合页面和五类扩展。打开 `http://127.0.0.1:4175`，或 Storybook 的 **View Engine → Library Delivery**，体验操作、自定义过滤器/单元格、异常恢复与深色窄容器。
+
+`verify-package.mjs` 创建临时归档，检查 exports、CSS 与构建内容一致性，再针对解包后的产物运行并类型校验使用方代码，不执行安装或发布。示例使用严格的本地模拟服务；库级验证不替代宿主的真实鉴权、权限、持久化和后端查询验证。
+
 ## RecordView 数据视图
 
 ```tsx

@@ -417,6 +417,18 @@ when invoking a request; backend authorization remains authoritative.
 
 ### Engine methods and runtime state
 
+`ViewEngine` is a composition facade. Internally, `SessionStore` owns immutable
+publication and derives session flags; `EngineScope`/`InstanceWork` coordinate
+lifetime/navigation and write/reload exclusion. `RecordEdits` owns validated
+configuration changes, `RecordQueries`/`RecordSummaries` own independent reads,
+and `ViewLoader`/`ViewReload`/`ViewPersistence`/`ViewManagement` own the host flows.
+These internal services are not extension entry points. Use public commands;
+the runtime dependency graph of the core contains no React, DOM or table UI.
+
+Navigation is checked again after synchronous subscriber notifications, including
+query cancellation during selection or save-as. A later loaded or pending
+selection wins over an older operation's automatic selection of a created copy.
+
 `getSnapshot` is referentially stable until state changes; `subscribe` returns
 an unsubscribe function. Snapshots isolate and freeze JSON data. Each session
 keeps baseline and current instance, dirty flag, transient filter draft/mode,
@@ -762,6 +774,29 @@ results. The package does not invent business commands.
 Cards, AnalysisView and DashboardView are not implemented in this increment;
 there is no nonfunctional layout switch. Storybook **View Engine / Record View**
 demonstrates this contract with a local simulated service, not a live backend.
+
+### Runnable built-package integration
+
+From the repository root, build with
+`pnpm --filter @ahoo-wang/fetcher-view-engine build`, then run
+`node packages/view-engine/examples/core.mjs` and
+`node packages/view-engine/scripts/verify-package.mjs`.
+The latter packs to a temporary directory, checks entry points and scoped CSS,
+compares archive contents with dist, runs public imports/core behavior, and
+type-checks consumers against the extracted package without private source aliases.
+It does not install, publish or modify dependency/build configuration.
+
+`examples/react/OrderExample.tsx` supplies independent global, row, table/batch,
+filter and cell extensions. It uses public package imports, readonly inputs,
+instance-bound refresh and explicit operation failure/retry handling. Run it with
+`pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175`
+or open **View Engine / Library Delivery** in Storybook. Its strict local order
+service rejects unsupported queries; replace that service with the host's real
+authenticated client rather than interpreting the demonstration as backend admission.
+
+Module responsibilities and the cohesive editing-hook size exception are documented
+in both package READMEs. Source, tests and stories are organized by behavior; internal
+page/table/editor components compose the public surface without expanding it.
 
 Programmatically opening a controlled Dialog, Popover, Select or dropdown menu refreshes its portal theme before paint, just like trigger-driven opening. Closing Save As returns focus to its persistent opener; restoring a save-only instance whose menu disappears returns focus to the view-action group without enabling Save or adding a tab stop.
 

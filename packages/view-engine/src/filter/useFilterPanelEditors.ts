@@ -1,0 +1,101 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { useEffect, useRef, useState } from 'react';
+import type { DeepReadonly } from '../lib/types.js';
+import type { FilterDraftNode, FilterMode } from './filterModel.js';
+import type { FilterPanelProps } from './filterReactTypes.js';
+import { compileFilterDraft, FILTER_OPERATORS } from './filterCore.js';
+import { locateFilterNodes, isFilterDraftPending } from './filterTree.js';
+import { resolveFilterEditor } from './resolveFilterEditor.js';
+
+/** Resolve extension support and combine local input validity with protocol validation. */
+export function useFilterPanelEditors(
+  props: FilterPanelProps,
+  draft: FilterDraftNode,
+  baseline: DeepReadonly<FilterDraftNode>,
+  mode: FilterMode,
+  loadError?: string,
+) {
+  const { fields, onPendingChange, onValidityChange } = props;
+  const [editorValidity, setEditorValidity] = useState<Record<string, string>>(
+    {},
+  );
+  const [editorOutputErrors, setEditorOutputErrors] = useState<
+    Record<string, string>
+  >({});
+  const [builtIn, setBuiltIn] = useState<ReadonlySet<string>>(new Set());
+  const [epoch, setEpoch] = useState(0);
+  const [editorEpochs, setEditorEpochs] = useState<Record<string, number>>({});
+  const locations = locateFilterNodes(draft, fields);
+  const compiled = compileFilterDraft(draft, fields, props.allowedOperators);
+  const resolutions = new Map(
+    locations
+      .filter(
+        ({ node }) =>
+          !['logical', 'element'].includes(FILTER_OPERATORS[node.op]?.category),
+      )
+      .map(location => [
+        location.node.id,
+        resolveFilterEditor(location, props, mode, builtIn),
+      ]),
+  );
+  const issues = locations.flatMap(({ node }) =>
+    [
+      ...compiled.errors
+        .filter(error => error.id === node.id)
+        .map(error => error.message),
+      editorValidity[node.id],
+      editorOutputErrors[node.id],
+      resolutions.get(node.id)?.error,
+    ]
+      .filter((item): item is string => item !== undefined)
+      .map(text => ({
+        id: node.id,
+        message: text || '输入尚未完成或格式无效。',
+      })),
+  );
+  const valid = !loadError && issues.length === 0;
+  const pending = isFilterDraftPending(draft, baseline, valid);
+  const previousValidity = useRef<boolean | undefined>(undefined);
+  useEffect(() => {
+    if (previousValidity.current !== valid) {
+      previousValidity.current = valid;
+      onValidityChange?.(valid);
+    }
+  }, [valid, onValidityChange]);
+  const previousPending = useRef<boolean | undefined>(undefined);
+  useEffect(() => {
+    if (previousPending.current !== pending) {
+      previousPending.current = pending;
+      onPendingChange?.(pending);
+    }
+  }, [pending, onPendingChange]);
+
+  return {
+    locations,
+    compiled,
+    resolutions,
+    issues,
+    valid,
+    pending,
+    builtIn,
+    epoch,
+    editorEpochs,
+    setEditorValidity,
+    setEditorOutputErrors,
+    setBuiltIn,
+    setEpoch,
+    setEditorEpochs,
+  };
+}
