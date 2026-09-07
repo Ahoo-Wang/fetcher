@@ -643,6 +643,21 @@ export function RecordTable({
     const configured = byId.get(column.id);
     return configured?.kind === 'field' && !!configured.summary?.length;
   });
+  const summaryLabelColumns = [];
+  for (const column of visibleColumns) {
+    const configured = byId.get(column.id)!;
+    if (
+      column.getIsPinned() !== 'start' ||
+      (configured.kind === 'field' && configured.summary?.length)
+    )
+      break;
+    summaryLabelColumns.push(column);
+  }
+  const summaryLabelSpan = summaryLabelColumns.length + (selectable ? 1 : 0);
+  const summaryLabelWidth = summaryLabelColumns.reduce(
+    (width, column) => width + column.getSize(),
+    selectable ? 48 : 0,
+  );
   const summaries = [
     { label: '本页', result: pageSummary },
     { label: '所有', result: allSummary },
@@ -969,12 +984,13 @@ export function RecordTable({
                   aria-label={`${label}汇总`}
                   aria-busy={result?.status === 'loading' || undefined}
                 >
-                  {selectable && (
+                  {summaryLabelSpan > 0 && (
                     <TableHead
                       scope="row"
                       aria-label={label}
+                      colSpan={summaryLabelSpan}
                       data-pinned="start"
-                      style={{ left: 0 }}
+                      style={{ left: 0, width: summaryLabelWidth }}
                       className="fve:h-auto fve:px-1 fve:py-2 fve:align-middle fve:text-xs fve:leading-5 fve:font-normal fve:text-muted-foreground"
                     >
                       <SummaryScope
@@ -984,7 +1000,8 @@ export function RecordTable({
                       />
                     </TableHead>
                   )}
-                  {withFiller(visibleColumns).map(column => {
+                  {withFiller(visibleColumns).map((column, index) => {
+                    if (index < summaryLabelColumns.length) return null;
                     if (!column)
                       return <TableCell key="space" aria-hidden="true" />;
                     const configured = byId.get(column.id)!;
@@ -995,7 +1012,7 @@ export function RecordTable({
                           )
                         : undefined;
                     const scopeCell =
-                      !selectable && column.id === visibleColumns[0]?.id;
+                      !summaryLabelSpan && column.id === visibleColumns[0]?.id;
                     const Cell = scopeCell ? TableHead : TableCell;
                     return (
                       <Cell

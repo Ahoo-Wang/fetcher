@@ -303,19 +303,25 @@ it('keeps headers, records and summaries aligned with default action pins, resiz
   ]);
   expect(
     cells('tfoot tr:first-child > *').map(cell => cell.textContent),
-  ).toEqual(['本页', '', '', '合计10', '', '']);
-  for (const selector of [
-    'thead th',
-    'tbody td',
-    'tfoot tr:first-child > *',
-    'tfoot tr:last-child > *',
-  ]) {
+  ).toEqual(['本页', '合计10', '', '']);
+  for (const selector of ['thead th', 'tbody td']) {
     const row = cells(selector);
     expect(row[0].style.left).toBe('0px');
     expect(row[1].style.left).toBe('48px');
     expect(row[2].style.left).toBe('168px');
     expect(row[4].style.right).toBe('64px');
     expect(row[5].style.right).toBe('0px');
+  }
+  for (const selector of [
+    'tfoot tr:first-child > *',
+    'tfoot tr:last-child > *',
+  ]) {
+    const row = cells(selector);
+    expect(row[0].getAttribute('colspan')).toBe('3');
+    expect(row[0].style.left).toBe('0px');
+    expect(row[0].style.width).toBe('268px');
+    expect(row[2].style.right).toBe('64px');
+    expect(row[3].style.right).toBe('0px');
   }
   view.rerender(
     draw(
@@ -325,6 +331,7 @@ it('keeps headers, records and summaries aligned with default action pins, resiz
     ),
   );
   expect(cells('tbody td')[2].style.left).toBe('188px');
+  expect(cells('tfoot tr:first-child > *')[0].style.width).toBe('288px');
   view.rerender(
     draw(
       pinnedColumns.map(column =>
@@ -346,6 +353,7 @@ it('keeps headers, records and summaries aligned with default action pins, resiz
   expect(cells('tbody td')[0].style.left).toBe('0px');
   expect(cells('tbody td')[2].style.right).toBe('64px');
   expect(cells('tbody td')[3].style.right).toBe('0px');
+  expect(cells('tfoot tr:first-child > *')[0].style.width).toBe('100px');
   expect(onColumnsChange).not.toHaveBeenCalled();
 });
 

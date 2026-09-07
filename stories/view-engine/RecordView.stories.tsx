@@ -1800,7 +1800,29 @@ export const SummaryFailure: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
-    await canvas.findByRole('row', { name: /ORD-202609-1001/ });
+    const firstRow = await canvas.findByRole('row', {
+      name: /ORD-202609-1001/,
+    });
+    const selectionCell = within(firstRow).getByRole('checkbox').closest('td')!;
+    const idCell = within(firstRow).getByText('ORD-202609-1001').closest('td')!;
+    await waitFor(() => {
+      for (const label of ['本页', '所有']) {
+        const scope = canvas.getByLabelText(`${label}汇总状态`);
+        const area = scope.closest('th')!.getBoundingClientRect();
+        const content = scope.getBoundingClientRect();
+        expect(
+          Math.abs(area.left - selectionCell.getBoundingClientRect().left),
+        ).toBeLessThan(2);
+        expect(
+          Math.abs(area.right - idCell.getBoundingClientRect().right),
+        ).toBeLessThan(2);
+        expect(
+          Math.abs(
+            content.left + content.width / 2 - (area.left + area.width / 2),
+          ),
+        ).toBeLessThan(2);
+      }
+    });
     const all = canvas.getByRole('row', { name: '所有汇总' });
     const error = await within(all).findByRole('button', {
       name: '所有汇总失败，查看详情',
@@ -2002,7 +2024,7 @@ export const PinnedColumns: Story = {
     const amountCell = within(row).getByText('¥680.00').closest('td')!;
     const idSummary = within(
       canvas.getByRole('row', { name: '本页汇总' }),
-    ).getAllByRole('cell')[0];
+    ).getByRole('rowheader', { name: '本页' });
     const amountSummary = within(canvas.getByRole('row', { name: '本页汇总' }))
       .getByRole('group', { name: '订单金额合计' })
       .closest('td')!;
@@ -2014,7 +2036,7 @@ export const PinnedColumns: Story = {
       );
       near(
         idSummary.getBoundingClientRect().left,
-        idCell.getBoundingClientRect().left,
+        scroller.getBoundingClientRect().left,
       );
       near(
         amountCell.getBoundingClientRect().left,
@@ -2030,7 +2052,7 @@ export const PinnedColumns: Story = {
     await userEvent.keyboard('{ArrowRight}');
     await waitFor(() => {
       near(idCell.getBoundingClientRect().width, 220);
-      near(idSummary.getBoundingClientRect().width, 220);
+      near(idSummary.getBoundingClientRect().width, 220 + 48);
     });
     await togglePin('订单金额', false);
     await expect(getComputedStyle(amountCell).position).not.toBe('sticky');
