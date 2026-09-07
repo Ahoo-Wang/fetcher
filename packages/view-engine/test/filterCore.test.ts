@@ -143,6 +143,47 @@ function node(
 }
 
 describe('filter compiler', () => {
+  it('rejects repeated direct AND fields even when one value is unset', () => {
+    for (const value of [undefined, 2]) {
+      const result = compile({
+        id: 'and',
+        op: Op.AND,
+        operands: [
+          { id: 'first', op: Op.GTE, field: 'amount', value: 1 },
+          { id: 'second', op: Op.LTE, field: 'amount', value },
+        ],
+      });
+      expect(result.expression).toBeUndefined();
+      expect(result.errors).toEqual([
+        { id: 'second', message: '同一 AND 分组不能重复使用字段 金额' },
+      ]);
+    }
+  });
+  it('keeps OR/NOR branches and separate nested groups independent', () => {
+    for (const expression of [
+      filter.or([filter.eq('amount', 1), filter.eq('amount', 2)]),
+      filter.nor([filter.eq('amount', 1), filter.eq('amount', 2)]),
+      filter.and([
+        filter.and([filter.gte('amount', 1)]),
+        filter.and([filter.lte('amount', 2)]),
+      ]),
+      filter.and([
+        filter.eq('amount', 1),
+        filter.elementMatch('items', filter.eq('quantity', 1)),
+      ]),
+    ])
+      expect(compile(createFilterDraft(expression))).toEqual({
+        expression,
+        errors: [],
+      });
+    const invalid = filter.elementMatch(
+      'items',
+      filter.and([filter.eq('quantity', 1), filter.eq('quantity', 2)]),
+    );
+    expect(compile(createFilterDraft(invalid)).errors[0].message).toContain(
+      '不能重复使用字段 数量',
+    );
+  });
   it('covers all 50 Wow operators without inserting optional defaults', () => {
     expect(new Set(expressions.map(value => value.op)).size).toBe(50);
     expect(Object.keys(FILTER_OPERATORS).sort()).toEqual(

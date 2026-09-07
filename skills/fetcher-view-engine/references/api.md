@@ -22,7 +22,7 @@ Core imports do not load React, DOM or CSS. These descriptors are UI inputs, not
 
 ### Fields, drafts and compilation
 
-`FilterFieldDefinition` extends `FilterField` with optional `type` (`string`, `number`, `boolean`, `date`, `datetime`, `array`), typed enum `options`, element-relative child `fields`, allowed `operators`, an `editor: {name, options?}` reference, and `timeZone`. Unspecified type keeps protocol scalar types; explicit types restrict supported operators and values. The optional global operator allowlist further restricts them.
+`FilterFieldDefinition` extends `FilterField` with optional `type` (`string`, `number`, `boolean`, `date`, `datetime`, `array`), typed enum `options`, optional display `group`, element-relative child `fields`, allowed `operators`, an `editor: {name, options?}` reference, and `timeZone`. Unspecified type keeps protocol scalar types; explicit types restrict supported operators and values. The optional global operator allowlist further restricts them.
 
 `FilterDraftNode` is transient editor state with a stable `id` and Wow property names. Raw numeric text uses `FilterScalarDraftValue = {type: 'number', value: raw}`; never interpret an already-loaded protocol string as numeric input. Mixed scalar collection items can similarly use string/boolean wrappers. `FilterDateTimeValue = {date?: string, time?: string, offsetMinutes?: number}` keeps both parts while editing. Drafts are not persisted query JSON.
 
@@ -34,6 +34,8 @@ Core imports do not load React, DOM or CSS. These descriptors are UI inputs, not
 | `compileFilterDraft(draft, fields, allowedOperators?)` | Returns `{expression, errors: []}` or `{errors}` with no executable expression. Each error has `{id, message}`. Validates fields, capability, type, scope and protocol through Wow constructors. |
 | `getFieldOperators(field)`                             | Returns the field's compatible operators, restricted by its explicit allowlist.                                                                                                                  |
 | `isSimpleFilter(draft)`                                | Structural eligibility: MATCH_ALL, an ordinary field predicate, or a flat AND of those predicates. Panel also checks editor validity before switching modes.                                     |
+
+Direct children of each AND group must have unique `field` bindings, including unset predicates and ELEMENT_MATCH containers. Duplicate bindings produce a validation error and no executable expression; view-instance validation enforces the same rule. OR/NOR branches, nested groups and element predicates keep their own scopes. Adding, moving and changing group operators cannot introduce duplicates.
 
 Fully unset scalar predicates and cleared collections are omitted. An explicitly empty new group is incomplete; a nonempty group whose children are all inactive is omitted. Empty output at the query root becomes MATCH_ALL. Inactive children never become MATCH_ALL inside OR/NOR. A missing part of a bound, collection item or date/time pair blocks compilation. False, zero, explicit null and valid empty strings retain their meaning. ELEMENT_MATCH only accepts element-relative fields and excludes root-only metadata/search/deletion nodes.
 
@@ -81,7 +83,35 @@ to the body. `renderToolbar` remains visible when collapsed. The default toolbar
 is unchanged for standalone panels. Add filter aligns left; Undo, Clear and Query
 align right, with Query last.
 
-Field bindings are fixed after adding. Ordinary conditions occupy equal-width grid cells within each group and reflow to one column in narrow panels; AND/OR/NOR/ELEMENT_MATCH span the grid as explicit containers. Delete controls align to the trailing edge. Standalone FieldFilter controls retain their content-sized layout. Simple mode has no condition action menu or ordering controls. Advanced mode offers a keyboard-accessible move control only when another compatible group exists; moves preserve every node parameter; cross-element or root-to-element reinterpretation is not offered. Clear lives in the value control; scalar controls provide a direct Clear button and offer special literals only when supported. Clear and Undo only edit the buffer. Apply retains unset controls; Undo returns to the last applied editing state. An acknowledgement of the submitted value preserves edits made during the request; a different externally supplied value resets the panel. Key panels by instance/scope and keep custom component local state mounted or in host context if it must survive unmounts.
+Field bindings are fixed after adding. Ordinary conditions occupy equal-width grid cells within each group and reflow to one column in narrow panels; AND/OR/NOR/ELEMENT_MATCH span the grid as explicit containers. Delete controls align to the trailing edge. Standalone FieldFilter controls retain their content-sized layout. Simple mode has no condition action menu or ordering controls. Advanced mode supports adding, deleting and editing groups; conditions and groups cannot be moved to another group. Built-in scalar rows have no Clear or Special value buttons. Delete input text to unset it; use the null/empty-string operators for those predicates. The trailing remove button deletes the whole condition. Enum dropdowns retain their unset option. Clear and Undo only edit the buffer. Apply retains unset controls; Undo returns to the last applied editing state. An acknowledgement of the submitted value preserves edits made during the request; a different externally supplied value resets the panel. Key panels by instance/scope and keep custom component local state mounted or in host context if it must survive unmounts.
+
+Add filter opens a button-anchored Popover with grouped checkboxes, using
+`FilterFieldDefinition.group?: string`. It does not occupy page layout space;
+the popup caps its width/height and scrolls its field area internally. It stays
+open during selection changes. Done or Escape closes it and restores trigger
+focus; outside interaction also dismisses it.
+
+Checkboxes reflect the current group's direct field bindings, including unset
+values. Checking adds a condition; unchecking removes that field's direct
+conditions from that group, without changing other groups or querying. AND
+still forbids duplicate fields. OR/NOR fields expose an adjacent add action
+for additional same-field conditions. In advanced mode, an adjacent icon dropdown adds AND/OR/NOR to the current
+group; these three entries are excluded from the field picker. Disallowed
+operators are disabled. Simple mode omits this icon. Root-level operators
+remain add actions. Removing a field from its filter row also updates its
+checkbox. Empty nested groups stay incomplete until filled or removed.
+
+Groups follow their first occurrence in the definitions; mixed ungrouped fields
+use Other fields. `group` is a nonempty display string when supplied and is
+validated for remote definitions.
+
+```ts
+const fields: FilterFieldDefinition[] = [
+  { field: 'amount', label: 'Amount', type: 'number', group: 'Order' },
+  { field: 'status', label: 'Status', type: 'string', group: 'Order' },
+  { field: 'customer', label: 'Customer', type: 'string', group: 'Customer' },
+];
+```
 
 ### Custom editors
 

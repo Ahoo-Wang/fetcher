@@ -91,21 +91,6 @@ async function select(label: string, option: string) {
   fireEvent.click(item);
 }
 
-async function valueAction(label: string, action: string) {
-  if (action === '清空值') {
-    fireEvent.click(
-      screen.getByRole('button', { name: `清空${label}`, exact: true }),
-    );
-    return;
-  }
-  fireEvent.click(
-    screen.getByRole('button', { name: `${label}选项`, exact: true }),
-  );
-  fireEvent.click(
-    await screen.findByRole('button', { name: action, exact: true }),
-  );
-}
-
 describe('structured filter values', () => {
   it('keeps invalid numeric input raw and preserves the bound node', () => {
     const initial = {
@@ -208,21 +193,24 @@ describe('structured filter values', () => {
     });
   });
 
-  it('distinguishes unset, null and explicit empty string and lets users edit again', async () => {
-    const state = mount({ id: 's', op: Op.EQ, field: 'name' });
-    await valueAction('名称值', '设为空字符串');
-    expect(state.current().value).toBe('');
-    expect(
-      (screen.getByRole('textbox', { name: '名称值' }) as HTMLInputElement)
-        .placeholder,
-    ).toContain('空字符串');
-    await valueAction('名称值', '设为空值');
-    expect(state.current().value).toBeNull();
-    change('名称值', 'hello');
-    expect(state.current().value).toBe('hello');
-    change('名称值', '');
-    expect(state.current().value).toBeUndefined();
-  });
+  it.each([undefined, null, ''])(
+    'preserves loaded special value %s without extra action buttons',
+    initial => {
+      const state = mount({
+        id: 's',
+        op: Op.EQ,
+        field: 'name',
+        value: initial,
+      });
+      expect(state.current().value).toBe(initial);
+      expect(screen.queryByRole('button', { name: '名称值选项' })).toBeNull();
+      expect(screen.queryByRole('button', { name: '清空名称值' })).toBeNull();
+      change('名称值', 'hello');
+      expect(state.current().value).toBe('hello');
+      change('名称值', '');
+      expect(state.current().value).toBeUndefined();
+    },
+  );
 
   it('retains false and clears it without converting to a string', async () => {
     const state = mount({ id: 'b', op: Op.EQ, field: 'enabled', value: false });
@@ -356,13 +344,13 @@ describe('structured filter values', () => {
     });
   });
 
-  it('keeps the selected numeric type when clearing through value options', async () => {
+  it('keeps the selected numeric type when deleting input text', async () => {
     const field: FilterFieldDefinition = { field: 'loose', label: '任意值' };
     const state = mount(
       { id: 'loose', op: Op.EQ, field: 'loose', value: 0 },
       field,
     );
-    await valueAction('任意值值', '清空值');
+    change('任意值值', '');
     expect(
       screen.getByRole('combobox', { name: '任意值值类型' }).textContent,
     ).toContain('数值');
@@ -668,18 +656,17 @@ describe('structured filter values', () => {
       (screen.getByRole('textbox', { name: '名称值' }) as HTMLInputElement)
         .disabled,
     ).toBe(true);
-    const trigger = screen.getByRole('button', { name: '名称值选项' });
-    fireEvent.click(trigger);
-    expect((trigger as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: '名称值选项' })).toBeNull();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(changes).toEqual([]);
   });
 });
 
-it('clears a numeric value directly without an options popup', () => {
+it('clears a numeric value by deleting its input text', () => {
   const state = mount({ id: 'amount', op: Op.GTE, field: 'amount', value: 10 });
   expect(screen.queryByRole('button', { name: '金额值选项' })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: '清空金额值' }));
+  expect(screen.queryByRole('button', { name: '清空金额值' })).toBeNull();
+  change('金额值', '');
   expect(compileFilterDraft(state.current(), fields).expression).toEqual({
     op: Op.MATCH_ALL,
   });

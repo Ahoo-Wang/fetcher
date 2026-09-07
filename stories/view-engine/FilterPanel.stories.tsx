@@ -13,7 +13,7 @@
 
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, within, waitFor } from 'storybook/test';
 import {
   filter,
   FilterOperator,
@@ -46,6 +46,7 @@ const fields: FilterFieldDefinition[] = [
   {
     field: 'status',
     label: '订单状态',
+    group: '订单信息',
     type: 'string',
     options: [
       { value: 'pending', label: '待处理' },
@@ -53,12 +54,13 @@ const fields: FilterFieldDefinition[] = [
       { value: 'closed', label: '已关闭' },
     ],
   },
-  { field: 'amount', label: '订单金额', type: 'number' },
-  { field: 'customer', label: '客户', type: 'string' },
-  { field: 'priority', label: '优先处理', type: 'boolean' },
+  { field: 'amount', label: '订单金额', type: 'number', group: '订单信息' },
+  { field: 'customer', label: '客户', type: 'string', group: '客户信息' },
+  { field: 'priority', label: '优先处理', type: 'boolean', group: '订单信息' },
   {
     field: 'createdAt',
     label: '创建时间',
+    group: '时间',
     type: 'datetime',
     timeZone: 'Asia/Shanghai',
   },
@@ -406,6 +408,60 @@ const meta = {
 export default meta;
 type Story = StoryObj<DemoArgs>;
 
+export const GroupedFields: Story = {
+  name: '添加筛选 · 分组复选与连续选择',
+  render: args => <Scenario {...args} />,
+  play: async ({ canvasElement, args }) => {
+    if (args.disabled) return;
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const add = canvas.getByRole('button', { name: '添加筛选' });
+    await userEvent.click(add);
+    let picker = within(
+      await page.findByRole('dialog', { name: '选择筛选字段' }),
+    );
+    for (const group of ['订单信息', '客户信息', '时间', '其他字段'])
+      await expect(picker.getByText(group, { exact: true })).toBeVisible();
+    for (const label of ['订单状态', '订单金额'])
+      await expect(picker.getByRole('checkbox', { name: label })).toBeChecked();
+    await userEvent.click(picker.getByText('客户', { exact: true }));
+    const customer = picker.getByRole('checkbox', { name: '客户' });
+    await expect(customer).toBeChecked();
+    await expect(customer).toHaveFocus();
+    await expect(canvas.getByRole('textbox', { name: '客户值' })).toBeVisible();
+    await userEvent.keyboard(' ');
+    await expect(customer).not.toBeChecked();
+    await expect(canvas.queryByRole('textbox', { name: '客户值' })).toBeNull();
+    await userEvent.keyboard(' ');
+    await expect(customer).toBeChecked();
+    await userEvent.click(picker.getByRole('checkbox', { name: '优先处理' }));
+    await expect(
+      picker.getByRole('checkbox', { name: '优先处理' }),
+    ).toBeChecked();
+    await expect(
+      canvas.getAllByRole('textbox', { name: '客户值' }),
+    ).toHaveLength(1);
+    await userEvent.click(picker.getByRole('button', { name: '完成' }));
+    await waitFor(() =>
+      expect(page.queryByRole('dialog', { name: '选择筛选字段' })).toBeNull(),
+    );
+    await userEvent.click(canvas.getByRole('button', { name: '删除客户条件' }));
+    await userEvent.click(add);
+    picker = within(await page.findByRole('dialog', { name: '选择筛选字段' }));
+    await expect(
+      picker.getByRole('checkbox', { name: '客户' }),
+    ).not.toBeChecked();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(page.queryByRole('dialog', { name: '选择筛选字段' })).toBeNull(),
+    );
+    await expect(add).toHaveFocus();
+    await expect(canvas.getByLabelText('宿主状态')).toHaveTextContent(
+      '已应用 0 次',
+    );
+  },
+};
+
 export const BusinessFilters: Story = {
   name: '业务筛选 · 手动查询',
   render: args => <Scenario {...args} />,
@@ -417,9 +473,10 @@ export const BusinessFilters: Story = {
         name: /条件操作|移动.*条件|订单金额值选项/,
       }),
     ).toHaveLength(0);
-    await userEvent.click(
-      canvas.getByRole('button', { name: '清空订单金额值' }),
-    );
+    await expect(
+      canvas.queryByRole('button', { name: '清空订单金额值' }),
+    ).toBeNull();
+    await userEvent.clear(canvas.getByLabelText('订单金额值'));
     await expect(canvas.getByLabelText('订单金额值')).toHaveValue('');
     await userEvent.clear(canvas.getByLabelText('订单金额值'));
     await userEvent.type(canvas.getByLabelText('订单金额值'), '1500');
@@ -447,12 +504,79 @@ export const AdvancedTree: Story = {
   play: async ({ canvasElement, args }) => {
     if (args.disabled) return;
     const canvas = within(canvasElement);
+    await expect(
+      canvas.queryAllByRole('button', { name: /移动.*条件/ }),
+    ).toHaveLength(0);
     await expect(canvas.getByLabelText('数量值')).toHaveValue('2');
     await userEvent.click(canvas.getByRole('button', { name: '查询' }));
     await expect(canvas.getByTestId('applied-filter')).toHaveTextContent(
       'ELEMENT_MATCH',
     );
     await expect(canvas.getByTestId('applied-filter')).toHaveTextContent('NOR');
+  },
+};
+export const LogicalGroupMenu: Story = {
+  name: '高级 · 独立添加逻辑分组',
+  render: args => (
+    <Scenario {...args} initial={filter.matchAll()} mode="advanced" />
+  ),
+  play: async ({ canvasElement, args }) => {
+    if (args.disabled) return;
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const add = canvas.getByRole('button', { name: '添加筛选' });
+    const group = canvas.getByRole('button', { name: '添加逻辑分组' });
+    const buttons = canvas.getByRole('group', { name: '添加筛选' });
+    await expect(within(buttons).getAllByRole('button')).toHaveLength(2);
+    await expect(group.getBoundingClientRect().left).toBeCloseTo(
+      add.getBoundingClientRect().right,
+      0,
+    );
+    await expect(getComputedStyle(add).borderTopRightRadius).toBe('0px');
+    await expect(getComputedStyle(group).borderTopLeftRadius).toBe('0px');
+    await expect(getComputedStyle(group).borderLeftWidth).toBe('0px');
+    await userEvent.click(add);
+    let picker = within(
+      await page.findByRole('dialog', { name: '选择筛选字段' }),
+    );
+    await expect(picker.queryByText('组合条件')).toBeNull();
+    await expect(
+      picker.queryByRole('button', {
+        name: /满足全部条件|满足任一条件|全部条件均不满足/,
+      }),
+    ).toBeNull();
+    await userEvent.click(group);
+    await waitFor(() =>
+      expect(page.queryByRole('dialog', { name: '选择筛选字段' })).toBeNull(),
+    );
+    await expect(
+      await page.findByRole('menuitem', { name: /^AND/ }),
+    ).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: /^NOR/ })).toBeVisible();
+    await userEvent.click(page.getByRole('menuitem', { name: /^OR/ }));
+    await waitFor(() => expect(group).toHaveFocus());
+    await userEvent.click(add);
+    picker = within(await page.findByRole('dialog', { name: '选择筛选字段' }));
+    await userEvent.click(picker.getByRole('checkbox', { name: '订单状态' }));
+    await userEvent.click(picker.getByRole('checkbox', { name: '订单金额' }));
+    await userEvent.click(picker.getByRole('button', { name: '完成' }));
+    await waitFor(() => expect(page.queryByRole('dialog')).toBeNull());
+    await userEvent.click(canvas.getByRole('combobox', { name: '订单状态值' }));
+    await userEvent.click(await page.findByRole('option', { name: '待处理' }));
+    await userEvent.type(
+      canvas.getByRole('textbox', { name: '订单金额值' }),
+      '1000',
+    );
+    await expect(canvas.getByLabelText('宿主状态')).toHaveTextContent(
+      '已应用 0 次',
+    );
+    await userEvent.click(canvas.getByRole('button', { name: '查询' }));
+    await expect(canvas.getByTestId('applied-filter')).toHaveTextContent(
+      '"op": "OR"',
+    );
+    await expect(canvas.getByLabelText('宿主状态')).toHaveTextContent(
+      '已应用 1 次',
+    );
   },
 };
 export const CustomEditor: Story = {

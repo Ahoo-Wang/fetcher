@@ -48,6 +48,38 @@ const instance: ViewInstance = {
   },
 };
 describe('record boundaries', () => {
+  it('validates display groups and rejects duplicate AND fields at the instance boundary', () => {
+    expect(() =>
+      validateViewDefinition({
+        ...definition,
+        fields: [{ ...definition.fields[0], group: '订单信息' }],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      validateViewDefinition({
+        ...definition,
+        fields: [{ ...definition.fields[0], group: 123 }],
+      }),
+    ).toThrow('字段分组');
+    expect(() =>
+      validateViewInstance(
+        {
+          ...instance,
+          config: {
+            ...instance.config,
+            filter: {
+              op: FilterOperator.AND,
+              operands: [
+                { op: FilterOperator.GTE, field: 'amount', value: 1 },
+                { op: FilterOperator.LTE, field: 'amount', value: 10 },
+              ],
+            },
+          },
+        },
+        definition,
+      ),
+    ).toThrow('不能重复使用字段');
+  });
   it('validates the table action reference from remote definitions', () => {
     expect(() =>
       validateViewDefinition({

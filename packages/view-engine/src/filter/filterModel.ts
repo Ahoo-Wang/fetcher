@@ -37,6 +37,8 @@ export interface FilterEditorReference {
   options?: Readonly<Record<string, FilterJsonValue>>;
 }
 export interface FilterFieldDefinition extends FilterField {
+  /** Display group in the add-filter picker; groups follow definition order. */
+  group?: string;
   type?: FilterFieldType;
   options?: readonly {
     value: Exclude<FilterLiteral, null>;

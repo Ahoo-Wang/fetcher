@@ -70,9 +70,6 @@ export interface FilterNodeLocation {
   node: FilterDraftNode;
   fields: readonly FilterFieldDefinition[];
   scope: string;
-  parent?: FilterDraftNode;
-  index: number;
-  ancestors: string[];
 }
 export function locateFilterNodes(
   root: FilterDraftNode,
@@ -83,24 +80,16 @@ export function locateFilterNodes(
     node: FilterDraftNode,
     fields: readonly FilterFieldDefinition[],
     scope: string,
-    parent: FilterDraftNode | undefined,
-    index: number,
-    ancestors: string[],
   ) {
-    result.push({ node, fields, scope, parent, index, ancestors });
-    node.operands?.forEach((child, index) =>
-      visit(child, fields, scope, node, index, [...ancestors, node.id]),
-    );
+    result.push({ node, fields, scope });
+    node.operands?.forEach(child => visit(child, fields, scope));
     if (node.predicate)
       visit(
         node.predicate,
         fields.find(field => field.field === node.field)?.fields ?? [],
         `${scope}/${node.id}`,
-        node,
-        0,
-        [...ancestors, node.id],
       );
   }
-  visit(root, fields, 'root', undefined, 0, []);
+  visit(root, fields, 'root');
   return result;
 }

@@ -20,9 +20,10 @@ import {
   type ReactNode,
 } from 'react';
 import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
-import { FolderInputIcon, SearchIcon, XIcon } from 'lucide-react';
+import { ChevronDownIcon, SearchIcon, XIcon } from 'lucide-react';
 import {
   compileFilterDraft,
+  duplicateAndFields,
   createFilterDraft,
   FILTER_OPERATORS,
   getFieldOperators,
@@ -54,16 +55,17 @@ import { FilterSelect } from './FilterSelect.js';
 import { FilterValueEditor } from './FilterValueEditor.js';
 import { Button } from '../components/ui/button.js';
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '../components/ui/dropdown-menu.js';
+import { FilterFieldPicker, type FieldChoice } from './FilterFieldPicker.js';
+import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
 } from '../components/ui/input-group.js';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTitle,
-  PopoverTrigger,
-} from '../components/ui/popover.js';
 import { cn } from '../lib/utils.js';
 
 const logicalOperators = [
@@ -78,6 +80,21 @@ const groupLabels = {
 };
 const filterLayout =
   'fve:grid fve:grid-cols-[repeat(auto-fill,minmax(min(100%,24rem),1fr))] fve:items-start fve:gap-2';
+function appendNode(
+  target: FilterDraftNode,
+  child: FilterDraftNode,
+): FilterDraftNode {
+  if (target.operands)
+    return { ...target, operands: [...target.operands, child] };
+  if (target.op === FilterOperator.MATCH_ALL) return child;
+  return { ...newFilterDraft(FilterOperator.AND), operands: [target, child] };
+}
+function canAppend(target: FilterDraftNode, child: FilterDraftNode): boolean {
+  if (target.operands && target.op !== FilterOperator.AND) return true;
+  const siblings =
+    target.operands ?? (target.op === FilterOperator.MATCH_ALL ? [] : [target]);
+  return !child.field || !siblings.some(node => node.field === child.field);
+}
 function message(error: unknown) {
   return (
     (error instanceof Error ? error.message : String(error)) ||
@@ -403,21 +420,17 @@ export function FilterPanel(props: FilterPanelProps) {
           ? previous
           : {
               ...previous,
-              [node.id]: '操作已改变，请设置新值，或明确清空此值。',
+              [node.id]: '操作已改变，请设置新值，或删除此筛选器。',
             },
       );
     }
   }
   function append(target: FilterDraftNode, child: FilterDraftNode) {
-    if (target.operands)
-      update(target.id, { ...target, operands: [...target.operands, child] });
-    else if (target.op === FilterOperator.MATCH_ALL && target.id === draft.id)
-      update(target.id, child);
-    else
-      update(target.id, {
-        ...newFilterDraft(FilterOperator.AND),
-        operands: [target, child],
-      });
+    const current = locateFilterNodes(draftRef.current, fields).find(
+      item => item.node.id === target.id,
+    )?.node;
+    if (current && canAppend(current, child))
+      update(current.id, appendNode(current, child));
   }
   function addControl(
     target: FilterDraftNode,
@@ -425,7 +438,8 @@ export function FilterPanel(props: FilterPanelProps) {
     scope: string,
     label: string,
   ) {
-    const options = scopeFields.flatMap(field => {
+    const bindings = target.operands ?? [target];
+    const options: FieldChoice[] = scopeFields.flatMap(field => {
       const operators = getFieldOperators(field).filter(
         op => !props.allowedOperators || props.allowedOperators.includes(op),
       );
@@ -436,12 +450,18 @@ export function FilterPanel(props: FilterPanelProps) {
           operators.every(op => FILTER_OPERATORS[op].category === 'element'))
       )
         return [];
-      return [{ value: `field:${field.field}`, label: field.label }];
+      return [
+        {
+          value: `field:${field.field}`,
+          label: field.label,
+          group: field.group ?? '',
+          selected: bindings.some(node => node.field === field.field),
+          repeatable:
+            target.op === FilterOperator.OR || target.op === FilterOperator.NOR,
+        },
+      ];
     });
     if (mode === 'advanced') {
-      for (const op of logicalOperators)
-        if (!props.allowedOperators || props.allowedOperators.includes(op))
-          options.push({ value: `op:${op}`, label: groupLabels[op] });
       for (const op of Object.values(FilterOperator))
         if (
           FILTER_OPERATORS[op].category === 'root' &&
@@ -453,93 +473,105 @@ export function FilterPanel(props: FilterPanelProps) {
           options.push({
             value: `op:${op}`,
             label: FILTER_OPERATORS[op].label,
+            group: '其他条件',
           });
     }
     return (
-      <FilterSelect
-        label={label}
-        placeholder="＋ 添加筛选"
-        value={null}
-        options={options}
-        disabled={disabled || options.length === 0}
-        onValueChange={choice => {
-          if (choice.startsWith('op:'))
-            append(target, newFilterDraft(choice.slice(3) as FilterOperator));
-          else {
-            const field = scopeFields.find(
-              field => field.field === choice.slice(6),
-            )!;
-            const op = getFieldOperators(field).find(
-              op =>
-                (!props.allowedOperators ||
-                  props.allowedOperators.includes(op)) &&
-                (mode === 'advanced' ||
-                  FILTER_OPERATORS[op].category !== 'element'),
-            )!;
-            if (op) append(target, newFilterDraft(op, field.field));
-          }
-        }}
-      />
-    );
-  }
-  function move(location: FilterNodeLocation, targetId: string) {
-    const target = locations.find(location => location.node.id === targetId);
-    if (
-      !target?.node.operands ||
-      target.scope !== location.scope ||
-      target.ancestors.includes(location.node.id) ||
-      targetId === location.node.id
-    )
-      return;
-    const removed = replaceFilterNode(draft, location.node.id);
-    if (!removed) return;
-    const destination = locateFilterNodes(removed, fields).find(
-      location => location.node.id === targetId,
-    )?.node;
-    if (destination?.operands)
-      change(
-        replaceFilterNode(removed, targetId, {
-          ...destination,
-          operands: [...destination.operands, location.node],
-        })!,
-      );
-  }
-  function actions(location: FilterNodeLocation, label: string) {
-    if (mode !== 'advanced') return null;
-    const destinations = locations.filter(
-      target =>
-        target.node.operands &&
-        target.scope === location.scope &&
-        target.node.id !== location.node.id &&
-        target.node.id !== location.parent?.id &&
-        !target.ancestors.includes(location.node.id),
-    );
-    if (!destinations.length) return null;
-    return (
-      <Popover>
-        <PopoverTrigger
-          render={<InputGroupButton size="icon-xs" />}
-          aria-label={`移动${label}条件`}
-          title="移动到分组"
-          disabled={disabled}
+      <DropdownMenu>
+        <FilterFieldPicker
+          label={label}
+          options={options}
+          disabled={disabled || options.length === 0}
+          onAdd={choice => {
+            const option = options.find(option => option.value === choice);
+            if (disabled || !choice || !option) return;
+            if (choice.startsWith('op:'))
+              append(target, newFilterDraft(choice.slice(3) as FilterOperator));
+            else {
+              const field = scopeFields.find(
+                field => field.field === choice.slice(6),
+              )!;
+              const op = getFieldOperators(field).find(
+                op =>
+                  (!props.allowedOperators ||
+                    props.allowedOperators.includes(op)) &&
+                  (mode === 'advanced' ||
+                    FILTER_OPERATORS[op].category !== 'element'),
+              )!;
+              if (op) append(target, newFilterDraft(op, field.field));
+            }
+          }}
+          onRemove={choice => {
+            if (disabled || !choice.startsWith('field:')) return;
+            const field = choice.slice(6);
+            const current = locateFilterNodes(draftRef.current, fields).find(
+              item => item.node.id === target.id,
+            )?.node;
+            if (!current) return;
+            if (current.operands) {
+              const operands = current.operands.filter(
+                node => node.field !== field,
+              );
+              if (operands.length === current.operands.length) return;
+              update(
+                current.id,
+                !operands.length &&
+                  current.id === draftRef.current.id &&
+                  current.op === FilterOperator.AND
+                  ? newFilterDraft(FilterOperator.MATCH_ALL)
+                  : { ...current, operands },
+              );
+            } else if (current.field === field) update(current.id);
+          }}
         >
-          <FolderInputIcon aria-hidden="true" />
-        </PopoverTrigger>
-        <PopoverContent align="end">
-          <PopoverTitle>移动{label}条件</PopoverTitle>
-          <FilterSelect
-            label="移动到分组"
-            value={null}
-            placeholder="移动到分组"
-            options={destinations.map((target, index) => ({
-              value: target.node.id,
-              label: `${FILTER_OPERATORS[target.node.op]?.label ?? target.node.op} · ${index + 1}`,
-            }))}
-            onValueChange={id => move(location, id)}
-            disabled={disabled}
-          />
-        </PopoverContent>
-      </Popover>
+          {mode === 'advanced' && (
+            <DropdownMenuTrigger
+              aria-label={
+                label === '添加筛选' ? '添加逻辑分组' : `${label}：添加逻辑分组`
+              }
+              title="添加逻辑分组"
+              disabled={
+                disabled ||
+                logicalOperators.every(
+                  op =>
+                    props.allowedOperators &&
+                    !props.allowedOperators.includes(op),
+                )
+              }
+              render={<Button type="button" variant="outline" size="icon-sm" />}
+            >
+              <ChevronDownIcon aria-hidden="true" />
+            </DropdownMenuTrigger>
+          )}
+        </FilterFieldPicker>
+        {mode === 'advanced' && (
+          <DropdownMenuContent align="start" className="fve:min-w-56">
+            {logicalOperators.map(op => (
+              <DropdownMenuItem
+                key={op}
+                disabled={
+                  disabled ||
+                  (!!props.allowedOperators &&
+                    !props.allowedOperators.includes(op))
+                }
+                onClick={() => {
+                  if (
+                    !disabled &&
+                    (!props.allowedOperators ||
+                      props.allowedOperators.includes(op))
+                  )
+                    append(target, newFilterDraft(op));
+                }}
+              >
+                <span className="fve:w-8 fve:font-medium">{op}</span>
+                <span className="fve:text-muted-foreground">
+                  {groupLabels[op]}
+                </span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        )}
+      </DropdownMenu>
     );
   }
   function resolveEditor(location: FilterNodeLocation): {
@@ -724,7 +756,7 @@ export function FilterPanel(props: FilterPanelProps) {
       </EditorBoundary>
     );
   }
-  function renderNode(node: FilterDraftNode): ReactNode {
+  function renderNode(node: FilterDraftNode, showAddControl = true): ReactNode {
     const location = locations.find(location => location.node.id === node.id)!;
     const descriptor = FILTER_OPERATORS[node.op];
     const field = location.fields.find(field => field.field === node.field);
@@ -758,14 +790,17 @@ export function FilterPanel(props: FilterPanelProps) {
                   value: op,
                   label: groupLabels[op],
                   disabled:
-                    !!props.allowedOperators &&
-                    !props.allowedOperators.includes(op),
+                    (!!props.allowedOperators &&
+                      !props.allowedOperators.includes(op)) ||
+                    duplicateAndFields({ ...node, op }).length > 0,
                 }))}
                 disabled={disabled}
-                onValueChange={op => update(node.id, { ...node, op })}
+                onValueChange={op => {
+                  if (!duplicateAndFields({ ...node, op }).length)
+                    update(node.id, { ...node, op });
+                }}
               />
             )}
-            {actions(location, label)}
             <Button
               variant="ghost"
               size="icon-xs"
@@ -778,10 +813,10 @@ export function FilterPanel(props: FilterPanelProps) {
           </div>
           <div className={filterLayout}>
             {element
-              ? node.predicate && renderNode(node.predicate)
-              : node.operands?.map(renderNode)}
+              ? node.predicate && renderNode(node.predicate, false)
+              : node.operands?.map(child => renderNode(child))}
           </div>
-          {element && node.predicate && !node.predicate.operands && (
+          {element && node.predicate && (
             <div className="fve:mt-2">
               {addControl(
                 node.predicate,
@@ -792,7 +827,7 @@ export function FilterPanel(props: FilterPanelProps) {
               )}
             </div>
           )}
-          {!element && (
+          {!element && showAddControl && (
             <div className="fve:mt-2">
               {addControl(
                 node,
@@ -859,7 +894,6 @@ export function FilterPanel(props: FilterPanelProps) {
             disabled={disabled}
           >
             {editor}
-            {actions(location, label)}
           </FieldFilter>
         ) : (
           <InputGroup
@@ -875,7 +909,6 @@ export function FilterPanel(props: FilterPanelProps) {
               disabled={disabled}
             />
             {editor}
-            {actions(location, label)}
             <InputGroupAddon align="inline-end" className="fve:ml-auto">
               <InputGroupButton
                 aria-label={`删除${label}条件`}
@@ -987,8 +1020,8 @@ export function FilterPanel(props: FilterPanelProps) {
           {draft.op === FilterOperator.MATCH_ALL
             ? null
             : mode === 'simple' && draft.op === FilterOperator.AND
-              ? draft.operands?.map(renderNode)
-              : renderNode(draft)}
+              ? draft.operands?.map(child => renderNode(child))
+              : renderNode(draft, false)}
         </div>
         <div className="fve:flex fve:flex-wrap fve:items-center fve:gap-2">
           {addControl(draft, fields, 'root', '添加筛选')}

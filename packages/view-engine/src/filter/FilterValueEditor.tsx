@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { TZDate } from '@date-fns/tz';
 import {
   DeletionState,
@@ -136,71 +136,6 @@ function dateTimeValue(value: unknown, timeZone?: string): FilterDateTimeValue {
   return { date: textValue(value) };
 }
 
-function ValueOptions({
-  label,
-  nullable,
-  emptyString,
-  disabled,
-  onChange,
-}: {
-  label: string;
-  nullable: boolean;
-  emptyString: boolean;
-  disabled?: boolean;
-  onChange(value: unknown): void;
-}) {
-  const [open, setOpen] = useState(false);
-  function choose(value: unknown) {
-    onChange(value);
-    setOpen(false);
-  }
-  return (
-    <>
-      <InputGroupButton
-        aria-label={`清空${label}`}
-        disabled={disabled}
-        onClick={() => choose(undefined)}
-      >
-        清空
-      </InputGroupButton>
-      {(nullable || emptyString) && (
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger
-            render={<InputGroupButton />}
-            aria-label={`${label}选项`}
-            disabled={disabled}
-          >
-            特殊值
-          </PopoverTrigger>
-          <PopoverContent align="start" className="fve:w-auto">
-            <PopoverTitle>{label}</PopoverTitle>
-            {emptyString && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={disabled}
-                onClick={() => choose('')}
-              >
-                设为空字符串
-              </Button>
-            )}
-            {nullable && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={disabled}
-                onClick={() => choose(null)}
-              >
-                设为空值
-              </Button>
-            )}
-          </PopoverContent>
-        </Popover>
-      )}
-    </>
-  );
-}
-
 function ScalarEditor({
   value,
   label,
@@ -277,14 +212,6 @@ function ScalarEditor({
         {incompatible && (
           <>
             <InputGroupText role="alert">值与选项不兼容</InputGroupText>
-            <InputGroupButton
-              aria-label={`清空${label}`}
-              disabled={disabled}
-              size="icon-xs"
-              onClick={() => changeValue(undefined)}
-            >
-              <XIcon aria-hidden="true" />
-            </InputGroupButton>
           </>
         )}
       </span>
@@ -325,13 +252,6 @@ function ScalarEditor({
             }
           />
         )}
-        <ValueOptions
-          label={label}
-          nullable={nullable}
-          emptyString={false}
-          disabled={disabled}
-          onChange={onChange}
-        />
       </span>
     );
   }
@@ -367,13 +287,6 @@ function ScalarEditor({
               : next,
           );
         }}
-      />
-      <ValueOptions
-        label={label}
-        nullable={nullable}
-        emptyString={kind === 'string'}
-        disabled={disabled}
-        onChange={changeValue}
       />
       {incompatible && (
         <InputGroupText role="alert">值与字段类型不兼容</InputGroupText>

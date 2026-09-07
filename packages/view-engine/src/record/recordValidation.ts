@@ -80,6 +80,7 @@ function fields(value: unknown) {
     text(field.field, '字段路径');
     path(field.field, '字段路径');
     text(field.label, '字段名称');
+    if (field.group !== undefined) text(field.group, '字段分组');
     if (names.has(field.field)) throw new Error(`字段重复：${field.field}`);
     names.add(field.field);
     if (

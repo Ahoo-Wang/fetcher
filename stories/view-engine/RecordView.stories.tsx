@@ -95,6 +95,7 @@ const definition: ViewDefinition = {
     },
     {
       field: 'customer',
+      group: '客户信息',
       label: '客户',
       type: 'string',
       sortable: true,
@@ -102,6 +103,7 @@ const definition: ViewDefinition = {
     },
     {
       field: 'amount',
+      group: '订单信息',
       label: '订单金额',
       type: 'number',
       sortable: true,
@@ -110,6 +112,7 @@ const definition: ViewDefinition = {
     },
     {
       field: 'status',
+      group: '订单信息',
       label: '订单状态',
       type: 'string',
       options: statuses,
@@ -118,6 +121,7 @@ const definition: ViewDefinition = {
     },
     {
       field: 'createdAt',
+      group: '时间',
       label: '下单时间',
       type: 'string',
       sortable: true,
@@ -2136,6 +2140,39 @@ export const RuntimeTools: Story = {
     const tableToolbar = within(
       canvas.getByRole('group', { name: '表格工具栏' }),
     );
+    const table = canvas.getByRole('table');
+    const query = canvas.getByRole('button', { name: '查询' });
+    const tableTop = table.getBoundingClientRect().top;
+    const queryTop = query.getBoundingClientRect().top;
+    const addFilter = canvas.getByRole('button', { name: '添加筛选' });
+    await userEvent.click(addFilter);
+    const fieldPicker = await page.findByRole('dialog', {
+      name: '选择筛选字段',
+    });
+    await waitFor(() => expect(fieldPicker).toBeVisible());
+    await expect(table.getBoundingClientRect().top).toBe(tableTop);
+    await expect(query.getBoundingClientRect().top).toBe(queryTop);
+    await expect(
+      fieldPicker.getBoundingClientRect().height,
+    ).toBeLessThanOrEqual(448);
+    await expect(fieldPicker.getBoundingClientRect().right).toBeLessThanOrEqual(
+      canvasElement.ownerDocument.documentElement.clientWidth,
+    );
+    await userEvent.click(
+      within(fieldPicker).getByRole('button', { name: '完成' }),
+    );
+    await waitFor(() =>
+      expect(page.queryByRole('dialog', { name: '选择筛选字段' })).toBeNull(),
+    );
+    await expect(addFilter).toHaveFocus();
+    await expect(table.getBoundingClientRect().top).toBe(tableTop);
+    await userEvent.click(addFilter);
+    await page.findByRole('dialog', { name: '选择筛选字段' });
+    await userEvent.click(input);
+    await waitFor(() =>
+      expect(page.queryByRole('dialog', { name: '选择筛选字段' })).toBeNull(),
+    );
+    await expect(input).toHaveFocus();
     for (const name of ['刷新', '自动刷新设置', '展开视图']) {
       await expect(globalToolbar.getByRole('button', { name })).toBeVisible();
       await expect(tableToolbar.queryByRole('button', { name })).toBeNull();

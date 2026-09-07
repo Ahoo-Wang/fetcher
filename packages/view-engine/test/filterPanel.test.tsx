@@ -20,6 +20,7 @@ import {
   render,
   screen,
   within,
+  waitFor,
 } from '@testing-library/react';
 import {
   filter,
@@ -46,6 +47,243 @@ const fields: FilterFieldDefinition[] = [
     fields: [{ field: 'quantity', label: '数量', type: 'number' }],
   },
 ];
+
+it.each([FilterOperator.AND, FilterOperator.OR, FilterOperator.NOR])(
+  'adds %s from the advanced group menu without querying',
+  async op => {
+    const apply = vi.fn();
+    const change = vi.fn();
+    const view = render(
+      <FilterPanel
+        fields={fields}
+        value={filter.matchAll()}
+        onApply={apply}
+        onDraftChange={change}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: '添加逻辑分组' })).toBeNull();
+    view.rerender(
+      <FilterPanel
+        fields={fields}
+        value={filter.matchAll()}
+        mode="advanced"
+        onApply={apply}
+        onDraftChange={change}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '添加逻辑分组' }));
+    for (const operator of ['AND', 'OR', 'NOR'])
+      expect(
+        await screen.findByRole('menuitem', {
+          name: new RegExp(`^${operator}`),
+        }),
+      ).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole('menuitem', { name: new RegExp(`^${op}`) }),
+    );
+    expect(change.mock.lastCall?.[0]).toMatchObject({ op, operands: [] });
+    expect(apply).not.toHaveBeenCalled();
+  },
+);
+
+it('keeps logical groups out of the picker and respects the allowed-operator list', async () => {
+  render(
+    <FilterPanel
+      fields={fields}
+      value={filter.eq('amount', 1)}
+      mode="advanced"
+      allowedOperators={[FilterOperator.EQ, FilterOperator.AND]}
+      onApply={() => {}}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '添加筛选' }));
+  const picker = within(
+    await screen.findByRole('dialog', { name: '选择筛选字段' }),
+  );
+  expect(
+    picker.queryByRole('button', {
+      name: /满足全部条件|满足任一条件|全部条件均不满足/,
+    }),
+  ).toBeNull();
+  expect(picker.queryByText('组合条件')).toBeNull();
+  expect(picker.getByRole('checkbox', { name: '订单金额' })).toBeTruthy();
+  fireEvent.click(picker.getByRole('button', { name: '完成' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  fireEvent.click(screen.getByRole('button', { name: '添加逻辑分组' }));
+  expect(
+    (await screen.findByRole('menuitem', { name: /^OR/ })).getAttribute(
+      'aria-disabled',
+    ),
+  ).toBe('true');
+  expect(
+    screen
+      .getByRole('menuitem', { name: /^NOR/ })
+      .getAttribute('aria-disabled'),
+  ).toBe('true');
+  expect(
+    screen
+      .getByRole('menuitem', { name: /^AND/ })
+      .getAttribute('aria-disabled'),
+  ).not.toBe('true');
+});
+
+it('adds a logical group to the selected nested target', async () => {
+  const change = vi.fn();
+  render(
+    <FilterPanel
+      fields={fields}
+      value={filter.and([
+        filter.eq('amount', 1),
+        filter.or([filter.eq('status', 'pending')]),
+      ])}
+      onApply={() => {}}
+      onDraftChange={change}
+    />,
+  );
+  fireEvent.click(
+    screen.getByRole('button', { name: '添加到组合 3：添加逻辑分组' }),
+  );
+  fireEvent.click(await screen.findByRole('menuitem', { name: /^NOR/ }));
+  expect(change.mock.lastCall?.[0]).toMatchObject({
+    op: FilterOperator.AND,
+    operands: [
+      { field: 'amount', value: 1 },
+      {
+        op: FilterOperator.OR,
+        operands: [
+          { field: 'status', value: 'pending' },
+          { op: FilterOperator.NOR, operands: [] },
+        ],
+      },
+    ],
+  });
+});
+
+it('uses field checkboxes for continuous selection and removal without querying', async () => {
+  const apply = vi.fn();
+  const definitions = fields.map(field => ({
+    ...field,
+    group: field.type === 'array' ? undefined : '订单信息',
+  }));
+  render(
+    <FilterPanel
+      fields={definitions}
+      value={filter.gte('amount', 10)}
+      onApply={apply}
+    />,
+  );
+  const trigger = screen.getByRole('button', { name: '添加筛选' });
+  fireEvent.click(trigger);
+  const dialog = await screen.findByRole('dialog', { name: '选择筛选字段' });
+  const picker = within(dialog);
+  expect(picker.getByText('订单信息')).toBeTruthy();
+  expect(picker.getByText('其他字段')).toBeTruthy();
+  expect(screen.queryByRole('listbox')).toBeNull();
+  const amount = picker.getByRole('checkbox', { name: '订单金额' });
+  const status = picker.getByRole('checkbox', { name: '订单状态' });
+  expect(amount.getAttribute('aria-checked')).toBe('true');
+  fireEvent.click(status);
+  expect(status.getAttribute('aria-checked')).toBe('true');
+  expect(screen.getByLabelText('订单状态值')).toBeTruthy();
+  fireEvent.click(amount);
+  expect(amount.getAttribute('aria-checked')).toBe('false');
+  expect(screen.queryByLabelText('订单金额值')).toBeNull();
+  fireEvent.click(status);
+  expect(screen.queryByLabelText('订单状态值')).toBeNull();
+  expect(screen.getByRole('dialog', { name: '选择筛选字段' })).toBe(dialog);
+  fireEvent.click(amount);
+  expect(amount.getAttribute('aria-checked')).toBe('true');
+  expect(screen.getAllByLabelText('订单金额值')).toHaveLength(1);
+  fireEvent.click(amount);
+  expect(apply).not.toHaveBeenCalled();
+  fireEvent.click(picker.getByRole('button', { name: '完成' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '选择筛选字段' })).toBeNull(),
+  );
+  await waitFor(() => expect(document.activeElement).toBe(trigger));
+  fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
+  expect(apply).toHaveBeenCalledWith(filter.matchAll());
+});
+
+it('keeps repeated OR conditions available and unchecks only the current group field', async () => {
+  const apply = vi.fn();
+  render(
+    <FilterPanel
+      fields={fields}
+      value={filter.and([
+        filter.eq('amount', 1),
+        filter.or([filter.eq('amount', 2), filter.eq('status', 'pending')]),
+      ])}
+      onApply={apply}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '添加到组合 3' }));
+  const picker = within(
+    await screen.findByRole('dialog', { name: '选择筛选字段' }),
+  );
+  const amount = picker.getByRole('checkbox', { name: '订单金额' });
+  expect(amount.getAttribute('aria-checked')).toBe('true');
+  fireEvent.click(picker.getByRole('button', { name: '添加订单金额条件' }));
+  expect(screen.getAllByLabelText('订单金额值')).toHaveLength(3);
+  fireEvent.click(amount);
+  expect(screen.getAllByLabelText('订单金额值')).toHaveLength(1);
+  expect(amount.getAttribute('aria-checked')).toBe('false');
+  expect(
+    picker
+      .getByRole('checkbox', { name: '订单状态' })
+      .getAttribute('aria-checked'),
+  ).toBe('true');
+  expect(apply).not.toHaveBeenCalled();
+  fireEvent.click(picker.getByRole('button', { name: '完成' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '选择筛选字段' })).toBeNull(),
+  );
+  fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
+  expect(apply).toHaveBeenCalledWith(
+    filter.and([
+      filter.eq('amount', 1),
+      filter.or([filter.eq('status', 'pending')]),
+    ]),
+  );
+});
+
+it('reports loaded AND duplicates without discarding either condition', () => {
+  const apply = vi.fn();
+  render(
+    <FilterPanel
+      fields={fields}
+      value={filter.and([filter.eq('amount', 1), filter.gte('amount', 2)])}
+      onApply={apply}
+    />,
+  );
+  expect(screen.getAllByLabelText('订单金额值')).toHaveLength(2);
+  expect(screen.getByText(/同一 AND 分组不能重复使用字段/)).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
+  expect(apply).not.toHaveBeenCalled();
+  fireEvent.click(
+    screen.getAllByRole('button', { name: '删除订单金额条件' })[1],
+  );
+  fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
+  expect(apply).toHaveBeenCalledWith(filter.and([filter.eq('amount', 1)]));
+});
+
+it('disables converting repeated OR fields into AND', async () => {
+  const apply = vi.fn();
+  render(
+    <FilterPanel
+      fields={fields}
+      value={filter.or([filter.eq('amount', 1), filter.gte('amount', 2)])}
+      onApply={apply}
+    />,
+  );
+  fireEvent.click(screen.getByRole('combobox', { name: '组合方式' }));
+  const and = await screen.findByRole('option', { name: '满足全部条件' });
+  expect(and.getAttribute('aria-disabled')).toBe('true');
+  fireEvent.click(and);
+  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
+  fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
+  expect(apply.mock.calls[0][0].op).toBe(FilterOperator.OR);
+});
 
 it('buffers edits and clears until Query, retains unset controls, and undoes without querying', () => {
   const apply = vi.fn();
@@ -349,9 +587,14 @@ it('adds fields without rebinding and changes modes without querying', async () 
       onModeChange={mode}
     />,
   );
-  await select('添加筛选', '订单金额');
+  fireEvent.click(screen.getByRole('button', { name: '添加筛选' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '订单金额' }));
   expect(screen.getByLabelText('订单金额值')).toBeTruthy();
   expect(screen.queryByRole('combobox', { name: '字段' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '完成' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '选择筛选字段' })).toBeNull(),
+  );
   await select('筛选模式', '高级');
   expect(mode).toHaveBeenCalledWith('advanced');
   await select('筛选模式', '简单');
@@ -373,29 +616,21 @@ it('keeps simple filters free of condition menus and applies the original order'
   expect(apply).toHaveBeenCalledWith(value);
 });
 
-it('moves a predicate into another group without changing its scope or parameters', async () => {
+it('omits group-move controls in advanced mode and preserves the condition tree', () => {
   const apply = vi.fn();
-  render(
-    <FilterPanel
-      fields={fields}
-      value={filter.and([
-        filter.eq('amount', 10),
-        filter.or([filter.eq('status', 'pending')]),
-      ])}
-      onApply={apply}
-    />,
+  const value = filter.and([
+    filter.eq('amount', 10),
+    filter.or([filter.eq('status', 'pending')]),
+  ]);
+  render(<FilterPanel fields={fields} value={value} onApply={apply} />);
+  expect(screen.queryAllByRole('button', { name: /移动.*条件/ })).toHaveLength(
+    0,
   );
-  fireEvent.click(screen.getByRole('button', { name: '移动订单金额条件' }));
-  await select('移动到分组', '满足任一条件 · 1');
   fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
-  expect(apply).toHaveBeenCalledWith(
-    filter.and([
-      filter.or([filter.eq('status', 'pending'), filter.eq('amount', 10)]),
-    ]),
-  );
+  expect(apply).toHaveBeenCalledWith(value);
 });
 
-it('does not offer cross-element moves or destructive simple-mode conversion', async () => {
+it('does not offer destructive simple-mode conversion for element conditions', async () => {
   render(
     <FilterPanel
       fields={fields}
@@ -415,7 +650,6 @@ it('does not offer cross-element moves or destructive simple-mode conversion', a
   fireEvent.keyDown(screen.getByRole('option', { name: '高级', exact: true }), {
     key: 'Escape',
   });
-  expect(screen.queryByRole('button', { name: '移动订单金额条件' })).toBeNull();
 });
 
 it('keeps mode-specific extension fallback and ignores unused lower-priority references', () => {
@@ -570,7 +804,9 @@ it('loaded single-predicate element scopes can add another child', () => {
   const element = within(
     screen.getByRole('group', { name: '商品明细元素条件' }),
   );
-  expect(element.queryByRole('combobox', { name: /添加/ })).not.toBeNull();
+  expect(
+    element.queryByRole('button', { name: '商品明细元素内添加筛选' }),
+  ).not.toBeNull();
 });
 it('changing an operator cannot clear a custom editors reported invalid input', async () => {
   const apply = vi.fn();
@@ -707,7 +943,7 @@ it('clearing a value rejects callbacks from the custom editor it just unmounted'
   fireEvent.click(screen.getByRole('button', { name: /^查询/ }));
   expect(apply).toHaveBeenLastCalledWith(filter.matchAll());
 });
-it('adds a same-scope sibling to an existing element predicate without changing it', async () => {
+it('keeps an element picker open when its last field is unchecked and reselected', async () => {
   const apply = vi.fn();
   render(
     <FilterPanel
@@ -717,20 +953,25 @@ it('adds a same-scope sibling to an existing element predicate without changing 
     />,
   );
   fireEvent.click(
-    screen.getByRole('combobox', { name: '商品明细元素内添加筛选' }),
+    screen.getByRole('button', { name: '商品明细元素内添加筛选' }),
   );
-  const item = await screen.findByRole('option', { name: '数量' });
-  fireEvent.pointerDown(item, { pointerType: 'mouse' });
-  fireEvent.click(item);
-  fireEvent.change(screen.getAllByLabelText('数量值')[1], {
-    target: { value: '2' },
-  });
-  fireEvent.click(screen.getByRole('button', { name: /^查询/ }));
-  expect(apply).toHaveBeenLastCalledWith(
-    filter.elementMatch(
-      'items',
-      filter.and([filter.eq('quantity', 1), filter.eq('quantity', 2)]),
-    ),
+  const dialog = await screen.findByRole('dialog', { name: '选择筛选字段' });
+  const picker = within(dialog);
+  const quantity = picker.getByRole('checkbox', { name: '数量' });
+  expect(quantity.getAttribute('aria-checked')).toBe('true');
+  fireEvent.click(quantity);
+  expect(screen.queryByLabelText('数量值')).toBeNull();
+  expect(screen.getByRole('dialog', { name: '选择筛选字段' })).toBe(dialog);
+  fireEvent.click(quantity);
+  expect(screen.getAllByLabelText('数量值')).toHaveLength(1);
+  fireEvent.click(picker.getByRole('button', { name: '完成' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '选择筛选字段' })).toBeNull(),
+  );
+  fireEvent.change(screen.getByLabelText('数量值'), { target: { value: '2' } });
+  fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
+  expect(apply).toHaveBeenCalledWith(
+    filter.elementMatch('items', filter.and([filter.eq('quantity', 2)])),
   );
 });
 
