@@ -84,6 +84,7 @@ const sceneDefinitions: Record<string, SceneDefinition> = {
 const preview: Preview = {
   decorators: [
     (Story, context) => {
+      if (context.title.startsWith('View Engine/')) return <Story />;
       const scene = sceneDefinitions[context.title];
       const story = scene ? (
         <article
@@ -157,7 +158,13 @@ const preview: Preview = {
     },
     options: {
       storySort: {
-        order: ['Overview', 'HTTP & Streaming', 'React Hooks', 'Viewer'],
+        order: [
+          'Overview',
+          'HTTP & Streaming',
+          'React Hooks',
+          'View Engine',
+          'Viewer',
+        ],
       },
     },
   },

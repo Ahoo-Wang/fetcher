@@ -1,0 +1,222 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import type {
+  FieldSort,
+  FilterExpression,
+  FilterOperator,
+  QueryApi,
+} from '@ahoo-wang/fetcher-wow';
+import type {
+  FilterDraftNode,
+  FilterEditorReference,
+  FilterFieldDefinition,
+  FilterMode,
+} from '../filter/filterModel.js';
+
+export type RecordData = Record<string, unknown>;
+export type RecordKey = string | number;
+export type RendererReference = FilterEditorReference;
+export interface ViewFieldDefinition extends FilterFieldDefinition {
+  sortable?: boolean;
+  cellRenderer?: RendererReference;
+  /** Restricts numeric summaries; other field types cannot summarize. */
+  summaryFunctions?: readonly RecordSummaryFunction[];
+}
+/** Source metadata shared by all instances. Paths are relative to the returned record. */
+export interface ViewDefinition {
+  id: string;
+  title: string;
+  sourceId: string;
+  rowKey: string;
+  fields: readonly ViewFieldDefinition[];
+  allowedOperators?: readonly FilterOperator[];
+  filterEditors?: Partial<Record<FilterOperator, FilterEditorReference>>;
+  recordActions?: {
+    global?: RendererReference;
+    table?: RendererReference;
+    row?: RendererReference;
+  };
+}
+export type ViewScope =
+  { type: 'personal' } | { type: 'public'; source: 'system' | 'shared' };
+export type SaveAsScope =
+  { type: 'personal' } | { type: 'public'; source: 'shared' };
+export type RecordColumnPinning = 'left' | 'right' | false;
+interface RecordColumnBase {
+  id: string;
+  title?: string;
+  /** Explicit pixel width. Omitted, unpinned string columns share the available table space. */
+  width?: number;
+  visible?: boolean;
+  /** Preference for ordinary fields; row-key and action columns have mandatory sides. */
+  pinned?: RecordColumnPinning;
+  renderer?: RendererReference;
+}
+export type RecordColumn =
+  | (RecordColumnBase & {
+      kind: 'field';
+      field: string;
+      summary?: RecordSummaryFunction;
+    })
+  | (RecordColumnBase & { kind: 'actions' });
+export function getRecordColumnPinning(
+  column: RecordColumn,
+  rowKey = 'id',
+): RecordColumnPinning {
+  if (column.kind === 'actions') return 'right';
+  if (column.field === rowKey) return 'left';
+  return column.pinned ?? false;
+}
+/** Returns display order without rewriting persisted preferences or omitting hidden columns. */
+export function orderRecordColumns(
+  columns: readonly RecordColumn[],
+  rowKey = 'id',
+): RecordColumn[] {
+  function priority(column: RecordColumn): number {
+    if (column.kind === 'actions') return 4;
+    if (column.field === rowKey) return 0;
+    const pinned = getRecordColumnPinning(column, rowKey);
+    return pinned === 'left' ? 1 : pinned === 'right' ? 3 : 2;
+  }
+  return [...columns].sort((left, right) => priority(left) - priority(right));
+}
+export interface RecordViewConfig {
+  filter: FilterExpression;
+  sort: FieldSort[];
+  pagination: { mode: 'paged' | 'cursor'; size: number };
+  presentation: { layout: 'table'; table: { columns: RecordColumn[] } };
+}
+/** This release implements record instances. Other view kinds will add their own config contracts. */
+export interface RecordViewInstance {
+  id: string;
+  definitionId: string;
+  title: string;
+  kind: 'record';
+  scope: ViewScope;
+  config: RecordViewConfig;
+  revision?: string;
+}
+export type ViewInstance = RecordViewInstance;
+export interface ViewInstanceList {
+  instances: ViewInstance[];
+  defaultInstanceId: string | null;
+}
+export interface ViewInstancePermissions {
+  save: boolean;
+  saveAsPersonal: boolean;
+  saveAsShared: boolean;
+  /** Defaults to false; system instances can never be deleted. */
+  delete?: boolean;
+  /** Defaults to false; system instance names are immutable. */
+  rename?: boolean;
+}
+export type RecordQuerySource = Pick<QueryApi<RecordData>, 'paged' | 'cursor'> &
+  Partial<Pick<QueryApi<RecordData>, 'aggregate'>>;
+/** One host/engine belongs to one fixed user, tenant and access scope. */
+export interface ViewHost {
+  loadDefinition?(
+    definitionId: string,
+    signal?: AbortSignal,
+  ): Promise<ViewDefinition>;
+  listInstances?(
+    definitionId: string,
+    signal?: AbortSignal,
+  ): Promise<ViewInstanceList>;
+  loadInstance?(
+    instanceId: string,
+    signal?: AbortSignal,
+  ): Promise<ViewInstance>;
+  createInstance?(
+    instance: Omit<ViewInstance, 'id' | 'revision'>,
+  ): Promise<ViewInstance>;
+  saveInstance?(instance: ViewInstance): Promise<ViewInstance>;
+  /** Resolves after deletion. The host enforces access and revision checks. */
+  deleteInstance?(instanceId: string, revision?: string): Promise<void>;
+  /** Changes only the persisted title; returns the complete instance with its new revision. */
+  renameInstance?(
+    instanceId: string,
+    title: string,
+    revision?: string,
+  ): Promise<ViewInstance>;
+  /** Saves this fixed user's display preference, never the public view's shared order. */
+  saveInstanceOrder?(
+    definitionId: string,
+    instanceIds: string[],
+  ): Promise<void>;
+  resolveSource(
+    sourceId: string,
+  ): RecordQuerySource | Promise<RecordQuerySource>;
+  getInstancePermissions?(instance: ViewInstance): ViewInstancePermissions;
+}
+export interface ViewEngineOptions {
+  definitionId: string;
+  host: ViewHost;
+  definition?: ViewDefinition;
+  instances?: ViewInstanceList;
+}
+export interface RecordSession {
+  readonly baseline: ViewInstance;
+  readonly instance: ViewInstance;
+  readonly dirty: boolean;
+  readonly filterDraft: FilterDraftNode;
+  readonly filterMode: FilterMode;
+  readonly filterPending: boolean;
+  readonly page: number;
+  readonly cursor: string | null;
+  readonly nextCursor: string | null;
+  readonly rows: readonly RecordData[];
+  readonly total: number | null;
+  readonly pageSummary: RecordSummaryResult;
+  readonly allSummary: RecordSummaryResult;
+  readonly selectedRowKeys: readonly RecordKey[];
+  readonly queryStatus: 'idle' | 'loading' | 'success' | 'error';
+  /** A background read keeps the last successful rows usable. */
+  readonly refreshing: boolean;
+  readonly queryError: string | null;
+  readonly writeStatus:
+    'idle' | 'saving' | 'creating' | 'deleting' | 'renaming';
+  readonly writeError: string | null;
+  readonly requiresReload: boolean;
+}
+export interface ViewEngineState {
+  readonly status: 'idle' | 'loading' | 'ready' | 'error';
+  readonly error: string | null;
+  readonly definition: ViewDefinition | null;
+  readonly instanceIds: readonly string[];
+  readonly selectedInstanceId: string | null;
+  readonly sessions: Readonly<Record<string, RecordSession>>;
+}
+export const RECORD_COLUMN_MIN_WIDTH = 64;
+export const RECORD_COLUMN_MAX_WIDTH = 960;
+export const RECORD_COLUMN_DEFAULT_WIDTH = 180;
+
+export const RECORD_SUMMARY_LABELS = {
+  SUM: '合计',
+  AVG: '平均值',
+  MIN: '最小值',
+  MAX: '最大值',
+} as const;
+export type RecordSummaryFunction = keyof typeof RECORD_SUMMARY_LABELS;
+export interface RecordSummaryResult {
+  readonly status: 'idle' | 'loading' | 'success' | 'error';
+  readonly values: Readonly<Record<string, number | null>>;
+  readonly error: string | null;
+}
+export function getRecordSummaryFunctions(
+  field: ViewFieldDefinition,
+): readonly RecordSummaryFunction[] {
+  return field.type === 'number'
+    ? (field.summaryFunctions ?? ['SUM', 'AVG', 'MIN', 'MAX'])
+    : [];
+}

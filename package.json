@@ -52,6 +52,7 @@
     "@ahoo-wang/fetcher-react": "workspace:*",
     "@ahoo-wang/fetcher-storage": "workspace:*",
     "@ahoo-wang/fetcher-viewer": "workspace:*",
+    "@ahoo-wang/fetcher-view-engine": "workspace:*",
     "@ahoo-wang/fetcher-wow": "workspace:*",
     "@ant-design/icons": "catalog:",
     "@babel/plugin-proposal-decorators": "^7.29.7",

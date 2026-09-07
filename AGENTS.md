@@ -20,6 +20,7 @@ TypeScript HTTP-client ecosystem built around `Fetcher`.
 | `packages/storage/`                                                  | Cross-environment storage                            |
 | `packages/wow/`                                                      | Wow command/query clients and query DSLs             |
 | `packages/react/`, `packages/viewer/`                                | React hooks and Ant Design viewer components         |
+| `packages/view-engine/`                                             | Independent view engine contracts and shadcn/Base UI components |
 | `stories/`, `.storybook/`                                            | Shared Storybook stories and configuration           |
 | `integration-test/`                                                  | Integration tests; service setup in its README files |
 | `skills/`, `wiki/`                                                   | Agent skills and bilingual VitePress documentation   |

@@ -1,0 +1,106 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { newFilterDraft } from './filterCore.js';
+import type { FilterDraftNode, FilterFieldDefinition } from './filterModel.js';
+
+export function sameFilterState(a: unknown, b: unknown): boolean {
+  function canonical(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === 'object')
+      return Object.fromEntries(
+        Object.entries(value)
+          .filter(([, value]) => value !== undefined)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, value]) => [key, canonical(value)]),
+      );
+    return value;
+  }
+  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+}
+export function sameFilterDraft(
+  a: FilterDraftNode,
+  b: FilterDraftNode,
+): boolean {
+  function content(node: FilterDraftNode): unknown {
+    return {
+      ...node,
+      id: undefined,
+      operands: node.operands?.map(content),
+      predicate: node.predicate ? content(node.predicate) : undefined,
+    };
+  }
+  return sameFilterState(content(a), content(b));
+}
+export function replaceFilterNode(
+  root: FilterDraftNode,
+  id: string,
+  next?: FilterDraftNode,
+): FilterDraftNode | undefined {
+  if (root.id === id) return next;
+  if (root.operands)
+    return {
+      ...root,
+      operands: root.operands.flatMap(node => {
+        const updated = replaceFilterNode(node, id, next);
+        return updated ? [updated] : [];
+      }),
+    };
+  if (root.predicate)
+    return {
+      ...root,
+      predicate:
+        replaceFilterNode(root.predicate, id, next) ??
+        newFilterDraft(FilterOperator.AND),
+    };
+  return root;
+}
+export interface FilterNodeLocation {
+  node: FilterDraftNode;
+  fields: readonly FilterFieldDefinition[];
+  scope: string;
+  parent?: FilterDraftNode;
+  index: number;
+  ancestors: string[];
+}
+export function locateFilterNodes(
+  root: FilterDraftNode,
+  fields: readonly FilterFieldDefinition[],
+): FilterNodeLocation[] {
+  const result: FilterNodeLocation[] = [];
+  function visit(
+    node: FilterDraftNode,
+    fields: readonly FilterFieldDefinition[],
+    scope: string,
+    parent: FilterDraftNode | undefined,
+    index: number,
+    ancestors: string[],
+  ) {
+    result.push({ node, fields, scope, parent, index, ancestors });
+    node.operands?.forEach((child, index) =>
+      visit(child, fields, scope, node, index, [...ancestors, node.id]),
+    );
+    if (node.predicate)
+      visit(
+        node.predicate,
+        fields.find(field => field.field === node.field)?.fields ?? [],
+        `${scope}/${node.id}`,
+        node,
+        0,
+        [...ancestors, node.id],
+      );
+  }
+  visit(root, fields, 'root', undefined, 0, []);
+  return result;
+}
