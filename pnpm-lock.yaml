@@ -22,8 +22,8 @@ catalogs:
       specifier: ^10.0.1
       version: 10.0.1
     '@rolldown/plugin-babel':
-      specifier: ^0.2.3
-      version: 0.2.3
+      specifier: ^0.2.4
+      version: 0.2.4
     '@testing-library/jest-dom':
       specifier: ^7.0.1
       version: 7.0.1
@@ -750,7 +750,7 @@ importers:
         version: 10.0.1(eslint@10.10.0)
       '@rolldown/plugin-babel':
         specifier: 'catalog:'
-        version: 0.2.3(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))
+        version: 0.2.4(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -762,7 +762,7 @@ importers:
         version: 19.2.7(@types/react@19.2.18)
       '@vitejs/plugin-react':
         specifier: 'catalog:'
-        version: 6.1.1(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))
+        version: 6.1.1(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.1.11(@vitest/browser@4.1.11)(vitest@4.1.11)
@@ -911,7 +911,7 @@ importers:
         version: 10.0.1(eslint@10.10.0)
       '@rolldown/plugin-babel':
         specifier: 'catalog:'
-        version: 0.2.3(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))
+        version: 0.2.4(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))
       '@testing-library/jest-dom':
         specifier: 'catalog:'
         version: 7.0.1(@testing-library/dom@10.4.1)(vitest@4.1.11)
@@ -926,7 +926,7 @@ importers:
         version: 19.2.7(@types/react@19.2.18)
       '@vitejs/plugin-react':
         specifier: 'catalog:'
-        version: 6.1.1(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))
+        version: 6.1.1(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.1.11(@vitest/browser@4.1.11)(vitest@4.1.11)
@@ -2730,8 +2730,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@rolldown/plugin-babel@0.2.3':
-    resolution: {integrity: sha512-+zEk16yGlz1F9STiRr6uG9hmIXb6nprjLczV/htGptYuLoCuxb+itZ03RKCEeOhBpDDd1NU7qF6x1VLMUp62bw==}
+  '@rolldown/plugin-babel@0.2.4':
+    resolution: {integrity: sha512-ygmm2j/mN+aCvstHo0x3IOu4uc6LqXT9SJ3q4kpfG/+Yhfz0B+E47FITcC0FljZADwUFARP6E2kiE+Lc26D8wg==}
     engines: {node: '>=22.12.0 || ^24.0.0'}
     peerDependencies:
       '@babel/core': ^7.29.0 || ^8.0.0-rc.1
@@ -4846,6 +4846,10 @@ packages:
 
   picomatch@4.0.5:
     resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
+    engines: {node: '>=12'}
+
+  picomatch@4.0.7:
+    resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
 
   pkg-types@1.3.1:
@@ -7210,10 +7214,10 @@ snapshots:
   '@rolldown/binding-win32-x64-msvc@1.2.4':
     optional: true
 
-  '@rolldown/plugin-babel@0.2.3(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))':
+  '@rolldown/plugin-babel@0.2.4(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))':
     dependencies:
       '@babel/core': 7.29.0
-      picomatch: 4.0.5
+      picomatch: 4.0.7
       rolldown: 1.2.4
     optionalDependencies:
       '@babel/runtime': 8.0.0
@@ -7853,12 +7857,12 @@ snapshots:
       d3-selection: 3.0.0
       d3-transition: 3.0.1(d3-selection@3.0.0)
 
-  '@vitejs/plugin-react@6.1.1(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))':
+  '@vitejs/plugin-react@6.1.1(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
       vite: 8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0)
     optionalDependencies:
-      '@rolldown/plugin-babel': 0.2.3(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))
+      '@rolldown/plugin-babel': 0.2.4(@babel/core@7.29.0)(@babel/runtime@8.0.0)(rolldown@1.2.4)(vite@8.2.2(@types/node@24.12.2)(esbuild@0.27.7)(less@4.9.1)(yaml@2.9.0))
       babel-plugin-react-compiler: 1.0.0
 
   '@vitejs/plugin-vue@5.2.4(vite@5.4.21(@types/node@24.12.2)(less@4.9.1)(lightningcss@1.33.0))(vue@3.5.34(typescript@6.0.3))':
@@ -9547,6 +9551,8 @@ snapshots:
   picocolors@1.1.1: {}
 
   picomatch@4.0.5: {}
+
+  picomatch@4.0.7: {}
 
   pkg-types@1.3.1:
     dependencies:
