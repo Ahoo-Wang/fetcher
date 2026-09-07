@@ -61,25 +61,25 @@ Import components from `@ahoo-wang/fetcher-view-engine/react` and compiled style
 
 ### FilterPanel
 
-| Prop                            | Contract                                                                                                                                                                                          |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                         | Required currently applied Wow FilterExpression. Invalid input is displayed as a load error and cannot query.                                                                                     |
-| `fields`                        | Required field definitions for this root scope; array fields carry their element-relative definitions.                                                                                            |
-| `onApply(expression)`           | Called exactly when Query applies a complete valid expression. The host synchronously updates `value`, then owns asynchronous requests and cancellation.                                          |
-| `mode`, `onModeChange(mode)`    | Optional controlled simple/advanced mode. Otherwise initialized from the expression. Complex loaded trees safely display advanced mode; incompatible or incomplete trees cannot switch to simple. |
-| `onPendingChange(pending)`      | Observes unsubmitted edits, including custom-editor invalid state. ViewEngine derives its own save guards from the draft and validity. Separate from a saved view's dirty flag.                   |
-| `draft`, `onDraftChange(draft)` | Optional controlled transient draft tree; parent can retain built-in buffers per instance. Otherwise managed locally.                                                                             |
-| `appliedDraft`                  | Optional controlled last-applied editor baseline, including unset controls. ViewEngine consumers pass `session.filterBaseline`.                                                                   |
-| `onValidityChange(valid)`       | Reports aggregate editor/buffer validity. ViewEngine consumers call `setFilterValidity`; reporting true cannot clear an unsubmitted draft.                                                        |
-| `allowedOperators`              | Optional global operator allowlist, including logical and root operators.                                                                                                                         |
-| `extensions`                    | Per-panel `{filters: Record<string, FilterRegistration>}` map; no global registry.                                                                                                                |
-| `editors`                       | Optional operator-to-editor-reference map; field references take priority.                                                                                                                        |
-| `context`                       | Opaque host definition/instance/business context passed to custom editors.                                                                                                                        |
-| `querying`, `queryError`        | Host request state. Editing stays available while querying; an unchanged in-flight query cannot be sent twice, changed filters may be applied. Errors retain applied conditions and allow retry.  |
-| `disabled`                      | Disables editing and query actions. Defaults false.                                                                                                                                               |
-| `collapsed`                     | Defaults false. Hides the panel body while retaining mounted editors and their local buffers.                                                                                                     |
-| `renderToolbar(props)`          | Replaces the default heading; renders before the collapsible body. Receives `FilterPanelToolbarProps`, described below.                                                                           |
-| `className`                     | Optional host layout classes; keep scoped theme tokens.                                                                                                                                           |
+| Prop                            | Contract                                                                                                                                                                                                                                                   |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                         | Required currently applied Wow FilterExpression. Invalid input is displayed as a load error and cannot query.                                                                                                                                              |
+| `fields`                        | Required field definitions for this root scope; array fields carry their element-relative definitions.                                                                                                                                                     |
+| `onApply(expression)`           | Called exactly when Query applies a complete valid expression. The host synchronously updates `value`, then owns asynchronous requests and cancellation.                                                                                                   |
+| `mode`, `onModeChange(mode)`    | Optional controlled simple/advanced mode. Otherwise initialized from the expression. Complex loaded trees safely display advanced mode; incompatible or incomplete trees cannot switch to simple.                                                          |
+| `onPendingChange(pending)`      | Observes unsubmitted edits, including custom-editor invalid state. ViewEngine derives its own save guards from the draft and validity. Separate from a saved view's dirty flag.                                                                            |
+| `draft`, `onDraftChange(draft)` | Optional controlled transient draft tree; parent can retain built-in buffers per instance. Otherwise managed locally.                                                                                                                                      |
+| `appliedDraft`                  | Optional controlled last-applied editor baseline, including unset controls. ViewEngine consumers pass `session.filterBaseline`. When it compiles to an externally updated `value`, the panel preserves the supplied controlled `draft` and its editor IDs. |
+| `onValidityChange(valid)`       | Reports aggregate editor/buffer validity. ViewEngine consumers call `setFilterValidity`; reporting true cannot clear an unsubmitted draft.                                                                                                                 |
+| `allowedOperators`              | Optional global operator allowlist, including logical and root operators.                                                                                                                                                                                  |
+| `extensions`                    | Per-panel `{filters: Record<string, FilterRegistration>}` map; no global registry.                                                                                                                                                                         |
+| `editors`                       | Optional operator-to-editor-reference map; field references take priority.                                                                                                                                                                                 |
+| `context`                       | Opaque host definition/instance/business context passed to custom editors.                                                                                                                                                                                 |
+| `querying`, `queryError`        | Host request state. Editing stays available while querying; an unchanged in-flight query cannot be sent twice, changed filters may be applied. Errors retain applied conditions and allow retry.                                                           |
+| `disabled`                      | Disables editing and query actions. Defaults false.                                                                                                                                                                                                        |
+| `collapsed`                     | Defaults false. Hides the panel body while retaining mounted editors and their local buffers.                                                                                                                                                              |
+| `renderToolbar(props)`          | Replaces the default heading; renders before the collapsible body. Receives `FilterPanelToolbarProps`, described below.                                                                                                                                    |
+| `className`                     | Optional host layout classes; keep scoped theme tokens.                                                                                                                                                                                                    |
 
 `FilterPanelToolbarProps` supplies `panelId: string`, `mode: FilterMode`, readonly
 `options: FilterOption<FilterMode>[]`, `pending: boolean`, `disabled: boolean`, and
@@ -690,8 +690,17 @@ near Query while expanded and on the filter toggle while collapsed. The active
 instance title/sidebar does not duplicate the notice; other instances keep their
 pending markers. Toggling filters does not query or clear selection
 and is not saved to the instance. Controls wrap within narrow containers.
-The filter toggle shows the number of applied conditions and a tooltip describing
-their boolean structure and exact thresholds, independent of pending drafts.
+Applied-filter Badge tags appear below the editor and above the table toolbar,
+including while the editor is collapsed. The outer AND is split into independent
+tags; OR/NOR and element conditions remain atomic groups. Close buttons unset the
+values and immediately query, retaining fields, operators, groups and editor IDs.
+Value-free predicates do not expose a clear button. Clearing is disabled during a
+loading query or pending edits; query or undo the draft first. Enter in a single-line
+filter input applies a valid query. Composition/IME confirmation, selectors,
+multiline inputs, portals and keys handled by custom editors do not trigger queries.
+Labels preserve exact thresholds and wrap long expressions; no tags displays all
+records. Pending drafts do not replace the tags until Query is applied. The global
+filter toggle only controls visibility and mode, without an applied-filter tooltip.
 Auto-refresh tooltips explain the pause cause and resumption rule. Successful
 saves briefly show a check and “已保存” with an accessible status announcement.
 

@@ -50,8 +50,46 @@ export function FilterPanel(props: FilterPanelProps) {
         )}
         aria-label="筛选器"
         onKeyDown={event => {
-          if (event.key === 'Enter' && event.nativeEvent.isComposing)
-            event.preventDefault();
+          if (
+            event.key !== 'Enter' ||
+            event.defaultPrevented ||
+            event.repeat ||
+            event.nativeEvent.isComposing ||
+            event.nativeEvent.keyCode === 229 ||
+            event.altKey ||
+            event.ctrlKey ||
+            event.metaKey
+          )
+            return;
+          const target = event.target;
+          if (
+            !(target instanceof HTMLInputElement) ||
+            !event.currentTarget.contains(target)
+          )
+            return;
+          if (
+            ![
+              'text',
+              'search',
+              'number',
+              'email',
+              'tel',
+              'url',
+              'date',
+              'time',
+              'datetime-local',
+              'month',
+              'week',
+            ].includes(target.type)
+          )
+            return;
+          const popup = target.closest(
+            '[role="combobox"], [role="listbox"], [role="menu"], [role="dialog"]',
+          );
+          if (popup && event.currentTarget.contains(popup)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          apply();
         }}
       >
         {!props.renderToolbar && (
@@ -126,7 +164,12 @@ export function FilterPanel(props: FilterPanelProps) {
             <Button variant="ghost" disabled={disabled} onClick={panel.clear}>
               清空条件
             </Button>
-            <Button disabled={panel.applyDisabled} onClick={apply}>
+            <Button
+              disabled={panel.applyDisabled}
+              onClick={apply}
+              aria-keyshortcuts="Enter"
+              title="查询（Enter）"
+            >
               <SearchIcon aria-hidden="true" />
               {panel.submitting ? '查询中' : '查询'}
             </Button>

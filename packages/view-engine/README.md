@@ -18,7 +18,7 @@ The public `ViewEngine` composes internal services; applications use its public 
 | `filter`                                                   | Operator metadata, protocol construction/compilation, editor lifetimes and focused panel/value components.               |
 | `record/page`, `record/table`                              | Page ownership/navigation/actions and table state/header/body/cell/summary composition. Layout calculations remain pure. |
 
-Tests and Storybook interactions are grouped by behavior. Source modules target 300 lines and none exceed 400. The 330-line `useFilterPanelState` deliberately retains one controlled editor lifecycle: splitting its coordinated draft/acknowledgement transitions would separate state that must change together. Its synchronous callback boundary has a regression covering child layout-effect updates.
+Tests and Storybook interactions are grouped by behavior. Source modules target 300 lines and none exceed 400. The 347-line `useFilterPanelState` deliberately retains one controlled editor lifecycle: splitting its coordinated draft/acknowledgement transitions would separate state that must change together. Its synchronous callback boundary and externally supplied editing baselines have regression coverage.
 
 ## Runnable public-package examples
 
@@ -125,9 +125,18 @@ keeps the query and filter draft. Pending edits appear near Query when expanded
 and in the filter toggle when collapsed; the current title/sidebar does not repeat
 the notice, while other instances retain pending markers. Record counts and
 pagination share the footer. Collapsing filters keeps editors, drafts and selection.
-The filter toggle displays the applied condition count. Its tooltip describes the
-applied expression, preserving boolean groups and exact thresholds; pending edits
-do not replace that description. Long descriptions direct users to expand filters.
+A compact applied-filter summary sits below the editor and above the table toolbar,
+remaining visible when the editor is collapsed. Top-level AND conditions appear as
+separate shadcn Badge tags; OR/NOR and element conditions remain complete groups.
+Each tag's close button unsets its values and immediately queries, retaining every
+field, operator, group and editor ID. Value-free predicates have no clear button.
+Clearing is disabled while a query is loading or unapplied edits remain; query or
+undo those edits first. Enter in a single-line filter input applies the query;
+IME composition, selectors, multiline inputs and popup interactions keep their
+normal keyboard behavior.
+Labels preserve exact thresholds and wrap long expressions; no conditions displays
+all records. Pending edits do not replace the applied tags until Query is applied.
+The global filter toggle only controls visibility and mode; it has no applied-filter tooltip.
 
 Unpinned string columns without enum options or an explicit `width` share spare container width,
 starting from 180px and growing up to 480px. Explicit widths, pinned columns and

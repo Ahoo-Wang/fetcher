@@ -22,6 +22,17 @@ export const playCompactWorkbench: RecordViewPlay = async ({
   const page = within(canvasElement.ownerDocument.body);
   const toolbar = canvas.getByRole('group', { name: '全局工具栏' });
   const tableToolbar = canvas.getByRole('group', { name: '表格工具栏' });
+  const appliedFilters = canvas.getByRole('region', { name: '已应用筛选' });
+  await expect(appliedFilters).toHaveTextContent('订单金额 大于等于 0');
+  await expect(
+    appliedFilters.getBoundingClientRect().top,
+  ).toBeGreaterThanOrEqual(
+    canvas.getByRole('region', { name: '筛选器' }).getBoundingClientRect()
+      .bottom,
+  );
+  await expect(
+    appliedFilters.getBoundingClientRect().bottom,
+  ).toBeLessThanOrEqual(tableToolbar.getBoundingClientRect().top);
   const save = within(toolbar)
     .getByRole('button', { name: '保存' })
     .getBoundingClientRect();
@@ -104,6 +115,12 @@ export const playCompactWorkbench: RecordViewPlay = async ({
   await userEvent.clear(amount);
   await userEvent.type(amount, '2500');
   await expect(canvas.getByText('筛选未生效')).toBeVisible();
+  await expect(appliedFilters).toHaveTextContent('订单金额 大于等于 0');
+  await expect(
+    within(appliedFilters).getByRole('button', {
+      name: '清空条件值：订单金额 大于等于 0',
+    }),
+  ).toBeDisabled();
   await expect(
     within(toolbar).getByRole('button', { name: '收起筛选' }),
   ).not.toHaveTextContent('待查询');
@@ -117,6 +134,7 @@ export const playCompactWorkbench: RecordViewPlay = async ({
   await expect(expand).toHaveTextContent('待查询');
   await expect(amount).toBeInTheDocument();
   await expect(amount).not.toBeVisible();
+  await expect(appliedFilters).toBeVisible();
   await expect(
     tableTop - canvas.getByRole('table').getBoundingClientRect().top,
   ).toBeGreaterThan(60);
@@ -150,6 +168,37 @@ export const playCompactWorkbench: RecordViewPlay = async ({
     expect(canvas.getByTestId('record-query-count')).toHaveTextContent(/^2$/),
   );
   await expect(canvas.getByTestId('record-query')).toHaveTextContent('2500');
+  await expect(appliedFilters).toHaveTextContent('订单金额 大于等于 2500');
+  await userEvent.click(
+    within(toolbar).getByRole('button', { name: '收起筛选' }),
+  );
+  const clearApplied = within(appliedFilters).getByRole('button', {
+    name: '清空条件值：订单金额 大于等于 2500',
+  });
+  await waitFor(() => expect(clearApplied).toBeEnabled());
+  clearApplied.focus();
+  await userEvent.keyboard('{Enter}');
+  await waitFor(() =>
+    expect(canvas.getByTestId('record-query-count')).toHaveTextContent(/^3$/),
+  );
+  await expect(appliedFilters).toHaveFocus();
+  await expect(appliedFilters).toHaveTextContent('全部记录');
+  await expect(canvas.getByTestId('record-query')).toHaveTextContent(
+    'MATCH_ALL',
+  );
+  await userEvent.click(
+    within(toolbar).getByRole('button', { name: '展开筛选' }),
+  );
+  await expect(canvas.getByRole('textbox', { name: '订单金额值' })).toBe(
+    amount,
+  );
+  await expect(amount).toHaveValue('');
+  await userEvent.type(amount, '1250');
+  await userEvent.keyboard('{Enter}');
+  await waitFor(() =>
+    expect(canvas.getByTestId('record-query-count')).toHaveTextContent(/^4$/),
+  );
+  await expect(appliedFilters).toHaveTextContent('订单金额 大于等于 1250');
   await userEvent.click(
     within(toolbar).getByRole('button', { name: '收起筛选' }),
   );

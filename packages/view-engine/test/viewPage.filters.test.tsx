@@ -61,26 +61,44 @@ it('does not rerender record cells for an unsubmitted filter edit', async () => 
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
   await screen.findByRole('cell', { name: '500' });
 });
-it('describes applied filters while drafts remain pending', async () => {
-  const { host } = setup();
+it('keeps the applied summary below the editor until a new query is applied', async () => {
+  const { host, paged } = setup();
   render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
-  expect(screen.getByLabelText('已应用 1 项筛选').textContent).toBe('1');
+  const summary = screen.getByRole('region', { name: '已应用筛选' });
+  expect(summary.textContent).toContain('金额 大于等于 10');
+  expect(
+    screen
+      .getByRole('region', { name: '筛选器' })
+      .compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    summary.compareDocumentPosition(
+      screen.getByRole('group', { name: '表格工具栏' }),
+    ) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
   fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
     target: { value: '20' },
   });
   const toggle = screen.getByRole('button', { name: '收起筛选' });
-  act(() => toggle.focus());
-  expect((await screen.findByRole('tooltip')).textContent).toContain(
-    '金额 大于等于 10',
-  );
-  expect(screen.getByRole('tooltip').textContent).not.toContain(
-    '金额 大于等于 20',
-  );
+  expect(summary.textContent).toContain('金额 大于等于 10');
+  expect(summary.textContent).not.toContain('金额 大于等于 20');
+  expect(paged).toHaveBeenCalledTimes(1);
   fireEvent.click(toggle);
   expect(
     screen.getByRole('button', { name: '展开筛选' }).textContent,
   ).toContain('待查询');
+  expect(screen.getByRole('region', { name: '已应用筛选' })).toBe(summary);
+  fireEvent.click(screen.getByRole('button', { name: '展开筛选' }));
+  fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
+  await waitFor(() =>
+    expect(summary.textContent).toContain('金额 大于等于 20'),
+  );
+  expect(paged.mock.lastCall?.[0].filter).toEqual(filter.gte('amount', 20));
+  fireEvent.click(screen.getByRole('button', { name: '清空条件' }));
+  expect(summary.textContent).toContain('金额 大于等于 20');
+  fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
+  await waitFor(() => expect(summary.textContent).toContain('全部记录'));
 });
 it('collapses filters without unmounting editors, applying drafts or clearing selection', async () => {
   const { host, paged } = setup();

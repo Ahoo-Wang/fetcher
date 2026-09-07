@@ -27,14 +27,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu.js';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '../../components/ui/tooltip.js';
 import type { FilterPanelToolbarProps } from '../../filter/filterReactTypes.js';
-import { describeRecordFilter } from '../recordFilterSummary.js';
 import type { RecordSession, ViewDefinition } from '../recordModel.js';
 import type { ViewExtensions } from '../recordReactTypes.js';
 import { RecordRefreshControls } from '../RecordRefreshControls.js';
@@ -73,10 +66,6 @@ export function RecordGlobalToolbar({
 }) {
   const { panelId, mode, options, pending, disabled, onModeChange } =
     filterToolbar;
-  const appliedFilter = describeRecordFilter(
-    session.instance.config.filter,
-    definition.fields,
-  );
   return (
     <header
       role="group"
@@ -91,79 +80,62 @@ export function RecordGlobalToolbar({
         )}
       </div>
       <div className="fve:ml-auto fve:flex fve:flex-wrap fve:items-center fve:gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <DropdownMenu>
-              <ButtonGroup aria-label="筛选控制">
-                <TooltipTrigger
-                  render={<Button variant="outline" size="sm" />}
-                  aria-label={filtersOpen ? '收起筛选' : '展开筛选'}
-                  aria-expanded={filtersOpen}
-                  aria-controls={panelId}
-                  aria-describedby={
-                    !filtersOpen && pending ? `${panelId}-pending` : undefined
-                  }
-                  onClick={() => onFiltersOpenChange(!filtersOpen)}
+        <DropdownMenu>
+          <ButtonGroup aria-label="筛选控制">
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label={filtersOpen ? '收起筛选' : '展开筛选'}
+              aria-expanded={filtersOpen}
+              aria-controls={panelId}
+              aria-describedby={
+                !filtersOpen && pending ? `${panelId}-pending` : undefined
+              }
+              onClick={() => onFiltersOpenChange(!filtersOpen)}
+            >
+              <ListFilterIcon data-icon="inline-start" aria-hidden="true" />
+              筛选 · {mode === 'simple' ? '简单' : '高级'}
+              {!filtersOpen && pending && (
+                <span id={`${panelId}-pending`}>· 待查询</span>
+              )}
+            </Button>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label="筛选模式"
+                  disabled={disabled}
+                />
+              }
+            >
+              <ChevronDownIcon aria-hidden="true" />
+            </DropdownMenuTrigger>
+          </ButtonGroup>
+          <DropdownMenuContent align="end">
+            <DropdownMenuRadioGroup
+              value={mode}
+              onValueChange={next => {
+                if (next !== 'simple' && next !== 'advanced') return;
+                if (options.find(option => option.value === next)?.disabled)
+                  return;
+                onModeChange(next);
+                onFiltersOpenChange(true);
+              }}
+            >
+              {options.map(option => (
+                <DropdownMenuRadioItem
+                  key={option.value}
+                  value={option.value}
+                  disabled={option.disabled}
+                  closeOnClick
                 >
-                  <ListFilterIcon data-icon="inline-start" aria-hidden="true" />
-                  筛选 · {mode === 'simple' ? '简单' : '高级'}
-                  {appliedFilter.count > 0 && (
-                    <>
-                      {' '}
-                      ·{' '}
-                      <span aria-label={`已应用 ${appliedFilter.count} 项筛选`}>
-                        {appliedFilter.count}
-                      </span>
-                    </>
-                  )}
-                  {!filtersOpen && pending && (
-                    <span id={`${panelId}-pending`}>· 待查询</span>
-                  )}
-                </TooltipTrigger>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label="筛选模式"
-                      disabled={disabled}
-                    />
-                  }
-                >
-                  <ChevronDownIcon aria-hidden="true" />
-                </DropdownMenuTrigger>
-              </ButtonGroup>
-              <DropdownMenuContent align="end">
-                <DropdownMenuRadioGroup
-                  value={mode}
-                  onValueChange={next => {
-                    if (next !== 'simple' && next !== 'advanced') return;
-                    if (options.find(option => option.value === next)?.disabled)
-                      return;
-                    onModeChange(next);
-                    onFiltersOpenChange(true);
-                  }}
-                >
-                  {options.map(option => (
-                    <DropdownMenuRadioItem
-                      key={option.value}
-                      value={option.value}
-                      disabled={option.disabled}
-                      closeOnClick
-                    >
-                      {option.label}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <TooltipContent className="fve:max-w-md fve:whitespace-pre-wrap">
-              {appliedFilter.count
-                ? `已应用筛选：${appliedFilter.text.length > 600 ? `${appliedFilter.text.slice(0, 600)}…（展开筛选查看全部）` : appliedFilter.text}`
-                : '当前视图未设置额外筛选条件。'}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+                  {option.label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <RecordRefreshControls
           key={`refresh:${session.instance.id}`}
           engine={engine}

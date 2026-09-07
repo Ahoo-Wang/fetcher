@@ -130,9 +130,21 @@ export function useFilterPanelState(props: FilterPanelProps) {
     }
     submittedRef.current = undefined;
     setSubmission(undefined);
+    if (!loadError && props.draft && props.appliedDraft) {
+      const applied = compileFilterDraft(
+        props.appliedDraft,
+        fields,
+        props.allowedOperators,
+      );
+      if (applied.expression && sameFilterState(applied.expression, value)) {
+        // The owner supplied the editing baseline for this value; keep its draft and editor IDs.
+        return;
+      }
+    }
     const next = readValue(value);
     draftRef.current = next.draft;
     // External applied values replace the editing session; acknowledgements above preserve in-progress edits.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- The value-change guard resets this local session once per external replacement.
     setLocalDraft(next.draft);
     onDraftChange?.(next.draft);
     setBaseline(next.draft);
@@ -144,6 +156,11 @@ export function useFilterPanelState(props: FilterPanelProps) {
     setEpoch(count => count + 1);
   }, [
     value,
+    props.draft,
+    props.appliedDraft,
+    props.allowedOperators,
+    fields,
+    loadError,
     onDraftChange,
     submittedRef,
     setSubmission,

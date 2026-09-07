@@ -24,6 +24,7 @@ import { FilterPanel } from '../filter/FilterPanel.js';
 import { cn } from '../lib/utils.js';
 import { RecordTable } from './RecordTable.js';
 import type { ViewEngine } from './ViewEngine.js';
+import { RecordAppliedFilters } from './page/RecordAppliedFilters.js';
 import { RecordGlobalToolbar } from './page/RecordGlobalToolbar.js';
 import { RecordPagination } from './page/RecordPagination.js';
 import { RecordTableToolbar } from './page/RecordTableToolbar.js';
@@ -169,6 +170,12 @@ export function RecordView({
             onRefresh={() => run(refresh)}
           />
         )}
+      />
+      <RecordAppliedFilters
+        engine={engine}
+        definition={definition}
+        session={session}
+        run={run}
       />
       <RecordTableToolbar
         key={`toolbar:${id}`}
