@@ -23,8 +23,11 @@ import { useLayoutEffect } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { createFilterDraft } from '../src/filter/filterCore.js';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
-import type { FilterEditorProps } from '../src/filter/filterReactTypes.js';
-import { fields } from './fixtures/filterPanel.js';
+import type {
+  FilterComponentProps,
+  FilterEditorProps,
+} from '../src/filter/filterReactTypes.js';
+import { fields, builtinCompiler } from './fixtures/filterPanel.js';
 
 afterEach(cleanup);
 
@@ -46,7 +49,11 @@ it('merges an asynchronous custom change into the latest tree and ignores it aft
       onDraftChange={drafts}
       extensions={{
         filters: {
-          custom: { component: Custom, modes: ['simple', 'advanced'] },
+          custom: {
+            ...builtinCompiler,
+            component: Custom,
+            modes: ['simple', 'advanced'],
+          },
         },
       }}
     />,
@@ -54,22 +61,22 @@ it('merges an asynchronous custom change into the latest tree and ignores it aft
   fireEvent.change(screen.getByLabelText('订单金额值'), {
     target: { value: '2' },
   });
-  act(() => publish!(filter.eq('status', 'paid')));
+  act(() => publish!({ value: 'paid' }));
   expect((screen.getByLabelText('订单金额值') as HTMLInputElement).value).toBe(
     '2',
   );
   view.unmount();
   const count = drafts.mock.calls.length;
-  act(() => publish!(filter.eq('status', 'closed')));
+  act(() => publish!({ value: 'closed' }));
   expect(drafts).toHaveBeenCalledTimes(count);
 });
 
 it('clearing a value rejects callbacks from the custom editor it just unmounted', async () => {
-  let publish: ((node: ReturnType<typeof filter.eq>) => void) | undefined;
+  let publish: FilterEditorProps['onChange'] | undefined;
   const apply = vi.fn();
-  function Custom({ onChange }: FilterEditorProps) {
+  function Custom({ onChange, onClear }: FilterComponentProps) {
     publish ??= onChange;
-    return <button onClick={() => onChange(undefined)}>清空自定义值</button>;
+    return <button onClick={onClear}>清空自定义值</button>;
   }
   render(
     <FilterPanel
@@ -78,13 +85,18 @@ it('clearing a value rejects callbacks from the custom editor it just unmounted'
       onApply={apply}
       extensions={{
         filters: {
-          custom: { component: Custom, modes: ['simple', 'advanced'] },
+          custom: {
+            ...builtinCompiler,
+            component: Custom,
+            render: 'filter',
+            modes: ['simple', 'advanced'],
+          },
         },
       }}
     />,
   );
   fireEvent.click(screen.getByRole('button', { name: '清空自定义值' }));
-  act(() => publish!(filter.eq('amount', 7)));
+  act(() => publish!({ value: 7 }));
   fireEvent.click(screen.getByRole('button', { name: /^查询/ }));
   expect(apply).toHaveBeenLastCalledWith(filter.matchAll());
 });
@@ -106,7 +118,13 @@ it('never revives callbacks when a replaced custom component returns', () => {
         value={filter.eq('amount', 1)}
         onApply={apply}
         extensions={{
-          filters: { custom: { component, modes: ['simple', 'advanced'] } },
+          filters: {
+            custom: {
+              ...builtinCompiler,
+              component,
+              modes: ['simple', 'advanced'],
+            },
+          },
         }}
       />
     );
@@ -115,7 +133,7 @@ it('never revives callbacks when a replaced custom component returns', () => {
   view.rerender(panel(B));
   expect(screen.getByText('B')).toBeTruthy();
   view.rerender(panel(A));
-  act(() => oldChange!(filter.eq('amount', 7)));
+  act(() => oldChange!({ value: 7 }));
   fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
   expect(apply).toHaveBeenLastCalledWith(filter.eq('amount', 1));
 });
@@ -123,13 +141,13 @@ it('never revives callbacks when a replaced custom component returns', () => {
 it('merges a custom layout-effect change into the current controlled draft', () => {
   const changes = vi.fn();
   let published = false;
-  function Custom({ node, onChange }: FilterEditorProps) {
+  function Custom({ props, onChange }: FilterEditorProps) {
     useLayoutEffect(() => {
-      if (node && 'value' in node && node.value === 'loaded' && !published) {
+      if (props.value === 'loaded' && !published) {
         published = true;
-        onChange(filter.eq('status', 'paid'));
+        onChange({ value: 'paid' });
       }
-    }, [node, onChange]);
+    }, [props, onChange]);
     return <span>自定义状态</span>;
   }
   const value = filter.and([
@@ -139,7 +157,13 @@ it('merges a custom layout-effect change into the current controlled draft', () 
   const initial = createFilterDraft(value);
   const definitions = [fields[0], { ...fields[1], editor: { name: 'custom' } }];
   const extensions = {
-    filters: { custom: { component: Custom, modes: ['simple' as const] } },
+    filters: {
+      custom: {
+        ...builtinCompiler,
+        component: Custom,
+        modes: ['simple' as const],
+      },
+    },
   };
   const view = render(
     <FilterPanel
@@ -168,7 +192,13 @@ it('merges a custom layout-effect change into the current controlled draft', () 
     ...restored,
     operands: [
       restored.operands![0],
-      { ...restored.operands![1], value: 'paid' },
+      {
+        id: restored.operands![1].id,
+        op: restored.operands![1].op,
+        field: 'status',
+        editor: { name: 'custom' },
+        props: { value: 'paid' },
+      },
     ],
   });
 });

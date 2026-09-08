@@ -80,7 +80,11 @@ export class ViewReload {
         const instances = readInstanceList(list, definition);
         for (const item of instances) {
           if (!this.store.find(item.id))
-            additions[item.id] = createSession(copy(item));
+            additions[item.id] = createSession(
+              copy(item),
+              definition,
+              this.store.filterCompilers,
+            );
         }
         const candidates = instances.filter(item =>
           unverified.id
@@ -128,12 +132,18 @@ export class ViewReload {
         // An already opened copy owns its own saves and drafts. A late reconciliation must not roll them back.
         const created =
           existing ??
-          inheritEditingSession(baseline, latest, {
-            ...baseline,
-            title: unverified.submitted.title,
-            scope: unverified.submitted.scope,
-            config: latest.instance.config,
-          });
+          inheritEditingSession(
+            baseline,
+            latest,
+            definition,
+            this.store.filterCompilers,
+            {
+              ...baseline,
+              title: unverified.submitted.title,
+              scope: unverified.submitted.scope,
+              config: latest.instance.config,
+            },
+          );
         const selectCopy =
           this.store.getSnapshot().selectedInstanceId === id &&
           this.scope.selection === selection;
@@ -177,7 +187,7 @@ export class ViewReload {
                 writeError: null,
                 requiresReload: false,
               }
-            : createSession(baseline);
+            : createSession(baseline, definition, this.store.filterCompilers);
         this.store.patch(id, next);
       }
     } catch (error) {

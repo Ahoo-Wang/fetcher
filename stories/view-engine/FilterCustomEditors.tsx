@@ -11,7 +11,11 @@
  * limitations under the License.
  */
 
-import { type FilterFieldDefinition } from '@ahoo-wang/fetcher-view-engine';
+import {
+  clearBuiltinFilterProps,
+  compileBuiltinFilter,
+  type FilterFieldDefinition,
+} from '@ahoo-wang/fetcher-view-engine';
 import {
   FilterSearchSelect,
   FilterSelect,
@@ -20,21 +24,20 @@ import {
   type FilterEditorProps,
   type FilterExtensions,
 } from '@ahoo-wang/fetcher-view-engine/react';
-import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { useState } from 'react';
 import { fields } from './FilterPanelExamples.js';
 
 function CustomerEditor({
-  node,
-  field,
+  props,
   onChange,
   onValidityChange,
   disabled,
 }: FilterEditorProps) {
   const [unavailable, setUnavailable] = useState(false);
   const selected =
-    node?.op === FilterOperator.IN &&
-    node.values.join(',') === 'customer-1,customer-2'
+    Array.isArray(props.values) &&
+    props.values.join(',') === 'customer-1,customer-2'
       ? 'vip'
       : null;
   return (
@@ -45,9 +48,9 @@ function CustomerEditor({
         value={selected}
         options={[{ value: 'vip', label: '重点客户' }]}
         disabled={disabled || unavailable}
-        onClear={() => onChange(undefined)}
+        onClear={() => onChange(clearBuiltinFilterProps(props))}
         onValueChange={() =>
-          onChange(filter.isIn(field!.field, ['customer-1', 'customer-2']))
+          onChange({ ...props, values: ['customer-1', 'customer-2'] })
         }
         inline
       />
@@ -69,12 +72,21 @@ function CustomerEditor({
 }
 export const customFields = fields.map(field =>
   field.field === 'customer'
-    ? { ...field, editor: { name: 'customer-groups' } }
+    ? {
+        ...field,
+        operators: [FilterOperator.IN],
+        editor: { name: 'customer-groups' },
+      }
     : field,
 );
 export const customExtensions: FilterExtensions = {
   filters: {
-    'customer-groups': { component: CustomerEditor, modes: ['simple'] },
+    'customer-groups': {
+      component: CustomerEditor,
+      modes: ['simple'],
+      compile: compileBuiltinFilter,
+      clear: clearBuiltinFilterProps,
+    },
   },
 };
 const customers = [
@@ -85,8 +97,7 @@ const customers = [
   { value: 'customer-5', label: '云海商贸（停用）', disabled: true },
 ];
 function SearchableCustomerEditor({
-  node,
-  field,
+  props,
   disabled,
   onChange,
 }: FilterEditorProps) {
@@ -96,13 +107,9 @@ function SearchableCustomerEditor({
       placeholder="选择客户"
       searchPlaceholder="输入客户名称"
       options={customers}
-      value={
-        node?.op === FilterOperator.EQ && typeof node.value === 'string'
-          ? node.value
-          : null
-      }
-      onValueChange={id => onChange(filter.eq(field!.field, id))}
-      onClear={() => onChange(undefined)}
+      value={typeof props.value === 'string' ? props.value : null}
+      onValueChange={id => onChange({ ...props, value: id })}
+      onClear={() => onChange(clearBuiltinFilterProps(props))}
       disabled={disabled}
       inline
     />
@@ -122,16 +129,17 @@ export const searchableExtensions: FilterExtensions = {
     'customer-search': {
       component: SearchableCustomerEditor,
       modes: ['simple', 'advanced'],
-      supports: node =>
-        node === undefined ||
-        (node.op === FilterOperator.EQ &&
-          customers.some(customer => customer.value === node.value)),
+      compile: compileBuiltinFilter,
+      clear: clearBuiltinFilterProps,
+      supports: (props, context) =>
+        context.operator === FilterOperator.EQ &&
+        (props.value === undefined ||
+          customers.some(customer => customer.value === props.value)),
     },
   },
 };
 function CompleteCustomerFilter({
-  node,
-  field,
+  props,
   disabled,
   onChange,
   onClear,
@@ -150,12 +158,8 @@ function CompleteCustomerFilter({
         label="客户选择"
         placeholder="不限客户"
         options={customers}
-        value={
-          node?.op === FilterOperator.EQ && typeof node.value === 'string'
-            ? node.value
-            : null
-        }
-        onValueChange={id => onChange(filter.eq(field!.field, id))}
+        value={typeof props.value === 'string' ? props.value : null}
+        onValueChange={id => onChange({ ...props, value: id })}
         onClear={onClear}
         disabled={disabled}
         inline

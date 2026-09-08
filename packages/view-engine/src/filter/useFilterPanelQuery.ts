@@ -15,7 +15,7 @@ import { useRef, useState } from 'react';
 import type { FilterExpression } from '@ahoo-wang/fetcher-wow';
 import type { FilterCompileResult, FilterDraftNode } from './filterModel.js';
 import type { FilterPanelProps } from './filterReactTypes.js';
-import { sameFilterState } from './filterTree.js';
+import { sameFilterQuery } from './filterTree.js';
 import { message } from './filterPanelUtils.js';
 
 /** The ref guards immediate callbacks; state drives the query button. */
@@ -35,7 +35,7 @@ export function useFilterPanelQuery(
       !valid ||
       !compiled.expression ||
       (querying &&
-        sameFilterState(compiled.expression, submittedRef.current ?? value))
+        sameFilterQuery(compiled.expression, submittedRef.current ?? value))
     )
       return;
     const before = submittedRef.current;
@@ -58,6 +58,6 @@ export function useFilterPanelQuery(
     submittedRef,
     setSubmission,
     submitting:
-      querying && sameFilterState(compiled.expression, submission ?? value),
+      querying && sameFilterQuery(compiled.expression, submission ?? value),
   };
 }

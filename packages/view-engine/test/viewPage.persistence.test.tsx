@@ -29,6 +29,53 @@ import { definition, instance, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
 
+it('saves an added unset control without querying and requires Query after entering a value', async () => {
+  const { host, paged } = setup();
+  render(
+    <ViewPage
+      scopeKey="test-user"
+      definitionId="orders"
+      host={host}
+      definition={{
+        ...definition,
+        fields: [
+          ...definition.fields,
+          { field: 'customer', label: '客户', type: 'string' },
+        ],
+      }}
+    />,
+  );
+  await screen.findByRole('cell', { name: '42' });
+  fireEvent.click(
+    screen.getByRole('button', { name: '添加筛选', exact: true }),
+  );
+  fireEvent.click(await screen.findByRole('checkbox', { name: '客户' }));
+  fireEvent.click(screen.getByRole('button', { name: '完成' }));
+  const input = await screen.findByRole('textbox', { name: '客户值' });
+  const save = screen.getByRole('button', {
+    name: '保存',
+    exact: true,
+  }) as HTMLButtonElement;
+  expect(save.disabled).toBe(false);
+  expect(screen.queryByText('筛选未生效')).toBeNull();
+  expect(paged).toHaveBeenCalledTimes(1);
+  fireEvent.click(save);
+  await waitFor(() => expect(host.saveInstance).toHaveBeenCalledTimes(1));
+  const saved = vi.mocked(host.saveInstance!).mock.calls[0][0];
+  const customer = saved.config.filters.root.operands?.find(
+    node => node.field === 'customer',
+  );
+  expect(customer?.component).toEqual({ name: 'builtin' });
+  expect(customer?.props).toEqual({});
+  expect(paged).toHaveBeenCalledTimes(1);
+  fireEvent.change(input, { target: { value: 'Alice' } });
+  expect(save.disabled).toBe(true);
+  expect(paged).toHaveBeenCalledTimes(1);
+  fireEvent.keyDown(input, { key: 'Enter' });
+  await waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
+  expect(save.disabled).toBe(false);
+});
+
 it('keeps filter edits manual, blocks saves while pending, then saves applied configuration', async () => {
   const { host, paged } = setup();
   render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);

@@ -18,27 +18,83 @@ interface FilterOption<Value extends string = string> {
 }
 ```
 
-Core imports do not load React, DOM or CSS. These descriptors are UI inputs, not a second persisted Wow filter expression format.
+Core imports do not load React, DOM or CSS. Field descriptors define editor capabilities; persisted component configuration is separate from the compiled Wow query.
 
 ### Fields, drafts and compilation
 
 `FilterFieldDefinition` extends `FilterField` with optional `type` (`string`, `number`, `boolean`, `date`, `datetime`, `array`), typed enum `options`, optional display `group`, element-relative child `fields`, allowed `operators`, an `editor: {name, options?}` reference, and `timeZone`. Unspecified type keeps protocol scalar types; explicit types restrict supported operators and values. The optional global operator allowlist further restricts them.
 
-`FilterDraftNode` is transient editor state with a stable `id` and Wow property names. Raw numeric text uses `FilterScalarDraftValue = {type: 'number', value: raw}`; never interpret an already-loaded protocol string as numeric input. Mixed scalar collection items can similarly use string/boolean wrappers. `FilterDateTimeValue = {date?: string, time?: string, offsetMinutes?: number}` keeps both parts while editing. Drafts are not persisted query JSON.
+`FilterDraftNode` is editor state with a stable configuration `id`, optional explicit `editor` and opaque custom `props`, plus the existing built-in Wow property names. Raw numeric text uses `FilterScalarDraftValue = {type: 'number', value: raw}`; never interpret an already-loaded protocol string as numeric input. Mixed scalar collection items can similarly use string/boolean wrappers. `FilterDateTimeValue = {date?: string, time?: string, offsetMinutes?: number}` keeps both parts while editing. Use `createFilterConfiguration` to persist these attributes; never reconstruct them from a compiled query.
 
 `createFilterDraft` accepts `DeepReadonly<FilterExpression>` and returns an editable
 draft. `compileFilterDraft` and `isSimpleFilter` accept `DeepReadonly<FilterDraftNode>`.
-`FilterPanel.value`, `draft` and `appliedDraft` also accept these readonly inputs;
+`FilterPanel.value` accepts a readonly expression or null; `draft` and `appliedDraft` accept readonly component editor trees;
 its editing buffer and emitted drafts remain independent editable values.
 
-| Export                                                 | Contract                                                                                                                                                                                         |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `FILTER_OPERATORS`                                     | Complete readonly record of all 50 Wow operators: business label, category, input kind, and relative-time flag.                                                                                  |
-| `createFilterDraft(expression)`                        | Strictly validates a real Wow expression, clones it and assigns transient IDs. Throws on invalid protocol input; preserves value types, nesting, ordering and absent optional parameters.        |
-| `newFilterDraft(op, field?)`                           | Creates a new draft. Value-dependent leaves start unset; logical groups and element predicates start incomplete; DELETION initially uses ACTIVE.                                                 |
-| `compileFilterDraft(draft, fields, allowedOperators?)` | Returns `{expression, errors: []}` or `{errors}` with no executable expression. Each error has `{id, message}`. Validates fields, capability, type, scope and protocol through Wow constructors. |
-| `getFieldOperators(field)`                             | Returns the field's compatible operators, restricted by its explicit allowlist.                                                                                                                  |
-| `isSimpleFilter(draft)`                                | Structural eligibility: MATCH_ALL, an ordinary field predicate, or a flat AND of those predicates. Panel also checks editor validity before switching modes.                                     |
+| Export                                                                       | Contract                                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FILTER_OPERATORS`                                                           | Complete readonly record of all 50 Wow operators: business label, category, input kind, and relative-time flag.                                                                                                                                           |
+| `createFilterDraft(expression)`                                              | Strictly validates a real Wow expression, clones it and assigns IDs for new built-in editor state. It does not restore custom component props. Throws on invalid protocol input; preserves value types, nesting, ordering and absent optional parameters. |
+| `newFilterDraft(op, field?)`                                                 | Creates a new draft. Value-dependent leaves start unset; logical groups and element predicates start incomplete; DELETION initially uses ACTIVE.                                                                                                          |
+| `compileFilterDraft(draft, fields, allowedOperators?, compilers?, editors?)` | Returns `{expression, errors: []}` or `{errors}` with no executable expression. Each error has `{id, message}`. Validates fields, capability, type, scope and protocol through Wow constructors.                                                          |
+| `getFieldOperators(field)`                                                   | Returns the field's compatible operators, restricted by its explicit allowlist.                                                                                                                                                                           |
+| `isSimpleFilter(draft)`                                                      | Structural eligibility: MATCH_ALL, an ordinary field predicate, or a flat AND of those predicates. Panel also checks editor validity before switching modes.                                                                                              |
+
+The persisted contract is:
+
+```ts
+interface FilterConfiguration {
+  mode: FilterMode;
+  root: FilterComponentConfig;
+}
+interface FilterComponentConfig {
+  id: string;
+  component: FilterEditorReference; // {name, options?}; reserved name: builtin
+  operator: FilterOperator;
+  field?: string;
+  props: FilterComponentProperties;
+  operands?: FilterComponentConfig[];
+  predicate?: FilterComponentConfig;
+}
+type FilterComponentProperties = Record<string, FilterJsonValue | undefined>;
+```
+
+React applications register the complete component definition once through `extensions.filters` (see Custom editors below). The following minimal capability contract is for React-independent compilation and direct `ViewEngine` use; `ViewPage` derives it from its component definitions.
+
+```ts
+interface FilterCompilerContext {
+  operator: FilterOperator;
+  field?: DeepReadonly<FilterFieldDefinition>;
+  fields: DeepReadonly<readonly FilterFieldDefinition[]>;
+  options?: DeepReadonly<Record<string, FilterJsonValue>>;
+}
+interface FilterCompiler {
+  compile(
+    props: DeepReadonly<FilterComponentProperties>,
+    context: FilterCompilerContext,
+  ): FilterExpression | undefined;
+  clear?(
+    props: DeepReadonly<FilterComponentProperties>,
+    context: FilterCompilerContext,
+  ): FilterComponentProperties;
+}
+type FilterCompilerRegistry = Readonly<Record<string, FilterCompiler>>;
+```
+
+| Export                                                                      | Contract                                                                                                                                                                                                                               |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createFilterConfiguration(draft, mode?, fields?, editors?)`                | Copies editor attributes into JSON configuration, preserving IDs, unset controls, custom props and date/time attributes. Resolves explicit editor first, then field/operator defaults, then `builtin`, and saves the chosen reference. |
+| `restoreFilterConfiguration(config)`                                        | Restores an editable draft directly from saved component attributes, preserving IDs. Does not compile or reverse a query.                                                                                                              |
+| `validateFilterConfiguration(value, fields?)`                               | Asserts the JSON component structure and optional field bindings. Throws on invalid configuration.                                                                                                                                     |
+| `compileFilterConfiguration(config, fields, allowedOperators?, compilers?)` | Invokes component-owned pure compilers and returns `FilterCompileResult`. Requires no React mounting. Unknown components, invalid output and cross-field output return errors without an executable query.                             |
+| `compileBuiltinFilter(props, context)`                                      | Compiles built-in payload attributes, reusable by builtin-compatible custom renderers. Returns undefined for unset values.                                                                                                             |
+| `clearBuiltinFilterProps(props)`                                            | Clears built-in values while retaining other component attributes.                                                                                                                                                                     |
+| `clearFilterDraftValues(draft, fields, compilers?, editors?)`               | Applies registered clear semantics while preserving component IDs and structure.                                                                                                                                                       |
+| `sameFilterQuery(a, b)`                                                     | Compares readonly expressions (also accepts null/undefined), ignoring object key order and redundant singleton AND/OR wrappers. Preserves predicate order and does not perform general Boolean equivalence.                            |
+
+Configuration is JSON data. An object property with undefined represents an unset input and is omitted on save; null, false, zero and empty strings retain their meaning. Arrays cannot contain undefined or other non-JSON values. Functions, DOM objects, non-finite numbers and cycles are rejected. Configuration IDs are stable persisted identities; mounted renderer DOM IDs are separate.
+
+A custom compiler may combine predicates for its bound field, but cannot escape that field or its scope. Logical/element containers remain structural component nodes. Compiled outputs must satisfy the declared field capabilities and global operator allowlist.
 
 Field uniqueness is a simple-mode editing rule, not a compiler restriction. Advanced AND/OR/NOR groups accept repeated direct field bindings, including within element predicates. Compilation and view-instance validation preserve these conditions. `isSimpleFilter` returns false for repeated-field AND drafts, including unset conditions; a requested simple mode is rendered as advanced until the draft can be represented without losing rules.
 
@@ -61,25 +117,25 @@ Import components from `@ahoo-wang/fetcher-view-engine/react` and compiled style
 
 ### FilterPanel
 
-| Prop                            | Contract                                                                                                                                                                                                                                                   |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                         | Required currently applied Wow FilterExpression. Invalid input is displayed as a load error and cannot query.                                                                                                                                              |
-| `fields`                        | Required field definitions for this root scope; array fields carry their element-relative definitions.                                                                                                                                                     |
-| `onApply(expression)`           | Called exactly when Query applies a complete valid expression. The host synchronously updates `value`, then owns asynchronous requests and cancellation.                                                                                                   |
-| `mode`, `onModeChange(mode)`    | Optional controlled simple/advanced mode. Otherwise initialized from the expression. Complex loaded trees safely display advanced mode; incompatible or incomplete trees cannot switch to simple.                                                          |
-| `onPendingChange(pending)`      | Observes unsubmitted edits, including custom-editor invalid state. ViewEngine derives its own save guards from the draft and validity. Separate from a saved view's dirty flag.                                                                            |
-| `draft`, `onDraftChange(draft)` | Optional controlled transient draft tree; parent can retain built-in buffers per instance. Otherwise managed locally.                                                                                                                                      |
-| `appliedDraft`                  | Optional controlled last-applied editor baseline, including unset controls. ViewEngine consumers pass `session.filterBaseline`. When it compiles to an externally updated `value`, the panel preserves the supplied controlled `draft` and its editor IDs. |
-| `onValidityChange(valid)`       | Reports aggregate editor/buffer validity. ViewEngine consumers call `setFilterValidity`; reporting true cannot clear an unsubmitted draft.                                                                                                                 |
-| `allowedOperators`              | Optional global operator allowlist, including logical and root operators.                                                                                                                                                                                  |
-| `extensions`                    | Per-panel `{filters: Record<string, FilterRegistration>}` map; no global registry.                                                                                                                                                                         |
-| `editors`                       | Optional operator-to-editor-reference map; field references take priority.                                                                                                                                                                                 |
-| `context`                       | Opaque host definition/instance/business context passed to custom editors.                                                                                                                                                                                 |
-| `querying`, `queryError`        | Host request state. Editing stays available while querying; an unchanged in-flight query cannot be sent twice, changed filters may be applied. Errors retain applied conditions and allow retry.                                                           |
-| `disabled`                      | Disables editing and query actions. Defaults false.                                                                                                                                                                                                        |
-| `collapsed`                     | Defaults false. Hides the panel body while retaining mounted editors and their local buffers.                                                                                                                                                              |
-| `renderToolbar(props)`          | Replaces the default heading; renders before the collapsible body. Receives `FilterPanelToolbarProps`, described below.                                                                                                                                    |
-| `className`                     | Optional host layout classes; keep scoped theme tokens.                                                                                                                                                                                                    |
+| Prop                            | Contract                                                                                                                                                                                                                                                                            |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                         | Required applied Wow FilterExpression or null when uncompiled. Invalid/uncompiled input never falls back to all records.                                                                                                                                                            |
+| `fields`                        | Required field definitions for this root scope; array fields carry their element-relative definitions.                                                                                                                                                                              |
+| `onApply(expression)`           | Called exactly when Query applies a complete valid expression. The host synchronously updates `value`, then owns asynchronous requests and cancellation.                                                                                                                            |
+| `mode`, `onModeChange(mode)`    | Optional controlled simple/advanced mode. Otherwise initialized from the expression. Complex loaded trees safely display advanced mode; incompatible or incomplete trees cannot switch to simple.                                                                                   |
+| `onPendingChange(pending)`      | Observes changed query semantics or invalid editor input. Configuration-only changes are synchronized without a request; this is separate from the saved view dirty flag.                                                                                                           |
+| `draft`, `onDraftChange(draft)` | Optional controlled draft tree; parent can retain built-in buffers and opaque custom props per instance. Otherwise managed locally.                                                                                                                                                 |
+| `appliedDraft`                  | Optional controlled accepted editor baseline, including unset controls and configuration-only edits. ViewEngine consumers pass `session.filterBaseline`. When it compiles to an externally updated `value`, the panel preserves the supplied controlled `draft` and its editor IDs. |
+| `onValidityChange(valid)`       | Reports aggregate editor/buffer validity. ViewEngine consumers call `setFilterValidity`; reporting true cannot clear an unsubmitted draft.                                                                                                                                          |
+| `allowedOperators`              | Optional global operator allowlist, including logical and root operators.                                                                                                                                                                                                           |
+| `extensions`                    | Per-panel `{filters: Record<string, FilterRegistration>}` map; no global registry.                                                                                                                                                                                                  |
+| `editors`                       | Optional operator-to-editor-reference map; field references take priority.                                                                                                                                                                                                          |
+| `context`                       | Opaque host definition/instance/business context passed to custom editors.                                                                                                                                                                                                          |
+| `querying`, `queryError`        | Host request state. Editing stays available while querying; an unchanged in-flight query cannot be sent twice, changed filters may be applied. Errors retain applied conditions and allow retry.                                                                                    |
+| `disabled`                      | Disables editing and query actions. Defaults false.                                                                                                                                                                                                                                 |
+| `collapsed`                     | Defaults false. Hides the panel body while retaining mounted editors and their local buffers.                                                                                                                                                                                       |
+| `renderToolbar(props)`          | Replaces the default heading; renders before the collapsible body. Receives `FilterPanelToolbarProps`, described below.                                                                                                                                                             |
+| `className`                     | Optional host layout classes; keep scoped theme tokens.                                                                                                                                                                                                                             |
 
 `FilterPanelToolbarProps` supplies `panelId: string`, `mode: FilterMode`, readonly
 `options: FilterOption<FilterMode>[]`, `pending: boolean`, `disabled: boolean`, and
@@ -124,11 +180,11 @@ const fields: FilterFieldDefinition[] = [
 
 ### Custom editors
 
-`FilterRegistration` is a union of `FilterEditorRegistration` (`render?: 'value'`, the backward-compatible default) and `FilterComponentRegistration` (`render: 'filter'`). Both contain `component`, supported `modes`, and optional `supports(node)`. The former composes inside the default frame; the latter replaces the complete non-container body with any React component, including its label, operator/value UI and clear/remove controls. Resolution is field reference → operator reference → built-in. A registered editor that does not support the mode/node falls through; a missing explicit name or failing compatibility check is an error, never a silent fallback.
+`FilterRegistration` is a union of `FilterEditorRegistration` (`render?: 'value'`, the default) and `FilterComponentRegistration` (`render: 'filter'`). Each is one complete filter definition containing its React `component`, pure `compile`, optional `clear`, supported `modes`, and optional `supports(props, context)`. Register it once in `extensions.filters`; React applications do not register a separate compiler. The former composes inside the default frame; the latter owns the complete non-container body, including labels, values and controls. Registration always includes a pure `compile`; optional `clear` defines clearing behavior.
 
-`FilterEditorProps` supplies a cloned `node: DeepReadonly<FilterExpression> | undefined`, `operator`, recursively readonly `field`, current-scope `fields`, `mode`, `context`, JSON `options`, `disabled`, `onChange(node)` and `onValidityChange(valid, message?)`. Publish only valid Wow nodes. For a value-dependent predicate, `onChange(undefined)` clears its value while retaining the field/operator/options; for a value-free predicate it removes the condition. Invalid local input must notify `onValidityChange(false)` so old valid output cannot be queried, including when the supplied message is empty. A later valid callback cannot erase an invalid-output/field-binding error; publish a valid node to resolve that error.
+`FilterEditorProps` supplies cloned readonly component `props`, `operator`, readonly `field`, current-scope `fields`, `mode`, host `context`, JSON `options`, `disabled`, `onChange(props)` and `onValidityChange(valid, message?)`. Publish raw serializable component properties, including selected IDs and display labels. Compilation belongs to the registration and runs independently of mounting. Builtin-compatible renderers can use `compileBuiltinFilter` and `clearBuiltinFilterProps`. Invalid local buffers must report `onValidityChange(false)`; a later true notification does not make invalid compiled output valid.
 
-Editor references apply to non-container nodes; logical and element containers use the built-in tree controls. Output cannot change the bound field, escape the current scope or turn a non-container editor into a container. Rendering errors are contained per editor, block Query, and offer an explicit built-in fallback. Callbacks from an editor that has been cleared, replaced or unmounted are permanently ignored, including when that component later returns. A value-dependent `onChange(undefined)` remounts that editor to discard its old local buffer and callbacks; custom editors provide their own clear affordance. The built-in `FilterValueEditor` is also exported with `{node, field?, fields, disabled?, onChange(node)}` for hosts composing raw draft editors.
+Explicit saved references remain attached to their components. Missing registrations and invalid outputs block Query; rendering failures are contained per editor and offer explicit built-in fallback. Logical and element containers use built-in tree controls. Compiler output cannot change the bound field, escape scope or make the component into a container, though it may combine predicates for its bound field. Callbacks from cleared, replaced or unmounted editors are ignored. `FilterValueEditor` remains available with `{node, field?, fields, disabled?, onChange(node)}` for raw built-in draft editing.
 
 `FilterComponentProps extends FilterEditorProps` adds:
 
@@ -138,10 +194,10 @@ Editor references apply to non-container nodes; logical and element containers u
 | `operators`            | Readonly `FilterOption<FilterOperator>[]` for the current binding and mode, including disabled display-only options.                             |
 | `errors`, `errorId`    | Current errors and the optional ID of the panel-rendered error text; use for input `aria-invalid` / `aria-describedby`.                          |
 | `onOperatorChange(op)` | Validated operator transition using the latest draft. Preserves compatible values and currently reported invalidity, including same-event calls. |
-| `onClear()`            | Same unset semantics as `onChange(undefined)`.                                                                                                   |
+| `onClear?()`           | Present only when the registration provides clear semantics; clears raw props through that function.                                             |
 | `onRemove()`           | Remove the whole node without applying or saving.                                                                                                |
 
-All mutation callbacks ignore disabled and expired editor sessions. Complete components own their UI and accessible labels; the panel retains equal-width layout, error display, field/scope validation, logical/element containers and manual Query. Candidate loading and component-local buffers remain the host editor's responsibility.
+All mutation callbacks ignore disabled and expired editor sessions. Complete components own their UI and accessible labels; the panel retains equal-width layout, error display, field/scope validation, logical/element containers and manual Query. Candidate loading and temporary component-local buffers remain the host editor's responsibility; persistable state belongs in component props.
 
 ```tsx
 const extensions: FilterExtensions = {
@@ -149,13 +205,15 @@ const extensions: FilterExtensions = {
     'customer-picker': {
       render: 'filter',
       component: MyCustomerFilter, // ComponentType<FilterComponentProps>
+      compile: compileBuiltinFilter,
+      clear: clearBuiltinFilterProps,
       modes: ['simple', 'advanced'],
     },
   },
 };
 ```
 
-The corresponding field uses `editor: {name: 'customer-picker', options: {...}}`; remote definitions contain this JSON reference, never React components or callbacks. The complete example is `View Engine/Filter Panel` → `完整自定义筛选器 · 组件契约`. See the [extension contract](../../../docs/superpowers/specs/2026-09-06-filter-extension-contract.md) for responsibilities and lifecycle rules.
+The corresponding field uses `editor: {name: 'customer-picker', options: {...}}`; remote definitions contain this JSON reference, never React components or callbacks. The complete example is `View Engine/Filter Panel` → `完整自定义筛选器 · 组件契约`. See the [component persistence plan](../../../docs/superpowers/plans/2026-09-08-filter-component-persistence.md) for responsibilities and lifecycle rules.
 
 ### FilterSelect
 
@@ -181,23 +239,14 @@ The input is inside the popup: the native Combobox filters `options` by label an
 Use it inside a locally registered custom editor; it does not require changes to FilterPanel or the Wow compiler:
 
 ```tsx
-function CustomerFilter({
-  node,
-  field,
-  disabled,
-  onChange,
-}: FilterEditorProps) {
+function CustomerFilter({ props, disabled, onChange }: FilterEditorProps) {
   return (
     <FilterSearchSelect
       label="客户选择"
       options={customers}
-      value={
-        node?.op === FilterOperator.EQ && typeof node.value === 'string'
-          ? node.value
-          : null
-      }
-      onValueChange={id => onChange(filter.eq(field!.field, id))}
-      onClear={() => onChange(undefined)}
+      value={typeof props.value === 'string' ? props.value : null}
+      onValueChange={id => onChange({ ...props, value: id })}
+      onClear={() => onChange(clearBuiltinFilterProps(props))}
       disabled={disabled}
       inline
     />
@@ -205,7 +254,7 @@ function CustomerFilter({
 }
 ```
 
-Register this component in `extensions.filters['customer-search']`, reference it with the field's `editor.name`, and restrict that field to `operators: [FilterOperator.EQ]`. `View Engine/Filter Panel` → `自定义筛选器 · 内置搜索 Select` provides the complete registration, compatible-node fallback and manual-apply example. Candidate search here is local; remote candidate loading remains the host editor's responsibility.
+Register this component with `compile: compileBuiltinFilter` and `clear: clearBuiltinFilterProps` in `extensions.filters['customer-search']`, reference it with the field's `editor.name`, and restrict that field to `operators: [FilterOperator.EQ]`. `View Engine/Filter Panel` → `自定义筛选器 · 内置搜索 Select` provides the complete registration, compatible-node fallback and manual-apply example. Candidate search here is local; remote candidate loading remains the host editor's responsibility.
 
 ### FieldFilter
 
@@ -297,9 +346,9 @@ separate filter-renderer protocol.
 `ViewInstance` contains `id`, `definitionId`, `title`, `kind: 'record'`, `scope`,
 `config`, optional `revision`. Scope is `{type:'personal'}` or
 `{type:'public', source:'system'|'shared'}`. Scope describes classification,
-not permission. Config contains a real Wow `filter`, `sort: FieldSort[]`,
+not permission. Config contains `filters: FilterConfiguration`, `sort: FieldSort[]`,
 `pagination: {mode:'paged'|'cursor', size:number}` and
-`presentation: {layout:'table', table:{columns:RecordColumn[]}}`.
+`presentation: {layout:'table', table:{columns:RecordColumn[]}}`. The former `config.filter` shape is rejected; compiled Wow filters are runtime-only.
 
 Columns form an ordered, nonempty array with unique `id`, optional `title`,
 `width`, `visible`, `pinned` and `renderer`. Field columns add `{kind:'field',field}`;
@@ -405,7 +454,7 @@ membership changes while saving, completion preserves added IDs and never
 resurrects deleted IDs. The host must validate current-user access and persist
 these preferences under that user's identity, including for public/system views.
 
-Local input uses `new ViewEngine({definitionId,host,definition,instances})`.
+Local input uses `new ViewEngine({definitionId,host,definition,instances,filterCompilers})`. Optional `filterCompilers` supplies the React-independent capabilities for this directly owned engine; keep them consistent throughout the engine scope. `ViewPage` does not accept this option and derives the same capabilities solely from `extensions.filters`. Unknown saved components remain in configuration and block queries until their compiler is available.
 An empty list or absent/unknown default leaves selection empty without a query.
 A foreign instance is rejected. Explicit selection loads an unknown instance
 through `loadInstance` and validates its definition before querying.
@@ -432,7 +481,7 @@ selection wins over an older operation's automatic selection of a created copy.
 `getSnapshot` is referentially stable until state changes; `subscribe` returns
 an unsubscribe function. Snapshots isolate and freeze JSON data. Each session
 keeps baseline and current instance, dirty flag, transient filter draft/mode,
-`filterBaseline` (last-applied editor tree), `filterValid` (reported local editor validity),
+`filterBaseline` (accepted editor tree), `appliedFilter` (compiled query or null), `filterValid` (reported local editor validity),
 derived `filterPending`, rows, total, page/cursor, selected keys, `pageSummary`, `allSummary`, and independent query/write
 status and error. Runtime state is never serialized into instance config.
 
@@ -442,13 +491,13 @@ to nested metadata or mutation of query arrays is rejected by TypeScript.
 `applyFilter`, `setFilterDraft`, `setSort` and `setColumns` accept readonly
 snapshots directly and copy accepted inputs. Host query/write/permission
 callbacks still receive independent editable DTOs. `RecordTable` accepts
-readonly definitions, instances and rows; presentation/summary readers also
+readonly definitions, instances and rows, plus required explicit `appliedFilter: DeepReadonly<FilterExpression> | null`; presentation/summary readers also
 accept readonly inputs.
 
 Methods with an optional instance ID default to the selected instance:
 
 - `load()`, `selectInstance(id)`, `reloadInstance(id?)`, `canReloadInstance(id?)`, `refresh(id?, {background?: boolean})`, `dispose()`.
-- `applyFilter(expression,id?)`, `setFilterDraft(draft,id?,valid?)`,
+- `applyFilter(expression?,id?)`, `setFilterDraft(draft,id?,valid?)`,
   `setFilterValidity(valid,id?)`, `setFilterMode(mode,id?)`.
 - `setSort(sort,id?)`, `setColumns(columns,id?)`, `setPage(index,id?)`,
   `setPageSize(size,id?)`, `nextPage(id?)`, `setSelection(keys,id?)`.
@@ -457,18 +506,29 @@ Methods with an optional instance ID default to the selected instance:
   `saveAs({title,scope},id?)`, `deleteInstance(id?)`, `renameInstance(title,id?)`, `getPermissions(id?)`.
 - `canReorderInstances()`, `reorderInstances(instanceIds)` save the current user's navigation order.
 
-`filterPending` is always derived from draft/baseline inequality or invalid editor
-input. `setFilterDraft` can atomically update both facts; omitted `valid` retains
-the previous local validity. `setFilterValidity(true)` cannot clear a changed
-draft. The old `setFilterPending` setter is removed. Apply records the submitted
-editor baseline (including unset controls); Restore rebuilds it from the saved
-configuration. Copy/reload reconciliation preserves each session's matching editor
-baseline and validity. These invariants also apply without React.
+`filterPending` is derived from compiler errors, local editor validity and equality
+between the compiled draft and `appliedFilter` using `sameFilterQuery`. `setFilterDraft` compiles the
+candidate and can atomically update local validity; omitted `valid` retains it.
+When valid edits compile to the applied query, their configuration and editor
+baseline are accepted immediately, without a request. Unset controls and opaque
+display props can therefore be saved directly. `dirty` compares accepted
+configuration with the saved baseline. Changed query values remain draft-only
+and block Save until Query accepts them. Synchronized supported mode changes
+are persisted; pending edits retain their mode until Query accepts the whole
+configuration. These rules also apply without React.
 
-`applyFilter` rejects before mutation or any request when `filterValid` is false,
-including reapplying the current expression. Correct or undo the invalid editor
-buffer first. Rejection preserves the draft, editor validity and applied query;
-it cannot make an invalid editor's old output eligible for saving.
+`applyFilter()` compiles the current draft. Programmatic clients must first call
+`setFilterDraft`; optional `applyFilter(expression)` verifies that supplied output
+equals the compiled result and cannot create editor state from an expression.
+Acceptance updates configuration, `filterBaseline`, `appliedFilter`, pagination
+and summary scope together. Invalid local input or compiler output rejects
+before mutation or requests. `setFilterValidity(true)` cannot bypass changed
+query semantics. Undo/Restore, Save As and reload restore component attributes
+from configuration, never by reversing a compiled query.
+
+`appliedFilter === null` means no successful compilation. Records, aggregate
+queries and action consumers must not substitute MATCH_ALL. Runtime applied
+scope is never persisted into `instance.config`.
 
 Async operations return `Promise<void>` and reject on failure. Query and write
 failures are also reflected in state. UI consumers must handle rejections. Superseded
@@ -625,7 +685,7 @@ column presentation or selection-array order. Pass the same validated metric
 bindings to both. `RECORD_SUMMARY_LABELS`
 contains the default function labels.
 
-Standalone `RecordTable` accepts controlled `pageSummary`, `allSummary` and
+Standalone `RecordTable` requires explicit `appliedFilter` and accepts controlled `pageSummary`, `allSummary` and
 `onSummaryRetry()`. It renders both results without fetching or calculating them.
 It also accepts `queryError?: string | null` and `onQueryRetry?()`. Failures render
 inside the record area rather than as empty data; existing rows remain visible
@@ -652,7 +712,7 @@ or business-action renderers.
 
 ### React composition and business extensions
 
-`ViewPage` accepts `ViewEngineOptions`, required nonempty `scopeKey`, plus `extensions`, `filterContext`,
+`ViewPage` accepts `Omit<ViewEngineOptions, 'filterCompilers'>`, required nonempty `scopeKey`, plus `extensions`, `filterContext`,
 `selectable` (default false), `autoRefreshPaused` (false), `className`, and `initialSidebarCollapsed` (false).
 It owns creation/loading/disposal, including React StrictMode. `[scopeKey, definitionId]`
 identifies the lifetime; change scopeKey when user, tenant or access scope changes.
@@ -666,7 +726,7 @@ operations, FilterPanel, column controls, table and pagination. The lower-level
 `RecordTable` and `RecordColumnSettings` can also be controlled directly.
 `ViewInstanceMetadata`, `RecordQueryConfig` and `RecordTablePresentation` name
 the common metadata, record query and implemented presentation boundaries.
-`RecordViewConfig` combines the last two; `ViewInstance` currently remains the
+`RecordViewConfig` combines query settings and presentation, replacing the compiled `filter` with persisted component `filters`; `ViewInstance` currently remains the
 record kind. These named boundaries do not claim additional view renderers.
 The record table is a memoized result boundary; RecordView supplies stable
 callbacks so unsubmitted draft edits do not rerender record cells. Its widths,
@@ -763,12 +823,12 @@ filters, field metadata and JSON options use recursive readonly inputs. Componen
 copy required fields into their own form state and submit through host commands
 or engine methods; direct writes to a snapshot are compile-time errors.
 
-| Renderer props               | Values                                                                                                                                                                                             |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CellRendererProps`          | `value`, full `record`, stable `rowKey`, page `index`, `field`, `column`, `definition`, `instance`, JSON `options`. Resolution: column reference → field reference → built-in.                     |
-| `GlobalActionsRendererProps` | `definition`, `instance`, applied `filter` / `sort`, `selectedRowKeys`, `querying`, `options`, `refresh()`. The selection is explicit current-page records, never implicitly all matching records. |
-| `TableActionsRendererProps`  | Alias of `GlobalActionsRendererProps`; same applied scope, explicit page selection and bound refresh, rendered in the table toolbar.                                                               |
-| `RowActionsRendererProps`    | `record`, `rowKey`, `definition`, `instance`, applied `filter` / `sort`, `options`, `refresh()`. Resolution: column reference → definition row action.                                             |
+| Renderer props               | Values                                                                                                                                                                                                                                    |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CellRendererProps`          | `value`, full `record`, stable `rowKey`, page `index`, `field`, `column`, `definition`, `instance`, JSON `options`. Resolution: column reference → field reference → built-in.                                                            |
+| `GlobalActionsRendererProps` | `definition`, `instance`, applied `filter` / `sort`, `selectedRowKeys`, `querying`, `options`, `refresh()`. The applied filter is null until compiled. Selection is explicit current-page records, never implicitly all matching records. |
+| `TableActionsRendererProps`  | Alias of `GlobalActionsRendererProps`; same applied scope, explicit page selection and bound refresh, rendered in the table toolbar.                                                                                                      |
+| `RowActionsRendererProps`    | `record`, `rowKey`, `definition`, `instance`, applied `filter` / `sort`, `options`, `refresh()`. Resolution: column reference → definition row action.                                                                                    |
 
 Definitions select each action area via `recordActions.global`, `.table` and `.row`.
 To move an existing batch component, change its definition reference from `.global`
@@ -788,7 +848,7 @@ demonstrates this contract with a local simulated service, not a live backend.
 
 From the repository root, build with
 `pnpm --filter @ahoo-wang/fetcher-view-engine build`, then run
-`node packages/view-engine/examples/core.mjs` and
+`examples/react/FilterPersistenceExample.tsx` and the matching Library Delivery story demonstrate JSON-backed save/new-engine reload of unset controls and opaque selected ID/display label props. Only changed query values require Query before Save. Run `node packages/view-engine/examples/core.mjs` and
 `node packages/view-engine/scripts/verify-package.mjs`.
 The latter packs to a temporary directory, checks entry points and scoped CSS,
 compares archive contents with dist, runs public imports/core behavior, and

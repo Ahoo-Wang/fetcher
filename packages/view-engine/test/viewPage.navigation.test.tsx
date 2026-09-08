@@ -19,9 +19,10 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { filter } from '@ahoo-wang/fetcher-wow';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ViewPage } from '../src/record/ViewPage.js';
-import { instance, setup } from './fixtures/viewPage.js';
+import { setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
 
@@ -104,7 +105,7 @@ it.each([false, true])(
     ).toBe('88');
     expect(paged).toHaveBeenCalledTimes(4);
     for (const [query] of paged.mock.calls)
-      expect(query.filter).toEqual(instance.config.filter);
+      expect(query.filter).toEqual(filter.gte('amount', 10));
     expect(host.saveInstance).not.toHaveBeenCalled();
   },
 );

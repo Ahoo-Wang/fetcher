@@ -101,7 +101,11 @@ export class ViewLoader {
       const sessions: Record<string, RecordSession> = Object.create(null);
       for (const instance of instances) {
         sessions[instance.id] = {
-          ...createSession(copy(instance)),
+          ...createSession(
+            copy(instance),
+            definition,
+            this.store.filterCompilers,
+          ),
           requiresReload: this.work.unverifiedCreates.has(instance.id),
           writeError: this.work.unverifiedCreates.has(instance.id)
             ? '另存结果尚未核对，请重新加载核对'
@@ -150,7 +154,11 @@ export class ViewLoader {
         this.store.publish({
           sessions: {
             ...this.store.getSnapshot().sessions,
-            [id]: createSession(copy(instance)),
+            [id]: createSession(
+              copy(instance),
+              definition,
+              this.store.filterCompilers,
+            ),
           },
           instanceIds: [...this.store.getSnapshot().instanceIds, id],
         });

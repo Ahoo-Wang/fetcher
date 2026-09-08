@@ -13,8 +13,10 @@
 
 import { afterEach, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { filter } from '@ahoo-wang/fetcher-wow';
 import { RecordTable } from '../src/record/RecordTable.js';
 import type { RecordColumn, ViewInstance } from '../src/record/recordModel.js';
+import type { RowActionsRendererProps } from '../src/record/recordReactTypes.js';
 import {
   cleanupTable,
   columns,
@@ -24,6 +26,47 @@ import {
 } from './fixtures/recordTable.js';
 
 afterEach(cleanupTable);
+
+it.each([filter.gte('amount', 20), null])(
+  'passes the explicit runtime filter to row actions without a saved-query fallback: %j',
+  appliedFilter => {
+    let context: RowActionsRendererProps | undefined;
+    render(
+      <RecordTable
+        {...props({
+          appliedFilter,
+          instance: {
+            ...instance,
+            config: {
+              ...instance.config,
+              presentation: {
+                layout: 'table',
+                table: {
+                  columns: [
+                    {
+                      id: 'actions',
+                      kind: 'actions',
+                      renderer: { name: 'actions' },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          extensions: {
+            rowActions: {
+              actions: value => {
+                context = value;
+                return <button>处理记录</button>;
+              },
+            },
+          },
+        })}
+      />,
+    );
+    expect(context?.filter).toBe(appliedFilter);
+  },
+);
 
 it('resolves explicit cells and row actions with complete records and preserved options', () => {
   const record = {

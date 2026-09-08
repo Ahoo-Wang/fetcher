@@ -137,7 +137,7 @@ export function RecordView({
     >
       <FilterPanel
         key={`filter:${id}`}
-        value={instance.config.filter}
+        value={session.appliedFilter}
         fields={definition.fields}
         onApply={filter => run(() => engine.applyFilter(filter, id))}
         draft={session.filterDraft}
@@ -200,6 +200,7 @@ export function RecordView({
         className="fve:rounded-none fve:border-x-0 fve:border-b-0"
         definition={definition}
         instance={instance}
+        appliedFilter={session.appliedFilter}
         rows={session.rows}
         queryError={session.queryError}
         {...tableHandlers}

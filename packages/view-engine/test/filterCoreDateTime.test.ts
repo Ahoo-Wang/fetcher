@@ -134,10 +134,11 @@ it('rejects DST gaps and malformed datetime offset hints', () => {
     ),
     { offsetMinutes: NaN },
   ]) {
-    const result = compile(node(Op.EQ, 'created', { value }), zoned);
+    const draft = node(Op.EQ, 'created', { value });
+    const result = compile(draft, zoned);
     expect(result.expression).toBeUndefined();
     expect(result.errors).toEqual([
-      { id: 'draft', message: expect.any(String) },
+      { id: draft.id, message: expect.any(String) },
     ]);
   }
 });

@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import type { FilterCompilerRegistry } from '../../filter/filterModel.js';
 import type { DeepReadonly } from '../../lib/types.js';
 import type {
   RecordSession,
@@ -33,7 +34,10 @@ export class SessionStore {
     sessions: Object.create(null),
   });
   private readonly listeners = new Set<() => void>();
-  constructor(private readonly scope: EngineScope) {}
+  constructor(
+    private readonly scope: EngineScope,
+    readonly filterCompilers: FilterCompilerRegistry,
+  ) {}
 
   getSnapshot = (): ViewEngineState => this.state;
   subscribe = (listener: () => void): (() => void) => {
@@ -55,7 +59,11 @@ export class SessionStore {
     this.publish({
       sessions: {
         ...this.state.sessions,
-        [id]: deriveSession({ ...session, ...patch }),
+        [id]: deriveSession(
+          { ...session, ...patch },
+          this.definition(),
+          this.filterCompilers,
+        ),
       },
     });
   }

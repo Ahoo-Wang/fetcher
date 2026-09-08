@@ -60,9 +60,9 @@ export class RecordSummaries {
     const metrics = getRecordSummaryMetrics(
       session.instance.config.presentation,
     );
-    if (!metrics.length) return undefined;
+    if (!metrics.length || session.appliedFilter === null) return undefined;
     return JSON.stringify([
-      session.instance.config.filter,
+      session.appliedFilter,
       metrics.map(({ id, field, function: fn }) => [id, field, fn]),
     ]);
   }
@@ -107,6 +107,7 @@ export class RecordSummaries {
     const key = this.key(session);
     if (
       !key ||
+      session.appliedFilter === null ||
       (this.keys.get(id) === key && session.allSummary.status !== 'idle')
     )
       return;
@@ -135,7 +136,7 @@ export class RecordSummaries {
       if (!source.aggregate)
         throw new Error('数据源未提供 aggregate，无法汇总所有记录');
       const result = await source.aggregate(
-        createRecordSummaryQuery(session.instance.config.filter, metrics),
+        createRecordSummaryQuery(session.appliedFilter, metrics),
         undefined,
         controller,
       );

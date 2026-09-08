@@ -16,7 +16,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createPortal } from 'react-dom';
 import { afterEach, expect, it, vi } from 'vitest';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
-import { fields } from './fixtures/filterPanel.js';
+import { fields, builtinCompiler } from './fixtures/filterPanel.js';
 
 afterEach(cleanup);
 
@@ -70,6 +70,7 @@ it('leaves Enter to selectors, multiline inputs, portals and handled editor keys
       extensions={{
         filters: {
           'keyboard-editor': {
+            ...builtinCompiler,
             component: Editor,
             modes: ['simple', 'advanced'],
           },

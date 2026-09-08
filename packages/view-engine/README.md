@@ -18,7 +18,7 @@ The public `ViewEngine` composes internal services; applications use its public 
 | `filter`                                                   | Operator metadata, protocol construction/compilation, editor lifetimes and focused panel/value components.               |
 | `record/page`, `record/table`                              | Page ownership/navigation/actions and table state/header/body/cell/summary composition. Layout calculations remain pure. |
 
-Tests and Storybook interactions are grouped by behavior. Source modules target 300 lines and none exceed 400. The 347-line `useFilterPanelState` deliberately retains one controlled editor lifecycle: splitting its coordinated draft/acknowledgement transitions would separate state that must change together. Its synchronous callback boundary and externally supplied editing baselines have regression coverage.
+Tests and Storybook interactions are grouped by behavior, including controlled editor lifetimes, configuration persistence and query boundaries.
 
 ## Runnable public-package examples
 
@@ -31,7 +31,9 @@ node packages/view-engine/scripts/verify-package.mjs
 pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
 ```
 
-`examples/core.mjs` runs the headless public API. The standalone `examples/react/OrderExample.tsx` composes a page and all five extension types using public imports only. Open `http://127.0.0.1:4175`, or **View Engine → Library Delivery** in Storybook, for actions, custom filtering/cells, error recovery and a narrow dark view.
+`examples/core.mjs` runs the headless public API, including JSON save and restoration by a new engine for unset controls and opaque component props. The standalone `examples/react/OrderExample.tsx` composes a page and all five extension types using public imports only. Open `http://127.0.0.1:4175`, or **View Engine → Library Delivery** in Storybook, for actions, custom filtering/cells, error recovery and a narrow dark view.
+
+`examples/react/FilterPersistenceExample.tsx` saves the selected status ID and an independently edited display name. Open `http://127.0.0.1:4175/?example=persistence`, or **View Engine → Library Delivery → 公共包 · 组件配置 JSON 保存与重新打开**, to add an unset control, save it without querying, and reopen the JSON in a new engine. Changing the display name can also be saved directly; changing the status requires Query before Save.
 
 `verify-package.mjs` creates a temporary archive, checks its exports/CSS and exact distribution content, then runs and type-checks consumers against the extracted package. It performs no installation or publication. These are library integration examples backed by a strict local simulated service; production authentication, authorization, persistence and backend query behavior still require host-system verification.
 
@@ -71,15 +73,29 @@ references does not reload them. Change the React key to explicitly reinitialize
 `ViewPage` owns the engine lifecycle; use
 `ViewPageContent` or `RecordView` with an existing engine when the host owns it.
 
-The engine derives filter pending state from `filterDraft`, its last-applied
-`filterBaseline`, and reported editor validity (`filterValid`). `setFilterDraft(draft, id?, valid?)`
-can atomically publish a draft and local validity. `setFilterValidity(valid, id?)`
-reports an invalid local buffer; reporting true cannot clear a changed draft.
-Apply or Undo must return it to an applied baseline before saving. Unset controls
-remain part of that baseline. The old `setFilterPending` setter has been removed.
-`applyFilter` rejects while an editor reports invalid input, even when applying
-the current expression again. Correct the input or undo it before submitting;
-the rejection changes neither the draft nor the current query.
+Instances persist `config.filters: {mode, root}`. Each component stores a stable
+configuration ID, `{name, options?}` reference, operator, field binding, raw JSON
+`props`, and any child components. The compiled query lives only in
+`session.appliedFilter`; `null` means compilation has not succeeded and blocks
+record and aggregate requests. Saved JSON never reconstructs components from a
+compiled expression. Object properties with `undefined` are omitted; explicit
+null, false, zero and empty strings survive JSON. Non-JSON values are rejected.
+
+`setFilterDraft(draft, id?, valid?)` compiles through the registered pure functions.
+Valid edits producing the same applied query immediately update the accepted
+configuration and editor baseline, enabling Save without a request. Adding an
+unset control or changing its display label follows this path. Changed query
+values and invalid local input set `filterPending` and block Save until Query
+accepts the draft or Undo restores it. `setFilterMode` persists supported mode
+changes when synchronized. `dirty` compares accepted configuration with saved JSON.
+`sameFilterQuery` ignores object key order and redundant singleton AND/OR wrappers;
+other expression differences still require Query.
+
+Programmatic clients call `setFilterDraft` before `applyFilter()`. An optional
+expression passed to `applyFilter(expression)` must equal the compiled draft;
+it cannot replace component state. `applyFilter` rejects invalid editor buffers
+without changing the draft or applied query. `setFilterValidity(true)` cannot
+make a changed or uncompiled query eligible for Save.
 
 Core snapshots use `DeepReadonly` for definitions, instances, drafts and records.
 Read these values directly, or pass them back to `applyFilter`, `setFilterDraft`,
@@ -128,8 +144,8 @@ pagination share the footer. Collapsing filters keeps editors, drafts and select
 A compact applied-filter summary sits below the editor and above the table toolbar,
 remaining visible when the editor is collapsed. Top-level AND conditions appear as
 separate shadcn Badge tags; OR/NOR and element conditions remain complete groups.
-Each tag's close button unsets its values and immediately queries, retaining every
-field, operator, group and editor ID. Value-free predicates have no clear button.
+Each tag's close button uses registered clear semantics to unset its values and immediately queries, retaining every
+field, operator, group and editor ID. Value-free predicates and custom components without clear semantics have no clear button.
 Clearing is disabled while a query is loading or unapplied edits remain; query or
 undo those edits first. Enter in a single-line filter input applies the query;
 IME composition, selectors, multiline inputs and popup interactions keep their
@@ -189,7 +205,8 @@ selection or query state; unrelated draft edits do not repeatedly retry a failur
 Definitions use `recordActions.global`, `.table` and `.row` to choose their action
 areas (for example, create, batch process and inspect record). Existing global
 registrations retain their location; move batch components to `tableActions` explicitly.
-Business actions receive the applied scope, stable record keys and an
+Standalone `RecordTable` requires `appliedFilter` explicitly. Business actions receive
+that runtime scope (`filter` is null until compilation succeeds), stable record keys and an
 instance-bound refresh callback. Selection contains explicit current-page keys.
 Records, definitions and instances must be JSON data; keys must be unique strings
 or finite numbers, with no index fallback. The core import remains React-free.
@@ -305,7 +322,7 @@ Simple mode allows one condition per field, including unset values. Advanced AND
 
 Add filter opens an anchored Popover with grouped checkboxes, keeping the table and query toolbar in place. Its height is capped and its field area scrolls internally. It stays open for continuous additions; Done or Escape closes it and returns focus to Add filter. Clicking outside dismisses it. Set `group` on field definitions to group choices in definition order. Ungrouped fields appear under Other fields when mixed with named groups. Checking a field adds its condition; unchecking removes that field's direct conditions in the current group. Checkbox state follows the draft even when a value is unset. Advanced mode shows each selected field’s condition count and an adjacent Append condition action for additional same-field predicates in any logical group; advanced mode places AND/OR/NOR in the adjacent icon dropdown instead of the field picker. Root-level operators remain add actions. Logical menu choices respect the definition allowlist. Changes apply only on Query.
 
-Fully unset values keep their controls but produce no predicate; partial values, invalid data and missing extensions block Query. Fields bind when added and remain in their original group and scope. `extensions.filters` supplies local custom editors. `draft` / `onDraftChange` lets the host retain built-in edit buffers per instance; custom components should keep their own temporary UI state in host context or remain mounted.
+Fully unset values keep their controls but produce no predicate; partial values, invalid data and missing extensions block Query. Fields bind when added and remain in their original group and scope. `extensions.filters` supplies local custom editors. `draft` / `onDraftChange` lets the host retain edit buffers per instance. Custom components publish serializable `props` through `onChange(props)`; saveable UI state such as selected IDs and display labels belongs there. Keep only unsaved temporary buffers in local React state.
 
 Simple mode has no condition action menu or ordering controls. Advanced mode supports adding, deleting and editing groups without moving conditions between groups. Built-in scalar rows omit Clear and Special value buttons; deleting input text leaves an unset value. Use null/empty-string operators for those predicates. Existing datetime edits retain their original offset in repeated DST hours, while dates in other seasons use their actual offset.
 
@@ -315,6 +332,8 @@ For composition, `FilterPanel.renderToolbar` replaces the default heading and re
 advanced conditions cannot switch to simple. `collapsed` hides only the body and
 retains editors. `RecordView.toolbarStart` accepts leading global-toolbar content;
 `ViewPage` supplies saving, title and instance navigation there.
+
+Each filter component definition registers its `component`, pure `compile(props, context)` and optional `clear(props, context)` together in `extensions.filters`. This is the only filter registration entry for `ViewPage`; it derives the engine capabilities from those definitions, keeping rendering and compilation consistent for the scope. `FilterCompiler` is the minimal React-independent capability contract used by a directly constructed `ViewEngine` through `filterCompilers`, not a second registration for React applications. Builtin-compatible editors can reuse `compileBuiltinFilter` and `clearBuiltinFilterProps`. Complete components receive `onClear` only when clear semantics exist.
 
 Custom editors can use any React component. Register `render: 'value'` (the default) for the value area, or `render: 'filter'` with `FilterComponentProps` to own the complete non-container UI. The panel continues to validate bindings and capabilities, display errors, and apply only on Query.
 

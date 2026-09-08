@@ -11,14 +11,21 @@
  * limitations under the License.
  */
 
-import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
-import type { FilterEditorReference, FilterMode } from './filterModel.js';
+import { copy } from '../lib/snapshot.js';
+import type {
+  FilterComponentProperties,
+  FilterEditorReference,
+  FilterMode,
+} from './filterModel.js';
 import type {
   FilterPanelProps,
   FilterRegistration,
 } from './filterReactTypes.js';
 import type { FilterNodeLocation } from './filterTree.js';
-import { compileFilterDraft } from './filterCore.js';
+import {
+  filterComponentProps,
+  filterComponentReference,
+} from './filterConfiguration.js';
 import { message } from './filterPanelUtils.js';
 
 export function resolveFilterEditor(
@@ -27,31 +34,51 @@ export function resolveFilterEditor(
   mode: FilterMode,
   builtIn: ReadonlySet<string>,
 ): {
-  expression?: FilterExpression;
+  props?: FilterComponentProperties;
+  reference?: FilterEditorReference;
   registration?: FilterRegistration;
   options?: FilterEditorReference['options'];
   error?: string;
 } {
   if (builtIn.has(location.node.id)) return {};
-  const { node, fields: scopeFields } = location;
-  const field = scopeFields.find(field => field.field === node.field);
-  const result = compileFilterDraft(node, scopeFields, props.allowedOperators);
-  const expression =
-    result.expression?.op === FilterOperator.MATCH_ALL &&
-    node.op !== FilterOperator.MATCH_ALL
-      ? undefined
-      : result.expression;
-  for (const reference of [field?.editor, props.editors?.[node.op]]) {
-    if (!reference) continue;
+  const { node, fields } = location;
+  const field = fields.find(field => field.field === node.field);
+  const reference = filterComponentReference(node, field, props.editors);
+  try {
+    const properties = filterComponentProps(node);
+    if (reference.name === 'builtin') return { props: properties, reference };
     const registration = props.extensions?.filters?.[reference.name];
-    if (!registration) return { error: `未注册筛选器：${reference.name}` };
-    if (!registration.modes.includes(mode)) continue;
-    try {
-      if (registration.supports && !registration.supports(expression)) continue;
-    } catch (error) {
-      return { error: message(error) };
-    }
-    return { expression, registration, options: reference.options };
+    if (
+      !registration ||
+      !Object.prototype.hasOwnProperty.call(
+        props.extensions?.filters,
+        reference.name,
+      )
+    )
+      return { error: `未注册筛选器：${reference.name}` };
+    const supported =
+      registration.modes.includes(mode) &&
+      (!registration.supports ||
+        registration.supports(
+          copy(properties),
+          copy({
+            operator: node.op,
+            field,
+            fields,
+            options: reference.options,
+          }),
+        ));
+    if (!supported)
+      return node.editor
+        ? { error: `筛选器 ${reference.name} 不支持当前模式或属性` }
+        : {};
+    return {
+      props: properties,
+      reference,
+      registration,
+      options: reference.options,
+    };
+  } catch (error) {
+    return { error: message(error) };
   }
-  return { expression };
 }

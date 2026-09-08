@@ -15,6 +15,7 @@ import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import {
   createFilterDraft,
+  createFilterConfiguration,
   newFilterDraft,
 } from '../../src/filter/filterCore.js';
 import type { ViewDefinition } from '../../src/record/recordModel.js';
@@ -22,7 +23,9 @@ import { definition, instance, selected, setup } from './fixtures.js';
 
 it('derives pending from core draft changes and only accepts the queried editing baseline', async () => {
   const saved = instance();
-  saved.config.filter = filter.gte('state.amount', 10);
+  saved.config.filters = createFilterConfiguration(
+    createFilterDraft(filter.gte('state.amount', 10)),
+  );
   const { engine, host } = setup({
     instances: { instances: [saved], defaultInstanceId: saved.id },
   });
@@ -45,10 +48,10 @@ it('derives pending from core draft changes and only accepts the queried editing
   await engine.applyFilter(filter.gte('state.amount', 500));
   expect(selected(engine).filterPending).toBe(false);
   await engine.save();
-  expect(selected(engine).baseline.config.filter).toEqual({
-    op: 'GTE',
+  expect(selected(engine).baseline.config.filters.root).toMatchObject({
+    operator: 'GTE',
     field: 'state.amount',
-    value: 500,
+    props: { value: 500 },
   });
   engine.setFilterDraft(newFilterDraft(FilterOperator.EQ, 'state.amount'));
   expect(selected(engine).filterPending).toBe(true);
@@ -75,7 +78,7 @@ it('isolates snapshots and request payloads from caller and host mutation', asyn
     (selected(engine).rows[0].state as { id: string }).id = 'external';
   }).toThrow();
   paged.mock.calls[0][0].filter.op = 'MATCH_NONE';
-  expect(selected(engine).instance.config.filter.op).toBe('MATCH_ALL');
+  expect(selected(engine).appliedFilter?.op).toBe('MATCH_ALL');
   const draft = newFilterDraft(FilterOperator.EQ, 'state.amount');
   engine.setFilterDraft(draft);
   draft.value = 999;

@@ -14,6 +14,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn } from 'storybook/test';
 import { OrderExample } from '../../packages/view-engine/examples/react/OrderExample.js';
+import { FilterPersistenceExample } from '../../packages/view-engine/examples/react/FilterPersistenceExample.js';
 import type { OrderEvent } from '../../packages/view-engine/examples/react/orderService.js';
 import {
   playExtensions,
@@ -21,6 +22,7 @@ import {
   playRefreshRecovery,
   playNarrowDark,
 } from './libraryDelivery.play.js';
+import { playFilterPersistence } from './filterPersistence.play.js';
 
 const meta = {
   title: 'View Engine/Library Delivery',
@@ -42,6 +44,11 @@ export const FiveExtensions: Story = {
   name: '公共包 · 五类扩展与手动查询',
   args: { onEvent: fn<(event: OrderEvent) => void>() },
   play: playExtensions,
+};
+export const FilterPersistence: Story = {
+  name: '公共包 · 组件配置 JSON 保存与重新打开',
+  render: args => <FilterPersistenceExample appearance={args.appearance} />,
+  play: playFilterPersistence,
 };
 export const FailureAndScopedRefresh: Story = {
   name: '公共包 · 失败恢复与异步作用域',

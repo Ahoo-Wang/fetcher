@@ -14,11 +14,16 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { OrderExample } from './OrderExample.js';
+import { FilterPersistenceExample } from './FilterPersistenceExample.js';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('订单示例缺少 root 容器。');
 createRoot(root).render(
   <StrictMode>
-    <OrderExample scopeKey="local-user:demo-orders" />
+    {new URLSearchParams(location.search).get('example') === 'persistence' ? (
+      <FilterPersistenceExample />
+    ) : (
+      <OrderExample scopeKey="local-user:demo-orders" />
+    )}
   </StrictMode>,
 );

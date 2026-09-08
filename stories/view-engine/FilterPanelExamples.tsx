@@ -11,9 +11,11 @@
  * limitations under the License.
  */
 
-import type {
-  FilterFieldDefinition,
-  FilterMode,
+import {
+  createFilterDraft,
+  type FilterDraftNode,
+  type FilterFieldDefinition,
+  type FilterMode,
 } from '@ahoo-wang/fetcher-view-engine';
 import {
   FilterPanel,
@@ -75,18 +77,23 @@ export function Scenario({
   appearance,
   disabled,
   initial = businessFilter,
+  initialDraft,
   definitions = fields,
   extensions,
   mode,
   initialError,
 }: DemoArgs & {
   initial?: FilterExpression;
+  initialDraft?: FilterDraftNode;
   definitions?: readonly FilterFieldDefinition[];
   extensions?: FilterExtensions;
   mode?: FilterMode;
   initialError?: string;
 }) {
   const [value, setValue] = useState(initial);
+  const [draft, setDraft] = useState(
+    () => initialDraft ?? createFilterDraft(initial),
+  );
   const [calls, setCalls] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(initialError);
@@ -106,6 +113,8 @@ export function Scenario({
     >
       <FilterPanel
         value={value}
+        draft={draft}
+        onDraftChange={setDraft}
         fields={definitions}
         mode={mode}
         extensions={extensions}

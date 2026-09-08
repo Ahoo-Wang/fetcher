@@ -16,6 +16,9 @@ import type { FilterExpression, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import type { FilterOption } from './filterTypes.js';
 import type { DeepReadonly } from '../lib/types.js';
 import type {
+  FilterCompiler,
+  FilterCompilerContext,
+  FilterComponentProperties,
   FilterDraftNode,
   FilterEditorReference,
   FilterFieldDefinition,
@@ -25,7 +28,7 @@ import type {
 
 /** UI-library-independent value editor. Inputs are read-only snapshots, not applied query state. */
 export interface FilterEditorProps {
-  node: DeepReadonly<FilterExpression> | undefined;
+  props: DeepReadonly<FilterComponentProperties>;
   operator: FilterOperator;
   field?: DeepReadonly<FilterFieldDefinition>;
   fields: DeepReadonly<readonly FilterFieldDefinition[]>;
@@ -33,8 +36,8 @@ export interface FilterEditorProps {
   context?: unknown;
   options?: DeepReadonly<Record<string, FilterJsonValue>>;
   disabled: boolean;
-  /** Publish a valid node for the same binding. Undefined clears a valued node, or removes a value-free node. Never queries. */
-  onChange(node: FilterExpression | undefined): void;
+  /** Publish raw serializable component properties. Never queries or changes the binding. */
+  onChange(props: FilterComponentProperties): void;
   /** Invalid local buffers must report false; an empty message still blocks application. */
   onValidityChange(valid: boolean, message?: string): void;
 }
@@ -49,17 +52,21 @@ export interface FilterComponentProps extends FilterEditorProps {
   readonly errorId?: string;
   /** Use the panel's operator transition rules, preserving compatible values and pending invalid input. */
   onOperatorChange(operator: FilterOperator): void;
-  /** Same unset semantics as onChange(undefined); remounts the editor to discard its local buffer. */
-  onClear(): void;
+  /** Available when registration supplies clear semantics; remounts to discard local buffers. */
+  onClear?(): void;
   /** Removes the whole node. Does not apply or save. */
   onRemove(): void;
 }
-export interface FilterEditorRegistration {
+/** One filter definition owns rendering, pure compilation and optional clearing. */
+export interface FilterEditorRegistration extends FilterCompiler {
   /** Default: compose this component inside the built-in field/operator/remove frame. */
   render?: 'value';
   component: ComponentType<FilterEditorProps>;
   modes: readonly FilterMode[];
-  supports?: (node: DeepReadonly<FilterExpression> | undefined) => boolean;
+  supports?: (
+    props: DeepReadonly<FilterComponentProperties>,
+    context: FilterCompilerContext,
+  ) => boolean;
 }
 export interface FilterComponentRegistration extends Omit<
   FilterEditorRegistration,
@@ -84,7 +91,7 @@ export interface FilterPanelToolbarProps {
   onModeChange(mode: FilterMode): void;
 }
 export interface FilterPanelProps {
-  value: DeepReadonly<FilterExpression>;
+  value: DeepReadonly<FilterExpression> | null;
   fields: readonly FilterFieldDefinition[];
   onApply(expression: FilterExpression): void;
   mode?: FilterMode;

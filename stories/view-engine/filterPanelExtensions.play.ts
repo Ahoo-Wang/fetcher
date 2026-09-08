@@ -110,8 +110,10 @@ export const playCompleteFilter: NonNullable<Story['play']> = async ({
   await expect(canvas.getByLabelText('宿主状态')).toHaveTextContent(
     '已应用 1 次',
   );
-  await userEvent.click(canvas.getByRole('button', { name: '撤销筛选修改' }));
   await expect(
-    canvas.getByRole('group', { name: '自定义客户筛选器' }),
-  ).toBeInTheDocument();
+    canvas.getByRole('button', { name: '撤销筛选修改' }),
+  ).toBeDisabled();
+  await expect(canvas.getByLabelText('宿主状态')).toHaveTextContent(
+    '筛选已同步',
+  );
 };

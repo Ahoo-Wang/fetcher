@@ -12,7 +12,11 @@
  */
 
 import type { FieldSort, FilterExpression } from '@ahoo-wang/fetcher-wow';
-import type { FilterDraftNode, FilterMode } from '../filter/filterModel.js';
+import type {
+  FilterCompilerRegistry,
+  FilterDraftNode,
+  FilterMode,
+} from '../filter/filterModel.js';
 import type { DeepReadonly } from '../lib/types.js';
 import type {
   RecordColumn,
@@ -36,7 +40,8 @@ import { ViewManagement } from './engine/ViewManagement.js';
 /** Fixed-scope public facade. Internal services own state, reads and durable writes. */
 export class ViewEngine {
   private readonly scope = new EngineScope();
-  private readonly store = new SessionStore(this.scope);
+  private readonly store: SessionStore;
+  readonly filterCompilers: FilterCompilerRegistry;
   private readonly work = new InstanceWork();
   private readonly summaries: RecordSummaries;
   private readonly queries: RecordQueries;
@@ -48,6 +53,20 @@ export class ViewEngine {
 
   constructor(options: ViewEngineOptions) {
     const { host } = options;
+    this.filterCompilers = Object.freeze(
+      Object.fromEntries(
+        Object.entries(options.filterCompilers ?? {}).map(
+          ([name, compiler]) => [
+            name,
+            Object.freeze({
+              compile: compiler.compile,
+              ...(compiler.clear ? { clear: compiler.clear } : {}),
+            }),
+          ],
+        ),
+      ),
+    );
+    this.store = new SessionStore(this.scope, this.filterCompilers);
     this.summaries = new RecordSummaries(this.store, this.scope, host);
     this.queries = new RecordQueries(
       this.store,
@@ -115,7 +134,7 @@ export class ViewEngine {
   }
 
   applyFilter(
-    expression: DeepReadonly<FilterExpression>,
+    expression?: DeepReadonly<FilterExpression>,
     id?: string,
   ): Promise<void> {
     return this.edits.applyFilter(expression, id);

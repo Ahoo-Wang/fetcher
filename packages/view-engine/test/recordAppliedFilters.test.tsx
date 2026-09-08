@@ -27,6 +27,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { createFilterDraft, newFilterDraft } from '../src/filter/filterCore.js';
+import { createFilterConfiguration } from '../src/filter/filterConfiguration.js';
 import { ViewEngine } from '../src/record/ViewEngine.js';
 import { ViewPageContent } from '../src/record/ViewPage.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
@@ -50,7 +51,13 @@ async function openView(expression: FilterExpression) {
     },
     instances: {
       instances: [
-        { ...instance, config: { ...instance.config, filter: expression } },
+        {
+          ...instance,
+          config: {
+            ...instance.config,
+            filters: createFilterConfiguration(createFilterDraft(expression)),
+          },
+        },
       ],
       defaultInstanceId: instance.id,
     },

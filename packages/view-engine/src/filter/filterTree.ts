@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { FilterOperator } from '@ahoo-wang/fetcher-wow';
-import { newFilterDraft } from './filterCore.js';
+import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
+import { newFilterDraft } from './filterDraft.js';
 import type { FilterDraftNode, FilterFieldDefinition } from './filterModel.js';
 import type { DeepReadonly } from '../lib/types.js';
 
@@ -30,6 +30,29 @@ export function sameFilterState(a: unknown, b: unknown): boolean {
   }
   return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 }
+/** Ignore only redundant singleton AND/OR wrappers; keep persisted structure unchanged. */
+export function sameFilterQuery(
+  a: DeepReadonly<FilterExpression> | null | undefined,
+  b: DeepReadonly<FilterExpression> | null | undefined,
+): boolean {
+  function normalize(
+    value: DeepReadonly<FilterExpression> | null | undefined,
+  ): unknown {
+    if (!value) return value;
+    if ('operands' in value) {
+      if (
+        (value.op === FilterOperator.AND || value.op === FilterOperator.OR) &&
+        value.operands.length === 1
+      )
+        return normalize(value.operands[0]);
+      return { ...value, operands: value.operands.map(normalize) };
+    }
+    return 'predicate' in value
+      ? { ...value, predicate: normalize(value.predicate) }
+      : value;
+  }
+  return sameFilterState(normalize(a), normalize(b));
+}
 export function sameFilterDraft(
   a: DeepReadonly<FilterDraftNode>,
   b: DeepReadonly<FilterDraftNode>,
@@ -43,14 +66,6 @@ export function sameFilterDraft(
     };
   }
   return sameFilterState(content(a), content(b));
-}
-/** Pending is derived from editing facts, never assigned independently. */
-export function isFilterDraftPending(
-  draft: DeepReadonly<FilterDraftNode>,
-  baseline: DeepReadonly<FilterDraftNode>,
-  valid = true,
-): boolean {
-  return !valid || !sameFilterDraft(draft, baseline);
 }
 export function replaceFilterNode(
   root: FilterDraftNode,

@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import type { ViewHost, ViewInstance } from '../../src/record/recordModel.js';
 import { deferred, instance, setup } from './fixtures.js';
@@ -77,3 +78,59 @@ it.each(['loaded', 'pending'] as const)(
     }
   },
 );
+
+it('carries edits published while canceling the source read into the selected copy', async () => {
+  const response = deferred<ViewInstance>();
+  const stalled = deferred<{ list: never[]; total: number }>();
+  const { engine, paged } = setup({
+    filterCompilers: {
+      threshold: {
+        compile: (props, context) =>
+          filter.gte(context.field!.field, Number(props.threshold)),
+      },
+    },
+    host: { createInstance: () => response.promise } as unknown as ViewHost,
+  });
+  await engine.load();
+  paged.mockReturnValueOnce(stalled.promise);
+  const refreshing = engine.refresh();
+  await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
+  const saving = engine.saveAs({ title: 'Copy', scope: { type: 'personal' } });
+  const draft = {
+    id: 'threshold',
+    op: FilterOperator.GTE,
+    field: 'state.amount',
+    editor: { name: 'threshold' },
+    props: { threshold: 20, caption: 'Twenty' },
+  };
+  let edited = false;
+  const unsubscribe = engine.subscribe(() => {
+    const source = engine.getSnapshot().sessions.mine;
+    if (
+      !edited &&
+      source.queryStatus === 'idle' &&
+      source.writeStatus === 'creating'
+    ) {
+      edited = true;
+      engine.setFilterDraft(draft, 'mine');
+    }
+  });
+  try {
+    response.resolve({ ...instance('created'), title: 'Copy' });
+    await saving;
+    expect(edited).toBe(true);
+    expect(engine.getSnapshot().selectedInstanceId).toBe('created');
+    for (const id of ['mine', 'created']) {
+      expect(engine.getSnapshot().sessions[id]).toMatchObject({
+        filterDraft: draft,
+        filterPending: true,
+        appliedFilter: filter.matchAll(),
+      });
+    }
+  } finally {
+    unsubscribe();
+    engine.dispose();
+    stalled.resolve({ list: [], total: 0 });
+    await refreshing;
+  }
+});

@@ -15,10 +15,13 @@ import type { FieldSort, FilterExpression } from '@ahoo-wang/fetcher-wow';
 import type { FilterDraftNode, FilterMode } from '../../filter/filterModel.js';
 import {
   compileFilterDraft,
-  createFilterDraft,
+  createFilterConfiguration,
+  compileFilterConfiguration,
+  restoreFilterConfiguration,
   isSimpleFilter,
 } from '../../filter/filterCore.js';
-import { sameFilterState } from '../../filter/filterTree.js';
+import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';
+import { sameFilterQuery, sameFilterState } from '../../filter/filterTree.js';
 import type { DeepReadonly } from '../../lib/types.js';
 import type { RecordColumn, RecordKey } from '../recordModel.js';
 import { getRecordKey } from '../recordValidation.js';
@@ -37,7 +40,7 @@ export class RecordEdits {
   ) {}
 
   async applyFilter(
-    expression: DeepReadonly<FilterExpression>,
+    expression?: DeepReadonly<FilterExpression>,
     id?: string,
   ): Promise<void> {
     const session = this.store.session(id);
@@ -48,18 +51,35 @@ export class RecordEdits {
       session.filterDraft,
       definition.fields,
       definition.allowedOperators,
+      this.store.filterCompilers,
+      definition.filterEditors,
     );
-    const filterDraft =
-      !compiled.errors.length &&
-      sameFilterState(compiled.expression, expression)
-        ? session.filterDraft
-        : createFilterDraft(expression);
+    if (compiled.errors.length || !compiled.expression)
+      throw new Error(
+        compiled.errors.map(error => error.message).join('；') ||
+          '筛选组件无法编译',
+      );
+    if (
+      expression !== undefined &&
+      !sameFilterQuery(compiled.expression, expression)
+    )
+      throw new Error('查询条件必须由当前筛选组件配置编译生成');
+    const filterDraft = session.filterDraft;
+    const filterMode = isSimpleFilter(filterDraft)
+      ? session.filterMode
+      : 'advanced';
+    const filters = createFilterConfiguration(
+      filterDraft,
+      filterMode,
+      definition.fields,
+      definition.filterEditors,
+    );
     const editingBaseline = copy(filterDraft);
     this.store.updateInstance(
       session,
       {
         ...session.instance,
-        config: { ...session.instance.config, filter: expression },
+        config: { ...session.instance.config, filters },
       },
       {
         filterDraft: editingBaseline,
@@ -67,9 +87,8 @@ export class RecordEdits {
         filterValid: true,
         page: 1,
         cursor: null,
-        filterMode: isSimpleFilter(filterDraft)
-          ? session.filterMode
-          : 'advanced',
+        filterMode,
+        appliedFilter: compiled.expression,
       },
     );
     this.summaries.invalidate(session.instance.id);
@@ -85,15 +104,44 @@ export class RecordEdits {
     const nextValid = valid === undefined ? session.filterValid : valid;
     if (typeof nextValid !== 'boolean')
       throw new Error('筛选有效性必须是布尔值');
+    validateFilterJson(draft);
     if (
       sameFilterState(session.filterDraft, draft) &&
       session.filterValid === nextValid
     )
       return;
-    this.store.patch(session.instance.id, {
-      filterDraft: copy(draft),
-      filterValid: nextValid,
-    });
+    const patch = { filterDraft: copy(draft), filterValid: nextValid };
+    const definition = this.store.definition();
+    const compiled = compileFilterDraft(
+      draft,
+      definition.fields,
+      definition.allowedOperators,
+      this.store.filterCompilers,
+      definition.filterEditors,
+    );
+    if (
+      nextValid &&
+      !compiled.errors.length &&
+      sameFilterQuery(compiled.expression, session.appliedFilter)
+    ) {
+      const filterMode = isSimpleFilter(draft)
+        ? session.filterMode
+        : 'advanced';
+      const filters = createFilterConfiguration(
+        draft,
+        filterMode,
+        definition.fields,
+        definition.filterEditors,
+      );
+      this.store.updateInstance(
+        session,
+        {
+          ...session.instance,
+          config: { ...session.instance.config, filters },
+        },
+        { ...patch, filterBaseline: patch.filterDraft, filterMode },
+      );
+    } else this.store.patch(session.instance.id, patch);
   }
 
   setFilterValidity(valid: boolean, id?: string): void {
@@ -109,7 +157,20 @@ export class RecordEdits {
     if (mode === 'simple' && !isSimpleFilter(session.filterDraft))
       throw new Error('当前条件需要高级筛选模式');
     if (session.filterMode === mode) return;
-    this.store.patch(session.instance.id, { filterMode: mode });
+    if (session.filterPending)
+      this.store.patch(session.instance.id, { filterMode: mode });
+    else
+      this.store.updateInstance(
+        session,
+        {
+          ...session.instance,
+          config: {
+            ...session.instance.config,
+            filters: { ...session.instance.config.filters, mode },
+          },
+        },
+        { filterMode: mode },
+      );
   }
 
   async setSort(sort: DeepReadonly<FieldSort[]>, id?: string): Promise<void> {
@@ -203,13 +264,22 @@ export class RecordEdits {
   async restore(id?: string): Promise<void> {
     const session = this.store.session(id);
     this.summaries.invalidate(session.instance.id);
-    const filterDraft = createFilterDraft(session.baseline.config.filter);
+    const filters = session.baseline.config.filters;
+    const filterDraft = restoreFilterConfiguration(filters);
+    const definition = this.store.definition();
+    const compiled = compileFilterConfiguration(
+      filters,
+      definition.fields,
+      definition.allowedOperators,
+      this.store.filterCompilers,
+    );
     this.store.patch(session.instance.id, {
       instance: session.baseline,
       filterDraft,
       filterBaseline: filterDraft,
       filterValid: true,
-      filterMode: isSimpleFilter(filterDraft) ? session.filterMode : 'advanced',
+      filterMode: filters.mode,
+      appliedFilter: compiled.expression ?? null,
       page: 1,
       cursor: null,
       writeError: session.requiresReload ? session.writeError : null,

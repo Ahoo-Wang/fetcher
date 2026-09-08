@@ -14,6 +14,8 @@
 import { cleanup, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import { filter } from '@ahoo-wang/fetcher-wow';
+import { createFilterDraft } from '../../src/filter/filterCore.js';
+import { createFilterConfiguration } from '../../src/filter/filterConfiguration.js';
 import type {
   RecordColumn,
   ViewDefinition,
@@ -96,7 +98,7 @@ export const instance: ViewInstance = {
   kind: 'record',
   scope: { type: 'personal' },
   config: {
-    filter: filter.matchAll(),
+    filters: createFilterConfiguration(createFilterDraft(filter.matchAll())),
     sort: [],
     pagination: { mode: 'paged', size: 20 },
     presentation: { layout: 'table', table: { columns } },
@@ -109,6 +111,7 @@ export function props(
   return {
     definition,
     instance,
+    appliedFilter: filter.matchAll(),
     rows: [{ meta: { id: 0 }, name: 'Zulu', amount: 10 }],
     selectedRowKeys: [],
     onSelectionChange: vi.fn(),

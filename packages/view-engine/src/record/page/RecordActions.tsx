@@ -51,6 +51,7 @@ export function RecordActions({
             Actions,
             definition,
             instance,
+            session.appliedFilter,
             reference.options,
             session.selectedRowKeys,
             querying,
@@ -60,7 +61,7 @@ export function RecordActions({
           <Actions
             definition={definition}
             instance={instance}
-            filter={instance.config.filter}
+            filter={session.appliedFilter}
             sort={instance.config.sort}
             selectedRowKeys={session.selectedRowKeys}
             querying={querying}

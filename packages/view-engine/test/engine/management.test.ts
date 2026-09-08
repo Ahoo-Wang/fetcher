@@ -11,6 +11,10 @@
  * limitations under the License.
  */
 
+import {
+  createFilterConfiguration,
+  createFilterDraft,
+} from '../../src/filter/filterCore.js';
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import { newFilterDraft } from '../../src/filter/filterCore.js';
@@ -92,7 +96,9 @@ it('rejects changed content from a rename response and requires reconciliation',
         title: 'New',
         config: {
           ...instance().config,
-          filter: filter.gte('state.amount', 99),
+          filters: createFilterConfiguration(
+            createFilterDraft(filter.gte('state.amount', 99)),
+          ),
         },
       }),
       getInstancePermissions: permissions,

@@ -11,17 +11,33 @@
  * limitations under the License.
  */
 
-import { createFilterDraft, isSimpleFilter } from '../../filter/filterCore.js';
+import { compileFilterDraft } from '../../filter/filterCore.js';
 import {
-  isFilterDraftPending,
-  sameFilterState,
-} from '../../filter/filterTree.js';
+  compileFilterConfiguration,
+  restoreFilterConfiguration,
+} from '../../filter/filterConfiguration.js';
+import type { FilterCompilerRegistry } from '../../filter/filterModel.js';
+import { sameFilterQuery, sameFilterState } from '../../filter/filterTree.js';
 import type { DeepReadonly } from '../../lib/types.js';
-import type { RecordSession, ViewInstance } from '../recordModel.js';
+import type {
+  RecordSession,
+  ViewDefinition,
+  ViewInstance,
+} from '../recordModel.js';
 import { EMPTY_RECORD_SUMMARY } from '../recordSummary.js';
 
-export function createSession(instance: ViewInstance): RecordSession {
-  const filterDraft = createFilterDraft(instance.config.filter);
+export function createSession(
+  instance: ViewInstance,
+  definition: DeepReadonly<ViewDefinition>,
+  compilers: FilterCompilerRegistry,
+): RecordSession {
+  const filterDraft = restoreFilterConfiguration(instance.config.filters);
+  const compiled = compileFilterConfiguration(
+    instance.config.filters,
+    definition.fields,
+    definition.allowedOperators,
+    compilers,
+  );
   return {
     baseline: instance,
     instance,
@@ -29,8 +45,9 @@ export function createSession(instance: ViewInstance): RecordSession {
     filterDraft,
     filterBaseline: filterDraft,
     filterValid: true,
-    filterMode: isSimpleFilter(filterDraft) ? 'simple' : 'advanced',
-    filterPending: false,
+    filterMode: instance.config.filters.mode,
+    filterPending: compiled.errors.length > 0,
+    appliedFilter: compiled.expression ?? null,
     page: 1,
     cursor: null,
     nextCursor: null,
@@ -56,14 +73,24 @@ export function instanceContent({
   return { title, scope, config };
 }
 
-export function deriveSession(session: RecordSession): RecordSession {
+export function deriveSession(
+  session: RecordSession,
+  definition: DeepReadonly<ViewDefinition>,
+  compilers: FilterCompilerRegistry,
+): RecordSession {
+  const compiled = compileFilterDraft(
+    session.filterDraft,
+    definition.fields,
+    definition.allowedOperators,
+    compilers,
+    definition.filterEditors,
+  );
   return {
     ...session,
-    filterPending: isFilterDraftPending(
-      session.filterDraft,
-      session.filterBaseline,
-      session.filterValid,
-    ),
+    filterPending:
+      !session.filterValid ||
+      compiled.errors.length > 0 ||
+      !sameFilterQuery(compiled.expression, session.appliedFilter),
     dirty: !sameFilterState(
       instanceContent(session.instance),
       instanceContent(session.baseline),
@@ -81,17 +108,24 @@ export function isSystemSession(session: RecordSession): boolean {
 export function inheritEditingSession(
   baseline: ViewInstance,
   source: RecordSession,
+  definition: DeepReadonly<ViewDefinition>,
+  compilers: FilterCompilerRegistry,
   instance: DeepReadonly<ViewInstance> = {
     ...baseline,
     config: source.instance.config,
   },
 ): RecordSession {
-  return deriveSession({
-    ...createSession(baseline),
-    instance,
-    filterDraft: source.filterDraft,
-    filterBaseline: source.filterBaseline,
-    filterValid: source.filterValid,
-    filterMode: source.filterMode,
-  });
+  return deriveSession(
+    {
+      ...createSession(baseline, definition, compilers),
+      instance,
+      filterDraft: source.filterDraft,
+      filterBaseline: source.filterBaseline,
+      filterValid: source.filterValid,
+      filterMode: source.filterMode,
+      appliedFilter: source.appliedFilter,
+    },
+    definition,
+    compilers,
+  );
 }

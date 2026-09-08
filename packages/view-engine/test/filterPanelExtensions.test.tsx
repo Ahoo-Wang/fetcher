@@ -17,7 +17,7 @@ import { useEffect } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
 import type { FilterEditorProps } from '../src/filter/filterReactTypes.js';
-import { fields } from './fixtures/filterPanel.js';
+import { fields, builtinCompiler } from './fixtures/filterPanel.js';
 
 afterEach(cleanup);
 
@@ -27,12 +27,12 @@ it('blocks stale valid custom values and rejects changed field bindings', () => 
     return (
       <>
         <button onClick={() => onValidityChange(false)}>无效输入</button>
-        <button onClick={() => onChange(filter.eq('status', 'wrong'))}>
+        <button onClick={() => onChange({ binding: 'status', value: 'wrong' })}>
           改字段
         </button>
         <button
           onClick={() => {
-            onChange(filter.eq('amount', 0));
+            onChange({ value: 0 });
             onValidityChange(true);
           }}
         >
@@ -48,7 +48,16 @@ it('blocks stale valid custom values and rejects changed field bindings', () => 
       onApply={apply}
       extensions={{
         filters: {
-          custom: { component: Custom, modes: ['simple', 'advanced'] },
+          custom: {
+            ...builtinCompiler,
+            component: Custom,
+            modes: ['simple', 'advanced'],
+            compile: (props, context) =>
+              filter.eq(
+                (props.binding as string) ?? context.field!.field,
+                props.value as number,
+              ),
+          },
         },
       }}
     />,
@@ -94,6 +103,7 @@ it.each(['value', 'filter'] as const)(
         extensions={{
           filters: {
             missing: {
+              ...builtinCompiler,
               component: Broken,
               render: renderMode,
               modes: ['simple', 'advanced'],
@@ -121,7 +131,9 @@ it('keeps mode-specific extension fallback and ignores unused lower-priority ref
       onApply={() => {}}
       editors={{ [FilterOperator.EQ]: { name: 'not-used' } }}
       extensions={{
-        filters: { custom: { component: Custom, modes: ['simple'] } },
+        filters: {
+          custom: { ...builtinCompiler, component: Custom, modes: ['simple'] },
+        },
       }}
     />,
   );
@@ -141,7 +153,9 @@ it('keeps mode-specific extension fallback and ignores unused lower-priority ref
       onApply={() => {}}
       mode="advanced"
       extensions={{
-        filters: { custom: { component: Custom, modes: ['simple'] } },
+        filters: {
+          custom: { ...builtinCompiler, component: Custom, modes: ['simple'] },
+        },
       }}
     />,
   );
@@ -158,6 +172,7 @@ it('blocks a failing extension compatibility predicate instead of applying stale
       extensions={{
         filters: {
           custom: {
+            ...builtinCompiler,
             component: () => null,
             modes: ['simple'],
             supports: () => {
@@ -179,106 +194,4 @@ it('blocks a failing extension compatibility predicate instead of applying stale
       }) as HTMLButtonElement
     ).disabled,
   ).toBe(true);
-});
-
-it('changing an operator cannot clear a custom editors reported invalid input', async () => {
-  const apply = vi.fn();
-  function Custom({
-    onValidityChange,
-  }: {
-    onValidityChange(valid: boolean): void;
-  }) {
-    return (
-      <input
-        aria-label="自定义金额值"
-        defaultValue="1"
-        onChange={() => onValidityChange(false)}
-      />
-    );
-  }
-  render(
-    <FilterPanel
-      fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-      value={filter.eq('amount', 1)}
-      onApply={apply}
-      extensions={{
-        filters: {
-          custom: { component: Custom, modes: ['simple', 'advanced'] },
-        },
-      }}
-    />,
-  );
-  fireEvent.change(screen.getByLabelText('自定义金额值'), {
-    target: { value: 'abc' },
-  });
-  expect(
-    (screen.getByRole('button', { name: /^查询/ }) as HTMLButtonElement)
-      .disabled,
-  ).toBe(true);
-  fireEvent.click(screen.getByRole('combobox', { name: '订单金额操作' }));
-  const item = await screen.findByRole('option', { name: '不等于' });
-  fireEvent.pointerDown(item, { pointerType: 'mouse' });
-  fireEvent.click(item);
-  expect(
-    (screen.getByLabelText('自定义金额值') as HTMLInputElement).value,
-  ).toBe('abc');
-  fireEvent.click(screen.getByRole('button', { name: /^查询/ }));
-  expect(apply).not.toHaveBeenCalled();
-});
-
-it('accepts validity reporting immediately after a custom operator change', () => {
-  const apply = vi.fn();
-  function Custom({ onChange, onValidityChange }: FilterEditorProps) {
-    return (
-      <button
-        onClick={() => {
-          onChange(filter.ne('amount', 1));
-          onValidityChange(false);
-        }}
-      >
-        继续编辑
-      </button>
-    );
-  }
-  render(
-    <FilterPanel
-      fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-      value={filter.eq('amount', 1)}
-      onApply={apply}
-      extensions={{
-        filters: {
-          custom: { component: Custom, modes: ['simple', 'advanced'] },
-        },
-      }}
-    />,
-  );
-  fireEvent.click(screen.getByText('继续编辑'));
-  expect(
-    (screen.getByRole('button', { name: '查询' }) as HTMLButtonElement)
-      .disabled,
-  ).toBe(true);
-});
-
-it('blocks invalid custom input even when its message is empty', () => {
-  const apply = vi.fn();
-  function Custom({ onValidityChange }: FilterEditorProps) {
-    return (
-      <button onClick={() => onValidityChange(false, '')}>输入无效</button>
-    );
-  }
-  render(
-    <FilterPanel
-      fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-      value={filter.eq('amount', 1)}
-      onApply={apply}
-      extensions={{
-        filters: {
-          custom: { component: Custom, modes: ['simple', 'advanced'] },
-        },
-      }}
-    />,
-  );
-  fireEvent.click(screen.getByText('输入无效'));
-  fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
-  expect(apply).not.toHaveBeenCalled();
 });

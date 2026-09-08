@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { createFilterDraft } from '../../src/filter/filterCore.js';
 import { filter, SortDirection } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import { deferred, instance, selected, setup } from './fixtures.js';
@@ -72,14 +73,15 @@ it('clears stale rows and ignores old query resolution and rejection after a new
     total: null,
   });
   const controller = paged.mock.calls[1][2];
-  await engine.applyFilter(filter.gt('state.amount', 5));
+  engine.setFilterDraft(createFilterDraft(filter.gt('state.amount', 5)));
+  await engine.applyFilter();
   expect(controller.signal.aborted).toBe(true);
   old.reject(new Error('obsolete error'));
   await previous;
   expect(selected(engine)).toMatchObject({
     queryStatus: 'success',
     queryError: null,
-    instance: { config: { filter: { op: 'GT', value: 5 } } },
+    appliedFilter: { op: 'GT', value: 5 },
   });
   expect(selected(engine).rows).toEqual([{ state: { id: 'a', amount: 10 } }]);
 
@@ -114,7 +116,8 @@ it('resets cursor position on filter, sort, size and refresh and exposes no prev
   expect(cursor.mock.calls.at(-1)?.[0].cursor).toBe('next');
   expect(selected(engine)).toMatchObject({ page: 2, selectedRowKeys: [] });
   await expect(engine.setPage(1)).rejects.toThrow();
-  await engine.applyFilter(filter.gt('state.amount', 2));
+  engine.setFilterDraft(createFilterDraft(filter.gt('state.amount', 2)));
+  await engine.applyFilter();
   expect(cursor.mock.calls.at(-1)?.[0].cursor).toBeNull();
   await engine.nextPage();
   await engine.setSort([

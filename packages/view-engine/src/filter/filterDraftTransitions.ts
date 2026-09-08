@@ -25,26 +25,16 @@ export function appendNode(
   if (target.op === FilterOperator.MATCH_ALL) return child;
   return { ...newFilterDraft(FilterOperator.AND), operands: [target, child] };
 }
-export function clearValue(node: FilterDraftNode): FilterDraftNode {
-  const next = { ...node };
-  for (const key of [
-    'value',
-    'values',
-    'lowerBound',
-    'upperBound',
-    'query',
-    'state',
-    'time',
-    'days',
-  ] as const)
-    delete next[key];
-  return next;
-}
 export function transitionFilterOperator(
   node: FilterDraftNode,
   op: FilterOperator,
 ): FilterDraftNode {
-  const next = { ...newFilterDraft(op, node.field), id: node.id };
+  const next = {
+    ...newFilterDraft(op, node.field),
+    id: node.id,
+    ...(node.editor ? { editor: node.editor } : {}),
+    ...(node.props ? { props: node.props } : {}),
+  };
   const before = FILTER_OPERATORS[node.op]?.input,
     after = FILTER_OPERATORS[op]?.input;
   if (before === after) {

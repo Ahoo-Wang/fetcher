@@ -75,6 +75,25 @@ export function checkShape(
   return descriptor;
 }
 
+export function checkBuiltinProps(
+  props: Readonly<Record<string, unknown>>,
+): void {
+  if (
+    Object.keys(props).some(key =>
+      [
+        'id',
+        'op',
+        'field',
+        'editor',
+        'props',
+        'operands',
+        'predicate',
+      ].includes(key),
+    )
+  )
+    throw new TypeError('内置筛选属性不能覆盖组件结构');
+}
+
 export type CompiledNode = Omit<
   FilterDraftNode,
   'operands' | 'predicate' | 'values' | 'fields'

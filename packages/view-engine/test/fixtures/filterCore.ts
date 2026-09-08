@@ -126,7 +126,7 @@ export function node(
   values: Partial<FilterDraftNode> = {},
 ): FilterDraftNode {
   return {
-    id: 'draft',
+    id: crypto.randomUUID(),
     op,
     ...(field === undefined ? {} : { field }),
     ...values,

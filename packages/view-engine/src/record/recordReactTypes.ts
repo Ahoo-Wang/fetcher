@@ -29,7 +29,8 @@ import type {
 export interface RecordActionsContext {
   readonly definition: DeepReadonly<ViewDefinition>;
   readonly instance: DeepReadonly<ViewInstance>;
-  readonly filter: DeepReadonly<FilterExpression>;
+  /** Applied query scope. Null means the component configuration has not compiled successfully. */
+  readonly filter: DeepReadonly<FilterExpression> | null;
   readonly sort: DeepReadonly<readonly FieldSort[]>;
   readonly options: DeepReadonly<RendererReference['options']>;
   /** Bound to this instance, even if navigation changes while an action is running. */
@@ -69,6 +70,8 @@ export interface ViewExtensions extends FilterExtensions {
 export interface RecordTableProps {
   definition: DeepReadonly<ViewDefinition>;
   instance: DeepReadonly<ViewInstance>;
+  /** Runtime query scope, supplied by the engine rather than inferred from saved configuration. */
+  appliedFilter: DeepReadonly<FilterExpression> | null;
   rows: DeepReadonly<readonly RecordData[]>;
   extensions?: ViewExtensions;
   querying?: boolean;

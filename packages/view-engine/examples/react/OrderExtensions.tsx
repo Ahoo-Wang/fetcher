@@ -11,9 +11,10 @@
  * limitations under the License.
  */
 
-import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { compileBuiltinFilter } from '@ahoo-wang/fetcher-view-engine';
 import {
   Button,
+  InputGroupInput,
   type CellRendererProps,
   type FilterEditorProps,
   type GlobalActionsRendererProps,
@@ -84,38 +85,42 @@ function ProcessOrders({
   );
 }
 function OrderStatus({
-  node,
+  props,
   disabled,
   onChange,
   onValidityChange,
 }: FilterEditorProps) {
-  const value =
-    node?.op === FilterOperator.EQ && typeof node.value === 'string'
-      ? node.value
-      : '';
+  const value = typeof props.selectedId === 'string' ? props.selectedId : '';
   return (
-    <select
-      aria-label="订单状态"
-      value={value}
-      disabled={disabled}
-      style={{
-        border: '1px solid var(--fve-input)',
-        borderRadius: 6,
-        padding: '4px 8px',
-      }}
-      onChange={event => {
-        onValidityChange(true);
-        onChange(
-          event.target.value
-            ? filter.eq('status', event.target.value)
-            : undefined,
-        );
-      }}
-    >
-      <option value="">不限</option>
-      <option value="pending">待处理</option>
-      <option value="processed">已处理</option>
-    </select>
+    <>
+      <select
+        aria-label="订单状态"
+        value={value}
+        disabled={disabled}
+        style={{
+          border: '1px solid var(--fve-input)',
+          borderRadius: 6,
+          padding: '4px 8px',
+        }}
+        onChange={event => {
+          onValidityChange(true);
+          onChange({ ...props, selectedId: event.target.value || undefined });
+        }}
+      >
+        <option value="">不限</option>
+        <option value="pending">待处理</option>
+        <option value="processed">已处理</option>
+      </select>
+      <InputGroupInput
+        aria-label="状态显示名称"
+        placeholder="显示名称（不影响查询）"
+        value={typeof props.displayLabel === 'string' ? props.displayLabel : ''}
+        disabled={disabled}
+        onChange={event =>
+          onChange({ ...props, displayLabel: event.target.value })
+        }
+      />
+    </>
   );
 }
 const currency = new Intl.NumberFormat('zh-CN', {
@@ -142,7 +147,9 @@ export const orderExtensions: ViewExtensions = {
     'order-status': {
       component: OrderStatus,
       modes: ['simple', 'advanced'],
-      supports: node => !node || node.op === FilterOperator.EQ,
+      compile: (props, context) =>
+        compileBuiltinFilter({ value: props.selectedId }, context),
+      clear: props => ({ ...props, selectedId: undefined }),
     },
   },
   cells: { money: Money },

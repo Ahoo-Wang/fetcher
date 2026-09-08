@@ -19,6 +19,13 @@ export {
   createFilterDraft,
   newFilterDraft,
   compileFilterDraft,
+  createFilterConfiguration,
+  restoreFilterConfiguration,
+  validateFilterConfiguration,
+  compileFilterConfiguration,
+  compileBuiltinFilter,
+  clearBuiltinFilterProps,
+  clearFilterDraftValues,
   getFieldOperators,
   isSimpleFilter,
   FILTER_OPERATORS,
@@ -51,3 +58,4 @@ export {
   RECORD_COLUMN_MAX_WIDTH,
   RECORD_COLUMN_DEFAULT_WIDTH,
 } from './record/recordModel.js';
+export { sameFilterQuery } from './filter/filterTree.js';

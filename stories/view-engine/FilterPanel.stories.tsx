@@ -12,7 +12,7 @@
  */
 
 import '@ahoo-wang/fetcher-view-engine/styles.css';
-import { filter } from '@ahoo-wang/fetcher-wow';
+import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   completeExtensions,
@@ -56,7 +56,7 @@ const meta = {
     docs: {
       description: {
         component:
-          '完整 FilterPanel。宿主接收 onApply 后执行查询；此处只记录条件与调用次数。字段元数据、编辑器扩展与查询错误均通过 props 注入。',
+          '完整 FilterPanel。宿主接收 onApply 后执行查询；此处只记录条件与调用次数。字段元数据与查询错误通过 props 注入。自定义筛选器在 extensions.filters 中一次注册 component、纯函数 compile 和可选 clear，由同一组件定义负责渲染、生成条件和清空值，无需另行注册编译器。',
       },
     },
   },
@@ -109,6 +109,13 @@ export const CustomEditor: Story = {
       definitions={customFields}
       extensions={customExtensions}
       initial={filter.isIn('customer', ['customer-1', 'customer-2'])}
+      initialDraft={{
+        id: 'customer-groups',
+        op: FilterOperator.IN,
+        field: 'customer',
+        editor: { name: 'customer-groups' },
+        props: { values: ['customer-1', 'customer-2'] },
+      }}
     />
   ),
   play: playCustomEditor,
@@ -125,13 +132,20 @@ export const SearchableSelect: Story = {
       definitions={searchableFields}
       extensions={searchableExtensions}
       initial={filter.eq('customer', 'customer-1')}
+      initialDraft={{
+        id: 'customer-search',
+        op: FilterOperator.EQ,
+        field: 'customer',
+        editor: { name: 'customer-search' },
+        props: { value: 'customer-1' },
+      }}
     />
   ),
   parameters: {
     docs: {
       description: {
         story:
-          '通过 extensions.filters 注册客户选择器。下拉内使用 Base UI Combobox 的内置搜索，搜索词只过滤候选，选中后输出 EQ；点击查询才应用条件。',
+          '通过 extensions.filters 注册客户选择器。下拉内使用 Base UI Combobox 的内置搜索，搜索词只过滤候选，选中后更新组件属性，由注册中的 compile 生成 EQ；点击查询才应用条件。',
       },
     },
   },
@@ -145,13 +159,20 @@ export const CompleteFilter: Story = {
       definitions={searchableFields}
       extensions={completeExtensions}
       initial={filter.eq('customer', 'customer-1')}
+      initialDraft={{
+        id: 'customer-search',
+        op: FilterOperator.EQ,
+        field: 'customer',
+        editor: { name: 'customer-search' },
+        props: { value: 'customer-1' },
+      }}
     />
   ),
   parameters: {
     docs: {
       description: {
         story:
-          'render: filter 接管整个非容器筛选器的布局、标签、值和移除操作。这个组件只通过契约回调编辑草稿；字段绑定、校验、错误展示与查询继续由面板管理。',
+          'render: filter 接管整个非容器筛选器的布局、标签、值和移除操作。组件通过 onChange(props) 更新可保存属性，同一注册中的 compile 生成条件；字段绑定、组合校验、错误展示与查询由面板管理。',
       },
     },
   },

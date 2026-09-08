@@ -12,6 +12,10 @@
  */
 
 import { fireEvent, screen } from '@testing-library/react';
+import {
+  compileBuiltinFilter,
+  clearBuiltinFilterProps,
+} from '../../src/filter/filterCore.js';
 import type { FilterFieldDefinition } from '../../src/filter/filterModel.js';
 
 export const fields: FilterFieldDefinition[] = [
@@ -30,3 +34,8 @@ export async function select(label: string, option: string) {
   fireEvent.pointerDown(item, { pointerType: 'mouse' });
   fireEvent.click(item);
 }
+
+export const builtinCompiler = {
+  compile: compileBuiltinFilter,
+  clear: clearBuiltinFilterProps,
+};

@@ -21,10 +21,11 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { compileBuiltinFilter } from '../src/filter/filterCore.js';
 import type { FilterEditorProps } from '../src/filter/filterReactTypes.js';
 import { ViewEngine } from '../src/record/ViewEngine.js';
 import { ViewPage, ViewPageContent } from '../src/record/ViewPage.js';
-import { definition, setup } from './fixtures/viewPage.js';
+import { definition, instance, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
 
@@ -170,6 +171,25 @@ it('rejects applying an invalid custom buffer without enabling Save or querying'
       ...definition,
       fields: [{ ...definition.fields[0], editor: { name: 'custom' } }],
     },
+    instances: {
+      instances: [
+        {
+          ...instance,
+          config: {
+            ...instance.config,
+            filters: {
+              ...instance.config.filters,
+              root: {
+                ...instance.config.filters.root,
+                component: { name: 'custom' },
+              },
+            },
+          },
+        },
+      ],
+      defaultInstanceId: instance.id,
+    },
+    filterCompilers: { custom: { compile: compileBuiltinFilter } },
     host,
   });
   await engine.load();
@@ -178,7 +198,11 @@ it('rejects applying an invalid custom buffer without enabling Save or querying'
       engine={engine}
       extensions={{
         filters: {
-          custom: { component: Custom, modes: ['simple', 'advanced'] },
+          custom: {
+            component: Custom,
+            compile: compileBuiltinFilter,
+            modes: ['simple', 'advanced'],
+          },
         },
       }}
     />,

@@ -12,12 +12,12 @@
  */
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
-import { cloneSnapshot, type DeepReadonly } from '../lib/types.js';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { cloneSnapshot } from '../lib/types.js';
 import {
   compileFilterDraft,
-  createFilterDraft,
   FILTER_OPERATORS,
+  clearFilterDraftValues,
   isSimpleFilter,
   newFilterDraft,
 } from './filterCore.js';
@@ -30,42 +30,24 @@ import {
   locateFilterNodes,
   replaceFilterNode,
   sameFilterState,
+  sameFilterQuery,
 } from './filterTree.js';
 import {
   appendNode,
-  clearValue,
   transitionFilterOperator,
 } from './filterDraftTransitions.js';
-import { message, without } from './filterPanelUtils.js';
+import {
+  message,
+  without,
+  readValue,
+  readInitialFilterPanelState,
+} from './filterPanelUtils.js';
 import { useFilterPanelEditors } from './useFilterPanelEditors.js';
 import { useFilterPanelQuery } from './useFilterPanelQuery.js';
 
-function readValue(value: DeepReadonly<FilterExpression>) {
-  try {
-    return { draft: createFilterDraft(value), error: undefined };
-  } catch (error) {
-    return {
-      draft: newFilterDraft(FilterOperator.MATCH_ALL),
-      error: message(error),
-    };
-  }
-}
 export function useFilterPanelState(props: FilterPanelProps) {
   const { fields, value, onDraftChange, disabled = false } = props;
-  const [initial] = useState(() => {
-    const loaded = readValue(value);
-    const restored =
-      props.draft && !loaded.error
-        ? compileFilterDraft(props.draft, fields, props.allowedOperators)
-        : undefined;
-    return {
-      ...loaded,
-      baseline:
-        restored?.expression && sameFilterState(restored.expression, value)
-          ? props.draft!
-          : loaded.draft,
-    };
-  });
+  const [initial] = useState(() => readInitialFilterPanelState(props));
   const [localDraft, setLocalDraft] = useState(initial.draft);
   const controlledDraft = useMemo(
     () =>
@@ -75,7 +57,6 @@ export function useFilterPanelState(props: FilterPanelProps) {
   const draft = controlledDraft ?? localDraft;
   const draftRef = useRef(draft);
   // Child layout effects may publish before this hook commits; callbacks must see this render's draft.
-  // eslint-disable-next-line react-hooks/refs
   draftRef.current = draft;
   const mounted = useRef(true);
   useEffect(() => {
@@ -112,6 +93,15 @@ export function useFilterPanelState(props: FilterPanelProps) {
     setEpoch,
     setEditorEpochs,
   } = useFilterPanelEditors(props, draft, baseline, mode, loadError);
+  useEffect(() => {
+    if (
+      !props.appliedDraft &&
+      !pending &&
+      !sameFilterState(localBaseline, draft)
+    ) {
+      setBaseline(cloneSnapshot<FilterDraftNode>(draft));
+    }
+  }, [props.appliedDraft, pending, localBaseline, draft]);
   const {
     apply,
     applyError,
@@ -135,8 +125,10 @@ export function useFilterPanelState(props: FilterPanelProps) {
         props.appliedDraft,
         fields,
         props.allowedOperators,
+        props.extensions?.filters,
+        props.editors,
       );
-      if (applied.expression && sameFilterState(applied.expression, value)) {
+      if (applied.expression && sameFilterQuery(applied.expression, value)) {
         // The owner supplied the editing baseline for this value; keep its draft and editor IDs.
         return;
       }
@@ -144,7 +136,6 @@ export function useFilterPanelState(props: FilterPanelProps) {
     const next = readValue(value);
     draftRef.current = next.draft;
     // External applied values replace the editing session; acknowledgements above preserve in-progress edits.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- The value-change guard resets this local session once per external replacement.
     setLocalDraft(next.draft);
     onDraftChange?.(next.draft);
     setBaseline(next.draft);
@@ -159,6 +150,8 @@ export function useFilterPanelState(props: FilterPanelProps) {
     props.draft,
     props.appliedDraft,
     props.allowedOperators,
+    props.extensions?.filters,
+    props.editors,
     fields,
     loadError,
     onDraftChange,
@@ -191,23 +184,42 @@ export function useFilterPanelState(props: FilterPanelProps) {
       ),
     );
   }
-  function update(id: string, next?: FilterDraftNode) {
+  function update(
+    id: string,
+    next?: FilterDraftNode,
+    preserveValidity = false,
+  ) {
     change(
       replaceFilterNode(draftRef.current, id, next) ??
         newFilterDraft(FilterOperator.MATCH_ALL),
     );
-    setEditorValidity(previous => without(previous, id));
+    if (!preserveValidity) setEditorValidity(previous => without(previous, id));
     setEditorOutputErrors(previous => without(previous, id));
   }
   function clearNode(node: FilterDraftNode) {
-    update(
-      node.id,
-      FILTER_OPERATORS[node.op].input === 'none' ? undefined : clearValue(node),
-    );
-    setEditorEpochs(previous => ({
-      ...previous,
-      [node.id]: (previous[node.id] ?? 0) + 1,
-    }));
+    try {
+      const scope =
+        locations.find(location => location.node.id === node.id)?.fields ??
+        fields;
+      update(
+        node.id,
+        clearFilterDraftValues(
+          node,
+          scope,
+          props.extensions?.filters,
+          props.editors,
+        ),
+      );
+      setEditorEpochs(previous => ({
+        ...previous,
+        [node.id]: (previous[node.id] ?? 0) + 1,
+      }));
+    } catch (error) {
+      setEditorOutputErrors(previous => ({
+        ...previous,
+        [node.id]: message(error),
+      }));
+    }
   }
   function changeOperator(node: FilterDraftNode, op: FilterOperator) {
     const next = transitionFilterOperator(node, op);
@@ -300,7 +312,19 @@ export function useFilterPanelState(props: FilterPanelProps) {
     setEpoch(count => count + 1);
   }
   function clear() {
-    change(newFilterDraft(FilterOperator.MATCH_ALL));
+    try {
+      change(
+        clearFilterDraftValues(
+          draftRef.current,
+          fields,
+          props.extensions?.filters,
+          props.editors,
+        ),
+      );
+    } catch (error) {
+      setApplyError(message(error));
+      return;
+    }
     setLoadError(undefined);
     setEditorValidity({});
     setEditorOutputErrors({});

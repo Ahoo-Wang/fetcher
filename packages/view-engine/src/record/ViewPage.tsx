@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { RecordViewProps } from './RecordView.js';
 import { ViewEngine } from './ViewEngine.js';
 import { ViewPageContent } from './page/ViewPageContent.js';
@@ -21,12 +21,14 @@ export { ViewPageContent } from './page/ViewPageContent.js';
 export type { ViewPageContentProps } from './page/ViewPageContent.js';
 
 export interface ViewPageProps
-  extends ViewEngineOptions, Omit<RecordViewProps, 'engine' | 'toolbarStart'> {
+  extends
+    Omit<ViewEngineOptions, 'filterCompilers'>,
+    Omit<RecordViewProps, 'engine' | 'toolbarStart'> {
   /** Stable user/tenant/access identity. Changing it creates an isolated session. */
   scopeKey: string;
   initialSidebarCollapsed?: boolean;
 }
-/** Owns one engine per explicit scope and definition. Local data initializes that lifetime. */
+/** Owns one engine per scope/definition; extensions.filters supplies complete filter definitions. */
 export function ViewPage(props: ViewPageProps) {
   if (typeof props.scopeKey !== 'string' || !props.scopeKey.trim())
     return (
@@ -50,18 +52,39 @@ function OwnedViewPage(props: ViewPageProps) {
     // Reflect committed capabilities without replacing the engine or its sessions.
     reflectHost(version => version + 1);
   }, [props.host]);
-  const [initial] = useState(() => ({
-    definitionId: props.definitionId,
-    definition: props.definition,
-    instances: props.instances,
-  }));
+  const [initial] = useState(() => {
+    // Compiler and renderer definitions share the engine scope's lifetime.
+    const filters = props.extensions?.filters
+      ? Object.fromEntries(
+          Object.entries(props.extensions.filters).map(
+            ([name, registration]) => [
+              name,
+              { ...registration, modes: [...registration.modes] },
+            ],
+          ),
+        )
+      : undefined;
+    return {
+      options: {
+        definitionId: props.definitionId,
+        definition: props.definition,
+        instances: props.instances,
+        filterCompilers: filters,
+      },
+      filters,
+    };
+  });
+  const extensions = useMemo(
+    () => ({ ...props.extensions, filters: initial.filters }),
+    [props.extensions, initial.filters],
+  );
   const [owned, setOwned] = useState<{
     engine: ViewEngine | null;
     error?: string;
   } | null>(null);
   useEffect(() => {
     const options: ViewEngineOptions = {
-      ...initial,
+      ...initial.options,
       // Resolve optional methods at call time; each scope owns a separate adapter.
       host: new Proxy({} as ViewEngineOptions['host'], {
         get(_target, property) {
@@ -103,7 +126,7 @@ function OwnedViewPage(props: ViewPageProps) {
     <ViewPageContent
       key={props.definitionId}
       engine={owned.engine}
-      extensions={props.extensions}
+      extensions={extensions}
       filterContext={props.filterContext}
       selectable={props.selectable}
       autoRefreshPaused={props.autoRefreshPaused}

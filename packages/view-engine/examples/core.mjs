@@ -15,7 +15,10 @@
 import assert from 'node:assert/strict';
 import {
   ViewEngine,
+  compileBuiltinFilter,
   compileFilterDraft,
+  createFilterConfiguration,
+  createFilterDraft,
   newFilterDraft,
 } from '@ahoo-wang/fetcher-view-engine';
 
@@ -38,7 +41,7 @@ const initial = {
   scope: { type: 'personal' },
   revision: '1',
   config: {
-    filter: { op: 'MATCH_ALL' },
+    filters: createFilterConfiguration(newFilterDraft('MATCH_ALL')),
     sort: [],
     pagination: { mode: 'paged', size: 2 },
     presentation: {
@@ -57,7 +60,8 @@ const records = [
   { id: 'order-2', amount: 30 },
   { id: 'order-3', amount: 50 },
 ];
-const saved = new Map([[initial.id, structuredClone(initial)]]);
+// Use actual JSON at the persistence boundary, just as a remote host would.
+const saved = new Map([[initial.id, JSON.stringify(initial)]]);
 const queries = [];
 const writes = [];
 let delayedQuery;
@@ -103,13 +107,13 @@ const host = {
   async listInstances(id) {
     assert.equal(id, definition.id);
     return {
-      instances: [...saved.values()].map(value => structuredClone(value)),
+      instances: [...saved.values()].map(value => JSON.parse(value)),
       defaultInstanceId: initial.id,
     };
   },
   async loadInstance(id) {
     assert.ok(saved.has(id));
-    return structuredClone(saved.get(id));
+    return JSON.parse(saved.get(id));
   },
   resolveSource(id) {
     assert.equal(id, definition.sourceId);
@@ -119,14 +123,17 @@ const host = {
     return { save: true, saveAsPersonal: true, saveAsShared: true };
   },
   async saveInstance(instance) {
-    assert.equal(instance.revision, saved.get(instance.id).revision);
+    assert.equal(
+      instance.revision,
+      JSON.parse(saved.get(instance.id)).revision,
+    );
     const next = {
       ...structuredClone(instance),
       revision: String(Number(instance.revision) + 1),
     };
-    saved.set(next.id, next);
+    saved.set(next.id, JSON.stringify(next));
     writes.push('save');
-    return structuredClone(next);
+    return JSON.parse(saved.get(next.id));
   },
   async createInstance(instance) {
     assert.equal('id' in instance, false);
@@ -136,12 +143,35 @@ const host = {
       id: 'shared-copy',
       revision: '1',
     };
-    saved.set(created.id, created);
+    saved.set(created.id, JSON.stringify(created));
     writes.push('create');
-    return structuredClone(created);
+    return JSON.parse(saved.get(created.id));
   },
 };
-const engine = new ViewEngine({ definitionId: definition.id, host });
+const filterCompilers = {
+  'amount-preset': {
+    compile(props, context) {
+      if (props.selectedId === undefined) return undefined;
+      assert.equal(props.selectedId, 'minimum-25');
+      return compileBuiltinFilter({ value: 25 }, context);
+    },
+    clear: props => ({ ...props, selectedId: undefined }),
+  },
+};
+const engineOptions = { definitionId: definition.id, host, filterCompilers };
+const engine = new ViewEngine(engineOptions);
+async function verifyReloadedDraft(expectedDraft) {
+  const reloaded = new ViewEngine(engineOptions);
+  try {
+    await reloaded.load();
+    assert.deepEqual(
+      reloaded.getSnapshot().sessions.mine.filterDraft,
+      expectedDraft,
+    );
+  } finally {
+    reloaded.dispose();
+  }
+}
 const session = () => {
   const state = engine.getSnapshot();
   return state.sessions[state.selectedInstanceId];
@@ -167,7 +197,10 @@ try {
   assert.equal(records[0].amount, 10);
 
   // An intentionally unset numeric control is valid and remains in the editor baseline.
-  const unset = newFilterDraft('GTE', 'amount');
+  const unset = {
+    ...newFilterDraft('GTE', 'amount'),
+    editor: { name: 'builtin' },
+  };
   const compiledUnset = compileFilterDraft(
     unset,
     definition.fields,
@@ -178,8 +211,13 @@ try {
     errors: [],
   });
   engine.setFilterDraft(unset, undefined, true);
-  assert.equal(session().filterPending, true);
-  await engine.applyFilter(compiledUnset.expression);
+  assert.equal(session().filterPending, false);
+  assert.equal(session().dirty, true);
+  await engine.save();
+  assert.equal(queries.length, 1);
+  assert.equal(JSON.parse(saved.get('mine')).config.filters.root.id, unset.id);
+  assert.deepEqual(JSON.parse(saved.get('mine')).config.filters.root.props, {});
+  await verifyReloadedDraft(session().filterDraft);
   assert.equal(session().filterDraft.op, 'GTE');
   assert.equal(session().filterDraft.value, undefined);
   assert.equal(session().filterPending, false);
@@ -197,7 +235,7 @@ try {
   await assert.rejects(engine.applyFilter({ op: 'MATCH_ALL' }));
   await assert.rejects(engine.save());
   assert.equal(queries.length, callsBeforeInvalid);
-  assert.deepEqual(writes, []);
+  assert.deepEqual(writes, ['save']);
 
   const valid = { ...unset, value: 25 };
   engine.setFilterDraft(valid, undefined, true);
@@ -207,7 +245,9 @@ try {
     definition.allowedOperators,
   );
   assert.deepEqual(compiled.errors, []);
-  await engine.applyFilter(compiled.expression);
+  await assert.rejects(engine.save());
+  await assert.rejects(engine.applyFilter({ op: 'MATCH_ALL' }));
+  await engine.applyFilter();
   assert.deepEqual(
     session().rows.map(row => row.id),
     ['order-2', 'order-3'],
@@ -219,13 +259,34 @@ try {
   });
   assert.equal(session().filterPending, false);
   await engine.save();
-  assert.equal(session().baseline.revision, '2');
+  assert.equal(session().baseline.revision, '3');
   assert.equal(session().dirty, false);
+
+  // The EQ/GTE result cannot reconstruct a preset ID or its editable display label.
+  const opaque = {
+    ...unset,
+    editor: { name: 'amount-preset' },
+    props: {
+      selectedId: 'minimum-25',
+      displayLabel: 'My manually named threshold',
+    },
+  };
+  const beforeMetadata = queries.length;
+  engine.setFilterDraft(opaque, undefined, true);
+  assert.equal(session().filterPending, false);
+  assert.equal(session().dirty, true);
+  assert.equal(createFilterDraft(session().appliedFilter).props, undefined);
+  await engine.save();
+  assert.equal(queries.length, beforeMetadata);
+  const persisted = JSON.parse(saved.get('mine'));
+  assert.deepEqual(persisted.config.filters.root.props, opaque.props);
+  assert.equal('filter' in persisted.config, false);
+  await verifyReloadedDraft(session().filterDraft);
   await engine.saveAs({
     title: 'Shared orders',
     scope: { type: 'public', source: 'shared' },
   });
-  assert.deepEqual(writes, ['save', 'create']);
+  assert.deepEqual(writes, ['save', 'save', 'save', 'create']);
   assert.equal(engine.getSnapshot().selectedInstanceId, 'shared-copy');
   assert.deepEqual(session().instance.scope, {
     type: 'public',
@@ -236,7 +297,7 @@ try {
     session().rows.map(row => row.id),
     ['order-2', 'order-3'],
   );
-  assert.equal(saved.get('mine').title, 'My orders');
+  assert.equal(JSON.parse(saved.get('mine')).title, 'My orders');
 
   const pending = { started: deferred(), result: deferred() };
   delayedQuery = pending;
@@ -252,7 +313,7 @@ try {
   assert.equal(notifications, notificationsBeforeDispose);
   await assert.rejects(engine.refresh());
   console.log(
-    'Core example passed: load, immutable snapshots, unset/invalid filters, query, save/saveAs, dispose and stale results.',
+    'Core example passed: load, immutable snapshots, unset and opaque props JSON save without querying, new-engine reload, invalid filters, Query-before-Save, saveAs, dispose and stale results.',
   );
 } finally {
   unsubscribe();

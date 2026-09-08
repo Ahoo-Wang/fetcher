@@ -1,0 +1,79 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { filter } from '@ahoo-wang/fetcher-wow';
+import { expect, it, vi } from 'vitest';
+import {
+  createFilterConfiguration,
+  createFilterDraft,
+} from '../../src/filter/filterCore.js';
+import { deferred, instance, selected, setup } from './fixtures.js';
+
+it.each(['state', 'abort'] as const)(
+  'does not let an older refresh replace a Query started by its %s notification',
+  async notification => {
+    const saved = instance();
+    saved.config.filters = createFilterConfiguration(
+      createFilterDraft(filter.gte('state.amount', 10)),
+    );
+    const { engine, paged } = setup({
+      instances: { instances: [saved], defaultInstanceId: saved.id },
+    });
+    paged.mockImplementation(async query => ({
+      total: 1,
+      list: [{ state: { id: 'a', amount: query.filter.value } }],
+    }));
+    await engine.load();
+    const stalled = deferred<{ total: number; list: never[] }>();
+    paged.mockReturnValueOnce(stalled.promise);
+    const previous = engine.refresh();
+    await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
+    let next: Promise<void> | undefined;
+    let submitted = false;
+    const submit = () => {
+      if (!submitted) {
+        submitted = true;
+        engine.setFilterDraft(
+          createFilterDraft(filter.gte('state.amount', 20)),
+        );
+        next = engine.applyFilter();
+      }
+    };
+    const unsubscribe = engine.subscribe(() => {
+      if (notification === 'state' && selected(engine).queryStatus === 'idle')
+        submit();
+    });
+    if (notification === 'abort')
+      paged.mock.calls[1][2].signal.addEventListener('abort', submit, {
+        once: true,
+      });
+    try {
+      await engine.refresh();
+      await next;
+      expect(submitted).toBe(true);
+      expect(selected(engine)).toMatchObject({
+        appliedFilter: filter.gte('state.amount', 20),
+        filterPending: false,
+        rows: [{ state: { id: 'a', amount: 20 } }],
+      });
+      expect(paged.mock.calls.at(-1)?.[0].filter).toEqual(
+        filter.gte('state.amount', 20),
+      );
+    } finally {
+      unsubscribe();
+      engine.dispose();
+      stalled.resolve({ list: [], total: 0 });
+      await previous;
+    }
+  },
+);

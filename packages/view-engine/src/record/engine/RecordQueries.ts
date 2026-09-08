@@ -36,9 +36,16 @@ export class RecordQueries {
   }
 
   cancel(id: string): void {
-    const controller = this.queries.get(id);
-    this.queries.delete(id);
-    controller?.abort();
+    this.replaceController(id);
+  }
+
+  private replaceController(id: string, next?: AbortController): void {
+    const previous = this.queries.get(id);
+    if (next) this.queries.set(id, next);
+    else this.queries.delete(id);
+    previous?.abort();
+    // Abort listeners may already have started a newer read.
+    if (this.queries.get(id) !== next) return;
     const session = this.store.find(id);
     if (session?.queryStatus === 'loading' || session?.refreshing)
       this.store.patch(id, {
@@ -51,11 +58,11 @@ export class RecordQueries {
     const session = this.store.session(id);
     const definition = this.store.definition();
     const lifecycle = this.scope.version;
-    this.cancel(id);
     const controller = new AbortController();
-    this.queries.set(id, controller);
     const current = () =>
       this.scope.current(lifecycle) && this.queries.get(id) === controller;
+    this.replaceController(id, controller);
+    if (!current()) return;
     this.store.patch(
       id,
       background
@@ -73,10 +80,13 @@ export class RecordQueries {
     if (!background) this.summaries.sync(id, undefined, false);
     try {
       if (!current()) return;
+      const filter = session.appliedFilter;
+      if (filter === null)
+        throw new Error('筛选组件配置无法编译，请先修正筛选');
       const source = await this.host.resolveSource(definition.sourceId);
       if (!current()) return;
       if (!background) this.summaries.sync(id, source);
-      const { filter, sort, pagination } = session.instance.config;
+      const { sort, pagination } = session.instance.config;
       const result =
         pagination.mode === 'paged'
           ? await source.paged(

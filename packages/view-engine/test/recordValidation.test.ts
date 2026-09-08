@@ -11,6 +11,10 @@
  * limitations under the License.
  */
 
+import {
+  createFilterConfiguration,
+  createFilterDraft,
+} from '../src/filter/filterCore.js';
 import { describe, expect, it } from 'vitest';
 import { FilterOperator, SortDirection } from '@ahoo-wang/fetcher-wow';
 import type {
@@ -38,7 +42,9 @@ const instance: ViewInstance = {
   kind: 'record',
   scope: { type: 'personal' },
   config: {
-    filter: { op: FilterOperator.MATCH_ALL },
+    filters: createFilterConfiguration(
+      createFilterDraft({ op: FilterOperator.MATCH_ALL }),
+    ),
     sort: [],
     pagination: { mode: 'paged', size: 20 },
     presentation: {
@@ -103,13 +109,15 @@ describe('record boundaries', () => {
           ...instance,
           config: {
             ...instance.config,
-            filter: {
-              op: FilterOperator.AND,
-              operands: [
-                { op: FilterOperator.GTE, field: 'amount', value: 1 },
-                { op: FilterOperator.LTE, field: 'amount', value: 10 },
-              ],
-            },
+            filters: createFilterConfiguration(
+              createFilterDraft({
+                op: FilterOperator.AND,
+                operands: [
+                  { op: FilterOperator.GTE, field: 'amount', value: 1 },
+                  { op: FilterOperator.LTE, field: 'amount', value: 10 },
+                ],
+              }),
+            ),
           },
         },
         definition,
@@ -210,7 +218,13 @@ describe('record boundaries', () => {
           ...instance,
           config: {
             ...instance.config,
-            filter: { op: FilterOperator.EQ, field: 'missing', value: 1 },
+            filters: createFilterConfiguration(
+              createFilterDraft({
+                op: FilterOperator.EQ,
+                field: 'missing',
+                value: 1,
+              }),
+            ),
           },
         },
         definition,
@@ -233,4 +247,12 @@ describe('record boundaries', () => {
     ])
       expect(() => validateRecordRows(rows, 'id')).toThrow();
   });
+});
+
+it('rejects the former persisted query shape instead of accepting two filter sources', () => {
+  const legacy = {
+    ...instance,
+    config: { ...instance.config, filter: { op: FilterOperator.MATCH_ALL } },
+  };
+  expect(() => validateViewInstance(legacy, definition)).toThrow(/组件配置/);
 });

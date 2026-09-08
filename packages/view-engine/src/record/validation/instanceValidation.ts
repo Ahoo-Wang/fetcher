@@ -12,10 +12,7 @@
  */
 
 import { SortDirection } from '@ahoo-wang/fetcher-wow';
-import {
-  compileFilterDraft,
-  createFilterDraft,
-} from '../../filter/filterCore.js';
+import { validateFilterConfiguration } from '../../filter/filterConfiguration.js';
 import {
   RECORD_COLUMN_MAX_WIDTH,
   RECORD_COLUMN_MIN_WIDTH,
@@ -57,13 +54,8 @@ export function validateViewInstance(
     throw new Error('实例 revision 必须是字符串');
   assertObject(value.config, '实例配置');
   const config = value.config;
-  const compiled = compileFilterDraft(
-    createFilterDraft(config.filter as ViewInstance['config']['filter']),
-    definition.fields,
-    definition.allowedOperators,
-  );
-  if (compiled.errors.length)
-    throw new Error(compiled.errors.map(error => error.message).join('；'));
+  if ('filter' in config) throw new Error('视图配置必须保存 filters 组件配置');
+  validateFilterConfiguration(config.filters, definition.fields);
   if (!Array.isArray(config.sort) || config.sort.length > 32)
     throw new Error('排序必须为最多 32 项的数组');
   const sorted = new Set<string>();

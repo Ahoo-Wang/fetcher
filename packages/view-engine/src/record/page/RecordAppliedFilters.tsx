@@ -17,20 +17,13 @@ import { useId, useRef } from 'react';
 import { Badge } from '../../components/ui/badge.js';
 import { Button } from '../../components/ui/button.js';
 import { compileFilterDraft } from '../../filter/filterCore.js';
-import { clearValue } from '../../filter/filterDraftTransitions.js';
+import { clearFilterDraftValues } from '../../filter/filterConfiguration.js';
 import type { FilterDraftNode } from '../../filter/filterModel.js';
 import { replaceFilterNode, sameFilterDraft } from '../../filter/filterTree.js';
 import { cloneSnapshot } from '../../lib/types.js';
 import { describeRecordFilter } from '../recordFilterSummary.js';
 import type { RecordSession, ViewDefinition } from '../recordModel.js';
 import type { ViewEngine } from '../ViewEngine.js';
-
-function unsetValues(node: FilterDraftNode): FilterDraftNode {
-  const next = clearValue(node);
-  if (next.operands) next.operands = next.operands.map(unsetValues);
-  if (next.predicate) next.predicate = unsetValues(next.predicate);
-  return next;
-}
 
 export function RecordAppliedFilters({
   engine,
@@ -48,23 +41,40 @@ export function RecordAppliedFilters({
   const baseline = session.filterBaseline;
   // Only the outer AND is split. OR/NOR and element scopes remain complete groups.
   const nodes =
-    baseline.op === FilterOperator.AND ? (baseline.operands ?? []) : [baseline];
+    session.appliedFilter === null
+      ? []
+      : baseline.op === FilterOperator.AND
+        ? (baseline.operands ?? [])
+        : [baseline];
   const items = nodes.flatMap(node => {
     const result = compileFilterDraft(
       node,
       definition.fields,
       definition.allowedOperators,
+      engine.filterCompilers,
+      definition.filterEditors,
     );
     if (!result.expression || result.expression.op === FilterOperator.MATCH_ALL)
       return [];
+    let clearable = false;
+    try {
+      clearable = !sameFilterDraft(
+        node,
+        clearFilterDraftValues(
+          node,
+          definition.fields,
+          engine.filterCompilers,
+          definition.filterEditors,
+        ),
+      );
+    } catch {
+      // An invalid extension clear function must not take down the record view.
+    }
     return [
       {
         id: node.id,
         text: describeRecordFilter(result.expression, definition.fields).text,
-        clearable: !sameFilterDraft(
-          node,
-          unsetValues(cloneSnapshot<FilterDraftNode>(node)),
-        ),
+        clearable,
       },
     ];
   });
@@ -89,7 +99,12 @@ export function RecordAppliedFilters({
             ? root.operands?.find(child => child.id === nodeId)
             : undefined;
       if (!node) return;
-      const cleared = unsetValues(node);
+      const cleared = clearFilterDraftValues(
+        node,
+        state.definition.fields,
+        engine.filterCompilers,
+        state.definition.filterEditors,
+      );
       if (sameFilterDraft(node, cleared)) return;
       const draft = replaceFilterNode(root, nodeId, cleared);
       if (!draft) return;
@@ -97,12 +112,14 @@ export function RecordAppliedFilters({
         draft,
         state.definition.fields,
         state.definition.allowedOperators,
+        engine.filterCompilers,
+        state.definition.filterEditors,
       );
       if (!result.expression)
         throw new Error(result.errors[0]?.message ?? '无法清空此筛选条件值');
       // Keep every field, operator and editor ID; only values become unset.
       engine.setFilterDraft(draft, current.instance.id);
-      const query = engine.applyFilter(result.expression, current.instance.id);
+      const query = engine.applyFilter(undefined, current.instance.id);
       rootRef.current?.focus();
       await query;
     });
@@ -142,7 +159,9 @@ export function RecordAppliedFilters({
         </Badge>
       ))}
       {!items.length && (
-        <span className="fve:text-xs fve:text-muted-foreground">全部记录</span>
+        <span className="fve:text-xs fve:text-muted-foreground">
+          {session.appliedFilter === null ? '筛选尚未生效' : '全部记录'}
+        </span>
       )}
       {session.filterPending && items.some(item => item.clearable) && (
         <span id={pendingId} className="fve:text-xs fve:text-muted-foreground">

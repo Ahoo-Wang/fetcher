@@ -66,9 +66,13 @@ export class EditorSession extends Component<
           if (isActive() && !this.props.disabled)
             props.onOperatorChange(operator);
         }}
-        onClear={() => {
-          if (isActive() && !this.props.disabled) props.onClear();
-        }}
+        onClear={
+          props.onClear
+            ? () => {
+                if (isActive() && !this.props.disabled) props.onClear?.();
+              }
+            : undefined
+        }
         onRemove={() => {
           if (isActive() && !this.props.disabled) props.onRemove();
         }}

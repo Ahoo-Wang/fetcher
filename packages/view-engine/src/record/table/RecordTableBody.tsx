@@ -23,6 +23,7 @@ import type { RecordTableModel } from './recordTableTypes.js';
 export function RecordTableBody({
   definition,
   instance,
+  appliedFilter,
   extensions,
   refresh,
   selectable,
@@ -35,6 +36,7 @@ export function RecordTableBody({
   RecordTableProps,
   | 'definition'
   | 'instance'
+  | 'appliedFilter'
   | 'extensions'
   | 'refresh'
   | 'selectable'
@@ -94,6 +96,7 @@ export function RecordTableBody({
                     column,
                     definition,
                     instance,
+                    appliedFilter,
                     extensions,
                   ]}
                 >
@@ -104,6 +107,7 @@ export function RecordTableBody({
                     index={row.index}
                     definition={definition}
                     instance={instance}
+                    appliedFilter={appliedFilter}
                     extensions={extensions}
                     refresh={refresh}
                     compact={compact}

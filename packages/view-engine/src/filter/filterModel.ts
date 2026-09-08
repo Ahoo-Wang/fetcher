@@ -20,6 +20,7 @@ import type {
   StringComparison,
   TimeUnit,
 } from '@ahoo-wang/fetcher-wow';
+import type { DeepReadonly } from '../lib/types.js';
 import type { FilterField } from './filterTypes.js';
 
 export type FilterMode = 'simple' | 'advanced';
@@ -66,6 +67,8 @@ export interface FilterDraftNode {
   id: string;
   op: FilterOperator;
   field?: string;
+  editor?: FilterEditorReference;
+  props?: FilterComponentProperties;
   value?: unknown;
   values?: unknown[];
   lowerBound?: unknown;
@@ -105,3 +108,40 @@ export interface FilterCompileResult {
   expression?: FilterExpression;
   errors: FilterValidationError[];
 }
+
+/** Serializable component state, including unset controls and presentation properties. */
+export type FilterComponentProperties = Record<
+  string,
+  FilterJsonValue | undefined
+>;
+export interface FilterComponentConfig {
+  id: string;
+  component: FilterEditorReference;
+  operator: FilterOperator;
+  field?: string;
+  props: FilterComponentProperties;
+  operands?: FilterComponentConfig[];
+  predicate?: FilterComponentConfig;
+}
+export interface FilterConfiguration {
+  mode: FilterMode;
+  root: FilterComponentConfig;
+}
+export interface FilterCompilerContext {
+  operator: FilterOperator;
+  field?: DeepReadonly<FilterFieldDefinition>;
+  fields: DeepReadonly<readonly FilterFieldDefinition[]>;
+  options?: DeepReadonly<Record<string, FilterJsonValue>>;
+}
+/** React-independent capabilities. React registers them together with its filter component. */
+export interface FilterCompiler {
+  compile(
+    props: DeepReadonly<FilterComponentProperties>,
+    context: FilterCompilerContext,
+  ): FilterExpression | undefined;
+  clear?(
+    props: DeepReadonly<FilterComponentProperties>,
+    context: FilterCompilerContext,
+  ): FilterComponentProperties;
+}
+export type FilterCompilerRegistry = Readonly<Record<string, FilterCompiler>>;

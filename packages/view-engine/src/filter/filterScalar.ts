@@ -118,12 +118,7 @@ export function scalar(
   field?: FilterFieldDefinition,
 ): FilterLiteral | undefined {
   if (value === undefined || value === null) return value;
-  if (
-    typeof value === 'object' &&
-    !Array.isArray(value) &&
-    'type' in value &&
-    'value' in value
-  ) {
+  if (typeof value === 'object' && !Array.isArray(value) && 'type' in value) {
     const typed = value as { type: string; value: unknown };
     if (Object.keys(value).some(key => key !== 'type' && key !== 'value'))
       throw new TypeError('标量编辑值无效');

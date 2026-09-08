@@ -12,11 +12,13 @@
  */
 
 import { filter, FilterOperator, SortDirection } from '@ahoo-wang/fetcher-wow';
-import type {
-  RecordData,
-  ViewDefinition,
-  ViewInstance,
-  ViewInstanceList,
+import {
+  createFilterConfiguration,
+  createFilterDraft,
+  type RecordData,
+  type ViewDefinition,
+  type ViewInstance,
+  type ViewInstanceList,
 } from '@ahoo-wang/fetcher-view-engine';
 
 export const statuses = [
@@ -135,7 +137,9 @@ export function makeInstances(
     scope: { type: 'personal' },
     revision: '1',
     config: {
-      filter: filter.gte('amount', 0),
+      filters: createFilterConfiguration(
+        createFilterDraft(filter.gte('amount', 0)),
+      ),
       sort: [{ field: 'id', direction: SortDirection.ASC }],
       pagination: { mode, size: pageSize },
       presentation: {
@@ -169,7 +173,10 @@ export function makeInstances(
     id: 'all-orders',
     title: '全部订单',
     scope: { type: 'public', source: 'system' },
-    config: { ...structuredClone(personal.config), filter: filter.matchAll() },
+    config: {
+      ...structuredClone(personal.config),
+      filters: createFilterConfiguration(createFilterDraft(filter.matchAll())),
+    },
   };
   const shared: ViewInstance = {
     ...structuredClone(personal),
@@ -178,13 +185,17 @@ export function makeInstances(
     scope: { type: 'public', source: 'shared' },
     config: {
       ...structuredClone(personal.config),
-      filter: filter.and([
-        filter.or([
-          filter.eq('status', 'pending'),
-          filter.eq('status', 'processing'),
-        ]),
-        filter.gte('amount', 1000),
-      ]),
+      filters: createFilterConfiguration(
+        createFilterDraft(
+          filter.and([
+            filter.or([
+              filter.eq('status', 'pending'),
+              filter.eq('status', 'processing'),
+            ]),
+            filter.gte('amount', 1000),
+          ]),
+        ),
+      ),
     },
   };
   return {

@@ -16,7 +16,7 @@ import type { DeepReadonly } from '../lib/types.js';
 import type { FilterDraftNode, FilterMode } from './filterModel.js';
 import type { FilterPanelProps } from './filterReactTypes.js';
 import { compileFilterDraft, FILTER_OPERATORS } from './filterCore.js';
-import { locateFilterNodes, isFilterDraftPending } from './filterTree.js';
+import { locateFilterNodes, sameFilterQuery } from './filterTree.js';
 import { resolveFilterEditor } from './resolveFilterEditor.js';
 
 /** Resolve extension support and combine local input validity with protocol validation. */
@@ -38,7 +38,13 @@ export function useFilterPanelEditors(
   const [epoch, setEpoch] = useState(0);
   const [editorEpochs, setEditorEpochs] = useState<Record<string, number>>({});
   const locations = locateFilterNodes(draft, fields);
-  const compiled = compileFilterDraft(draft, fields, props.allowedOperators);
+  const compiled = compileFilterDraft(
+    draft,
+    fields,
+    props.allowedOperators,
+    props.extensions?.filters,
+    props.editors,
+  );
   const resolutions = new Map(
     locations
       .filter(
@@ -66,7 +72,18 @@ export function useFilterPanelEditors(
       })),
   );
   const valid = !loadError && issues.length === 0;
-  const pending = isFilterDraftPending(draft, baseline, valid);
+  const applied = compileFilterDraft(
+    baseline,
+    fields,
+    props.allowedOperators,
+    props.extensions?.filters,
+    props.editors,
+  );
+  const pending =
+    !valid ||
+    !compiled.expression ||
+    props.value === null ||
+    !sameFilterQuery(compiled.expression, applied.expression);
   const previousValidity = useRef<boolean | undefined>(undefined);
   useEffect(() => {
     if (previousValidity.current !== valid) {

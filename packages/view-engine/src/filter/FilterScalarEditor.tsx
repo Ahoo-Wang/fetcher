@@ -43,7 +43,6 @@ function typedValue(value: unknown): value is FilterScalarDraftValue {
     typeof value === 'object' &&
     value !== null &&
     'type' in value &&
-    'value' in value &&
     scalarTypes.some(item => item.value === value.type)
   );
 }

@@ -22,7 +22,7 @@ import {
 import { afterEach, expect, it, vi } from 'vitest';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
 import type { FilterComponentProps } from '../src/filter/filterReactTypes.js';
-import { fields } from './fixtures/filterPanel.js';
+import { fields, builtinCompiler } from './fixtures/filterPanel.js';
 
 afterEach(cleanup);
 
@@ -38,12 +38,13 @@ it('lets a complete filter own its UI while the panel owns changes, clearing and
         <input
           id={props.id}
           value={
-            props.node && 'value' in props.node ? String(props.node.value) : ''
+            props.props.value === undefined ? '' : String(props.props.value)
           }
           onChange={event =>
-            props.onChange(
-              filter.eq(props.field!.field, Number(event.target.value)),
-            )
+            props.onChange({
+              ...props.props,
+              value: Number(event.target.value),
+            })
           }
         />
         <button onClick={() => props.onOperatorChange(FilterOperator.GTE)}>
@@ -69,6 +70,7 @@ it('lets a complete filter own its UI while the panel owns changes, clearing and
       extensions={{
         filters: {
           full: {
+            ...builtinCompiler,
             component: Custom,
             render: 'filter',
             modes: ['simple', 'advanced'],
@@ -124,7 +126,12 @@ it('validates complete-filter operator requests and keeps empty-message errors b
       onApply={apply}
       extensions={{
         filters: {
-          full: { component: Custom, render: 'filter', modes: ['simple'] },
+          full: {
+            ...builtinCompiler,
+            component: Custom,
+            render: 'filter',
+            modes: ['simple'],
+          },
         },
       }}
     />,
@@ -136,7 +143,7 @@ it('validates complete-filter operator requests and keeps empty-message errors b
   ).toBe(true);
   expect(contract!.errors.length).toBeGreaterThan(0);
   expect(contract!.errorId).toBeTruthy();
-  act(() => contract!.onChange(filter.eq('amount', 2)));
+  act(() => contract!.onChange({ value: 2 }));
   act(() => contract!.onValidityChange(false, ''));
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
   expect(apply).not.toHaveBeenCalled();
@@ -153,6 +160,7 @@ it('rejects disabled and stale complete-filter actions', () => {
   const extensions = {
     filters: {
       full: {
+        ...builtinCompiler,
         component: Custom,
         render: 'filter' as const,
         modes: ['simple' as const],
@@ -169,8 +177,8 @@ it('rejects disabled and stale complete-filter actions', () => {
     />,
   );
   act(() => {
-    contract!.onChange(filter.eq('amount', 9));
-    contract!.onClear();
+    contract!.onChange({ value: 9 });
+    contract!.onClear!();
     contract!.onRemove();
   });
   view.rerender(
@@ -184,7 +192,7 @@ it('rejects disabled and stale complete-filter actions', () => {
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
   expect(apply).toHaveBeenLastCalledWith(filter.eq('amount', 1));
   const old = contract!;
-  act(() => contract!.onClear());
+  act(() => contract!.onClear!());
   act(() => old.onRemove());
   expect(screen.getByText('完全自定义')).toBeTruthy();
 });
@@ -205,7 +213,12 @@ it.each(['same-event', 'retained-callback'])(
         onApply={apply}
         extensions={{
           filters: {
-            full: { component: Custom, render: 'filter', modes: ['simple'] },
+            full: {
+              ...builtinCompiler,
+              component: Custom,
+              render: 'filter',
+              modes: ['simple'],
+            },
           },
         }}
       />,

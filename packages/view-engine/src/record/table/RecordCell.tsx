@@ -68,12 +68,13 @@ export function RecordCell({
   index,
   definition,
   instance,
+  appliedFilter,
   extensions,
   refresh,
   compact = false,
 }: Pick<
   RecordTableProps,
-  'definition' | 'instance' | 'extensions' | 'refresh'
+  'definition' | 'instance' | 'appliedFilter' | 'extensions' | 'refresh'
 > & {
   column: RecordColumn;
   record: RecordData;
@@ -96,7 +97,7 @@ export function RecordCell({
       <Renderer
         definition={definition}
         instance={instance}
-        filter={instance.config.filter}
+        filter={appliedFilter}
         sort={instance.config.sort}
         options={reference?.options}
         refresh={refresh}

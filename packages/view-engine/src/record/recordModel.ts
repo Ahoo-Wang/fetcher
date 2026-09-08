@@ -18,6 +18,8 @@ import type {
   QueryApi,
 } from '@ahoo-wang/fetcher-wow';
 import type {
+  FilterCompilerRegistry,
+  FilterConfiguration,
   FilterDraftNode,
   FilterEditorReference,
   FilterFieldDefinition,
@@ -104,7 +106,8 @@ export interface RecordTablePresentation {
   layout: 'table';
   table: { columns: RecordColumn[] };
 }
-export interface RecordViewConfig extends RecordQueryConfig {
+export interface RecordViewConfig extends Omit<RecordQueryConfig, 'filter'> {
+  filters: FilterConfiguration;
   presentation: RecordTablePresentation;
 }
 /** Metadata shared by saved view kinds; query and presentation belong to their kind. */
@@ -173,6 +176,8 @@ export interface ViewHost {
   getInstancePermissions?(instance: ViewInstance): ViewInstancePermissions;
 }
 export interface ViewEngineOptions {
+  /** Headless filter capabilities fixed for this engine lifetime; ViewPage uses extensions.filters. */
+  filterCompilers?: FilterCompilerRegistry;
   definitionId: string;
   host: ViewHost;
   definition?: ViewDefinition;
@@ -189,6 +194,8 @@ export interface RecordSession {
   readonly filterValid: boolean;
   readonly filterMode: FilterMode;
   readonly filterPending: boolean;
+  /** Compiled query scope. Null blocks reads until the component configuration is valid. */
+  readonly appliedFilter: DeepReadonly<FilterExpression> | null;
   readonly page: number;
   readonly cursor: string | null;
   readonly nextCursor: string | null;

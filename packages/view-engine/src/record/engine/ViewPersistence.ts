@@ -126,13 +126,16 @@ export class ViewPersistence {
       if (options) this.work.unverifiedCreates.delete(id);
       const latest = this.store.session(id);
       if (options) {
-        let created = createSession(saved);
+        let created = createSession(
+          saved,
+          definition,
+          this.store.filterCompilers,
+        );
         if (
           this.store.getSnapshot().selectedInstanceId === id &&
           this.scope.selection === selection
         ) {
           selectedCopy = saved.id;
-          created = inheritEditingSession(saved, latest);
           const navigation = this.scope.advanceSelection();
           if (!current()) return;
           this.queries.cancel(id);
@@ -141,10 +144,15 @@ export class ViewPersistence {
           if (
             this.scope.selection !== navigation ||
             this.store.getSnapshot().selectedInstanceId !== id
-          ) {
+          )
             selectedCopy = undefined;
-            created = createSession(saved);
-          }
+          else
+            created = inheritEditingSession(
+              saved,
+              this.store.session(id),
+              definition,
+              this.store.filterCompilers,
+            );
         }
         this.store.publish({
           instanceIds: [...this.store.getSnapshot().instanceIds, saved.id],

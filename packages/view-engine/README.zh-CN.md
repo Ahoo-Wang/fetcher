@@ -18,7 +18,7 @@
 | `filter`                                                   | 操作元数据、协议构造/编译、编辑器生命周期及面板/值组件。                      |
 | `record/page`、`record/table`                              | 页面所有权/导航/操作，以及表格状态/表头/单元格/汇总组合；布局计算保持纯函数。 |
 
-测试和 Storybook 交互按行为领域组织。源码以 300 行为目标，没有超过 400 行的文件。`useFilterPanelState` 保留 347 行，集中维护受控编辑会话：草稿与提交确认必须一起协调，继续拆分会分散同一状态的变更。同步回调边界与外部编辑基线均有回归验证。
+测试和 Storybook 交互按行为领域组织，覆盖受控编辑器生命周期、配置持久化与查询边界。
 
 ## 可运行的公开包示例
 
@@ -31,7 +31,9 @@ node packages/view-engine/scripts/verify-package.mjs
 pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
 ```
 
-`examples/core.mjs` 演示无 React 的公开 API；`examples/react/OrderExample.tsx` 仅通过公开导入组合页面和五类扩展。打开 `http://127.0.0.1:4175`，或 Storybook 的 **View Engine → Library Delivery**，体验操作、自定义过滤器/单元格、异常恢复与深色窄容器。
+`examples/core.mjs` 演示无 React 的公开 API，包括未设置控件和自定义原始属性的 JSON 保存及新引擎恢复；`examples/react/OrderExample.tsx` 仅通过公开导入组合页面和五类扩展。打开 `http://127.0.0.1:4175`，或 Storybook 的 **View Engine → Library Delivery**，体验操作、自定义过滤器/单元格、异常恢复与深色窄容器。
+
+`examples/react/FilterPersistenceExample.tsx` 保存选中状态 ID 和独立编辑的显示名称。打开 `http://127.0.0.1:4175/?example=persistence`，或 **View Engine → Library Delivery → 公共包 · 组件配置 JSON 保存与重新打开**：新增未设置控件后无需查询即可保存，并在新引擎中恢复；只改显示名称也能直接保存，状态值改变后则需先查询。
 
 `verify-package.mjs` 创建临时归档，检查 exports、CSS 与构建内容一致性，再针对解包后的产物运行并类型校验使用方代码，不执行安装或发布。示例使用严格的本地模拟服务；库级验证不替代宿主的真实鉴权、权限、持久化和后端查询验证。
 
@@ -62,9 +64,11 @@ export function OrderPage({
 
 `ViewHost` 加载定义及完整实例列表、解析已配置的 Wow 查询客户端、提供权限，并按需实现保存与创建接口。本地数据可直接传入 `definition` 与 `instances: {instances, defaultInstanceId}`。必填 `scopeKey` 标识用户、租户与访问范围，范围变化时更换此值；引擎按 `[scopeKey, definitionId]` 管理生命周期。同一作用域下替换宿主对象会更新回调与能力，保留草稿。本地定义和列表作为该生命周期的初始值，引用变化不触发重载；需要重新初始化时显式改变 React key。宿主自行管理引擎时，使用 `ViewPageContent` 或 `RecordView`。
 
-引擎根据 `filterDraft`、最近一次查询应用的编辑基线 `filterBaseline` 和编辑器报告的有效性 `filterValid` 推导 pending。`setFilterDraft(draft, id?, valid?)` 可原子更新草稿及局部有效性；`setFilterValidity(valid, id?)` 报告输入缓冲区是否有效，传入 true 不能清除尚未查询的草稿修改。查询或撤销使草稿回到已应用基线后才能保存，未设置值的控件也保留在编辑基线中。原 `setFilterPending` setter 已移除。
+实例保存 `config.filters: {mode, root}`。每个组件保存稳定配置 ID、`{name, options?}` 引用、操作符、字段绑定、原始 JSON `props` 和子组件。编译结果只在运行时的 `session.appliedFilter` 中；null 表示尚未编译成功，阻止记录及汇总查询。恢复直接读取组件配置，不从查询表达式反推 UI。对象属性中的 undefined 保存时省略；null、false、零和空字符串保留，拒绝非 JSON 值。
 
-编辑器报告无效输入时，`applyFilter` 会拒绝执行，重复应用当前条件也不能绕过。先修正输入或撤销修改后再提交；拒绝时保留草稿和当前查询。
+`setFilterDraft(draft, id?, valid?)` 通过已注册的纯函数编译。有效修改若未改变已应用查询，会立即更新接受的配置与编辑基线，无需请求即可保存，例如新增未设置控件或修改显示名称。查询值改变或输入无效时产生 `filterPending`，需先查询接受草稿或撤销修改，才能保存。同步状态下 `setFilterMode` 保存支持的模式变化；`dirty` 比较接受的配置与已存 JSON。`sameFilterQuery` 忽略对象键顺序和仅含一个条件的冗余 AND/OR 包装，其余表达式变化仍需查询。
+
+程序调用先 `setFilterDraft`，再 `applyFilter()`。可选的 `applyFilter(expression)` 参数必须与草稿编译结果相等，不能借此替换组件状态。局部输入无效时拒绝执行，保留草稿和已应用查询；`setFilterValidity(true)` 也不能使已改变或未编译的查询变得可保存。
 
 核心快照中的定义、实例、草稿和记录采用 `DeepReadonly`。可直接读取，也可将快照传回 `applyFilter`、`setFilterDraft`、`setSort` 和 `setColumns`，引擎会复制接受的输入。修改时构造新对象；传给宿主查询和写入接口的参数仍是独立、可编辑的数据对象。
 
@@ -90,7 +94,7 @@ export function OrderPage({
 
 主键列（字段绑定 `definition.rowKey`）始终固定在左侧最前面，操作列始终固定在右侧最后面，实例配置和列设置都不能改变这两类列的固定方向。列设置使用图钉按钮切换固定状态，不提供左/右下拉框：未固定列仅在上下恰有一个相邻设置项已固定时可点击，继承其固定方向；上下均未固定或均已固定时不可固定，已固定的普通列仍可取消固定；主键和操作列显示已固定且禁用的图钉。宿主契约仍接受 `pinned: 'left' | 'right' | false`，已有固定方向在用户修改前保持有效，调整随实例保存；同一区域内可拖动排序，数值汇总选择与显隐、固定控件处于同一行。表头、数据行和汇总行保持对齐，隐藏与调宽同步更新偏移；选择列位于主键之前。调整固定位置和顺序不查询记录或汇总。
 
-`extensions.cells`、`globalActions`、`tableActions`、`rowActions` 与 `filters` 注册任意本地 React 组件，远程定义只保存名称与 JSON 参数。定义通过 `recordActions.global`、`.table`、`.row` 指定创建、批量处理、查看记录等操作所在区域。已有全局注册保留原位置，批量组件需显式移到 `tableActions`。业务操作得到已应用的查询范围、稳定记录主键与绑定当前实例的刷新回调。勾选仅表示明确选择的当前页记录。定义、实例和记录必须是 JSON 数据；主键必须为唯一字符串或有限数字，不回退到数组下标。核心入口仍不加载 React。
+`extensions.cells`、`globalActions`、`tableActions`、`rowActions` 与 `filters` 注册任意本地 React 组件，远程定义只保存名称与 JSON 参数。定义通过 `recordActions.global`、`.table`、`.row` 指定创建、批量处理、查看记录等操作所在区域。已有全局注册保留原位置，批量组件需显式移到 `tableActions`。独立使用 `RecordTable` 时必须显式传入 `appliedFilter`。业务操作得到这一运行时查询范围（编译成功前 `filter` 为 null）、稳定记录主键与绑定当前实例的刷新回调。勾选仅表示明确选择的当前页记录。定义、实例和记录必须是 JSON 数据；主键必须为唯一字符串或有限数字，不回退到数组下标。核心入口仍不加载 React。
 
 扩展输入采用导出的 `DeepReadonly<T>` 递归只读快照。把需要编辑的字段复制到组件自己的表单状态，再通过宿主命令或引擎方法提交。尚未查询的筛选编辑不会触发记录单元格边界的重渲染。
 
@@ -104,7 +108,7 @@ Storybook 的 **View Engine → Record View** 使用内存服务演示完整请�
 
 查询失败在记录区展示图标、原因与重试，不使用空结果图标，不显示零条记录或分页。后台失败保留原记录，并标明上次查询结果。
 
-已应用筛选在编辑区下方、表格工具栏上方展示为 shadcn Badge 标签，收起编辑区后仍可见；顶层 AND 条件分别展示，OR/NOR 与元素条件保留完整分组。点击标签的 × 将值设为“未设置”并立即查询，保留字段、操作符、分组与编辑器 ID；无需值的操作不提供清空按钮。查询中或有待查询修改时禁用清空，先查询或撤销修改后可继续操作。单行筛选输入框支持回车查询；中文输入法确认、下拉选择、多行输入和弹层交互保留原有键盘行为。标签保留精确阈值，长条件自动换行，无条件时显示“全部记录”。待查询草稿不会替换标签；顶部筛选按钮仅保留展开/收起与模式，不再显示摘要 Tooltip。
+已应用筛选在编辑区下方、表格工具栏上方展示为 shadcn Badge 标签，收起编辑区后仍可见；顶层 AND 条件分别展示，OR/NOR 与元素条件保留完整分组。点击标签的 × 按注册的清空语义将值设为“未设置”并立即查询，保留字段、操作符、分组与编辑器 ID；无需值的操作及未提供清空语义的自定义组件不提供清空按钮。查询中或有待查询修改时禁用清空，先查询或撤销修改后可继续操作。单行筛选输入框支持回车查询；中文输入法确认、下拉选择、多行输入和弹层交互保留原有键盘行为。标签保留精确阈值，长条件自动换行，无条件时显示“全部记录”。待查询草稿不会替换标签；顶部筛选按钮仅保留展开/收起与模式，不再显示摘要 Tooltip。
 
 自动刷新暂停时提供原因和恢复条件。普通保存成功后短暂显示“已保存”及无障碍播报。
 
@@ -182,9 +186,11 @@ export function OrderFilters({
 
 点击“添加筛选”打开锚定按钮的 Popover，按组展示 Checkbox，打开和关闭不改变表格、查询按钮的位置。浮层限制高度，字段区内部滚动；添加后保持打开，支持连续添加。“完成”或 Esc 关闭并返回触发按钮焦点，点击外部也可关闭。字段定义可通过 `group` 指定分组，按定义中的首次出现顺序展示。与有分组字段混用时，未分组字段显示在“其他字段”下；复选框与当前分组的草稿同步：勾选添加条件，取消勾选移除该字段的直接条件，未设置值仍显示为已勾选。高级模式在已选字段旁显示条件数量和“追加条件”加号，AND、OR、NOR 统一支持追加；高级模式在“添加筛选”旁提供图标下拉按钮，独立选择 AND/OR/NOR 并添加到当前分组，这三项不进入字段面板；未获定义允许的操作禁用。根级操作仍保留添加按钮。所有变更仍在点击“查询”后统一生效。
 
-完全未设置的值保留控件但不产生谓词；部分填写、无效数据和未注册扩展阻止查询。所有字段在添加时绑定，保留所属分组及作用域。`extensions.filters` 提供本地自定义编辑器；`draft` / `onDraftChange` 可将内置编辑缓冲交由宿主按实例保存。自定义组件自己的临时 UI 状态应由宿主上下文保存或保持挂载。
+完全未设置的值保留控件但不产生谓词；部分填写、无效数据和未注册扩展阻止查询。所有字段在添加时绑定，保留所属分组及作用域。`extensions.filters` 提供本地自定义编辑器；`draft` / `onDraftChange` 可将编辑缓冲交由宿主按实例保留。自定义组件通过 `onChange(props)` 发布可序列化属性；选中 ID、显示名称等需要保存的 UI 状态放在 props，仅未提交的临时缓冲保留在 React 局部状态中。
 
 简单模式没有条件操作菜单或前后排序。高级模式支持新增、删除和编辑分组，不提供条件或分组的移动功能；内置标量筛选项移除“清空”和“特殊值”按钮；删除输入内容可保留未设置值，空值和空字符串使用对应操作符。编辑已有日期时间会保留夏令时重复小时的原偏移，跨季节日期仍使用目标日期的实际偏移。
+
+过滤器组件定义将 `component`、纯函数 `compile(props, context)` 和可选的 `clear(props, context)` 一起注册到 `extensions.filters`。这是 `ViewPage` 唯一的筛选器注册入口；页面从同一份定义提供引擎所需能力，保持作用域内渲染与编译一致。`FilterCompiler` 是不依赖 React 的最小能力契约，仅在直接构造 `ViewEngine` 时通过 `filterCompilers` 使用，React 接入无需另行注册。兼容内置属性的编辑器可复用 `compileBuiltinFilter` 和 `clearBuiltinFilterProps`；完整组件仅在提供清空语义时获得 `onClear`。
 
 自定义筛选器可使用任意 React 组件。注册 `render: 'value'`（默认）替换值区域，或用 `render: 'filter'` 与 `FilterComponentProps` 接管完整非容器 UI。面板继续负责字段与能力校验、错误展示，以及点击查询后统一生效。
 

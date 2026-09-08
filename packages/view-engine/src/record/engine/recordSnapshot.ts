@@ -11,38 +11,4 @@
  * limitations under the License.
  */
 
-export function freeze<T>(value: T, ancestors = new Set<object>()): T {
-  if (
-    value === null ||
-    value === undefined ||
-    typeof value === 'string' ||
-    typeof value === 'boolean'
-  )
-    return value;
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value !== 'object') throw new Error('视图数据必须可序列化为 JSON');
-  if (Object.isFrozen(value)) return value;
-  if (
-    (!Array.isArray(value) &&
-      Object.prototype.toString.call(value) !== '[object Object]') ||
-    ancestors.has(value)
-  )
-    throw new Error('视图数据必须为无循环引用的 JSON 数据');
-  ancestors.add(value);
-  Object.values(value).forEach(item => freeze(item, ancestors));
-  ancestors.delete(value);
-  return Object.freeze(value);
-}
-export function copy<T>(value: T): T {
-  try {
-    return freeze(structuredClone(value));
-  } catch (error) {
-    throw Object.assign(
-      new Error(`视图数据包含非 JSON 值：${message(error)}`),
-      { cause: error },
-    );
-  }
-}
-export function message(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
+export { copy, freeze, message } from '../../lib/snapshot.js';

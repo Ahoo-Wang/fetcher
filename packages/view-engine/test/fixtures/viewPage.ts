@@ -13,6 +13,8 @@
 
 import { filter } from '@ahoo-wang/fetcher-wow';
 import { vi } from 'vitest';
+import { createFilterDraft } from '../../src/filter/filterCore.js';
+import { createFilterConfiguration } from '../../src/filter/filterConfiguration.js';
 import type {
   ViewDefinition,
   ViewHost,
@@ -33,7 +35,9 @@ export const instance: ViewInstance = {
   kind: 'record',
   scope: { type: 'personal' },
   config: {
-    filter: filter.gte('amount', 10),
+    filters: createFilterConfiguration(
+      createFilterDraft(filter.gte('amount', 10)),
+    ),
     sort: [],
     pagination: { mode: 'paged', size: 10 },
     presentation: {

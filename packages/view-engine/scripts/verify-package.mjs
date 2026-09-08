@@ -113,15 +113,24 @@ function verifyTypes(directory) {
   writeFileSync(
     probe,
     `
-    import { ViewEngine, type DeepReadonly, type ViewHost, type ViewInstance } from '${manifest.name}';
-    import { ViewPage, type CellRendererProps } from '${manifest.name}/react';
+    import { ViewEngine, restoreFilterConfiguration, compileBuiltinFilter, clearBuiltinFilterProps, type DeepReadonly, type ViewHost, type ViewInstance } from '${manifest.name}';
+    import { ViewPage, type CellRendererProps, type FilterEditorProps, type FilterExtensions } from '${manifest.name}/react';
     import { OrderExample } from './examples/react/OrderExample.js';
     declare const engine: ViewEngine;
     declare const host: ViewHost;
     declare const instance: DeepReadonly<ViewInstance>;
     engine.setColumns(instance.config.presentation.table.columns);
     void engine.setSort(instance.config.sort);
-    void engine.applyFilter(instance.config.filter);
+    engine.setFilterDraft(restoreFilterConfiguration(instance.config.filters));
+    void engine.applyFilter();
+    const filterEditor = ({ props, onChange }: FilterEditorProps) => {
+      // @ts-expect-error Persisted component props are readonly snapshots.
+      props.value = 'mutated';
+      return <button onClick={() => onChange({ ...props, displayLabel: 'Custom label' })}>Rename</button>;
+    };
+    export const filters: FilterExtensions = { filters: { custom: {
+      component: filterEditor, modes: ['simple'], compile: compileBuiltinFilter, clear: clearBuiltinFilterProps,
+    } } };
     // @ts-expect-error Public snapshots must remain readonly.
     engine.getSnapshot().instanceIds.push('mutated');
     const cell = ({ record }: CellRendererProps) => {
@@ -129,7 +138,9 @@ function verifyTypes(directory) {
       record.id = 'mutated';
       return String(record.id);
     };
-    export const page = <ViewPage definitionId="orders" scopeKey="user:tenant" host={host} extensions={{ cells: { custom: cell } }} />;
+    export const page = <ViewPage definitionId="orders" scopeKey="user:tenant" host={host} extensions={{ ...filters, cells: { custom: cell } }} />;
+    // @ts-expect-error React filter definitions are registered only through extensions.filters.
+    export const splitRegistration = <ViewPage definitionId="orders" scopeKey="user:tenant" host={host} filterCompilers={{ custom: { compile: compileBuiltinFilter } }} />;
     export const example = OrderExample;
   `,
   );

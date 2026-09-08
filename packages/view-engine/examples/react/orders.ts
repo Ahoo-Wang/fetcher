@@ -11,10 +11,12 @@
  * limitations under the License.
  */
 
-import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
-import type {
-  ViewDefinition,
-  ViewInstanceList,
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import {
+  createFilterConfiguration,
+  newFilterDraft,
+  type ViewDefinition,
+  type ViewInstanceList,
 } from '@ahoo-wang/fetcher-view-engine';
 
 export type Order = {
@@ -68,7 +70,13 @@ export const orderDefinition: ViewDefinition = {
   },
 };
 const config = {
-  filter: filter.eq('status', 'pending'),
+  filters: createFilterConfiguration({
+    id: 'status-selector',
+    op: FilterOperator.EQ,
+    field: 'status',
+    editor: { name: 'order-status' },
+    props: { selectedId: 'pending', displayLabel: '待办队列（人工命名）' },
+  }),
   sort: [],
   pagination: { mode: 'paged' as const, size: 10 },
   presentation: {
@@ -101,7 +109,12 @@ export const orderViews: ViewInstanceList = {
       kind: 'record',
       title: '全部订单',
       scope: { type: 'public', source: 'system' },
-      config: { ...config, filter: filter.matchAll() },
+      config: {
+        ...config,
+        filters: createFilterConfiguration(
+          newFilterDraft(FilterOperator.MATCH_ALL),
+        ),
+      },
     },
   ],
 };

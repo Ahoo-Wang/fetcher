@@ -11,6 +11,10 @@
  * limitations under the License.
  */
 
+import {
+  createFilterDraft,
+  createFilterConfiguration,
+} from '../../src/filter/filterCore.js';
 import { filter } from '@ahoo-wang/fetcher-wow';
 import { vi } from 'vitest';
 import { ViewEngine } from '../../src/record/ViewEngine.js';
@@ -53,7 +57,7 @@ export function setup() {
     kind: 'record',
     scope: { type: 'personal' },
     config: {
-      filter: filter.matchAll(),
+      filters: createFilterConfiguration(createFilterDraft(filter.matchAll())),
       sort: [],
       pagination: { mode: 'paged', size: 2 },
       presentation: {

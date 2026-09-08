@@ -17,7 +17,7 @@ import { dirname, resolve } from 'node:path';
 import ts from 'typescript';
 import { expect, it } from 'vitest';
 
-it('rejects mutation of extension snapshots at compile time', () => {
+it('checks readonly snapshots and component registration boundaries at compile time', () => {
   const configPath = resolve('tsconfig.json');
   const file = resolve('src/__extension_contract__.ts');
   const source = `
@@ -25,7 +25,16 @@ it('rejects mutation of extension snapshots at compile time', () => {
     import type { FilterEditorProps } from './filter/filterReactTypes.js';
     import type { DeepReadonly } from './lib/types.js';
     import type { ViewEngine } from './record/ViewEngine.js';
+    import type { ViewPageProps } from './record/ViewPage.js';
+    import type { FilterRegistration } from './filter/filterReactTypes.js';
+    import type { ViewEngineOptions } from './record/recordModel.js';
     import type { RecordSession, ViewEngineState } from './record/recordModel.js';
+    declare const page: ViewPageProps;
+    declare const registration: FilterRegistration;
+    const extensions: ViewPageProps['extensions'] = { filters: { custom: registration } };
+    const headless: ViewEngineOptions['filterCompilers'] = { custom: { compile: registration.compile } };
+    // @ts-expect-error React registers compilation with its component, never through a second registry
+    page.filterCompilers;
     declare const cell: CellRendererProps;
     declare const editor: FilterEditorProps;
     const value: unknown = cell.record.amount;
@@ -46,7 +55,7 @@ it('rejects mutation of extension snapshots at compile time', () => {
     engine.setFilterDraft(snapshot.sessions.mine.filterDraft);
     engine.setSort(snapshot.sessions.mine.instance.config.sort);
     engine.setColumns(snapshot.sessions.mine.instance.config.presentation.table.columns);
-    engine.applyFilter(snapshot.sessions.mine.instance.config.filter);
+    engine.applyFilter(snapshot.sessions.mine.appliedFilter ?? undefined);
     // @ts-expect-error extension records are snapshots
     cell.record.amount = 100;
     // @ts-expect-error instance metadata is a snapshot

@@ -22,11 +22,58 @@ import {
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ViewEngine } from '../src/record/ViewEngine.js';
-import { ViewPageContent } from '../src/record/ViewPage.js';
+import { ViewPage, ViewPageContent } from '../src/record/ViewPage.js';
 import type { GlobalActionsRendererProps } from '../src/record/recordReactTypes.js';
-import { definition, setup } from './fixtures/viewPage.js';
+import { definition, instance, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
+
+it('keeps unresolved component scopes null in global and table actions without querying all records', async () => {
+  const { host, paged } = setup();
+  const global = vi.fn((props: GlobalActionsRendererProps) => (
+    <button>{props.filter === null ? '全局等待条件' : '全局可查询'}</button>
+  ));
+  const table = vi.fn((props: GlobalActionsRendererProps) => (
+    <button>{props.filter === null ? '表格等待条件' : '表格可查询'}</button>
+  ));
+  render(
+    <ViewPage
+      scopeKey="unknown-component"
+      definitionId="orders"
+      host={host}
+      definition={{
+        ...definition,
+        recordActions: { global: { name: 'global' }, table: { name: 'table' } },
+      }}
+      instances={{
+        instances: [
+          {
+            ...instance,
+            config: {
+              ...instance.config,
+              filters: {
+                ...instance.config.filters,
+                root: {
+                  ...instance.config.filters.root,
+                  component: { name: 'missing' },
+                },
+              },
+            },
+          },
+        ],
+        defaultInstanceId: instance.id,
+      }}
+      extensions={{ globalActions: { global }, tableActions: { table } }}
+    />,
+  );
+  await screen.findByRole('button', { name: '全局等待条件' });
+  expect(screen.getByRole('button', { name: '表格等待条件' })).toBeTruthy();
+  expect(
+    screen.getByRole('region', { name: '已应用筛选' }).textContent,
+  ).toContain('筛选尚未生效');
+  expect(screen.getAllByText(/未注册.*missing/).length).toBeGreaterThan(0);
+  expect(paged).not.toHaveBeenCalled();
+});
 
 it('business refresh stays bound to its instance after navigation', async () => {
   const { host, paged } = setup();

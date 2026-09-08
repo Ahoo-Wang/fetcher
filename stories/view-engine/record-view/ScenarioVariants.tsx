@@ -12,6 +12,7 @@
  */
 
 import { useState } from 'react';
+import { filter } from '@ahoo-wang/fetcher-wow';
 import { Button, RecordTable } from '@ahoo-wang/fetcher-view-engine/react';
 import type { DemoArgs, Story } from './demoTypes.js';
 import { definition, makeInstances } from './fixtures.js';
@@ -72,6 +73,7 @@ export const renderLoadingSummaries: Story['render'] = args => {
       <RecordTable
         definition={definition}
         instance={instance}
+        appliedFilter={filter.gte('amount', 0)}
         rows={[]}
         querying
         selectable
