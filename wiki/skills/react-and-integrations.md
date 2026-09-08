@@ -1,73 +1,26 @@
 ---
-title: React and integration skills
-description: Choose Fetcher skills for React state, data viewers, CoSec authentication, and Wow CQRS.
+title: React and integrations
+description: React and integrations — Fetcher agent workflows
 pageClass: skills-page
 ---
 
-# React and integration skills
+# React and integrations
 
-These skills compose Fetcher into application-level behavior. Invoke the most
-specific skill first so the agent loads only the contracts the task needs.
+Choose a skill from the task’s inputs and outputs. An application can compose packages while keeping each change focused on one responsibility.
 
-## `$fetcher-react-hooks`
+| Task                     | Skill                                                                                                                    | API reference                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| React request state      | [`$fetcher-react-hooks`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-react-hooks/SKILL.md)             | [react](../reference/react/index.md)   |
+| Data viewers             | [`$fetcher-viewer-components`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-viewer-components/SKILL.md) | [viewer](../reference/viewer/index.md) |
+| CoSec authentication     | [`$fetcher-cosec-auth`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-cosec-auth/SKILL.md)               | [cosec](../reference/cosec/index.md)   |
+| Wow commands and queries | [`$fetcher-wow-cqrs`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-wow-cqrs/SKILL.md)                   | [wow](../reference/wow/index.md)       |
 
-**Use for:** promise and request state, query hooks, cancellation, debounce,
-storage hooks, event subscriptions, security context, and Wow hooks.
+## Provide this context
 
-```text
-$fetcher-react-hooks build a debounced search hook with explicit loading,
-empty, error, success, and reset states. Ignore stale responses.
-```
+Component-owned state, query triggers, API clients, authentication/tenant context, persistence callbacks and failure UI. Use the existing Viewer contract only when the backend supports it; do not turn an ordinary REST endpoint into a guessed Wow endpoint.
 
-Continue with the [React reference](../reference/react.md).
+## Review the result
 
-## `$fetcher-viewer-components`
+Check public imports, complete examples, failures and cleanup. Run package tests or actual generation for the affected behavior; inspect component interactions in a browser. Type-checking does not prove server protocol compatibility.
 
-**Use for:** `Viewer`, `FetcherViewer`, filters, registries, tables, cells,
-saved views, remote selection, locale, and end-to-end data exploration flows.
-
-```text
-$fetcher-viewer-components build an order viewer with status filters,
-server pagination, saved views, and visible loading, empty, and error states.
-```
-
-Use Storybook to review interactive states, then use the
-[Viewer reference](../reference/viewer.md) for component contracts.
-
-## `$fetcher-cosec-auth`
-
-**Use for:** `CoSecConfigurer`, JWT storage, device and space attribution,
-authorization interceptors, refresh, 401/403 behavior, and logout cleanup.
-
-```text
-$fetcher-cosec-auth configure a server-side Fetcher with token refresh,
-space attribution, and explicit unauthorized and forbidden handling.
-Never expose the credential in a browser bundle.
-```
-
-Continue with the [CoSec reference](../reference/cosec.md).
-
-## `$fetcher-wow-cqrs`
-
-**Use for:** command delivery, command waiting streams, snapshot and event
-queries, the query DSL, aggregation, attribution paths, generated Wow
-clients, and matching React hooks.
-
-```text
-$fetcher-wow-cqrs add typed cart commands plus paged and aggregate snapshot
-queries. Verify paths and field semantics against the current Wow contract.
-```
-
-Continue with the [Wow reference](../reference/wow.md) or the
-[Wow CQRS recipe](../recipes/wow-cqrs.md).
-
-## Composition order
-
-When one task spans packages, load skills from infrastructure to UI:
-
-```text
-Fetcher request → authentication or Wow client → React hook → Viewer
-```
-
-Each layer should keep its own error and cleanup boundary. Do not hide a CoSec
-refresh failure inside a generic Viewer empty state.
+[Installation and full catalog](./index.md)

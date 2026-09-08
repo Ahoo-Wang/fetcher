@@ -1,114 +1,48 @@
 ---
-title: Fetcher Skills
-description: 在 Codex 和其他兼容编码 Agent 中使用理解 Fetcher 包边界的 Skills。
+title: 使用 Fetcher Skills
+description: 使用 Fetcher Skills — Fetcher agent workflows
 pageClass: skills-page
 ---
 
-# Fetcher Skills
+# 使用 Fetcher Skills
 
-Fetcher 在本仓库维护十二个面向具体任务的 Agent Skill，并通过
-[Ahoo Skills Marketplace](https://github.com/Ahoo-Wang/skills)统一发布为
-`ahoo-fetcher-skills` 插件。安装一个插件即可获得覆盖整个 Fetcher 生态的包边界、
-工作流和 API 参考。
+Skills 将包边界、实现流程与 API 参考交给编码 Agent。本站文档帮助你理解和审阅结果；Skill 帮助 Agent 按这些边界执行工作。
 
-::: tip Skills 与文档各司其职
-使用本站理解和审查实现；需要 Agent 执行任务时使用 Skill，让它选择正确的包和工作流。
-:::
+## 安装插件
 
-## 安装 Fetcher 插件
-
-[Ahoo Skills](https://github.com/Ahoo-Wang/skills) 是统一分发仓库，按源项目发布
-拆分插件；Fetcher 对应 `ahoo-fetcher-skills`。
-
-### Codex
+Fetcher 的 skills/plugins.json 将这些技能发布为 ahoo-fetcher-skills。按 [Ahoo Skills 安装指南](https://github.com/Ahoo-Wang/skills#installation)安装对应插件。
 
 ```bash
 codex plugin marketplace add Ahoo-Wang/skills --ref main
 codex plugin add ahoo-fetcher-skills@ahoo-skills
 ```
 
-### Claude Code
+Claude Code 使用 `/plugin marketplace add https://github.com/Ahoo-Wang/skills` 和 `/plugin install ahoo-fetcher-skills`。安装后的版本由分发仓库管理，不假定与当前源码立即一致。
 
-```bash
-/plugin marketplace add https://github.com/Ahoo-Wang/skills
-/plugin install ahoo-fetcher-skills
-```
+## 选择任务边界
 
-Marketplace 每六小时同步一次源仓库，每次同步提交都会形成新的插件版本。在
-Claude Code 中运行 `/plugin update` 即可拉取最新同步副本。安装与更新规则以
-[Ahoo Skills 安装说明](https://github.com/Ahoo-Wang/skills/blob/main/README.zh-CN.md#L47-L66)为准。
+| 任务           | Skill                                                                                                                    | API 参考                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| HTTP 客户端    | [`$fetcher-integration`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-integration/SKILL.md)             | [fetcher](../reference/fetcher/index.md)         |
+| 声明式服务     | [`$fetcher-decorator-service`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-decorator-service/SKILL.md) | [decorator](../reference/decorator/index.md)     |
+| 事件投递       | [`$fetcher-eventbus`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-eventbus/SKILL.md)                   | [eventbus](../reference/eventbus/index.md)       |
+| 值存储         | [`$fetcher-storage`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-storage/SKILL.md)                     | [storage](../reference/storage/index.md)         |
+| SSE 消费       | [`$fetcher-llm-streaming`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-llm-streaming/SKILL.md)         | [eventstream](../reference/eventstream/index.md) |
+| 对话补全       | [`$fetcher-openai-client`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openai-client/SKILL.md)         | [openai](../reference/openai/index.md)           |
+| OpenAPI 类型   | [`$fetcher-openapi-types`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-types/SKILL.md)         | [openapi](../reference/openapi/index.md)         |
+| 客户端生成     | [`$fetcher-openapi-generator`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-generator/SKILL.md) | [generator](../reference/generator/index.md)     |
+| React 请求状态 | [`$fetcher-react-hooks`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-react-hooks/SKILL.md)             | [react](../reference/react/index.md)             |
+| 数据视图       | [`$fetcher-viewer-components`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-viewer-components/SKILL.md) | [viewer](../reference/viewer/index.md)           |
+| CoSec 认证     | [`$fetcher-cosec-auth`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-cosec-auth/SKILL.md)               | [cosec](../reference/cosec/index.md)             |
+| Wow 命令与查询 | [`$fetcher-wow-cqrs`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-wow-cqrs/SKILL.md)                   | [wow](../reference/wow/index.md)                 |
 
-## 调用 Skill
-
-安装插件后，用 `$` 显式调用其中一个 Skill：
-
-```text
-$fetcher-integration 创建一个 10 秒超时的命名客户端，
-返回类型化 JSON，并为 401 增加类型安全的恢复拦截器。
-```
-
-当任务匹配 `description` 时，Agent 也可以自动选择 Skill；包边界很重要时，优先
-显式调用。
-
-## 源码与分发
-
-| 层级        | 位置                                                                                                                 | 用途                               |
-| ----------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 源码        | [`fetcher/skills`](https://github.com/Ahoo-Wang/fetcher/tree/main/skills)                                            | 编写和审查 Fetcher 自有 Skill 内容 |
-| 分发        | [`plugins/ahoo-fetcher-skills`](https://github.com/Ahoo-Wang/skills/tree/main/plugins/ahoo-fetcher-skills)           | Agent 实际安装的生成式插件         |
-| Marketplace | [`.agents/plugins/marketplace.json`](https://github.com/Ahoo-Wang/skills/blob/main/.agents/plugins/marketplace.json) | 发布可安装的 Codex 插件集合        |
-
-Skill 应在 Fetcher 仓库修改，而不是直接编辑生成的分发副本。Ahoo Skills 会浅克隆本仓库、
-镜像 `skills/plugins.json`，并按同步周期重新生成插件。具体流程见
-[Ahoo Skills 源码同步说明](https://github.com/Ahoo-Wang/skills/blob/main/README.zh-CN.md#L68-L80)。
-
-## 选择 Skill
-
-| 目标                                  | Skill                        | 包参考                                 |
-| ------------------------------------- | ---------------------------- | -------------------------------------- |
-| 配置请求、URL、拦截器、超时与结果提取 | `$fetcher-integration`       | [Fetcher](../reference/fetcher.md)     |
-| 声明类型安全的服务类                  | `$fetcher-decorator-service` | [Decorator](../reference/decorator.md) |
-| 协调本地或跨标签页类型化事件          | `$fetcher-eventbus`          | [事件总线](../reference/eventbus.md)   |
-| 持久化浏览器或内存中的类型化状态      | `$fetcher-storage`           | [Storage](../reference/storage.md)     |
-| 消费 SSE 与 Token 流                  | `$fetcher-llm-streaming`     | [事件流](../reference/eventstream.md)  |
-| 调用 OpenAI Chat 与流式 API           | `$fetcher-openai-client`     | [OpenAI](../reference/openai.md)       |
-| 用 TypeScript 描述 OpenAPI 3 文档     | `$fetcher-openapi-types`     | [OpenAPI](../reference/openapi.md)     |
-| 根据 OpenAPI 生成客户端               | `$fetcher-openapi-generator` | [Generator](../reference/generator.md) |
-| 使用 React Hooks 管理请求状态         | `$fetcher-react-hooks`       | [React](../reference/react.md)         |
-| 构建数据探索界面                      | `$fetcher-viewer-components` | [Viewer](../reference/viewer.md)       |
-| 增加 CoSec 认证与 Token 刷新          | `$fetcher-cosec-auth`        | [CoSec](../reference/cosec.md)         |
-| 构建 Wow 命令与查询客户端             | `$fetcher-wow-cqrs`          | [Wow](../reference/wow.md)             |
-
-## Skill 的结构
-
-每个 Fetcher Skill 都有三个核心层级，部分 Skill 还包含 `evals/` Fixture：
-
-| 文件                 | 加载时机           | 用途                         |
-| -------------------- | ------------------ | ---------------------------- |
-| `SKILL.md`           | Skill 激活时       | 触发边界与实施工作流         |
-| `references/api.md`  | 需要精确 API 时    | 签名、默认值、示例和边界情况 |
-| `agents/openai.yaml` | Host 展示 Skill 时 | 显示名称与默认提示词         |
-| `evals/`             | 校验 Skill 时      | 可选的激活或行为测试 Fixture |
-
-短工作流防止无关包进入变更；API reference 比 Wiki 更深入，是 Agent 查询精确签名
-时的事实来源。
-
-## 提示词模式
-
-告诉 Agent 明确的结果与约束：
+## 写一个可验证的请求
 
 ```text
-$fetcher-openapi-generator 根据 ./openapi.yaml 生成客户端。
-把生成代码放在 src/generated，复用现有 tsconfig，
-不要修改规范，并验证生成包可以构建。
+$fetcher-openapi-generator 从 ./openapi.yaml 生成客户端到 src/generated，
+使用现有 tsconfig，不修改输入契约，并验证生成代码的类型检查。
 ```
 
-如果运行环境、错误、认证或兼容性要求会改变实现，就明确写出。无需粘贴 Skill
-可以从自身 reference 加载的 API 签名。
+给出输入、目标目录、已有客户端、运行环境和验收标准。Skill 的 references/api.md 是 Agent 可按需加载的详细材料；人类参考页同样提供准确 API 契约，不要求读者转去 Skill 才能完成开发。
 
-## 按工作流浏览
-
-- [HTTP 与服务](./http-and-services.md)
-- [流式与 OpenAI](./streaming-and-openai.md)
-- [OpenAPI 与生成](./openapi-and-generation.md)
-- [React 与集成](./react-and-integrations.md)
+源文件在本仓库 skills/；分发副本由 Ahoo Skills 生成。修改源文件并通过对应验证，不直接修改生成副本。

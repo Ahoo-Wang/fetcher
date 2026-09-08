@@ -1,62 +1,40 @@
 ---
-title: Documentation
-description: Keep Fetcher Wiki, README, examples, diagrams, and package skills accurate and bilingual.
+title: Maintain accurate documentation
+description: Maintain accurate documentation — Fetcher
 ---
 
-# Documentation
+# Maintain accurate documentation
 
-## Source of truth
+## Verify before explaining
 
-The Wiki owns learning paths, recipes, and reference. Root and package README
-files are short entry points. Before documenting a symbol, signature, default,
-or failure, verify the public package entry point and its implementation or
-tests.
+Resolve public exports through package.json and src/index.ts, then read implementations and tests for signatures, defaults, errors, and cleanup. Internal files do not establish supported imports. Keep API symbols unchanged when translating.
 
-## Bilingual parity
+## Place content by purpose
 
-Every English Wiki page outside generated artifacts has a Chinese counterpart
-at the same path under `wiki/zh/`. Keep headings, examples, links, and diagrams
-structurally identical; translate the explanation naturally without translating
-API identifiers.
+| Content                      | Location                |
+| ---------------------------- | ----------------------- |
+| First successful integration | Start                   |
+| Mental model and lifecycle   | Learn                   |
+| Complete application task    | Recipes                 |
+| Precise API contract         | Reference package/topic |
+| Agent workflow               | Skills                  |
 
-Every page starts with a unique title and description:
+Reference package indexes map public symbols to topic anchors. Split topics by independent concepts, not one file per symbol. Keep English and Chinese complete at matching paths, with title and description frontmatter on every page.
 
-```yaml
----
-title: First Request
-description: Install Fetcher and make a typed HTTP request in five minutes.
----
-```
+## Keep navigation complete
 
-## Examples and security
+Add a Reference topic to `.vitepress/config/reference.mjs`; it supplies order to navigation, the LLM generator and checks. Update both language pages. This is a new documentation site: maintain only current pages and links, without migration pages or legacy section indexes.
 
-- Make the smallest useful example copyable.
-- Use `example.com`, `example.test`, fixed fake IDs, and obvious placeholders.
-- Never place credentials, private hosts, personal data, or live service calls
-  in documentation or Storybook.
-- Explain browser/server trust boundaries where secrets are involved.
+## Validate examples and diagrams
 
-## Mermaid
+Examples must include imports and necessary context. Label application endpoints and external demonstration services honestly; never include private credentials. Type-check examples through public package imports. For generated clients, run the generator and inspect actual names instead of inventing a sample import.
 
-Use the existing dark palette, `autonumber` for sequence diagrams, and `<br>`
-inside node labels. Validate diagrams before building:
+Mermaid uses node fill `#2d333b`, border `#6d5dfc`, text `#e6edf3`. Use autonumber in sequenceDiagram and `<br>` in labels. After diagram edits run:
 
 ```bash
 pnpm --dir wiki fix:mermaid
 pnpm --dir wiki build
+node --test wiki/test/documentation.test.mjs
 ```
 
-## Generated artifacts
-
-Do not hand-edit `wiki/llms.txt`, `wiki/llms-full.txt`, or
-`wiki/.vitepress/dist/`. Build output and generated client code must be
-regenerated from their source.
-
-## Review checklist
-
-- English and Chinese files both changed.
-- Names, signatures, defaults, and errors match source.
-- Internal links target canonical Start, Learn, Recipes, Reference, or
-  Contributing paths.
-- Code and diagrams build.
-- A package public API change also updates its matching `skills/*/references/api.md`.
+Do not hand-edit llms.txt, llms-full.txt or .vitepress/dist. Public SDK API changes must update the matching skills/*/references/api.md in the same change.

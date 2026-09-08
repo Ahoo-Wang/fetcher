@@ -1,112 +1,125 @@
 ---
 title: Share State and Events
-description: Store typed values and coordinate serial, parallel, and cross-tab work with Fetcher packages.
+description: Verify local state and ordered events, then opt into browser tab notifications.
 ---
 
 # Share State and Events
 
-Use storage for durable/current values and an event bus for transient notifications. Do not use an event bus as an implicit database.
+Keep current values in storage and use events to notify consumers. First run a deterministic in-memory check; add cross-tab delivery only if your application needs it.
 
-## Store a typed value
+## 1. Install and run a local check
+
+Install `@ahoo-wang/fetcher-storage` and `@ahoo-wang/fetcher-eventbus`. Call this function in a runtime with the packages installed:
 
 ```ts
 import { InMemoryStorage, KeyStorage } from '@ahoo-wang/fetcher-storage';
+import { SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
 interface Preferences {
   theme: 'light' | 'dark';
 }
 
-const preferences = new KeyStorage<Preferences>({
-  key: 'preferences',
-  storage: new InMemoryStorage(),
-  defaultValue: { theme: 'light' },
-});
-
-const removeListener = preferences.addListener({
-  name: 'render-preferences',
-  order: 0,
-  handle: event => console.log(event.newValue),
-});
-
-preferences.set({ theme: 'dark' });
-console.log(preferences.get()); // { theme: 'dark' }
-
-removeListener();
-preferences.destroy();
-```
-
-`KeyStorage` serializes values as JSON by default, caches the deserialized value, and invalidates it through storage events. Provide `InMemoryStorage` for tests or non-persistent state; the default storage is selected from the current environment.
-
-## Run handlers in order
-
-```ts
-import { SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
-
-interface UserSaved {
-  id: string;
+export async function checkStateAndEvents() {
+  const preferences = new KeyStorage<Preferences>({
+    key: 'preferences',
+    storage: new InMemoryStorage(),
+    defaultValue: { theme: 'light' },
+  });
+  const remove = preferences.addListener({
+    name: 'render-preferences',
+    order: 0,
+    handle: event => {
+      console.log(event.newValue);
+    },
+  });
+  const saved = new SerialTypedEventBus<{ id: string }>('user-saved');
+  const calls: string[] = [];
+  saved.on({
+    name: 'cache',
+    order: 10,
+    handle: () => {
+      calls.push('cache');
+    },
+  });
+  saved.on({
+    name: 'toast',
+    order: 20,
+    once: true,
+    handle: () => {
+      calls.push('toast');
+    },
+  });
+  try {
+    preferences.set({ theme: 'dark' });
+    if (preferences.get()?.theme !== 'dark')
+      throw new Error('Storage check failed');
+    await saved.emit({ id: '42' });
+    await saved.emit({ id: '43' });
+    if (calls.join(',') !== 'cache,toast,cache')
+      throw new Error('Delivery check failed');
+  } finally {
+    remove();
+    preferences.destroy();
+    preferences.eventBus.destroy();
+    saved.destroy();
+  }
 }
-
-const saved = new SerialTypedEventBus<UserSaved>('user-saved');
-
-saved.on({
-  name: 'cache',
-  order: 10,
-  handle: event => console.log('cache', event.id),
-});
-saved.on({
-  name: 'toast',
-  order: 20,
-  once: true,
-  handle: event => console.log('toast', event.id),
-});
-
-await saved.emit({ id: '42' });
-saved.destroy();
 ```
 
-Serial handlers run by ascending order. Each emission removes its `once` registrations before any callback starts, so reentrant or concurrent emissions cannot invoke them again. Handler names are unique.
+A successful call verifies the stored value, ascending handler order and a once-only notification. `set()` writes and updates the cache synchronously, but does not await asynchronous listeners. Use `await bus.emit()` when you need to wait for local event delivery.
 
-## Run independent handlers concurrently
+## 2. Choose persistence explicitly
 
-Use `ParallelTypedEventBus` only when handlers do not depend on each other's effects:
+`InMemoryStorage` does not survive reload. Browser `localStorage` persists strings; `KeyStorage` defaults to JSON serialization. Its default event bus is local: two independently constructed stores are not automatically a cross-tab reactive system. Parse failures, blocked storage access and quota errors can throw; handle them where the application chooses whether to retain an in-memory fallback or show an error.
 
-```ts
-import { ParallelTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
+## 3. Add browser tab notifications
 
-const bus = new ParallelTypedEventBus<UserSaved>('user-saved');
-```
-
-`emit()` waits for all handlers. Handler failures are logged by the bus implementation and do not stop unrelated handlers.
-
-## Broadcast across tabs
-
-Wrap a local bus:
+Run the following in two same-origin browser tabs with storage access and an available cross-tab messenger:
 
 ```ts
+import { KeyStorage, type StorageEvent } from '@ahoo-wang/fetcher-storage';
 import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
 
-const local = new SerialTypedEventBus<UserSaved>('user-saved');
-const broadcast = new BroadcastTypedEventBus({ delegate: local });
-
-broadcast.on({
-  name: 'refresh-user',
-  order: 0,
-  handle: event => console.log(event.id),
-});
-
-await broadcast.emit({ id: '42' });
-broadcast.destroy();
+export function watchTheme(onTheme: (theme: string) => void) {
+  const bus = new BroadcastTypedEventBus({
+    delegate: new SerialTypedEventBus<StorageEvent<string>>('app-theme'),
+  });
+  const theme = new KeyStorage<string>({
+    key: 'app-theme',
+    storage: localStorage,
+    eventBus: bus,
+    defaultValue: 'light',
+  });
+  const remove = theme.addListener({
+    name: 'render-theme',
+    order: 0,
+    handle: event => {
+      onTheme(event.newValue ?? 'light');
+    },
+  });
+  onTheme(theme.get() ?? 'light');
+  return {
+    set: (value: 'light' | 'dark') => theme.set(value),
+    dispose() {
+      remove();
+      theme.destroy();
+      bus.destroy();
+    },
+  };
+}
 ```
 
-The event must be structured-clone/serialization safe for the chosen messenger. `destroy()` closes cross-tab messaging; call it when the owner unmounts or shuts down.
+In each tab call `const theme = watchTheme(renderTheme)`, where `renderTheme` updates your UI. Call `theme.set('dark')` in one tab and check both UIs. Call `theme.dispose()` when its owner unmounts. This example owns its bus; do not destroy a bus shared with another owner.
 
-## Choose the smallest tool
+Use the same key and channel in both tabs. The storage adapter installs a serialization bridge for broadcast values; a shared bus must represent one key and a compatible serializer. Messages are notifications, not a durable queue or conflict-resolution protocol. There is no delivery acknowledgement from all remote tabs.
 
-- One module owns the value: a variable may be enough.
-- The value must survive reload: use `KeyStorage` with browser storage.
-- Several local consumers react to a transient event: use a serial bus.
-- Consumers are independent and slow: consider a parallel bus.
-- Other tabs must react: use a broadcast bus and explicit cleanup.
+## Failure and cleanup checklist
+
+Handler names are unique; a second registration with the same name returns false. Handler errors are logged and do not stop other handlers. Use `ParallelTypedEventBus` only for independent consumers; its emit waits for local handlers, not remote acknowledgements. `destroy()` on KeyStorage only removes its internal listener; remove application listeners and close the owned bus separately. It does not delete stored values.
+
+See [storage lifecycle](../reference/storage/key-storage), [serialization and environment](../reference/storage/serialization-and-runtime), [event delivery](../reference/eventbus/events-and-delivery), and [broadcast messengers](../reference/eventbus/broadcast-and-messengers).
+
+[keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242) selects the default local bus.

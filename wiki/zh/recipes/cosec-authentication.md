@@ -1,84 +1,86 @@
 ---
-title: 增加 CoSec 认证
-description: 为 Fetcher 增加 CoSec 请求头、Token 存储、自动刷新和鉴权错误处理。
+title: 接入 CoSec 身份认证
+description: 创建包含刷新、令牌所有权及清理逻辑的浏览器认证会话。
 ---
 
-# 增加 CoSec 认证
+# 接入 CoSec 身份认证
 
-`CoSecConfigurer` 是 CoSec 拦截器的组合根。最小配置会增加应用、设备和请求 ID；提供 TokenRefresher 后还会启用 Bearer 认证与刷新。
+将浏览器应用连接到现有 CoSec 服务，得到一个处理登录、受保护请求和退出登录的会话对象。
 
-## 配置可信 API 客户端
+## 1. 确认认证契约
 
-```ts
-import { Fetcher } from '@ahoo-wang/fetcher';
-import { CoSecConfigurer, CoSecTokenRefresher } from '@ahoo-wang/fetcher-cosec';
+安装 `@ahoo-wang/fetcher` 和 `@ahoo-wang/fetcher-cosec`。应用须已有登录流程，返回 JWT 字符串 `accessToken` 和 `refreshToken`。本例的 `POST /auth/refresh` 接收该令牌对的 JSON 并返回新令牌对，`GET /profile` 返回 `{ id, name }`。这些路由和 app ID 必须与后端一致。仅对该可信来源使用此客户端。
 
-const api = new Fetcher({ baseURL: 'https://api.example.com' });
-const refreshFetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-
-const cosec = new CoSecConfigurer({
-  appId: 'developer-console',
-  tokenRefresher: new CoSecTokenRefresher({
-    fetcher: refreshFetcher,
-    endpoint: '/auth/refresh',
-  }),
-  onUnauthorized: () => {
-    window.location.assign('/login');
-  },
-  onForbidden: async () => {
-    console.error('Access denied');
-  },
-});
-
-cosec.applyTo(api);
-```
-
-使用未配置 CoSec 的独立 Fetcher 刷新 Token。`CoSecTokenRefresher` 会标记刷新调用，防止认证拦截器递归刷新。
-
-## 登录与退出
-
-保存认证端点返回的 Token Pair：
+## 2. 为应用所有者创建一个会话
 
 ```ts
-cosec.tokenStorage.signIn({
-  accessToken: loginResponse.accessToken,
-  refreshToken: loginResponse.refreshToken,
-});
+import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
+import {
+  CoSecConfigurer,
+  CoSecTokenRefresher,
+  type CompositeToken,
+} from '@ahoo-wang/fetcher-cosec';
 
-console.log(cosec.tokenStorage.authenticated);
-console.log(cosec.tokenStorage.currentUser);
+export function createSession(baseURL: string) {
+  const api = new Fetcher({ baseURL });
+  const refreshApi = new Fetcher({ baseURL });
+  const cosec = new CoSecConfigurer({
+    appId: 'developer-console',
+    tokenRefresher: new CoSecTokenRefresher({
+      fetcher: refreshApi,
+      endpoint: '/auth/refresh',
+    }),
+    onUnauthorized: () => {
+      console.error('Sign in again');
+    },
+    onForbidden: async () => {
+      console.error('Access denied');
+    },
+  });
+  cosec.applyTo(api);
+
+  return {
+    signIn(tokens: CompositeToken) {
+      cosec.tokenStorage.signIn(tokens);
+    },
+    signOut() {
+      cosec.tokenStorage.signOut();
+    },
+    async loadProfile() {
+      return api.get<{ id: string; name: string }>(
+        '/profile',
+        {},
+        { resultExtractor: ResultExtractors.Json },
+      );
+    },
+    dispose() {
+      cosec.tokenStorage.destroy();
+      cosec.tokenStorage.eventBus.destroy();
+      cosec.deviceIdStorage.destroy();
+      cosec.deviceIdStorage.eventBus.destroy();
+    },
+  };
+}
 ```
 
-退出会删除 Token Pair，并通过默认存储事件总线向其他 Context 广播变更：
+独立刷新客户端让刷新请求不经过受保护请求的管线。`CoSecTokenRefresher` 还会设置跳过递归刷新的标记。提供 tokenRefresher 才会启用 bearer 认证；仅传 appId 只安装基础请求头和资源归属逻辑。
 
-```ts
-cosec.tokenStorage.signOut();
-```
+## 3. 连接登录与退出流程
 
-不要记录、写入文档或提交真实 Token。
+应用启动时创建 `const session = createSession(yourApiOrigin)`。登录成功后调用 `session.signIn(loginResponse)`，再在 UI 错误边界内等待 `session.loadProfile()`。退出时调用 `session.signOut()` 并清除敏感 UI 状态。不要将真实令牌写入源码或日志。
 
-## 每个请求会获得什么
+令牌解析不是签名验证，授权责任仍在后端。请求中显式提供的 Authorization 不会被覆盖。添加空间或租户行为前先阅读[请求头与资源归属规则](../reference/cosec/interceptors-and-attribution)。
 
-配置后的请求拦截器会增加：
+## 4. 验证刷新与失败行为
 
-- `CoSec-App-Id`
-- `CoSec-Device-Id`
-- `CoSec-Request-Id`
-- Provider 能解析时的 `CoSec-Space-Id`
-- 存在已认证 Token 时的 `Authorization: Bearer …`
+在测试中使用内存令牌/设备存储和模拟 fetch，覆盖有效令牌、访问令牌过期但刷新令牌有效、并发请求、刷新失败及 401/403 响应。刷新并发在单个 token manager 内共享，不是跨标签页的分布式锁。刷新失败可能清除当前会话；回调不会将失败请求变成成功结果。除了显示登录或错误界面，也要捕获请求拒绝。
 
-显式请求 Authorization 不会被覆盖。
+## 5. 清理所有者
 
-## 刷新与错误
+当前 `TokenStorage` 默认使用按存储 key 命名的广播总线；其他上下文需要匹配通道和支持的 messenger。这与默认只使用本地总线的普通 `KeyStorage` 不同。广播是变更通知，不是跨标签页的事务性刷新协调。
 
-发送请求前，只有 Access Token 进入过期/提前刷新区间且 Refresh Token 仍有效时才会刷新。并发刷新共享同一个进行中 Promise。刷新失败会删除已存 Token 并抛出 `RefreshTokenError`。
+应用关闭时停止尚未完成的应用任务，并调用 `session.dispose()`。它释放本例拥有的存储处理器和总线，不删除令牌；退出登录需另外调用 `signOut()`。 存储通知是异步的：退出登录后通知仍在投递时，不要立即销毁会话。投递中关闭总线可能中断广播并记录错误。不要销毁其他所有者仍在共享的总线。配置器没有 dispose 方法；本例随会话一起停止使用私有 Fetcher。
 
-收到 `401` 后，认证响应/错误拦截器按配置运行；`403` 会在提供时调用 `onForbidden`。界面跳转保留在这些回调中，Token 协议保留在 CoSec 组件内。
+查阅[配置](../reference/cosec/configuration)和[令牌刷新与存储](../reference/cosec/tokens-and-refresh)。
 
-## 空间与资源归属
-
-只有服务端契约要求空间请求头的资源才增加 `SpaceIdProvider`。资源归属拦截器还可以从请求契约解析 Tenant/Owner；不要全局注入猜测的 Tenant 值。
-
-## 安全测试
-
-使用内存存储、固定的假 JWT 和 Mock Fetch 边界。断言请求头名称、刷新次数、存储变更以及 401/403 回调，不要联系真实身份服务。
+[tokenStorage.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenStorage.ts#L94) 创建默认广播总线。

@@ -38,51 +38,40 @@
   max-height: 320px;
 }
 
-/* Mermaid diagram styling */
-.mermaid,
-.vitepress-mermaid-renderer,
-[class*='mermaid'] {
-  background: #161b22 !important;
+/* Target the chart surface, never nested controls or fullscreen wrappers. */
+.mermaid-container {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+}
+
+.mermaid-container .mermaid {
+  background: #161b22;
   border-radius: 8px;
-  padding: 16px;
-  margin: 16px 0;
-  width: 100% !important;
-  overflow-x: auto;
-  box-sizing: border-box;
 }
 
-.mermaid svg,
-.vitepress-mermaid-renderer svg,
-[class*='mermaid'] svg {
-  max-width: 100% !important;
-  height: auto !important;
-  display: block;
+.mermaid-container .controls {
+  width: auto;
 }
 
-/* Mermaid zoom container */
-.mermaid-zoom-container,
-[class*='mermaid-control'] {
-  width: 100%;
+.mermaid-container button:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 3px;
 }
 
-.mermaid-zoom-container {
-  cursor: zoom-in;
-  position: relative;
-  display: inline-block;
-  width: 100%;
+.mermaid-container.dialog-fullscreen-active {
+  z-index: 1000;
 }
 
-.mermaid-zoom-container.zoomed {
-  cursor: zoom-out;
+.mermaid-dialog-backdrop {
+  z-index: 999;
 }
 
-/* Medium zoom for images */
-.medium-zoom-overlay {
-  z-index: 200;
-}
-
-.medium-zoom-image--opened {
-  z-index: 201;
+@media (hover: none) {
+  .mermaid-container .controls {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
 }
 
 .VPDoc .container {
@@ -130,13 +119,13 @@
 .reference-page .vp-doc table,
 .reference-index-page .vp-doc table,
 .skills-page .vp-doc table {
-  display: table;
-  width: 100%;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
   margin: 18px 0 26px;
   border: 1px solid var(--vp-c-divider);
   border-radius: 12px;
   border-spacing: 0;
-  overflow: hidden;
 }
 
 .reference-page .vp-doc th,
@@ -210,4 +199,89 @@
   --vp-font-family-mono:
     'JetBrains Mono', 'Fira Code', Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+.vp-doc {
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.vp-doc h1 {
+  letter-spacing: -0.035em;
+  line-height: 1.25;
+}
+
+.vp-doc h2 {
+  scroll-margin-top: 88px;
+}
+
+.vp-doc pre {
+  overflow-wrap: normal;
+}
+
+.VPDoc .content {
+  min-width: 0;
+}
+
+/* stylelint-disable-next-line selector-class-pattern -- VitePress owns this class name. */
+.VPHero .text {
+  max-width: 780px;
+}
+
+/* stylelint-disable-next-line selector-class-pattern -- VitePress owns this class name. */
+.VPHome .vp-doc {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mermaid-container * {
+    transition: none !important;
+  }
+}
+
+.vp-doc .mermaid-container:not(.dialog-fullscreen-active) {
+  height: auto;
+  min-height: 240px;
+  max-height: none;
+  aspect-ratio: var(--fetcher-mermaid-ratio, 2);
+}
+
+.vp-doc td code {
+  white-space: nowrap;
+}
+
+.vp-doc .mermaid-source pre {
+  white-space: pre-wrap;
+  padding: 16px;
+}
+
+.vp-doc .mermaid-container.dialog-fullscreen-active {
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border-radius: 0;
+  transform: none;
+}
+
+@media (hover: hover) {
+  .vp-doc .mermaid-container:not(.dialog-fullscreen-active) .desktop-controls {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .vp-doc .mermaid-container:hover .desktop-controls,
+  .vp-doc .mermaid-container:focus-within .desktop-controls {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+}
+
+.vp-doc .mermaid marker[id*='sequencenumber'] circle {
+  fill: #2d333b;
+  stroke: #6d5dfc;
 }

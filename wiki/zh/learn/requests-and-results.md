@@ -1,82 +1,52 @@
 ---
-title: URL、请求体与结果
-description: 构建 Fetcher URL 和请求体，并选择应用真正需要的结果形态。
+title: 构造请求并选择结果
+description: 构造请求并选择结果 — Fetcher
 ---
 
-# URL、请求体与结果
+# 构造请求并选择结果
 
-## 解析 URL
+构造请求时要明确三件事：请求地址、发送的数据，以及调用者得到的结果。明确这三个边界，服务函数才有稳定的契约。
 
-Fetcher 先合并 `baseURL` 与请求 URL，再应用路径值和查询值。
+## 定位资源
 
 ```ts
-const api = new Fetcher({ baseURL: 'https://api.example.com/v1' });
+import { Fetcher, JsonResultExtractor } from '@ahoo-wang/fetcher';
 
-await api.get('/users/{id}', {
-  urlParams: {
-    path: { id: 'a/b' },
-    query: { active: true, page: 2 },
+const api = new Fetcher({ baseURL: 'https://api.example.com', timeout: 5_000 });
+interface User {
+  id: string;
+  name: string;
+}
+const user = await api.get<User>(
+  '/users/{id}',
+  {
+    urlParams: { path: { id: '42' }, query: { include: 'profile' } },
   },
-});
-```
-
-默认 URI Template Resolver 会对路径值做百分号编码。`UrlTemplateStyle.Express` 支持 `/users/:id`。缺少必填路径值时，会在发送网络请求前抛出异常。
-
-查询值会交给 `URLSearchParams`。优先使用字符串、数字和布尔值，并确保其字符串形式属于服务端契约；嵌套值应显式序列化。
-
-## 合并请求头与超时
-
-客户端默认值会被复制，同名请求级值覆盖它：
-
-```ts
-const api = new Fetcher({
-  headers: { Accept: 'application/json', 'X-App': 'console' },
-  timeout: 5_000,
-});
-
-await api.get('/health', {
-  headers: { 'X-App': 'worker' },
-  timeout: 1_000,
-});
-```
-
-最终请求使用 `X-App: worker` 和一秒超时。
-
-## 发送请求体
-
-普通对象会通过 `JSON.stringify` 编码。`FormData`、`Blob`、`URLSearchParams`、TypedArray 和 `ReadableStream` 等原生请求体类型会直接传递。
-
-```ts
-await api.post('/users', {
-  body: { name: 'Ada', role: 'admin' },
-});
-```
-
-GET 和 HEAD 辅助方法会在 TypeScript 边界排除 `body`。
-
-## 选择结果
-
-HTTP 辅助方法返回 `Response`：
-
-```ts
-const response = await api.get('/users/42');
-const user = await response.json();
-```
-
-当共享客户端应该直接返回其他形态时，使用结果提取器：
-
-```ts
-import { JsonResultExtractor } from '@ahoo-wang/fetcher';
-
-const user = await api.get<{ id: string; name: string }>(
-  '/users/42',
-  {},
   { resultExtractor: JsonResultExtractor },
 );
+console.log(user.name);
 ```
 
-内置提取器覆盖 Exchange、Response、JSON、文本、Blob、ArrayBuffer 和 Bytes。响应体通常只能消费一次；多个消费者读取前应先克隆。
+`urlParams.path` 填充 URI 模板，`urlParams.query` 编码为查询参数。示例对应 `/users/42?include=profile`。嵌套业务对象应显式序列化，不要依赖对象的默认字符串形式。详见 [URL 规则](../reference/fetcher/urls.md)。
 
-## 校验服务端数据
+## 发送数据
 
-泛型结果类型只表达编译期预期，不会校验 JSON。安全、金额或持久化路径必须在信任边界校验不受信任的响应数据。
+```ts
+import { Fetcher } from '@ahoo-wang/fetcher';
+const api = new Fetcher({ baseURL: 'https://api.example.com' });
+await api.post('/users', { body: { name: 'Ada' } });
+```
+
+请求体拦截器序列化普通对象；FormData、Blob 等原生请求体遵循各自的传输规则。头部合并时请求级值优先；使用受支持的 Headers 输入，不要将 Headers 实例展开成普通对象。详见[请求参考](../reference/fetcher/requests.md)。
+
+## 选择返回契约
+
+| 入口                   | 默认结果      | 适用场景                             |
+| ---------------------- | ------------- | ------------------------------------ |
+| get、post 等 HTTP 方法 | Response      | 需要状态码、响应头或原生 body 读取器 |
+| request                | FetchExchange | 需要完整管线上下文                   |
+| 显式结果提取器         | 提取后的值    | 调用者只需要 JSON、文本或指定结构    |
+
+响应体读取一次；多个消费者需要在读取前 clone。JSON 泛型表达静态预期，不验证数据。解析发生在传输之后，即使 HTTP 成功也可能抛错。
+
+下一步：[错误与超时](./interceptors-errors-timeouts.md)，然后理解[请求生命周期](./request-lifecycle.md)。

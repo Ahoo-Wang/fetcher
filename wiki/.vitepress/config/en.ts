@@ -1,3 +1,4 @@
+import { referenceSidebar } from './reference';
 import type { DefaultTheme } from 'vitepress';
 
 const sidebarSections = [
@@ -100,11 +101,16 @@ export const en: DefaultTheme.Config = {
     logo: { src: '/fetcher-logo.png', alt: 'Fetcher logo' },
     nav: [
       { text: 'Start', link: '/start/' },
-      { text: 'Learn', link: '/learn/request-lifecycle' },
+      { text: 'Learn', link: '/learn/requests-and-results' },
       { text: 'Recipes', link: '/recipes/declarative-services' },
-      { text: 'Skills', link: '/skills/' },
       { text: 'Reference', link: '/reference/' },
-      { text: 'Contributing', link: '/contributing/' },
+      {
+        text: 'Resources',
+        items: [
+          { text: 'Skills', link: '/skills/' },
+          { text: 'Contributing', link: '/contributing/' },
+        ],
+      },
       { text: 'Storybook', link: '/storybook/', target: '_blank' },
     ],
     sidebar: {
@@ -112,7 +118,7 @@ export const en: DefaultTheme.Config = {
       '/learn/': sidebar('Learn'),
       '/recipes/': sidebar('Recipes'),
       '/skills/': sidebar('Skills'),
-      '/reference/': sidebar('Reference'),
+      ...referenceSidebar(),
       '/contributing/': sidebar('Contributing'),
     },
     socialLinks: [

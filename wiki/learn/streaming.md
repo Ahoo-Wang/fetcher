@@ -1,77 +1,49 @@
 ---
-title: Streaming
-description: Parse Server-Sent Events, convert JSON events, stop on a terminator, and cancel safely.
+title: Read and close an event stream
+description: Read and close an event stream — Fetcher
 ---
 
-# Streaming
+# Read and close an event stream
 
-`@ahoo-wang/fetcher-eventstream` turns a response body into typed stream stages. Importing the package also installs the documented `Response` helpers.
+An SSE response remains open while events arrive. Treat HTTP acquisition, frame parsing, JSON conversion, and consumer cleanup as separate responsibilities.
 
-## Parse SSE
+## Consume one response once
 
 ```ts
 import '@ahoo-wang/fetcher-eventstream';
-
-const response = await fetch('/events');
-const stream = response.eventStream();
-
-for await (const event of stream) {
-  console.log(event.event, event.id, event.data);
-}
-```
-
-The parser joins consecutive `data:` lines with a newline, exposes `event`, `id`, and `retry`, ignores comment lines, and emits on the blank line that terminates an SSE event.
-
-## Convert JSON data
-
-```ts
 import { toJsonServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
-
 interface Token {
   value: string;
 }
-
-const jsonStream = toJsonServerSentEventStream<Token>(
-  response.eventStream(),
-  event => event.data === '[DONE]',
-);
-
-for await (const event of jsonStream) {
-  console.log(event.data.value);
-}
-```
-
-The terminate detector sees the raw `ServerSentEvent`. A terminating event closes the JSON stream and is not parsed as JSON.
-
-## Handle malformed data
-
-Invalid JSON is reported through `EventStreamConvertError`. Keep protocol errors visible instead of silently dropping chunks:
-
-```ts
+const controller = new AbortController();
 try {
-  for await (const event of jsonStream) {
-    consume(event.data);
-  }
-} catch (error) {
-  console.error('Invalid event stream', error);
+  const response = await fetch('/events', { signal: controller.signal });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const raw = response.eventStream();
+  if (!raw) throw new Error('Missing response body');
+  const events = toJsonServerSentEventStream<Token>(
+    raw,
+    event => event.data === '[DONE]',
+  );
+  for await (const event of events) console.log(event.data.value);
+} finally {
+  controller.abort();
 }
 ```
 
-## Cancel
+The import registers Response helpers. The example expects your server to emit SSE data containing JSON `{ "value": "..." }`, with `[DONE]` as a final raw-data marker. It is an integration template, not a standalone public endpoint.
 
-Abort the HTTP request when the consumer no longer needs data. Breaking an async loop stops consumption, but the request owner should still abort the network operation when continued download is unwanted.
+## Understand the boundaries
 
-```ts
-const abortController = new AbortController();
-const response = await fetch('/events', { signal: abortController.signal });
+| Stage          | Responsibility                                          |
+| -------------- | ------------------------------------------------------- |
+| HTTP           | Validate status and own AbortController                 |
+| SSE parser     | Decode lines, join data fields and emit complete events |
+| JSON transform | Test the raw terminator before parsing data             |
+| Consumer       | Process typed events and release resources on exit      |
 
-for await (const event of response.eventStream()) {
-  if (event.data === '[DONE]') break;
-}
+A terminating event is not parsed as JSON. Invalid JSON produces a conversion failure; handle it around stream consumption, not only around the initial fetch. Static Token types do not validate event payloads.
 
-abortController.abort();
-```
+A stalled response may contain incomplete frames: verify the server sends a blank line after each event. Do not call eventStream twice on the same consumed body. The finally block cancels the network owner even when processing throws.
 
-## Debug a stalled stream
-
-Check the `Content-Type`, confirm the server sends a blank line after each event, verify UTF-8 chunk boundaries are decoded by the provided transforms, and ensure the terminator matches the raw data exactly.
+See [SSE pipeline](../reference/eventstream/sse-pipeline.md), [JSON results](../reference/eventstream/json-and-results.md), and [Cancellation](../reference/eventstream/consumption-and-cancellation.md).

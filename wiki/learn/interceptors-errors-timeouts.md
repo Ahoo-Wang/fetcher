@@ -1,86 +1,49 @@
 ---
-title: Interceptors, Errors, and Timeouts
-description: Extend the Fetcher pipeline and diagnose status, network, cancellation, and timeout failures.
+title: Handle errors, timeouts, and cancellation
+description: Handle errors, timeouts, and cancellation — Fetcher
 ---
 
-# Interceptors, Errors, and Timeouts
+# Handle errors, timeouts, and cancellation
 
-## Add an interceptor at the right phase
+First determine whether failure belongs to transport, HTTP policy, or result extraction. A retry cannot fix every category.
 
-```ts
-import {
-  FETCH_INTERCEPTOR_ORDER,
-  type RequestInterceptor,
-} from '@ahoo-wang/fetcher';
-
-const requestIdInterceptor: RequestInterceptor = {
-  name: 'RequestIdInterceptor',
-  order: FETCH_INTERCEPTOR_ORDER - 100,
-  intercept(exchange) {
-    exchange.request.headers = {
-      ...exchange.request.headers,
-      'X-Request-Id': crypto.randomUUID(),
-    };
-  },
-};
-
-api.interceptors.request.use(requestIdInterceptor);
-```
-
-Use request interceptors for request mutation, response interceptors for response policy, and error interceptors for recovery. Do not read a response body in multiple interceptors unless each reader uses a clone.
-
-Remove a registered interceptor by name with `eject(name)`. A duplicate name is rejected instead of replacing the existing interceptor.
-
-## Status errors
-
-The default validator accepts only 2xx responses. Customize it per client:
+## Keep the exchange context
 
 ```ts
-const api = new Fetcher({
-  validateStatus: status => status >= 200 && status < 400,
-});
-```
-
-Rejected responses become `HttpStatusValidationError`, then pass through error interceptors. The final unhandled error is an `ExchangeError` whose `exchange.response` still contains the status and headers.
-
-## Network and interceptor errors
-
-An exception thrown by native Fetch or any interceptor becomes `exchange.error`. If no error interceptor clears it, Fetcher throws `ExchangeError`. Check `error.cause` and `error.exchange.request.url` before treating it as an HTTP status failure.
-
-## Timeout and cancellation
-
-Request timeout overrides client timeout. `0` or an omitted timeout disables the timer.
-
-```ts
-import { FetchTimeoutError } from '@ahoo-wang/fetcher';
-
+import { ExchangeError, Fetcher, FetchTimeoutError } from '@ahoo-wang/fetcher';
+const api = new Fetcher({ baseURL: 'https://api.example.com' });
 try {
   await api.get('/reports', { timeout: 1_000 });
 } catch (error) {
-  if (
-    error instanceof ExchangeError &&
-    error.cause instanceof FetchTimeoutError
-  ) {
-    console.error(error.cause.timeout, error.cause.request.url);
+  if (error instanceof ExchangeError) {
+    if (error.cause instanceof FetchTimeoutError) {
+      console.error('Timeout', error.cause.request.timeout);
+    } else {
+      console.error(error.exchange.response?.status, error.cause);
+    }
+  } else {
+    throw error;
   }
 }
 ```
 
-Provide an `AbortController` when the caller also needs cancellation:
+The default status policy accepts 200–299. A rejected status becomes an exchange failure; native network failures can have no response. JSON parsing and custom result extraction run after the interceptor pipeline, so their failures are not necessarily ExchangeError.
+
+## Give cancellation an owner
 
 ```ts
+import { Fetcher } from '@ahoo-wang/fetcher';
+const api = new Fetcher({ baseURL: 'https://api.example.com' });
 const abortController = new AbortController();
-const request = api.get('/reports', { abortController });
+const request = api.get('/reports', { abortController, timeout: 5_000 });
 abortController.abort();
-await request;
+await request.catch(error => console.error(error));
 ```
 
-Timeout uses the same controller and throws `FetchTimeoutError`. A manually aborted request retains the platform's abort error as the exchange cause.
+Use `abortController` when caller cancellation must compose with the Fetcher timeout. Supplying a native `signal` takes the direct fetch path and bypasses the library timeout. An omitted timeout or zero disables its timer. Request timeout overrides client timeout.
 
-## Minimal diagnosis order
+## Change policy deliberately
 
-1. Read `ExchangeError.message` and `cause`.
-2. Inspect the resolved request URL, method, headers, and timeout.
-3. If a response exists, inspect status and content type before reading the body.
-4. Check custom interceptor order and whether an error interceptor cleared the original error.
-5. Reproduce against a mocked network boundary before changing retry behavior.
+Client `validateStatus` configures the default interceptor manager. A custom manager owns its own response policy. Error interceptors can recover by clearing `exchange.error`; they do not automatically repeat response validation. Do not treat recovery as a built-in retry loop.
+
+Read [Errors and cancellation](../reference/fetcher/errors-and-cancellation.md) for exact classes and [Interceptors](../reference/fetcher/interceptors.md) for registration and ordering.

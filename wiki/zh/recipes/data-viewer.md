@@ -1,51 +1,48 @@
 ---
-title: 构建数据 Viewer
-description: 将字段定义、筛选、列、视图、数据加载和远程定义组合为 Viewer 工作流。
+title: 构建数据浏览器
+description: 使用应用负责的数据加载、取消和可恢复错误渲染分页 Viewer。
 ---
 
-# 构建数据 Viewer
+# 构建数据浏览器
 
-应用已经拥有数据加载和视图持久化时，从 `Viewer` 开始。只有后端实现 Viewer Definition 与 Wow View 契约时，才使用 `FetcherViewer`。
+创建一个 React 页面，渲染默认视图、加载数据并响应分页/排序。Viewer 管理展示状态，应用提供数据和持久化回调。
 
-## 安装 Peer
+## 1. 准备应用
 
-```bash
-pnpm add @ahoo-wang/fetcher-viewer @ahoo-wang/fetcher-wow @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage antd @ant-design/icons dayjs react react-dom
-```
+使用支持 CSS 打包的 React 应用，安装 `@ahoo-wang/fetcher-viewer` 及其声明的 peer 依赖。[包入口](../reference/viewer/)列出了完整安装契约；React、Ant Design、图标、dayjs 和 Fetcher peers 都必须解析到兼容版本。
 
-包管理器会报告当前版本仍缺少的 Fetcher Peer Package。
+本例要求同源应用提供 `POST /users/paged`，接收 `{ condition, pagination: { index, size }, sort }`，返回 JSON `{ list: [{ id, name }], total }`。请实现该路由或将 load 适配至真实服务。这是应用契约，不是 Viewer 创建的端点。后端必须执行授权并验证查询。countUrl 是必填的定义元数据，但本例不会调用它。
 
-## 定义字段与视图
+## 2. 添加完整页面
+
+保存为 `UsersPage.tsx`，通过现有 React root/路由挂载 `<UsersPage />`：
 
 ```tsx
-import type {
-  FieldDefinition,
-  ViewColumn,
-  ViewDefinition,
-  ViewState,
-} from '@ahoo-wang/fetcher-viewer';
-import { Viewer } from '@ahoo-wang/fetcher-viewer';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 import { all, type PagedList } from '@ahoo-wang/fetcher-wow';
+import {
+  Viewer,
+  type FieldDefinition,
+  type ViewDefinition,
+  type ViewState,
+  type ViewChangeAction,
+} from '@ahoo-wang/fetcher-viewer';
 
 interface User {
   id: string;
   name: string;
-  status: 'ACTIVE' | 'DISABLED';
 }
-
 const fields: FieldDefinition[] = [
   { name: 'id', label: 'ID', type: 'text', primaryKey: true },
-  { name: 'name', label: 'Name', type: 'text', primaryKey: false },
-  { name: 'status', label: 'Status', type: 'text', primaryKey: false },
+  {
+    name: 'name',
+    label: 'Name',
+    type: 'text',
+    primaryKey: false,
+    sorter: true,
+  },
 ];
-
-const columns: ViewColumn[] = fields.map(field => ({
-  key: field.name,
-  name: field.name,
-  fixed: field.primaryKey,
-  hidden: false,
-}));
-
 const definition: ViewDefinition = {
   id: 'users',
   name: 'Users',
@@ -54,66 +51,107 @@ const definition: ViewDefinition = {
   dataUrl: '/users/paged',
   countUrl: '/users/count',
 };
-
 const defaultView: ViewState = {
   id: 'default',
   name: 'All users',
-  definitionId: definition.id,
+  definitionId: 'users',
   type: 'PERSONAL',
   source: 'SYSTEM',
   isDefault: true,
   filters: [],
-  columns,
+  columns: fields.map(field => ({
+    key: field.name,
+    name: field.name,
+    fixed: field.primaryKey,
+    hidden: false,
+  })),
   tableSize: 'middle',
   pageSize: 20,
   condition: all(),
   sorter: [],
 };
+const defaultViews = [defaultView];
+const api = new Fetcher();
+type QueryArgs = Parameters<ViewChangeAction>;
+
+export function UsersPage() {
+  const [data, setData] = useState<PagedList<User>>({ list: [], total: 0 });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  const pending = useRef<AbortController | null>(null);
+  const lastQuery = useRef<QueryArgs>([all(), 1, 20, []]);
+
+  const load = useCallback(async (...args: QueryArgs) => {
+    lastQuery.current = args;
+    pending.current?.abort();
+    const controller = new AbortController();
+    pending.current = controller;
+    const [condition, index, size, sorter] = args;
+    setLoading(true);
+    setError(undefined);
+    try {
+      const page = await api.post<PagedList<User>>(
+        definition.dataUrl,
+        {
+          signal: controller.signal,
+          body: { condition, pagination: { index, size }, sort: sorter },
+        },
+        { resultExtractor: ResultExtractors.Json },
+      );
+      if (!controller.signal.aborted) setData(page);
+    } catch (cause) {
+      if (!controller.signal.aborted) {
+        setError(cause instanceof Error ? cause.message : 'Loading failed');
+      }
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load(...lastQuery.current);
+    return () => pending.current?.abort();
+  }, [load]);
+
+  return (
+    <section aria-label="Users">
+      {error && (
+        <div role="alert">
+          {error}{' '}
+          <button onClick={() => void load(...lastQuery.current)}>Retry</button>
+        </div>
+      )}
+      <Viewer<User>
+        defaultViews={defaultViews}
+        defaultView={defaultView}
+        definition={definition}
+        dataSource={data}
+        loading={loading}
+        pagination={{}}
+        enableRowSelection
+        onLoadData={load}
+      />
+    </section>
+  );
+}
 ```
 
-## 渲染数据
+初始 effect 加载第一页。后续变化通过 onLoadData 提供条件、从 1 开始的页码、大小和 sorter，回调将其转换为应用请求体。新请求取消前一个请求，已取消的响应不能覆盖新数据。卸载时取消活动请求。
 
-```tsx
-const dataSource: PagedList<User> = {
-  list: [{ id: '42', name: 'Ada', status: 'ACTIVE' }],
-  total: 1,
-};
+## 3. 验证加载、空和失败状态
 
-<Viewer<User>
-  defaultViews={[defaultView]}
-  defaultView={defaultView}
-  definition={definition}
-  dataSource={dataSource}
-  pagination={{ pageSize: 20 }}
-  enableRowSelection
-  onLoadData={(condition, page, size, sorter) => {
-    console.log({ condition, page, size, sorter });
-  }}
-/>;
-```
+将应用路由模拟为 `{ list: [{ id: '42', name: 'Ada' }], total: 1 }`，检查可见数据行、选择、排序和发出的查询。返回空 list、零 total 来检查表格空状态。返回 HTTP 错误，检查提示和对最后一次查询的重试。延迟两个响应并快速翻页：应只有当前响应更新表格。本例失败时保留之前的数据行，并在上方显示错误。
 
-用户修改视图后，`Viewer` 会发出 Condition、从 1 开始的 Page Index、Page Size 和 Sort。它不加载数据，也不持久化视图；在应用边界实现 `onLoadData`、`onCreateView`、`onUpdateView` 和 `onDeleteView`。
+JSON 泛型不验证服务端数据；需要时应在应用边界验证不可信响应。本流程的 TypeScript 检查不能替代浏览器交互检查，[Storybook](https://fetcher.ahoo.me/storybook/) 提供组件示例。
 
-## 增加筛选
+## 4. 按需添加过滤与保存视图
 
-通过明确的 Field/Component 定义填充 `availableFilters`。内置 Component 包含 Text、ID、Number、Select、Boolean 和 DateTime。未知 Component 名称会渲染 `FallbackFilter`，不会静默失败。
+初始视图有意不设置过滤器。根据[过滤契约](../reference/viewer/filters)向 availableFilters 和已保存 filters 添加条目。内置日期时间行为通过注册表的 datetime 解析；`DateTimeFilter` 不是包根的具名导出，不要导入内部文件。
 
-## 远程 Viewer
+持久化视图变更时提供 onCreateView、onUpdateView、onDeleteView，只有保存成功后才使用服务端确认的视图调用成功回调，否则 UI 应保留现有状态。参见[保存视图生命周期](../reference/viewer/saved-views)。本例只定义一个系统默认视图，不执行远端视图写入。
 
-`FetcherViewer` 通过配置的客户端加载 `ViewDefinition`、保存的视图、数量和分页数据：
+## 5. 按契约选择远端组合
 
-```tsx
-<FetcherViewer<User>
-  viewerDefinitionId="users"
-  tenantId="tenant-demo"
-  ownerId="user-42"
-  pagination={{ pageSize: 20 }}
-  enableRowSelection
-/>
-```
+只有服务端实现定义接口与 Wow 保存视图契约，并且已设置必要客户端 Fetcher 配置时，才使用 [FetcherViewer](../reference/viewer/fetcher-viewer)。仅有通用分页端点并不足够。参见[模型与状态](../reference/viewer/models-and-state)及 [View 与 Viewer](../reference/viewer/view-and-viewer)了解所有权边界。
 
-它公开刷新、清空选择、读取当前 Page Query、活动视图和 Definition 的 Ref 方法。渲染前配置默认 Fetcher 和后端所需端点。
-
-## 用户可见状态
-
-加载 Definition/View/Data 时展示 Loading；`list` 为空时展示 Empty；请求失败时展示可恢复 Error。Storybook 使用确定性 Fixture 演示筛选、表格、视图、分页与远程加载：[打开交互示例](https://fetcher.ahoo.me/storybook/)。
+[Viewer.tsx:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L57) 说明数据与持久化责任。

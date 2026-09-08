@@ -1,66 +1,132 @@
 ---
-title: Generate an OpenAPI Client
-description: Generate Fetcher TypeScript models and clients from a local or remote OpenAPI document.
+title: Generate and Use an OpenAPI Client
+description: Generate a real ItemsApiClient from a complete minimal schema and type-check its consumer.
 ---
 
-# Generate an OpenAPI Client
+# Generate and Use an OpenAPI Client
 
-Use the generator when OpenAPI is already the source contract. Generated code should be reproducible, not hand-edited.
+Start with a checked-in document, generate into a dedicated directory, and compile a caller. This example produces a known class and method rather than assuming generated names.
 
-## Install
+## 1. Prepare a consumer project
 
 ```bash
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator
-pnpm add -D @ahoo-wang/fetcher-generator
+pnpm add -D @ahoo-wang/fetcher-generator typescript
 ```
 
-## Generate
+Save this as `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "experimentalDecorators": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}
+```
+
+## 2. Save the contract
+
+Save the complete document below as `openapi.json`. The root tag, operation tag, operationId and 200 response schema give the generator enough information to create a typed ordinary API client.
+
+```json
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Items",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "Items"
+    }
+  ],
+  "paths": {
+    "/items/{id}": {
+      "get": {
+        "operationId": "getItem",
+        "tags": ["Items"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## 3. Generate and compile
 
 ```bash
-pnpm exec fetcher-generator generate \
-  -i ./openapi.yaml \
-  -o ./src/generated \
-  -t ./tsconfig.json
+pnpm exec fetcher-generator generate -i ./openapi.json -o ./src/generated -t ./tsconfig.json
+pnpm exec tsc --noEmit -p ./tsconfig.json
 ```
 
-The input may be a local JSON/YAML file or an HTTP/HTTPS URL. The default output is `src/generated`; providing the paths explicitly makes CI and local runs identical.
+For this exact document the output includes `ItemsApiClient.ts`, `types.ts` and `index.ts`. The client exposes `getItem(id: string, httpRequest?: ParameterRequest, attributes?: Record<string, any>): Promise<Item>`, and `Item` has a required string `id`. The generator also writes `.fetcher-generator.json` to record output ownership.
 
-## Configuration
+If optional `fetcher-generator.config.json` is absent, the CLI logs a configuration read error and continues. Add a config only when you need an override; see [configuration precedence](../reference/generator/configuration).
 
-The optional configuration flag is:
+## 4. Write the caller outside generated files
 
-```bash
--c ./fetcher-generator.config.json
-```
-
-Without `-c`, the generator looks for `./fetcher-generator.config.json`. A log such as `Configuration file parsing failed: ENOENT` means optional configuration was absent; generation continues with an empty configuration.
-
-## Use generated code
-
-Generated directories contain model, client, and index files derived from the document. Import through the generated index rather than a generator-internal path:
+Save this as `src/loadItem.ts`, then repeat the TypeScript check:
 
 ```ts
-import { UserApiClient, type User } from './generated';
+import { Fetcher } from '@ahoo-wang/fetcher';
+import { ItemsApiClient, type Item } from './generated';
 
-const client = new UserApiClient();
-const user: User = await client.getUser('42');
+export async function loadItem(baseURL: string): Promise<Item> {
+  const client = new ItemsApiClient({ fetcher: new Fetcher({ baseURL }) });
+  return client.getItem('42');
+}
 ```
 
-Exact names follow OpenAPI operation IDs and schemas. Inspect the generated index after the first run before writing application imports.
+Calling `loadItem(yourApiOrigin)` requires an application server implementing `GET /items/42`, JSON `{"id":"42"}`, and any required authentication/CORS configuration. Generation and type checking do not make that remote request. Catch the returned promise at the application boundary.
 
-## Regenerate safely
+For a local runtime check, mock fetch with `Response.json({ id: '42' })`, call the function, assert the final URL and returned ID, and restore fetch in `finally`.
 
-1. Keep the OpenAPI document or stable source URL in version control/configuration.
-2. Run generation into the same directory.
-3. Format and type-check the result.
-4. Review the generated diff for operation/schema renames.
-5. Never place custom application code inside the generated directory.
+## 5. Regenerate and review
 
-## Diagnose failures
+Edit the source document and rerun the same command. Review changed models, method signatures and the ownership manifest before accepting the diff. Do not put application code into `src/generated`: files generated again at the same path are overwritten. Unchanged stale owned files can be deleted; modified stale files are preserved. Generation is not an atomic directory transaction, so inspect partial output after a failure.
 
-- `Input OpenAPI specification file path or URL` errors: verify `-i` and network access for remote input.
-- TypeScript project initialization errors: verify `-t` points to an existing tsconfig.
-- Missing expected clients: check operation IDs, tags, response schemas, and generator-specific discovery rules.
-- A successful generator run does not prove the remote server implements the document; integration-test generated calls separately.
+Missing methods usually require checking tags and operation IDs; missing return types require checking the 200 response. A schema compiler is not a server validator. No runtime resource is allocated by this caller until it is invoked; the JSON response is consumed on success.
 
-Run `pnpm exec fetcher-generator generate --help` to see the current CLI contract.
+See [CLI options](../reference/generator/cli), [output and regeneration](../reference/generator/generated-output), [OpenAPI documents](../reference/openapi/documents-and-operations), and the distinct [Wow discovery rules](../reference/generator/wow-discovery).
+
+[apiClientGenerator.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/client/apiClientGenerator.ts#L73) implements ordinary client generation.

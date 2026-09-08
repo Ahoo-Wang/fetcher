@@ -1,86 +1,49 @@
 ---
-title: 拦截器、错误与超时
-description: 扩展 Fetcher 管线，并定位状态码、网络、取消和超时故障。
+title: 处理错误、超时与取消
+description: 处理错误、超时与取消 — Fetcher
 ---
 
-# 拦截器、错误与超时
+# 处理错误、超时与取消
 
-## 在正确阶段增加拦截器
+先判断失败属于传输、HTTP 状态策略，还是结果提取。重试不能解决所有类型的错误。
 
-```ts
-import {
-  FETCH_INTERCEPTOR_ORDER,
-  type RequestInterceptor,
-} from '@ahoo-wang/fetcher';
-
-const requestIdInterceptor: RequestInterceptor = {
-  name: 'RequestIdInterceptor',
-  order: FETCH_INTERCEPTOR_ORDER - 100,
-  intercept(exchange) {
-    exchange.request.headers = {
-      ...exchange.request.headers,
-      'X-Request-Id': crypto.randomUUID(),
-    };
-  },
-};
-
-api.interceptors.request.use(requestIdInterceptor);
-```
-
-请求拦截器负责修改请求，响应拦截器负责响应策略，错误拦截器负责恢复。除非每个读取方都使用克隆，否则不要让多个拦截器读取同一个响应体。
-
-使用 `eject(name)` 按名称移除拦截器。重复名称会被拒绝，不会覆盖已有拦截器。
-
-## 状态码错误
-
-默认校验器只接受 2xx。可以按客户端调整：
+## 保留 exchange 上下文
 
 ```ts
-const api = new Fetcher({
-  validateStatus: status => status >= 200 && status < 400,
-});
-```
-
-被拒绝的响应会产生 `HttpStatusValidationError`，然后进入错误拦截器。最终未处理错误是 `ExchangeError`，其 `exchange.response` 仍保留状态码与请求头。
-
-## 网络与拦截器错误
-
-原生 Fetch 或任意拦截器抛出的异常会成为 `exchange.error`。如果错误拦截器没有清除它，Fetcher 抛出 `ExchangeError`。在将问题判断为 HTTP 状态错误前，先检查 `error.cause` 和 `error.exchange.request.url`。
-
-## 超时与取消
-
-请求级超时覆盖客户端超时。`0` 或省略超时会禁用计时器。
-
-```ts
-import { FetchTimeoutError } from '@ahoo-wang/fetcher';
-
+import { ExchangeError, Fetcher, FetchTimeoutError } from '@ahoo-wang/fetcher';
+const api = new Fetcher({ baseURL: 'https://api.example.com' });
 try {
   await api.get('/reports', { timeout: 1_000 });
 } catch (error) {
-  if (
-    error instanceof ExchangeError &&
-    error.cause instanceof FetchTimeoutError
-  ) {
-    console.error(error.cause.timeout, error.cause.request.url);
+  if (error instanceof ExchangeError) {
+    if (error.cause instanceof FetchTimeoutError) {
+      console.error('Timeout', error.cause.request.timeout);
+    } else {
+      console.error(error.exchange.response?.status, error.cause);
+    }
+  } else {
+    throw error;
   }
 }
 ```
 
-调用方也需要取消时，提供 `AbortController`：
+默认状态策略接受 200–299。状态拒绝进入 exchange 错误；原生网络错误可能根本没有响应。JSON 解析与自定义结果提取在拦截器管线之后执行，因此不一定抛出 ExchangeError。
+
+## 明确取消的所有者
 
 ```ts
+import { Fetcher } from '@ahoo-wang/fetcher';
+const api = new Fetcher({ baseURL: 'https://api.example.com' });
 const abortController = new AbortController();
-const request = api.get('/reports', { abortController });
+const request = api.get('/reports', { abortController, timeout: 5_000 });
 abortController.abort();
-await request;
+await request.catch(error => console.error(error));
 ```
 
-超时使用同一个 Controller 并抛出 `FetchTimeoutError`。手动取消会将平台 Abort 错误保留为 Exchange Cause。
+需要同时使用主动取消和 Fetcher 超时时，传入 abortController。原生 signal 会走直接 fetch 路径，绕过库的超时逻辑。未设置 timeout 或设为零时不启用计时器；请求级 timeout 覆盖客户端值。
 
-## 最短定位顺序
+## 有意识地调整策略
 
-1. 读取 `ExchangeError.message` 和 `cause`。
-2. 检查解析后的请求 URL、方法、请求头和超时。
-3. 如果存在响应，在读取响应体前检查状态码和内容类型。
-4. 检查自定义拦截器顺序，以及错误拦截器是否清除了原始错误。
-5. 在修改重试行为前，先通过模拟网络边界复现。
+客户端 validateStatus 配置默认拦截器管理器；自定义管理器自行负责响应策略。错误拦截器可通过清除 exchange.error 恢复，但不会自动重新执行响应校验，也不构成内置重试循环。
+
+查阅[错误与取消](../reference/fetcher/errors-and-cancellation.md)了解准确错误类型，或查阅[拦截器](../reference/fetcher/interceptors.md)了解注册和顺序。

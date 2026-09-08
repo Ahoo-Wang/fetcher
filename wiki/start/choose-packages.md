@@ -1,56 +1,32 @@
 ---
-title: Choose Packages
-description: Match each Fetcher package to the developer job it performs.
+title: Choose packages for your task
+description: Choose packages for your task
 ---
 
-# Choose Packages
+# Choose packages for your task
 
-Start with the core client. Add another package only when its job exists in your application.
+Identify the capability your application needs, then add the package that owns it. The Fetcher core can send requests by itself.
 
-| Developer job                | Package                          | Use it when                                                                                      |
-| ---------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Send HTTP requests           | `@ahoo-wang/fetcher`             | You need URL templates, query values, JSON bodies, timeouts, interceptors, or status validation. |
-| Declare service methods      | `@ahoo-wang/fetcher-decorator`   | Decorated service classes are easier to maintain than repeated request calls.                    |
-| Publish typed events         | `@ahoo-wang/fetcher-eventbus`    | Components or tabs need serial, parallel, or broadcast events.                                   |
-| Consume SSE                  | `@ahoo-wang/fetcher-eventstream` | A response delivers events or token chunks over a stream.                                        |
-| Call OpenAI Chat Completions | `@ahoo-wang/fetcher-openai`      | You need the ecosystem's typed non-streaming and streaming client.                               |
-| Model an OpenAPI document    | `@ahoo-wang/fetcher-openapi`     | Your tooling needs OpenAPI 3.x TypeScript types without runtime code.                            |
-| Generate clients             | `@ahoo-wang/fetcher-generator`   | OpenAPI is the source contract for models and API clients.                                       |
-| Bind requests to React       | `@ahoo-wang/fetcher-react`       | A component needs loading, result, error, debounce, storage, or Wow query state.                 |
-| Store typed values           | `@ahoo-wang/fetcher-storage`     | Browser and non-browser code need a common key/value abstraction.                                |
-| Integrate CoSec              | `@ahoo-wang/fetcher-cosec`       | Requests need CoSec tokens, refresh, space, device, or attribution behavior.                     |
-| Integrate Wow CQRS           | `@ahoo-wang/fetcher-wow`         | A client sends Wow commands or snapshot/event queries.                                           |
-| Build data viewers           | `@ahoo-wang/fetcher-viewer`      | A React application needs reusable filters, tables, views, or remote Viewer definitions.         |
+| Task                     | Package                          | Details                                          |
+| ------------------------ | -------------------------------- | ------------------------------------------------ |
+| HTTP clients             | `@ahoo-wang/fetcher`             | [fetcher](../reference/fetcher/index.md)         |
+| Declarative services     | `@ahoo-wang/fetcher-decorator`   | [decorator](../reference/decorator/index.md)     |
+| Event delivery           | `@ahoo-wang/fetcher-eventbus`    | [eventbus](../reference/eventbus/index.md)       |
+| Stored values            | `@ahoo-wang/fetcher-storage`     | [storage](../reference/storage/index.md)         |
+| SSE consumption          | `@ahoo-wang/fetcher-eventstream` | [eventstream](../reference/eventstream/index.md) |
+| Chat completions         | `@ahoo-wang/fetcher-openai`      | [openai](../reference/openai/index.md)           |
+| OpenAPI types            | `@ahoo-wang/fetcher-openapi`     | [openapi](../reference/openapi/index.md)         |
+| Client generation        | `@ahoo-wang/fetcher-generator`   | [generator](../reference/generator/index.md)     |
+| React request state      | `@ahoo-wang/fetcher-react`       | [react](../reference/react/index.md)             |
+| Data viewers             | `@ahoo-wang/fetcher-viewer`      | [viewer](../reference/viewer/index.md)           |
+| CoSec authentication     | `@ahoo-wang/fetcher-cosec`       | [cosec](../reference/cosec/index.md)             |
+| Wow commands and queries | `@ahoo-wang/fetcher-wow`         | [wow](../reference/wow/index.md)                 |
 
-## Common combinations
+## Common compositions
 
-### Typed REST client
+- REST: Fetcher, plus Decorator when a stable service interface helps.
+- OpenAPI: Generator produces clients at build time; generated code uses the relevant runtime packages.
+- Streaming: Fetcher/EventStream transport and parse data; add React when a page needs state.
+- Data applications: Wow owns commands/queries, React manages component request state, Viewer supplies the view interface.
 
-```bash
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator
-```
-
-### OpenAPI-generated client
-
-```bash
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator
-pnpm add -D @ahoo-wang/fetcher-generator
-```
-
-### Streaming React client
-
-```bash
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-react react react-dom
-```
-
-### Wow data application
-
-```bash
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-wow @ahoo-wang/fetcher-react
-```
-
-Add `fetcher-viewer` only when you need its opinionated Ant Design data interface.
-
-## When the core package is enough
-
-Do not install decorators, code generation, React integration, or a Viewer for a small request module. `Fetcher` already returns native `Response` objects and accepts native request options, so a direct client is the simplest default.
+See [Installation](./installation.md) for dependencies and peers. Once you choose a package, use its reference index to select a topic without reading the rest of the ecosystem.
