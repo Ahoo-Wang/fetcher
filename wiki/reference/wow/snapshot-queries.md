@@ -54,9 +54,11 @@ Service URLs in examples require application endpoints; type checking does not i
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### QueryApi {#api-QueryApi}
+
+::: details Expand all fields and members
 
 ```ts
 export interface QueryApi<R, FIELDS extends string = string> {
@@ -103,6 +105,8 @@ export interface QueryApi<R, FIELDS extends string = string> {
   ): Promise<number>;
 }
 ```
+
+:::
 
 [packages/wow/src/query/queryApi.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryApi.ts#L36)
 
@@ -183,6 +187,8 @@ export class SnapshotMetadataFields {
 
 ### SnapshotQueryApi {#api-SnapshotQueryApi}
 
+::: details Expand all fields and members
+
 ```ts
 export interface SnapshotQueryApi<
   S,
@@ -216,6 +222,8 @@ export interface SnapshotQueryApi<
 }
 ```
 
+:::
+
 [packages/wow/src/query/snapshot/snapshotQueryApi.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryApi.ts#L31)
 
 ### SnapshotQueryEndpointPaths {#api-SnapshotQueryEndpointPaths}
@@ -240,6 +248,8 @@ export class SnapshotQueryEndpointPaths {
 
 ### SnapshotQueryClient {#api-SnapshotQueryClient}
 
+::: details Expand all fields and members
+
 ```ts
 export class SnapshotQueryClient<S, FIELDS extends string = string> implements SnapshotQueryApi<S, FIELDS>, ApiMetadataCapable {
     constructor(public readonly apiMetadata?: ApiMetadata);
@@ -263,8 +273,10 @@ export class SnapshotQueryClient<S, FIELDS extends string = string> implements S
 }
 ```
 
+:::
+
 [packages/wow/src/query/snapshot/snapshotQueryClient.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L121)
 
 ## Related topics
 
-[Client configuration and metadata](./configuration) · [Commands and wait results](./commands) · [Filter expressions and legacy conditions](./filters) · [Projection, sorting and pagination](./query-options) · [Cursor queries](./cursor-queries) · [Aggregation builders](./aggregations) · [Events and historical state](./events-and-history) · [Shared domain types and utilities](./shared-types)
+[Client configuration and metadata](./configuration) · [Commands and wait results](./commands) · [Filter expressions and legacy conditions](./filters) · [Projection, sorting and pagination](./query-options) · [Cursor queries](./cursor-queries) · [Aggregation builders](./aggregations) · [Events and historical state](./events-and-history) · [Identity and resource attribution](./identity-and-attribution)

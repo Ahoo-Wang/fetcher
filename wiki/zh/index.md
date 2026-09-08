@@ -1,66 +1,58 @@
 ---
 layout: home
-title: Fetcher
-description: 从一个 HTTP 请求开始，按需组合服务、流和 React。
+title: 基于原生 Fetch 的 TypeScript HTTP 客户端
+description: 使用 Fetcher 完成 HTTP、服务客户端、流和 React 数据交互。
 hero:
   name: Fetcher
-  text: 从 HTTP 请求，到应用数据流
-  tagline: 从一个 HTTP 请求开始，按需组合服务、流和 React。
+  text: 从一次请求到应用数据交互
+  tagline: 在原生 Fetch 之上共享配置，明确处理结果与错误。
+  image:
+    src: /fetcher-logo.png
+    alt: Fetcher 请求与响应标志
   actions:
     - theme: brand
-      text: 发送第一个请求
-      link: /zh/start/first-request
+      text: 开始接入
+      link: ./start/
     - theme: alt
-      text: 查阅 API
-      link: /zh/reference/
+      text: 评估架构
+      link: ./architecture/
 features:
-  - title: 请求与结果
-    details: 组合 URL、参数与请求体，明确选择 Response 或 JSON。
-    link: /zh/learn/requests-and-results
-  - title: 流与服务
-    details: 读取 SSE，定义声明式服务，或从 OpenAPI 生成客户端。
-    link: /zh/start/choose-packages
-  - title: React 与数据视图
-    details: 让加载、结果、错误和取消融入页面，再按需加入 Viewer。
-    link: /zh/learn/react-data-flow
+  - title: HTTP 请求
+    details: 在原生 Fetch 之上共享配置、发送数据，明确处理结果与失败。
+    link: /zh/guides/http/
+    linkText: 了解更多
+  - title: 服务客户端
+    details: 声明服务方法，或从 OpenAPI 文档生成 TypeScript 客户端。
+    link: /zh/guides/services/
+    linkText: 了解更多
+  - title: 流式消费
+    details: 消费 SSE 事件，管理取消、连接生命周期与资源清理。
+    link: /zh/guides/streaming/
+    linkText: 了解更多
+  - title: React 数据流
+    details: 将请求执行、加载、错误与取消接入 React 组件。
+    link: /zh/guides/react/
+    linkText: 了解更多
+  - title: 数据视图
+    details: 组合表格、过滤、排序与已保存视图，明确应用的数据和持久化责任。
+    link: /zh/guides/viewer/
+    linkText: 了解更多
+  - title: 架构与选型
+    details: 评估包边界、运行环境要求与集成责任，选择适合应用的能力。
+    link: /zh/architecture/
+    linkText: 了解更多
 ---
 
-## 一个客户端，一个明确的结果
+## 明确请求与返回值
 
 ```ts
-import {
-  ExchangeError,
-  Fetcher,
-  JsonResultExtractor,
-} from '@ahoo-wang/fetcher';
-
-interface User {
-  id: number;
-  name: string;
-}
-const api = new Fetcher({
-  baseURL: 'https://jsonplaceholder.typicode.com',
-  timeout: 5_000,
-});
-
-try {
-  const user = await api.get<User>(
-    '/users/{id}',
-    {
-      urlParams: { path: { id: 1 } },
-    },
-    { resultExtractor: JsonResultExtractor },
-  );
-  console.log(user.name);
-} catch (error) {
-  if (error instanceof ExchangeError) {
-    console.error(error.exchange.response?.status, error.message);
-  } else {
-    throw error;
-  }
-}
+const user = await client.get<User>(
+  '/users/1',
+  {},
+  {
+    resultExtractor: ResultExtractors.Json,
+  },
+);
 ```
 
-泛型描述预期结构，不替代运行时校验。示例使用公开演示接口，执行需要网络。
-
-[阅读完整入门](./start/index.md) · [选择适合的包](./start/choose-packages.md) · [Storybook](https://fetcher.ahoo.me/storybook/)
+`client` 是配置好的 `Fetcher` 实例，`ResultExtractors` 从核心包导入。通过[第一个请求](./start/first-request.md)运行完整配置、本地服务和失败分支。

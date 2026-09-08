@@ -23,6 +23,19 @@ FilterPanel collects each child ref and combines valid conditions with legacy an
 
 The datetime dispatcher uses milliseconds for ordinary dates, before-today local HH:mm:ss text, and integer days for relative-day operators. A midnight range end is expanded to end of day. Invalid/disabled values are omitted rather than sent as an error condition. FallbackFilter displays an unsupported-type message. None of these components fetch data by themselves. For customization see [registries](./registries-and-inputs).
 
+## Definition, input state and emitted query {#filter-values}
+
+| Value                                          | Consumer and meaning                                                                                                 |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| AvailableFilter / ActiveFilter                 | A catalog entry versus a chosen instance; the instance key lets panels preserve/remove the correct filter.           |
+| `field.name` / `field.label`                   | Query data path / displayed caption; label is not sent as a query path.                                              |
+| `operator.defaultValue` / `value.defaultValue` | Initial UI choices, not continuously controlled inputs. Use reset/remount intentionally when changing defaults.      |
+| `FilterState`                                  | Raw operator/value needed to restore editing, even if incomplete.                                                    |
+| `FilterValue.condition`                        | A valid legacy Condition or no emitted value; downstream data loading consumes this query value.                     |
+| Panel `conditionMap` / `stateMap`              | Per-filter query / UI snapshots alongside the combined condition. Saving only one can lose the other responsibility. |
+
+A panel search produces a query, not filtered rows. The application's onLoadData (or FetcherViewer's loader) applies it. Input validation is UI-oriented; remote field authorization and query admission remain server responsibilities.
+
 ## Complete example
 
 ```tsx
@@ -50,7 +63,7 @@ export function SearchPanel() {
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### OPERATOR_zh_CN {#api-OPERATOR_zh_CN}
 
@@ -280,10 +293,9 @@ export interface RemovableTypedFilterProps extends TypedFilterProps {
 ### AssemblyFilter {#api-AssemblyFilter}
 
 ```ts
-export function AssemblyFilter({
-  ref,
-  ...props
-}: AssemblyFilterProps): import('react').JSX.Element;
+export function AssemblyFilter(
+  options: AssemblyFilterProps,
+): import('react').JSX.Element;
 ```
 
 [packages/viewer/src/filter/AssemblyFilter.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/AssemblyFilter.tsx#L45)
@@ -340,10 +352,7 @@ declare const BOOL_FILTER: 'bool';
 ### FallbackFilter {#api-FallbackFilter}
 
 ```ts
-export function FallbackFilter({
-  type,
-  ref,
-}: TypedFilterProps): React.JSX.Element;
+export function FallbackFilter(options: TypedFilterProps): React.JSX.Element;
 ```
 
 [packages/viewer/src/filter/FallbackFilter.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/FallbackFilter.tsx#L20)

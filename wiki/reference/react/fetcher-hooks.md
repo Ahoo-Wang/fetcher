@@ -19,6 +19,12 @@ Create a new request object for each call; do not share a mutable request betwee
 
 `useFetcherQuery`'s declared return extends the exchange-capable type, but the current implementation does not include `exchange` in its returned object. Use `useFetcher` directly when inspecting exchanges. `reset()` clears exchange/state; it does not cancel pending work. `abort()` clears exchange, invalidates the local request ID and aborts the executor. Unmount and overlapping request behavior follows [Promise state](./promise-and-query-state). Changing `url` or other options updates what the next execution reads; it is not itself a promise that a new request is triggered.
 
+## HTTP cancellation and timeout {#http-cancellation}
+
+`useFetcher` assigns the executor's AbortController to the request. With the normal Fetcher transport and no explicit `signal`, that controller participates in the library timeout path. An explicit request `signal` takes precedence in Fetcher and bypasses its built-in timeout; it can also bypass the controller the hook would abort. Compose your own signal/timeout deliberately if supplying a signal. Regardless of physical cancellation, request IDs prevent older work from replacing the hook's current state.
+
+Select an extractor before choosing the result generic: `JsonResultExtractor` parses JSON, while ordinary Fetcher defaults can return an exchange or Response. `R` is the extracted value type, `E` is the error-state type; neither validates runtime payloads. [Request lifecycle](../../architecture/request-lifecycle) explains why a JSON parse failure can occur after exchange interception has finished.
+
 ## Complete example
 
 ```tsx
@@ -47,7 +53,7 @@ export function Profile() {
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### useFetcher {#api-useFetcher}
 

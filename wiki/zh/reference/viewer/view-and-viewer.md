@@ -20,6 +20,21 @@ Viewer 接收 onCreateView/onUpdateView/onDeleteView 和可选成功回调。它
 
 reset 恢复默认值、重新挂载过滤/表格并清除选中行；仅替换 dataSource 不自动清除选择，刷新需要时调用 ref。字段 render 或应用回调可抛错，组件不是错误边界。浏览器工具栏功能需要 window/document。示例只显示本地传入数据，不发服务请求。
 
+## Props 与 ref 的职责 {#props-and-ref}
+
+| 输入 / 操作  | View                                                                   | Viewer                                                          |
+| ------------ | ---------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `dataSource` | 必填 `{list,total}`，应已是所需页                                      | 相同；`loading` 是可选展示输入                                  |
+| `pagination` | 必填 false 或选项；total 来自 dataSource                               | 相同；组件接管 onChange/onShowSizeChange 连线                   |
+| 初始布局     | 必填 defaultColumns/defaultPageSize/defaultTableSize，另有可选初始状态 | 必填 defaultViews/defaultView 和 definition，用于初始化本地状态 |
+| 过滤控制     | 必填 showFilter/filterMode；editable 允许增删过滤器                    | 活动视图状态提供过滤面板与可见性                                |
+| 受控维度     | 同时提供 `external*` 值与匹配的 `externalUpdate*` 回调                 | 需要此粒度外部控制时直接使用 View                               |
+| 加载行       | `onChange(condition,index,size,sorter?)`                               | 同参数的 `onLoadData`                                           |
+| ref 读取     | `getCondition()` 读取过滤面板条件                                      | 增加 `getActiveView()`；无保存视图时为 undefined                |
+| ref 修改     | clearSelectedRowKeys、updateTableSize、reset                           | clearSelectedRowKeys；数据重载/持久化仍由回调负责               |
+
+以 React 19 prop 传入 `ref`。挂载后读取 ref，并允许过滤面板尚不存在时条件为 undefined。清空选择键不会查询。Reset 恢复默认值并通过变化回调请求对应数据，不是后端回滚。只传受控值而不传更新回调时，修改会落到未使用的内部状态，界面可能表现为冻结。
+
 ## 完整示例
 
 ```tsx
@@ -59,27 +74,14 @@ export function Users() {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
 ### View {#api-View}
 
 ```ts
-export function View<RecordType>({
-  ref,
-  fields,
-  availableFilters,
-  dataSource,
-  actionColumn,
-  showFilter,
-  filterMode,
-  pagination,
-  enableRowSelection,
-  viewTableSetting,
-  onClickPrimaryKey,
-  onSelectedDataChange,
-  loading,
-  ...viewState
-}: ViewProps<RecordType>): React.JSX.Element;
+export function View<RecordType>(
+  options: ViewProps<RecordType>,
+): React.JSX.Element;
 ```
 
 [packages/viewer/src/view/View.tsx:212](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L212)
@@ -104,6 +106,8 @@ export type FilterMode = 'none' | 'normal' | 'editable';
 [packages/viewer/src/view/View.tsx:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L66)
 
 ### ViewProps {#api-ViewProps}
+
+::: details 展开完整字段与成员
 
 ```ts
 export interface ViewProps<RecordType>
@@ -152,14 +156,16 @@ export interface ViewProps<RecordType>
 }
 ```
 
+:::
+
 [packages/viewer/src/view/View.tsx:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L106)
 
 ### Viewer {#api-Viewer}
 
 ```ts
-export function Viewer<RecordType = any>({
-  ...props
-}: ViewerProps<RecordType>): React.JSX.Element;
+export function Viewer<RecordType = any>(
+  options: ViewerProps<RecordType>,
+): React.JSX.Element;
 ```
 
 [packages/viewer/src/viewer/Viewer.tsx:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L74)
@@ -176,6 +182,8 @@ export interface ViewerRef extends FilterPanelConditionCapableRef {
 [packages/viewer/src/viewer/Viewer.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L36)
 
 ### ViewerProps {#api-ViewerProps}
+
+::: details 展开完整字段与成员
 
 ```ts
 export interface ViewerProps<RecordType>
@@ -200,6 +208,8 @@ export interface ViewerProps<RecordType>
   fullscreenTarget?: React.RefObject<HTMLElement | null>;
 }
 ```
+
+:::
 
 [packages/viewer/src/viewer/Viewer.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L41)
 

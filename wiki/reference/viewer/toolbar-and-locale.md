@@ -46,7 +46,7 @@ export function Refresh({ reload }: { reload: () => Promise<void> }) {
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### useRefreshDataEventBus {#api-useRefreshDataEventBus}
 
@@ -87,12 +87,12 @@ export interface RefreshDataEventBusReturn {
 ### AutoRefreshBarItem {#api-AutoRefreshBarItem}
 
 ```ts
-export function AutoRefreshBarItem({
-  items = DefaultAutoRefreshItems,
-  viewId,
-  viewerDefinitionId,
-}: AutoRefreshBarItemProps): import('react').JSX.Element;
+export function AutoRefreshBarItem(
+  options: AutoRefreshBarItemProps,
+): import('react').JSX.Element;
 ```
+
+Implementation defaults: `items = DefaultAutoRefreshItems`.
 
 [packages/viewer/src/topbar/AutoRefreshBarItem.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/AutoRefreshBarItem.tsx#L52)
 
@@ -283,6 +283,8 @@ export function TopBar<RecordType>(
 
 ### TopBarProps {#api-TopBarProps}
 
+::: details Expand all fields and members
+
 ```ts
 export interface TopBarProps<
   RecordType,
@@ -314,6 +316,8 @@ export interface TopBarProps<
 }
 ```
 
+:::
+
 [packages/viewer/src/topbar/TopBar.tsx:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/TopBar.tsx#L35)
 
 ### TopBarItemProps {#api-TopBarItemProps}
@@ -325,6 +329,8 @@ export interface TopBarItemProps extends StyleCapable {}
 [packages/viewer/src/topbar/types.ts:3](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/types.ts#L3)
 
 ### Locale {#api-Locale}
+
+::: details Expand all fields and members
 
 ```ts
 export interface Locale {
@@ -362,6 +368,8 @@ export interface Locale {
   };
 }
 ```
+
+:::
 
 [packages/viewer/src/locale/Locale.ts:1](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/locale/Locale.ts#L1)
 

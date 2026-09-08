@@ -7,6 +7,8 @@ description: '请求、请求头与正文 — @ahoo-wang/fetcher 5.0.0'
 
 `FetchRequest` 在 `FetchRequestInit` 上增加必填的 `url: string`。`FetchRequestInit<BODY>` 扩展原生 `RequestInit`，将头替换为 `RequestHeaders`、正文替换为 `RequestBodyType`，并增加 `timeout`、`urlParams`、`abortController`。原生 credentials、cache、mode、redirect、integrity 等受支持的 Fetch 选项继续透传。
 
+普通调用直接把请求对象传给客户端方法；只有自行组合两份配置时才调用 `mergeRequest`。模板值放在 `urlParams.path`，查询串放在 `urlParams.query`。`body` 表示请求载荷；`resultExtractor` 应放在方法的第三个选项参数中，不属于请求对象。
+
 ## 请求字段 {#fields}
 
 | 字段/类型                                  | 契约                                                                                                                           |

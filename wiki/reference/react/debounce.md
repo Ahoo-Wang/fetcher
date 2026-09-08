@@ -19,6 +19,17 @@ With leading and trailing enabled, the initial invocation runs immediately; a lo
 
 Query variants deep-compare reactive queries. Turning autoExecute off or setting an explicit `query: undefined` cancels their automatic scheduled work. Manually requested work is separate. Replacing query input does not mean an existing network request is immediately cancelled: that happens when the next execution starts. Callback exceptions and rejected promises need their own handling; a timer does not expose a rejection to the caller of run. Prefer the executor's default error state for asynchronous actions.
 
+## Timer and request controls {#cancellation-controls}
+
+| Control                       | Pending timer | Running operation                        | Result state                                |
+| ----------------------------- | ------------- | ---------------------------------------- | ------------------------------------------- |
+| `cancel()`                    | Removes it    | Keeps running                            | Retained                                    |
+| `abort()` on request variants | Retained      | Signals abort and invalidates its result | Idle                                        |
+| `reset()` on request variants | Retained      | Keeps running                            | Cleared now; later completion may update it |
+| Unmount                       | Cleared       | Request variants abort                   | No further mounted-state commit             |
+
+There is no default `delay`. Set `debounce: { delay: 300 }` for a 300 ms quiet period. Ordinary `useQuery` defaults to automatic execution; the current debounced query implementation needs explicit `autoExecute: true`. `isPending()` describes the timer, while `loading` describes an already started supplier. Neither proves a server-side write was cancelled.
+
 ## Complete example
 
 ```tsx
@@ -49,7 +60,7 @@ export function Preview() {
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### useDebouncedCallback {#api-useDebouncedCallback}
 

@@ -1,4 +1,5 @@
 ---
+prev: false
 title: Use Fetcher Skills
 description: Use Fetcher Skills — Fetcher agent workflows
 pageClass: skills-page
@@ -46,3 +47,5 @@ Use the existing tsconfig, preserve the input contract, and type-check the outpu
 Provide inputs, output location, existing clients, runtime, and acceptance criteria. A skill’s references/api.md supplies detailed material on demand; human Reference pages also provide accurate contracts without requiring readers to switch to a skill to develop an application.
 
 Author source files under this repository’s skills/. Ahoo Skills generates distribution copies; change and validate the source rather than editing generated copies.
+
+Start with [runnable examples](../examples/index.md) and [task guides](../guides/index.md) to give the agent concrete inputs and expected results. Use [architecture](../architecture/index.md) to review boundaries.

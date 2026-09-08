@@ -7,6 +7,8 @@ description: 'KeyStorage 与变更监听 — @ahoo-wang/fetcher-storage 5.0.0'
 
 `KeyStorage<T>` 把一个类型化值绑定到一个字符串键。读写同步执行，通知通过事件总线异步投递。它不会自动监听原生浏览器 storage 事件。
 
+后端与事件总线需要分别选择：共享后端不会共享缓存值或订阅。两个实例即使使用同一个 key 和后端，若各用默认总线，仍可能保留不同的缓存值。需要两个实例都观察到通过 KeyStorage 进行的写入时，还需共享总线。
+
 ## 选项 {#options}
 
 `new KeyStorage<T>(options: KeyStorageOptions<T>)`：

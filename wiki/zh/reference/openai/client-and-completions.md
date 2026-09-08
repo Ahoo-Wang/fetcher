@@ -7,6 +7,8 @@ description: '客户端与聊天补全 — Fetcher 5.0.0'
 
 本包实现 Chat Completions，没有 Responses、embeddings、images、files、audio 或 realtime 客户端。以下契约描述 SDK 当前实现，不保证供应商当前模型可用性或限制。
 
+`OpenAI` 始终创建自己的 Fetcher 和 Authorization 头。复用已有认证代理时，应构造 `ChatClient({ fetcher })`，这样也会保留该 Fetcher 的请求头、超时和拦截器。ApiMetadata 应在首次调用前设置，因为装饰器执行器会按方法缓存元数据。
+
 ## 客户端契约
 
 | API                                      | 输入/默认值                                               | 返回/效果                                                                     |

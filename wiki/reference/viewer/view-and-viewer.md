@@ -20,6 +20,21 @@ Viewer receives `onCreateView`, `onUpdateView`, `onDeleteView` with optional suc
 
 A reset restores view defaults, remounts filters/table and clears selected rows. Merely replacing dataSource does not automatically clear selection; call the ref when your refresh requires it. Fields' render callbacks and application callbacks may throw; this component is not an error boundary. Browser-dependent toolbar features require window/document. The example renders supplied local data only; it makes no service request.
 
+## Props and ref responsibilities {#props-and-ref}
+
+| Input / action       | View                                                                                  | Viewer                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `dataSource`         | Required `{list,total}` is already the desired page                                   | Same; `loading` is an optional presentation input                              |
+| `pagination`         | Required false or options; total comes from dataSource                                | Same; the component owns onChange/onShowSizeChange wiring                      |
+| Initial arrangement  | Required defaultColumns/defaultPageSize/defaultTableSize, plus optional default state | Required defaultViews/defaultView and definition; these initialize local state |
+| Filter controls      | Required showFilter/filterMode; editable mode allows adding/removing filters          | Active-view state supplies the filter panel and visibility                     |
+| Controlled dimension | Pair an `external*` value and matching `externalUpdate*` callback                     | Use View directly for this level of external state control                     |
+| Load rows            | `onChange(condition,index,size,sorter?)`                                              | `onLoadData` with the same arguments                                           |
+| Ref read             | `getCondition()` reads filter-panel condition                                         | Adds `getActiveView()`, undefined when no saved views remain                   |
+| Ref mutation         | clearSelectedRowKeys, updateTableSize, reset                                          | clearSelectedRowKeys; data reload/persistence remain callbacks                 |
+
+Pass `ref` as a React 19 prop. Read refs after mount and tolerate undefined conditions before a filter panel exists. Clearing selected keys does not issue a query. Reset restores defaults and requests the corresponding data through the change callback; it is not a backend rollback. A controlled value without its update callback can appear frozen because mutations then write unused internal state.
+
 ## Complete example
 
 ```tsx
@@ -59,27 +74,14 @@ export function Users() {
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### View {#api-View}
 
 ```ts
-export function View<RecordType>({
-  ref,
-  fields,
-  availableFilters,
-  dataSource,
-  actionColumn,
-  showFilter,
-  filterMode,
-  pagination,
-  enableRowSelection,
-  viewTableSetting,
-  onClickPrimaryKey,
-  onSelectedDataChange,
-  loading,
-  ...viewState
-}: ViewProps<RecordType>): React.JSX.Element;
+export function View<RecordType>(
+  options: ViewProps<RecordType>,
+): React.JSX.Element;
 ```
 
 [packages/viewer/src/view/View.tsx:212](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L212)
@@ -104,6 +106,8 @@ export type FilterMode = 'none' | 'normal' | 'editable';
 [packages/viewer/src/view/View.tsx:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L66)
 
 ### ViewProps {#api-ViewProps}
+
+::: details Expand all fields and members
 
 ```ts
 export interface ViewProps<RecordType>
@@ -152,14 +156,16 @@ export interface ViewProps<RecordType>
 }
 ```
 
+:::
+
 [packages/viewer/src/view/View.tsx:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L106)
 
 ### Viewer {#api-Viewer}
 
 ```ts
-export function Viewer<RecordType = any>({
-  ...props
-}: ViewerProps<RecordType>): React.JSX.Element;
+export function Viewer<RecordType = any>(
+  options: ViewerProps<RecordType>,
+): React.JSX.Element;
 ```
 
 [packages/viewer/src/viewer/Viewer.tsx:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L74)
@@ -176,6 +182,8 @@ export interface ViewerRef extends FilterPanelConditionCapableRef {
 [packages/viewer/src/viewer/Viewer.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L36)
 
 ### ViewerProps {#api-ViewerProps}
+
+::: details Expand all fields and members
 
 ```ts
 export interface ViewerProps<RecordType>
@@ -200,6 +208,8 @@ export interface ViewerProps<RecordType>
   fullscreenTarget?: React.RefObject<HTMLElement | null>;
 }
 ```
+
+:::
 
 [packages/viewer/src/viewer/Viewer.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L41)
 

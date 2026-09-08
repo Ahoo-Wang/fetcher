@@ -101,7 +101,7 @@ Save the following as `tsconfig.json`. Install the [runtime dependencies](./gene
 ```
 
 ```bash
-pnpm add -D @ahoo-wang/fetcher-generator typescript
+pnpm add -D @ahoo-wang/fetcher-generator @ahoo-wang/fetcher-openapi typescript
 pnpm exec fetcher-generator generate -i ./openapi.json -o ./src/generated -t ./tsconfig.json
 pnpm exec tsc --noEmit -p ./tsconfig.json
 ```

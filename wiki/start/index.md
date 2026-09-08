@@ -1,27 +1,21 @@
 ---
-title: Start with Fetcher
-description: Start with one HTTP request, then compose services, streams, and React.
+prev: false
+title: Choose your starting point
+description: Start with HTTP, a React request, or a local data table according to your existing application.
 ---
 
-# Start with Fetcher
+# Choose your starting point
 
-Fetcher is a TypeScript HTTP client built on the native Fetch API. The core package owns URLs, request bodies, status validation, interceptors, and result extraction. Add other packages as your workflow needs them.
+Fetcher adds reusable request configuration and result handling to native Fetch. Choose the first result you need; a plain HTTP application does not need a UI framework or platform backend.
 
-## Complete one request first
+| Your starting point                        | Prerequisites                                      | First result                                                                                                 |
+| ------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| TypeScript or JavaScript HTTP client       | A Fetch-capable runtime; the core package          | [Install](./installation.md), then [run a first request](./first-request.md) against a supplied local server |
+| Existing React application                 | Compatible React and Fetcher peers, a bundler      | [Run the React example](../examples/react.md) and display loading, data, errors, and cancellation            |
+| Existing React application needing a table | Viewer peers, CSS-capable bundling, local row data | [Build a first view](./first-view.md) with pagination, sorting, and filtering                                |
 
-1. [Install](./installation.md): check your runtime and add the core package.
-2. [First request](./first-request.md): create a client, read JSON, and handle failure.
-3. [Requests and results](../learn/requests-and-results.md): use parameters, bodies, and result types.
-4. [Errors and timeouts](../learn/interceptors-errors-timeouts.md): understand failure and cancellation ownership.
+The runnable HTTP and Storybook examples have deterministic fixtures. When you move them into your application, supply the routes and response JSON documented in each example. Installing a client does not create a server.
 
-## Continue from what you already have
+Already have an API contract? [Declare service methods](../guides/services/declarative-client.md) or [generate from OpenAPI](../guides/services/generated-client.md). Before adopting Wow, CoSec, or remote Viewer, check their [integration requirements](../guides/integrations/index.md).
 
-| Your input          | Next step                                          |
-| ------------------- | -------------------------------------------------- |
-| An HTTP address     | [Fetcher reference](../reference/fetcher/index.md) |
-| An OpenAPI document | [Generate a client](../recipes/openapi-client.md)  |
-| An SSE endpoint     | [Consume a stream](../learn/streaming.md)          |
-| A React page        | [React data flow](../learn/react-data-flow.md)     |
-| A Wow service       | [CQRS recipe](../recipes/wow-cqrs.md)              |
-
-Use [Choose packages](./choose-packages.md) to understand the ecosystem. Your first integration does not require every package.
+Continue with [next tasks](./next-steps.md), or [evaluate the architecture](../architecture/index.md) before choosing components.

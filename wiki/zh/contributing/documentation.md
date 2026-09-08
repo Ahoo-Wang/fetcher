@@ -1,4 +1,5 @@
 ---
+next: false
 title: 维护准确的文档
 description: 维护准确的文档 — Fetcher
 ---
@@ -13,13 +14,13 @@ description: 维护准确的文档 — Fetcher
 
 | 内容           | 位置              |
 | -------------- | ----------------- |
-| 首次成功接入   | Start             |
-| 概念与生命周期 | Learn             |
-| 完整应用任务   | Recipes           |
+| 首次成功接入   | 开始              |
+| 概念与生命周期 | 架构              |
+| 完整应用任务   | 指南              |
 | 准确 API 契约  | Reference 包/专题 |
 | Agent 工作流程 | Skills            |
 
-包索引将公开符号映射到专题锚点。按独立概念拆分，不为每个符号建页。英文和中文路径对应、内容完整，每页具备 title 和 description。
+每个包的 symbols 页将公开符号映射到专题锚点。按独立概念拆分，不为每个符号建页。英文和中文路径对应、内容完整，每页具备 title 和 description。
 
 ## 保持导航完整
 
@@ -32,9 +33,12 @@ Reference 新专题加入 .vitepress/config/reference.mjs；该清单为导航�
 Mermaid 节点填充使用 #2d333b、边框 #6d5dfc、文字 #e6edf3。sequenceDiagram 使用 autonumber，标签换行用 `<br>`。修改后执行：
 
 ```bash
+pnpm --dir wiki generate:llms
 pnpm --dir wiki fix:mermaid
 pnpm --dir wiki build
 node --test wiki/test/documentation.test.mjs
 ```
 
 不手改 llms.txt、llms-full.txt 或 .vitepress/dist。公开 SDK API 变更必须在同一次修改中同步对应 skills/*/references/api.md。
+
+阅读组清单位于 `.vitepress/config/pages.mjs`；首尾页用 `prev: false` 与 `next: false` 限定翻页边界。共享可运行源码使用完整文件引用 `<<< @/examples/http/client.ts` 或 `<<< @/../stories/docs/Filename.tsx`，不使用区域或行范围。LLM 生成器展开源码，目标缺失或越出仓库时拒绝生成。

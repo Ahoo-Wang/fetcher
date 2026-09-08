@@ -18,7 +18,7 @@ import type {
   MermaidRenderer,
   MermaidToolbarOptions,
 } from 'vitepress-mermaid-renderer';
-import './custom.css';
+import './mermaid.css';
 import { observeSidebarAria } from './sidebarA11y';
 import { observeMermaidInteractions } from './mermaid';
 import { mermaidConfig } from '../config/mermaid';

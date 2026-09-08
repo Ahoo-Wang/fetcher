@@ -1,4 +1,5 @@
 ---
+prev: false
 title: 'Openapi 参考'
 description: 'Openapi 参考 — Fetcher 5.0.0'
 ---
@@ -13,7 +14,7 @@ description: 'Openapi 参考 — Fetcher 5.0.0'
 pnpm add @ahoo-wang/fetcher-openapi
 ```
 
-版本基线：**5.0.0**。本包声明 Node **>=18.20.8**；仓库贡献者工具链另行规定。按所选运行时集成安装需要的 peer 包。
+版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=20.20.2** 和 pnpm **10.34.5**。
 
 ## 最小示例
 
@@ -27,52 +28,14 @@ const document: OpenAPI = {
 console.log(document.openapi);
 ```
 
+## 选择入口
+
+编写完整文档时导入 `OpenAPI`，描述可复用载荷时用 `Schema`/`Reference`，描述文档安全元数据时用安全类型。这些仅是类型，没有可调用的解析器、HTTP 客户端或校验器。生成可执行客户端请用 [Generator](../generator/index.md)。
+
 ## 专题
 
-- [文档与操作](/zh/reference/openapi/documents-and-operations)
-- [Schema 与引用](/zh/reference/openapi/schemas-and-references)
-- [安全与扩展](/zh/reference/openapi/security-and-extensions)
+- [文档与操作](documents-and-operations)
+- [Schema 与引用](schemas-and-references)
+- [安全与扩展](security-and-extensions)
 
-## 公开符号索引
-
-| 符号                    | 参考                                                           |
-| ----------------------- | -------------------------------------------------------------- |
-| `Callback`              | [文档与操作](/zh/reference/openapi/documents-and-operations#callback)              |
-| `CommonExtensions`      | [安全与扩展](/zh/reference/openapi/security-and-extensions#commonextensions)       |
-| `ComponentTypeMap`      | [Schema 与引用](/zh/reference/openapi/schemas-and-references#componenttypemap)     |
-| `Components`            | [Schema 与引用](/zh/reference/openapi/schemas-and-references#components)           |
-| `Contact`               | [文档与操作](/zh/reference/openapi/documents-and-operations#contact)               |
-| `Discriminator`         | [Schema 与引用](/zh/reference/openapi/schemas-and-references#discriminator)        |
-| `Encoding`              | [文档与操作](/zh/reference/openapi/documents-and-operations#encoding)              |
-| `Example`               | [文档与操作](/zh/reference/openapi/documents-and-operations#example)               |
-| `Extensible`            | [安全与扩展](/zh/reference/openapi/security-and-extensions#extensible)             |
-| `ExternalDocumentation` | [文档与操作](/zh/reference/openapi/documents-and-operations#externaldocumentation) |
-| `HTTPMethod`            | [文档与操作](/zh/reference/openapi/documents-and-operations#httpmethod)            |
-| `Header`                | [文档与操作](/zh/reference/openapi/documents-and-operations#header)                |
-| `Info`                  | [文档与操作](/zh/reference/openapi/documents-and-operations#info)                  |
-| `IsReference`           | [Schema 与引用](/zh/reference/openapi/schemas-and-references#isreference)          |
-| `License`               | [文档与操作](/zh/reference/openapi/documents-and-operations#license)               |
-| `Link`                  | [文档与操作](/zh/reference/openapi/documents-and-operations#link)                  |
-| `MediaType`             | [文档与操作](/zh/reference/openapi/documents-and-operations#mediatype)             |
-| `OAuthFlow`             | [安全与扩展](/zh/reference/openapi/security-and-extensions#oauthflow)              |
-| `OAuthFlows`            | [安全与扩展](/zh/reference/openapi/security-and-extensions#oauthflows)             |
-| `OpenAPI`               | [文档与操作](/zh/reference/openapi/documents-and-operations#openapi)               |
-| `Operation`             | [文档与操作](/zh/reference/openapi/documents-and-operations#operation)             |
-| `Parameter`             | [文档与操作](/zh/reference/openapi/documents-and-operations#parameter)             |
-| `ParameterLocation`     | [文档与操作](/zh/reference/openapi/documents-and-operations#parameterlocation)     |
-| `PathItem`              | [文档与操作](/zh/reference/openapi/documents-and-operations#pathitem)              |
-| `Paths`                 | [文档与操作](/zh/reference/openapi/documents-and-operations#paths)                 |
-| `Reference`             | [Schema 与引用](/zh/reference/openapi/schemas-and-references#reference)            |
-| `RequestBody`           | [文档与操作](/zh/reference/openapi/documents-and-operations#requestbody)           |
-| `Response`              | [文档与操作](/zh/reference/openapi/documents-and-operations#response)              |
-| `Responses`             | [文档与操作](/zh/reference/openapi/documents-and-operations#responses)             |
-| `Schema`                | [Schema 与引用](/zh/reference/openapi/schemas-and-references#schema)               |
-| `SchemaType`            | [Schema 与引用](/zh/reference/openapi/schemas-and-references#schematype)           |
-| `SecurityRequirement`   | [安全与扩展](/zh/reference/openapi/security-and-extensions#securityrequirement)    |
-| `SecurityScheme`        | [安全与扩展](/zh/reference/openapi/security-and-extensions#securityscheme)         |
-| `Server`                | [文档与操作](/zh/reference/openapi/documents-and-operations#server)                |
-| `ServerVariable`        | [文档与操作](/zh/reference/openapi/documents-and-operations#servervariable)        |
-| `Tag`                   | [文档与操作](/zh/reference/openapi/documents-and-operations#tag)                   |
-| `XML`                   | [Schema 与引用](/zh/reference/openapi/schemas-and-references#xml)                  |
-
-[packages/openapi/src/index.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)
+[完整公开符号索引](./symbols.md)

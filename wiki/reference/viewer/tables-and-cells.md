@@ -65,7 +65,7 @@ export function Prices() {
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### isActionCellProps {#api-isActionCellProps}
 
@@ -254,9 +254,11 @@ declare const cellRegistry: TypedComponentRegistry<
 ```ts
 export function formatCurrency(
   amount: number | string | null,
-  options: CurrencyFormatOptions = DEFAULT_CURRENCY_FORMAT_OPTIONS,
+  options?: CurrencyFormatOptions,
 ): string;
 ```
+
+Implementation defaults: `options = DEFAULT_CURRENCY_FORMAT_OPTIONS`.
 
 [packages/viewer/src/table/cell/currencyFormatter.ts:200](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/cell/currencyFormatter.ts#L200)
 

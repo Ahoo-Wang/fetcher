@@ -9,7 +9,7 @@ description: '拦截器管线 — @ahoo-wang/fetcher 5.0.0'
 
 ## 注册与排序 {#registry}
 
-`new InterceptorRegistry(interceptors = [])` 按 order 升序排序。`use(interceptor): boolean` 拒绝重复名称；`eject(name): boolean` 表示是否删除；`clear(): void` 清空全部条目。构造器会排序初始数组，但不会去重初始条目。`interceptors` 返回数组副本。`intercept(exchange): Promise<void>` 依次等待，拒绝时停止。注册表本身实现 Interceptor，`name` 为构造器名称，order 为 `Number.MIN_SAFE_INTEGER`。
+`new InterceptorRegistry(interceptors = [])` 按 order 升序排序。`use(interceptor): boolean` 拒绝重复名称；`eject(name): boolean` 表示是否删除；`clear(): void` 清空全部条目。构造器排序的是初始数组的副本，不修改传入数组，也不会去重初始条目。`interceptors` 返回数组副本。`intercept(exchange): Promise<void>` 依次等待，拒绝时停止。注册表本身实现 Interceptor，`name` 为构造器名称，order 为 `Number.MIN_SAFE_INTEGER`。
 
 `OrderedCapable.order` 可选；`sortOrder(a, b)` 把缺失值视为零。`toSorted(array, filter?)` 返回排序副本，可选过滤。`DEFAULT_INTERCEPTOR_ORDER_STEP = 1000`、`BUILT_IN_INTERCEPTOR_ORDER_STEP = 10000` 提供排序间隔。
 

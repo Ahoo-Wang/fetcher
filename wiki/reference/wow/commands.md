@@ -24,6 +24,21 @@ These values are distinct server wait targets, not a client-side guarantee that 
 
 Transport or extraction failure rejects the Promise. Stream errors may instead occur during reader.read after the initial Promise resolves; the consumer must cancel/release the reader on early exit. DeleteAggregate/RecoverAggregate are empty command-body contracts; resource-tag commands carry tags. They do not delete/recover anything until a server endpoint executes them.
 
+## Reading a command result {#result-fields}
+
+| Field                                                     | Interpretation                                                                                                |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `id`, `commandId`, `requestId`, `waitCommandId`           | Distinct signal/command/request/wait correlation IDs. Do not substitute one for the server's idempotency key. |
+| `contextName`, `aggregateName`, `tenantId`, `aggregateId` | Flat aggregate identity in CommandResult; WaitSignal instead nests the AggregateId object.                    |
+| `stage`                                                   | The emitted wait stage, not a boolean covering every projection.                                              |
+| `aggregateVersion?`                                       | Optional version reported by the service; absence does not establish a visibility barrier.                    |
+| `signalTime`                                              | Numeric signal timestamp. It is not a client timeout duration.                                                |
+| `function`                                                | Processor/function metadata; see [message metadata](./messages-and-state).                                    |
+| `result`                                                  | Service-provided result map, not the generic command body C.                                                  |
+| `errorCode`, `errorMsg`, `bindingErrors?`                 | Business outcome and optional field errors; see [error classification](./errors-and-utilities).               |
+
+Use [identity and attribution](./identity-and-attribution) for nested/flat identity details. No result interface assigns defaults or validates JSON. A stream carries successive CommandResult payloads in `event.data`; its initial HTTP success is not completion of every event or stage.
+
 ## Complete example
 
 ```ts
@@ -46,7 +61,7 @@ Service URLs in examples require application endpoints; type checking does not i
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### CommandClient {#api-CommandClient}
 
@@ -61,6 +76,8 @@ export class CommandClient<C extends object = object> implements ApiMetadataCapa
 [packages/wow/src/command/commandClient.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandClient.ts#L76)
 
 ### CommandHeaders {#api-CommandHeaders}
+
+::: details Expand all fields and members
 
 ```ts
 export class CommandHeaders {
@@ -90,9 +107,13 @@ export class CommandHeaders {
 }
 ```
 
+:::
+
 [packages/wow/src/command/commandHeaders.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandHeaders.ts#L33)
 
 ### CommandRequestHeaders {#api-CommandRequestHeaders}
+
+::: details Expand all fields and members
 
 ```ts
 export interface CommandRequestHeaders extends RequestHeaders {
@@ -117,6 +138,8 @@ export interface CommandRequestHeaders extends RequestHeaders {
   [CommandHeaders.COMMAND_TYPE]: string;
 }
 ```
+
+:::
 
 [packages/wow/src/command/commandRequest.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandRequest.ts#L36)
 
@@ -366,4 +389,4 @@ export interface BatchResult extends ErrorInfo {
 
 ## Related topics
 
-[Client configuration and metadata](./configuration) · [Snapshot queries](./snapshot-queries) · [Filter expressions and legacy conditions](./filters) · [Projection, sorting and pagination](./query-options) · [Cursor queries](./cursor-queries) · [Aggregation builders](./aggregations) · [Events and historical state](./events-and-history) · [Shared domain types and utilities](./shared-types)
+[Client configuration and metadata](./configuration) · [Snapshot queries](./snapshot-queries) · [Filter expressions and legacy conditions](./filters) · [Projection, sorting and pagination](./query-options) · [Cursor queries](./cursor-queries) · [Aggregation builders](./aggregations) · [Events and historical state](./events-and-history) · [Identity and resource attribution](./identity-and-attribution)

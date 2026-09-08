@@ -7,6 +7,8 @@ description: 'CoSec configuration — Fetcher 5.0.0'
 
 `CoSecConfigurer` wires CoSec metadata, resource attribution and optional authentication into a Fetcher. It does not provide a login endpoint or server-side token verification.
 
+Apply a setup once to a client. Interceptor registration rejects duplicate names: calling `applyTo` again does not replace the original interceptors with a new configurer's dependencies. To change authentication ownership, create a separately configured Fetcher or explicitly eject the old named interceptors after stopping its requests.
+
 ## CoSecConfig and construction
 
 | Field                           | Default               | Contract                                                                                           |

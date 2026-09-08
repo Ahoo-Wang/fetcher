@@ -1,89 +1,7 @@
-import { referenceSidebar } from './reference';
-import type { DefaultTheme } from 'vitepress';
+import { siteSidebar } from './reference';
+import type { DefaultTheme, LocaleConfig } from 'vitepress';
 
-const sidebarSections = [
-  {
-    text: '开始',
-    items: [
-      { text: '概览', link: '/zh/start/' },
-      { text: '安装', link: '/zh/start/installation' },
-      { text: '第一个请求', link: '/zh/start/first-request' },
-      { text: '选择包', link: '/zh/start/choose-packages' },
-    ],
-  },
-  {
-    text: '学习',
-    items: [
-      { text: '请求生命周期', link: '/zh/learn/request-lifecycle' },
-      { text: '请求与结果', link: '/zh/learn/requests-and-results' },
-      {
-        text: '拦截器、错误与超时',
-        link: '/zh/learn/interceptors-errors-timeouts',
-      },
-      { text: '流式响应', link: '/zh/learn/streaming' },
-      { text: 'React 数据流', link: '/zh/learn/react-data-flow' },
-    ],
-  },
-  {
-    text: '场景',
-    items: [
-      { text: '声明式服务', link: '/zh/recipes/declarative-services' },
-      { text: '生成客户端', link: '/zh/recipes/openapi-client' },
-      { text: 'OpenAI 流式请求', link: '/zh/recipes/openai-streaming' },
-      { text: 'Wow CQRS', link: '/zh/recipes/wow-cqrs' },
-      { text: 'CoSec 认证', link: '/zh/recipes/cosec-authentication' },
-      { text: '状态与事件', link: '/zh/recipes/state-and-events' },
-      { text: '数据 Viewer', link: '/zh/recipes/data-viewer' },
-    ],
-  },
-  {
-    text: 'Skills',
-    items: [
-      { text: '概览', link: '/zh/skills/' },
-      { text: 'HTTP 与服务', link: '/zh/skills/http-and-services' },
-      { text: '流式与 OpenAI', link: '/zh/skills/streaming-and-openai' },
-      { text: 'OpenAPI 与生成', link: '/zh/skills/openapi-and-generation' },
-      { text: 'React 与集成', link: '/zh/skills/react-and-integrations' },
-    ],
-  },
-  {
-    text: '参考',
-    items: [
-      { text: '包概览', link: '/zh/reference/' },
-      { text: 'Fetcher', link: '/zh/reference/fetcher' },
-      { text: 'Decorator', link: '/zh/reference/decorator' },
-      { text: '事件总线', link: '/zh/reference/eventbus' },
-      { text: '事件流', link: '/zh/reference/eventstream' },
-      { text: 'Storage', link: '/zh/reference/storage' },
-      { text: 'React', link: '/zh/reference/react' },
-      { text: 'OpenAPI', link: '/zh/reference/openapi' },
-      { text: 'Generator', link: '/zh/reference/generator' },
-      { text: 'OpenAI', link: '/zh/reference/openai' },
-      { text: 'Wow', link: '/zh/reference/wow' },
-      { text: 'CoSec', link: '/zh/reference/cosec' },
-      { text: 'Viewer', link: '/zh/reference/viewer' },
-    ],
-  },
-  {
-    text: '贡献',
-    items: [
-      { text: '概览', link: '/zh/contributing/' },
-      { text: '开发', link: '/zh/contributing/development' },
-      { text: '测试', link: '/zh/contributing/testing' },
-      { text: '文档', link: '/zh/contributing/documentation' },
-    ],
-  },
-] satisfies DefaultTheme.SidebarItem[];
-
-function sidebar(activeSection: string) {
-  return sidebarSections.map(section =>
-    section.text === activeSection
-      ? section
-      : { text: section.text, link: section.items?.[0]?.link },
-  );
-}
-
-export const zh: DefaultTheme.Config = {
+export const zh: LocaleConfig<DefaultTheme.Config>[string] = {
   label: '中文',
   lang: 'zh-CN',
   title: 'Fetcher',
@@ -94,26 +12,20 @@ export const zh: DefaultTheme.Config = {
     logo: { src: '/fetcher-logo.png', alt: 'Fetcher 标志' },
     nav: [
       { text: '开始', link: '/zh/start/' },
-      { text: '学习', link: '/zh/learn/requests-and-results' },
-      { text: '场景', link: '/zh/recipes/declarative-services' },
+      { text: '指南', link: '/zh/guides/' },
+      { text: '架构', link: '/zh/architecture/' },
       { text: '参考', link: '/zh/reference/' },
       {
         text: '资源',
         items: [
+          { text: '示例', link: '/zh/examples/' },
           { text: 'Skills', link: '/zh/skills/' },
           { text: '贡献', link: '/zh/contributing/' },
+          { text: 'GitHub', link: 'https://github.com/Ahoo-Wang/fetcher' },
         ],
       },
-      { text: 'Storybook', link: '/storybook/', target: '_blank' },
     ],
-    sidebar: {
-      '/zh/start/': sidebar('开始'),
-      '/zh/learn/': sidebar('学习'),
-      '/zh/recipes/': sidebar('场景'),
-      '/zh/skills/': sidebar('Skills'),
-      ...referenceSidebar(true),
-      '/zh/contributing/': sidebar('贡献'),
-    },
+    sidebar: siteSidebar(true),
     socialLinks: [
       { icon: 'github', link: 'https://github.com/Ahoo-Wang/fetcher' },
     ],

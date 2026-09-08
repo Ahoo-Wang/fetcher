@@ -4,40 +4,97 @@
 
 ## Overview
 
-- [Fetcher](/) — Start with one HTTP request, then compose services, streams, and React.
+- [TypeScript HTTP clients on native Fetch](/) — Use Fetcher for HTTP, service clients, streaming, and React data interactions.
 
-## Start
+## start
 
-- [Start with Fetcher](/start/) — Start with one HTTP request, then compose services, streams, and React.
-- [Installation and runtime](/start/installation) — Separate application runtime, optional peers, and repository tooling.
-- [Your first request](/start/first-request) — Install, request, extract JSON, and handle failure.
-- [Choose packages for your task](/start/choose-packages) — Choose packages for your task
+- [Choose your starting point](/start/) — Start with HTTP, a React request, or a local data table according to your existing application.
+- [Install Fetcher](/start/installation) — Create an independent ESM project and install the core HTTP client.
+- [Your first request](/start/first-request) — Run a typed JSON request and verify the HTTP 404 failure path.
+- [Your first data view](/start/first-view) — Run a local Viewer and understand where data and saved state belong.
+- [Choose your next task](/start/next-steps) — Extend the first successful request or table with one concrete application capability.
 
-## Learn
+## guides
 
-- [Understand the request lifecycle](/learn/request-lifecycle) — Understand the request lifecycle — Fetcher
-- [Build a request and choose its result](/learn/requests-and-results) — Build a request and choose its result — Fetcher
-- [Handle errors, timeouts, and cancellation](/learn/interceptors-errors-timeouts) — Handle errors, timeouts, and cancellation — Fetcher
-- [Read and close an event stream](/learn/streaming) — Read and close an event stream — Fetcher
-- [React data flow](/learn/react-data-flow) — Connect execution, results, and cancellation to component lifetime.
+- [Build your application](/guides/) — Choose HTTP, service, stream, React, data-view, or integration tasks.
 
-## Recipes
+## guides/http
 
-- [Create a Declarative Service](/recipes/declarative-services) — Define, call, and verify a decorator service with explicit request bindings.
-- [Generate and Use an OpenAPI Client](/recipes/openapi-client) — Generate a real ItemsApiClient from a complete minimal schema and type-check its consumer.
-- [Stream a Chat Completion](/recipes/openai-streaming) — Consume Chat Completions SSE through an application gateway with cancellation and reader cleanup.
-- [Send a Wow Command and Read State](/recipes/wow-cqrs) — Configure application aggregate routes, inspect command results, and query or stream snapshot state.
-- [Add CoSec Authentication](/recipes/cosec-authentication) — Create a browser authentication session with refresh, token ownership, and cleanup.
-- [Share State and Events](/recipes/state-and-events) — Verify local state and ordered events, then opt into browser tab notifications.
-- [Build a Data Viewer](/recipes/data-viewer) — Render a paged Viewer with application-owned fetching, cancellation, and recoverable errors.
+- [HTTP requests](/guides/http/) — Choose a concrete task for http requests.
+- [Reuse a shared HTTP client](/guides/http/shared-client) — Configure a reusable origin, headers, and request timeout with explicit identity ownership.
+- [Construct URLs, headers, and bodies](/guides/http/requests) — Send explicit path/query parameters and choose a body format appropriate to your server.
+- [Choose and validate a result](/guides/http/results) — Select Response, exchange, or parsed JSON and verify what the caller actually receives.
+- [Handle HTTP, transport, and parsing failures](/guides/http/failures) — Preserve exchange context and handle extraction failures at the application boundary.
+- [Cancel requests and set timeouts](/guides/http/cancellation) — Assign AbortController ownership and distinguish response acquisition from full body deadlines.
+- [Extend the request pipeline](/guides/http/interceptors) — Add and remove an owned interceptor at the stage where its input is available.
 
-## Skills
+## guides/services
+
+- [Service clients](/guides/services/) — Choose a concrete task for service clients.
+- [Create a Declarative Service](/guides/services/declarative-client) — Define, call, and verify a decorator service with explicit request bindings.
+- [Generate and Use an OpenAPI Client](/guides/services/generated-client) — Generate a real ItemsApiClient from a complete minimal schema and type-check its consumer.
+
+## guides/streaming
+
+- [Streaming data](/guides/streaming/) — Choose a concrete task for streaming data.
+- [Read and close an event stream](/guides/streaming/sse) — Read and close an event stream — Fetcher
+- [Stream a Chat Completion](/guides/streaming/chat) — Consume Chat Completions SSE through an application gateway with cancellation and reader cleanup.
+
+## guides/react
+
+- [React data flow](/guides/react/) — Choose a concrete task for react data flow.
+- [Trigger and display a React request](/guides/react/requests) — Use the verified useFetcher component to render loading, results, errors, and cancellation.
+- [Drive a query from input](/guides/react/queries) — Send a query as POST JSON and render the current component-owned result.
+- [Debounce input-driven requests](/guides/react/debounce) — Delay changing input and distinguish queued execution from an active request.
+- [Clean up React async work](/guides/react/cleanup) — Connect cancellation to the actual operation and distinguish abort, reset, and debounce cancellation.
+
+## guides/viewer
+
+- [Data view tasks](/guides/viewer/) — Choose a concrete task for data view tasks.
+- [Render local rows in a Viewer](/guides/viewer/local-data) — Build a backend-free table with a complete definition, initial view, and application-owned data.
+- [Make pagination and sorting change rows](/guides/viewer/pagination-and-sorting) — Apply the requested condition and sort before slicing a one-based page.
+- [Filter the displayed data](/guides/viewer/filters) — Connect an available filter, saved filter configuration, and an application query evaluator.
+- [Save and restore view state](/guides/viewer/saved-views) — Implement view mutation callbacks and report success only after the chosen persistence accepts a change.
+- [Connect remote rows to a Viewer](/guides/viewer/remote-data) — Render a paged Viewer with application-owned fetching, cancellation, and recoverable errors.
+
+## guides/integrations
+
+- [Platform integrations](/guides/integrations/) — Choose a concrete task for platform integrations.
+- [Send a Wow Command and Read State](/guides/integrations/wow) — Configure application aggregate routes, inspect command results, and query or stream snapshot state.
+- [Add CoSec Authentication](/guides/integrations/cosec) — Create a browser authentication session with refresh, token ownership, and cleanup.
+- [Share State and Events](/guides/integrations/storage-and-events) — Verify local state and ordered events, then opt into browser tab notifications.
+
+## architecture
+
+- [Architecture and choices](/architecture/) — Choose the smallest client layer and identify the responsibilities that remain in your application.
+- [Package boundaries](/architecture/package-boundaries) — Separate declared installation dependencies from runtime request paths and code generation.
+- [Runtime support and SSR](/architecture/runtime-support) — Check platform capabilities and scope mutable identity state before sharing clients.
+- [Request lifecycle](/architecture/request-lifecycle) — Place interception and extraction at the correct stage of a Fetcher request.
+- [State and resource ownership](/architecture/state-and-resources) — Assign request state, table data, saved-view confirmation, and cleanup to their actual owners.
+- [Failure model](/architecture/failure-model) — Handle transport, HTTP, extraction, Hook, and stream failures at the boundary where they occur.
+- [Integration decisions](/architecture/integration-decisions) — Compare client styles and table layers by the contracts and maintenance they require.
+
+## examples
+
+- [Run complete examples](/examples/) — Run deterministic HTTP, React, and Viewer examples with clear consumer and repository instructions.
+- [Runnable HTTP example](/examples/http) — Run a local deterministic server and verify Fetcher success and HTTP failure behavior.
+- [Runnable React request example](/examples/react) — Exercise successful, failed, and cancelled Fetcher requests with real React hook state.
+- [Local Viewer example](/examples/viewer) — Filter, sort, page and save a local data view with application-owned state.
+
+## skills
 
 - [Use Fetcher Skills](/skills/) — Use Fetcher Skills — Fetcher agent workflows
 - [HTTP and services](/skills/http-and-services) — HTTP and services — Fetcher agent workflows
 - [Streaming and OpenAI](/skills/streaming-and-openai) — Streaming and OpenAI — Fetcher agent workflows
 - [OpenAPI and generation](/skills/openapi-and-generation) — OpenAPI and generation — Fetcher agent workflows
 - [React and integrations](/skills/react-and-integrations) — React and integrations — Fetcher agent workflows
+
+## contributing
+
+- [Contribute a focused change](/contributing/) — Contribute a focused change — Fetcher
+- [Set up the monorepo](/contributing/development) — Set up the monorepo — Fetcher
+- [Choose the verification boundary](/contributing/testing) — Choose the verification boundary — Fetcher
+- [Maintain accurate documentation](/contributing/documentation) — Maintain accurate documentation — Fetcher
 
 ## Reference
 
@@ -49,47 +106,57 @@
 - [Exchanges and result extraction](/reference/fetcher/results) — Exchanges and result extraction — @ahoo-wang/fetcher 5.0.0
 - [Interceptor pipeline](/reference/fetcher/interceptors) — Interceptor pipeline — @ahoo-wang/fetcher 5.0.0
 - [Errors, timeouts, and cancellation](/reference/fetcher/errors-and-cancellation) — Errors, timeouts, and cancellation — @ahoo-wang/fetcher 5.0.0
+- [fetcher public symbols](/reference/fetcher/symbols) — Complete root exports with behavior contracts and source locations.
 - [Decorator reference](/reference/decorator/) — Legacy TypeScript class, method, and parameter decorators for declarative Fetcher services.
 - [Services and endpoints](/reference/decorator/services-and-endpoints) — Services and endpoints — @ahoo-wang/fetcher-decorator 5.0.0
 - [Parameter binding](/reference/decorator/parameters) — Parameter binding — @ahoo-wang/fetcher-decorator 5.0.0
 - [Metadata and execution lifecycle](/reference/decorator/execution) — Metadata and execution lifecycle — @ahoo-wang/fetcher-decorator 5.0.0
+- [decorator public symbols](/reference/decorator/symbols) — Complete root exports with behavior contracts and source locations.
 - [Eventbus reference](/reference/eventbus/) — Local serial/parallel delivery and optional cross-context broadcasting.
 - [Events and local delivery](/reference/eventbus/events-and-delivery) — Events and local delivery — @ahoo-wang/fetcher-eventbus 5.0.0
 - [Broadcast buses and messengers](/reference/eventbus/broadcast-and-messengers) — Broadcast buses and messengers — @ahoo-wang/fetcher-eventbus 5.0.0
+- [eventbus public symbols](/reference/eventbus/symbols) — Complete root exports with behavior contracts and source locations.
 - [Eventstream reference](/reference/eventstream/) — Web Streams transforms for UTF-8 text, SSE frames, JSON data, and cancellable consumption.
 - [The SSE parsing pipeline](/reference/eventstream/sse-pipeline) — The SSE parsing pipeline — @ahoo-wang/fetcher-eventstream 5.0.0
 - [JSON events, Response helpers, and extractors](/reference/eventstream/json-and-results) — JSON events, Response helpers, and extractors — @ahoo-wang/fetcher-eventstream 5.0.0
 - [Consumption, cancellation, and safe transforms](/reference/eventstream/consumption-and-cancellation) — Consumption, cancellation, and safe transforms — @ahoo-wang/fetcher-eventstream 5.0.0
+- [eventstream public symbols](/reference/eventstream/symbols) — Complete root exports with behavior contracts and source locations.
 - [Storage reference](/reference/storage/) — Typed values backed by browser Storage or memory, with explicit notification ownership.
 - [KeyStorage and change listeners](/reference/storage/key-storage) — KeyStorage and change listeners — @ahoo-wang/fetcher-storage 5.0.0
 - [Serialization and runtime storage](/reference/storage/serialization-and-runtime) — Serialization and runtime storage — @ahoo-wang/fetcher-storage 5.0.0
+- [storage public symbols](/reference/storage/symbols) — Complete root exports with behavior contracts and source locations.
 - [Openapi reference](/reference/openapi/) — Openapi reference — Fetcher 5.0.0
 - [Documents and operations](/reference/openapi/documents-and-operations) — Documents and operations — Fetcher 5.0.0
 - [Schemas and references](/reference/openapi/schemas-and-references) — Schemas and references — Fetcher 5.0.0
 - [Security and extensions](/reference/openapi/security-and-extensions) — Security and extensions — Fetcher 5.0.0
+- [openapi public symbols](/reference/openapi/symbols) — Complete root exports with behavior contracts and source locations.
 - [Generator reference](/reference/generator/) — Generator reference — Fetcher 5.0.0
 - [Generator CLI](/reference/generator/cli) — Generator CLI — Fetcher 5.0.0
 - [Generator configuration](/reference/generator/configuration) — Generator configuration — Fetcher 5.0.0
 - [Generated output and regeneration](/reference/generator/generated-output) — Generated output and regeneration — Fetcher 5.0.0
 - [Programmatic API](/reference/generator/programmatic-api) — Programmatic API — Fetcher 5.0.0
 - [Wow aggregate discovery](/reference/generator/wow-discovery) — Wow aggregate discovery — Fetcher 5.0.0
+- [generator public symbols](/reference/generator/symbols) — Complete root exports with behavior contracts and source locations.
 - [Openai reference](/reference/openai/) — Openai reference — Fetcher 5.0.0
 - [Client and chat completions](/reference/openai/client-and-completions) — Client and chat completions — Fetcher 5.0.0
 - [Streaming chat completions](/reference/openai/streaming) — Streaming chat completions — Fetcher 5.0.0
+- [openai public symbols](/reference/openai/symbols) — Complete root exports with behavior contracts and source locations.
 - [Cosec reference](/reference/cosec/) — Cosec reference — Fetcher 5.0.0
 - [CoSec configuration](/reference/cosec/configuration) — CoSec configuration — Fetcher 5.0.0
 - [Tokens and refresh](/reference/cosec/tokens-and-refresh) — Tokens and refresh — Fetcher 5.0.0
 - [Interceptors and attribution](/reference/cosec/interceptors-and-attribution) — Interceptors and attribution — Fetcher 5.0.0
-- [React Reference](/reference/react/) — @ahoo-wang/fetcher-react 5.0.0 API reference
+- [cosec public symbols](/reference/cosec/symbols) — Complete root exports with behavior contracts and source locations.
+- [React reference](/reference/react/) — React entry selection, installation and behavior contracts
 - [Fetcher hooks](/reference/react/fetcher-hooks) — Fetcher hooks — @ahoo-wang/fetcher-react 5.0.0
 - [Promise and query state](/reference/react/promise-and-query-state) — Promise and query state — @ahoo-wang/fetcher-react 5.0.0
 - [API hook factories](/reference/react/api-hooks) — API hook factories — @ahoo-wang/fetcher-react 5.0.0
 - [Debounced execution](/reference/react/debounce) — Debounced execution — @ahoo-wang/fetcher-react 5.0.0
+- [Wow query hooks](/reference/react/wow) — Wow query hooks — @ahoo-wang/fetcher-react 5.0.0
 - [Storage and event subscriptions](/reference/react/storage-and-events) — Storage and event subscriptions — @ahoo-wang/fetcher-react 5.0.0
 - [Security hooks and route guards](/reference/react/cosec) — Security hooks and route guards — @ahoo-wang/fetcher-react 5.0.0
-- [Wow query hooks](/reference/react/wow) — Wow query hooks — @ahoo-wang/fetcher-react 5.0.0
 - [Monitoring, refs and fullscreen](/reference/react/monitoring-and-utilities) — Monitoring, refs and fullscreen — @ahoo-wang/fetcher-react 5.0.0
-- [Wow Reference](/reference/wow/) — @ahoo-wang/fetcher-wow 5.0.0 API reference
+- [React symbol index](/reference/react/symbols) — React symbol index — @ahoo-wang/fetcher-react 5.0.0
+- [Wow reference](/reference/wow/) — Wow entry selection, installation and behavior contracts
 - [Client configuration and metadata](/reference/wow/configuration) — Client configuration and metadata — @ahoo-wang/fetcher-wow 5.0.0
 - [Commands and wait results](/reference/wow/commands) — Commands and wait results — @ahoo-wang/fetcher-wow 5.0.0
 - [Snapshot queries](/reference/wow/snapshot-queries) — Snapshot queries — @ahoo-wang/fetcher-wow 5.0.0
@@ -98,23 +165,21 @@
 - [Cursor queries](/reference/wow/cursor-queries) — Cursor queries — @ahoo-wang/fetcher-wow 5.0.0
 - [Aggregation builders](/reference/wow/aggregations) — Aggregation builders — @ahoo-wang/fetcher-wow 5.0.0
 - [Events and historical state](/reference/wow/events-and-history) — Events and historical state — @ahoo-wang/fetcher-wow 5.0.0
-- [Shared domain types and utilities](/reference/wow/shared-types) — Shared domain types and utilities — @ahoo-wang/fetcher-wow 5.0.0
-- [Viewer Reference](/reference/viewer/) — @ahoo-wang/fetcher-viewer 5.0.0 API reference
-- [Models and state ownership](/reference/viewer/models-and-state) — Models and state ownership — @ahoo-wang/fetcher-viewer 5.0.0
+- [Identity and resource attribution](/reference/wow/identity-and-attribution) — Identity and resource attribution — @ahoo-wang/fetcher-wow 5.0.0
+- [Message payloads and state metadata](/reference/wow/messages-and-state) — Message payloads and state metadata — @ahoo-wang/fetcher-wow 5.0.0
+- [Business errors and document utilities](/reference/wow/errors-and-utilities) — Business errors and document utilities — @ahoo-wang/fetcher-wow 5.0.0
+- [Legacy operator locales](/reference/wow/operator-locales) — Legacy operator locales — @ahoo-wang/fetcher-wow 5.0.0
+- [Wow symbol index](/reference/wow/symbols) — Wow symbol index — @ahoo-wang/fetcher-wow 5.0.0
+- [Viewer reference](/reference/viewer/) — Viewer entry selection, installation and behavior contracts
 - [View and Viewer composition](/reference/viewer/view-and-viewer) — View and Viewer composition — @ahoo-wang/fetcher-viewer 5.0.0
-- [Saved-view panels and persistence callbacks](/reference/viewer/saved-views) — Saved-view panels and persistence callbacks — @ahoo-wang/fetcher-viewer 5.0.0
-- [FetcherViewer remote integration](/reference/viewer/fetcher-viewer) — FetcherViewer remote integration — @ahoo-wang/fetcher-viewer 5.0.0
+- [Models and state ownership](/reference/viewer/models-and-state) — Models and state ownership — @ahoo-wang/fetcher-viewer 5.0.0
 - [Filters and editable panels](/reference/viewer/filters) — Filters and editable panels — @ahoo-wang/fetcher-viewer 5.0.0
 - [Tables, columns and cells](/reference/viewer/tables-and-cells) — Tables, columns and cells — @ahoo-wang/fetcher-viewer 5.0.0
+- [Saved-view panels and persistence callbacks](/reference/viewer/saved-views) — Saved-view panels and persistence callbacks — @ahoo-wang/fetcher-viewer 5.0.0
+- [FetcherViewer remote integration](/reference/viewer/fetcher-viewer) — FetcherViewer remote integration — @ahoo-wang/fetcher-viewer 5.0.0
 - [Registries, inputs and fullscreen button](/reference/viewer/registries-and-inputs) — Registries, inputs and fullscreen button — @ahoo-wang/fetcher-viewer 5.0.0
 - [Toolbar, refresh and locale](/reference/viewer/toolbar-and-locale) — Toolbar, refresh and locale — @ahoo-wang/fetcher-viewer 5.0.0
-
-## Contributing
-
-- [Contribute a focused change](/contributing/) — Contribute a focused change — Fetcher
-- [Set up the monorepo](/contributing/development) — Set up the monorepo — Fetcher
-- [Choose the verification boundary](/contributing/testing) — Choose the verification boundary — Fetcher
-- [Maintain accurate documentation](/contributing/documentation) — Maintain accurate documentation — Fetcher
+- [Viewer symbol index](/reference/viewer/symbols) — Viewer symbol index — @ahoo-wang/fetcher-viewer 5.0.0
 
 ## 中文文档
 

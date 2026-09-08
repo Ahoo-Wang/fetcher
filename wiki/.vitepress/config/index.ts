@@ -32,7 +32,7 @@ export default defineConfig({
     search: {
       provider: 'local',
       options: {
-        detailedView: true,
+        detailedView: false,
         translations: {
           button: {
             buttonText: 'Search',
@@ -64,7 +64,7 @@ export default defineConfig({
         search: {
           provider: 'local',
           options: {
-            detailedView: true,
+            detailedView: false,
             translations: {
               button: {
                 buttonText: '搜索',
@@ -87,7 +87,16 @@ export default defineConfig({
       },
     },
   },
+  transformPageData(pageData) {
+    if (
+      pageData.relativePath.replace(/^zh\//, '').startsWith('reference/') &&
+      pageData.frontmatter.outline === undefined
+    ) {
+      pageData.frontmatter.outline = 2;
+    }
+  },
   markdown: {
+    languageAlias: { mjs: 'javascript' },
     lineNumbers: true,
   },
   vite: {

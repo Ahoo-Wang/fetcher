@@ -23,9 +23,24 @@ supplier 必须把 signal 传给 I/O 才能停止实际工作；即使忽略取�
 
 ## 查询所有权
 
-`useQuery<Q,R,E>` 增加 `initialQuery`、`query`、`attributes`、`autoExecute`、`getQuery()`、`setQuery(Q)`；执行器接收 `(query, attributes, abortController)`。`autoExecute` 默认为 true。没有已定义查询就不请求；`isValidateQuery` 只检查 `query !== undefined`，不进行 schema 校验。`query` 覆盖初始化；内容深相等而仅引用变化不会重新查询，执行配置变化则可能触发。`initialQuery` 只用于初始化，不是响应式替换参数。
+`useQuery<Q,R,E>` 增加 `initialQuery`、`query`、`attributes`、`autoExecute`、`getQuery()`、`setQuery(Q)`；执行器接收 `(query, attributes, abortController)`。`autoExecute` 默认为 true。初始化时 `query` 和 `initialQuery` 均为 undefined 才没有查询可执行；`isValidateQuery` 只检查 `query !== undefined`，不进行 schema 校验。`query` 覆盖初始化；内容深相等而仅引用变化不会重新查询，执行配置变化则可能触发。`initialQuery` 只用于初始化，不是响应式替换参数。
+
+将已定义的 `query` 属性改为 `undefined` 不会清空保存的查询，还可能再次自动执行旧值。暂停自动执行应设置 `autoExecute: false`，但这不会取消已经运行的操作；需要作废并取消当前执行时，另外调用 `abort()`。
 
 `setQuery` 更新 ref，启用自动执行时立即执行；它本身不是 React 状态通知，也不会去重显式 setter 调用。`autoExecute: false` 时可先 `setQuery` 再 `execute()`。自动执行不会等待调用者 catch，因此无人等待的请求应通过错误状态/onError 处理，而不要设 `propagateError: true`。`useQueryState` 只提供查询 ref 行为，不负责取消；应保持其 `execute` 回调稳定。
+
+## 选择状态、执行与查询所有权 {#ownership}
+
+| 决策                 | 纯状态 Hook                    | 执行器                                       | 查询 Hook                             |
+| -------------------- | ------------------------------ | -------------------------------------------- | ------------------------------------- |
+| 谁启动工作？         | `usePromiseState` 外的应用代码 | 调用 `execute(supplier)`                     | 默认挂载/查询变化，或显式 `execute()` |
+| 谁保存输入？         | 应用代码                       | 当前 supplier/调用                           | 查询 ref，通过 `getQuery()` 读取      |
+| 谁取消并拒绝旧结果？ | 应用代码                       | `useExecutePromise`                          | 底层执行器                            |
+| reset 做什么？       | 置 idle 并清空 result/error    | 相同；运行中的 supplier 之后仍可能置 success | 相同；保留 query                      |
+
+搜索框文本若需独立于请求状态渲染，应保存在 React state 中；`setQuery` 本身只是更新 ref。`initialQuery` 初始化 ref，有定义的响应式 `query` 优先。查询有效性检查仅排除 undefined，不能作为表单/结构验证器。查询 ref 和异步结果是两个值；改变前者不会立即生成后者。
+
+添加定时器前参见[防抖取消](./debounce#cancellation-controls)；[HTTP 示例](./index)展示向 Fetcher 传递取消的完整操作。
 
 ## 完整示例
 
@@ -63,107 +78,9 @@ export function Search() {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
-### useQueryState {#api-useQueryState}
-
-```ts
-export function useQueryState<Q>(
-  options: UseQueryStateOptions<Q>,
-): UseQueryStateReturn<Q>;
-```
-
-[packages/react/src/core/useQueryState.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L113)
-
-### isValidateQuery {#api-isValidateQuery}
-
-```ts
-export function isValidateQuery<Q>(query: Q | undefined): query is Q;
-```
-
-[packages/react/src/core/useQueryState.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L195)
-
-### QueryOptions {#api-QueryOptions}
-
-```ts
-export interface QueryOptions<Q> {
-  initialQuery?: Q;
-  query?: Q;
-}
-```
-
-[packages/react/src/core/useQueryState.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L18)
-
-### UseQueryStateOptions {#api-UseQueryStateOptions}
-
-```ts
-export interface UseQueryStateOptions<Q>
-  extends QueryOptions<Q>, AutoExecuteCapable {
-  execute: (query: Q) => Promise<void>;
-}
-```
-
-[packages/react/src/core/useQueryState.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L29)
-
-### UseQueryStateReturn {#api-UseQueryStateReturn}
-
-```ts
-export interface UseQueryStateReturn<Q> {
-  getQuery: () => Q | undefined;
-  setQuery: (query: Q) => void;
-}
-```
-
-[packages/react/src/core/useQueryState.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L39)
-
-### useExecutePromise {#api-useExecutePromise}
-
-```ts
-export function useExecutePromise<R = unknown, E = FetcherError>(
-  options?: UseExecutePromiseOptions<R, E>,
-): UseExecutePromiseReturn<R, E>;
-```
-
-[packages/react/src/core/useExecutePromise.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L210)
-
-### UseExecutePromiseOptions {#api-UseExecutePromiseOptions}
-
-```ts
-export interface UseExecutePromiseOptions<
-  R,
-  E = FetcherError,
-> extends UsePromiseStateOptions<R, E> {
-  propagateError?: boolean;
-  onAbort?: () => void | Promise<void>;
-}
-```
-
-[packages/react/src/core/useExecutePromise.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L27)
-
-### PromiseSupplier {#api-PromiseSupplier}
-
-```ts
-export type PromiseSupplier<R> = (
-  abortController: AbortController,
-) => Promise<R>;
-```
-
-[packages/react/src/core/useExecutePromise.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L51)
-
-### UseExecutePromiseReturn {#api-UseExecutePromiseReturn}
-
-```ts
-export interface UseExecutePromiseReturn<
-  R,
-  E = FetcherError,
-> extends PromiseState<R, E> {
-  execute: (input: PromiseSupplier<R>) => Promise<void>;
-  reset: () => void;
-  abort: () => void;
-}
-```
-
-[packages/react/src/core/useExecutePromise.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L61)
+## 不拥有执行的状态 {#state-contracts}
 
 ### usePromiseState {#api-usePromiseState}
 
@@ -241,6 +158,59 @@ export interface UsePromiseStateReturn<
 
 [packages/react/src/core/usePromiseState.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/usePromiseState.ts#L75)
 
+## 显式执行 {#execution-contracts}
+
+### useExecutePromise {#api-useExecutePromise}
+
+```ts
+export function useExecutePromise<R = unknown, E = FetcherError>(
+  options?: UseExecutePromiseOptions<R, E>,
+): UseExecutePromiseReturn<R, E>;
+```
+
+[packages/react/src/core/useExecutePromise.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L210)
+
+### UseExecutePromiseOptions {#api-UseExecutePromiseOptions}
+
+```ts
+export interface UseExecutePromiseOptions<
+  R,
+  E = FetcherError,
+> extends UsePromiseStateOptions<R, E> {
+  propagateError?: boolean;
+  onAbort?: () => void | Promise<void>;
+}
+```
+
+[packages/react/src/core/useExecutePromise.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L27)
+
+### PromiseSupplier {#api-PromiseSupplier}
+
+```ts
+export type PromiseSupplier<R> = (
+  abortController: AbortController,
+) => Promise<R>;
+```
+
+[packages/react/src/core/useExecutePromise.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L51)
+
+### UseExecutePromiseReturn {#api-UseExecutePromiseReturn}
+
+```ts
+export interface UseExecutePromiseReturn<
+  R,
+  E = FetcherError,
+> extends PromiseState<R, E> {
+  execute: (input: PromiseSupplier<R>) => Promise<void>;
+  reset: () => void;
+  abort: () => void;
+}
+```
+
+[packages/react/src/core/useExecutePromise.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L61)
+
+## 查询驱动执行 {#query-contracts}
+
 ### useQuery {#api-useQuery}
 
 ```ts
@@ -250,6 +220,17 @@ export function useQuery<Q, R, E = FetcherError>(
 ```
 
 [packages/react/src/core/useQuery.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQuery.ts#L105)
+
+### QueryOptions {#api-QueryOptions}
+
+```ts
+export interface QueryOptions<Q> {
+  initialQuery?: Q;
+  query?: Q;
+}
+```
+
+[packages/react/src/core/useQueryState.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L18)
 
 ### UseQueryOptions {#api-UseQueryOptions}
 
@@ -280,6 +261,48 @@ export interface UseQueryReturn<Q, R, E = FetcherError>
 ```
 
 [packages/react/src/core/useQuery.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQuery.ts#L53)
+
+## 不拥有取消的查询 ref {#query-ref-contracts}
+
+### useQueryState {#api-useQueryState}
+
+```ts
+export function useQueryState<Q>(
+  options: UseQueryStateOptions<Q>,
+): UseQueryStateReturn<Q>;
+```
+
+[packages/react/src/core/useQueryState.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L113)
+
+### isValidateQuery {#api-isValidateQuery}
+
+```ts
+export function isValidateQuery<Q>(query: Q | undefined): query is Q;
+```
+
+[packages/react/src/core/useQueryState.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L195)
+
+### UseQueryStateOptions {#api-UseQueryStateOptions}
+
+```ts
+export interface UseQueryStateOptions<Q>
+  extends QueryOptions<Q>, AutoExecuteCapable {
+  execute: (query: Q) => Promise<void>;
+}
+```
+
+[packages/react/src/core/useQueryState.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L29)
+
+### UseQueryStateReturn {#api-UseQueryStateReturn}
+
+```ts
+export interface UseQueryStateReturn<Q> {
+  getQuery: () => Q | undefined;
+  setQuery: (query: Q) => void;
+}
+```
+
+[packages/react/src/core/useQueryState.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L39)
 
 ## 相关专题
 

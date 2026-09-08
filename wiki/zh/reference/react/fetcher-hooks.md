@@ -19,6 +19,12 @@ description: 'Fetcher 请求 Hook — @ahoo-wang/fetcher-react 5.0.0'
 
 `useFetcherQuery` 的返回类型继承了可带 exchange 的类型，但当前实现返回对象没有 `exchange`；需要检查 exchange 时直接用 `useFetcher`。`reset()` 清除 exchange/状态，不会取消在途工作；`abort()` 清除 exchange、作废本地请求 ID 并取消执行器。卸载与重叠请求见 [Promise 状态](./promise-and-query-state)。`url` 或其他选项变化只更新下次执行读取的值，本身不保证触发新请求。
 
+## HTTP 取消与超时 {#http-cancellation}
+
+`useFetcher` 将执行器的 AbortController 放到请求上。使用普通 Fetcher 传输且未显式传 `signal` 时，该 controller 参与库的超时路径。显式请求 `signal` 在 Fetcher 中优先，并绕过内建超时，也可能绕过 Hook 用于 abort 的 controller。自行传 signal 时，应有意识地组合信号/超时。无论实际 I/O 是否取消，请求序号都会阻止旧工作覆盖 Hook 当前状态。
+
+选择结果泛型前先选提取器：`JsonResultExtractor` 解析 JSON，普通 Fetcher 默认值可能返回 exchange 或 Response。`R` 是提取后的值类型，`E` 是错误状态类型；两者不验证运行时载荷。[请求生命周期](../../architecture/request-lifecycle)解释 JSON 解析为何可能在 exchange 拦截结束后失败。
+
 ## 完整示例
 
 ```tsx
@@ -47,7 +53,7 @@ export function Profile() {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
 ### useFetcher {#api-useFetcher}
 

@@ -56,15 +56,17 @@ export function Presentation() {
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### useFullscreen {#api-useFullscreen}
 
 ```ts
 export function useFullscreen(
-  options: UseFullscreenOptions = {},
+  options?: UseFullscreenOptions,
 ): UseFullscreenReturn;
 ```
+
+Implementation defaults: `options = {}`.
 
 [packages/react/src/core/fullscreen/useFullscreen.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/useFullscreen.ts#L60)
 

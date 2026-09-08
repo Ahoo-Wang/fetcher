@@ -7,6 +7,8 @@ description: '事件与本地投递 — @ahoo-wang/fetcher-eventbus 5.0.0'
 
 单一负载类型选择类型化总线，多种具名事件选择 `EventBus<Events>`。这些实现不持久化事件、不重试投递，也不会把处理器失败转换成业务事务失败。
 
+后续本地工作依赖监听器完成时，应等待 `emit`。它只表示完成，不表示成功确认：内置总线会捕获监听器错误。发布方若需要某项操作的成功结果或失败，应直接调用该操作，而不是使用事件通知。
+
 ## 事件与订阅契约 {#subscriptions}
 
 `EventType = string`。`EventHandler<EVENT>` 必填 `name: string`、`handle(event): void | Promise<void>`；串行排序中可选 `order` 默认零，可选 `once` 默认 false。`TypedEventBus<EVENT>` 提供 `type`、`handlers`、`on`、`off`、`emit`、`destroy`。

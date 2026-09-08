@@ -9,7 +9,7 @@ Interceptors mutate a shared `FetchExchange`; they return `void | Promise<void>`
 
 ## Registration and ordering {#registry}
 
-`new InterceptorRegistry(interceptors = [])` sorts ascending by `order`. `use(interceptor): boolean` rejects a duplicate name; `eject(name): boolean` reports whether removal happened; `clear(): void` removes everything. The constructor sorts the provided array but does not de-duplicate its initial entries. `interceptors` returns an array copy. `intercept(exchange): Promise<void>` awaits handlers sequentially and stops on rejection. The registry itself implements Interceptor, with constructor-name `name` and order `Number.MIN_SAFE_INTEGER`.
+`new InterceptorRegistry(interceptors = [])` sorts ascending by `order`. `use(interceptor): boolean` rejects a duplicate name; `eject(name): boolean` reports whether removal happened; `clear(): void` removes everything. The constructor sorts a copy of the provided array and leaves the input array unchanged; it does not de-duplicate its initial entries. `interceptors` returns an array copy. `intercept(exchange): Promise<void>` awaits handlers sequentially and stops on rejection. The registry itself implements Interceptor, with constructor-name `name` and order `Number.MIN_SAFE_INTEGER`.
 
 `OrderedCapable.order` is optional; `sortOrder(a, b)` treats missing values as zero. `toSorted(array, filter?)` returns a sorted copy, optionally filtered. `DEFAULT_INTERCEPTOR_ORDER_STEP = 1000` and `BUILT_IN_INTERCEPTOR_ORDER_STEP = 10000` provide spacing.
 

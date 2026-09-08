@@ -7,6 +7,8 @@ description: 'Events and local delivery — @ahoo-wang/fetcher-eventbus 5.0.0'
 
 Choose a typed bus for one payload type, or `EventBus<Events>` to route multiple named event types. Neither implementation persists events, retries delivery, or turns a handler failure into a failed business transaction.
 
+Await `emit` when subsequent local work depends on listener completion. This is a completion boundary, not a success acknowledgment: built-in buses catch listener errors. If the publisher needs a successful result or failure from a particular operation, call that operation directly instead of using an event notification.
+
 ## Event and subscription contracts {#subscriptions}
 
 `EventType = string`. `EventHandler<EVENT>` requires `name: string` and `handle(event): void | Promise<void>`; optional `order` defaults to zero in serial sorting, and optional `once` defaults to false. `TypedEventBus<EVENT>` exposes `type`, `handlers`, `on`, `off`, `emit`, and `destroy`.

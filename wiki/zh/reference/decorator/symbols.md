@@ -1,0 +1,53 @@
+---
+next: false
+title: 'decorator 公开符号索引'
+description: '完整根入口导出、行为契约及源码位置索引。'
+---
+
+# decorator 公开符号索引
+
+已知符号名时从下表定位。安装与入口选择请先看[包概览](./index.md)。
+
+## 公开导出索引 {#exports}
+
+| 符号                               | 契约                                                                  | 源码                                                                                                                                      |
+| ---------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `ApiMetadata`                      | [服务与端点](services-and-endpoints.md#apimetadata)                   | [apiDecorator.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L40)                           |
+| `ApiMetadataCapable`               | [服务与端点](services-and-endpoints.md#apimetadatacapable)            | [apiDecorator.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L83)                           |
+| `API_METADATA_KEY`                 | [元数据与执行生命周期](execution.md#api_metadata_key)                 | [apiDecorator.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L90)                           |
+| `buildRequestExecutor`             | [元数据与执行生命周期](execution.md#buildrequestexecutor)             | [apiDecorator.ts:164](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L164)                         |
+| `api`                              | [服务与端点](services-and-endpoints.md#api)                           | [apiDecorator.ts:228](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L228)                         |
+| `PathCapable`                      | [服务与端点](services-and-endpoints.md#pathcapable)                   | [endpointDecorator.ts:5](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L5)                   |
+| `EndpointMetadata`                 | [服务与端点](services-and-endpoints.md#endpointmetadata)              | [endpointDecorator.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L21)                 |
+| `ENDPOINT_METADATA_KEY`            | [元数据与执行生命周期](execution.md#endpoint_metadata_key)            | [endpointDecorator.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L31)                 |
+| `MethodEndpointMetadata`           | [服务与端点](services-and-endpoints.md#methodendpointmetadata)        | [endpointDecorator.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L33)                 |
+| `endpoint`                         | [服务与端点](services-and-endpoints.md#endpoint)                      | [endpointDecorator.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L59)                 |
+| `get`                              | [服务与端点](services-and-endpoints.md#get)                           | [endpointDecorator.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L101)               |
+| `post`                             | [服务与端点](services-and-endpoints.md#post)                          | [endpointDecorator.ts:126](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L126)               |
+| `put`                              | [服务与端点](services-and-endpoints.md#put)                           | [endpointDecorator.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L151)               |
+| `del`                              | [服务与端点](services-and-endpoints.md#del)                           | [endpointDecorator.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L176)               |
+| `patch`                            | [服务与端点](services-and-endpoints.md#patch)                         | [endpointDecorator.ts:201](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L201)               |
+| `head`                             | [服务与端点](services-and-endpoints.md#head)                          | [endpointDecorator.ts:229](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L229)               |
+| `options`                          | [服务与端点](services-and-endpoints.md#options)                       | [endpointDecorator.ts:254](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L254)               |
+| `EndpointReturnType`               | [元数据与执行生命周期](execution.md#endpointreturntype)               | [endpointReturnTypeCapable.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointReturnTypeCapable.ts#L14) |
+| `EndpointReturnTypeCapable`        | [元数据与执行生命周期](execution.md#endpointreturntypecapable)        | [endpointReturnTypeCapable.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointReturnTypeCapable.ts#L19) |
+| `ExecuteLifeCycle`                 | [元数据与执行生命周期](execution.md#executelifecycle)                 | [executeLifeCycle.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/executeLifeCycle.ts#L23)                   |
+| `FunctionMetadata`                 | [元数据与执行生命周期](execution.md#functionmetadata)                 | [functionMetadata.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L100)                 |
+| `AutoGenerated`                    | [服务与端点](services-and-endpoints.md#autogenerated)                 | [generated.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/generated.ts#L25)                                 |
+| `autoGeneratedError`               | [服务与端点](services-and-endpoints.md#autogeneratederror)            | [generated.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/generated.ts#L41)                                 |
+| `ParameterType`                    | [参数绑定](parameters.md#parametertype)                               | [parameterDecorator.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L19)               |
+| `ParameterMetadata`                | [参数绑定](parameters.md#parametermetadata)                           | [parameterDecorator.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L136)             |
+| `PARAMETER_METADATA_KEY`           | [参数绑定](parameters.md#parameter_metadata_key)                      | [parameterDecorator.ts:161](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L161)             |
+| `parameter`                        | [参数绑定](parameters.md#parameter)                                   | [parameterDecorator.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199)             |
+| `path`                             | [参数绑定](parameters.md#path)                                        | [parameterDecorator.ts:265](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L265)             |
+| `query`                            | [参数绑定](parameters.md#query)                                       | [parameterDecorator.ts:297](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L297)             |
+| `header`                           | [参数绑定](parameters.md#header)                                      | [parameterDecorator.ts:329](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L329)             |
+| `body`                             | [参数绑定](parameters.md#body)                                        | [parameterDecorator.ts:347](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L347)             |
+| `ParameterRequest`                 | [参数绑定](parameters.md#parameterrequest)                            | [parameterDecorator.ts:359](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L359)             |
+| `request`                          | [参数绑定](parameters.md#request)                                     | [parameterDecorator.ts:379](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L379)             |
+| `attribute`                        | [参数绑定](parameters.md#attribute)                                   | [parameterDecorator.ts:415](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L415)             |
+| `getParameterNames`                | [参数绑定](parameters.md#getparameternames)                           | [reflection.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L46)                               |
+| `getParameterName`                 | [参数绑定](parameters.md#getparametername)                            | [reflection.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L92)                               |
+| `DECORATOR_TARGET_ATTRIBUTE_KEY`   | [元数据与执行生命周期](execution.md#decorator_target_attribute_key)   | [requestExecutor.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L17)                     |
+| `DECORATOR_METADATA_ATTRIBUTE_KEY` | [元数据与执行生命周期](execution.md#decorator_metadata_attribute_key) | [requestExecutor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L18)                     |
+| `RequestExecutor`                  | [元数据与执行生命周期](execution.md#requestexecutor)                  | [requestExecutor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L61)                     |

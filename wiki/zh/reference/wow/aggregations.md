@@ -49,7 +49,7 @@ export const revenue: AggregationQuery = {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
 ### AggregationGroupType {#api-AggregationGroupType}
 
@@ -330,6 +330,8 @@ export interface DateHistogramAggregationOptions {
 
 ### aggregation {#api-aggregation}
 
+::: details 展开完整字段与成员
+
 ```ts
 declare const aggregation: {
   element(
@@ -392,8 +394,10 @@ declare const aggregation: {
 };
 ```
 
+:::
+
 [packages/wow/src/query/aggregation.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L210)
 
 ## 相关专题
 
-[客户端配置与元数据](./configuration) · [命令与等待结果](./commands) · [快照查询](./snapshot-queries) · [过滤表达式与旧条件](./filters) · [投影、排序与分页](./query-options) · [游标查询](./cursor-queries) · [事件与历史状态](./events-and-history) · [共享领域类型与工具](./shared-types)
+[客户端配置与元数据](./configuration) · [命令与等待结果](./commands) · [快照查询](./snapshot-queries) · [过滤表达式与旧条件](./filters) · [投影、排序与分页](./query-options) · [游标查询](./cursor-queries) · [事件与历史状态](./events-and-history) · [身份与资源归属](./identity-and-attribution)

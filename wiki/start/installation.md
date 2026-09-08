@@ -1,35 +1,38 @@
 ---
-title: Installation and runtime
-description: Separate application runtime, optional peers, and repository tooling.
+title: Install Fetcher
+description: Create an independent ESM project and install the core HTTP client.
 ---
 
-# Installation and runtime
+# Install Fetcher
 
-## Install the core package
+The core package supports Node `>=18.20.8`. Create an independent directory so the example does not rely on this repository's workspace links:
+
+```bash
+mkdir fetcher-first-request
+cd fetcher-first-request
+```
+
+Create `package.json` with ESM enabled:
+
+```json
+{
+  "name": "fetcher-first-request",
+  "private": true,
+  "type": "module"
+}
+```
+
+Install the published client and TypeScript:
 
 ```bash
 pnpm add @ahoo-wang/fetcher
-# npm install @ahoo-wang/fetcher
+pnpm add -D typescript
 ```
 
-## Check the packages you use
-
-The table follows current package.json declarations. Browsers must provide the Fetch, AbortController, and Streams APIs needed by your features; version declarations do not polyfill runtime APIs.
-
-| Package                                          | Declared Node range | Peer dependencies                                                                                                                                                                                                                                                                                   |
-| ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [fetcher](../reference/fetcher/index.md)         | `>=18.20.8`         | None                                                                                                                                                                                                                                                                                                |
-| [decorator](../reference/decorator/index.md)     | `>=18.20.8`         | `@ahoo-wang/fetcher`                                                                                                                                                                                                                                                                                |
-| [eventstream](../reference/eventstream/index.md) | `>=18.20.8`         | `@ahoo-wang/fetcher`                                                                                                                                                                                                                                                                                |
-| [react](../reference/react/index.md)             | `>=18.20.8`         | `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-eventstream`, `@ahoo-wang/fetcher-eventbus`, `@ahoo-wang/fetcher-storage`, `@ahoo-wang/fetcher-wow`, `@ahoo-wang/fetcher-cosec`, `react`, `react-dom`                                                                                                     |
-| [viewer](../reference/viewer/index.md)           | `>=18.20.8`         | `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-decorator`, `@ahoo-wang/fetcher-eventbus`, `@ahoo-wang/fetcher-eventstream`, `@ahoo-wang/fetcher-openapi`, `@ahoo-wang/fetcher-react`, `@ahoo-wang/fetcher-storage`, `@ahoo-wang/fetcher-wow`, `@ant-design/icons`, `antd`, `dayjs`, `react`, `react-dom` |
-
-## Feature-specific setup
-
-Declarative services need `experimentalDecorators` and `emitDecoratorMetadata`; see [Decorator setup](../reference/decorator/index.md). Import `@ahoo-wang/fetcher-eventstream` to register Response stream helpers; see [Stream results](../reference/eventstream/json-and-results.md). Install the peer dependencies of your selected React or Viewer version rather than treating the core-only command as a complete UI setup.
-
-## If you contribute to this repository
-
-The repository uses Node `>=20.20.2` and pnpm `10.34.5`. These contributor requirements differ from the consumer declarations above. Follow [Development](../contributing/development.md) to install the workspace and run checks.
+This is a consumer setup. Contributors to this repository instead need Node `>=20.20.2`, pnpm `10.34.5`, and the commands in [Development](../contributing/development.md).
 
 Continue with [Your first request](./first-request.md).
+
+## React and Viewer starting points
+
+For an existing React application, follow the [React example peer installation and mounting steps](../examples/react.md). For a table, use [your first data view](./first-view.md). These UI paths require additional peers beyond the core HTTP installation; [choose your starting point](./index.md) first.
