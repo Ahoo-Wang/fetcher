@@ -94,7 +94,10 @@ export async function startViewService({
       permissionsRevision: () => account.revision,
     });
   const server = createServer(async (request, response) => {
-    response.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:6006');
+    response.setHeader(
+      'Access-Control-Allow-Origin',
+      request.headers.origin ?? 'http://127.0.0.1:6006',
+    );
     response.setHeader(
       'Access-Control-Allow-Headers',
       'authorization, content-type, idempotency-key, if-match',

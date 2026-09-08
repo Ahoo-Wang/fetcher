@@ -47,7 +47,11 @@ if (serveOnly) {
   const { chromium } = createRequire(
     require.resolve('@vitest/browser-playwright'),
   )('playwright');
-  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const channel = process.env.VIEW_ENGINE_BROWSER_CHANNEL;
+  const browser = await chromium.launch({
+    ...(channel ? { channel } : {}),
+    headless: true,
+  });
   try {
     const context = await browser.newContext({
       viewport: { width: 1440, height: 1000 },
@@ -57,7 +61,9 @@ if (serveOnly) {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     bobPage.on('pageerror', error => errors.push(error.message));
-    const origin = 'http://127.0.0.1:6006';
+    const origin = (
+      process.env.VIEW_ENGINE_E2E_BASE_URL ?? 'http://127.0.0.1:6006'
+    ).replace(/\/$/, '');
     const url = `${origin}/iframe.html?id=development-http-service--http-view-service&viewMode=story&viewService=${encodeURIComponent(server.baseUrl)}`;
     const alice = new HttpViewHost({
       baseUrl: server.baseUrl,

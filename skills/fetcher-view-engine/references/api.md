@@ -2,6 +2,10 @@
 
 Package: `@ahoo-wang/fetcher-view-engine`, version `4.0.1`. The filter layer and RecordView are implemented: headless compilation and view engine, definitions/instances with host persistence, and React filter/table/page components. AnalysisView, DashboardView and cards remain separate work.
 
+Library acceptance: after workspace build, `pnpm verify:view-engine` verifies the packed public API, owns an isolated Storybook process, runs local/HTTP host recovery, and checks the 100-row/30-column/100-filter fixture. `VIEW_ENGINE_BROWSERS=chromium,firefox,webkit` selects the readiness matrix; `VIEW_ENGINE_BROWSER_CHANNEL=chrome` optionally selects installed Chrome for Chromium; `VIEW_ENGINE_ARTIFACTS` retains stage logs, screenshots and JSON. Install matching Playwright browsers first. The CI job uses this same entry point; full unit validation uses `VITEST_MAX_WORKERS=4 pnpm test:unit`.
+
+The readiness gate keeps raw axe findings and permits only the documented WebKit Base UI hidden focus-sentinel naming diagnostic after keyboard navigation checks; it does not certify VoiceOver. This is library validation with simulated services, not consuming-application production authentication or persistence admission.
+
 ## Core entry
 
 `src/index.ts` exports the headless compiler and JSON-friendly field/draft contracts. The basic display contracts remain:

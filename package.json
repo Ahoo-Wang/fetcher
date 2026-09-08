@@ -22,7 +22,8 @@
     "update-version": "sh ./scripts/update-all-versions.sh",
     "storybook": "storybook dev --docs -p 6006",
     "build-storybook": "storybook build --docs && node scripts/verify-storybook.mjs",
-    "test:storybook": "vitest run --project=storybook"
+    "test:storybook": "vitest run --project=storybook",
+    "verify:view-engine": "node scripts/verify-view-engine.mjs"
   },
   "keywords": [
     "fetcher",

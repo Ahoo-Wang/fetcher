@@ -37,6 +37,25 @@ pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
 
 `verify-package.mjs` 创建临时归档，检查 exports、CSS 与构建内容一致性，再针对解包后的产物运行并类型校验使用方代码，不执行安装或发布。示例使用严格的本地模拟服务；库级验证不替代宿主的真实鉴权、权限、持久化和后端查询验证。
 
+### 库级交付验收
+
+从仓库根目录执行 `pnpm verify:view-engine`（先完成工作区构建）。入口会校验公开包、启动自己的隔离 Storybook 服务，依次验证本地/HTTP 服务恢复和数据视图验收，完成、失败或中断时清理自己启动的进程。它不使用你正在调试的 6006 服务。
+
+```bash
+pnpm build
+pnpm exec playwright install chromium firefox webkit
+VITEST_MAX_WORKERS=4 pnpm test:unit
+pnpm lint:view-engine
+pnpm test:storybook
+VIEW_ENGINE_BROWSERS=chromium,firefox,webkit VIEW_ENGINE_ARTIFACTS=/tmp/view-engine-acceptance pnpm verify:view-engine
+```
+
+默认使用 Playwright Chromium；`VIEW_ENGINE_BROWSER_CHANNEL=chrome` 可使用本机 Chrome。浏览器缓存目录不可写时，用 `PLAYWRIGHT_BROWSERS_PATH` 指向可写目录，并在安装和运行时使用同一值。`VIEW_ENGINE_BROWSERS` 仅控制新增的 UX/规模验收；服务恢复阶段使用 Chromium。CI 安装三个引擎并执行相同入口，失败时上传分阶段日志、测量 JSON 和截图。
+
+验收负载为每页 100 行、30 个数据列、100 个筛选候选字段；覆盖 1440px/390px、浅色/深色、键盘查询与选择、错误重试及反复卸载。刷新、行选择和字段面板的暖交互分别记录 10 个样本，p95 上限为 1000ms，包含自动化通信和绘制等待，不是业务网络延迟 SLA。更大规模需要消费方独立测量；当前不承诺虚拟滚动或任意数据量。
+
+可访问性保留原始 axe 结果。WebKit 对 Base UI 隐藏焦点哨兵的命名告警按[上游已知行为](https://github.com/mui/base-ui/issues/5237)单独记录，并验证实际键盘进入、Tab 离开和 Escape 恢复；其他违规仍使验收失败。这不替代真实 VoiceOver/移动设备人工测试。
+
 ## RecordView 数据视图
 
 ```tsx
@@ -117,6 +136,8 @@ const host: ViewHost = {
 `extensions.cells`、`globalActions`、`tableActions`、`rowActions` 与 `filters` 注册任意本地 React 组件，远程定义只保存名称与 JSON 参数。定义通过 `recordActions.global`、`.table`、`.row` 指定创建、批量处理、查看记录等操作所在区域。已有全局注册保留原位置，批量组件需显式移到 `tableActions`。独立使用 `RecordTable` 时必须显式传入 `appliedFilter`。业务操作得到这一运行时查询范围（编译成功前 `filter` 为 null）、稳定记录主键与绑定当前实例的刷新回调。勾选仅表示明确选择的当前页记录。定义、实例和记录必须是 JSON 数据；主键必须为唯一字符串或有限数字，不回退到数组下标。核心入口仍不加载 React。
 
 扩展输入采用导出的 `DeepReadonly<T>` 递归只读快照。把需要编辑的字段复制到组件自己的表单状态，再通过宿主命令或引擎方法提交。尚未查询的筛选编辑不会触发记录单元格边界的重渲染。
+
+字段定义和列的 `field` 使用相对于返回记录的完整点路径，例如 `customer.name`、`state.amount`、`items.0.name`。默认、内置和自定义单元格共用取值函数，渲染器直接接收解析后的 `value`。只读取自有属性；缺失或中间值为空时返回 undefined，默认显示“—”，保留零和 false。不解析方括号或通配符，也不自动展开对象生成列。
 
 全局和批量操作组件渲染失败后，选择、查询状态等实际输入发生变化时会重新尝试渲染；无关的筛选草稿编辑不会反复触发失败组件。
 

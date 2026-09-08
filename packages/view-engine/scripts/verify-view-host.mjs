@@ -20,11 +20,18 @@ const require = createRequire(
 const { chromium } = createRequire(
   require.resolve('@vitest/browser-playwright'),
 )('playwright');
+const baseUrl = (
+  process.env.VIEW_ENGINE_E2E_BASE_URL ?? 'http://127.0.0.1:6006'
+).replace(/\/$/, '');
 const url =
   process.env.VIEW_HOST_E2E_URL ??
-  'http://127.0.0.1:6006/iframe.html?id=development-local-storage--local-storage-views&viewMode=story';
+  `${baseUrl}/iframe.html?id=development-local-storage--local-storage-views&viewMode=story`;
 const key = 'fve:views:["demo-view-service","demo-orders"]';
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const channel = process.env.VIEW_ENGINE_BROWSER_CHANNEL;
+const browser = await chromium.launch({
+  ...(channel ? { channel } : {}),
+  headless: true,
+});
 try {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 1000 },

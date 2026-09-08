@@ -37,6 +37,25 @@ pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
 
 `verify-package.mjs` creates a temporary archive, checks its exports/CSS and exact distribution content, then runs and type-checks consumers against the extracted package. It performs no installation or publication. These are library integration examples backed by a strict local simulated service; production authentication, authorization, persistence and backend query behavior still require host-system verification.
 
+### Library delivery acceptance
+
+Run `pnpm verify:view-engine` from the repository root after building the workspace. It checks the public package, starts an owned isolated Storybook server, and verifies local/HTTP recovery followed by browser acceptance. Success, failure and interruption clean up its owned processes; your existing port 6006 server is not used.
+
+```bash
+pnpm build
+pnpm exec playwright install chromium firefox webkit
+VITEST_MAX_WORKERS=4 pnpm test:unit
+pnpm lint:view-engine
+pnpm test:storybook
+VIEW_ENGINE_BROWSERS=chromium,firefox,webkit VIEW_ENGINE_ARTIFACTS=/tmp/view-engine-acceptance pnpm verify:view-engine
+```
+
+The default is Playwright Chromium; `VIEW_ENGINE_BROWSER_CHANNEL=chrome` selects installed Chrome. If the default browser cache is not writable, set the same writable `PLAYWRIGHT_BROWSERS_PATH` during installation and execution. `VIEW_ENGINE_BROWSERS` selects only the UX/scale checks; service recovery uses Chromium. CI installs three engines and runs this entry point, uploading per-stage logs, measurement JSON and screenshots on failure.
+
+The fixture uses 100 loaded rows, 30 data columns and 100 filter candidates at 1440px/390px in light/dark themes. It checks keyboard query/selection, retry and repeated disposal. Refresh, selection and field-picker warm interactions each record 10 samples with a 1000ms p95 regression ceiling, including automation transport and paint settlement; this is not a business-network latency SLA. Larger workloads need consumer measurements; virtual scrolling or arbitrary scale is not promised.
+
+Raw axe findings are retained. WebKit's hidden Base UI focus-sentinel naming diagnostic is recorded as [upstream expected behavior](https://github.com/mui/base-ui/issues/5237), with actual keyboard entry, Tab exit and Escape restoration checked separately. Other violations fail acceptance. This does not replace real VoiceOver/mobile-device testing.
+
 ## RecordView
 
 ```tsx
@@ -245,6 +264,7 @@ column. Pin/order changes do not query records or aggregates.
 Extension inputs use exported `DeepReadonly<T>` snapshots. Copy the fields needed
 into a component's own form state, then submit changes through host commands or
 engine methods. Unsubmitted filter edits do not rerender the record-cell boundary.
+Field definitions and table columns bind full dot paths relative to returned records, such as `customer.name`, `state.amount` and `items.0.name`. Default, built-in and custom cells share the same lookup and receive the resolved `value`. Only own properties are read; missing/null intermediates resolve to undefined and default to “—”, while zero and false are preserved. Bracket syntax, wildcards and automatic object-to-column expansion are not supported.
 Action rendering errors recover when the renderer's inputs change, including
 selection or query state; unrelated draft edits do not repeatedly retry a failure.
 Definitions use `recordActions.global`, `.table` and `.row` to choose their action
